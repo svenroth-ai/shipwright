@@ -1,0 +1,20 @@
+# Decision Log — {PROJECT_NAME}
+
+> Profile-level decisions (stack, auth pattern, DB strategy, folder structure, UX patterns) are implicit — the stack profile `{PROFILE_NAME}` is the ADR for those. Only project-specific decisions go here.
+
+---
+
+## ADR-001 | {DATE} | {SECTION_REF} | Commit {COMMIT_HASH}
+
+### Status: {STATUS}
+
+### Context
+{CONTEXT_DESCRIPTION}
+
+### Decision
+{DECISION_DESCRIPTION}
+
+### Consequences
+- {CONSEQUENCE_1}
+- {CONSEQUENCE_2}
+- Alternatives rejected: {REJECTED_ALTERNATIVES}
