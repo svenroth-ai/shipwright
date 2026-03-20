@@ -1,0 +1,51 @@
+# Code Conventions — {PROJECT_NAME}
+
+> Generated from stack profile: `{PROFILE_NAME}`
+
+## Architecture Rules
+
+{ARCHITECTURE_RULES}
+
+## File Organization
+
+```
+{FOLDER_STRUCTURE}
+```
+
+## Naming Conventions
+
+- **Files**: kebab-case (`user-profile.tsx`, `auth-utils.ts`)
+- **Components**: PascalCase (`UserProfile`, `AuthProvider`)
+- **Functions**: camelCase (`getUserById`, `handleSubmit`)
+- **Constants**: UPPER_SNAKE_CASE (`MAX_RETRIES`, `API_BASE_URL`)
+- **Database**: snake_case (`user_profiles`, `created_at`)
+
+## Component Patterns
+
+- Server Components by default — `'use client'` only when needed
+- Colocate component-specific types in the same file
+- Extract shared types to `src/lib/types/`
+
+## State Management
+
+- Server state: React Server Components + Supabase
+- Client state: Zustand stores in `src/lib/stores/`
+- Form state: react-hook-form + zod validation
+
+## API Patterns
+
+- All Supabase calls through `src/lib/supabase/`
+- All external API calls through `src/lib/api/`
+- No `fetch()` directly in components
+
+## Testing
+
+- Unit tests: `tests/` directory, mirror `src/` structure
+- E2E tests: `e2e/` directory, one file per user flow
+- Test naming: `describe('ComponentName')` / `it('should do X')`
+
+## Git
+
+- Conventional Commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`
+- Branch naming: `feature/{name}`, `fix/{name}`
+- PRs to `main` require passing CI

@@ -1,0 +1,34 @@
+# Architecture — {PROJECT_NAME}
+
+## System Overview
+
+{ARCHITECTURE_DIAGRAM}
+
+## Stack
+
+| Layer | Technology | Notes |
+|-------|-----------|-------|
+| Frontend | {FRONTEND_STACK} | {FRONTEND_NOTES} |
+| Backend | {BACKEND_STACK} | {BACKEND_NOTES} |
+| Database | {DATABASE_STACK} | {DATABASE_NOTES} |
+| Auth | {AUTH_STACK} | {AUTH_NOTES} |
+| Deploy | {DEPLOY_TARGET} | {DEPLOY_NOTES} |
+
+## Key Architecture Decisions
+
+See `decision_log.md` for detailed ADRs. Profile-level decisions (stack, auth pattern, DB strategy, folder structure) are defined by the stack profile (`{PROFILE_NAME}`).
+
+## Data Flow
+
+{DATA_FLOW_DESCRIPTION}
+
+## Security Model
+
+- **Auth**: {AUTH_MODEL}
+- **RLS**: {RLS_DESCRIPTION}
+- **API**: {API_SECURITY}
+
+## Infrastructure
+
+- **DEV**: {DEV_INFRA}
+- **PROD**: {PROD_INFRA}

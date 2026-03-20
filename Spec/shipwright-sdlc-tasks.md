@@ -116,10 +116,18 @@ shipwright/
 ```
 
 **Verification:**
-- [ ] Each template is valid Markdown
-- [ ] CLAUDE.md template is under 100 lines
-- [ ] Placeholders use consistent naming (`{PROJECT_NAME}`, `{TECH_STACK}`, etc.)
-- [ ] CI templates match spec section 12
+- [x] Each template is valid Markdown
+- [x] CLAUDE.md template is under 100 lines (22 lines)
+- [x] Placeholders use consistent naming (`{PROJECT_NAME}`, `{TECH_STACK}`, etc.)
+- [x] CI templates match spec section 12
+
+**Status: COMPLETE** (2026-03-20)
+
+**Notes:**
+- 7 templates created: claude-md, architecture, decision-log, conventions, current-sprint, session-handoff, ci-nextjs
+- All placeholders use UPPER_SNAKE_CASE in curly braces
+- CI template includes: lint, type-check, unit tests, Aikido on PR, Jelastic deploy stubs
+- No README.md for templates dir (templates are self-documenting)
 
 ---
 
