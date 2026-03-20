@@ -166,13 +166,22 @@ shipwright/
 ```
 
 **Verification:**
-- [ ] `uv run pytest shared/tests/ -v` -- all green
-- [ ] Session handoff generates all required fields
-- [ ] Decision log appends without overwriting, numbering is sequential
-- [ ] Config handles all 4 config files (shipwright_run, shipwright_project, shipwright_plan, shipwright_build)
-- [ ] Cost tracker writes `estimated_tokens_used` and `estimated_api_calls` per section to shipwright_build_config.json
-- [ ] Hook scripts: `check_destructive_migration.sh` detects DROP TABLE/COLUMN in .sql files
-- [ ] Hook scripts: `validate_command.sh` blocks dangerous commands (exit 2 on match)
+- [x] `uv run pytest shared/tests/ -v` -- all green (36/36)
+- [x] Session handoff generates all required fields
+- [x] Decision log appends without overwriting, numbering is sequential
+- [x] Config handles all 4 config files (shipwright_run, shipwright_project, shipwright_plan, shipwright_build)
+- [x] Cost tracker writes `estimated_tokens_used` and `estimated_api_calls` per section to shipwright_build_config.json
+- [x] Hook scripts: `check_destructive_migration.sh` detects DROP TABLE/COLUMN in .sql files
+- [x] Hook scripts: `validate_command.sh` blocks dangerous commands (exit 2 on match)
+
+**Status: COMPLETE** (2026-03-20)
+
+**Notes:**
+- Hook scripts use portable sed/grep (no grep -P) for Windows compatibility
+- Hook scripts avoid emojis in stderr output (cp1252 encoding issue on Windows)
+- cost_tracker.py is a data writer — records values provided by SKILL.md flow, does not measure actual tokens
+- verify_documentation.sh also created (checks agent_docs/ completeness)
+- uv 0.10.12 + Python 3.13.12 installed and working
 
 ---
 
