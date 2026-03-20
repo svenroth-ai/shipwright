@@ -1,0 +1,39 @@
+# Session Handoff — {PROJECT_NAME}
+
+> Auto-generated before context compaction. Read this after `/clear` to recover state.
+
+## Session Info
+
+- **Session ID**: {SESSION_ID}
+- **Timestamp**: {TIMESTAMP}
+- **Reason**: {HANDOFF_REASON}
+
+## Current State
+
+- **Phase**: {CURRENT_PHASE}
+- **Split**: {CURRENT_SPLIT}
+- **Section**: {CURRENT_SECTION}
+- **Step**: {CURRENT_STEP}
+
+## What Was Done
+
+{COMPLETED_WORK}
+
+## What Needs to Happen Next
+
+{NEXT_ACTIONS}
+
+## Key Decisions Made This Session
+
+{SESSION_DECISIONS}
+
+## Config Files to Read
+
+- `shipwright_run_config.json` — scope, profile, autonomy
+- `shipwright_project_config.json` — split state
+- `shipwright_plan_config.json` — planning state
+- `shipwright_build_config.json` — implementation state, commit hashes
+
+## Open Issues
+
+{OPEN_ISSUES}
