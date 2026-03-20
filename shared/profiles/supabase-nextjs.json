@@ -1,0 +1,142 @@
+{
+  "name": "supabase-nextjs",
+  "description": "Full-stack Next.js with Supabase backend, optimized for Jelastic deployment",
+  "version": "1.0.0",
+
+  "stack": {
+    "runtime": {
+      "node": "22.x",
+      "typescript": "^5.9.3"
+    },
+    "frontend": {
+      "next": "^16.2.0",
+      "react": "^19.2.4",
+      "react-dom": "^19.2.4",
+      "tailwindcss": "^4.2.0",
+      "zustand": "^5.0.12"
+    },
+    "backend": {
+      "supabase-js": "@supabase/supabase-js@^2.99.3",
+      "supabase-cli": "^2.82.0"
+    },
+    "auth": {
+      "provider": "supabase-auth",
+      "methods": ["email", "oauth"],
+      "notes": "Supabase Auth with Email + OAuth. Token refresh strategy is project-specific (decision_log)."
+    },
+    "storage": "supabase-storage",
+    "realtime": "supabase-realtime"
+  },
+
+  "ui": {
+    "component_library": "shadcn/ui",
+    "shadcn_cli": "^4.0.0",
+    "forms": {
+      "react-hook-form": "^7.71.2",
+      "zod": "^4.3.6"
+    },
+    "patterns": {
+      "auth_flow": "Login/Signup page with social OAuth buttons (shadcn/ui)",
+      "dashboard": "Sidebar navigation + header + content area",
+      "settings": "Tab-based settings page",
+      "lists": "Data tables with sorting, filtering, pagination (shadcn/ui)",
+      "forms": "Multi-step forms with validation (react-hook-form + zod)",
+      "empty_states": "Illustrated empty state with CTA",
+      "error_pages": "404/500 with navigation back"
+    }
+  },
+
+  "testing": {
+    "unit": {
+      "framework": "vitest",
+      "version": "^4.1.0"
+    },
+    "e2e": {
+      "framework": "@playwright/test",
+      "version": "^1.58.2"
+    },
+    "security": {
+      "provider": "aikido",
+      "scope": ["sast", "sca", "secret-detection"]
+    }
+  },
+
+  "linting": {
+    "eslint": "^10.0.3",
+    "eslint_config": "flat",
+    "prettier": "^3.8.1"
+  },
+
+  "error_tracking": {
+    "provider": "sentry",
+    "package": "@sentry/nextjs@^10.45.0",
+    "tier": "free"
+  },
+
+  "deploy": {
+    "target": "jelastic",
+    "environments": {
+      "dev": {
+        "auto_deploy": true,
+        "branches": ["develop", "feature/*"]
+      },
+      "prod": {
+        "auto_deploy": false,
+        "branches": ["main"],
+        "requires_confirmation": true,
+        "snapshot_before_deploy": true
+      }
+    },
+    "next_config": {
+      "output": "standalone"
+    },
+    "notes": "No ISR on Jelastic — use SSR or client-side fetch. Optional Cloudflare CDN for caching + image optimization."
+  },
+
+  "ci": {
+    "provider": "github-actions",
+    "pipeline": {
+      "on_push": ["develop", "feature/*"],
+      "on_pr": ["main"],
+      "jobs": ["lint", "type-check", "unit-tests"],
+      "on_pr_jobs": ["aikido-scan"]
+    }
+  },
+
+  "folder_structure": {
+    "src/app/": "Next.js App Router pages",
+    "src/components/": "React components",
+    "src/lib/": "Utility functions",
+    "src/hooks/": "Custom React hooks",
+    "supabase/migrations/": "SQL migrations (managed by shipwright-build)",
+    "supabase/functions/": "Edge Functions",
+    "tests/": "Vitest unit tests",
+    "e2e/": "Playwright E2E tests",
+    "public/": "Static assets"
+  },
+
+  "env_files": {
+    ".env.local": "Local development (not committed)",
+    ".env.example": "Template with all required vars (committed)",
+    "jelastic_dashboard": "DEV/PROD secrets (SUPABASE_URL, SUPABASE_KEY, etc.)"
+  },
+
+  "architecture_rules": [
+    "Feature modules must not import from other feature modules",
+    "All Supabase calls go through lib/supabase/ — no direct client usage in components",
+    "All API calls go through lib/api/ — no fetch() in components",
+    "Server Components by default — 'use client' only when needed",
+    "No business logic in API routes — use Edge Functions",
+    "All database changes via migrations in supabase/migrations/"
+  ],
+
+  "package_manager": "npm",
+
+  "migrations": {
+    "dev": "supabase db push (automatic)",
+    "prod": "supabase db push --dry-run first, user confirms, then apply",
+    "rollback": "down.sql generated alongside each migration (best-effort)",
+    "destructive_protection": true,
+    "destructive_patterns": ["DROP TABLE", "DROP COLUMN", "ALTER TYPE"]
+  }
+}

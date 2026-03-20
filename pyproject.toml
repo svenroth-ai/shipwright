@@ -1,0 +1,32 @@
+[project]
+name = "shipwright"
+version = "0.1.0"
+description = "AI-powered SDLC framework built on Claude Code"
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Sven Roth"}
+]
+keywords = ["claude-code", "sdlc", "ai-framework", "plugin"]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-mock>=3.12.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["integration-tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+pythonpath = ["."]
+markers = [
+    "integration: marks tests as integration tests",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["shared*"]
