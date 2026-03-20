@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+
+# Node
+node_modules/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Test / Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+coverage/
+
+# Shipwright runtime artifacts (generated in target projects, not in this repo)
+shipwright_*_config.json
+agent_docs/session_handoff.md
+
+# UV
+.uv/
