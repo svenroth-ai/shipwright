@@ -51,4 +51,4 @@ Profiles define everything: stack versions, folder structure, deploy target, tes
 
 ---
 
-Built by [dinovo GmbH](https://github.com/svenroth-ai). Powered by Claude Code.
+Built by [svenroth.ai](https://github.com/svenroth-ai). Powered by Claude Code.
