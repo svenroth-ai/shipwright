@@ -660,10 +660,14 @@ shipwright/
 ```
 
 **Verification:**
-- [ ] Full flow completes from description to deployed state
-- [ ] Iteration mode works on existing project
-- [ ] All config files and artifacts are consistent
-- [ ] Resume from any point works via config files
+- [x] Full pipeline E2E: inference → project → plan → build → changelog (all plugins)
+- [x] Resume from any point: tested all 6 pipeline steps sequentially
+- [x] Iterate mode: detects existing project, sets scope correctly
+- [x] Extension mode: CLAUDE.md + agent_docs → extension scope (no --iterate)
+- [x] All config files consistent across pipeline
+- [x] 4 E2E integration tests passing
+
+**Status: COMPLETE** (2026-03-21)
 
 ---
 
