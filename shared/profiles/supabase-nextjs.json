@@ -54,6 +54,13 @@
     }
   },
 
+  "dev_server": {
+    "command": "npm run dev",
+    "port": 3000,
+    "ready_timeout_seconds": 60,
+    "ready_path": "/"
+  },
+
   "testing": {
     "unit": {
       "framework": "vitest",

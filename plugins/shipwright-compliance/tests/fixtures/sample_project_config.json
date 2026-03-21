@@ -1,0 +1,10 @@
+{
+  "scope": "full_app",
+  "profile": "supabase-nextjs",
+  "splits": [
+    {"name": "01-auth", "status": "complete"},
+    {"name": "02-dashboard", "status": "complete"},
+    {"name": "03-settings", "status": "complete"}
+  ],
+  "status": "complete"
+}

@@ -66,5 +66,5 @@ def test_read_all_configs_with_data(project_with_configs):
     assert len(result["build"]["sections"]) == 2
 
 
-def test_config_handles_all_four_files():
-    assert set(CONFIG_FILES.keys()) == {"run", "project", "plan", "build"}
+def test_config_handles_all_config_files():
+    assert set(CONFIG_FILES.keys()) == {"run", "project", "plan", "build", "compliance"}

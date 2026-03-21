@@ -18,11 +18,21 @@ Shipwright uses a layered testing strategy. Each layer catches different classes
 - **When:** After deployment
 - **Speed:** Fast (< 5s)
 
+### 2.5. Browser Verify (in shipwright-build)
+- **What:** Quick visual check — load page, screenshot, check console errors
+- **Tool:** `browser-verify.ts` (TypeScript helper using Playwright)
+- **When:** After each section implementation (Step 4.5 in shipwright-build)
+- **Speed:** Fast (5-15s)
+- **Auto-fix:** Yes — `browser-fixer` subagent analyzes screenshot + console errors
+
 ### 3. E2E Tests (Playwright)
-- **What:** Full user flows in browser
-- **Tool:** Playwright
-- **When:** After deployment, before PROD release
+- **What:** Full user flows in browser (all `e2e/*.spec.ts` files)
+- **Tool:** Playwright via `playwright_runner.py`
+- **When:** After all sections built, as part of `/shipwright-test`
 - **Speed:** Medium (30s-5min)
+- **Setup:** Automated via `playwright_setup.py` (idempotent)
+- **Config:** `playwright.config.ts` generated from template (Chromium only, JSON reporter)
+- **Results:** Parsed from `e2e-results.json` (Playwright JSON reporter)
 
 ### 4. Security Scan
 - **What:** Dependency vulnerabilities, code patterns
@@ -49,3 +59,8 @@ When enabled:
 
 The agent uses its code understanding to fix tests — it reads the error,
 finds the relevant source code, and applies a fix. This is not a dumb retry.
+
+For Playwright/E2E failures, the `browser-fixer` subagent is used instead:
+- Receives screenshot, console errors, and DOM snippet
+- Uses multimodal analysis (Claude sees the screenshot)
+- Returns a specific file + fix recommendation with confidence level

@@ -1,0 +1,21 @@
+{
+  "name": "my-saas-app",
+  "version": "0.1.0",
+  "dependencies": {
+    "next": "16.2.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "@supabase/supabase-js": "2.45.0",
+    "@supabase/ssr": "0.5.0",
+    "zod": "3.23.0",
+    "tailwindcss": "4.1.0",
+    "lucide-react": "0.460.0"
+  },
+  "devDependencies": {
+    "typescript": "5.8.0",
+    "vitest": "3.1.0",
+    "@playwright/test": "1.50.0",
+    "@types/react": "19.0.0",
+    "eslint": "9.0.0"
+  }
+}
