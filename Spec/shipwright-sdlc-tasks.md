@@ -325,52 +325,32 @@ shipwright/plugins/shipwright-build/
 ```
 
 **Verification:**
-- [ ] All existing tests pass (adapted to new names)
-- [ ] Plugin loads correctly
-- [ ] TDD loop works as before
-- [ ] All `DEEP_` env var references renamed to `SHIPWRIGHT_`
+- [x] All tests pass (26/26, adapted to new names)
+- [x] All DEEP_* env var references renamed to SHIPWRIGHT_*
+- [x] TDD loop in SKILL.md (12-step workflow)
+- [x] Conventional Commits format (feat, fix, refactor, test, docs, chore)
+- [x] Decision log entries via write_decision_log.py
+- [x] Session handoff via generate_session_handoff.py
+- [x] Auto-push: default false, opt-in per config
+- [x] Feature branch always created (shipwright/NN-name)
+- [x] Migration safety: down.sql generation + destructive change detection
+- [x] Hook: PreToolUse blocks git push --force and rm -rf (exit 2)
+- [x] Hook: PostToolUse detects DROP TABLE in migration files and warns (exit 2)
+- [x] Hook: Stop checks decision_log.md and session_handoff.md existence
+- [x] Section state tracking via update_section_state.py
 
----
+**Status: COMPLETE** (2026-03-21) — Combined Task 07 + Task 08
 
-### Task 08: shipwright-build -- Enhancements (Commits, Decision Log, Handoff, Migration Safety)
+**Notes:**
+- Tasks 07+08 merged (fork + enhancements together)
+- Design decision: auto_push default false (opt-in), feature branch always created
+- Design decision: Build generates migrations (up.sql + down.sql), Deploy executes them
+- supabase db push moved to shipwright-deploy (not build's responsibility)
+- auto_feature_branch removed as config option — always on, safer default
 
-**Description**: Add Conventional Commits, decision log integration, session handoff, auto-push, and migration safety to shipwright-build.
+~~### Task 08: shipwright-build -- Enhancements (Commits, Decision Log, Handoff, Migration Safety)~~
 
-**Inputs:**
-- `plugins/shipwright-build/` from Task 07
-- Shared utilities from Task 03 (including hook scripts)
-- `shipwright-sdlc-spec.md` -- Section 6.3, Section 3.5 (Build-Test-Deploy Loop), Section 5.1 (Database Migrations), Section 11.5 (Quality Gate Hooks)
-
-**Outputs:**
-- SKILL.md extended with:
-  - Conventional Commits format for all commits
-  - Decision log call after code review interviews
-  - Session handoff generation before context limits
-  - Optional auto-push after commit (`"auto_push": true`)
-  - Optional feature branch creation (`"auto_feature_branch": true`)
-  - Migration safety: generate down.sql alongside each migration (best-effort)
-  - Destructive change detection: DROP TABLE, DROP COLUMN, lossy ALTER TYPE → always warn user, require confirmation regardless of autonomy level
-  - DEV migrations: `supabase db push` (automatic)
-  - PROD migrations: `supabase db push --dry-run` first, user reviews, then manual confirm
-- Integrated shared utilities (`write_decision_log.py`, `generate_session_handoff.py`)
-- Quality Gate Hooks in `hooks/hooks.json`:
-  - `PreToolUse` (Bash): dangerous command guard via `validate_command.sh`
-  - `PostToolUse` (Write|Edit): migration safety gate via `check_destructive_migration.sh`
-  - `Stop`: documentation completeness check (agent hook)
-- New tests for all enhancements
-
-**Verification:**
-- [ ] Commits follow Conventional Commits format (feat:, fix:, etc.)
-- [ ] Decision log entries are written after interview triage
-- [ ] Session handoff is generated before context warnings
-- [ ] Auto-push works when enabled, skipped when disabled
-- [ ] Migrations generate corresponding down.sql files
-- [ ] Destructive DB changes trigger explicit user warning + confirmation
-- [ ] PROD migrations run dry-run before apply
-- [ ] Hook: `PreToolUse` blocks `git push --force` and `rm -rf` (exit 2)
-- [ ] Hook: `PostToolUse` detects DROP TABLE in migration files and warns
-- [ ] Hook: `Stop` verifies decision_log.md and session_handoff.md are current
-- [ ] All tests pass
+*Merged into Task 07 above.*
 
 ---
 
