@@ -1,0 +1,47 @@
+{
+  "sections": [
+    {
+      "name": "01-login",
+      "status": "complete",
+      "commit": "abc123def456",
+      "tests_passed": 5,
+      "tests_total": 5,
+      "estimated_tokens_used": 45000,
+      "estimated_api_calls": 12,
+      "code_review_findings": [
+        {"finding": "Missing input validation on email field", "status": "fixed"}
+      ]
+    },
+    {
+      "name": "02-rbac",
+      "status": "complete",
+      "commit": "def789ghi012",
+      "tests_passed": 8,
+      "tests_total": 8,
+      "estimated_tokens_used": 38000,
+      "estimated_api_calls": 10,
+      "code_review_findings": []
+    },
+    {
+      "name": "03-profile",
+      "status": "complete",
+      "commit": "jkl345mno678",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "estimated_tokens_used": 22000,
+      "estimated_api_calls": 8,
+      "code_review_findings": [
+        {"finding": "Avatar upload missing size check", "status": "fixed"},
+        {"finding": "Consider caching profile data", "status": "deferred"}
+      ]
+    }
+  ],
+  "summary": {
+    "total_sections": 3,
+    "completed_sections": 3,
+    "total_tests_passed": 16,
+    "total_tests_total": 16,
+    "total_estimated_tokens": 105000,
+    "total_estimated_api_calls": 30
+  }
+}

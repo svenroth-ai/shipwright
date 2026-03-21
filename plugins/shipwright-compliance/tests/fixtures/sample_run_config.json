@@ -1,0 +1,9 @@
+{
+  "scope": "full_app",
+  "profile": "supabase-nextjs",
+  "autonomy": "guided",
+  "deploy_target": "jelastic-dev",
+  "pipeline": ["project", "plan", "build", "test", "deploy", "changelog"],
+  "status": "complete",
+  "current_step": "changelog"
+}

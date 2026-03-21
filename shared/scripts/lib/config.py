@@ -5,6 +5,7 @@ Each skill writes its own config file in the target project root:
   - shipwright_project_config.json
   - shipwright_plan_config.json
   - shipwright_build_config.json
+  - shipwright_compliance_config.json
 
 Config files are the single source of truth for state recovery after
 context compaction or /clear.
@@ -19,6 +20,7 @@ CONFIG_FILES = {
     "project": "shipwright_project_config.json",
     "plan": "shipwright_plan_config.json",
     "build": "shipwright_build_config.json",
+    "compliance": "shipwright_compliance_config.json",
 }
 
 
