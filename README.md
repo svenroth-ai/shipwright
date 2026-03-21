@@ -25,6 +25,10 @@ User Description
 ┌──────────────────┐
 │shipwright-project│  Interview → Split → IREB Specs → CLAUDE.md + agent_docs
 └────────┬─────────┘
+         ▼
+┌──────────────────┐
+│shipwright-design │  Specs → Screen Detection → HTML Mockups → User Flows
+└────────┬─────────┘
          ▼  (per split)
 ┌──────────────────┐
 │ shipwright-plan  │  Research → Interview → Plan → External LLM Review → Sections
@@ -54,6 +58,7 @@ User Description
 |-------|---------|-------------|
 | `shipwright-run` | Orchestrator | Inference engine, scope detection, pipeline state machine |
 | `shipwright-project` | Requirements | IREB-aligned specs, scope detection (Full App / Extension), chat + file + inline input |
+| `shipwright-design` | UI Design | HTML mockups from specs, screen + flow generation, iterate via chat, upload existing designs |
 | `shipwright-plan` | Planning | External LLM review (Gemini + OpenAI), section-writer subagent, E2E test plan |
 | `shipwright-build` | Implementation | TDD loop, code-reviewer subagent, Conventional Commits, migration safety |
 | `shipwright-test` | Testing | Profile-aware (Vitest/Playwright), smoke test, `--fix` auto-repair |
