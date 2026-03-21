@@ -1,5 +1,5 @@
 ---
-name: shipwright-run
+name: run
 description: "Master orchestrator for the Shipwright SDLC pipeline. From user description to deployed application. Use this as the single entry point: /shipwright-run"
 license: MIT
 compatibility: Requires uv (Python 3.11+), git. Optional: JELASTIC_TOKEN for deploy.
