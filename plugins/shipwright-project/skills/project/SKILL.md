@@ -1,5 +1,5 @@
 ---
-name: project
+name: shipwright-project
 description: Decomposes project requirements into well-scoped planning units for /shipwright-plan. Generates CLAUDE.md and agent_docs for the target project. Use when starting a new project or extending an existing one.
 license: MIT
 compatibility: Requires uv (Python 3.11+), git repository recommended
