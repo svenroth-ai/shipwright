@@ -157,6 +157,12 @@ The orchestrator dispatches to each skill in sequence:
 
 **Between each skill:**
 - Update `shipwright_run_config.json` with progress
+- Update compliance documentation (incremental):
+  ```bash
+  uv run {compliance_plugin_root}/scripts/tools/update_compliance.py \
+    --project-root "$(pwd)" --phase "{completed_phase}"
+  ```
+  Where `{compliance_plugin_root}` = `{plugin_root}/../../shipwright-compliance` (sibling plugin)
 - Check if context window is getting large → suggest `/clear` + resume
 
 **Guided mode:** Ask user at each major transition:
@@ -215,6 +221,7 @@ Project artifacts:
   - CLAUDE.md
   - agent_docs/ (architecture, conventions, decision_log, sprint, handoff)
   - CHANGELOG.md
+  - compliance/ (dashboard, RTM, test evidence, change history, SBOM)
   - shipwright_*_config.json files
 ================================================================================
 ```
