@@ -1,0 +1,68 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "shipwright",
+  "description": "Shipwright SDLC — AI-powered software delivery lifecycle framework",
+  "version": "0.1.0",
+  "owner": {
+    "name": "svenroth.ai",
+    "url": "https://github.com/svenroth-ai"
+  },
+  "plugins": [
+    {
+      "name": "shipwright-run",
+      "description": "Orchestrate the full Shipwright SDLC pipeline — from user description to deployed application",
+      "version": "0.1.0",
+      "source": "./plugins/shipwright-run",
+      "category": "development",
+      "tags": ["orchestration", "sdlc", "pipeline", "deployment"]
+    },
+    {
+      "name": "shipwright-project",
+      "description": "Decompose project requirements into well-scoped planning units with IREB-aligned specs",
+      "version": "0.1.0",
+      "source": "./plugins/shipwright-project",
+      "category": "development",
+      "tags": ["planning", "decomposition", "requirements", "ireb"]
+    },
+    {
+      "name": "shipwright-plan",
+      "description": "Deep planning with research, interview, external LLM review, and TDD approach",
+      "version": "0.1.0",
+      "source": "./plugins/shipwright-plan",
+      "category": "development",
+      "tags": ["planning", "tdd", "architecture", "llm-review"]
+    },
+    {
+      "name": "shipwright-build",
+      "description": "TDD implementation with code review, Conventional Commits, and feature branch workflow",
+      "version": "0.1.0",
+      "source": "./plugins/shipwright-build",
+      "category": "development",
+      "tags": ["implementation", "tdd", "code-review", "conventional-commits"]
+    },
+    {
+      "name": "shipwright-test",
+      "description": "Profile-aware test runner: unit tests, smoke tests, Playwright E2E, and security scans",
+      "version": "0.1.0",
+      "source": "./plugins/shipwright-test",
+      "category": "development",
+      "tags": ["testing", "vitest", "playwright", "smoke-test"]
+    },
+    {
+      "name": "shipwright-deploy",
+      "description": "Deploy to Jelastic (Infomaniak) with smoke test verification and rollback support",
+      "version": "0.1.0",
+      "source": "./plugins/shipwright-deploy",
+      "category": "development",
+      "tags": ["deployment", "jelastic", "infomaniak", "rollback"]
+    },
+    {
+      "name": "shipwright-changelog",
+      "description": "Parse Conventional Commits, generate Keep-a-Changelog entries, create version tags and PRs",
+      "version": "0.1.0",
+      "source": "./plugins/shipwright-changelog",
+      "category": "development",
+      "tags": ["changelog", "conventional-commits", "semver", "pr"]
+    }
+  ]
+}
