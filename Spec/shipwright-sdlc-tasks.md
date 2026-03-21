@@ -432,10 +432,15 @@ shipwright/plugins/shipwright-changelog/
 ```
 
 **Verification:**
-- [ ] `uv run pytest tests/ -v` -- all green
-- [ ] Changelog output is valid Keep-a-Changelog format
-- [ ] All Conventional Commit types are recognized
-- [ ] Integration test creates/parses real git history
+- [x] `uv run pytest tests/ -v` — 23/23 green
+- [x] Changelog output is valid Keep-a-Changelog format
+- [x] All Conventional Commit types recognized (feat, fix, refactor, docs, test, chore, style, perf, ci, build)
+- [x] Breaking change detection (! suffix and BREAKING CHANGE footer)
+- [x] Integration tests create/parse real git repos with tags
+- [x] Version bump suggestion (major/minor/patch based on commit types)
+- [x] No README (consistent with other plugins)
+
+**Status: COMPLETE** (2026-03-21)
 
 ---
 
