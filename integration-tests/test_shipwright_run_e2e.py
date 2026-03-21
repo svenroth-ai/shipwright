@@ -100,6 +100,13 @@ class TestFullPipelineE2E:
              "--step", "project", "--status", "complete"],
         )
 
+        # === Phase 2.5: shipwright-design (skip in test, mark complete) ===
+        run_script(
+            str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
+            ["update-step", "--project-root", str(project),
+             "--step", "design", "--status", "complete"],
+        )
+
         # === Phase 3: shipwright-plan ===
         auth_dir = planning / "01-auth"
         result = run_script(
@@ -190,7 +197,7 @@ class TestFullPipelineE2E:
         assert config["status"] == "complete"
         assert config["current_step"] is None
         assert set(config["completed_steps"]) == {
-            "project", "plan", "build", "test", "deploy", "changelog"
+            "project", "design", "plan", "build", "test", "deploy", "changelog"
         }
 
 
@@ -211,7 +218,8 @@ class TestResumeFromAnyPoint:
         )
 
         expected_next = {
-            "project": "plan",
+            "project": "design",
+            "design": "plan",
             "plan": "build",
             "build": "test",
             "test": "deploy",
