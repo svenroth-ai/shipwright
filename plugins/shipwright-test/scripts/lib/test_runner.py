@@ -150,9 +150,15 @@ def main() -> int:
     all_success = True
 
     for layer in layers:
-        command = args.command or get_test_command(args.profile, layer)
-        result = run_tests(command, args.cwd)
-        result["layer"] = layer
+        if layer == "e2e" and not args.command and args.cwd:
+            # Use Playwright runner for structured E2E results
+            from playwright_runner import run_playwright
+            result = run_playwright(Path(args.cwd))
+            result["layer"] = "e2e"
+        else:
+            command = args.command or get_test_command(args.profile, layer)
+            result = run_tests(command, args.cwd)
+            result["layer"] = layer
         results.append(result)
         if not result["success"]:
             all_success = False

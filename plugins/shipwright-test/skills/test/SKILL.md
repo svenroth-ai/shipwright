@@ -101,13 +101,46 @@ If no DEV URL and app not running: skip with note.
 **Prerequisites:**
 - Profile has UI (e.g., `supabase-nextjs`)
 - DEV URL is accessible (smoke test passed)
-- `claude-plan-e2e.md` exists (from /shipwright-plan)
 
+**Flow:**
+
+1. **Ensure Playwright is set up:**
 ```bash
-npx playwright test
+uv run {plugin_root}/../../shared/scripts/playwright_setup.py --cwd {project_root}
 ```
 
-If no Playwright config exists: skip with note.
+2. **Ensure dev server is running:**
+```bash
+uv run {plugin_root}/../../shared/scripts/dev_server.py start --profile {profile} --cwd {project_root}
+```
+
+3. **Run E2E tests:**
+```bash
+uv run {plugin_root}/scripts/lib/playwright_runner.py --cwd {project_root}
+```
+
+4. **Evaluate results:**
+   - Parse the JSON output for pass/fail/skip counts
+   - If all passed: continue to Step 4
+   - If failures and `--fix` flag active: invoke auto-fix
+
+5. **Auto-fix mode** (only with `--fix` flag, max 3 retries):
+   a. For each failed test, check if a screenshot exists
+   b. Spawn `browser-fixer` subagent with:
+      - Screenshot image (if available)
+      - Error message from test failure
+      - DOM snippet (if available via trace)
+      - Relevant source files
+   c. Apply the recommended fix
+   d. Re-run failed tests only: `npx playwright test --grep "{test_title}"`
+   e. If still failing after 3 retries, report failures to user
+
+6. **Stop dev server** (after all E2E tests complete):
+```bash
+uv run {plugin_root}/../../shared/scripts/dev_server.py stop --cwd {project_root}
+```
+
+If no Playwright config exists and setup fails: skip with note.
 
 ---
 
