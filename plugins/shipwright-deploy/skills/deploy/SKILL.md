@@ -1,5 +1,5 @@
 ---
-name: deploy
+name: shipwright-deploy
 description: Deploy to Jelastic (Infomaniak) with smoke test verification, rollback support, and Supabase migrations. Use after /shipwright-build and /shipwright-test.
 license: MIT
 compatibility: Requires uv (Python 3.11+), JELASTIC_TOKEN env var, optionally Supabase CLI
