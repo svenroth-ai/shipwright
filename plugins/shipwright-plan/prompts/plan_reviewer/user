@@ -1,0 +1,18 @@
+Review this implementation plan against the original specification.
+
+## Original Specification
+
+{SPEC}
+
+## Implementation Plan
+
+{PLAN}
+
+---
+
+Please provide your review focusing on:
+1. Does the plan fully cover the specification?
+2. Are there security, performance, or architecture issues?
+3. Are edge cases and error states handled?
+4. Is the section breakdown logical and implementation-ready?
+5. Are there any "footguns" — things that seem fine but will cause problems later?
