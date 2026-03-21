@@ -71,6 +71,14 @@
       "source": "./plugins/shipwright-changelog",
       "category": "development",
       "tags": ["changelog", "conventional-commits", "semver", "pr"]
+    },
+    {
+      "name": "shipwright-compliance",
+      "description": "IREB traceability, Requirements Traceability Matrix, SBOM, test evidence, and change history reports",
+      "version": "0.1.0",
+      "source": "./plugins/shipwright-compliance",
+      "category": "development",
+      "tags": ["compliance", "ireb", "traceability", "sbom", "rtm"]
     }
   ]
 }

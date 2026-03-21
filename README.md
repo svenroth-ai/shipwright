@@ -64,6 +64,7 @@ User Description
 | `shipwright-test` | Testing | Profile-aware (Vitest/Playwright), smoke test, `--fix` auto-repair |
 | `shipwright-deploy` | Deployment | Jelastic (Infomaniak, Switzerland), DEV auto / PROD manual, clone-based rollback |
 | `shipwright-changelog` | Release | Keep-a-Changelog format, semver bump suggestion, PR creation |
+| `shipwright-compliance` | Compliance | IREB traceability, RTM, SBOM, test evidence, change history reports |
 
 ## Modes
 
