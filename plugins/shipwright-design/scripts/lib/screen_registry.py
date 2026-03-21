@@ -58,13 +58,25 @@ def scan_designs_dir(designs_dir: Path) -> dict:
     uploads_dir = designs_dir / "uploads"
     if uploads_dir.is_dir():
         for f in sorted(uploads_dir.iterdir()):
-            if f.suffix in (".html", ".png", ".jpg", ".jpeg", ".svg", ".pdf"):
-                result["uploads"].append({
+            if f.suffix in (".html", ".png", ".jpg", ".jpeg", ".svg", ".pdf", ".md"):
+                entry = {
                     "name": f.name,
                     "file": f"uploads/{f.name}",
                     "type": f.suffix[1:],
                     "integrated": False,
-                })
+                }
+                # Detect visual guidelines
+                if f.suffix == ".md":
+                    content = f.read_text(encoding="utf-8").lower()
+                    if "visual guideline" in content or "design token" in content or "color system" in content:
+                        entry["is_visual_guidelines"] = True
+                result["uploads"].append(entry)
+
+    # Check for generated visual guidelines
+    guidelines_path = designs_dir / "visual-guidelines.md"
+    result["has_visual_guidelines"] = guidelines_path.exists()
+    if guidelines_path.exists():
+        result["visual_guidelines_path"] = "visual-guidelines.md"
 
     return result
 
