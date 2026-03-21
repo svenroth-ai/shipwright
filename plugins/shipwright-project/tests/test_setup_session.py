@@ -20,7 +20,9 @@ def run_setup(args: list[str], cwd: str = None) -> dict:
     return json.loads(result.stdout)
 
 
-def test_setup_new_session(sample_requirements):
+# --- File mode tests ---
+
+def test_setup_new_session_file_mode(sample_requirements):
     plugin_root = str(Path(__file__).resolve().parent.parent)
     output = run_setup([
         "--file", str(sample_requirements),
@@ -30,14 +32,16 @@ def test_setup_new_session(sample_requirements):
 
     assert output["success"] is True
     assert output["mode"] == "new"
+    assert output["input_mode"] == "file"
     assert output["resume_from_step"] == 1
     assert output["session_id"] == "test-session-123"
+    assert output["initial_file"] is not None
 
 
 def test_setup_resume_session(sample_requirements):
     plugin_root = str(Path(__file__).resolve().parent.parent)
 
-    # First run — creates session
+    # First run
     run_setup([
         "--file", str(sample_requirements),
         "--plugin-root", plugin_root,
@@ -79,3 +83,96 @@ def test_setup_empty_file(tmp_path):
 
     assert output["success"] is False
     assert "empty" in output["error"]
+
+
+# --- Chat mode tests ---
+
+def test_setup_chat_mode(tmp_path):
+    plugin_root = str(Path(__file__).resolve().parent.parent)
+    planning = tmp_path / "my-project" / "planning"
+
+    output = run_setup([
+        "--planning-dir", str(planning),
+        "--plugin-root", plugin_root,
+        "--input-mode", "chat",
+        "--session-id", "chat-test-1",
+    ])
+
+    assert output["success"] is True
+    assert output["mode"] == "new"
+    assert output["input_mode"] == "chat"
+    assert output["initial_file"] is None
+    assert planning.is_dir()
+
+
+def test_setup_inline_mode(tmp_path):
+    plugin_root = str(Path(__file__).resolve().parent.parent)
+    planning = tmp_path / "time-tracker" / "planning"
+
+    output = run_setup([
+        "--planning-dir", str(planning),
+        "--plugin-root", plugin_root,
+        "--input-mode", "inline",
+        "--session-id", "inline-test-1",
+    ])
+
+    assert output["success"] is True
+    assert output["input_mode"] == "inline"
+    assert output["initial_file"] is None
+
+
+def test_setup_chat_mode_resume(tmp_path):
+    plugin_root = str(Path(__file__).resolve().parent.parent)
+    planning = tmp_path / "project" / "planning"
+
+    # First run
+    run_setup([
+        "--planning-dir", str(planning),
+        "--plugin-root", plugin_root,
+        "--input-mode", "chat",
+    ])
+
+    # Second run — should resume
+    output = run_setup([
+        "--planning-dir", str(planning),
+        "--plugin-root", plugin_root,
+        "--input-mode", "chat",
+    ])
+
+    assert output["success"] is True
+    assert output["mode"] == "resume"
+
+
+def test_setup_no_file_no_dir():
+    """Neither --file nor --planning-dir → error."""
+    plugin_root = str(Path(__file__).resolve().parent.parent)
+    output = run_setup([
+        "--plugin-root", plugin_root,
+        "--input-mode", "chat",
+    ])
+
+    assert output["success"] is False
+    assert "required" in output["error"].lower()
+
+
+def test_setup_force_overwrites(tmp_path):
+    plugin_root = str(Path(__file__).resolve().parent.parent)
+    planning = tmp_path / "project" / "planning"
+
+    # First run
+    run_setup([
+        "--planning-dir", str(planning),
+        "--plugin-root", plugin_root,
+        "--input-mode", "chat",
+    ])
+
+    # Force overwrite
+    output = run_setup([
+        "--planning-dir", str(planning),
+        "--plugin-root", plugin_root,
+        "--input-mode", "chat",
+        "--force",
+    ])
+
+    assert output["success"] is True
+    assert output["mode"] == "new"
