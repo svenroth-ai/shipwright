@@ -369,11 +369,27 @@ Profiles are JSON files in `~/shipwright/shared/profiles/`. Currently available:
 
 To add a new profile, create a JSON file following the `supabase-nextjs.json` structure.
 
-### Stay Updated
+### Updating Shipwright
+
+Shipwright is installed as a local git clone. Updates are a single command:
 
 ```bash
-cd ~/shipwright && git pull
+cd ~/shipwright && git pull && uv sync
 ```
+
+`uv sync` re-installs Python dependencies if they changed. If nothing changed, it's a no-op (< 1 second).
+
+**What happens on update:**
+- SKILL.md changes → take effect on next `shipwright` session (exit and restart)
+- Python script changes → take effect immediately (loaded fresh each run via `uv run`)
+- New plugins added → update your shell alias to include them
+
+**Check what changed:**
+```bash
+cd ~/shipwright && git log --oneline -10
+```
+
+Or read `CHANGELOG.md` for release notes.
 
 ---
 
