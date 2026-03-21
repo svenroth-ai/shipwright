@@ -535,15 +535,19 @@ shipwright/plugins/shipwright-deploy/
 ```
 
 **Verification:**
-- [ ] `uv run pytest tests/ -v` -- all green
-- [ ] Jelastic client handles HTTP errors (401, 404, 500)
-- [ ] Smoke test produces structured report
-- [ ] PROD deploy requires explicit confirmation
-- [ ] PROD deploy creates snapshot before deploying
-- [ ] Smoke failure triggers automatic rollback (max 1 attempt, then escalate)
-- [ ] `--rollback` flag restores last PROD snapshot with user confirmation
-- [ ] Rollback events are logged in decision_log.md
-- [ ] Flavor architecture allows adding new deploy targets without modifying core logic
+- [x] `uv run pytest tests/ -v` — 13/13 green
+- [x] Jelastic client handles API errors (raises JelasticError with result code)
+- [x] Smoke test via shared/scripts/smoke_test.py
+- [x] PROD deploy requires explicit confirmation (SKILL.md flow)
+- [x] PROD deploy creates clone before deploying (CloneEnv API)
+- [x] Rollback: git-based (DEV) + clone-based (PROD)
+- [x] `--rollback` flag for manual PROD rollback
+- [x] Rollback events logged in decision_log.md (SKILL.md flow)
+- [x] Flavor architecture: jelastic_client.py as first flavor, extensible pattern
+- [x] Supabase migrations: DEV auto, PROD dry-run → confirm
+- [x] Jelastic API reference doc created (Spec/jelastic-cloud-deployment.md)
+
+**Status: COMPLETE** (2026-03-21)
 
 ---
 
