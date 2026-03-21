@@ -9,7 +9,10 @@ def test_scan_empty_dir(tmp_path):
     designs = tmp_path / "designs"
     designs.mkdir()
     result = scan_designs_dir(designs)
-    assert result == {"screens": [], "flows": [], "uploads": []}
+    assert result["screens"] == []
+    assert result["flows"] == []
+    assert result["uploads"] == []
+    assert result["has_visual_guidelines"] is False
 
 
 def test_scan_with_screens(tmp_project_with_designs):
