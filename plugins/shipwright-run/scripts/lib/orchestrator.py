@@ -21,7 +21,7 @@ from typing import Any, Optional
 
 CONFIG_NAME = "shipwright_run_config.json"
 
-PIPELINE_STEPS = ["project", "plan", "build", "test", "deploy", "changelog"]
+PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "deploy", "changelog"]
 
 
 def load_run_config(project_root: Path) -> dict[str, Any]:

@@ -136,11 +136,24 @@ Only decisions that shipwright-plan needs to plan correctly.}
 - **Decision:** {What was decided}
   **Rationale:** {Why}
 
-## 7. References
+## 7. UI Requirements (optional)
+
+{Include only if this split has user-facing screens.
+Used by shipwright-design to generate mockups.}
+
+| Screen | Description | Key Elements |
+|--------|-------------|-------------|
+| {Screen name} | {What the user sees} | {Key UI elements: forms, tables, cards, etc.} |
+
+**Layout preference:** {Sidebar | Top-nav | Centered | Full-width}
+**Design references:** {Link to existing mockups in designs/uploads/ if any}
+
+## 8. References
 
 - Requirements: `{path to requirements file}`
 - Interview: `{path to interview transcript}`
 - Related splits: {links to other split specs if relevant}
+- Designs: `{path to design-manifest.md if available}`
 ```
 
 ## Example: Filled spec.md

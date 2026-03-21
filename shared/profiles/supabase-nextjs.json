@@ -28,6 +28,14 @@
     "realtime": "supabase-realtime"
   },
 
+  "design_system": {
+    "name": "untitled-ui",
+    "type": "react",
+    "docs_url": "https://www.untitledui.com/react/components",
+    "mockup_approach": "html-inline-css",
+    "_comment": "Design system for shipwright-design mockups. Implementation uses component_library below."
+  },
+
   "ui": {
     "component_library": "shadcn/ui",
     "shadcn_cli": "^4.0.0",
