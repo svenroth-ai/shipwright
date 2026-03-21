@@ -377,9 +377,19 @@ shipwright/
 ```
 
 **Verification:**
-- [ ] `uv run pytest integration-tests/ -v` -- all green
-- [ ] All expected artifacts are generated
-- [ ] State recovery works (interrupt + resume from config files)
+- [x] `uv run pytest integration-tests/ -v` — 20/20 green
+- [x] All expected artifacts generated (session state, interview, manifest, specs, plan, sections, config, decision log, handoff)
+- [x] State recovery works: project (5 resume points), plan (4 resume points)
+- [x] Cross-plugin config: project config readable by downstream, build config tracks progress
+- [x] Chat mode works in integration context
+
+**Status: COMPLETE** (2026-03-21)
+
+**Notes:**
+- No README in integration-tests/ (internal test dir, not a package)
+- test_core_trilogy_flow.py: 9 tests covering project → plan → build script flow
+- test_state_recovery.py: 11 tests covering resume from every checkpoint + cross-plugin config
+- Tests use subprocess calls (not imports) to avoid namespace conflicts between plugins
 
 ---
 
