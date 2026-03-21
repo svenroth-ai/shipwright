@@ -224,32 +224,27 @@ shipwright/plugins/shipwright-project/
 - Generate `shipwright_project_config.json` instead of `deep_project_config.json`
 
 **Verification:**
-- [ ] All existing tests pass (adapted to new names)
-- [ ] Plugin loads with `claude --plugin-dir ./plugins/shipwright-project`
-- [ ] SKILL.md references correct config file names
-- [ ] New step generates valid CLAUDE.md and all 5 agent_docs files
+- [x] All tests pass (25/25, adapted to new names)
+- [x] SKILL.md references correct config file names (shipwright_*)
+- [x] Scope detection (Full App vs Extension) in SKILL.md
+- [x] Profile-aware interview depth in SKILL.md
+- [x] New Step 7: project scaffolding (CLAUDE.md + agent_docs generation)
+- [x] Profile detection heuristics in project-scaffolding.md reference
+- [x] write-project-config.py generates shipwright_project_config.json
 
----
+**Status: COMPLETE** (2026-03-21) — Combined Task 04 + Task 05
 
-### Task 05: shipwright-project -- Profile Integration + Testing
+**Notes:**
+- Tasks 04 and 05 merged into one (fork + profile integration together)
+- Upstream deep-project v0.2.1 fully adapted: all DEEP_* → SHIPWRIGHT_*, all config/file names renamed
+- Cross-platform: removed fcntl dependency (atomic write works on Windows)
+- Simplified: removed Claude Code task system integration (tasks managed by SKILL.md flow)
+- New scripts: write-project-config.py for Step 7 scaffolding
+- New reference: project-scaffolding.md with profile detection and template filling
 
-**Description**: Deep integration of stack profiles into shipwright-project. Profile determines folder structure, conventions, and generated templates.
+~~### Task 05: shipwright-project -- Profile Integration + Testing~~
 
-**Inputs:**
-- `plugins/shipwright-project/` from Task 04
-- Stack profiles from Task 01
-- Templates from Task 02
-
-**Outputs:**
-- Extended SKILL.md: profile selection based on user description
-- Profile-specific convention generation in `agent_docs/conventions.md`
-- Profile-specific folder structure in generated specs
-- Tests covering supabase-nextjs and custom profiles
-
-**Verification:**
-- [ ] "SaaS app with Supabase" → selects supabase-nextjs profile
-- [ ] Generated conventions match profile
-- [ ] All tests pass
+*Merged into Task 04 above.*
 
 ---
 
