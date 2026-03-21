@@ -1,5 +1,5 @@
 ---
-name: shipwright-plan
+name: plan
 description: Creates detailed implementation plans from spec files via research, interview, external LLM review, and TDD approach. Generates section-based plans for /shipwright-build. Use when you have a spec.md from /shipwright-project.
 license: MIT
 compatibility: Requires uv (Python 3.11+), git repository recommended. Optional: Gemini API key + OpenAI API key for external review.
