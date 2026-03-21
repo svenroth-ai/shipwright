@@ -18,34 +18,34 @@ Shipwright infers your stack, deploys to DEV automatically, runs tests, creates 
 User Description
   │
   ▼
-┌─────────────────┐
+┌──────────────────┐
 │ shipwright-run   │  Infer scope, profile, autonomy → dispatch
-└────────┬────────┘
+└────────┬─────────┘
          ▼
-┌─────────────────┐
+┌──────────────────┐
 │shipwright-project│  Interview → Split → IREB Specs → CLAUDE.md + agent_docs
-└────────┬────────┘
+└────────┬─────────┘
          ▼  (per split)
-┌─────────────────┐
+┌──────────────────┐
 │ shipwright-plan  │  Research → Interview → Plan → External LLM Review → Sections
-└────────┬────────┘
+└────────┬─────────┘
          ▼  (per section)
-┌─────────────────┐
+┌──────────────────┐
 │ shipwright-build │  TDD → Code Review → Conventional Commit → Feature Branch
-└────────┬────────┘
+└────────┬─────────┘
          ▼
-┌─────────────────┐
+┌──────────────────┐
 │ shipwright-test  │  Unit (Vitest) → Smoke → Playwright E2E → Security
-└────────┬────────┘
+└────────┬─────────┘
          ▼
-┌─────────────────┐
+┌──────────────────┐
 │shipwright-deploy │  Jelastic (Infomaniak) → Smoke Test → Rollback on Failure
-└────────┬────────┘
+└────────┬─────────┘
          ▼
-┌─────────────────┐
+┌──────────────────┐
 │shipwright-       │  Parse Commits → Changelog → Version Tag → PR
 │    changelog     │
-└─────────────────┘
+└──────────────────┘
 ```
 
 ## Skills
