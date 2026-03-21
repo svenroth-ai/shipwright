@@ -38,7 +38,7 @@ plugins/shipwright-{name}/
   .claude-plugin/plugin.json          # Plugin metadata
   hooks/hooks.json                    # Claude Code hooks
   agents/                             # Subagent definitions (markdown)
-  skills/shipwright-{name}/SKILL.md   # Main skill definition
+  skills/{name}/SKILL.md              # Main skill definition (folder = slash command suffix)
   scripts/                            # Python scripts (checks, hooks, lib, tools)
   tests/                              # Plugin-specific tests
   pyproject.toml                      # Plugin dependencies

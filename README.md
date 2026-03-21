@@ -114,7 +114,7 @@ plugins/shipwright-{name}/
 ├── .claude-plugin/plugin.json        # Plugin metadata
 ├── hooks/hooks.json                  # Claude Code hooks
 ├── agents/                           # Subagent definitions
-├── skills/shipwright-{name}/
+├── skills/{name}/
 │   ├── SKILL.md                      # Main skill definition
 │   └── references/                   # Lazy-loaded protocol docs
 ├── scripts/                          # Python scripts
