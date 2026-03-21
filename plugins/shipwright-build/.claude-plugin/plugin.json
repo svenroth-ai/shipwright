@@ -1,6 +1,6 @@
 {
   "name": "shipwright-build",
-  "description": "Implement code from /shipwright-plan sections with TDD, code review, and git workflow",
+  "description": "Implement code from /shipwright-plan sections with TDD, code review, Conventional Commits, and git workflow",
   "version": "0.1.0",
   "author": {
     "name": "Sven Roth",
