@@ -45,8 +45,18 @@ def test_is_external_review_disabled_no_keys(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     config = {"external_review": {"feedback_iterations": 1}}
     assert is_external_review_enabled(config) is False
+
+
+def test_is_external_review_enabled_openrouter(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test-123")
+    config = {"external_review": {"feedback_iterations": 1}}
+    assert is_external_review_enabled(config) is True
 
 
 def test_is_e2e_enabled_default():

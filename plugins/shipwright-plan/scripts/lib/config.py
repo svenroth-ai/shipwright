@@ -61,10 +61,11 @@ def is_external_review_enabled(config: dict[str, Any]) -> bool:
     if ext.get("feedback_iterations", 1) == 0:
         return False
 
+    has_openrouter = bool(os.environ.get("OPENROUTER_API_KEY"))
     has_gemini = bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
     has_openai = bool(os.environ.get("OPENAI_API_KEY"))
 
-    return has_gemini or has_openai
+    return has_openrouter or has_gemini or has_openai
 
 
 def is_e2e_enabled(config: dict[str, Any]) -> bool:

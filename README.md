@@ -144,13 +144,24 @@ Shipwright enforces quality at multiple levels:
 | Code Review | After implementation | Subagent reviews diff against spec |
 | External Review | After planning | Gemini + OpenAI review plan in parallel |
 
-## Requirements
+## Getting Started
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI
+See the **[Setup Guide](docs/setup-guide.md)** for step-by-step installation instructions.
+
+**Quick version:**
+```bash
+git clone https://github.com/svenroth-ai/shipwright.git ~/shipwright
+~/shipwright/scripts/install.sh
+```
+
+### Requirements
+
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI (Pro or Max subscription)
 - Python 3.11+ with [uv](https://docs.astral.sh/uv/)
 - Git
+- Optional: `OPENROUTER_API_KEY` for external plan review (recommended)
 - Optional: `JELASTIC_TOKEN` for deployment (Infomaniak)
-- Optional: `GEMINI_API_KEY` + `OPENAI_API_KEY` for external plan review
+- Optional: Node.js 22.x for supabase-nextjs profile
 
 ## Development
 
