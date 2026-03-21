@@ -13,28 +13,20 @@ For experienced developers who just want to get going:
 ```bash
 # 1. Prerequisites (skip if you have these)
 curl -LsSf https://astral.sh/uv/install.sh | sh   # Python package manager
-brew install gh                                      # GitHub CLI (macOS)
 
-# 2. Clone Shipwright
+# 2. Clone and install
 git clone https://github.com/svenroth-ai/shipwright.git ~/shipwright
+cd ~/shipwright && uv sync
 
-# 3. Add the shell alias (bash/zsh)
-echo 'shipwright() {
-  claude \
-    --plugin-dir ~/shipwright/plugins/shipwright-run \
-    --plugin-dir ~/shipwright/plugins/shipwright-project \
-    --plugin-dir ~/shipwright/plugins/shipwright-plan \
-    --plugin-dir ~/shipwright/plugins/shipwright-build \
-    --plugin-dir ~/shipwright/plugins/shipwright-test \
-    --plugin-dir ~/shipwright/plugins/shipwright-deploy \
-    --plugin-dir ~/shipwright/plugins/shipwright-changelog \
-    "$@"
-}' >> ~/.bashrc && source ~/.bashrc
+# 3. Register as marketplace (works in VSCode Extension + CLI)
+#    Add to ~/.claude/settings.json:
+#    "extraKnownMarketplaces": { "shipwright": { "source": { "source": "github", "repo": "svenroth-ai/shipwright" } } }
+#    "enabledPlugins": { "shipwright-run@shipwright": true, ... (all 7 plugins) }
+#    Or run the install script:
+~/shipwright/scripts/install.sh
 
-# 4. Run
-mkdir ~/my-first-app && cd ~/my-first-app && git init
-shipwright
-# Then type: /shipwright-run "A simple todo app with Supabase and Next.js"
+# 4. Open Claude Code (VSCode Extension or CLI) and type:
+/shipwright-run "A simple todo app with Supabase and Next.js"
 ```
 
 For the full setup (deployment, external review, etc.), read on.
@@ -75,16 +67,47 @@ winget install astral-sh.uv
 
 ## 2. Installation
 
-### Clone the Repository
+### Option A: Marketplace (recommended — works in VSCode Extension + CLI)
 
+Add the Shipwright marketplace to your Claude Code settings. This works in both the **VSCode Extension** (sidebar) and the **CLI**.
+
+Add this to `~/.claude/settings.json`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "shipwright": {
+      "source": {
+        "source": "github",
+        "repo": "svenroth-ai/shipwright"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "shipwright-run@shipwright": true,
+    "shipwright-project@shipwright": true,
+    "shipwright-plan@shipwright": true,
+    "shipwright-build@shipwright": true,
+    "shipwright-test@shipwright": true,
+    "shipwright-deploy@shipwright": true,
+    "shipwright-changelog@shipwright": true
+  }
+}
+```
+
+If you already have content in `settings.json`, merge these two keys into your existing file.
+
+**Alternatively**, in the VSCode Extension: type `/plugins` → Marketplaces tab → add `svenroth-ai/shipwright`.
+
+**Install Python dependencies** (needed for plugin scripts):
 ```bash
 git clone https://github.com/svenroth-ai/shipwright.git ~/shipwright
 cd ~/shipwright && uv sync
 ```
 
-### Create the Shell Alias
+### Option B: Shell Alias (CLI only)
 
-Shipwright uses Claude Code's `--plugin-dir` flag to load all 7 plugins. A shell alias makes this convenient.
+If you prefer the CLI without marketplace registration, use a shell alias.
 
 **bash / zsh** — add to `~/.bashrc` or `~/.zshrc`:
 
@@ -122,13 +145,11 @@ function shipwright {
 
 ### Verify Installation
 
-```bash
-shipwright
-# Type: /shipwright-run
-# You should see the SHIPWRIGHT-RUN banner
+In Claude Code (VSCode Extension or CLI), type:
 ```
-
-> **Coming soon:** Marketplace installation (`claude plugin marketplace add`) for persistent plugin registration without aliases.
+/shipwright-run
+```
+You should see the SHIPWRIGHT-RUN banner.
 
 ---
 
