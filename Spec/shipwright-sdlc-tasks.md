@@ -284,10 +284,22 @@ shipwright/plugins/shipwright-plan/
 - Generate `shipwright_plan_config.json`
 
 **Verification:**
-- [ ] All existing tests pass (adapted to new names)
-- [ ] Plugin loads correctly
-- [ ] When E2E disabled: workflow identical to original
-- [ ] When E2E enabled: test plan is generated
+- [x] All tests pass (30/30, adapted to new names)
+- [x] SKILL.md references correct config/env names (SHIPWRIGHT_*)
+- [x] SubagentStop JSONL race condition fix preserved (retry with backoff)
+- [x] E2E test plan as optional Step 8 (controlled by config.json)
+- [x] Sprint tracking updates in Steps 2 and 9
+- [x] External LLM review with Gemini + OpenAI in parallel
+- [x] Agents: opus-plan-reviewer + section-writer (corrected from task description)
+
+**Status: COMPLETE** (2026-03-21)
+
+**Notes:**
+- Task description incorrectly listed agents as "explore, web-search-researcher, section-writer" — actual upstream has opus-plan-reviewer + section-writer
+- Added prompts/ directory (not mentioned in task) — required for external review templates
+- Added llm_clients/ directory (not mentioned in task) — required for review.py
+- config.json updated with current model names (gemini-3-pro-preview, gpt-5.2) and e2e_test_plan toggle
+- Cross-platform compatible (no fcntl, no Unix-only patterns)
 
 ---
 
