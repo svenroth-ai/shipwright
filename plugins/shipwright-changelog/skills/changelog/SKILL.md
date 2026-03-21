@@ -1,5 +1,5 @@
 ---
-name: shipwright-changelog
+name: changelog
 description: Parses Conventional Commits from git history, generates Keep-a-Changelog entries, creates version tags, and opens PRs. Use after /shipwright-build completes all sections.
 license: MIT
 compatibility: Requires uv (Python 3.11+), git repository required, gh CLI for PR creation

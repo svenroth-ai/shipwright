@@ -1,5 +1,5 @@
 ---
-name: shipwright-test
+name: test
 description: Profile-aware test runner. Runs unit tests, smoke tests, Playwright E2E, and optional security scans. Use after /shipwright-build or /shipwright-deploy.
 license: MIT
 compatibility: Requires uv (Python 3.11+). Optional: Playwright, Aikido account.
