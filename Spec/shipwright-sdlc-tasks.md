@@ -618,52 +618,28 @@ shipwright/plugins/shipwright-run/
 ```
 
 **Verification:**
-- [ ] Inference correctly maps descriptions to scopes and profiles
-- [ ] Autonomy levels change interview depth
-- [ ] `shipwright_run_config.json` is written with all required fields
-- [ ] Flow dispatches to shipwright-project correctly
+- [x] Inference: "Supabase + Next.js" → supabase-nextjs (high confidence)
+- [x] Scope detection: no CLAUDE.md → full_app, existing → extension, --iterate → iterate
+- [x] Autonomy: guided (default) vs autonomous (2 levels, simplified from 3)
+- [x] `shipwright_run_config.json` written with pipeline, scope, profile, autonomy
+- [x] Orchestrator: pipeline step tracking, resume from any point
+- [x] Scope flows: Full App, Extension, Iterate all in one SKILL.md
+- [x] 22 tests passing (12 inference + 10 orchestrator)
 
----
+**Status: COMPLETE** (2026-03-21) — Combined Task 14 + Task 15 + Task 16
 
-### Task 15: shipwright-run -- Scope Flows (Full App, Extension)
+**Notes:**
+- Tasks 14+15+16 merged (orchestrator + scope flows + iterate as one plugin)
+- Autonomy simplified to 2 levels (guided, autonomous) instead of 3
+- Scope flows are part of SKILL.md, not separate scripts (they're agent instructions)
 
-**Description**: Implement all scope-dependent flows in shipwright-run: Full Application, Extension.
+~~### Task 15: shipwright-run -- Scope Flows (Full App, Extension)~~
 
-**Inputs:**
-- `plugins/shipwright-run/` from Task 14
-- `shipwright-sdlc-spec.md` -- Section 3.4 (Scope-Driven Flows)
+*Merged into Task 14 above.*
 
-**Outputs:**
-- Extended orchestrator: complete flow for each scope
-- Per-split loop: plan → build → test → deploy → changelog → PR
-- Inter-skill communication via config files
-- Tests for each scope flow
+~~### Task 16: shipwright-run -- Iteration Mode~~
 
-**Verification:**
-- [ ] Full App flow: multi-split with full build-test-deploy loop
-- [ ] Extension flow: reads existing CLAUDE.md, lighter decomposition
-
----
-
-### Task 16: shipwright-run -- Iteration Mode
-
-**Description**: Implement `--iterate` mode for quick changes to existing projects.
-
-**Inputs:**
-- `plugins/shipwright-run/` from Task 15
-- `shipwright-sdlc-spec.md` -- Section 7 (Iteration Mode)
-
-**Outputs:**
-- `--iterate` flag handling in SKILL.md
-- Context-aware: reads CLAUDE.md + agent_docs
-- Light decomposition: 1-2 questions, 1 split, 1-2 sections
-- Reuses existing `shipwright_run_config.json`
-
-**Verification:**
-- [ ] `--iterate` skips full interview
-- [ ] Reads existing project context
-- [ ] Creates modification sections (not just new files)
-- [ ] Full build-test-deploy loop still executes
+*Merged into Task 14 above.*
 
 ---
 
