@@ -10,11 +10,13 @@
 plugins/                    # Claude Code plugins (one per SDLC phase)
   shipwright-run/           # Orchestrator (entry point)
   shipwright-project/       # Requirements decomposition (fork of deep-project)
+  shipwright-design/        # UI mockups from IREB specs (HTML)
   shipwright-plan/          # Planning (fork of deep-plan)
   shipwright-build/         # Implementation (fork of deep-implement)
   shipwright-test/          # Testing (unit + E2E + security)
   shipwright-changelog/     # Git sync + changelog + PR
   shipwright-deploy/        # Deployment (extensible flavors)
+  shipwright-compliance/    # IREB traceability, RTM, SBOM, reports
 shared/                     # Shared across all plugins
   profiles/                 # Stack profile definitions (JSON)
   templates/                # CLAUDE.md, agent_docs, CI templates
