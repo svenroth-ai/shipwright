@@ -75,14 +75,25 @@ def get_commits_since(ref: Optional[str] = None) -> list[dict]:
             cmd, capture_output=True, text=True, encoding="utf-8",
         )
         if result.returncode != 0:
+            print(json.dumps({
+                "warning": "git log failed",
+                "error_category": "transient",
+                "stderr": result.stderr.strip(),
+                "returncode": result.returncode,
+            }), file=sys.stderr)
             return []
-    except (FileNotFoundError, OSError):
+    except (FileNotFoundError, OSError) as exc:
+        print(json.dumps({
+            "warning": "git binary not available",
+            "error_category": "permission",
+            "exception": str(exc),
+        }), file=sys.stderr)
         return []
 
     commits = []
     raw = result.stdout.strip()
     if not raw:
-        return []
+        return []  # Valid empty result: no commits since ref
 
     entries = raw.split("---COMMIT_END---")
     for entry in entries:

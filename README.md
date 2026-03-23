@@ -108,8 +108,8 @@ shipwright/
 │   └── shipwright-changelog/         # Changelog + PR
 ├── shared/                           # Shared across plugins
 │   ├── profiles/                     # Stack profile definitions (JSON)
-│   ├── templates/                    # CLAUDE.md, agent_docs templates
-│   └── scripts/                      # Shared utilities (smoke_test.py, etc.)
+│   ├── templates/                    # CLAUDE.md, agent_docs, CI/CD, rules templates
+│   └── scripts/                      # Shared utilities (errors, validation_loop, etc.)
 ├── integration-tests/                # Cross-plugin integration tests
 └── Spec/                             # Design specifications
 ```
@@ -138,6 +138,20 @@ plugins/shipwright-{name}/
 6. **Resume anywhere** — file-based state allows interrupting and resuming at any point
 7. **Migration safety** — destructive SQL changes always require confirmation
 
+## Claude Architect Best Practices
+
+Shipwright implements best practices from the [Anthropic Claude Certified Architect](https://www.anthropic.com/certification) exam guide across all 5 certification domains:
+
+| Domain | Best Practice | Implementation |
+|--------|--------------|----------------|
+| Agentic Architecture (27%) | Hooks > Prompts for compliance | Compliance enforcement hooks (soft-block with override) |
+| Tool Design & MCP (18%) | Structured errors with categories | `shared/scripts/lib/errors.py` — `transient`, `validation`, `business`, `permission` |
+| Claude Code Config (20%) | Path-specific `.claude/rules/` | Rule templates auto-generated per profile (tests, API, migrations, components, config) |
+| Prompt Engineering (20%) | Few-shot examples > prose instructions | 2-3 input→output example pairs in every subagent definition |
+| Context & Reliability (15%) | Specific error feedback, not "try again" | Validation loop with retriable vs terminal error distinction |
+
+Additional patterns: independent CI/CD review sessions (`claude -p --output-format json`), override logging for compliance, configurable enforcement thresholds per project.
+
 ## Quality Gates
 
 Shipwright enforces quality at multiple levels:
@@ -145,10 +159,14 @@ Shipwright enforces quality at multiple levels:
 | Hook | Trigger | Action |
 |------|---------|--------|
 | `PreToolUse` | Bash commands | Block `git push --force`, `rm -rf /` |
+| `PreToolUse` | `git commit` | Soft-block if RTM coverage < threshold (overridable) |
+| `PreToolUse` | Deploy commands | Soft-block if unresolved security findings (overridable) |
 | `PostToolUse` | Write/Edit SQL | Detect `DROP TABLE`, `DROP COLUMN` → warn |
 | `Stop` | Session end | Check decision_log.md and session_handoff.md |
 | Code Review | After implementation | Subagent reviews diff against spec |
 | External Review | After planning | Gemini + OpenAI review plan in parallel |
+
+Compliance hooks use **exit code 2 (soft-block)**: the user can say "Continue anyway" — the override gets logged to `agent_docs/compliance_overrides.log` and flagged again at the next checkpoint.
 
 ## Getting Started
 

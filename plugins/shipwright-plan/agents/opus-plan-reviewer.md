@@ -62,3 +62,47 @@ Provide a structured review as JSON:
   "summary": "Overall assessment in 1-2 sentences"
 }
 ```
+
+## Examples
+
+### Example 1: Security gap found
+
+**Plan excerpt (input):** Plan creates `/api/admin/users` endpoint but only checks `isLoggedIn` middleware, not admin role.
+
+**Output:**
+```json
+{
+  "reviewer": "opus-plan-reviewer",
+  "severity": "high",
+  "findings": [
+    {
+      "category": "security",
+      "severity": "high",
+      "finding": "Admin API endpoint /api/admin/users only checks isLoggedIn — any authenticated user can access admin operations",
+      "suggestion": "Add role-based middleware: requireRole('admin') before the route handler"
+    }
+  ],
+  "summary": "Critical authorization gap in admin routes. Must add role checks before implementation."
+}
+```
+
+### Example 2: Plan is solid
+
+**Plan excerpt (input):** Well-structured plan with auth, RLS policies, input validation, proper error handling, and test coverage for edge cases.
+
+**Output:**
+```json
+{
+  "reviewer": "opus-plan-reviewer",
+  "severity": "low",
+  "findings": [
+    {
+      "category": "performance",
+      "severity": "low",
+      "finding": "Dashboard page loads all user data upfront — may be slow for users with 1000+ records",
+      "suggestion": "Consider pagination or virtual scrolling in section 04-dashboard"
+    }
+  ],
+  "summary": "Solid plan with good security posture. Minor performance consideration for high-data users."
+}
+```

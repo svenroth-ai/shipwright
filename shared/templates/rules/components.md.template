@@ -1,0 +1,13 @@
+---
+description: UI component conventions — accessibility, props, patterns
+globs: "**/components/**,**/*.tsx,**/*.jsx"
+---
+
+## Component Rules
+
+- All interactive elements must be keyboard accessible (focus, enter/space to activate)
+- Use semantic HTML: `<button>` not `<div onClick>`, `<nav>` not `<div class="nav">`
+- Images must have `alt` text (empty `alt=""` for decorative images)
+- Form inputs must have associated `<label>` elements
+- Server Components by default — add `'use client'` only when state or effects are needed
+- Keep components focused: one responsibility per component, extract when complexity grows

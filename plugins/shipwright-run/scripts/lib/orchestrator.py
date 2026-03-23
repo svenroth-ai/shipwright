@@ -28,10 +28,17 @@ def load_run_config(project_root: Path) -> dict[str, Any]:
     """Load orchestrator config."""
     path = project_root / CONFIG_NAME
     if not path.exists():
-        return {}
+        return {}  # Valid: first run, no config yet
     try:
         return json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as exc:
+        print(json.dumps({
+            "warning": "Corrupt orchestrator config",
+            "error_category": "validation",
+            "what_failed": f"Parse {CONFIG_NAME}",
+            "exception": str(exc),
+            "alternative": "Delete the file and re-run /shipwright-run to recreate",
+        }), file=sys.stderr)
         return {}
 
 
