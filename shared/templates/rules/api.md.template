@@ -1,0 +1,13 @@
+---
+description: API route conventions — validation, error responses, auth
+globs: "**/api/**,**/routes/**,**/functions/**"
+---
+
+## API Rules
+
+- Validate all input at the boundary: use zod/JSON schema before processing
+- Return consistent error format: `{error: string, code: string, details?: object}`
+- Always check authentication and authorization before business logic
+- Use appropriate HTTP status codes: 400 (bad input), 401 (unauthed), 403 (forbidden), 404 (not found), 500 (server)
+- Never expose internal error details or stack traces to the client
+- Log errors with structured context (request ID, user ID, operation)

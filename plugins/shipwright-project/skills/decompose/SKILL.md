@@ -296,6 +296,14 @@ See [project-scaffolding.md](references/project-scaffolding.md) for details.
 3. **agent_docs/decision_log.md** — initialized with header
 4. **agent_docs/conventions.md** — from profile's architecture rules and folder structure
 5. **agent_docs/current_sprint.md** — initialized with first split
+6. **`.claude/rules/*.md`** — path-specific rules from profile (Claude Architect Best Practice)
+
+**Path-specific rules generation:**
+- Read the `"rules"` array from the loaded profile JSON (e.g., `["tests", "api", "migrations", "components", "config"]`)
+- For each rule name, copy the corresponding template from `{plugin_root}/../../shared/templates/rules/{name}.md.template`
+- Write to `.claude/rules/{name}.md` in the project root (strip the `.template` suffix)
+- If the profile has no `"rules"` field, skip this step
+- These rules load conditionally in Claude Code: test rules only activate when editing test files, API rules only for API files, etc.
 
 **Write config:**
 ```bash
