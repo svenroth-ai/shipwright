@@ -1,0 +1,13 @@
+---
+description: Testing conventions — TDD, assertion style, mock boundaries
+globs: "**/tests/**,**/*.test.*,**/*.spec.*,**/e2e/**"
+---
+
+## Testing Rules
+
+- Follow TDD: write failing tests first, then implement, then refactor
+- Each test covers one behavior — name tests after the behavior, not the method
+- Use descriptive assertion messages: `expect(result).toBe(expected)` with context
+- Mock at system boundaries only (HTTP calls, database) — do not mock internal modules
+- Test edge cases: empty input, null values, boundary conditions, error paths
+- Keep test files co-located or in a parallel `tests/` directory matching source structure

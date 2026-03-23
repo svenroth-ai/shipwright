@@ -1,0 +1,13 @@
+---
+description: Database migration safety — down migrations, destructive checks
+globs: "**/migrations/**,**/*.sql"
+---
+
+## Migration Rules
+
+- Every migration must have a corresponding down/rollback migration
+- Never use DROP TABLE, DROP COLUMN, or ALTER TYPE without explicit user confirmation
+- Test migrations on a copy of production data before applying
+- Use transactions for multi-statement migrations where supported
+- Add comments explaining WHY each migration exists, not just what it does
+- New columns should be nullable or have defaults to avoid breaking existing rows
