@@ -108,8 +108,8 @@ shipwright/
 │   └── shipwright-changelog/         # Changelog + PR
 ├── shared/                           # Shared across plugins
 │   ├── profiles/                     # Stack profile definitions (JSON)
-│   ├── templates/                    # CLAUDE.md, agent_docs templates
-│   └── scripts/                      # Shared utilities (smoke_test.py, etc.)
+│   ├── templates/                    # CLAUDE.md, agent_docs, CI/CD, rules templates
+│   └── scripts/                      # Shared utilities (errors, validation_loop, etc.)
 ├── integration-tests/                # Cross-plugin integration tests
 └── Spec/                             # Design specifications
 ```
@@ -137,18 +137,70 @@ plugins/shipwright-{name}/
 5. **Iteration is first-class** — `--iterate` is the daily workflow after initial build
 6. **Resume anywhere** — file-based state allows interrupting and resuming at any point
 7. **Migration safety** — destructive SQL changes always require confirmation
+8. **Linters over instructions** — mechanical enforcement (hooks) beats advisory prose (CLAUDE.md rules)
+9. **Progressive disclosure** — CLAUDE.md stays lean (~200 lines), details live in `@agent_docs/`
+
+## Claude Architect Best Practices
+
+Shipwright implements best practices from the [Anthropic Claude Certified Architect](https://www.anthropic.com/certification) exam guide across all 5 certification domains:
+
+| Domain | Best Practice | Implementation |
+|--------|--------------|----------------|
+| Agentic Architecture (27%) | Hooks > Prompts for compliance | Compliance enforcement hooks (soft-block with override) |
+| Tool Design & MCP (18%) | Structured errors with categories | `shared/scripts/lib/errors.py` — `transient`, `validation`, `business`, `permission` |
+| Claude Code Config (20%) | Path-specific `.claude/rules/` | Rule templates auto-generated per profile (tests, API, migrations, components, config) |
+| Prompt Engineering (20%) | Few-shot examples > prose instructions | 2-3 input→output example pairs in every subagent definition |
+| Context & Reliability (15%) | Specific error feedback, not "try again" | Validation loop with retriable vs terminal error distinction |
+
+Additional patterns: independent CI/CD review sessions (`claude -p --output-format json`), override logging for compliance, configurable enforcement thresholds per project, secret scanning, file size guards, and CLAUDE.md drift detection.
 
 ## Quality Gates
 
-Shipwright enforces quality at multiple levels:
+Shipwright enforces quality at multiple levels through **mechanical enforcement** — hooks that block or warn deterministically, not advisory prose that agents may ignore. This approach follows the "Linters over Instructions" principle: automated enforcement beats documentation.
 
-| Hook | Trigger | Action |
-|------|---------|--------|
-| `PreToolUse` | Bash commands | Block `git push --force`, `rm -rf /` |
-| `PostToolUse` | Write/Edit SQL | Detect `DROP TABLE`, `DROP COLUMN` → warn |
-| `Stop` | Session end | Check decision_log.md and session_handoff.md |
-| Code Review | After implementation | Subagent reviews diff against spec |
-| External Review | After planning | Gemini + OpenAI review plan in parallel |
+### Enforcement Hooks
+
+| Hook | Trigger | Action | Exit |
+|------|---------|--------|------|
+| Dangerous Command Guard | `PreToolUse` (Bash) | Block `git push --force`, `rm -rf /`, `DROP DATABASE` | 2 (block) |
+| RTM Coverage Check | `PreToolUse` (`git commit`) | Soft-block if RTM coverage < threshold | 2 (overridable) |
+| Security Findings Check | `PreToolUse` (deploy) | Soft-block if unresolved critical findings | 2 (overridable) |
+| **Secret Scanning** | `PostToolUse` (Write/Edit) | Detect API keys, tokens, passwords, private keys | 2 (block) |
+| **File Size Guard** | `PostToolUse` (Write/Edit) | Warn when files exceed 300 lines (configurable) | 2 (block) |
+| Destructive Migration Scan | `PostToolUse` (Write/Edit SQL) | Detect `DROP TABLE`, `DROP COLUMN`, `TRUNCATE` | 2 (block) |
+| **CLAUDE.md Drift Detection** | `SessionStart` | Warn when source changed but CLAUDE.md didn't | 0 (warn) |
+| Documentation Check | `Stop` (session end) | Verify decision_log.md + session_handoff.md | 0 (warn) |
+
+### In-Band Quality Gates
+
+| Gate | When | Action |
+|------|------|--------|
+| Code Review | After each section | Subagent reviews diff against spec |
+| External LLM Review | After planning | Gemini + OpenAI review plan in parallel |
+
+### Secret Scanning
+
+The secret scanner detects common credential patterns in written/edited files:
+- AWS Access Keys (`AKIA...`)
+- API keys (`sk-...`, `ghp_...`, `gho_...`, `glpat-...`)
+- Slack tokens (`xoxb-...`, `xoxp-...`)
+- PEM private keys
+- Hardcoded passwords/secrets in assignments
+- Connection strings with embedded credentials
+
+Automatically skips `.env.example`, test fixtures, lock files, and vendor directories.
+
+### File Size Guard
+
+Large files degrade AI agent performance by consuming excessive context window space. The guard warns when source files exceed **300 lines** (configurable via `shipwright_build_config.json → enforcement.max_file_lines`). Automatically skips config files (JSON, YAML, TOML), documentation (Markdown), lock files, generated code, and SQL migrations.
+
+### CLAUDE.md Drift Detection
+
+At session start, compares modification timestamps of key project files (`package.json`, `pyproject.toml`, `src/`, etc.) against `CLAUDE.md`. If source files changed more recently, warns the agent that documentation may be outdated. This prevents agents from working with stale architectural context — a common failure mode identified by [Anthropic's Best Practices](https://code.claude.com/docs/en/best-practices).
+
+### Override & Audit
+
+Compliance hooks use **exit code 2 (soft-block)**: the user can say "Continue anyway" — the override gets logged to `agent_docs/compliance_overrides.log` and flagged again at the next checkpoint.
 
 ## Getting Started
 

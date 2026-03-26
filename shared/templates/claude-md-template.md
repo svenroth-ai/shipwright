@@ -2,21 +2,27 @@
 
 ## WHAT
 - **Stack**: {TECH_STACK}
-- **Structure**: {FOLDER_STRUCTURE}
-- **Key Files**: {KEY_FILES}
-
-## WHY
 - **Purpose**: {PROJECT_PURPOSE}
-- **Architecture**: {ARCHITECTURE_SUMMARY}
-- **Decisions**: See agent_docs/decision_log.md
 
 ## HOW
 - **Build**: {BUILD_COMMAND}
 - **Test**: {TEST_COMMAND}
+- **Lint**: {LINT_COMMAND}
 - **Deploy DEV**: git push (auto)
 - **Deploy PROD**: /shipwright-deploy --env prod
 
+## Structure
+{FOLDER_STRUCTURE}
+
+## Key Files
+{KEY_FILES}
+
+## Gotchas
+{GOTCHAS}
+
 ## Context
-- **Agent Docs**: agent_docs/
-- **Planning**: planning/
-- **Shipwright Config**: shipwright_run_config.json
+- **Architecture**: See @agent_docs/architecture.md
+- **Conventions**: See @agent_docs/conventions.md
+- **Decisions**: See @agent_docs/decision_log.md
+- **Planning**: See @planning/
+- **Config**: See @shipwright_run_config.json
