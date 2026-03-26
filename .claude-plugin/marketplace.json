@@ -73,6 +73,14 @@
       "tags": ["changelog", "conventional-commits", "semver", "pr"]
     },
     {
+      "name": "shipwright-security",
+      "description": "Security scanning via Aikido API with automated remediation loop",
+      "version": "0.1.0",
+      "source": "./plugins/shipwright-security",
+      "category": "development",
+      "tags": ["security", "sast", "sca", "secrets", "aikido", "remediation"]
+    },
+    {
       "name": "shipwright-compliance",
       "description": "IREB traceability, Requirements Traceability Matrix, SBOM, test evidence, and change history reports",
       "version": "0.1.0",

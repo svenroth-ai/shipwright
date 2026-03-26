@@ -20,6 +20,7 @@ CONFIG_FILES = {
     "project": "shipwright_project_config.json",
     "plan": "shipwright_plan_config.json",
     "build": "shipwright_build_config.json",
+    "security": "shipwright_security_config.json",
     "compliance": "shipwright_compliance_config.json",
 }
 

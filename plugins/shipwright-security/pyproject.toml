@@ -1,0 +1,28 @@
+[project]
+name = "shipwright-security"
+version = "0.1.0"
+description = "Claude Code plugin for security scanning via Aikido with remediation loop"
+requires-python = ">=3.11"
+readme = "../../README.md"
+license = {text = "MIT"}
+authors = [{name = "Sven Roth"}]
+keywords = ["claude-code", "plugin", "security", "aikido", "sast", "sca"]
+dependencies = [
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-mock>=3.12.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+pythonpath = [".", "scripts"]
+markers = [
+    "integration: marks tests as integration tests",
+]
