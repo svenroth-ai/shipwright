@@ -1,0 +1,51 @@
+{
+  "auto_fixable": [
+    {
+      "id": "aikido-001",
+      "severity": "critical",
+      "type": "sca",
+      "rule": "CVE-2024-1234",
+      "affected_package": "lodash",
+      "affected_file": "package.json",
+      "expected_class": "auto-fixable"
+    }
+  ],
+  "agent_fixable": [
+    {
+      "id": "aikido-002",
+      "severity": "high",
+      "type": "sast",
+      "rule": "python.lang.security.hardcoded-credentials",
+      "affected_file": "scripts/api_client.py",
+      "expected_class": "agent-fixable"
+    },
+    {
+      "id": "aikido-005",
+      "severity": "high",
+      "type": "secret_detection",
+      "rule": "generic-api-key",
+      "affected_file": "scripts/config.py",
+      "expected_class": "agent-fixable"
+    }
+  ],
+  "needs_review": [
+    {
+      "id": "aikido-006",
+      "severity": "high",
+      "type": "iac",
+      "rule": "terraform.aws.security-group-open-ingress",
+      "affected_file": "infra/main.tf",
+      "expected_class": "needs-review"
+    }
+  ],
+  "informational": [
+    {
+      "id": "aikido-004",
+      "severity": "low",
+      "type": "sast",
+      "rule": "python.lang.best-practice.open-never-closed",
+      "affected_file": "scripts/helpers.py",
+      "expected_class": "informational"
+    }
+  ]
+}
