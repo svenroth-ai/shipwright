@@ -39,7 +39,12 @@ User Description
 └────────┬─────────┘
          ▼
 ┌──────────────────┐
-│ shipwright-test  │  Unit (Vitest) → Smoke → Playwright E2E → Security
+│ shipwright-test  │  Unit (Vitest) → Smoke → Playwright E2E
+└────────┬─────────┘
+         ▼
+┌──────────────────┐
+│shipwright-       │  Aikido API → Classify → Remediation Loop → Report
+│    security      │
 └────────┬─────────┘
          ▼
 ┌──────────────────┐
@@ -62,6 +67,7 @@ User Description
 | `shipwright-plan` | Planning | External LLM review (Gemini + OpenAI), section-writer subagent, E2E test plan |
 | `shipwright-build` | Implementation | TDD loop, code-reviewer subagent, Conventional Commits, migration safety |
 | `shipwright-test` | Testing | Profile-aware (Vitest/Playwright), smoke test, `--fix` auto-repair |
+| `shipwright-security` | Security | Aikido API scanning, finding classification, remediation loop, security-fixer subagent |
 | `shipwright-deploy` | Deployment | Jelastic (Infomaniak, Switzerland), DEV auto / PROD manual, clone-based rollback |
 | `shipwright-changelog` | Release | Keep-a-Changelog format, semver bump suggestion, PR creation |
 | `shipwright-compliance` | Compliance | IREB traceability, RTM, SBOM, test evidence, change history reports |
@@ -104,6 +110,7 @@ shipwright/
 │   ├── shipwright-plan/              # Deep planning
 │   ├── shipwright-build/             # TDD implementation
 │   ├── shipwright-test/              # Test runner
+│   ├── shipwright-security/          # Security scanning (Aikido)
 │   ├── shipwright-deploy/            # Deployment
 │   └── shipwright-changelog/         # Changelog + PR
 ├── shared/                           # Shared across plugins
@@ -219,6 +226,7 @@ git clone https://github.com/svenroth-ai/shipwright.git ~/shipwright
 - Git
 - Optional: `OPENROUTER_API_KEY` for external plan review (recommended)
 - Optional: `JELASTIC_TOKEN` for deployment (Infomaniak)
+- Optional: Aikido Security account + API credentials for security scanning
 - Optional: Node.js 22.x for supabase-nextjs profile
 
 ## Development
