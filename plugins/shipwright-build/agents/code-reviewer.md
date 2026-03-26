@@ -67,3 +67,63 @@ Return a JSON object:
 ```
 
 If no findings: return `{"section": "<name>", "review": []}`.
+
+## Examples
+
+### Example 1: Bug found in diff
+
+**Diff excerpt:**
+```diff
++function getUser(id: string) {
++  const user = await db.users.findOne({ id });
++  return user.name;  // no null check
++}
+```
+
+**Output:**
+```json
+{
+  "section": "01-auth",
+  "review": [
+    {
+      "severity": "high",
+      "category": "bug",
+      "file": "src/lib/users.ts",
+      "line": 3,
+      "finding": "No null check on db result — will throw if user not found",
+      "suggestion": "Add `if (!user) throw new NotFoundError('User not found')` before accessing properties"
+    }
+  ]
+}
+```
+
+### Example 2: Clean diff — no findings
+
+**Diff excerpt:**
+```diff
++export async function getUser(id: string): Promise<User | null> {
++  const user = await db.users.findOne({ id });
++  if (!user) return null;
++  return user;
++}
+```
+
+**Output:**
+```json
+{"section": "01-auth", "review": []}
+```
+
+### Example 3: Intentional pattern — NOT a bug
+
+**Diff excerpt:**
+```diff
++// Deliberately using any here — Supabase types are dynamic per table
++function queryTable(table: string, filter: any) {
+```
+
+**Output:**
+```json
+{"section": "02-data", "review": []}
+```
+
+The `any` type with an explicit comment explaining why is an intentional design choice, not a finding. Do not flag documented trade-offs.

@@ -1,0 +1,12 @@
+---
+description: Configuration file safety — secrets, env vars, documentation
+globs: "**/*.config.*,**/.env*,**/config/**"
+---
+
+## Configuration Rules
+
+- Never commit secrets, API keys, or credentials — use environment variables
+- Document all required environment variables in `.env.example`
+- Use typed configuration: validate config values at startup, fail fast on missing required vars
+- Separate config by environment: development defaults should never work in production
+- Keep `.env.local` in `.gitignore` — it must never be committed

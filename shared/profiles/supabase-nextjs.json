@@ -145,6 +145,8 @@
     "All database changes via migrations in supabase/migrations/"
   ],
 
+  "rules": ["tests", "api", "migrations", "components", "config"],
+
   "package_manager": "npm",
 
   "migrations": {

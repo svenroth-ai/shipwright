@@ -16,6 +16,44 @@ import os
 import re
 import sys
 import time
+from typing import Any
+
+
+# ---------------------------------------------------------------------------
+# Inline structured error helpers (hook runs from plugin cache, can't import
+# shared/scripts/lib/errors.py).  Mirrors the contract defined there.
+# ---------------------------------------------------------------------------
+
+def _hook_error(
+    what_failed: str,
+    what_was_attempted: str,
+    error_category: str,
+    is_retryable: bool,
+    partial_results: dict[str, Any] | None = None,
+    alternatives: list[str] | None = None,
+) -> dict[str, Any]:
+    """Build hookSpecificOutput with structured error context."""
+    error_detail = {
+        "what_failed": what_failed,
+        "what_was_attempted": what_was_attempted,
+        "error_category": error_category,
+        "is_retryable": is_retryable,
+        "partial_results": partial_results or {},
+        "alternatives": alternatives or [],
+    }
+    alt_text = ""
+    if alternatives:
+        alt_text = " Alternatives: " + "; ".join(alternatives)
+    return {
+        "hookSpecificOutput": {
+            "hookEventName": "SubagentStop",
+            "additionalContext": (
+                f"ERROR [{error_category}]: {what_failed}. "
+                f"Attempted: {what_was_attempted}.{alt_text}"
+            ),
+            "structuredError": error_detail,
+        }
+    }
 
 
 def read_transcript_with_retry(transcript_path: str, max_retries: int = 4) -> list[dict]:
@@ -98,34 +136,60 @@ def extract_section_name(entries: list[dict]) -> str | None:
 def main() -> int:
     try:
         payload = json.load(sys.stdin)
-    except (json.JSONDecodeError, Exception):
+    except (json.JSONDecodeError, Exception) as exc:
+        print(json.dumps(_hook_error(
+            what_failed="Parse hook stdin payload",
+            what_was_attempted="json.load(sys.stdin) for SubagentStop event",
+            error_category="validation",
+            is_retryable=False,
+            partial_results={"exception": str(exc)},
+            alternatives=["Re-run section-writer subagent"],
+        )))
         return 0
 
     transcript_path = payload.get("transcript_path")
     if not transcript_path:
+        print(json.dumps(_hook_error(
+            what_failed="Missing transcript_path in payload",
+            what_was_attempted="Reading SubagentStop payload for transcript location",
+            error_category="validation",
+            is_retryable=False,
+            partial_results={"payload_keys": list(payload.keys())},
+            alternatives=["Check hooks.json matcher config"],
+        )))
         return 0
 
     entries = read_transcript_with_retry(transcript_path)
     if not entries:
-        # Couldn't read transcript — log but don't fail
-        print(json.dumps({
-            "hookSpecificOutput": {
-                "hookEventName": "SubagentStop",
-                "additionalContext": "Warning: Could not read section-writer transcript. Section may need manual writing.",
-            }
-        }))
+        print(json.dumps(_hook_error(
+            what_failed="Read section-writer transcript",
+            what_was_attempted=f"Reading JSONL transcript at {transcript_path} (4 retries with backoff)",
+            error_category="transient",
+            is_retryable=True,
+            partial_results={
+                "transcript_path": transcript_path,
+                "file_exists": os.path.exists(transcript_path),
+            },
+            alternatives=["Re-run section-writer subagent", "Write section manually"],
+        )))
         return 0
 
     section_content = extract_section_content(entries)
     section_name = extract_section_name(entries)
 
     if not section_content or not section_name:
-        print(json.dumps({
-            "hookSpecificOutput": {
-                "hookEventName": "SubagentStop",
-                "additionalContext": f"Warning: Could not extract section content from transcript. section_name={section_name}, has_content={bool(section_content)}",
-            }
-        }))
+        print(json.dumps(_hook_error(
+            what_failed="Extract section content from transcript",
+            what_was_attempted="Searching transcript entries for '# Section:' header and section name pattern",
+            error_category="validation",
+            is_retryable=False,
+            partial_results={
+                "section_name": section_name,
+                "has_content": bool(section_content),
+                "transcript_entries": len(entries),
+            },
+            alternatives=["Re-run section-writer with clearer instructions", "Write section manually"],
+        )))
         return 0
 
     # Determine output path from environment or transcript context
@@ -140,6 +204,14 @@ def main() -> int:
                 break
 
     if not planning_dir:
+        print(json.dumps(_hook_error(
+            what_failed="Determine planning directory",
+            what_was_attempted="Checking SHIPWRIGHT_PLANNING_DIR env var and transcript for planning-dir reference",
+            error_category="validation",
+            is_retryable=False,
+            partial_results={"section_name": section_name, "env_set": bool(os.environ.get("SHIPWRIGHT_PLANNING_DIR"))},
+            alternatives=["Set SHIPWRIGHT_PLANNING_DIR environment variable", "Write section file manually"],
+        )))
         return 0
 
     sections_dir = os.path.join(planning_dir, "sections")
