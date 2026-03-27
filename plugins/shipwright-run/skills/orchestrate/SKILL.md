@@ -27,7 +27,7 @@ Usage:
   /shipwright-run --iterate "Add dark mode toggle"
   /shipwright-run @requirements.md
 
-Pipeline: Project → Plan → Build → Test → Deploy → Changelog
+Pipeline: Project → Design → Plan → Build → Test → Deploy → Changelog
 ================================================================================
 ```
 
@@ -130,7 +130,7 @@ Writes `shipwright_run_config.json`:
   "profile": "supabase-nextjs",
   "autonomy": "guided",
   "deploy_target": "jelastic-dev",
-  "pipeline": ["project", "plan", "build", "test", "deploy", "changelog"],
+  "pipeline": ["project", "design", "plan", "build", "test", "deploy", "changelog"],
   "status": "in_progress",
   "current_step": "project"
 }
@@ -146,13 +146,14 @@ The orchestrator dispatches to each skill in sequence:
 
 ```
 1. /shipwright-project    → Requirements → Splits + Specs
-2. For each split:
+2. /shipwright-design     → Specs → UI Mockups (HTML)
+3. For each split:
    a. /shipwright-plan    → Spec → Sections
    b. For each section:
       - /shipwright-build → Section → Code + Tests + Commit
    c. /shipwright-test    → Run all tests
    d. /shipwright-deploy  → Deploy to DEV
-3. /shipwright-changelog  → Changelog + PR
+4. /shipwright-changelog  → Changelog + PR
 ```
 
 **Between each skill:**
@@ -168,7 +169,7 @@ The orchestrator dispatches to each skill in sequence:
 **Guided mode:** Ask user at each major transition:
 ```
 AskUserQuestion:
-  question: "Project phase complete. {N} splits created. Continue to planning?"
+  question: "Project phase complete. {N} splits created. Continue to design?"
   options:
     - "Continue"
     - "Review first"
@@ -188,6 +189,7 @@ Same pipeline but lighter:
 Each skill is invoked as a slash command:
 ```
 /shipwright-project @{planning_dir}/requirements.md
+/shipwright-design @{split_dir}/spec.md
 /shipwright-plan @{split_dir}/spec.md
 /shipwright-build @{sections_dir}/01-name.md
 /shipwright-test
