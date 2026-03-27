@@ -29,6 +29,12 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+# Load .env from plugin root (two levels up from this file)
+_plugin_root = Path(__file__).parent.parent.parent
+load_dotenv(_plugin_root / ".env")
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from lib.config import load_global_config
 from lib.prompts import load_review_prompts
@@ -50,9 +56,9 @@ def review_with_openrouter(
 
         models = config.get("models", {})
         if model_key == "gemini":
-            model_name = models.get("openrouter_gemini", "google/gemini-2.5-pro-preview")
+            model_name = models.get("openrouter_gemini", "google/gemini-3.1-pro-preview")
         else:
-            model_name = models.get("openrouter_chatgpt", "openai/gpt-4.1")
+            model_name = models.get("openrouter_chatgpt", "openai/gpt-5.4")
 
         timeout = config.get("llm_client", {}).get("timeout_seconds", 120)
 
