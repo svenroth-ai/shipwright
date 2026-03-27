@@ -9,10 +9,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib
 
 from orchestrator import (
     PIPELINE_STEPS,
+    _COMPLIANCE_SCRIPT,
     build_pipeline,
     create_config,
     get_next_step,
     load_run_config,
+    run_compliance_update,
     update_step,
 )
 
@@ -107,6 +109,45 @@ def test_create_config_with_security(tmp_project, monkeypatch):
     )
     assert "security" in config["pipeline"]
     assert config["pipeline"].index("security") == config["pipeline"].index("test") + 1
+
+
+def test_compliance_runs_on_step_complete(tmp_project, mocker):
+    """Compliance update is triggered when a step completes."""
+    create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
+
+    mock_result = {"success": True, "phase": "project", "updated_reports": ["compliance/rtm.md"]}
+    mocker.patch("orchestrator.run_compliance_update", return_value=mock_result)
+
+    config = update_step(tmp_project, "project", "complete")
+    assert config["last_compliance_update"]["phase"] == "project"
+    assert "compliance/rtm.md" in config["last_compliance_update"]["reports"]
+
+
+def test_compliance_skipped_on_failure(tmp_project, mocker):
+    """Pipeline continues even if compliance update fails."""
+    create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
+
+    mocker.patch("orchestrator.run_compliance_update", return_value=None)
+
+    config = update_step(tmp_project, "project", "complete")
+    assert "last_compliance_update" not in config
+    assert "project" in config["completed_steps"]
+
+
+def test_compliance_not_triggered_on_in_progress(tmp_project, mocker):
+    """Compliance update should NOT run for in_progress status."""
+    create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
+
+    mock_compliance = mocker.patch("orchestrator.run_compliance_update")
+    update_step(tmp_project, "build", "in_progress")
+    mock_compliance.assert_not_called()
+
+
+def test_run_compliance_update_script_missing(tmp_project, mocker):
+    """Returns None when compliance plugin is not installed."""
+    mocker.patch("orchestrator._COMPLIANCE_SCRIPT", tmp_project / "nonexistent.py")
+    result = run_compliance_update(tmp_project, "project")
+    assert result is None
 
 
 def test_get_next_step_no_config(tmp_path):
