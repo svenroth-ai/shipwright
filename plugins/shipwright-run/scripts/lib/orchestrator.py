@@ -14,6 +14,7 @@ Output (JSON): config or next step info
 import argparse
 import json
 import os
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,6 +22,10 @@ from typing import Any, Optional
 
 
 CONFIG_NAME = "shipwright_run_config.json"
+
+# Compliance plugin location (sibling plugin)
+_THIS_PLUGIN = Path(__file__).parent.parent.parent
+_COMPLIANCE_SCRIPT = _THIS_PLUGIN.parent / "shipwright-compliance" / "scripts" / "tools" / "update_compliance.py"
 
 PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "deploy", "changelog"]
 
@@ -120,8 +125,34 @@ def get_next_step(project_root: Path) -> dict[str, Any]:
     }
 
 
+def run_compliance_update(project_root: Path, phase: str) -> dict[str, Any] | None:
+    """Run incremental compliance update after a phase completes.
+
+    Returns parsed JSON output on success, None if compliance plugin not found
+    or on error (non-blocking).
+    """
+    if not _COMPLIANCE_SCRIPT.exists():
+        return None
+
+    try:
+        result = subprocess.run(
+            [sys.executable, str(_COMPLIANCE_SCRIPT),
+             "--project-root", str(project_root),
+             "--phase", phase],
+            capture_output=True, text=True, encoding="utf-8", timeout=30,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return json.loads(result.stdout)
+    except (subprocess.TimeoutExpired, json.JSONDecodeError, OSError):
+        pass
+    return None
+
+
 def update_step(project_root: Path, step: str, status: str) -> dict[str, Any]:
-    """Update a pipeline step's status."""
+    """Update a pipeline step's status.
+
+    On completion, also triggers incremental compliance update.
+    """
     config = load_run_config(project_root)
 
     if status == "complete":
@@ -136,6 +167,14 @@ def update_step(project_root: Path, step: str, status: str) -> dict[str, Any]:
         config["current_step"] = remaining[0] if remaining else None
         if not remaining:
             config["status"] = "complete"
+
+        # Trigger incremental compliance update (non-blocking on failure)
+        compliance_result = run_compliance_update(project_root, step)
+        if compliance_result:
+            config["last_compliance_update"] = {
+                "phase": step,
+                "reports": compliance_result.get("updated_reports", []),
+            }
 
     elif status == "in_progress":
         config["current_step"] = step
