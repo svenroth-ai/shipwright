@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib
 
 from orchestrator import (
     PIPELINE_STEPS,
+    build_pipeline,
     create_config,
     get_next_step,
     load_run_config,
@@ -79,6 +80,33 @@ def test_update_step_failed(tmp_project):
     config = update_step(tmp_project, "build", "failed")
     assert config["status"] == "failed"
     assert config["current_step"] == "build"
+
+
+def test_build_pipeline_without_aikido(monkeypatch):
+    monkeypatch.delenv("AIKIDO_CLIENT_ID", raising=False)
+    pipeline = build_pipeline()
+    assert "security" not in pipeline
+    assert pipeline == PIPELINE_STEPS
+
+
+def test_build_pipeline_with_aikido(monkeypatch):
+    monkeypatch.setenv("AIKIDO_CLIENT_ID", "test-id")
+    pipeline = build_pipeline()
+    assert "security" in pipeline
+    assert pipeline.index("security") == pipeline.index("test") + 1
+
+
+def test_create_config_with_security(tmp_project, monkeypatch):
+    monkeypatch.setenv("AIKIDO_CLIENT_ID", "test-id")
+    config = create_config(
+        scope="full_app",
+        profile="supabase-nextjs",
+        autonomy="guided",
+        deploy_target="jelastic-dev",
+        project_root=tmp_project,
+    )
+    assert "security" in config["pipeline"]
+    assert config["pipeline"].index("security") == config["pipeline"].index("test") + 1
 
 
 def test_get_next_step_no_config(tmp_path):

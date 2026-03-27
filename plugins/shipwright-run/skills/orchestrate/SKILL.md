@@ -152,7 +152,8 @@ The orchestrator dispatches to each skill in sequence:
    b. For each section:
       - /shipwright-build → Section → Code + Tests + Commit
    c. /shipwright-test    → Run all tests
-   d. /shipwright-deploy  → Deploy to DEV
+   d. /shipwright-security → Security scan (if AIKIDO_CLIENT_ID set)
+   e. /shipwright-deploy  → Deploy to DEV
 4. /shipwright-changelog  → Changelog + PR
 ```
 
@@ -193,9 +194,25 @@ Each skill is invoked as a slash command:
 /shipwright-plan @{split_dir}/spec.md
 /shipwright-build @{sections_dir}/01-name.md
 /shipwright-test
+/shipwright-security              (conditional, see below)
 /shipwright-deploy
 /shipwright-changelog
 ```
+
+### Security Scan (conditional)
+
+`/shipwright-security` runs **only if `AIKIDO_CLIENT_ID` is set** (check via environment variable). If the variable is not set, skip silently — no error, no warning.
+
+**In guided mode:** Always ask before running:
+```
+AskUserQuestion:
+  question: "Tests passed. Run Aikido security scan before deploy?"
+  options:
+    - "Yes — run security scan"
+    - "Skip — go to deploy"
+```
+
+**In autonomous mode:** Run automatically (no prompt).
 
 The orchestrator reads config files written by each skill to determine:
 - What the next step is
