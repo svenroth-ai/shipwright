@@ -13,6 +13,7 @@ Output (JSON): config or next step info
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,6 +23,25 @@ from typing import Any, Optional
 CONFIG_NAME = "shipwright_run_config.json"
 
 PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "deploy", "changelog"]
+
+# Conditional steps: included only when their env var is set
+CONDITIONAL_STEPS = {
+    "security": {
+        "env_var": "AIKIDO_CLIENT_ID",
+        "after": "test",  # inserted after this step
+    },
+}
+
+
+def build_pipeline() -> list[str]:
+    """Build pipeline with conditional steps resolved."""
+    pipeline = PIPELINE_STEPS.copy()
+    for step, rule in CONDITIONAL_STEPS.items():
+        if os.environ.get(rule["env_var"]):
+            after = rule["after"]
+            idx = pipeline.index(after) + 1
+            pipeline.insert(idx, step)
+    return pipeline
 
 
 def load_run_config(project_root: Path) -> dict[str, Any]:
@@ -62,7 +82,7 @@ def create_config(
         "profile": profile,
         "autonomy": autonomy,
         "deploy_target": deploy_target,
-        "pipeline": PIPELINE_STEPS.copy(),
+        "pipeline": build_pipeline(),
         "status": "in_progress",
         "current_step": "project",
         "completed_steps": [],
@@ -144,7 +164,8 @@ def main() -> int:
 
     p = subparsers.add_parser("update-step")
     p.add_argument("--project-root", default=".")
-    p.add_argument("--step", required=True, choices=PIPELINE_STEPS)
+    all_steps = PIPELINE_STEPS + list(CONDITIONAL_STEPS.keys())
+    p.add_argument("--step", required=True, choices=all_steps)
     p.add_argument("--status", required=True, choices=["in_progress", "complete", "failed"])
 
     args = parser.parse_args()
