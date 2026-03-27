@@ -169,27 +169,31 @@ export JELASTIC_TOKEN="your-jelastic-api-token"
 
 Shipwright can send your implementation plan to external LLMs for independent review (catching blind spots Claude might miss). Three options:
 
-#### Option A: OpenRouter (recommended)
+#### Option A: OpenRouter via .env file (recommended)
 
 One API key for both review models. Simplest setup.
 
 ```bash
-export OPENROUTER_API_KEY="sk-or-your-key"
+# Copy the template
+cp plugins/shipwright-plan/.env.example plugins/shipwright-plan/.env
+
+# Edit .env and add your key
+OPENROUTER_API_KEY=sk-or-your-key
 ```
 
-Get your key at [openrouter.ai](https://openrouter.ai/).
+Get your key at [openrouter.ai](https://openrouter.ai/). The `.env` file is gitignored and will never be committed.
 
-Models used (configurable in `config.json`):
-- `google/gemini-2.5-pro-preview` — Gemini review
-- `openai/gpt-4.1` — OpenAI review
+Models used (configurable in `plugins/shipwright-plan/config.json`):
+- `google/gemini-3.1-pro-preview` — Gemini review
+- `openai/gpt-5.4` — OpenAI review
 
 #### Option B: Direct API Keys
 
-Use Google and OpenAI APIs directly.
+Use Google and OpenAI APIs directly. Add to your `.env` file:
 
 ```bash
-export GEMINI_API_KEY="your-gemini-key"    # from ai.google.dev
-export OPENAI_API_KEY="sk-your-key"        # from platform.openai.com
+GEMINI_API_KEY=your-gemini-key    # from ai.google.dev
+OPENAI_API_KEY=sk-your-key        # from platform.openai.com
 ```
 
 #### Option C: No External Review
@@ -206,7 +210,7 @@ export SUPABASE_ACCESS_TOKEN="your-supabase-token"
 
 ### Where to Set Environment Variables
 
-Add exports to your shell profile so they persist:
+API keys for external plan review go in the `.env` file (see above). For other environment variables (deployment tokens, etc.), add exports to your shell profile:
 
 | Shell | File |
 |-------|------|
@@ -350,7 +354,7 @@ chmod +x ~/shipwright/plugins/*/scripts/**/*.sh
 
 **Cause:** No API keys set.
 
-**Fix:** See Section 3 (Configuration). Set `OPENROUTER_API_KEY` for the easiest option.
+**Fix:** Copy `.env.example` to `.env` in `plugins/shipwright-plan/` and add your `OPENROUTER_API_KEY`. See Section 3.
 
 ### Git operations fail
 
