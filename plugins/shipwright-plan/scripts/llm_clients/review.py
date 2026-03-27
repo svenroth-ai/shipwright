@@ -98,7 +98,7 @@ def review_with_gemini(
     try:
         from google import genai
 
-        model_name = config.get("models", {}).get("gemini", "gemini-3-pro-preview")
+        model_name = config.get("models", {}).get("gemini", "gemini-3.1-pro-preview")
         client = genai.Client(api_key=api_key)
 
         prompt = user_prompt.replace("{PLAN}", plan).replace("{SPEC}", spec)
@@ -131,7 +131,7 @@ def review_with_openai(
     try:
         from openai import OpenAI
 
-        model_name = config.get("models", {}).get("chatgpt", "gpt-5.2")
+        model_name = config.get("models", {}).get("chatgpt", "gpt-5.4")
         timeout = config.get("llm_client", {}).get("timeout_seconds", 120)
 
         client = OpenAI(api_key=api_key, timeout=timeout)
