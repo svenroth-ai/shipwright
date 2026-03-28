@@ -63,12 +63,12 @@ User Description
 |-------|---------|-------------|
 | `shipwright-run` | Orchestrator | Inference engine, scope detection, pipeline state machine |
 | `shipwright-project` | Requirements | IREB-aligned specs, scope detection (Full App / Extension), chat + file + inline input |
-| `shipwright-design` | UI Design | HTML mockups from specs, screen + flow generation, iterate via chat, upload existing designs |
+| `shipwright-design` | UI Design | HTML mockups from specs, screen + flow generation, [design system flavors](#design-system-flavors), iterate via chat, upload existing designs |
 | `shipwright-plan` | Planning | External LLM review (Gemini + OpenAI), section-writer subagent, E2E test plan |
 | `shipwright-build` | Implementation | TDD loop, code-reviewer subagent, Conventional Commits, migration safety |
 | `shipwright-test` | Testing | Profile-aware (Vitest/Playwright), smoke test, `--fix` auto-repair |
 | `shipwright-security` | Security | Aikido API scanning, finding classification, remediation loop, security-fixer subagent |
-| `shipwright-deploy` | Deployment | Jelastic (Infomaniak, Switzerland), DEV auto / PROD manual, clone-based rollback |
+| `shipwright-deploy` | Deployment | [Deployment flavors](#deployment-flavors), DEV auto / PROD manual, clone-based rollback |
 | `shipwright-changelog` | Release | Keep-a-Changelog format, semver bump suggestion, PR creation |
 | `shipwright-compliance` | Compliance | IREB traceability, RTM, SBOM, test evidence, change history reports |
 
@@ -91,6 +91,26 @@ Quick change to existing project. Minimal questions, fast pipeline.
 ```
 /shipwright-run --iterate "Add dark mode toggle"
 ```
+
+## Design System Flavors
+
+`shipwright-design` generates HTML mockups based on a selectable design system flavor. The flavor is chosen during the design interview and determines the visual language (components, spacing, colors, typography) for all generated screens.
+
+| Flavor | Design System | Best For |
+|--------|--------------|----------|
+| `untitled-ui` | [Untitled UI](https://www.untitledui.com/) | SaaS dashboards, admin panels, B2B apps (default) |
+| `material-design` | [Material Design 3](https://m3.material.io/) | Consumer apps, Android-first, Google ecosystem |
+| `custom` | User-provided | Upload your own brand guidelines to `designs/uploads/` |
+
+## Deployment Flavors
+
+`shipwright-deploy` uses a flavor pattern for deployment targets. Each flavor implements the same interface but talks to a different platform.
+
+| Flavor | Platform | Region | Status |
+|--------|----------|--------|--------|
+| `jelastic` | [Jelastic](https://jelastic.com/) (Infomaniak) | Switzerland | Implemented |
+
+Additional flavors (e.g., Vercel, Fly.io) can be added by implementing the deploy client interface. See `plugins/shipwright-deploy/skills/deploy/references/deploy-flavors.md`.
 
 ## Stack Profiles
 

@@ -143,6 +143,24 @@ If `agent_docs/current_sprint.md` exists in the project root, update it with:
 
 **Checkpoint:** Write `{planning_dir}/shipwright_plan_interview.md` with full transcript.
 
+**Write interview decisions to decision_log.md:**
+
+After the interview, extract all architecture/design decisions made (e.g., UUID strategy,
+component style, auth callback behavior, state management choice) and log each one:
+
+```bash
+uv run {plugin_root}/../../shared/scripts/tools/write_decision_log.py \
+  --section "Plan Interview — {split_name}" \
+  --commit "n/a" \
+  --context "{why the question arose}" \
+  --decision "{what was decided}" \
+  --consequences "{impact on implementation}" \
+  --rejected "{alternatives considered}"
+```
+
+Only log decisions that go **beyond** what the profile or project interview already decided.
+Typical planning interview decisions: ORM vs raw SQL, component library variants, caching strategy, API patterns.
+
 ---
 
 ## Step 3: Context Check
@@ -204,6 +222,22 @@ This runs Gemini and OpenAI reviews **in parallel** via ThreadPoolExecutor.
 1. Present feedback to user
 2. Integrate valid suggestions into plan
 3. Mark feedback as addressed
+
+**Write review decisions to decision_log.md:**
+
+After processing review feedback, log each accepted or rejected finding as a decision:
+
+```bash
+uv run {plugin_root}/../../shared/scripts/tools/write_decision_log.py \
+  --section "External Review — {split_name}" \
+  --commit "n/a" \
+  --context "External LLM review finding: {finding summary}" \
+  --decision "{accepted: what changed | rejected: why not}" \
+  --consequences "{impact on plan}" \
+  --rejected "{if accepted: original approach | if rejected: the suggestion itself}"
+```
+
+This ensures review-driven decisions (e.g., "add JWT custom claims for RLS", "use idempotent migrations") are visible in the decision log before build starts.
 
 ---
 

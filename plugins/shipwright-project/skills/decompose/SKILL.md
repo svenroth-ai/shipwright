@@ -313,6 +313,31 @@ uv run {plugin_root}/scripts/checks/write-project-config.py \
   --scope "{scope}"
 ```
 
+**Write interview decisions to decision_log.md:**
+
+After scaffolding, extract all project-level decisions made during the interview
+(e.g., auth strategy, video hosting, CRM choice, table prefix, design style) and
+log each one using the shared tool:
+
+```bash
+uv run {plugin_root}/../../shared/scripts/tools/write_decision_log.py \
+  --section "Project Interview" \
+  --commit "n/a" \
+  --context "{why the decision came up}" \
+  --decision "{what was decided}" \
+  --consequences "{impact on downstream phases}" \
+  --rejected "{alternatives considered}"
+```
+
+Run this once per decision. Only log **project-specific** decisions — not profile defaults
+(those are implicit in the stack profile). Typical decisions from the project interview:
+
+- Auth strategy (Magic Link, password, OAuth)
+- Third-party services (video hosting, CRM, payments)
+- Naming conventions (table prefix, folder structure overrides)
+- Design choices (font, color scheme, design system flavor)
+- Data model choices (UUIDs vs auto-increment, soft delete, etc.)
+
 **Checkpoint:** CLAUDE.md existence.
 
 ---
