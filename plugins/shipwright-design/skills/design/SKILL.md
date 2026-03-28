@@ -22,14 +22,18 @@ SHIPWRIGHT-DESIGN: UI Mockups
 Generate HTML mockups from your specs.
 
 Usage:
-  /shipwright-design                              (analyze specs, generate all)
-  /shipwright-design @designs/screens/02-dashboard.html  (iterate on one screen)
-  /shipwright-design --upload                     (integrate uploaded designs)
+  /shipwright-design                                       (analyze specs, generate all)
+  /shipwright-design @designs/screens/02-dashboard.html    (iterate on one screen)
+  /shipwright-design @designs/design-feedback-round2.md    (process feedback file)
+  /shipwright-design --upload                              (integrate uploaded designs)
 
 Output:
-  - designs/screens/*.html    (individual screen mockups)
-  - designs/flows/*.html      (multi-screen user flows)
-  - designs/design-manifest.md (screen registry)
+  - designs/screens/*.html         (individual screen mockups)
+  - designs/flows/*.html           (multi-screen user flows)
+  - designs/index.html             (review viewer with feedback panel)
+  - designs/design-manifest.md     (screen registry)
+  - designs/visual-guidelines.md   (design tokens for build phase)
+  - designs/design-handoff.md      (session handoff at finalization)
 ================================================================================
 ```
 
@@ -222,44 +226,44 @@ AskUserQuestion:
 
 ## Step 4: Generate Screens
 
-**Goal:** Create standalone HTML mockups.
+**Goal:** Create standalone HTML mockups using the snippet assembly system for speed.
 
-For each confirmed screen:
+### Assembly Process
 
-1. Read the selected design flavor (from Step 3 or profile fallback)
-2. Load component patterns from the flavor's reference file:
-   - `untitled-ui` → [untitled-ui-components.md](references/untitled-ui-components.md)
-   - `material-design` → [material-design-components.md](references/material-design-components.md)
-   - `custom` → user's uploaded guidelines
-3. Load layout patterns from [design-system-patterns.md](references/design-system-patterns.md)
-4. Generate standalone HTML with inline CSS
-5. Save to `designs/screens/{NN}-{name}.html`
+For each confirmed screen, **assemble from pre-built snippets** rather than writing from scratch:
 
-**HTML Requirements:**
+1. **Page Shell** — Start with the Page Shell from [snippets-layout.md](references/snippets-layout.md). Replace `{{FONT_FAMILY}}` with the selected font.
+2. **CSS Variables** — Copy the matching `:root` block from [snippets-variables.md](references/snippets-variables.md) based on the flavor × character chosen in Step 3. If brand extraction was done (Step 2.5), override specific variables with extracted values.
+3. **Layout** — Pick the appropriate layout snippet from [snippets-layout.md](references/snippets-layout.md):
+   - Auth screens → Layout C (Centered Card)
+   - Dashboard/admin/list/detail/settings → Layout A (Sidebar + Content)
+   - Public/marketing pages → Layout B (Top Navigation)
+   - Always include the shared Button Styles block.
+4. **Components** — Fill the layout's content area with component snippets from [snippets-components.md](references/snippets-components.md):
+   - Tables, card grids, forms, stats rows, modals, tabs, badges, etc.
+   - Pick components that match the screen type and FRs.
+5. **Customize** — Replace all `{{PLACEHOLDERS}}` with screen-specific content:
+   - Realistic data (not "Lorem ipsum" — use plausible content)
+   - Screen-specific labels, field names, nav items
+   - FR-specific functionality visible in the UI
+   - SVG stroke icons (no emojis — premium, abstract feel)
+6. **Unique elements** — Write from scratch ONLY for content that doesn't match any snippet (custom visualizations, domain-specific widgets, unique layouts).
+7. **Save** to `designs/screens/{NN}-{name}.html`
+
+### Design Context References
+
+For understanding design intent and making good composition decisions, consult:
+- [design-system-patterns.md](references/design-system-patterns.md) — Layout patterns, component patterns, color system, character palettes
+- [untitled-ui-components.md](references/untitled-ui-components.md) — Untitled UI component reference (flavor: `untitled-ui`)
+- [material-design-components.md](references/material-design-components.md) — Material Design 3 component reference (flavor: `material-design`)
+
+### HTML Requirements
 - Self-contained (no external dependencies except optional CDN font)
 - Responsive (mobile + desktop)
-- Realistic data (not "Lorem ipsum" — use plausible content)
+- Realistic data (plausible content for the domain)
 - Interactive elements visible (buttons, inputs, dropdowns styled)
-- Color scheme from user preferences or clean default
-
-**Template:**
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{Screen Name} — {Project Name}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    /* Reset + variables + component styles inline */
-  </style>
-</head>
-<body>
-  <!-- Screen content -->
-</body>
-</html>
-```
+- All icons: SVG stroke icons (no emojis)
+- Color scheme from CSS variables (set once, applied everywhere)
 
 ---
 
@@ -317,65 +321,43 @@ Write `designs/design-manifest.md`:
 
 ---
 
-## Step 6a: Generate Index Page
+## Step 6a: Generate Review Viewer (Index Page)
 
-**Goal:** Create an interactive `designs/index.html` that lets you browse all screens and flows.
+**Goal:** Create `designs/index.html` — a full review tool with grid view, fullscreen viewer, and integrated feedback panel.
 
-Save to `designs/index.html`. The page has two modes:
+### How to Generate
 
-1. **Grid View** (default): All screens + flows as thumbnail cards with live iframe preview, grouped by split
-2. **Viewer Mode**: Click a card or the "Viewer" button → full-size iframe with navigation
+1. Read the complete template from [review-viewer-template.md](references/review-viewer-template.md)
+2. Read `designs/visual-guidelines.md` → extract primary color, font, background, surface, text, muted, border colors, and border radius
+3. Read `designs/design-manifest.md` → build the `screens` JavaScript array
+4. Replace all `{{PLACEHOLDERS}}` in the template with project-specific values
+5. Write to `designs/index.html`
 
-**Features:**
-- Keyboard navigation: `←`/`→` prev/next, `Esc` back to grid
-- Dropdown to jump to any screen directly
-- Prev/Next buttons
-- Screen counter (e.g. "5 / 25")
-- Cards show: number, title, type badge (screen/flow), linked FRs
-- Responsive (single column on mobile)
+### Placeholder Mapping
 
-**Data structure:** Build a JavaScript `screens` array from the design manifest:
+| Placeholder | Source |
+|-------------|--------|
+| `{{PROJECT_NAME}}` | `shipwright_project_config.json` → `project_name` |
+| `{{FONT_FAMILY}}` | `visual-guidelines.md` → primary font |
+| `{{FONT_URL}}` | Google Fonts URL for that font |
+| `{{COLOR_PRIMARY}}` | `visual-guidelines.md` → Primary color |
+| `{{COLOR_BG}}` | `visual-guidelines.md` → Background |
+| `{{COLOR_SURFACE}}` | `visual-guidelines.md` → Surface/Card background |
+| `{{COLOR_TEXT}}` | `visual-guidelines.md` → Foreground/Text |
+| `{{COLOR_MUTED}}` | `visual-guidelines.md` → Muted text |
+| `{{COLOR_BORDER}}` | `visual-guidelines.md` → Border |
+| `{{RADIUS}}` | `visual-guidelines.md` → Card border radius |
+| `{{SCREENS_ARRAY}}` | Built from `design-manifest.md` — see template for format |
 
-```javascript
-const screens = [
-  // Split 01 — {Split Name}
-  { split: "01 — {Split Name}", num: "01", title: "{Screen Title}", file: "screens/01-{name}.html", frs: "FR-01.01, FR-01.02", type: "screen" },
-  // ...
-  // User Flows
-  { split: "User Flows", num: "A", title: "{Flow Name}", file: "flows/{flow-name}.html", frs: "Screen1 → Screen2 → Screen3", type: "flow" },
-];
-```
+### Features (built into template)
 
-**HTML structure:**
-
-```html
-<!-- Header: project title + Grid/Viewer toggle buttons -->
-<div class="header">
-  <h1><span>Shipwright</span> Design Review</h1>
-  <div class="mode-toggle">
-    <button id="btn-grid" class="active" onclick="showGrid()">Grid</button>
-    <button id="btn-viewer" onclick="showViewer(currentIndex)">Viewer</button>
-  </div>
-</div>
-
-<!-- Grid: cards with scaled iframe previews, grouped by split headings -->
-<div class="grid-view" id="gridView"></div>
-
-<!-- Viewer: toolbar (back, prev, next, title, counter, dropdown) + full iframe -->
-<div class="viewer" id="viewer">
-  <div class="kbd-hints"><!-- ← → Esc hints --></div>
-  <div class="viewer-toolbar"><!-- nav buttons, title, dropdown --></div>
-  <iframe class="viewer-frame" id="viewerFrame"></iframe>
-</div>
-```
-
-**Card thumbnails:** Use iframes scaled to 50% (`transform: scale(0.5)` with `200%` width/height) inside a fixed-height container. Set `pointer-events: none` and `loading="lazy"` on grid iframes.
-
-**Styling rules:**
-- Use the same font as the mockups (from user preferences or Inter as default)
-- Keep the index page visually neutral — it's a review tool, not part of the app design
-- Primary accent color: `#4d65ff` (Shipwright blue) for active states and hover
-- Cards: white background, subtle border, hover lift effect
+- **Grid View**: Thumbnail cards with scaled iframe previews, grouped by split, feedback dot indicators
+- **Viewer Mode**: Full-size iframe with toolbar (prev/next, dropdown navigator, counter)
+- **Feedback Panel**: 340px right side, toggleable, with status buttons (Approved/Changes/Rejected), textarea with auto-save (500ms debounce), previous rounds history
+- **Keyboard navigation**: `←` `→` navigate, `Esc` grid, `F` toggle feedback
+- **localStorage persistence**: Feedback, round number, and history survive browser refreshes
+- **Export**: Generates `design-feedback-roundN.md` via File System Access API save dialog + fallback download
+- **Theming**: Viewer uses the project's own design tokens — feels native to the project
 
 **Important:** The index.html is self-contained (inline CSS + JS, no external dependencies except the optional font CDN). It references screen/flow files via relative paths.
 
@@ -479,46 +461,199 @@ This is optional — skip if specs don't have the UI Requirements section.
 
 ---
 
-## Step 8: Completion
+## Step 8: Completion & Review Instructions
+
+Print the completion summary followed by review instructions:
 
 ```
 ================================================================================
-SHIPWRIGHT-DESIGN COMPLETE
+SHIPWRIGHT-DESIGN: Generation Complete
 ================================================================================
 Screens:     {N} generated
 Flows:       {M} generated
 Uploads:     {K} integrated
 Guidelines:  designs/visual-guidelines.md {generated | from upload}
 Manifest:    designs/design-manifest.md
-Index:       designs/index.html
-
-Open in browser:
-  designs/index.html  (← start here — grid + viewer for all screens)
-
-Next steps:
-  1. Open designs/index.html in your browser to review all screens
-  2. Iterate: /shipwright-design @designs/screens/02-dashboard.html
-  3. Continue: /shipwright-plan @planning/01-auth/spec.md
+Index:       designs/index.html (with review viewer + feedback panel)
 ================================================================================
+
+================================================================================
+REVIEW YOUR SCREENS
+================================================================================
+1. Open designs/index.html in your FILE EXPLORER (not the IDE)
+   → The file opens in your default browser with the review viewer
+
+2. Use Grid View or Viewer Mode to review each screen
+   → Keyboard: ← → navigate, Esc for grid, F for feedback panel
+
+3. For each screen, set a status:
+   → Approved / Changes Requested / Rejected
+   → Add comments describing what to change
+
+4. When done, click "Export Feedback"
+   → A save dialog opens — save the file into the /designs folder
+================================================================================
+```
+
+Then immediately proceed to **Step 8.5**.
+
+---
+
+## Step 8.5: Design Review Loop
+
+**Goal:** Wait for the user's review, then process feedback or finalize.
+
+Present an `AskUserQuestion` dialog that stays open while the user reviews in the browser:
+
+```
+AskUserQuestion:
+  question: |
+    Take your time reviewing in the browser. When you're done, choose:
+  options:
+    A) All screens approved — finalize design phase
+       → Updates specs & decisions, writes session handoff, ready for /shipwright-plan
+    B) Feedback ready — I've reviewed and exported the feedback file
+       → Reads designs/design-feedback-roundN.md, revises flagged screens, then asks again
+    C) Pause for now
+       → State is saved, continue later with /shipwright-design
+```
+
+### Option A — Finalize
+
+1. **Spec Backflow (full)**:
+
+   | Artifact | What to update |
+   |----------|---------------|
+   | `designs/visual-guidelines.md` | Final color values, token changes |
+   | `designs/design-manifest.md` | Final screen titles, statuses |
+   | `designs/index.html` | Regenerate screens array |
+   | `planning/*/spec.md` Section 7 (UI Requirements) | Add screen references per FR: "FR-01.09 → screens/03-dashboard.html" |
+   | `planning/*/spec.md` Section 5 (Functional Requirements) | Add `[UI: Screen #NN]` cross-reference tags to FRs that have mockups |
+   | `agent_docs/decision_log.md` | All final design decisions (DR-NNN format, see below) |
+   | `shipwright_project_config.json` | Set `design_phase: "complete"` |
+
+2. **Write session handoff** to `designs/design-handoff.md`:
+
+   ```markdown
+   # Design Phase — Session Handoff
+
+   > Completed: {date}
+   > Rounds: {N}
+   > Screens: {total} ({approved} approved, {revised} revised)
+
+   ## Status
+   All screens approved. Ready for implementation planning.
+
+   ## Key Design Decisions
+   {List of DR-NNN decisions made during design phase}
+
+   ## Files for Implementation
+   - Visual system: `designs/visual-guidelines.md`
+   - Screen registry: `designs/design-manifest.md`
+   - Screen mockups: `designs/screens/*.html`
+   - User flows: `designs/flows/*.html`
+
+   ## Notes for /shipwright-plan
+   {Any implementation-relevant notes from feedback, e.g.
+   "Sidebar CTA must be purchase-aware — hide when user has active Masterclass"}
+   ```
+
+3. Print completion message with next step (`/shipwright-plan`)
+
+### Option B — Process Feedback
+
+1. Find the latest `designs/design-feedback-round*.md` file (highest round number)
+2. Parse it: identify screens with status **CHANGES** or **REJECTED**
+3. Identify **global changes** (changes that affect multiple screens — e.g. color shifts, icon style changes, nav label renames). Apply these to ALL screens, not just flagged ones.
+4. Revise only flagged screens — use the snippet assembly process from Step 4
+5. **Spec Backflow (partial)**:
+
+   | Artifact | What to update | Condition |
+   |----------|---------------|-----------|
+   | `designs/visual-guidelines.md` | Color values, token changes | If global design changes were made |
+   | `designs/design-manifest.md` | Screen titles (if renamed), status → `revised-rN` | Always |
+   | `designs/index.html` | Regenerate screens array with updated data | Always |
+   | `agent_docs/decision_log.md` | New design decisions (DR-NNN format) | If non-trivial decisions |
+
+6. Print review instructions again (same banner as Step 8)
+7. → **Loop back** to the AskUserQuestion (same 3 options)
+
+### Option C — Pause
+
+1. Print current state summary (N screens, N approved, guidelines saved)
+2. End — user can resume later with `/shipwright-design`
+
+### Decision Log Format
+
+Design decisions are logged to `agent_docs/decision_log.md` using this format:
+
+```markdown
+### DR-{NNN}: {Title}
+
+**Date:** {date}
+**Source:** Design Round {N} feedback
+**Decision:** {What was decided}
+**Rationale:** {Why — user feedback, UX reason, brand requirement}
+**Impact:** {What changed — screens, colors, patterns}
+```
+
+### Complete Flow Diagram
+
+```
+/shipwright-design
+  │
+  ├── Generate/revise screens + index.html
+  ├── Print review instructions
+  ├── AskUserQuestion (A/B/C) ← dialog stays open
+  │
+  │   [User reviews in browser meanwhile]
+  │   [User exports feedback to designs/]
+  │
+  ├─[B]─→ Read feedback file
+  │        Revise CHANGES/REJECTED screens
+  │        Spec Backflow (partial)
+  │        Regenerate index.html
+  │        Print review instructions
+  │        → AskUserQuestion again (loop)
+  │
+  ├─[A]─→ Spec Backflow (full)
+  │        Write session handoff
+  │        → Done, ready for /shipwright-plan
+  │
+  └─[C]─→ Print state summary → End
 ```
 
 ---
 
 ## Iteration Mode
 
-When invoked with a specific HTML file:
+### Mode 1: Iterate on a single screen
+
+When invoked with a specific HTML file (e.g. `@designs/screens/02-dashboard.html`):
 
 1. Read the HTML file
 2. Ask: "What would you like to change?"
-3. Apply changes
+3. Apply changes using the snippet assembly approach where applicable
 4. Regenerate the file
 5. Update design-manifest.md if needed
+6. Regenerate index.html
+7. → Enter **Step 8.5** (review loop)
 
-Examples:
-- "Make the header sticky"
-- "Add a search bar to the table"
-- "Change the primary color to blue"
-- "Add a dark mode toggle"
+### Mode 2: Process feedback file
+
+When invoked with a feedback file (e.g. `@designs/design-feedback-round2.md`):
+
+1. Read the feedback file
+2. For each screen with status **CHANGES** or **REJECTED**:
+   - Read the current HTML file
+   - Apply the requested changes from the feedback text
+   - Regenerate the screen using snippet assembly
+3. Identify and apply global changes to all affected screens
+4. Update design-manifest.md (status → `revised-rN`)
+5. Regenerate index.html
+6. Run Spec Backflow (partial)
+7. Report what was changed
+8. → Enter **Step 8.5** (review loop)
 
 ---
 
@@ -538,8 +673,15 @@ When `designs/uploads/` contains files:
 
 ## Reference Documents
 
+### Snippet System (primary — use for screen generation)
+- [snippets-layout.md](references/snippets-layout.md) — Copy-paste HTML/CSS layout blocks (Page Shell, Sidebar, Top Nav, Centered Card, Buttons)
+- [snippets-components.md](references/snippets-components.md) — Copy-paste HTML/CSS component blocks (Table, Card Grid, Form, Stats, Modal, Tabs, Badges, Empty State, Breadcrumbs, Detail, Notifications)
+- [snippets-variables.md](references/snippets-variables.md) — Complete CSS `:root` variable blocks for each flavor × character combination
+- [review-viewer-template.md](references/review-viewer-template.md) — Complete HTML template for designs/index.html (review viewer with feedback panel)
+
+### Design Context (secondary — consult for design decisions and understanding)
 - [design-flavors.md](references/design-flavors.md) — Design system flavor architecture and selection
-- [design-system-patterns.md](references/design-system-patterns.md) — Layout patterns and component best practices
+- [design-system-patterns.md](references/design-system-patterns.md) — Layout patterns, component patterns, color system, character palettes
 - [untitled-ui-components.md](references/untitled-ui-components.md) — Untitled UI component reference (flavor: `untitled-ui`)
 - [material-design-components.md](references/material-design-components.md) — Material Design 3 component reference (flavor: `material-design`)
 - [user-flow-patterns.md](references/user-flow-patterns.md) — Standard user flow templates
