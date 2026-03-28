@@ -67,4 +67,4 @@ def test_read_all_configs_with_data(project_with_configs):
 
 
 def test_config_handles_all_config_files():
-    assert set(CONFIG_FILES.keys()) == {"run", "project", "plan", "build", "compliance"}
+    assert set(CONFIG_FILES.keys()) == {"run", "project", "plan", "build", "compliance", "security"}
