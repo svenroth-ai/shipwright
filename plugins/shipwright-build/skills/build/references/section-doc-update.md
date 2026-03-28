@@ -2,13 +2,17 @@
 
 ## Decision Log
 
-After code review interview, write decisions to `agent_docs/decision_log.md`:
+After code review interview, write each decision to `agent_docs/decision_log.md` using the shared ADR tool (one call per decision):
 
 ```bash
-uv run {plugin_root}/scripts/tools/write_decision_log.py \
-  --project-root "$(pwd)" \
-  --section "{section_name}" \
-  --decisions '[{"decision": "Use Zustand over Context", "reason": "Simpler API, better devtools", "category": "architecture"}]'
+uv run {plugin_root}/../../shared/scripts/tools/write_decision_log.py \
+  --section "Build — {section_name}" \
+  --commit "$(git rev-parse HEAD)" \
+  --context "Needed simpler state management with better devtools" \
+  --decision "Use Zustand over Context API" \
+  --consequences "Less boilerplate, no provider nesting" \
+  --rejected "Redux, React Context" \
+  --project-root "$(pwd)"
 ```
 
 ### What to Log

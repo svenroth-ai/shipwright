@@ -1,5 +1,6 @@
 """Integration tests for shipwright-build."""
 
+import importlib.util
 import json
 import subprocess
 import sys
@@ -8,6 +9,14 @@ from pathlib import Path
 import pytest
 
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
+_SHARED_DECISION_LOG = (
+    Path(__file__).resolve().parent.parent.parent.parent
+    / "shared" / "scripts" / "tools" / "write_decision_log.py"
+)
+_spec = importlib.util.spec_from_file_location("write_decision_log", _SHARED_DECISION_LOG)
+_mod = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_mod)
+append_decision = _mod.append_decision
 
 
 def run_script(subdir: str, script_name: str, args: list[str]) -> dict:
@@ -61,15 +70,16 @@ def test_setup_and_track_section(tmp_path):
     assert state_result["success"] is True
 
     # 3. Write decision log
-    decisions = json.dumps([
-        {"decision": "Use Supabase magic link", "reason": "Better UX", "category": "design"},
-    ])
-    log_result = run_script("tools", "write_decision_log.py", [
-        "--project-root", str(project),
-        "--section", "01-auth",
-        "--decisions", decisions,
-    ])
-    assert log_result["success"] is True
+    adr_num = append_decision(
+        project,
+        section_ref="Build — 01-auth",
+        commit_hash="abc123",
+        context="Better UX for initial MVP",
+        decision="Use Supabase magic link",
+        consequences="No password management needed",
+        rejected="Password auth",
+    )
+    assert adr_num >= 1
 
     # 4. Generate handoff
     handoff_result = run_script("tools", "generate_session_handoff.py", [

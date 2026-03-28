@@ -100,6 +100,7 @@ def main() -> None:
     import os
 
     parser = argparse.ArgumentParser(description="Append a decision to the decision log")
+    parser.add_argument("--project-root", default=None, help="Project root directory (default: CWD)")
     parser.add_argument("--section", required=True, help="Section reference (e.g. 'Section 03: Auth')")
     parser.add_argument("--commit", required=True, help="Commit hash")
     parser.add_argument("--context", required=True, help="Context/background for the decision")
@@ -109,7 +110,7 @@ def main() -> None:
     parser.add_argument("--status", default="Accepted", help="Status (default: Accepted)")
     args = parser.parse_args()
 
-    project_root = Path(os.getcwd())
+    project_root = Path(args.project_root) if args.project_root else Path(os.getcwd())
     number = append_decision(
         project_root,
         section_ref=args.section,
