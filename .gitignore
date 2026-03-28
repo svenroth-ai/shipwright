@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 *.egg-info/
 dist/
-build/
+/build/
 .eggs/
 *.egg
 .venv/
