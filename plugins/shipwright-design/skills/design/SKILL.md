@@ -96,6 +96,37 @@ Build a proposed screen list from this analysis.
 
 ---
 
+## Step 2.5: Brand Extraction
+
+**Goal:** Auto-extract design tokens from the user's existing website before asking design questions.
+
+**Trigger:** If the user has an existing website (mentioned in project interview, requirements, or `shipwright_project_config.json`).
+
+**Skip if:** No existing website is known. Proceed directly to Step 3.
+
+```
+1. WebFetch the URL
+2. Extract from HTML/CSS:
+   - Fonts: <link> tags (Google Fonts), CSS font-family declarations
+   - Colors: CSS custom properties, most frequent bg/text/accent colors
+   - Background style: white vs. cream/beige vs. dark
+   - Card style: border-based vs. shadow-based
+   - Border radius patterns
+3. Present findings:
+   "I found these design tokens from your website:
+    - Font: {font} ({weights})
+    - Background: {hex} ({description})
+    - Text: {hex}
+    - Accent: {hex} ({description})
+    - Cards: {style}, {radius} radius
+    Shall I use these as the foundation?"
+4. User confirms or adjusts
+```
+
+Confirmed tokens carry forward into Step 3 as defaults — the user can still override them.
+
+---
+
 ## Step 3: Design Interview (3-5 questions)
 
 **Goal:** Refine the proposal with user preferences. Quick, targeted.
@@ -112,10 +143,24 @@ AskUserQuestion:
    - **Material Design 3** — Google's design system, great for consumer apps
    - **Custom** — Upload your own guidelines to `designs/uploads/`
    See [design-flavors.md](references/design-flavors.md) for details.
-2. **Branding**: "Any brand colors, fonts, or a logo? Or should I use the flavor's default palette?"
+2. **Brand Character**: "What character should the app have?"
+   - **A) Warm & Premium** — Earth tones, beige/cream backgrounds, elegant feel (think: luxury brands, boutique)
+   - **B) Clean & Modern** — Whites, subtle grays, one accent color (think: Stripe, Linear)
+   - **C) Bold & Energetic** — Vibrant colors, strong contrasts (think: Vercel, Figma)
+   - **D) I have specific brand guidelines** → upload to `designs/uploads/`
+   If brand tokens were extracted in Step 2.5, present them here as suggestion and let the user confirm or override.
+   See [design-system-patterns.md](references/design-system-patterns.md) → "Character Palettes" for full token sets.
 3. **Layout**: "Sidebar navigation or top navigation bar?"
 4. **Existing designs**: "Do you have existing mockups or screenshots to include? Drop them in designs/uploads/ if so."
 5. **Special UX**: "Any specific UX requirements? (dark mode, mobile-first, accessibility focus, etc.)"
+
+**Palette derivation:** After the user picks a character (or confirms extracted tokens), derive the full palette automatically:
+
+| Character | Background | Card Style | Accent Strategy |
+|-----------|-----------|------------|-----------------|
+| Warm & Premium | Cream/beige (#f5f0eb) | Shadow, no border, 12px radius | Brown/earth tones from bg |
+| Clean & Modern | White (#ffffff) | 1px border + subtle shadow, 8px radius | Single saturated color |
+| Bold & Energetic | White or dark | Strong shadow, 8px radius | 2-color system (primary + secondary) |
 
 **Flavor resolution:** User choice > profile default (`design_system.name`) > `untitled-ui`.
 
@@ -139,6 +184,39 @@ User Flows:
 
 Add, remove, or modify?
 ```
+
+---
+
+## Step 3.5: Design Preview
+
+**Goal:** Validate the chosen palette and style on a small sample before generating all screens.
+
+**After** the screen list is confirmed in Step 3, generate exactly 3 preview screens:
+
+1. **Auth/Login screen** — Brand first impression, centered card layout
+2. **Main layout screen** — Sidebar + content (or top nav), shows navigation feel
+3. **One content-heavy screen** — Detail page with cards, buttons, and text hierarchy
+
+Pick these from the confirmed screen list. Save them to `designs/screens/` as usual.
+
+```
+AskUserQuestion:
+  question: |
+    I've generated 3 preview screens. Open them in your browser:
+      - designs/screens/{login-screen}.html
+      - designs/screens/{layout-screen}.html
+      - designs/screens/{content-screen}.html
+
+    Does the look and feel match what you want?
+    Specifically: colors, font, card style, overall warmth?
+```
+
+**If adjustments needed:**
+- Swap hex values / font / radius in the 3 preview files
+- Do NOT regenerate from scratch — just update the CSS variables
+- Re-ask for confirmation
+
+**Only after user confirms** → proceed to Step 4 and generate the remaining screens using the validated palette.
 
 ---
 
