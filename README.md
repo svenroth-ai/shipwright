@@ -27,7 +27,7 @@ User Description
 └────────┬─────────┘
          ▼
 ┌──────────────────┐
-│shipwright-design │  Specs → Screen Detection → HTML Mockups → User Flows
+│shipwright-design │  Specs → Interview → HTML Mockups → Review Viewer → Feedback Loop
 └────────┬─────────┘
          ▼  (per split)
 ┌──────────────────┐
@@ -63,7 +63,7 @@ User Description
 |-------|---------|-------------|
 | `shipwright-run` | Orchestrator | Inference engine, scope detection, pipeline state machine |
 | `shipwright-project` | Requirements | IREB-aligned specs, scope detection (Full App / Extension), chat + file + inline input |
-| `shipwright-design` | UI Design | HTML mockups from specs, screen + flow generation, [design system flavors](#design-system-flavors), iterate via chat, upload existing designs |
+| `shipwright-design` | UI Design | [Snippet-assembled HTML mockups](#design-phase), [review viewer](#design-review-workflow) with feedback panel, [design system flavors](#design-system-flavors), spec backflow, session handoff |
 | `shipwright-plan` | Planning | External LLM review (Gemini + OpenAI), section-writer subagent, E2E test plan |
 | `shipwright-build` | Implementation | TDD loop, code-reviewer subagent, Conventional Commits, migration safety |
 | `shipwright-test` | Testing | Profile-aware (Vitest/Playwright), smoke test, `--fix` auto-repair |
@@ -91,6 +91,57 @@ Quick change to existing project. Minimal questions, fast pipeline.
 ```
 /shipwright-run --iterate "Add dark mode toggle"
 ```
+
+## Design Phase
+
+`shipwright-design` turns IREB specs into interactive HTML mockups before a single line of code is written. The phase bridges requirements (from `shipwright-project`) and implementation planning (from `shipwright-plan`).
+
+### Snippet Assembly System
+
+Screens are assembled from **pre-built HTML/CSS building blocks** rather than written from scratch. This makes generation 2-3x faster while keeping full visual flexibility.
+
+```
+snippets-variables.md     →  CSS :root block (flavor × character)
+         ↓
+snippets-layout.md        →  Page Shell + Layout (Sidebar / Top Nav / Centered Card)
+         ↓
+snippets-components.md    →  Components (Table, Form, Cards, Stats, Modal, Tabs, ...)
+         ↓
+Assembled Screen           →  designs/screens/NN-name.html
+```
+
+All visual properties (colors, fonts, shadows, radii) are controlled by CSS custom properties — set once per project based on the design interview. The snippets define **structure and layout**, not visual style.
+
+### Design Review Workflow
+
+After generation, `shipwright-design` produces an integrated review viewer (`designs/index.html`) that runs in the browser:
+
+- **Grid View** — All screens as thumbnail cards with live iframe previews, grouped by split
+- **Viewer Mode** — Full-size iframe with prev/next navigation, keyboard shortcuts
+- **Feedback Panel** — 340px right side panel with status buttons (Approved / Changes / Rejected), free-text comments, auto-save to localStorage, previous round history
+- **Export** — Generates `design-feedback-roundN.md` via save dialog
+
+The review viewer uses the project's own design tokens — it feels native to the app being designed.
+
+### Feedback Loop
+
+After generation, the skill enters a review loop:
+
+```
+Generate screens + index.html
+  │
+  ├── Print review instructions
+  ├── AskUserQuestion (stays open while user reviews in browser)
+  │
+  ├─[A] All approved  → Spec Backflow (full) → Session Handoff → /shipwright-plan
+  ├─[B] Feedback ready → Read feedback file → Revise screens → Loop back
+  └─[C] Pause          → Save state → Resume later
+```
+
+**Spec Backflow** keeps upstream artifacts in sync with design decisions:
+- Updates `planning/*/spec.md` with screen references per FR
+- Logs design decisions to `agent_docs/decision_log.md` (ADR format)
+- Writes `designs/design-handoff.md` at finalization for `/shipwright-plan`
 
 ## Design System Flavors
 
