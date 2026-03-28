@@ -88,23 +88,24 @@ class TestCollectSections:
 class TestCollectDecisionLog:
     def test_parses_decision_entries(self, project_root: Path):
         entries = collect_decision_log(project_root)
-        assert len(entries) == 3
+        assert len(entries) == 5
 
     def test_first_entry_details(self, project_root: Path):
         entries = collect_decision_log(project_root)
         entry = entries[0]
         assert entry.section == "01-login"
         assert "2026-03-20" in entry.timestamp
-        assert len(entry.decisions) == 2
+        assert entry.commit == "abc123"
+        assert len(entry.decisions) == 1
         assert entry.decisions[0]["decision"] == "Use Supabase Auth with magic link"
-        assert entry.decisions[0]["category"] == "architecture"
-        assert "password" in entry.decisions[0]["reason"].lower()
+        assert "password" in entry.decisions[0]["context"].lower()
+        assert "Password auth" in entry.decisions[0]["rejected"]
 
-    def test_second_entry(self, project_root: Path):
+    def test_rbac_entries(self, project_root: Path):
         entries = collect_decision_log(project_root)
-        entry = entries[1]
-        assert entry.section == "02-rbac"
-        assert len(entry.decisions) == 2
+        rbac = [e for e in entries if e.section == "02-rbac"]
+        assert len(rbac) == 2
+        assert rbac[0].decisions[0]["decision"] == "Implement RLS policies in Supabase"
 
     def test_no_decision_log(self, empty_project_root: Path):
         entries = collect_decision_log(empty_project_root)
@@ -152,7 +153,7 @@ class TestCollectAll:
         assert data.project_root == project_root.resolve()
         assert len(data.splits) == 3
         assert len(data.sections) == 3
-        assert len(data.decisions) == 3
+        assert len(data.decisions) == 5
         assert len(data.dependencies) == 13
         assert data.timestamp  # not empty
 

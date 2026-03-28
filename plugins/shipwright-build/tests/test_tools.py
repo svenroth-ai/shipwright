@@ -1,11 +1,20 @@
 """Tests for shipwright-build tools."""
 
+import importlib.util
 import json
 import subprocess
 import sys
 from pathlib import Path
 
 TOOLS_DIR = Path(__file__).resolve().parent.parent / "scripts" / "tools"
+_SHARED_DECISION_LOG = (
+    Path(__file__).resolve().parent.parent.parent.parent
+    / "shared" / "scripts" / "tools" / "write_decision_log.py"
+)
+_spec = importlib.util.spec_from_file_location("write_decision_log", _SHARED_DECISION_LOG)
+_mod = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_mod)
+append_decision = _mod.append_decision
 
 
 def run_tool(script_name: str, args: list[str]) -> dict:
@@ -57,37 +66,47 @@ def test_update_section_state_existing(tmp_path):
 def test_write_decision_log(tmp_path):
     (tmp_path / "agent_docs").mkdir()
 
-    decisions = json.dumps([
-        {"decision": "Use Zustand", "reason": "Simpler than Redux", "category": "architecture"},
-        {"decision": "Magic link auth", "reason": "Better UX", "category": "design"},
-    ])
+    n1 = append_decision(
+        tmp_path,
+        section_ref="Build — 01-auth",
+        commit_hash="abc123",
+        context="Simpler than Redux",
+        decision="Use Zustand",
+        consequences="Less boilerplate",
+        rejected="Redux, React Context",
+    )
+    n2 = append_decision(
+        tmp_path,
+        section_ref="Build — 01-auth",
+        commit_hash="abc123",
+        context="Better UX",
+        decision="Magic link auth",
+        consequences="No password management",
+        rejected="Password auth",
+    )
 
-    output = run_tool("write_decision_log.py", [
-        "--project-root", str(tmp_path),
-        "--section", "01-auth",
-        "--decisions", decisions,
-    ])
-
-    assert output["success"] is True
-    assert output["entries_written"] == 2
+    assert n1 == 1
+    assert n2 == 2
 
     log = (tmp_path / "agent_docs" / "decision_log.md").read_text(encoding="utf-8")
+    assert "ADR-001" in log
+    assert "ADR-002" in log
     assert "Use Zustand" in log
     assert "Magic link auth" in log
-    assert "architecture" in log
 
 
 def test_write_decision_log_creates_dir(tmp_path):
     """agent_docs/ doesn't exist yet — should be created."""
-    decisions = json.dumps([{"decision": "Test", "reason": "Because", "category": "test"}])
+    n = append_decision(
+        tmp_path,
+        section_ref="Build — 01-test",
+        commit_hash="n/a",
+        context="Testing",
+        decision="Test decision",
+        consequences="None",
+    )
 
-    output = run_tool("write_decision_log.py", [
-        "--project-root", str(tmp_path),
-        "--section", "01-test",
-        "--decisions", decisions,
-    ])
-
-    assert output["success"] is True
+    assert n == 1
     assert (tmp_path / "agent_docs" / "decision_log.md").exists()
 
 

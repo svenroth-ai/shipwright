@@ -20,6 +20,7 @@ from conftest import (
     PROJECT_PLUGIN,
     run_script,
 )
+from tools.write_decision_log import append_decision
 
 
 class TestCoreTrilogyFlow:
@@ -252,15 +253,16 @@ class TestCoreTrilogyFlow:
         assert result["success"] is True
 
         # Write decision log
-        decisions = json.dumps([
-            {"decision": "Use Supabase magic link", "reason": "Better UX", "category": "design"},
-        ])
-        result = run_script(BUILD_PLUGIN, "tools", "write_decision_log.py", [
-            "--project-root", str(trilogy_project),
-            "--section", "01-models",
-            "--decisions", decisions,
-        ])
-        assert result["success"] is True
+        adr_num = append_decision(
+            trilogy_project,
+            section_ref="Build — 01-models",
+            commit_hash="abc123def",
+            context="Better UX for initial MVP",
+            decision="Use Supabase magic link",
+            consequences="No password management needed",
+            rejected="Password auth",
+        )
+        assert adr_num >= 1
 
         # Generate handoff
         result = run_script(BUILD_PLUGIN, "tools", "generate_session_handoff.py", [
@@ -278,7 +280,7 @@ class TestCoreTrilogyFlow:
         # Verify decision log content
         log = (trilogy_project / "agent_docs" / "decision_log.md").read_text(encoding="utf-8")
         assert "Supabase magic link" in log
-        assert "design" in log
+        assert "ADR-001" in log
 
     # ── Full flow ──
 
@@ -298,11 +300,14 @@ class TestCoreTrilogyFlow:
             "--project-root", str(trilogy_project),
         ])
 
-        run_script(BUILD_PLUGIN, "tools", "write_decision_log.py", [
-            "--project-root", str(trilogy_project),
-            "--section", "01-models",
-            "--decisions", json.dumps([{"decision": "Test", "reason": "R", "category": "arch"}]),
-        ])
+        append_decision(
+            trilogy_project,
+            section_ref="Build — 01-models",
+            commit_hash="abc123",
+            context="Testing",
+            decision="Test decision",
+            consequences="None",
+        )
 
         # ── Verify complete artifact set ──
         # Project phase artifacts

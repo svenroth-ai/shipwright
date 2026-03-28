@@ -45,7 +45,9 @@ class SectionInfo:
 class DecisionEntry:
     section: str
     timestamp: str
+    commit: str = ""
     decisions: list[dict] = field(default_factory=list)
+    # Each dict: {"decision": str, "context": str, "consequences": str, "rejected": str}
 
 
 @dataclass
@@ -181,13 +183,13 @@ def collect_sections(project_root: Path) -> list[SectionInfo]:
 # Decision Log
 # ---------------------------------------------------------------------------
 
-_SECTION_RE = re.compile(r"^## (.+?) \((.+?)\)\s*$")
-_DECISION_RE = re.compile(r"^- \*\*(.+?)\*\* \[(.+?)\]\s*$")
-_REASON_RE = re.compile(r"^\s+- Reason: (.+)$")
+_ADR_HEADER_RE = re.compile(r"^## ADR-\d+ \| (.+?) \| (.+?) \| Commit (.+)$")
+_ADR_FIELD_RE = re.compile(r"^### (Status|Context|Decision|Consequences):?\s*(.*)$")
+_REJECTED_RE = re.compile(r"^- Alternatives rejected: (.+)$")
 
 
 def collect_decision_log(project_root: Path) -> list[DecisionEntry]:
-    """Parse agent_docs/decision_log.md into structured entries."""
+    """Parse agent_docs/decision_log.md (ADR format) into structured entries."""
     log_path = project_root / "agent_docs" / "decision_log.md"
     if not log_path.exists():
         return []
@@ -195,40 +197,54 @@ def collect_decision_log(project_root: Path) -> list[DecisionEntry]:
     content = log_path.read_text(encoding="utf-8")
     entries: list[DecisionEntry] = []
     current_entry: DecisionEntry | None = None
+    current_field: str | None = None
     current_decision: dict | None = None
 
     for line in content.splitlines():
-        section_match = _SECTION_RE.match(line)
-        if section_match:
-            if current_entry and current_entry.decisions:
+        header_match = _ADR_HEADER_RE.match(line)
+        if header_match:
+            # Finalize previous entry
+            if current_entry and current_decision:
+                current_entry.decisions.append(current_decision)
                 entries.append(current_entry)
             current_entry = DecisionEntry(
-                section=section_match.group(1),
-                timestamp=section_match.group(2),
+                section=header_match.group(2),
+                timestamp=header_match.group(1),
+                commit=header_match.group(3),
             )
-            current_decision = None
+            current_decision = {"decision": "", "context": "", "consequences": "", "rejected": ""}
+            current_field = None
             continue
 
-        if current_entry is None:
+        if current_entry is None or current_decision is None:
             continue
 
-        decision_match = _DECISION_RE.match(line)
-        if decision_match:
-            current_decision = {
-                "decision": decision_match.group(1),
-                "category": decision_match.group(2),
-                "reason": "",
-            }
-            current_entry.decisions.append(current_decision)
+        field_match = _ADR_FIELD_RE.match(line)
+        if field_match:
+            field_name = field_match.group(1).lower()
+            inline_value = field_match.group(2).strip()
+            current_field = field_name
+            if inline_value:
+                current_decision[field_name] = inline_value
             continue
 
-        if current_decision is not None:
-            reason_match = _REASON_RE.match(line)
-            if reason_match:
-                current_decision["reason"] = reason_match.group(1)
+        rejected_match = _REJECTED_RE.match(line)
+        if rejected_match:
+            current_decision["rejected"] = rejected_match.group(1)
+            continue
 
-    # Don't forget the last entry
-    if current_entry and current_entry.decisions:
+        # Accumulate multi-line content for the current field
+        stripped = line.strip()
+        if current_field and stripped and not line.startswith("---"):
+            # Strip leading "- " from consequence lines
+            if stripped.startswith("- "):
+                stripped = stripped[2:]
+            existing = current_decision.get(current_field, "")
+            current_decision[current_field] = (existing + " " + stripped).strip() if existing else stripped
+
+    # Finalize last entry
+    if current_entry and current_decision:
+        current_entry.decisions.append(current_decision)
         entries.append(current_entry)
 
     return entries

@@ -392,15 +392,20 @@ See [section-doc-update.md](references/section-doc-update.md) for details.
 
 **Goal:** Record decisions made during implementation.
 
-If `agent_docs/decision_log.md` exists:
+If `agent_docs/decision_log.md` exists, log each significant decision using the shared tool:
+
 ```bash
-uv run {plugin_root}/scripts/tools/write_decision_log.py \
-  --project-root "$(pwd)" \
-  --section "{section_name}" \
-  --decisions "{decisions_json}"
+uv run {plugin_root}/../../shared/scripts/tools/write_decision_log.py \
+  --section "Build — {section_name}" \
+  --commit "$(git rev-parse HEAD)" \
+  --context "{why this decision was needed}" \
+  --decision "{what was decided}" \
+  --consequences "{impact on the codebase}" \
+  --rejected "{alternatives considered}" \
+  --project-root "$(pwd)"
 ```
 
-Decisions to log:
+Run once per decision. Decisions to log:
 - Architecture choices made during implementation
 - Review findings accepted/declined with reasoning
 - Deviations from the section spec (and why)
