@@ -136,6 +136,17 @@
     "jelastic_dashboard": "DEV/PROD secrets (SUPABASE_URL, SUPABASE_KEY, etc.)"
   },
 
+  "required_env_vars": {
+    "build": [
+      {"name": "NEXT_PUBLIC_SUPABASE_URL", "description": "Supabase project URL"},
+      {"name": "NEXT_PUBLIC_SUPABASE_ANON_KEY", "description": "Supabase anonymous key"}
+    ],
+    "deploy": [
+      {"name": "JELASTIC_TOKEN", "description": "Infomaniak Jelastic API token"},
+      {"name": "SUPABASE_ACCESS_TOKEN", "description": "Supabase CLI access token (for migrations)", "optional": true}
+    ]
+  },
+
   "architecture_rules": [
     "Feature modules must not import from other feature modules",
     "All Supabase calls go through lib/supabase/ — no direct client usage in components",

@@ -50,6 +50,38 @@ Checks for:
 - Optionally: `SUPABASE_ACCESS_TOKEN` (for migrations)
 - Optionally: git repo with remote (for git-based deploy)
 
+### B2. Validate Environment
+
+Check that required deploy environment variables from the stack profile are available.
+
+```bash
+uv run {shared_root}/scripts/validate_env.py \
+  --project-root "{project_root}" \
+  --phase deploy
+```
+
+Where `{shared_root}` = `{plugin_root}/../../shared` (relative to plugin root).
+
+Parse the JSON output:
+
+1. **`skipped == true`**: No profile or no vars defined — continue.
+2. **`success == true`**: All required deploy vars present — continue.
+3. **`success == false`**: Missing required vars — **use AskUserQuestion**:
+
+   > **Missing environment variables for deployment**
+   >
+   > The following required variables are not set:
+   > - `VAR_NAME` — description
+   >
+   > Please set the missing environment variables, then confirm to continue.
+
+   Options: "I've set the variables — continue" / "Skip validation and proceed anyway"
+
+   If user updates: **re-run validation** to confirm.
+   If user skips: proceed with a warning.
+
+4. **`optional_missing`**: Log a warning but do not block.
+
 ### C. Determine Target
 
 | Flag | Target | Behavior |
