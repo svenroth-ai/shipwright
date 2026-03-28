@@ -24,7 +24,9 @@ from scripts.lib.sbom_generator import generate_file as generate_sbom
 # Phase -> which reports to regenerate
 PHASE_REPORTS = {
     "project": ["rtm", "dashboard"],
+    "design": ["dashboard"],
     "plan": ["rtm", "dashboard"],
+    "compliance": ["dashboard"],
     "build": ["rtm", "test_evidence", "change_history", "dashboard"],
     "test": ["test_evidence", "dashboard"],
     "deploy": ["dashboard"],

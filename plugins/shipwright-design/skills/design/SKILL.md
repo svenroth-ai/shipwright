@@ -229,6 +229,70 @@ Write `designs/design-manifest.md`:
 
 ---
 
+## Step 6a: Generate Index Page
+
+**Goal:** Create an interactive `designs/index.html` that lets you browse all screens and flows.
+
+Save to `designs/index.html`. The page has two modes:
+
+1. **Grid View** (default): All screens + flows as thumbnail cards with live iframe preview, grouped by split
+2. **Viewer Mode**: Click a card or the "Viewer" button → full-size iframe with navigation
+
+**Features:**
+- Keyboard navigation: `←`/`→` prev/next, `Esc` back to grid
+- Dropdown to jump to any screen directly
+- Prev/Next buttons
+- Screen counter (e.g. "5 / 25")
+- Cards show: number, title, type badge (screen/flow), linked FRs
+- Responsive (single column on mobile)
+
+**Data structure:** Build a JavaScript `screens` array from the design manifest:
+
+```javascript
+const screens = [
+  // Split 01 — {Split Name}
+  { split: "01 — {Split Name}", num: "01", title: "{Screen Title}", file: "screens/01-{name}.html", frs: "FR-01.01, FR-01.02", type: "screen" },
+  // ...
+  // User Flows
+  { split: "User Flows", num: "A", title: "{Flow Name}", file: "flows/{flow-name}.html", frs: "Screen1 → Screen2 → Screen3", type: "flow" },
+];
+```
+
+**HTML structure:**
+
+```html
+<!-- Header: project title + Grid/Viewer toggle buttons -->
+<div class="header">
+  <h1><span>Shipwright</span> Design Review</h1>
+  <div class="mode-toggle">
+    <button id="btn-grid" class="active" onclick="showGrid()">Grid</button>
+    <button id="btn-viewer" onclick="showViewer(currentIndex)">Viewer</button>
+  </div>
+</div>
+
+<!-- Grid: cards with scaled iframe previews, grouped by split headings -->
+<div class="grid-view" id="gridView"></div>
+
+<!-- Viewer: toolbar (back, prev, next, title, counter, dropdown) + full iframe -->
+<div class="viewer" id="viewer">
+  <div class="kbd-hints"><!-- ← → Esc hints --></div>
+  <div class="viewer-toolbar"><!-- nav buttons, title, dropdown --></div>
+  <iframe class="viewer-frame" id="viewerFrame"></iframe>
+</div>
+```
+
+**Card thumbnails:** Use iframes scaled to 50% (`transform: scale(0.5)` with `200%` width/height) inside a fixed-height container. Set `pointer-events: none` and `loading="lazy"` on grid iframes.
+
+**Styling rules:**
+- Use the same font as the mockups (from user preferences or Inter as default)
+- Keep the index page visually neutral — it's a review tool, not part of the app design
+- Primary accent color: `#4d65ff` (Shipwright blue) for active states and hover
+- Cards: white background, subtle border, hover lift effect
+
+**Important:** The index.html is self-contained (inline CSS + JS, no external dependencies except the optional font CDN). It references screen/flow files via relative paths.
+
+---
+
 ## Step 6.5: Generate Visual Guidelines
 
 **Goal:** Create a reusable design token document for shipwright-build.
@@ -338,14 +402,13 @@ Flows:       {M} generated
 Uploads:     {K} integrated
 Guidelines:  designs/visual-guidelines.md {generated | from upload}
 Manifest:    designs/design-manifest.md
+Index:       designs/index.html
 
 Open in browser:
-  designs/screens/01-login.html
-  designs/screens/02-dashboard.html
-  ...
+  designs/index.html  (← start here — grid + viewer for all screens)
 
 Next steps:
-  1. Open HTML files in your browser to review
+  1. Open designs/index.html in your browser to review all screens
   2. Iterate: /shipwright-design @designs/screens/02-dashboard.html
   3. Continue: /shipwright-plan @planning/01-auth/spec.md
 ================================================================================

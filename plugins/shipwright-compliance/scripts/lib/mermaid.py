@@ -26,21 +26,23 @@ _TEXT_COLORS = {
 }
 
 
+_DEFAULT_PIPELINE = ["project", "plan", "build", "test", "deploy", "changelog"]
+
+
+def _node_id(phase: str) -> str:
+    """Generate a short Mermaid node ID from a phase name."""
+    return phase.upper().replace("-", "_")[:8]
+
+
 def pipeline_status_diagram(configs: dict[str, dict]) -> str:
     """Generate flowchart LR showing pipeline phase status with color coding."""
-    phases = [
-        ("P", "Project", "project"),
-        ("PL", "Plan", "plan"),
-        ("B", "Build", "build"),
-        ("T", "Test", "test"),
-        ("D", "Deploy", "deploy"),
-        ("CL", "Changelog", "changelog"),
-    ]
+    run_config = configs.get("run", {})
+    pipeline = run_config.get("pipeline", _DEFAULT_PIPELINE)
+    phases = [(_node_id(p), p.replace("-", " ").title(), p) for p in pipeline]
 
     lines = ["```mermaid", "flowchart LR"]
 
     # Determine status per phase
-    run_config = configs.get("run", {})
     pipeline_status = run_config.get("status", "pending")
     current_step = run_config.get("current_step", "")
 
@@ -75,6 +77,13 @@ def _get_phase_status(
     if pipeline_status == "complete":
         return "complete"
 
+    run_config = configs.get("run", {})
+
+    # Explicit completed_steps takes priority
+    completed_steps = run_config.get("completed_steps", [])
+    if phase in completed_steps:
+        return "complete"
+
     # Check if phase has a config with status
     config = configs.get(phase, {})
     if config.get("status") == "complete":
@@ -84,7 +93,7 @@ def _get_phase_status(
         return "in_progress"
 
     # Phases before current are complete, after are pending
-    phase_order = ["project", "plan", "build", "test", "deploy", "changelog"]
+    phase_order = run_config.get("pipeline", _DEFAULT_PIPELINE)
     try:
         current_idx = phase_order.index(current_step)
         phase_idx = phase_order.index(phase)

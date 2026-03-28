@@ -63,6 +63,16 @@ winget install astral-sh.uv
 | Node.js 22.x | supabase-nextjs profile | [nodejs.org](https://nodejs.org) or `nvm install 22` | `node --version` |
 | Supabase CLI | Database migrations | `npm install -g supabase` | `supabase --version` |
 
+### Recommended: Mermaid Preview (VSCode)
+
+Shipwright's compliance reports use **Mermaid diagrams** for pipeline status, traceability flows, and test pyramids. To render these diagrams directly in VSCode's Markdown preview, install the Mermaid extension:
+
+1. Open VSCode → Extensions (`Ctrl+Shift+X`)
+2. Search for **"Markdown Preview Mermaid Support"** (by Matt Bierner)
+3. Install and reload
+
+Without this extension, Mermaid code blocks appear as raw text in the Markdown preview.
+
 ---
 
 ## 2. Installation
