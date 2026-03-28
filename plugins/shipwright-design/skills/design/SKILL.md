@@ -107,13 +107,19 @@ AskUserQuestion:
 
 **Questions to ask:**
 
-1. **Visual Guidelines**: "Do you have existing visual guidelines or a design system document? If so, drop it in designs/uploads/ — I'll use it as the foundation."
-2. **Branding**: "Any brand colors, fonts, or a logo? Or should I use a clean default palette?"
+1. **Design System Flavor**: "Which design system should I use as the visual foundation?"
+   - **Untitled UI** — Clean, professional SaaS style (default)
+   - **Material Design 3** — Google's design system, great for consumer apps
+   - **Custom** — Upload your own guidelines to `designs/uploads/`
+   See [design-flavors.md](references/design-flavors.md) for details.
+2. **Branding**: "Any brand colors, fonts, or a logo? Or should I use the flavor's default palette?"
 3. **Layout**: "Sidebar navigation or top navigation bar?"
 4. **Existing designs**: "Do you have existing mockups or screenshots to include? Drop them in designs/uploads/ if so."
 5. **Special UX**: "Any specific UX requirements? (dark mode, mobile-first, accessibility focus, etc.)"
 
-**If visual guidelines uploaded:** Read them and use as the design foundation for all mockups. Skip generating new guidelines in Step 6.5 — instead, reference the uploaded file.
+**Flavor resolution:** User choice > profile default (`design_system.name`) > `untitled-ui`.
+
+**If custom flavor selected:** Prompt user to upload guidelines to `designs/uploads/`. Read them and use as the design foundation for all mockups. Skip generating new guidelines in Step 6.5 — instead, reference the uploaded file.
 
 **Then present the proposed screen list:**
 
@@ -142,10 +148,14 @@ Add, remove, or modify?
 
 For each confirmed screen:
 
-1. Read the design system from profile (`design_system.name` in supabase-nextjs.json)
-2. Load component patterns from [design-system-patterns.md](references/design-system-patterns.md)
-3. Generate standalone HTML with inline CSS
-4. Save to `designs/screens/{NN}-{name}.html`
+1. Read the selected design flavor (from Step 3 or profile fallback)
+2. Load component patterns from the flavor's reference file:
+   - `untitled-ui` → [untitled-ui-components.md](references/untitled-ui-components.md)
+   - `material-design` → [material-design-components.md](references/material-design-components.md)
+   - `custom` → user's uploaded guidelines
+3. Load layout patterns from [design-system-patterns.md](references/design-system-patterns.md)
+4. Generate standalone HTML with inline CSS
+5. Save to `designs/screens/{NN}-{name}.html`
 
 **HTML Requirements:**
 - Self-contained (no external dependencies except optional CDN font)
@@ -370,9 +380,9 @@ Based on interview answers and generated mockups, write `designs/visual-guidelin
 ```
 
 **Sources for values:**
-1. User's uploaded guidelines (if any) → primary source
+1. User's uploaded guidelines (custom flavor) → primary source
 2. Interview answers (brand colors, font choice) → overrides
-3. Profile defaults (Untitled UI tokens) → fallback
+3. Selected flavor defaults (Untitled UI or Material Design tokens) → fallback
 4. Mockups already generated (extract what was used) → verification
 
 **This file is designed to be reusable.** The user can upload it to `designs/uploads/` in their next project and skip the design interview.
@@ -450,6 +460,8 @@ When `designs/uploads/` contains files:
 
 ## Reference Documents
 
+- [design-flavors.md](references/design-flavors.md) — Design system flavor architecture and selection
 - [design-system-patterns.md](references/design-system-patterns.md) — Layout patterns and component best practices
-- [untitled-ui-components.md](references/untitled-ui-components.md) — Untitled UI component reference
+- [untitled-ui-components.md](references/untitled-ui-components.md) — Untitled UI component reference (flavor: `untitled-ui`)
+- [material-design-components.md](references/material-design-components.md) — Material Design 3 component reference (flavor: `material-design`)
 - [user-flow-patterns.md](references/user-flow-patterns.md) — Standard user flow templates
