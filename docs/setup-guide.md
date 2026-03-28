@@ -68,7 +68,7 @@ winget install astral-sh.uv
 Shipwright's compliance reports use **Mermaid diagrams** for pipeline status, traceability flows, and test pyramids. To render these diagrams directly in VSCode's Markdown preview, install the Mermaid extension:
 
 1. Open VSCode → Extensions (`Ctrl+Shift+X`)
-2. Search for **"Markdown Preview Mermaid Support"** (by Matt Bierner)
+2. Search for **"Markdown Preview Mermaid Support"** (by the Mermaid team)
 3. Install and reload
 
 Without this extension, Mermaid code blocks appear as raw text in the Markdown preview.
