@@ -91,6 +91,75 @@
 - Text: #F8FAFC
 - (Accent colors stay the same)
 
+### Character Palettes
+
+Used by Step 3 (Brand Character question) to derive a full palette from a mood choice.
+
+#### A) Warm & Premium
+
+| Role | Value | Notes |
+|------|-------|-------|
+| Background | #f5f0eb | Warm cream |
+| Surface | #faf7f4 | Lighter cream for cards |
+| Text | #1a1a1a | Near-black |
+| Muted Text | #6b5e54 | Warm gray |
+| Primary | #5c4033 | Dark brown (CTA, links) |
+| Primary Hover | #4a3328 | Darker brown |
+| Secondary | #8b7355 | Medium brown (secondary actions) |
+| Border | #e8e0d8 | Warm light border |
+| Success | #2d6a4f | Forest green |
+| Error | #c1121f | Deep red |
+
+- **Cards:** Shadow-based (`0 1px 3px rgba(0,0,0,0.08)`), no border, 12px radius
+- **Buttons:** Rounded (8px), solid fill primary, ghost secondary
+- **Font suggestion:** Libre Baskerville, DM Serif Display, or Inter with 300/400/600 weights
+
+#### B) Clean & Modern
+
+| Role | Value | Notes |
+|------|-------|-------|
+| Background | #ffffff | Pure white |
+| Surface | #f8fafc | Slate-50 |
+| Text | #0f172a | Slate-900 |
+| Muted Text | #64748b | Slate-500 |
+| Primary | #2563eb | Blue-600 (single accent) |
+| Primary Hover | #1d4ed8 | Blue-700 |
+| Secondary | #64748b | Slate-500 |
+| Border | #e2e8f0 | Slate-200 |
+| Success | #059669 | Emerald-600 |
+| Error | #dc2626 | Red-600 |
+
+- **Cards:** 1px border (`#e2e8f0`) + subtle shadow (`0 1px 2px rgba(0,0,0,0.05)`), 8px radius
+- **Buttons:** 6px radius, solid fill primary, outline secondary
+- **Font suggestion:** Inter, system-ui
+
+#### C) Bold & Energetic
+
+| Role | Value | Notes |
+|------|-------|-------|
+| Background | #ffffff | White (or #09090b for dark variant) |
+| Surface | #f4f4f5 | Zinc-100 |
+| Text | #09090b | Zinc-950 |
+| Muted Text | #71717a | Zinc-500 |
+| Primary | #7c3aed | Violet-600 (vivid) |
+| Primary Hover | #6d28d9 | Violet-700 |
+| Secondary | #f97316 | Orange-500 (contrast pair) |
+| Border | #e4e4e7 | Zinc-200 |
+| Success | #10b981 | Emerald-500 |
+| Error | #ef4444 | Red-500 |
+
+- **Cards:** Strong shadow (`0 4px 12px rgba(0,0,0,0.1)`), 8px radius
+- **Buttons:** 8px radius, bold fill, gradient option for CTAs
+- **Font suggestion:** Plus Jakarta Sans, Space Grotesk, or Inter with 500/700 weights
+
+#### Combining Character with Extracted Tokens
+
+When Step 2.5 extracts tokens from an existing website:
+1. Use the extracted colors as the starting point
+2. Map them to the closest character palette
+3. Fill any missing roles (success, error, muted) from the matched character palette
+4. Let the user confirm the merged result
+
 ## Typography
 
 - Font: Inter (Google Fonts CDN)
