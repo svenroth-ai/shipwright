@@ -18,43 +18,41 @@ Shipwright infers your stack, deploys to DEV automatically, runs tests, creates 
 User Description
   │
   ▼
-┌──────────────────┐
-│ shipwright-run   │  Infer scope, profile, autonomy → dispatch
-└────────┬─────────┘
-         ▼
-┌──────────────────┐
-│shipwright-project│  Interview → Split → IREB Specs → CLAUDE.md + agent_docs
-└────────┬─────────┘
-         ▼
-┌──────────────────┐
-│shipwright-design │  Specs → Interview → HTML Mockups → Review Viewer → Feedback Loop
-└────────┬─────────┘
-         ▼  (per split)
-┌──────────────────┐
-│ shipwright-plan  │  Research → Interview → Plan → External LLM Review → Sections
-└────────┬─────────┘
-         ▼  (per section)
-┌──────────────────┐
-│ shipwright-build │  TDD → Code Review → Conventional Commit → Feature Branch
-└────────┬─────────┘
-         ▼
-┌──────────────────┐
-│ shipwright-test  │  Unit (Vitest) → Smoke → Playwright E2E
-└────────┬─────────┘
-         ▼
-┌──────────────────┐
-│shipwright-       │  Aikido API → Classify → Remediation Loop → Report
-│    security      │
-└────────┬─────────┘
-         ▼
-┌──────────────────┐
-│shipwright-deploy │  Jelastic (Infomaniak) → Smoke Test → Rollback on Failure
-└────────┬─────────┘
-         ▼
-┌──────────────────┐
-│shipwright-       │  Parse Commits → Changelog → Version Tag → PR
-│    changelog     │
-└──────────────────┘
+┌────────────────────────────┐
+│ shipwright-run             │  Infer scope, profile, autonomy → dispatch
+└─────────────┬──────────────┘
+              ▼
+┌────────────────────────────┐
+│ shipwright-project         │  Interview → Split → IREB Specs → CLAUDE.md + agent_docs
+└─────────────┬──────────────┘
+              ▼
+┌────────────────────────────┐
+│ shipwright-design          │  Specs → Interview → HTML Mockups → Review Viewer → Feedback Loop
+└─────────────┬──────────────┘
+              ▼  (per split)
+┌────────────────────────────┐
+│ shipwright-plan            │  Research → Interview → Plan → External LLM Review → Sections
+└─────────────┬──────────────┘
+              ▼  (per section)
+┌────────────────────────────┐
+│ shipwright-build           │  TDD → Code Review → Conventional Commit → Feature Branch
+└─────────────┬──────────────┘
+              ▼
+┌────────────────────────────┐
+│ shipwright-test            │  Unit (Vitest) → Smoke → Playwright E2E
+└─────────────┬──────────────┘
+              ▼
+┌────────────────────────────┐
+│ shipwright-security        │  Aikido API → Classify → Remediation Loop → Report
+└─────────────┬──────────────┘
+              ▼
+┌────────────────────────────┐
+│ shipwright-deploy          │  Jelastic (Infomaniak) → Smoke Test → Rollback on Failure
+└─────────────┬──────────────┘
+              ▼
+┌────────────────────────────┐
+│ shipwright-changelog       │  Parse Commits → Changelog → Version Tag → PR
+└────────────────────────────┘
 ```
 
 ## Skills
