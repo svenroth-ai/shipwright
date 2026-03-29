@@ -2,7 +2,7 @@
 name: shipwright-test
 description: Profile-aware test runner. Runs unit tests, smoke tests, Playwright E2E, and optional security scans. Use after /shipwright-build or /shipwright-deploy.
 license: MIT
-compatibility: Requires uv (Python 3.11+). Optional: Playwright, Aikido account.
+compatibility: Requires uv (Python 3.11+). Optional: Playwright.
 ---
 
 # Shipwright Test Skill
@@ -23,7 +23,6 @@ Runs tests across all layers based on stack profile.
 
 Usage: /shipwright-test
    or: /shipwright-test --fix        (auto-fix failures, max 3 retries)
-   or: /shipwright-test --security   (include security scan)
    or: /shipwright-test --e2e-only   (only Playwright E2E)
    or: Invoked by /shipwright-run (orchestrator)
 
@@ -31,7 +30,7 @@ Test layers:
   1. Unit tests (Vitest / pytest)
   2. Smoke test (HTTP 200 on DEV URL)
   3. Playwright E2E (if UI project + DEV URL available)
-  4. Security scan (if --security flag, placeholder)
+  4. Security scan → see /shipwright-security
 ================================================================================
 ```
 
@@ -144,18 +143,14 @@ If no Playwright config exists and setup fails: skip with note.
 
 ---
 
-## Step 4: Security Scan (Optional — Placeholder)
+## Step 4: Security Scan → /shipwright-security
 
-**Only runs with `--security` flag.**
+Security scanning is handled by the dedicated `/shipwright-security` plugin (Aikido integration).
 
-This is a placeholder for future integration with security scanning tools
-(e.g., Aikido, Snyk, or similar). Currently outputs:
+- Standalone: `/shipwright-security`
+- Pipeline: Automatically called after test by `/shipwright-run` (if `AIKIDO_CLIENT_ID` is set)
 
-```
-Security scan: Not configured.
-To enable, set AIKIDO_API_KEY or configure a security provider in
-shipwright_test_config.json.
-```
+This step is a no-op in shipwright-test.
 
 ---
 
@@ -169,7 +164,7 @@ SHIPWRIGHT-TEST RESULTS
 Unit tests:    {passed}/{total} passed ({duration}s)
 Smoke test:    {PASS | FAIL | SKIP} ({url}, {response_time}ms)
 E2E tests:     {passed}/{total} passed | SKIP
-Security:      {clean | N findings | not configured}
+Security:      {via /shipwright-security | not run}
 
 Overall:       {PASS | FAIL}
 {Failed tests: list if any}

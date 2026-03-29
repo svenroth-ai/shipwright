@@ -35,10 +35,10 @@ Shipwright uses a layered testing strategy. Each layer catches different classes
 - **Results:** Parsed from `e2e-results.json` (Playwright JSON reporter)
 
 ### 4. Security Scan
-- **What:** Dependency vulnerabilities, code patterns
-- **Tool:** Placeholder (future: Aikido, Snyk, etc.)
-- **When:** Before release, on schedule
-- **Speed:** Variable
+- **What:** Dependency vulnerabilities, SAST, secrets detection
+- **Tool:** /shipwright-security (Aikido API)
+- **When:** After test, before deploy (via /shipwright-run or standalone)
+- **Speed:** Variable (API-dependent)
 
 ## Profile-Aware Strategy
 
