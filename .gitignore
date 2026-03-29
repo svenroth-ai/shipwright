@@ -44,3 +44,6 @@ agent_docs/session_handoff.md
 
 # UV
 .uv/
+
+# Specifications (internal only)
+Spec/
