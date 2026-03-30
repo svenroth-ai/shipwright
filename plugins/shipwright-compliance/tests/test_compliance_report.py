@@ -14,11 +14,11 @@ class TestGenerate:
         result = generate(data)
         assert "# Compliance Dashboard" in result
 
-    def test_pipeline_status_diagram(self, project_root: Path):
+    def test_no_pipeline_status_diagram(self, project_root: Path):
+        """Pipeline status lives in delivery dashboard, not compliance."""
         data = collect_all(project_root)
         result = generate(data)
-        assert "## Pipeline Status" in result
-        assert "```mermaid" in result
+        assert "## Pipeline Status" not in result
 
     def test_quality_indicators(self, project_root: Path):
         data = collect_all(project_root)

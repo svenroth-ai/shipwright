@@ -23,7 +23,7 @@ class TestGenerate:
             CommitEntry("def456", "fix", "auth", "fix timeout", "2026-03-21T10:00:00+00:00", "Claude"),
         ]
         result = generate(_make_data(commits))
-        assert "# Change History Report" in result
+        assert "# Commit Change Log" in result
         assert "Total commits: 2" in result
 
     def test_groups_by_type(self):

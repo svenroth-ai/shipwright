@@ -564,7 +564,19 @@ AskUserQuestion:
    "Sidebar CTA must be purchase-aware — hide when user has active Masterclass"}
    ```
 
-3. Print completion message with next step (`/shipwright-plan`)
+3. **Phase complete — update pipeline state:**
+```bash
+# Mark design phase complete (triggers compliance update automatically)
+uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+  update-step --project-root "$(pwd)" --step design --status complete
+
+# Update delivery dashboard
+uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+  --project-root "$(pwd)" --phase design --session-id "{SHIPWRIGHT_SESSION_ID}"
+```
+Where `{shared_root}` = `{plugin_root}/../../shared`.
+
+4. Print completion message with next step (`/shipwright-plan`)
 
 ### Option B — Process Feedback
 

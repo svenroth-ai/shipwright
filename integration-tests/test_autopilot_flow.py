@@ -99,7 +99,7 @@ class TestAutopilotFlow:
         assert result["success"] is True
 
         dashboard = (autopilot_project / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
-        assert "0/3 sections complete" in dashboard
+        assert "0/3" in dashboard
         assert "01-models" in dashboard
 
     def test_complete_section_1(self, autopilot_project):
@@ -131,7 +131,7 @@ class TestAutopilotFlow:
 
         # Verify dashboard content
         dashboard = (autopilot_project / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
-        assert "1/3 sections complete" in dashboard
+        assert "1/3" in dashboard
 
     def test_context_pressure_triggers_checkpoint(self, autopilot_project):
         """High tool call count triggers checkpoint recommendation."""
@@ -205,7 +205,7 @@ class TestAutopilotFlow:
 
         # Final dashboard
         dashboard = (autopilot_project / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
-        assert "3/3 sections complete" in dashboard
+        assert "3/3" in dashboard
         assert "/shipwright-test" in dashboard
 
     def test_resume_after_checkpoint(self, autopilot_project):

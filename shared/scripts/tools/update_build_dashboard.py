@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Generate agent_docs/build_dashboard.md from current build state.
+"""Generate agent_docs/build_dashboard.md from current pipeline and build state.
 
-Reads shipwright_build_config.json and shipwright_run_config.json
+Reads shipwright_run_config.json and shipwright_build_config.json
 to produce a human-readable progress dashboard.
 
 Usage:
     uv run update_build_dashboard.py --project-root <path> [options]
 
 Options:
+    --phase <name>      Pipeline phase (project|design|plan|build|test|deploy|changelog)
     --section <name>    Current section being worked on
     --step <1-12>       Current step within the section
     --detail <text>     Free-text detail (e.g., "TDD green phase")
@@ -44,6 +45,8 @@ STEP_LABELS = {
     12: "Complete",
 }
 
+PIPELINE_PHASES = ["project", "design", "plan", "build", "test", "deploy", "changelog"]
+
 
 def format_status(section: dict, current_section: str | None, current_step: int | None, detail: str | None) -> str:
     """Format a section's status for the dashboard table."""
@@ -64,8 +67,48 @@ def format_status(section: dict, current_section: str | None, current_step: int 
     return "pending"
 
 
+def _pipeline_status(run_config: dict, build_sections: list) -> str:
+    """Format pipeline phase for the status column."""
+    completed = set(run_config.get("completed_steps", []))
+    current = run_config.get("current_step")
+    total_sections = len(build_sections)
+    completed_sections = sum(1 for s in build_sections if s.get("status") == "complete")
+
+    def phase_status(phase: str) -> str:
+        if phase in completed:
+            return "complete"
+        if phase == current:
+            if phase == "build" and total_sections > 0:
+                return f"**{completed_sections}/{total_sections} sections**"
+            return "**in progress**"
+        return "pending"
+
+    return phase_status
+
+
+def generate_pipeline_table(run_config: dict, build_sections: list) -> list[str]:
+    """Generate the pipeline status table."""
+    pipeline = run_config.get("pipeline", PIPELINE_PHASES)
+    get_status = _pipeline_status(run_config, build_sections)
+
+    lines = [
+        "## Pipeline",
+        "",
+        "| Phase | Status |",
+        "|-------|--------|",
+    ]
+    for phase in pipeline:
+        status = get_status(phase)
+        # Capitalize phase name
+        display = phase.capitalize()
+        lines.append(f"| {display} | {status} |")
+    lines.append("")
+    return lines
+
+
 def generate_dashboard(
     project_root: Path,
+    phase: str | None = None,
     section: str | None = None,
     step: int | None = None,
     detail: str | None = None,
@@ -89,11 +132,15 @@ def generate_dashboard(
         "",
     ]
 
-    # Progress summary
+    # Pipeline table (shown when run_config exists)
+    if run_config:
+        lines.extend(generate_pipeline_table(run_config, sections))
+
+    # Section table
     if total > 0:
-        lines.append(f"## Progress ({completed}/{total} sections complete)")
-    else:
-        lines.append("## Progress")
+        lines.append(f"## Build Sections ({completed}/{total} complete)")
+    elif sections is not None and run_config:
+        lines.append("## Build Sections")
     lines.append("")
 
     if sections:
@@ -104,9 +151,6 @@ def generate_dashboard(
             sec_status = format_status(sec, section, step, detail)
             commit = sec.get("commit", "--")
             lines.append(f"| {i} | {name} | {sec_status} | {commit} |")
-        lines.append("")
-    else:
-        lines.append("No sections registered yet.")
         lines.append("")
 
     # Current activity
@@ -128,7 +172,7 @@ def generate_dashboard(
             next_section = sec.get("name")
             break
 
-    if status == "paused" or (completed < total and not section):
+    if status == "paused" or (completed < total and total > 0 and not section):
         lines.append("## Resume Info")
         if next_section:
             lines.append(f"Next: `/shipwright-run` (auto-resumes from {next_section})")
@@ -146,6 +190,7 @@ def generate_dashboard(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Update build dashboard")
     parser.add_argument("--project-root", required=True, help="Project root directory")
+    parser.add_argument("--phase", help="Pipeline phase that just completed")
     parser.add_argument("--section", help="Current section name")
     parser.add_argument("--step", type=int, choices=range(1, 13), help="Current step (1-12)")
     parser.add_argument("--detail", help="Free-text activity detail")
@@ -157,6 +202,7 @@ def main() -> int:
 
     content = generate_dashboard(
         project_root,
+        phase=args.phase,
         section=args.section,
         step=args.step,
         detail=args.detail,

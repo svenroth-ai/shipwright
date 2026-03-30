@@ -181,6 +181,19 @@ Migrations: {applied | skipped | N/A}
 ================================================================================
 ```
 
+**Phase complete — update pipeline state:**
+```bash
+# Mark deploy phase complete (triggers compliance update automatically)
+uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+  update-step --project-root "$(pwd)" --step deploy --status complete
+
+# Update delivery dashboard
+uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+  --project-root "$(pwd)" --phase deploy --detail "Deployed to {url}" \
+  --session-id "{SHIPWRIGHT_SESSION_ID}"
+```
+Where `{shared_root}` = `{plugin_root}/../../shared`.
+
 ### Smoke Test Failed → Rollback
 
 **DEV:** Git-based rollback
