@@ -169,6 +169,13 @@ gh pr create \
   --base main
 ```
 
+**Autonomous mode:** After creating the PR, merge it immediately:
+```bash
+gh pr merge --merge --delete-branch
+```
+
+**Guided mode:** PR stays open for manual review and merge.
+
 If already on main: skip PR, just push tag.
 
 **Print Summary:**
