@@ -118,14 +118,15 @@ echo ""
 
 echo "Environment Variables:"
 
-# Source .env.local if it exists (same behavior as Python plugins)
-if [ -f "$REPO_ROOT/.env.local" ]; then
-    echo "  $PASS .env.local: found at $REPO_ROOT/.env.local"
+# Source .env.local from CWD (project root) — same as Python plugins
+PROJECT_ROOT="$(pwd)"
+if [ -f "$PROJECT_ROOT/.env.local" ]; then
+    echo "  $PASS .env.local: found at $PROJECT_ROOT/.env.local"
     set -a
-    source "$REPO_ROOT/.env.local"
+    source "$PROJECT_ROOT/.env.local"
     set +a
 else
-    echo "  $SKIP .env.local: not found (copy .env.example to .env.local)"
+    echo "  $SKIP .env.local: not found in project (run validate_env.py --init --phase all)"
 fi
 
 if [ -n "${OPENROUTER_API_KEY:-}" ]; then
