@@ -94,6 +94,10 @@ INFERRED SETTINGS
 Scope:      {Full Application | Extension}
 Profile:    {supabase-nextjs | custom}
 Autonomy:   {guided | autonomous}
+              Guided:     Interactive through all phases incl. Build and Test
+                          with confirmation between phases and request for approval of fixes
+              Autonomous: Interactive through Spec and Design with autonomous
+                          Build and Test incl. fixes. Deploy stays interactive.
 Deploy to:  {Jelastic DEV | none}
 
 Accept or modify:
@@ -169,7 +173,30 @@ The orchestrator dispatches to each skill in sequence:
     --project-root "$(pwd)" --phase "{completed_phase}"
   ```
   Where `{compliance_plugin_root}` = `{plugin_root}/../../shipwright-compliance` (sibling plugin)
-- Check if context window is getting large → suggest `/clear` + resume
+- **Context pressure check** (after each skill completes):
+  ```bash
+  uv run {shared_root}/scripts/tools/estimate_context_pressure.py \
+    --counter-file "$(pwd)/.shipwright_toolcall_count" --threshold 120
+  ```
+  If `recommend_checkpoint` is true:
+  1. Generate session handoff
+  2. Update build dashboard with `--status paused`
+  3. Print checkpoint banner and **STOP**:
+  ```
+  ================================================================================
+  CHECKPOINT — Context pressure detected
+  ================================================================================
+  Progress: {completed}/{total} sections complete
+  Dashboard: agent_docs/build_dashboard.md
+
+  To continue:
+    1. Open a new session (+ button) <- recommended
+    2. Or: /clear in this session
+
+  Then invoke: /shipwright-run
+    -> Auto-resumes from current position
+  ================================================================================
+  ```
 
 **Guided mode:** Ask user at each major transition:
 ```
@@ -201,6 +228,50 @@ Each skill is invoked as a slash command:
 /shipwright-security              (conditional, see below)
 /shipwright-deploy
 /shipwright-changelog
+```
+
+### Build Phase Autopilot Loop
+
+When executing the build phase (step 3b in the pipeline), use the autopilot loop:
+
+1. **Get section progress:**
+```bash
+uv run {plugin_root}/scripts/lib/orchestrator.py get-build-progress \
+  --project-root "$(pwd)"
+```
+
+2. **Initialize dashboard:**
+```bash
+uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+  --project-root "$(pwd)" --session-id "{SHIPWRIGHT_SESSION_ID}"
+```
+
+3. **For each incomplete section** (from `next_section` in progress output):
+   a. Update dashboard: `--section "{section}" --step 1 --detail "Starting"`
+   b. Invoke: `/shipwright-build @{sections_dir}/{section}.md`
+   c. On return: update dashboard with `--status complete`
+   d. Check context pressure:
+      ```bash
+      uv run {shared_root}/scripts/tools/estimate_context_pressure.py \
+        --counter-file "$(pwd)/.shipwright_toolcall_count" --threshold 120
+      ```
+   e. If `recommend_checkpoint` is true:
+      - Update dashboard with `--status paused`
+      - Generate session handoff
+      - Print checkpoint banner (see above) and **STOP**
+   f. If not: re-run `get-build-progress` and continue with next section
+
+4. **All sections done:** Proceed to `/shipwright-test`
+
+**In autonomous mode:** The loop runs without asking between sections.
+**In guided mode:** Ask before each section:
+```
+AskUserQuestion:
+  question: "Section {N-1} complete ({completed}/{total}). Continue with {next_section}?"
+  options:
+    - "Continue"
+    - "Review first"
+    - "Stop here"
 ```
 
 ### Security Scan (conditional)
@@ -285,10 +356,23 @@ Same as Full App but shorter:
 
 If the pipeline is interrupted (context window, user stops, error):
 
-1. Read `shipwright_run_config.json` → `current_step`
-2. Read per-plugin configs → determine exact resume point
-3. Skip completed steps
-4. Continue from where we left off
+1. Read `shipwright_run_config.json` → `current_step` and `completed_steps`
+2. If `current_step == "build"`:
+   a. Run `orchestrator.py get-build-progress` → get section status
+   b. Print resume banner:
+   ```
+   ================================================================================
+   RESUMING PIPELINE
+   ================================================================================
+   Pipeline step: build
+   Sections: {completed}/{total} complete
+   Resuming from: {next_section}
+   Dashboard: agent_docs/build_dashboard.md
+   ================================================================================
+   ```
+   c. Enter Build Phase Autopilot Loop from first incomplete section
+3. For other steps: skip completed steps, continue from `current_step`
+4. Read `agent_docs/session_handoff.md` if it exists — use it for additional context about what was in progress
 
 ---
 

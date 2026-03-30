@@ -1,10 +1,18 @@
 # Code Review Interview
 
-## When Triggered
+## Autonomous Mode
+
+Skip this interview entirely. All findings are auto-accepted and fixed
+immediately. Each fix is logged in the decision log with context
+"auto-fixed (autonomous mode)".
+
+## Guided Mode
+
+### When Triggered
 
 After code-reviewer subagent returns findings with medium+ severity.
 
-## User Interaction
+### User Interaction
 
 Present each finding via AskUserQuestion:
 
