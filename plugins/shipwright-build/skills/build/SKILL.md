@@ -498,9 +498,11 @@ If `agent_docs/decision_log.md` exists, log each significant decision using the 
 uv run {plugin_root}/../../shared/scripts/tools/write_decision_log.py \
   --section "Build — {section_name}" \
   --commit "$(git rev-parse HEAD)" \
+  --title "{short title for the decision}" \
   --context "{why this decision was needed}" \
   --decision "{what was decided}" \
   --consequences "{impact on the codebase}" \
+  --rationale "{reasoning behind the choice}" \
   --rejected "{alternatives considered}" \
   --project-root "$(pwd)"
 ```
@@ -527,6 +529,12 @@ uv run {plugin_root}/scripts/tools/update_section_state.py \
 ```bash
 uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "$(pwd)" --section "{section_name}" --step 10 --status complete --session-id "{SHIPWRIGHT_SESSION_ID}"
+```
+
+**Sprint update** (if `agent_docs/current_sprint.md` exists):
+```bash
+uv run {shared_root}/scripts/tools/update_sprint.py \
+  --project-root "$(pwd)" --section "{section_name}" --status complete --commit "$(git rev-parse HEAD)"
 ```
 
 ---

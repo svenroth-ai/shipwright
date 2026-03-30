@@ -2,13 +2,15 @@
 
 Auto-numbers entries sequentially and auto-dates with today's date.
 Never overwrites existing entries — always appends.
+Compact ADR format: one H3 per entry, bullet points for fields.
 
 Usage (from target project root):
-    uv run <path>/write_decision_log.py --section "Section 03: Auth" --commit abc1234 \
+    uv run <path>/write_decision_log.py --section "Build — 01-auth" --commit abc1234 \
         --context "Code review found session-based auth" \
         --decision "Keep JWT, refresh 7 days" \
         --consequences "Stateless for scaling" \
-        --rejected "Session cookies, OAuth-only"
+        --rejected "Session cookies, OAuth-only" \
+        --title "JWT over Session Auth"
 """
 
 import argparse
@@ -20,10 +22,20 @@ from pathlib import Path
 
 def get_next_adr_number(content: str) -> int:
     """Extract the highest ADR number and return next."""
-    numbers = re.findall(r"## ADR-(\d+)", content)
+    numbers = re.findall(r"### ADR-(\d+)", content)
+    if not numbers:
+        # Also check old format for backwards compatibility
+        numbers = re.findall(r"## ADR-(\d+)", content)
     if not numbers:
         return 1
     return max(int(n) for n in numbers) + 1
+
+
+def _truncate_title(text: str, max_len: int = 60) -> str:
+    """Truncate text to max_len, adding ellipsis if needed."""
+    if len(text) <= max_len:
+        return text
+    return text[:max_len - 3].rsplit(" ", 1)[0] + "..."
 
 
 def format_entry(
@@ -34,31 +46,33 @@ def format_entry(
     decision: str,
     consequences: str,
     rejected: str = "",
-    status: str = "Accepted",
+    title: str = "",
+    rationale: str = "",
 ) -> str:
-    """Format a single ADR entry."""
+    """Format a single ADR entry in compact format."""
     today = date.today().isoformat()
+    display_title = title or _truncate_title(decision)
 
     lines = [
         "",
         "---",
         "",
-        f"## ADR-{number:03d} | {today} | {section_ref} | Commit {commit_hash}",
-        "",
-        f"### Status: {status}",
-        "",
-        "### Context",
-        context,
-        "",
-        "### Decision",
-        decision,
-        "",
-        "### Consequences",
-        f"- {consequences}",
+        f"### ADR-{number:03d}: {display_title}",
+        f"- **Date:** {today}",
+        f"- **Section:** {section_ref}",
+        f"- **Context:** {context}",
+        f"- **Decision:** {decision}",
+        f"- **Commit:** {commit_hash}",
     ]
 
+    if rationale:
+        lines.append(f"- **Rationale:** {rationale}")
+
+    if consequences:
+        lines.append(f"- **Consequences:** {consequences}")
+
     if rejected:
-        lines.append(f"- Alternatives rejected: {rejected}")
+        lines.append(f"- **Rejected:** {rejected}")
 
     lines.append("")
     return "\n".join(lines)
@@ -72,7 +86,9 @@ def append_decision(
     decision: str,
     consequences: str,
     rejected: str = "",
-    status: str = "Accepted",
+    title: str = "",
+    rationale: str = "",
+    status: str = "Accepted",  # kept for backwards compat, not used in compact format
 ) -> int:
     """Append a decision entry to the decision log. Returns the ADR number."""
     project_root = Path(project_root)
@@ -88,7 +104,7 @@ def append_decision(
         content = "# Decision Log\n\n> Project-specific decisions only. Profile-level decisions are implicit in the stack profile.\n"
 
     number = get_next_adr_number(content)
-    entry = format_entry(number, section_ref, commit_hash, context, decision, consequences, rejected, status)
+    entry = format_entry(number, section_ref, commit_hash, context, decision, consequences, rejected, title, rationale)
     content += entry
 
     log_path.write_text(content, encoding="utf-8")
@@ -101,13 +117,15 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(description="Append a decision to the decision log")
     parser.add_argument("--project-root", default=None, help="Project root directory (default: CWD)")
-    parser.add_argument("--section", required=True, help="Section reference (e.g. 'Section 03: Auth')")
+    parser.add_argument("--section", required=True, help="Section reference (e.g. 'Build — 01-auth')")
     parser.add_argument("--commit", required=True, help="Commit hash")
     parser.add_argument("--context", required=True, help="Context/background for the decision")
     parser.add_argument("--decision", required=True, help="The decision made")
     parser.add_argument("--consequences", required=True, help="Consequences of the decision")
     parser.add_argument("--rejected", default="", help="Rejected alternatives")
-    parser.add_argument("--status", default="Accepted", help="Status (default: Accepted)")
+    parser.add_argument("--title", default="", help="Short title for the ADR entry (default: truncated decision)")
+    parser.add_argument("--rationale", default="", help="Rationale (if different from consequences)")
+    parser.add_argument("--status", default="Accepted", help="Status (kept for backwards compat)")
     args = parser.parse_args()
 
     project_root = Path(args.project_root) if args.project_root else Path(os.getcwd())
@@ -119,6 +137,8 @@ def main() -> None:
         decision=args.decision,
         consequences=args.consequences,
         rejected=args.rejected,
+        title=args.title,
+        rationale=args.rationale,
         status=args.status,
     )
     print(f"ADR-{number:03d} appended to agent_docs/decision_log.md")
