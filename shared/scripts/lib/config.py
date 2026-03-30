@@ -58,3 +58,49 @@ def update_config(skill: str, project_root: str | Path, updates: dict[str, Any])
 def read_all_configs(project_root: str | Path) -> dict[str, dict[str, Any]]:
     """Read all config files. Returns dict keyed by skill name."""
     return {skill: read_config(skill, project_root) for skill in CONFIG_FILES}
+
+
+def collect_all_build_sections(project_root: str | Path) -> dict[str, Any]:
+    """Read all build sections across archived and current splits.
+
+    Returns a dict with:
+        archived: list of section dicts from completed splits
+        current: list of section dicts from the current split
+        all: archived + current combined
+        current_split: name of the current split (or "")
+        completed_splits: list of completed split names
+        total_splits: total number of splits from project config
+    """
+    project_root = Path(project_root)
+    build_config = read_config("build", project_root)
+    project_config = read_config("project", project_root)
+
+    splits = project_config.get("splits", [])
+    total_splits = len(splits)
+
+    # Build prefix -> split name lookup
+    split_by_prefix: dict[str, str] = {}
+    for sp in splits:
+        prefix = sp.get("name", "").split("-", 1)[0]
+        if prefix:
+            split_by_prefix[prefix] = sp["name"]
+
+    # Archived splits
+    archived: list[dict[str, Any]] = []
+    for key, value in build_config.items():
+        if key.startswith("split_") and key.endswith("_sections") and isinstance(value, list):
+            archived.extend(value)
+
+    # Current split
+    current: list[dict[str, Any]] = build_config.get("sections", [])
+    current_split = build_config.get("current_split", "")
+    completed_splits = build_config.get("completed_splits", [])
+
+    return {
+        "archived": archived,
+        "current": current,
+        "all": archived + current,
+        "current_split": current_split,
+        "completed_splits": completed_splits,
+        "total_splits": total_splits,
+    }

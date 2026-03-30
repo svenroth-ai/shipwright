@@ -21,6 +21,10 @@ from pathlib import Path
 from typing import Any, Optional
 
 
+# Add shared scripts to path for imports
+_SHARED_SCRIPTS = Path(__file__).resolve().parent.parent.parent.parent.parent / "shared" / "scripts"
+sys.path.insert(0, str(_SHARED_SCRIPTS))
+
 CONFIG_NAME = "shipwright_run_config.json"
 
 # Compliance plugin location (sibling plugin)
@@ -193,16 +197,17 @@ def get_build_progress(project_root: Path) -> dict[str, Any]:
     Reads shipwright_build_config.json and returns counts plus the next
     section to work on.  Used by the orchestrator autopilot loop and the
     resume-detection logic in SKILL.md.
-    """
-    build_config_path = project_root / "shipwright_build_config.json"
-    build_config: dict[str, Any] = {}
-    if build_config_path.exists():
-        try:
-            build_config = json.loads(build_config_path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            pass
 
-    sections = build_config.get("sections", [])
+    Returns split-aware progress:
+        split_done: all sections in current split are complete
+        all_done: entire build is done (all splits complete)
+    """
+    from lib.config import collect_all_build_sections
+
+    build_info = collect_all_build_sections(project_root)
+
+    # Current split sections (what the agent works on)
+    sections = build_info["current"]
     completed = [s for s in sections if s.get("status") == "complete"]
     in_progress = [s for s in sections if s.get("status") == "in_progress"]
     pending = [s for s in sections if s.get("status") not in ("complete", "in_progress", "failed")]
@@ -214,13 +219,36 @@ def get_build_progress(project_root: Path) -> dict[str, Any]:
     elif pending:
         next_section = pending[0]
 
+    # Split awareness
+    split_done = len(sections) > 0 and len(completed) == len(sections)
+    completed_splits = build_info["completed_splits"]
+    total_splits = build_info["total_splits"]
+
+    # all_done: split_done AND no more splits remain
+    # For single-split projects (total_splits <= 1), split_done == all_done
+    if total_splits > 0:
+        all_done = split_done and (len(completed_splits) + 1 >= total_splits)
+    else:
+        all_done = split_done
+
+    # Total across all splits (for dashboard reporting)
+    all_sections = build_info["all"]
+    total_all = len(all_sections)
+    completed_all = sum(1 for s in all_sections if s.get("status") == "complete")
+
     return {
         "total": len(sections),
         "completed": len(completed),
         "in_progress": len(in_progress),
         "completed_sections": [s.get("name") for s in completed],
         "next_section": next_section.get("name") if next_section else None,
-        "all_done": len(sections) > 0 and len(completed) == len(sections),
+        "split_done": split_done,
+        "all_done": all_done,
+        "current_split": build_info["current_split"],
+        "completed_splits": completed_splits,
+        "total_splits": total_splits,
+        "total_all": total_all,
+        "completed_all": completed_all,
     }
 
 

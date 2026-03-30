@@ -158,6 +158,94 @@ class TestPipelineTable:
         assert "## Pipeline" in content
 
 
+class TestMultiSplit:
+    def test_dashboard_multi_split_pipeline_shows_total(self, tmp_project):
+        """Pipeline row shows total progress across all splits."""
+        run_config = {
+            "pipeline": ["project", "plan", "build", "test"],
+            "completed_steps": ["project", "plan"],
+            "current_step": "build",
+        }
+        build_config = {
+            "current_split": "02-dashboard",
+            "completed_splits": ["01-auth"],
+            "split_01_sections": [
+                {"name": "01-login", "status": "complete", "commit": "aaa"},
+                {"name": "02-rbac", "status": "complete", "commit": "bbb"},
+            ],
+            "sections": [
+                {"name": "01-widgets", "status": "complete", "commit": "ccc"},
+                {"name": "02-charts", "status": "pending"},
+            ],
+        }
+        project_config = {
+            "splits": [
+                {"name": "01-auth", "status": "complete"},
+                {"name": "02-dashboard", "status": "in_progress"},
+            ],
+        }
+        (tmp_project / "shipwright_run_config.json").write_text(
+            json.dumps(run_config), encoding="utf-8"
+        )
+        (tmp_project / "shipwright_build_config.json").write_text(
+            json.dumps(build_config), encoding="utf-8"
+        )
+        (tmp_project / "shipwright_project_config.json").write_text(
+            json.dumps(project_config), encoding="utf-8"
+        )
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "3/4 sections" in content  # total across all splits
+        assert "02-dashboard" in content  # split label shown
+        assert "01-login" not in content  # archived sections NOT in table
+
+    def test_dashboard_split_complete_not_build_complete(self, tmp_project):
+        """Split done but more splits remain — shows 'Split complete'."""
+        build_config = {
+            "current_split": "01-auth",
+            "completed_splits": [],
+            "sections": [
+                {"name": "01-login", "status": "complete", "commit": "aaa"},
+            ],
+        }
+        project_config = {
+            "splits": [
+                {"name": "01-auth", "status": "complete"},
+                {"name": "02-dashboard", "status": "pending"},
+            ],
+        }
+        (tmp_project / "shipwright_build_config.json").write_text(
+            json.dumps(build_config), encoding="utf-8"
+        )
+        (tmp_project / "shipwright_project_config.json").write_text(
+            json.dumps(project_config), encoding="utf-8"
+        )
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "Split 01-auth complete" in content
+        assert "/shipwright-run" in content
+        assert "/shipwright-test" not in content
+
+    def test_dashboard_all_splits_done(self, tmp_project):
+        """All splits complete — shows 'Ready for /shipwright-test'."""
+        build_config = {
+            "current_split": "01-auth",
+            "completed_splits": [],
+            "sections": [
+                {"name": "01-login", "status": "complete", "commit": "aaa"},
+            ],
+        }
+        project_config = {
+            "splits": [{"name": "01-auth", "status": "complete"}],
+        }
+        (tmp_project / "shipwright_build_config.json").write_text(
+            json.dumps(build_config), encoding="utf-8"
+        )
+        (tmp_project / "shipwright_project_config.json").write_text(
+            json.dumps(project_config), encoding="utf-8"
+        )
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "/shipwright-test" in content
+
+
 class TestStepLabels:
     def test_all_steps_have_labels(self):
         for i in range(1, 13):

@@ -28,7 +28,7 @@ from pathlib import Path
 # Add shared lib to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from lib.config import read_config
+from lib.config import collect_all_build_sections, read_config
 
 STEP_LABELS = {
     1: "Read spec",
@@ -67,12 +67,10 @@ def format_status(section: dict, current_section: str | None, current_step: int 
     return "pending"
 
 
-def _pipeline_status(run_config: dict, build_sections: list) -> str:
+def _pipeline_status(run_config: dict, total_sections: int, completed_sections: int) -> str:
     """Format pipeline phase for the status column."""
     completed = set(run_config.get("completed_steps", []))
     current = run_config.get("current_step")
-    total_sections = len(build_sections)
-    completed_sections = sum(1 for s in build_sections if s.get("status") == "complete")
 
     def phase_status(phase: str) -> str:
         if phase in completed:
@@ -86,10 +84,10 @@ def _pipeline_status(run_config: dict, build_sections: list) -> str:
     return phase_status
 
 
-def generate_pipeline_table(run_config: dict, build_sections: list) -> list[str]:
+def generate_pipeline_table(run_config: dict, total_sections: int, completed_sections: int) -> list[str]:
     """Generate the pipeline status table."""
     pipeline = run_config.get("pipeline", PIPELINE_PHASES)
-    get_status = _pipeline_status(run_config, build_sections)
+    get_status = _pipeline_status(run_config, total_sections, completed_sections)
 
     lines = [
         "## Pipeline",
@@ -99,7 +97,6 @@ def generate_pipeline_table(run_config: dict, build_sections: list) -> list[str]
     ]
     for phase in pipeline:
         status = get_status(phase)
-        # Capitalize phase name
         display = phase.capitalize()
         lines.append(f"| {display} | {status} |")
     lines.append("")
@@ -116,12 +113,22 @@ def generate_dashboard(
     session_id: str | None = None,
 ) -> str:
     """Generate dashboard markdown content."""
-    build_config = read_config("build", project_root)
     run_config = read_config("run", project_root)
+    build_info = collect_all_build_sections(project_root)
 
-    sections = build_config.get("sections", [])
+    # Current split sections (what the agent works on)
+    sections = build_info["current"]
     total = len(sections)
     completed = sum(1 for s in sections if s.get("status") == "complete")
+
+    # Total across all splits (for pipeline display)
+    all_sections = build_info["all"]
+    total_all = len(all_sections)
+    completed_all = sum(1 for s in all_sections if s.get("status") == "complete")
+
+    current_split = build_info["current_split"]
+    completed_splits = build_info["completed_splits"]
+    total_splits = build_info["total_splits"]
 
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     sid = session_id or os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
@@ -134,13 +141,18 @@ def generate_dashboard(
 
     # Pipeline table (shown when run_config exists)
     if run_config:
-        lines.extend(generate_pipeline_table(run_config, sections))
+        lines.extend(generate_pipeline_table(run_config, total_all, completed_all))
 
-    # Section table
+    # Section table — current split only
+    split_label = ""
+    if current_split:
+        splits_done = len(completed_splits)
+        split_label = f" — Split: {current_split} ({splits_done}/{total_splits} splits)"
+
     if total > 0:
-        lines.append(f"## Build Sections ({completed}/{total} complete)")
+        lines.append(f"## Build Sections ({completed}/{total} complete){split_label}")
     elif sections is not None and run_config:
-        lines.append("## Build Sections")
+        lines.append(f"## Build Sections{split_label}")
     lines.append("")
 
     if sections:
@@ -165,12 +177,15 @@ def generate_dashboard(
         lines.append(activity)
         lines.append("")
 
-    # Resume info
+    # Resume / status info
     next_section = None
     for sec in sections:
         if sec.get("status") not in ("complete",):
             next_section = sec.get("name")
             break
+
+    split_done = total > 0 and completed == total
+    all_done = split_done and (len(completed_splits) + 1 >= total_splits if total_splits > 0 else True)
 
     if status == "paused" or (completed < total and total > 0 and not section):
         lines.append("## Resume Info")
@@ -179,9 +194,13 @@ def generate_dashboard(
         else:
             lines.append("Next: `/shipwright-run`")
         lines.append("")
-    elif completed == total and total > 0:
+    elif split_done and all_done:
         lines.append("## Status")
         lines.append("All sections complete. Ready for `/shipwright-test`.")
+        lines.append("")
+    elif split_done and not all_done:
+        lines.append("## Status")
+        lines.append(f"Split {current_split} complete. Next: `/shipwright-run` to start next split.")
         lines.append("")
 
     return "\n".join(lines)
