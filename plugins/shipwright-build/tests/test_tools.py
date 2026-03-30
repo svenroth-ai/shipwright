@@ -44,6 +44,28 @@ def test_update_section_state(tmp_path):
     assert config["sections"][0]["commit"] == "abc123"
 
 
+def test_update_section_state_with_test_results(tmp_path):
+    output = run_tool("update_section_state.py", [
+        "--section", "01-auth",
+        "--status", "complete",
+        "--commit", "abc123",
+        "--tests-passed", "26",
+        "--tests-total", "26",
+        "--review-findings", json.dumps([
+            {"finding": "Missing input validation", "status": "fixed"},
+        ]),
+        "--project-root", str(tmp_path),
+    ])
+
+    assert output["success"] is True
+    config = json.loads((tmp_path / "shipwright_build_config.json").read_text(encoding="utf-8"))
+    section = config["sections"][0]
+    assert section["tests_passed"] == 26
+    assert section["tests_total"] == 26
+    assert len(section["code_review_findings"]) == 1
+    assert section["code_review_findings"][0]["status"] == "fixed"
+
+
 def test_update_section_state_existing(tmp_path):
     # Create initial config
     (tmp_path / "shipwright_build_config.json").write_text(

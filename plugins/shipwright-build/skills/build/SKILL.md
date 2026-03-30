@@ -516,14 +516,21 @@ Run once per decision. Decisions to log:
 
 ## Step 10: Update Section State
 
-**Goal:** Mark section as complete in config.
+**Goal:** Mark section as complete in config with test results and review findings.
 
 ```bash
 uv run {plugin_root}/scripts/tools/update_section_state.py \
   --section "{section_name}" \
   --status "complete" \
-  --commit "$(git rev-parse HEAD)"
+  --commit "$(git rev-parse HEAD)" \
+  --tests-passed {tests_passed} \
+  --tests-total {tests_total} \
+  --review-findings '{review_findings_json}'
 ```
+
+Where:
+- `{tests_passed}` / `{tests_total}` — from the last test run (Step 4)
+- `{review_findings_json}` — JSON array of findings from code review (Step 6), e.g. `[{"finding": "Missing validation", "status": "fixed"}]`. Use `[]` if no findings.
 
 **Dashboard update:**
 ```bash

@@ -1,4 +1,5 @@
 {
+  "current_split": "01-auth",
   "sections": [
     {
       "name": "01-login",

@@ -131,25 +131,18 @@ def collect_splits(project_root: Path) -> list[SplitInfo]:
 # Sections
 # ---------------------------------------------------------------------------
 
-def _map_sections_to_splits(
-    splits: list[SplitInfo], sections_data: list[dict[str, Any]]
+def _sections_from_data(
+    sections_data: list[dict[str, Any]], split_name: str
 ) -> list[SectionInfo]:
-    """Map build config sections to their parent splits.
-
-    Heuristic: section names often start with a number prefix.
-    If we can't determine the parent split, use the first split name.
-    """
+    """Convert raw section dicts into SectionInfo objects for a given split."""
     sections: list[SectionInfo] = []
-    default_split = splits[0].name if splits else "unknown"
-
     for s in sections_data:
-        name = s.get("name", "unknown")
         findings = s.get("code_review_findings", [])
         fixed = sum(1 for f in findings if f.get("status") == "fixed")
 
         sections.append(SectionInfo(
-            name=name,
-            split=default_split,  # simplified — all sections belong to first split
+            name=s.get("name", "unknown"),
+            split=split_name,
             status=s.get("status", "pending"),
             commit=s.get("commit"),
             tests_passed=s.get("tests_passed", 0),
@@ -164,19 +157,45 @@ def _map_sections_to_splits(
 
 
 def collect_sections(project_root: Path) -> list[SectionInfo]:
-    """Read sections from build config, mapping to splits."""
+    """Read sections from build config, including archived splits.
+
+    The build config stores current-split sections under ``sections`` and
+    archived splits under ``split_NN_sections`` keys.  This function reads
+    all of them and maps each group to its parent split.
+    """
     build_path = project_root / CONFIG_FILES["build"]
     if not build_path.exists():
         return []
 
     build_config = json.loads(build_path.read_text(encoding="utf-8"))
-    sections_data = build_config.get("sections", [])
-
-    if not sections_data:
-        return []
-
     splits = collect_splits(project_root)
-    return _map_sections_to_splits(splits, sections_data)
+
+    # Build a lookup: split number prefix -> split name
+    split_by_prefix: dict[str, str] = {}
+    for sp in splits:
+        # Extract leading digits: "01-foundation" -> "01"
+        prefix = sp.name.split("-", 1)[0]
+        split_by_prefix[prefix] = sp.name
+
+    all_sections: list[SectionInfo] = []
+
+    # 1. Archived splits: split_NN_sections keys
+    for key, value in build_config.items():
+        if key.startswith("split_") and key.endswith("_sections") and isinstance(value, list):
+            # "split_01_sections" -> "01"
+            prefix = key.removeprefix("split_").removesuffix("_sections")
+            split_name = split_by_prefix.get(prefix, f"{prefix}-unknown")
+            all_sections.extend(_sections_from_data(value, split_name))
+
+    # 2. Current split sections
+    current_split = build_config.get("current_split", "")
+    sections_data = build_config.get("sections", [])
+    if sections_data:
+        # Use current_split if available, otherwise fall back to first split
+        split_name = current_split or (splits[0].name if splits else "unknown")
+        all_sections.extend(_sections_from_data(sections_data, split_name))
+
+    return all_sections
 
 
 # ---------------------------------------------------------------------------

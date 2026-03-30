@@ -18,6 +18,9 @@ def main() -> int:
     parser.add_argument("--section", required=True, help="Section name (e.g., 01-auth)")
     parser.add_argument("--status", required=True, choices=["in_progress", "complete", "failed"])
     parser.add_argument("--commit", help="Git commit hash")
+    parser.add_argument("--tests-passed", type=int, help="Number of tests passed")
+    parser.add_argument("--tests-total", type=int, help="Total number of tests")
+    parser.add_argument("--review-findings", help="JSON array of code review findings")
     parser.add_argument("--project-root", help="Project root (default: cwd)")
     args = parser.parse_args()
 
@@ -35,11 +38,26 @@ def main() -> int:
 
     # Update or add section
     found = False
+    # Parse review findings if provided
+    review_findings = None
+    if args.review_findings:
+        try:
+            review_findings = json.loads(args.review_findings)
+        except json.JSONDecodeError:
+            print(json.dumps({"success": False, "error": "Invalid JSON for --review-findings"}))
+            return 1
+
     for section in sections:
         if section.get("name") == args.section:
             section["status"] = args.status
             if args.commit:
                 section["commit"] = args.commit
+            if args.tests_passed is not None:
+                section["tests_passed"] = args.tests_passed
+            if args.tests_total is not None:
+                section["tests_total"] = args.tests_total
+            if review_findings is not None:
+                section["code_review_findings"] = review_findings
             found = True
             break
 
@@ -47,6 +65,12 @@ def main() -> int:
         entry = {"name": args.section, "status": args.status}
         if args.commit:
             entry["commit"] = args.commit
+        if args.tests_passed is not None:
+            entry["tests_passed"] = args.tests_passed
+        if args.tests_total is not None:
+            entry["tests_total"] = args.tests_total
+        if review_findings is not None:
+            entry["code_review_findings"] = review_findings
         sections.append(entry)
 
     config["sections"] = sections
