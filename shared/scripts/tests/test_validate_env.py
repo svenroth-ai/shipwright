@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from shared.scripts.validate_env import parse_env_file, validate
+from shared.scripts.validate_env import init_env_file, parse_env_file, validate
 
 
 @pytest.fixture
@@ -175,3 +175,73 @@ class TestSkipConditions:
         result = validate(project, "build", profiles)
         assert result["success"] is True
         assert result["skipped"] is True
+
+
+class TestInitEnvFile:
+    def test_creates_env_local_when_missing(self, project_root, profile_dir):
+        result = init_env_file(project_root, "build", profile_dir)
+        assert result["action"] == "created"
+        assert result["profile"] == "test-profile"
+        assert "NEXT_PUBLIC_SUPABASE_URL" in result["vars"]
+        assert "NEXT_PUBLIC_SUPABASE_ANON_KEY" in result["vars"]
+
+        env_file = project_root / ".env.local"
+        assert env_file.exists()
+        content = env_file.read_text(encoding="utf-8")
+        assert "# NEXT_PUBLIC_SUPABASE_URL=" in content
+        assert "# NEXT_PUBLIC_SUPABASE_ANON_KEY=" in content
+        assert "Supabase project URL" in content
+        assert "Profile: test-profile" in content
+
+    def test_appends_missing_vars_to_existing_file(self, project_root, profile_dir):
+        env_file = project_root / ".env.local"
+        env_file.write_text(
+            "NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co\n",
+            encoding="utf-8",
+        )
+        result = init_env_file(project_root, "build", profile_dir)
+        assert result["action"] == "updated"
+        assert result["added"] == ["NEXT_PUBLIC_SUPABASE_ANON_KEY"]
+
+        content = env_file.read_text(encoding="utf-8")
+        assert "NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co" in content
+        assert "# NEXT_PUBLIC_SUPABASE_ANON_KEY=" in content
+
+    def test_idempotent_when_all_vars_present(self, project_root, profile_dir):
+        env_file = project_root / ".env.local"
+        env_file.write_text(
+            "NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co\n"
+            "NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...\n",
+            encoding="utf-8",
+        )
+        result = init_env_file(project_root, "build", profile_dir)
+        assert result["action"] == "unchanged"
+
+    def test_idempotent_with_commented_vars(self, project_root, profile_dir):
+        """Already-commented placeholders count as present."""
+        env_file = project_root / ".env.local"
+        env_file.write_text(
+            "# NEXT_PUBLIC_SUPABASE_URL=        # Supabase project URL\n"
+            "# NEXT_PUBLIC_SUPABASE_ANON_KEY=   # Supabase anonymous key\n",
+            encoding="utf-8",
+        )
+        result = init_env_file(project_root, "build", profile_dir)
+        assert result["action"] == "unchanged"
+
+    def test_skips_deploy_phase(self, project_root, profile_dir):
+        result = init_env_file(project_root, "deploy", profile_dir)
+        assert result["action"] == "skipped"
+        assert "deploy" in result["reason"]
+
+    def test_skips_without_run_config(self, tmp_path, profile_dir):
+        project = tmp_path / "empty"
+        project.mkdir()
+        result = init_env_file(project, "build", profile_dir)
+        assert result["action"] == "skipped"
+
+    def test_skips_without_profile(self, tmp_path, profile_dir):
+        project = tmp_path / "no_profile"
+        project.mkdir()
+        (project / "shipwright_run_config.json").write_text("{}", encoding="utf-8")
+        result = init_env_file(project, "build", profile_dir)
+        assert result["action"] == "skipped"
