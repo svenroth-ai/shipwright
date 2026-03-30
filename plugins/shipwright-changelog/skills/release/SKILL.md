@@ -99,6 +99,10 @@ Rules:
 
 If no previous tag exists: suggest `v0.1.0`.
 
+**Autonomous mode** (check `autonomy` in `shipwright_run_config.json`):
+Accept the suggested version automatically. No prompt.
+
+**Guided mode** (default):
 Present suggestion to user:
 ```
 Suggested version: v{X.Y.Z} (based on: {reason})
@@ -126,6 +130,10 @@ This prepends the new entry to CHANGELOG.md (or creates it if missing).
 
 **Goal:** Show the generated changelog entry to the user.
 
+**Autonomous mode** (check `autonomy` in `shipwright_run_config.json`):
+Skip preview confirmation. Proceed directly to Step 6.
+
+**Guided mode** (default):
 Present the full entry and ask:
 ```
 AskUserQuestion:
