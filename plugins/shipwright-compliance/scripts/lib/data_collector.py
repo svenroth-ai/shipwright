@@ -183,13 +183,24 @@ def collect_sections(project_root: Path) -> list[SectionInfo]:
 # Decision Log
 # ---------------------------------------------------------------------------
 
-_ADR_HEADER_RE = re.compile(r"^## ADR-\d+ \| (.+?) \| (.+?) \| Commit (.+)$")
-_ADR_FIELD_RE = re.compile(r"^### (Status|Context|Decision|Consequences):?\s*(.*)$")
-_REJECTED_RE = re.compile(r"^- Alternatives rejected: (.+)$")
+# Old format: ## ADR-001 | date | section | Commit hash
+_ADR_OLD_HEADER_RE = re.compile(r"^## ADR-\d+ \| (.+?) \| (.+?) \| Commit (.+)$")
+_ADR_OLD_FIELD_RE = re.compile(r"^### (Status|Context|Decision|Consequences):?\s*(.*)$")
+_ADR_OLD_REJECTED_RE = re.compile(r"^- Alternatives rejected: (.+)$")
+
+# Compact format: ### ADR-001: Title  (bullet-point fields)
+_ADR_COMPACT_HEADER_RE = re.compile(r"^### ADR-\d+:\s*(.+)$")
+_ADR_COMPACT_FIELD_RE = re.compile(
+    r"^- \*\*(Date|Section|Context|Decision|Commit|Rationale|Consequences|Rejected):\*\*\s*(.+)$"
+)
 
 
 def collect_decision_log(project_root: Path) -> list[DecisionEntry]:
-    """Parse agent_docs/decision_log.md (ADR format) into structured entries."""
+    """Parse agent_docs/decision_log.md into structured entries.
+
+    Supports both the old verbose format (## ADR-NNN | ...) and the
+    compact format (### ADR-NNN: Title with bullet-point fields).
+    """
     log_path = project_root / "agent_docs" / "decision_log.md"
     if not log_path.exists():
         return []
@@ -201,9 +212,44 @@ def collect_decision_log(project_root: Path) -> list[DecisionEntry]:
     current_decision: dict | None = None
 
     for line in content.splitlines():
-        header_match = _ADR_HEADER_RE.match(line)
+        # --- Compact format header ---
+        compact_match = _ADR_COMPACT_HEADER_RE.match(line)
+        if compact_match:
+            if current_entry and current_decision:
+                current_entry.decisions.append(current_decision)
+                entries.append(current_entry)
+            # Fields filled in by subsequent bullet lines
+            current_entry = DecisionEntry(section="", timestamp="", commit="")
+            current_decision = {"decision": "", "context": "", "consequences": "", "rejected": ""}
+            current_field = None
+            continue
+
+        # --- Compact format field ---
+        if current_entry is not None and current_decision is not None:
+            compact_field = _ADR_COMPACT_FIELD_RE.match(line)
+            if compact_field:
+                field_name = compact_field.group(1)
+                value = compact_field.group(2).strip()
+                if field_name == "Section":
+                    current_entry.section = value
+                elif field_name == "Date":
+                    current_entry.timestamp = value
+                elif field_name == "Commit":
+                    current_entry.commit = value
+                elif field_name == "Decision":
+                    current_decision["decision"] = value
+                elif field_name == "Context":
+                    current_decision["context"] = value
+                elif field_name in ("Consequences", "Rationale"):
+                    current_decision["consequences"] = value
+                elif field_name == "Rejected":
+                    current_decision["rejected"] = value
+                current_field = None
+                continue
+
+        # --- Old verbose format header ---
+        header_match = _ADR_OLD_HEADER_RE.match(line)
         if header_match:
-            # Finalize previous entry
             if current_entry and current_decision:
                 current_entry.decisions.append(current_decision)
                 entries.append(current_entry)
@@ -219,7 +265,8 @@ def collect_decision_log(project_root: Path) -> list[DecisionEntry]:
         if current_entry is None or current_decision is None:
             continue
 
-        field_match = _ADR_FIELD_RE.match(line)
+        # --- Old verbose format fields ---
+        field_match = _ADR_OLD_FIELD_RE.match(line)
         if field_match:
             field_name = field_match.group(1).lower()
             inline_value = field_match.group(2).strip()
@@ -228,7 +275,7 @@ def collect_decision_log(project_root: Path) -> list[DecisionEntry]:
                 current_decision[field_name] = inline_value
             continue
 
-        rejected_match = _REJECTED_RE.match(line)
+        rejected_match = _ADR_OLD_REJECTED_RE.match(line)
         if rejected_match:
             current_decision["rejected"] = rejected_match.group(1)
             continue
@@ -236,7 +283,6 @@ def collect_decision_log(project_root: Path) -> list[DecisionEntry]:
         # Accumulate multi-line content for the current field
         stripped = line.strip()
         if current_field and stripped and not line.startswith("---"):
-            # Strip leading "- " from consequence lines
             if stripped.startswith("- "):
                 stripped = stripped[2:]
             existing = current_decision.get(current_field, "")
