@@ -557,7 +557,7 @@ uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
   get-build-progress --project-root "$(pwd)"
 ```
 
-If `all_done == true`:
+If `split_done == true AND all_done == true` (final split complete):
 1. Mark build phase complete (triggers compliance update automatically):
 ```bash
 uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
@@ -568,6 +568,15 @@ uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
 uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "$(pwd)" --phase build --session-id "{SHIPWRIGHT_SESSION_ID}"
 ```
+
+If `split_done == true AND all_done == false` (more splits remain):
+1. Print: "Split {current_split} complete. Next split will be started by /shipwright-run."
+2. Update delivery dashboard:
+```bash
+uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+  --project-root "$(pwd)" --section "{section_name}" --status complete --session-id "{SHIPWRIGHT_SESSION_ID}"
+```
+3. **STOP** — do not mark build phase as complete. The next session picks up the next split via /shipwright-run.
 
 ---
 

@@ -238,6 +238,69 @@ def test_get_build_progress_with_failed(tmp_project):
     assert result["next_section"] == "03-ui"  # skips failed, picks pending
 
 
+def test_get_build_progress_split_done_not_all_done(tmp_project):
+    """Current split complete but more splits remain — split_done=True, all_done=False."""
+    (tmp_project / "shipwright_project_config.json").write_text(
+        json.dumps({
+            "splits": [
+                {"name": "01-auth", "status": "complete"},
+                {"name": "02-dashboard", "status": "in_progress"},
+            ],
+        }), encoding="utf-8"
+    )
+    (tmp_project / "shipwright_build_config.json").write_text(
+        json.dumps({
+            "current_split": "02-dashboard",
+            "completed_splits": ["01-auth"],
+            "split_01_sections": [
+                {"name": "01-login", "status": "complete", "commit": "aaa"},
+            ],
+            "sections": [
+                {"name": "01-widgets", "status": "complete", "commit": "bbb"},
+                {"name": "02-charts", "status": "complete", "commit": "ccc"},
+            ],
+        }), encoding="utf-8"
+    )
+    result = get_build_progress(tmp_project)
+    assert result["split_done"] is True
+    assert result["all_done"] is True  # 1 completed + current = 2 = total_splits
+    assert result["total_all"] == 3
+    assert result["completed_all"] == 3
+
+
+def test_get_build_progress_mid_split_with_more_splits(tmp_project):
+    """Current split NOT complete, more splits exist."""
+    (tmp_project / "shipwright_project_config.json").write_text(
+        json.dumps({
+            "splits": [
+                {"name": "01-auth", "status": "complete"},
+                {"name": "02-dashboard", "status": "in_progress"},
+                {"name": "03-settings", "status": "pending"},
+            ],
+        }), encoding="utf-8"
+    )
+    (tmp_project / "shipwright_build_config.json").write_text(
+        json.dumps({
+            "current_split": "02-dashboard",
+            "completed_splits": ["01-auth"],
+            "split_01_sections": [
+                {"name": "01-login", "status": "complete", "commit": "aaa"},
+            ],
+            "sections": [
+                {"name": "01-widgets", "status": "complete", "commit": "bbb"},
+                {"name": "02-charts", "status": "pending"},
+            ],
+        }), encoding="utf-8"
+    )
+    result = get_build_progress(tmp_project)
+    assert result["split_done"] is False
+    assert result["all_done"] is False
+    assert result["current_split"] == "02-dashboard"
+    assert result["total_splits"] == 3
+    assert result["total_all"] == 3
+    assert result["completed_all"] == 2
+
+
 def test_cli_get_build_progress(tmp_path):
     config = {
         "sections": [
