@@ -88,17 +88,42 @@ Parse the JSON output. Check for:
 2. **`mode == "resume"`**: Skip to `resume_from_step`
 3. **`success == false`**: Report error and stop
 
-### D2. Validate Environment
+### D2. Initialize & Validate Environment
 
-Check that required environment variables are available before building.
+Ensure `.env.local` exists with the required variable placeholders, then validate.
+
+#### D2a. Initialize .env.local
+
+```bash
+uv run {shared_root}/scripts/validate_env.py \
+  --project-root "{project_root}" \
+  --phase build \
+  --init
+```
+
+Where `{shared_root}` = `{plugin_root}/../../shared` (relative to plugin root).
+
+Parse the JSON output:
+
+1. **`action == "created"`**: File was generated — inform the user:
+   ```
+   ✓  Created .env.local with placeholder variables from profile '{profile}'.
+      Please fill in the values and remove the leading '#' to activate each variable.
+   ```
+2. **`action == "updated"`**: New vars were appended — inform the user:
+   ```
+   ✓  Updated .env.local — added missing variables: {added}.
+      Please fill in the new values.
+   ```
+3. **`action == "unchanged"` or `action == "skipped"`**: Proceed silently.
+
+#### D2b. Validate Environment
 
 ```bash
 uv run {shared_root}/scripts/validate_env.py \
   --project-root "{project_root}" \
   --phase build
 ```
-
-Where `{shared_root}` = `{plugin_root}/../../shared` (relative to plugin root).
 
 Parse the JSON output:
 
@@ -120,7 +145,7 @@ Parse the JSON output:
    > The following required variables are not set in `.env.local` or your environment:
    > - `VAR_NAME` — description
    >
-   > Please create/update `{env_file_path}` with the missing values, then confirm to continue.
+   > `.env.local` has been created/updated with placeholders — fill in the values and remove the leading `#`.
 
    Options: "I've updated the file — continue" / "Skip validation and proceed anyway"
 
