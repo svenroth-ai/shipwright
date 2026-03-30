@@ -173,6 +173,13 @@ The orchestrator dispatches to each skill in sequence:
     --project-root "$(pwd)" --phase "{completed_phase}"
   ```
   Where `{compliance_plugin_root}` = `{plugin_root}/../../shipwright-compliance` (sibling plugin)
+- **Update delivery dashboard** with pipeline progress:
+  ```bash
+  uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+    --project-root "$(pwd)" --phase "{completed_phase}" \
+    --session-id "{SHIPWRIGHT_SESSION_ID}"
+  ```
+  Where `{shared_root}` = `{plugin_root}/../../shared`
 - **Context pressure check** (after each skill completes):
   ```bash
   uv run {shared_root}/scripts/tools/estimate_context_pressure.py \

@@ -359,6 +359,19 @@ Run this once per decision. Only log **project-specific** decisions — not prof
    - If any spec.md is missing these sections → fix before proceeding
 6. **Manifest-Spec Consistency** — no split in manifest without spec.md, no spec.md without split in manifest
 
+**Phase complete — update pipeline state:**
+```bash
+# Mark project phase complete (triggers compliance update automatically)
+uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+  update-step --project-root "$(pwd)" --step project --status complete
+
+# Update delivery dashboard
+uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+  --project-root "$(pwd)" --phase project --detail "{N} splits created" \
+  --session-id "{SHIPWRIGHT_SESSION_ID}"
+```
+Where `{shared_root}` = `{plugin_root}/../../shared`.
+
 **Print Summary:**
 ```
 ================================================================================

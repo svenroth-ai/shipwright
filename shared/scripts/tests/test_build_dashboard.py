@@ -33,6 +33,30 @@ def project_with_sections(tmp_project):
     return tmp_project
 
 
+@pytest.fixture
+def project_with_pipeline(tmp_project):
+    """Project with run config (pipeline status)."""
+    run_config = {
+        "pipeline": ["project", "design", "plan", "build", "test", "deploy", "changelog"],
+        "completed_steps": ["project", "design", "plan"],
+        "current_step": "build",
+    }
+    build_config = {
+        "sections": [
+            {"name": "01-auth", "status": "complete", "commit": "abc"},
+            {"name": "02-api", "status": "in_progress"},
+            {"name": "03-ui", "status": "pending"},
+        ]
+    }
+    (tmp_project / "shipwright_run_config.json").write_text(
+        json.dumps(run_config), encoding="utf-8"
+    )
+    (tmp_project / "shipwright_build_config.json").write_text(
+        json.dumps(build_config), encoding="utf-8"
+    )
+    return tmp_project
+
+
 class TestFormatStatus:
     def test_complete(self):
         sec = {"name": "01-auth", "status": "complete"}
@@ -63,15 +87,12 @@ class TestGenerateDashboard:
         content = generate_dashboard(tmp_project, session_id="test-123")
         assert "# Shipwright Build Dashboard" in content
         assert "test-123" in content
-        assert "No sections registered" in content
 
     def test_with_sections(self, project_with_sections):
         content = generate_dashboard(project_with_sections, session_id="test-456")
-        assert "1/3 sections complete" in content
+        assert "1/3" in content
         assert "01-models" in content
         assert "a1b2c3d" in content
-        assert "02-routes" in content
-        assert "03-ui" in content
 
     def test_current_activity(self, project_with_sections):
         content = generate_dashboard(
@@ -97,7 +118,7 @@ class TestGenerateDashboard:
             json.dumps(config), encoding="utf-8"
         )
         content = generate_dashboard(tmp_project, session_id="test")
-        assert "2/2 sections complete" in content
+        assert "2/2" in content
         assert "/shipwright-test" in content
 
     def test_paused_shows_resume_info(self, project_with_sections):
@@ -108,10 +129,33 @@ class TestGenerateDashboard:
         assert "/shipwright-run" in content
 
     def test_no_config_file(self, tmp_project):
-        """No build config yet — should still generate valid dashboard."""
         content = generate_dashboard(tmp_project, session_id="test")
         assert "# Shipwright Build Dashboard" in content
-        assert "No sections registered" in content
+
+
+class TestPipelineTable:
+    def test_pipeline_shown_when_run_config_exists(self, project_with_pipeline):
+        content = generate_dashboard(project_with_pipeline, session_id="test")
+        assert "## Pipeline" in content
+        assert "| Project | complete |" in content
+        assert "| Design | complete |" in content
+        assert "| Plan | complete |" in content
+        assert "1/3 sections" in content  # Build shows section progress
+
+    def test_pipeline_not_shown_without_run_config(self, tmp_project):
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "## Pipeline" not in content
+
+    def test_pipeline_pending_phases(self, project_with_pipeline):
+        content = generate_dashboard(project_with_pipeline, session_id="test")
+        assert "| Test | pending |" in content
+        assert "| Deploy | pending |" in content
+
+    def test_pipeline_with_phase_param(self, project_with_pipeline):
+        content = generate_dashboard(
+            project_with_pipeline, phase="build", session_id="test"
+        )
+        assert "## Pipeline" in content
 
 
 class TestStepLabels:

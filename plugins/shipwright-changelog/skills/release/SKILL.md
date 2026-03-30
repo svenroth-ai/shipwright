@@ -178,6 +178,18 @@ gh pr merge --merge --delete-branch
 
 If already on main: skip PR, just push tag.
 
+**Phase complete — update pipeline state:**
+```bash
+# Mark changelog phase complete (triggers compliance update automatically)
+uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+  update-step --project-root "$(pwd)" --step changelog --status complete
+
+# Update delivery dashboard
+uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+  --project-root "$(pwd)" --phase changelog --session-id "{SHIPWRIGHT_SESSION_ID}"
+```
+Where `{shared_root}` = `{plugin_root}/../../shared`.
+
 **Print Summary:**
 ```
 ================================================================================

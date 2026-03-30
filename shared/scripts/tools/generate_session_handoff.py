@@ -60,10 +60,12 @@ def generate_handoff(
     recent_decisions = ""
     if decision_log.exists():
         content = decision_log.read_text(encoding="utf-8")
-        # Extract last ADR entry
-        entries = content.split("\n## ADR-")
-        if len(entries) > 1:
-            recent_decisions = "## ADR-" + entries[-1][:500]
+        # Extract last ADR entry (supports both compact ### ADR- and old ## ADR- format)
+        for prefix in ("\n### ADR-", "\n## ADR-"):
+            entries = content.split(prefix)
+            if len(entries) > 1:
+                recent_decisions = prefix.lstrip("\n") + entries[-1][:500]
+                break
 
     lines = [
         f"# Session Handoff",

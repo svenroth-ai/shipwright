@@ -203,6 +203,19 @@ Test results determine pipeline continuation:
 
 If unit tests or smoke test FAIL: set phase status to `FAIL` and inform user. Do NOT proceed to deploy.
 
+**Phase complete — update pipeline state** (only if overall PASS):
+```bash
+# Mark test phase complete (triggers compliance update automatically)
+uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+  update-step --project-root "$(pwd)" --step test --status complete
+
+# Update delivery dashboard
+uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+  --project-root "$(pwd)" --phase test --detail "{passed}/{total} passing" \
+  --session-id "{SHIPWRIGHT_SESSION_ID}"
+```
+Where `{shared_root}` = `{plugin_root}/../../shared`.
+
 ---
 
 ## Reference Documents

@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""Stop hook: Generate session_handoff.md before session ends.
+"""Stop hook: Generate session_handoff.md + update dashboard + fallback phase-completion.
 
 Automatically generates agent_docs/session_handoff.md from current
 project state (configs, git, decision log). Non-blocking (exit 0).
+
+Also detects if a phase completed but wasn't marked in the orchestrator
+config (e.g., standalone /shipwright-build without /shipwright-run), and
+triggers the compliance update as a fallback.
 
 Usage (from hooks.json):
     uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py
@@ -12,8 +16,66 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
+
+
+def _detect_phase_complete(current_step: str, project_root: Path, completed_steps: set) -> bool:
+    """Check if current phase has completed work but isn't marked complete."""
+    if current_step in completed_steps:
+        return False
+
+    if current_step == "build":
+        config_path = project_root / "shipwright_build_config.json"
+        if config_path.exists():
+            try:
+                config = json.loads(config_path.read_text(encoding="utf-8"))
+                sections = config.get("sections", [])
+                return bool(sections) and all(
+                    s.get("status") == "complete" for s in sections
+                )
+            except (json.JSONDecodeError, OSError):
+                pass
+    elif current_step == "plan":
+        config_path = project_root / "shipwright_plan_config.json"
+        if config_path.exists():
+            try:
+                config = json.loads(config_path.read_text(encoding="utf-8"))
+                return config.get("status") == "complete"
+            except (json.JSONDecodeError, OSError):
+                pass
+    elif current_step == "project":
+        config_path = project_root / "shipwright_project_config.json"
+        if config_path.exists():
+            try:
+                config = json.loads(config_path.read_text(encoding="utf-8"))
+                return config.get("status") == "complete"
+            except (json.JSONDecodeError, OSError):
+                pass
+
+    return False
+
+
+def _run_phase_completion(project_root: Path, step: str) -> None:
+    """Mark phase complete in orchestrator config (triggers compliance update)."""
+    # Find orchestrator script (sibling plugin)
+    scripts_dir = Path(__file__).resolve().parent.parent
+    # shared/scripts/hooks -> shared -> plugins/shipwright-run
+    orchestrator = scripts_dir.parent.parent / "plugins" / "shipwright-run" / "scripts" / "lib" / "orchestrator.py"
+
+    if not orchestrator.exists():
+        return
+
+    try:
+        subprocess.run(
+            [sys.executable, str(orchestrator),
+             "update-step", "--project-root", str(project_root),
+             "--step", step, "--status", "complete"],
+            capture_output=True, timeout=30,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        pass
 
 
 def main() -> int:
@@ -44,19 +106,29 @@ def main() -> int:
         agent_docs.mkdir(exist_ok=True)
         (agent_docs / "session_handoff.md").write_text(content, encoding="utf-8")
 
-        # Update build dashboard with "paused" status if build is active
+        # Update build dashboard with "paused" status
         try:
             from tools.update_build_dashboard import generate_dashboard
-            from lib.config import read_config
 
-            build_config = read_config("build", project_root)
-            if build_config.get("sections"):
-                dashboard = generate_dashboard(
-                    project_root, status="paused", session_id=session_id,
-                )
-                (agent_docs / "build_dashboard.md").write_text(dashboard, encoding="utf-8")
+            dashboard = generate_dashboard(
+                project_root, status="paused", session_id=session_id,
+            )
+            (agent_docs / "build_dashboard.md").write_text(dashboard, encoding="utf-8")
         except Exception:
             pass  # Dashboard update is best-effort
+
+        # Fallback: detect incomplete phase-completion and trigger it
+        try:
+            run_config_path = project_root / "shipwright_run_config.json"
+            if run_config_path.exists():
+                run_config = json.loads(run_config_path.read_text(encoding="utf-8"))
+                current_step = run_config.get("current_step")
+                completed_steps = set(run_config.get("completed_steps", []))
+
+                if current_step and _detect_phase_complete(current_step, project_root, completed_steps):
+                    _run_phase_completion(project_root, current_step)
+        except Exception:
+            pass  # Phase-completion fallback is best-effort
 
         print(json.dumps({
             "hookSpecificOutput": {

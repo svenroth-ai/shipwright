@@ -531,10 +531,22 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "$(pwd)" --section "{section_name}" --step 10 --status complete --session-id "{SHIPWRIGHT_SESSION_ID}"
 ```
 
-**Sprint update** (if `agent_docs/current_sprint.md` exists):
+**Check if all sections are complete (phase-complete trigger):**
 ```bash
-uv run {shared_root}/scripts/tools/update_sprint.py \
-  --project-root "$(pwd)" --section "{section_name}" --status complete --commit "$(git rev-parse HEAD)"
+uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+  get-build-progress --project-root "$(pwd)"
+```
+
+If `all_done == true`:
+1. Mark build phase complete (triggers compliance update automatically):
+```bash
+uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+  update-step --project-root "$(pwd)" --step build --status complete
+```
+2. Update delivery dashboard with pipeline status:
+```bash
+uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+  --project-root "$(pwd)" --phase build --session-id "{SHIPWRIGHT_SESSION_ID}"
 ```
 
 ---

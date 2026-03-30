@@ -8,7 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from scripts.lib.mermaid import pipeline_status_diagram, traceability_flow_diagram
+from scripts.lib.mermaid import traceability_flow_diagram
 
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
@@ -31,14 +31,6 @@ def generate(data: ComplianceData) -> str:
         f"Scope: {scope}",
         "",
     ]
-
-    # Pipeline status
-    lines.extend([
-        "## Pipeline Status",
-        "",
-        pipeline_status_diagram(data.configs),
-        "",
-    ])
 
     # Quality indicators
     total_sections = len(data.sections)
@@ -69,16 +61,23 @@ def generate(data: ComplianceData) -> str:
     ])
 
     # Compliance artifacts
+    artifact_rows = [
+        "| Traceability Matrix | [traceability-matrix.md](traceability-matrix.md) | Requirements → Sections → Tests |",
+        "| Test Evidence | [test-evidence.md](test-evidence.md) | Per-section test results |",
+        "| Commit Change Log | [change-history.md](change-history.md) | Conventional Commits by type |",
+        "| Decision Log | [../agent_docs/decision_log.md](../agent_docs/decision_log.md) | Architecture decisions (ADRs) |",
+        "| SBOM | [sbom.md](sbom.md) | Open-source dependencies + licenses |",
+    ]
+    # Add CHANGELOG if it exists
+    if (data.project_root / "CHANGELOG.md").exists():
+        artifact_rows.append("| Changelog | [../CHANGELOG.md](../CHANGELOG.md) | Release notes |")
+
     lines.extend([
         "## Compliance Artifacts",
         "",
         "| Document | Path | Description |",
         "|----------|------|-------------|",
-        "| Traceability Matrix | [traceability-matrix.md](traceability-matrix.md) | Requirements → Sections → Tests |",
-        "| Test Evidence | [test-evidence.md](test-evidence.md) | Per-section test results |",
-        "| Change History | [change-history.md](change-history.md) | Conventional Commits by type |",
-        "| Decision Log | [../agent_docs/decision_log.md](../agent_docs/decision_log.md) | Architecture decisions (ADRs) |",
-        "| SBOM | [sbom.md](sbom.md) | Open-source dependencies + licenses |",
+        *artifact_rows,
         "",
     ])
 

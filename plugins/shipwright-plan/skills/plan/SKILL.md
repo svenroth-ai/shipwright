@@ -136,11 +136,6 @@ See [interview-protocol.md](references/interview-protocol.md) for detailed guida
 2. Clarify ambiguities from spec
 3. Identify risks and unknowns
 
-**Shipwright Enhancement — Sprint Tracking:**
-If `agent_docs/current_sprint.md` exists in the project root, update it with:
-- Current split name and status → "planning"
-- Planning start timestamp
-
 **Checkpoint:** Write `{planning_dir}/shipwright_plan_interview.md` with full transcript.
 
 **Write interview decisions to decision_log.md:**
@@ -316,8 +311,18 @@ See [e2e-test-plan.md](references/e2e-test-plan.md) for guidance.
 6. **FR Coverage Check** — read the spec's Functional Requirements, verify every FR is assigned to at least one section. If uncovered FRs found → add them to appropriate section or create new section
 7. **Dependency Order** — sections with dependencies must come after their dependencies in SECTION_MANIFEST
 
-**Sprint Tracking Update:**
-If `agent_docs/current_sprint.md` exists, update status → "planned".
+**Phase complete — update pipeline state:**
+```bash
+# Mark plan phase complete (triggers compliance update automatically)
+uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+  update-step --project-root "$(pwd)" --step plan --status complete
+
+# Update delivery dashboard
+uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+  --project-root "$(pwd)" --phase plan --detail "{N} sections for {split_name}" \
+  --session-id "{SHIPWRIGHT_SESSION_ID}"
+```
+Where `{shared_root}` = `{plugin_root}/../../shared`.
 
 **Print Summary:**
 ```

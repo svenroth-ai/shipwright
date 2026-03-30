@@ -1,4 +1,4 @@
-"""Change History Report generator.
+"""Commit Change Log generator.
 
 Produces compliance/change-history.md from git conventional commits.
 """
@@ -35,7 +35,7 @@ def generate(data: ComplianceData) -> str:
     commits = data.commits
 
     lines = [
-        "# Change History Report",
+        "# Commit Change Log",
         "",
         f"Generated: {data.timestamp}",
         f"Total commits: {len(commits)}",
