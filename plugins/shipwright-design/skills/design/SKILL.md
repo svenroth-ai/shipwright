@@ -520,6 +520,12 @@ AskUserQuestion:
 
 ### Option A — Finalize
 
+**FR-Coverage Gate** (verify before finalizing):
+- Read the spec's Functional Requirements that have UI relevance
+- Verify each UI-relevant FR has at least one screen in `designs/design-manifest.md`
+- Verify `designs/visual-guidelines.md` exists and contains: Colors, Typography, Spacing
+- If uncovered FRs or missing guidelines → fix before proceeding to Spec Backflow
+
 1. **Spec Backflow (full)**:
 
    | Artifact | What to update |

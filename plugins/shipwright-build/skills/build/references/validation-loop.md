@@ -23,10 +23,11 @@ After each test failure or implementation attempt, follow this protocol:
 
 ### 3. Stop Conditions
 
-Stop retrying when:
+Follow the [debugging-protocol.md](debugging-protocol.md) for structured analysis. Stop retrying when:
 - The failure is due to a **missing dependency from another section** → log as dependency in decision_log.md
 - The data/API **doesn't exist yet** and can't be mocked → skip with `// TODO(shipwright): requires section XX`
-- **3 attempts** have been made with the same root cause → escalate to user via AskUserQuestion
+- **2 attempts with the same root cause** → Architectural Reevaluation (re-read spec, consider alternative approach)
+- **3 attempts total** → escalate to user via AskUserQuestion with diagnosis summary
 
 ### 4. Decision Log Entry
 

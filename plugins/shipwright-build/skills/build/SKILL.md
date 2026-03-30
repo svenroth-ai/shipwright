@@ -272,16 +272,18 @@ uv run {plugin_root}/scripts/lib/browser_verify.py --cwd {project_root}
    - **Success** (no console errors, page loads): Continue to Step 5
    - **Failure**: Invoke the `browser-fixer` subagent
 
-5. **Auto-fix loop** (max 3 retries):
+5. **Auto-fix loop** (max 3 retries, follow [debugging-protocol.md](references/debugging-protocol.md)):
    a. Read the screenshot image at `{project_root}/e2e/screenshots/browser-verify.png`
-   b. Spawn `browser-fixer` subagent with:
+   b. **Root-cause analysis:** Before each fix, identify what's wrong (Phase 1) and state hypothesis (Phase 3)
+   c. Spawn `browser-fixer` subagent with:
       - Screenshot image path
       - Console errors from result JSON
       - DOM snippet from result JSON
       - Recently changed files (from `git diff --name-only`)
-   c. Apply the recommended fix
-   d. Re-run browser verify
-   e. If still failing after 3 retries, present findings to user via AskUserQuestion
+   d. Apply the recommended fix
+   e. Re-run browser verify
+   f. **If same root cause as previous attempt** → change approach (different fix strategy, not same fix again)
+   g. If still failing after 3 retries, present findings to user via AskUserQuestion with diagnosis summary
 
 **Note:** The dev server stays running between sections. It gets stopped by shipwright-test or at the end of all sections.
 
@@ -298,11 +300,31 @@ uv run {plugin_root}/scripts/lib/browser_verify.py --cwd {project_root}
 
 ---
 
-## Step 6: Code Review
+## Step 6: Code Review (Two-Tier)
+
+### 6a: Self-Review (always)
+
+See [self-review-checklist.md](references/self-review-checklist.md).
+
+**Goal:** Quick inline quality check (~30 seconds).
+
+1. Run through the 5-point checklist (Spec Compliance, Error Handling, Security, Test Quality, Naming)
+2. For each: ✅ or ❌ with 1-sentence explanation
+3. **Fix all ❌ items** before proceeding
+4. Re-run tests after fixes
+
+### 6b: Full Code Review (conditional)
 
 See [code-review-protocol.md](references/code-review-protocol.md) for the review process.
 
-**Goal:** Get implementation reviewed by code-reviewer subagent.
+**Trigger full review when ANY of:**
+- Diff exceeds **100 lines** of changed code
+- Section is marked `risk: high` in the plan
+- Changes touch **security-sensitive files** (auth, middleware, RLS policies, migrations)
+
+**Otherwise:** Self-review is sufficient — skip to Step 7.
+
+**Full review flow:**
 
 1. Generate diff of all changes:
 ```bash
@@ -474,11 +496,12 @@ Next steps:
 ## Error Handling
 
 ### Test Failures
-If tests fail after implementation:
-1. Analyze failure output
-2. Fix implementation (not the test, unless test is wrong)
-3. Re-run tests
-4. If stuck after 3 attempts: ask user for guidance
+Follow the [debugging-protocol.md](references/debugging-protocol.md):
+1. **Root cause investigation** — read error output, identify failing component
+2. **Pattern analysis** — same root cause as last attempt? If yes → change approach
+3. **Hypothesis** — state what you'll fix and why before changing code
+4. **Fix and verify** — targeted fix, then re-run tests
+5. If stuck after 3 attempts (or 2 with same root cause): escalate to user
 
 ### Pre-commit Hook Failures
 See [pre-commit-handling.md](references/pre-commit-handling.md).
@@ -503,5 +526,7 @@ If context is getting large mid-section:
 - [git-operations.md](references/git-operations.md) — Conventional Commits and branch workflow
 - [pre-commit-handling.md](references/pre-commit-handling.md) — Handling pre-commit failures
 - [section-doc-update.md](references/section-doc-update.md) — Decision log and doc updates
-- [migration-safety.md](references/migration-safety.md) — SQL migration safety (NEW)
+- [migration-safety.md](references/migration-safety.md) — SQL migration safety
+- [debugging-protocol.md](references/debugging-protocol.md) — Structured 4-phase debugging (root cause → hypothesis → fix)
+- [self-review-checklist.md](references/self-review-checklist.md) — Lightweight inline code review checklist
 - [finalization.md](references/finalization.md) — Section completion checklist
