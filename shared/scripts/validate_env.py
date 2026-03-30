@@ -104,6 +104,37 @@ def _find_existing_keys(env_file_path: Path) -> set[str]:
     return keys
 
 
+def _ensure_gitignore(project_root: Path) -> bool:
+    """Ensure .env.local is listed in the project's .gitignore.
+
+    Creates .gitignore if it doesn't exist.  Appends the entry if missing.
+    Returns True if the file was modified.
+    """
+    gitignore_path = project_root / ".gitignore"
+    marker = ".env.local"
+
+    if gitignore_path.exists():
+        content = gitignore_path.read_text(encoding="utf-8")
+        # Check if any line already covers .env.local
+        for line in content.splitlines():
+            stripped = line.strip()
+            if stripped in (marker, ".env*.local", ".env.*.local"):
+                return False
+        # Append
+        if not content.endswith("\n"):
+            content += "\n"
+        content += "\n# Shipwright secrets\n.env.local\n"
+        gitignore_path.write_text(content, encoding="utf-8")
+        return True
+
+    # Create minimal .gitignore
+    gitignore_path.write_text(
+        "# Shipwright secrets\n.env.local\n",
+        encoding="utf-8",
+    )
+    return True
+
+
 def init_env_file(
     project_root: Path,
     phase: str,
@@ -112,6 +143,7 @@ def init_env_file(
     """Create or update .env.local with commented placeholders for required vars.
 
     Includes all phases when *phase* is ``"all"``, or a single phase otherwise.
+    Also ensures .env.local is in .gitignore before creating the file.
     Returns a result dict with status: created, updated, or unchanged.
     """
     # Load profile
@@ -132,6 +164,9 @@ def init_env_file(
     all_vars = [v for _, vars_list in sections for v in vars_list]
     if not all_vars:
         return {"action": "skipped", "reason": f"No vars defined for phase '{phase}'"}
+
+    # Ensure .env.local is gitignored BEFORE creating it
+    _ensure_gitignore(project_root)
 
     env_file_path = project_root / ".env.local"
     existing_keys = _find_existing_keys(env_file_path)
