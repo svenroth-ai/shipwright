@@ -6,10 +6,10 @@ Every build session works on a feature branch:
 
 ```bash
 # Create branch (new session)
-git checkout -b shipwright/{section_name}
+git checkout -b {branch_prefix}/{section_name}
 
 # Resume branch (existing session)
-git checkout shipwright/{section_name}
+git checkout {branch_prefix}/{section_name}
 ```
 
 ## Conventional Commits
@@ -63,7 +63,7 @@ git add src/auth/ tests/auth/
 
 If `auto_push` is true in config:
 ```bash
-git push -u origin shipwright/{section_name}
+git push -u origin {branch_prefix}/{section_name}
 ```
 
 Default: **disabled**. User or /shipwright-changelog handles pushing.

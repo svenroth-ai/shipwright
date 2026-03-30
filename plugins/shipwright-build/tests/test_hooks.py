@@ -47,10 +47,10 @@ def test_validate_command_blocks_force_push():
 
 
 def test_validate_command_allows_force_push_to_feature():
-    """git push --force to shipwright/ branch should be allowed."""
+    """git push --force to feature branch should be allowed."""
     result = subprocess.run(
         ["bash", str(HOOKS_DIR / "validate_command.sh")],
-        input=json.dumps({"tool_input": {"command": "git push --force origin shipwright/01-auth"}}),
+        input=json.dumps({"tool_input": {"command": "git push --force origin my-app/01-auth"}}),
         capture_output=True, text=True, encoding="utf-8",
     )
     assert result.returncode == 0

@@ -12,7 +12,7 @@ Output (JSON):
         "section_file": "/path/to/sections/01-auth.md",
         "project_root": "/path/to/project",
         "plugin_root": "/path/to/plugin",
-        "branch_name": "shipwright/01-auth",
+        "branch_name": "<project-slug>/01-auth",
         "config": { ... },
         "session_id": "<id>"
     }
@@ -20,6 +20,7 @@ Output (JSON):
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -80,7 +81,22 @@ def main() -> int:
 
     project_root = detect_project_root(section_path)
     config = load_build_config(project_root)
-    branch_name = f"shipwright/{section_name}"
+
+    # Derive branch prefix from project name in run config, fallback to "shipwright"
+    branch_prefix = "shipwright"
+    run_config_path = project_root / "shipwright_run_config.json"
+    if run_config_path.exists():
+        try:
+            run_config = json.loads(run_config_path.read_text(encoding="utf-8"))
+            project_name = run_config.get("project_summary", {}).get("name", "")
+            if project_name:
+                slug = re.sub(r"[^a-z0-9]+", "-", project_name.lower()).strip("-")
+                if slug:
+                    branch_prefix = slug
+        except (json.JSONDecodeError, OSError):
+            pass  # keep default
+
+    branch_name = f"{branch_prefix}/{section_name}"
     branch_exists = check_branch_exists(branch_name)
 
     result = {

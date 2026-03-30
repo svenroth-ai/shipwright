@@ -54,6 +54,25 @@ def test_setup_invalid_section_name(tmp_path):
     assert "Cannot extract section name" in output["error"]
 
 
+def test_setup_branch_prefix_from_run_config(sample_section):
+    """Branch prefix derived from project name in run config."""
+    project_root = sample_section.parent.parent.parent
+    (project_root / ".git").mkdir(exist_ok=True)
+    import json as json_mod
+    (project_root / "shipwright_run_config.json").write_text(
+        json_mod.dumps({"project_summary": {"name": "My Cool App"}}), encoding="utf-8"
+    )
+
+    plugin_root = str(Path(__file__).resolve().parent.parent)
+    output = run_setup([
+        "--file", str(sample_section),
+        "--plugin-root", plugin_root,
+    ])
+
+    assert output["success"] is True
+    assert output["branch_name"] == "my-cool-app/01-auth"
+
+
 def test_setup_loads_config(sample_section):
     # Create config in project root (detected via .git)
     project_root = sample_section.parent.parent.parent  # my-project/
