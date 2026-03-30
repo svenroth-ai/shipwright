@@ -179,19 +179,24 @@ export JELASTIC_TOKEN="your-jelastic-api-token"
 
 Shipwright can send your implementation plan to external LLMs for independent review (catching blind spots Claude might miss). Three options:
 
-#### Option A: OpenRouter via .env file (recommended)
-
-One API key for both review models. Simplest setup.
+All credentials go in a single `.env.local` file at the Shipwright repo root:
 
 ```bash
-# Copy the template
-cp plugins/shipwright-plan/.env.example plugins/shipwright-plan/.env
+# Copy the template and fill in your keys
+cp .env.example .env.local
+```
 
-# Edit .env and add your key
+The `.env.local` file is gitignored and will never be committed. See `.env.example` for all available variables.
+
+#### Option A: OpenRouter (recommended)
+
+One API key for both review models. Add to `.env.local`:
+
+```
 OPENROUTER_API_KEY=sk-or-your-key
 ```
 
-Get your key at [openrouter.ai](https://openrouter.ai/). The `.env` file is gitignored and will never be committed.
+Get your key at [openrouter.ai](https://openrouter.ai/).
 
 Models used (configurable in `plugins/shipwright-plan/config.json`):
 - `google/gemini-3.1-pro-preview` — Gemini review
@@ -199,9 +204,9 @@ Models used (configurable in `plugins/shipwright-plan/config.json`):
 
 #### Option B: Direct API Keys
 
-Use Google and OpenAI APIs directly. Add to your `.env` file:
+Use Google and OpenAI APIs directly. Add to `.env.local`:
 
-```bash
+```
 GEMINI_API_KEY=your-gemini-key    # from ai.google.dev
 OPENAI_API_KEY=sk-your-key        # from platform.openai.com
 ```
@@ -212,22 +217,15 @@ Skip external review entirely. Shipwright works fine without it — you just don
 
 ### Supabase Migrations
 
-Required only for automated database migrations during deploy.
+Required only for automated database migrations during deploy. Add to `.env.local`:
 
-```bash
-export SUPABASE_ACCESS_TOKEN="your-supabase-token"
+```
+SUPABASE_ACCESS_TOKEN=your-supabase-token
 ```
 
 ### Where to Set Environment Variables
 
-API keys for external plan review go in the `.env` file (see above). For other environment variables (deployment tokens, etc.), add exports to your shell profile:
-
-| Shell | File |
-|-------|------|
-| bash | `~/.bashrc` |
-| zsh | `~/.zshrc` |
-| PowerShell | `$PROFILE` |
-| Windows (system) | System → Environment Variables |
+All Shipwright credentials go in `.env.local` at the repo root. Variables already set in your OS environment take precedence over `.env.local`.
 
 ### Verify Configuration
 
@@ -364,7 +362,7 @@ chmod +x ~/shipwright/plugins/*/scripts/**/*.sh
 
 **Cause:** No API keys set.
 
-**Fix:** Copy `.env.example` to `.env` in `plugins/shipwright-plan/` and add your `OPENROUTER_API_KEY`. See Section 3.
+**Fix:** Copy `.env.example` to `.env.local` at the repo root and add your `OPENROUTER_API_KEY`. See Section 3.
 
 ### Git operations fail
 

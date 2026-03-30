@@ -29,11 +29,12 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-from dotenv import load_dotenv
-
-# Load .env from plugin root (two levels up from this file)
-_plugin_root = Path(__file__).parent.parent.parent
-load_dotenv(_plugin_root / ".env")
+# Load Shipwright env vars from <repo_root>/.env.local
+_plugin_root = Path(__file__).resolve().parent.parent.parent
+_shared_lib = _plugin_root.parent.parent / "shared" / "scripts" / "lib"
+sys.path.insert(0, str(_shared_lib))
+from env import load_shipwright_env
+load_shipwright_env()
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from lib.config import load_global_config

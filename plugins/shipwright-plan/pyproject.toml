@@ -12,7 +12,6 @@ keywords = ["claude-code", "plugin", "planning", "tdd", "architecture", "llm-rev
 dependencies = [
     "google-genai>=1.0.0",
     "openai>=1.0.0",
-    "python-dotenv>=1.0.0",
 ]
 
 [project.optional-dependencies]

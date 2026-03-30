@@ -67,7 +67,6 @@ except (ImportError, ModuleNotFoundError):
 # Configuration
 # ---------------------------------------------------------------------------
 
-ENV_FILE = PLUGIN_ROOT / ".env"
 API_BASE = "https://app.aikido.dev/api"
 TOKEN_URL = f"{API_BASE}/oauth/token"
 
@@ -79,34 +78,12 @@ SETUP_URL = "https://app.aikido.dev/settings/integrations/api/aikido/rest"
 
 
 # ---------------------------------------------------------------------------
-# Environment loading (manual, no python-dotenv dependency)
+# Environment loading — centralized via shared/scripts/lib/env.py
 # ---------------------------------------------------------------------------
 
-def load_env_file() -> None:
-    """Load environment variables from .env file in the plugin directory."""
-    if not ENV_FILE.exists():
-        return
-    try:
-        with open(ENV_FILE, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                if "=" in line:
-                    key, _, value = line.partition("=")
-                    key = key.strip()
-                    value = value.strip()
-                    if (value.startswith('"') and value.endswith('"')) or (
-                        value.startswith("'") and value.endswith("'")
-                    ):
-                        value = value[1:-1]
-                    if key and key not in os.environ:
-                        os.environ[key] = value
-    except Exception as e:
-        print(f"Warning: Could not load .env file: {e}", file=sys.stderr)
-
-
-load_env_file()
+sys.path.insert(0, str(SHARED_ROOT / "scripts" / "lib"))
+from env import load_shipwright_env
+load_shipwright_env()
 
 
 # ---------------------------------------------------------------------------
@@ -356,7 +333,7 @@ def main() -> int:
             is_retryable=False,
             alternatives=[
                 f"Create API credentials at {SETUP_URL}",
-                f"Add AIKIDO_CLIENT_ID and AIKIDO_CLIENT_SECRET to {ENV_FILE}",
+                "Add AIKIDO_CLIENT_ID and AIKIDO_CLIENT_SECRET to <shipwright_root>/.env.local",
                 "See references/setup-guide.md for step-by-step instructions",
             ],
         )

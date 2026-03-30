@@ -118,6 +118,16 @@ echo ""
 
 echo "Environment Variables:"
 
+# Source .env.local if it exists (same behavior as Python plugins)
+if [ -f "$REPO_ROOT/.env.local" ]; then
+    echo "  $PASS .env.local: found at $REPO_ROOT/.env.local"
+    set -a
+    source "$REPO_ROOT/.env.local"
+    set +a
+else
+    echo "  $SKIP .env.local: not found (copy .env.example to .env.local)"
+fi
+
 if [ -n "${OPENROUTER_API_KEY:-}" ]; then
     echo "  $PASS OPENROUTER_API_KEY: set (external review via OpenRouter)"
 elif [ -n "${GEMINI_API_KEY:-}" ] || [ -n "${GOOGLE_API_KEY:-}" ]; then
