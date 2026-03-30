@@ -19,36 +19,15 @@ if sys.platform == "win32":
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 PLUGIN_ROOT = Path(__file__).parent.parent.parent
-ENV_FILE = PLUGIN_ROOT / ".env"
+SHARED_SCRIPTS = PLUGIN_ROOT.parent.parent / "shared" / "scripts"
 SETUP_URL = "https://app.aikido.dev/settings/integrations/api/aikido/rest"
 
-
-def load_env_file() -> None:
-    """Load environment variables from .env file."""
-    if not ENV_FILE.exists():
-        return
-    try:
-        with open(ENV_FILE, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                if "=" in line:
-                    key, _, value = line.partition("=")
-                    key = key.strip()
-                    value = value.strip()
-                    if (value.startswith('"') and value.endswith('"')) or (
-                        value.startswith("'") and value.endswith("'")
-                    ):
-                        value = value[1:-1]
-                    if key and key not in os.environ:
-                        os.environ[key] = value
-    except Exception:
-        pass
+sys.path.insert(0, str(SHARED_SCRIPTS / "lib"))
+from env import load_shipwright_env
 
 
 def main() -> int:
-    load_env_file()
+    load_shipwright_env()
 
     client_id = os.environ.get("AIKIDO_CLIENT_ID", "")
     client_secret = os.environ.get("AIKIDO_CLIENT_SECRET", "")
@@ -61,7 +40,7 @@ def main() -> int:
                     "Aikido Security: credentials not configured. "
                     "Security scanning is available but requires setup.\n"
                     f"1. Create API credentials at {SETUP_URL}\n"
-                    f"2. Add AIKIDO_CLIENT_ID and AIKIDO_CLIENT_SECRET to {ENV_FILE}\n"
+                    "2. Add AIKIDO_CLIENT_ID and AIKIDO_CLIENT_SECRET to <shipwright_root>/.env.local\n"
                     "3. See skills/security/references/setup-guide.md for details."
                 ),
             }

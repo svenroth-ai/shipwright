@@ -7,9 +7,13 @@ Two config types:
 
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
+# Ensure shared lib is importable (use scripts/lib directly to avoid namespace collision)
+_shared_lib = Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"
+sys.path.insert(0, str(_shared_lib))
 
 GLOBAL_CONFIG_NAME = "config.json"
 SESSION_CONFIG_NAME = "shipwright_plan_config.json"
@@ -57,6 +61,9 @@ def _deep_merge(base: dict, override: dict) -> dict:
 
 def is_external_review_enabled(config: dict[str, Any]) -> bool:
     """Check if external review is enabled and API keys are available."""
+    from env import load_shipwright_env
+    load_shipwright_env()  # idempotent — ensures .env.local is loaded
+
     ext = config.get("external_review", {})
     if ext.get("feedback_iterations", 1) == 0:
         return False
