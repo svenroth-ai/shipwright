@@ -105,56 +105,6 @@ def _get_phase_status(
     return "pending"
 
 
-def traceability_flow_diagram(
-    splits: list, sections: list
-) -> str:
-    """Generate flowchart TD showing splits → sections → test results."""
-    lines = ["```mermaid", "flowchart TD"]
-
-    if not splits and not sections:
-        lines.append('    EMPTY["No traceability data available"]')
-        lines.append("```")
-        return "\n".join(lines)
-
-    # Splits subgraph
-    lines.append("    subgraph Splits")
-    for s in splits:
-        safe_id = s.name.replace("-", "_")
-        lines.append(f'        S_{safe_id}["{s.name}"]')
-    lines.append("    end")
-
-    # Sections subgraph
-    lines.append("    subgraph Sections")
-    for sec in sections:
-        safe_id = sec.name.replace("-", "_")
-        lines.append(f'        SEC_{safe_id}["{sec.name}"]')
-    lines.append("    end")
-
-    # Tests subgraph
-    lines.append("    subgraph Tests")
-    for sec in sections:
-        safe_id = sec.name.replace("-", "_")
-        if sec.tests_total > 0:
-            lines.append(f'        T_{safe_id}["{sec.tests_passed}/{sec.tests_total} passed"]')
-        else:
-            lines.append(f'        T_{safe_id}["pending"]')
-    lines.append("    end")
-
-    # Edges: splits -> sections
-    for sec in sections:
-        split_id = sec.split.replace("-", "_")
-        sec_id = sec.name.replace("-", "_")
-        lines.append(f"    S_{split_id} --> SEC_{sec_id}")
-
-    # Edges: sections -> tests
-    for sec in sections:
-        sec_id = sec.name.replace("-", "_")
-        lines.append(f"    SEC_{sec_id} --> T_{sec_id}")
-
-    lines.append("```")
-    return "\n".join(lines)
-
-
 def commit_type_pie(commits: list[CommitEntry]) -> str:
     """Generate pie chart of commit type distribution."""
     if not commits:

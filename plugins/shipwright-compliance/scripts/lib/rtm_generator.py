@@ -9,8 +9,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from scripts.lib.mermaid import traceability_flow_diagram
-
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
 
@@ -21,10 +19,6 @@ def generate(data: ComplianceData) -> str:
         "# Requirements Traceability Matrix",
         "",
         f"Generated: {data.timestamp}",
-        "",
-        "## Traceability Flow",
-        "",
-        traceability_flow_diagram(data.splits, data.sections),
         "",
         "## Matrix",
         "",
