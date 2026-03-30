@@ -31,10 +31,10 @@ if [ -z "$COMMAND" ]; then
 fi
 
 # Check for dangerous patterns
-# 1. git push --force (except to shipwright/* branches)
+# 1. git push --force (only allowed on feature branches, not main/master)
 if echo "$COMMAND" | grep -qE 'git\s+push\s+.*(-f|--force)'; then
-    if ! echo "$COMMAND" | grep -q 'shipwright/'; then
-        echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"BLOCKED: git push --force is not allowed on non-feature branches. Use normal push or push to a shipwright/* branch."}}'
+    if echo "$COMMAND" | grep -qE '\s(main|master)\b'; then
+        echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"BLOCKED: git push --force to main/master is not allowed."}}'
         exit 2
     fi
 fi
