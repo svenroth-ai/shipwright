@@ -18,7 +18,10 @@ Before marking a section as complete:
 uv run {plugin_root}/scripts/tools/update_section_state.py \
   --section "{section_name}" \
   --status "complete" \
-  --commit "$(git rev-parse HEAD)"
+  --commit "$(git rev-parse HEAD)" \
+  --tests-passed {tests_passed} \
+  --tests-total {tests_total} \
+  --review-findings '{review_findings_json}'
 ```
 
 ## Next Section

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from scripts.lib.data_collector import (
@@ -60,21 +61,25 @@ class TestCollectSections:
     def test_reads_sections_from_build_config(self, project_root: Path):
         sections = collect_sections(project_root)
         assert len(sections) == 3
-        assert sections[0].name == "01-login"
-        assert sections[0].commit == "abc123def456"
-        assert sections[0].tests_passed == 5
-        assert sections[0].tests_total == 5
+        # Sections are mapped to current_split from build config
+        current = [s for s in sections if s.split == "01-auth"]
+        assert len(current) == 3
+        login = next(s for s in sections if s.name == "01-login")
+        assert login.commit == "abc123def456"
+        assert login.tests_passed == 5
+        assert login.tests_total == 5
 
     def test_review_findings_counted(self, project_root: Path):
         sections = collect_sections(project_root)
+        by_name = {s.name: s for s in sections}
         # 01-login has 1 finding
-        assert sections[0].review_findings == 1
-        assert sections[0].review_findings_fixed == 1
+        assert by_name["01-login"].review_findings == 1
+        assert by_name["01-login"].review_findings_fixed == 1
         # 02-rbac has 0 findings
-        assert sections[1].review_findings == 0
+        assert by_name["02-rbac"].review_findings == 0
         # 03-profile has 2 findings (1 fixed, 1 deferred)
-        assert sections[2].review_findings == 2
-        assert sections[2].review_findings_fixed == 1
+        assert by_name["03-profile"].review_findings == 2
+        assert by_name["03-profile"].review_findings_fixed == 1
 
     def test_no_build_config(self, empty_project_root: Path):
         sections = collect_sections(empty_project_root)
@@ -83,6 +88,42 @@ class TestCollectSections:
     def test_section_info_type(self, project_root: Path):
         sections = collect_sections(project_root)
         assert isinstance(sections[0], SectionInfo)
+
+    def test_multi_split_sections(self, tmp_path: Path):
+        """Archived split_NN_sections are read alongside current sections."""
+        root = tmp_path / "multi-split"
+        root.mkdir()
+
+        # Project config with two splits
+        (root / "shipwright_project_config.json").write_text(json.dumps({
+            "splits": [
+                {"name": "01-auth", "status": "complete"},
+                {"name": "02-dashboard", "status": "in_progress"},
+            ],
+        }), encoding="utf-8")
+
+        # Build config with archived + current sections
+        (root / "shipwright_build_config.json").write_text(json.dumps({
+            "current_split": "02-dashboard",
+            "completed_splits": ["01-auth"],
+            "split_01_sections": [
+                {"name": "01-login", "status": "complete", "commit": "aaa",
+                 "tests_passed": 5, "tests_total": 5},
+            ],
+            "sections": [
+                {"name": "01-widgets", "status": "complete", "commit": "bbb",
+                 "tests_passed": 8, "tests_total": 8},
+            ],
+        }), encoding="utf-8")
+
+        sections = collect_sections(root)
+        assert len(sections) == 2
+
+        by_name = {s.name: s for s in sections}
+        assert by_name["01-login"].split == "01-auth"
+        assert by_name["01-login"].tests_passed == 5
+        assert by_name["01-widgets"].split == "02-dashboard"
+        assert by_name["01-widgets"].tests_passed == 8
 
 
 class TestCollectDecisionLog:
