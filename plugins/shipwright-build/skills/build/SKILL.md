@@ -277,6 +277,10 @@ See [implementation-loop.md](references/implementation-loop.md) for guidance.
 
 **Checkpoint:** All tests pass (green phase).
 
+**Capture test counts** — note the numbers from the final test run for Step 10:
+- `tests_passed` = number of passing tests
+- `tests_total` = total number of tests
+
 **Dashboard update + context pressure check:**
 ```bash
 uv run {shared_root}/scripts/tools/update_build_dashboard.py \
@@ -425,6 +429,15 @@ For each accepted finding:
 1. Make the fix
 2. Run tests to verify no regressions
 3. Mark finding as resolved
+
+**Track findings for Step 10** — build a list of all findings with their disposition:
+```json
+[
+  {"finding": "Missing input validation on email field", "status": "fixed"},
+  {"finding": "Consider caching profile data", "status": "deferred"}
+]
+```
+Valid statuses: `fixed`, `declined`, `deferred`. If no findings (self-review only), use `[]`.
 
 ---
 
