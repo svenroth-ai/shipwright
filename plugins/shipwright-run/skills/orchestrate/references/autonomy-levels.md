@@ -21,6 +21,7 @@ including fixes. Deploy stays interactive.
 - **Test:** Failures trigger auto-fix automatically (structured debugging, up to 3 retries).
   No --fix flag needed.
 - **Changelog:** Version bump and changelog entry accepted automatically, no review prompt.
+  PR is created and auto-merged.
 - **Deploy:** Same as Guided — PROD confirmation always required
 
 **Always interactive regardless of level:**
