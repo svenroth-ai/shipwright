@@ -1,6 +1,6 @@
 """Centralized environment variable loading for Shipwright plugins.
 
-All plugins load credentials from a single <repo_root>/.env.local file.
+All plugins load credentials from the project's .env.local file (CWD).
 Variables already present in os.environ are never overwritten.
 """
 
@@ -63,17 +63,14 @@ def parse_env_file(env_path: Path) -> dict[str, str]:
     return env_vars
 
 
-def load_shipwright_env() -> Path | None:
-    """Load ``<repo_root>/.env.local`` into ``os.environ``.
+def load_shipwright_env(project_root: Path | None = None) -> Path | None:
+    """Load ``<project_root>/.env.local`` into ``os.environ``.
 
-    Existing environment variables are never overwritten.
+    *project_root* defaults to CWD (= the target project when Claude Code
+    runs scripts).  Existing environment variables are never overwritten.
     Returns the path that was loaded, or ``None`` if no file found.
     """
-    try:
-        root = find_shipwright_root()
-    except FileNotFoundError:
-        return None
-
+    root = Path(project_root) if project_root else Path.cwd()
     env_path = root / ".env.local"
     if not env_path.exists():
         return None

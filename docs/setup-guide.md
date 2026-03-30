@@ -179,14 +179,13 @@ export JELASTIC_TOKEN="your-jelastic-api-token"
 
 Shipwright can send your implementation plan to external LLMs for independent review (catching blind spots Claude might miss). Three options:
 
-All credentials go in a single `.env.local` file at the Shipwright repo root:
+All credentials go in your **project's** `.env.local` file. Generate the template automatically:
 
 ```bash
-# Copy the template and fill in your keys
-cp .env.example .env.local
+uv run shared/scripts/validate_env.py --project-root /path/to/your-project --phase all --init
 ```
 
-The `.env.local` file is gitignored and will never be committed. See `.env.example` for all available variables.
+This creates `.env.local` with all required and optional variables (build, deploy, plugin). Fill in the values you need.
 
 #### Option A: OpenRouter (recommended)
 
@@ -225,7 +224,7 @@ SUPABASE_ACCESS_TOKEN=your-supabase-token
 
 ### Where to Set Environment Variables
 
-All Shipwright credentials go in `.env.local` at the repo root. Variables already set in your OS environment take precedence over `.env.local`.
+All environment variables go in your project's `.env.local`. Variables already set in your OS environment take precedence over `.env.local`.
 
 ### Verify Configuration
 
@@ -362,7 +361,7 @@ chmod +x ~/shipwright/plugins/*/scripts/**/*.sh
 
 **Cause:** No API keys set.
 
-**Fix:** Copy `.env.example` to `.env.local` at the repo root and add your `OPENROUTER_API_KEY`. See Section 3.
+**Fix:** Run `validate_env.py --init --phase all` in your project, then add your `OPENROUTER_API_KEY` to the project's `.env.local`. See Section 3.
 
 ### Git operations fail
 

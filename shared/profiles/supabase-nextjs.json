@@ -144,6 +144,13 @@
     "deploy": [
       {"name": "JELASTIC_TOKEN", "description": "Infomaniak Jelastic API token"},
       {"name": "SUPABASE_ACCESS_TOKEN", "description": "Supabase CLI access token (for migrations)", "optional": true}
+    ],
+    "plugin": [
+      {"name": "OPENROUTER_API_KEY", "description": "OpenRouter API key for external plan review", "optional": true},
+      {"name": "GEMINI_API_KEY", "description": "Google Gemini API key (alternative to OpenRouter)", "optional": true},
+      {"name": "OPENAI_API_KEY", "description": "OpenAI API key (alternative to OpenRouter)", "optional": true},
+      {"name": "AIKIDO_CLIENT_ID", "description": "Aikido Security API client ID", "optional": true},
+      {"name": "AIKIDO_CLIENT_SECRET", "description": "Aikido Security API client secret", "optional": true}
     ]
   },
 

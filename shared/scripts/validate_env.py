@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Validate required environment variables before build or deploy.
+"""Validate required environment variables for any pipeline phase.
 
 Reads the stack profile from shipwright_run_config.json, checks the
 profile's required_env_vars for the given phase, and reports missing vars.
+All vars (build, deploy, plugin) live in the project's .env.local.
 
 Usage:
-    uv run validate_env.py --project-root <path> --phase build|deploy [--profile-dir <path>]
+    uv run validate_env.py --project-root <path> --phase build|deploy|plugin|all [--profile-dir <path>]
 
 Output (JSON):
     {
@@ -67,6 +68,42 @@ def load_profile(profile_name: str, profile_dir: Path) -> dict | None:
     return json.loads(profile_path.read_text(encoding="utf-8"))
 
 
+def _collect_phase_vars(
+    profile: dict, phase: str,
+) -> list[tuple[str, list[dict]]]:
+    """Return list of (section_label, vars) tuples for *phase*.
+
+    If *phase* is ``"all"``, returns all sections.  Otherwise returns
+    only the requested phase.
+    """
+    required = profile.get("required_env_vars", {})
+    phase_order = ["build", "deploy", "plugin"]
+
+    if phase == "all":
+        return [
+            (p.capitalize(), required.get(p, []))
+            for p in phase_order
+            if required.get(p)
+        ]
+    vars_list = required.get(phase, [])
+    return [(phase.capitalize(), vars_list)] if vars_list else []
+
+
+def _find_existing_keys(env_file_path: Path) -> set[str]:
+    """Parse existing .env.local and return all keys (active or commented)."""
+    keys: set[str] = set()
+    if not env_file_path.exists():
+        return keys
+    for line in env_file_path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        check = stripped.lstrip("#").strip()
+        if "=" in check:
+            key = check.partition("=")[0].strip()
+            if key:
+                keys.add(key)
+    return keys
+
+
 def init_env_file(
     project_root: Path,
     phase: str,
@@ -74,16 +111,9 @@ def init_env_file(
 ) -> dict:
     """Create or update .env.local with commented placeholders for required vars.
 
-    Only includes build-phase vars (deploy vars belong in OS environment).
+    Includes all phases when *phase* is ``"all"``, or a single phase otherwise.
     Returns a result dict with status: created, updated, or unchanged.
     """
-    if phase != "build":
-        return {
-            "action": "skipped",
-            "reason": f"Phase '{phase}' does not use .env.local",
-            "env_file_path": None,
-        }
-
     # Load profile
     run_config_path = project_root / "shipwright_run_config.json"
     if not run_config_path.exists():
@@ -98,27 +128,17 @@ def init_env_file(
     if not profile:
         return {"action": "skipped", "reason": f"Profile '{profile_name}' not found"}
 
-    build_vars = profile.get("required_env_vars", {}).get("build", [])
-    if not build_vars:
-        return {"action": "skipped", "reason": "No build vars defined in profile"}
+    sections = _collect_phase_vars(profile, phase)
+    all_vars = [v for _, vars_list in sections for v in vars_list]
+    if not all_vars:
+        return {"action": "skipped", "reason": f"No vars defined for phase '{phase}'"}
 
     env_file_path = project_root / ".env.local"
-    existing_keys: set[str] = set()
+    existing_keys = _find_existing_keys(env_file_path)
 
     if env_file_path.exists():
-        # Parse existing file to find already-present keys (active or commented)
-        existing_content = env_file_path.read_text(encoding="utf-8")
-        for line in existing_content.splitlines():
-            stripped = line.strip()
-            # Match both active "KEY=" and commented "# KEY=" patterns
-            check = stripped.lstrip("#").strip()
-            if "=" in check:
-                key = check.partition("=")[0].strip()
-                if key:
-                    existing_keys.add(key)
-
         # Find vars that need to be added
-        missing_vars = [v for v in build_vars if v["name"] not in existing_keys]
+        missing_vars = [v for v in all_vars if v["name"] not in existing_keys]
         if not missing_vars:
             return {
                 "action": "unchanged",
@@ -129,7 +149,8 @@ def init_env_file(
         # Append missing vars to existing file
         lines = ["\n# --- Added by Shipwright ---"]
         for var in missing_vars:
-            lines.append(f"# {var['name']}=        # {var['description']}")
+            opt = " (optional)" if var.get("optional") else ""
+            lines.append(f"# {var['name']}=        # {var['description']}{opt}")
         lines.append("")
 
         with env_file_path.open("a", encoding="utf-8") as f:
@@ -142,7 +163,7 @@ def init_env_file(
             "added": [v["name"] for v in missing_vars],
         }
 
-    # Create new file
+    # Create new file with all sections
     lines = [
         "# =============================================================================",
         f"# Environment Variables — generated by Shipwright",
@@ -151,11 +172,13 @@ def init_env_file(
         "# Fill in the values below and remove the leading '#' to activate each variable.",
         "# This file is NOT committed to git (.gitignore).",
         "# =============================================================================",
-        "",
-        "# --- Build Phase ---",
     ]
-    for var in build_vars:
-        lines.append(f"# {var['name']}=        # {var['description']}")
+    for label, vars_list in sections:
+        lines.append("")
+        lines.append(f"# --- {label} ---")
+        for var in vars_list:
+            opt = " (optional)" if var.get("optional") else ""
+            lines.append(f"# {var['name']}=        # {var['description']}{opt}")
     lines.append("")
 
     env_file_path.write_text("\n".join(lines), encoding="utf-8")
@@ -164,7 +187,7 @@ def init_env_file(
         "action": "created",
         "env_file_path": str(env_file_path),
         "profile": profile_name,
-        "vars": [v["name"] for v in build_vars],
+        "vars": [v["name"] for v in all_vars],
     }
 
 
@@ -224,8 +247,8 @@ def validate(
             "skip_reason": f"Profile '{profile_name}' not found in {profile_dir}",
         }
 
-    required_env_vars = profile.get("required_env_vars", {})
-    phase_vars = required_env_vars.get(phase, [])
+    sections = _collect_phase_vars(profile, phase)
+    phase_vars = [v for _, vars_list in sections for v in vars_list]
 
     if not phase_vars:
         return {
@@ -241,12 +264,12 @@ def validate(
             "skip_reason": f"No required_env_vars defined for phase '{phase}' in profile",
         }
 
-    # Collect available vars from .env.local (build) and os.environ
+    # Collect available vars from .env.local and os.environ
     env_file_path = project_root / ".env.local"
     env_file_exists = env_file_path.exists()
 
     available_vars: dict[str, str] = {}
-    if phase == "build" and env_file_exists:
+    if env_file_exists:
         available_vars.update(parse_env_file(env_file_path))
     # Always check os.environ as fallback
     available_vars.update(os.environ)
@@ -283,7 +306,7 @@ def validate(
         "optional_missing": optional_missing,
         "found": found,
         "env_file_exists": env_file_exists,
-        "env_file_path": str(env_file_path) if phase == "build" else None,
+        "env_file_path": str(env_file_path),
         "skipped": False,
         "skip_reason": None,
     }
@@ -292,7 +315,7 @@ def validate(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate env vars for build/deploy")
     parser.add_argument("--project-root", required=True, help="Path to target project root")
-    parser.add_argument("--phase", required=True, choices=["build", "deploy"], help="Pipeline phase")
+    parser.add_argument("--phase", required=True, choices=["build", "deploy", "plugin", "all"], help="Pipeline phase")
     parser.add_argument(
         "--profile-dir",
         help="Directory containing profile JSON files (default: shared/profiles/ relative to this script)",
