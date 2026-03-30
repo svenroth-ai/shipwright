@@ -36,9 +36,14 @@ git diff HEAD > /tmp/shipwright-review-diff.txt
 
 ## Handling Results
 
+### Autonomous mode
+- **high + medium severity**: Fix immediately, no prompt
+- **low severity**: Fix if trivial, otherwise log
+
+### Guided mode (default)
 - **high severity**: Must fix before commit
-- **medium severity**: Present to user, fix if accepted
-- **low severity**: Log and optionally fix
+- **medium severity**: Present to user (Accept/Decline/Defer)
+- **low severity**: Batch present ("3 style suggestions — accept all?")
 
 ## No Findings
 

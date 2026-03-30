@@ -214,6 +214,12 @@ Read the section file thoroughly. Identify:
 If prerequisites reference other sections, verify those are complete
 (check for their commits on the branch or main).
 
+**Dashboard update:**
+```bash
+uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+  --project-root "$(pwd)" --section "{section_name}" --step 1 --detail "Reading section spec" --session-id "{SHIPWRIGHT_SESSION_ID}"
+```
+
 ---
 
 ## Step 2: Install Dependencies
@@ -246,6 +252,12 @@ npm test  # or: uv run pytest
 
 **Checkpoint:** Test files exist and fail for the right reasons.
 
+**Dashboard update:**
+```bash
+uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+  --project-root "$(pwd)" --section "{section_name}" --step 3 --detail "Tests written (red phase)" --session-id "{SHIPWRIGHT_SESSION_ID}"
+```
+
 ---
 
 ## Step 4: Implement
@@ -264,6 +276,21 @@ See [implementation-loop.md](references/implementation-loop.md) for guidance.
 - The PostToolUse hook will warn on destructive operations automatically
 
 **Checkpoint:** All tests pass (green phase).
+
+**Dashboard update + context pressure check:**
+```bash
+uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+  --project-root "$(pwd)" --section "{section_name}" --step 4 --detail "Implementation complete (green phase)" --session-id "{SHIPWRIGHT_SESSION_ID}"
+
+uv run {shared_root}/scripts/tools/estimate_context_pressure.py \
+  --counter-file "$(pwd)/.shipwright_toolcall_count" --threshold 120
+```
+If `recommend_checkpoint` is true AND section is not yet complete:
+1. Commit partial progress
+2. Generate session handoff
+3. Update dashboard with `--status paused`
+4. Tell user: "Context pressure detected. Open a new session (+) or /clear, then /shipwright-run to continue."
+5. **STOP** — do not continue to next step.
 
 ---
 
@@ -363,12 +390,26 @@ git diff HEAD > /tmp/shipwright-review-diff.txt
 3. Receive structured review JSON
 
 **If findings exist:**
-See [code-review-interview.md](references/code-review-interview.md) for user interaction.
 
+**Autonomous mode** (check `autonomy` in `shipwright_run_config.json`):
+Fix all findings immediately — no AskUserQuestion. For each finding:
+1. Apply the suggested fix
+2. Run tests to verify no regressions
+3. Log fix in decision log with context "auto-fixed (autonomous mode)"
+Skip to Step 8 (Commit).
+
+**Guided mode** (default):
+See [code-review-interview.md](references/code-review-interview.md) for user interaction.
 Present findings to user via AskUserQuestion:
 - Accept → fix the issue
 - Decline → log reason in decision log
 - Defer → create TODO comment in code
+
+**Dashboard update:**
+```bash
+uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+  --project-root "$(pwd)" --section "{section_name}" --step 6 --detail "Code review" --session-id "{SHIPWRIGHT_SESSION_ID}"
+```
 
 ---
 
@@ -377,6 +418,8 @@ Present findings to user via AskUserQuestion:
 See [apply-interview-fixes.md](references/apply-interview-fixes.md) for guidance.
 
 **Goal:** Fix accepted review findings.
+
+In autonomous mode: all findings arrive as "accepted" — apply all fixes.
 
 For each accepted finding:
 1. Make the fix
@@ -431,6 +474,16 @@ git commit -m "<message>"
 git push -u origin shipwright/{section_name}
 ```
 
+**Dashboard update + context pressure check:**
+```bash
+uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+  --project-root "$(pwd)" --section "{section_name}" --step 8 --detail "Committed" --session-id "{SHIPWRIGHT_SESSION_ID}"
+
+uv run {shared_root}/scripts/tools/estimate_context_pressure.py \
+  --counter-file "$(pwd)/.shipwright_toolcall_count" --threshold 120
+```
+If `recommend_checkpoint` is true: follow the same checkpoint procedure as Step 4.
+
 ---
 
 ## Step 9: Update Decision Log
@@ -468,6 +521,12 @@ uv run {plugin_root}/scripts/tools/update_section_state.py \
   --section "{section_name}" \
   --status "complete" \
   --commit "$(git rev-parse HEAD)"
+```
+
+**Dashboard update:**
+```bash
+uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+  --project-root "$(pwd)" --section "{section_name}" --step 10 --status complete --session-id "{SHIPWRIGHT_SESSION_ID}"
 ```
 
 ---
@@ -535,10 +594,28 @@ See [pre-commit-handling.md](references/pre-commit-handling.md).
 - Don't bypass hooks with `--no-verify`
 
 ### Context Window Pressure
-If context is getting large mid-section:
+Context pressure is checked automatically at Steps 4 and 8 via `estimate_context_pressure.py`.
+If `recommend_checkpoint` is true mid-section:
 1. Commit current progress (partial)
 2. Generate session handoff
-3. Suggest `/clear` and resume
+3. Update dashboard with `--status paused`
+4. Print checkpoint banner:
+```
+================================================================================
+CHECKPOINT — Context pressure detected
+================================================================================
+Progress saved. Section {section_name} paused at step {N}.
+Dashboard: agent_docs/build_dashboard.md
+
+To continue:
+  1. Open a new session (+ button) <- recommended
+  2. Or: /clear in this session
+
+Then invoke: /shipwright-run
+  -> Auto-resumes from {section_name}
+================================================================================
+```
+5. **STOP** — do not continue.
 
 ---
 

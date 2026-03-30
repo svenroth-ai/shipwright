@@ -187,6 +187,43 @@ def update_step(project_root: Path, step: str, status: str) -> dict[str, Any]:
     return config
 
 
+def get_build_progress(project_root: Path) -> dict[str, Any]:
+    """Return section-level progress for the build phase.
+
+    Reads shipwright_build_config.json and returns counts plus the next
+    section to work on.  Used by the orchestrator autopilot loop and the
+    resume-detection logic in SKILL.md.
+    """
+    build_config_path = project_root / "shipwright_build_config.json"
+    build_config: dict[str, Any] = {}
+    if build_config_path.exists():
+        try:
+            build_config = json.loads(build_config_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            pass
+
+    sections = build_config.get("sections", [])
+    completed = [s for s in sections if s.get("status") == "complete"]
+    in_progress = [s for s in sections if s.get("status") == "in_progress"]
+    pending = [s for s in sections if s.get("status") not in ("complete", "in_progress", "failed")]
+
+    # Next section: first in_progress (resume), else first pending
+    next_section = None
+    if in_progress:
+        next_section = in_progress[0]
+    elif pending:
+        next_section = pending[0]
+
+    return {
+        "total": len(sections),
+        "completed": len(completed),
+        "in_progress": len(in_progress),
+        "completed_sections": [s.get("name") for s in completed],
+        "next_section": next_section.get("name") if next_section else None,
+        "all_done": len(sections) > 0 and len(completed) == len(sections),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Orchestrator")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -207,6 +244,9 @@ def main() -> int:
     p.add_argument("--step", required=True, choices=all_steps)
     p.add_argument("--status", required=True, choices=["in_progress", "complete", "failed"])
 
+    p = subparsers.add_parser("get-build-progress")
+    p.add_argument("--project-root", default=".")
+
     args = parser.parse_args()
     project_root = Path(args.project_root).resolve()
 
@@ -224,6 +264,10 @@ def main() -> int:
     elif args.command == "update-step":
         config = update_step(project_root, args.step, args.status)
         print(json.dumps(config, indent=2))
+
+    elif args.command == "get-build-progress":
+        result = get_build_progress(project_root)
+        print(json.dumps(result, indent=2))
 
     return 0
 

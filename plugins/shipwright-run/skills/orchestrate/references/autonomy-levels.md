@@ -2,39 +2,40 @@
 
 ## Guided (default)
 
-The orchestrator asks the user at key decision points:
+Interactive process through all phases including Build and Test,
+with confirmation between phases and request for approval of fixes.
 
-1. **After inference:** "Settings look correct?"
-2. **After project phase:** "N splits created. Continue to design?"
-3. **After design phase:** "UI mockups created. Continue to planning?"
-4. **After plan phase:** "M sections planned. Start building?"
-5. **After build phase:** "All tests pass. Deploy to DEV?"
-6. **After deploy:** "Smoke test passed. Create changelog + PR?"
-
-**Always asks regardless of level:**
-- PROD deployment confirmation
-- Destructive database operations (DROP TABLE, etc.)
-- Rollback decisions
+- **Between phases:** Orchestrator asks "Continue to next phase?"
+- **Build:** Code review findings presented via AskUserQuestion (Accept/Decline/Defer per finding)
+- **Test:** Failures reported. Auto-fix only with explicit --fix flag.
 
 ## Autonomous
 
-The orchestrator proceeds without asking, except for the "always ask" items above.
+Interactive process through Spec and Design with autonomous Build and Test
+including fixes. Deploy stays interactive.
 
-Suitable for:
-- Iteration mode (small, well-understood changes)
-- CI/CD integration (future)
-- Experienced users who trust the pipeline
+- **Spec & Design:** Same as Guided — user input shapes architecture
+- **Between phases:** Orchestrator proceeds without asking
+- **Build:** Code review findings are auto-fixed immediately. All findings treated as accepted.
+  Fixes logged in decision log.
+- **Test:** Failures trigger auto-fix automatically (structured debugging, up to 3 retries).
+  No --fix flag needed.
+- **Deploy:** Same as Guided — PROD confirmation always required
+
+**Always interactive regardless of level:**
+- Destructive database operations (always require confirmation)
+- Rollback decisions (always require confirmation)
 
 ## Configuration
 
 Set in `shipwright_run_config.json`:
 ```json
 {
-  "autonomy": "guided"  // or "autonomous"
+  "autonomy": "guided"
 }
 ```
 
-Can also be set per-invocation:
+Per-invocation:
 ```
 /shipwright-run --autonomous "Build a todo app"
 ```

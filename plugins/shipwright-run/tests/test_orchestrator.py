@@ -12,6 +12,7 @@ from orchestrator import (
     _COMPLIANCE_SCRIPT,
     build_pipeline,
     create_config,
+    get_build_progress,
     get_next_step,
     load_run_config,
     run_compliance_update,
@@ -170,6 +171,92 @@ def test_resume_midway(tmp_project):
     assert result["next_step"] == "test"
     assert set(result["completed"]) == {"project", "design", "plan", "build"}
     assert result["remaining"] == ["test", "deploy", "changelog"]
+
+
+# --- CLI ---
+
+# --- Build Progress ---
+
+def test_get_build_progress_no_config(tmp_project):
+    result = get_build_progress(tmp_project)
+    assert result["total"] == 0
+    assert result["completed"] == 0
+    assert result["next_section"] is None
+    assert result["all_done"] is False
+
+
+def test_get_build_progress_partial(tmp_project):
+    config = {
+        "sections": [
+            {"name": "01-auth", "status": "complete", "commit": "abc123"},
+            {"name": "02-api", "status": "in_progress"},
+            {"name": "03-ui", "status": "pending"},
+        ]
+    }
+    (tmp_project / "shipwright_build_config.json").write_text(
+        json.dumps(config), encoding="utf-8"
+    )
+    result = get_build_progress(tmp_project)
+    assert result["total"] == 3
+    assert result["completed"] == 1
+    assert result["in_progress"] == 1
+    assert result["next_section"] == "02-api"  # in_progress takes priority
+    assert result["all_done"] is False
+    assert result["completed_sections"] == ["01-auth"]
+
+
+def test_get_build_progress_all_complete(tmp_project):
+    config = {
+        "sections": [
+            {"name": "01-auth", "status": "complete", "commit": "abc"},
+            {"name": "02-api", "status": "complete", "commit": "def"},
+        ]
+    }
+    (tmp_project / "shipwright_build_config.json").write_text(
+        json.dumps(config), encoding="utf-8"
+    )
+    result = get_build_progress(tmp_project)
+    assert result["total"] == 2
+    assert result["completed"] == 2
+    assert result["next_section"] is None
+    assert result["all_done"] is True
+
+
+def test_get_build_progress_with_failed(tmp_project):
+    config = {
+        "sections": [
+            {"name": "01-auth", "status": "complete", "commit": "abc"},
+            {"name": "02-api", "status": "failed"},
+            {"name": "03-ui", "status": "pending"},
+        ]
+    }
+    (tmp_project / "shipwright_build_config.json").write_text(
+        json.dumps(config), encoding="utf-8"
+    )
+    result = get_build_progress(tmp_project)
+    assert result["completed"] == 1
+    assert result["next_section"] == "03-ui"  # skips failed, picks pending
+
+
+def test_cli_get_build_progress(tmp_path):
+    config = {
+        "sections": [
+            {"name": "01-auth", "status": "complete", "commit": "abc"},
+            {"name": "02-api", "status": "pending"},
+        ]
+    }
+    (tmp_path / "shipwright_build_config.json").write_text(
+        json.dumps(config), encoding="utf-8"
+    )
+    result = subprocess.run(
+        [sys.executable, SCRIPT,
+         "get-build-progress",
+         "--project-root", str(tmp_path)],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    output = json.loads(result.stdout)
+    assert output["total"] == 2
+    assert output["next_section"] == "02-api"
 
 
 # --- CLI ---

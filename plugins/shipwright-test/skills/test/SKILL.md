@@ -69,7 +69,13 @@ uv run {plugin_root}/scripts/lib/test_runner.py \
 
 **Expected output:** Test results with pass/fail counts.
 
-If `--fix` flag and tests fail (max 3 retries, structured debugging):
+**Autonomous mode** (check `autonomy` in `shipwright_run_config.json`):
+If tests fail, automatically apply --fix behavior (structured debugging,
+up to 3 retries) without requiring the explicit --fix flag.
+
+**Guided mode:** Only attempt fixes if `--fix` flag was explicitly passed.
+
+**Fix behavior** (max 3 retries, structured debugging):
 1. **Root cause:** Read error output, identify what's failing and why
 2. **Pattern check:** Same root cause as previous attempt? → Change approach, don't retry same fix
 3. **Hypothesis:** State what you'll change and why before editing
@@ -125,7 +131,10 @@ uv run {plugin_root}/scripts/lib/playwright_runner.py --cwd {project_root}
    - If all passed: continue to Step 4
    - If failures and `--fix` flag active: invoke auto-fix
 
-5. **Auto-fix mode** (only with `--fix` flag, max 3 retries, structured debugging):
+5. **Auto-fix mode** (with `--fix` flag or autonomous mode, max 3 retries, structured debugging):
+
+   **Autonomous mode:** Auto-fix is always active. Spawn browser-fixer
+   subagent automatically on failure (up to 3 retries), same as --fix behavior.
    a. For each failed test, check if a screenshot exists
    b. **Root cause:** Identify what's failing from error + screenshot before fixing
    c. Spawn `browser-fixer` subagent with:

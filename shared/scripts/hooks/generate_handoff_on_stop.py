@@ -44,6 +44,20 @@ def main() -> int:
         agent_docs.mkdir(exist_ok=True)
         (agent_docs / "session_handoff.md").write_text(content, encoding="utf-8")
 
+        # Update build dashboard with "paused" status if build is active
+        try:
+            from tools.update_build_dashboard import generate_dashboard
+            from lib.config import read_config
+
+            build_config = read_config("build", project_root)
+            if build_config.get("sections"):
+                dashboard = generate_dashboard(
+                    project_root, status="paused", session_id=session_id,
+                )
+                (agent_docs / "build_dashboard.md").write_text(dashboard, encoding="utf-8")
+        except Exception:
+            pass  # Dashboard update is best-effort
+
         print(json.dumps({
             "hookSpecificOutput": {
                 "hookEventName": "Stop",
