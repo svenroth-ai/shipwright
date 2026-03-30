@@ -24,11 +24,11 @@ class TestGenerate:
         assert "03-profile" in result
         assert "abc123def456" in result  # commit hash
 
-    def test_contains_mermaid_diagram(self, project_root: Path):
+    def test_no_traceability_flow_diagram(self, project_root: Path):
         data = collect_all(project_root)
         result = generate(data)
-        assert "```mermaid" in result
-        assert "flowchart TD" in result
+        assert "## Traceability Flow" not in result
+        assert "flowchart TD" not in result
 
     def test_summary_metrics(self, project_root: Path):
         data = collect_all(project_root)

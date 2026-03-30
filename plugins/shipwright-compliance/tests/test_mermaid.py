@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from scripts.lib.data_collector import CommitEntry, DependencyInfo, SectionInfo, SplitInfo
+from scripts.lib.data_collector import CommitEntry, DependencyInfo, SectionInfo
 from scripts.lib.mermaid import (
     commit_type_pie,
     license_pie,
     pipeline_status_diagram,
     testing_pyramid_diagram,
-    traceability_flow_diagram,
 )
 
 
@@ -43,33 +42,6 @@ class TestPipelineStatusDiagram:
         result = pipeline_status_diagram(configs)
         assert "```mermaid" in result
         assert "PENDING" in result
-
-
-class TestTraceabilityFlowDiagram:
-    def test_with_data(self):
-        splits = [SplitInfo("01-auth", "complete")]
-        sections = [
-            SectionInfo("01-login", "01-auth", "complete", "abc123", 5, 5, 1, 1, 0, 0),
-            SectionInfo("02-rbac", "01-auth", "complete", "def456", 8, 8, 0, 0, 0, 0),
-        ]
-        result = traceability_flow_diagram(splits, sections)
-        assert "```mermaid" in result
-        assert "flowchart TD" in result
-        assert "Splits" in result
-        assert "Sections" in result
-        assert "Tests" in result
-        assert "5/5 passed" in result
-        assert "8/8 passed" in result
-
-    def test_empty_data(self):
-        result = traceability_flow_diagram([], [])
-        assert "No traceability data available" in result
-
-    def test_pending_tests(self):
-        splits = [SplitInfo("01-auth", "complete")]
-        sections = [SectionInfo("01-login", "01-auth", "pending", None, 0, 0, 0, 0, 0, 0)]
-        result = traceability_flow_diagram(splits, sections)
-        assert "pending" in result
 
 
 class TestCommitTypePie:

@@ -30,22 +30,20 @@ class TestGenerate:
     def test_compliance_artifacts_links(self, project_root: Path):
         data = collect_all(project_root)
         result = generate(data)
-        assert "traceability-matrix.md" in result
-        assert "test-evidence.md" in result
-        assert "change-history.md" in result
-        assert "sbom.md" in result
+        assert "./traceability-matrix.md" in result
+        assert "./test-evidence.md" in result
+        assert "./change-history.md" in result
+        assert "./sbom.md" in result
 
-    def test_traceability_overview(self, project_root: Path):
+    def test_no_traceability_overview(self, project_root: Path):
         data = collect_all(project_root)
         result = generate(data)
-        assert "## Traceability Overview" in result
+        assert "## Traceability Overview" not in result
 
-    def test_cost_summary(self, project_root: Path):
+    def test_no_cost_summary(self, project_root: Path):
         data = collect_all(project_root)
         result = generate(data)
-        assert "## Cost Summary" in result
-        assert "| Total estimated tokens | 105,000 |" in result
-        assert "| Total estimated API calls | 30 |" in result
+        assert "## Cost Summary" not in result
 
     def test_copyleft_detection(self):
         data = ComplianceData(project_root=Path("."))

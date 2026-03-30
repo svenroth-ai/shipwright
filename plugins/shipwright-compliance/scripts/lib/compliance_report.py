@@ -8,8 +8,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from scripts.lib.mermaid import traceability_flow_diagram
-
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
 
@@ -62,15 +60,15 @@ def generate(data: ComplianceData) -> str:
 
     # Compliance artifacts
     artifact_rows = [
-        "| Traceability Matrix | [traceability-matrix.md](traceability-matrix.md) | Requirements → Sections → Tests |",
-        "| Test Evidence | [test-evidence.md](test-evidence.md) | Per-section test results |",
-        "| Commit Change Log | [change-history.md](change-history.md) | Conventional Commits by type |",
-        "| Decision Log | [../agent_docs/decision_log.md](../agent_docs/decision_log.md) | Architecture decisions (ADRs) |",
-        "| SBOM | [sbom.md](sbom.md) | Open-source dependencies + licenses |",
+        "| Traceability Matrix | [traceability-matrix.md](./traceability-matrix.md) | Requirements → Sections → Tests |",
+        "| Test Evidence | [test-evidence.md](./test-evidence.md) | Per-section test results |",
+        "| Commit Change Log | [change-history.md](./change-history.md) | Conventional Commits by type |",
+        "| Decision Log | [decision_log.md](../agent_docs/decision_log.md) | Architecture decisions (ADRs) |",
+        "| SBOM | [sbom.md](./sbom.md) | Open-source dependencies + licenses |",
     ]
     # Add CHANGELOG if it exists
     if (data.project_root / "CHANGELOG.md").exists():
-        artifact_rows.append("| Changelog | [../CHANGELOG.md](../CHANGELOG.md) | Release notes |")
+        artifact_rows.append("| Changelog | [CHANGELOG.md](../CHANGELOG.md) | Release notes |")
 
     lines.extend([
         "## Compliance Artifacts",
@@ -78,31 +76,6 @@ def generate(data: ComplianceData) -> str:
         "| Document | Path | Description |",
         "|----------|------|-------------|",
         *artifact_rows,
-        "",
-    ])
-
-    # Traceability overview
-    lines.extend([
-        "## Traceability Overview",
-        "",
-        traceability_flow_diagram(data.splits, data.sections),
-        "",
-    ])
-
-    # Cost summary
-    total_tokens = sum(s.estimated_tokens for s in data.sections)
-    total_api_calls = sum(s.estimated_api_calls for s in data.sections)
-    avg_tokens = total_tokens // total_sections if total_sections > 0 else 0
-
-    lines.extend([
-        "## Cost Summary",
-        "",
-        "| Metric | Value |",
-        "|--------|-------|",
-        f"| Total estimated tokens | {total_tokens:,} |",
-        f"| Total estimated API calls | {total_api_calls} |",
-        f"| Sections built | {total_sections} |",
-        f"| Avg tokens/section | {avg_tokens:,} |",
         "",
     ])
 
