@@ -346,11 +346,18 @@ Run this once per decision. Only log **project-specific** decisions — not prof
 
 **Goal:** Verify and summarize.
 
-**Verification:**
+**Verification (all must pass before "phase complete"):**
+
 1. All declared splits have spec.md files
-2. project-manifest.md exists
+2. project-manifest.md exists and lists all splits with execution order
 3. CLAUDE.md exists (Full Application only)
 4. agent_docs/ directory exists with all 5 files (Full Application only)
+5. **Spec Completeness Gate** — for each spec.md, verify it contains:
+   - Scope section (what's included / excluded)
+   - Functional Requirements (at least 1 FR with ID, e.g., FR-01.01)
+   - Non-Functional Requirements section
+   - If any spec.md is missing these sections → fix before proceeding
+6. **Manifest-Spec Consistency** — no split in manifest without spec.md, no spec.md without split in manifest
 
 **Print Summary:**
 ```

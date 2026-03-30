@@ -37,8 +37,15 @@ For each section from /shipwright-plan:
 
 ## When Tests Won't Pass
 
-If stuck after 3 implementation attempts:
-1. Re-read the section spec
-2. Check if prerequisites are met
-3. Ask user for guidance via AskUserQuestion
-4. Don't skip or weaken the test
+Follow the [debugging-protocol.md](debugging-protocol.md):
+
+1. **Investigate root cause** before changing code (Phase 1)
+2. **Check if same root cause** as previous attempt (Phase 2) — if yes, the approach is wrong
+3. **State hypothesis** before writing the fix (Phase 3)
+4. **Fix and verify** (Phase 4)
+
+**Escalation triggers:**
+- 2 failed fixes with the same root cause → Architectural Reevaluation
+- 3 failed fixes total → Escalate to user via AskUserQuestion
+
+**Never** skip or weaken a test. **Never** retry blindly without root-cause analysis.

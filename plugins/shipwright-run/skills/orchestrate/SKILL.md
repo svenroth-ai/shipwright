@@ -158,6 +158,10 @@ The orchestrator dispatches to each skill in sequence:
 ```
 
 **Between each skill:**
+- **Upstream Success Check:** Before starting the next phase, verify the previous phase completed successfully:
+  - Read `shipwright_run_config.json` → check that the previous phase status is `"complete"`
+  - If previous phase is NOT complete → do NOT proceed. Inform user which phase failed and why.
+  - This prevents cascading failures (e.g., building from an incomplete plan)
 - Update `shipwright_run_config.json` with progress
 - Update compliance documentation (incremental):
   ```bash

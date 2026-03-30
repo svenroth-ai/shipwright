@@ -69,11 +69,13 @@ uv run {plugin_root}/scripts/lib/test_runner.py \
 
 **Expected output:** Test results with pass/fail counts.
 
-If `--fix` flag and tests fail:
-1. Analyze failure output
-2. Attempt auto-fix (edit code to fix the issue)
-3. Re-run tests
-4. Max 3 retries, then report remaining failures
+If `--fix` flag and tests fail (max 3 retries, structured debugging):
+1. **Root cause:** Read error output, identify what's failing and why
+2. **Pattern check:** Same root cause as previous attempt? → Change approach, don't retry same fix
+3. **Hypothesis:** State what you'll change and why before editing
+4. Attempt targeted fix based on hypothesis
+5. Re-run tests
+6. After 3 retries (or 2 with same root cause): report remaining failures with diagnosis
 
 ---
 
@@ -123,16 +125,18 @@ uv run {plugin_root}/scripts/lib/playwright_runner.py --cwd {project_root}
    - If all passed: continue to Step 4
    - If failures and `--fix` flag active: invoke auto-fix
 
-5. **Auto-fix mode** (only with `--fix` flag, max 3 retries):
+5. **Auto-fix mode** (only with `--fix` flag, max 3 retries, structured debugging):
    a. For each failed test, check if a screenshot exists
-   b. Spawn `browser-fixer` subagent with:
+   b. **Root cause:** Identify what's failing from error + screenshot before fixing
+   c. Spawn `browser-fixer` subagent with:
       - Screenshot image (if available)
       - Error message from test failure
       - DOM snippet (if available via trace)
       - Relevant source files
-   c. Apply the recommended fix
-   d. Re-run failed tests only: `npx playwright test --grep "{test_title}"`
-   e. If still failing after 3 retries, report failures to user
+   d. Apply the recommended fix
+   e. Re-run failed tests only: `npx playwright test --grep "{test_title}"`
+   f. **If same root cause as previous attempt** → change approach, don't repeat same fix
+   g. If still failing after 3 retries, report failures to user with diagnosis summary
 
 6. **Stop dev server** (after all E2E tests complete):
 ```bash
@@ -177,6 +181,18 @@ Auto-fix attempts: {N}
 Fixed: {list of fixed tests}
 Remaining failures: {list}
 ```
+
+### Results Enforcement
+
+Test results determine pipeline continuation:
+
+| Layer | On FAIL | Rationale |
+|-------|---------|-----------|
+| **Unit tests** | **Pipeline stops** (blocking) | Unit tests are deterministic — failure = real bug |
+| **Smoke test** | **Pipeline stops** (blocking) | App not running = can't deploy |
+| **E2E tests** | **Warning only** (non-blocking) | E2E can be flaky; log failures but continue |
+
+If unit tests or smoke test FAIL: set phase status to `FAIL` and inform user. Do NOT proceed to deploy.
 
 ---
 

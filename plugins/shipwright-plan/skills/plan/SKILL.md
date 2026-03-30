@@ -302,11 +302,19 @@ See [e2e-test-plan.md](references/e2e-test-plan.md) for guidance.
 
 ## Step 9: Completion
 
-**Verification:**
+**Verification (all must pass before "phase complete"):**
+
 1. plan.md exists with SECTION_MANIFEST
 2. All declared sections have files
 3. Interview transcript exists
 4. E2E test plan exists (if enabled)
+5. **Section Quality Gate** — for each section file, verify it contains:
+   - Description (what the section implements)
+   - Implementation Steps (at least 2 concrete steps)
+   - Test Strategy (what tests to write)
+   - If any section is missing these → fix before proceeding
+6. **FR Coverage Check** — read the spec's Functional Requirements, verify every FR is assigned to at least one section. If uncovered FRs found → add them to appropriate section or create new section
+7. **Dependency Order** — sections with dependencies must come after their dependencies in SECTION_MANIFEST
 
 **Sprint Tracking Update:**
 If `agent_docs/current_sprint.md` exists, update status → "planned".
