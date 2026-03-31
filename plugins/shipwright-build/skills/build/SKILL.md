@@ -10,6 +10,11 @@ compatibility: Requires uv (Python 3.11+), git repository required
 TDD implementation with code review, Conventional Commits, and feature branch workflow.
 Enhanced fork of deep-implement with decision logging, session handoff, and migration safety.
 
+> **Autonomous orchestrated mode:** When invoked by `/shipwright-run` in autonomous mode,
+> sections are delegated to the `section-builder` subagent (see `agents/section-builder.md`).
+> Each subagent gets a fresh context window and runs the full TDD cycle independently.
+> This skill is still used directly in guided mode and for standalone invocations.
+
 ---
 
 ## CRITICAL: First Actions

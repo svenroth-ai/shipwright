@@ -5,10 +5,14 @@ Reads .shipwright_toolcall_count (plain integer file) and returns
 a recommendation on whether to checkpoint.
 
 Usage:
-    uv run estimate_context_pressure.py [--counter-file <path>] [--threshold <n>]
+    uv run estimate_context_pressure.py [--counter-file <path>] [--threshold <n>] [--mode <mode>]
+
+Modes:
+    builder (default): threshold 120 — used within /shipwright-build (guided mode)
+    orchestrator:      threshold 300 — used by /shipwright-run when delegating to subagents
 
 Output (JSON):
-    {"tool_calls": 142, "threshold": 120, "recommend_checkpoint": true}
+    {"tool_calls": 142, "threshold": 120, "recommend_checkpoint": true, "mode": "builder"}
 """
 
 import argparse
@@ -17,7 +21,13 @@ import sys
 from pathlib import Path
 
 
-def estimate_pressure(counter_file: Path, threshold: int) -> dict:
+MODE_THRESHOLDS = {
+    "builder": 120,
+    "orchestrator": 300,
+}
+
+
+def estimate_pressure(counter_file: Path, threshold: int, mode: str = "builder") -> dict:
     """Read counter file and compute pressure recommendation."""
     tool_calls = 0
     if counter_file.exists():
@@ -30,6 +40,7 @@ def estimate_pressure(counter_file: Path, threshold: int) -> dict:
         "tool_calls": tool_calls,
         "threshold": threshold,
         "recommend_checkpoint": tool_calls >= threshold,
+        "mode": mode,
     }
 
 
@@ -43,16 +54,24 @@ def main() -> int:
     parser.add_argument(
         "--threshold",
         type=int,
-        default=120,
-        help="Tool call threshold for checkpoint recommendation (default: 120)",
+        default=None,
+        help="Tool call threshold for checkpoint recommendation (default: mode-dependent)",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=list(MODE_THRESHOLDS.keys()),
+        default="builder",
+        help="Execution mode: 'builder' (120, default) or 'orchestrator' (300)",
     )
     args = parser.parse_args()
+
+    threshold = args.threshold if args.threshold is not None else MODE_THRESHOLDS[args.mode]
 
     counter_file = Path(args.counter_file)
     if not counter_file.is_absolute():
         counter_file = Path.cwd() / counter_file
 
-    result = estimate_pressure(counter_file, args.threshold)
+    result = estimate_pressure(counter_file, threshold, args.mode)
     print(json.dumps(result))
     return 0
 
