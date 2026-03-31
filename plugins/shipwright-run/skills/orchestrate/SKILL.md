@@ -468,7 +468,12 @@ If the pipeline is interrupted (context window, user stops, error):
 1. Read `shipwright_run_config.json` → `current_step` and `completed_steps`
 2. If `current_step == "build"`:
    a. Run `orchestrator.py get-build-progress` → get section status
-   b. Print resume banner:
+   b. **Validate split state:** If `current_split` in progress output doesn't match the split that owns the current sections, the split archive may have been missed. Run:
+      ```bash
+      uv run {shared_root}/scripts/tools/archive_split.py \
+        --project-root "$(pwd)" --next-split "{correct_split_name}"
+      ```
+   c. Print resume banner:
    ```
    ================================================================================
    RESUMING PIPELINE
@@ -479,7 +484,7 @@ If the pipeline is interrupted (context window, user stops, error):
    Dashboard: agent_docs/build_dashboard.md
    ================================================================================
    ```
-   c. Enter Build Phase Autopilot Loop from first incomplete section
+   d. Enter Build Phase Autopilot Loop from first incomplete section
 3. For other steps: skip completed steps, continue from `current_step`
 4. Read `agent_docs/session_handoff.md` if it exists — use it for additional context about what was in progress
 

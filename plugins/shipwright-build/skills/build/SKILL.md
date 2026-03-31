@@ -575,13 +575,18 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
 ```
 
 If `split_done == true AND all_done == false` (more splits remain):
-1. Print: "Split {current_split} complete. Next split will be started by /shipwright-run."
-2. Update delivery dashboard:
+1. **Archive completed split** (moves sections to `split_NN_sections`, updates `current_split`):
+```bash
+uv run {shared_root}/scripts/tools/archive_split.py \
+  --project-root "$(pwd)" --next-split "{next_split_name}"
+```
+2. Print: "Split {current_split} complete. Archived to split_{prefix}_sections. Next split will be started by /shipwright-run."
+3. Update delivery dashboard:
 ```bash
 uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "$(pwd)" --section "{section_name}" --status complete --session-id "{SHIPWRIGHT_SESSION_ID}"
 ```
-3. **STOP** — do not mark build phase as complete. The next session picks up the next split via /shipwright-run.
+4. **STOP** — do not mark build phase as complete. The next session picks up the next split via /shipwright-run.
 
 ---
 
