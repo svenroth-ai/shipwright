@@ -568,7 +568,16 @@ If `split_done == true AND all_done == true` (final split complete):
 uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
   update-step --project-root "$(pwd)" --step build --status complete
 ```
-2. Update delivery dashboard with pipeline status:
+2. Push feature branch to remote:
+```bash
+git push -u origin "$(git branch --show-current)"
+```
+3. Generate session handoff for next pipeline phase:
+```bash
+uv run {plugin_root}/scripts/tools/generate_session_handoff.py \
+  --project-root "$(pwd)" --section "all" --status "complete"
+```
+4. Update delivery dashboard with pipeline status:
 ```bash
 uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "$(pwd)" --phase build --session-id "{SHIPWRIGHT_SESSION_ID}"
@@ -580,13 +589,22 @@ If `split_done == true AND all_done == false` (more splits remain):
 uv run {shared_root}/scripts/tools/archive_split.py \
   --project-root "$(pwd)" --next-split "{next_split_name}"
 ```
-2. Print: "Split {current_split} complete. Archived to split_{prefix}_sections. Next split will be started by /shipwright-run."
-3. Update delivery dashboard:
+2. Push feature branch to remote:
+```bash
+git push -u origin "$(git branch --show-current)"
+```
+3. Generate session handoff for next split:
+```bash
+uv run {plugin_root}/scripts/tools/generate_session_handoff.py \
+  --project-root "$(pwd)" --section "{section_name}" --status "split-complete"
+```
+4. Print: "Split {current_split} complete. Archived to split_{prefix}_sections. Next split will be started by /shipwright-run."
+5. Update delivery dashboard:
 ```bash
 uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "$(pwd)" --section "{section_name}" --status complete --session-id "{SHIPWRIGHT_SESSION_ID}"
 ```
-4. **STOP** — do not mark build phase as complete. The next session picks up the next split via /shipwright-run.
+6. **STOP** — do not mark build phase as complete. The next session picks up the next split via /shipwright-run.
 
 ---
 

@@ -222,8 +222,8 @@ class TestResumeFromAnyPoint:
             "design": "plan",
             "plan": "build",
             "build": "test",
-            "test": "deploy",
-            "deploy": "changelog",
+            "test": "changelog",
+            "changelog": "deploy",
         }
 
         for step, expected in expected_next.items():

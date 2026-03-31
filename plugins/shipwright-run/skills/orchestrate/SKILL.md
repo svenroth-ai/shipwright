@@ -134,7 +134,7 @@ Writes `shipwright_run_config.json`:
   "profile": "supabase-nextjs",
   "autonomy": "guided",
   "deploy_target": "jelastic-dev",
-  "pipeline": ["project", "design", "plan", "build", "test", "deploy", "changelog"],
+  "pipeline": ["project", "design", "plan", "build", "test", "changelog", "deploy"],
   "status": "in_progress",
   "current_step": "project"
 }
@@ -157,8 +157,8 @@ The orchestrator dispatches to each skill in sequence:
       - /shipwright-build → Section → Code + Tests + Commit
    c. /shipwright-test    → Run all tests
    d. /shipwright-security → Security scan (if AIKIDO_CLIENT_ID set)
-   e. /shipwright-deploy  → Deploy to DEV
-4. /shipwright-changelog  → Changelog + PR
+   e. /shipwright-changelog → Changelog + PR + Merge
+   f. /shipwright-deploy  → Deploy to DEV (from merged main)
 ```
 
 **Between each skill:**
@@ -233,8 +233,8 @@ Each skill is invoked as a slash command:
 /shipwright-build @{sections_dir}/01-name.md
 /shipwright-test
 /shipwright-security              (conditional, see below)
-/shipwright-deploy
 /shipwright-changelog
+/shipwright-deploy
 ```
 
 ### Build Phase Autopilot Loop
@@ -377,7 +377,7 @@ After all build sections are complete:
   uv run {compliance_plugin_root}/scripts/tools/update_compliance.py \
     --project-root "$(pwd)" --phase test
   ```
-- Continue to security scan / deploy
+- Continue to security scan / changelog / deploy
 
 **--- Guided mode: Direct invocation (unchanged) ---**
 
@@ -390,10 +390,10 @@ After all build sections are complete:
 **In guided mode:** Always ask before running:
 ```
 AskUserQuestion:
-  question: "Tests passed. Run Aikido security scan before deploy?"
+  question: "Tests passed. Run Aikido security scan before changelog/deploy?"
   options:
     - "Yes — run security scan"
-    - "Skip — go to deploy"
+    - "Skip — go to changelog"
 ```
 
 **In autonomous mode:** Run automatically (no prompt).
@@ -455,8 +455,8 @@ Same as Full App but shorter:
 /shipwright-plan @01-dark-mode/spec.md        → 1-2 sections
 /shipwright-build @sections/01-theme.md       → implement
 /shipwright-test                              → verify
-/shipwright-deploy                            → deploy to DEV
-/shipwright-changelog                         → changelog + PR
+/shipwright-changelog                         → changelog + PR + merge
+/shipwright-deploy                            → deploy to DEV (from main)
 ```
 
 ---

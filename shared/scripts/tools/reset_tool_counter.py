@@ -13,6 +13,7 @@ Output (JSON):
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -28,7 +29,8 @@ def main() -> int:
 
     counter_file = Path(args.counter_file)
     if not counter_file.is_absolute():
-        counter_file = Path.cwd() / counter_file
+        project_root = Path(os.environ.get("SHIPWRIGHT_PROJECT_ROOT", Path.cwd()))
+        counter_file = project_root / counter_file
 
     counter_file.write_text("0", encoding="utf-8")
 

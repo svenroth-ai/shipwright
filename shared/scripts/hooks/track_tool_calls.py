@@ -1,17 +1,27 @@
 #!/usr/bin/env python3
 """PostToolUse hook: Increment tool call counter.
 
-Atomically increments .shipwright_toolcall_count in the current
-working directory. Used by estimate_context_pressure.py to detect
-when context window is getting full.
+Atomically increments .shipwright_toolcall_count in the project root
+(via SHIPWRIGHT_PROJECT_ROOT env var, fallback to cwd).
+Used by estimate_context_pressure.py to detect when context window
+is getting full.
 
 Usage (from hooks.json):
     uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/track_tool_calls.py
 """
 
 import json
+import os
 import sys
 from pathlib import Path
+
+
+def _resolve_project_root() -> Path:
+    """Resolve project root from SHIPWRIGHT_PROJECT_ROOT env var, fallback to cwd."""
+    env_root = os.environ.get("SHIPWRIGHT_PROJECT_ROOT")
+    if env_root:
+        return Path(env_root)
+    return Path.cwd()
 
 
 def main() -> int:
@@ -21,7 +31,7 @@ def main() -> int:
     except Exception:
         pass
 
-    counter_file = Path.cwd() / ".shipwright_toolcall_count"
+    counter_file = _resolve_project_root() / ".shipwright_toolcall_count"
 
     count = 0
     if counter_file.exists():
