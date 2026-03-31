@@ -180,6 +180,10 @@ The orchestrator dispatches to each skill in sequence:
     --session-id "{SHIPWRIGHT_SESSION_ID}"
   ```
   Where `{shared_root}` = `{plugin_root}/../../shared`
+- **Reset tool call counter** (prevents stale counts from triggering false checkpoints in next phase):
+  ```bash
+  uv run {shared_root}/scripts/tools/reset_tool_counter.py
+  ```
 - **Context pressure check** (after each skill completes):
   ```bash
   uv run {shared_root}/scripts/tools/estimate_context_pressure.py \
@@ -349,9 +353,15 @@ After all build sections are complete:
 **Parse test-runner result JSON.** Expected fields:
 - `status`: "pass" or "fail"
 - `unit`: `{passed, total, duration_s}`
-- `smoke`: `{status, url, response_ms}`
-- `e2e`: `{passed, total, failures, skipped}`
+- `smoke`: `{status, url, response_ms}` or `{status: "skipped", reason: "..."}`
+- `e2e`: `{passed, total, failures, skipped}` or `{status: "skipped", reason: "..."}`
 - `fixes_applied`: list of auto-fixes attempted
+
+**Validate test completeness:** Before accepting status "pass", verify:
+- `unit` field exists and has results (always required)
+- `smoke` field exists (result or skip reason)
+- `e2e` field exists (result or skip reason)
+If any field is missing, treat as incomplete — do NOT mark test phase complete. Inform user which layer has no result.
 
 **If status == "fail":**
 - Update dashboard: `--phase test --status failed`
