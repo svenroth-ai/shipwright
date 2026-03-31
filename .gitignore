@@ -41,6 +41,7 @@ coverage/
 # Shipwright runtime artifacts (generated in target projects, not in this repo)
 shipwright_*_config.json
 agent_docs/session_handoff.md
+.shipwright_toolcall_count
 
 # UV
 .uv/
