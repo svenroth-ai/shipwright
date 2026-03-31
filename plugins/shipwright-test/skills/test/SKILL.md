@@ -203,7 +203,28 @@ Test results determine pipeline continuation:
 
 If unit tests or smoke test FAIL: set phase status to `FAIL` and inform user. Do NOT proceed to deploy.
 
-**Phase complete — update pipeline state** (only if overall PASS):
+### Completion Gate
+
+Before marking the test phase complete, ALL test layers must have an explicit result:
+
+| Layer | Required Result |
+|-------|----------------|
+| Unit tests | `pass` or `fail` (always required) |
+| Smoke test | `pass`, `fail`, or `skipped: {reason}` |
+| E2E tests | `pass`, `fail`, or `skipped: {reason}` |
+
+If any layer has NO result (was never executed and has no skip reason):
+- **Do NOT mark test phase as complete**
+- Print warning: "Test layer {layer} has no result. Run it or document skip reason."
+- Set phase status to `incomplete`
+
+Valid skip reasons:
+- `skipped: no DEV URL available` (Smoke + E2E)
+- `skipped: no Playwright config` (E2E)
+- `skipped: profile has no UI` (E2E)
+- `skipped: smoke test failed` (E2E, because prerequisite not met)
+
+**Phase complete — update pipeline state** (only if Completion Gate passes):
 ```bash
 # Mark test phase complete (triggers compliance update automatically)
 uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \

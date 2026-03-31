@@ -3,7 +3,7 @@
   "profile": "supabase-nextjs",
   "autonomy": "guided",
   "deploy_target": "jelastic-dev",
-  "pipeline": ["project", "plan", "build", "test", "deploy", "changelog"],
+  "pipeline": ["project", "design", "plan", "build", "test", "changelog", "deploy"],
   "status": "complete",
   "current_step": "changelog"
 }
