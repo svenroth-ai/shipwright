@@ -37,7 +37,7 @@ def project_with_sections(tmp_project):
 def project_with_pipeline(tmp_project):
     """Project with run config (pipeline status)."""
     run_config = {
-        "pipeline": ["project", "design", "plan", "build", "test", "deploy", "changelog"],
+        "pipeline": ["project", "design", "plan", "build", "test", "changelog", "deploy"],
         "completed_steps": ["project", "design", "plan"],
         "current_step": "build",
     }

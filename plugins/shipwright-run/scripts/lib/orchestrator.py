@@ -31,7 +31,7 @@ CONFIG_NAME = "shipwright_run_config.json"
 _THIS_PLUGIN = Path(__file__).parent.parent.parent
 _COMPLIANCE_SCRIPT = _THIS_PLUGIN.parent / "shipwright-compliance" / "scripts" / "tools" / "update_compliance.py"
 
-PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "deploy", "changelog"]
+PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "deploy"]
 
 # Conditional steps: included only when their env var is set
 CONDITIONAL_STEPS = {

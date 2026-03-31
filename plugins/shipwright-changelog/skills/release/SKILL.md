@@ -178,6 +178,11 @@ gh pr merge --merge --delete-branch
 
 If already on main: skip PR, just push tag.
 
+**Push tags and updated main to remote:**
+```bash
+git push --tags origin main
+```
+
 **Phase complete — update pipeline state:**
 ```bash
 # Mark changelog phase complete (triggers compliance update automatically)
@@ -201,7 +206,7 @@ Changelog:  CHANGELOG.md updated
 Tag:        v{version} created
 PR:         {PR_URL | "skipped (on main)"}
 
-Next: git push --tags origin main
+Tags + main pushed to origin
 ================================================================================
 ```
 

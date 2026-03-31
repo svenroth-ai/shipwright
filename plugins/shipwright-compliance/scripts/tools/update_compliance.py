@@ -27,7 +27,7 @@ PHASE_REPORTS = {
     "design": ["dashboard"],
     "plan": ["rtm", "dashboard"],
     "compliance": ["dashboard"],
-    "build": ["rtm", "test_evidence", "change_history", "dashboard"],
+    "build": ["rtm", "test_evidence", "change_history", "sbom", "dashboard"],
     "test": ["test_evidence", "dashboard"],
     "deploy": ["dashboard"],
     "changelog": ["change_history", "dashboard"],

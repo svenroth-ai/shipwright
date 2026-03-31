@@ -26,7 +26,7 @@ _TEXT_COLORS = {
 }
 
 
-_DEFAULT_PIPELINE = ["project", "plan", "build", "test", "deploy", "changelog"]
+_DEFAULT_PIPELINE = ["project", "plan", "build", "test", "changelog", "deploy"]
 
 
 def _node_id(phase: str) -> str:

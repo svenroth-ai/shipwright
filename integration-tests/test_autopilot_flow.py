@@ -52,7 +52,7 @@ def autopilot_project(tmp_path):
         "profile": "supabase-nextjs",
         "autonomy": "autonomous",
         "deploy_target": "jelastic-dev",
-        "pipeline": ["project", "design", "plan", "build", "test", "deploy", "changelog"],
+        "pipeline": ["project", "design", "plan", "build", "test", "changelog", "deploy"],
         "status": "in_progress",
         "current_step": "build",
         "completed_steps": ["project", "design", "plan"],

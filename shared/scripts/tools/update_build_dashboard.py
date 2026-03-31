@@ -45,7 +45,7 @@ STEP_LABELS = {
     12: "Complete",
 }
 
-PIPELINE_PHASES = ["project", "design", "plan", "build", "test", "deploy", "changelog"]
+PIPELINE_PHASES = ["project", "design", "plan", "build", "test", "changelog", "deploy"]
 
 
 def format_status(section: dict, current_section: str | None, current_step: int | None, detail: str | None) -> str:
