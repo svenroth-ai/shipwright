@@ -74,6 +74,16 @@ def archive_split(project_root: Path, next_split: str) -> dict:
         completed_splits.append(current_split)
     config["completed_splits"] = completed_splits
 
+    # Archive test results for this split (if they exist)
+    test_results_path = project_root / "shipwright_test_results.json"
+    archived_test_results = False
+    if test_results_path.exists():
+        dest = project_root / f"split_{prefix}_test_results.json"
+        if not dest.exists():
+            import shutil
+            shutil.copy2(str(test_results_path), str(dest))
+            archived_test_results = True
+
     # Transition to next split
     config["current_split"] = next_split
     config["sections"] = []
@@ -84,6 +94,7 @@ def archive_split(project_root: Path, next_split: str) -> dict:
         "success": True,
         "archived_key": archive_key,
         "archived_count": len(sections),
+        "archived_test_results": archived_test_results,
         "current_split": next_split,
         "completed_splits": completed_splits,
     }

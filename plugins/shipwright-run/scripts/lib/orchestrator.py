@@ -165,6 +165,26 @@ def update_step(project_root: Path, step: str, status: str) -> dict[str, Any]:
             completed.append(step)
         config["completed_steps"] = completed
 
+        # Trigger incremental compliance update (non-blocking on failure)
+        compliance_result = run_compliance_update(project_root, step)
+
+        # Split-loop: after deploy, check if more splits remain
+        if step == "deploy":
+            progress = get_build_progress(project_root)
+            if progress.get("total_splits", 0) > 0 and not progress.get("all_done", True):
+                # More splits remain — loop back to plan for next split
+                split_steps = {"plan", "build", "test", "changelog", "deploy", "security"}
+                config["completed_steps"] = [s for s in completed if s not in split_steps]
+                config["current_step"] = "plan"
+                config["status"] = "in_progress"
+                if compliance_result:
+                    config["last_compliance_update"] = {
+                        "phase": step,
+                        "reports": compliance_result.get("updated_reports", []),
+                    }
+                save_run_config(project_root, config)
+                return config
+
         # Set next step
         pipeline = config.get("pipeline", PIPELINE_STEPS)
         remaining = [s for s in pipeline if s not in completed]
@@ -172,8 +192,6 @@ def update_step(project_root: Path, step: str, status: str) -> dict[str, Any]:
         if not remaining:
             config["status"] = "complete"
 
-        # Trigger incremental compliance update (non-blocking on failure)
-        compliance_result = run_compliance_update(project_root, step)
         if compliance_result:
             config["last_compliance_update"] = {
                 "phase": step,

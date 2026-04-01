@@ -598,13 +598,17 @@ git push -u origin "$(git branch --show-current)"
 uv run {plugin_root}/scripts/tools/generate_session_handoff.py \
   --project-root "$(pwd)" --section "{section_name}" --status "split-complete"
 ```
-4. Print: "Split {current_split} complete. Archived to split_{prefix}_sections. Next split will be started by /shipwright-run."
+4. Print: "Split {current_split} complete. Archived to split_{prefix}_sections. Continuing pipeline for this split (test → changelog → deploy), then next split."
 5. Update delivery dashboard:
 ```bash
 uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "$(pwd)" --section "{section_name}" --status complete --session-id "{SHIPWRIGHT_SESSION_ID}"
 ```
-6. **STOP** — do not mark build phase as complete. The next session picks up the next split via /shipwright-run.
+6. **Mark build phase complete** for this split (pipeline continues to test → changelog → deploy, then orchestrator loops back to plan for next split):
+```bash
+uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+  update-step --project-root "$(pwd)" --step build --status complete
+```
 
 ---
 
