@@ -370,6 +370,8 @@ If any field is missing, treat as incomplete — do NOT mark test phase complete
 - Inform user of which tests failed and why
 
 **If status == "pass":**
+- **Persist test results** (if not already written by test-runner):
+  Verify `shipwright_test_results.json` exists in project root. If not, write the parsed JSON result to that file. This ensures compliance reports have access to unit/smoke/e2e results.
 - Update pipeline state:
   ```bash
   uv run {plugin_root}/scripts/lib/orchestrator.py \

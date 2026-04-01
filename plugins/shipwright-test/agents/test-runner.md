@@ -141,7 +141,14 @@ Overall status = "pass" if unit + smoke pass, regardless of E2E.
 
 ## Output
 
-Return a JSON object as the **last line of your response**:
+**Write results to file** so compliance reports can consume them:
+```bash
+cat > shipwright_test_results.json << 'RESULTS_EOF'
+{JSON object below}
+RESULTS_EOF
+```
+
+Also return the same JSON object as the **last line of your response**:
 
 ```json
 {

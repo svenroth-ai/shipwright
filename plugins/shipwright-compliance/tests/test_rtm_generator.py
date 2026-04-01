@@ -13,8 +13,8 @@ class TestGenerate:
         data = collect_all(project_root)
         result = generate(data)
         assert "# Requirements Traceability Matrix" in result
-        assert "## Matrix" in result
-        assert "## Summary" in result
+        assert "## Section Traceability" in result
+        assert "## Coverage Summary" in result
 
     def test_contains_section_data(self, project_root: Path):
         data = collect_all(project_root)
@@ -47,12 +47,12 @@ class TestGenerate:
         result = generate(data)
         assert "PASS" in result
 
-    def test_findings_formatted(self, project_root: Path):
+    def test_findings_in_summary(self, project_root: Path):
         data = collect_all(project_root)
         result = generate(data)
-        # 03-profile has 2 findings (1 fixed, 1 deferred)
-        assert "1 fixed" in result
-        assert "1 deferred" in result
+        # 03-profile has 2 findings (1 fixed, 1 deferred) -> totals in summary
+        assert "| Total review findings | 3 |" in result
+        assert "| Unresolved findings | 1 |" in result
 
 
 class TestGenerateFile:

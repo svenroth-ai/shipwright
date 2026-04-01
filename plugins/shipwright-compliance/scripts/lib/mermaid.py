@@ -137,28 +137,63 @@ def license_pie(dependencies: list[DependencyInfo]) -> str:
     return "\n".join(lines)
 
 
-def testing_pyramid_diagram(sections: list[SectionInfo]) -> str:
-    """Generate a test pyramid showing coverage layers."""
+def testing_pyramid_diagram(sections: list[SectionInfo], test_results=None) -> str:
+    """Generate a test pyramid showing coverage layers with real data when available."""
     total_passed = sum(s.tests_passed for s in sections)
     total_tests = sum(s.tests_total for s in sections)
     reviewed = sum(1 for s in sections if s.review_findings >= 0)
 
+    tr = test_results  # TestResults | None
+
+    # Unit layer — always from section data
+    unit_label = f"Unit Tests<br/>{total_passed}/{total_tests} passed"
+    unit_color = "#4CAF50" if total_passed == total_tests and total_tests > 0 else "#F44336"
+
+    # Review layer
+    review_label = f"Code Review<br/>{reviewed} sections reviewed"
+    review_color = "#4CAF50"
+
+    # Smoke layer — from test_results if available
+    if tr and tr.smoke_status:
+        smoke_label = f"Smoke Tests<br/>{tr.smoke_status.upper()}"
+        if tr.smoke_url:
+            smoke_label += f" ({tr.smoke_url})"
+        smoke_color = "#4CAF50" if tr.smoke_status in ("pass", "PASS") else "#F44336"
+    else:
+        smoke_label = "Smoke Tests<br/>not run"
+        smoke_color = "#9E9E9E"
+
+    # E2E layer — from test_results if available
+    if tr and not tr.e2e_skipped and tr.e2e_total > 0:
+        e2e_label = f"E2E Tests<br/>{tr.e2e_passed}/{tr.e2e_total} passed"
+        e2e_color = "#4CAF50" if tr.e2e_passed == tr.e2e_total else "#FFC107"
+    elif tr and tr.e2e_skipped:
+        e2e_label = f"E2E Tests<br/>skipped"
+        e2e_color = "#9E9E9E"
+    else:
+        e2e_label = "E2E Tests<br/>not run"
+        e2e_color = "#9E9E9E"
+
+    # Security layer — always informational
+    sec_label = "Security<br/>Aikido SAST/SCA"
+    sec_color = "#9E9E9E"
+
     lines = [
         "```mermaid",
         "flowchart TD",
-        f'    UNIT["Unit Tests<br/>{total_passed}/{total_tests} passed"]',
-        f'    REVIEW["Code Review<br/>{reviewed} sections reviewed"]',
-        '    SMOKE["Smoke Tests<br/>HTTP 200 check"]',
-        '    E2E["E2E Tests<br/>Playwright"]',
-        '    SEC["Security<br/>Aikido SAST/SCA"]',
+        f'    UNIT["{unit_label}"]',
+        f'    REVIEW["{review_label}"]',
+        f'    SMOKE["{smoke_label}"]',
+        f'    E2E["{e2e_label}"]',
+        f'    SEC["{sec_label}"]',
         "",
         "    SEC --> E2E --> SMOKE --> REVIEW --> UNIT",
         "",
-        "    style UNIT fill:#4CAF50,color:#fff",
-        "    style REVIEW fill:#4CAF50,color:#fff",
-        "    style SMOKE fill:#9E9E9E,color:#fff",
-        "    style E2E fill:#9E9E9E,color:#fff",
-        "    style SEC fill:#9E9E9E,color:#fff",
+        f"    style UNIT fill:{unit_color},color:#fff",
+        f"    style REVIEW fill:{review_color},color:#fff",
+        f"    style SMOKE fill:{smoke_color},color:#fff",
+        f"    style E2E fill:{e2e_color},color:#fff",
+        f"    style SEC fill:{sec_color},color:#fff",
         "```",
     ]
     return "\n".join(lines)
