@@ -69,6 +69,35 @@ class DependencyInfo:
 
 
 @dataclass
+class TestResults:
+    """Aggregated test results from test phase (shipwright_test_results.json)."""
+    status: str = ""  # "pass" | "fail"
+    timestamp: str = ""
+    unit_passed: int = 0
+    unit_total: int = 0
+    unit_duration_s: float = 0
+    smoke_status: str = ""  # "pass" | "fail" | "skip" | "skipped"
+    smoke_url: str = ""
+    smoke_response_ms: int = 0
+    e2e_passed: int = 0
+    e2e_total: int = 0
+    e2e_failures: list[str] = field(default_factory=list)
+    e2e_skipped: bool = False
+    e2e_skip_reason: str = ""
+
+
+@dataclass
+class RequirementInfo:
+    """A functional requirement parsed from spec.md."""
+    id: str           # "FR-02.01"
+    text: str         # "The system SHALL..."
+    priority: str     # "Must" | "Should" | "May"
+    split: str        # "02-course-platform"
+    spec_path: str = ""  # Relative path to spec.md
+    sections: list[str] = field(default_factory=list)
+
+
+@dataclass
 class ComplianceData:
     project_root: Path
     configs: dict[str, dict] = field(default_factory=dict)
@@ -77,6 +106,9 @@ class ComplianceData:
     decisions: list[DecisionEntry] = field(default_factory=list)
     commits: list[CommitEntry] = field(default_factory=list)
     dependencies: list[DependencyInfo] = field(default_factory=list)
+    test_results: TestResults | None = None
+    requirements: list[RequirementInfo] = field(default_factory=list)
+    test_file_map: dict[str, list[str]] = field(default_factory=dict)  # section -> [test file paths]
     timestamp: str = ""
 
 
@@ -449,6 +481,129 @@ def _parse_pyproject_deps(pyproject_path: Path) -> list[DependencyInfo]:
 
 
 # ---------------------------------------------------------------------------
+# Test Results
+# ---------------------------------------------------------------------------
+
+def collect_test_results(project_root: Path) -> TestResults | None:
+    """Read aggregated test results from shipwright_test_results.json."""
+    results_path = project_root / "shipwright_test_results.json"
+    if not results_path.exists():
+        return None
+
+    try:
+        data = json.loads(results_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+
+    unit = data.get("unit", {})
+    smoke = data.get("smoke", {})
+    e2e = data.get("e2e", {})
+
+    return TestResults(
+        status=data.get("status", ""),
+        timestamp=data.get("timestamp", ""),
+        unit_passed=unit.get("passed", 0),
+        unit_total=unit.get("total", 0),
+        unit_duration_s=unit.get("duration_s", 0),
+        smoke_status=smoke.get("status", ""),
+        smoke_url=smoke.get("url", ""),
+        smoke_response_ms=smoke.get("response_ms", 0),
+        e2e_passed=e2e.get("passed", 0),
+        e2e_total=e2e.get("total", 0),
+        e2e_failures=e2e.get("failures", []),
+        e2e_skipped=e2e.get("skipped", False),
+        e2e_skip_reason=e2e.get("reason", ""),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Requirements
+# ---------------------------------------------------------------------------
+
+_FR_TABLE_RE = re.compile(
+    r"^\| (FR-[\d.]+)\s*\|\s*(.+?)\s*\|\s*(Must|Should|May)\s*\|$"
+)
+
+
+def collect_requirements(project_root: Path) -> list[RequirementInfo]:
+    """Parse functional requirements from planning/*/spec.md files."""
+    planning_dir = project_root / "planning"
+    if not planning_dir.exists():
+        return []
+
+    requirements: list[RequirementInfo] = []
+
+    for split_dir in sorted(planning_dir.iterdir()):
+        if not split_dir.is_dir():
+            continue
+        spec_path = split_dir / "spec.md"
+        if not spec_path.exists():
+            continue
+
+        split_name = split_dir.name
+        rel_spec = f"planning/{split_name}/spec.md"
+        content = spec_path.read_text(encoding="utf-8")
+
+        for line in content.splitlines():
+            match = _FR_TABLE_RE.match(line)
+            if match:
+                requirements.append(RequirementInfo(
+                    id=match.group(1),
+                    text=match.group(2).strip(),
+                    priority=match.group(3),
+                    split=split_name,
+                    spec_path=rel_spec,
+                ))
+
+    return requirements
+
+
+def _map_requirements_to_sections(
+    requirements: list[RequirementInfo],
+    sections: list[SectionInfo],
+) -> None:
+    """Infer requirement→section mapping by matching FR split prefix to section split."""
+    # Group sections by split
+    sections_by_split: dict[str, list[SectionInfo]] = {}
+    for sec in sections:
+        sections_by_split.setdefault(sec.split, []).append(sec)
+
+    for req in requirements:
+        # Find sections in the same split
+        split_sections = sections_by_split.get(req.split, [])
+        # Simple heuristic: match section names against requirement text keywords
+        req_lower = req.text.lower()
+        for sec in split_sections:
+            sec_keywords = sec.name.replace("-", " ").split()
+            # If any meaningful section keyword appears in requirement text
+            matches = sum(1 for kw in sec_keywords if len(kw) > 2 and kw in req_lower)
+            if matches >= 1:
+                req.sections.append(sec.name)
+
+
+# ---------------------------------------------------------------------------
+# Test file mapping
+# ---------------------------------------------------------------------------
+
+def collect_test_files(project_root: Path) -> dict[str, list[str]]:
+    """Scan tests/ directory and map test files to sections by path convention.
+
+    Returns dict: section_name -> [relative test file paths].
+    """
+    test_dir = project_root / "tests"
+    if not test_dir.exists():
+        return {}
+
+    file_map: dict[str, list[str]] = {}
+    for test_file in test_dir.rglob("*.test.*"):
+        rel_path = str(test_file.relative_to(project_root)).replace("\\", "/")
+        # Use the file path as-is; grouping by section done at report level
+        file_map.setdefault("_all", []).append(rel_path)
+
+    return file_map
+
+
+# ---------------------------------------------------------------------------
 # Main collector
 # ---------------------------------------------------------------------------
 
@@ -456,13 +611,20 @@ def collect_all(project_root: Path) -> ComplianceData:
     """Collect all compliance-relevant data from a project."""
     project_root = Path(project_root).resolve()
 
+    sections = collect_sections(project_root)
+    requirements = collect_requirements(project_root)
+    _map_requirements_to_sections(requirements, sections)
+
     return ComplianceData(
         project_root=project_root,
         configs=collect_configs(project_root),
         splits=collect_splits(project_root),
-        sections=collect_sections(project_root),
+        sections=sections,
         decisions=collect_decision_log(project_root),
         commits=collect_git_history(project_root),
         dependencies=collect_dependencies(project_root),
+        test_results=collect_test_results(project_root),
+        requirements=requirements,
+        test_file_map=collect_test_files(project_root),
         timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     )
