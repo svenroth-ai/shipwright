@@ -53,6 +53,14 @@ def _detect_phase_complete(current_step: str, project_root: Path, completed_step
                 return config.get("status") == "complete"
             except (json.JSONDecodeError, OSError):
                 pass
+    elif current_step == "test":
+        results_path = project_root / "shipwright_test_results.json"
+        if results_path.exists():
+            try:
+                results = json.loads(results_path.read_text(encoding="utf-8"))
+                return results.get("status") == "pass"
+            except (json.JSONDecodeError, OSError):
+                pass
 
     return False
 

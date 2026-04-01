@@ -27,7 +27,7 @@ Usage:
   /shipwright-run --iterate "Add dark mode toggle"
   /shipwright-run @requirements.md
 
-Pipeline: Project → Design → Plan → Build → Test → Deploy → Changelog
+Pipeline: Project → Design → Plan → Build → Test → Changelog → Deploy
 ================================================================================
 ```
 

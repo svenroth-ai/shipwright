@@ -33,6 +33,8 @@ def main() -> int:
     if plugin_root:
         context_parts.append(f"SHIPWRIGHT_PLUGIN_ROOT={plugin_root}")
 
+    context_parts.append(f"SHIPWRIGHT_PROJECT_ROOT={os.getcwd()}")
+
     if context_parts:
         output = {
             "hookSpecificOutput": {
