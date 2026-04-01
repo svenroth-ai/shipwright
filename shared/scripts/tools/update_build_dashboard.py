@@ -72,7 +72,17 @@ def _pipeline_status(run_config: dict, total_sections: int, completed_sections: 
     completed = set(run_config.get("completed_steps", []))
     current = run_config.get("current_step")
 
+    # Detect split-loop: plan/build cycling with project+design already done
+    # In this state, test/changelog/deploy haven't run for current cycle
+    in_split_loop = (
+        current in ("plan", "build")
+        and "project" in completed
+        and "design" in completed
+    )
+
     def phase_status(phase: str) -> str:
+        if in_split_loop and phase in ("test", "changelog", "deploy", "security"):
+            return "pending"
         if phase in completed:
             return "complete"
         if phase == current:
@@ -151,6 +161,12 @@ def generate_dashboard(
 
     if total > 0:
         lines.append(f"## Build Sections ({completed}/{total} complete){split_label}")
+    elif completed_splits and current_split and current_split not in completed_splits:
+        # Split transition: current split awaiting plan, sections empty
+        lines.append(f"## Build Sections{split_label}")
+        lines.append("")
+        lines.append(f"Split **{current_split}** — awaiting `/shipwright-plan`. "
+                      f"Previous splits: {', '.join(completed_splits)} (archived).")
     elif sections is not None and run_config:
         lines.append(f"## Build Sections{split_label}")
     lines.append("")

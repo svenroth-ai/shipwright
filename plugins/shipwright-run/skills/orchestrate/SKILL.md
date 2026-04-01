@@ -155,29 +155,30 @@ The orchestrator dispatches to each skill in sequence:
    a. /shipwright-plan    → Spec → Sections
    b. For each section:
       - /shipwright-build → Section → Code + Tests + Commit
-   c. /shipwright-test    → Run all tests
-   d. /shipwright-security → Security scan (if AIKIDO_CLIENT_ID set)
-   e. /shipwright-changelog → Changelog + PR + Merge
-   f. /shipwright-deploy  → Deploy to DEV (from merged main)
+   [After build: orchestrator loops back to plan if more splits remain]
+4. /shipwright-test       → Run all tests (full codebase, all splits merged)
+5. /shipwright-security   → Security scan (if AIKIDO_CLIENT_ID set)
+6. /shipwright-changelog  → Changelog + PR + Merge (aggregated across all splits)
+7. /shipwright-deploy     → Deploy to DEV (from merged main, all splits)
 ```
 
-**Important:** Steps 3a-3f repeat for EACH split. After deploy completes for one split,
-`orchestrator.py update-step --step deploy --status complete` automatically detects remaining
-splits and loops back: resets per-split steps (plan/build/test/changelog/deploy) and sets
-`current_step` to "plan". The pipeline only completes when ALL splits are done.
+**Important:** Steps 3a-3b repeat for EACH split. After build completes for one split,
+`orchestrator.py update-step --step build --status complete` automatically detects remaining
+splits and loops back: resets plan+build steps and sets `current_step` to "plan".
+Test, changelog, and deploy run ONCE after all splits are built.
 
-### Split Transition (automatic after deploy)
+### Split Transition (automatic after build)
 
-After deploy completes, the orchestrator's `update-step` checks `get-build-progress`:
-- If `all_done == false`: Resets per-split steps and sets `current_step = "plan"`
-- If `all_done == true`: Pipeline continues to completion
+After build completes for a split, the orchestrator's `update-step` checks `get-build-progress`:
+- If `all_done == false`: Resets plan+build steps, sets `current_step = "plan"`, resets tool counter
+- If `all_done == true`: Pipeline continues to test → changelog → deploy (once)
 
 When a split transition occurs, print:
 ```
 ================================================================================
 SPLIT COMPLETE: {completed_split}
 ================================================================================
-Completed: {N}/{total} splits
+Completed: {N}/{total} splits built
 Next: {next_split_name}
 Continuing to /shipwright-plan...
 ================================================================================
