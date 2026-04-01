@@ -598,7 +598,7 @@ git push -u origin "$(git branch --show-current)"
 uv run {plugin_root}/scripts/tools/generate_session_handoff.py \
   --project-root "$(pwd)" --section "{section_name}" --status "split-complete"
 ```
-4. Print: "Split {current_split} complete. Archived to split_{prefix}_sections. Continuing pipeline for this split (test → changelog → deploy), then next split."
+4. Print: "Split {current_split} complete. Archived to split_{prefix}_sections. Continuing to plan + build for next split. Test/changelog/deploy run once after all splits."
 5. Update delivery dashboard:
 ```bash
 uv run {shared_root}/scripts/tools/update_build_dashboard.py \

@@ -152,6 +152,15 @@ def run_compliance_update(project_root: Path, phase: str) -> dict[str, Any] | No
     return None
 
 
+def _reset_tool_counter(project_root: Path) -> None:
+    """Reset tool call counter to zero (between-skill cleanup)."""
+    counter = project_root / ".shipwright_toolcall_count"
+    try:
+        counter.write_text("0", encoding="utf-8")
+    except OSError:
+        pass
+
+
 def update_step(project_root: Path, step: str, status: str) -> dict[str, Any]:
     """Update a pipeline step's status.
 
@@ -168,12 +177,13 @@ def update_step(project_root: Path, step: str, status: str) -> dict[str, Any]:
         # Trigger incremental compliance update (non-blocking on failure)
         compliance_result = run_compliance_update(project_root, step)
 
-        # Split-loop: after deploy, check if more splits remain
-        if step == "deploy":
+        # Split-loop: after build, check if more splits remain
+        # Test/changelog/deploy run ONCE after all splits are built
+        if step == "build":
             progress = get_build_progress(project_root)
             if progress.get("total_splits", 0) > 0 and not progress.get("all_done", True):
                 # More splits remain — loop back to plan for next split
-                split_steps = {"plan", "build", "test", "changelog", "deploy", "security"}
+                split_steps = {"plan", "build"}
                 config["completed_steps"] = [s for s in completed if s not in split_steps]
                 config["current_step"] = "plan"
                 config["status"] = "in_progress"
@@ -182,6 +192,8 @@ def update_step(project_root: Path, step: str, status: str) -> dict[str, Any]:
                         "phase": step,
                         "reports": compliance_result.get("updated_reports", []),
                     }
+                # Reset tool counter (between-skill cleanup)
+                _reset_tool_counter(project_root)
                 save_run_config(project_root, config)
                 return config
 

@@ -26,6 +26,11 @@ def _detect_phase_complete(current_step: str, project_root: Path, completed_step
     if current_step in completed_steps:
         return False
 
+    # Guard: skip detection during split-loop resume
+    # (project+design done but plan/build cycling = mid-split-loop, stale configs)
+    if current_step in ("plan", "build") and "project" in completed_steps and "design" in completed_steps:
+        return False
+
     if current_step == "build":
         config_path = project_root / "shipwright_build_config.json"
         if config_path.exists():
