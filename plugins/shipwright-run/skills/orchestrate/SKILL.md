@@ -161,6 +161,30 @@ The orchestrator dispatches to each skill in sequence:
    f. /shipwright-deploy  → Deploy to DEV (from merged main)
 ```
 
+**Important:** Steps 3a-3f repeat for EACH split. After deploy completes for one split,
+`orchestrator.py update-step --step deploy --status complete` automatically detects remaining
+splits and loops back: resets per-split steps (plan/build/test/changelog/deploy) and sets
+`current_step` to "plan". The pipeline only completes when ALL splits are done.
+
+### Split Transition (automatic after deploy)
+
+After deploy completes, the orchestrator's `update-step` checks `get-build-progress`:
+- If `all_done == false`: Resets per-split steps and sets `current_step = "plan"`
+- If `all_done == true`: Pipeline continues to completion
+
+When a split transition occurs, print:
+```
+================================================================================
+SPLIT COMPLETE: {completed_split}
+================================================================================
+Completed: {N}/{total} splits
+Next: {next_split_name}
+Continuing to /shipwright-plan...
+================================================================================
+```
+
+Then continue the pipeline — the orchestrator will invoke `/shipwright-plan` for the next split's spec.
+
 **Between each skill:**
 - **Upstream Success Check:** Before starting the next phase, verify the previous phase completed successfully:
   - Read `shipwright_run_config.json` → check that the previous phase status is `"complete"`
@@ -497,8 +521,14 @@ If the pipeline is interrupted (context window, user stops, error):
    ================================================================================
    ```
    d. Enter Build Phase Autopilot Loop from first incomplete section
-3. For other steps: skip completed steps, continue from `current_step`
-4. Read `agent_docs/session_handoff.md` if it exists — use it for additional context about what was in progress
+3. If `current_step == "plan"` and `completed_steps` includes `project` and `design`:
+   - This is a **split-loop resume** (not the first run)
+   - Read `shipwright_build_config.json` → `current_split` to identify which split is next
+   - Read `shipwright_project_config.json` → `splits[]` to get the spec path for this split
+   - Print split-loop resume banner showing which split is starting
+   - Continue to `/shipwright-plan` for the current split's spec
+4. For other steps: skip completed steps, continue from `current_step`
+5. Read `agent_docs/session_handoff.md` if it exists — use it for additional context about what was in progress
 
 ---
 

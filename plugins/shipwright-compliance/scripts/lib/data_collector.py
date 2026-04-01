@@ -484,14 +484,10 @@ def _parse_pyproject_deps(pyproject_path: Path) -> list[DependencyInfo]:
 # Test Results
 # ---------------------------------------------------------------------------
 
-def collect_test_results(project_root: Path) -> TestResults | None:
-    """Read aggregated test results from shipwright_test_results.json."""
-    results_path = project_root / "shipwright_test_results.json"
-    if not results_path.exists():
-        return None
-
+def _parse_test_results_file(path: Path) -> TestResults | None:
+    """Parse a single test results JSON file into a TestResults object."""
     try:
-        data = json.loads(results_path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return None
 
@@ -513,6 +509,51 @@ def collect_test_results(project_root: Path) -> TestResults | None:
         e2e_failures=e2e.get("failures", []),
         e2e_skipped=e2e.get("skipped", False),
         e2e_skip_reason=e2e.get("reason", ""),
+    )
+
+
+def collect_test_results(project_root: Path) -> TestResults | None:
+    """Read and aggregate test results from current + archived split results.
+
+    Reads split_*_test_results.json (archived) and shipwright_test_results.json
+    (current), aggregating unit/e2e counts across all splits.
+    """
+    all_results: list[TestResults] = []
+
+    # Archived split results
+    for f in sorted(project_root.glob("split_*_test_results.json")):
+        tr = _parse_test_results_file(f)
+        if tr:
+            all_results.append(tr)
+
+    # Current results
+    current = project_root / "shipwright_test_results.json"
+    if current.exists():
+        tr = _parse_test_results_file(current)
+        if tr:
+            all_results.append(tr)
+
+    if not all_results:
+        return None
+
+    if len(all_results) == 1:
+        return all_results[0]
+
+    # Aggregate across splits
+    return TestResults(
+        status="pass" if all(r.status == "pass" for r in all_results) else "fail",
+        timestamp=all_results[-1].timestamp,  # Most recent
+        unit_passed=sum(r.unit_passed for r in all_results),
+        unit_total=sum(r.unit_total for r in all_results),
+        unit_duration_s=sum(r.unit_duration_s for r in all_results),
+        smoke_status=all_results[-1].smoke_status,  # Latest split's smoke
+        smoke_url=all_results[-1].smoke_url,
+        smoke_response_ms=all_results[-1].smoke_response_ms,
+        e2e_passed=sum(r.e2e_passed for r in all_results),
+        e2e_total=sum(r.e2e_total for r in all_results),
+        e2e_failures=[f for r in all_results for f in r.e2e_failures],
+        e2e_skipped=all_results[-1].e2e_skipped,
+        e2e_skip_reason=all_results[-1].e2e_skip_reason,
     )
 
 
