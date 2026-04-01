@@ -14,7 +14,7 @@ If so, summarize what we know before proceeding.
 ## Script
 
 ```bash
-uv run {plugin_root}/scripts/checks/check-context-decision.py
+uv run --project {plugin_root} {plugin_root}/scripts/checks/check-context-decision.py
 ```
 
 The script doesn't measure actual context — it prompts Claude to self-assess.

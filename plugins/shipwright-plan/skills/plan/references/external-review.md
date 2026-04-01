@@ -14,7 +14,7 @@ Claude reviewing its own plan misses systematic biases — external models help.
 ## Script
 
 ```bash
-uv run {plugin_root}/scripts/llm_clients/review.py \
+uv run --project {plugin_root} {plugin_root}/scripts/llm_clients/review.py \
   --plan-file "{planning_dir}/plan.md" \
   --spec-file "{spec_file}" \
   --plugin-root "{plugin_root}"

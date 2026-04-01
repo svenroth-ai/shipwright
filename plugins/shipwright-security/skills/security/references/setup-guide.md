@@ -40,7 +40,7 @@ AIKIDO_CLIENT_SECRET=your_client_secret_here
 
 Test the connection:
 ```bash
-uv run plugins/shipwright-security/scripts/lib/aikido_client.py repos
+uv run --project plugins/shipwright-security plugins/shipwright-security/scripts/lib/aikido_client.py repos
 ```
 
 Expected output: JSON with your connected repositories.

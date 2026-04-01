@@ -61,7 +61,7 @@ If credentials missing → print setup instructions and stop.
 
 Run the aikido_client script:
 ```bash
-uv run {plugin_root}/scripts/lib/aikido_client.py issues --repo {repo} --severity critical,high,medium
+uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py issues --repo {repo} --severity critical,high,medium
 ```
 
 Parse the JSON response. If `success: false`, show the error and follow alternatives.
@@ -155,7 +155,7 @@ For accepted findings → run security-fixer subagent → re-run tests.
 
 Run the report generator:
 ```bash
-uv run {plugin_root}/scripts/lib/aikido_client.py report --repo {repo}
+uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py report --repo {repo}
 ```
 
 Write a Markdown report to the project root using the suggested filename.
@@ -200,25 +200,25 @@ When used outside a Shipwright pipeline, these commands work directly:
 
 ### `issues` — List Issues
 ```bash
-uv run {plugin_root}/scripts/lib/aikido_client.py issues [--repo owner/repo] [--severity critical,high] [--status open] [--type sast]
+uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py issues [--repo owner/repo] [--severity critical,high] [--status open] [--type sast]
 ```
 Format output as Markdown table.
 
 ### `repos` — List Connected Repos
 ```bash
-uv run {plugin_root}/scripts/lib/aikido_client.py repos
+uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py repos
 ```
 Format as bulleted list.
 
 ### `summary` — Dashboard
 ```bash
-uv run {plugin_root}/scripts/lib/aikido_client.py summary [--repo owner/repo]
+uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py summary [--repo owner/repo]
 ```
 Format as ASCII dashboard with severity bars.
 
 ### `report` — Generate Report
 ```bash
-uv run {plugin_root}/scripts/lib/aikido_client.py report --repo owner/repo [--output path.md]
+uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py report --repo owner/repo [--output path.md]
 ```
 Write Markdown report to working directory.
 

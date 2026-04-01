@@ -13,7 +13,7 @@ Write section files directly without subagents.
 Use the `shipwright-plan:section-writer` subagent for parallel generation:
 
 ```bash
-uv run {plugin_root}/scripts/checks/generate-batch-tasks.py \
+uv run --project {plugin_root} {plugin_root}/scripts/checks/generate-batch-tasks.py \
   --planning-dir "{planning_dir}"
 ```
 

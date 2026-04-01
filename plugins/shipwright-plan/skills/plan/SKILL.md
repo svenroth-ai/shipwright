@@ -74,7 +74,7 @@ The plugin_root is the directory two levels up from `scripts/checks/`.
 ### D. Run Setup Script
 
 ```bash
-uv run {plugin_root}/scripts/checks/setup-planning-session.py \
+uv run --project {plugin_root} {plugin_root}/scripts/checks/setup-planning-session.py \
   --file "{spec_file_path}" \
   --plugin-root "{plugin_root}" \
   --session-id "{SHIPWRIGHT_SESSION_ID}"
@@ -166,7 +166,7 @@ See [context-check.md](references/context-check.md) for detailed guidance.
 
 Run the context check script:
 ```bash
-uv run {plugin_root}/scripts/checks/check-context-decision.py
+uv run --project {plugin_root} {plugin_root}/scripts/checks/check-context-decision.py
 ```
 
 If context is getting large, consider:
@@ -203,7 +203,7 @@ See [external-review.md](references/external-review.md) for protocol.
 
 Run the review script:
 ```bash
-uv run {plugin_root}/scripts/llm_clients/review.py \
+uv run --project {plugin_root} {plugin_root}/scripts/llm_clients/review.py \
   --plan-file "{planning_dir}/plan.md" \
   --spec-file "{spec_file}" \
   --plugin-root "{plugin_root}"
@@ -249,7 +249,7 @@ See [section-splitting.md](references/section-splitting.md) for protocol.
 
 **Batch approach (recommended for 3+ sections):**
 ```bash
-uv run {plugin_root}/scripts/checks/generate-batch-tasks.py \
+uv run --project {plugin_root} {plugin_root}/scripts/checks/generate-batch-tasks.py \
   --planning-dir "{planning_dir}"
 ```
 
@@ -269,7 +269,7 @@ The fix: retry with backoff (50ms, 100ms, 200ms) if transcript file is empty or 
 
 Run section validation:
 ```bash
-uv run {plugin_root}/scripts/checks/check-sections.py \
+uv run --project {plugin_root} {plugin_root}/scripts/checks/check-sections.py \
   --planning-dir "{planning_dir}"
 ```
 
