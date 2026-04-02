@@ -123,7 +123,8 @@
     "src/components/": "React components",
     "src/lib/": "Utility functions",
     "src/hooks/": "Custom React hooks",
-    "supabase/migrations/": "SQL migrations (managed by shipwright-build)",
+    "supabase/migrations/": "SQL forward migrations (managed by shipwright-build)",
+    "supabase/migrations/_rollback/": "SQL rollback migrations (not executed by supabase db push)",
     "supabase/functions/": "Edge Functions",
     "tests/": "Vitest unit tests",
     "e2e/": "Playwright E2E tests",
@@ -139,7 +140,8 @@
   "required_env_vars": {
     "build": [
       {"name": "NEXT_PUBLIC_SUPABASE_URL", "description": "Supabase project URL"},
-      {"name": "NEXT_PUBLIC_SUPABASE_ANON_KEY", "description": "Supabase anonymous key"}
+      {"name": "NEXT_PUBLIC_SUPABASE_ANON_KEY", "description": "Supabase anonymous key"},
+      {"name": "SUPABASE_SERVICE_ROLE_KEY", "description": "Supabase service role key (admin operations: webhooks, role upgrades)"}
     ],
     "deploy": [
       {"name": "JELASTIC_TOKEN", "description": "Infomaniak Jelastic API token"},
@@ -170,7 +172,7 @@
   "migrations": {
     "dev": "supabase db push (automatic)",
     "prod": "supabase db push --dry-run first, user confirms, then apply",
-    "rollback": "down.sql generated alongside each migration (best-effort)",
+    "rollback": "down.sql generated in supabase/migrations/_rollback/ (best-effort, never in migrations/ directly)",
     "destructive_protection": true,
     "destructive_patterns": ["DROP TABLE", "DROP COLUMN", "ALTER TYPE"]
   }

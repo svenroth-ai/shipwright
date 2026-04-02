@@ -9,9 +9,9 @@ Build generates migration files; Deploy executes them.
 
 ### 1. Always Generate down.sql
 
-When creating a migration `up.sql`, also generate `down.sql` (best-effort):
+When creating a migration, also generate a rollback file in `supabase/migrations/_rollback/` (best-effort):
 
-| up.sql | down.sql |
+| Forward migration | Rollback migration |
 |--------|----------|
 | CREATE TABLE users (...) | DROP TABLE IF EXISTS users; |
 | ALTER TABLE users ADD COLUMN email TEXT | ALTER TABLE users DROP COLUMN email; |
@@ -19,7 +19,7 @@ When creating a migration `up.sql`, also generate `down.sql` (best-effort):
 
 For complex migrations (data transforms), add a comment:
 ```sql
--- down.sql: Manual rollback required. See decision_log.md.
+-- Manual rollback required. See decision_log.md.
 ```
 
 ### 2. Destructive Change Detection
@@ -42,20 +42,44 @@ regardless of autonomy level.
 
 ### 3. Migration File Conventions
 
+**CRITICAL:** The Supabase CLI (`supabase db push`) treats EVERY `.sql` file in
+`supabase/migrations/` as a forward migration. Rollback files placed there will
+cause duplicate key errors.
+
 ```
 supabase/migrations/
-  YYYYMMDDHHMMSS_description/
-    up.sql       # Forward migration
-    down.sql     # Rollback migration (best-effort)
+  NNN_description.sql              # Forward migration (executed by supabase db push)
+
+supabase/migrations/_rollback/
+  NNN_description_down.sql         # Rollback migration (NOT executed, stored for manual use)
 ```
+
+**Rules:**
+- Forward migrations: flat files in `supabase/migrations/`, named `NNN_description.sql`
+- Rollback migrations: matching files in `supabase/migrations/_rollback/`, named `NNN_description_down.sql`
+- **NEVER** place `_down.sql` files directly in `supabase/migrations/` — the CLI will try to execute them
+- Create the `_rollback/` directory if it doesn't exist (`mkdir -p supabase/migrations/_rollback`)
 
 ### 4. Build vs Deploy Responsibility
 
 **Build (this plugin):**
-- Generates up.sql and down.sql
+- Generates forward migration in `supabase/migrations/`
+- Generates rollback migration in `supabase/migrations/_rollback/`
 - Detects destructive changes and warns
 - Does NOT execute migrations
 
 **Deploy (shipwright-deploy):**
-- DEV: `supabase db push` (automatic)
-- PROD: `supabase db push --dry-run` → user review → manual confirm
+- DEV: `supabase db push --linked` (automatic)
+- PROD: `supabase db push --linked --dry-run` → user review → manual confirm
+
+### 5. Post-Migration Manual Steps
+
+Some Supabase features require Dashboard activation after the migration SQL runs:
+
+| Feature | Migration creates... | Dashboard action required |
+|---------|---------------------|--------------------------|
+| Auth Hooks | Function + grants | Authentication → Hooks → Enable and select function |
+| Database Webhooks | Edge Function | Database → Webhooks → Configure |
+| Realtime | Publication | Database → Replication → Enable table |
+
+The deploy skill will remind the user of any required manual steps after migration push.

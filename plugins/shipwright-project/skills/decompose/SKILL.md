@@ -338,7 +338,22 @@ Run this once per decision. Only log **project-specific** decisions — not prof
 - Design choices (font, color scheme, design system flavor)
 - Data model choices (UUIDs vs auto-increment, soft delete, etc.)
 
-**Checkpoint:** CLAUDE.md existence.
+**Supabase Project Setup (supabase-nextjs profile only):**
+
+When the detected profile is `supabase-nextjs`, perform these additional steps after generating CLAUDE.md:
+
+1. **Check if `supabase/config.toml` exists** in project root
+2. If NOT: run `npx supabase init`
+3. **Ask the user for their Supabase project ref** (from Dashboard → Settings → General → Reference ID)
+4. **Check if `SUPABASE_ACCESS_TOKEN` is set** in `.env.local`:
+   - If missing: prompt user to generate one at https://supabase.com/dashboard/account/tokens and add it to `.env.local`
+   - Ensure it is NOT commented out (no leading `#`)
+5. Run `SUPABASE_ACCESS_TOKEN="$TOKEN" npx supabase link --project-ref <ref>`
+6. Verify link succeeded: check that `.supabase/` directory was created
+
+This ensures all downstream skills (build migrations, deploy) can use `supabase db push --linked`.
+
+**Checkpoint:** CLAUDE.md existence + `supabase/config.toml` existence (if supabase-nextjs profile).
 
 ---
 
