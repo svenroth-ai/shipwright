@@ -222,18 +222,26 @@ def _collect_split_e2e_results(project_root: Path) -> dict[str, dict]:
 
 
 def _e2e_details(data: ComplianceData) -> list[str]:
-    """E2E test failure details if available."""
-    tr = data.test_results
-    if not tr or tr.e2e_skipped or not tr.e2e_failures:
-        return []
+    """E2E test failure details and Playwright report link."""
+    lines: list[str] = []
 
-    lines = [
-        "## E2E Test Failures",
-        "",
-    ]
-    for failure in tr.e2e_failures:
-        lines.append(f"- {failure}")
-    lines.append("")
+    # Playwright HTML report link
+    report_path = data.project_root / "playwright-report" / "index.html"
+    if report_path.exists():
+        lines.extend([
+            "## Playwright Report",
+            "",
+            "**Interactive E2E report:** [playwright-report/index.html](../playwright-report/index.html)",
+            "",
+        ])
+
+    # Failure details
+    tr = data.test_results
+    if tr and not tr.e2e_skipped and tr.e2e_failures:
+        lines.extend(["## E2E Test Failures", ""])
+        for failure in tr.e2e_failures:
+            lines.append(f"- {failure}")
+        lines.append("")
 
     return lines
 

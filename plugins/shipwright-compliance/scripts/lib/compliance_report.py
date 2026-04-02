@@ -69,6 +69,9 @@ def generate(data: ComplianceData) -> str:
     # Add CHANGELOG if it exists
     if (data.project_root / "CHANGELOG.md").exists():
         artifact_rows.append("| Changelog | [CHANGELOG.md](../CHANGELOG.md) | Release notes |")
+    # Add Playwright report if it exists
+    if (data.project_root / "playwright-report" / "index.html").exists():
+        artifact_rows.append("| Playwright Report | [playwright-report/index.html](../playwright-report/index.html) | Interactive E2E test results with screenshots |")
 
     lines.extend([
         "## Compliance Artifacts",
