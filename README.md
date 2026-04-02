@@ -218,7 +218,7 @@ plugins/shipwright-{name}/
 
 ## Constitution
 
-All Shipwright agents follow the **Constitution** (`shared/constitution.md`) — a declarative set of behavioral boundaries organized as ALWAYS / ASK FIRST / NEVER rules.
+All Shipwright agents follow the **Constitution** (`shared/constitution.md`) — a declarative set of behavioral boundaries organized as ALWAYS / ASK FIRST / NEVER rules. Several rules are derived from agent reliability patterns identified in the [Claude Code source code leak](https://simonwillison.net/2025/Jun/21/claude-code/) (verification after edits, context window awareness, honest test reporting).
 
 ### ALWAYS (do without asking)
 - Run tests before committing — tests must pass
