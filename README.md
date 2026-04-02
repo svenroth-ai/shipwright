@@ -57,18 +57,18 @@ User Description
 
 ## Skills
 
-| Skill | Purpose | Key Features |
-|-------|---------|-------------|
-| `shipwright-run` | Orchestrator | Inference engine, scope detection, pipeline state machine |
-| `shipwright-project` | Requirements | IREB-aligned specs, scope detection (Full App / Extension), chat + file + inline input |
-| `shipwright-design` | UI Design | [Snippet-assembled HTML mockups](#design-phase), [review viewer](#design-review-workflow) with feedback panel, [design system flavors](#design-system-flavors), spec backflow, session handoff |
-| `shipwright-plan` | Planning | External LLM review (Gemini + OpenAI), section-writer subagent, E2E test plan |
-| `shipwright-build` | Implementation | TDD loop, code-reviewer subagent, Conventional Commits, migration safety |
-| `shipwright-test` | Testing | Profile-aware (Vitest/Playwright), smoke test, `--fix` auto-repair |
-| `shipwright-security` | Security | Aikido API scanning, finding classification, remediation loop, security-fixer subagent |
-| `shipwright-deploy` | Deployment | [Deployment flavors](#deployment-flavors), DEV auto / PROD manual, clone-based rollback |
-| `shipwright-changelog` | Release | Keep-a-Changelog format, semver bump suggestion, PR creation |
-| `shipwright-compliance` | Compliance | IREB traceability, RTM, SBOM, test evidence, change history reports |
+| Skill | Purpose |
+|-------|---------|
+| `shipwright-run` | Orchestrator — inference engine, scope detection, pipeline state machine |
+| `shipwright-project` | Requirements — IREB-aligned specs, scope detection, chat + file + inline input |
+| `shipwright-design` | UI Design — snippet-assembled HTML mockups, review viewer, design system flavors |
+| `shipwright-plan` | Planning — external LLM review, section-writer subagent, E2E test plan |
+| `shipwright-build` | Implementation — TDD loop, code-reviewer subagent, Conventional Commits |
+| `shipwright-test` | Testing — profile-aware (Vitest/Playwright), smoke test, `--fix` auto-repair |
+| `shipwright-security` | Security — Aikido API scanning, finding classification, remediation loop |
+| `shipwright-deploy` | Deployment — deployment flavors, DEV auto / PROD manual, clone-based rollback |
+| `shipwright-changelog` | Release — Keep-a-Changelog format, semver bump suggestion, PR creation |
+| `shipwright-compliance` | Compliance — IREB traceability, RTM, SBOM, test evidence, change history reports |
 
 ## Modes
 
@@ -89,77 +89,6 @@ Quick change to existing project. Minimal questions, fast pipeline.
 ```
 /shipwright-run --iterate "Add dark mode toggle"
 ```
-
-## Design Phase
-
-`shipwright-design` turns IREB specs into interactive HTML mockups before a single line of code is written. The phase bridges requirements (from `shipwright-project`) and implementation planning (from `shipwright-plan`).
-
-### Snippet Assembly System
-
-Screens are assembled from **pre-built HTML/CSS building blocks** rather than written from scratch. This makes generation 2-3x faster while keeping full visual flexibility.
-
-```
-snippets-variables.md     →  CSS :root block (flavor × character)
-         ↓
-snippets-layout.md        →  Page Shell + Layout (Sidebar / Top Nav / Centered Card)
-         ↓
-snippets-components.md    →  Components (Table, Form, Cards, Stats, Modal, Tabs, ...)
-         ↓
-Assembled Screen           →  designs/screens/NN-name.html
-```
-
-All visual properties (colors, fonts, shadows, radii) are controlled by CSS custom properties — set once per project based on the design interview. The snippets define **structure and layout**, not visual style.
-
-### Design Review Workflow
-
-After generation, `shipwright-design` produces an integrated review viewer (`designs/index.html`) that runs in the browser:
-
-- **Grid View** — All screens as thumbnail cards with live iframe previews, grouped by split
-- **Viewer Mode** — Full-size iframe with prev/next navigation, keyboard shortcuts
-- **Feedback Panel** — 340px right side panel with status buttons (Approved / Changes / Rejected), free-text comments, auto-save to localStorage, previous round history
-- **Export** — Generates `design-feedback-roundN.md` via save dialog
-
-The review viewer uses the project's own design tokens — it feels native to the app being designed.
-
-### Feedback Loop
-
-After generation, the skill enters a review loop:
-
-```
-Generate screens + index.html
-  │
-  ├── Print review instructions
-  ├── AskUserQuestion (stays open while user reviews in browser)
-  │
-  ├─[A] All approved  → Spec Backflow (full) → Session Handoff → /shipwright-plan
-  ├─[B] Feedback ready → Read feedback file → Revise screens → Loop back
-  └─[C] Pause          → Save state → Resume later
-```
-
-**Spec Backflow** keeps upstream artifacts in sync with design decisions:
-- Updates `planning/*/spec.md` with screen references per FR
-- Logs design decisions to `agent_docs/decision_log.md` (ADR format)
-- Writes `designs/design-handoff.md` at finalization for `/shipwright-plan`
-
-## Design System Flavors
-
-`shipwright-design` generates HTML mockups based on a selectable design system flavor. The flavor is chosen during the design interview and determines the visual language (components, spacing, colors, typography) for all generated screens.
-
-| Flavor | Design System | Best For |
-|--------|--------------|----------|
-| `untitled-ui` | [Untitled UI](https://www.untitledui.com/) | SaaS dashboards, admin panels, B2B apps (default) |
-| `material-design` | [Material Design 3](https://m3.material.io/) | Consumer apps, Android-first, Google ecosystem |
-| `custom` | User-provided | Upload your own brand guidelines to `designs/uploads/` |
-
-## Deployment Flavors
-
-`shipwright-deploy` uses a flavor pattern for deployment targets. Each flavor implements the same interface but talks to a different platform.
-
-| Flavor | Platform | Region | Status |
-|--------|----------|--------|--------|
-| `jelastic` | [Jelastic](https://jelastic.com/) (Infomaniak) | Switzerland | Implemented |
-
-Additional flavors (e.g., Vercel, Fly.io) can be added by implementing the deploy client interface. See `plugins/shipwright-deploy/skills/deploy/references/deploy-flavors.md`.
 
 ## Stack Profiles
 
@@ -216,117 +145,36 @@ plugins/shipwright-{name}/
 8. **Linters over instructions** — mechanical enforcement (hooks) beats advisory prose (CLAUDE.md rules)
 9. **Progressive disclosure** — CLAUDE.md stays lean (~200 lines), details live in `@agent_docs/`
 
-## Constitution
+For the complete documentation — including phase-by-phase details, configuration, troubleshooting, and the full constitution — see **[docs/guide.md](docs/guide.md)**.
 
-All Shipwright agents follow the **Constitution** (`shared/constitution.md`) — a declarative set of behavioral boundaries organized as ALWAYS / ASK FIRST / NEVER rules. Several rules are derived from agent reliability patterns identified in the Claude Code source code leak (March 2026) — verification after edits, context window awareness, and honest test reporting.
+## Quality & Safety
 
-### ALWAYS (do without asking)
-- Run tests before committing — tests must pass
-- Generate rollback SQL for every migration
-- Use Conventional Commits and parameterized queries
-- Run self-review checklist before committing
-- Keep files under 300 lines
-- Fix the code, not the test — never weaken assertions
-- Diagnose test failures before skipping — attempt autonomous fix, escalate after 2 attempts
-- Verify after non-trivial edits — run type-checker or linter before reporting success
-- Re-read files before editing in long sessions — do not trust cached content after auto-compaction
-- State explicitly when search results may be truncated
+Shipwright enforces quality through mechanical hooks — not advisory prose. Hooks fire on Claude Code events and block dangerous actions deterministically.
 
-### ASK FIRST (require confirmation)
-- Destructive database operations, PROD deployments, rollback decisions
-- Skipping test layers, overriding validation gates
-- Continuing after 3 failed fix attempts
+| Hook | What it prevents |
+|------|-----------------|
+| Dangerous Command Guard | `git push --force` to main, `rm -rf /`, `DROP DATABASE` |
+| Secret Scanning | API keys, tokens, passwords, PEM keys in source code |
+| Destructive Migration Scan | `DROP TABLE` / `DROP COLUMN` without rollback SQL |
+| File Size Guard | Source files exceeding 300 lines |
+| Drift Detection | Stale CLAUDE.md when source files changed |
 
-### NEVER (hard stops)
-- `rm -rf` on root, `git push --force` to main, `git reset --hard`
-- Skip or weaken tests, add features beyond spec (YAGNI)
-- Hardcode secrets or commit `.env` files
-- Retry blindly without root-cause analysis
-- Claim "all tests pass" when output shows failures
-
-See `shared/constitution.md` for the full document including escalation thresholds, test layer boundaries, and programmatic enforcement mapping.
-
-## Claude Architect Best Practices
-
-Shipwright implements best practices from the [Anthropic Claude Certified Architect](https://www.anthropic.com/certification) exam guide across all 5 certification domains:
-
-| Domain | Best Practice | Implementation |
-|--------|--------------|----------------|
-| Agentic Architecture (27%) | Hooks > Prompts for compliance | Compliance enforcement hooks (soft-block with override) |
-| Tool Design & MCP (18%) | Structured errors with categories | `shared/scripts/lib/errors.py` — `transient`, `validation`, `business`, `permission` |
-| Claude Code Config (20%) | Path-specific `.claude/rules/` | Rule templates auto-generated per profile (tests, API, migrations, components, config) |
-| Prompt Engineering (20%) | Few-shot examples > prose instructions | 2-3 input→output example pairs in every subagent definition |
-| Context & Reliability (15%) | Specific error feedback, not "try again" | Validation loop with retriable vs terminal error distinction |
-
-Additional patterns: independent CI/CD review sessions (`claude -p --output-format json`), override logging for compliance, configurable enforcement thresholds per project, secret scanning, file size guards, and CLAUDE.md drift detection.
-
-## Quality Gates
-
-Shipwright enforces quality at multiple levels through **mechanical enforcement** — hooks that block or warn deterministically, not advisory prose that agents may ignore. This approach follows the "Linters over Instructions" principle: automated enforcement beats documentation.
-
-### Enforcement Hooks
-
-| Hook | Trigger | Action | Exit |
-|------|---------|--------|------|
-| Dangerous Command Guard | `PreToolUse` (Bash) | Block `git push --force`, `rm -rf /`, `DROP DATABASE` | 2 (block) |
-| RTM Coverage Check | `PreToolUse` (`git commit`) | Soft-block if RTM coverage < threshold | 2 (overridable) |
-| Security Findings Check | `PreToolUse` (deploy) | Soft-block if unresolved critical findings | 2 (overridable) |
-| **Secret Scanning** | `PostToolUse` (Write/Edit) | Detect API keys, tokens, passwords, private keys | 2 (block) |
-| **File Size Guard** | `PostToolUse` (Write/Edit) | Warn when files exceed 300 lines (configurable) | 2 (block) |
-| Destructive Migration Scan | `PostToolUse` (Write/Edit SQL) | Detect `DROP TABLE`, `DROP COLUMN`, `TRUNCATE` | 2 (block) |
-| **CLAUDE.md Drift Detection** | `SessionStart` | Warn when source changed but CLAUDE.md didn't | 0 (warn) |
-| Documentation Check | `Stop` (session end) | Verify decision_log.md + session_handoff.md | 0 (warn) |
-
-### In-Band Quality Gates
-
-| Gate | When | Action |
-|------|------|--------|
-| Code Review | After each section | Subagent reviews diff against spec |
-| External LLM Review | After planning | Gemini + OpenAI review plan in parallel |
-
-### Secret Scanning
-
-The secret scanner detects common credential patterns in written/edited files:
-- AWS Access Keys (`AKIA...`)
-- API keys (`sk-...`, `ghp_...`, `gho_...`, `glpat-...`)
-- Slack tokens (`xoxb-...`, `xoxp-...`)
-- PEM private keys
-- Hardcoded passwords/secrets in assignments
-- Connection strings with embedded credentials
-
-Automatically skips `.env.example`, test fixtures, lock files, and vendor directories.
-
-### File Size Guard
-
-Large files degrade AI agent performance by consuming excessive context window space. The guard warns when source files exceed **300 lines** (configurable via `shipwright_build_config.json → enforcement.max_file_lines`). Automatically skips config files (JSON, YAML, TOML), documentation (Markdown), lock files, generated code, and SQL migrations.
-
-### CLAUDE.md Drift Detection
-
-At session start, compares modification timestamps of key project files (`package.json`, `pyproject.toml`, `src/`, etc.) against `CLAUDE.md`. If source files changed more recently, warns the agent that documentation may be outdated. This prevents agents from working with stale architectural context — a common failure mode identified by [Anthropic's Best Practices](https://code.claude.com/docs/en/best-practices).
-
-### Override & Audit
-
-Compliance hooks use **exit code 2 (soft-block)**: the user can say "Continue anyway" — the override gets logged to `agent_docs/compliance_overrides.log` and flagged again at the next checkpoint.
+All hooks use exit code 2 (soft-block): you can override, but the override is logged. See the [full documentation](docs/guide.md) for details on the constitution, TDD workflow, code review, and migration safety.
 
 ## Getting Started
 
-See the **[Setup Guide](docs/setup-guide.md)** for step-by-step installation instructions.
-
-**Quick version:**
 ```bash
 git clone https://github.com/svenroth-ai/shipwright.git ~/shipwright
-~/shipwright/scripts/install.sh
+cd ~/shipwright && uv sync
 ```
+
+Then type `/shipwright-run` in Claude Code. For the complete setup guide (deployment, external review, security scanning, platform notes), see **[docs/guide.md](docs/guide.md)**.
 
 ### Requirements
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI (Pro or Max subscription)
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (Pro or Max subscription)
 - Python 3.11+ with [uv](https://docs.astral.sh/uv/)
 - Git
-- Optional: `OPENROUTER_API_KEY` for external plan review (recommended)
-- Optional: `JELASTIC_TOKEN` for deployment (Infomaniak)
-- Optional: Aikido Security account + API credentials for security scanning
-- Optional: Node.js 22.x for supabase-nextjs profile
 
 ## Development
 
