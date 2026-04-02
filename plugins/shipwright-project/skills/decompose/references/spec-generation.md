@@ -52,6 +52,7 @@ Examples for Split 01:
 ### Acceptance Criteria Rules
 
 - Every FR with Priority "Must" MUST have acceptance criteria
+- QRs with measurable targets (e.g., "within 500ms", "10 concurrent users") SHOULD also have acceptance criteria — these drive performance/load tests in shipwright-build
 - Criteria must be testable (shipwright-build uses them for TDD)
 - Use checkbox format: `- [ ] {criterion}`
 - 2-5 criteria per requirement (not more)
@@ -109,6 +110,12 @@ Examples for Split 01:
 | QR-{NN}.01 | The system SHALL respond to ... within {X}ms | Performance |
 | QR-{NN}.02 | The system SHALL handle {X} concurrent users | Scalability |
 | QR-{NN}.03 | The system SHALL ... | Security |
+
+**Acceptance Criteria** (for QRs with measurable targets):
+
+**QR-{NN}.01: Response Time**
+- [ ] API responds within {X}ms at p95 under normal load
+- [ ] No endpoint exceeds {Y}ms at p99
 
 ## 4. Constraints
 

@@ -11,3 +11,46 @@ globs: "**/components/**,**/*.tsx,**/*.jsx"
 - Form inputs must have associated `<label>` elements
 - Server Components by default — add `'use client'` only when state or effects are needed
 - Keep components focused: one responsibility per component, extract when complexity grows
+
+## Example: Server Component (default) — data fetching at the component level
+
+```tsx
+// src/components/user-profile.tsx  (NO 'use client' — this is a Server Component)
+import { createServerClient } from '@/lib/supabase/server'
+
+export async function UserProfile({ userId }: { userId: string }) {
+  const supabase = await createServerClient()
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single()
+
+  if (!profile) return <p>User not found</p>
+
+  return (
+    <section aria-labelledby="profile-heading">
+      <h2 id="profile-heading">{profile.name}</h2>
+      <p>{profile.bio}</p>
+    </section>
+  )
+}
+```
+
+## Example: Client Component — only when interactivity requires it
+
+```tsx
+'use client'
+// src/components/theme-toggle.tsx
+import { useState } from 'react'
+
+export function ThemeToggle() {
+  const [dark, setDark] = useState(false)
+
+  return (
+    <button
+      onClick={() => setDark(!dark)}
+      aria-pressed={dark}
+      aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+    >
+      {dark ? '☀️' : '🌙'}
+    </button>
+  )
+}
+```

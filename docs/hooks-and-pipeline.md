@@ -2,6 +2,9 @@
 
 > Single source of truth for understanding what fires when and the impact of pipeline changes.
 > **Rule:** When modifying hooks, pipeline phases, validators, or between-phase actions, update this document.
+>
+> **See also:** `shared/constitution.md` — declarative ALWAYS / ASK FIRST / NEVER boundary rules.
+> Hooks enforce a programmatic subset; the constitution covers the complete set.
 
 ## Pipeline Flow
 

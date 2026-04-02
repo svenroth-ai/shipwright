@@ -11,3 +11,41 @@ globs: "**/api/**,**/routes/**,**/functions/**"
 - Use appropriate HTTP status codes: 400 (bad input), 401 (unauthed), 403 (forbidden), 404 (not found), 500 (server)
 - Never expose internal error details or stack traces to the client
 - Log errors with structured context (request ID, user ID, operation)
+
+## Example: Next.js API route with validation and auth
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import { createServerClient } from '@/lib/supabase/server'
+
+const UpdateProfileSchema = z.object({
+  name: z.string().min(1).max(100),
+  bio: z.string().max(500).optional(),
+})
+
+export async function PATCH(req: NextRequest) {
+  const supabase = await createServerClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized', code: 'AUTH_REQUIRED' }, { status: 401 })
+  }
+
+  const body = await req.json()
+  const parsed = UpdateProfileSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Invalid input', code: 'VALIDATION_ERROR', details: parsed.error.flatten() },
+      { status: 400 },
+    )
+  }
+
+  const { error } = await supabase.from('profiles').update(parsed.data).eq('id', user.id)
+  if (error) {
+    console.error('[PATCH /api/profile]', { userId: user.id, error: error.message })
+    return NextResponse.json({ error: 'Update failed', code: 'DB_ERROR' }, { status: 500 })
+  }
+
+  return NextResponse.json({ success: true })
+}
+```

@@ -21,8 +21,16 @@
 {GOTCHAS}
 
 ## Context
-- **Architecture**: See @agent_docs/architecture.md
-- **Conventions**: See @agent_docs/conventions.md
-- **Decisions**: See @agent_docs/decision_log.md
-- **Planning**: See @planning/
-- **Config**: See @shipwright_run_config.json
+
+**Read first** (stable, always relevant):
+- @agent_docs/architecture.md — system overview, layers, security model
+- @agent_docs/conventions.md — code patterns, naming, git workflow
+
+**Read on demand** (volatile, changes per session):
+- @agent_docs/decision_log.md — when making or reviewing decisions
+- @agent_docs/current_sprint.md — when checking progress or planning next steps
+- @agent_docs/session_handoff.md — when resuming after a pause or /clear
+
+**Other references:**
+- @planning/ — specs and section files
+- @shipwright_run_config.json — pipeline state and settings

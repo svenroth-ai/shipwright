@@ -10,3 +10,23 @@ globs: "**/*.config.*,**/.env*,**/config/**"
 - Use typed configuration: validate config values at startup, fail fast on missing required vars
 - Separate config by environment: development defaults should never work in production
 - Keep `.env.local` in `.gitignore` — it must never be committed
+
+## Example: Typed config with zod validation
+
+```typescript
+// src/lib/config.ts
+import { z } from 'zod'
+
+const envSchema = z.object({
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(), // server-only, not required in browser
+})
+
+export const env = envSchema.parse({
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+})
+// Fails fast at startup if required vars are missing
+```

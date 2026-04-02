@@ -14,6 +14,8 @@ Enhanced fork of deep-plan with E2E test plan generation and sprint tracking.
 
 ## CRITICAL: First Actions
 
+**Governing rules:** Read and follow `shared/constitution.md` (ALWAYS / ASK FIRST / NEVER boundaries).
+
 **BEFORE using any other tools**, do these in order:
 
 ### A. Print Intro Banner

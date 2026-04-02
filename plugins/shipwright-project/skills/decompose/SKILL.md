@@ -14,6 +14,8 @@ Enhanced fork of deep-project with profile-aware decomposition and project scaff
 
 ## CRITICAL: First Actions
 
+**Governing rules:** Read and follow `shared/constitution.md` (ALWAYS / ASK FIRST / NEVER boundaries).
+
 **BEFORE using any other tools**, do these in order:
 
 ### A. Print Intro Banner

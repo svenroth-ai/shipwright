@@ -13,6 +13,8 @@ Generates changelogs from Conventional Commits and manages release workflow.
 
 ## CRITICAL: First Actions
 
+**Governing rules:** Read and follow `shared/constitution.md` (ALWAYS / ASK FIRST / NEVER boundaries).
+
 ### A. Print Intro Banner
 
 ```
