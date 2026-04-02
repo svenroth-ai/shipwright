@@ -103,6 +103,9 @@ uv run {shared_root}/scripts/smoke_test.py \
 
 If no DEV URL and app not running: skip with note.
 
+**Note:** The smoke test script is a **shared plugin script** (`{shared_root}/scripts/smoke_test.py`),
+not a project file. Do NOT search for smoke test files in the project directory.
+
 **If smoke test fails (any reason) — diagnose before skipping:**
 1. **Diagnose:** Read error output, identify root cause
 2. **Attempt autonomous fix** based on diagnosis. Examples:
@@ -174,6 +177,10 @@ e2e/
    - Respect `playwright.config.ts` settings (base URL, browser, timeouts)
    - Tests must be runnable against the dev server (localhost)
    - Use `test.skip()` for flows that require external services (e.g., Stripe Checkout redirect)
+   - If `designs/visual-guidelines.md` exists, generate basic visual assertion tests in `e2e/flows/00-visual.spec.ts`:
+     - Check brand colors on key elements (header, CTA buttons, links)
+     - Check font-family on body/headings
+     - Check page background color
 
 **Checkpoint:** `e2e/flows/` contains at least one `.spec.ts` file.
 
