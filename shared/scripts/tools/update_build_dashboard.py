@@ -45,7 +45,7 @@ STEP_LABELS = {
     12: "Complete",
 }
 
-PIPELINE_PHASES = ["project", "design", "plan", "build", "test", "changelog", "deploy"]
+PIPELINE_PHASES = ["project", "design", "plan", "build", "test", "changelog", "deploy", "compliance"]
 
 
 def format_status(section: dict, current_section: str | None, current_step: int | None, detail: str | None) -> str:
@@ -110,6 +110,19 @@ def generate_pipeline_table(run_config: dict, total_sections: int, completed_sec
         display = phase.capitalize()
         lines.append(f"| {display} | {status} |")
     lines.append("")
+
+    # Validation issues (pending user decision)
+    if run_config.get("status") == "needs_validation":
+        for issue in run_config.get("validation_issues", []):
+            lines.append(f"> **NEEDS DECISION — {issue.get('step', '?')}:** {issue.get('message', '')}")
+        lines.append("")
+
+    # Inform-level notes
+    for note in run_config.get("validation_notes", []):
+        lines.append(f"> **NOTE — {note.get('step', '?')}:** {note.get('message', '')}")
+    if run_config.get("validation_notes"):
+        lines.append("")
+
     return lines
 
 
@@ -157,7 +170,12 @@ def generate_dashboard(
     split_label = ""
     if current_split:
         splits_done = len(completed_splits)
-        split_label = f" — Split: {current_split} ({splits_done}/{total_splits} splits)"
+        # Count current split as done if all its sections are complete
+        if total > 0 and completed == total:
+            display_splits_done = splits_done + 1
+        else:
+            display_splits_done = splits_done
+        split_label = f" — Split: {current_split} ({display_splits_done}/{total_splits} splits)"
 
     if total > 0:
         lines.append(f"## Build Sections ({completed}/{total} complete){split_label}")

@@ -1,0 +1,237 @@
+# Hooks & Pipeline Reference
+
+> Single source of truth for understanding what fires when and the impact of pipeline changes.
+> **Rule:** When modifying hooks, pipeline phases, validators, or between-phase actions, update this document.
+
+## Pipeline Flow
+
+```mermaid
+flowchart TD
+    START([/shipwright-run]) --> PROJECT[Project]
+    PROJECT --> DESIGN[Design]
+    DESIGN --> PLAN_LOOP{More splits?}
+
+    PLAN_LOOP -->|Yes| PLAN[Plan]
+    PLAN --> BUILD[Build — all sections]
+    BUILD --> SPLIT_CHECK{All splits done?}
+    SPLIT_CHECK -->|No| PLAN_LOOP
+    SPLIT_CHECK -->|Yes| TEST[Test]
+
+    TEST --> SECURITY{AIKIDO_CLIENT_ID set?}
+    SECURITY -->|Yes| SEC_SCAN[Security Scan]
+    SECURITY -->|No| CHANGELOG
+    SEC_SCAN --> CHANGELOG[Changelog]
+
+    CHANGELOG --> DEPLOY[Deploy]
+    DEPLOY --> COMPLIANCE[Compliance — final]
+    COMPLIANCE --> DONE([Complete])
+
+    %% Side-effects (dashed)
+    PROJECT -.->|incremental| COMP_INC[Compliance Update]
+    DESIGN -.->|incremental| COMP_INC
+    PLAN -.->|incremental| COMP_INC
+    BUILD -.->|incremental| COMP_INC
+    TEST -.->|incremental| COMP_INC
+```
+
+### Pipeline Constants
+
+**File:** `plugins/shipwright-run/scripts/lib/orchestrator.py`
+
+```python
+PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "deploy", "compliance"]
+CONDITIONAL_STEPS = {"security": {"env_var": "AIKIDO_CLIENT_ID", "after": "test"}}
+```
+
+**Dashboard display order:** `shared/scripts/tools/update_build_dashboard.py`
+```python
+PIPELINE_PHASES = ["project", "design", "plan", "build", "test", "changelog", "deploy", "compliance"]
+```
+
+---
+
+## Hooks Registry
+
+### shipwright-run
+
+| Event | Matcher | Script | What It Does |
+|-------|---------|--------|--------------|
+| SessionStart | — | `capture-session-id.py` | Injects `SHIPWRIGHT_SESSION_ID`, `PLUGIN_ROOT`, `PROJECT_ROOT` into context |
+| Stop | — | `generate-handoff.py` | Writes `agent_docs/session_handoff.md` for resume |
+
+### shipwright-project
+
+| Event | Matcher | Script | What It Does |
+|-------|---------|--------|--------------|
+| SessionStart | — | `capture-session-id.py` | Session ID injection |
+| Stop | — | `generate-handoff.py` | Session handoff |
+
+### shipwright-design
+
+| Event | Matcher | Script | What It Does |
+|-------|---------|--------|--------------|
+| SessionStart | — | `capture-session-id.py` | Session ID injection |
+| Stop | — | `generate-handoff.py` | Session handoff |
+
+### shipwright-plan
+
+| Event | Matcher | Script | What It Does |
+|-------|---------|--------|--------------|
+| SessionStart | — | `capture-session-id.py` | Session ID injection |
+| SubagentStop | `shipwright-plan:section-writer` | `write-section-on-stop.py` | Persists section files from subagent output to disk |
+| Stop | — | `generate-handoff.py` | Session handoff |
+
+### shipwright-build
+
+| Event | Matcher | Script | What It Does |
+|-------|---------|--------|--------------|
+| SessionStart | — | `capture-session-id.py` | Session ID injection |
+| SessionStart | — | `check_drift.py` | Detects code drift (uncommitted changes from prior sessions) |
+| PreToolUse | `Bash` | `validate_command.sh` | Blocks dangerous shell commands (rm -rf, force push, etc.) |
+| PostToolUse | `Write\|Edit` | `check_destructive_migration.sh` | Warns on DROP/DELETE in .sql files without down.sql |
+| PostToolUse | `Write\|Edit` | `check_secrets.sh` | Scans written files for API keys, tokens, passwords |
+| PostToolUse | `Write\|Edit` | `check_file_size.py` | Warns if file exceeds size limit |
+| PostToolUse | `Write\|Edit` | `track_tool_calls.py` | Increments tool call counter for context pressure detection |
+| Stop | — | `generate-handoff.py` | Session handoff |
+| Stop | — | `check_doc_completeness.py` | Verifies documentation artifacts are up to date |
+
+### shipwright-test
+
+| Event | Matcher | Script | What It Does |
+|-------|---------|--------|--------------|
+| Stop | — | `generate-handoff.py` | Session handoff |
+
+### shipwright-changelog
+
+| Event | Matcher | Script | What It Does |
+|-------|---------|--------|--------------|
+| SessionStart | — | `capture-session-id.py` | Session ID injection |
+| Stop | — | `generate-handoff.py` | Session handoff |
+
+### shipwright-deploy
+
+| Event | Matcher | Script | What It Does |
+|-------|---------|--------|--------------|
+| SessionStart | — | `capture-session-id.py` | Session ID injection |
+| Stop | — | `generate-handoff.py` | Session handoff |
+
+### shipwright-compliance
+
+| Event | Matcher | Script | What It Does |
+|-------|---------|--------|--------------|
+| SessionStart | — | `capture-session-id.py` | Session ID injection |
+| PreToolUse | `Bash` | `check_rtm_coverage.py` | Soft-blocks if RTM coverage < 80% threshold |
+| PreToolUse | `Bash` | `check_security_scan.py` | Checks security scan completion status |
+
+---
+
+## Phase Validators
+
+**File:** `plugins/shipwright-run/scripts/lib/phase_validators.py`
+
+Called by `orchestrator.py:update_step()` before marking a phase complete. Returns issues with severity `ask` or `inform`.
+
+| Phase | Severity | Validation Check |
+|-------|----------|-----------------|
+| project | ASK | Config exists, splits defined, spec.md per split |
+| design | ASK | Mockup HTML files exist (may be intentionally skipped) |
+| plan | ASK | Sections defined in build config, section .md files exist |
+| build | ASK | All current-split sections complete, all have tests_total > 0 |
+| test | ASK | `shipwright_test_results.json` exists; unit/smoke/e2e have results or valid skip reason |
+| changelog | ASK | `CHANGELOG.md` exists |
+| deploy | PASS | Always passes |
+| compliance | INFORM | Lists which of 5 compliance artifacts are present (non-blocking) |
+
+**Override mechanism:** `--force` flag on `update-step` skips validation (user approved via AskUserQuestion).
+
+**Flow:** `update-step --status complete` → validator runs → if ASK issues found → returns `status: "needs_validation"` → SKILL.md asks user → user says "continue" → `update-step --status complete --force` → phase completes.
+
+---
+
+## Subagent Timing & Data Flow
+
+### section-builder (Build Phase)
+
+```
+section-builder subagent
+  → writes code, runs tests
+  → calls update_section_state.py (updates shipwright_build_config.json)
+  → returns JSON result to orchestrator
+orchestrator autopilot loop
+  → checks get-build-progress → split_done?
+  → only after ALL sections done: update-step --step build --status complete
+  → validate_build() fires (checks current split sections only)
+```
+
+### test-runner (Test Phase)
+
+```
+test-runner subagent
+  → runs unit/smoke/e2e tests
+  → writes shipwright_test_results.json to project root
+  → returns JSON result to orchestrator
+orchestrator
+  → parses result
+  → calls update-step --step test --status complete
+  → validate_test() fires (checks results file exists, all layers have results)
+```
+
+### section-writer (Plan Phase)
+
+```
+section-writer subagent
+  → generates section spec content
+  → SubagentStop hook fires write-section-on-stop.py
+  → section .md files written to disk
+plan SKILL completes
+  → update-step --step plan --status complete
+  → validate_plan() fires (checks sections exist in config + files on disk)
+```
+
+---
+
+## Config File Data Flow
+
+| Config File | Written By | Read By |
+|-------------|-----------|---------|
+| `shipwright_run_config.json` | orchestrator.py | All phases (resume), dashboard, validators |
+| `shipwright_project_config.json` | /shipwright-project | Orchestrator (splits), compliance (requirements), validators |
+| `shipwright_build_config.json` | /shipwright-build, update_section_state.py | Orchestrator (progress), dashboard, compliance, validators |
+| `shipwright_test_results.json` | test-runner subagent | Compliance (test evidence), validators |
+| `shipwright_compliance_config.json` | update_compliance.py | Compliance (phases_covered) |
+| `shipwright_plan_config.json` | /shipwright-plan | Build (section references) |
+
+---
+
+## Between-Phase Actions
+
+Executed by the orchestrator between each skill invocation (orchestrate SKILL.md):
+
+1. **Phase Validation & Completion** — `update-step --status complete` triggers `phase_validators.py`. If ASK issues found, asks user before proceeding.
+2. **Upstream Success Check** — Reads `shipwright_run_config.json`, verifies previous phase is in `completed_steps`. Prevents cascading failures.
+3. **Incremental Compliance Update** — `update_compliance.py --phase {phase}` (non-blocking subprocess, errors swallowed).
+4. **Dashboard Update** — `update_build_dashboard.py --phase {phase}` refreshes `agent_docs/build_dashboard.md`.
+5. **Tool Counter Reset** — `reset_tool_counter.py` prevents stale counts from triggering false context pressure.
+6. **Context Pressure Check** — `estimate_context_pressure.py --threshold 120`. If `recommend_checkpoint` is true, generates handoff and stops.
+
+### Split-Loop (Build Phase)
+
+After build completes for a split:
+- `update_step()` calls `get_build_progress()`
+- If `all_done == false`: removes `plan` and `build` from `completed_steps`, sets `current_step = "plan"`
+- Test/changelog/deploy/compliance only run after `all_done == true`
+
+---
+
+## Architecture Impact Tracking
+
+When writing decision log entries, the `--architecture-impact` flag on `write_decision_log.py` automatically appends update notes:
+
+| Impact Type | Target File | Section Added |
+|-------------|-------------|---------------|
+| `component` | `agent_docs/architecture.md` | `## Architecture Updates` |
+| `data-flow` | `agent_docs/architecture.md` | `## Architecture Updates` |
+| `convention` | `agent_docs/conventions.md` | `## Convention Updates` |
+| `none` | — | No update |
+
+Format: `- **ADR-NNN** (YYYY-MM-DD): Short description`

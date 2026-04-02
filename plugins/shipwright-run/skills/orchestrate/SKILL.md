@@ -160,12 +160,24 @@ The orchestrator dispatches to each skill in sequence:
 5. /shipwright-security   → Security scan (if AIKIDO_CLIENT_ID set)
 6. /shipwright-changelog  → Changelog + PR + Merge (aggregated across all splits)
 7. /shipwright-deploy     → Deploy to DEV (from merged main, all splits)
+8. /shipwright-compliance → Final compliance report generation (all artifacts)
 ```
 
 **Important:** Steps 3a-3b repeat for EACH split. After build completes for one split,
 `orchestrator.py update-step --step build --status complete` automatically detects remaining
 splits and loops back: resets plan+build steps and sets `current_step` to "plan".
 Test, changelog, and deploy run ONCE after all splits are built.
+
+### Compliance Phase (Final)
+
+After deploy completes (or is skipped), invoke:
+```
+/shipwright-compliance
+```
+This generates the final, complete compliance package. Incremental updates during the
+pipeline are still useful for monitoring, but this final run ensures all reports
+reflect the deployed state. The phase validator (INFORM level) will note which
+artifacts were generated and which may need attention.
 
 ### Split Transition (automatic after build)
 
@@ -187,6 +199,28 @@ Continuing to /shipwright-plan...
 Then continue the pipeline — the orchestrator will invoke `/shipwright-plan` for the next split's spec.
 
 **Between each skill:**
+- **Phase Validation & Completion:** After a skill finishes, mark the step complete:
+  ```bash
+  uv run {plugin_root}/scripts/lib/orchestrator.py \
+    update-step --project-root "$(pwd)" --step "{completed_step}" --status complete
+  ```
+  Parse the returned JSON. **If `status == "needs_validation"`:** the phase produced incomplete artifacts.
+  For each issue in `validation_issues`:
+  ```
+  AskUserQuestion:
+    question: "{issue.message}"
+    options:
+      - "Fix this first"
+      - "Continue anyway"
+  ```
+  - If user says **"Continue anyway"**: Re-call with `--force`:
+    ```bash
+    uv run {plugin_root}/scripts/lib/orchestrator.py \
+      update-step --project-root "$(pwd)" --step "{step}" --status complete --force
+    ```
+  - If user says **"Fix this first"**: Print what needs to be fixed and **STOP**.
+    The pipeline will auto-resume from this step on next `/shipwright-run`.
+
 - **Upstream Success Check:** Before starting the next phase, verify the previous phase completed successfully:
   - Read `shipwright_run_config.json` → check that the previous phase status is `"complete"`
   - If previous phase is NOT complete → do NOT proceed. Inform user which phase failed and why.
@@ -382,11 +416,11 @@ After all build sections are complete:
 - `e2e`: `{passed, total, failures, skipped}` or `{status: "skipped", reason: "..."}`
 - `fixes_applied`: list of auto-fixes attempted
 
-**Validate test completeness:** Before accepting status "pass", verify:
+**Validate test completeness:** The orchestrator's phase validator (`phase_validators.py`) automatically checks test completeness when `update-step --status complete` is called. It verifies:
 - `unit` field exists and has results (always required)
 - `smoke` field exists (result or skip reason)
 - `e2e` field exists (result or skip reason)
-If any field is missing, treat as incomplete — do NOT mark test phase complete. Inform user which layer has no result.
+If any field is missing, `update-step` returns `status: "needs_validation"` with the specific issues. Follow the standard validation handling (AskUserQuestion → fix or --force).
 
 **If status == "fail":**
 - Update dashboard: `--phase test --status failed`

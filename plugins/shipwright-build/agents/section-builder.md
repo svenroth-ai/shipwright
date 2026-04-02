@@ -204,17 +204,27 @@ git push -u origin {branch_prefix}/{section_name}
 
 ### Step 14: Update Decision Log
 
-If `agent_docs/decision_log.md` exists, log significant decisions:
+If `agent_docs/decision_log.md` exists, log significant decisions. For each decision, classify its architecture impact:
+- `component` — new component, service, or major subsystem added/changed
+- `data-flow` — data flow, API contract, or storage model changed
+- `convention` — coding convention, naming pattern, or folder structure changed
+- `none` — no impact on architecture or conventions (default)
+
 ```bash
 uv run {shared_root}/scripts/tools/write_decision_log.py \
   --section "Build — {section_name}" \
   --commit "$(git rev-parse HEAD)" \
   --title "{title}" --context "{context}" --decision "{decision}" \
   --consequences "{consequences}" --rationale "{rationale}" --rejected "{alternatives}" \
+  --architecture-impact "{impact}" \
   --project-root "{project_root}"
 ```
 
+When `--architecture-impact` is not `none`, the script automatically appends an update note to `agent_docs/architecture.md` (for component/data-flow) or `agent_docs/conventions.md` (for convention).
+
 ### Step 15: Update Section State
+
+Determine `review_type`: If Step 11 (Full Code Review) was performed, use `full-review`. If only Step 10 (Self-Review) was done, use `self-review`.
 
 ```bash
 uv run {plugin_root}/scripts/tools/update_section_state.py \
@@ -222,6 +232,7 @@ uv run {plugin_root}/scripts/tools/update_section_state.py \
   --commit "$(git rev-parse HEAD)" \
   --tests-passed {tests_passed} --tests-total {tests_total} \
   --review-findings '{review_findings_json}' \
+  --review-type "{review_type}" \
   --project-root "{project_root}"
 ```
 

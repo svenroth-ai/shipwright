@@ -21,6 +21,8 @@ def main() -> int:
     parser.add_argument("--tests-passed", type=int, help="Number of tests passed")
     parser.add_argument("--tests-total", type=int, help="Total number of tests")
     parser.add_argument("--review-findings", help="JSON array of code review findings")
+    parser.add_argument("--review-type", choices=["self-review", "full-review"],
+                        help="Type of code review performed")
     parser.add_argument("--project-root", help="Project root (default: cwd)")
     args = parser.parse_args()
 
@@ -58,6 +60,8 @@ def main() -> int:
                 section["tests_total"] = args.tests_total
             if review_findings is not None:
                 section["code_review_findings"] = review_findings
+            if args.review_type:
+                section["review_type"] = args.review_type
             found = True
             break
 
@@ -71,6 +75,8 @@ def main() -> int:
             entry["tests_total"] = args.tests_total
         if review_findings is not None:
             entry["code_review_findings"] = review_findings
+        if args.review_type:
+            entry["review_type"] = args.review_type
         sections.append(entry)
 
     config["sections"] = sections

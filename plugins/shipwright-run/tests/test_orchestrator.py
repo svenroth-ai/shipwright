@@ -50,7 +50,7 @@ def test_get_next_step_fresh(tmp_project):
 
 def test_get_next_step_after_project(tmp_project):
     create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
-    update_step(tmp_project, "project", "complete")
+    update_step(tmp_project, "project", "complete", force=True)
 
     result = get_next_step(tmp_project)
     assert result["next_step"] == "design"
@@ -58,7 +58,7 @@ def test_get_next_step_after_project(tmp_project):
 
 def test_update_step_complete(tmp_project):
     create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
-    config = update_step(tmp_project, "project", "complete")
+    config = update_step(tmp_project, "project", "complete", force=True)
 
     assert "project" in config["completed_steps"]
     assert config["current_step"] == "design"
@@ -68,7 +68,7 @@ def test_update_step_all_complete(tmp_project):
     create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
 
     for step in PIPELINE_STEPS:
-        update_step(tmp_project, step, "complete")
+        update_step(tmp_project, step, "complete", force=True)
 
     config = load_run_config(tmp_project)
     assert config["status"] == "complete"
@@ -119,7 +119,7 @@ def test_compliance_runs_on_step_complete(tmp_project, mocker):
     mock_result = {"success": True, "phase": "project", "updated_reports": ["compliance/rtm.md"]}
     mocker.patch("orchestrator.run_compliance_update", return_value=mock_result)
 
-    config = update_step(tmp_project, "project", "complete")
+    config = update_step(tmp_project, "project", "complete", force=True)
     assert config["last_compliance_update"]["phase"] == "project"
     assert "compliance/rtm.md" in config["last_compliance_update"]["reports"]
 
@@ -130,7 +130,7 @@ def test_compliance_skipped_on_failure(tmp_project, mocker):
 
     mocker.patch("orchestrator.run_compliance_update", return_value=None)
 
-    config = update_step(tmp_project, "project", "complete")
+    config = update_step(tmp_project, "project", "complete", force=True)
     assert "last_compliance_update" not in config
     assert "project" in config["completed_steps"]
 
@@ -161,16 +161,16 @@ def test_resume_midway(tmp_project):
     create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
 
     # Complete first 4 steps (project, design, plan, build)
-    update_step(tmp_project, "project", "complete")
-    update_step(tmp_project, "design", "complete")
-    update_step(tmp_project, "plan", "complete")
-    update_step(tmp_project, "build", "complete")
+    update_step(tmp_project, "project", "complete", force=True)
+    update_step(tmp_project, "design", "complete", force=True)
+    update_step(tmp_project, "plan", "complete", force=True)
+    update_step(tmp_project, "build", "complete", force=True)
 
     # Resume should point to "test"
     result = get_next_step(tmp_project)
     assert result["next_step"] == "test"
     assert set(result["completed"]) == {"project", "design", "plan", "build"}
-    assert result["remaining"] == ["test", "changelog", "deploy"]
+    assert result["remaining"] == ["test", "changelog", "deploy", "compliance"]
 
 
 # --- CLI ---

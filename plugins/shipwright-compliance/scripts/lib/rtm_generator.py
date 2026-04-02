@@ -46,14 +46,17 @@ def _requirements_coverage(data: ComplianceData) -> list[str]:
     lines = [
         "## Requirements Coverage",
         "",
-        "| Requirement | Priority | Section(s) | Unit Tests | Status |",
-        "|-------------|----------|------------|------------|--------|",
+        "| Requirement | Title | Priority | Section(s) | Unit Tests | Status |",
+        "|-------------|-------|----------|------------|------------|--------|",
     ]
 
     for req in data.requirements:
         # Link to spec file with anchor
         anchor = _make_anchor(req.id)
         req_link = f"[{req.id}](../{req.spec_path}#{anchor})"
+
+        # Truncated title for table readability
+        display_text = req.text[:60] + ("..." if len(req.text) > 60 else "")
 
         # Linked sections
         if req.sections:
@@ -84,7 +87,7 @@ def _requirements_coverage(data: ComplianceData) -> list[str]:
             status = "UNLINKED"
 
         lines.append(
-            f"| {req_link} | {req.priority} | {sections_cell} | {tests_cell} | {status} |"
+            f"| {req_link} | {display_text} | {req.priority} | {sections_cell} | {tests_cell} | {status} |"
         )
 
     lines.append("")
