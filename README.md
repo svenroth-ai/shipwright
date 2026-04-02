@@ -68,6 +68,7 @@ User Description
 | `shipwright-security` | Security — Aikido API scanning, finding classification, remediation loop |
 | `shipwright-deploy` | Deployment — deployment flavors, DEV auto / PROD manual, clone-based rollback |
 | `shipwright-changelog` | Release — Keep-a-Changelog format, semver bump suggestion, PR creation |
+| `shipwright-preview` | Preview — local dev server, browser URL, profile-driven (available after first build split) |
 | `shipwright-compliance` | Compliance — IREB traceability, RTM, SBOM, test evidence, change history reports |
 
 ## Modes
