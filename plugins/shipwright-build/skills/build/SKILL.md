@@ -543,12 +543,14 @@ uv run {plugin_root}/scripts/tools/update_section_state.py \
   --commit "$(git rev-parse HEAD)" \
   --tests-passed {tests_passed} \
   --tests-total {tests_total} \
-  --review-findings '{review_findings_json}'
+  --review-findings '{review_findings_json}' \
+  --review-type "{review_type}"
 ```
 
 Where:
 - `{tests_passed}` / `{tests_total}` — from the last test run (Step 4)
 - `{review_findings_json}` — JSON array of findings from code review (Step 6), e.g. `[{"finding": "Missing validation", "status": "fixed"}]`. Use `[]` if no findings.
+- `{review_type}` — `"full-review"` if Step 6b (full code review) was triggered, `"self-review"` if only Step 6a (self-review checklist) was performed
 
 **Dashboard update:**
 ```bash

@@ -178,17 +178,28 @@ def _code_review_evidence(data: ComplianceData) -> list[str]:
     if not data.sections:
         return []
 
+    _REVIEW_LABELS = {
+        "full-review": "Full review",
+        "self-review": "Self-review only",
+    }
+
     lines = [
         "## Code Review Evidence",
         "",
-        "| Section | Findings | Fixed | Deferred | Status |",
-        "|---------|----------|-------|----------|--------|",
+        "| Section | Review Type | Findings | Fixed | Deferred | Status |",
+        "|---------|-------------|----------|-------|----------|--------|",
     ]
     for sec in data.sections:
+        review_label = _REVIEW_LABELS.get(sec.review_type, "Unknown")
         deferred = sec.review_findings - sec.review_findings_fixed
-        status = "PASS" if deferred == 0 else "OPEN"
+        if sec.review_type == "self-review":
+            status = "SELF-REVIEW"
+        elif deferred == 0:
+            status = "PASS"
+        else:
+            status = "OPEN"
         lines.append(
-            f"| {sec.name} | {sec.review_findings} | {sec.review_findings_fixed} "
+            f"| {sec.name} | {review_label} | {sec.review_findings} | {sec.review_findings_fixed} "
             f"| {deferred} | {status} |"
         )
     lines.append("")

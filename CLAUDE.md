@@ -60,6 +60,14 @@ SHIPWRIGHT_PLUGIN_ROOT       # Absolute path to active plugin directory
 - Env var prefix: `SHIPWRIGHT_` (replaces upstream `DEEP_`)
 - Config file prefix: `shipwright_` (replaces upstream `deep_`)
 
+### Hooks & Pipeline Reference
+- **Reference doc:** `docs/hooks-and-pipeline.md`
+- **Rule:** When modifying any hook (hooks.json), adding/removing a pipeline phase,
+  changing phase validators, or altering between-phase actions in the orchestrator,
+  you MUST update `docs/hooks-and-pipeline.md` to reflect the change.
+- This document is the single source of truth for understanding what fires when
+  and the impact of pipeline changes.
+
 ### Testing
 ```bash
 # Single plugin

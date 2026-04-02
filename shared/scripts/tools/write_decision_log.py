@@ -78,6 +78,39 @@ def format_entry(
     return "\n".join(lines)
 
 
+def _append_architecture_update(
+    project_root: Path,
+    adr_number: int,
+    impact_type: str,
+    summary: str,
+) -> str | None:
+    """Append an update note to architecture.md or conventions.md.
+
+    Returns the target filename if updated, None otherwise.
+    """
+    if impact_type in ("component", "data-flow"):
+        target = project_root / "agent_docs" / "architecture.md"
+        section_header = "## Architecture Updates"
+    elif impact_type == "convention":
+        target = project_root / "agent_docs" / "conventions.md"
+        section_header = "## Convention Updates"
+    else:
+        return None
+
+    if not target.exists():
+        return None
+
+    content = target.read_text(encoding="utf-8")
+    if section_header not in content:
+        content = content.rstrip() + f"\n\n{section_header}\n"
+
+    today = date.today().isoformat()
+    update_line = f"\n- **ADR-{adr_number:03d}** ({today}): {summary}\n"
+    content += update_line
+    target.write_text(content, encoding="utf-8")
+    return target.name
+
+
 def append_decision(
     project_root: str | Path,
     section_ref: str,
@@ -89,6 +122,7 @@ def append_decision(
     title: str = "",
     rationale: str = "",
     status: str = "Accepted",  # kept for backwards compat, not used in compact format
+    architecture_impact: str = "none",  # "component" | "data-flow" | "convention" | "none"
 ) -> int:
     """Append a decision entry to the decision log. Returns the ADR number."""
     project_root = Path(project_root)
@@ -108,6 +142,12 @@ def append_decision(
     content += entry
 
     log_path.write_text(content, encoding="utf-8")
+
+    # Append architecture/convention update if applicable
+    if architecture_impact != "none":
+        summary = title or _truncate_title(decision)
+        _append_architecture_update(project_root, number, architecture_impact, summary)
+
     return number
 
 
@@ -126,6 +166,9 @@ def main() -> None:
     parser.add_argument("--title", default="", help="Short title for the ADR entry (default: truncated decision)")
     parser.add_argument("--rationale", default="", help="Rationale (if different from consequences)")
     parser.add_argument("--status", default="Accepted", help="Status (kept for backwards compat)")
+    parser.add_argument("--architecture-impact", default="none",
+                        choices=["component", "data-flow", "convention", "none"],
+                        help="If not 'none', appends update to architecture.md or conventions.md")
     args = parser.parse_args()
 
     project_root = Path(args.project_root) if args.project_root else Path(os.getcwd())
@@ -140,6 +183,7 @@ def main() -> None:
         title=args.title,
         rationale=args.rationale,
         status=args.status,
+        architecture_impact=args.architecture_impact,
     )
     print(f"ADR-{number:03d} appended to agent_docs/decision_log.md")
 

@@ -37,6 +37,7 @@ class SectionInfo:
     tests_total: int = 0
     review_findings: int = 0
     review_findings_fixed: int = 0
+    review_type: str = ""  # "self-review" | "full-review" | "" (unknown)
     estimated_tokens: int = 0
     estimated_api_calls: int = 0
 
@@ -181,6 +182,7 @@ def _sections_from_data(
             tests_total=s.get("tests_total", 0),
             review_findings=len(findings),
             review_findings_fixed=fixed,
+            review_type=s.get("review_type", ""),
             estimated_tokens=s.get("estimated_tokens_used", 0),
             estimated_api_calls=s.get("estimated_api_calls", 0),
         ))

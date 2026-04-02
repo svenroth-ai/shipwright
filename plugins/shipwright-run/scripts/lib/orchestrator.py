@@ -21,9 +21,12 @@ from pathlib import Path
 from typing import Any, Optional
 
 
-# Add shared scripts to path for imports
+# Add shared scripts and local lib to path for imports
 _SHARED_SCRIPTS = Path(__file__).resolve().parent.parent.parent.parent.parent / "shared" / "scripts"
+_LOCAL_LIB = str(Path(__file__).resolve().parent)
 sys.path.insert(0, str(_SHARED_SCRIPTS))
+if _LOCAL_LIB not in sys.path:
+    sys.path.insert(0, _LOCAL_LIB)
 
 CONFIG_NAME = "shipwright_run_config.json"
 
@@ -31,7 +34,7 @@ CONFIG_NAME = "shipwright_run_config.json"
 _THIS_PLUGIN = Path(__file__).parent.parent.parent
 _COMPLIANCE_SCRIPT = _THIS_PLUGIN.parent / "shipwright-compliance" / "scripts" / "tools" / "update_compliance.py"
 
-PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "deploy"]
+PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "deploy", "compliance"]
 
 # Conditional steps: included only when their env var is set
 CONDITIONAL_STEPS = {
@@ -161,14 +164,43 @@ def _reset_tool_counter(project_root: Path) -> None:
         pass
 
 
-def update_step(project_root: Path, step: str, status: str) -> dict[str, Any]:
+def update_step(project_root: Path, step: str, status: str, *, force: bool = False) -> dict[str, Any]:
     """Update a pipeline step's status.
+
+    On completion, runs phase validation first (unless force=True).
+    If validation returns ask-level issues, sets status to "needs_validation"
+    and returns without marking complete. The caller (SKILL.md) should then
+    ask the user and re-call with force=True if the user approves.
 
     On completion, also triggers incremental compliance update.
     """
     config = load_run_config(project_root)
 
     if status == "complete":
+        # Phase validation gate
+        if not force:
+            from phase_validators import validate_phase
+            valid, issues = validate_phase(step, project_root)
+            ask_issues = [i for i in issues if i["severity"] == "ask"]
+            inform_issues = [i for i in issues if i["severity"] == "inform"]
+
+            # Record inform-level notes (non-blocking)
+            if inform_issues:
+                notes = config.get("validation_notes", [])
+                notes.extend({"step": step, **i} for i in inform_issues)
+                config["validation_notes"] = notes
+
+            # Ask-level issues: pause for user decision
+            if ask_issues:
+                config["current_step"] = step
+                config["status"] = "needs_validation"
+                config["validation_issues"] = [{"step": step, **i} for i in ask_issues]
+                save_run_config(project_root, config)
+                return config
+
+        # Clear prior validation state on success/force
+        config.pop("validation_issues", None)
+
         completed = config.get("completed_steps", [])
         if step not in completed:
             completed.append(step)
@@ -301,6 +333,7 @@ def main() -> int:
     all_steps = PIPELINE_STEPS + list(CONDITIONAL_STEPS.keys())
     p.add_argument("--step", required=True, choices=all_steps)
     p.add_argument("--status", required=True, choices=["in_progress", "complete", "failed"])
+    p.add_argument("--force", action="store_true", help="Skip validation (user override)")
 
     p = subparsers.add_parser("get-build-progress")
     p.add_argument("--project-root", default=".")
@@ -320,7 +353,7 @@ def main() -> int:
         print(json.dumps(result, indent=2))
 
     elif args.command == "update-step":
-        config = update_step(project_root, args.step, args.status)
+        config = update_step(project_root, args.step, args.status, force=args.force)
         print(json.dumps(config, indent=2))
 
     elif args.command == "get-build-progress":

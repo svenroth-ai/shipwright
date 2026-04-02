@@ -24,8 +24,8 @@ class TestGenerate:
         data = collect_all(project_root)
         result = generate(data)
         assert "## Quality Indicators" in result
-        assert "| Tests passing | 16/16 | PASS |" in result
-        assert "| Copyleft licenses | 0 | PASS |" in result
+        assert "| All unit tests passing | 16/16 | PASS |" in result
+        assert "| Copyleft license risk | 0 | PASS |" in result
 
     def test_compliance_artifacts_links(self, project_root: Path):
         data = collect_all(project_root)
@@ -54,13 +54,13 @@ class TestGenerate:
             DependencyInfo("gpl-pkg", "1.0.0", "runtime", "GPL-3.0"),
         ]
         result = generate(data)
-        assert "| Copyleft licenses | 1 | WARN |" in result
+        assert "| Copyleft license risk | 1 | WARN |" in result
 
     def test_empty_data(self, empty_project_root: Path):
         data = collect_all(empty_project_root)
         result = generate(data)
         assert "# Compliance Dashboard" in result
-        assert "| Sections completed | 0/0 | WARN |" in result
+        assert "| All sections completed | 0/0 | WARN |" in result
 
 
 class TestGenerateFile:
