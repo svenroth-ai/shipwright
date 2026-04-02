@@ -32,6 +32,7 @@ Do tests validate behavior, not implementation?
 ### 5. Naming & Structure
 Is the code consistent with the existing codebase?
 - File and folder locations match profile conventions
+- New directories or files outside existing structure? → set `--architecture-impact convention`
 - No single file exceeds 300 lines (split if needed)
 - Variable/function names follow existing patterns
 
