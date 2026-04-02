@@ -35,7 +35,8 @@ User Description
       |
       v  (per section)
   SHIPWRIGHT-BUILD ......... TDD --> Code Review --> Conventional Commit
-      |
+      |                        ↑
+      |              /shipwright-preview (local browser preview, available after first split)
       v
   SHIPWRIGHT-TEST .......... Unit (Vitest) --> Smoke --> Playwright E2E
       |
@@ -864,11 +865,14 @@ Every skill works standalone -- you do not always need the full pipeline:
 | `/shipwright-plan @spec.md` | Just plan one split from a spec file |
 | `/shipwright-build @sections/01-models.md` | Just implement one section |
 | `/shipwright-test` | Just run the test suite |
+| `/shipwright-preview` | Start local dev server and open in browser |
 | `/shipwright-deploy` | Just deploy to Jelastic |
 | `/shipwright-changelog` | Just generate changelog and create a PR |
 | `/shipwright-compliance` | Just generate compliance reports |
 
 When using skills individually, provide the input artifact (spec file, section file) as an argument. The skill reads what it needs from the project's config files.
+
+**Local Preview.** `/shipwright-preview` starts the development server and shows the URL (e.g., `http://localhost:3000`). Available after at least one build split is complete. The preview uses the `dev_server` configuration from the stack profile -- new stack profiles must define `dev_server.command`, `dev_server.port`, and `dev_server.ready_path` in their profile JSON.
 
 ### 7.4 Session Recovery and Handoff
 
