@@ -25,6 +25,10 @@ def project_with_configs(tmp_project):
         "scope": "full_app",
         "profile": "supabase-nextjs",
         "autonomy_level": 2,
+        "current_step": "build",
+        "completed_steps": ["project", "design", "plan"],
+        "completed_splits": ["01-auth"],
+        "pipeline": ["project", "design", "plan", "build", "test", "changelog", "deploy"],
     }
     project_config = {
         "status": "complete",

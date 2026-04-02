@@ -15,6 +15,10 @@ def test_full_workflow(tmp_project):
         "scope": "full_app",
         "profile": "supabase-nextjs",
         "autonomy_level": 2,
+        "current_step": "build",
+        "completed_steps": ["project", "design", "plan"],
+        "completed_splits": ["01-auth"],
+        "pipeline": ["project", "design", "plan", "build", "test", "changelog", "deploy"],
     })
 
     # 2. Write project config with splits

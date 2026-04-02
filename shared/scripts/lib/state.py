@@ -22,10 +22,19 @@ def detect_current_phase(project_root: str | Path) -> str:
     if not configs["run"]:
         return "not_started"
 
-    build = configs["build"]
-    if build.get("status") == "complete":
+    # Primary: use orchestrator's current_step (authoritative source)
+    run = configs["run"]
+    current = run.get("current_step")
+    completed = run.get("completed_steps", [])
+    if current:
+        return current
+    # All pipeline steps completed
+    pipeline = run.get("pipeline", [])
+    if pipeline and set(pipeline).issubset(set(completed)):
         return "complete"
 
+    # Fallback: heuristic for projects without run_config.current_step
+    build = configs["build"]
     if build.get("sections"):
         return "build"
 
@@ -56,14 +65,17 @@ def get_checkpoint(project_root: str | Path) -> dict[str, Any]:
     }
 
     # Add split info if available
+    run = configs["run"]
     project = configs["project"]
     if project.get("splits"):
         splits = project["splits"]
-        completed = [s for s in splits if s.get("status") == "complete"]
+        # Use run_config.completed_splits (authoritative, maintained by orchestrator)
+        # rather than project_config splits[].status (only written by /shipwright-project)
+        completed_names = run.get("completed_splits", []) if run else []
         checkpoint["total_splits"] = len(splits)
-        checkpoint["completed_splits"] = len(completed)
+        checkpoint["completed_splits"] = len(completed_names)
         checkpoint["current_split"] = next(
-            (s["name"] for s in splits if s.get("status") != "complete"), None
+            (s["name"] for s in splits if s["name"] not in completed_names), None
         )
 
     # Add section info if available

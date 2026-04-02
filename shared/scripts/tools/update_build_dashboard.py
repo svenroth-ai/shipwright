@@ -166,6 +166,11 @@ def generate_dashboard(
     if run_config:
         lines.extend(generate_pipeline_table(run_config, total_all, completed_all))
 
+    # Phase detail line (e.g., "Last update (test): 833/833 unit passing")
+    if phase and detail:
+        lines.append(f"> **Last update ({phase}):** {detail}")
+        lines.append("")
+
     # Section table — current split only
     split_label = ""
     if current_split:
