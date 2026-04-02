@@ -13,6 +13,8 @@ Single entry point for the entire Shipwright SDLC pipeline.
 
 ## CRITICAL: First Actions
 
+**Governing rules:** Read and follow `shared/constitution.md` (ALWAYS / ASK FIRST / NEVER boundaries).
+
 ### A. Print Intro Banner
 
 ```
@@ -302,157 +304,11 @@ Each skill is invoked as a slash command:
 
 ### Build Phase Autopilot Loop
 
-When executing the build phase (step 3b in the pipeline), use the autopilot loop:
-
-1. **Get section progress:**
-```bash
-uv run {plugin_root}/scripts/lib/orchestrator.py get-build-progress \
-  --project-root "$(pwd)"
-```
-
-2. **Initialize dashboard:**
-```bash
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
-  --project-root "$(pwd)" --session-id "{SHIPWRIGHT_SESSION_ID}"
-```
-
-3. **For each incomplete section** (from `next_section` in progress output):
-
-   a. **Reset tool counter** (prevents stale counter from prior section):
-      ```bash
-      uv run {shared_root}/scripts/tools/reset_tool_counter.py \
-        --counter-file "$(pwd)/.shipwright_toolcall_count"
-      ```
-
-   b. Update dashboard: `--section "{section}" --step 1 --detail "Starting"`
-
-   **--- Autonomous mode: Subagent delegation ---**
-
-   c. **IF autonomy == "autonomous":** Spawn `section-builder` subagent (Agent tool):
-      - `description`: "Build section {section}"
-      - `subagent_type`: "shipwright-build:section-builder"
-      - `prompt`: Provide all required parameters:
-        - `section_file`: `{sections_dir}/{section}.md` (absolute path)
-        - `project_root`: `$(pwd)` (absolute path)
-        - `plugin_root`: `{build_plugin_root}` (sibling: `{plugin_root}/../shipwright-build`)
-        - `shared_root`: `{shared_root}` (= `{plugin_root}/../../shared`)
-        - `branch_prefix`: from `shipwright_run_config.json`
-        - `section_name`: `{section}`
-        - `session_id`: `{SHIPWRIGHT_SESSION_ID}`
-      - Do **NOT** use `run_in_background` — sections must be sequential
-      - Do **NOT** use `isolation: "worktree"` — section N+1 needs section N's code
-
-   d. **Parse subagent result JSON.** Expected fields:
-      - `status`: "complete" or "failed"
-      - `commit`, `branch`, `tests_passed`, `tests_total`, `review_findings`, `decisions`
-
-   e. **If status == "failed":**
-      - Update dashboard with `--status failed`
-      - Print error summary from result
-      - **STOP** — do not continue to next section
-      - Inform user of failure with diagnosis from result
-
-   f. **If status == "complete":**
-      - Verify section state in config:
-        ```bash
-        uv run {shared_root}/scripts/tools/update_build_dashboard.py \
-          --project-root "$(pwd)" --section "{section}" --status complete \
-          --session-id "{SHIPWRIGHT_SESSION_ID}"
-        ```
-      - Log decisions from result to decision log (if any)
-      - **No context pressure check needed** — subagent used its own context window
-      - Continue to next section
-
-   **--- Guided mode: Direct invocation (unchanged) ---**
-
-   g. **IF autonomy == "guided":**
-      - Invoke: `/shipwright-build @{sections_dir}/{section}.md`
-      - On return: update dashboard with `--status complete`
-      - Check context pressure:
-        ```bash
-        uv run {shared_root}/scripts/tools/estimate_context_pressure.py \
-          --counter-file "$(pwd)/.shipwright_toolcall_count" --threshold 120
-        ```
-      - If `recommend_checkpoint` is true:
-        - Update dashboard with `--status paused`
-        - Generate session handoff
-        - Print checkpoint banner (see above) and **STOP**
-
-   h. Re-run `get-build-progress` and continue with next section
-
-4. **All sections done:** Proceed to test phase (see below)
-
-**In guided mode:** Ask before each section:
-```
-AskUserQuestion:
-  question: "Section {N-1} complete ({completed}/{total}). Continue with {next_section}?"
-  options:
-    - "Continue"
-    - "Review first"
-    - "Stop here"
-```
+See `references/build-autopilot.md` for the complete autopilot loop (section iteration, subagent delegation, guided mode prompts, dashboard updates).
 
 ### Test Phase Execution
 
-After all build sections are complete:
-
-**--- Autonomous mode: Subagent delegation ---**
-
-**IF autonomy == "autonomous":** Spawn `test-runner` subagent (Agent tool):
-- `description`: "Run test suite"
-- `subagent_type`: "shipwright-test:test-runner"
-- `prompt`: Provide all required parameters:
-  - `project_root`: `$(pwd)` (absolute path)
-  - `plugin_root`: `{test_plugin_root}` (sibling: `{plugin_root}/../shipwright-test`)
-  - `shared_root`: `{shared_root}`
-  - `profile`: from `shipwright_project_config.json`
-  - `session_id`: `{SHIPWRIGHT_SESSION_ID}`
-  - `dev_url`: from `shipwright_build_config.json` → `dev_url`, or env `SHIPWRIGHT_DEV_URL`, or default `http://localhost:3000`
-
-**Parse test-runner result JSON.** Expected fields:
-- `status`: "pass" or "fail"
-- `unit`: `{passed, total, duration_s}`
-- `smoke`: `{status, url, response_ms}` or `{status: "skipped", reason: "..."}`
-- `e2e`: `{passed, total, failures, skipped}` or `{status: "skipped", reason: "..."}`
-- `fixes_applied`: list of auto-fixes attempted
-
-**Validate test completeness:** The orchestrator's phase validator (`phase_validators.py`) automatically checks test completeness when `update-step --status complete` is called. It verifies:
-- `unit` field exists and has results (always required)
-- `smoke` field exists (result or skip reason)
-- `e2e` field exists (result or skip reason)
-If any field is missing, `update-step` returns `status: "needs_validation"` with the specific issues. Follow the standard validation handling (AskUserQuestion → fix or --force).
-
-**If status == "fail":**
-- Update dashboard: `--phase test --status failed`
-- Print test failure summary from result
-- **STOP** — do not proceed to deploy
-- Inform user of which tests failed and why
-
-**If status == "pass":**
-- **Persist test results** (if not already written by test-runner):
-  Verify `shipwright_test_results.json` exists in project root. If not, write the parsed JSON result to that file. This ensures compliance reports have access to unit/smoke/e2e results.
-- Update pipeline state:
-  ```bash
-  uv run {plugin_root}/scripts/lib/orchestrator.py \
-    update-step --project-root "$(pwd)" --step test --status complete
-  ```
-- Update dashboard:
-  ```bash
-  uv run {shared_root}/scripts/tools/update_build_dashboard.py \
-    --project-root "$(pwd)" --phase test \
-    --detail "{unit.passed}/{unit.total} unit, {e2e.passed}/{e2e.total} E2E" \
-    --session-id "{SHIPWRIGHT_SESSION_ID}"
-  ```
-- Update compliance:
-  ```bash
-  uv run {compliance_plugin_root}/scripts/tools/update_compliance.py \
-    --project-root "$(pwd)" --phase test
-  ```
-- Continue to security scan / changelog / deploy
-
-**--- Guided mode: Direct invocation (unchanged) ---**
-
-**IF autonomy == "guided":** Invoke `/shipwright-test` as before.
+See `references/test-execution.md` for the complete test execution flow (subagent delegation, result parsing, validation, dashboard updates).
 
 ### Security Scan (conditional)
 

@@ -281,11 +281,5 @@ If the section could not be completed:
 
 ## Safety Rules
 
-- **Never** run `rm -rf`, `git push --force`, `git reset --hard`
-- **Never** bypass hooks with `--no-verify`
-- **Never** skip or weaken a test to make it pass
-- **Never** add features beyond what the section spec requires
-- **Always** generate `down.sql` in `supabase/migrations/_rollback/` for every migration (NEVER in `supabase/migrations/` directly)
-- **Always** run secret check before committing
-- Keep files under 300 lines — split if larger
-- If stuck after 3 debugging attempts: report failure, don't loop forever
+Follow `shared/constitution.md` — the complete ALWAYS / ASK FIRST / NEVER boundary definitions.
+Key hooks (`validate_command.sh`, `check_secrets.sh`, `check_destructive_migration.sh`) enforce critical rules programmatically.

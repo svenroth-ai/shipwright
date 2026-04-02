@@ -13,6 +13,8 @@ Deploys to Jelastic (Infomaniak) with smoke tests and rollback.
 
 ## CRITICAL: First Actions
 
+**Governing rules:** Read and follow `shared/constitution.md` (ALWAYS / ASK FIRST / NEVER boundaries).
+
 ### A. Print Intro Banner
 
 ```

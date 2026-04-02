@@ -13,6 +13,8 @@ Generates audit-ready compliance reports from existing Shipwright pipeline data.
 
 ## CRITICAL: First Actions
 
+**Governing rules:** Read and follow `shared/constitution.md` (ALWAYS / ASK FIRST / NEVER boundaries).
+
 ### A. Print Intro Banner
 
 ```

@@ -11,3 +11,24 @@ globs: "**/migrations/**,**/*.sql"
 - Use transactions for multi-statement migrations where supported
 - Add comments explaining WHY each migration exists, not just what it does
 - New columns should be nullable or have defaults to avoid breaking existing rows
+
+## Example: up.sql / down.sql pair
+
+```sql
+-- supabase/migrations/20260402_add_user_preferences.sql (up.sql)
+-- WHY: Users need per-account notification and theme settings (FR-01.05)
+alter table public.profiles
+  add column notification_email boolean not null default true,
+  add column theme text not null default 'system'
+    check (theme in ('light', 'dark', 'system'));
+
+-- Enable RLS on new columns (inherits existing profiles policy)
+comment on column public.profiles.theme is 'UI theme preference: light, dark, or system';
+```
+
+```sql
+-- supabase/migrations/20260402_add_user_preferences_down.sql (down.sql)
+alter table public.profiles
+  drop column if exists notification_email,
+  drop column if exists theme;
+```

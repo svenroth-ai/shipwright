@@ -203,8 +203,5 @@ If unit or smoke tests fail:
 
 ## Safety Rules
 
-- **Never** modify test assertions to make tests pass (fix the code, not the test)
-- **Never** delete or skip tests
-- **Never** run `rm -rf` or destructive commands
-- If stuck after 3 debugging attempts: report failure, don't loop forever
-- E2E failures are non-blocking — report them but return `status: "pass"` if unit+smoke pass
+Follow `shared/constitution.md` — the complete ALWAYS / ASK FIRST / NEVER boundary definitions.
+Additional test-specific rule: E2E failures are non-blocking — report them but return `status: "pass"` if unit+smoke pass.

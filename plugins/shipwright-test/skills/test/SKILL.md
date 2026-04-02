@@ -13,6 +13,8 @@ Profile-aware test execution across all test layers.
 
 ## CRITICAL: First Actions
 
+**Governing rules:** Read and follow `shared/constitution.md` (ALWAYS / ASK FIRST / NEVER boundaries).
+
 ### A. Print Intro Banner
 
 ```
