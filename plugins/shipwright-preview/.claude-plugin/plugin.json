@@ -1,0 +1,12 @@
+{
+  "name": "shipwright-preview",
+  "description": "Local browser preview for Shipwright projects — starts dev server and shows URL",
+  "version": "0.1.0",
+  "author": {
+    "name": "Sven Roth",
+    "url": "https://github.com/svenroth-ai"
+  },
+  "repository": "https://github.com/svenroth-ai/shipwright",
+  "license": "MIT",
+  "keywords": ["preview", "dev-server", "browser", "local"]
+}

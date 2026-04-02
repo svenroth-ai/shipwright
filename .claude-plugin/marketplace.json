@@ -87,6 +87,14 @@
       "source": "./plugins/shipwright-compliance",
       "category": "development",
       "tags": ["compliance", "ireb", "traceability", "sbom", "rtm"]
+    },
+    {
+      "name": "shipwright-preview",
+      "description": "Local browser preview — start dev server and show URL for in-browser testing",
+      "version": "0.1.0",
+      "source": "./plugins/shipwright-preview",
+      "category": "development",
+      "tags": ["preview", "dev-server", "browser", "local"]
     }
   ]
 }
