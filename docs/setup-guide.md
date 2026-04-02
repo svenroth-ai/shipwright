@@ -355,7 +355,7 @@ chmod +x ~/shipwright/plugins/*/scripts/**/*.sh
 
 **Cause:** Large projects can fill Claude's context window.
 
-**Fix:** Type `/clear` in Claude Code. Shipwright saves state to config files and resumes automatically from where you left off.
+**Fix:** Create a new session (or Type `/clear`) in Claude Code. Shipwright saves state to config files and resumes automatically from where you left off.
 
 ### External review skipped
 
