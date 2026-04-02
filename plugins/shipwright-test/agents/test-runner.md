@@ -106,17 +106,24 @@ uv run {plugin_root}/scripts/lib/playwright_runner.py --cwd {project_root}
 
 4. **Parse results** from JSON output: passed, failed, skipped, failure details.
 
-5. **If failures — auto-fix (max 3 retries):**
+5. **If failures — group and fix by root cause:**
 
-   For each failed test:
-   a. Check if screenshot exists for the failure
-   b. Read the screenshot image if available
-   c. Read console errors from the test output
-   d. **Diagnose using browser-fix heuristics** (see below)
-   e. Apply the recommended fix
-   f. Re-run failed test only: `npx playwright test --grep "{test_title}"`
-   g. If same root cause as previous attempt: change approach
-   h. After 3 retries: report remaining failures
+   **Categorize failures** by error message pattern:
+   - `TimeoutError.*waitForURL` or `loginAs` → **auth** group
+   - `getByRole.*not found` or `locator.*resolved to 0` → **selector** group
+   - Empty state, no data, missing records → **data** group
+   - `ERR_CONNECTION` or `net::` → **connection** group
+   - Everything else → **other** group
+
+   **For each group (up to 3 fix attempts per group):**
+   a. Diagnose the group's common root cause
+   b. Read screenshots/console errors for representative failures
+   c. Apply a single fix targeting the group's root cause
+   d. Re-run only the group's tests: `npx playwright test --grep "{pattern}"`
+   e. If fix works: commit, move to next group
+   f. If 3 attempts exhausted: park group with diagnosis, move to next
+
+   **After all groups:** ASK user for direction on parked groups (one dialog).
 
 6. **Stop dev server:**
 ```bash
@@ -127,6 +134,7 @@ uv run {shared_root}/scripts/dev_server.py stop --cwd {project_root}
 - `e2e_passed`: number passing
 - `e2e_total`: total E2E tests
 - `e2e_failures`: list of failed test names
+- `fix_groups` (optional): per-group status with attempts/resolved/diagnosis
 - `fixes_applied`: list of fixes attempted
 
 ### Browser-Fix Heuristics (inline)
