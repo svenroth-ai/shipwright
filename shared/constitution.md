@@ -20,6 +20,9 @@
 - Keep files under 300 lines — split if larger
 - Fix the code, not the test — never weaken assertions to make tests pass
 - Diagnose test failures before skipping — attempt autonomous fix (e.g., restart services, seed data, fix config), escalate to user if fix fails after 2 attempts
+- Verify after non-trivial edits — run `tsc --noEmit` (TypeScript) or project linter before reporting success
+- Re-read files before editing in long sessions (10+ messages) — do not trust cached content after auto-compaction
+- State explicitly when search results may be truncated — never silently work with incomplete data
 
 ## ASK FIRST (require user confirmation)
 
@@ -45,6 +48,7 @@
 - Retry blindly without root-cause analysis
 - Amend a commit that was blocked by a pre-commit hook
 - Loop more than 3 debugging attempts without escalating
+- Claim "all tests pass" when output shows failures — report actual numbers honestly
 
 ---
 

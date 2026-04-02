@@ -216,6 +216,36 @@ plugins/shipwright-{name}/
 8. **Linters over instructions** — mechanical enforcement (hooks) beats advisory prose (CLAUDE.md rules)
 9. **Progressive disclosure** — CLAUDE.md stays lean (~200 lines), details live in `@agent_docs/`
 
+## Constitution
+
+All Shipwright agents follow the **Constitution** (`shared/constitution.md`) — a declarative set of behavioral boundaries organized as ALWAYS / ASK FIRST / NEVER rules.
+
+### ALWAYS (do without asking)
+- Run tests before committing — tests must pass
+- Generate rollback SQL for every migration
+- Use Conventional Commits and parameterized queries
+- Run self-review checklist before committing
+- Keep files under 300 lines
+- Fix the code, not the test — never weaken assertions
+- Diagnose test failures before skipping — attempt autonomous fix, escalate after 2 attempts
+- Verify after non-trivial edits — run type-checker or linter before reporting success
+- Re-read files before editing in long sessions — do not trust cached content after auto-compaction
+- State explicitly when search results may be truncated
+
+### ASK FIRST (require confirmation)
+- Destructive database operations, PROD deployments, rollback decisions
+- Skipping test layers, overriding validation gates
+- Continuing after 3 failed fix attempts
+
+### NEVER (hard stops)
+- `rm -rf` on root, `git push --force` to main, `git reset --hard`
+- Skip or weaken tests, add features beyond spec (YAGNI)
+- Hardcode secrets or commit `.env` files
+- Retry blindly without root-cause analysis
+- Claim "all tests pass" when output shows failures
+
+See `shared/constitution.md` for the full document including escalation thresholds, test layer boundaries, and programmatic enforcement mapping.
+
 ## Claude Architect Best Practices
 
 Shipwright implements best practices from the [Anthropic Claude Certified Architect](https://www.anthropic.com/certification) exam guide across all 5 certification domains:
