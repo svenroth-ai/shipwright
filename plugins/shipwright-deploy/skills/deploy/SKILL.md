@@ -96,22 +96,37 @@ Parse the JSON output:
 
 **Only runs if migration files exist** in `supabase/migrations/`.
 
+### Prerequisites (check before running migrations)
+
+1. **`supabase/config.toml` exists** — if not: run `npx supabase init`
+2. **Project is linked** (`.supabase/` directory exists) — if not: run `npx supabase link --project-ref <ref>` (requires `SUPABASE_ACCESS_TOKEN`)
+3. **`SUPABASE_ACCESS_TOKEN` is set** — if not: prompt user to create one at https://supabase.com/dashboard/account/tokens and add to `.env.local`
+
+If any prerequisite fails: stop and inform user with specific remediation steps.
+
 ### DEV
 ```bash
-supabase db push --linked
+SUPABASE_ACCESS_TOKEN="$TOKEN" npx supabase db push --linked
 ```
 Automatic, no confirmation needed.
 
 ### PROD
 ```bash
-supabase db push --linked --dry-run
+SUPABASE_ACCESS_TOKEN="$TOKEN" npx supabase db push --linked --dry-run
 ```
 Present dry-run output to user. Require explicit confirmation before:
 ```bash
-supabase db push --linked
+SUPABASE_ACCESS_TOKEN="$TOKEN" npx supabase db push --linked
 ```
 
 **Destructive changes** (detected by shipwright-build hooks): always warn and require confirmation regardless of target.
+
+### Post-Migration Manual Steps
+
+If any migration creates a Supabase Auth Hook function (e.g., `custom_access_token_hook`),
+remind the user that the hook must be **manually activated** in the Supabase Dashboard:
+**Dashboard → Authentication → Hooks → Enable the hook and select the function.**
+This cannot be done via CLI or migration.
 
 ---
 

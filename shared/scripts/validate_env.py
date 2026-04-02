@@ -226,6 +226,33 @@ def init_env_file(
     }
 
 
+_PLACEHOLDER_PATTERNS = [
+    "...", "xxx", "your-key-here", "your_key_here",
+    "<placeholder>", "todo", "changeme", "replace_me",
+    "sk_test_xxx", "pk_test_xxx", "sbp_xxx",
+]
+
+
+def _is_placeholder(value: str) -> bool:
+    """Detect common placeholder values that aren't real credentials."""
+    stripped = value.strip()
+    if not stripped:
+        return True
+    lower = stripped.lower()
+    for pattern in _PLACEHOLDER_PATTERNS:
+        if lower == pattern:
+            return True
+    # Catch values that are just dots or x's
+    if all(c == "." for c in stripped):
+        return True
+    if all(c.lower() == "x" for c in stripped):
+        return True
+    # Catch angle-bracket wrapped values like <your-key>
+    if stripped.startswith("<") and stripped.endswith(">"):
+        return True
+    return False
+
+
 def validate(
     project_root: Path,
     phase: str,
@@ -313,13 +340,27 @@ def validate(
     missing: list[dict] = []
     optional_missing: list[dict] = []
 
+    placeholder_detected: list[str] = []
+
     for var_def in phase_vars:
         var_name = var_def["name"]
         is_optional = var_def.get("optional", False)
         value = available_vars.get(var_name, "")
 
-        if value:
+        if value and not _is_placeholder(value):
             found.append(var_name)
+        elif value and _is_placeholder(value):
+            placeholder_detected.append(var_name)
+            if is_optional:
+                optional_missing.append({
+                    "name": var_name,
+                    "description": var_def.get("description", "") + " (placeholder value detected)",
+                })
+            else:
+                missing.append({
+                    "name": var_name,
+                    "description": var_def.get("description", "") + " (placeholder value detected)",
+                })
         elif is_optional:
             optional_missing.append({
                 "name": var_name,
@@ -340,6 +381,7 @@ def validate(
         "missing": missing,
         "optional_missing": optional_missing,
         "found": found,
+        "placeholder_detected": placeholder_detected,
         "env_file_exists": env_file_exists,
         "env_file_path": str(env_file_path),
         "skipped": False,

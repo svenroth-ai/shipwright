@@ -285,7 +285,7 @@ If the section could not be completed:
 - **Never** bypass hooks with `--no-verify`
 - **Never** skip or weaken a test to make it pass
 - **Never** add features beyond what the section spec requires
-- **Always** generate `down.sql` for every `up.sql` migration
+- **Always** generate `down.sql` in `supabase/migrations/_rollback/` for every migration (NEVER in `supabase/migrations/` directly)
 - **Always** run secret check before committing
 - Keep files under 300 lines — split if larger
 - If stuck after 3 debugging attempts: report failure, don't loop forever
