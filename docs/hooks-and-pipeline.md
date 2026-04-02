@@ -170,13 +170,21 @@ orchestrator autopilot loop
 
 ```
 test-runner subagent
-  → runs unit/smoke/e2e tests
+  → runs unit tests (vitest)
+  → runs smoke test (HTTP health check)
+  → Step 3.5: checks e2e/ for .spec.ts files
+    → if missing: reads planning/*/claude-plan-e2e.md
+    → generates e2e/flows/*.spec.ts + e2e/pages/*.page.ts
+  → runs Playwright E2E (against dev server)
   → writes shipwright_test_results.json to project root
   → returns JSON result to orchestrator
 orchestrator
-  → parses result
+  → parses result (unit/smoke/e2e with real counts)
+  → if E2E plans exist but E2E skipped: AskUserQuestion
   → calls update-step --step test --status complete
   → validate_test() fires (checks results file exists, all layers have results)
+  → update_build_dashboard.py with "X/Y unit, A/B E2E"
+  → update_compliance.py --phase test (reads test results for evidence)
 ```
 
 ### section-writer (Plan Phase)

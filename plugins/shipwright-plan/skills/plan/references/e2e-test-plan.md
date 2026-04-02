@@ -44,6 +44,18 @@ Write `{planning_dir}/claude-plan-e2e.md` with:
 - Elements: ...
 ```
 
+## Downstream Usage
+
+The E2E test plans are **automatically implemented** by `/shipwright-test` (Step 2.5) during the
+Test phase. The test-runner reads all `claude-plan-e2e.md` files and generates Playwright specs:
+
+- `e2e/flows/NN-flow-name.spec.ts` — one file per flow group
+- `e2e/pages/*.page.ts` — Page Object Models
+- `e2e/fixtures/test-data.ts` — seed data
+
+The generated specs are then executed by Playwright (Step 3). Results flow into
+`shipwright_test_results.json` → compliance reports → build dashboard.
+
 ## Guidelines
 
 - Focus on user-visible flows (not API-only routes)
@@ -51,3 +63,5 @@ Write `{planning_dir}/claude-plan-e2e.md` with:
 - Include both happy path and key error cases
 - Suggest Page Object Model for maintainability
 - Reference specific UI components from the plan
+- Mark flows requiring external services (Stripe, CRM API) with a note — these will be `test.skip()`'d
+- Use consistent flow naming (NN prefix) — the test-runner maps these to spec file names
