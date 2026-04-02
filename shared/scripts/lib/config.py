@@ -85,15 +85,23 @@ def collect_all_build_sections(project_root: str | Path) -> dict[str, Any]:
         if prefix:
             split_by_prefix[prefix] = sp["name"]
 
-    # Archived splits
+    # Archived splits — tag each section with its split name
     archived: list[dict[str, Any]] = []
     for key, value in build_config.items():
         if key.startswith("split_") and key.endswith("_sections") and isinstance(value, list):
+            prefix = key.split("_")[1]  # "split_01_sections" → "01"
+            split_name = split_by_prefix.get(prefix, prefix)
+            for sec in value:
+                if "split" not in sec:
+                    sec["split"] = split_name
             archived.extend(value)
 
-    # Current split
+    # Current split — tag sections with current split name
     current: list[dict[str, Any]] = build_config.get("sections", [])
     current_split = build_config.get("current_split", "")
+    for sec in current:
+        if "split" not in sec:
+            sec["split"] = current_split
     completed_splits = build_config.get("completed_splits", [])
 
     return {
