@@ -68,6 +68,18 @@ SHIPWRIGHT_PLUGIN_ROOT       # Absolute path to active plugin directory
 - This document is the single source of truth for understanding what fires when
   and the impact of pipeline changes.
 
+### Documentation Guide
+- **Reference doc:** `docs/guide.md`
+- **Rule:** When adding a new skill, changing a skill's command/arguments/flags,
+  modifying the pipeline flow, or changing the constitution, check whether
+  `docs/guide.md` needs an update. Key sections to check:
+  - Chapter 4 (phase descriptions) — if skill behavior changed
+  - Chapter 7.5 (constitution) — if constitution rules changed
+  - Chapter 8 (quality gates) — if hooks changed
+  - Appendix B (command reference) — if commands/flags changed
+- The guide is the primary user-facing documentation. README.md is a summary
+  that links to the guide.
+
 ### Testing
 ```bash
 # Single plugin
@@ -80,4 +92,5 @@ uv run pytest integration-tests/ -v
 ## Context
 - **Spec**: Spec/shipwright-sdlc-spec.md (v3.3)
 - **Tasks**: Spec/shipwright-sdlc-tasks.md
+- **Guide**: docs/guide.md (primary user-facing documentation)
 - **Upstream**: github.com/piercelamb/deep-{project,plan,implement}
