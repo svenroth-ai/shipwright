@@ -93,10 +93,10 @@ PIPELINE_PHASES = ["project", "design", "plan", "build", "test", "changelog", "d
 | PreToolUse | `Bash` | `validate_command.sh` | Blocks dangerous shell commands (rm -rf, force push, etc.) |
 | PostToolUse | `Write\|Edit` | `check_destructive_migration.sh` | Warns on DROP/DELETE in .sql files without down.sql |
 | PostToolUse | `Write\|Edit` | `check_secrets.sh` | Scans written files for API keys, tokens, passwords |
-| PostToolUse | `Write\|Edit` | `check_file_size.py` | Warns if file exceeds size limit |
+| PostToolUse | `Write\|Edit` | `check_file_size.sh` | Warns if file exceeds size limit |
 | PostToolUse | `Write\|Edit` | `track_tool_calls.py` | Increments tool call counter for context pressure detection |
 | Stop | — | `generate-handoff.py` | Session handoff |
-| Stop | — | `check_doc_completeness.py` | Verifies documentation artifacts are up to date |
+| Stop | — | `check_documentation.py` | Verifies documentation artifacts are up to date |
 
 ### shipwright-test
 
@@ -116,6 +116,14 @@ PIPELINE_PHASES = ["project", "design", "plan", "build", "test", "changelog", "d
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture-session-id.py` | Session ID injection |
+| Stop | — | `generate-handoff.py` | Session handoff |
+
+### shipwright-security
+
+| Event | Matcher | Script | What It Does |
+|-------|---------|--------|--------------|
+| SessionStart | — | `capture_session_id.py` | Session ID injection |
+| SessionStart | — | `check_drift.py` | Detects code drift (uncommitted changes from prior sessions) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-compliance
@@ -211,6 +219,9 @@ plan SKILL completes
 | `shipwright_test_results.json` | test-runner subagent | Compliance (test evidence), validators |
 | `shipwright_compliance_config.json` | update_compliance.py | Compliance (phases_covered) |
 | `shipwright_plan_config.json` | /shipwright-plan | Build (section references) |
+| `shipwright_project_session.json` | /shipwright-project | /shipwright-project (session resume state) |
+| `shipwright_plan_session.json` | /shipwright-plan | /shipwright-plan (session resume state) |
+| `shipwright_security_config.json` | /shipwright-security | /shipwright-security, compliance (scan results) |
 
 ---
 
