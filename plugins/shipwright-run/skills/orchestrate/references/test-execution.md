@@ -28,6 +28,16 @@ After all build sections are complete:
 - `e2e` field exists (result or skip reason)
 If any field is missing, `update-step` returns `status: "needs_validation"` with the specific issues. Follow the standard validation handling (AskUserQuestion → fix or --force).
 
+**E2E plans exist but E2E skipped:** If `e2e` result is `skipped` but `planning/*/claude-plan-e2e.md` files exist, and the skip reason is NOT "no Playwright config" or "no UI profile", use AskUserQuestion:
+
+```
+"E2E test plans exist but no E2E tests were executed. How should we proceed?"
+Options:
+  - "Generate & run E2E tests now" → Re-invoke /shipwright-test (will trigger Step 2.5 E2E generation + Step 3 execution)
+  - "Skip E2E tests — continue pipeline" → Log warning, proceed to changelog/deploy
+  - "Stop here — I'll review first" → Pause pipeline
+```
+
 **If status == "fail":**
 - Update dashboard: `--phase test --status failed`
 - Print test failure summary from result

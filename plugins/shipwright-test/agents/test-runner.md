@@ -66,6 +66,25 @@ uv run {shared_root}/scripts/smoke_test.py \
 - `smoke_url`: the URL tested
 - `smoke_response_ms`: response time
 
+### Step 3.5: Generate E2E Specs from Plan (if missing)
+
+**Skip if:** Profile has no UI, or `e2e/` already contains `.spec.ts` files.
+
+1. **Check for existing specs:** Search `e2e/` for `*.spec.ts` files. If found → skip.
+2. **Find E2E plans:** Search `planning/*/claude-plan-e2e.md`. If none found → skip.
+3. **Generate specs:** For each E2E plan:
+   - Read the plan (user flows, page objects, test data)
+   - Create `e2e/flows/NN-flow-name.spec.ts` for each flow group
+   - Create `e2e/pages/*.page.ts` Page Object Models
+   - Create `e2e/fixtures/test-data.ts` seed data
+   - Create `e2e/fixtures/auth.setup.ts` if auth flows exist
+4. **Guidelines:**
+   - One `.spec.ts` file per flow group (auth, courses, downloads, payments, etc.)
+   - Use Page Object Model pattern
+   - Use `test.skip()` for flows requiring external services (Stripe redirect, etc.)
+   - Tests run against dev server at `{dev_url}`
+   - Respect existing `playwright.config.ts`
+
 ### Step 4: Run Playwright E2E (if applicable)
 
 **Skip if:** Profile has no UI, or smoke test failed, or no DEV URL.
