@@ -58,6 +58,7 @@
 |---|---|
 | 2 failed fixes with same root cause | Stop — approach is wrong, not the fix. Reevaluate architecture. |
 | 3 failed fixes total | Stop — escalate to user via AskUserQuestion |
+| Multiple failure groups (E2E) | 3 retries per group, then move to next group. User dialog after all groups attempted. |
 | Missing dependency from another section | Log + skip with TODO comment, do not block |
 | PROD deploy | Always confirm, even in autonomous mode |
 | Destructive SQL | Always confirm, even in autonomous mode |

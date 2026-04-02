@@ -214,21 +214,29 @@ uv run {plugin_root}/scripts/lib/playwright_runner.py --cwd {project_root}
    - If all passed: continue to Step 4
    - If failures and `--fix` flag active: invoke auto-fix
 
-5. **Auto-fix mode** (with `--fix` flag or autonomous mode, max 3 retries, structured debugging):
+5. **Auto-fix mode** (autonomous mode or `--fix` flag):
 
-   **Autonomous mode:** Auto-fix is always active. Spawn browser-fixer
-   subagent automatically on failure (up to 3 retries), same as --fix behavior.
-   a. For each failed test, check if a screenshot exists
-   b. **Root cause:** Identify what's failing from error + screenshot before fixing
-   c. Spawn `browser-fixer` subagent with:
-      - Screenshot image (if available)
-      - Error message from test failure
-      - DOM snippet (if available via trace)
-      - Relevant source files
-   d. Apply the recommended fix
-   e. Re-run failed tests only: `npx playwright test --grep "{test_title}"`
-   f. **If same root cause as previous attempt** → change approach, don't repeat same fix
-   g. If still failing after 3 retries, report failures to user with diagnosis summary
+   **Group failures by root cause** before fixing:
+   - Auth/login failures (e.g., loginAs timeout, missing credentials)
+   - Selector mismatches (e.g., getByRole not found, wrong label)
+   - Missing data (e.g., no test courses, empty tables)
+   - Connection/timeout issues
+   - Other
+
+   **For each root-cause group:**
+   a. Diagnose the group's common root cause
+   b. If screenshots exist for failed tests, read them for visual context
+   c. Apply a single fix addressing the group (e.g., fix loginAs helper → fixes all auth tests)
+   d. Re-run only the tests in this group: `npx playwright test --grep "{pattern}"`
+   e. If fix works: **commit the fix**, move to next group
+   f. If same root cause persists after 3 attempts on this group: **park it**, move to next group
+   
+   **After all groups attempted:**
+   - Report summary: which groups fixed, which parked, with diagnosis per parked group
+   - **ASK user** for direction on parked groups (one consolidated dialog, not per group)
+   
+   **Commit between fix rounds** — each successful group fix gets its own commit
+   to prevent losing progress on session interruption.
 
 6. **Stop dev server** (after all E2E tests complete):
 ```bash
