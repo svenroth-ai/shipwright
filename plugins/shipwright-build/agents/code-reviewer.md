@@ -68,6 +68,24 @@ Return a JSON object:
 
 If no findings: return `{"section": "<name>", "review": []}`.
 
+## External LLM Review (optional)
+
+If `OPENROUTER_API_KEY` (or `GEMINI_API_KEY`/`OPENAI_API_KEY`) is set, supplement your
+review with an external LLM review using `shared/scripts/lib/llm_review.py`:
+
+```bash
+uv run -c "
+from lib.llm_review import run_review
+result = run_review(content=diff_text, context=spec_text)
+print(json.dumps(result, indent=2))
+"
+```
+
+- Merge external findings into your review output
+- External findings get `"source": "external-llm"` in the review item
+- Set `review_type` to `"external-review"` in build config when external review was successful
+- If no API keys available: proceed with Claude-only review (`review_type: "full-review"`)
+
 ## Examples
 
 ### Example 1: Bug found in diff

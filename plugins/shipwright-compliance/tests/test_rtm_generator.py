@@ -42,9 +42,10 @@ class TestGenerate:
         result = generate(data)
         assert "No sections available yet" in result
 
-    def test_pass_status_for_complete_sections(self, project_root: Path):
+    def test_section_pass_status(self, project_root: Path):
         data = collect_all(project_root)
         result = generate(data)
+        # Section traceability shows PASS for sections with green unit tests
         assert "PASS" in result
 
     def test_findings_in_summary(self, project_root: Path):
