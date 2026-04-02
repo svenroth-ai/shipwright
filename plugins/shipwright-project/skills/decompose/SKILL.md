@@ -355,6 +355,22 @@ When the detected profile is `supabase-nextjs`, perform these additional steps a
 
 This ensures all downstream skills (build migrations, deploy) can use `supabase db push --linked`.
 
+**GitHub Repo Hygiene (if git remote exists):**
+
+After scaffolding, check if the project has a GitHub remote and configure branch cleanup:
+
+```bash
+# Check if remote exists
+git remote get-url origin 2>/dev/null
+```
+
+If a GitHub remote is found (contains `github.com`):
+```bash
+# Enable auto-delete of branches after PR merge
+gh api repos/{owner}/{repo} -X PATCH -f delete_branch_on_merge=true
+```
+This prevents stale feature branches from accumulating after Shipwright's `gh pr merge --merge --delete-branch` (in changelog phase) or manual UI merges.
+
 **Checkpoint:** CLAUDE.md existence + `supabase/config.toml` existence (if supabase-nextjs profile).
 
 ---

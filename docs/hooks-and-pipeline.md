@@ -246,3 +246,15 @@ When writing decision log entries, the `--architecture-impact` flag on `write_de
 | `none` | — | No update |
 
 Format: `- **ADR-NNN** (YYYY-MM-DD): Short description`
+
+---
+
+## GitHub Repo Hygiene
+
+During `/shipwright-project` Step 7 (Scaffolding), if the project has a GitHub remote:
+
+| Setting | Value | Why |
+|---------|-------|-----|
+| `delete_branch_on_merge` | `true` | Prevents stale feature branches after PR merges (CLI or UI) |
+
+This complements `gh pr merge --merge --delete-branch` in `/shipwright-changelog` Step 7, which only fires on CLI merges.
