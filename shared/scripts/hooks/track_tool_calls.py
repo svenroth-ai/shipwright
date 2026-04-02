@@ -24,6 +24,12 @@ def _resolve_project_root() -> Path:
     return Path.cwd()
 
 
+def _is_shipwright_project(root: Path) -> bool:
+    """Check if the directory is an active Shipwright project."""
+    markers = ["shipwright_run_config.json", "shipwright_build_config.json"]
+    return any((root / m).exists() for m in markers)
+
+
 def main() -> int:
     # Consume stdin (hook protocol)
     try:
@@ -31,7 +37,13 @@ def main() -> int:
     except Exception:
         pass
 
-    counter_file = _resolve_project_root() / ".shipwright_toolcall_count"
+    project_root = _resolve_project_root()
+
+    # Only track in actual Shipwright projects
+    if not _is_shipwright_project(project_root):
+        return 0
+
+    counter_file = project_root / ".shipwright_toolcall_count"
 
     count = 0
     if counter_file.exists():
