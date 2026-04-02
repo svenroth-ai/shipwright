@@ -348,6 +348,12 @@ uv run {plugin_root}/scripts/lib/browser_verify.py --cwd {project_root}
    f. **If same root cause as previous attempt** → change approach (different fix strategy, not same fix again)
    g. If still failing after 3 retries, present findings to user via AskUserQuestion with diagnosis summary
 
+6. **Visual guidelines check** (if `designs/visual-guidelines.md` exists):
+   When reviewing the screenshot, also check against the visual guidelines:
+   - Brand colors match (primary, background, accent)
+   - Typography consistent (font family, sizes, weights)
+   - Component patterns followed (card shadows, button styles, border radius)
+
 **Note:** The dev server stays running between sections. It gets stopped by shipwright-test or at the end of all sections.
 
 ---

@@ -29,7 +29,8 @@ Execute these steps **in order**. Do NOT skip steps.
 
 1. Read `CLAUDE.md` from `{project_root}` for project conventions
 2. Read `agent_docs/` directory for architecture docs, decision log, prior decisions
-3. Read the section spec at `{section_file}` thoroughly
+3. Read `designs/visual-guidelines.md` (if exists) for brand colors, typography, spacing, component patterns
+4. Read the section spec at `{section_file}` thoroughly
 4. Read `{project_root}/shipwright_build_config.json` for existing config
 5. Run setup script:
 ```bash
