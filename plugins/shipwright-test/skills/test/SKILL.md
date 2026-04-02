@@ -103,6 +103,16 @@ uv run {shared_root}/scripts/smoke_test.py \
 
 If no DEV URL and app not running: skip with note.
 
+**If smoke test fails (any reason) — diagnose before skipping:**
+1. **Diagnose:** Read error output, identify root cause
+2. **Attempt autonomous fix** based on diagnosis. Examples:
+   - Connection refused → check if dev server is running, start/restart it
+   - HTTP error (non-200) → check app logs, report to user (real app bug)
+   - Timeout → increase timeout, retry
+   - Process hung → kill stale process, restart
+3. **Retry** smoke test after fix
+4. After 2 failed fix attempts: **ASK user** how to proceed
+
 ---
 
 ## Step 2.5: Generate E2E Specs from Plan (if missing)
@@ -219,6 +229,17 @@ uv run {plugin_root}/../../shared/scripts/dev_server.py stop --cwd {project_root
 ```
 
 If no Playwright config exists and setup fails: skip with note.
+
+**If E2E tests fail — diagnose before reporting:**
+1. **Diagnose:** Read error output, identify root cause pattern across failures
+2. **Attempt autonomous fix** based on diagnosis. Examples:
+   - Auth/login failures → run auth setup to seed test users (`npx playwright test --project=setup`)
+   - Missing page elements → verify pages render, check selectors against actual DOM
+   - Connection issues → verify dev server is running, check base URL config
+   - Timeout → increase test timeout, check for slow-loading pages
+   - Missing test data → check fixtures, seed required data
+3. **Re-run failed tests only:** `npx playwright test --grep "{test_title}"`
+4. After 2 failed fix attempts with same root cause: **ASK user** for direction
 
 ---
 

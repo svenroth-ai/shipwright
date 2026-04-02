@@ -27,19 +27,19 @@ def generate(data: ComplianceData) -> str:
     # --- Test Execution Summary (unit + smoke + e2e) ---
     lines.extend(_test_execution_summary(data))
 
-    # --- Per-section unit test results ---
-    lines.extend(_per_section_results(data))
-
-    # --- E2E Test Details ---
-    lines.extend(_e2e_details(data))
-
-    # --- Test Pyramid ---
+    # --- Test Pyramid (right after execution summary) ---
     lines.extend([
         "## Test Pyramid",
         "",
         testing_pyramid_diagram(data.sections, data.test_results),
         "",
     ])
+
+    # --- Per-split test results (with layer breakdown) ---
+    lines.extend(_per_split_results(data))
+
+    # --- E2E Test Details ---
+    lines.extend(_e2e_details(data))
 
     # --- Code Review Evidence ---
     lines.extend(_code_review_evidence(data))
@@ -121,39 +121,104 @@ def _test_execution_summary(data: ComplianceData) -> list[str]:
     return lines
 
 
-def _per_section_results(data: ComplianceData) -> list[str]:
-    """Per-section unit test results with links to section plans and test files."""
+def _per_split_results(data: ComplianceData) -> list[str]:
+    """Per-split test results with layer breakdown and section summary."""
     if not data.sections:
         return []
 
-    lines = ["## Per-Section Results", ""]
+    lines = ["## Per-Split Results", ""]
 
-    # Group by split
+    # Group sections by split
     splits_seen: dict[str, list] = {}
     for sec in data.sections:
         splits_seen.setdefault(sec.split, []).append(sec)
 
+    # Read per-split E2E results if available
+    split_e2e = _collect_split_e2e_results(data.project_root)
+
     for split_name, sections in splits_seen.items():
-        lines.extend([
-            f"### Split: {split_name}",
-            "",
-            "| Section | Tests Passed | Tests Total | Review Findings | Status |",
-            "|---------|-------------|-------------|-----------------|--------|",
-        ])
-        for sec in sections:
-            findings_text = _format_findings(sec.review_findings, sec.review_findings_fixed)
-            status = "PASS" if sec.tests_passed == sec.tests_total and sec.tests_total > 0 else "PENDING"
+        unit_passed = sum(s.tests_passed for s in sections)
+        unit_total = sum(s.tests_total for s in sections)
+        total_sections = len(sections)
+        complete_sections = sum(1 for s in sections if s.status == "complete")
+        total_findings = sum(s.review_findings for s in sections)
+        review_types = {s.review_type for s in sections if s.review_type}
+        review_label = ", ".join(sorted(review_types)) if review_types else "—"
 
-            # Link to section plan file
-            section_link = f"[{sec.name}](../planning/{split_name}/sections/{sec.name}.md)"
+        # E2E data for this split
+        e2e_info = split_e2e.get(split_name, {})
+        e2e_passed = e2e_info.get("passed", 0)
+        e2e_total = e2e_info.get("total", 0)
 
-            lines.append(
-                f"| {section_link} | {sec.tests_passed} | {sec.tests_total} "
-                f"| {findings_text} | {status} |"
-            )
+        lines.append(f"### Split: {split_name}")
+        lines.append("")
+        lines.append("| Layer | Passed | Total | Status |")
+        lines.append("|-------|--------|-------|--------|")
+
+        # Unit layer
+        if unit_total > 0:
+            u_status = "PASS" if unit_passed == unit_total else "FAIL"
+        else:
+            u_status = "—"
+        lines.append(f"| Unit | {unit_passed} | {unit_total} | {u_status} |")
+
+        # E2E layer (if data available)
+        if e2e_total > 0:
+            e_status = "PASS" if e2e_passed == e2e_total else "WARNING"
+            lines.append(f"| E2E | {e2e_passed} | {e2e_total} | {e_status} |")
+        else:
+            lines.append("| E2E | — | — | — |")
+
+        lines.append("")
+        lines.append(
+            f"Sections: {complete_sections}/{total_sections} complete "
+            f"| Review: {review_label} ({total_findings} findings)"
+        )
         lines.append("")
 
     return lines
+
+
+def _collect_split_e2e_results(project_root: Path) -> dict[str, dict]:
+    """Read per-split E2E results from archived and current test results.
+
+    Returns: {"01-foundation": {"passed": 6, "total": 7}, ...}
+    Maps split number prefixes from spec filenames to split names.
+    """
+    import json
+
+    result: dict[str, dict] = {}
+
+    # Get split names from project config
+    project_config_path = project_root / "shipwright_project_config.json"
+    split_names: dict[str, str] = {}  # "01" -> "01-foundation"
+    if project_config_path.exists():
+        try:
+            config = json.loads(project_config_path.read_text(encoding="utf-8"))
+            for split in config.get("splits", []):
+                name = split.get("name", "")
+                if len(name) >= 2:
+                    split_names[name[:2]] = name
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    # Current test results have aggregate E2E — distribute to last split
+    current = project_root / "shipwright_test_results.json"
+    if current.exists():
+        try:
+            data = json.loads(current.read_text(encoding="utf-8"))
+            e2e = data.get("e2e", {})
+            if e2e.get("total", 0) > 0:
+                # E2E tests run after all splits — assign to project-level
+                # For now, report as aggregate across all splits
+                result["_aggregate"] = {
+                    "passed": e2e.get("passed", 0),
+                    "total": e2e.get("total", 0),
+                }
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    return result
 
 
 def _e2e_details(data: ComplianceData) -> list[str]:

@@ -22,12 +22,12 @@ class TestGenerate:
         assert "| Unit tests passed | 16 |" in result
         assert "| Unit tests failed | 0 |" in result
 
-    def test_per_section_results(self, project_root: Path):
+    def test_per_split_results(self, project_root: Path):
         data = collect_all(project_root)
         result = generate(data)
-        assert "## Per-Section Results" in result
-        assert "01-login" in result
-        assert "02-rbac" in result
+        assert "## Per-Split Results" in result
+        assert "01-login" in result or "01-auth" in result  # Split or section name
+        assert "| Unit |" in result  # Layer breakdown present
 
     def test_code_review_evidence(self, project_root: Path):
         data = collect_all(project_root)

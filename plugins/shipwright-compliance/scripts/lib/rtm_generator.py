@@ -1,12 +1,13 @@
 """Requirements Traceability Matrix generator.
 
 Produces compliance/traceability-matrix.md mapping:
-  Requirements → Sections → Commits → Test Results
+  Requirements → Sections → Commits → Test Results (Unit + E2E)
 with clickable links to spec files, section plans, and test files.
 """
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -43,11 +44,14 @@ def _requirements_coverage(data: ComplianceData) -> list[str]:
     # Build section lookup for test counts
     section_lookup: dict[str, SectionInfo] = {s.name: s for s in data.sections}
 
+    # E2E coverage per split (pragmatic: count flows from plan files)
+    e2e_by_split = _collect_e2e_coverage_by_split(data.project_root)
+
     lines = [
         "## Requirements Coverage",
         "",
-        "| Requirement | Title | Priority | Section(s) | Unit Tests | Status |",
-        "|-------------|-------|----------|------------|------------|--------|",
+        "| Requirement | Title | Priority | Section(s) | Unit Tests | E2E Coverage | Status |",
+        "|-------------|-------|----------|------------|------------|-------------|--------|",
     ]
 
     for req in data.requirements:
@@ -66,7 +70,7 @@ def _requirements_coverage(data: ComplianceData) -> list[str]:
                 section_links.append(sec_link)
             sections_cell = ", ".join(section_links)
 
-            # Aggregate test counts from linked sections
+            # Aggregate unit test counts from linked sections
             total_passed = 0
             total_tests = 0
             for sec_name in req.sections:
@@ -75,23 +79,79 @@ def _requirements_coverage(data: ComplianceData) -> list[str]:
                     total_passed += sec.tests_passed
                     total_tests += sec.tests_total
 
-            if total_tests > 0:
-                tests_cell = f"{total_passed}/{total_tests}"
-                status = "PASS" if total_passed == total_tests else "FAIL"
+            tests_cell = f"{total_passed}/{total_tests}" if total_tests > 0 else "—"
+
+            # E2E coverage for this requirement's split
+            split_e2e = e2e_by_split.get(req.split, {})
+            e2e_flows = split_e2e.get("flows", 0)
+            e2e_specs = split_e2e.get("specs", 0)
+            has_e2e = e2e_specs > 0
+            e2e_cell = f"Split: {e2e_specs} specs" if has_e2e else "—"
+
+            # Status: 3-tier based on unit + E2E
+            has_unit = total_tests > 0 and total_passed == total_tests
+            if has_unit and has_e2e:
+                status = "COVERED"
+            elif has_unit:
+                status = "PARTIAL"
+            elif has_e2e:
+                status = "E2E ONLY"
+            elif total_tests > 0:
+                status = "FAIL"
             else:
-                tests_cell = "—"
                 status = "NO TESTS"
         else:
             sections_cell = "—"
             tests_cell = "—"
+            e2e_cell = "—"
             status = "UNLINKED"
 
         lines.append(
-            f"| {req_link} | {display_text} | {req.priority} | {sections_cell} | {tests_cell} | {status} |"
+            f"| {req_link} | {display_text} | {req.priority} "
+            f"| {sections_cell} | {tests_cell} | {e2e_cell} | {status} |"
         )
 
     lines.append("")
     return lines
+
+
+def _collect_e2e_coverage_by_split(project_root: Path) -> dict[str, dict]:
+    """Count E2E flows and specs per split.
+
+    Reads planning/*/claude-plan-e2e.md for planned flows and
+    e2e/flows/*.spec.ts for existing specs.
+    Returns: {"01-foundation": {"flows": 10, "specs": 7}, ...}
+    """
+    result: dict[str, dict] = {}
+
+    # Count planned flows from E2E plan files
+    planning_dir = project_root / "planning"
+    if planning_dir.exists():
+        for plan_file in planning_dir.glob("*/claude-plan-e2e.md"):
+            split_name = plan_file.parent.name
+            try:
+                content = plan_file.read_text(encoding="utf-8")
+                flows = len(re.findall(r"^### Flow \d+", content, re.MULTILINE))
+            except OSError:
+                flows = 0
+            result.setdefault(split_name, {"flows": 0, "specs": 0})
+            result[split_name]["flows"] = flows
+
+    # Count existing spec files (NN-name.spec.ts → split NN)
+    e2e_dir = project_root / "e2e" / "flows"
+    if e2e_dir.exists():
+        for spec_file in e2e_dir.glob("*.spec.ts"):
+            # Extract split number from filename: 01-auth.spec.ts → "01"
+            match = re.match(r"^(\d{2})-", spec_file.name)
+            if match:
+                prefix = match.group(1)
+                # Find matching split name
+                for split_name in result:
+                    if split_name.startswith(prefix):
+                        result[split_name]["specs"] += 1
+                        break
+
+    return result
 
 
 def _section_traceability(data: ComplianceData) -> list[str]:
@@ -165,6 +225,16 @@ def _coverage_summary(data: ComplianceData) -> list[str]:
         f"| Sections with commits | {sections_with_commits} |",
         f"| Sections with passing tests | {sections_passing} |",
         f"| Traceability coverage | {coverage_pct}% |",
+    ])
+
+    # E2E coverage
+    e2e_by_split = _collect_e2e_coverage_by_split(data.project_root)
+    splits_with_e2e = sum(1 for s in e2e_by_split.values() if s.get("specs", 0) > 0)
+    total_e2e_specs = sum(s.get("specs", 0) for s in e2e_by_split.values())
+    total_e2e_flows = sum(s.get("flows", 0) for s in e2e_by_split.values())
+    lines.extend([
+        f"| E2E specs | {total_e2e_specs} (across {splits_with_e2e} splits) |",
+        f"| E2E planned flows | {total_e2e_flows} |",
     ])
 
     # Requirements coverage

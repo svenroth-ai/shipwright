@@ -19,6 +19,7 @@
 - Update compliance incrementally after each pipeline phase
 - Keep files under 300 lines — split if larger
 - Fix the code, not the test — never weaken assertions to make tests pass
+- Diagnose test failures before skipping — attempt autonomous fix (e.g., restart services, seed data, fix config), escalate to user if fix fails after 2 attempts
 
 ## ASK FIRST (require user confirmation)
 

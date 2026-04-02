@@ -239,6 +239,39 @@ def _validate_test(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
         })
         has_ask = True
 
+    # --- Outcome checks (after existence checks) ---
+
+    # Unit: blocking — must pass
+    if unit.get("total", 0) > 0 and unit.get("passed", 0) < unit.get("total", 0):
+        issues.append({
+            "severity": "ask",
+            "message": (
+                f"Unit tests failing: {unit.get('passed', 0)}/{unit['total']} passed. "
+                "Fix before continuing?"
+            ),
+        })
+        has_ask = True
+
+    # Smoke: blocking — must pass
+    if smoke_status == "fail":
+        issues.append({
+            "severity": "ask",
+            "message": "Smoke test failed — app not responding correctly. Continue anyway?",
+        })
+        has_ask = True
+
+    # E2E: non-blocking — warn only (per constitution, E2E can be flaky)
+    e2e_passed = e2e.get("passed", 0)
+    e2e_total = e2e.get("total", 0)
+    if e2e_total > 0 and e2e_passed < e2e_total:
+        issues.append({
+            "severity": "inform",
+            "message": (
+                f"E2E tests: {e2e_passed}/{e2e_total} passed. "
+                f"{e2e_total - e2e_passed} failures logged as warnings."
+            ),
+        })
+
     return not has_ask, issues
 
 

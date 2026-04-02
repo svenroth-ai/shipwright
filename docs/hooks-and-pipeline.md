@@ -50,6 +50,8 @@ CONDITIONAL_STEPS = {"security": {"env_var": "AIKIDO_CLIENT_ID", "after": "test"
 ```python
 PIPELINE_PHASES = ["project", "design", "plan", "build", "test", "changelog", "deploy", "compliance"]
 ```
+Dashboard uses `PIPELINE_PHASES` as canonical order, merging dynamic steps (e.g., "security") from `run_config["pipeline"]`.
+After build completes: shows split summary table. After test completes: shows test layer results (unit/smoke/e2e).
 
 ---
 
@@ -148,7 +150,7 @@ Called by `orchestrator.py:update_step()` before marking a phase complete. Retur
 | design | ASK | Mockup HTML files exist (may be intentionally skipped) |
 | plan | ASK | Sections defined in build config, section .md files exist |
 | build | ASK | All current-split sections complete, all have tests_total > 0 |
-| test | ASK | `shipwright_test_results.json` exists; unit/smoke/e2e have results or valid skip reason |
+| test | ASK | `shipwright_test_results.json` exists; all layers have results or valid skip reason; unit/smoke must pass (outcomes checked); E2E failures logged as inform-level warnings |
 | changelog | ASK | `CHANGELOG.md` exists |
 | deploy | PASS | Always passes |
 | compliance | INFORM | Lists which of 5 compliance artifacts are present (non-blocking) |
