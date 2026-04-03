@@ -26,13 +26,15 @@ Runs tests across all layers based on stack profile.
 Usage: /shipwright-test
    or: /shipwright-test --fix        (auto-fix failures, max 3 retries)
    or: /shipwright-test --e2e-only   (only Playwright E2E)
+   or: /shipwright-test --visual     (only visual comparison)
    or: Invoked by /shipwright-run (orchestrator)
 
 Test layers:
   1. Unit tests (Vitest / pytest)
   2. Smoke test (HTTP 200 on DEV URL)
   3. Playwright E2E (if UI project + DEV URL available)
-  4. Security scan → see /shipwright-security
+  4. Visual comparison (if designs/screen-routes.json exists)
+  5. Security scan → see /shipwright-security
 ================================================================================
 ```
 
@@ -238,10 +240,7 @@ uv run {plugin_root}/scripts/lib/playwright_runner.py --cwd {project_root}
    **Commit between fix rounds** — each successful group fix gets its own commit
    to prevent losing progress on session interruption.
 
-6. **Stop dev server** (after all E2E tests complete):
-```bash
-uv run {plugin_root}/../../shared/scripts/dev_server.py stop --cwd {project_root}
-```
+6. Dev server remains running for Visual Comparison (Step 3.7). Stopped there.
 
 If no Playwright config exists and setup fails: skip with note.
 
@@ -282,8 +281,18 @@ miscounts from setup projects, retries, or skipped tests.
 
 **Condition:** Runs if `designs/screen-routes.json` exists in the project root. Also runs standalone via `--visual` flag.
 
-**Purpose:** Compare HTML design mockups against the live application to detect visual divergence. This is a non-blocking (WARNING level) check — visual differences indicate design inconsistency but don't fail the pipeline.
+**Purpose:** Compare HTML design mockups against the live application to detect visual divergence and fix layout/styling issues. Non-blocking (WARNING level) — visual differences don't fail the pipeline.
 
+**1. Ensure dev server is running** (should be up from E2E step):
+```bash
+uv run {plugin_root}/../../shared/scripts/dev_server.py status --cwd {project_root}
+```
+If not running, start it:
+```bash
+uv run {plugin_root}/../../shared/scripts/dev_server.py start --profile {profile} --cwd {project_root}
+```
+
+**2. Run visual comparison:**
 ```bash
 uv run {plugin_root}/scripts/lib/visual_compare.py \
   --cwd "{project_root}" \
@@ -291,29 +300,54 @@ uv run {plugin_root}/scripts/lib/visual_compare.py \
 ```
 
 Parse the JSON output:
-- `skipped: true` → no screen-routes.json, skip silently
-- `total > 0` → comparisons were made
-- `report_path` → path to the side-by-side HTML comparison page
+- `skipped: true` → no screen-routes.json, skip to step 6
+- `passed == total` → all screens match, PASS, skip to step 5
+- `passed < total` → mismatches found, proceed to fix loop
 
-**Show results to user:**
-```
-Visual Comparison: {passed}/{total} screens match
-Report: designs/visual-comparison/index.html
-```
+**3. Group failures by root cause** (identical pattern to E2E Step 3):
 
-If any screens don't match, show which ones diverge and ask the user if they want to review the comparison page.
+Read the mockup + live screenshots for each failing screen. Categorize:
 
-**Record in test results:**
-Add `visual` key to `shipwright_test_results.json`:
+| Root Cause | Example | Fix Scope |
+|------------|---------|-----------|
+| **Layout structure** | Sidebar vs header, missing nav sections | Layout components, shell |
+| **Colors/typography** | Wrong primary color, font-family | globals.css, CSS variables |
+| **Missing components** | No logo, no stats section, no CTA | Individual pages/components |
+| **Spacing/shadows/radius** | Wrong padding, no card shadow | Tailwind classes, globals.css |
+
+**4. Fix loop per group** (max 3 retries per group):
+
+a. Read both mockup screenshot + live screenshot for a representative screen in the group
+b. Identify specific CSS/layout/component divergences
+c. Fix source files (components, globals.css, layout.tsx, page.tsx)
+d. Rebuild app: `npm run build` (production) or wait for dev server HMR
+e. Re-run `visual_compare.py` for this group's screens
+f. If fix works: **commit the fix** with message `fix(visual): {description}`, move to next group
+g. If same issue persists after 3 attempts on this group: **park it**, move to next group
+
+**After all groups attempted:**
+- Report summary: which groups fixed, which parked, with diagnosis per parked group
+- **ASK user** for direction on parked groups (one consolidated dialog, not per group)
+- **Commit between fix rounds** — each successful group fix gets its own commit
+
+**5. Record results** in `shipwright_test_results.json`:
 ```json
 {
   "visual": {
     "passed": N,
     "total": N,
     "skipped": false,
-    "comparisons": [...]
+    "comparisons": [
+      {"mockup": "01-login.html", "route": "/login", "match": true},
+      {"mockup": "08-dashboard.html", "route": "/dashboard", "match": false}
+    ]
   }
 }
+```
+
+**6. Stop dev server** (always — whether visual ran or was skipped):
+```bash
+uv run {plugin_root}/../../shared/scripts/dev_server.py stop --cwd {project_root}
 ```
 
 ---
@@ -339,6 +373,7 @@ SHIPWRIGHT-TEST RESULTS
 Unit tests:    {passed}/{total} passed ({duration}s)
 Smoke test:    {PASS | FAIL | SKIP} ({url}, {response_time}ms)
 E2E tests:     {passed}/{total} passed | SKIP
+Visual tests:  {passed}/{total} matched | SKIP
 Security:      {via /shipwright-security | not run}
 
 Overall:       {PASS | FAIL}
@@ -362,6 +397,7 @@ Test results determine pipeline continuation:
 | **Unit tests** | **Pipeline stops** (blocking) | Unit tests are deterministic — failure = real bug |
 | **Smoke test** | **Pipeline stops** (blocking) | App not running = can't deploy |
 | **E2E tests** | **Warning only** (non-blocking) | E2E can be flaky; log failures but continue |
+| **Visual tests** | **Warning only** (non-blocking) | Visual divergence ≠ broken functionality |
 
 If unit tests or smoke test FAIL: set phase status to `FAIL` and inform user. Do NOT proceed to deploy.
 
@@ -374,6 +410,7 @@ Before marking the test phase complete, ALL test layers must have an explicit re
 | Unit tests | `pass` or `fail` (always required) |
 | Smoke test | `pass`, `fail`, or `skipped: {reason}` |
 | E2E tests | `pass`, `fail`, or `skipped: {reason}` |
+| Visual tests | `pass`, `fail`, or `skipped: {reason}` |
 
 If any layer has NO result (was never executed and has no skip reason):
 - **Do NOT mark test phase as complete**
@@ -385,6 +422,7 @@ Valid skip reasons:
 - `skipped: no Playwright config` (E2E)
 - `skipped: profile has no UI` (E2E)
 - `skipped: smoke test failed` (E2E, because prerequisite not met)
+- `skipped: no screen-routes.json` (Visual)
 
 **Phase complete — update pipeline state** (only if Completion Gate passes):
 ```bash
