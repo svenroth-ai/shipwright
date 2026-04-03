@@ -38,7 +38,7 @@ User Description
       |                        ↑
       |              /shipwright-preview (local browser preview, available after first split)
       v
-  SHIPWRIGHT-TEST .......... Unit (Vitest) --> Smoke --> Playwright E2E
+  SHIPWRIGHT-TEST .......... Unit (Vitest) --> Smoke --> Playwright E2E --> Visual (mockup vs live)
       |
       v
   SHIPWRIGHT-SECURITY ...... Aikido Scan --> Classify --> Remediation Loop
@@ -866,6 +866,7 @@ Every skill works standalone -- you do not always need the full pipeline:
 | `/shipwright-build @sections/01-models.md` | Just implement one section |
 | `/shipwright-test` | Just run the test suite |
 | `/shipwright-preview` | Start local dev server and open in browser |
+| `/shipwright-test --visual` | Run visual comparison only (mockup vs live screenshots) |
 | `/shipwright-deploy` | Just deploy to Jelastic |
 | `/shipwright-changelog` | Just generate changelog and create a PR |
 | `/shipwright-compliance` | Just generate compliance reports |

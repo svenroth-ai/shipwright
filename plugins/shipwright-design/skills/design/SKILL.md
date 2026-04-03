@@ -421,6 +421,22 @@ REVIEW YOUR SCREENS
 ================================================================================
 ```
 
+**Generate screen-routes.json** for visual testing (`/shipwright-test --visual`):
+
+After all screens are generated, create `designs/screen-routes.json` mapping each mockup to its app route:
+
+```json
+{
+  "01-login.html": "/login",
+  "02-signup.html": "/signup",
+  "03-public-layout.html": "/",
+  "04-admin-layout.html": "/admin/dashboard",
+  "08-student-dashboard.html": "/dashboard"
+}
+```
+
+Derive routes from the screen content (look at navigation links, page titles, form actions). Only include screens that map to a specific route (skip flow diagrams, modals shown within other pages, etc.).
+
 Then immediately proceed to **Step 8.5**.
 
 ---

@@ -174,6 +174,17 @@ def testing_pyramid_diagram(sections: list[SectionInfo], test_results=None) -> s
         e2e_label = "E2E Tests<br/>not run"
         e2e_color = "#9E9E9E"
 
+    # Visual layer — from test_results if available
+    if tr and not tr.visual_skipped and tr.visual_total > 0:
+        vis_label = f"Visual<br/>{tr.visual_passed}/{tr.visual_total} screens"
+        vis_color = "#4CAF50" if tr.visual_passed == tr.visual_total else "#FFC107"
+    elif tr and tr.visual_skipped:
+        vis_label = "Visual<br/>skipped"
+        vis_color = "#9E9E9E"
+    else:
+        vis_label = "Visual<br/>not run"
+        vis_color = "#9E9E9E"
+
     # Security layer — always informational
     sec_label = "Security<br/>Aikido SAST/SCA"
     sec_color = "#9E9E9E"
@@ -185,14 +196,16 @@ def testing_pyramid_diagram(sections: list[SectionInfo], test_results=None) -> s
         f'    REVIEW["{review_label}"]',
         f'    SMOKE["{smoke_label}"]',
         f'    E2E["{e2e_label}"]',
+        f'    VIS["{vis_label}"]',
         f'    SEC["{sec_label}"]',
         "",
-        "    SEC --> E2E --> SMOKE --> REVIEW --> UNIT",
+        "    SEC --> VIS --> E2E --> SMOKE --> REVIEW --> UNIT",
         "",
         f"    style UNIT fill:{unit_color},color:#fff",
         f"    style REVIEW fill:{review_color},color:#fff",
         f"    style SMOKE fill:{smoke_color},color:#fff",
         f"    style E2E fill:{e2e_color},color:#fff",
+        f"    style VIS fill:{vis_color},color:#fff",
         f"    style SEC fill:{sec_color},color:#fff",
         "```",
     ]
