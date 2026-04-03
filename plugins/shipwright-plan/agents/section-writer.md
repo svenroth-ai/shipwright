@@ -56,6 +56,23 @@ How to verify this section is complete:
 - [ ] No regressions in other sections
 ```
 
+## Design Reference (mandatory for UI sections)
+
+If the section involves a page, layout, or UI component, check if `designs/screens/` contains a matching mockup. If so, add a `## Design Reference` block to the section:
+
+```markdown
+## Design Reference
+- Screen mockup: designs/screens/{matching-file}.html
+- Visual guidelines: designs/visual-guidelines.md
+
+The mockup defines layout structure, component hierarchy, colors, spacing, and responsive behavior.
+The build agent MUST read the mockup before implementing.
+```
+
+Match by name convention: section "05-base-layout" → look for mockups like "03-public-layout.html", "04-admin-layout.html". Section "01-auth" → look for "01-login.html", "02-signup.html". When unsure, list all potentially relevant mockups.
+
+If no `designs/` directory exists (project hasn't gone through shipwright-design), skip this block.
+
 ## Guidelines
 
 - Be specific about file paths and function names

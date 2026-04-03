@@ -110,6 +110,18 @@ def _test_execution_summary(data: ComplianceData) -> list[str]:
                 f"| — | Playwright |"
             )
 
+        # Visual
+        if tr.visual_skipped:
+            vis_status = "SKIP"
+            vis_detail = tr.visual_skip_reason or "skipped"
+            lines.append(f"| Visual | {vis_status} | — | — | — | {vis_detail} |")
+        elif tr.visual_total > 0:
+            vis_status = "PASS" if tr.visual_passed == tr.visual_total else "WARNING"
+            lines.append(
+                f"| Visual | {vis_status} | {tr.visual_passed} | {tr.visual_total} "
+                f"| — | Mockup vs Live |"
+            )
+
         lines.append("")
     else:
         lines.extend([

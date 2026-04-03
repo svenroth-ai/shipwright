@@ -278,6 +278,46 @@ miscounts from setup projects, retries, or skipped tests.
 
 ---
 
+## Step 3.7: Visual Comparison (if applicable)
+
+**Condition:** Runs if `designs/screen-routes.json` exists in the project root. Also runs standalone via `--visual` flag.
+
+**Purpose:** Compare HTML design mockups against the live application to detect visual divergence. This is a non-blocking (WARNING level) check — visual differences indicate design inconsistency but don't fail the pipeline.
+
+```bash
+uv run {plugin_root}/scripts/lib/visual_compare.py \
+  --cwd "{project_root}" \
+  --base-url "http://localhost:{port}"
+```
+
+Parse the JSON output:
+- `skipped: true` → no screen-routes.json, skip silently
+- `total > 0` → comparisons were made
+- `report_path` → path to the side-by-side HTML comparison page
+
+**Show results to user:**
+```
+Visual Comparison: {passed}/{total} screens match
+Report: designs/visual-comparison/index.html
+```
+
+If any screens don't match, show which ones diverge and ask the user if they want to review the comparison page.
+
+**Record in test results:**
+Add `visual` key to `shipwright_test_results.json`:
+```json
+{
+  "visual": {
+    "passed": N,
+    "total": N,
+    "skipped": false,
+    "comparisons": [...]
+  }
+}
+```
+
+---
+
 ## Step 4: Security Scan → /shipwright-security
 
 Security scanning is handled by the dedicated `/shipwright-security` plugin (Aikido integration).

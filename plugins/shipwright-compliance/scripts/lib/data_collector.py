@@ -85,6 +85,10 @@ class TestResults:
     e2e_failures: list[str] = field(default_factory=list)
     e2e_skipped: bool = False
     e2e_skip_reason: str = ""
+    visual_passed: int = 0
+    visual_total: int = 0
+    visual_skipped: bool = False
+    visual_skip_reason: str = ""
 
 
 @dataclass
@@ -496,6 +500,7 @@ def _parse_test_results_file(path: Path) -> TestResults | None:
     unit = data.get("unit", {})
     smoke = data.get("smoke", {})
     e2e = data.get("e2e", {})
+    visual = data.get("visual", {})
 
     return TestResults(
         status=data.get("status", ""),
@@ -511,6 +516,10 @@ def _parse_test_results_file(path: Path) -> TestResults | None:
         e2e_failures=e2e.get("failures", []),
         e2e_skipped=e2e.get("skipped", False),
         e2e_skip_reason=e2e.get("reason", ""),
+        visual_passed=visual.get("passed", 0),
+        visual_total=visual.get("total", 0),
+        visual_skipped=visual.get("skipped", False),
+        visual_skip_reason=visual.get("skip_reason", ""),
     )
 
 
@@ -556,6 +565,10 @@ def collect_test_results(project_root: Path) -> TestResults | None:
         e2e_failures=[f for r in all_results for f in r.e2e_failures],
         e2e_skipped=all_results[-1].e2e_skipped,
         e2e_skip_reason=all_results[-1].e2e_skip_reason,
+        visual_passed=sum(r.visual_passed for r in all_results),
+        visual_total=sum(r.visual_total for r in all_results),
+        visual_skipped=all_results[-1].visual_skipped,
+        visual_skip_reason=all_results[-1].visual_skip_reason,
     )
 
 

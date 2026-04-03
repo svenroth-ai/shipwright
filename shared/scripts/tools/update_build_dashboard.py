@@ -95,7 +95,7 @@ def _generate_test_results(project_root: Path) -> list[str]:
     except (FileNotFoundError, json.JSONDecodeError):
         return []
     lines = ["## Test Results", "", "| Layer | Passed | Total | Status |", "|-------|--------|-------|--------|"]
-    for key, label in [("unit", "Unit"), ("smoke", "Smoke"), ("e2e", "E2E")]:
+    for key, label in [("unit", "Unit"), ("smoke", "Smoke"), ("e2e", "E2E"), ("visual", "Visual")]:
         layer = data.get(key, {})
         if layer.get("status") == "skip" or layer.get("skipped") is True:
             lines.append(f"| {label} | \u2014 | \u2014 | SKIP |")

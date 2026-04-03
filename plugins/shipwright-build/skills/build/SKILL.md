@@ -218,6 +218,14 @@ Read the section file thoroughly. Identify:
 - Implementation steps
 - Files to create/modify
 
+**Design Reference (mandatory for UI sections):** If the section contains a `## Design Reference` block, you **MUST read the referenced mockup HTML file** before writing any implementation code. The mockup is the visual truth — the text spec describes behavior, the mockup describes appearance. Match:
+- Layout structure (sidebar vs header, grid vs flex, widths)
+- Component hierarchy (card structure, nav groups, form layouts)
+- Colors, spacing, typography, shadows, border-radius from `designs/visual-guidelines.md`
+- Responsive behavior (mobile hamburger, breakpoints)
+
+If no `## Design Reference` exists but `designs/screens/` contains relevant mockups, read them anyway. When in doubt, the mockup wins over your assumptions about layout.
+
 If prerequisites reference other sections, verify those are complete
 (check for their commits on the branch or main).
 
