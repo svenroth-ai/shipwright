@@ -60,55 +60,18 @@ Use for: Dashboards, admin panels, settings, list views, detail views.
 
 ```html
 <div class="app-layout">
+  <!-- CHROME: Copy the "Resolved Sidebar Block" from designs/chrome-definition.md verbatim.
+       Change ONLY which .nav-item has class="nav-item active" for this screen.
+       See snippets-chrome.md for the full structure reference. -->
   <aside class="sidebar">
-    <div class="sidebar-logo">
-      <span class="logo-icon">{{LOGO_ICON_OR_SVG}}</span>
-      <span class="logo-text">{{APP_NAME}}</span>
-    </div>
-    <nav class="sidebar-nav">
-      <!-- Repeat .nav-item for each menu entry -->
-      <a href="#" class="nav-item active">
-        <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{{ICON_PATH}}</svg>
-        <span>{{NAV_LABEL}}</span>
-      </a>
-      <a href="#" class="nav-item">
-        <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{{ICON_PATH}}</svg>
-        <span>{{NAV_LABEL}}</span>
-      </a>
-      <!-- Optional: section divider -->
-      <div class="nav-divider"></div>
-      <span class="nav-section-label">{{SECTION_LABEL}}</span>
-      <a href="#" class="nav-item">
-        <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{{ICON_PATH}}</svg>
-        <span>{{NAV_LABEL}}</span>
-      </a>
-    </nav>
-    <div class="sidebar-footer">
-      <div class="user-info">
-        <div class="avatar">{{USER_INITIALS}}</div>
-        <div class="user-details">
-          <div class="user-name">{{USER_NAME}}</div>
-          <div class="user-role">{{USER_ROLE}}</div>
-        </div>
-      </div>
-    </div>
+    <!-- ... resolved sidebar content from chrome-definition.md ... -->
   </aside>
 
   <div class="main-area">
+    <!-- CHROME: Copy the "Resolved Topbar Block" from designs/chrome-definition.md verbatim.
+         No per-screen changes needed for the topbar. -->
     <header class="topbar">
-      <button class="sidebar-toggle" aria-label="Toggle sidebar">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-      </button>
-      <div class="topbar-search">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input type="text" placeholder="Search..." class="search-input">
-      </div>
-      <div class="topbar-actions">
-        <button class="icon-btn" aria-label="Notifications">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        </button>
-        <div class="avatar avatar-sm">{{USER_INITIALS}}</div>
-      </div>
+      <!-- ... resolved topbar content from chrome-definition.md ... -->
     </header>
 
     <main class="content">
@@ -336,24 +299,11 @@ Use for: Marketing sites, simpler apps, public-facing pages.
 
 ```html
 <div class="app-topnav">
+  <!-- CHROME: Copy the "Resolved Top-Nav Block" from designs/chrome-definition.md verbatim.
+       Change ONLY which .topnav-link has class="topnav-link active" for this screen.
+       See snippets-chrome.md for the full structure reference. -->
   <header class="topnav">
-    <div class="topnav-inner">
-      <div class="topnav-brand">
-        <span class="logo-icon">{{LOGO_ICON_OR_SVG}}</span>
-        <span class="logo-text">{{APP_NAME}}</span>
-      </div>
-      <nav class="topnav-links">
-        <a href="#" class="topnav-link active">{{NAV_LABEL}}</a>
-        <a href="#" class="topnav-link">{{NAV_LABEL}}</a>
-        <a href="#" class="topnav-link">{{NAV_LABEL}}</a>
-      </nav>
-      <div class="topnav-actions">
-        <button class="icon-btn" aria-label="Notifications">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        </button>
-        <div class="avatar avatar-sm">{{USER_INITIALS}}</div>
-      </div>
-    </div>
+    <!-- ... resolved top-nav content from chrome-definition.md ... -->
   </header>
 
   <main class="content-topnav">
@@ -454,9 +404,10 @@ Use for: Login, signup, password reset, email verification, onboarding steps.
 ```html
 <div class="auth-layout">
   <div class="auth-card">
+    <!-- CHROME: Copy APP_NAME and LOGO_SVG from designs/chrome-definition.md → App Branding -->
     <div class="auth-logo">
-      <span class="logo-icon">{{LOGO_ICON_OR_SVG}}</span>
-      <span class="logo-text">{{APP_NAME}}</span>
+      <span class="logo-icon">{{LOGO_SVG from chrome-definition.md}}</span>
+      <span class="logo-text">{{APP_NAME from chrome-definition.md}}</span>
     </div>
     <h1 class="auth-title">{{TITLE}}</h1>
     <p class="auth-subtitle">{{SUBTITLE}}</p>
@@ -582,4 +533,87 @@ Used across all layouts. Include in every screen.
 }
 .btn-sm { padding: 5px 10px; font-size: 12px; }
 .btn-lg { padding: 12px 20px; font-size: var(--font-size-base); }
+```
+
+---
+
+## Reference: Chrome HTML Structure
+
+> These blocks show the **expected HTML structure** for shared chrome elements. Use them as a guide when generating the resolved blocks in `designs/chrome-definition.md`. See [snippets-chrome.md](snippets-chrome.md) for the full chrome definition template.
+
+### Sidebar Structure (Layout A)
+
+```html
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-icon"><svg width="24" height="24" ...>...</svg></span>
+    <span class="logo-text">App Name</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="#" class="nav-item active">
+      <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="..."/></svg>
+      <span>Nav Label</span>
+    </a>
+    <!-- ... more nav items ... -->
+    <div class="nav-divider"></div>
+    <span class="nav-section-label">Section</span>
+    <a href="#" class="nav-item">
+      <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="..."/></svg>
+      <span>Nav Label</span>
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="avatar">JD</div>
+      <div class="user-details">
+        <div class="user-name">Jane Doe</div>
+        <div class="user-role">Product Manager</div>
+      </div>
+    </div>
+  </div>
+</aside>
+```
+
+### Topbar Structure (Layout A)
+
+```html
+<header class="topbar">
+  <button class="sidebar-toggle" aria-label="Toggle sidebar">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+  </button>
+  <div class="topbar-search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" placeholder="Search..." class="search-input">
+  </div>
+  <div class="topbar-actions">
+    <button class="icon-btn" aria-label="Notifications">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    </button>
+    <div class="avatar avatar-sm">JD</div>
+  </div>
+</header>
+```
+
+### Top-Nav Structure (Layout B)
+
+```html
+<header class="topnav">
+  <div class="topnav-inner">
+    <div class="topnav-brand">
+      <span class="logo-icon"><svg width="24" height="24" ...>...</svg></span>
+      <span class="logo-text">App Name</span>
+    </div>
+    <nav class="topnav-links">
+      <a href="#" class="topnav-link active">Dashboard</a>
+      <a href="#" class="topnav-link">Projects</a>
+      <a href="#" class="topnav-link">Settings</a>
+    </nav>
+    <div class="topnav-actions">
+      <button class="icon-btn" aria-label="Notifications">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </button>
+      <div class="avatar avatar-sm">JD</div>
+    </div>
+  </div>
+</header>
 ```
