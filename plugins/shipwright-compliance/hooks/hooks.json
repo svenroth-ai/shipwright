@@ -1,39 +1,37 @@
 {
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/capture-session-id.py"
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check_rtm_coverage.py"
-          },
-          {
-            "type": "command",
-            "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check_security_scan.py"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py"
-          }
-        ]
-      }
-    ]
-  }
+  "SessionStart": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/capture-session-id.py"
+        }
+      ]
+    }
+  ],
+  "PreToolUse": [
+    {
+      "matcher": {"tools": ["Bash"]},
+      "hooks": [
+        {
+          "type": "command",
+          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check_rtm_coverage.py"
+        },
+        {
+          "type": "command",
+          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check_security_scan.py"
+        }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py"
+        }
+      ]
+    }
+  ]
 }

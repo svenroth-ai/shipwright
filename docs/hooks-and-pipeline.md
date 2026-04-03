@@ -55,6 +55,39 @@ After build completes: shows split summary table. After test completes: shows te
 
 ---
 
+## hooks.json Format
+
+> **Breaking change (April 2025):** Claude Code now requires the new hooks format.
+> Plugins with old-format hooks are **skipped entirely** (not just the invalid settings).
+
+**New format** — event types at top level, no `{"hooks": {...}}` wrapper:
+
+```json
+{
+  "EventName": [
+    {
+      "matcher": {"tools": ["Bash"]},
+      "hooks": [
+        {"type": "command", "command": "path/to/script.sh"}
+      ]
+    }
+  ]
+}
+```
+
+| Matcher type | Format | Used by |
+|-------------|--------|---------|
+| Single tool | `"matcher": {"tools": ["Bash"]}` | PreToolUse, PostToolUse |
+| Multi tool | `"matcher": {"tools": ["Write", "Edit"]}` | PostToolUse |
+| Subagent name | `"matcher": "agent-name"` (plain string) | SubagentStop |
+| No filter | Omit `matcher` field entirely | SessionStart, Stop |
+
+Tool names use short form: `Bash`, `Write`, `Edit`, `Read`, `Glob`, `Grep`.
+
+**Old format (removed):** `{"hooks": {"EventName": [{"matcher": "Bash", ...}]}}` — wrapper + string matchers.
+
+---
+
 ## Hooks Registry
 
 ### shipwright-run
@@ -92,11 +125,11 @@ After build completes: shows split summary table. After test completes: shows te
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture-session-id.py` | Session ID injection |
 | SessionStart | — | `check_drift.py` | Detects code drift (uncommitted changes from prior sessions) |
-| PreToolUse | `Bash` | `validate_command.sh` | Blocks dangerous shell commands (rm -rf, force push, etc.) |
-| PostToolUse | `Write\|Edit` | `check_destructive_migration.sh` | Warns on DROP/DELETE in .sql files without down.sql |
-| PostToolUse | `Write\|Edit` | `check_secrets.sh` | Scans written files for API keys, tokens, passwords |
-| PostToolUse | `Write\|Edit` | `check_file_size.sh` | Warns if file exceeds size limit |
-| PostToolUse | `Write\|Edit` | `track_tool_calls.py` | Increments tool call counter for context pressure detection |
+| PreToolUse | `{"tools": ["Bash"]}` | `validate_command.sh` | Blocks dangerous shell commands (rm -rf, force push, etc.) |
+| PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_destructive_migration.sh` | Warns on DROP/DELETE in .sql files without down.sql |
+| PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_secrets.sh` | Scans written files for API keys, tokens, passwords |
+| PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_file_size.sh` | Warns if file exceeds size limit |
+| PostToolUse | — (catch-all) | `track_tool_calls.py` | Increments tool call counter for context pressure detection |
 | Stop | — | `generate-handoff.py` | Session handoff |
 | Stop | — | `check_documentation.py` | Verifies documentation artifacts are up to date |
 
@@ -133,8 +166,8 @@ After build completes: shows split summary table. After test completes: shows te
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture-session-id.py` | Session ID injection |
-| PreToolUse | `Bash` | `check_rtm_coverage.py` | Soft-blocks if RTM coverage < 80% threshold |
-| PreToolUse | `Bash` | `check_security_scan.py` | Checks security scan completion status |
+| PreToolUse | `{"tools": ["Bash"]}` | `check_rtm_coverage.py` | Soft-blocks if RTM coverage < 80% threshold |
+| PreToolUse | `{"tools": ["Bash"]}` | `check_security_scan.py` | Checks security scan completion status |
 
 ---
 

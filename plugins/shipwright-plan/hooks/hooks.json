@@ -1,35 +1,33 @@
 {
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/capture-session-id.py"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "matcher": "shipwright-plan:section-writer",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/write-section-on-stop.py"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py"
-          }
-        ]
-      }
-    ]
-  }
+  "SessionStart": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/capture-session-id.py"
+        }
+      ]
+    }
+  ],
+  "SubagentStop": [
+    {
+      "matcher": "shipwright-plan:section-writer",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/write-section-on-stop.py"
+        }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py"
+        }
+      ]
+    }
+  ]
 }

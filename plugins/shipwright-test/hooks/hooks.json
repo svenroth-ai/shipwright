@@ -1,14 +1,12 @@
 {
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py"
-          }
-        ]
-      }
-    ]
-  }
+  "Stop": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py"
+        }
+      ]
+    }
+  ]
 }
