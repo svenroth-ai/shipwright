@@ -84,6 +84,7 @@ shipwright() {
     --plugin-dir $REPO_ROOT/plugins/shipwright-run \\
     --plugin-dir $REPO_ROOT/plugins/shipwright-project \\
     --plugin-dir $REPO_ROOT/plugins/shipwright-design \\
+    --plugin-dir $REPO_ROOT/plugins/shipwright-iterate \\
     --plugin-dir $REPO_ROOT/plugins/shipwright-plan \\
     --plugin-dir $REPO_ROOT/plugins/shipwright-build \\
     --plugin-dir $REPO_ROOT/plugins/shipwright-test \\

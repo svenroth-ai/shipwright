@@ -60,7 +60,7 @@ Shipwright follows nine design principles that shape every decision in the pipel
 2. **DEV auto, PROD manual.** Development deploys happen automatically for fast feedback. Production deploys always require explicit confirmation.
 3. **Every skill works standalone.** The orchestrator coordinates the pipeline, but each skill (project, plan, build, test, etc.) can be invoked independently.
 4. **Test-first.** Shipwright follows TDD with IREB acceptance criteria, producing testable specifications from day one.
-5. **Iteration is first-class.** The `--iterate` flag is designed for daily workflow after the initial build -- quick changes with minimal overhead.
+5. **Iteration is first-class.** `/shipwright-iterate` is designed for daily workflow after the initial build -- quick changes with minimal overhead.
 6. **Resume anywhere.** All pipeline state is file-based. You can interrupt a run, close your session, and resume exactly where you left off.
 7. **Migration safety.** Destructive database changes (DROP TABLE, DROP COLUMN) always require explicit confirmation before execution.
 8. **Linters over instructions.** Mechanical enforcement through hooks beats advisory prose. Hooks block dangerous actions deterministically rather than relying on the agent to follow written rules.
@@ -250,7 +250,7 @@ You are not limited to a single command. Shipwright supports several input metho
 /shipwright-run @requirements.md
 
 # Quick iteration on an existing project (minimal questions, fast pipeline)
-/shipwright-run --iterate "Add dark mode toggle"
+/shipwright-iterate "Add dark mode toggle"
 
 # Use individual skills directly
 /shipwright-project "Build a dashboard"
@@ -276,7 +276,6 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 ```
 /shipwright-run "Build a SaaS time tracker with Supabase"
 /shipwright-run                          (interactive -- asks what to build)
-/shipwright-run --iterate "Add dark mode toggle"
 /shipwright-run @requirements.md         (from a file)
 ```
 
@@ -284,10 +283,9 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 |-----------------|-------------|
 | `"description"` | Inline project description |
 | `@file.md` | Path to a requirements file |
-| `--iterate` | Iteration mode for quick changes to an existing project |
 | *(no argument)* | Interactive mode -- Shipwright asks you what to build |
 
-**What it needs.** Nothing beyond a project idea. For iteration mode, it expects an existing project with `CLAUDE.md` and `shipwright_run_config.json` in the project root.
+**What it needs.** Nothing beyond a project idea. For ongoing changes to existing projects, use `/shipwright-iterate` instead.
 
 **What it produces**
 
@@ -847,13 +845,13 @@ Each split is further divided into **sections** -- the smallest unit of implemen
 
 ### 7.2 Iteration Mode
 
-Once your project exists, use `--iterate` for fast changes:
+Once your project exists, use `/shipwright-iterate` for fast changes:
 
 ```
-/shipwright-run --iterate "Add dark mode toggle"
+/shipwright-iterate "Add dark mode toggle"
 ```
 
-Iteration mode skips the full interview and deep decomposition. It reads your existing `CLAUDE.md` and project structure, asks minimal clarifying questions, and runs a lightweight plan-build-test cycle. This is the intended daily workflow after the initial build.
+`/shipwright-iterate` skips the full interview and deep decomposition. It reads your existing `CLAUDE.md` and project structure, asks minimal clarifying questions, and runs a lightweight plan-build-test cycle. This is the intended daily workflow after the initial build. See [Chapter 8](#8-ongoing-development-with-shipwright-iterate) for details.
 
 ### 7.3 Using Skills Individually
 
@@ -920,11 +918,44 @@ The **constitution** (`shared/constitution.md`) defines behavioral boundaries fo
 - Hardcode secrets in source code.
 - Commit `.env` files.
 
-The most critical rules are also enforced programmatically by hooks (see Chapter 8).
+The most critical rules are also enforced programmatically by hooks (see Chapter 9).
 
 ---
 
-## 8. Quality and Safety
+## 8. Ongoing Development with /shipwright-iterate
+
+After the initial pipeline completes, ongoing changes use `/shipwright-iterate` -- a lightweight process that keeps all artifacts in sync.
+
+### Trigger
+- **Automatic:** A `UserPromptSubmit` hook detects change intent from user messages and suggests `/shipwright-iterate`
+- **Manual:** User calls `/shipwright-iterate` directly with `--type feature|change|bug`
+
+### 3 Paths
+
+| Intent | Flow | Artifacts Updated |
+|--------|------|-------------------|
+| **Feature** | Interview --> Mini-Spec --> [Design] --> Build+Tests --> ADR --> Commit | New FRs, ADR, optional mockup |
+| **Change** | Interview --> Spec Delta --> [Design] --> Build+Tests --> ADR --> Commit | Updated FRs, ADR |
+| **Bug** | Reproduce --> Impact --> Fix --> Test Update --> Commit | Regression test, optional ADR |
+
+Each path runs tests automatically (vitest + tsc + affected E2E) and creates a conventional commit with FR references.
+
+### Drift Check
+
+Use `/shipwright-sync --check` to verify all artifacts are in sync. This is a read-only diagnostic -- it reports drift but doesn't auto-fix.
+
+### vs. /shipwright-run
+
+| | /shipwright-run | /shipwright-iterate |
+|---|---|---|
+| **When** | New project or major extension | Daily changes, bug fixes, small features |
+| **Pipeline** | Full 8-phase SDLC | Lean 3-path mini-process |
+| **Duration** | Hours | Minutes |
+| **Artifacts** | All created from scratch | Existing artifacts updated incrementally |
+
+---
+
+## 9. Quality and Safety
 
 Shipwright enforces quality through **mechanical enforcement** -- hooks that block or warn deterministically, not advisory prose that agents may ignore. This follows the "linters over instructions" principle.
 
@@ -983,7 +1014,7 @@ It automatically skips `.env.example`, test fixtures, lock files, and vendor dir
 
 ---
 
-## 9. Generated Documentation
+## 10. Generated Documentation
 
 Shipwright generates and maintains documentation throughout the pipeline. You do not write these files manually -- they are created and updated as a side effect of each phase.
 
@@ -1036,7 +1067,7 @@ Compliance is updated incrementally after each pipeline phase, so reports reflec
 
 ---
 
-## 10. Troubleshooting
+## 11. Troubleshooting
 
 | Issue | Cause | Fix |
 |-------|-------|-----|
@@ -1053,7 +1084,7 @@ Compliance is updated incrementally after each pipeline phase, so reports reflec
 
 ---
 
-## 11. Updating Shipwright
+## 12. Updating Shipwright
 
 Shipwright is installed as a local git clone. Updates are a single command:
 
@@ -1109,7 +1140,8 @@ Or read `CHANGELOG.md` in the repository root for release notes.
 
 | Command | Arguments | Flags | Purpose |
 |---------|-----------|-------|---------|
-| `/shipwright-run` | `"description"` or `@requirements.md` | `--iterate` | Orchestrate the full pipeline. Infers stack profile, detects scope (Full App / Extension / Iteration), dispatches to downstream skills in sequence. |
+| `/shipwright-run` | `"description"` or `@requirements.md` | -- | Orchestrate the full pipeline. Infers stack profile, detects scope (Full App / Extension), dispatches to downstream skills in sequence. |
+| `/shipwright-iterate` | `"description"` | `--type feature\|change\|bug` | Lightweight SDLC for ongoing changes. Auto-detects intent and runs specs, build, test, commit. |
 | `/shipwright-project` | `"description"` or `@requirements.md` | -- | Decompose requirements into splits and IREB-aligned specs. Generates `CLAUDE.md`, `agent_docs/`, and project config. Interviews you about requirements. |
 | `/shipwright-design` | -- | -- | Generate HTML mockups from specs. Produces screens with review viewer, feedback loop, and spec backflow. Runs after project, before plan. |
 | `/shipwright-plan` | `@spec.md` | -- | Create implementation plan for one split. Researches stack, interviews for clarification, generates section files. Optionally sends plan to external LLMs (Gemini + OpenAI) for review. |

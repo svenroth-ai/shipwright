@@ -1,0 +1,8 @@
+{
+  "name": "shipwright-iterate",
+  "description": "Lightweight SDLC for ongoing changes. Auto-detects intent (feature/change/bug) and runs a lean process: spec → [design] → build → test → commit.",
+  "version": "0.1.0",
+  "author": { "name": "Sven Roth" },
+  "license": "MIT",
+  "keywords": ["iterate", "change", "bug-fix", "lightweight-sdlc"]
+}

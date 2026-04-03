@@ -9,7 +9,7 @@ Usage:
 
 Output (JSON):
     {
-        "scope": "full_app" | "extension" | "iterate",
+        "scope": "full_app" | "extension",
         "profile": "supabase-nextjs" | null,
         "profile_confidence": "high" | "medium" | "low",
         "autonomy": "guided",
@@ -34,14 +34,12 @@ PROFILE_RULES = [
 ]
 
 
-def detect_scope(project_root: Optional[Path] = None, iterate: bool = False) -> tuple[str, list[str]]:
+def detect_scope(project_root: Optional[Path] = None, **kwargs) -> tuple[str, list[str]]:
     """Detect project scope from filesystem state.
 
     Returns (scope, signals).
+    For ongoing changes to existing projects, use /shipwright-iterate instead.
     """
-    if iterate:
-        return "iterate", ["flag: --iterate"]
-
     signals = []
 
     if project_root:
@@ -108,12 +106,12 @@ def detect_profile(description: str) -> tuple[Optional[str], str, list[str]]:
 def infer_settings(
     description: str,
     project_root: Optional[str] = None,
-    iterate: bool = False,
+    **kwargs,
 ) -> dict:
     """Run full inference and return settings."""
     root = Path(project_root) if project_root else None
 
-    scope, scope_signals = detect_scope(root, iterate)
+    scope, scope_signals = detect_scope(root)
     profile, confidence, profile_signals = detect_profile(description)
 
     return {
@@ -129,10 +127,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Inference engine")
     parser.add_argument("--description", required=True, help="User description")
     parser.add_argument("--project-root", help="Project root directory")
-    parser.add_argument("--iterate", action="store_true", help="Iteration mode")
+    parser.add_argument("--iterate", action="store_true", help="Deprecated — use /shipwright-iterate instead")
     args = parser.parse_args()
 
-    result = infer_settings(args.description, args.project_root, args.iterate)
+    result = infer_settings(args.description, args.project_root)
     print(json.dumps(result, indent=2))
     return 0
 

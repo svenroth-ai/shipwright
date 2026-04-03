@@ -26,23 +26,21 @@ From description to deployed application.
 Usage:
   /shipwright-run "Build a SaaS time tracker with Supabase"
   /shipwright-run                        (interactive)
-  /shipwright-run --iterate "Add dark mode toggle"
   /shipwright-run @requirements.md
 
 Pipeline: Project → Design → Plan → Build → Test → Changelog → Deploy
+
+For ongoing changes to existing projects, use /shipwright-iterate instead.
 ================================================================================
 ```
 
 ### B. Detect Input & Mode
 
-**Iteration mode** (`--iterate`):
-- User has an existing project (CLAUDE.md exists)
-- Quick change: 1-2 questions, 1 split, 1-2 sections
-- Skip to [Iteration Flow](#iteration-flow)
-
 **Full mode** (default):
 - New project or major extension
 - Continue to Step 1
+
+> **Note:** For ongoing changes to existing projects (quick features, bug fixes, small changes), use `/shipwright-iterate` instead of `/shipwright-run`.
 
 ### C. Discover Plugin Root
 
@@ -79,7 +77,7 @@ The inference engine determines:
 
 | Setting | How Inferred |
 |---------|-------------|
-| **Scope** | New project (no CLAUDE.md) → Full App; existing CLAUDE.md → Extension |
+| **Scope** | New project (no CLAUDE.md) → Full App; existing CLAUDE.md → Extension. For ongoing changes, use `/shipwright-iterate`. |
 | **Profile** | "Supabase" + "Next.js" → `supabase-nextjs`; no match → ask user |
 | **Autonomy** | Default: `guided` (ask at key decisions); user can choose `autonomous` |
 
@@ -358,36 +356,6 @@ Project artifacts:
 
 ---
 
-## Iteration Flow
-
-When invoked with `--iterate`:
-
-### 1. Read Existing Context
-- Read `CLAUDE.md` and `agent_docs/`
-- Read `shipwright_run_config.json` (reuse profile, deploy target)
-
-### 2. Understand Change
-- User describes what to change: "Add dark mode toggle"
-- 1-2 clarifying questions max
-
-### 3. Light Decomposition
-- Skip full interview
-- 1 split, 1-2 sections
-- Reuse existing profile and conventions
-
-### 4. Execute Pipeline
-Same as Full App but shorter:
-```
-/shipwright-project "Add dark mode toggle"    → 1 split
-/shipwright-plan @01-dark-mode/spec.md        → 1-2 sections
-/shipwright-build @sections/01-theme.md       → implement
-/shipwright-test                              → verify
-/shipwright-changelog                         → changelog + PR + merge
-/shipwright-deploy                            → deploy to DEV (from main)
-```
-
----
-
 ## Resume Support
 
 If the pipeline is interrupted (context window, user stops, error):
@@ -427,4 +395,4 @@ If the pipeline is interrupted (context window, user stops, error):
 
 - [inference-rules.md](references/inference-rules.md) — Scope + profile inference
 - [autonomy-levels.md](references/autonomy-levels.md) — Guided vs autonomous behavior
-- [scope-flows.md](references/scope-flows.md) — Full App, Extension, Iterate flows
+- [scope-flows.md](references/scope-flows.md) — Full App and Extension flows
