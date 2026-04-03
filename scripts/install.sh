@@ -91,6 +91,8 @@ shipwright() {
     --plugin-dir $REPO_ROOT/plugins/shipwright-deploy \\
     --plugin-dir $REPO_ROOT/plugins/shipwright-changelog \\
     --plugin-dir $REPO_ROOT/plugins/shipwright-compliance \\
+    --plugin-dir $REPO_ROOT/plugins/shipwright-security \\
+    --plugin-dir $REPO_ROOT/plugins/shipwright-preview \\
     \"\$@\"
 }
 "
