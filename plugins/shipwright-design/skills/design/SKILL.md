@@ -222,7 +222,48 @@ AskUserQuestion:
 - Do NOT regenerate from scratch — just update the CSS variables
 - Re-ask for confirmation
 
-**Only after user confirms** → proceed to Step 4 and generate the remaining screens using the validated palette.
+**Only after user confirms** → proceed to Step 3.7 (Chrome Definition) and then Step 4.
+
+---
+
+## Step 3.7: Generate Chrome Definition
+
+**Goal:** Create a single source of truth for all shared UI elements (sidebar, topbar, footer, branding) so every screen has identical chrome.
+
+**After** the design preview is confirmed in Step 3.5:
+
+1. Read [snippets-chrome.md](references/snippets-chrome.md) for the chrome definition template
+2. From the confirmed screen list (Step 3) and design choices, determine:
+   - **App branding:** name + logo SVG icon (24x24 stroke icon)
+   - **Navigation items:** one per screen that appears in nav. Include label, SVG icon path, target file name, section (main vs. bottom). Order: overview first, settings last.
+   - **Topbar config:** search placeholder text, notification bell (yes/no), user avatar (yes/no)
+   - **User info:** realistic name, initials, and role for the app domain
+   - **Footer** (if the layout uses one)
+3. Write `designs/chrome-definition.md` containing:
+   - Filled data tables (the source of truth)
+   - **Resolved HTML blocks** — fully expanded sidebar, topbar, top-nav, and footer HTML with all real labels, icons, and content. No `{{PLACEHOLDERS}}` remaining.
+4. Present the navigation structure for user confirmation:
+
+```
+AskUserQuestion:
+  question: |
+    Navigation structure for all screens:
+
+      {icon} Dashboard        ← active on: 02-dashboard.html
+      {icon} Projects         ← active on: 03-projects.html
+      {icon} Tasks            ← active on: 04-tasks.html
+      ─────────────
+      {icon} Settings         ← active on: 08-settings.html
+
+    App: "{App Name}" with {logo description}
+    User: "{User Name}" ({Initials}), {Role}
+
+    Adjust navigation items, order, or labels?
+```
+
+5. After confirmation, the chrome definition is locked. All screens in Step 4 copy from it.
+
+**Important:** This step runs ONCE per design session. If chrome needs changes later, see [Chrome Change Propagation](#chrome-change-propagation).
 
 ---
 
@@ -241,16 +282,22 @@ For each confirmed screen, **assemble from pre-built snippets** rather than writ
    - Dashboard/admin/list/detail/settings → Layout A (Sidebar + Content)
    - Public/marketing pages → Layout B (Top Navigation)
    - Always include the shared Button Styles block.
-4. **Components** — Fill the layout's content area with component snippets from [snippets-components.md](references/snippets-components.md):
+4. **Shared Chrome** — Read `designs/chrome-definition.md` (generated in Step 3.7). Copy the resolved HTML blocks **verbatim**:
+   - **Layout A screens:** Copy the **Resolved Sidebar Block** into `<aside class="sidebar">`. Copy the **Resolved Topbar Block** into `<header class="topbar">`. Change ONLY which `.nav-item` has `class="nav-item active"` to match the current screen.
+   - **Layout B screens:** Copy the **Resolved Top-Nav Block** into `<header class="topnav">`. Change ONLY which `.topnav-link` has `class="topnav-link active"` to match the current screen.
+   - **Layout C screens:** Copy only the app name and logo SVG from the chrome definition into `.auth-logo`.
+   - Do NOT improvise nav items, icons, labels, or user info. The `chrome-definition.md` is authoritative.
+5. **Components** — Fill the layout's **content area** with component snippets from [snippets-components.md](references/snippets-components.md):
    - Tables, card grids, forms, stats rows, modals, tabs, badges, etc.
    - Pick components that match the screen type and FRs.
-5. **Customize** — Replace all `{{PLACEHOLDERS}}` with screen-specific content:
+6. **Customize** — Replace remaining `{{PLACEHOLDERS}}` in the **content area only** (page title, subtitle, action labels, component data):
    - Realistic data (not "Lorem ipsum" — use plausible content)
-   - Screen-specific labels, field names, nav items
+   - Screen-specific labels, field names, table data
    - FR-specific functionality visible in the UI
    - SVG stroke icons (no emojis — premium, abstract feel)
-6. **Unique elements** — Write from scratch ONLY for content that doesn't match any snippet (custom visualizations, domain-specific widgets, unique layouts).
-7. **Save** to `designs/screens/{NN}-{name}.html`
+   - Do NOT modify the sidebar, topbar, or footer — those come from `chrome-definition.md`.
+7. **Unique elements** — Write from scratch ONLY for content that doesn't match any snippet (custom visualizations, domain-specific widgets, unique layouts).
+8. **Save** to `designs/screens/{NN}-{name}.html`
 
 ### Design Context References
 
@@ -313,6 +360,12 @@ Write `designs/design-manifest.md`:
 | File | Type | Integrated |
 |------|------|-----------|
 | uploads/existing-header.png | image | yes |
+
+## Shared Chrome
+
+- Chrome definition: `chrome-definition.md`
+- Layout: {Sidebar / Top Nav}
+- Nav items: {count}
 
 ## Design Decisions
 
@@ -455,11 +508,13 @@ When invoked with a specific HTML file (e.g. `@designs/screens/02-dashboard.html
 
 1. Read the HTML file
 2. Ask: "What would you like to change?"
-3. Apply changes using the snippet assembly approach where applicable
-4. Regenerate the file
-5. Update design-manifest.md if needed
-6. Regenerate index.html
-7. → Enter **Step 8.5** (review loop)
+3. If the change affects shared chrome (nav, header, footer, branding) → follow [Chrome Change Propagation](#chrome-change-propagation) instead
+4. Apply changes using the snippet assembly approach where applicable
+5. Re-read `designs/chrome-definition.md` and verify the chrome blocks are still copied verbatim (with correct active state)
+6. Regenerate the file
+7. Update design-manifest.md if needed
+8. Regenerate index.html
+9. → Enter **Step 8.5** (review loop)
 
 ### Mode 2: Process feedback file
 
@@ -476,6 +531,17 @@ When invoked with a feedback file (e.g. `@designs/design-feedback-round2.md`):
 6. Run Spec Backflow (partial)
 7. Report what was changed
 8. → Enter **Step 8.5** (review loop)
+
+### Chrome Change Propagation
+
+If **any** iteration (Mode 1 or Mode 2) changes a shared chrome element — navigation items, labels, icons, header, footer, or branding:
+
+1. **Update `designs/chrome-definition.md` first** — edit the data tables AND regenerate the resolved HTML blocks
+2. **Identify all affected screens** — every screen using the same layout (A or B) must be updated
+3. **Re-copy the chrome blocks** — replace the sidebar/topbar/footer in each affected screen with the updated resolved blocks (preserve the correct `active` class per screen)
+4. **Report** which screens were updated and what changed
+
+> **Rule:** Never change chrome in a single screen without updating `chrome-definition.md`. The definition file is always authoritative.
 
 ---
 
