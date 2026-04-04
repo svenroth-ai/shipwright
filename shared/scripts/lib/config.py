@@ -60,8 +60,15 @@ def update_config(skill: str, project_root: str | Path, updates: dict[str, Any])
 
 
 def read_all_configs(project_root: str | Path) -> dict[str, dict[str, Any]]:
-    """Read all config files. Returns dict keyed by skill name."""
-    return {skill: read_config(skill, project_root) for skill in CONFIG_FILES}
+    """Read all JSON config files. Returns dict keyed by skill name.
+
+    Skips non-JSON entries (like the JSONL event log).
+    """
+    return {
+        skill: read_config(skill, project_root)
+        for skill in CONFIG_FILES
+        if not CONFIG_FILES[skill].endswith(".jsonl")
+    }
 
 
 def collect_all_build_sections(project_root: str | Path) -> dict[str, Any]:
