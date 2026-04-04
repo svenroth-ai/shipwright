@@ -8,6 +8,8 @@
 set -euo pipefail
 
 MARKETPLACE_NAME="shipwright"
+MARKETPLACE_DIR="$HOME/.claude/plugins/marketplaces/shipwright"
+HTTPS_URL="https://github.com/svenroth-ai/shipwright.git"
 
 # All plugins in the marketplace
 PLUGINS=(
@@ -25,10 +27,23 @@ if ! command -v claude &>/dev/null; then
 fi
 
 # Step 1: Update marketplace clone from GitHub
+# Try the built-in command first; fall back to manual git pull if SSH fails
 echo ""
 echo "Fetching latest from GitHub..."
-claude plugin marketplace update "$MARKETPLACE_NAME"
-echo "[OK] Marketplace synced"
+if claude plugin marketplace update "$MARKETPLACE_NAME" 2>/dev/null; then
+    echo "[OK] Marketplace synced via CLI"
+else
+    echo "[!!] CLI marketplace update failed (likely SSH issue), using git pull fallback..."
+    if [ -d "$MARKETPLACE_DIR/.git" ]; then
+        # Ensure remote uses HTTPS (not SSH)
+        git -C "$MARKETPLACE_DIR" remote set-url origin "$HTTPS_URL" 2>/dev/null || true
+        git -C "$MARKETPLACE_DIR" fetch origin main
+        git -C "$MARKETPLACE_DIR" reset --hard origin/main
+    else
+        git clone "$HTTPS_URL" "$MARKETPLACE_DIR"
+    fi
+    echo "[OK] Marketplace synced via git"
+fi
 
 # Step 2: Update each installed plugin's cache
 echo ""
