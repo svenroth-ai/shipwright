@@ -746,4 +746,6 @@ Then invoke: /shipwright-run
 - [migration-safety.md](references/migration-safety.md) — SQL migration safety
 - [debugging-protocol.md](references/debugging-protocol.md) — Structured 4-phase debugging (root cause → hypothesis → fix)
 - [self-review-checklist.md](references/self-review-checklist.md) — Lightweight inline code review checklist
+- [performance-checklist.md](references/performance-checklist.md) — Performance review reference (N+1, bundle size, Core Web Vitals)
+- [simplification-patterns.md](references/simplification-patterns.md) — Code simplification patterns for readability axis
 - [finalization.md](references/finalization.md) — Section completion checklist

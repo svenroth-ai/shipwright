@@ -29,7 +29,14 @@ Do tests validate behavior, not implementation?
 - At least one happy-path and one error-path test per feature
 - No tests that always pass regardless of implementation
 
-### 5. Naming & Structure
+### 5. Performance Basics
+Any obvious performance issues?
+- No N+1 query patterns (loop of DB calls → use join/include)
+- List endpoints paginated (no unbounded result sets)
+- No large synchronous blocking in async handlers
+- See [performance-checklist.md](performance-checklist.md) for full reference
+
+### 6. Naming & Structure
 Is the code consistent with the existing codebase?
 - File and folder locations match profile conventions
 - New directories or files outside existing structure? → set `--architecture-impact convention`
@@ -40,14 +47,26 @@ Is the code consistent with the existing codebase?
 
 ```
 Self-Review:
-  1. Spec Compliance:  ✅ All 3 FRs implemented (auth, profile, settings)
-  2. Error Handling:   ✅ API routes wrapped, DB calls guarded
-  3. Security Basics:  ❌ Missing auth check on /api/settings PUT
-  4. Test Quality:     ✅ 8 tests covering happy + error paths
-  5. Naming:           ✅ Consistent with existing patterns
+  1. Spec Compliance:    ✅ All 3 FRs implemented (auth, profile, settings)
+  2. Error Handling:     ✅ API routes wrapped, DB calls guarded
+  3. Security Basics:    ❌ Missing auth check on /api/settings PUT
+  4. Test Quality:       ✅ 8 tests covering happy + error paths
+  5. Performance Basics: ✅ No N+1, lists paginated
+  6. Naming & Structure: ✅ Consistent with existing patterns
 
 Action: Fix item 3 before commit.
 ```
+
+## Anti-Rationalization
+
+Before marking all items ✅, check yourself against these:
+
+| Rationalization | Reality |
+|---|---|
+| "It works, ship it" | Working ≠ correct. Does it handle errors, edge cases, and invalid input? |
+| "I'll add tests later" | You won't. Write them now or they won't exist |
+| "It's just a small change" | Small changes in auth, middleware, or shared modules have outsized impact |
+| "The framework handles security" | Frameworks prevent some issues but can't fix missing auth checks or business logic flaws |
 
 ## When to Escalate to Full Code Review
 
