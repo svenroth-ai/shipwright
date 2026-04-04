@@ -265,18 +265,37 @@ plan SKILL completes
 Executed by the orchestrator between each skill invocation (orchestrate SKILL.md):
 
 1. **Phase Validation & Completion** — `update-step --status complete` triggers `phase_validators.py`. If ASK issues found, asks user before proceeding.
-2. **Upstream Success Check** — Reads `shipwright_run_config.json`, verifies previous phase is in `completed_steps`. Prevents cascading failures.
-3. **Incremental Compliance Update** — `update_compliance.py --phase {phase}` (non-blocking subprocess, errors swallowed).
-4. **Dashboard Update** — `update_build_dashboard.py --phase {phase}` refreshes `agent_docs/build_dashboard.md`.
-5. **Tool Counter Reset** — `reset_tool_counter.py` prevents stale counts from triggering false context pressure.
-6. **Context Pressure Check** — `estimate_context_pressure.py --threshold 120`. If `recommend_checkpoint` is true, generates handoff and stops.
+2. **Record Phase Event** — `record_event.py --type phase_completed --phase {phase}` appends to `shipwright_events.jsonl`.
+3. **Upstream Success Check** — Reads `shipwright_run_config.json`, verifies previous phase is in `completed_steps`. Prevents cascading failures.
+4. **Incremental Compliance Update** — `update_compliance.py --phase {phase}` (non-blocking subprocess, errors swallowed).
+5. **Dashboard Update** — `update_build_dashboard.py --phase {phase}` refreshes `agent_docs/build_dashboard.md`.
+6. **Tool Counter Reset** — `reset_tool_counter.py` prevents stale counts from triggering false context pressure.
+7. **Context Pressure Check** — `estimate_context_pressure.py --threshold 120`. If `recommend_checkpoint` is true, generates handoff and stops.
 
 ### Split-Loop (Build Phase)
 
 After build completes for a split:
 - `update_step()` calls `get_build_progress()`
 - If `all_done == false`: removes `plan` and `build` from `completed_steps`, sets `current_step = "plan"`
+- Records `split_completed` event via `record_event.py --type split_completed --split {name}`
 - Test/changelog/deploy/compliance only run after `all_done == true`
+
+---
+
+## Event Emission Points
+
+The unified event log (`shipwright_events.jsonl`) is written to by these components:
+
+| Emitter | Event Type | When |
+|---------|-----------|------|
+| Orchestrator (between phases) | `phase_started` | Phase begins |
+| Orchestrator (between phases) | `phase_completed` | Phase validated + complete |
+| Orchestrator (split loop) | `split_completed` | All sections of a split done |
+| Build SKILL.md (Step 10) | `work_completed` (source=build) | Section committed |
+| Iterate SKILL.md (F3.5) | `work_completed` (source=iterate) | Iterate change committed |
+| Test Phase | `test_run` | Full test suite executed |
+
+All events share common fields: `v` (schema version), `id` (UUID-based), `ts` (ISO timestamp), `type`, and optional `session`.
 
 ---
 

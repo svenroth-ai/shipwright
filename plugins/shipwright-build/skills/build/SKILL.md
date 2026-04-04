@@ -568,6 +568,22 @@ Where:
 - `{review_findings_json}` — JSON array of findings from code review (Step 6), e.g. `[{"finding": "Missing validation", "status": "fixed"}]`. Use `[]` if no findings.
 - `{review_type}` — `"full-review"` if Step 6b (full code review) was triggered, `"self-review"` if only Step 6a (self-review checklist) was performed
 
+**Record event in unified event log:**
+```bash
+uv run {shared_root}/scripts/tools/record_event.py \
+  --project-root "$(pwd)" \
+  --type work_completed --source build \
+  --split "{current_split}" --section "{section_name}" \
+  --commit "$(git rev-parse HEAD)" \
+  --tests-passed {tests_passed} --tests-total {tests_total} \
+  --review-type "{review_type}" \
+  --review-findings {review_findings_count} --review-fixed {review_fixed_count} \
+  --affected-frs "{comma_separated_FRs}" \
+  --deduplicate-by-commit
+```
+
+Where `{comma_separated_FRs}` is the list of FRs from the section spec that this section implements (e.g. `"FR-01.01,FR-01.02"`). If the section spec does not reference specific FRs, use the split-level FR range. Omit `--review-findings` and `--review-fixed` if no review was performed (self-review with 0 findings).
+
 **Dashboard update:**
 ```bash
 uv run {shared_root}/scripts/tools/update_build_dashboard.py \

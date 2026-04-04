@@ -31,6 +31,7 @@ PHASE_REPORTS = {
     "test": ["test_evidence", "dashboard"],
     "deploy": ["dashboard"],
     "changelog": ["change_history", "dashboard"],
+    "iterate": ["rtm", "test_evidence", "change_history", "dashboard"],
 }
 
 GENERATORS = {

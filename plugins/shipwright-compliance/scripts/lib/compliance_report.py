@@ -30,12 +30,57 @@ def generate(data: ComplianceData) -> str:
         "",
     ]
 
-    # Quality indicators
-    total_sections = len(data.sections)
-    completed = sum(1 for s in data.sections if s.status == "complete")
-    total_passed = sum(s.tests_passed for s in data.sections)
-    total_tests = sum(s.tests_total for s in data.sections)
-    reviewed = total_sections  # all sections go through code review
+    # Quality indicators — event-based if events exist, legacy otherwise
+    if data.work_events:
+        lines.extend(_quality_indicators_events(data))
+        lines.extend(_project_velocity(data))
+    else:
+        lines.extend(_quality_indicators_legacy(data))
+
+    # Compliance artifacts
+    artifact_rows = [
+        "| Traceability Matrix | [traceability-matrix.md](./traceability-matrix.md) | Requirements → Work Events → Tests |",
+        "| Test Evidence | [test-evidence.md](./test-evidence.md) | Test progression timeline |",
+        "| Commit Change Log | [change-history.md](./change-history.md) | Conventional Commits by type |",
+        "| Decision Log | [decision_log.md](../agent_docs/decision_log.md) | Architecture decisions (ADRs) |",
+        "| SBOM | [sbom.md](./sbom.md) | Open-source dependencies + licenses |",
+    ]
+    # Event log
+    if (data.project_root / "shipwright_events.jsonl").exists():
+        artifact_rows.insert(0, "| Event Log | [shipwright_events.jsonl](../shipwright_events.jsonl) | Unified append-only event log |")
+    if (data.project_root / "CHANGELOG.md").exists():
+        artifact_rows.append("| Changelog | [CHANGELOG.md](../CHANGELOG.md) | Release notes |")
+    if (data.project_root / "playwright-report" / "index.html").exists():
+        artifact_rows.append("| Playwright Report | [playwright-report/index.html](../playwright-report/index.html) | Interactive E2E test results |")
+
+    lines.extend([
+        "## Compliance Artifacts",
+        "",
+        "| Document | Path | Description |",
+        "|----------|------|-------------|",
+        *artifact_rows,
+        "",
+    ])
+
+    return "\n".join(lines) + "\n"
+
+
+def _quality_indicators_events(data: ComplianceData) -> list[str]:
+    """Quality indicators from event log."""
+    build_events = [we for we in data.work_events if we.source == "build"]
+    iterate_events = [we for we in data.work_events if we.source == "iterate"]
+
+    # Phase completion from events
+    completed_phases = [e["phase"] for e in data.phase_events if e.get("type") == "phase_completed"]
+    total_pipeline = 7  # project, design, plan, build, test, changelog, deploy
+
+    # Latest test counts from work events
+    latest_passed = data.work_events[-1].tests_passed if data.work_events else 0
+    latest_total = data.work_events[-1].tests_total if data.work_events else 0
+
+    # Review counts
+    reviewed = sum(1 for we in build_events if we.review_type)
+
     total_decisions = sum(len(e.decisions) for e in data.decisions)
     total_deps = len(data.dependencies)
     copyleft = sum(
@@ -43,7 +88,73 @@ def generate(data: ComplianceData) -> str:
         if any(cl in d.license.upper() for cl in ("GPL", "AGPL", "LGPL", "MPL"))
     )
 
+    # Iterate test coverage
+    iterate_tested = sum(1 for we in iterate_events if we.tests_total > 0)
+
+    lines = [
+        "## Quality Indicators",
+        "",
+        "| Metric | Value | Status |",
+        "|--------|-------|--------|",
+        f"| Pipeline phases completed | {len(completed_phases)}/{total_pipeline} | {_status_badge(len(completed_phases) >= total_pipeline)} |",
+        f"| Work events (build) | {len(build_events)} sections | {_status_badge(len(build_events) > 0)} |",
+        f"| Work events (iterate) | {len(iterate_events)} changes | INFO |",
+        f"| All unit tests passing | {latest_passed}/{latest_total} | {_status_badge(latest_passed == latest_total and latest_total > 0)} |",
+        f"| All sections reviewed | {reviewed}/{len(build_events)} | {_status_badge(reviewed == len(build_events) and len(build_events) > 0)} |",
+        f"| Architecture decisions | {total_decisions} ADRs | INFO |",
+    ]
+
+    if iterate_events:
+        lines.append(f"| Iterate tests passing | {iterate_tested}/{len(iterate_events)} iterations tested | {_status_badge(iterate_tested == len(iterate_events))} |")
+
     lines.extend([
+        f"| Dependencies | {total_deps} packages | INFO |",
+        f"| Copyleft risk | {copyleft} | {_status_badge(copyleft == 0)} |",
+        "",
+    ])
+
+    return lines
+
+
+def _project_velocity(data: ComplianceData) -> list[str]:
+    """Project velocity computed from event timestamps."""
+    build_events = [we for we in data.work_events if we.source == "build"]
+    iterate_events = [we for we in data.work_events if we.source == "iterate"]
+
+    lines = ["## Project Velocity", ""]
+
+    if build_events:
+        first_date = build_events[0].timestamp[:10]
+        last_date = build_events[-1].timestamp[:10]
+        lines.append(f"- Build: {len(build_events)} sections ({first_date} → {last_date})")
+
+    if iterate_events:
+        first_date = iterate_events[0].timestamp[:10]
+        last_date = iterate_events[-1].timestamp[:10]
+        lines.append(f"- Iterate: {len(iterate_events)} changes ({first_date} → {last_date})")
+
+    if data.work_events:
+        lines.append(f"- Last activity: {data.work_events[-1].timestamp[:10]}")
+
+    lines.append("")
+    return lines
+
+
+def _quality_indicators_legacy(data: ComplianceData) -> list[str]:
+    """Legacy quality indicators from config files."""
+    total_sections = len(data.sections)
+    completed = sum(1 for s in data.sections if s.status == "complete")
+    total_passed = sum(s.tests_passed for s in data.sections)
+    total_tests = sum(s.tests_total for s in data.sections)
+    reviewed = total_sections
+    total_decisions = sum(len(e.decisions) for e in data.decisions)
+    total_deps = len(data.dependencies)
+    copyleft = sum(
+        1 for d in data.dependencies
+        if any(cl in d.license.upper() for cl in ("GPL", "AGPL", "LGPL", "MPL"))
+    )
+
+    return [
         "## Quality Indicators",
         "",
         "| Indicator | Value | Status | Description |",
@@ -56,33 +167,7 @@ def generate(data: ComplianceData) -> str:
         f"| Third-party dependencies | {total_deps} | INFO | Open-source packages in use |",
         f"| Copyleft license risk | {copyleft} | {_status_badge(copyleft == 0)} | Packages with GPL/AGPL/LGPL/MPL licenses |",
         "",
-    ])
-
-    # Compliance artifacts
-    artifact_rows = [
-        "| Traceability Matrix | [traceability-matrix.md](./traceability-matrix.md) | Requirements → Sections → Tests |",
-        "| Test Evidence | [test-evidence.md](./test-evidence.md) | Per-section test results |",
-        "| Commit Change Log | [change-history.md](./change-history.md) | Conventional Commits by type |",
-        "| Decision Log | [decision_log.md](../agent_docs/decision_log.md) | Architecture decisions (ADRs) |",
-        "| SBOM | [sbom.md](./sbom.md) | Open-source dependencies + licenses |",
     ]
-    # Add CHANGELOG if it exists
-    if (data.project_root / "CHANGELOG.md").exists():
-        artifact_rows.append("| Changelog | [CHANGELOG.md](../CHANGELOG.md) | Release notes |")
-    # Add Playwright report if it exists
-    if (data.project_root / "playwright-report" / "index.html").exists():
-        artifact_rows.append("| Playwright Report | [playwright-report/index.html](../playwright-report/index.html) | Interactive E2E test results with screenshots |")
-
-    lines.extend([
-        "## Compliance Artifacts",
-        "",
-        "| Document | Path | Description |",
-        "|----------|------|-------------|",
-        *artifact_rows,
-        "",
-    ])
-
-    return "\n".join(lines) + "\n"
 
 
 def generate_file(project_root: Path, data: ComplianceData | None = None) -> Path:

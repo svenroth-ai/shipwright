@@ -18,7 +18,7 @@ from pathlib import Path
 # Add shared lib to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from lib.config import read_all_configs
+from lib.config import read_all_configs, read_events
 from lib.state import detect_current_phase, get_checkpoint
 
 
@@ -104,8 +104,51 @@ def generate_handoff(
     ]
 
     for skill, config in configs.items():
+        if skill == "events":
+            continue  # Listed separately below
         status = "exists" if config else "missing"
         lines.append(f"- `shipwright_{skill}_config.json` — {status}")
+
+    # Event log section (if exists)
+    events = read_events(project_root)
+    if events:
+        # Show last 5 events
+        recent = events[-5:]
+        lines += [
+            "",
+            "## Last Events",
+            "",
+            "| Event | Type | Source | Date |",
+            "|-------|------|--------|------|",
+        ]
+        for e in reversed(recent):
+            eid = e.get("id", "—")
+            etype = e.get("type", "—")
+            source = e.get("source", e.get("phase", "—"))
+            if etype == "work_completed":
+                source = f"{e.get('source', '—')} ({e.get('section', e.get('description', '—'))})"
+            ts = e.get("ts", "—")[:10]
+            lines.append(f"| {eid} | {etype} | {source} | {ts} |")
+
+        # Summary
+        work_events = [e for e in events if e.get("type") == "work_completed"]
+        iterate_events = [e for e in work_events if e.get("source") == "iterate"]
+        phase_completed = [e for e in events if e.get("type") == "phase_completed"]
+
+        lines += [
+            "",
+            "## Recovery",
+            "",
+            f"- **Pipeline**: {len(phase_completed)} phases completed",
+            f"- **Total work events**: {len(work_events)}",
+        ]
+        if iterate_events:
+            last_iter = iterate_events[-1]
+            lines.append(f"- **Last iterate**: {last_iter.get('intent', 'change')} — {last_iter.get('description', '—')} ({last_iter.get('ts', '')[:10]})")
+        lines.append("- **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline")
+    else:
+        # Legacy: config file listing only
+        pass
 
     if recent_decisions:
         lines += [

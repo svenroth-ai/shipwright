@@ -300,6 +300,36 @@ git commit -m "<type>(<scope>): <description>
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+### F3.5: Record Event
+
+After the commit succeeds, record the work event in the unified event log. Use the EXACT values from this iteration — do not use placeholder braces. Pick one intent value: `feature`, `change`, or `bug`. Parse the vitest summary line (`Tests: 47 passed, 47 total`) for the test counts. Omit `--new-frs` and `--spec-updated` if not applicable. The `--deduplicate-by-commit` flag prevents duplicate events if this step is retried.
+
+```bash
+# Example for a feature iteration:
+uv run {shared_root}/scripts/tools/record_event.py \
+  --project-root "{project_root}" \
+  --type work_completed --source iterate \
+  --intent feature \
+  --description "Add course filtering by category" \
+  --commit "$(git rev-parse HEAD)" \
+  --affected-frs "FR-02.08" \
+  --new-frs "FR-02.08" \
+  --spec-updated "planning/02-course-platform/spec.md" \
+  --tests-new 3 --tests-passed 47 --tests-total 47 \
+  --e2e-run false \
+  --adr-id "ADR-055" \
+  --deduplicate-by-commit
+```
+
+### F3.7: Update Compliance
+
+Trigger incremental compliance report regeneration:
+
+```bash
+uv run {shared_root}/../../plugins/shipwright-compliance/scripts/tools/update_compliance.py \
+  --project-root "{project_root}" --phase iterate
+```
+
 ### F4: Print Summary
 
 ```
@@ -309,6 +339,7 @@ SHIPWRIGHT-ITERATE COMPLETE
 Type:       {FEATURE | CHANGE | BUG}
 Branch:     iterate/{short-description}
 Commit:     {commit_hash}
+Event:      {event_id from F3.5 output}
 Tests:      {N} passing
 Specs:      {updated | no changes needed}
 ADR:        Logged in decision_log.md
