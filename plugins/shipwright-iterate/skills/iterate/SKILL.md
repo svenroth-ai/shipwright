@@ -115,6 +115,11 @@ Read these only when the change touches their domain:
 - `planning/*/sections/*.md` — only the section files for affected areas
 - `designs/visual-guidelines.md` — only for UI changes
 - `designs/screens/*.html` — only for UI changes requiring mockup reference
+- `{build_plugin_root}/skills/build/references/shadcn-rules.md` — Core Rules only, for UI changes
+- `{build_plugin_root}/skills/build/references/shadcn-block-patterns.md` — Index + matching category only, for UI changes
+- `{build_plugin_root}/skills/build/references/mockup-to-shadcn-mapping.md` — for UI changes
+
+Where `{build_plugin_root}` = path to `plugins/shipwright-build` (resolve from `shipwright_run_config.json` or relative to shared).
 - `agent_docs/architecture.md` — only for structural changes
 - `supabase/migrations/` — only for database changes
 
@@ -173,6 +178,24 @@ npx playwright test
    d. Re-run failing tests
    e. If same root cause repeats, change approach
    f. After 3 failures, escalate to user
+4. **Visual comparison** (conditional — only for structural UI changes):
+
+   **Run if:** Change affects UI STRUCTURE (new layout, new components, grid changes, new screens).
+   **Skip if:** Text changes, color tweaks, copy updates, logic fixes, bug fixes without layout impact.
+   Hint: FEATURE with UI = likely compare. BUG/CHANGE without layout = likely skip.
+
+   If running:
+   a. Start dev server if not running
+   b. Run browser-verify (basic health: JS errors, page loads)
+   c. Run `visual_compare.py` for affected screens only
+   d. READ both screenshots (mockup + live) and compare using structured rubric:
+      - Major layout match?
+      - Component type match?
+      - Component order/hierarchy?
+      - Spacing acceptable?
+      - Chrome consistency?
+   e. For mismatches: inspect DOM/classes first, then make targeted fix
+   f. Max 2 fix iterations. If still mismatched: log warning and continue.
 
 ### Step 5: Finalize
 
