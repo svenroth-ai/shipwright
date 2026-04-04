@@ -1,6 +1,6 @@
 ---
 name: shipwright-iterate
-description: Lightweight SDLC for ongoing changes — iterate, change, modify, fix bug, add feature, update. Auto-detects intent (feature/change/bug) and runs a lean process with spec sync, tests, and conventional commits.
+description: "Lightweight SDLC for ongoing changes in completed Shipwright projects.\nTRIGGER when: user asks to add a feature, fix a bug, change behavior, refactor, update, modify, or improve code in a project that has shipwright_run_config.json. Also when user describes a bug report, enhancement request, or any code-level change.\nDO NOT TRIGGER when: user asks about project setup (/shipwright-project), planning (/shipwright-plan), initial build (/shipwright-build), deployment (/shipwright-deploy), or non-code tasks like documentation questions."
 license: MIT
 compatibility: Requires uv (Python 3.11+), git repository required, completed Shipwright project
 ---
