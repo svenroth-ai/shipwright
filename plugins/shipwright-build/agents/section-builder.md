@@ -31,7 +31,16 @@ Execute these steps **in order**. Do NOT skip steps.
 2. Read `agent_docs/` directory for architecture docs, decision log, prior decisions
 3. Read `designs/visual-guidelines.md` (if exists) for brand colors, typography, spacing, component patterns
 4. Read the section spec at `{section_file}` thoroughly
-4. Read `{project_root}/shipwright_build_config.json` for existing config
+   - If spec contains `## Design Reference`: read the referenced mockup HTML file(s)
+   - If no design reference but `designs/screens/` exists: check for relevant mockups
+   - The mockup is visual truth for layout and visual hierarchy (not DOM structure)
+5. Read `designs/chrome-definition.md` (if exists) for shared nav/header/footer structure
+6. For UI sections, read from `{plugin_root}/skills/build/references/`:
+   - `shadcn-rules.md` — Core Rules section (always)
+   - `shadcn-block-patterns.md` — Index first, then ONLY the matching category section(s)
+   - `mockup-to-shadcn-mapping.md` — translation table for mockup HTML → shadcn/ui
+7. **Source-of-truth priority** (when sources conflict): Spec > Architecture > Chrome > Mockup > shadcn Rules > Screenshot
+8. Read `{project_root}/shipwright_build_config.json` for existing config
 5. Run setup script:
 ```bash
 uv run {plugin_root}/scripts/checks/setup_implementation_session.py \
@@ -108,9 +117,24 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
 4. Fix & Verify: Apply targeted fix, run tests
 5. After 3 failed attempts (or 2 with same root cause): stop trying, report failure in result JSON
 
-### Step 8: Browser Verify (UI Projects Only)
+### Step 7.5: Design Fidelity Check (UI sections only)
+
+**Skip if:** No mockup was read in Step 1, or section has no UI.
+
+Compare your implementation against the mockup HTML:
+1. **Layout Structure** — Grid columns, flex direction, sidebar width match mockup?
+2. **Component Order** — Same visual order as mockup?
+3. **Component Types** — Table vs Card Grid? Tabs vs Accordion? Match the mockup choice.
+4. **Card Patterns** — Full composition used? (CardHeader + CardTitle + CardContent + CardFooter)
+5. **shadcn Rules** — gap not space-y? Semantic colors? FieldGroup for forms? Badge for status?
+
+If mismatches found: fix implementation, re-run tests to verify no regressions, then proceed.
+
+### Step 8: Browser Verify + Visual Comparison (UI Projects Only)
 
 **Skip if:** No UI, no `dev_server` config in profile, no frontend file changes.
+
+**8a. Basic health check:**
 
 ```bash
 uv run {shared_root}/scripts/playwright_setup.py --cwd {project_root}
@@ -118,7 +142,35 @@ uv run {shared_root}/scripts/dev_server.py start --profile {profile} --cwd {proj
 uv run {plugin_root}/scripts/lib/browser_verify.py --cwd {project_root}
 ```
 
-If failure: Read screenshot at `{project_root}/e2e/screenshots/browser-verify.png`, diagnose, fix (max 3 retries).
+If JS errors: Read screenshot at `{project_root}/e2e/screenshots/browser-verify.png`, diagnose, fix (max 3 retries).
+
+**8b. Visual comparison (only if mockup was read in Step 1):**
+
+If `designs/screen-routes.json` exists AND mockup HTML files exist for this section:
+
+```bash
+uv run {shared_root}/../plugins/shipwright-test/scripts/lib/visual_compare.py \
+  --cwd {project_root} --screens {relevant_screens_for_this_section}
+```
+
+Then READ the generated screenshots and compare using this rubric:
+1. Read `designs/visual-comparison/{screen}-mockup.png`
+2. Read `designs/visual-comparison/{screen}-live.png`
+3. Evaluate against structured rubric:
+   - [ ] Major layout match (sidebar, header, content areas)?
+   - [ ] Component type match (table vs cards vs grid)?
+   - [ ] Component order/hierarchy match?
+   - [ ] Spacing acceptable?
+   - [ ] Chrome consistency (nav, header, footer)?
+4. Report top 3 mismatches with confidence level
+5. For each mismatch: **inspect DOM/classes FIRST**, then make targeted fix
+6. Max 2 visual fix iterations
+
+**8c. Escalation (if still mismatched after 2 iterations):**
+- Attach screenshots to section state
+- Mark section with `visual_fidelity: "partial"` in result JSON
+- Log warning: "Visual fidelity check did not converge after 2 iterations"
+- Continue pipeline (do NOT hard-fail)
 
 ### Step 9: Refactor (Optional)
 
@@ -258,6 +310,7 @@ When complete, return a JSON object as the **last line of your response**:
   "review_findings": [
     {"finding": "description", "status": "fixed"}
   ],
+  "visual_fidelity": "full|partial|skipped",
   "decisions": [
     {"title": "short title", "rationale": "why"}
   ]
