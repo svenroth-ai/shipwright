@@ -123,11 +123,16 @@ The marketplace approach works in both the VSCode Extension and the CLI. Add the
   "enabledPlugins": {
     "shipwright-run@shipwright": true,
     "shipwright-project@shipwright": true,
+    "shipwright-design@shipwright": true,
     "shipwright-plan@shipwright": true,
     "shipwright-build@shipwright": true,
     "shipwright-test@shipwright": true,
+    "shipwright-security@shipwright": true,
     "shipwright-deploy@shipwright": true,
-    "shipwright-changelog@shipwright": true
+    "shipwright-changelog@shipwright": true,
+    "shipwright-compliance@shipwright": true,
+    "shipwright-iterate@shipwright": true,
+    "shipwright-preview@shipwright": true
   }
 }
 ```
@@ -1086,7 +1091,28 @@ Compliance is updated incrementally after each pipeline phase, so reports reflec
 
 ## 12. Updating Shipwright
 
-Shipwright is installed as a local git clone. Updates are a single command:
+### Marketplace Installation (Recommended)
+
+Run the update script from the Shipwright repo:
+
+```bash
+bash scripts/update-marketplace.sh
+```
+
+This fetches the latest code from GitHub (`claude plugin marketplace update`) and refreshes each plugin's local cache (`claude plugin update`). Restart your Claude Code session afterward.
+
+**Manual alternative** (update individual plugins):
+
+```bash
+claude plugin marketplace update shipwright
+claude plugin update shipwright-iterate@shipwright
+claude plugin update shipwright-build@shipwright
+# ... repeat for other installed plugins
+```
+
+### Shell Alias Installation
+
+If you installed via shell alias instead of marketplace:
 
 ```bash
 cd ~/shipwright && git pull && uv sync
@@ -1098,9 +1124,10 @@ cd ~/shipwright && git pull && uv sync
 
 | Change Type | When It Takes Effect |
 |-------------|---------------------|
-| SKILL.md changes | On next `shipwright` session (exit and restart Claude Code) |
+| SKILL.md changes | After session restart |
 | Python script changes | Immediately (scripts are loaded fresh each run via `uv run`) |
 | Hook changes | Immediately (hooks are re-read each session) |
+| Marketplace plugin updates | After `claude plugin update` + session restart |
 | New plugins added | After updating your shell alias or marketplace config to include them |
 | Profile changes | On next `/shipwright-run` (profile is read at pipeline start) |
 
