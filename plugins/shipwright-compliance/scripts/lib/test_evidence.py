@@ -28,8 +28,8 @@ def generate(data: ComplianceData) -> str:
     if data.work_events:
         lines.extend(_test_progression(data))
         lines.extend(_full_suite_runs(data))
-        lines.extend(_code_review_evidence_events(data))
         lines.extend(_e2e_details(data))
+        lines.extend(_code_review_evidence_events(data))
     else:
         # Legacy fallback
         lines.extend(_test_execution_summary(data))
