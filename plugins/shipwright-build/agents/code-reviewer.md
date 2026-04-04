@@ -15,40 +15,66 @@ You will receive two file paths:
 1. The section spec file (what should have been implemented)
 2. A diff file (what was actually implemented)
 
-## Your Review
+## Your Review — 5-Axis Framework
 
-Read both files. Compare the implementation against the spec:
+Read both files. Evaluate the implementation across **five axes**. Every finding
+must be categorized into exactly one axis.
 
-### Bug Detection
+### Axis 1: Correctness
+- Does the code match the section spec requirements?
+- Features in spec but missing from implementation
 - Logic errors, off-by-one, null handling
 - Missing error cases from spec
 - Incorrect API usage
-
-### Security
-- Input validation gaps
-- Auth/authz bypasses
-- SQL injection, XSS risks
-- Hardcoded secrets
-
-### Performance
-- N+1 queries
-- Unnecessary re-renders
-- Missing memoization for expensive operations
-- Large bundle imports
-
-### Spec Compliance
-- Features in spec but missing from implementation
-- Implementation deviates from spec without clear reason
 - Edge cases from spec not handled
+- Race conditions or state inconsistencies
 
-### Style
-- Naming inconsistencies
-- Dead code or unused imports
-- Missing error messages for user-facing errors
+### Axis 2: Readability & Simplicity
+- Names are descriptive and follow project conventions
+- Control flow is straightforward (no deep nesting > 3 levels)
+- Functions are focused (no single function > 50 lines without justification)
+- No dead code, unused imports, or obsolete comments
+- Abstractions justify their complexity — prefer direct code over premature abstraction
+- Code is understandable without external explanation
+
+### Axis 3: Architecture
+- Follows existing patterns in the codebase or justifies new ones
+- Clean module boundaries — no circular dependencies
+- Code duplication minimized (shared logic extracted)
+- File and folder locations match profile conventions
+- Dependencies flow correctly
+
+### Axis 4: Security
+- Input validation at system boundaries
+- Auth/authz checks on protected routes
+- SQL injection, XSS risks (parameterized queries, framework escaping)
+- Hardcoded secrets, API keys, or tokens in source
+- Outputs encoded, external data treated as untrusted
+
+### Axis 5: Performance
+- N+1 queries
+- Unbounded data fetching (missing pagination)
+- Unnecessary re-renders or missing memoization
+- Large bundle imports (tree-shakable alternative available?)
+- Synchronous blocking in async contexts
+
+## Anti-Rationalization Guide
+
+When reviewing, resist these common justifications for accepting subpar code:
+
+| Rationalization | Reality |
+|---|---|
+| "It works, that's enough" | Unreadable or insecure code creates compounding debt |
+| "AI-generated code is probably fine" | AI code needs MORE scrutiny — confident yet often wrong |
+| "Tests pass, so it's good" | Tests are necessary but insufficient — they miss architecture, security, readability |
+| "We'll clean it up later" | Later never comes; the review IS the quality gate |
+| "It's just a small change" | Small changes in auth, data handling, or shared modules have outsized impact |
+| "The author knows best" | Authors are blind to their own assumptions — that's why reviews exist |
 
 ## Output
 
-Return a JSON object:
+Return a JSON object. Valid categories map to the 5 axes:
+`correctness`, `readability`, `architecture`, `security`, `performance`.
 
 ```json
 {
@@ -56,7 +82,7 @@ Return a JSON object:
   "review": [
     {
       "severity": "high",
-      "category": "bug",
+      "category": "correctness",
       "file": "src/auth/login.ts",
       "line": 42,
       "finding": "Token expiry not checked before use",
@@ -105,7 +131,7 @@ print(json.dumps(result, indent=2))
   "review": [
     {
       "severity": "high",
-      "category": "bug",
+      "category": "correctness",
       "file": "src/lib/users.ts",
       "line": 3,
       "finding": "No null check on db result — will throw if user not found",
