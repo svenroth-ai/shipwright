@@ -24,25 +24,24 @@ def generate(data: ComplianceData) -> str:
         "",
     ]
 
-    # --- Test Execution Summary (unit + smoke + e2e) ---
-    lines.extend(_test_execution_summary(data))
-
-    # --- Test Pyramid (right after execution summary) ---
-    lines.extend([
-        "## Test Pyramid",
-        "",
-        testing_pyramid_diagram(data.sections, data.test_results),
-        "",
-    ])
-
-    # --- Per-split test results (with layer breakdown) ---
-    lines.extend(_per_split_results(data))
-
-    # --- E2E Test Details ---
-    lines.extend(_e2e_details(data))
-
-    # --- Code Review Evidence ---
-    lines.extend(_code_review_evidence(data))
+    # Use event-based generation if events exist
+    if data.work_events:
+        lines.extend(_test_progression(data))
+        lines.extend(_full_suite_runs(data))
+        lines.extend(_code_review_evidence_events(data))
+        lines.extend(_e2e_details(data))
+    else:
+        # Legacy fallback
+        lines.extend(_test_execution_summary(data))
+        lines.extend([
+            "## Test Pyramid",
+            "",
+            testing_pyramid_diagram(data.sections, data.test_results),
+            "",
+        ])
+        lines.extend(_per_split_results(data))
+        lines.extend(_e2e_details(data))
+        lines.extend(_code_review_evidence(data))
 
     return "\n".join(lines) + "\n"
 
@@ -289,6 +288,131 @@ def _code_review_evidence(data: ComplianceData) -> list[str]:
         )
     lines.append("")
 
+    return lines
+
+
+# ---------------------------------------------------------------------------
+# Event-based generation
+# ---------------------------------------------------------------------------
+
+def _test_progression(data: ComplianceData) -> list[str]:
+    """Test progression timeline from work events."""
+    if not data.work_events:
+        return []
+
+    build_events = [we for we in data.work_events if we.source == "build"]
+    iterate_events = [we for we in data.work_events if we.source == "iterate"]
+    new_from_iterate = sum(we.tests_new for we in iterate_events)
+
+    # Latest test counts
+    latest = data.work_events[-1]
+
+    lines = [
+        "## Summary",
+        "",
+        "| Metric | Value |",
+        "|--------|-------|",
+        f"| Total test checkpoints | {len(data.work_events)} |",
+        f"| Total unit tests (latest) | {latest.tests_passed}/{latest.tests_total} |",
+    ]
+
+    if data.test_runs:
+        last_run = data.test_runs[-1]
+        lines.append(f"| Total E2E tests (latest) | {last_run.e2e_passed}/{last_run.e2e_total} |")
+
+    if new_from_iterate:
+        lines.append(f"| New tests from iterations | +{new_from_iterate} |")
+
+    lines.extend([
+        "",
+        "## Test Progression",
+        "",
+        "| # | Event | Source | New Tests | Suite Total | Result | Date |",
+        "|---|-------|--------|-----------|-------------|--------|------|",
+    ])
+
+    for i, we in enumerate(data.work_events, 1):
+        name = we.section if we.source == "build" else (we.description or we.id)
+        source = we.source
+
+        # New tests display
+        if we.source == "iterate":
+            new_parts = []
+            if we.tests_new:
+                new_parts.append(f"+{we.tests_new}")
+            if we.tests_modified:
+                new_parts.append(f"{we.tests_modified} mod")
+            new_cell = ", ".join(new_parts) if new_parts else "+0"
+        else:
+            new_cell = f"+{we.tests_total}" if we.tests_total > 0 else "—"
+
+        suite = f"{we.tests_passed}/{we.tests_total}" if we.tests_total > 0 else "—"
+        result = "PASS" if we.tests_passed == we.tests_total and we.tests_total > 0 else "FAIL" if we.tests_total > 0 else "—"
+        date = we.timestamp[:10]
+
+        lines.append(f"| {i} | {name} | {source} | {new_cell} | {suite} | {result} | {date} |")
+
+    lines.append("")
+    return lines
+
+
+def _full_suite_runs(data: ComplianceData) -> list[str]:
+    """Full test suite runs from test_run events."""
+    if not data.test_runs:
+        return []
+
+    lines = [
+        "## Full Suite Runs",
+        "",
+        "| Run | Trigger | Unit | Smoke | E2E | Date |",
+        "|-----|---------|------|-------|-----|------|",
+    ]
+
+    for i, tr in enumerate(data.test_runs, 1):
+        unit = f"{tr.unit_passed}/{tr.unit_total}" if tr.unit_total > 0 else "—"
+        smoke = tr.smoke_status or "—"
+        e2e = f"{tr.e2e_passed}/{tr.e2e_total}" if tr.e2e_total > 0 else "—"
+        date = tr.timestamp[:10]
+        trigger = tr.trigger or "—"
+
+        lines.append(f"| {i} | {trigger} | {unit} | {smoke} | {e2e} | {date} |")
+
+    lines.append("")
+    return lines
+
+
+def _code_review_evidence_events(data: ComplianceData) -> list[str]:
+    """Code review evidence from work events."""
+    events_with_review = [we for we in data.work_events if we.review_type]
+    if not events_with_review:
+        return []
+
+    _REVIEW_LABELS = {
+        "full-review": "Full review",
+        "self-review": "Self-review only",
+    }
+
+    lines = [
+        "## Code Review Evidence",
+        "",
+        "| Event | Review Type | Findings | Fixed | Status |",
+        "|-------|------------|----------|-------|--------|",
+    ]
+
+    for we in events_with_review:
+        name = we.section if we.source == "build" else (we.description or we.id)
+        review_label = _REVIEW_LABELS.get(we.review_type, we.review_type)
+        deferred = we.review_findings - we.review_fixed
+        if we.review_type == "self-review" and we.review_findings == 0:
+            status = "PASS"
+        elif deferred == 0:
+            status = "PASS"
+        else:
+            status = "OPEN"
+
+        lines.append(f"| {name} | {review_label} | {we.review_findings} | {we.review_fixed} | {status} |")
+
+    lines.append("")
     return lines
 
 

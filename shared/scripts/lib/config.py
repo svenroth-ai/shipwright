@@ -1,4 +1,4 @@
-"""Config read/write for all shipwright_*_config.json files.
+"""Config read/write for all shipwright_*_config.json files and the event log.
 
 Each skill writes its own config file in the target project root:
   - shipwright_run_config.json
@@ -7,11 +7,12 @@ Each skill writes its own config file in the target project root:
   - shipwright_build_config.json
   - shipwright_compliance_config.json
 
-Config files are the single source of truth for state recovery after
-context compaction or /clear.
+Config files are used for orchestration and resume. The event log
+(shipwright_events.jsonl) is the single source of truth for reporting.
 """
 
 import json
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -22,7 +23,10 @@ CONFIG_FILES = {
     "build": "shipwright_build_config.json",
     "security": "shipwright_security_config.json",
     "compliance": "shipwright_compliance_config.json",
+    "events": "shipwright_events.jsonl",
 }
+
+EVENT_FILE = "shipwright_events.jsonl"
 
 
 def get_config_path(skill: str, project_root: str | Path) -> Path:
@@ -112,3 +116,41 @@ def collect_all_build_sections(project_root: str | Path) -> dict[str, Any]:
         "completed_splits": completed_splits,
         "total_splits": total_splits,
     }
+
+
+# ---------------------------------------------------------------------------
+# Event log
+# ---------------------------------------------------------------------------
+
+def read_events(project_root: str | Path) -> list[dict[str, Any]]:
+    """Read all events from the JSONL log. Tolerant — skips corrupt lines."""
+    path = Path(project_root) / EVENT_FILE
+    if not path.exists():
+        return []
+    events: list[dict[str, Any]] = []
+    for i, line in enumerate(path.open("r", encoding="utf-8")):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            events.append(json.loads(line))
+        except json.JSONDecodeError:
+            warnings.warn(f"Corrupt event at line {i + 1} in {EVENT_FILE}, skipping")
+    return events
+
+
+def apply_amendments(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Apply event_amended entries to their target events."""
+    amendments: dict[str, dict] = {}
+    for e in events:
+        if e.get("type") == "event_amended":
+            amendments[e["amends"]] = e.get("fields", {})
+
+    result: list[dict[str, Any]] = []
+    for e in events:
+        if e.get("type") == "event_amended":
+            continue
+        if e.get("id") in amendments:
+            e = {**e, **amendments[e["id"]]}
+        result.append(e)
+    return result

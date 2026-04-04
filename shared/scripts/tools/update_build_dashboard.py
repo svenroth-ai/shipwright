@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Generate agent_docs/build_dashboard.md from pipeline and build state."""
+"""Generate agent_docs/build_dashboard.md from pipeline state and event log."""
 import argparse, json, os, sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from lib.config import collect_all_build_sections, read_config
+from lib.config import collect_all_build_sections, read_config, read_events
 
 STEP_LABELS = {
     1: "Read spec", 2: "Install deps", 3: "Write tests (red)",
@@ -117,7 +117,13 @@ def generate_dashboard(
     step: int | None = None, detail: str | None = None,
     status: str | None = None, session_id: str | None = None,
 ) -> str:
-    """Generate dashboard markdown content."""
+    """Generate dashboard markdown content. Uses events if available."""
+    # Try event-based generation first
+    event_dashboard = _generate_from_events(project_root, session_id, section, step, detail)
+    if event_dashboard is not None:
+        return event_dashboard
+
+    # Legacy: config-based generation
     run_config = read_config("run", project_root)
     build_info = collect_all_build_sections(project_root)
     sections = build_info["current"]
@@ -194,6 +200,122 @@ def generate_dashboard(
     elif split_done and not all_done:
         lines.append("## Status")
         lines.append(f"Split {current_split} complete. Next: `/shipwright-run` to start next split.")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Event-based dashboard generation
+# ---------------------------------------------------------------------------
+
+def _generate_from_events(project_root: Path, session_id: str | None = None,
+                          section: str | None = None, step: int | None = None,
+                          detail: str | None = None) -> str | None:
+    """Generate dashboard from event log. Returns None if no events exist."""
+    events = read_events(project_root)
+    if not events:
+        return None
+
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    sid = session_id or os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
+
+    work_events = [e for e in events if e.get("type") == "work_completed"]
+    build_events = [e for e in work_events if e.get("source") == "build"]
+    iterate_events = [e for e in work_events if e.get("source") == "iterate"]
+    phase_events = [e for e in events if e.get("type") == "phase_completed"]
+    test_runs = [e for e in events if e.get("type") == "test_run"]
+
+    lines = ["# Project Activity Dashboard", f"> Updated: {now} | Session: {sid}", ""]
+
+    # --- Recent Changes (iterate events, newest first) ---
+    if iterate_events:
+        lines.extend([
+            f"## Recent Changes ({len(iterate_events)} iterations)",
+            "",
+            "| Type | Description | Tests | Commit | FRs | Date |",
+            "|------|-------------|-------|--------|-----|------|",
+        ])
+        for we in reversed(iterate_events):
+            intent = we.get("intent", "change")
+            desc = we.get("description", "—")
+            tests = we.get("tests", {})
+            new_str = f"+{tests.get('new', 0)} new, " if tests.get("new") else ""
+            tests_cell = f"{new_str}{tests.get('passed', 0)}/{tests.get('total', 0)}"
+            commit = we.get("commit", "—")[:7]
+            frs = ", ".join(we.get("affected_frs", [])[:3])
+            date = we.get("ts", "")[:10]
+            lines.append(f"| {intent} | {desc} | {tests_cell} | {commit} | {frs} | {date} |")
+        lines.append("")
+
+    # --- Test Status ---
+    if test_runs:
+        latest = test_runs[-1]
+        layers = latest.get("layers", {})
+        unit = layers.get("unit", {})
+        e2e = layers.get("e2e", {})
+        smoke = layers.get("smoke", {})
+        parts = [f"Last run: {latest.get('ts', '')[:10]}"]
+        if unit:
+            parts.append(f"Unit: {unit.get('passed', 0)}/{unit.get('total', 0)}")
+        if e2e:
+            skipped = e2e.get("total", 0) - e2e.get("passed", 0)
+            e2e_str = f"E2E: {e2e.get('passed', 0)}/{e2e.get('total', 0)}"
+            if skipped:
+                e2e_str += f" ({skipped} skipped)"
+            parts.append(e2e_str)
+        if smoke:
+            parts.append(f"Smoke: {smoke.get('status', '—')}")
+        lines.extend(["## Test Status", " | ".join(parts), ""])
+
+    # --- Pipeline ---
+    if phase_events:
+        completed_phases = {e["phase"] for e in phase_events}
+        lines.extend(["## Pipeline", "", "| Phase | Status | Completed |", "|-------|--------|-----------|"])
+        for phase in PIPELINE_PHASES:
+            if phase in completed_phases:
+                ts = next((e.get("ts", "")[:10] for e in phase_events if e["phase"] == phase), "—")
+                lines.append(f"| {phase} | complete | {ts} |")
+            else:
+                lines.append(f"| {phase} | — | — |")
+        lines.append("")
+
+    # --- Build History ---
+    if build_events:
+        splits_seen: dict[str, list[dict]] = {}
+        for we in build_events:
+            splits_seen.setdefault(we.get("split", "default"), []).append(we)
+
+        lines.append(f"## Build History ({len(build_events)} events)")
+        lines.append("")
+
+        for split_name, secs in splits_seen.items():
+            first_date = secs[0].get("ts", "")[:10] if secs else ""
+            lines.extend([
+                f"### {split_name} ({len(secs)} sections, {first_date})",
+                "",
+                "| Section | Tests | Review | Commit | FRs |",
+                "|---------|-------|--------|--------|-----|",
+            ])
+            for we in secs:
+                tests = we.get("tests", {})
+                tests_cell = f"{tests.get('passed', 0)}/{tests.get('total', 0)}" if tests.get("total") else "—"
+                review = we.get("review", {})
+                review_cell = review.get("type", "—").replace("-review", "")
+                commit = we.get("commit", "—")[:7]
+                frs = ", ".join(we.get("affected_frs", [])[:3])
+                lines.append(f"| {we.get('section', '—')} | {tests_cell} | {review_cell} | {commit} | {frs} |")
+            lines.append("")
+
+    # --- Current Activity ---
+    if section:
+        lines.append("## Current Activity")
+        activity = f"Section: {section}"
+        if step:
+            activity += f" — {STEP_LABELS.get(step, f'step {step}')}"
+        if detail:
+            activity += f" ({detail})"
+        lines.append(activity)
         lines.append("")
 
     return "\n".join(lines)

@@ -226,6 +226,16 @@ Then continue the pipeline — the orchestrator will invoke `/shipwright-plan` f
   - If previous phase is NOT complete → do NOT proceed. Inform user which phase failed and why.
   - This prevents cascading failures (e.g., building from an incomplete plan)
 - Update `shipwright_run_config.json` with progress
+- **Record phase event** in unified event log:
+  ```bash
+  uv run {shared_root}/scripts/tools/record_event.py \
+    --project-root "$(pwd)" --type phase_completed --phase "{completed_phase}"
+  ```
+  For split completions (after all sections of a split are built):
+  ```bash
+  uv run {shared_root}/scripts/tools/record_event.py \
+    --project-root "$(pwd)" --type split_completed --split "{split_name}"
+  ```
 - Update compliance documentation (incremental):
   ```bash
   uv run {compliance_plugin_root}/scripts/tools/update_compliance.py \

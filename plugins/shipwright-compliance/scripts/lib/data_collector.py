@@ -1,8 +1,10 @@
 """Central data aggregator for compliance reporting.
 
-Reads all Shipwright config files, decision logs, git history, and dependency
-manifests from a target project. Returns structured dataclasses consumed by
-all report generators.
+Primary source: shipwright_events.jsonl (unified event log).
+Secondary sources: decision logs, git history, dependency manifests, spec files.
+
+All report generators consume the ComplianceData dataclass returned by
+collect_all().
 """
 
 from __future__ import annotations
@@ -103,17 +105,107 @@ class RequirementInfo:
 
 
 @dataclass
+class WorkEvent:
+    """Unified representation of any work_completed event (build or iterate)."""
+    id: str
+    timestamp: str
+    source: str          # "build" | "iterate"
+    commit: str = ""
+    tests_passed: int = 0
+    tests_total: int = 0
+    affected_frs: list[str] = field(default_factory=list)
+    # Build-specific
+    split: str = ""
+    section: str = ""
+    review_type: str = ""
+    review_findings: int = 0
+    review_fixed: int = 0
+    # Iterate-specific
+    intent: str = ""     # "feature" | "change" | "bug"
+    description: str = ""
+    new_frs: list[str] = field(default_factory=list)
+    tests_new: int = 0
+    tests_modified: int = 0
+    e2e_run: bool = False
+    spec_updated: str = ""
+    adr_id: str = ""
+
+    @classmethod
+    def from_dict(cls, d: dict) -> WorkEvent:
+        tests = d.get("tests", {})
+        review = d.get("review", {})
+        return cls(
+            id=d.get("id", ""),
+            timestamp=d.get("ts", ""),
+            source=d.get("source", ""),
+            commit=d.get("commit", ""),
+            tests_passed=tests.get("passed", 0),
+            tests_total=tests.get("total", 0),
+            affected_frs=d.get("affected_frs", []),
+            split=d.get("split", ""),
+            section=d.get("section", ""),
+            review_type=review.get("type", ""),
+            review_findings=review.get("findings", 0),
+            review_fixed=review.get("fixed", 0),
+            intent=d.get("intent", ""),
+            description=d.get("description", ""),
+            new_frs=d.get("new_frs", []),
+            tests_new=tests.get("new", 0),
+            tests_modified=tests.get("modified", 0),
+            e2e_run=tests.get("e2e_run", False),
+            spec_updated=d.get("spec_updated", ""),
+            adr_id=d.get("adr_id", ""),
+        )
+
+
+@dataclass
+class TestRunEvent:
+    """Full test suite execution from event log."""
+    id: str
+    timestamp: str
+    trigger: str = ""
+    unit_passed: int = 0
+    unit_total: int = 0
+    e2e_passed: int = 0
+    e2e_total: int = 0
+    smoke_status: str = ""
+
+    @classmethod
+    def from_dict(cls, d: dict) -> TestRunEvent:
+        layers = d.get("layers", {})
+        unit = layers.get("unit", {})
+        e2e = layers.get("e2e", {})
+        smoke = layers.get("smoke", {})
+        return cls(
+            id=d.get("id", ""),
+            timestamp=d.get("ts", ""),
+            trigger=d.get("trigger", ""),
+            unit_passed=unit.get("passed", 0),
+            unit_total=unit.get("total", 0),
+            e2e_passed=e2e.get("passed", 0),
+            e2e_total=e2e.get("total", 0),
+            smoke_status=smoke.get("status", ""),
+        )
+
+
+@dataclass
 class ComplianceData:
     project_root: Path
+    # Event-sourced (primary)
+    work_events: list[WorkEvent] = field(default_factory=list)
+    test_runs: list[TestRunEvent] = field(default_factory=list)
+    phase_events: list[dict] = field(default_factory=list)
+    # Legacy (still populated for backward compat during migration)
     configs: dict[str, dict] = field(default_factory=dict)
     splits: list[SplitInfo] = field(default_factory=list)
     sections: list[SectionInfo] = field(default_factory=list)
+    test_results: TestResults | None = None
+    # Shared (unchanged sources)
     decisions: list[DecisionEntry] = field(default_factory=list)
     commits: list[CommitEntry] = field(default_factory=list)
     dependencies: list[DependencyInfo] = field(default_factory=list)
-    test_results: TestResults | None = None
     requirements: list[RequirementInfo] = field(default_factory=list)
-    test_file_map: dict[str, list[str]] = field(default_factory=dict)  # section -> [test file paths]
+    test_file_map: dict[str, list[str]] = field(default_factory=dict)
     timestamp: str = ""
 
 
@@ -660,26 +752,124 @@ def collect_test_files(project_root: Path) -> dict[str, list[str]]:
 
 
 # ---------------------------------------------------------------------------
+# Event log
+# ---------------------------------------------------------------------------
+
+EVENT_FILE = "shipwright_events.jsonl"
+
+
+def _read_event_log(project_root: Path) -> list[dict]:
+    """Read and parse shipwright_events.jsonl. Tolerant of corrupt lines."""
+    import warnings
+
+    path = project_root / EVENT_FILE
+    if not path.exists():
+        return []
+    events: list[dict] = []
+    for i, line in enumerate(path.open("r", encoding="utf-8")):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            events.append(json.loads(line))
+        except json.JSONDecodeError:
+            warnings.warn(f"Corrupt event at line {i + 1} in {EVENT_FILE}, skipping")
+    return events
+
+
+def _apply_amendments(events: list[dict]) -> list[dict]:
+    """Apply event_amended entries to their target events."""
+    amendments: dict[str, dict] = {}
+    for e in events:
+        if e.get("type") == "event_amended":
+            amendments[e["amends"]] = e.get("fields", {})
+
+    result: list[dict] = []
+    for e in events:
+        if e.get("type") == "event_amended":
+            continue
+        if e.get("id") in amendments:
+            e = {**e, **amendments[e["id"]]}
+        result.append(e)
+    return result
+
+
+def collect_events(project_root: Path) -> tuple[list[WorkEvent], list[TestRunEvent], list[dict]]:
+    """Collect events from the unified event log.
+
+    Returns (work_events, test_runs, phase_events).
+    """
+    raw = _read_event_log(project_root)
+    if not raw:
+        return [], [], []
+
+    raw = _apply_amendments(raw)
+
+    work_events = [WorkEvent.from_dict(e) for e in raw if e.get("type") == "work_completed"]
+    test_runs = [TestRunEvent.from_dict(e) for e in raw if e.get("type") == "test_run"]
+    phase_events = [e for e in raw if e.get("type") in ("phase_started", "phase_completed", "split_completed")]
+
+    return work_events, test_runs, phase_events
+
+
+def _map_requirements_to_events(
+    requirements: list[RequirementInfo],
+    work_events: list[WorkEvent],
+) -> None:
+    """Map requirements to work events via affected_frs field."""
+    fr_to_events: dict[str, list[str]] = {}
+    for we in work_events:
+        for fr_id in we.affected_frs:
+            fr_to_events.setdefault(fr_id, []).append(
+                we.section if we.source == "build" else we.id
+            )
+
+    for req in requirements:
+        event_refs = fr_to_events.get(req.id, [])
+        if event_refs:
+            req.sections = event_refs
+
+
+# ---------------------------------------------------------------------------
 # Main collector
 # ---------------------------------------------------------------------------
 
 def collect_all(project_root: Path) -> ComplianceData:
-    """Collect all compliance-relevant data from a project."""
+    """Collect all compliance-relevant data from a project.
+
+    Primary source: shipwright_events.jsonl (if exists).
+    Falls back to config files for legacy fields.
+    """
     project_root = Path(project_root).resolve()
 
+    # Event-sourced data
+    work_events, test_runs, phase_events = collect_events(project_root)
+
+    # Legacy data (still populated for generators not yet migrated)
     sections = collect_sections(project_root)
+
     requirements = collect_requirements(project_root)
-    _map_requirements_to_sections(requirements, sections)
+    # Map requirements: prefer event-based mapping if events exist
+    if work_events:
+        _map_requirements_to_events(requirements, work_events)
+    else:
+        _map_requirements_to_sections(requirements, sections)
 
     return ComplianceData(
         project_root=project_root,
+        # Event-sourced
+        work_events=work_events,
+        test_runs=test_runs,
+        phase_events=phase_events,
+        # Legacy
         configs=collect_configs(project_root),
         splits=collect_splits(project_root),
         sections=sections,
+        test_results=collect_test_results(project_root),
+        # Shared
         decisions=collect_decision_log(project_root),
         commits=collect_git_history(project_root),
         dependencies=collect_dependencies(project_root),
-        test_results=collect_test_results(project_root),
         requirements=requirements,
         test_file_map=collect_test_files(project_root),
         timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),

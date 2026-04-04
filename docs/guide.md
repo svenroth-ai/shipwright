@@ -60,8 +60,8 @@ Shipwright follows nine design principles that shape every decision in the pipel
 2. **DEV auto, PROD manual.** Development deploys happen automatically for fast feedback. Production deploys always require explicit confirmation.
 3. **Every skill works standalone.** The orchestrator coordinates the pipeline, but each skill (project, plan, build, test, etc.) can be invoked independently.
 4. **Test-first.** Shipwright follows TDD with IREB acceptance criteria, producing testable specifications from day one.
-5. **Iteration is first-class.** `/shipwright-iterate` is designed for daily workflow after the initial build -- quick changes with minimal overhead.
-6. **Resume anywhere.** All pipeline state is file-based. You can interrupt a run, close your session, and resume exactly where you left off.
+5. **All work is tracked uniformly.** Build sections and iterate changes are events in the same append-only log (`shipwright_events.jsonl`). The initial build is just the first batch of events. `/shipwright-iterate` is designed for daily workflow after the initial build -- quick changes with minimal overhead.
+6. **Resume anywhere.** All pipeline state is file-based. The event log is the single source of truth for what happened, when, and with what test results. You can interrupt a run, close your session, and resume exactly where you left off.
 7. **Migration safety.** Destructive database changes (DROP TABLE, DROP COLUMN) always require explicit confirmation before execution.
 8. **Linters over instructions.** Mechanical enforcement through hooks beats advisory prose. Hooks block dangerous actions deterministically rather than relying on the agent to follow written rules.
 9. **Progressive disclosure.** CLAUDE.md stays lean (around 200 lines). Detailed architecture docs, conventions, and decision logs live in `agent_docs/`.
@@ -459,6 +459,7 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 
 - Production code and test files as specified in the section plan
 - A git commit on a feature branch (`{project-slug}/NN-name`) using Conventional Commits format
+- A `work_completed` event in `shipwright_events.jsonl` (commit hash, test results, affected FRs, review data)
 - Updated `agent_docs/decision_log.md` with implementation decisions
 - Updated `agent_docs/build_dashboard.md` with progress tracking
 - `agent_docs/session_handoff.md` (generated on context pressure or phase completion)
@@ -665,14 +666,15 @@ No flags or arguments. It reads existing pipeline data and generates (or updates
 
 **What it needs:**
 
-- At least some Shipwright pipeline data in the project root (config files like `shipwright_run_config.json`, `shipwright_project_config.json`, `shipwright_build_config.json`, etc.)
+- `shipwright_events.jsonl` -- The unified event log is the primary data source for all compliance reports. Each build section, iterate change, test run, and phase transition is a JSON event.
 - A git repository (for change history and commit data)
 - Dependency manifests (`package.json` or `pyproject.toml`) for SBOM generation
+- Planning specs (`planning/*/spec.md`) for requirement extraction
 
 **What it produces:**
 
-- `compliance/dashboard.md` -- The starting point. A high-level overview with Mermaid diagrams showing pipeline status, phase completion, and key metrics.
-- `compliance/traceability-matrix.md` -- Maps requirements (splits) through plan sections to implementation, tests, and commits. This is the core artifact for proving that every requirement was addressed.
+- `compliance/dashboard.md` -- The starting point. Quality indicators, project velocity, and links to all compliance artifacts.
+- `compliance/traceability-matrix.md` -- Maps every requirement to the work events (build sections and iterate changes) that verify it, with a "Last Verified" column showing when each requirement was last tested.
 - `compliance/test-evidence.md` -- Collects test results across all layers (unit, smoke, E2E) with pass/fail counts and skip reasons. Provides evidence that the software was tested.
 - `compliance/change-history.md` -- Documents all commits, decisions (from `agent_docs/decision_log.md`), and version tags. Shows who changed what and why.
 - `compliance/sbom.md` -- Software Bill of Materials listing all dependencies with versions and license types. Flags copyleft licenses that may have legal implications.
@@ -939,11 +941,11 @@ After the initial pipeline completes, ongoing changes use `/shipwright-iterate` 
 
 | Intent | Flow | Artifacts Updated |
 |--------|------|-------------------|
-| **Feature** | Interview --> Mini-Spec --> [Design] --> Build+Tests --> ADR --> Commit | New FRs, ADR, optional mockup |
-| **Change** | Interview --> Spec Delta --> [Design] --> Build+Tests --> ADR --> Commit | Updated FRs, ADR |
-| **Bug** | Reproduce --> Impact --> Fix --> Test Update --> Commit | Regression test, optional ADR |
+| **Feature** | Interview --> Mini-Spec --> [Design] --> Build+Tests --> ADR --> Commit --> Event | New FRs, ADR, event log, compliance |
+| **Change** | Interview --> Spec Delta --> [Design] --> Build+Tests --> ADR --> Commit --> Event | Updated FRs, ADR, event log, compliance |
+| **Bug** | Reproduce --> Impact --> Fix --> Test Update --> Commit --> Event | Regression test, optional ADR, event log, compliance |
 
-Each path runs tests automatically (vitest + tsc + affected E2E) and creates a conventional commit with FR references.
+Each path runs tests automatically (vitest + tsc + affected E2E), creates a conventional commit with FR references, records a `work_completed` event in the event log, and triggers incremental compliance report updates.
 
 ### Drift Check
 
@@ -956,7 +958,7 @@ Use `/shipwright-sync --check` to verify all artifacts are in sync. This is a re
 | **When** | New project or major extension | Daily changes, bug fixes, small features |
 | **Pipeline** | Full 8-phase SDLC | Lean 3-path mini-process |
 | **Duration** | Hours | Minutes |
-| **Artifacts** | All created from scratch | Existing artifacts updated incrementally |
+| **Artifacts** | All created from scratch | Same event log, incrementally |
 
 ---
 
@@ -1033,8 +1035,8 @@ The `agent_docs/` directory is the project's knowledge base for AI agents. Its c
 | `conventions.md` | Code patterns, naming, git workflow, component examples | `/shipwright-project` |
 | `decision_log.md` | Architecture Decision Records (ADR format) | All phases |
 | `current_sprint.md` | Active split, section status table, blockers | `/shipwright-plan`, `/shipwright-build` |
-| `session_handoff.md` | Recovery document: current state, next steps, config files to read | Auto-generated on context pressure or session end |
-| `build_dashboard.md` | Pipeline progress: phase status, split summary, test results | Updated after every phase |
+| `session_handoff.md` | Recovery document: last events, git state, resume instructions | Auto-generated on context pressure or session end |
+| `build_dashboard.md` | Project activity: recent changes, test status, pipeline, build history | Updated after every phase and iterate |
 | `compliance_overrides.log` | Audit log of hook overrides | Hooks (when user says "Continue anyway") |
 
 ### CLAUDE.md
@@ -1052,19 +1054,23 @@ The project master document, generated during `/shipwright-project`. It stays le
 
 Each decision record follows the ADR template: Status, Context, Decision, Consequences (including rejected alternatives). Profile-level decisions (stack, auth pattern, folder structure) are implicit in the stack profile. Only project-specific decisions go in the log.
 
-### Build Dashboard
+### Event Log
 
-A Markdown file showing pipeline progress. After each phase, the dashboard updates with phase status (pending/in-progress/complete), split summary tables (after build), and test layer results (after test: unit/smoke/e2e with pass/fail counts).
+`shipwright_events.jsonl` is an append-only JSONL file in the project root. Every build section, iterate change, test run, and phase transition is recorded as a JSON event. This is the single source of truth for all compliance reports and the activity dashboard. Events are never edited -- corrections use `event_amended` entries that reference the original event's ID.
+
+### Project Activity Dashboard
+
+`agent_docs/build_dashboard.md` shows the project's current state, derived from the event log. The most recent changes appear at the top (newest first), followed by test status, pipeline progress, and build history grouped by split. This is the first file an agent reads to understand what has happened and what to do next.
 
 ### Compliance Reports
 
-The `/shipwright-compliance` skill generates audit-ready documentation:
+The `/shipwright-compliance` skill generates audit-ready documentation from the event log:
 
 | Report | Contents |
 |--------|----------|
-| **Compliance Dashboard** | Pipeline status with Mermaid diagrams, phase coverage summary |
-| **Requirements Traceability Matrix (RTM)** | Maps every requirement to its spec, implementation section, test, and commit |
-| **Test Evidence** | Test results by layer (unit, smoke, E2E) with pass/fail counts and skip reasons |
+| **Compliance Dashboard** | Quality indicators from events, project velocity, links to all artifacts |
+| **Requirements Traceability Matrix (RTM)** | Maps every requirement to work events that verify it, with "Last Verified" timestamps |
+| **Test Evidence** | Test progression timeline showing how the test suite evolved over time |
 | **Change History** | Conventional Commits mapped to requirements, with commit hashes and timestamps |
 | **SBOM (Software Bill of Materials)** | Dependencies with versions, extracted from `package.json` / `package-lock.json` |
 
@@ -1086,6 +1092,9 @@ Compliance is updated incrementally after each pipeline phase, so reports reflec
 | Deploy fails with auth error | Jelastic token expired or invalid | Generate a new token in the Infomaniak Jelastic Dashboard under Settings > Access Tokens. |
 | Security phase skipped | `AIKIDO_CLIENT_ID` not set | Add `AIKIDO_CLIENT_ID` and `AIKIDO_CLIENT_SECRET` to `.env.local`. The security phase is conditional on this variable. |
 | Build hangs after multiple fix attempts | Agent stuck in a debugging loop | The constitution limits retries to 3 attempts, then escalates. If it still loops, type "stop" and review the error manually. |
+| Invalid JSON in `shipwright_events.jsonl` | Interrupted write or manual editing | Run `uv run shared/scripts/tools/validate_event_log.py --project-root .` -- the reader skips corrupt lines automatically, but the validator will identify them. |
+| Commit exists but no event recorded | Agent crashed after commit but before event recording | Run `validate_event_log.py` -- it checks git history against events and reports unmatched commits. |
+| Compliance reports empty after update | Event log missing or no events | Ensure `shipwright_events.jsonl` exists. For existing projects, run `uv run shared/scripts/tools/convert_configs_to_events.py --project-root .` to migrate from config files. |
 
 ---
 
@@ -1146,12 +1155,15 @@ Or read `CHANGELOG.md` in the repository root for release notes.
 | Term | Definition |
 |------|-----------|
 | **Split** | A shippable chunk of functionality within a larger project. Shipwright decomposes projects into splits during the project phase. Each split gets its own spec, plan, and build cycle. |
-| **Section** | The smallest unit of implementation within a split. Each section maps to a single Conventional Commit. Sections are defined during the plan phase and built sequentially. |
+| **Section** | The smallest unit of implementation within a split. Each section maps to a single Conventional Commit and produces a `work_completed` event in the event log. Sections are defined during the plan phase and built sequentially. |
+| **Event Log** | An append-only JSONL file (`shipwright_events.jsonl`) recording every significant action in the project: section completions, iterate changes, test runs, and phase transitions. All compliance reports and the activity dashboard are derived from this log. |
+| **Work Event** | A `work_completed` entry in the event log. Represents any unit of verified work -- whether a build section or an iterate change. Contains the commit hash, test results, affected requirements, and review data. |
+| **Event Amendment** | A correction entry (`event_amended`) that references a previous event's ID and provides corrected field values. Preserves log immutability while allowing data fixes. |
 | **Stack Profile** | A JSON file defining the complete technology stack: runtime versions, libraries, folder structure, deployment target, CI pipeline, and architecture rules. Stored in `shared/profiles/`. |
 | **Hook** | A Python or shell script that fires on Claude Code events (session start, before/after tool use, session end). Hooks enforce safety rules programmatically -- blocking dangerous commands, scanning for secrets, detecting destructive migrations. |
 | **Constitution** | The governing document (`shared/constitution.md`) defining ALWAYS, ASK FIRST, and NEVER rules for all Shipwright agents. Hooks enforce a subset; the constitution covers the complete set. |
 | **Phase Validator** | A function that runs before marking a pipeline phase complete. Checks that required artifacts exist (specs, section files, test results). Returns issues with severity ASK (blocks until user confirms) or INFORM (logs and continues). |
-| **RTM (Requirements Traceability Matrix)** | A compliance report mapping every requirement to its specification, implementation section, test, and commit. Proves that all requirements were implemented and tested. |
+| **RTM (Requirements Traceability Matrix)** | A compliance report mapping every requirement to work events that verify it, with "Last Verified" timestamps. Proves that all requirements were implemented and tested. |
 | **SBOM (Software Bill of Materials)** | A compliance report listing all project dependencies with their versions, extracted from `package.json` and `package-lock.json`. Used for supply chain auditing. |
 | **ADR (Architecture Decision Record)** | A structured log entry documenting an architecture decision: status, context, decision, and consequences (including rejected alternatives). Stored in `agent_docs/decision_log.md`. |
 | **Conventional Commits** | A commit message format (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`) that enables automated changelog generation and semantic versioning. |

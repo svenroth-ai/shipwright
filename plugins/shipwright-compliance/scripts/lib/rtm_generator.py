@@ -1,8 +1,8 @@
 """Requirements Traceability Matrix generator.
 
 Produces compliance/traceability-matrix.md mapping:
-  Requirements → Sections → Commits → Test Results (Unit + E2E)
-with clickable links to spec files, section plans, and test files.
+  Requirements → Work Events (sections + iterations) → Test Results
+with clickable links to spec files and verification timeline.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from scripts.lib.data_collector import ComplianceData, SectionInfo
+    from scripts.lib.data_collector import ComplianceData, SectionInfo, WorkEvent
 
 
 def generate(data: ComplianceData) -> str:
@@ -24,14 +24,16 @@ def generate(data: ComplianceData) -> str:
         "",
     ]
 
-    # --- Requirements Coverage Matrix ---
-    lines.extend(_requirements_coverage(data))
-
-    # --- Section Traceability ---
-    lines.extend(_section_traceability(data))
-
-    # --- Coverage Summary ---
-    lines.extend(_coverage_summary(data))
+    # Use event-based generation if events exist
+    if data.work_events:
+        lines.extend(_requirements_coverage_events(data))
+        lines.extend(_verification_timeline(data))
+        lines.extend(_coverage_summary_events(data))
+    else:
+        # Legacy fallback
+        lines.extend(_requirements_coverage(data))
+        lines.extend(_section_traceability(data))
+        lines.extend(_coverage_summary(data))
 
     return "\n".join(lines) + "\n"
 
@@ -260,6 +262,173 @@ def _coverage_summary(data: ComplianceData) -> list[str]:
     # Review findings
     total_findings = sum(s.review_findings for s in data.sections)
     unresolved = sum(s.review_findings - s.review_findings_fixed for s in data.sections)
+    lines.extend([
+        f"| Total review findings | {total_findings} |",
+        f"| Unresolved findings | {unresolved} |",
+    ])
+
+    lines.append("")
+    return lines
+
+
+# ---------------------------------------------------------------------------
+# Event-based generation
+# ---------------------------------------------------------------------------
+
+def _requirements_coverage_events(data: ComplianceData) -> list[str]:
+    """Requirements coverage from work events with Last Verified column."""
+    if not data.requirements:
+        return []
+
+    # Build FR → events mapping
+    fr_events: dict[str, list[WorkEvent]] = {}
+    for we in data.work_events:
+        for fr_id in we.affected_frs:
+            fr_events.setdefault(fr_id, []).append(we)
+
+    e2e_by_split = _collect_e2e_coverage_by_split(data.project_root)
+
+    lines = [
+        "## Requirements Coverage",
+        "",
+        "| Requirement | Title | Priority | Verified By | Tests | Last Verified | Status |",
+        "|-------------|-------|----------|-------------|-------|---------------|--------|",
+    ]
+
+    for req in data.requirements:
+        anchor = _make_anchor(req.id)
+        req_link = f"[{req.id}](../{req.spec_path}#{anchor})"
+        display_text = req.text[:60] + ("..." if len(req.text) > 60 else "")
+
+        events = fr_events.get(req.id, [])
+        if events:
+            # Verified-by: section names for build, event IDs for iterate
+            refs = []
+            for we in events:
+                if we.source == "build" and we.section:
+                    refs.append(we.section)
+                else:
+                    refs.append(we.id)
+            verified_cell = ", ".join(refs[:4])
+            if len(refs) > 4:
+                verified_cell += f" +{len(refs) - 4}"
+
+            # Test progression: first → latest
+            first_tests = f"{events[0].tests_passed}/{events[0].tests_total}"
+            last_tests = f"{events[-1].tests_passed}/{events[-1].tests_total}"
+            if first_tests != last_tests:
+                tests_cell = f"{first_tests} → {last_tests}"
+            else:
+                tests_cell = last_tests
+
+            # Last verified timestamp
+            last_ts = events[-1].timestamp[:10]
+            source_tag = "iter" if events[-1].source == "iterate" else "build"
+            last_verified = f"{last_ts} ({source_tag})"
+
+            # Status
+            all_passing = all(we.tests_passed == we.tests_total and we.tests_total > 0 for we in events)
+            has_tests = any(we.tests_total > 0 for we in events)
+            if has_tests and all_passing:
+                status = "COVERED"
+            elif has_tests:
+                status = "FAIL"
+            else:
+                status = "NO TESTS"
+        else:
+            verified_cell = "—"
+            tests_cell = "—"
+            last_verified = "—"
+            status = "NOT VERIFIED"
+
+        lines.append(
+            f"| {req_link} | {display_text} | {req.priority} "
+            f"| {verified_cell} | {tests_cell} | {last_verified} | {status} |"
+        )
+
+    lines.append("")
+    return lines
+
+
+def _verification_timeline(data: ComplianceData) -> list[str]:
+    """Chronological timeline of all work events verifying requirements."""
+    if not data.work_events:
+        return []
+
+    lines = [
+        "## Verification Timeline",
+        "",
+        "| Event | Source | Type | FRs | Tests | Commit | Date |",
+        "|-------|--------|------|-----|-------|--------|------|",
+    ]
+
+    for we in data.work_events:
+        name = we.section if we.source == "build" else (we.description or we.id)
+        source = we.source
+        event_type = "section" if we.source == "build" else (we.intent or "change")
+        frs = ", ".join(we.affected_frs[:3])
+        if len(we.affected_frs) > 3:
+            frs += f" +{len(we.affected_frs) - 3}"
+        tests = f"{we.tests_passed}/{we.tests_total}" if we.tests_total > 0 else "—"
+        commit = we.commit[:7] if we.commit else "—"
+        date = we.timestamp[:10]
+
+        lines.append(f"| {name} | {source} | {event_type} | {frs} | {tests} | {commit} | {date} |")
+
+    lines.append("")
+    return lines
+
+
+def _coverage_summary_events(data: ComplianceData) -> list[str]:
+    """Coverage summary from events."""
+    lines = ["## Coverage Summary", ""]
+
+    build_events = [we for we in data.work_events if we.source == "build"]
+    iterate_events = [we for we in data.work_events if we.source == "iterate"]
+
+    splits_seen = set(we.split for we in build_events if we.split)
+
+    lines.extend([
+        "| Metric | Value |",
+        "|--------|-------|",
+        f"| Total splits built | {len(splits_seen)} |",
+        f"| Build sections | {len(build_events)} |",
+        f"| Iterate changes | {len(iterate_events)} |",
+    ])
+
+    # Requirements coverage
+    if data.requirements:
+        total_reqs = len(data.requirements)
+        must_reqs = [r for r in data.requirements if r.priority == "Must"]
+        verified = [r for r in data.requirements if r.sections]
+        verified_must = [r for r in must_reqs if r.sections]
+
+        lines.extend([
+            f"| Requirements total | {total_reqs} |",
+            f"| Requirements verified | {len(verified)}/{total_reqs} |",
+            f"| Must-have verified | {len(verified_must)}/{len(must_reqs)} |",
+        ])
+
+        unverified = [r for r in data.requirements if not r.sections]
+        if unverified:
+            lines.extend(["", "### Not Verified", ""])
+            for req in unverified:
+                lines.append(f"- [{req.id}](../{req.spec_path}) ({req.priority}): {req.text[:80]}...")
+
+    # Last test run
+    if data.test_runs:
+        latest = data.test_runs[-1]
+        lines.append(f"| Last full test run | {latest.timestamp[:10]} (Unit: {latest.unit_passed}/{latest.unit_total}, E2E: {latest.e2e_passed}/{latest.e2e_total}) |")
+
+    # E2E coverage
+    e2e_by_split = _collect_e2e_coverage_by_split(data.project_root)
+    total_e2e_specs = sum(s.get("specs", 0) for s in e2e_by_split.values())
+    if total_e2e_specs:
+        lines.append(f"| E2E specs | {total_e2e_specs} |")
+
+    # Review findings from events
+    total_findings = sum(we.review_findings for we in data.work_events)
+    unresolved = sum(we.review_findings - we.review_fixed for we in data.work_events)
     lines.extend([
         f"| Total review findings | {total_findings} |",
         f"| Unresolved findings | {unresolved} |",
