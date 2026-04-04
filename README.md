@@ -190,6 +190,14 @@ uv run pytest plugins/shipwright-project/tests/ -v
 uv run pytest integration-tests/ -v
 ```
 
+## Integrated Learnings
+
+Shipwright incorporates insights from three external sources that shaped its architecture and quality practices:
+
+- **[Agent Skills](https://github.com/addyosmani/agent-skills) — Addy Osmani** — 5-axis code review framework, anti-rationalization tables, performance and simplification patterns as reference docs
+- **[Claude Architect Certification](https://www.anthropic.com/certification) — Anthropic** — Constitution-driven ALWAYS/ASK FIRST/NEVER boundaries, progressive disclosure, subagent delegation with minimal tool sets
+- **Claude Code Source Code Leak** — Hook-based mechanical enforcement over advisory prose, context pressure management with checkpoint-and-resume, session handoff protocol for multi-session workflows
+
 ## Upstream
 
 Shipwright builds on the [Deep Trilogy](https://github.com/piercelamb) by Pierce Lamb:
