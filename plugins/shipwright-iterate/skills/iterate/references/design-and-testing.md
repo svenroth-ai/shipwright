@@ -132,6 +132,10 @@ After code-level fidelity passes:
    uv run {test_plugin_root}/scripts/lib/visual_compare.py \
      --cwd "{project_root}" --base-url "http://localhost:{port}"
    ```
+   Use `--screen` flag to filter to specific screens when only certain screens are relevant:
+   ```bash
+   uv run ... --screen 01-login.html --screen 02-register.html
+   ```
 
 2. Group failures by root cause:
    | Root Cause | Example | Fix Scope |
@@ -141,22 +145,24 @@ After code-level fidelity passes:
    | **Missing components** | No logo, no stats section | Individual pages/components |
    | **Spacing/shadows/radius** | Wrong padding, no shadow | Tailwind classes, globals.css |
 
-3. Fix loop per group (max 3 retries per group):
+3. Fix loop per group (max 3 retries per group, max 8 total):
    a. Read mockup + live screenshots for representative screen
    b. Inspect DOM/classes FIRST, then targeted fix
    c. Re-run visual_compare.py for this group's screens
    d. If fix works: commit with `fix(visual): {description}`
-   e. If same issue persists after 3 attempts: park it
+   e. If same issue persists after 3 attempts: **revert uncommitted changes**, park it with diagnosis
 
 4. After all groups:
-   - Report summary (fixed vs parked groups)
+   - Report summary (fixed vs parked groups with diagnosis)
    - ASK user for direction on parked groups
    - Each successful group fix gets its own commit
+
+> **Note on full pipeline:** In `/shipwright-build`, visual comparison runs per-section with root-cause grouping (same taxonomy, same fix loop). In `/shipwright-test`, visual comparison runs as a regressions-only safety net — it triages screens against `visual-build-report.json` and only fixes regressions (screens that passed in build but now fail) and persistent failures. Iterate does NOT use this two-phase split — visual comparison happens once (Step 12) with the full fix loop above.
 
 ### Escalation
 If still mismatched after fix loops:
 - Mark `visual_fidelity: "partial"` in test results
-- Log warning, continue (do NOT hard-fail)
+- Log warning with diagnosis per parked group, continue (do NOT hard-fail)
 
 ### Skip When
 No UI structural change, text/color-only tweaks, logic-only fixes.

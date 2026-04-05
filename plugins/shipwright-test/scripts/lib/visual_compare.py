@@ -3,9 +3,11 @@
 
 Usage:
     uv run visual_compare.py --cwd <project_root> [--base-url http://localhost:3000]
+    uv run visual_compare.py --cwd <project_root> --screen 01-login.html --screen 02-register.html
 
 Reads designs/screen-routes.json for mockup-to-route mapping.
 Supports authenticated routes via "auth" field (member/student/admin).
+Use --screen (repeatable) to filter to specific screens (e.g. per build section).
 Outputs designs/visual-comparison/index.html with side-by-side pairs.
 Returns JSON with comparison results.
 """
@@ -208,8 +210,20 @@ def _generate_comparison_html(comparisons: list[dict], output_dir: Path) -> Path
     return output_path
 
 
-def run_visual_comparison(project_root: Path, base_url: str = "http://localhost:3000") -> dict:
-    """Run visual comparison and return results."""
+def run_visual_comparison(
+    project_root: Path,
+    base_url: str = "http://localhost:3000",
+    screens: list[str] | None = None,
+) -> dict:
+    """Run visual comparison and return results.
+
+    Args:
+        project_root: Path to the project root directory.
+        base_url: Base URL of the live application.
+        screens: Optional list of screen filenames to compare (e.g. ["01-login.html"]).
+                 When provided, only these screens are compared. When None, all screens
+                 from screen-routes.json are compared.
+    """
     routes_path = project_root / "designs" / "screen-routes.json"
     if not routes_path.exists():
         return {
@@ -233,6 +247,24 @@ def run_visual_comparison(project_root: Path, base_url: str = "http://localhost:
             "skip_reason": "screen-routes.json is empty",
             "comparisons": [], "report_path": "",
         }
+
+    # Filter to requested screens if specified
+    if screens is not None:
+        available = set(routes.keys())
+        requested = set(screens)
+        missing = requested - available
+        if missing:
+            return {
+                "passed": 0, "total": 0, "skipped": False,
+                "skip_reason": "",
+                "comparisons": [],
+                "report_path": "",
+                "error": (
+                    f"Requested screens not found in screen-routes.json: "
+                    f"{sorted(missing)}. Available: {sorted(available)}"
+                ),
+            }
+        routes = {k: v for k, v in routes.items() if k in requested}
 
     # Load env for auth (from .env.local via @next/env or OS env)
     _load_env_local(project_root)
@@ -311,9 +343,28 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Visual comparison: mockup vs live")
     parser.add_argument("--cwd", required=True, help="Project root directory")
     parser.add_argument("--base-url", default="http://localhost:3000", help="Live app base URL")
+    parser.add_argument(
+        "--screen", action="append", dest="screens", metavar="FILENAME",
+        help="Screen filename to compare (repeatable, e.g. --screen 01-login.html --screen 02-register.html). "
+             "When omitted, all screens from screen-routes.json are compared.",
+    )
     args = parser.parse_args()
 
-    result = run_visual_comparison(Path(args.cwd).resolve(), args.base_url)
+    # Validate --screen args are non-empty strings
+    screens = args.screens
+    if screens is not None:
+        screens = [s.strip() for s in screens if s.strip()]
+        if not screens:
+            print(json.dumps({"error": "--screen flag provided but no valid screen names given"}))
+            return 1
+
+    result = run_visual_comparison(Path(args.cwd).resolve(), args.base_url, screens=screens)
+
+    # Non-zero exit if --screen was used but resulted in an error
+    if result.get("error"):
+        print(json.dumps(result, indent=2))
+        return 1
+
     print(json.dumps(result, indent=2))
     return 0
 
