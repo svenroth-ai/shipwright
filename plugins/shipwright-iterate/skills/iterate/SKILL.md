@@ -278,6 +278,8 @@ Go to **Finalization** below.
 
 ## Finalization (all paths)
 
+**CRITICAL: Steps F1–F9 are MANDATORY. Do NOT skip any step. F9 will fail if F5 was skipped.**
+
 ### F1: Drift Check
 
 Run artifact sync to verify specs match code:
@@ -306,7 +308,27 @@ uv run {shared_root}/scripts/tools/write_decision_log.py \
   --project-root "{project_root}"
 ```
 
-### F3: Commit (Conventional Commits)
+**If the change introduces a new architectural pattern** (component, service, data flow) or a new convention, add `--architecture-impact component|data-flow|convention`. This auto-updates `agent_docs/architecture.md` or `agent_docs/conventions.md`.
+
+### F3: Update CHANGELOG.md
+
+Add the iterate change to the `[Unreleased]` section in `CHANGELOG.md`. Determine the changelog section from the commit type:
+
+- `feat` → **Added**
+- `fix` → **Fixed**
+- `refactor` → **Changed**
+
+If `CHANGELOG.md` does not exist, create it with the standard Keep-a-Changelog header.
+
+Append the entry under `## [Unreleased]` in the appropriate subsection:
+```
+### {Added|Fixed|Changed}
+- **{scope}:** {description}
+```
+
+Stage the updated CHANGELOG.md so it is included in the commit (F4).
+
+### F4: Commit (Conventional Commits)
 
 Stage and commit with the appropriate type:
 
@@ -323,38 +345,78 @@ git commit -m "<type>(<scope>): <description>
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
-### F3.5: Record Event
+### F5: Record Event
 
 After the commit succeeds, record the work event in the unified event log. Use the EXACT values from this iteration — do not use placeholder braces. Pick one intent value: `feature`, `change`, or `bug`. Parse the vitest summary line (`Tests: 47 passed, 47 total`) for the test counts. Omit `--new-frs` and `--spec-updated` if not applicable. The `--deduplicate-by-commit` flag prevents duplicate events if this step is retried.
 
 ```bash
-# Example for a feature iteration:
 uv run {shared_root}/scripts/tools/record_event.py \
   --project-root "{project_root}" \
   --type work_completed --source iterate \
-  --intent feature \
-  --description "Add course filtering by category" \
+  --intent {feature|change|bug} \
+  --description "{short_description}" \
   --commit "$(git rev-parse HEAD)" \
-  --affected-frs "FR-02.08" \
-  --new-frs "FR-02.08" \
-  --spec-updated "planning/02-course-platform/spec.md" \
-  --tests-new 3 --tests-passed 47 --tests-total 47 \
+  --affected-frs "{comma_separated_FRs}" \
+  --tests-passed {N} --tests-total {N} \
   --e2e-run false \
-  --adr-id "ADR-055" \
+  --adr-id "ADR-{NNN}" \
   --deduplicate-by-commit
 ```
 
-### F3.7: Update Compliance
+Optional flags (add when applicable):
+- `--new-frs "FR-XX.XX"` — if new FRs were added to the spec
+- `--spec-updated "planning/XX/spec.md"` — if a spec file was modified
+- `--tests-new {N}` — if new tests were added (not just modified)
+- `--tests-modified {N}` — if existing tests were updated
 
-Trigger incremental compliance report regeneration:
+### F6: Update Compliance
+
+Trigger incremental compliance report regeneration. This updates: traceability matrix, test evidence, change history, SBOM, and compliance dashboard.
 
 ```bash
 uv run {shared_root}/../../plugins/shipwright-compliance/scripts/tools/update_compliance.py \
   --project-root "{project_root}" --phase iterate
 ```
 
-### F4: Print Summary
+### F7: Update Build Dashboard
 
+Update the build dashboard with the iterate event:
+
+```bash
+uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+  --project-root "{project_root}" \
+  --phase iterate \
+  --detail "{type}: {short_description}"
+```
+
+### F8: Merge & Push
+
+Merge the iterate branch into the main branch and push:
+
+```bash
+main_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "master")
+git checkout "$main_branch"
+git merge iterate/{short-description}
+git push origin "$main_branch"
+```
+
+### F9: Verify & Print Summary
+
+**Gate check:** Verify that F5 (Record Event) was executed. If the gate fails, go back and run F5.
+
+```bash
+grep "$(git rev-parse HEAD)" "{project_root}/shipwright_events.jsonl" > /dev/null 2>&1
+```
+
+If the grep fails (exit code != 0), print this error and STOP:
+```
+================================================================================
+ERROR: F5 (Record Event) was skipped.
+Run record_event.py for this commit before printing the summary.
+================================================================================
+```
+
+If the grep succeeds, print the summary:
 ```
 ================================================================================
 SHIPWRIGHT-ITERATE COMPLETE
@@ -362,15 +424,15 @@ SHIPWRIGHT-ITERATE COMPLETE
 Type:       {FEATURE | CHANGE | BUG}
 Branch:     iterate/{short-description}
 Commit:     {commit_hash}
-Event:      {event_id from F3.5 output}
+Event:      {event_id from F5 output}
 Tests:      {N} passing
 Specs:      {updated | no changes needed}
 ADR:        Logged in decision_log.md
-
-Next steps:
-  1. Review: git diff main..iterate/{short-description}
-  2. Merge:  git checkout main && git merge iterate/{short-description}
-  3. Push:   git push origin main
+CHANGELOG:  Updated ([Unreleased])
+Compliance: Updated (RTM, test evidence, change history, SBOM, dashboard)
+Dashboard:  Updated
+Merged:     {main_branch} ← iterate/{short-description}
+Pushed:     origin/{main_branch}
 ================================================================================
 ```
 
