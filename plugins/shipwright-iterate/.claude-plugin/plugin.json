@@ -1,7 +1,7 @@
 {
   "name": "shipwright-iterate",
-  "description": "Lightweight SDLC for ongoing changes. Auto-detects intent (feature/change/bug) and runs a lean process: spec → [design] → build → test → commit.",
-  "version": "0.2.0",
+  "description": "Complexity-adaptive SDLC for ongoing changes. Auto-detects intent + complexity, scales from quick fix to structured feature with specs, plans, reviews, and testing.",
+  "version": "0.3.0",
   "author": { "name": "Sven Roth", "url": "https://github.com/svenroth-ai" },
   "repository": "https://github.com/svenroth-ai/shipwright",
   "license": "MIT",
