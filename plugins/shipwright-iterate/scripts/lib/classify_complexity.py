@@ -1,0 +1,251 @@
+#!/usr/bin/env python3
+"""Two-stage complexity classifier for Shipwright iterate workflow.
+
+Stage 1 (this script): Quick estimate from prompt + sync config keywords.
+Stage 2 (AI agent): Repo scout confirms/upgrades via structured scan.
+
+Output: JSON with estimate, confidence, risk_flags, and signals.
+"""
+
+import json
+import re
+import sys
+from pathlib import Path
+
+# --- Canonical Risk Taxonomy ---
+# One authoritative list. Referenced by SKILL.md, references, and tests.
+
+RISK_TAXONOMY = {
+    "touches_auth": {
+        "patterns": [
+            r"auth", r"login", r"signup", r"sign.?up", r"session",
+            r"middleware\.ts", r"supabase/.*auth",
+        ],
+        "min_complexity": "small",
+        "enforces": ["mandatory_review"],
+    },
+    "touches_rls": {
+        "patterns": [r"rls", r"row.?level", r"policy", r"policies"],
+        "min_complexity": "small",
+        "enforces": ["mandatory_review"],
+    },
+    "touches_middleware": {
+        "patterns": [r"middleware", r"next\.config"],
+        "min_complexity": "small",
+        "enforces": ["mandatory_review"],
+    },
+    "touches_migrations": {
+        "patterns": [
+            r"migration", r"migrate", r"schema", r"alter\s+table",
+            r"create\s+table", r"supabase/migrations",
+        ],
+        "min_complexity": "small",
+        "enforces": ["mandatory_review", "down_sql"],
+    },
+    "touches_billing": {
+        "patterns": [
+            r"stripe", r"payment", r"checkout", r"webhook",
+            r"subscription", r"billing", r"invoice",
+        ],
+        "min_complexity": "small",
+        "enforces": ["mandatory_review"],
+    },
+    "touches_shared_infra": {
+        "patterns": [
+            r"src/lib/", r"src/components/ui/", r"layout",
+            r"shared.*component", r"global.*css", r"globals\.css",
+        ],
+        "min_complexity": "small",
+        "enforces": ["full_test_suite"],
+    },
+    "touches_public_api": {
+        "patterns": [
+            r"api/", r"route\.ts", r"endpoint", r"export.*type",
+            r"public.*api",
+        ],
+        "min_complexity": "small",
+        "enforces": ["mandatory_review"],
+    },
+    "cross_split": {
+        "patterns": [],  # Detected by sync config, not keywords
+        "min_complexity": "medium",
+        "enforces": ["full_review", "full_test_suite"],
+    },
+}
+
+COMPLEXITY_ORDER = ["trivial", "small", "medium", "large"]
+
+# --- Heuristic keywords for file/FR count estimation ---
+
+SCOPE_LARGE_KEYWORDS = {
+    "multi-language", "i18n", "internationalization", "rewrite",
+    "rebuild", "overhaul", "migration", "redesign the entire",
+    "replace all", "new module", "new split",
+}
+SCOPE_MEDIUM_KEYWORDS = {
+    "search", "filter", "dashboard", "wizard", "workflow",
+    "new page", "new screen", "new route", "integration",
+}
+SCOPE_SMALL_KEYWORDS = {
+    "spinner", "loading", "tooltip", "icon", "badge",
+    "toast", "notification", "rename", "reorder",
+}
+
+
+def _complexity_index(level: str) -> int:
+    """Return numeric index for complexity comparison."""
+    return COMPLEXITY_ORDER.index(level)
+
+
+def detect_risk_flags(message: str) -> list[dict]:
+    """Detect risk flags from message using canonical taxonomy."""
+    msg_lower = message.lower()
+    flags = []
+    for flag_name, flag_def in RISK_TAXONOMY.items():
+        if flag_name == "cross_split":
+            continue  # Needs sync config, not keyword matching
+        for pattern in flag_def["patterns"]:
+            if re.search(pattern, msg_lower):
+                flags.append({
+                    "flag": flag_name,
+                    "min_complexity": flag_def["min_complexity"],
+                    "enforces": flag_def["enforces"],
+                })
+                break
+    return flags
+
+
+def detect_cross_split(
+    message: str, sync_config_path: str | None
+) -> dict | None:
+    """Check if change spans multiple planning splits."""
+    if not sync_config_path:
+        return None
+    try:
+        config = json.loads(Path(sync_config_path).read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+    msg_lower = message.lower()
+    splits_hit = set()
+    for mapping in config.get("mappings", []):
+        pattern = mapping.get("pattern", "")
+        parts = re.findall(r"\w+", pattern)
+        for part in parts:
+            if part.lower() in msg_lower and len(part) > 3:
+                for fr in mapping.get("frs", []):
+                    # FR format: FR-NN.XX — extract split number
+                    m = re.match(r"FR-(\d+)\.", fr)
+                    if m:
+                        splits_hit.add(m.group(1))
+                break
+
+    if len(splits_hit) >= 2:
+        flag_def = RISK_TAXONOMY["cross_split"]
+        return {
+            "flag": "cross_split",
+            "min_complexity": flag_def["min_complexity"],
+            "enforces": flag_def["enforces"],
+            "splits": sorted(splits_hit),
+        }
+    return None
+
+
+def estimate_scope(message: str) -> str:
+    """Heuristic scope estimate from keywords."""
+    msg_lower = message.lower()
+    for kw in SCOPE_LARGE_KEYWORDS:
+        if kw in msg_lower:
+            return "large"
+    for kw in SCOPE_MEDIUM_KEYWORDS:
+        if kw in msg_lower:
+            return "medium"
+    for kw in SCOPE_SMALL_KEYWORDS:
+        if kw in msg_lower:
+            return "small"
+    return "trivial"
+
+
+def classify(
+    message: str,
+    sync_config_path: str | None = None,
+) -> dict:
+    """Stage 1: Quick complexity estimate from prompt + risk flags.
+
+    Returns dict with: estimate, confidence, risk_flags, signals.
+    Stage 2 (AI agent repo scout) may upgrade the estimate.
+    """
+    # Detect risk flags
+    risk_flags = detect_risk_flags(message)
+
+    # Cross-split check
+    cross_split = detect_cross_split(message, sync_config_path)
+    if cross_split:
+        risk_flags.append(cross_split)
+
+    # Heuristic scope estimate
+    scope_estimate = estimate_scope(message)
+
+    # Apply risk flag minimums
+    effective_min = "trivial"
+    for flag in risk_flags:
+        flag_min = flag["min_complexity"]
+        if _complexity_index(flag_min) > _complexity_index(effective_min):
+            effective_min = flag_min
+
+    # Final estimate = max(scope_estimate, risk_floor)
+    if _complexity_index(effective_min) > _complexity_index(scope_estimate):
+        estimate = effective_min
+    else:
+        estimate = scope_estimate
+
+    # Confidence scoring
+    confidence = 0.5
+    if risk_flags:
+        confidence += 0.15  # Risk flags boost confidence
+    if sync_config_path and Path(sync_config_path).exists():
+        confidence += 0.1  # Sync config available
+    if estimate in ("large", "medium"):
+        confidence += 0.1  # Higher scope = more confident in needing structure
+    confidence = min(round(confidence, 2), 0.95)
+
+    # Build signals for Repo Scout
+    flag_names = [f["flag"] for f in risk_flags]
+    enforcements = set()
+    for flag in risk_flags:
+        enforcements.update(flag.get("enforces", []))
+
+    return {
+        "estimate": estimate,
+        "confidence": confidence,
+        "risk_flags": flag_names,
+        "enforcements": sorted(enforcements),
+        "signals": {
+            "scope_keyword_estimate": scope_estimate,
+            "risk_floor": effective_min,
+            "cross_split": cross_split is not None,
+            "has_sync_config": (
+                sync_config_path is not None
+                and Path(sync_config_path).exists()
+            ),
+        },
+    }
+
+
+def main():
+    """CLI entry point."""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Stage 1 complexity estimate for Shipwright iterate"
+    )
+    parser.add_argument("--message", required=True, help="User message")
+    parser.add_argument("--sync-config", help="Path to shipwright_sync_config.json")
+    args = parser.parse_args()
+
+    result = classify(args.message, args.sync_config)
+    print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    main()

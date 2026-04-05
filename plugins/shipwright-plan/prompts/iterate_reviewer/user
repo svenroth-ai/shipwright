@@ -1,0 +1,18 @@
+Review this implementation approach for a change to an existing application.
+
+## Change Specification
+
+{SPEC}
+
+## Implementation Approach (Mini-Plan)
+
+{PLAN}
+
+---
+
+Please review focusing on:
+1. Is the approach sound for this specific change?
+2. Are there risks to existing functionality?
+3. Are there missing dependencies or prerequisites?
+4. What edge cases or failure modes are unhandled?
+5. Any security concerns specific to this change?

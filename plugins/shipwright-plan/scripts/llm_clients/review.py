@@ -38,7 +38,7 @@ load_shipwright_env()
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from lib.config import load_global_config
-from lib.prompts import load_review_prompts
+from lib.prompts import load_review_prompts, load_iterate_review_prompts
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
@@ -175,9 +175,13 @@ def detect_provider() -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="External LLM plan review")
-    parser.add_argument("--plan-file", required=True, help="Path to plan.md")
-    parser.add_argument("--spec-file", required=True, help="Path to spec.md")
+    parser.add_argument("--plan-file", required=True, help="Path to plan.md or mini-plan")
+    parser.add_argument("--spec-file", required=True, help="Path to spec.md or iterate spec")
     parser.add_argument("--plugin-root", required=True, help="Path to plugin root")
+    parser.add_argument(
+        "--mode", choices=["plan", "iterate"], default="plan",
+        help="Review mode: 'plan' (full pipeline) or 'iterate' (lightweight change)"
+    )
     args = parser.parse_args()
 
     plan_path = Path(args.plan_file)
@@ -195,16 +199,35 @@ def main() -> int:
     spec = spec_path.read_text(encoding="utf-8")
 
     config = load_global_config(args.plugin_root)
-    system_prompt, user_prompt = load_review_prompts(args.plugin_root)
+
+    # Load mode-specific prompts
+    if args.mode == "iterate":
+        system_prompt, user_prompt = load_iterate_review_prompts(args.plugin_root)
+    else:
+        system_prompt, user_prompt = load_review_prompts(args.plugin_root)
 
     if not system_prompt:
-        system_prompt = "You are a senior software architect reviewing an implementation plan."
+        if args.mode == "iterate":
+            system_prompt = (
+                "You are a senior software architect reviewing an implementation approach "
+                "for a single change to an existing application."
+            )
+        else:
+            system_prompt = "You are a senior software architect reviewing an implementation plan."
     if not user_prompt:
-        user_prompt = (
-            "Review this implementation plan for a project.\n\n"
-            "## Spec:\n{SPEC}\n\n## Plan:\n{PLAN}\n\n"
-            "Identify: security issues, performance concerns, architecture problems, "
-            "missing features, and edge cases not handled."
+        if args.mode == "iterate":
+            user_prompt = (
+                "Review this implementation approach for a change to an existing application.\n\n"
+                "## Change Specification:\n{SPEC}\n\n## Implementation Approach:\n{PLAN}\n\n"
+                "Focus on: approach soundness, risks to existing functionality, "
+                "missing dependencies, edge cases, and security concerns."
+            )
+        else:
+            user_prompt = (
+                "Review this implementation plan for a project.\n\n"
+                "## Spec:\n{SPEC}\n\n## Plan:\n{PLAN}\n\n"
+                "Identify: security issues, performance concerns, architecture problems, "
+                "missing features, and edge cases not handled."
         )
 
     provider = detect_provider()
