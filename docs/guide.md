@@ -16,6 +16,18 @@ Shipwright is a structured Software Delivery Lifecycle (SDLC) pipeline built on 
 
 Shipwright infers your stack, interviews you about requirements, designs the UI, plans the implementation, builds with TDD, runs tests, scans for vulnerabilities, deploys, and generates a changelog. You stay in control; the pipeline does the heavy lifting.
 
+### What You Get
+
+- **IREB-aligned specs** from a structured requirements interview - testable acceptance criteria from day one
+- **HTML design mockups** with visual guidelines, design tokens, and a browser-based review viewer
+- **Test-Driven Development** with automated unit, smoke, E2E, and visual comparison testing
+- **Visual fidelity verification** - screenshot comparison with root-cause grouping catches UI drift automatically
+- **Compliance documentation** generated automatically: traceability matrix, test evidence, change history, SBOM
+- **Architecture docs** (`architecture.md`, `conventions.md`, `decision_log.md`) kept in sync by every phase
+- **A constitution** with mechanical enforcement - hooks block dangerous actions, not advisory prose
+- **Full artifact traceability** - every requirement traces to build events, test results, and commits
+- **Daily iteration** with `/shipwright-iterate` - complexity-adaptive changes that keep all artifacts in sync
+
 ### How It Works
 
 ```
@@ -48,6 +60,12 @@ User Description
       |
       v
   SHIPWRIGHT-CHANGELOG ..... Parse Commits --> Changelog --> Version Tag --> PR
+      |
+      v
+  SHIPWRIGHT-COMPLIANCE .... Traceability Matrix --> Test Evidence --> SBOM
+
+  After initial build, ongoing changes use /shipwright-iterate:
+  SHIPWRIGHT-ITERATE ....... Classify Intent --> Assess Complexity --> Adaptive Pipeline
 ```
 
 Each phase is a standalone Claude Code plugin. The orchestrator (`shipwright-run`) chains them together, but you can also invoke any skill individually.
@@ -66,7 +84,11 @@ Shipwright follows nine design principles that shape every decision in the pipel
 8. **Linters over instructions.** Mechanical enforcement through hooks beats advisory prose. Hooks block dangerous actions deterministically rather than relying on the agent to follow written rules.
 9. **Progressive disclosure.** CLAUDE.md stays lean (around 200 lines). Detailed architecture docs, conventions, and decision logs live in `agent_docs/`.
 
-### Learnings from the Claude Code Leak
+### Integrated Learnings
+
+Shipwright's architecture and quality practices were shaped by three external sources.
+
+#### Claude Code Source Code Leak
 
 When Claude Code's source code was exposed, it revealed the internal rules Anthropic uses to govern their own AI coding agent. Shipwright adopted the most impactful ones into its constitution.
 
@@ -83,6 +105,25 @@ When Claude Code's source code was exposed, it revealed the internal rules Anthr
 - "Run tests before committing" -- Shipwright's constitution required this from day one.
 - "Keep files under 300 lines" -- covers Claude Code's file read strategy (2,000-line cap) indirectly.
 - "Fix the code, not the test" -- aligns with Claude Code's quality calibration philosophy.
+
+#### Addy Osmani's Agent Skills
+
+Shipwright integrated patterns from Osmani's [agent-skills](https://github.com/addyosmani/agent-skills) repository into its review and build infrastructure:
+
+- **5-axis code review framework** -- correctness, readability, architecture, security, performance. Adopted into the code-reviewer subagent and the self-review checklist that runs on every section.
+- **Anti-rationalization tables** -- structured prompts that prevent agents from explaining away test failures or rationalizing skipped checks. Applied to code review, self-review, and test result interpretation.
+- **Performance and simplification patterns** -- reference docs for the build phase covering Core Web Vitals, bundle optimization, and code simplification heuristics.
+
+#### Anthropic Claude Architect Certification
+
+Aligned with the five domains of Anthropic's [Claude Certified Architect](https://www.anthropic.com/certification) exam guide:
+
+- **Constitution-driven boundaries** -- the ALWAYS / ASK FIRST / NEVER tiers that govern agent behavior (see Chapter 7.5).
+- **Structured error propagation** -- errors classified into 4 severity categories with specific recovery strategies.
+- **Compliance enforcement hooks** -- `PreToolUse` hooks that soft-block (exit code 2) when RTM coverage drops or security scans are stale. Overrides are logged to `compliance_overrides.log`.
+- **Path-specific rules** -- `.claude/rules/` templates for tests, API routes, migrations, components, and config files, so the agent gets context-appropriate guidance per file type.
+- **Few-shot examples in subagent definitions** -- code-reviewer, section-writer, and opus-plan-reviewer include worked examples so agents produce consistent output.
+- **Progressive disclosure** -- CLAUDE.md stays lean (~200 lines), detailed docs live in `agent_docs/`.
 
 ---
 
@@ -473,7 +514,10 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 - Installs dependencies listed in the section spec
 - Writes tests first (TDD red phase) -- tests should fail for the right reasons
 - Implements code until all tests pass (green phase), running tests after each significant change
-- For UI projects, performs a browser verification step (Playwright screenshot + console check) with an automated fix loop
+- For UI projects, performs a two-layer visual fidelity check:
+  - **Code-level fidelity** -- compares implementation code against mockup HTML for layout structure, component hierarchy, and shadcn/ui patterns before taking any screenshots
+  - **Screenshot comparison with root-cause grouping** -- runs `visual_compare.py` to capture mockup and live screenshots side-by-side, groups failures by cause (layout structure, colors/typography, missing components, spacing/shadows), runs targeted fix loops (max 3 retries per group), and commits each visual fix separately
+- Visual fix results are tracked in `visual-build-report.json` -- this artifact feeds into the test phase for regression detection
 - Optionally refactors for cleanliness without changing behavior
 - Runs a two-tier code review: a quick self-review checklist (always), plus a full subagent-based review for large diffs, high-risk sections, or security-sensitive files
 - Applies accepted review fixes, re-runs tests to confirm no regressions
@@ -507,6 +551,8 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 - E2E test results (pass/fail/skip counts)
 - Auto-generated E2E specs in `e2e/flows/` and `e2e/pages/` if test plans exist but specs do not
 - `playwright-report/index.html` -- interactive HTML report with screenshots, linked from compliance reports
+- Visual comparison report (`designs/visual-comparison/index.html`) with side-by-side mockup vs live screenshots
+- Visual triage results in `shipwright_test_results.json` (regressions, persistent failures, resolved screens)
 - A summary report printed to the terminal
 
 **How it works:**
@@ -516,16 +562,18 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 3. Runs a smoke test against your dev URL (checking for HTTP 200 on `/api/health`). If the server is not running, it attempts to diagnose and fix the issue before skipping.
 4. If E2E test plans exist from `/shipwright-plan` but no `.spec.ts` files have been written yet, it generates Playwright specs from the plans using the Page Object Model pattern.
 5. Runs Playwright E2E tests (starts and stops the dev server automatically). Failed tests can be debugged with a browser-fixer subagent that reads screenshots and error messages.
-6. Runs an E2E results verification step: compares `shipwright_test_results.json` against Playwright's authoritative `e2e-results.json` to catch count discrepancies (e.g., setup project tests being counted as E2E tests). If numbers diverge, the pipeline corrects `shipwright_test_results.json` and documents the reason.
-7. Produces a structured results summary with explicit status for every layer.
+6. Runs visual comparison as a **regressions-only safety net**. Reads `visual-build-report.json` (what the build phase already verified) and triages each screen: regressions (was passing in build, now failing), persistent failures (build gave up), and unchecked screens (never verified). Only fixes regressions and persistent failures -- resolved screens are skipped. Uses the same root-cause grouping and fix loops as build.
+7. Runs an E2E results verification step: compares `shipwright_test_results.json` against Playwright's authoritative `e2e-results.json` to catch count discrepancies (e.g., setup project tests being counted as E2E tests). If numbers diverge, the pipeline corrects `shipwright_test_results.json` and documents the reason.
+8. Produces a structured results summary with explicit status for every layer.
 
-**The three test layers and enforcement rules** are central to how the pipeline decides whether to continue:
+**The four test layers and enforcement rules** are central to how the pipeline decides whether to continue:
 
 | Layer | On Failure | Rationale |
 |-------|-----------|-----------|
 | Unit tests | Pipeline stops (blocking) | Unit tests are deterministic -- failure means a real bug |
 | Smoke test | Pipeline stops (blocking) | If the app is not running, deployment is pointless |
 | E2E tests | Warning only (non-blocking) | E2E tests can be flaky; failures are logged but do not block |
+| Visual comparison | Warning only (advisory) | Visual mismatches are logged but do not block deployment |
 
 Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason}`) before the phase is considered complete. If any layer has no result, the phase stays in `incomplete` status.
 
