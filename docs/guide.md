@@ -858,7 +858,7 @@ Once your project exists, use `/shipwright-iterate` for fast changes:
 /shipwright-iterate "Add dark mode toggle"
 ```
 
-`/shipwright-iterate` skips the full interview and deep decomposition. It reads your existing `CLAUDE.md` and project structure, asks minimal clarifying questions, and runs a lightweight plan-build-test cycle. This is the intended daily workflow after the initial build. See [Chapter 8](#8-ongoing-development-with-shipwright-iterate) for details.
+`/shipwright-iterate` reads your existing `CLAUDE.md` and project structure, auto-detects intent (feature, change, or bug), assesses complexity and risk, then runs an adaptive pipeline -- from a quick fix for trivial changes to a structured mini-SDLC with planning, external review, and full testing for medium-complexity work. Large changes get an escape hatch to the full pipeline. This is the intended daily workflow after the initial build. See [Chapter 8](#8-ongoing-development-with-shipwright-iterate) for details.
 
 ### 7.3 Using Skills Individually
 
@@ -931,21 +931,117 @@ The most critical rules are also enforced programmatically by hooks (see Chapter
 
 ## 8. Ongoing Development with /shipwright-iterate
 
-After the initial pipeline completes, ongoing changes use `/shipwright-iterate` -- a lightweight process that keeps all artifacts in sync.
+After the initial pipeline completes, ongoing changes use `/shipwright-iterate` -- a complexity-adaptive process that scales from quick fix to structured mini-SDLC, keeping all artifacts in sync.
 
 ### Trigger
+
 - **Automatic:** A `UserPromptSubmit` hook detects change intent from user messages and suggests `/shipwright-iterate`
 - **Manual:** User calls `/shipwright-iterate` directly with `--type feature|change|bug`
 
-### 3 Paths
+### Complexity-Adaptive Phases
 
-| Intent | Flow | Artifacts Updated |
-|--------|------|-------------------|
-| **Feature** | Interview --> Mini-Spec --> [Design] --> Build+Tests --> ADR --> Commit --> Event | New FRs, ADR, event log, compliance |
-| **Change** | Interview --> Spec Delta --> [Design] --> Build+Tests --> ADR --> Commit --> Event | Updated FRs, ADR, event log, compliance |
-| **Bug** | Reproduce --> Impact --> Fix --> Test Update --> Commit --> Event | Regression test, optional ADR, event log, compliance |
+Unlike v0.2's fixed process, `/shipwright-iterate` v0.3 assesses each change's complexity and runs only the phases that change needs. This happens in two stages:
 
-Each path runs tests automatically (vitest + tsc + affected E2E), creates a conventional commit with FR references, records a `work_completed` event in the event log, and triggers incremental compliance report updates.
+1. **Quick Estimate** -- A classifier script analyzes your prompt for scope keywords and risk signals, producing an initial estimate with confidence score.
+2. **Repo Scout** -- The agent scans the repository (affected files, FRs, split boundaries) to confirm or upgrade the estimate. After this, complexity is locked.
+
+The result is one of four levels:
+
+| Complexity | Criteria | What Runs |
+|------------|----------|-----------|
+| **Trivial** | 1 FR, 1-2 files, no risk flags | spec update → build → self-review → unit test (`--related`) → finalize |
+| **Small** | 1-2 FRs, 3-5 files, or risk flags present | + design text (if UI), mini-plan (features), conditional full review |
+| **Medium** | 2-4 FRs, 5-10 files, or cross-split | + iterate spec file, external LLM review, full code review, full test suite, E2E update |
+| **Large** | 4+ FRs, 10+ files, cross-split + risk flags | **Escape hatch** -- recommends switching to the full pipeline |
+
+Users can override complexity (`--complexity medium`) and adjust phases before execution ("skip design", "make it small"). However, safety floors enforced by risk flags cannot be bypassed without explicit acknowledgment.
+
+### Risk Taxonomy
+
+Eight canonical risk flags trigger safety minimums regardless of complexity level:
+
+| Risk Flag | Example Trigger Paths | Enforces |
+|-----------|----------------------|----------|
+| `touches_auth` | `src/middleware.ts`, `**/auth/**` | mandatory code review |
+| `touches_rls` | `supabase/migrations/*rls*` | mandatory code review |
+| `touches_middleware` | `src/middleware.ts`, `next.config.*` | mandatory code review |
+| `touches_migrations` | `supabase/migrations/` | mandatory review + down.sql |
+| `touches_billing` | `**/stripe/**`, `**/payment*/**` | mandatory code review |
+| `touches_shared_infra` | `src/lib/`, `src/components/ui/` | full test suite |
+| `cross_split` | changes span 2+ planning splits | full review + full test suite |
+| `touches_public_api` | API route handlers, exported types | mandatory code review |
+
+### Planned Run Summary
+
+Before execution begins, iterate prints a summary of what will run:
+
+```
+SHIPWRIGHT-ITERATE: Session Plan
+  Run ID:      iterate-20260405-course-search
+  Intent:      FEATURE
+  Complexity:  Small (1 FR, ~4 files, risk: touches_migrations)
+  Phases:      spec → design text → build (TDD) → self-review → scoped test → finalize
+  Skipping:    iterate spec (small), mini-plan (small), full review (no risk flags)
+  Safety floor: DB migration → mandatory down.sql
+```
+
+You can adjust before proceeding -- "make it medium", "skip design", "add review".
+
+### 3 Intent Paths
+
+The three intent types still define the workflow shape, but each is now complexity-gated:
+
+| Intent | Flow (brackets = complexity-dependent) | Key Difference |
+|--------|---------------------------------------|----------------|
+| **Feature** | [spec] → [plan] → [review] → [design] → build → test → finalize | Appends new FR to spec |
+| **Change** | [spec] → [plan] → [review] → [design] → build → test → finalize | Updates existing FR in spec |
+| **Bug** | [spec] → reproduce → [plan] → fix → test → finalize | Reproduces via failing test first |
+
+Each path runs tests automatically, creates a conventional commit with FR references and a `Run-ID` trailer, records a `work_completed` event in the event log, and triggers incremental compliance report updates.
+
+### Override Classes
+
+Not all phases can be skipped. Iterate defines three categories:
+
+| Category | Includes | User Can Skip? |
+|----------|----------|----------------|
+| **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON | Never |
+| **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations) | Only with explicit risk acknowledgment |
+| **Advisory** | Design check, mini-plan, visual comparison, E2E update, external LLM review | Freely skippable |
+
+### Escape Hatch and Escalation
+
+**Large scope:** When the Repo Scout determines complexity is large, iterate prints a recommendation with two options: (1) hand off to `/shipwright-project --extend` via a structured handoff file, or (2) continue with iterate under mandatory full review and full test suite.
+
+**Mid-flight escalation:** If scope grows during implementation (more files than estimated, cascading test failures), iterate can upgrade complexity dynamically. For example, small → medium triggers retroactive creation of an iterate spec and mini-plan, plus external LLM review before further code changes.
+
+### Finalization
+
+Every iterate run -- regardless of complexity -- ends with 11 mandatory finalization steps:
+
+1. **Drift check** -- verify specs match implementation
+2. **Architecture update** -- update `architecture.md` if structural changes were made
+3. **ADR** -- record the decision in `decision_log.md`
+4. **CHANGELOG** -- add entry to `[Unreleased]` section
+5. **Test results JSON** -- write structured test results to `shipwright_test_results.json`
+6. **Conventional commit** -- with `Run-ID` trailer and FR references
+7. **Record event** -- append `work_completed` to `shipwright_events.jsonl`
+8. **Update compliance** -- regenerate traceability and reports
+9. **Update build dashboard** -- refresh `build_dashboard.md`
+10. **Update iterate_history** -- append to `shipwright_run_config.json` (last 50 entries retained)
+11. **Merge, push & verify** -- merge branch to main, push, verify event was recorded
+
+### Degraded Mode
+
+When metadata is incomplete, iterate degrades gracefully rather than failing:
+
+- **No sync config:** defaults to medium complexity, runs full test suite
+- **No visual-guidelines.md:** skips design check, notes in ADR
+- **External review unavailable:** skips, notes as "external-review-skipped"
+- **Code reviewer unavailable:** self-review only, flagged as "review-limited"
+- **Browser verify fails:** falls back to test-only verification
+
+All degraded conditions are recorded in `shipwright_test_results.json` and noted in the final summary.
 
 ### Drift Check
 
@@ -955,9 +1051,11 @@ Use `/shipwright-sync --check` to verify all artifacts are in sync. This is a re
 
 | | /shipwright-run | /shipwright-iterate |
 |---|---|---|
-| **When** | New project or major extension | Daily changes, bug fixes, small features |
-| **Pipeline** | Full 8-phase SDLC | Lean 3-path mini-process |
-| **Duration** | Hours | Minutes |
+| **When** | New project or major extension | Daily changes, bug fixes, features of any size |
+| **Pipeline** | Full 8-phase SDLC | Complexity-adaptive (trivial → medium, or escape to full pipeline) |
+| **Complexity** | Always full | Auto-assessed: trivial, small, medium, large |
+| **Duration** | Hours | Minutes (trivial/small) to ~1 hour (medium) |
+| **Risk detection** | Implicit in phase structure | Explicit: 8 canonical risk flags with safety floors |
 | **Artifacts** | All created from scratch | Same event log, incrementally |
 
 ---
@@ -1180,7 +1278,7 @@ Or read `CHANGELOG.md` in the repository root for release notes.
 | Command | Arguments | Flags | Purpose |
 |---------|-----------|-------|---------|
 | `/shipwright-run` | `"description"` or `@requirements.md` | -- | Orchestrate the full pipeline. Infers stack profile, detects scope (Full App / Extension), dispatches to downstream skills in sequence. |
-| `/shipwright-iterate` | `"description"` | `--type feature\|change\|bug` | Lightweight SDLC for ongoing changes. Auto-detects intent and runs specs, build, test, commit. |
+| `/shipwright-iterate` | `"description"` | `--type feature\|change\|bug`, `--complexity trivial\|small\|medium\|large`, `--review`, `--pause` | Complexity-adaptive SDLC for ongoing changes. Auto-detects intent and complexity, scales phases from quick fix to structured mini-pipeline with planning, review, and testing. |
 | `/shipwright-project` | `"description"` or `@requirements.md` | -- | Decompose requirements into splits and IREB-aligned specs. Generates `CLAUDE.md`, `agent_docs/`, and project config. Interviews you about requirements. |
 | `/shipwright-design` | -- | -- | Generate HTML mockups from specs. Produces screens with review viewer, feedback loop, and spec backflow. Runs after project, before plan. |
 | `/shipwright-plan` | `@spec.md` | -- | Create implementation plan for one split. Researches stack, interviews for clarification, generates section files. Optionally sends plan to external LLMs (Gemini + OpenAI) for review. |
