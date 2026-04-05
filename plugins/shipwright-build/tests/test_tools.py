@@ -149,3 +149,112 @@ def test_generate_session_handoff(tmp_path):
     handoff = (tmp_path / "agent_docs" / "session_handoff.md").read_text(encoding="utf-8")
     assert "01-auth" in handoff
     assert "in_progress" in handoff
+
+
+# --- Visual comparison integration tests ---
+
+
+def test_update_section_state_visual_fields(tmp_path):
+    """Visual fidelity fields are persisted to build config and visual report."""
+    groups_file = tmp_path / "groups.json"
+    groups_file.write_text(json.dumps([
+        {"group": "Layout structure", "status": "fixed", "screens": ["01-login.html"], "attempts": 1},
+        {"group": "Spacing/shadows", "status": "parked", "screens": ["01-login.html"], "attempts": 3,
+         "diagnosis": "Card padding diverges"},
+    ]), encoding="utf-8")
+
+    output = run_tool("update_section_state.py", [
+        "--section", "01-auth",
+        "--status", "complete",
+        "--commit", "abc123",
+        "--visual-fidelity", "partial",
+        "--visual-groups-file", str(groups_file),
+        "--visual-screen", "01-login.html",
+        "--project-root", str(tmp_path),
+    ])
+
+    assert output["success"] is True
+
+    # Check build config has visual_fidelity + pointer
+    config = json.loads((tmp_path / "shipwright_build_config.json").read_text(encoding="utf-8"))
+    section = config["sections"][0]
+    assert section["visual_fidelity"] == "partial"
+    assert section["visual_report"] == "visual-build-report.json"
+
+    # Check visual-build-report.json was created
+    report = json.loads((tmp_path / "visual-build-report.json").read_text(encoding="utf-8"))
+    assert "01-login.html" in report["screens"]
+    screen = report["screens"]["01-login.html"]
+    assert screen["section"] == "01-auth"
+    assert screen["status"] == "partial"  # worst-case: in parked group
+    assert "Layout structure" in screen["groups_fixed"]
+    assert "Spacing/shadows" in screen["groups_parked"]
+
+    # Temp groups file should be cleaned up
+    assert not groups_file.exists()
+
+
+def test_visual_report_merge_multiple_sections(tmp_path):
+    """Multiple sections merge into the same visual-build-report.json."""
+    # Section 1
+    groups1 = tmp_path / "g1.json"
+    groups1.write_text(json.dumps([
+        {"group": "Layout structure", "status": "fixed", "screens": ["01-login.html"], "attempts": 1},
+    ]), encoding="utf-8")
+
+    run_tool("update_section_state.py", [
+        "--section", "01-auth",
+        "--status", "complete",
+        "--visual-fidelity", "full",
+        "--visual-groups-file", str(groups1),
+        "--visual-screen", "01-login.html",
+        "--project-root", str(tmp_path),
+    ])
+
+    # Section 2
+    groups2 = tmp_path / "g2.json"
+    groups2.write_text(json.dumps([
+        {"group": "Colors/typography", "status": "fixed", "screens": ["02-dashboard.html"], "attempts": 2},
+    ]), encoding="utf-8")
+
+    run_tool("update_section_state.py", [
+        "--section", "02-dashboard",
+        "--status", "complete",
+        "--visual-fidelity", "full",
+        "--visual-groups-file", str(groups2),
+        "--visual-screen", "02-dashboard.html",
+        "--project-root", str(tmp_path),
+    ])
+
+    # Both screens should be in report
+    report = json.loads((tmp_path / "visual-build-report.json").read_text(encoding="utf-8"))
+    assert "01-login.html" in report["screens"]
+    assert "02-dashboard.html" in report["screens"]
+    assert report["screens"]["01-login.html"]["section"] == "01-auth"
+    assert report["screens"]["02-dashboard.html"]["section"] == "02-dashboard"
+
+
+def test_visual_report_build_complete_marker(tmp_path):
+    """--build-complete sets the top-level marker."""
+    run_tool("update_section_state.py", [
+        "--section", "01-auth",
+        "--status", "complete",
+        "--visual-fidelity", "full",
+        "--visual-screen", "01-login.html",
+        "--build-complete",
+        "--project-root", str(tmp_path),
+    ])
+
+    report = json.loads((tmp_path / "visual-build-report.json").read_text(encoding="utf-8"))
+    assert report["build_complete"] is True
+
+
+def test_no_visual_report_when_no_visual_args(tmp_path):
+    """Without visual args, no visual-build-report.json is created."""
+    run_tool("update_section_state.py", [
+        "--section", "01-auth",
+        "--status", "complete",
+        "--project-root", str(tmp_path),
+    ])
+
+    assert not (tmp_path / "visual-build-report.json").exists()

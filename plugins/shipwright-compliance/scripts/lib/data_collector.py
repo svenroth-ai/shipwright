@@ -91,6 +91,7 @@ class TestResults:
     visual_total: int = 0
     visual_skipped: bool = False
     visual_skip_reason: str = ""
+    visual_report_path: str = ""  # Path to visual-build-report.json if available
 
 
 @dataclass
@@ -594,6 +595,12 @@ def _parse_test_results_file(path: Path) -> TestResults | None:
     e2e = data.get("e2e", {})
     visual = data.get("visual", {})
 
+    # Check for visual-build-report.json alongside the test results file
+    visual_report_path = ""
+    report_candidate = path.parent / "visual-build-report.json"
+    if report_candidate.exists():
+        visual_report_path = str(report_candidate)
+
     return TestResults(
         status=data.get("status", ""),
         timestamp=data.get("timestamp", ""),
@@ -612,6 +619,7 @@ def _parse_test_results_file(path: Path) -> TestResults | None:
         visual_total=visual.get("total", 0),
         visual_skipped=visual.get("skipped", False),
         visual_skip_reason=visual.get("skip_reason", ""),
+        visual_report_path=visual_report_path,
     )
 
 

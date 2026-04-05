@@ -116,9 +116,12 @@ def _test_execution_summary(data: ComplianceData) -> list[str]:
             lines.append(f"| Visual | {vis_status} | — | — | — | {vis_detail} |")
         elif tr.visual_total > 0:
             vis_status = "PASS" if tr.visual_passed == tr.visual_total else "WARNING"
+            vis_detail = "Mockup vs Live"
+            if tr.visual_report_path:
+                vis_detail += f" ([detail](visual-build-report.json))"
             lines.append(
                 f"| Visual | {vis_status} | {tr.visual_passed} | {tr.visual_total} "
-                f"| — | Mockup vs Live |"
+                f"| — | {vis_detail} |"
             )
 
         lines.append("")

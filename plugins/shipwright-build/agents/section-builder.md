@@ -144,33 +144,54 @@ uv run {plugin_root}/scripts/lib/browser_verify.py --cwd {project_root}
 
 If JS errors: Read screenshot at `{project_root}/e2e/screenshots/browser-verify.png`, diagnose, fix (max 3 retries).
 
-**8b. Visual comparison (only if mockup was read in Step 1):**
+**8b. Visual comparison with root-cause grouping (only if mockup was read in Step 1):**
 
 If `designs/screen-routes.json` exists AND mockup HTML files exist for this section:
 
+**Prerequisites:**
+- The base implementation from Step 7 MUST be committed before starting visual fixes. Visual fix commits must contain only visual corrections, not the base implementation.
+- The `section_screens` are the mockup filenames read in Step 1 (e.g., `01-login.html`, `02-register.html`). These are the keys in `designs/screen-routes.json`.
+
+**1. Run visual comparison:**
 ```bash
 uv run {shared_root}/../plugins/shipwright-test/scripts/lib/visual_compare.py \
-  --cwd {project_root} --screens {relevant_screens_for_this_section}
+  --cwd {project_root} --screen {screen1} --screen {screen2}
 ```
 
-Then READ the generated screenshots and compare using this rubric:
-1. Read `designs/visual-comparison/{screen}-mockup.png`
-2. Read `designs/visual-comparison/{screen}-live.png`
-3. Evaluate against structured rubric:
-   - [ ] Major layout match (sidebar, header, content areas)?
-   - [ ] Component type match (table vs cards vs grid)?
-   - [ ] Component order/hierarchy match?
-   - [ ] Spacing acceptable?
-   - [ ] Chrome consistency (nav, header, footer)?
-4. Report top 3 mismatches with confidence level
-5. For each mismatch: **inspect DOM/classes FIRST**, then make targeted fix
-6. Max 2 visual fix iterations
+**2. Read and evaluate screenshots:**
+For each screen, read `designs/visual-comparison/mockup-{screen}.png` and `designs/visual-comparison/live-{screen}.png`. The script's `match` field only indicates screenshot capture success — YOU must visually evaluate the screenshots.
 
-**8c. Escalation (if still mismatched after 2 iterations):**
-- Attach screenshots to section state
-- Mark section with `visual_fidelity: "partial"` in result JSON
-- Log warning: "Visual fidelity check did not converge after 2 iterations"
-- Continue pipeline (do NOT hard-fail)
+**3. Group failures by root cause:**
+
+| Root Cause | Example | Fix Scope |
+|------------|---------|-----------|
+| **Layout structure** | Sidebar vs header, missing nav sections | Layout components, shell |
+| **Colors/typography** | Wrong primary color, font-family | globals.css, CSS variables |
+| **Missing components** | No logo, no stats section, no CTA | Individual pages/components |
+| **Spacing/shadows/radius** | Wrong padding, no card shadow | Tailwind classes, globals.css |
+
+**4. Fix loop per group (max 3 retries per group, max 8 total across all groups):**
+
+a. Read both mockup + live screenshots for a representative screen in the group
+b. Inspect DOM/classes FIRST, then identify specific CSS/layout/component divergences
+c. Fix source files (components, globals.css, layout.tsx, page.tsx)
+d. Re-run `visual_compare.py --screen {group_screens}` for this group's screens
+e. If fix works: stage ONLY the changed files (`git add <specific_files>` — do NOT use `git add -A`), commit: `fix(build-visual): {description}`, move to next group
+f. If commit fails: mark section as failed, abort
+g. If same issue persists after 3 attempts: **revert uncommitted changes** (`git checkout -- <changed_files>`), park the group with a diagnosis, move to next group
+
+**Context management:** After each group, summarize previous fix iterations. Do not keep all screenshots in context.
+
+**5. Final regression check:**
+After ALL groups, re-run `visual_compare.py --screen {all_section_screens}` on all section screens. If new regressions were introduced by group fixes: one extra fix iteration on the regressed screens. After that, if regressions remain: mark affected screens as parked, set `visual_fidelity: "partial"`.
+
+**6. Summary:** Report which groups were fixed and which were parked. Do NOT ask the user — section-builder is autonomous. Parked groups are logged and documented in the result JSON.
+
+**8c. Escalation:**
+- All groups resolved → `visual_fidelity: "full"`
+- Some groups parked → `visual_fidelity: "partial"`, log warning per parked group with diagnosis
+- No mockups or no UI → `visual_fidelity: "skipped"`
+- Continue pipeline (do NOT hard-fail — visual issues are non-blocking)
 
 ### Step 9: Refactor (Optional)
 
@@ -286,8 +307,15 @@ uv run {plugin_root}/scripts/tools/update_section_state.py \
   --tests-passed {tests_passed} --tests-total {tests_total} \
   --review-findings '{review_findings_json}' \
   --review-type "{review_type}" \
+  --visual-fidelity "{visual_fidelity}" \
+  --visual-groups-file "{path_to_temp_groups_json}" \
+  --visual-screen {screen1} --visual-screen {screen2} \
   --project-root "{project_root}"
 ```
+
+**Visual fields:** If Step 8b ran, include `--visual-fidelity` (full/partial/skipped), `--visual-screen` for each checked screen, and `--visual-groups-file` pointing to a temp JSON file with the groups array from Step 8b. If Step 8 was skipped, use `--visual-fidelity skipped` without the other visual flags. For the **last section** in the build, also add `--build-complete`.
+
+If `update_section_state.py` fails: log ERROR and mark the section as incomplete.
 
 **Dashboard update:**
 ```bash
@@ -311,6 +339,11 @@ When complete, return a JSON object as the **last line of your response**:
     {"finding": "description", "status": "fixed"}
   ],
   "visual_fidelity": "full|partial|skipped",
+  "visual_groups": [
+    {"group": "Layout structure", "status": "fixed", "screens": ["01-login.html"], "attempts": 1},
+    {"group": "Spacing/shadows", "status": "parked", "screens": ["01-login.html"], "attempts": 3, "diagnosis": "Card padding diverges from mockup"}
+  ],
+  "visual_screens_checked": ["01-login.html", "02-register.html"],
   "decisions": [
     {"title": "short title", "rationale": "why"}
   ]

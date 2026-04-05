@@ -277,11 +277,11 @@ miscounts from setup projects, retries, or skipped tests.
 
 ---
 
-## Step 3.7: Visual Comparison (if applicable)
+## Step 3.7: Visual Comparison — Regressions-Only (if applicable)
 
 **Condition:** Runs if `designs/screen-routes.json` exists in the project root. Also runs standalone via `--visual` flag.
 
-**Purpose:** Compare HTML design mockups against the live application to detect visual divergence and fix layout/styling issues. Non-blocking (WARNING level) — visual differences don't fail the pipeline.
+**Purpose:** Detect and fix visual regressions introduced by later build sections (cross-section side effects). Build handles the bulk of visual fixes per-section; Test is the safety net. Non-blocking (WARNING level) — visual differences don't fail the pipeline.
 
 **1. Ensure dev server is running** (should be up from E2E step):
 ```bash
@@ -292,7 +292,12 @@ If not running, start it:
 uv run {plugin_root}/../../shared/scripts/dev_server.py start --profile {profile} --cwd {project_root}
 ```
 
-**2. Run visual comparison:**
+**2. Read build visual results:**
+Read `visual-build-report.json` from the project root. Build a screen-status map: `{screen: status}`.
+- If file is missing or fails to parse → **fallback**: treat all screens as unchecked (full fix behavior, backward-compatible).
+- If `build_complete: false` → log WARNING ("Build may still be in progress"), proceed with triage anyway.
+
+**3. Run visual comparison (all screens):**
 ```bash
 uv run {plugin_root}/scripts/lib/visual_compare.py \
   --cwd "{project_root}" \
@@ -300,13 +305,26 @@ uv run {plugin_root}/scripts/lib/visual_compare.py \
 ```
 
 Parse the JSON output:
-- `skipped: true` → no screen-routes.json, skip to step 6
-- `passed == total` → all screens match, PASS, skip to step 5
-- `passed < total` → mismatches found, proceed to fix loop
+- `skipped: true` → no screen-routes.json, skip to step 7
+- `passed == total` → all screens match, PASS, skip to step 6
+- `passed < total` → mismatches found, proceed to triage
 
-**3. Group failures by root cause** (identical pattern to E2E Step 3):
+**4. Triage against build results:**
 
-Read the mockup + live screenshots for each failing screen. Categorize:
+For each screen with visual mismatches, determine its category using `visual-build-report.json` screen status (NOT the script's `match` field — that only indicates screenshot capture success):
+
+| Category | Condition | Priority | Action |
+|----------|-----------|----------|--------|
+| **Resolved** | Screen was `partial` in Build, now passes | Log only | Log as positive outcome, no fix needed |
+| **Regression** | Screen was `full` in Build, now fails | Prio 1 | Cross-section side effect — fix loop |
+| **Persistent Failure** | Screen was `partial` in Build, still fails | Prio 2 | Build gave up — one more try |
+| **Unchecked** | Screen not in build report | Prio 3 | Never verified — full fix loop |
+
+If a screen appears in multiple groups in the build report: status = worst-case (partial if in ANY parked group).
+
+**5. Fix loop (Regressions + Persistent Failures + Unchecked only):**
+
+Group failures by root cause (identical taxonomy to Build):
 
 | Root Cause | Example | Fix Scope |
 |------------|---------|-----------|
@@ -315,22 +333,22 @@ Read the mockup + live screenshots for each failing screen. Categorize:
 | **Missing components** | No logo, no stats section, no CTA | Individual pages/components |
 | **Spacing/shadows/radius** | Wrong padding, no card shadow | Tailwind classes, globals.css |
 
-**4. Fix loop per group** (max 3 retries per group):
+Fix loop per group (max 3 retries per group):
 
 a. Read both mockup screenshot + live screenshot for a representative screen in the group
 b. Identify specific CSS/layout/component divergences
 c. Fix source files (components, globals.css, layout.tsx, page.tsx)
 d. Rebuild app: `npm run build` (production) or wait for dev server HMR
 e. Re-run `visual_compare.py` for this group's screens
-f. If fix works: **commit the fix** with message `fix(visual): {description}`, move to next group
-g. If same issue persists after 3 attempts on this group: **park it**, move to next group
+f. If fix works: **commit the fix** with message `fix(test-visual): {description}`, move to next group
+g. If same issue persists after 3 attempts on this group: **park it** with diagnosis, move to next group
 
 **After all groups attempted:**
 - Report summary: which groups fixed, which parked, with diagnosis per parked group
 - **ASK user** for direction on parked groups (one consolidated dialog, not per group)
 - **Commit between fix rounds** — each successful group fix gets its own commit
 
-**5. Record results** in `shipwright_test_results.json`:
+**6. Record results** in `shipwright_test_results.json`:
 ```json
 {
   "visual": {
@@ -340,12 +358,18 @@ g. If same issue persists after 3 attempts on this group: **park it**, move to n
     "comparisons": [
       {"mockup": "01-login.html", "route": "/login", "match": true},
       {"mockup": "08-dashboard.html", "route": "/dashboard", "match": false}
-    ]
+    ],
+    "triage": {
+      "regressions": 1,
+      "persistent_failures": 0,
+      "unchecked": 0,
+      "resolved": 2
+    }
   }
 }
 ```
 
-**6. Stop dev server** (always — whether visual ran or was skipped):
+**7. Stop dev server** (always — whether visual ran or was skipped):
 ```bash
 uv run {plugin_root}/../../shared/scripts/dev_server.py stop --cwd {project_root}
 ```
