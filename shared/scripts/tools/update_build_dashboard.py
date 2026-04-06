@@ -209,6 +209,52 @@ def generate_dashboard(
 # Event-based dashboard generation
 # ---------------------------------------------------------------------------
 
+
+def _read_iterate_test_results(project_root: Path) -> dict | None:
+    """Read iterate_latest from shipwright_test_results.json."""
+    try:
+        data = json.loads((project_root / "shipwright_test_results.json").read_text(encoding="utf-8"))
+        return data.get("iterate_latest")
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
+def _test_status_from_iterate(project_root: Path, latest_event: dict) -> list[str]:
+    """Build Test Status parts from iterate data.
+
+    Prefers layered data from shipwright_test_results.json (iterate_latest).
+    Falls back to flat tests dict from the work_completed event.
+    """
+    layered = _read_iterate_test_results(project_root)
+    if layered:
+        parts = [f"Last run: {layered.get('date', latest_event.get('ts', '')[:10])}"]
+        unit = layered.get("unit", {})
+        e2e = layered.get("e2e", {})
+        smoke = layered.get("smoke", {})
+        if unit and unit.get("total", 0) > 0:
+            parts.append(f"Unit: {unit.get('passed', 0)}/{unit.get('total', 0)}")
+        if e2e and e2e.get("total", 0) > 0:
+            parts.append(f"E2E: {e2e.get('passed', 0)}/{e2e.get('total', 0)}")
+        if smoke and smoke.get("status"):
+            parts.append(f"Smoke: {smoke['status']}")
+        parts.append("(iterate)")
+        return parts
+
+    # Flat fallback from event's tests dict
+    tests = latest_event.get("tests", {})
+    if tests.get("total", 0) > 0:
+        parts = [f"Last run: {latest_event.get('ts', '')[:10]}"]
+        parts.append(f"Tests: {tests.get('passed', 0)}/{tests.get('total', 0)}")
+        if tests.get("e2e_run"):
+            parts.append("(incl. E2E)")
+        parts.append("(iterate)")
+        return parts
+
+    return []
+
+
+# ---------------------------------------------------------------------------
+
 def _generate_from_events(project_root: Path, session_id: str | None = None,
                           section: str | None = None, step: int | None = None,
                           detail: str | None = None) -> str | None:
@@ -249,7 +295,16 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
         lines.append("")
 
     # --- Test Status ---
-    if test_runs:
+    # Pick freshest source: test_run event vs iterate work_completed
+    latest_test_ts = test_runs[-1].get("ts", "") if test_runs else ""
+    latest_iter_ts = iterate_events[-1].get("ts", "") if iterate_events else ""
+    use_iterate = bool(iterate_events) and latest_iter_ts > latest_test_ts
+
+    if use_iterate:
+        parts = _test_status_from_iterate(project_root, iterate_events[-1])
+        if parts:
+            lines.extend(["## Test Status", " | ".join(parts), ""])
+    elif test_runs:
         latest = test_runs[-1]
         layers = latest.get("layers", {})
         unit = layers.get("unit", {})

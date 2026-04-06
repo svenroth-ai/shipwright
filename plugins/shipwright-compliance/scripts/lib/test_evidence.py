@@ -334,7 +334,7 @@ def _test_progression(data: ComplianceData) -> list[str]:
         "|---|-------|--------|-----------|-------------|--------|------|",
     ])
 
-    for i, we in enumerate(data.work_events, 1):
+    for i, we in enumerate(reversed(data.work_events), 1):
         name = we.section if we.source == "build" else (we.description or we.id)
         source = we.source
 

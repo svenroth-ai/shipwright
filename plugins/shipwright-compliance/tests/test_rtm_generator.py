@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.lib.data_collector import ComplianceData, SectionInfo, SplitInfo, collect_all
+from scripts.lib.data_collector import (
+    ComplianceData, KnownFailure, RequirementInfo, SectionInfo, SplitInfo, WorkEvent, collect_all,
+)
 from scripts.lib.rtm_generator import generate, generate_file
 
 
@@ -54,6 +56,52 @@ class TestGenerate:
         # 03-profile has 2 findings (1 fixed, 1 deferred) -> totals in summary
         assert "| Total review findings | 3 |" in result
         assert "| Unresolved findings | 1 |" in result
+
+
+def _make_data(tmp_path, *, baseline=0, tests_passed=830, tests_total=831):
+    """Helper to build ComplianceData with one FR and one work event."""
+    data = ComplianceData(project_root=tmp_path, timestamp="2026-04-06T00:00:00Z")
+    data.baseline_failure_count = baseline
+    we = WorkEvent(
+        id="ev-1", timestamp="2026-04-06T10:00:00Z", source="iterate",
+        description="Add feature", tests_passed=tests_passed, tests_total=tests_total,
+        affected_frs=["FR-01.01"],
+    )
+    data.work_events = [we]
+    data.requirements = [
+        RequirementInfo(id="FR-01.01", text="Login works", priority="Must", split="01-auth"),
+    ]
+    return data
+
+
+class TestKnownFailures:
+    def test_baseline_failures_give_covered_baseline(self, tmp_path: Path):
+        """FRs with failures <= baseline get COVERED (baseline) not FAIL."""
+        data = _make_data(tmp_path, baseline=1, tests_passed=830, tests_total=831)
+        result = generate(data)
+        assert "COVERED (baseline)" in result
+        assert "| FAIL |" not in result
+
+    def test_failures_beyond_baseline_still_fail(self, tmp_path: Path):
+        """FRs with failures > baseline still get FAIL."""
+        data = _make_data(tmp_path, baseline=1, tests_passed=828, tests_total=831)
+        result = generate(data)
+        assert "FAIL" in result
+        assert "COVERED (baseline)" not in result
+
+    def test_no_known_failures_unchanged(self, tmp_path: Path):
+        """Without known_failures, behavior is identical to current."""
+        data = _make_data(tmp_path, baseline=0, tests_passed=830, tests_total=831)
+        result = generate(data)
+        assert "FAIL" in result
+        assert "COVERED (baseline)" not in result
+
+    def test_all_passing_ignores_baseline(self, tmp_path: Path):
+        """When all tests pass, status is COVERED regardless of baseline."""
+        data = _make_data(tmp_path, baseline=1, tests_passed=831, tests_total=831)
+        result = generate(data)
+        assert "COVERED" in result
+        assert "baseline" not in result
 
 
 class TestGenerateFile:

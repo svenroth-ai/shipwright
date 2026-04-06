@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.lib.data_collector import ComplianceData, collect_all
+from scripts.lib.data_collector import ComplianceData, WorkEvent, collect_all
 from scripts.lib.test_evidence import generate, generate_file
 
 
@@ -45,6 +45,32 @@ class TestGenerate:
         data = collect_all(empty_project_root)
         result = generate(data)
         assert "| Total sections tested | 0 |" in result
+
+
+class TestProgressionOrder:
+    def test_newest_event_first(self, empty_project_root: Path):
+        """Row 1 in Test Progression table is the newest event."""
+        data = ComplianceData(project_root=empty_project_root, timestamp="2026-04-06T00:00:00Z")
+        data.work_events = [
+            WorkEvent(
+                id="ev-old", timestamp="2026-04-01T10:00:00Z", source="build",
+                section="01-auth", tests_passed=10, tests_total=10,
+            ),
+            WorkEvent(
+                id="ev-new", timestamp="2026-04-05T10:00:00Z", source="iterate",
+                description="Add login flow", tests_passed=15, tests_total=15,
+            ),
+        ]
+        result = generate(data)
+        lines = result.splitlines()
+        # Find data rows in Test Progression table (skip header/separator)
+        table_rows = [
+            l for l in lines
+            if l.startswith("| ") and ("build" in l or "iterate" in l)
+        ]
+        assert len(table_rows) >= 2
+        assert "iterate" in table_rows[0], "Newest event (iterate) should be first row"
+        assert "build" in table_rows[1], "Older event (build) should be second row"
 
 
 class TestGenerateFile:

@@ -106,6 +106,16 @@ class RequirementInfo:
 
 
 @dataclass
+class KnownFailure:
+    """A known pre-existing test failure."""
+    test: str
+    description: str = ""
+    ticket: str = ""
+    added: str = ""
+    count: int = 1
+
+
+@dataclass
 class WorkEvent:
     """Unified representation of any work_completed event (build or iterate)."""
     id: str
@@ -207,6 +217,9 @@ class ComplianceData:
     dependencies: list[DependencyInfo] = field(default_factory=list)
     requirements: list[RequirementInfo] = field(default_factory=list)
     test_file_map: dict[str, list[str]] = field(default_factory=dict)
+    # Known / baseline failures
+    known_failures: list[KnownFailure] = field(default_factory=list)
+    baseline_failure_count: int = 0
     timestamp: str = ""
 
 
@@ -839,6 +852,37 @@ def _map_requirements_to_events(
 
 
 # ---------------------------------------------------------------------------
+# Known failures
+# ---------------------------------------------------------------------------
+
+def collect_known_failures(project_root: Path) -> tuple[list[KnownFailure], int]:
+    """Load known failures from shipwright_known_failures.json.
+
+    Returns (failures_list, baseline_failure_count).
+    """
+    path = project_root / "shipwright_known_failures.json"
+    if not path.exists():
+        return [], 0
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return [], 0
+
+    failures = [
+        KnownFailure(
+            test=f.get("test", ""),
+            description=f.get("description", ""),
+            ticket=f.get("ticket", ""),
+            added=f.get("added", ""),
+            count=f.get("count", 1),
+        )
+        for f in data.get("known_failures", [])
+    ]
+    baseline = data.get("baseline_failure_count", sum(f.count for f in failures))
+    return failures, baseline
+
+
+# ---------------------------------------------------------------------------
 # Main collector
 # ---------------------------------------------------------------------------
 
@@ -863,6 +907,8 @@ def collect_all(project_root: Path) -> ComplianceData:
     else:
         _map_requirements_to_sections(requirements, sections)
 
+    known_failures, baseline_count = collect_known_failures(project_root)
+
     return ComplianceData(
         project_root=project_root,
         # Event-sourced
@@ -880,5 +926,8 @@ def collect_all(project_root: Path) -> ComplianceData:
         dependencies=collect_dependencies(project_root),
         requirements=requirements,
         test_file_map=collect_test_files(project_root),
+        # Known failures
+        known_failures=known_failures,
+        baseline_failure_count=baseline_count,
         timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     )

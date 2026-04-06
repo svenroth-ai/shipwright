@@ -329,8 +329,15 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
             # Status
             all_passing = all(we.tests_passed == we.tests_total and we.tests_total > 0 for we in events)
             has_tests = any(we.tests_total > 0 for we in events)
+            baseline = data.baseline_failure_count
             if has_tests and all_passing:
                 status = "COVERED"
+            elif has_tests and baseline > 0:
+                max_failures = max(
+                    (we.tests_total - we.tests_passed for we in events if we.tests_total > 0),
+                    default=0,
+                )
+                status = "COVERED (baseline)" if max_failures <= baseline else "FAIL"
             elif has_tests:
                 status = "FAIL"
             else:
