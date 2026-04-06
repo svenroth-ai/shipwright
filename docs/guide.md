@@ -53,7 +53,7 @@ User Description
   SHIPWRIGHT-TEST .......... Unit (Vitest) --> Smoke --> Playwright E2E --> Visual (mockup vs live)
       |
       v
-  SHIPWRIGHT-SECURITY ...... Aikido Scan --> Classify --> Remediation Loop
+  SHIPWRIGHT-SECURITY ...... Scan (OSS/Aikido) --> Classify --> Remediation Loop
       |
       v
   SHIPWRIGHT-DEPLOY ........ Jelastic (Infomaniak) --> Smoke Test --> Rollback on Failure
@@ -583,22 +583,36 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 
 ### 4.7 Security Scanning -- /shipwright-security
 
-**Purpose:** Scans your GitHub repository for security vulnerabilities -- static analysis (SAST), dependency vulnerabilities (SCA), and leaked secrets -- using the Aikido Security API. In pipeline mode, findings are automatically routed to a subagent for remediation.
+**Purpose:** Scans your project for security vulnerabilities -- static analysis (SAST), dependency vulnerabilities (SCA), and leaked secrets. Supports two scanner backends: **OSS** (local CLI tools) and **Aikido** (cloud SaaS). In pipeline mode, findings are automatically routed to a subagent for remediation.
+
+**Scanner Backends:**
+
+| Backend | Tools | Runs where | Cost |
+|---------|-------|-----------|------|
+| **OSS** (default) | Semgrep + Trivy + Gitleaks | Local (CLI binaries) | Free |
+| **Aikido** | Aikido Security API | Cloud (SaaS) | Commercial |
 
 **Command & Arguments:**
 
 ```
 /shipwright-security                          # full scan (pipeline or standalone)
-/shipwright-security issues --repo owner/repo # list open issues for a repo
-/shipwright-security summary                  # severity dashboard
-/shipwright-security report --repo owner/repo # generate Markdown report
+/shipwright-security issues --repo owner/repo # list open issues (Aikido only)
+/shipwright-security summary                  # severity dashboard (Aikido only)
+/shipwright-security report --repo owner/repo # generate Markdown report (Aikido only)
 ```
 
-**What it needs:**
+**What it needs (OSS backend):**
+
+- At least one of: `semgrep`, `trivy`, `gitleaks` installed and on PATH
+- See `references/oss-scanners.md` for installation instructions
+- No account or API key required
+
+**What it needs (Aikido backend):**
 
 - An Aikido Security account with API credentials (`AIKIDO_CLIENT_ID` and `AIKIDO_CLIENT_SECRET` in your environment)
 - Your GitHub repository connected in Aikido's dashboard
-- For pipeline mode: `shipwright_project_config.json` in the project root
+
+**Backend selection:** Auto-detected. Aikido is preferred when credentials are set; otherwise OSS tools are used. Override with `SHIPWRIGHT_SCANNER_BACKEND=oss|aikido` or the profile's `testing.security.provider` field.
 
 **What it produces:**
 
@@ -609,15 +623,15 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 
 **How it works:**
 
-1. Checks for Aikido credentials. If missing, prints setup instructions and stops.
-2. Fetches issues from the Aikido API, filtered to critical, high, and medium severity.
+1. Detects and selects the scanner backend (OSS or Aikido). If neither is configured, prints setup instructions and stops.
+2. Runs the scan -- locally via CLI tools (OSS) or via API call (Aikido).
 3. In pipeline mode, classifies each finding into four categories: auto-fixable (e.g., dependency updates with known patches), agent-fixable (e.g., hardcoded credentials), needs-review (architecture issues), and informational (low-severity best practices).
 4. Auto-fixable issues are patched directly, then tests are re-run to verify the fix.
 5. Agent-fixable issues are handed to a `security-fixer` subagent with full context (file, line, CWE, remediation hint). Each finding gets up to 3 fix attempts.
 6. Needs-review findings are presented to you with options to fix, decline, or defer.
 7. Generates a Markdown report summarizing all findings and their remediation status (fixed, declined, deferred, open).
 
-**Standalone usage:** Yes -- and this is an important distinction. This phase is entirely optional because it requires Aikido credentials. Without them, the pipeline skips security scanning silently. You can also use the standalone commands (`issues`, `summary`, `report`, `repos`) against any Aikido-connected repository, even outside a Shipwright project. This makes it useful as a general-purpose security dashboard.
+**Standalone usage:** Yes -- the phase runs when any scanner backend is available. With OSS tools installed, it works without any cloud account. With Aikido, the standalone commands (`issues`, `summary`, `report`, `repos`) work against any connected repository.
 
 ---
 
@@ -760,7 +774,7 @@ The default profile ships a modern full-stack setup:
 | Design System | Untitled UI (for mockups) | -- |
 | Unit Testing | Vitest | ^4.1.0 |
 | E2E Testing | Playwright | ^1.58.2 |
-| Security Scanning | Aikido (SAST, SCA, secret detection) | API-based |
+| Security Scanning | OSS (Semgrep, Trivy, Gitleaks) or Aikido | Local CLI or Cloud API |
 | Linting | ESLint (flat config), Prettier | ^10.0.3, ^3.8.1 |
 | Error Tracking | Sentry | ^10.45.0 (free tier) |
 | CI | GitHub Actions | On push + PR |
@@ -854,16 +868,28 @@ OPENAI_API_KEY=sk-your-key
 
 **Option C -- No external review:** Simply leave the keys unset. The pipeline continues without the second-opinion check.
 
-### Security Scanning (Aikido)
+### Security Scanning
 
-If you have an Aikido Security account, add your API credentials to enable SAST, SCA, and secret detection scanning:
+The security phase supports two backends. Choose one (or both):
+
+**Option A -- OSS Backend (local, free):** Install one or more CLI tools on your machine:
+
+- **Semgrep** (SAST): `pip install semgrep` or `brew install semgrep`
+- **Trivy** (SCA): `brew install trivy` or download from [GitHub releases](https://github.com/aquasecurity/trivy/releases)
+- **Gitleaks** (Secrets): `brew install gitleaks` or download from [GitHub releases](https://github.com/gitleaks/gitleaks/releases)
+
+Each tool is optional -- install at least one to enable the OSS backend. Semgrep and Trivy auto-update their rules/vulnerability databases on every scan.
+
+**Option B -- Aikido Backend (cloud SaaS):** Add your API credentials:
 
 ```
 AIKIDO_CLIENT_ID=your-client-id
 AIKIDO_CLIENT_SECRET=your-client-secret
 ```
 
-The security phase (`/shipwright-security`) is conditional -- it only runs when `AIKIDO_CLIENT_ID` is present in the environment.
+**Backend selection** is automatic: Aikido is used when credentials are set, otherwise OSS tools are detected. Override with `SHIPWRIGHT_SCANNER_BACKEND=oss|aikido` in your environment.
+
+The security phase (`/shipwright-security`) is conditional -- it only runs when at least one backend is available.
 
 ### Validating Your Setup
 
@@ -1018,6 +1044,10 @@ Eight canonical risk flags trigger safety minimums regardless of complexity leve
 | `touches_shared_infra` | `src/lib/`, `src/components/ui/` | full test suite |
 | `cross_split` | changes span 2+ planning splits | full review + full test suite |
 | `touches_public_api` | API route handlers, exported types | mandatory code review |
+
+### Context Loading
+
+Before assessing intent or complexity, iterate reads all project context upfront: `CLAUDE.md`, coding conventions, the complete decision log (ADRs), architecture overview, all spec files across all planning splits, file-to-FR mappings, last test results, and the 20 most recent git commits. This ensures the agent knows what was already built, what decisions were made, and what was recently changed -- preventing regressions and duplicate work.
 
 ### Planned Run Summary
 
@@ -1246,7 +1276,7 @@ Compliance is updated incrementally after each pipeline phase, so reports reflec
 | External review skipped silently | No API keys set for OpenRouter, Gemini, or OpenAI | Run `validate_env.py --init --phase all`, then add `OPENROUTER_API_KEY` to `.env.local`. |
 | Git operations fail (PR creation, changelog) | GitHub CLI not authenticated | Run `gh auth login` and follow the prompts. |
 | Deploy fails with auth error | Jelastic token expired or invalid | Generate a new token in the Infomaniak Jelastic Dashboard under Settings > Access Tokens. |
-| Security phase skipped | `AIKIDO_CLIENT_ID` not set | Add `AIKIDO_CLIENT_ID` and `AIKIDO_CLIENT_SECRET` to `.env.local`. The security phase is conditional on this variable. |
+| Security phase skipped | No scanner backend available | Install OSS tools (semgrep, trivy, gitleaks) or add Aikido credentials (`AIKIDO_CLIENT_ID`, `AIKIDO_CLIENT_SECRET`) to `.env.local`. |
 | Build hangs after multiple fix attempts | Agent stuck in a debugging loop | The constitution limits retries to 3 attempts, then escalates. If it still loops, type "stop" and review the error manually. |
 | Invalid JSON in `shipwright_events.jsonl` | Interrupted write or manual editing | Run `uv run shared/scripts/tools/validate_event_log.py --project-root .` -- the reader skips corrupt lines automatically, but the validator will identify them. |
 | Commit exists but no event recorded | Agent crashed after commit but before event recording | Run `validate_event_log.py` -- it checks git history against events and reports unmatched commits. |
@@ -1342,7 +1372,7 @@ Or read `CHANGELOG.md` in the repository root for release notes.
 | `/shipwright-plan` | `@spec.md` | -- | Create implementation plan for one split. Researches stack, interviews for clarification, generates section files. Optionally sends plan to external LLMs (Gemini + OpenAI) for review. |
 | `/shipwright-build` | `@section.md` | -- | Implement one section using TDD. Writes failing test, implements code, runs code review subagent, creates Conventional Commit on feature branch. |
 | `/shipwright-test` | -- | `--fix` | Run test suite: unit tests (Vitest), smoke test (HTTP health check), E2E tests (Playwright). The `--fix` flag enables auto-repair of failing tests. |
-| `/shipwright-security` | -- | -- | Run Aikido API security scan (SAST, SCA, secret detection). Classifies findings, runs remediation loop with security-fixer subagent, generates report. Only runs when `AIKIDO_CLIENT_ID` is set. |
+| `/shipwright-security` | -- | -- | Run security scan (OSS or Aikido backend). Classifies findings, runs remediation loop with security-fixer subagent, generates report. Runs when any scanner backend is available. |
 | `/shipwright-changelog` | -- | -- | Parse Conventional Commits from git history, generate Keep-a-Changelog entries, suggest semver bump, create version tag, and open a pull request. |
 | `/shipwright-deploy` | -- | `--env prod` | Deploy to Jelastic (Infomaniak). DEV deploys automatically; PROD requires `--env prod` flag and explicit confirmation. Runs smoke test after deploy, rolls back on failure. |
 | `/shipwright-compliance` | -- | `--phase {name}` | Generate compliance reports: dashboard, RTM, test evidence, change history, and SBOM. The `--phase` flag updates reports incrementally for a specific phase. |

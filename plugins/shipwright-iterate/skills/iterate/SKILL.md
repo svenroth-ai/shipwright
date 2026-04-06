@@ -76,6 +76,23 @@ For initial builds, use: /shipwright-run
 ```
 **Stop and wait.**
 
+### B2. Load Project Context (MANDATORY)
+
+**Read ALL of these files NOW before proceeding.** This context is required for accurate intent classification, complexity assessment, and interview questions. Do NOT skip this step.
+
+1. `CLAUDE.md` — stack, conventions, commands
+2. `agent_docs/conventions.md` — coding standards, naming, patterns
+3. `agent_docs/decision_log.md` — ALL architectural decisions (read the complete file)
+4. `agent_docs/architecture.md` — app structure, component tree, data flow
+5. `shipwright_sync_config.json` — file-to-FR mappings (if exists)
+6. `planning/*/spec.md` — ALL spec files across all splits (read completely)
+7. `shipwright_test_results.json` — last test run status, degraded conditions
+8. Run: `git log --oneline -20` — recent commits (prevents duplicate work)
+
+Note: `shipwright_run_config.json` was already read in Step B (Validate Project).
+
+If a file does not exist, skip it silently (not all projects have all artifacts).
+
 ### C. Generate Run ID
 
 Generate `run_id`: `iterate-{YYYYMMDD}-{short-description}`
@@ -220,18 +237,22 @@ Note: "touches_db" (ordinary query/model edits without schema changes) is NOT a 
 
 ## Context Loading (Progressive Disclosure)
 
-### Layer 1 — Always Load
+### Layer 1 — Always Load (read in Step B2)
 
 1. `shipwright_run_config.json` — project metadata, profile, completed sections
 2. `CLAUDE.md` — project conventions, stack, commands
-3. `agent_docs/decision_log.md` — past architectural decisions
-4. `shipwright_sync_config.json` �� file-to-FR mappings (if exists)
+3. `agent_docs/conventions.md` — coding standards, naming, patterns
+4. `agent_docs/decision_log.md` — ALL architectural decisions (read completely)
+5. `agent_docs/architecture.md` — app structure, component tree, data flow
+6. `shipwright_sync_config.json` — file-to-FR mappings (if exists)
+7. `planning/*/spec.md` — ALL spec files across all splits (read completely)
+8. `git log --oneline -20` — recent commits (prevents duplicate work)
+9. `shipwright_test_results.json` — last test run status, degraded conditions
 
 ### Layer 2 — Load On-Demand
 
 Read only when the change touches their domain:
 
-- `planning/*/spec.md` — only the spec for affected FRs
 - `planning/*/sections/*.md` — only the section files for affected areas
 - `designs/visual-guidelines.md` — only for UI changes
 - `designs/screens/*.html` — only for UI changes requiring mockup reference
@@ -239,7 +260,6 @@ Read only when the change touches their domain:
 - `{build_plugin_root}/skills/build/references/shadcn-rules.md` — Core Rules only, for UI changes
 - `{build_plugin_root}/skills/build/references/shadcn-block-patterns.md` — Index + matching category only
 - `{build_plugin_root}/skills/build/references/mockup-to-shadcn-mapping.md` — for UI changes
-- `agent_docs/architecture.md` — only for structural changes
 - `supabase/migrations/` — only for database changes
 
 Where `{build_plugin_root}` = path to `plugins/shipwright-build` (resolve from `shipwright_run_config.json` or relative to shared).
