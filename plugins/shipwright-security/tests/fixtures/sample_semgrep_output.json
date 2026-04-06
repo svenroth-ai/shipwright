@@ -1,0 +1,52 @@
+{
+  "results": [
+    {
+      "check_id": "python.lang.security.hardcoded-credentials.hardcoded-credentials",
+      "path": "scripts/api.py",
+      "start": {"line": 42, "col": 1},
+      "end": {"line": 42, "col": 50},
+      "extra": {
+        "message": "Hardcoded credentials detected in source code",
+        "severity": "ERROR",
+        "metadata": {
+          "cwe": ["CWE-798"],
+          "confidence": "HIGH",
+          "impact": "HIGH",
+          "fix": "Move credentials to environment variables"
+        }
+      }
+    },
+    {
+      "check_id": "javascript.express.security.audit.xss.mustache-escape",
+      "path": "src/app/page.tsx",
+      "start": {"line": 15, "col": 5},
+      "end": {"line": 15, "col": 30},
+      "extra": {
+        "message": "Detected unescaped user input in template rendering",
+        "severity": "WARNING",
+        "metadata": {
+          "cwe": ["CWE-79"],
+          "confidence": "MEDIUM",
+          "impact": "MEDIUM"
+        }
+      }
+    },
+    {
+      "check_id": "generic.secrets.security.detected-generic-api-key",
+      "path": "config/settings.ts",
+      "start": {"line": 8, "col": 1},
+      "end": {"line": 8, "col": 60},
+      "extra": {
+        "message": "Generic API key detected",
+        "severity": "ERROR",
+        "metadata": {
+          "cwe": ["CWE-798"],
+          "confidence": "HIGH",
+          "impact": "HIGH",
+          "fix": "Use environment variables or a secrets manager"
+        }
+      }
+    }
+  ],
+  "errors": []
+}
