@@ -87,7 +87,8 @@ For initial builds, use: /shipwright-run
 5. `shipwright_sync_config.json` — file-to-FR mappings (if exists)
 6. `planning/*/spec.md` — ALL spec files across all splits (read completely)
 7. `shipwright_test_results.json` — last test run status, degraded conditions
-8. Run: `git log --oneline -20` — recent commits (prevents duplicate work)
+8. `shipwright_events.jsonl` — ALL events — complete project history (work_completed, deployments, etc.)
+9. Run: `git log --oneline -20` — recent commits (prevents duplicate work)
 
 Note: `shipwright_run_config.json` was already read in Step B (Validate Project).
 
@@ -248,6 +249,7 @@ Note: "touches_db" (ordinary query/model edits without schema changes) is NOT a 
 7. `planning/*/spec.md` — ALL spec files across all splits (read completely)
 8. `git log --oneline -20` — recent commits (prevents duplicate work)
 9. `shipwright_test_results.json` — last test run status, degraded conditions
+10. `shipwright_events.jsonl` — ALL events — complete project history (work_completed, deployments, etc.)
 
 ### Layer 2 — Load On-Demand
 
