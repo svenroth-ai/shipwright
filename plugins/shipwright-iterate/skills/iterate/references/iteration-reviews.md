@@ -122,10 +122,13 @@ Write to `agent_docs/session_handoff.md`:
 {any parked visual groups, unresolved items}
 
 ## Resume Command
-/shipwright-iterate  (will detect branch and resume)
+/shipwright-iterate  (Step B1 detects the iterate/* branch and offers Resume/Abandon/Complete)
 ```
 
 ### Generation Rules
 - Best-effort: write what's known, don't block on missing fields
 - Commit to branch before handoff
 - Include enough context for next session to resume without re-reading all files
+
+### How Resume Works (Step B1 in SKILL.md)
+When a new session starts, Step B1 checks for existing `iterate/*` branches and `session_handoff.md`. If found, it offers three options: Resume (skip to remaining phase), Abandon (delete branch, start fresh), or Complete (skip to finalization). The handoff file is the primary source of truth for what was done and what remains.

@@ -139,6 +139,13 @@ Tool names use short form: `Bash`, `Write`, `Edit`, `Read`, `Glob`, `Grep`.
 |-------|---------|--------|--------------|
 | Stop | — | `generate-handoff.py` | Session handoff |
 
+### shipwright-iterate
+
+| Event | Matcher | Script | What It Does |
+|-------|---------|--------|--------------|
+| SessionStart | — | `capture-session-id.py` | Session ID injection |
+| Stop | — | `generate_handoff_on_stop.py` | Session handoff (enables resume via Step B1) |
+
 ### shipwright-changelog
 
 | Event | Matcher | Script | What It Does |

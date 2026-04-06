@@ -76,6 +76,43 @@ For initial builds, use: /shipwright-run
 ```
 **Stop and wait.**
 
+### B1. Check for In-Progress Iterate Run
+
+Before starting fresh, check if a previous iterate run was interrupted:
+
+1. Check for existing `iterate/*` branches:
+   ```bash
+   git branch --list "iterate/*"
+   ```
+2. Check if `agent_docs/session_handoff.md` exists and references an iterate run_id
+3. Check current git branch — if already on an `iterate/` branch
+
+**If an in-progress run is detected:**
+
+```
+================================================================================
+SHIPWRIGHT-ITERATE: Previous Run Detected
+================================================================================
+Run ID:     {run_id from handoff or branch name}
+Branch:     {branch name}
+Phase:      {last phase from handoff, or "unknown"}
+Files:      {modified files count from git status}
+
+Options:
+  1. Resume — continue from where we left off
+  2. Abandon — discard and start fresh (branch will be deleted)
+  3. Complete — skip to finalization (F1-F11)
+================================================================================
+```
+
+**Wait for user choice.**
+
+- **Resume:** Read `agent_docs/session_handoff.md` for full state (completed phases, remaining work, test status, blocked items). Skip Steps C-G (Run ID, Intent, Complexity, Summary, Interview). Go directly to the phase listed under "Remaining" in handoff. Reuse the existing run_id, branch, and iterate spec.
+- **Abandon:** Delete the iterate branch (`git branch -D iterate/{name}`), remove `agent_docs/session_handoff.md`, proceed with fresh run from Step B2.
+- **Complete:** Read handoff for context, skip to Finalization (F1-F11) to commit, record event, and merge what's already been built.
+
+**If no in-progress run detected:** Continue to B2 normally.
+
 ### B2. Load Project Context (MANDATORY)
 
 **Read ALL of these files NOW before proceeding.** This context is required for accurate intent classification, complexity assessment, and interview questions. Do NOT skip this step.
