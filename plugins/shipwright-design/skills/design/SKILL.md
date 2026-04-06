@@ -61,6 +61,15 @@ Output:
 
 The SessionStart hook injects `SHIPWRIGHT_PLUGIN_ROOT=<path>`. Use it directly.
 
+### C2. Load Project Context
+
+Read these files for stack and architecture context before generating mockups:
+
+1. `CLAUDE.md` — stack context (influences component and layout choices)
+2. `agent_docs/architecture.md` — app structure, component hierarchy (if exists)
+
+If a file does not exist, skip it silently.
+
 ---
 
 ## Step 1: Read Specs

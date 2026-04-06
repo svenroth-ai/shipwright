@@ -260,6 +260,48 @@ plan SKILL completes
 
 ---
 
+## Context Loading by Phase
+
+Each plugin reads project context at startup to ensure consistency. This table shows what each phase loads before its main work begins.
+
+### Artifact Read Matrix
+
+| Artifact | project | design | plan | build | test | deploy | iterate | compliance |
+|----------|---------|--------|------|-------|------|--------|---------|------------|
+| constitution.md | read | read | read | read | read | read | read | read |
+| CLAUDE.md | ext | C2 | C2 | C2 | — | — | B2 | — |
+| conventions.md | ext | — | C2 | C2 | — | — | B2 | — |
+| decision_log.md | ext | — | C2 | C2 | — | — | B2 | read |
+| architecture.md | ext | C2 | C2 | C2 | B2 | — | B2 | — |
+| sync_config.json | ext | — | — | — | — | — | B2 | — |
+| spec.md (all splits) | ext | Step 1 | own | own section | — | — | B2 | read |
+| git log | ext | — | C2 | C2 | — | — | B2 | read |
+| test_results.json | — | — | — | — | B2 | B3 gate | B2 | read |
+| events.jsonl | — | — | — | — | — | — | B2 | read |
+| run_config.json | — | — | — | — | — | — | B2 | read |
+| project_config.json | — | Step 1 | — | — | B | B2 | — | read |
+| build_config.json | — | — | — | D | — | — | — | read |
+
+**Key:** `read` = loaded at startup, `ext` = Extension scope only, `C2`/`B2`/`B3` = specific step name,
+`own` = only its own spec/section, `gate` = must-pass check before proceeding, `—` = not loaded.
+
+### Artifact Write Matrix
+
+| Artifact | Created By | Updated By |
+|----------|-----------|-----------|
+| `CLAUDE.md` | project | — |
+| `conventions.md` | project | write_decision_log.py (convention impact) |
+| `decision_log.md` | project (init) | plan, build, deploy, iterate (via write_decision_log.py) |
+| `architecture.md` | project | write_decision_log.py (architecture impact) |
+| `build_dashboard.md` | update_build_dashboard.py | build, test, changelog, deploy, iterate |
+| `session_handoff.md` | generate_handoff_on_stop.py | all plugins (Stop hook) |
+| `events.jsonl` | record_event.py | build, iterate, test, orchestrator (append-only) |
+| `test_results.json` | test, iterate | test, iterate |
+| `compliance/*` | compliance plugin | update_compliance.py (all phases trigger) |
+| `sync_config.json` | project | iterate (FR mappings) |
+
+---
+
 ## Between-Phase Actions
 
 Executed by the orchestrator between each skill invocation (orchestrate SKILL.md):
