@@ -1,0 +1,34 @@
+[
+  {
+    "Description": "Generic API Key",
+    "StartLine": 42,
+    "EndLine": 42,
+    "StartColumn": 10,
+    "EndColumn": 55,
+    "Match": "api_key = 'sk-abc123def456...'",
+    "Secret": "sk-abc123def456",
+    "File": "scripts/config.py",
+    "Commit": "abc123def456",
+    "Entropy": 4.8,
+    "Author": "dev@example.com",
+    "Date": "2024-01-15",
+    "RuleID": "generic-api-key",
+    "Fingerprint": "scripts/config.py:generic-api-key:42"
+  },
+  {
+    "Description": "AWS Access Key ID",
+    "StartLine": 10,
+    "EndLine": 10,
+    "StartColumn": 1,
+    "EndColumn": 40,
+    "Match": "AKIAIOSFODNN7EXAMPLE",
+    "Secret": "AKIAIOSFODNN7EXAMPLE",
+    "File": "deploy/credentials.sh",
+    "Commit": "def789abc012",
+    "Entropy": 3.2,
+    "Author": "ops@example.com",
+    "Date": "2024-02-20",
+    "RuleID": "aws-access-key-id",
+    "Fingerprint": "deploy/credentials.sh:aws-access-key-id:10"
+  }
+]

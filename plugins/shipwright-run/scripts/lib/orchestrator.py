@@ -14,6 +14,7 @@ Output (JSON): config or next step info
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -36,12 +37,29 @@ _COMPLIANCE_SCRIPT = _THIS_PLUGIN.parent / "shipwright-compliance" / "scripts" /
 
 PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "deploy", "compliance"]
 
-# Conditional steps: included only when their env var is set
+# Conditional steps: included only when their check function returns True
 CONDITIONAL_STEPS = {
     "security": {
-        "env_var": "AIKIDO_CLIENT_ID",
+        "check_fn": "_check_security_available",
         "after": "test",  # inserted after this step
     },
+}
+
+
+def _check_security_available() -> bool:
+    """Return True if any security scanner backend is configured."""
+    # Explicit backend selection
+    if os.environ.get("SHIPWRIGHT_SCANNER_BACKEND"):
+        return True
+    # Aikido (cloud)
+    if os.environ.get("AIKIDO_CLIENT_ID"):
+        return True
+    # OSS tools (local)
+    return any(shutil.which(t) for t in ("semgrep", "trivy", "gitleaks"))
+
+
+_CHECK_FNS = {
+    "_check_security_available": _check_security_available,
 }
 
 
@@ -49,7 +67,8 @@ def build_pipeline() -> list[str]:
     """Build pipeline with conditional steps resolved."""
     pipeline = PIPELINE_STEPS.copy()
     for step, rule in CONDITIONAL_STEPS.items():
-        if os.environ.get(rule["env_var"]):
+        check_fn = _CHECK_FNS.get(rule["check_fn"], lambda: False)
+        if check_fn():
             after = rule["after"]
             idx = pipeline.index(after) + 1
             pipeline.insert(idx, step)

@@ -1,13 +1,15 @@
 ---
 name: shipwright-security
-description: Security scanning via Aikido API with automated remediation. Scans connected GitHub repos for vulnerabilities (SAST, SCA, secrets). Findings flow back to the coding agent for fixes. Use after /shipwright-build or standalone for any Aikido-connected repo. Trigger: 'security scan', 'aikido', 'vulnerabilities', 'Sicherheitsscan', 'Schwachstellen'.
+description: Security scanning with automated remediation. Supports two backends — OSS (Semgrep + Trivy + Gitleaks, local) or Aikido (cloud SaaS). Findings flow back to the coding agent for fixes. Use after /shipwright-build or standalone. Trigger: 'security scan', 'aikido', 'semgrep', 'vulnerabilities', 'Sicherheitsscan', 'Schwachstellen'.
 license: MIT
-compatibility: Requires uv (Python 3.11+), requests. Aikido account required.
+compatibility: Requires uv (Python 3.11+). OSS backend needs semgrep/trivy/gitleaks on PATH. Aikido backend needs API credentials.
 ---
 
 # Shipwright Security Skill
 
-Security scanning with automated remediation via Aikido Security API.
+Security scanning with automated remediation. Pluggable scanner backend:
+- **OSS** (default): Semgrep (SAST) + Trivy (SCA) + Gitleaks (Secrets) — local, free
+- **Aikido**: Cloud SaaS with SAST, SCA, secrets, IaC scanning
 
 ---
 
@@ -19,20 +21,20 @@ Security scanning with automated remediation via Aikido Security API.
 
 ```
 ================================================================================
-SHIPWRIGHT-SECURITY: Aikido Security Scanner
+SHIPWRIGHT-SECURITY: Security Scanner
 ================================================================================
-Scans GitHub repos for vulnerabilities via Aikido Security API.
-Findings flow back to the agent for automated remediation.
+Scans projects for vulnerabilities with automated remediation.
+Backends: OSS (Semgrep + Trivy + Gitleaks) or Aikido (cloud SaaS).
 
 Usage: /shipwright-security
-   or: /shipwright-security issues --repo owner/repo
-   or: /shipwright-security summary
-   or: /shipwright-security report --repo owner/repo
+   or: /shipwright-security issues --repo owner/repo     (Aikido only)
+   or: /shipwright-security summary                      (Aikido only)
+   or: /shipwright-security report --repo owner/repo     (Aikido only)
    or: Invoked by /shipwright-run (orchestrator)
 
 Modes:
   Pipeline mode: Inside Shipwright project → full remediation loop
-  Standalone mode: Any Aikido-connected repo → scan + report
+  Standalone mode: Any project → scan + report
 ================================================================================
 ```
 
@@ -51,15 +53,59 @@ If Pipeline mode, read profile:
 ```
 Load profile from `{plugin_root}/../../shared/profiles/{profile}.json`.
 
-### C. Check Credentials
+### C. Select Scanner Backend
+
+**Resolution order:**
+1. `SHIPWRIGHT_SCANNER_BACKEND` env var (`oss` or `aikido`)
+2. Profile `testing.security.provider` field
+3. Auto-detect:
+   - `AIKIDO_CLIENT_ID` set → Aikido backend
+   - `semgrep` / `trivy` / `gitleaks` on PATH → OSS backend
+   - Neither → show setup instructions and stop
+
+Print detected backend:
+```
+Backend: OSS (Semgrep + Trivy + Gitleaks)
+Available: SAST ✓  SCA ✓  Secrets ✓
+```
+
+Or for Aikido:
+```
+Backend: Aikido (Cloud SaaS)
+Available: SAST ✓  SCA ✓  Secrets ✓  IaC ✓
+```
+
+See `references/oss-scanners.md` for OSS tool installation.
+See `references/setup-guide.md` for Aikido setup.
+
+### D. Check Prerequisites
 
 Run: `uv run {plugin_root}/scripts/checks/validate_security.py`
 
-If credentials missing → print setup instructions and stop.
+If prerequisites missing → print setup instructions and stop.
 
 ---
 
-## Step 1: Fetch Issues from Aikido
+## Step 1: Run Security Scan
+
+**For OSS backend:**
+
+The OSS backend runs available tools via subprocess and normalizes the output.
+Use the scanner_backend API:
+
+```python
+# In the plugin's Python scripts:
+from scanner_backend import get_backend
+backend = get_backend()
+findings = backend.scan(target_dir)
+```
+
+Each tool runs its CLI command:
+- Semgrep: `semgrep scan --json --config auto {target}`
+- Trivy: `trivy fs --format json --scanners vuln {target}`
+- Gitleaks: `gitleaks detect --report-format json -s {target} --report-path -`
+
+**For Aikido backend:**
 
 Run the aikido_client script:
 ```bash
@@ -67,6 +113,8 @@ uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py issues
 ```
 
 Parse the JSON response. If `success: false`, show the error and follow alternatives.
+
+**Both backends** return findings in the same normalized schema.
 
 Present findings as a table:
 
@@ -155,12 +203,15 @@ For accepted findings → run security-fixer subagent → re-run tests.
 
 ## Step 6: Generate Report
 
-Run the report generator:
+**For Aikido backend:**
 ```bash
 uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py report --repo {repo}
 ```
 
-Write a Markdown report to the project root using the suggested filename.
+**For OSS backend:**
+Generate the report from the normalized findings returned by `backend.scan()`.
+
+Write a Markdown report to the project root.
 
 **Report contents:**
 - Summary: total findings, severity breakdown
@@ -239,10 +290,17 @@ Write Markdown report to working directory.
 
 ---
 
-## API Details
+## Backend Details
 
+### Aikido (Cloud SaaS)
 - **Base URL:** `https://app.aikido.dev/api`
 - **Auth:** OAuth 2.0 Client Credentials → `POST /oauth/token`
 - **Issues:** `GET /issues/export` with filter params
 - **Repos:** `GET /code-repos`
 - **Docs:** See `references/aikido-api.md`
+
+### OSS (Local CLI Tools)
+- **Semgrep:** SAST scanner, auto-updating rules
+- **Trivy:** SCA scanner, auto-updating vulnerability DB
+- **Gitleaks:** Secrets detector
+- **Docs:** See `references/oss-scanners.md`

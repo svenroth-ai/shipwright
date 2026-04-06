@@ -1,7 +1,7 @@
 [project]
 name = "shipwright-security"
 version = "0.1.0"
-description = "Claude Code plugin for security scanning via Aikido with remediation loop"
+description = "Claude Code plugin for security scanning (OSS or Aikido) with automated remediation loop"
 requires-python = ">=3.11"
 readme = "../../README.md"
 license = {text = "MIT"}

@@ -1,0 +1,55 @@
+{
+  "Results": [
+    {
+      "Target": "package-lock.json",
+      "Type": "npm",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2024-1234",
+          "PkgName": "lodash",
+          "InstalledVersion": "4.17.20",
+          "FixedVersion": "4.17.21",
+          "Severity": "HIGH",
+          "Title": "Prototype Pollution in lodash",
+          "Description": "Versions of lodash prior to 4.17.21 are vulnerable to prototype pollution.",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2024-1234",
+          "CVSS": {
+            "nvd": {"V3Score": 7.5}
+          },
+          "CweIDs": ["CWE-1321"]
+        },
+        {
+          "VulnerabilityID": "CVE-2024-5678",
+          "PkgName": "express",
+          "InstalledVersion": "4.18.0",
+          "FixedVersion": "4.18.3",
+          "Severity": "CRITICAL",
+          "Title": "Path traversal in express static middleware",
+          "Description": "A path traversal vulnerability exists in express versions before 4.18.3.",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2024-5678",
+          "CVSS": {
+            "nvd": {"V3Score": 9.1}
+          },
+          "CweIDs": ["CWE-22"]
+        }
+      ]
+    },
+    {
+      "Target": "requirements.txt",
+      "Type": "pip",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2024-9999",
+          "PkgName": "requests",
+          "InstalledVersion": "2.28.0",
+          "FixedVersion": "2.31.0",
+          "Severity": "MEDIUM",
+          "Title": "Certificate verification bypass in requests",
+          "Description": "The requests library before 2.31.0 does not properly verify TLS certificates.",
+          "CVSS": {},
+          "CweIDs": ["CWE-295"]
+        }
+      ]
+    }
+  ]
+}

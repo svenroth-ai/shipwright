@@ -19,6 +19,9 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+# Late-imported after paths are set up:
+#   scanner_backend.ScannerBackend, register_backend, classify_finding (re-export)
+
 def _fix_windows_encoding() -> None:
     """Fix Windows console encoding for Unicode characters."""
     if sys.platform == "win32":
@@ -284,6 +287,71 @@ def cmd_report(client: AikidoClient, args: argparse.Namespace) -> dict[str, Any]
             "output_path": args.output if args.output else None,
         },
     })
+
+
+# ---------------------------------------------------------------------------
+# ScannerBackend implementation
+# ---------------------------------------------------------------------------
+
+try:
+    from scanner_backend import ScannerBackend, register_backend
+
+    @register_backend
+    class AikidoBackend(ScannerBackend):
+        """Aikido Security SaaS backend."""
+
+        name = "aikido"
+        capabilities = {"sast", "sca", "secrets", "iac"}
+        requires_cloud = True
+
+        def __init__(self) -> None:
+            self._client = AikidoClient()
+
+        def is_configured(self) -> bool:
+            return self._client.is_configured
+
+        def scan(self, target: str, scan_types: list[str] | None = None) -> list[dict[str, Any]]:
+            """Fetch issues from Aikido API and return normalized findings."""
+            params: dict[str, Any] = {}
+            if target:
+                params["filter_code_repo_name"] = target
+
+            data = self._client.get("/issues/export", params)
+            issues = normalize_issues(data)
+
+            # Normalize to standard schema
+            findings = []
+            for issue in issues:
+                finding = {
+                    "id": str(issue.get("id", "")),
+                    "severity": issue.get("severity", "unknown"),
+                    "severity_score": float(issue.get("severity_score", 0)),
+                    "type": issue.get("type", "unknown"),
+                    "rule": issue.get("rule", ""),
+                    "cve_id": issue.get("cve_id"),
+                    "affected_package": issue.get("affected_package"),
+                    "affected_file": issue.get("affected_file"),
+                    "affected_line": issue.get("affected_line"),
+                    "description": issue.get("description", ""),
+                    "remediation_hint": issue.get("remediation_hint"),
+                    "cwe_classes": issue.get("cwe_classes", []),
+                    "source": "aikido",
+                    "_remediation_class": classify_finding(issue),
+                }
+                findings.append(finding)
+            return findings
+
+        def get_setup_instructions(self) -> str:
+            return (
+                "Aikido Security (Cloud SaaS):\n"
+                f"1. Create API credentials at {SETUP_URL}\n"
+                "2. Add AIKIDO_CLIENT_ID and AIKIDO_CLIENT_SECRET to <project>/.env.local\n"
+                "3. See skills/security/references/setup-guide.md"
+            )
+
+except ImportError:
+    # scanner_backend not available (e.g. running standalone CLI)
+    pass
 
 
 # ---------------------------------------------------------------------------
