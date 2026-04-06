@@ -246,6 +246,111 @@ class TestMultiSplit:
         assert "/shipwright-test" in content
 
 
+def _write_events(project_root: Path, events: list[dict]):
+    """Helper to write events to shipwright_events.jsonl."""
+    lines = [json.dumps(e) for e in events]
+    (project_root / "shipwright_events.jsonl").write_text(
+        "\n".join(lines) + "\n", encoding="utf-8"
+    )
+
+
+class TestEventTestStatus:
+    def test_status_from_test_run_event(self, tmp_project):
+        """test_run events render layered test status."""
+        _write_events(tmp_project, [
+            {"v": 1, "type": "test_run", "ts": "2026-04-02T10:00:00Z",
+             "trigger": "pipeline", "layers": {
+                 "unit": {"passed": 715, "total": 715},
+                 "e2e": {"passed": 0, "total": 0},
+                 "smoke": {"status": "pass"},
+             }},
+        ])
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "## Test Status" in content
+        assert "Unit: 715/715" in content
+        assert "(iterate)" not in content
+
+    def test_status_from_iterate_with_results_json(self, tmp_project):
+        """Iterate events use shipwright_test_results.json for layered data."""
+        _write_events(tmp_project, [
+            {"v": 1, "type": "test_run", "ts": "2026-04-02T10:00:00Z",
+             "trigger": "pipeline", "layers": {
+                 "unit": {"passed": 715, "total": 715},
+             }},
+            {"v": 1, "type": "work_completed", "source": "iterate",
+             "ts": "2026-04-06T10:00:00Z", "intent": "feature",
+             "description": "Add search", "tests": {"passed": 830, "total": 831}},
+        ])
+        (tmp_project / "shipwright_test_results.json").write_text(json.dumps({
+            "iterate_latest": {
+                "date": "2026-04-06",
+                "unit": {"passed": 830, "total": 831, "status": "failed"},
+                "e2e": {"passed": 0, "total": 0, "status": "not_run"},
+                "smoke": {"status": "pass"},
+            }
+        }), encoding="utf-8")
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "## Test Status" in content
+        assert "Unit: 830/831" in content
+        assert "(iterate)" in content
+        assert "2026-04-06" in content
+
+    def test_status_from_iterate_flat_fallback(self, tmp_project):
+        """When no results JSON, iterate events show flat passed/total."""
+        _write_events(tmp_project, [
+            {"v": 1, "type": "work_completed", "source": "iterate",
+             "ts": "2026-04-06T10:00:00Z", "intent": "feature",
+             "description": "Add search",
+             "tests": {"passed": 830, "total": 831, "e2e_run": True}},
+        ])
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "## Test Status" in content
+        assert "Tests: 830/831" in content
+        assert "(incl. E2E)" in content
+        assert "(iterate)" in content
+
+    def test_status_prefers_newer_iterate(self, tmp_project):
+        """When iterate event is newer than test_run, iterate data is used."""
+        _write_events(tmp_project, [
+            {"v": 1, "type": "test_run", "ts": "2026-04-02T10:00:00Z",
+             "trigger": "pipeline", "layers": {
+                 "unit": {"passed": 715, "total": 715},
+             }},
+            {"v": 1, "type": "work_completed", "source": "iterate",
+             "ts": "2026-04-06T10:00:00Z", "intent": "change",
+             "description": "Fix bug",
+             "tests": {"passed": 830, "total": 831}},
+        ])
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "(iterate)" in content
+        assert "830/831" in content
+
+    def test_status_prefers_newer_test_run(self, tmp_project):
+        """When test_run is newer than iterate event, test_run data is used."""
+        _write_events(tmp_project, [
+            {"v": 1, "type": "work_completed", "source": "iterate",
+             "ts": "2026-04-01T10:00:00Z", "intent": "change",
+             "description": "Fix bug",
+             "tests": {"passed": 830, "total": 831}},
+            {"v": 1, "type": "test_run", "ts": "2026-04-06T10:00:00Z",
+             "trigger": "pipeline", "layers": {
+                 "unit": {"passed": 831, "total": 831},
+             }},
+        ])
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "(iterate)" not in content
+        assert "Unit: 831/831" in content
+
+    def test_no_test_status_without_data(self, tmp_project):
+        """No Test Status section if no test_run or iterate events."""
+        _write_events(tmp_project, [
+            {"v": 1, "type": "phase_completed", "ts": "2026-04-01T10:00:00Z",
+             "phase": "project"},
+        ])
+        content = generate_dashboard(tmp_project, session_id="test")
+        assert "## Test Status" not in content
+
+
 class TestStepLabels:
     def test_all_steps_have_labels(self):
         for i in range(1, 13):
