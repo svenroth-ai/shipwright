@@ -998,8 +998,8 @@ The result is one of four levels:
 | Complexity | Criteria | What Runs |
 |------------|----------|-----------|
 | **Trivial** | 1 FR, 1-2 files, no risk flags | spec update → build → self-review → unit test (`--related`) → finalize |
-| **Small** | 1-2 FRs, 3-5 files, or risk flags present | + design text (if UI), mini-plan (features), conditional full review |
-| **Medium** | 2-4 FRs, 5-10 files, or cross-split | + iterate spec file, external LLM review, full code review, full test suite, E2E update |
+| **Small** | 1-2 FRs, 3-5 files, or risk flags present | + confirmation question, design text (if UI), mini-plan (features), conditional full review |
+| **Medium** | 2-4 FRs, 5-10 files, or cross-split | + scoping interview (2-3 Qs), iterate spec file, mini-plan with work breakdown, user approval gate, external LLM review, full code review, full test suite, E2E update |
 | **Large** | 4+ FRs, 10+ files, cross-split + risk flags | **Escape hatch** -- recommends switching to the full pipeline |
 
 Users can override complexity (`--complexity medium`) and adjust phases before execution ("skip design", "make it small"). However, safety floors enforced by risk flags cannot be bypassed without explicit acknowledgment.
@@ -1035,15 +1035,25 @@ SHIPWRIGHT-ITERATE: Session Plan
 
 You can adjust before proceeding -- "make it medium", "skip design", "add review".
 
+### Interview & Approval
+
+Iterate replaces manual Plan Mode by building scoping questions directly into the workflow:
+
+- **Small changes:** One confirmation question -- "Verstehe ich richtig: [restated intent]. Soll ich so umsetzen?" If you correct, iterate adjusts scope and may re-assess complexity.
+- **Medium changes:** 2-3 scoping questions for features (what, out-of-scope, UI behavior) or 1-2 for changes (what changes, boundaries). Answers feed directly into the iterate spec and mini-plan. After the mini-plan is written, iterate presents a summary and waits for your approval before building.
+- **Trivial and bugs:** No interview. Trivial changes proceed directly; bugs go straight to reproduction via failing test.
+
+This means you never need to manually trigger `/plan` -- iterate handles the right amount of upfront scoping automatically based on complexity.
+
 ### 3 Intent Paths
 
 The three intent types still define the workflow shape, but each is now complexity-gated:
 
 | Intent | Flow (brackets = complexity-dependent) | Key Difference |
 |--------|---------------------------------------|----------------|
-| **Feature** | [spec] → [plan] → [review] → [design] → build → test → finalize | Appends new FR to spec |
-| **Change** | [spec] → [plan] → [review] → [design] → build → test → finalize | Updates existing FR in spec |
-| **Bug** | [spec] → reproduce → [plan] → fix → test → finalize | Reproduces via failing test first |
+| **Feature** | [interview] → [spec] → [plan] → [approval] → [review] → [design] → build → test → finalize | Appends new FR to spec |
+| **Change** | [interview] → [spec] → [plan] → [approval] → [review] → [design] → build → test → finalize | Updates existing FR in spec |
+| **Bug** | [spec] → reproduce → [plan] → fix → test → finalize | Reproduces via failing test first, no interview |
 
 Each path runs tests automatically, creates a conventional commit with FR references and a `Run-ID` trailer, records a `work_completed` event in the event log, and triggers incremental compliance report updates.
 

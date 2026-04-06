@@ -40,7 +40,7 @@ Create BEFORE mini-plan. Status lifecycle:
 - `implemented` → set during finalization when ACs checked off
 - `superseded` → if escalated to full pipeline
 
-Template: See SKILL.md Section 2.0.
+Template: See SKILL.md Path A Step 1 (inline template).
 
 ---
 
@@ -50,10 +50,14 @@ Template: See SKILL.md Section 2.0.
 
 ### Content
 1. **Files to create/modify** — list with expected change type (new/edit)
-2. **Component hierarchy** (if UI) — parent→child tree
-3. **Data model changes** (if any) — tables, columns, RLS
-4. **Test strategy** — which tests to write/update, E2E needed?
-5. **Alternative approach** (medium only) — one alternative + why rejected
+2. **Work breakdown** (medium only) — numbered implementation steps in order:
+   - Each step = one logical unit of work (1 component, 1 route, 1 migration)
+   - Include test expectation per step
+   - Steps are executed sequentially within one iterate run
+3. **Component hierarchy** (if UI) — parent→child tree
+4. **Data model changes** (if any) — tables, columns, RLS
+5. **Test strategy** — which tests to write/update, E2E needed?
+6. **Alternative approach** (medium only) — one alternative + why rejected
 
 ### Persistence
 - **Small:** Inline in session only (no file)
@@ -68,7 +72,7 @@ Template: See SKILL.md Section 2.0.
 **Trigger:** Stage 2 Repo Scout finalizes complexity = large.
 
 ### Banner
-Print the scope assessment with two options (see SKILL.md Section 3).
+Print the scope assessment with two options (see SKILL.md Section 8).
 
 ### Option 1: Semi-automatic pipeline transition
 1. Write handoff file: `planning/iterate/{run_id}-handoff.json`
