@@ -50,8 +50,8 @@ Usage: /shipwright-iterate --type feature|change|bug "description"
    or: Auto-detected from your prompt (via hook context)
 
 Paths (phases in brackets are complexity-dependent):
-  FEATURE  → [spec] → [plan] → [review] → [design] → build → test → commit
-  CHANGE   → [spec] → [plan] → [review] → [design] → build → test → commit
+  FEATURE  → [interview] → [spec] → [plan] → [approval] → [review] → [design] → build → test → commit
+  CHANGE   → [interview] → [spec] → [plan] → [approval] → [review] → [design] → build → test → commit
   BUG      → [spec] → reproduce → [plan] → fix → test → commit
 
 Complexity: trivial | small | medium | large (auto-detected, overridable)
@@ -150,6 +150,42 @@ SHIPWRIGHT-ITERATE: Session Plan
 User can adjust: "make it medium", "skip design", "skip review".
 See Override Classes below for what can and cannot be skipped.
 
+### G. Interview (complexity-gated)
+
+After the Planned Run Summary, ask clarifying questions BEFORE writing specs or code.
+This replaces manual Plan Mode — iterate handles scoping automatically.
+
+**CRITICAL: Wait for user answers before proceeding to any path step.**
+
+| Complexity | FEATURE | CHANGE | BUG |
+|------------|---------|--------|-----|
+| Trivial | skip | skip | skip (reproduce instead) |
+| Small | 1 confirmation Q | 1 confirmation Q | skip (reproduce instead) |
+| Medium | 2-3 scoping Qs | 1-2 scoping Qs | skip (reproduce instead) |
+| Large | → escape hatch | → escape hatch | → escape hatch |
+
+#### Small — Confirmation (1 question, FEATURE + CHANGE)
+
+> "Verstehe ich richtig: [restate intent in 1 sentence]. Soll ich so umsetzen?"
+
+- If user corrects → update scope, re-assess complexity if needed.
+- If user confirms → proceed to Step 1 of the relevant path.
+
+#### Medium — FEATURE (2-3 questions)
+
+1. "Was genau soll das Feature können? (Kurzbeschreibung + Acceptance Criteria)"
+2. "Was ist explizit out of scope?"
+3. [If UI] "Wie soll es aussehen/sich verhalten?"
+
+Use answers to populate the Iterate Spec (Step 1).
+
+#### Medium — CHANGE (1-2 questions)
+
+1. "Was genau soll sich ändern und warum?"
+2. "Gibt es verwandte Bereiche die unverändert bleiben sollen?"
+
+Use answers to populate the Iterate Spec (Step 1) and scope the Spec Update (Step 2).
+
 ---
 
 ## Canonical Risk Taxonomy
@@ -215,8 +251,32 @@ Where `{build_plugin_root}` = path to `plugins/shipwright-build` (resolve from `
 Follow the Phase Matrix (Section 6) to determine which steps run.
 
 ### Step 1: Iterate Spec (medium+ only)
-Create `planning/iterate/{date}-{short-description}.md` with status `draft`.
-Template: See Section 2.0 in the plan. Include run_id, goal, ACs, affected FRs, out-of-scope.
+Create `planning/iterate/{date}-{short-description}.md` using this template:
+
+```markdown
+# Iterate Spec: {short-description}
+
+- **Run ID:** {run_id}
+- **Type:** {feature | change | bug}
+- **Complexity:** {level}
+- **Status:** draft
+
+## Goal
+{1-2 sentences — populated from interview answers (Section G)}
+
+## Acceptance Criteria
+- [ ] {AC from interview — concrete, testable}
+- [ ] {AC 2}
+
+## Affected FRs
+- {FR-XX.YY}: {what changes or is added}
+
+## Out of Scope
+- {from interview answer — what explicitly will NOT be done}
+
+## Design Notes
+{Filled during design check phase, leave empty initially}
+```
 
 ### Step 2: Spec Update (always)
 1. Identify which spec file(s) cover the affected area
@@ -227,6 +287,24 @@ Template: See Section 2.0 in the plan. Include run_id, goal, ACs, affected FRs, 
 See `references/iteration-planning.md` for protocol.
 - Small: inline in session
 - Medium+: save as `planning/iterate/{date}-{desc}-miniplan.md`
+
+### Step 3b: User Approval Gate (medium+)
+
+Present the iterate spec + mini-plan summary to the user:
+
+> "Hier ist mein Plan:
+> - **Scope:** {AC summary from iterate spec}
+> - **Approach:** {mini-plan summary: files to change, work breakdown, test strategy}
+> - **Out of scope:** {boundaries from iterate spec}
+>
+> Soll ich so umsetzen, oder willst du Scope, ACs oder Approach anpassen?"
+
+**CRITICAL: Wait for user approval before proceeding to build.**
+
+- If user adjusts → update iterate spec + mini-plan accordingly, re-present
+- If user approves → proceed to Step 4
+
+For trivial/small: skip (the confirmation question in Section G is sufficient).
 
 ### Step 4: External LLM Review (medium auto, or --review flag)
 See `references/iteration-planning.md` for invocation.
@@ -318,9 +396,11 @@ Large is a "soft boundary" — force-continue supported with mandatory review + 
 | Phase | Trivial | Small | Medium | Large |
 |---|---|---|---|---|
 | Repo Scout | quick | quick | thorough | → escape hatch |
+| Interview | skip | 1 confirmation Q | FEATURE: 2-3 Q, CHANGE: 1-2 Q | → escape hatch |
 | Iterate Spec | skip | skip | own file in `planning/iterate/` | — |
 | Spec Update (existing FRs) | always (BUG: only if spec wrong) | always (BUG: only if spec wrong) | always (BUG: only if spec wrong) | — |
 | Mini-Plan | skip | FEATURE only | yes + alternative (all types) | — |
+| User Approval | skip | skip | before build | — |
 | External LLM Review | skip | skip | auto | — |
 | Design Check | skip | Tier 1 (text) | Tier 2 (markdown) | — |
 | Build (TDD) | always | always | always | — |
