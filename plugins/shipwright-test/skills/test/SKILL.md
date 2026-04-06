@@ -52,6 +52,15 @@ Load profile from `{plugin_root}/../../shared/profiles/{profile}.json`.
 
 If no config: detect from package.json / pyproject.toml.
 
+### B2. Load Project Context
+
+Read these files for app context before running tests:
+
+1. `agent_docs/architecture.md` — app structure (understand what to test)
+2. `shipwright_test_results.json` — previous test state (if exists, for comparison)
+
+If a file does not exist, skip it silently.
+
 ### C. Determine Test Strategy
 
 Based on profile:

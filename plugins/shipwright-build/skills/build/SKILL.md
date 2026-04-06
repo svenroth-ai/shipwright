@@ -81,6 +81,18 @@ The SessionStart hook injects `SHIPWRIGHT_PLUGIN_ROOT=<path>` into your context.
 find "$(pwd)" -name "setup_implementation_session.py" -path "*/shipwright-build/scripts/checks/*" -type f 2>/dev/null | head -1
 ```
 
+### C2. Load Project Context (MANDATORY)
+
+**Read these files NOW before proceeding.** This context ensures coding standards, past decisions, and app structure are known before implementation begins. Do NOT skip this step.
+
+1. `CLAUDE.md` — stack, conventions, commands
+2. `agent_docs/conventions.md` — coding standards, naming, patterns
+3. `agent_docs/decision_log.md` — ALL architectural decisions (read the complete file)
+4. `agent_docs/architecture.md` — app structure, component tree, data flow
+5. Run: `git log --oneline -10` — recent commits from other sections
+
+If a file does not exist, skip it silently.
+
 ### D. Run Setup Script
 
 ```bash

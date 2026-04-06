@@ -84,6 +84,28 @@ Parse the JSON output:
 
 4. **`optional_missing`**: Log a warning but do not block.
 
+### B3. Verify Tests Passed (MANDATORY)
+
+Before deploying, verify all tests passed:
+
+1. Read `shipwright_test_results.json`
+2. Check: `unit.status == "passed"` AND (`e2e.status == "passed"` OR `e2e.status == "skipped"`)
+3. If tests failed or file does not exist:
+
+```
+================================================================================
+SHIPWRIGHT-DEPLOY: Test Gate Failed
+================================================================================
+
+Cannot deploy — tests have not passed.
+Unit: {status}  |  E2E: {status}
+
+Run /shipwright-test first, or confirm to proceed at your own risk.
+================================================================================
+```
+
+**Ask user for confirmation before proceeding.** Do NOT deploy silently with failing tests.
+
 ### C. Determine Target
 
 | Flag | Target | Behavior |

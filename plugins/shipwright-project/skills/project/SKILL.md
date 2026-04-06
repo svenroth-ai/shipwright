@@ -180,7 +180,14 @@ See [interview-protocol.md](references/interview-protocol.md) for detailed guida
 - **File mode**: Read `{initial_file}` — the requirements file seeds the conversation
 - **Inline mode**: Use `{inline_description}` as starting context
 - **Chat mode**: No pre-existing context — interview is the primary source
-- If Extension scope: also read existing `CLAUDE.md` and `agent_docs/architecture.md`
+- If Extension scope, read ALL existing project context:
+  - `CLAUDE.md` — stack, conventions, commands
+  - `agent_docs/architecture.md` — app structure, component tree
+  - `agent_docs/conventions.md` — coding standards, naming, patterns
+  - `agent_docs/decision_log.md` — ALL past architectural decisions (read completely)
+  - `shipwright_sync_config.json` — existing file-to-FR mappings (if exists)
+  - ALL `planning/*/spec.md` — existing specs across all splits (read completely)
+  - Run: `git log --oneline -20` — recent project history
 
 **Interview depth by scope and input mode:**
 

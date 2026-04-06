@@ -62,11 +62,15 @@ SHIPWRIGHT_PLUGIN_ROOT       # Absolute path to active plugin directory
 
 ### Hooks & Pipeline Reference
 - **Reference doc:** `docs/hooks-and-pipeline.md`
+- **ALWAYS read this file first** when working on any plugin. It contains the
+  complete context loading matrix (who reads what), artifact write matrix (who
+  writes what), hooks registry, config data flow, and between-phase actions.
 - **Rule:** When modifying any hook (hooks.json), adding/removing a pipeline phase,
-  changing phase validators, or altering between-phase actions in the orchestrator,
-  you MUST update `docs/hooks-and-pipeline.md` to reflect the change.
-- This document is the single source of truth for understanding what fires when
-  and the impact of pipeline changes.
+  changing phase validators, altering between-phase actions, or changing what a
+  plugin reads at startup (context loading), you MUST update
+  `docs/hooks-and-pipeline.md` to reflect the change.
+- This document is the single source of truth for understanding what fires when,
+  who reads/writes which artifacts, and the impact of pipeline changes.
 
 ### Documentation Guide
 - **Reference doc:** `docs/guide.md`
