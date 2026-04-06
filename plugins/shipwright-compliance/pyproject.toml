@@ -1,6 +1,6 @@
 [project]
 name = "shipwright-compliance"
-version = "0.1.0"
+version = "0.2.0"
 description = "Claude Code plugin for audit-ready compliance documentation from Shipwright pipeline data"
 requires-python = ">=3.11"
 readme = "../../README.md"

@@ -1,6 +1,6 @@
 [project]
 name = "shipwright"
-version = "0.1.0"
+version = "0.2.0"
 description = "AI-powered SDLC framework built on Claude Code"
 requires-python = ">=3.11"
 readme = "README.md"
@@ -9,7 +9,9 @@ authors = [
     {name = "Sven Roth"}
 ]
 keywords = ["claude-code", "sdlc", "ai-framework", "plugin"]
-dependencies = []
+dependencies = [
+    "openai>=2.30.0",
+]
 
 [project.optional-dependencies]
 dev = [

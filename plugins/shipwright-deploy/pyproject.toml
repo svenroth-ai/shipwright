@@ -1,6 +1,6 @@
 [project]
 name = "shipwright-deploy"
-version = "0.1.0"
+version = "0.2.0"
 description = "Claude Code plugin for Jelastic deployment with rollback"
 requires-python = ">=3.11"
 readme = "../../README.md"

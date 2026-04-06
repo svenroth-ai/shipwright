@@ -1,6 +1,6 @@
 [project]
 name = "shipwright-plan"
-version = "0.1.0"
+version = "0.2.0"
 description = "Claude Code plugin for deep planning with research, interview, and external LLM review"
 requires-python = ">=3.11"
 readme = "../../README.md"

@@ -91,7 +91,7 @@
     {
       "name": "shipwright-iterate",
       "description": "Lightweight SDLC for ongoing changes. Auto-detects intent (feature/change/bug) and runs specs → build → test → commit.",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "source": "./plugins/shipwright-iterate",
       "category": "development",
       "tags": ["iterate", "change", "bug-fix", "continuous"]

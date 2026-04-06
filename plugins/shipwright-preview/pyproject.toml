@@ -1,14 +1,12 @@
 [project]
-name = "shipwright-project"
+name = "shipwright-preview"
 version = "0.2.0"
-description = "Claude Code plugin for decomposing requirements into plannable units"
+description = "Claude Code plugin for local dev server preview"
 requires-python = ">=3.11"
 readme = "../../README.md"
 license = {text = "MIT"}
-authors = [
-    {name = "Sven Roth"}
-]
-keywords = ["claude-code", "plugin", "planning", "decomposition", "requirements"]
+authors = [{name = "Sven Roth"}]
+keywords = ["claude-code", "plugin", "preview", "dev-server"]
 dependencies = []
 
 [project.optional-dependencies]
