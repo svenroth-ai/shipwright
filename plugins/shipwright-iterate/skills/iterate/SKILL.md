@@ -402,6 +402,24 @@ See `references/design-and-testing.md` for 2-tier protocol.
 4. **GREEN — Implement** minimum code until tests pass
 5. Run tests after each significant change
 6. **Verify wiring** — would the test fail if the wiring (onClick → handler → API) is missing? If not: improve the test
+**Migration apply** (if migration files were created during build):
+
+Read `migrations` config from the stack profile (loaded in Step B2).
+
+**Preflight + Apply:**
+1. Run `{migrations.preflight_cmd}` — verify environment ready
+2. If `safe_nonprod_only` is true, verify target is non-production
+3. If preflight fails: Print diagnostic, instruct user to fix. **Stop.**
+4. Run `{migrations.apply_cmd}`
+5. If apply fails: **Stop immediately.** Do not run tests. Ask user for intervention.
+6. Verify with `{migrations.list_cmd}`
+
+**Post-migration manual steps:**
+7. Check `post_apply_manual_steps` — match `trigger_tag` against changes
+8. If matched: inform user via AskUserQuestion, note blocked test areas, wait for confirmation
+
+Apply immediately after creating the migration, before running tests.
+
 7. Run tests:
 ```bash
 npx vitest run

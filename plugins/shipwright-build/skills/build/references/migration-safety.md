@@ -63,23 +63,27 @@ supabase/migrations/_rollback/
 ### 4. Build vs Deploy Responsibility
 
 **Build (this plugin):**
-- Generates forward migration in `supabase/migrations/`
-- Generates rollback migration in `supabase/migrations/_rollback/`
+- Generates forward migration in the profile's `migrations.dir`
+- Generates rollback migration in `{migrations.dir}/_rollback/`
 - Detects destructive changes and warns
-- Does NOT execute migrations
+- **Applies migration** after preflight verification via profile commands
+- Falls back to manual SQL instructions if preflight or apply fails
 
 **Deploy (shipwright-deploy):**
-- DEV: `supabase db push --linked` (automatic)
-- PROD: `supabase db push --linked --dry-run` → user review → manual confirm
+- PROD: Profile's `migrations.dry_run_cmd` → user review → `migrations.apply_cmd`
+- DEV: Verify-only (`migrations.list_cmd`) — migrations already applied during Build/Iterate
+
+**Migration apply is a serialized critical section.** In autonomous mode with parallel section-builders, only one agent at a time may create/apply migrations. See section-builder agent docs for serialization protocol.
 
 ### 5. Post-Migration Manual Steps
 
-Some Supabase features require Dashboard activation after the migration SQL runs:
+Some migrations require manual activation that cannot be automated.
+These steps are defined in the stack profile under `migrations.post_apply_manual_steps`.
 
-| Feature | Migration creates... | Dashboard action required |
-|---------|---------------------|--------------------------|
-| Auth Hooks | Function + grants | Authentication → Hooks → Enable and select function |
-| Database Webhooks | Edge Function | Database → Webhooks → Configure |
-| Realtime | Publication | Database → Replication → Enable table |
+After applying migrations:
+1. Check each `trigger_tag` against the migration content and implementation changes
+2. If a trigger matches, inform the user via AskUserQuestion with the action and note
+3. Note which test areas are blocked (`blocks_tests_for`) until the manual step is completed
+4. Wait for user confirmation before running tests that depend on the manually activated feature
 
-The deploy skill will remind the user of any required manual steps after migration push.
+In autonomous subagent mode: log the manual step as a warning, skip tests matching `blocks_tests_for` keywords, and flag in result JSON.

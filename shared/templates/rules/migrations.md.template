@@ -12,6 +12,15 @@ globs: "**/migrations/**,**/*.sql"
 - Add comments explaining WHY each migration exists, not just what it does
 - New columns should be nullable or have defaults to avoid breaking existing rows
 
+## Migration Application Responsibility
+
+- **Build / Iterate:** Apply migrations to DEV immediately after creation, using the stack profile's `preflight_cmd` → `apply_cmd` sequence. This ensures tests run against the current schema.
+- **Deploy:** Apply migrations to PROD only (profile's `dry_run_cmd` → user confirm → `apply_cmd`). DEV migrations should already be applied.
+- **Preflight:** Always run `preflight_cmd` before `apply_cmd`. If preflight fails (CLI not installed, project not linked, auth missing), stop and inform user with specific remediation steps.
+- **Failure:** If `apply_cmd` fails, stop immediately. Do not run tests. Do not attempt further schema changes. The database may be in a partial state. Ask user for intervention.
+- **Manual steps:** If `post_apply_manual_steps` triggers match, inform user and note which test areas are blocked until the manual step is completed.
+- **Concurrency:** Migration creation and application is a serialized critical section — only one agent may create/apply migrations per workspace at a time.
+
 ## Example: up.sql / down.sql pair
 
 ```sql

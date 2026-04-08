@@ -116,9 +116,11 @@ Run /shipwright-test first, or confirm to proceed at your own risk.
 
 ---
 
-## Step 1: Supabase Migrations (if applicable)
+## Step 1: Migrations (if applicable)
 
-**Only runs if migration files exist** in `supabase/migrations/`.
+**Only runs if migration files exist** in the profile's `migrations.dir`.
+
+Read `migrations` config from the stack profile.
 
 ### Prerequisites (check before running migrations)
 
@@ -128,29 +130,30 @@ Run /shipwright-test first, or confirm to proceed at your own risk.
 
 If any prerequisite fails: stop and inform user with specific remediation steps.
 
-### DEV
+### Verify DEV migrations
+
+DEV migrations are applied during Build/Iterate. Verify all are current:
 ```bash
-SUPABASE_ACCESS_TOKEN="$TOKEN" npx supabase db push --linked
+{migrations.list_cmd}
 ```
-Automatic, no confirmation needed.
+If pending migrations exist:
+- If `supports_idempotent_apply` is true: warn user, offer to apply them now
+- If false or unknown: warn user, require explicit confirmation before applying
 
 ### PROD
 ```bash
-SUPABASE_ACCESS_TOKEN="$TOKEN" npx supabase db push --linked --dry-run
+{migrations.dry_run_cmd}
 ```
-Present dry-run output to user. Require explicit confirmation before:
+Present dry-run output to user (note: dry-run output format varies by stack — present raw output for human review). Require explicit confirmation before:
 ```bash
-SUPABASE_ACCESS_TOKEN="$TOKEN" npx supabase db push --linked
+{migrations.apply_cmd}
 ```
 
 **Destructive changes** (detected by shipwright-build hooks): always warn and require confirmation regardless of target.
 
 ### Post-Migration Manual Steps
 
-If any migration creates a Supabase Auth Hook function (e.g., `custom_access_token_hook`),
-remind the user that the hook must be **manually activated** in the Supabase Dashboard:
-**Dashboard → Authentication → Hooks → Enable the hook and select the function.**
-This cannot be done via CLI or migration.
+Check `migrations.post_apply_manual_steps` from the stack profile. For each entry where `trigger_tag` matches a migration just applied, inform user via AskUserQuestion with the action and note. Wait for confirmation before proceeding.
 
 ---
 
