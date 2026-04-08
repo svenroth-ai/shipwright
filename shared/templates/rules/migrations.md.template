@@ -41,3 +41,13 @@ alter table public.profiles
   drop column if exists notification_email,
   drop column if exists theme;
 ```
+
+## Auth Hook + RLS Dependency
+
+When RLS policies use JWT custom claims (e.g., `auth.jwt() ->> 'user_role'`), the Supabase Auth Hook
+must be enabled in the Dashboard. Without the hook, JWTs have no custom claims and all writes
+guarded by those policies will be silently blocked — even if database grants are correct.
+
+- After creating RLS policies that reference `auth.jwt()` custom claims: verify the Auth Hook is active
+- After enabling/changing an Auth Hook: users must sign out and back in (JWT is only regenerated at login)
+- Build/Iterate agents: when creating an Auth Hook function, explicitly instruct the user to enable it in the Dashboard and re-login

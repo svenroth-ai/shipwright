@@ -37,6 +37,7 @@ Execute these steps **in order**. Do NOT skip steps.
 5. Read `designs/chrome-definition.md` (if exists) for shared nav/header/footer structure
 6. For UI sections, read from `{plugin_root}/skills/build/references/`:
    - `shadcn-rules.md` — Core Rules section (always)
+   - `shadcn-project-conventions.md` — Card/Button project conventions (Shipwright Enhancement)
    - `shadcn-block-patterns.md` — Index first, then ONLY the matching category section(s)
    - `mockup-to-shadcn-mapping.md` — translation table for mockup HTML → shadcn/ui
 7. **Source-of-truth priority** (when sources conflict): Spec > Architecture > Chrome > Mockup > shadcn Rules > Screenshot

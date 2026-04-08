@@ -314,6 +314,7 @@ Read only when the change touches their domain:
 - `designs/screens/*.html` — only for UI changes requiring mockup reference
 - `designs/chrome-definition.md` — only for UI changes needing chrome context
 - `{build_plugin_root}/skills/build/references/shadcn-rules.md` — Core Rules only, for UI changes
+- `{build_plugin_root}/skills/build/references/shadcn-project-conventions.md` — Card/Button conventions, for UI changes
 - `{build_plugin_root}/skills/build/references/shadcn-block-patterns.md` — Index + matching category only
 - `{build_plugin_root}/skills/build/references/mockup-to-shadcn-mapping.md` — for UI changes
 - `supabase/migrations/` — only for database changes
