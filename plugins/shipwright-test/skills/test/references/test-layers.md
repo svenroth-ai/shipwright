@@ -12,6 +12,22 @@ Shipwright uses a layered testing strategy. Each layer catches different classes
 - **When:** After every code change
 - **Speed:** Fast (< 30s)
 
+### 1.5. Integration Tests (Real DB)
+- **What:** CRUD operations, API routes, server actions against real Supabase (localhost only)
+- **Tool:** Vitest with `vitest.integration.config.ts` (NO mocks, `.env.test`)
+- **When:** After unit tests pass, before smoke test
+- **Speed:** Medium (10-30s)
+- **Cleanup:** Cascade delete via test user (`ON DELETE CASCADE`)
+- **Blocking:** Yes — with autofix (3 retries, fast-fail for infra errors like ECONNREFUSED)
+- **Safety:** URL must be localhost/127.0.0.1. Service-role for setup/teardown only. Never weaken RLS to pass tests.
+
+### 1.6. pgTAP Database Tests
+- **What:** RLS policies, constraints, DB functions at schema level
+- **Tool:** `supabase test db` (pgTAP + supabase-test-helpers)
+- **When:** After integration tests, before smoke test. Only if `supabase/tests/database/` exists
+- **Speed:** Fast (< 10s)
+- **Blocking:** Yes — with autofix (3 retries)
+
 ### 2. Smoke Test
 - **What:** HTTP 200 on deployed URL + health endpoint
 - **Tool:** shared/scripts/smoke_test.py

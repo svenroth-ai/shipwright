@@ -20,7 +20,7 @@ Shipwright infers your stack, interviews you about requirements, designs the UI,
 
 - **IREB-aligned specs** from a structured requirements interview - testable acceptance criteria from day one
 - **HTML design mockups** with visual guidelines, design tokens, and a browser-based review viewer
-- **Test-Driven Development** with automated unit, smoke, E2E, and visual comparison testing
+- **Test-Driven Development** with automated unit, integration (real DB), pgTAP (RLS), smoke, E2E, and visual comparison testing
 - **Visual fidelity verification** - screenshot comparison with root-cause grouping catches UI drift automatically
 - **Compliance documentation** generated automatically: traceability matrix, test evidence, change history, SBOM
 - **Architecture docs** (`architecture.md`, `conventions.md`, `decision_log.md`) kept in sync by every phase
@@ -50,7 +50,7 @@ User Description
       |                        ↑
       |              /shipwright-preview (local browser preview, available after first split)
       v
-  SHIPWRIGHT-TEST .......... Unit (Vitest) --> Smoke --> Playwright E2E --> Visual (mockup vs live)
+  SHIPWRIGHT-TEST .......... Unit --> Integration (real DB) --> pgTAP --> Smoke --> E2E --> Visual
       |
       v
   SHIPWRIGHT-SECURITY ...... Scan (OSS/Aikido) --> Classify --> Remediation Loop
@@ -273,7 +273,7 @@ The pipeline runs through these phases in sequence:
 3. **SHIPWRIGHT-DESIGN** -- Generates interactive HTML mockups from your specs. You review them in a browser-based viewer and provide feedback until satisfied.
 4. **SHIPWRIGHT-PLAN** -- Creates a detailed implementation plan for each split. Optionally sends the plan to external LLMs (Gemini, OpenAI) for independent review.
 5. **SHIPWRIGHT-BUILD** -- Implements each section using TDD: writes tests first, then code, then runs a code review subagent. Each section gets a Conventional Commit on a feature branch.
-6. **SHIPWRIGHT-TEST** -- Runs the full test suite: unit tests (Vitest), smoke tests, and Playwright E2E tests.
+6. **SHIPWRIGHT-TEST** -- Runs the full test suite: unit tests (Vitest), integration tests (real DB), pgTAP (RLS), smoke tests, and Playwright E2E tests.
 7. **SHIPWRIGHT-DEPLOY** -- Deploys to Jelastic DEV (if configured). Runs a smoke test against the live environment and rolls back on failure.
 8. **SHIPWRIGHT-CHANGELOG** -- Parses Conventional Commits, generates a changelog entry, suggests a semver bump, and opens a pull request.
 
@@ -527,7 +527,7 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 **Standalone usage.** Yes. Run `/shipwright-build @sections/01-auth.md` for any section file. When used standalone, you manage the section order yourself. When used within the pipeline, the orchestrator feeds sections in dependency order and handles split transitions automatically.
 ### 4.6 Testing -- /shipwright-test
 
-**Purpose:** Runs your project's full test suite across multiple layers -- unit tests, smoke tests, and end-to-end (E2E) browser tests -- to catch bugs before deployment. It is profile-aware, meaning it automatically picks the right test runners and URLs based on your stack.
+**Purpose:** Runs your project's full test suite across multiple layers -- unit tests, integration tests (real DB), pgTAP database tests, smoke tests, and end-to-end (E2E) browser tests -- to catch bugs before deployment. It is profile-aware, meaning it automatically picks the right test runners and URLs based on your stack.
 
 **Command & Arguments:**
 
@@ -547,6 +547,8 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 **What it produces:**
 
 - Unit test results (pass/fail counts, duration)
+- Integration test results (real DB CRUD + RLS verification, pass/fail counts)
+- pgTAP test results (schema-level RLS/constraint verification)
 - Smoke test result (HTTP status against your dev URL)
 - E2E test results (pass/fail/skip counts)
 - Auto-generated E2E specs in `e2e/flows/` and `e2e/pages/` if test plans exist but specs do not
@@ -559,18 +561,22 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 
 1. Detects your stack profile and determines which test runners and URLs to use.
 2. Runs unit tests (e.g., `npx vitest run`). In autonomous mode, failures trigger auto-fix automatically; in guided mode, you need the `--fix` flag.
-3. Runs a smoke test against your dev URL (checking for HTTP 200 on `/api/health`). If the server is not running, it attempts to diagnose and fix the issue before skipping.
+3. Runs integration tests against a real (localhost) Supabase instance (`npx vitest run --config vitest.integration.config.ts`). These verify CRUD operations, RLS policies, and complex queries with no mocks. Uses cascade-delete cleanup via test users. Fast-fails on infrastructure errors (ECONNREFUSED). Skipped if profile has no `testing.integration` config or `tests/integration/` directory does not exist.
+4. Runs pgTAP database tests (`supabase test db`) if `supabase/tests/database/` exists. These verify RLS policies and constraints at the schema level.
+5. Runs a smoke test against your dev URL (checking for HTTP 200 on `/api/health`). If the server is not running, it attempts to diagnose and fix the issue before skipping.
 4. If E2E test plans exist from `/shipwright-plan` but no `.spec.ts` files have been written yet, it generates Playwright specs from the plans using the Page Object Model pattern.
 5. Runs Playwright E2E tests (starts and stops the dev server automatically). Failed tests can be debugged with a browser-fixer subagent that reads screenshots and error messages.
 6. Runs visual comparison as a **regressions-only safety net**. Reads `visual-build-report.json` (what the build phase already verified) and triages each screen: regressions (was passing in build, now failing), persistent failures (build gave up), and unchecked screens (never verified). Only fixes regressions and persistent failures -- resolved screens are skipped. Uses the same root-cause grouping and fix loops as build.
 7. Runs an E2E results verification step: compares `shipwright_test_results.json` against Playwright's authoritative `e2e-results.json` to catch count discrepancies (e.g., setup project tests being counted as E2E tests). If numbers diverge, the pipeline corrects `shipwright_test_results.json` and documents the reason.
 8. Produces a structured results summary with explicit status for every layer.
 
-**The four test layers and enforcement rules** are central to how the pipeline decides whether to continue:
+**The six test layers and enforcement rules** are central to how the pipeline decides whether to continue:
 
 | Layer | On Failure | Rationale |
 |-------|-----------|-----------|
 | Unit tests | Pipeline stops (blocking) | Unit tests are deterministic -- failure means a real bug |
+| Integration tests | Autofix (3 retries, fast-fail for infra errors), then blocking | Deterministic against real DB -- failure means a real schema/RLS bug |
+| pgTAP DB tests | Autofix (3 retries), then blocking | Schema-level RLS/constraint verification |
 | Smoke test | Pipeline stops (blocking) | If the app is not running, deployment is pointless |
 | E2E tests | Warning only (non-blocking) | E2E tests can be flaky; failures are logged but do not block |
 | Visual comparison | Warning only (advisory) | Visual mismatches are logged but do not block deployment |
@@ -737,7 +743,7 @@ No flags or arguments. It reads existing pipeline data and generates (or updates
 
 - `compliance/dashboard.md` -- The starting point. Quality indicators, project velocity, and links to all compliance artifacts.
 - `compliance/traceability-matrix.md` -- Maps every requirement to the work events (build sections and iterate changes) that verify it, with a "Last Verified" column showing when each requirement was last tested.
-- `compliance/test-evidence.md` -- Collects test results across all layers (unit, smoke, E2E) with pass/fail counts and skip reasons. Provides evidence that the software was tested.
+- `compliance/test-evidence.md` -- Collects test results across all layers (unit, integration, pgTAP, smoke, E2E, visual) with pass/fail counts and skip reasons. Provides evidence that the software was tested.
 - `compliance/change-history.md` -- Documents all commits, decisions (from `agent_docs/decision_log.md`), and version tags. Shows who changed what and why.
 - `compliance/sbom.md` -- Software Bill of Materials listing all dependencies with versions and license types. Flags copyleft licenses that may have legal implications.
 
@@ -1371,7 +1377,7 @@ Or read `CHANGELOG.md` in the repository root for release notes.
 | `/shipwright-design` | -- | -- | Generate HTML mockups from specs. Produces screens with review viewer, feedback loop, and spec backflow. Runs after project, before plan. |
 | `/shipwright-plan` | `@spec.md` | -- | Create implementation plan for one split. Researches stack, interviews for clarification, generates section files. Optionally sends plan to external LLMs (Gemini + OpenAI) for review. |
 | `/shipwright-build` | `@section.md` | -- | Implement one section using TDD. Writes failing test, implements code, runs code review subagent, creates Conventional Commit on feature branch. |
-| `/shipwright-test` | -- | `--fix` | Run test suite: unit tests (Vitest), smoke test (HTTP health check), E2E tests (Playwright). The `--fix` flag enables auto-repair of failing tests. |
+| `/shipwright-test` | -- | `--fix` | Run test suite: unit tests (Vitest), integration tests (real DB), pgTAP (RLS), smoke test (HTTP), E2E (Playwright). The `--fix` flag enables auto-repair of failing tests. |
 | `/shipwright-security` | -- | -- | Run security scan (OSS or Aikido backend). Classifies findings, runs remediation loop with security-fixer subagent, generates report. Runs when any scanner backend is available. |
 | `/shipwright-changelog` | -- | -- | Parse Conventional Commits from git history, generate Keep-a-Changelog entries, suggest semver bump, create version tag, and open a pull request. |
 | `/shipwright-deploy` | -- | `--env prod` | Deploy to Jelastic (Infomaniak). DEV deploys automatically; PROD requires `--env prod` flag and explicit confirmation. Runs smoke test after deploy, rolls back on failure. |

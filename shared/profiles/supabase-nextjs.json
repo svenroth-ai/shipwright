@@ -70,6 +70,38 @@
       "framework": "@playwright/test",
       "version": "^1.58.2"
     },
+    "integration": {
+      "framework": "vitest",
+      "config": "vitest.integration.config.ts",
+      "command": "npx vitest run --config vitest.integration.config.ts",
+      "dir": "tests/integration/",
+      "helpers_template": "integration-helpers-supabase.ts.template",
+      "vitest_config_template": "vitest.integration.config.ts.template",
+      "cleanup_strategy": "cascade-delete-test-user",
+      "db_strategy": { "local": "supabase start", "ci": "supabase start", "dev": "supabase start" },
+      "env_file": ".env.test",
+      "url_safety_check": "localhost_only",
+      "requires_env": ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
+      "test_users": {
+        "admin": { "env_email": "TEST_ADMIN_EMAIL", "env_password": "TEST_ADMIN_PASSWORD" },
+        "member": { "env_email": "TEST_MEMBER_EMAIL", "env_password": "TEST_MEMBER_PASSWORD" }
+      },
+      "timeout_ms": 30000,
+      "sequential": true,
+      "autofix": {
+        "max_retries": 3,
+        "strategy": "structured-debugging",
+        "fast_fail_patterns": ["ECONNREFUSED", "ETIMEDOUT", "connect ENOENT"],
+        "fast_fail_threshold": 0.5
+      }
+    },
+    "db_tests": {
+      "framework": "pgtap",
+      "command": "supabase test db",
+      "dir": "supabase/tests/database/",
+      "setup_script": "supabase/tests/database/000-setup-tests-hooks.sql",
+      "helpers": "supabase-test-helpers"
+    },
     "security": {
       "provider": "auto",
       "scope": ["sast", "sca", "secret-detection"],
@@ -114,7 +146,7 @@
     "pipeline": {
       "on_push": ["develop", "feature/*"],
       "on_pr": ["main"],
-      "jobs": ["lint", "type-check", "unit-tests"],
+      "jobs": ["lint", "type-check", "unit-tests", "integration-tests"],
       "on_pr_jobs": ["aikido-scan"]
     }
   },
@@ -128,12 +160,15 @@
     "supabase/migrations/_rollback/": "SQL rollback migrations (not executed by supabase db push)",
     "supabase/functions/": "Edge Functions",
     "tests/": "Vitest unit tests",
+    "tests/integration/": "Vitest integration tests (real DB, no mocks, localhost only)",
+    "supabase/tests/database/": "pgTAP database tests (RLS, constraints, DB functions)",
     "e2e/": "Playwright E2E tests",
     "public/": "Static assets"
   },
 
   "env_files": {
     ".env.local": "Local development (not committed)",
+    ".env.test": "Integration test environment — localhost Supabase only (not committed)",
     ".env.example": "Template with all required vars (committed)",
     "jelastic_dashboard": "DEV/PROD secrets (SUPABASE_URL, SUPABASE_KEY, etc.)"
   },
@@ -142,7 +177,11 @@
     "build": [
       {"name": "NEXT_PUBLIC_SUPABASE_URL", "description": "Supabase project URL"},
       {"name": "NEXT_PUBLIC_SUPABASE_ANON_KEY", "description": "Supabase anonymous key"},
-      {"name": "SUPABASE_SERVICE_ROLE_KEY", "description": "Supabase service role key (admin operations: webhooks, role upgrades)"}
+      {"name": "SUPABASE_SERVICE_ROLE_KEY", "description": "Supabase service role key (admin operations: webhooks, role upgrades)"},
+      {"name": "TEST_ADMIN_EMAIL", "description": "Test admin user email for integration tests", "optional": true},
+      {"name": "TEST_ADMIN_PASSWORD", "description": "Test admin user password for integration tests", "optional": true},
+      {"name": "TEST_MEMBER_EMAIL", "description": "Test member user email for integration tests", "optional": true},
+      {"name": "TEST_MEMBER_PASSWORD", "description": "Test member user password for integration tests", "optional": true}
     ],
     "deploy": [
       {"name": "JELASTIC_TOKEN", "description": "Infomaniak Jelastic API token"},
@@ -166,7 +205,7 @@
     "All database changes via migrations in supabase/migrations/"
   ],
 
-  "rules": ["tests", "api", "migrations", "components", "config"],
+  "rules": ["tests", "integration-tests", "api", "migrations", "components", "config"],
 
   "package_manager": "npm",
 

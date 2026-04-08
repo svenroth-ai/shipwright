@@ -30,11 +30,13 @@ Usage: /shipwright-test
    or: Invoked by /shipwright-run (orchestrator)
 
 Test layers:
-  1. Unit tests (Vitest / pytest)
-  2. Smoke test (HTTP 200 on DEV URL)
-  3. Playwright E2E (if UI project + DEV URL available)
-  4. Visual comparison (if designs/screen-routes.json exists)
-  5. Security scan → see /shipwright-security
+  1.  Unit tests (Vitest / pytest)
+  1.5 Integration tests (if profile has testing.integration)
+  1.6 pgTAP database tests (if supabase/tests/database/ exists)
+  2.  Smoke test (HTTP 200 on DEV URL)
+  3.  Playwright E2E (if UI project + DEV URL available)
+  4.  Visual comparison (if designs/screen-routes.json exists)
+  5.  Security scan → see /shipwright-security
 ================================================================================
 ```
 
@@ -95,6 +97,85 @@ up to 3 retries) without requiring the explicit --fix flag.
 4. Attempt targeted fix based on hypothesis
 5. Re-run tests
 6. After 3 retries (or 2 with same root cause): report remaining failures with diagnosis
+
+---
+
+## Step 1.5: Run Integration Tests
+
+**Skip if:** Profile has no `testing.integration` config, OR `tests/integration/` directory does not exist.
+
+**Check prerequisites:**
+1. Read profile `testing.integration` block
+2. Verify env vars from `.env.test`: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+3. Verify URL is localhost/127.0.0.1 (safety check)
+4. **In CI:** Missing env vars = FAIL (not skip). **Locally:** Missing env vars = skip with warning.
+
+**Run integration tests:**
+```bash
+npx vitest run --config vitest.integration.config.ts
+```
+
+Or via runner script:
+```bash
+uv run {plugin_root}/scripts/lib/test_runner.py \
+  --profile "{profile}" \
+  --layer integration \
+  --cwd {project_root} \
+  --skip-if-missing
+```
+
+**Autofix behavior:** Same structured debugging as unit tests (root cause → hypothesis → fix → re-run), max 3 retries.
+
+**Fast-fail rules:**
+- If error matches `ECONNREFUSED`, `ETIMEDOUT`, `connect ENOENT` → skip autofix, fail immediately with infrastructure diagnosis
+- If >50% of integration tests fail simultaneously → skip autofix, fail with diagnosis (likely global issue, not individual test bugs)
+
+**Never auto-fix by:**
+- Weakening RLS policies
+- Switching test assertions to use service-role client
+- Disabling URL safety checks
+
+**Common auto-fixable patterns:**
+
+| Error Pattern | Diagnosis | Auto-fix |
+|---|---|---|
+| `relation "x" does not exist` | Migration not applied | Run `supabase db push --linked` |
+| `permission denied for table` | RLS policy issue | Check auth context setup in test |
+| `null value in column "x"` | Test data setup incomplete | Fix `beforeAll` / seed data |
+| `duplicate key value` | Previous cleanup failed | Fix `afterAll` cleanup |
+| Auth sign-in failure | Test user not provisioned | Create test user or check credentials |
+
+**Record results:**
+- `integration_passed`: number of passing tests
+- `integration_total`: total tests
+- `integration_duration_s`: duration in seconds
+- If skipped: `integration_skipped: true`, `integration_skip_reason: "..."`
+
+---
+
+## Step 1.6: Run pgTAP Database Tests
+
+**Skip if:** `supabase/tests/database/` directory does not exist.
+
+**Run pgTAP tests:**
+```bash
+supabase test db
+```
+
+Or via runner script:
+```bash
+uv run {plugin_root}/scripts/lib/test_runner.py \
+  --profile "{profile}" \
+  --layer pgtap \
+  --cwd {project_root} \
+  --skip-if-missing
+```
+
+**Autofix:** Same as integration tests (structured debugging, max 3 retries).
+
+**Record results:**
+- `pgtap_passed` / `pgtap_total` / `pgtap_duration_s`
+- If skipped: `pgtap_skipped: true`, `pgtap_skip_reason: "no supabase/tests/database/ directory"`
 
 ---
 
@@ -404,6 +485,8 @@ This step is a no-op in shipwright-test.
 SHIPWRIGHT-TEST RESULTS
 ================================================================================
 Unit tests:    {passed}/{total} passed ({duration}s)
+Integration:   {passed}/{total} passed ({duration}s) | SKIP: {reason}
+pgTAP:         {passed}/{total} passed ({duration}s) | SKIP: {reason}
 Smoke test:    {PASS | FAIL | SKIP} ({url}, {response_time}ms)
 E2E tests:     {passed}/{total} passed | SKIP
 Visual tests:  {passed}/{total} matched | SKIP
@@ -428,11 +511,13 @@ Test results determine pipeline continuation:
 | Layer | On FAIL | Rationale |
 |-------|---------|-----------|
 | **Unit tests** | **Pipeline stops** (blocking) | Unit tests are deterministic — failure = real bug |
+| **Integration tests** | Autofix (3 retries, fast-fail for infra), then blocking | Deterministic against real DB |
+| **pgTAP tests** | Autofix (3 retries), then blocking | Schema-level verification |
 | **Smoke test** | **Pipeline stops** (blocking) | App not running = can't deploy |
 | **E2E tests** | **Warning only** (non-blocking) | E2E can be flaky; log failures but continue |
 | **Visual tests** | **Warning only** (non-blocking) | Visual divergence ≠ broken functionality |
 
-If unit tests or smoke test FAIL: set phase status to `FAIL` and inform user. Do NOT proceed to deploy.
+If unit tests, integration tests, pgTAP tests, or smoke test FAIL: set phase status to `FAIL` and inform user. Do NOT proceed to deploy.
 
 ### Completion Gate
 
@@ -441,6 +526,8 @@ Before marking the test phase complete, ALL test layers must have an explicit re
 | Layer | Required Result |
 |-------|----------------|
 | Unit tests | `pass` or `fail` (always required) |
+| Integration tests | `pass`, `fail`, or `skipped: {reason}` |
+| pgTAP tests | `pass`, `fail`, or `skipped: {reason}` |
 | Smoke test | `pass`, `fail`, or `skipped: {reason}` |
 | E2E tests | `pass`, `fail`, or `skipped: {reason}` |
 | Visual tests | `pass`, `fail`, or `skipped: {reason}` |
@@ -451,6 +538,10 @@ If any layer has NO result (was never executed and has no skip reason):
 - Set phase status to `incomplete`
 
 Valid skip reasons:
+- `skipped: no testing.integration config in profile` (Integration)
+- `skipped: tests/integration/ directory does not exist` (Integration)
+- `skipped: missing integration test env vars` (Integration, local only)
+- `skipped: no supabase/tests/database/ directory` (pgTAP)
 - `skipped: no DEV URL available` (Smoke + E2E)
 - `skipped: no Playwright config` (E2E)
 - `skipped: profile has no UI` (E2E)

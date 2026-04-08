@@ -2,9 +2,12 @@
 """Profile-aware test runner.
 
 Determines the correct test command based on stack profile and runs it.
+Reads commands dynamically from profile JSON when --profile-path is provided,
+falling back to hardcoded defaults otherwise.
 
 Usage:
-    uv run test_runner.py --profile <name> --layer <unit|e2e|all>
+    uv run test_runner.py --profile <name> --layer <unit|integration|pgtap|e2e|all>
+    uv run test_runner.py --profile-path <path/to/profile.json> --layer <layer>
     uv run test_runner.py --command <custom_command>
 
 Output (JSON):
@@ -28,16 +31,19 @@ import time
 from pathlib import Path
 
 
-# Profile → test commands
+# Profile → test commands (fallback when --profile-path not provided)
 PROFILE_TEST_COMMANDS = {
     "supabase-nextjs": {
         "unit": "npx vitest run",
+        "integration": "npx vitest run --config vitest.integration.config.ts",
+        "pgtap": "npx supabase test db",
         "e2e": "npx playwright test",
     },
 }
 
 DEFAULT_COMMANDS = {
     "unit": "npm test",
+    "integration": "npx vitest run --config vitest.integration.config.ts",
     "e2e": "npx playwright test",
 }
 
@@ -127,8 +133,31 @@ def run_tests(command: str, cwd: str | None = None) -> dict:
         }
 
 
-def get_test_command(profile: str, layer: str) -> str:
-    """Get the test command for a profile and layer."""
+def get_test_command(profile: str, layer: str, profile_path: Path | None = None) -> str:
+    """Get the test command for a profile and layer.
+
+    When profile_path is provided, reads commands dynamically from the profile
+    JSON file (single source of truth). Falls back to hardcoded defaults otherwise.
+    """
+    if profile_path and profile_path.exists():
+        try:
+            profile_data = json.loads(profile_path.read_text(encoding="utf-8"))
+            testing = profile_data.get("testing", {})
+            if layer == "integration":
+                cmd = testing.get("integration", {}).get("command", "")
+                if cmd:
+                    return cmd
+            elif layer == "pgtap":
+                cmd = testing.get("db_tests", {}).get("command", "")
+                if cmd:
+                    return cmd
+            elif layer in testing:
+                layer_config = testing[layer]
+                if isinstance(layer_config, dict) and "command" in layer_config:
+                    return layer_config["command"]
+        except (json.JSONDecodeError, OSError):
+            pass  # Fall back to hardcoded defaults
+
     commands = PROFILE_TEST_COMMANDS.get(profile, DEFAULT_COMMANDS)
     return commands.get(layer, DEFAULT_COMMANDS.get(layer, f"echo 'No test command for {layer}'"))
 
@@ -136,27 +165,57 @@ def get_test_command(profile: str, layer: str) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Profile-aware test runner")
     parser.add_argument("--profile", default="supabase-nextjs", help="Stack profile name")
-    parser.add_argument("--layer", default="unit", choices=["unit", "e2e", "all"])
+    parser.add_argument("--layer", default="unit", choices=["unit", "integration", "pgtap", "e2e", "all"])
     parser.add_argument("--command", help="Custom test command (overrides profile)")
     parser.add_argument("--cwd", help="Working directory for test execution")
+    parser.add_argument("--profile-path", help="Path to profile JSON for dynamic command resolution")
+    parser.add_argument("--skip-if-missing", action="store_true",
+                        help="Skip gracefully if test dir does not exist (integration/pgtap)")
     args = parser.parse_args()
 
+    profile_path = Path(args.profile_path) if args.profile_path else None
+
     if args.layer == "all":
-        layers = ["unit", "e2e"]
+        layers = ["unit", "integration", "pgtap", "e2e"]
     else:
         layers = [args.layer]
 
     results = []
     all_success = True
 
+    # Directory existence checks for skip-if-missing
+    skip_dirs = {
+        "integration": "tests/integration",
+        "pgtap": "supabase/tests/database",
+    }
+
     for layer in layers:
+        # Skip layers whose directories don't exist (when --skip-if-missing)
+        if args.skip_if_missing and layer in skip_dirs and args.cwd:
+            layer_dir = Path(args.cwd) / skip_dirs[layer]
+            if not layer_dir.exists():
+                results.append({
+                    "success": True,
+                    "layer": layer,
+                    "command": "skipped",
+                    "exit_code": 0,
+                    "passed": 0,
+                    "failed": 0,
+                    "total": 0,
+                    "duration_seconds": 0,
+                    "output": f"Skipped: {skip_dirs[layer]}/ directory does not exist",
+                    "skipped": True,
+                    "skip_reason": f"no {skip_dirs[layer]}/ directory",
+                })
+                continue
+
         if layer == "e2e" and not args.command and args.cwd:
             # Use Playwright runner for structured E2E results
             from playwright_runner import run_playwright
             result = run_playwright(Path(args.cwd))
             result["layer"] = "e2e"
         else:
-            command = args.command or get_test_command(args.profile, layer)
+            command = args.command or get_test_command(args.profile, layer, profile_path)
             result = run_tests(command, args.cwd)
             result["layer"] = layer
         results.append(result)

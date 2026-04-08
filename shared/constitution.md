@@ -20,6 +20,9 @@
 - Update compliance incrementally after each pipeline phase
 - Keep files under 300 lines — split if larger
 - Fix the code, not the test — never weaken assertions to make tests pass
+- Never weaken RLS policies to make integration tests pass — fix the test or auth context instead
+- Service-role client is for test setup/teardown ONLY — never use it for test assertions
+- Integration tests must only run against localhost/127.0.0.1 Supabase instances
 - Diagnose test failures before skipping — attempt autonomous fix (e.g., restart services, seed data, fix config), escalate to user if fix fails after 2 attempts
 - Verify after non-trivial edits — run `tsc --noEmit` (TypeScript) or project linter before reporting success
 - Re-read files before editing in long sessions (10+ messages) — do not trust cached content after auto-compaction
@@ -70,6 +73,8 @@
 | Layer | On FAIL | Rationale |
 |---|---|---|
 | Unit tests | Pipeline stops (blocking) | Deterministic — failure = real bug |
+| Integration tests | Autofix (3 retries, fast-fail for infra errors), then blocking | Deterministic against real DB — failure = real schema/RLS bug |
+| pgTAP DB tests | Autofix (3 retries), then blocking | Schema-level RLS/constraint verification |
 | Smoke test | Pipeline stops (blocking) | App not running = can't deploy |
 | E2E tests | Warning only (non-blocking) | Can be flaky; log but continue |
 

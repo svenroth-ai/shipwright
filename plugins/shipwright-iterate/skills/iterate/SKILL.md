@@ -424,6 +424,12 @@ Apply immediately after creating the migration, before running tests.
 ```bash
 npx vitest run
 npx tsc --noEmit
+
+# Integration tests (if CRUD/DB changes)
+npx vitest run --config vitest.integration.config.ts
+
+# pgTAP tests (if new RLS migrations)
+supabase test db
 ```
 
 ### Step 7: Self-Review (always)
@@ -441,7 +447,7 @@ See `references/design-and-testing.md`.
 - Safety floor paths → always full suite
 See `references/design-and-testing.md` for details.
 
-### Step 11: E2E Update (medium+ with new flows)
+### Step 11: E2E Update (features that change user-visible behavior + medium+ changes with new flows)
 See `references/design-and-testing.md`.
 
 ### Step 12: Visual Comparison (if structural UI)
@@ -531,7 +537,9 @@ Large is a "soft boundary" — force-continue supported with mandatory review + 
 | Browser Verify | if UI | if UI | if UI | — |
 | Smoke Test | if server up | if server up | if server up | — |
 | Unit Test | `--related` | `--related` | full suite | — |
-| E2E Update | skip | skip | if new flows | — |
+| Integration Test | if CRUD | if CRUD | full suite | — |
+| pgTAP DB Test | if new RLS | if new RLS | full suite | — |
+| E2E Update | if feature+UI | if feature+UI | always | — |
 | Visual Comparison | skip | if structural UI | if UI | — |
 | architecture.md | if structural impact | if structural impact | if structural impact | — |
 | Test Results JSON | always | always | always | — |
@@ -594,6 +602,12 @@ Run the full test suite NOW — do not rely on earlier results:
 ```bash
 npx vitest run
 npx tsc --noEmit
+
+# Integration tests (if CRUD/DB changes)
+npx vitest run --config vitest.integration.config.ts
+
+# pgTAP tests (if new RLS migrations)
+supabase test db
 ```
 
 **Read the actual output.** Verify:
@@ -646,6 +660,8 @@ Write latest-run state to `shipwright_test_results.json`:
     "run_id": "{run_id}",
     "date": "{YYYY-MM-DD}",
     "unit": { "status": "passed|failed|not_run", "passed": N, "total": N },
+    "integration": { "status": "passed|failed|skipped|not_run", "passed": N, "total": N },
+    "pgtap": { "status": "passed|failed|skipped|not_run", "passed": N, "total": N },
     "e2e": { "status": "passed|partial|skipped|not_run", "passed": N, "total": N },
     "visual": { "status": "passed|partial|skipped|not_run", "passed": N, "total": N },
     "smoke": { "status": "passed|skipped|not_run" },

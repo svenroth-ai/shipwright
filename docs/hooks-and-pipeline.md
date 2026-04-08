@@ -51,7 +51,7 @@ CONDITIONAL_STEPS = {"security": {"env_var": "AIKIDO_CLIENT_ID", "after": "test"
 PIPELINE_PHASES = ["project", "design", "plan", "build", "test", "changelog", "deploy", "compliance"]
 ```
 Dashboard uses `PIPELINE_PHASES` as canonical order, merging dynamic steps (e.g., "security") from `run_config["pipeline"]`.
-After build completes: shows split summary table. After test completes: shows test layer results (unit/smoke/e2e).
+After build completes: shows split summary table. After test completes: shows test layer results (unit/integration/pgtap/smoke/e2e/visual).
 
 ---
 
