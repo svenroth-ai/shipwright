@@ -223,7 +223,7 @@ This replaces manual Plan Mode — iterate handles scoping automatically.
 
 > "Verstehe ich richtig: [restate intent in 1 sentence]. Soll ich so umsetzen?"
 
-- If user corrects → update scope, re-assess complexity if needed.
+- If user corrects → apply Feedback Parsing Protocol (above), then update scope, re-assess complexity if needed.
 - If user confirms → proceed to Step 1 of the relevant path.
 
 #### Medium — FEATURE (2-3 questions)
@@ -240,6 +240,23 @@ Use answers to populate the Iterate Spec (Step 1).
 2. "Gibt es verwandte Bereiche die unverändert bleiben sollen?"
 
 Use answers to populate the Iterate Spec (Step 1) and scope the Spec Update (Step 2).
+
+### Feedback Parsing Protocol (applies to Interview, Approval Gate, and any user correction)
+
+When the user provides feedback (corrections, additions, scope changes):
+
+1. **Extract ALL items** — read the entire user message, decompose into individual items
+2. **Numbered checklist** — echo all extracted items back as a numbered list:
+   > "Here's what I got from your feedback:
+   > 1. [Item 1]
+   > 2. [Item 2]
+   > 3. [Item 3]
+   > Did I capture everything, or is something missing?"
+3. **Wait for confirmation** — only proceed after user OK
+4. **Track as tasks** — add each confirmed item as a task (TodoWrite), mark completed once implemented
+5. **No silent dropping** — if an item is not feasible, communicate explicitly why
+
+**CRITICAL: NEVER proceed to the next step without all feedback items captured and confirmed.**
 
 ---
 
@@ -360,7 +377,7 @@ Present the iterate spec + mini-plan summary to the user:
 
 **CRITICAL: Wait for user approval before proceeding to build.**
 
-- If user adjusts → update iterate spec + mini-plan accordingly, re-present
+- If user adjusts → apply Feedback Parsing Protocol, update iterate spec + mini-plan for EACH item, re-present complete summary
 - If user approves → proceed to Step 4
 
 For trivial/small: skip (the confirmation question in Section G is sufficient).
@@ -371,11 +388,21 @@ See `references/iteration-planning.md` for invocation.
 ### Step 5: Design Check (if UI)
 See `references/design-and-testing.md` for 2-tier protocol.
 
-### Step 6: Build (TDD)
+### Step 6: Build (TDD — Red-Green-Refactor)
 1. Create feature branch: `iterate/{short-description}`
-2. **Write tests first** (TDD red phase)
-3. **Implement** until tests pass (green phase)
-4. Run tests:
+2. **RED — Write failing tests first**, at minimum one test per Acceptance Criteria:
+   - Tests assert on **outcomes, not internal state**
+   - At least one **happy-path AND one error-path** test per AC
+   - **User interactions:** onClick/onSubmit/onChange triggers the expected action (not just "renders without error")
+   - **Form submissions:** input → submit → API/DB call is invoked with correct data
+   - **API calls:** correct endpoint, correct parameters, error case handled
+   - **Data persistence:** create/update/delete triggers the correct DB/API call
+   - No tests that always pass regardless of implementation
+3. Run tests — they **MUST fail** (if they pass: you're testing the wrong thing or it's already implemented)
+4. **GREEN — Implement** minimum code until tests pass
+5. Run tests after each significant change
+6. **Verify wiring** — would the test fail if the wiring (onClick → handler → API) is missing? If not: improve the test
+7. Run tests:
 ```bash
 npx vitest run
 npx tsc --noEmit

@@ -50,6 +50,11 @@ Use Vitest's built-in dependency analysis instead of custom filename matching:
 npx vitest --related {changed_files} --run
 ```
 
+### New-Code Coverage Rule
+When `--related` returns zero tests for newly created files: write at minimum one integration
+test per AC that verifies the wiring (handler → service → API/DB call). Do NOT proceed with
+zero test coverage on new code — the `--related` shortcut only works when tests already exist.
+
 ### Safety Floor
 Changes touching these paths ALWAYS trigger full suite, regardless of complexity:
 - `src/lib/`
