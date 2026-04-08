@@ -29,9 +29,10 @@ class TestIntentClassification:
         assert result["type"] == "bug"
         assert result["confidence"] > 0.5
 
-    def test_german_bug_keywords(self):
+    def test_non_english_input_not_classified(self):
+        """Non-English input should not match English-only keywords."""
         result = classify("Login ist kaputt, fehler beim Redirect")
-        assert result["type"] == "bug"
+        assert result["type"] == "none"
 
     def test_none_for_greeting(self):
         result = classify("hello there")

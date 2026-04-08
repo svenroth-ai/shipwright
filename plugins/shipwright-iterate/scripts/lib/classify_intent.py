@@ -8,7 +8,7 @@ from pathlib import Path
 
 FEATURE_KEYWORDS = {"add", "create", "implement", "new", "build", "introduce", "develop"}
 CHANGE_KEYWORDS = {"change", "update", "move", "reorder", "rename", "replace", "modify", "adjust", "refactor", "redesign", "restructure", "swap"}
-BUG_KEYWORDS = {"fix", "bug", "broken", "error", "doesn't work", "wrong", "crash", "fail", "issue", "problem", "nicht", "kaputt", "fehler"}
+BUG_KEYWORDS = {"fix", "bug", "broken", "error", "doesn't work", "wrong", "crash", "fail", "issue", "problem"}
 
 # Slash commands and non-code requests to ignore
 SKIP_PATTERNS = [
