@@ -190,9 +190,9 @@ class TestClassify:
         with_config = classify("fix button color", str(config_path))
         assert with_config["confidence"] > without["confidence"]
 
-    def test_german_keywords_no_crash(self):
+    def test_non_english_input_no_crash(self):
         result = classify("Fehler beim Login beheben, kaputtes auth redirect")
-        assert result["estimate"] is not None  # Should not crash
+        assert result["estimate"] is not None  # Should not crash on non-English input
 
 
 # --- Risk taxonomy completeness ---

@@ -1069,7 +1069,7 @@ You can adjust before proceeding -- "make it medium", "skip design", "add review
 
 Iterate replaces manual Plan Mode by building scoping questions directly into the workflow:
 
-- **Small changes:** One confirmation question -- "Verstehe ich richtig: [restated intent]. Soll ich so umsetzen?" If you correct, iterate adjusts scope and may re-assess complexity.
+- **Small changes:** One confirmation question -- "Do I understand correctly: [restated intent]. Shall I proceed with this?" If you correct, iterate adjusts scope and may re-assess complexity.
 - **Medium changes:** 2-3 scoping questions for features (what, out-of-scope, UI behavior) or 1-2 for changes (what changes, boundaries). Answers feed directly into the iterate spec and mini-plan. After the mini-plan is written, iterate presents a summary and waits for your approval before building.
 - **Trivial and bugs:** No interview. Trivial changes proceed directly; bugs go straight to reproduction via failing test.
 

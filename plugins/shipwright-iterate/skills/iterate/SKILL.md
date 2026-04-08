@@ -221,23 +221,23 @@ This replaces manual Plan Mode — iterate handles scoping automatically.
 
 #### Small — Confirmation (1 question, FEATURE + CHANGE)
 
-> "Verstehe ich richtig: [restate intent in 1 sentence]. Soll ich so umsetzen?"
+> "Do I understand correctly: [restate intent in 1 sentence]. Shall I proceed with this?"
 
 - If user corrects → apply Feedback Parsing Protocol (above), then update scope, re-assess complexity if needed.
 - If user confirms → proceed to Step 1 of the relevant path.
 
 #### Medium — FEATURE (2-3 questions)
 
-1. "Was genau soll das Feature können? (Kurzbeschreibung + Acceptance Criteria)"
-2. "Was ist explizit out of scope?"
-3. [If UI] "Wie soll es aussehen/sich verhalten?"
+1. "What exactly should the feature do? (Brief description + Acceptance Criteria)"
+2. "What is explicitly out of scope?"
+3. [If UI] "How should it look/behave?"
 
 Use answers to populate the Iterate Spec (Step 1).
 
 #### Medium — CHANGE (1-2 questions)
 
-1. "Was genau soll sich ändern und warum?"
-2. "Gibt es verwandte Bereiche die unverändert bleiben sollen?"
+1. "What exactly should change and why?"
+2. "Are there related areas that should remain unchanged?"
 
 Use answers to populate the Iterate Spec (Step 1) and scope the Spec Update (Step 2).
 
@@ -368,12 +368,12 @@ See `references/iteration-planning.md` for protocol.
 
 Present the iterate spec + mini-plan summary to the user:
 
-> "Hier ist mein Plan:
+> "Here is my plan:
 > - **Scope:** {AC summary from iterate spec}
 > - **Approach:** {mini-plan summary: files to change, work breakdown, test strategy}
 > - **Out of scope:** {boundaries from iterate spec}
 >
-> Soll ich so umsetzen, oder willst du Scope, ACs oder Approach anpassen?"
+> Shall I proceed, or would you like to adjust scope, ACs, or approach?"
 
 **CRITICAL: Wait for user approval before proceeding to build.**
 

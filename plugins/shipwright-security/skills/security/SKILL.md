@@ -1,6 +1,6 @@
 ---
 name: shipwright-security
-description: Security scanning with automated remediation. Supports two backends — OSS (Semgrep + Trivy + Gitleaks, local) or Aikido (cloud SaaS). Findings flow back to the coding agent for fixes. Use after /shipwright-build or standalone. Trigger: 'security scan', 'aikido', 'semgrep', 'vulnerabilities', 'Sicherheitsscan', 'Schwachstellen'.
+description: Security scanning with automated remediation. Supports two backends — OSS (Semgrep + Trivy + Gitleaks, local) or Aikido (cloud SaaS). Findings flow back to the coding agent for fixes. Use after /shipwright-build or standalone. Trigger: 'security scan', 'aikido', 'semgrep', 'vulnerabilities'.
 license: MIT
 compatibility: Requires uv (Python 3.11+). OSS backend needs semgrep/trivy/gitleaks on PATH. Aikido backend needs API credentials.
 ---
