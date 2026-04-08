@@ -1071,7 +1071,7 @@ Iterate replaces manual Plan Mode by building scoping questions directly into th
 
 - **Small changes:** One confirmation question -- "Do I understand correctly: [restated intent]. Shall I proceed with this?" If you correct, iterate adjusts scope and may re-assess complexity.
 - **Medium changes:** 2-3 scoping questions for features (what, out-of-scope, UI behavior) or 1-2 for changes (what changes, boundaries). Answers feed directly into the iterate spec and mini-plan. After the mini-plan is written, iterate presents a summary and waits for your approval before building.
-- **Trivial and bugs:** No interview. Trivial changes proceed directly; bugs go straight to reproduction via failing test.
+- **Trivial and bugs:** No interview. Trivial changes proceed directly; bugs go through a structured debugging protocol (reproduce → localize → root cause → failing test).
 
 This means you never need to manually trigger `/plan` -- iterate handles the right amount of upfront scoping automatically based on complexity.
 

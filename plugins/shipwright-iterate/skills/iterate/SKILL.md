@@ -471,20 +471,38 @@ Same as FEATURE Step 1.
 ### Step 2: Spec Update (only if spec was wrong or behavior changes)
 Check if the spec itself was incorrect. If yes, update. If no, skip.
 
-### Step 3: Reproduce
-1. **Write a failing test** that reproduces the bug
-2. Run the test to confirm it fails:
+### Step 3: Investigate & Reproduce
+
+**Do NOT attempt fixes before completing investigation.**
+
+1. **Reproduce** — trigger the bug reliably. Note exact steps, inputs, and environment.
+2. **Localize** — identify which layer fails:
+   - UI (render/interaction) → check browser console, DOM state
+   - API (request/response) → check network calls, status codes, payloads
+   - Data (DB/state) → check queries, migrations, state shape
+   - External (third-party) → check service status, API changes
+3. **Root Cause** — trace from symptom to cause. Ask "why?" at each level.
+   Do NOT fix the first thing that looks wrong — that's symptom-patching.
+4. **Write a failing test** that proves the root cause (not just the symptom):
+   - The test must fail for the *identified root cause*, not a side effect
+   - If you can't write a targeted test, your root-cause analysis is incomplete — go back to step 3
+5. Run the test to confirm it fails:
 ```bash
 npx vitest run --reporter=verbose {test_file}
 ```
+
+**Circuit breaker:** If 3 fix attempts fail after implementing Step 5, STOP.
+Re-evaluate: Is the root cause actually understood? Is the architecture itself the problem?
+If yes → escalate to Mid-Flight Escalation (Section 7).
 
 ### Step 4: Mini-Plan (medium+ only)
 See `references/iteration-planning.md`.
 
 ### Step 5: Fix
 1. Create feature branch: `iterate/fix-{short-description}`
-2. **Fix the bug** — targeted change, minimal scope
+2. **Fix the root cause** — targeted change, minimal scope. Do not fix symptoms.
 3. Run reproducing test to verify it passes
+4. Run related tests to verify no regressions
 
 ### Step 6-14: Same as FEATURE (self-review, code review, testing, escalation, finalize)
 Follow the Phase Matrix to determine which steps run for the assessed complexity.
@@ -568,7 +586,23 @@ See `references/iteration-planning.md` for full protocol including handoff file 
 
 ## Finalization (all paths)
 
-**CRITICAL: Steps F1–F11 are MANDATORY. Do NOT skip any step.**
+**CRITICAL: Steps F0–F11 are MANDATORY. Do NOT skip any step.**
+
+### F0: Fresh Verification Gate
+
+Run the full test suite NOW — do not rely on earlier results:
+```bash
+npx vitest run
+npx tsc --noEmit
+```
+
+**Read the actual output.** Verify:
+- Exit code is 0
+- All tests pass (not "mostly pass" or "known failures")
+- No type errors
+
+If ANY test fails: **STOP.** Go back to the build step and fix before continuing.
+Do not proceed to F1 with failing tests.
 
 ### F1: Drift Check
 
