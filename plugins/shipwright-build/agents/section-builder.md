@@ -100,6 +100,23 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
 2. After each significant change, run tests
 3. Continue until ALL tests pass
 
+**Migration apply** (if .sql migration files were created during implementation):
+
+**CRITICAL — Serialization:** Migration creation and application is a critical section. If you detect that another section-builder has uncommitted migration files (check `git status` for `{migrations.dir}`), wait or yield. Only one agent may create/apply migrations at a time.
+
+Read `migrations` config from the stack profile (`shared/profiles/{profile}.json`).
+
+1. Run `{migrations.preflight_cmd}` — verify environment ready
+2. If preflight fails: log warning, note that tests depending on new schema may fail
+3. If preflight passes: run `{migrations.apply_cmd}`
+4. If apply fails: **Stop immediately.** Mark section as failed with `error: "migration_apply_failed"`. Do not run tests. Do not attempt rollback.
+5. Check `migrations.post_apply_manual_steps` — if any `trigger_tag` matches:
+   - Log as warning in result JSON
+   - Skip tests matching `blocks_tests_for` keywords
+   - Set `manual_steps_pending: true` in result JSON
+
+Apply immediately after creating the migration, BEFORE running tests that depend on the new schema.
+
 **Capture test counts** from the final passing run:
 - `tests_passed` = number of passing tests
 - `tests_total` = total number of tests

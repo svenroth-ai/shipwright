@@ -10,6 +10,7 @@
 
 - Run tests before committing — tests must pass
 - Generate `down.sql` in `supabase/migrations/_rollback/` for every `up.sql` migration (NEVER in `supabase/migrations/` directly)
+- Apply newly created migrations before running tests when: (a) the profile's `preflight_cmd` succeeds, (b) the target is verified as non-production (profile `safe_nonprod_only`). If apply cannot be safely performed, stop and ask the user
 - Use Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`)
 - Use parameterized queries — never interpolate user input into SQL
 - Validate input at system boundaries (API routes, external data, user input)
@@ -30,6 +31,7 @@
 - PROD deployments (always confirm + backup, regardless of autonomy level)
 - Rollback decisions
 - Skipping test layers (must provide valid skip reason)
+- Migration apply failures (stop immediately, do not run tests, do not attempt further schema changes — database may be in partial state)
 - Overriding phase validation gates (`--force`)
 - Changing stack profile settings
 - Continuing after 3 failed fix attempts (or 2 with same root cause)

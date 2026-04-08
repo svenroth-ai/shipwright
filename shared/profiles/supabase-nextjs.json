@@ -175,6 +175,40 @@
     "prod": "supabase db push --dry-run first, user confirms, then apply",
     "rollback": "down.sql generated in supabase/migrations/_rollback/ (best-effort, never in migrations/ directly)",
     "destructive_protection": true,
-    "destructive_patterns": ["DROP TABLE", "DROP COLUMN", "ALTER TYPE"]
+    "destructive_patterns": ["DROP TABLE", "DROP COLUMN", "ALTER TYPE"],
+    "dir": "supabase/migrations/",
+    "preflight_cmd": "npx supabase status",
+    "apply_cmd": "npx supabase db push --linked",
+    "dry_run_cmd": "npx supabase db push --linked --dry-run",
+    "list_cmd": "npx supabase migration list",
+    "safe_nonprod_only": true,
+    "supports_idempotent_apply": true,
+    "supports_locking": true,
+    "supports_dry_run": true,
+    "apply_scope": "linked",
+    "rollback_strategy": "manual",
+    "post_apply_manual_steps": [
+      {
+        "trigger_tag": "supabase_auth_hook",
+        "trigger_description": "Auth Hook function created (e.g., custom_access_token_hook)",
+        "action": "Dashboard → Authentication → Hooks → Enable and select function",
+        "note": "Cannot be done via CLI or migration",
+        "blocks_tests_for": ["auth", "session", "token"]
+      },
+      {
+        "trigger_tag": "supabase_webhook",
+        "trigger_description": "Database Webhook / Edge Function created",
+        "action": "Dashboard → Database → Webhooks → Configure",
+        "note": "Edge Function must be deployed first",
+        "blocks_tests_for": ["webhook", "edge-function"]
+      },
+      {
+        "trigger_tag": "supabase_realtime",
+        "trigger_description": "Realtime publication added for a table",
+        "action": "Dashboard → Database → Replication → Enable table",
+        "note": "Required for real-time subscriptions to work",
+        "blocks_tests_for": ["realtime", "subscription"]
+      }
+    ]
   }
 }

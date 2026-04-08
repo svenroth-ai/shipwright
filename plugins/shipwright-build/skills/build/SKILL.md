@@ -302,6 +302,27 @@ See [implementation-loop.md](references/implementation-loop.md) for guidance.
 - See [migration-safety.md](references/migration-safety.md) for guidelines
 - The PostToolUse hook will warn on destructive operations automatically
 
+**Apply migrations immediately** (if migration files were created):
+
+Read `migrations` config from the stack profile (via `shipwright_run_config.json` → `profile` → `shared/profiles/{profile}.json`).
+
+**Preflight sequence (mandatory before apply):**
+1. Verify new files exist in `{migrations.dir}`
+2. Run `{migrations.preflight_cmd}` — verifies CLI, authentication, and connectivity
+3. If `safe_nonprod_only` is true, verify target is non-production (check preflight output or project-ref)
+4. If preflight fails: Print diagnostic and instruct user to fix environment. **Stop — do not run tests against stale schema.**
+
+**Apply:**
+5. Run `{migrations.apply_cmd}`
+6. If apply fails: **Stop immediately.** Do not run tests. Do not attempt further schema changes. Database may be in partial state. Ask user for intervention.
+7. Verify with `{migrations.list_cmd}` — no pending migrations should remain.
+
+**Post-migration manual steps:**
+8. Check `migrations.post_apply_manual_steps` from the profile — match `trigger_tag` against migration content.
+9. If a trigger matches: inform user via AskUserQuestion with the required action. Note which test areas (`blocks_tests_for`) are blocked until the step is completed. Wait for confirmation before running affected tests.
+
+This ensures subsequent tests run against the current schema.
+
 **Checkpoint:** All tests pass (green phase).
 
 **Capture test counts** — note the numbers from the final test run for Step 10:

@@ -306,6 +306,7 @@ Each plugin reads project context at startup to ensure consistency. This table s
 | `test_results.json` | test, iterate | test, iterate |
 | `compliance/*` | compliance plugin | update_compliance.py (all phases trigger) |
 | `sync_config.json` | project | iterate (FR mappings) |
+| `{migrations.dir}` (profile) | build, iterate (create + apply DEV, serialized) | deploy (PROD apply only) |
 
 ---
 
