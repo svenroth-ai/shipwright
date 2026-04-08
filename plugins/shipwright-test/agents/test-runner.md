@@ -52,6 +52,84 @@ Parse output for pass/fail counts.
 - `unit_total`: total tests
 - `unit_duration_s`: duration in seconds
 
+### Step 2.5: Run Integration Tests
+
+**Skip if:** Profile has no `testing.integration` config, OR `tests/integration/` directory does not exist.
+
+**Check prerequisites:**
+1. Read profile `testing.integration` block
+2. Verify env vars from `.env.test`: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+3. Verify URL is localhost/127.0.0.1 (safety check)
+4. **In CI:** Missing env vars = FAIL (not skip). **Locally:** Missing env vars = skip with warning.
+
+**Run integration tests:**
+```bash
+npx vitest run --config vitest.integration.config.ts
+```
+
+Or via runner script:
+```bash
+uv run {plugin_root}/scripts/lib/test_runner.py \
+  --profile "{profile}" \
+  --layer integration \
+  --cwd {project_root} \
+  --skip-if-missing
+```
+
+**If tests fail — auto-fix (max 3 retries):**
+
+Same structured debugging as unit tests (root cause → hypothesis → fix → re-run).
+
+**Fast-fail rules:**
+- If error matches `ECONNREFUSED`, `ETIMEDOUT`, `connect ENOENT` → skip autofix, fail immediately with infrastructure diagnosis
+- If >50% of integration tests fail simultaneously → skip autofix, fail with diagnosis (likely global issue, not individual test bugs)
+
+**Never auto-fix by:**
+- Weakening RLS policies
+- Switching test assertions to use service-role client
+- Disabling URL safety checks
+
+**Common auto-fixable patterns:**
+
+| Error Pattern | Diagnosis | Auto-fix |
+|---|---|---|
+| `relation "x" does not exist` | Migration not applied | Run `supabase db push --linked` |
+| `permission denied for table` | RLS policy issue | Check auth context setup in test |
+| `null value in column "x"` | Test data setup incomplete | Fix `beforeAll` / seed data |
+| `duplicate key value` | Previous cleanup failed | Fix `afterAll` cleanup |
+| Auth sign-in failure | Test user not provisioned | Create test user or check credentials |
+
+**Record results:**
+- `integration_passed`: number of passing tests
+- `integration_total`: total tests
+- `integration_duration_s`: duration in seconds
+- If skipped: `integration_skipped: true`, `integration_skip_reason: "..."`
+
+### Step 2.6: Run pgTAP Database Tests
+
+**Skip if:** `supabase/tests/database/` directory does not exist.
+
+**Run pgTAP tests:**
+```bash
+supabase test db
+```
+
+Or via runner script:
+```bash
+uv run {plugin_root}/scripts/lib/test_runner.py \
+  --profile "{profile}" \
+  --layer pgtap \
+  --cwd {project_root} \
+  --skip-if-missing
+```
+
+**If tests fail — auto-fix (max 3 retries):**
+Same structured debugging as integration tests.
+
+**Record results:**
+- `pgtap_passed` / `pgtap_total` / `pgtap_duration_s`
+- If skipped: `pgtap_skipped: true`, `pgtap_skip_reason: "no supabase/tests/database/ directory"`
+
 ### Step 3: Run Smoke Test
 
 **Skip if:** No DEV URL available or app not running.
@@ -161,10 +239,12 @@ When diagnosing E2E failures, analyze:
 | Layer | On FAIL | Impact |
 |-------|---------|--------|
 | Unit tests | **Blocking** — pipeline stops | `status: "fail"` |
+| Integration tests | Autofix then blocking | `status: "fail"` |
+| pgTAP tests | Autofix then blocking | `status: "fail"` |
 | Smoke test | **Blocking** — pipeline stops | `status: "fail"` |
 | E2E tests | **Warning only** — pipeline continues | `status: "pass"` with `e2e_warnings` |
 
-Overall status = "pass" if unit + smoke pass, regardless of E2E.
+Overall status = "pass" if unit + integration + pgTAP + smoke pass, regardless of E2E.
 
 ## Output
 
@@ -179,11 +259,24 @@ Also return the same JSON object as the **last line of your response**:
 
 ```json
 {
+  "schema_version": 2,
   "status": "pass",
   "unit": {
     "passed": 42,
     "total": 42,
     "duration_s": 8.3
+  },
+  "integration": {
+    "passed": 12,
+    "total": 12,
+    "duration_s": 15.2,
+    "skipped": false
+  },
+  "pgtap": {
+    "passed": 8,
+    "total": 8,
+    "duration_s": 3.1,
+    "skipped": false
   },
   "smoke": {
     "status": "pass",
@@ -205,6 +298,7 @@ Also return the same JSON object as the **last line of your response**:
 If unit or smoke tests fail:
 ```json
 {
+  "schema_version": 2,
   "status": "fail",
   "error": "Unit tests: 3 failures after 3 fix attempts",
   "unit": {
@@ -212,6 +306,14 @@ If unit or smoke tests fail:
     "total": 42,
     "duration_s": 12.1,
     "failures": ["auth.test.ts: token refresh", "api.test.ts: rate limit"]
+  },
+  "integration": {
+    "skipped": true,
+    "reason": "Unit tests failed"
+  },
+  "pgtap": {
+    "skipped": true,
+    "reason": "Unit tests failed"
   },
   "smoke": {
     "status": "skip",

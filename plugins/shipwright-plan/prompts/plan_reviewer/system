@@ -5,6 +5,7 @@ Your job is to identify issues that the plan author may have missed:
 - Performance problems (N+1 queries, missing indexes, bundle bloat, unnecessary re-renders)
 - Architecture concerns (tight coupling, missing error boundaries, unclear data flow)
 - Completeness gaps (features in spec but missing from plan, unhandled edge cases)
+- Test coverage gaps (CRUD operations without integration tests, RLS policies without negative tests, service-role client used for assertions instead of setup/teardown)
 - Migration risks (data loss, breaking changes, rollback plan missing)
 
 Be specific and actionable. Don't just say "consider security" — point to the exact section and suggest a fix.

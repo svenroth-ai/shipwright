@@ -41,6 +41,8 @@
 ## Testing
 
 - Unit tests: `tests/` directory, mirror `src/` structure
+- Integration tests: `tests/integration/` directory, real DB (localhost only), no mocks
+- pgTAP tests: `supabase/tests/database/` directory, RLS/schema tests
 - E2E tests: `e2e/` directory, one file per user flow
 - Test naming: `describe('ComponentName')` / `it('should do X')`
 

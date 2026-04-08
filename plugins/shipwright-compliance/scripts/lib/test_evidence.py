@@ -86,6 +86,32 @@ def _test_execution_summary(data: ComplianceData) -> list[str]:
             f"| {tr.unit_duration_s}s | Vitest |"
         )
 
+        # Integration
+        if tr.integration_skipped:
+            int_status = "SKIP"
+            int_detail = tr.integration_skip_reason or "skipped"
+            lines.append(f"| Integration | {int_status} | — | — | — | {int_detail} |")
+        elif tr.integration_total > 0:
+            int_status = "PASS" if tr.integration_passed == tr.integration_total else "FAIL"
+            lines.append(
+                f"| Integration | {int_status} | {tr.integration_passed} | {tr.integration_total} "
+                f"| {tr.integration_duration_s}s | Vitest (real DB) |"
+            )
+        else:
+            lines.append("| Integration | — | 0 | 0 | — | not configured |")
+
+        # pgTAP
+        if tr.pgtap_skipped:
+            pgtap_status = "SKIP"
+            pgtap_detail = tr.pgtap_skip_reason or "skipped"
+            lines.append(f"| pgTAP | {pgtap_status} | — | — | — | {pgtap_detail} |")
+        elif tr.pgtap_total > 0:
+            pgtap_status = "PASS" if tr.pgtap_passed == tr.pgtap_total else "FAIL"
+            lines.append(
+                f"| pgTAP | {pgtap_status} | {tr.pgtap_passed} | {tr.pgtap_total} "
+                f"| {tr.pgtap_duration_s}s | supabase test db |"
+            )
+
         # Smoke
         smoke_status = tr.smoke_status.upper() if tr.smoke_status else "—"
         smoke_detail = f"GET {tr.smoke_url}" if tr.smoke_url else "—"

@@ -76,9 +76,20 @@ class TestResults:
     """Aggregated test results from test phase (shipwright_test_results.json)."""
     status: str = ""  # "pass" | "fail"
     timestamp: str = ""
+    schema_version: int = 1  # 1 = legacy (no integration), 2 = with integration/pgtap
     unit_passed: int = 0
     unit_total: int = 0
     unit_duration_s: float = 0
+    integration_passed: int = 0
+    integration_total: int = 0
+    integration_duration_s: float = 0
+    integration_skipped: bool = False
+    integration_skip_reason: str = ""
+    pgtap_passed: int = 0
+    pgtap_total: int = 0
+    pgtap_duration_s: float = 0
+    pgtap_skipped: bool = False
+    pgtap_skip_reason: str = ""
     smoke_status: str = ""  # "pass" | "fail" | "skip" | "skipped"
     smoke_url: str = ""
     smoke_response_ms: int = 0
@@ -604,6 +615,8 @@ def _parse_test_results_file(path: Path) -> TestResults | None:
         return None
 
     unit = data.get("unit", {})
+    integration = data.get("integration", {})
+    pgtap = data.get("pgtap", {})
     smoke = data.get("smoke", {})
     e2e = data.get("e2e", {})
     visual = data.get("visual", {})
@@ -615,11 +628,22 @@ def _parse_test_results_file(path: Path) -> TestResults | None:
         visual_report_path = str(report_candidate)
 
     return TestResults(
+        schema_version=data.get("schema_version", 1),
         status=data.get("status", ""),
         timestamp=data.get("timestamp", ""),
         unit_passed=unit.get("passed", 0),
         unit_total=unit.get("total", 0),
         unit_duration_s=unit.get("duration_s", 0),
+        integration_passed=integration.get("passed", 0),
+        integration_total=integration.get("total", 0),
+        integration_duration_s=integration.get("duration_s", 0),
+        integration_skipped=integration.get("skipped", False),
+        integration_skip_reason=integration.get("skip_reason", integration.get("reason", "")),
+        pgtap_passed=pgtap.get("passed", 0),
+        pgtap_total=pgtap.get("total", 0),
+        pgtap_duration_s=pgtap.get("duration_s", 0),
+        pgtap_skipped=pgtap.get("skipped", False),
+        pgtap_skip_reason=pgtap.get("skip_reason", pgtap.get("reason", "")),
         smoke_status=smoke.get("status", ""),
         smoke_url=smoke.get("url", ""),
         smoke_response_ms=smoke.get("response_ms", 0),
@@ -665,11 +689,22 @@ def collect_test_results(project_root: Path) -> TestResults | None:
 
     # Aggregate across splits
     return TestResults(
+        schema_version=max(r.schema_version for r in all_results),
         status="pass" if all(r.status == "pass" for r in all_results) else "fail",
         timestamp=all_results[-1].timestamp,  # Most recent
         unit_passed=sum(r.unit_passed for r in all_results),
         unit_total=sum(r.unit_total for r in all_results),
         unit_duration_s=sum(r.unit_duration_s for r in all_results),
+        integration_passed=sum(r.integration_passed for r in all_results),
+        integration_total=sum(r.integration_total for r in all_results),
+        integration_duration_s=sum(r.integration_duration_s for r in all_results),
+        integration_skipped=all_results[-1].integration_skipped,
+        integration_skip_reason=all_results[-1].integration_skip_reason,
+        pgtap_passed=sum(r.pgtap_passed for r in all_results),
+        pgtap_total=sum(r.pgtap_total for r in all_results),
+        pgtap_duration_s=sum(r.pgtap_duration_s for r in all_results),
+        pgtap_skipped=all_results[-1].pgtap_skipped,
+        pgtap_skip_reason=all_results[-1].pgtap_skip_reason,
         smoke_status=all_results[-1].smoke_status,  # Latest split's smoke
         smoke_url=all_results[-1].smoke_url,
         smoke_response_ms=all_results[-1].smoke_response_ms,

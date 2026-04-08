@@ -1,0 +1,28 @@
+import { defineConfig } from 'vitest/config'
+import react from '@vitejs/plugin-react'
+import tsconfigPaths from 'vite-tsconfig-paths'
+
+export default defineConfig({
+  plugins: [react(), tsconfigPaths()],
+  test: {
+    // Integration tests — real DB, no mocks
+    include: ['tests/integration/**/*.integration.test.ts'],
+    exclude: ['node_modules', 'tests/**/*.test.ts', 'e2e/**'],
+
+    // Load .env.test (must point to localhost Supabase only)
+    envFile: '.env.test',
+
+    // Sequential execution to avoid data races
+    fileParallelism: false,
+
+    // Longer timeout for DB operations
+    testTimeout: 30000,
+    hookTimeout: 30000,
+
+    // Setup file validates environment + URL safety
+    setupFiles: ['tests/integration/helpers/setup.ts'],
+
+    // No globals — explicit imports only
+    globals: false,
+  },
+})

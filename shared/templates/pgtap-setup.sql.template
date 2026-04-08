@@ -1,0 +1,10 @@
+-- 000-setup-tests-hooks.sql
+-- Installs pgTAP and supabase-test-helpers for database testing.
+-- This file runs once before all other test files.
+
+-- Install pgTAP extension (provides TAP-compliant testing functions)
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+
+-- Install supabase-test-helpers (provides auth context switching for RLS tests)
+-- See: https://github.com/usebasejump/supabase-test-helpers
+CREATE EXTENSION IF NOT EXISTS supabase_test_helpers WITH SCHEMA tests;

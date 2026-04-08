@@ -51,9 +51,10 @@ npx vitest --related {changed_files} --run
 ```
 
 ### New-Code Coverage Rule
-When `--related` returns zero tests for newly created files: write at minimum one integration
-test per AC that verifies the wiring (handler → service → API/DB call). Do NOT proceed with
-zero test coverage on new code — the `--related` shortcut only works when tests already exist.
+When `--related` returns zero tests for newly created files: write at minimum one **unit test**
+(boundary mock) per AC. For CRUD/DB operations, ALSO write one **integration test** (real DB)
+per AC with `afterAll` cascade cleanup. Do NOT proceed with zero test coverage on new code —
+the `--related` shortcut only works when tests already exist.
 
 ### Safety Floor
 Changes touching these paths ALWAYS trigger full suite, regardless of complexity:
@@ -76,6 +77,61 @@ npx vitest --related $(git diff --name-only HEAD) --run
 npx vitest run
 npx tsc --noEmit
 ```
+
+---
+
+## Integration Testing (Real Database)
+
+### When
+Any change that creates, reads, updates, or deletes database records, modifies RLS policies, or changes API routes that write data. Not complexity-gated — always write integration tests for CRUD operations.
+
+### What it tests
+The full wiring from API route or service function through to the actual database — no mocks.
+Catches: wrong column names, broken joins, missing RLS policies, incorrect query filters.
+
+### Protocol
+1. Check profile for `testing.integration` config. If absent: skip.
+2. Verify env vars (from `.env.test`): `NEXT_PUBLIC_SUPABASE_URL` (must be localhost), `SUPABASE_SERVICE_ROLE_KEY`, test user credentials
+3. If env vars missing: **In CI: fail.** Locally: skip with warning.
+4. Run integration tests:
+   ```bash
+   npx vitest run --config vitest.integration.config.ts
+   ```
+5. **Autofix:** Structured debugging (root cause → hypothesis → fix → re-run), max 3 retries.
+6. **Fast-fail:** If error matches `ECONNREFUSED`, `ETIMEDOUT`, or >50% of tests fail simultaneously → skip autofix, fail immediately with diagnosis.
+7. **Never auto-fix by weakening RLS policies or switching to service-role client for assertions.**
+
+### Skip When
+- No database changes in this iteration
+- Pure UI change (no data layer)
+- Profile has no `testing.integration` config
+
+### Relationship to Unit Tests
+- **Unit tests** (existing "Scoped Testing"): Mock at Supabase client boundary. Fast, deterministic. Test logic and error handling.
+- **Integration tests** (this section): No mocks. Hit real DB (localhost only). Test wiring, schema correctness, RLS policies. Slower but catches real failures.
+- Write BOTH for CRUD code: unit tests for logic, integration tests for wiring.
+
+### Safety Rules
+- Service-role client is for setup/teardown ONLY — never for assertions
+- Never weaken RLS policies to make integration tests pass
+- All test data cleaned up via cascade delete (`deleteTestUser` in `afterAll`)
+- URL must be localhost/127.0.0.1 (enforced by setup file)
+
+---
+
+## pgTAP Database Tests
+
+### When
+New migrations that add RLS policies, constraints, or database functions.
+
+### Protocol
+1. Check if `supabase/tests/database/` exists. If not: skip.
+2. Run: `supabase test db`
+3. Autofix: same structured debugging pattern (max 3 retries).
+
+### Skip When
+- No new migrations in this iteration
+- Migrations don't contain RLS policies or DB functions
 
 ---
 
@@ -177,7 +233,7 @@ No UI structural change, text/color-only tweaks, logic-only fixes.
 ## Incremental E2E Test Update
 
 ### When
-Medium+ features/changes that introduce new routes, new user flows, or significantly alter existing flows.
+Features at any complexity that change user-visible behavior (new routes, modified flows, new UI). Changes/bugs: medium+ with new flows.
 
 ### Protocol
 1. Read existing `e2e/flows/*.spec.ts` to understand current coverage
@@ -191,9 +247,9 @@ Medium+ features/changes that introduce new routes, new user flows, or significa
    ```
 
 ### Skip When
-- Trivial/small complexity
-- No route/flow changes
-- BUG type (unless fix changes expected E2E behavior)
+- Changes/bugs at trivial/small complexity with no new flows
+- No route/flow/UI behavior changes
+- Pure logic/refactor changes
 
 ---
 

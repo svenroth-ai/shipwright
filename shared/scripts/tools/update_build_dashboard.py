@@ -95,7 +95,7 @@ def _generate_test_results(project_root: Path) -> list[str]:
     except (FileNotFoundError, json.JSONDecodeError):
         return []
     lines = ["## Test Results", "", "| Layer | Passed | Total | Status |", "|-------|--------|-------|--------|"]
-    for key, label in [("unit", "Unit"), ("smoke", "Smoke"), ("e2e", "E2E"), ("visual", "Visual")]:
+    for key, label in [("unit", "Unit"), ("integration", "Integration"), ("pgtap", "pgTAP"), ("smoke", "Smoke"), ("e2e", "E2E"), ("visual", "Visual")]:
         layer = data.get(key, {})
         if layer.get("status") == "skip" or layer.get("skipped") is True:
             lines.append(f"| {label} | \u2014 | \u2014 | SKIP |")
@@ -229,10 +229,16 @@ def _test_status_from_iterate(project_root: Path, latest_event: dict) -> list[st
     if layered:
         parts = [f"Last run: {layered.get('date', latest_event.get('ts', '')[:10])}"]
         unit = layered.get("unit", {})
+        integration = layered.get("integration", {})
+        pgtap = layered.get("pgtap", {})
         e2e = layered.get("e2e", {})
         smoke = layered.get("smoke", {})
         if unit and unit.get("total", 0) > 0:
             parts.append(f"Unit: {unit.get('passed', 0)}/{unit.get('total', 0)}")
+        if integration and integration.get("total", 0) > 0:
+            parts.append(f"Integration: {integration.get('passed', 0)}/{integration.get('total', 0)}")
+        if pgtap and pgtap.get("total", 0) > 0:
+            parts.append(f"pgTAP: {pgtap.get('passed', 0)}/{pgtap.get('total', 0)}")
         if e2e and e2e.get("total", 0) > 0:
             parts.append(f"E2E: {e2e.get('passed', 0)}/{e2e.get('total', 0)}")
         if smoke and smoke.get("status"):

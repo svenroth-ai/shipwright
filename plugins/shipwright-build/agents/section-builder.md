@@ -94,6 +94,60 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
 3. Run tests — they MUST fail (red phase)
 4. If tests pass immediately: you're testing the wrong thing
 
+**Integration Tests (if profile has `testing.integration` AND section involves CRUD/DB):**
+
+Check the profile for a `testing.integration` config block. If present AND this section creates, reads, updates, or deletes database records:
+
+1. **Scaffold helpers** (if not already present):
+   - `tests/integration/helpers/supabase-clients.ts` — from `integration-helpers-supabase.ts.template`
+   - `vitest.integration.config.ts` at project root — from `vitest.integration.config.ts.template`
+   - `.env.test` at project root — from `env.test.template`
+
+2. **Write integration test files** in `tests/integration/{entity}.integration.test.ts`:
+   - **Mandatory:** One test per CRUD operation (create, read, update, delete)
+   - **Mandatory:** One RLS negative test per entity (prove unauthorized access is blocked)
+   - **Mandatory:** `afterAll` block that calls `deleteTestUser(userId)` for cascade cleanup
+   - **Forbidden:** Using `getServiceClient()` for test assertions — it is for setup/teardown ONLY
+   - **Forbidden:** Weakening RLS policies to make tests pass
+
+3. **Use cascade-delete pattern:**
+   - `beforeAll`: `createTestUser()` to get a unique test user
+   - Tests: create data linked to this test user
+   - `afterAll`: `deleteTestUser()` — all data cascades away
+
+4. **Run integration tests** (must fail in red phase):
+   ```bash
+   npx vitest run --config vitest.integration.config.ts
+   ```
+
+**pgTAP tests (if section adds migrations with RLS policies):**
+
+If this section creates SQL migrations containing RLS policies (`CREATE POLICY`, `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`):
+
+1. Scaffold `supabase/tests/database/000-setup-tests-hooks.sql` from `pgtap-setup.sql.template` if missing
+2. Write `supabase/tests/database/{migration-name}.test.sql`
+3. Run: `supabase test db`
+
+**E2E tests (if section changes user-visible behavior):**
+
+If this section adds new user-facing routes/pages or modifies existing user flows (regardless of complexity):
+
+1. Write Playwright spec in `e2e/flows/{feature}.spec.ts`
+2. Create Page Object Models in `e2e/pages/` if needed
+3. Run: `npx playwright test e2e/flows/{feature}.spec.ts`
+
+**Decision table — which test type to write:**
+
+| What you're testing | Test type |
+|---|---|
+| Service function logic | Unit (mocked boundary) |
+| API route → real DB row created/updated/deleted | Integration |
+| RLS policy blocks unauthorized access | Integration + pgTAP |
+| Complex query (joins, filters, aggregations) | Integration |
+| Input validation rejects bad data | Unit |
+| Component renders with props | Unit |
+| User journey / multi-page flow | E2E (Playwright) |
+
 ### Step 7: Implement (TDD Green Phase)
 
 1. Write the minimum code to make tests pass
@@ -117,9 +171,24 @@ Read `migrations` config from the stack profile (`shared/profiles/{profile}.json
 
 Apply immediately after creating the migration, BEFORE running tests that depend on the new schema.
 
+**Run integration tests** (if integration test files were created in the red phase):
+```bash
+npx vitest run --config vitest.integration.config.ts
+```
+Integration test failures are **blocking** — fix before proceeding. Autofix: structured debugging (root cause → hypothesis → fix → re-run), max 3 retries. **Fast-fail:** if error matches `ECONNREFUSED`, `ETIMEDOUT`, or >50% of tests fail simultaneously, stop autofix and report infrastructure issue.
+
+**Never auto-fix by weakening RLS policies or switching to service-role client for assertions.**
+
+**Run pgTAP tests** (if pgTAP test files were created):
+```bash
+supabase test db
+```
+
 **Capture test counts** from the final passing run:
 - `tests_passed` = number of passing tests
 - `tests_total` = total number of tests
+- `integration_passed` / `integration_total` (if integration tests exist)
+- `pgtap_passed` / `pgtap_total` (if pgTAP tests exist)
 
 **Dashboard update:**
 ```bash

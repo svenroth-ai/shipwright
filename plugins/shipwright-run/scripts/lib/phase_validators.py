@@ -207,6 +207,40 @@ def _validate_test(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
         })
         has_ask = True
 
+    # Integration tests: optional — only validate if present or profile requires them
+    integration = results.get("integration", {})
+    integration_skipped = integration.get("skipped", False)
+    if integration and not integration_skipped and integration.get("total", 0) > 0:
+        if integration.get("passed", 0) < integration.get("total", 0):
+            issues.append({
+                "severity": "ask",
+                "message": (
+                    f"Integration tests failing: {integration.get('passed', 0)}/{integration['total']} passed. "
+                    "Fix before continuing?"
+                ),
+            })
+            has_ask = True
+    elif integration_skipped and not integration.get("skip_reason") and not integration.get("reason"):
+        issues.append({
+            "severity": "ask",
+            "message": "Integration tests were skipped without a reason. Was this intentional?",
+        })
+        has_ask = True
+
+    # pgTAP tests: optional — only validate if present
+    pgtap = results.get("pgtap", {})
+    pgtap_skipped = pgtap.get("skipped", False)
+    if pgtap and not pgtap_skipped and pgtap.get("total", 0) > 0:
+        if pgtap.get("passed", 0) < pgtap.get("total", 0):
+            issues.append({
+                "severity": "ask",
+                "message": (
+                    f"pgTAP tests failing: {pgtap.get('passed', 0)}/{pgtap['total']} passed. "
+                    "Fix before continuing?"
+                ),
+            })
+            has_ask = True
+
     # Smoke test: must have status or valid skip reason
     smoke = results.get("smoke", {})
     smoke_status = smoke.get("status", "")
