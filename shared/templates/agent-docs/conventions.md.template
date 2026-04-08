@@ -95,9 +95,9 @@ export async function POST(req: NextRequest) {
   const parsed = CreateSchema.safeParse(await req.json())
   if (!parsed.success) return NextResponse.json({ error: 'Invalid input', code: 'VALIDATION_ERROR' }, { status: 400 })
 
-  const { data, error } = await supabase.from('projects').insert({ ...parsed.data, user_id: user.id }).select().single()
+  const { data, error } = await supabase.from('projects').insert({ ...parsed.data, user_id: user.id }).select('id')
   if (error) return NextResponse.json({ error: 'Create failed', code: 'DB_ERROR' }, { status: 500 })
-  return NextResponse.json(data, { status: 201 })
+  return NextResponse.json({ id: data?.[0]?.id }, { status: 201 })
 }
 ```
 

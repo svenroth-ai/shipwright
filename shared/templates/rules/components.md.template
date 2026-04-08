@@ -54,3 +54,53 @@ export function ThemeToggle() {
   )
 }
 ```
+
+## CRUD Dialog Pattern — state update, not page reload
+
+After a dialog creates, updates, or deletes a record, update local state directly.
+Never use `router.refresh()` or `window.location.reload()` — they cause page flash and state loss.
+
+- Dialog returns data via `onSuccess(data)` callback to parent
+- Parent updates `useState` array: push (create), map (update), filter (delete)
+- Navigation after dialog save: `window.location.href` not `router.push` (avoids React state conflicts on dialog unmount)
+
+```tsx
+'use client'
+import { useState } from 'react'
+
+export function ItemList({ initialItems }: { initialItems: Item[] }) {
+  const [items, setItems] = useState(initialItems)
+
+  return (
+    <>
+      <CreateDialog onSuccess={(created) => setItems((prev) => [...prev, created])} />
+      {items.map((item) => (
+        <ItemCard
+          key={item.id}
+          item={item}
+          onUpdate={(updated) => setItems((prev) => prev.map((i) => i.id === updated.id ? updated : i))}
+          onDelete={(id) => setItems((prev) => prev.filter((i) => i.id !== id))}
+        />
+      ))}
+    </>
+  )
+}
+```
+
+## Search Input + Suspense
+
+Any component using `useSearchParams()` in Next.js MUST be wrapped in a `<Suspense>` boundary.
+Without it, the page can freeze during static rendering.
+
+```tsx
+import { Suspense } from 'react'
+import { SearchInput } from './search-input' // uses useSearchParams() internally
+
+export function SearchBar() {
+  return (
+    <Suspense fallback={<input disabled placeholder="Search..." className="h-10 w-full rounded-md border px-3" />}>
+      <SearchInput />
+    </Suspense>
+  )
+}
+```
