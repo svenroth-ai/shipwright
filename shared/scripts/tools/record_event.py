@@ -175,6 +175,8 @@ def build_event(args: argparse.Namespace) -> dict:
 
     elif args.type in ("phase_started", "phase_completed"):
         event["phase"] = args.phase
+        if args.detail:
+            event["detail"] = args.detail
 
     elif args.type == "split_completed":
         event["split"] = args.split
@@ -261,6 +263,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     # phase_started / phase_completed
     p.add_argument("--phase", help="Phase name (project, plan, build, ...)")
+    p.add_argument("--detail", help="Phase detail (e.g. deploy URL, PR URL)")
 
     # test_run
     p.add_argument("--trigger", help="What triggered the test run")

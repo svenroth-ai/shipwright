@@ -190,6 +190,19 @@ class TestBuildEvent:
         event = build_event(args)
         assert event["type"] == "phase_completed"
         assert event["phase"] == "build"
+        assert "detail" not in event
+
+    def test_phase_completed_with_detail(self):
+        args = parse_args([
+            "--project-root", "/tmp",
+            "--type", "phase_completed",
+            "--phase", "deploy",
+            "--detail", "https://dev-app.jpc.infomaniak.com",
+        ])
+        event = build_event(args)
+        assert event["type"] == "phase_completed"
+        assert event["phase"] == "deploy"
+        assert event["detail"] == "https://dev-app.jpc.infomaniak.com"
 
     def test_test_run(self):
         args = parse_args([

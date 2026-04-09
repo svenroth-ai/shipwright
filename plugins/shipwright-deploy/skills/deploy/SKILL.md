@@ -223,6 +223,16 @@ Migrations: {applied | skipped | N/A}
 ================================================================================
 ```
 
+**Record deploy event** (captures deployed URL for downstream consumers):
+```bash
+uv run {shared_root}/scripts/tools/record_event.py \
+  --project-root "$(pwd)" \
+  --type phase_completed \
+  --phase deploy \
+  --detail "https://{env_name}.jpc.infomaniak.com"
+```
+Where `{shared_root}` = `{plugin_root}/../../shared`.
+
 **Phase complete — update pipeline state:**
 ```bash
 # Mark deploy phase complete (triggers compliance update automatically)
@@ -234,7 +244,6 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "$(pwd)" --phase deploy --detail "Deployed to {url}" \
   --session-id "{SHIPWRIGHT_SESSION_ID}"
 ```
-Where `{shared_root}` = `{plugin_root}/../../shared`.
 
 **Reflection — Capture Deploy Learnings:**
 

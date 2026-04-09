@@ -303,7 +303,7 @@ Each plugin reads project context at startup to ensure consistency. This table s
 | `architecture.md` | project | write_decision_log.py (architecture impact) |
 | `build_dashboard.md` | update_build_dashboard.py | build, test, changelog, deploy, iterate |
 | `session_handoff.md` | generate_handoff_on_stop.py | all plugins (Stop hook) |
-| `events.jsonl` | record_event.py | build, iterate, test, orchestrator (append-only) |
+| `events.jsonl` | record_event.py | build, iterate, test, deploy, changelog, orchestrator (append-only) |
 | `test_results.json` | test, iterate | test, iterate |
 | `compliance/*` | compliance plugin | update_compliance.py (all phases trigger) |
 | `sync_config.json` | project | iterate (FR mappings) |
@@ -337,14 +337,16 @@ After build completes for a split:
 
 The unified event log (`shipwright_events.jsonl`) is written to by these components:
 
-| Emitter | Event Type | When |
-|---------|-----------|------|
-| Orchestrator (between phases) | `phase_started` | Phase begins |
-| Orchestrator (between phases) | `phase_completed` | Phase validated + complete |
-| Orchestrator (split loop) | `split_completed` | All sections of a split done |
-| Build SKILL.md (Step 10) | `work_completed` (source=build) | Section committed |
-| Iterate SKILL.md (F3.5) | `work_completed` (source=iterate) | Iterate change committed |
-| Test Phase | `test_run` | Full test suite executed |
+| Emitter | Event Type | When | Detail |
+|---------|-----------|------|--------|
+| Orchestrator (between phases) | `phase_started` | Phase begins | — |
+| Orchestrator (between phases) | `phase_completed` | Phase validated + complete | — |
+| Orchestrator (split loop) | `split_completed` | All sections of a split done | — |
+| Build SKILL.md (Step 10) | `work_completed` (source=build) | Section committed | — |
+| Iterate SKILL.md (F3.5) | `work_completed` (source=iterate) | Iterate change committed | — |
+| Test SKILL.md (Step 5) | `test_run` | Full test suite executed | unit/e2e/smoke layer counts |
+| Deploy SKILL.md (Step 5) | `phase_completed` (phase=deploy) | Deploy smoke test passed | Deploy URL via `--detail` |
+| Changelog SKILL.md (Step 7) | `phase_completed` (phase=changelog) | PR created or tag pushed | Version + PR URL via `--detail` |
 
 All events share common fields: `v` (schema version), `id` (UUID-based), `ts` (ISO timestamp), `type`, and optional `session`.
 

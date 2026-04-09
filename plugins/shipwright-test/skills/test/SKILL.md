@@ -619,6 +619,23 @@ If learnings exist:
 - **Cross-project insights** → save Claude Code feedback/project Memory
 If none: skip.
 
+**Record test_run event** (always, even on failure — captures layer results):
+```bash
+uv run {shared_root}/scripts/tools/record_event.py \
+  --project-root "$(pwd)" \
+  --type test_run \
+  --trigger "pipeline" \
+  --unit-passed {unit_passed} \
+  --unit-total {unit_total} \
+  --e2e-passed {e2e_passed} \
+  --e2e-total {e2e_total} \
+  --smoke-status "{pass|fail|skip}"
+```
+Where `{shared_root}` = `{plugin_root}/../../shared`.
+
+Omit `--e2e-passed`/`--e2e-total` if E2E was skipped. Omit `--smoke-status` if smoke was skipped.
+Use `--trigger "iterate"` when invoked by `/shipwright-iterate`, `"manual"` when invoked standalone.
+
 **Phase complete — update pipeline state** (only if Completion Gate passes):
 ```bash
 # Mark test phase complete (triggers compliance update automatically)
@@ -630,7 +647,6 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "$(pwd)" --phase test --detail "{passed}/{total} passing" \
   --session-id "{SHIPWRIGHT_SESSION_ID}"
 ```
-Where `{shared_root}` = `{plugin_root}/../../shared`.
 
 ---
 
