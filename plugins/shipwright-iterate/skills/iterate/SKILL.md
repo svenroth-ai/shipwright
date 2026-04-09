@@ -25,6 +25,7 @@ Detects intent (feature, change, bug), assesses complexity, runs the right amoun
 Repo Scout, Mini-Plan, Escape Hatch  → references/iteration-planning.md
 Self-Review, Full Review, Handoff     → references/iteration-reviews.md
 Design Check, Testing, Visual, E2E    → references/design-and-testing.md
+Reflection Protocol                   → references/reflection.md
 Risk Taxonomy, Override Classes       → this file (inline)
 Phase Matrix                          → this file (Section 6, NORMATIVE)
 ```
@@ -595,7 +596,7 @@ See `references/iteration-planning.md` for full protocol including handoff file 
 
 ## Finalization (all paths)
 
-**CRITICAL: Steps F0–F11 are MANDATORY. Do NOT skip any step.**
+**CRITICAL: Steps F0–F11 (including F3a) are MANDATORY. Do NOT skip any step.**
 
 ### F0: Fresh Verification Gate
 
@@ -646,6 +647,17 @@ uv run {shared_root}/scripts/tools/write_decision_log.py \
 ```
 
 Reference iterate spec and run_id in the ADR body.
+
+### F3a: Reflection — Capture Learnings
+
+Apply the reflection protocol (`references/reflection.md`):
+
+1. Review the work done in this iterate run
+2. Check: new patterns, gotchas, corrections, tool/infra insights?
+3. **Decisions** → ADR with `--architecture-impact convention` (handled via F3 if applicable)
+4. **Observations** → append to `agent_docs/conventions.md` under `## Learnings`
+5. **Cross-project insights** → save Claude Code feedback/project Memory
+6. If no learnings: skip — do not force entries
 
 ### F4: Update CHANGELOG.md
 
@@ -744,6 +756,11 @@ main_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^re
 git checkout "$main_branch"
 git merge iterate/{short-description}
 git push origin "$main_branch"
+```
+
+**Update session handoff** to reflect completed state:
+```bash
+uv run {shared_root}/scripts/tools/generate_session_handoff.py
 ```
 
 **Gate check:** Verify F7 (Record Event) was executed:

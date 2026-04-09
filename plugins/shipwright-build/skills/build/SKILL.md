@@ -748,6 +748,18 @@ uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
 
 ---
 
+## Step 10a: Reflection — Capture Learnings
+
+Apply the reflection protocol (`references/reflection.md`):
+
+1. Review what was learned building this section
+2. **Decisions** → ADR with `--architecture-impact convention`
+3. **Observations** → append to `agent_docs/conventions.md` under `## Learnings`
+4. **Cross-project insights** → save Claude Code feedback/project Memory
+5. If no learnings: skip
+
+---
+
 ## Step 11: Session Handoff Check
 
 **Goal:** Before context limits, generate handoff document.
@@ -851,3 +863,4 @@ Then invoke: /shipwright-run
 - [performance-checklist.md](references/performance-checklist.md) — Performance review reference (N+1, bundle size, Core Web Vitals)
 - [simplification-patterns.md](references/simplification-patterns.md) — Code simplification patterns for readability axis
 - [finalization.md](references/finalization.md) — Section completion checklist
+- [reflection.md](references/reflection.md) — Learnings capture protocol (patterns, gotchas, corrections)

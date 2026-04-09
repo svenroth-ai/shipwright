@@ -383,6 +383,16 @@ uv run {shared_root}/scripts/tools/write_decision_log.py \
 
 When `--architecture-impact` is not `none`, the script automatically appends an update note to `agent_docs/architecture.md` (for component/data-flow) or `agent_docs/conventions.md` (for convention).
 
+### Step 14a: Reflection — Capture Learnings
+
+Check for new patterns, gotchas, or corrections discovered during this section.
+- **Decisions** → use `write_decision_log.py` with `--architecture-impact convention`
+- **Observations** → append to `agent_docs/conventions.md` under `## Learnings`
+  Format: `- ({YYYY-MM-DD}) build — {summary}`
+- If none: skip
+
+Note: Claude Code Memory is not available to subagents. Record learnings in conventions.md only.
+
 ### Step 15: Update Section State
 
 Determine `review_type`: If Step 11 (Full Code Review) was performed, use `full-review`. If only Step 10 (Self-Review) was done, use `self-review`.

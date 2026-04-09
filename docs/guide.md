@@ -504,6 +504,7 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 - Updated `agent_docs/decision_log.md` with implementation decisions
 - Updated `agent_docs/build_dashboard.md` with progress tracking
 - `agent_docs/session_handoff.md` (generated on context pressure or phase completion)
+- Updated `agent_docs/conventions.md` with implementation learnings (when new patterns or gotchas discovered)
 - SQL migration files with both `up.sql` and `down.sql` (when applicable)
 
 **How it works**
@@ -555,6 +556,7 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 - `playwright-report/index.html` -- interactive HTML report with screenshots, linked from compliance reports
 - Visual comparison report (`designs/visual-comparison/index.html`) with side-by-side mockup vs live screenshots
 - Visual triage results in `shipwright_test_results.json` (regressions, persistent failures, resolved screens)
+- Updated `agent_docs/conventions.md` with test learnings (when flaky patterns or infra quirks discovered)
 - A summary report printed to the terminal
 
 **How it works:**
@@ -704,6 +706,7 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 - Smoke test verification confirming the deployment is live
 - For PROD: a backup clone of the environment before deployment (rollback point)
 - Applied database migrations (if Supabase migration files exist)
+- Updated `agent_docs/conventions.md` with deployment learnings (when infra gotchas or config quirks discovered)
 
 **How it works:**
 
@@ -1111,19 +1114,20 @@ Not all phases can be skipped. Iterate defines three categories:
 
 ### Finalization
 
-Every iterate run -- regardless of complexity -- ends with 11 mandatory finalization steps:
+Every iterate run -- regardless of complexity -- ends with 12 mandatory finalization steps:
 
 1. **Drift check** -- verify specs match implementation
 2. **Architecture update** -- update `architecture.md` if structural changes were made
 3. **ADR** -- record the decision in `decision_log.md`
-4. **CHANGELOG** -- add entry to `[Unreleased]` section
-5. **Test results JSON** -- write structured test results to `shipwright_test_results.json`
-6. **Conventional commit** -- with `Run-ID` trailer and FR references
-7. **Record event** -- append `work_completed` to `shipwright_events.jsonl`
-8. **Update compliance** -- regenerate traceability and reports
-9. **Update build dashboard** -- refresh `build_dashboard.md`
-10. **Update iterate_history** -- append to `shipwright_run_config.json` (last 50 entries retained)
-11. **Merge, push & verify** -- merge branch to main, push, verify event was recorded
+4. **Reflection** -- capture learnings (patterns, gotchas, corrections) in `conventions.md` and/or Claude Code Memory
+5. **CHANGELOG** -- add entry to `[Unreleased]` section
+6. **Test results JSON** -- write structured test results to `shipwright_test_results.json`
+7. **Conventional commit** -- with `Run-ID` trailer and FR references
+8. **Record event** -- append `work_completed` to `shipwright_events.jsonl`
+9. **Update compliance** -- regenerate traceability and reports
+10. **Update build dashboard** -- refresh `build_dashboard.md`
+11. **Update iterate_history** -- append to `shipwright_run_config.json` (last 50 entries retained)
+12. **Merge, push & verify** -- merge branch to main, push, verify event was recorded, regenerate session handoff
 
 ### Degraded Mode
 
