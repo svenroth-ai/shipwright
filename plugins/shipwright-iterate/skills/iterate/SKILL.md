@@ -286,7 +286,7 @@ Note: "touches_db" (ordinary query/model edits without schema changes) is NOT a 
 |---|---|---|
 | **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON, iterate_history | Never skippable |
 | **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations) | Only with explicit risk acknowledgment |
-| **Advisory** | Design check, mini-plan, visual comparison, E2E update, external LLM review | Freely skippable |
+| **Advisory** | Design check, mini-plan, visual comparison, E2E update, external LLM review, release prompt | Freely skippable |
 | **Complexity-gated** | Iterate spec, context scan depth | Adjustable via "make it medium/small" |
 
 ---
@@ -547,6 +547,7 @@ Large is a "soft boundary" — force-continue supported with mandatory review + 
 | Test Results JSON | always | always | always | — |
 | run_config iterate_history | always | always | always | — |
 | Session Handoff | skip | if needed | if needed | — |
+| Release Prompt | always | always | always | — |
 
 ---
 
@@ -768,6 +769,17 @@ uv run {shared_root}/scripts/tools/generate_session_handoff.py
 grep "$(git rev-parse HEAD)" "{project_root}/shipwright_events.jsonl" > /dev/null 2>&1
 ```
 
+### F12: Release Prompt
+
+After pushing to main, check if `CHANGELOG.md` has entries under `[Unreleased]`:
+
+Count the `- ` lines between `## [Unreleased]` and the next `## [v` heading. If > 0:
+
+> "{N} unreleased changelog entries found. Run /shipwright-changelog to tag a release?"
+
+- If **yes**: invoke `/shipwright-changelog` (handles version bump, tagging, push — respects project autonomy mode)
+- If **no**: proceed to summary (entries stay under `[Unreleased]`)
+
 Print summary:
 ```
 ================================================================================
@@ -782,6 +794,7 @@ Tests:      {N} passing (unit: {N}, e2e: {N|skipped}, visual: {N|skipped})
 Specs:      {iterate spec path | FR update only | no changes}
 ADR:        Logged in decision_log.md
 CHANGELOG:  Updated ([Unreleased])
+Release:    {version tag | "deferred (N unreleased entries)"}
 Compliance: Updated
 Merged:     {main_branch} ← iterate/{short-description}
 Pushed:     origin/{main_branch}
