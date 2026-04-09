@@ -234,6 +234,35 @@ When diagnosing E2E failures, analyze:
 
 **DOM check:** If `<div id="__next">` is empty → app didn't render at all.
 
+### Step 4.5: Cross-Page UI Consistency Check
+
+**Skip if:** `designs/visual-guidelines.md` does not exist, OR profile has no `component_library`.
+
+**Run consistency analysis:**
+```bash
+uv run {plugin_root}/scripts/lib/ui_consistency_check.py \
+  --cwd "{project_root}" \
+  --guidelines "designs/visual-guidelines.md"
+```
+
+Parse JSON output for `passed`, `total`, `categories`, `root_cause_groups`.
+
+**If INCONSISTENT categories found:**
+1. Group outliers by root cause (Spacing, Components, Colors)
+2. Fix per group (max 3 retries): read outlier file/line, apply targeted fix, re-run `--category {name}`
+3. Commit each fix: `fix(ui-consistency): normalize {category} across pages`
+4. Park unresolvable with diagnosis
+
+**Record results:**
+- `consistency.passed`: categories consistent
+- `consistency.total`: categories checked (excludes SKIPPED)
+- `consistency.skipped`: true if no visual-guidelines.md or no UI profile
+- `consistency.skip_reason`: reason for skip
+- `consistency.categories`: per-category details
+- `consistency.root_cause_groups`: grouped inconsistent categories
+
+**Non-blocking:** Consistency issues are warnings, never pipeline failures.
+
 ### Step 5: Determine Overall Status
 
 | Layer | On FAIL | Impact |
@@ -243,8 +272,9 @@ When diagnosing E2E failures, analyze:
 | pgTAP tests | Autofix then blocking | `status: "fail"` |
 | Smoke test | **Blocking** — pipeline stops | `status: "fail"` |
 | E2E tests | **Warning only** — pipeline continues | `status: "pass"` with `e2e_warnings` |
+| Consistency | **Warning only** — pipeline continues | `status: "pass"` with warnings |
 
-Overall status = "pass" if unit + integration + pgTAP + smoke pass, regardless of E2E.
+Overall status = "pass" if unit + integration + pgTAP + smoke pass, regardless of E2E or consistency.
 
 ## Output
 
@@ -288,6 +318,16 @@ Also return the same JSON object as the **last line of your response**:
     "total": 17,
     "failures": ["login flow redirects after auth", "dashboard shows stats"],
     "skipped": false
+  },
+  "consistency": {
+    "passed": 5,
+    "total": 6,
+    "skipped": false,
+    "categories": {
+      "heading_hierarchy": {"status": "CONSISTENT", "majority_pattern": "text-2xl"},
+      "token_usage": {"status": "INCONSISTENT", "majority_pattern": "semantic tokens", "outliers": [{"file": "src/app/admin/page.tsx", "line": 8, "found": "bg-blue-500", "expected": "semantic token"}]}
+    },
+    "root_cause_groups": {"Colors": ["token_usage"]}
   },
   "fixes_applied": [
     {"test": "login flow redirects after auth", "fix": "Added missing await on redirect", "retry": 1}

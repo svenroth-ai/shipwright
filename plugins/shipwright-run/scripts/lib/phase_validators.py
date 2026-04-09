@@ -306,6 +306,20 @@ def _validate_test(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
             ),
         })
 
+    # Consistency: non-blocking — inform only (cross-page cosmetic issues)
+    consistency = results.get("consistency", {})
+    if consistency and not consistency.get("skipped", False):
+        cons_total = consistency.get("total", 0)
+        cons_passed = consistency.get("passed", 0)
+        if cons_total > 0 and cons_passed < cons_total:
+            issues.append({
+                "severity": "inform",
+                "message": (
+                    f"UI consistency: {cons_passed}/{cons_total} categories consistent. "
+                    f"{cons_total - cons_passed} inconsistencies logged."
+                ),
+            })
+
     return not has_ask, issues
 
 

@@ -284,6 +284,7 @@ Each plugin reads project context at startup to ensure consistency. This table s
 | spec.md (all splits) | ext | Step 1 | own | own section | — | — | B2 | read |
 | git log | ext | — | C2 | C2 | — | — | B2 | read |
 | test_results.json | — | — | — | — | B2 | B3 gate | B2 | read |
+| visual-guidelines.md | — | design | — | build | 3.6 | — | design ref | — |
 | events.jsonl | — | — | — | — | — | — | B2 | read |
 | run_config.json | — | — | — | — | — | — | B2 | read |
 | project_config.json | — | Step 1 | — | — | B | B2 | — | read |

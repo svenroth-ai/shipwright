@@ -35,6 +35,7 @@ Test layers:
   1.6 pgTAP database tests (if supabase/tests/database/ exists)
   2.  Smoke test (HTTP 200 on DEV URL)
   3.  Playwright E2E (if UI project + DEV URL available)
+  3.6 Cross-page consistency (if designs/visual-guidelines.md exists)
   4.  Visual comparison (if designs/screen-routes.json exists)
   5.  Security scan → see /shipwright-security
 ================================================================================
@@ -367,6 +368,58 @@ miscounts from setup projects, retries, or skipped tests.
 
 ---
 
+## Step 3.6: Cross-Page UI Consistency Check (if applicable)
+
+**Condition:** Runs if `designs/visual-guidelines.md` exists AND profile has UI config (`component_library` set). Also runs standalone via `--consistency` flag or alongside `--visual`.
+
+**Purpose:** Detect cross-page UI inconsistencies that per-page mockup comparison cannot catch (e.g., mixed heading sizes, inconsistent spacing, different table wrappers across pages). Non-blocking (WARNING level).
+
+**1. Run consistency analysis:**
+```bash
+uv run {plugin_root}/scripts/lib/ui_consistency_check.py \
+  --cwd "{project_root}" \
+  --guidelines "designs/visual-guidelines.md"
+```
+
+Parse JSON output: `passed`, `total`, `skipped`, `categories`, `root_cause_groups`.
+
+**2. If all categories CONSISTENT:** Log result, proceed to Step 3.7.
+
+**3. If INCONSISTENT categories found:**
+
+Print outlier summary grouped by root cause (same taxonomy as visual comparison):
+
+| Root Cause | Categories | Fix Scope |
+|------------|-----------|-----------|
+| **Spacing** | heading_hierarchy, spacing_patterns | Tailwind classes on page headings/containers |
+| **Components** | component_patterns, form_patterns, interactive_patterns | Component imports, wrapper replacements |
+| **Colors** | token_usage | Replace hardcoded colors with semantic tokens |
+
+**Fix loop per root-cause group** (max 3 retries per group):
+a. Read outlier details (file, line, found vs. expected)
+b. Apply targeted fix (e.g., change `text-3xl` → `text-2xl`)
+c. Re-run consistency check for that category: `--category {name}`
+d. If fix works: commit with `fix(ui-consistency): normalize {category} across pages`
+e. If same issue persists after 3 attempts: park with diagnosis
+
+**4. Record results** in `shipwright_test_results.json`:
+```json
+{
+  "consistency": {
+    "passed": 4,
+    "total": 6,
+    "skipped": false,
+    "skip_reason": "",
+    "categories": { ... },
+    "root_cause_groups": { ... }
+  }
+}
+```
+
+**5. Non-blocking:** Consistency issues produce WARNINGs, never hard-fail the pipeline.
+
+---
+
 ## Step 3.7: Visual Comparison — Regressions-Only (if applicable)
 
 **Condition:** Runs if `designs/screen-routes.json` exists in the project root. Also runs standalone via `--visual` flag.
@@ -489,6 +542,7 @@ Integration:   {passed}/{total} passed ({duration}s) | SKIP: {reason}
 pgTAP:         {passed}/{total} passed ({duration}s) | SKIP: {reason}
 Smoke test:    {PASS | FAIL | SKIP} ({url}, {response_time}ms)
 E2E tests:     {passed}/{total} passed | SKIP
+Consistency:   {passed}/{total} categories consistent | SKIP
 Visual tests:  {passed}/{total} matched | SKIP
 Security:      {via /shipwright-security | not run}
 
@@ -515,6 +569,7 @@ Test results determine pipeline continuation:
 | **pgTAP tests** | Autofix (3 retries), then blocking | Schema-level verification |
 | **Smoke test** | **Pipeline stops** (blocking) | App not running = can't deploy |
 | **E2E tests** | **Warning only** (non-blocking) | E2E can be flaky; log failures but continue |
+| **Consistency** | **Warning only** (non-blocking) | Cross-page cosmetic issues don't gate deployment |
 | **Visual tests** | **Warning only** (non-blocking) | Visual divergence ≠ broken functionality |
 
 If unit tests, integration tests, pgTAP tests, or smoke test FAIL: set phase status to `FAIL` and inform user. Do NOT proceed to deploy.
@@ -530,6 +585,7 @@ Before marking the test phase complete, ALL test layers must have an explicit re
 | pgTAP tests | `pass`, `fail`, or `skipped: {reason}` |
 | Smoke test | `pass`, `fail`, or `skipped: {reason}` |
 | E2E tests | `pass`, `fail`, or `skipped: {reason}` |
+| Consistency | `pass`, `warning`, or `skipped: {reason}` |
 | Visual tests | `pass`, `fail`, or `skipped: {reason}` |
 
 If any layer has NO result (was never executed and has no skip reason):
@@ -546,6 +602,8 @@ Valid skip reasons:
 - `skipped: no Playwright config` (E2E)
 - `skipped: profile has no UI` (E2E)
 - `skipped: smoke test failed` (E2E, because prerequisite not met)
+- `skipped: no designs/visual-guidelines.md` (Consistency)
+- `skipped: profile has no UI` (Consistency)
 - `skipped: no screen-routes.json` (Visual)
 
 **Reflection — Capture Test Learnings** (before marking phase complete):

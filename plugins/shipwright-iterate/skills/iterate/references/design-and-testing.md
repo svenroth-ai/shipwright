@@ -230,6 +230,28 @@ No UI structural change, text/color-only tweaks, logic-only fixes.
 
 ---
 
+## Cross-Page Consistency Re-Check (medium+ UI changes)
+
+After visual comparison, verify no new cross-page inconsistencies introduced by this change:
+
+1. **Run scoped check:**
+```bash
+uv run {test_plugin_root}/scripts/lib/ui_consistency_check.py \
+  --cwd "{project_root}" --files {changed_files}
+```
+
+2. **New outliers introduced by THIS change:** Fix before committing — these are regressions you just created.
+3. **Pre-existing outliers:** Log as WARNING, do not fix (out of scope for this iteration).
+4. Record results in `shipwright_test_results.json` under `consistency` key.
+
+### Skip When
+- Trivial/small complexity
+- No UI changes
+- `designs/visual-guidelines.md` does not exist
+- Profile has no UI config
+
+---
+
 ## Incremental E2E Test Update
 
 ### When

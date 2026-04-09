@@ -103,6 +103,10 @@ class TestResults:
     visual_skipped: bool = False
     visual_skip_reason: str = ""
     visual_report_path: str = ""  # Path to visual-build-report.json if available
+    consistency_passed: int = 0
+    consistency_total: int = 0
+    consistency_skipped: bool = False
+    consistency_skip_reason: str = ""
 
 
 @dataclass
@@ -620,6 +624,7 @@ def _parse_test_results_file(path: Path) -> TestResults | None:
     smoke = data.get("smoke", {})
     e2e = data.get("e2e", {})
     visual = data.get("visual", {})
+    consistency = data.get("consistency", {})
 
     # Check for visual-build-report.json alongside the test results file
     visual_report_path = ""
@@ -657,6 +662,10 @@ def _parse_test_results_file(path: Path) -> TestResults | None:
         visual_skipped=visual.get("skipped", False),
         visual_skip_reason=visual.get("skip_reason", ""),
         visual_report_path=visual_report_path,
+        consistency_passed=consistency.get("passed", 0),
+        consistency_total=consistency.get("total", 0),
+        consistency_skipped=consistency.get("skipped", False),
+        consistency_skip_reason=consistency.get("skip_reason", ""),
     )
 
 

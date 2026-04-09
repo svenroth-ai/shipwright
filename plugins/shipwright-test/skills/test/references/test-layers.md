@@ -50,6 +50,14 @@ Shipwright uses a layered testing strategy. Each layer catches different classes
 - **Config:** `playwright.config.ts` generated from template (Chromium only, JSON reporter)
 - **Results:** Parsed from `e2e-results.json` (Playwright JSON reporter)
 
+### 3.6. Cross-Page UI Consistency Check
+- **What:** Detects inconsistencies across pages (heading sizes, spacing, component patterns, form structure, token usage, interactive patterns)
+- **Tool:** `ui_consistency_check.py` (static source analysis, no browser needed)
+- **When:** After E2E results verification (3.5), before visual comparison (3.7). Only for UI projects with `designs/visual-guidelines.md`
+- **Speed:** Fast (< 10s, static file analysis)
+- **Non-blocking:** WARNING level — outliers logged, autofix attempted, never hard-fails pipeline
+- **Algorithm:** Majority-wins — most common pattern = expected, deviations are outliers
+
 ### 4. Security Scan
 - **What:** Dependency vulnerabilities, SAST, secrets detection
 - **Tool:** /shipwright-security (Aikido API)
