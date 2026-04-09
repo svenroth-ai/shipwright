@@ -185,6 +185,18 @@ If already on main: skip PR, just push tag.
 git push --tags origin main
 ```
 
+**Record changelog event** (captures version and PR URL for downstream consumers):
+```bash
+uv run {shared_root}/scripts/tools/record_event.py \
+  --project-root "$(pwd)" \
+  --type phase_completed \
+  --phase changelog \
+  --detail "v{version} — {PR_URL}"
+```
+Where `{shared_root}` = `{plugin_root}/../../shared`.
+
+If no PR was created (on main), use `--detail "v{version} — tagged on main"`.
+
 **Phase complete — update pipeline state:**
 ```bash
 # Mark changelog phase complete (triggers compliance update automatically)
@@ -195,7 +207,6 @@ uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
 uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "$(pwd)" --phase changelog --session-id "{SHIPWRIGHT_SESSION_ID}"
 ```
-Where `{shared_root}` = `{plugin_root}/../../shared`.
 
 **Print Summary:**
 ```
