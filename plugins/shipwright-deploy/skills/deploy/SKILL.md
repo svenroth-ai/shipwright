@@ -236,6 +236,19 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
 ```
 Where `{shared_root}` = `{plugin_root}/../../shared`.
 
+**Reflection — Capture Deploy Learnings:**
+
+If deployment had issues or required adjustments:
+1. Infra configuration gotchas?
+2. Environment-specific behavior?
+3. Rollback insights?
+
+If learnings exist:
+- **Observations** → append to `agent_docs/conventions.md` under `## Learnings`
+  Format: `- ({YYYY-MM-DD}) deploy — {summary}`
+- **Cross-project insights** → save Claude Code feedback/project Memory
+If none: skip.
+
 ### Smoke Test Failed → Rollback
 
 **DEV:** Git-based rollback

@@ -297,7 +297,7 @@ Each plugin reads project context at startup to ensure consistency. This table s
 | Artifact | Created By | Updated By |
 |----------|-----------|-----------|
 | `CLAUDE.md` | project | — |
-| `conventions.md` | project | write_decision_log.py (convention impact) |
+| `conventions.md` | project | write_decision_log.py (convention impact), reflection protocol (build, test, deploy, iterate) |
 | `decision_log.md` | project (init) | plan, build, deploy, iterate (via write_decision_log.py) |
 | `architecture.md` | project | write_decision_log.py (architecture impact) |
 | `build_dashboard.md` | update_build_dashboard.py | build, test, changelog, deploy, iterate |
@@ -361,6 +361,16 @@ When writing decision log entries, the `--architecture-impact` flag on `write_de
 | `none` | — | No update |
 
 Format: `- **ADR-NNN** (YYYY-MM-DD): Short description`
+
+### Reflection Protocol
+
+In addition to ADR-driven architecture impact, the **reflection protocol** (`references/reflection.md` in each plugin) updates `conventions.md` at the end of build (Step 10a), test, deploy, and iterate (F3a) phases. Two mechanisms:
+
+| Learning Type | Mechanism | Target |
+|---------------|-----------|--------|
+| Decisions (pattern chosen, convention corrected) | `write_decision_log.py --architecture-impact convention` | `conventions.md` → `## Convention Updates` (with ADR ref) |
+| Observations (gotchas, framework quirks) | Direct append | `conventions.md` → `## Learnings` (no ADR) |
+| Cross-project insights | Claude Code Memory (main conversation only) | `.claude/` memory system |
 
 ---
 

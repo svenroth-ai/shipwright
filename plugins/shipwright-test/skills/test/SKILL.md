@@ -548,6 +548,19 @@ Valid skip reasons:
 - `skipped: smoke test failed` (E2E, because prerequisite not met)
 - `skipped: no screen-routes.json` (Visual)
 
+**Reflection — Capture Test Learnings** (before marking phase complete):
+
+If test failures required investigation or fixes:
+1. Flaky test patterns worth documenting?
+2. Infrastructure quirks (timing, ports, browser drivers)?
+3. Test strategy insights (missing coverage, better approaches)?
+
+If learnings exist:
+- **Observations** → append to `agent_docs/conventions.md` under `## Learnings`
+  Format: `- ({YYYY-MM-DD}) test — {summary}`
+- **Cross-project insights** → save Claude Code feedback/project Memory
+If none: skip.
+
 **Phase complete — update pipeline state** (only if Completion Gate passes):
 ```bash
 # Mark test phase complete (triggers compliance update automatically)
