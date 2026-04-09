@@ -388,7 +388,15 @@ def _test_progression(data: ComplianceData) -> list[str]:
             new_cell = f"+{we.tests_total}" if we.tests_total > 0 else "—"
 
         suite = f"{we.tests_passed}/{we.tests_total}" if we.tests_total > 0 else "—"
-        result = "PASS" if we.tests_passed == we.tests_total and we.tests_total > 0 else "FAIL" if we.tests_total > 0 else "—"
+        baseline = data.baseline_failure_count
+        if we.tests_passed == we.tests_total and we.tests_total > 0:
+            result = "PASS"
+        elif we.tests_total > 0 and baseline > 0 and (we.tests_total - we.tests_passed) <= baseline:
+            result = "PASS (baseline)"
+        elif we.tests_total > 0:
+            result = "FAIL"
+        else:
+            result = "—"
         date = we.timestamp[:10]
 
         lines.append(f"| {i} | {name} | {source} | {new_cell} | {suite} | {result} | {date} |")
