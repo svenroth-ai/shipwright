@@ -20,6 +20,7 @@ Complete HTML template for `designs/index.html`. Claude populates the `screens` 
 | `{{COLOR_MUTED}}` | From `visual-guidelines.md` → muted/secondary text |
 | `{{COLOR_BORDER}}` | From `visual-guidelines.md` → border color |
 | `{{RADIUS}}` | From `visual-guidelines.md` → border radius |
+| `{{PROJECT_SLUG}}` | `shipwright_project_config.json` → `project_name`, lowercase, spaces→hyphens |
 | `{{SCREENS_ARRAY}}` | Built from `design-manifest.md` — see Data Model below |
 
 ---
@@ -569,9 +570,9 @@ const screens = [
     {{SCREENS_ARRAY}}
 
     // === STATE ===
-    const STORAGE_KEY = 'shipwright-design-feedback';
-    const ROUND_KEY = 'shipwright-design-round';
-    const HISTORY_KEY = 'shipwright-design-history';
+    const STORAGE_KEY = 'shipwright-design-feedback-{{PROJECT_SLUG}}';
+    const ROUND_KEY = 'shipwright-design-round-{{PROJECT_SLUG}}';
+    const HISTORY_KEY = 'shipwright-design-history-{{PROJECT_SLUG}}';
     let currentIndex = 0;
     let saveTimeout = null;
 
