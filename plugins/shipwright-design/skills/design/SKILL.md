@@ -411,6 +411,7 @@ Write `designs/design-manifest.md`:
 | `{{COLOR_MUTED}}` | `visual-guidelines.md` → Muted text |
 | `{{COLOR_BORDER}}` | `visual-guidelines.md` → Border |
 | `{{RADIUS}}` | `visual-guidelines.md` → Card border radius |
+| `{{PROJECT_SLUG}}` | `shipwright_project_config.json` → `project_name`, lowercase, spaces→hyphens |
 | `{{SCREENS_ARRAY}}` | Built from `design-manifest.md` — see template for format |
 
 ### Features (built into template)
