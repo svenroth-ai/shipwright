@@ -528,7 +528,7 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 **Standalone usage.** Yes. Run `/shipwright-build @sections/01-auth.md` for any section file. When used standalone, you manage the section order yourself. When used within the pipeline, the orchestrator feeds sections in dependency order and handles split transitions automatically.
 ### 4.6 Testing -- /shipwright-test
 
-**Purpose:** Runs your project's full test suite across multiple layers -- unit tests, integration tests (real DB), pgTAP database tests, smoke tests, and end-to-end (E2E) browser tests -- to catch bugs before deployment. It is profile-aware, meaning it automatically picks the right test runners and URLs based on your stack.
+**Purpose:** Runs your project's full test suite across multiple layers -- unit tests, integration tests (real DB), pgTAP database tests, smoke tests, end-to-end (E2E) browser tests, cross-page UI consistency checks, and visual comparison -- to catch bugs before deployment. It is profile-aware, meaning it automatically picks the right test runners and URLs based on your stack.
 
 **Command & Arguments:**
 
@@ -572,7 +572,7 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 7. Runs an E2E results verification step: compares `shipwright_test_results.json` against Playwright's authoritative `e2e-results.json` to catch count discrepancies (e.g., setup project tests being counted as E2E tests). If numbers diverge, the pipeline corrects `shipwright_test_results.json` and documents the reason.
 8. Produces a structured results summary with explicit status for every layer.
 
-**The six test layers and enforcement rules** are central to how the pipeline decides whether to continue:
+**The seven test layers and enforcement rules** are central to how the pipeline decides whether to continue:
 
 | Layer | On Failure | Rationale |
 |-------|-----------|-----------|
@@ -581,6 +581,7 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 | pgTAP DB tests | Autofix (3 retries), then blocking | Schema-level RLS/constraint verification |
 | Smoke test | Pipeline stops (blocking) | If the app is not running, deployment is pointless |
 | E2E tests | Warning only (non-blocking) | E2E tests can be flaky; failures are logged but do not block |
+| Cross-page consistency | Warning only (advisory) | Cross-page UI inconsistencies are logged but do not block deployment |
 | Visual comparison | Warning only (advisory) | Visual mismatches are logged but do not block deployment |
 
 Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason}`) before the phase is considered complete. If any layer has no result, the phase stays in `incomplete` status.
@@ -746,7 +747,7 @@ No flags or arguments. It reads existing pipeline data and generates (or updates
 
 - `compliance/dashboard.md` -- The starting point. Quality indicators, project velocity, and links to all compliance artifacts.
 - `compliance/traceability-matrix.md` -- Maps every requirement to the work events (build sections and iterate changes) that verify it, with a "Last Verified" column showing when each requirement was last tested.
-- `compliance/test-evidence.md` -- Collects test results across all layers (unit, integration, pgTAP, smoke, E2E, visual) with pass/fail counts and skip reasons. Provides evidence that the software was tested.
+- `compliance/test-evidence.md` -- Collects test results across all layers (unit, integration, pgTAP, smoke, E2E, consistency, visual) with pass/fail counts and skip reasons. Provides evidence that the software was tested.
 - `compliance/change-history.md` -- Documents all commits, decisions (from `agent_docs/decision_log.md`), and version tags. Shows who changed what and why.
 - `compliance/sbom.md` -- Software Bill of Materials listing all dependencies with versions and license types. Flags copyleft licenses that may have legal implications.
 

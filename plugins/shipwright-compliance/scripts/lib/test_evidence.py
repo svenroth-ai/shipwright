@@ -150,6 +150,18 @@ def _test_execution_summary(data: ComplianceData) -> list[str]:
                 f"| — | {vis_detail} |"
             )
 
+        # Consistency
+        if tr.consistency_skipped:
+            cons_status = "SKIP"
+            cons_detail = tr.consistency_skip_reason or "skipped"
+            lines.append(f"| Consistency | {cons_status} | — | — | — | {cons_detail} |")
+        elif tr.consistency_total > 0:
+            cons_status = "PASS" if tr.consistency_passed == tr.consistency_total else "WARNING"
+            lines.append(
+                f"| Consistency | {cons_status} | {tr.consistency_passed} | {tr.consistency_total} "
+                f"| — | Cross-page UI check |"
+            )
+
         lines.append("")
     else:
         lines.extend([

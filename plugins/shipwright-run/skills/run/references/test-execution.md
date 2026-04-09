@@ -20,6 +20,7 @@ After all build sections are complete:
 - `unit`: `{passed, total, duration_s}`
 - `smoke`: `{status, url, response_ms}` or `{status: "skipped", reason: "..."}`
 - `e2e`: `{passed, total, failures, skipped}` or `{status: "skipped", reason: "..."}`
+- `consistency`: `{passed, total, skipped, categories, root_cause_groups}` or `{skipped: true, skip_reason: "..."}`
 - `fixes_applied`: list of auto-fixes attempted
 
 **Validate test completeness:** The orchestrator's phase validator (`phase_validators.py`) automatically checks test completeness when `update-step --status complete` is called. It verifies:
