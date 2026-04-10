@@ -671,6 +671,9 @@ Where:
 - `{review_type}` — `"full-review"` if Step 6b (full code review) was triggered, `"self-review"` if only Step 6a (self-review checklist) was performed
 
 **Record event in unified event log:**
+
+> **CRITICAL:** Call `record_event.py` immediately after each section completes. Do NOT batch multiple sections in a loop with `--deduplicate-by-commit` using the same commit hash — dedup checks (section, commit) but batching with identical commits from a different context will collapse events. Each section has its own commit from Step 8.
+
 ```bash
 uv run {shared_root}/scripts/tools/record_event.py \
   --project-root "$(pwd)" \
