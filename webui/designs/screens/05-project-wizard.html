@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shipwright — New Project Wizard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --color-primary: #6b5e56;
+    --color-primary-hover: #5a4f48;
+    --color-bg: #f5f0eb;
+    --color-surface: #ffffff;
+    --color-muted-bg: #ede8e1;
+    --color-text: #1a1a1a;
+    --color-muted: #6b7280;
+    --color-border: #e0dbd4;
+    --color-accent: #857568;
+    --color-success: #059669;
+    --radius-card: 12px;
+    --radius-button: 8px;
+    --shadow-card: 0 6px 30px rgba(0,0,0,0.10);
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Simulated background content */
+  .bg-content {
+    position: fixed;
+    inset: 0;
+    background: var(--color-bg);
+    z-index: 0;
+  }
+  .bg-content::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 64px;
+    background: var(--color-primary);
+  }
+  .bg-content::after {
+    content: '';
+    position: absolute;
+    left: 64px;
+    top: 0;
+    bottom: 0;
+    width: 260px;
+    background: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+  }
+
+  /* Overlay */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.40);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: overlayIn 0.2s ease-out;
+  }
+
+  @keyframes overlayIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* Modal */
+  .modal {
+    width: 560px;
+    max-height: 90vh;
+    background: var(--color-surface);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    position: relative;
+    animation: modalIn 0.25s ease-out;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* Modal header */
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 28px 0 28px;
+  }
+
+  .modal-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-text);
+    letter-spacing: -0.02em;
+  }
+
+  .close-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--color-muted);
+    transition: all 0.15s ease;
+  }
+  .close-btn:hover {
+    background: var(--color-muted-bg);
+    color: var(--color-text);
+  }
+  .close-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Step indicator */
+  .step-indicator {
+    padding: 20px 28px 0 28px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .step-dots {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .step-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--color-border);
+    background: transparent;
+    transition: all 0.25s ease;
+  }
+  .step-dot.active {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(107, 94, 86, 0.15);
+  }
+  .step-dot.completed {
+    border-color: var(--color-success);
+    background: var(--color-success);
+  }
+
+  .step-label {
+    font-size: 13px;
+    color: var(--color-muted);
+    font-weight: 500;
+  }
+
+  /* Modal body */
+  .modal-body {
+    padding: 24px 28px;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  /* Step content */
+  .step-content {
+    display: none;
+  }
+  .step-content.active {
+    display: block;
+    animation: stepIn 0.2s ease-out;
+  }
+
+  @keyframes stepIn {
+    from { opacity: 0; transform: translateX(8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Form fields */
+  .form-group {
+    margin-bottom: 20px;
+  }
+  .form-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+  }
+
+  .form-input {
+    width: 100%;
+    height: 48px;
+    padding: 0 14px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-button);
+    outline: none;
+    transition: all 0.15s ease;
+  }
+  .form-input:hover {
+    border-color: var(--color-accent);
+  }
+  .form-input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(107, 94, 86, 0.10);
+  }
+  .form-input::placeholder {
+    color: #b0a99f;
+  }
+
+  .form-textarea {
+    width: 100%;
+    min-height: 88px;
+    padding: 12px 14px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-button);
+    outline: none;
+    resize: vertical;
+    line-height: 1.5;
+    transition: all 0.15s ease;
+  }
+  .form-textarea:hover {
+    border-color: var(--color-accent);
+  }
+  .form-textarea:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(107, 94, 86, 0.10);
+  }
+  .form-textarea::placeholder {
+    color: #b0a99f;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+  }
+  .input-row .form-input {
+    flex: 1;
+  }
+
+  .btn-browse {
+    height: 48px;
+    padding: 0 16px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text);
+    background: var(--color-muted-bg);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-button);
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+  }
+  .btn-browse:hover {
+    background: #e4dfd8;
+    border-color: var(--color-accent);
+  }
+  .btn-browse svg {
+    width: 16px;
+    height: 16px;
+    color: var(--color-muted);
+  }
+
+  /* Radio cards */
+  .radio-cards-group {
+    margin-bottom: 24px;
+  }
+  .radio-cards-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .radio-cards-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+  }
+
+  .radio-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .radio-card {
+    position: relative;
+    padding: 16px 18px;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-button);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: var(--color-surface);
+  }
+  .radio-card:hover {
+    border-color: var(--color-accent);
+    background: #faf8f6;
+  }
+  .radio-card.selected {
+    border-color: var(--color-primary);
+    background: #f9f6f3;
+    box-shadow: 0 0 0 1px var(--color-primary);
+  }
+
+  .radio-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .radio-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .radio-indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+  }
+  .radio-card.selected .radio-indicator {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+  }
+  .radio-indicator::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: white;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .radio-card.selected .radio-indicator::after {
+    opacity: 1;
+  }
+
+  .radio-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .radio-card-desc {
+    font-size: 13px;
+    color: var(--color-muted);
+    margin-top: 4px;
+    margin-left: 28px;
+    line-height: 1.45;
+  }
+
+  .radio-card-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-primary);
+    background: rgba(107, 94, 86, 0.08);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  /* Modal footer */
+  .modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 0 28px 24px 28px;
+  }
+
+  .btn {
+    height: 40px;
+    padding: 0 20px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: var(--radius-button);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+    border: none;
+  }
+
+  .btn-secondary {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1.5px solid var(--color-border);
+  }
+  .btn-secondary:hover {
+    background: var(--color-muted-bg);
+    border-color: var(--color-accent);
+  }
+
+  .btn-primary {
+    background: var(--color-primary);
+    color: #ffffff;
+  }
+  .btn-primary:hover {
+    background: var(--color-primary-hover);
+  }
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  .btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Step connector lines between dots */
+  .step-dots {
+    position: relative;
+  }
+  .step-connector {
+    width: 20px;
+    height: 2px;
+    background: var(--color-border);
+    border-radius: 1px;
+    transition: background 0.25s ease;
+  }
+  .step-connector.completed {
+    background: var(--color-success);
+  }
+</style>
+</head>
+<body>
+
+<!-- Simulated background (rail + sidebar) -->
+<div class="bg-content"></div>
+
+<!-- Overlay + Modal -->
+<div class="overlay" id="wizardOverlay">
+  <div class="modal">
+
+    <!-- Header -->
+    <div class="modal-header">
+      <span class="modal-title">New Project</span>
+      <button class="close-btn" title="Close">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Step Indicator -->
+    <div class="step-indicator">
+      <div class="step-dots">
+        <div class="step-dot" id="dot1"></div>
+        <div class="step-connector" id="conn1"></div>
+        <div class="step-dot" id="dot2"></div>
+        <div class="step-connector" id="conn2"></div>
+        <div class="step-dot" id="dot3"></div>
+        <div class="step-connector" id="conn3"></div>
+        <div class="step-dot" id="dot4"></div>
+      </div>
+      <span class="step-label" id="stepLabel">Step 1 of 4 &mdash; Project Info</span>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body">
+
+      <!-- STEP 1: Project Info -->
+      <div class="step-content active" id="step1">
+        <div class="form-group">
+          <label class="form-label" for="projectName">Project Name</label>
+          <input class="form-input" type="text" id="projectName" placeholder="My SaaS App" value="My SaaS App">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="projectDir">Directory</label>
+          <div class="input-row">
+            <input class="form-input" type="text" id="projectDir" placeholder="~/projects/my-saas-app" value="~/projects/my-saas-app" style="font-family: var(--font-mono); font-size: 13px;">
+            <button class="btn-browse">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/>
+              </svg>
+              Browse
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="projectDesc">Description</label>
+          <textarea class="form-textarea" id="projectDesc" placeholder="Describe what you want to build...">Time tracking SaaS application with team management and billing integration.</textarea>
+        </div>
+      </div>
+
+      <!-- STEP 2: Stack & Mode -->
+      <div class="step-content" id="step2">
+        <div class="radio-cards-group">
+          <span class="radio-cards-label">Stack Profile</span>
+          <div class="radio-cards">
+            <label class="radio-card selected" onclick="selectCard(this)">
+              <input type="radio" name="stack" value="supabase-nextjs" checked>
+              <div class="radio-card-header">
+                <span class="radio-indicator"></span>
+                <span class="radio-card-title">Supabase + Next.js</span>
+                <span class="radio-card-badge">Recommended</span>
+              </div>
+              <div class="radio-card-desc">Full-stack with Supabase auth, database, and storage. Next.js App Router with server components and Tailwind CSS.</div>
+            </label>
+            <label class="radio-card" onclick="selectCard(this)">
+              <input type="radio" name="stack" value="custom">
+              <div class="radio-card-header">
+                <span class="radio-indicator"></span>
+                <span class="radio-card-title">Custom</span>
+              </div>
+              <div class="radio-card-desc">Define your own tech stack. You'll configure framework, database, and hosting in the next steps.</div>
+            </label>
+          </div>
+        </div>
+        <div class="radio-cards-group">
+          <span class="radio-cards-label">Autonomy Level</span>
+          <div class="radio-cards">
+            <label class="radio-card selected" onclick="selectCard(this)">
+              <input type="radio" name="autonomy" value="guided" checked>
+              <div class="radio-card-header">
+                <span class="radio-indicator"></span>
+                <span class="radio-card-title">Guided</span>
+              </div>
+              <div class="radio-card-desc">Claude asks before major design, architecture, and implementation decisions. Best for hands-on developers.</div>
+            </label>
+            <label class="radio-card" onclick="selectCard(this)">
+              <input type="radio" name="autonomy" value="autonomous">
+              <div class="radio-card-header">
+                <span class="radio-indicator"></span>
+                <span class="radio-card-title">Autonomous</span>
+              </div>
+              <div class="radio-card-desc">For product managers and non-technical users who want to delegate design and architecture decisions to Claude.</div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="btnBack" style="display:none" onclick="goBack()">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+        </svg>
+        Back
+      </button>
+      <button class="btn btn-secondary" id="btnCancel" onclick="closeWizard()">Cancel</button>
+      <button class="btn btn-primary" id="btnNext" onclick="goNext()">
+        Next
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+        </svg>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let currentStep = 1;
+  const totalSteps = 4;
+  const stepLabels = [
+    'Project Info',
+    'Stack & Mode',
+    'Review',
+    'Create'
+  ];
+
+  function updateUI() {
+    // Update dots
+    for (let i = 1; i <= totalSteps; i++) {
+      const dot = document.getElementById('dot' + i);
+      dot.classList.remove('active', 'completed');
+      if (i === currentStep) dot.classList.add('active');
+      else if (i < currentStep) dot.classList.add('completed');
+    }
+
+    // Update connectors
+    for (let i = 1; i < totalSteps; i++) {
+      const conn = document.getElementById('conn' + i);
+      conn.classList.toggle('completed', i < currentStep);
+    }
+
+    // Update label
+    document.getElementById('stepLabel').innerHTML =
+      'Step ' + currentStep + ' of ' + totalSteps + ' &mdash; ' + stepLabels[currentStep - 1];
+
+    // Show/hide step content
+    document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+    const activeStep = document.getElementById('step' + currentStep);
+    if (activeStep) activeStep.classList.add('active');
+
+    // Show/hide back button
+    document.getElementById('btnBack').style.display = currentStep > 1 ? '' : 'none';
+    // Hide cancel when back is visible
+    document.getElementById('btnCancel').style.display = currentStep > 1 ? 'none' : '';
+
+    // Update next button text
+    const btnNext = document.getElementById('btnNext');
+    if (currentStep === totalSteps) {
+      btnNext.innerHTML = 'Create Project <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>';
+    } else {
+      btnNext.innerHTML = 'Next <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>';
+    }
+  }
+
+  function goNext() {
+    if (currentStep < totalSteps) {
+      currentStep++;
+      updateUI();
+    }
+  }
+
+  function goBack() {
+    if (currentStep > 1) {
+      currentStep--;
+      updateUI();
+    }
+  }
+
+  function closeWizard() {
+    document.getElementById('wizardOverlay').style.display = 'none';
+  }
+
+  function selectCard(el) {
+    const group = el.closest('.radio-cards');
+    group.querySelectorAll('.radio-card').forEach(card => card.classList.remove('selected'));
+    el.classList.add('selected');
+    el.querySelector('input[type="radio"]').checked = true;
+  }
+
+  // Initialize
+  updateUI();
+</script>
+
+</body>
+</html>

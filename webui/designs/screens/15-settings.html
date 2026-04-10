@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shipwright Command Center — Settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --color-primary: #6b5e56;
+    --color-primary-hover: #5a4f48;
+    --color-bg: #f5f0eb;
+    --color-surface: #ffffff;
+    --color-muted-bg: #ede8e1;
+    --color-text: #1a1a1a;
+    --color-muted: #6b7280;
+    --color-border: #e0dbd4;
+    --color-accent: #857568;
+    --color-success: #059669;
+    --color-warning: #D97706;
+    --color-error: #DC2626;
+    --radius-card: 12px;
+    --radius-button: 8px;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ============================================================
+     SIDEBAR
+     ============================================================ */
+  .sidebar {
+    width: 200px;
+    min-width: 200px;
+    background: #5c5652;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    z-index: 10;
+  }
+
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 16px 24px;
+  }
+
+  .sidebar-logo svg {
+    width: 28px;
+    height: 28px;
+    color: #ffffff;
+    flex-shrink: 0;
+  }
+
+  .sidebar-logo span {
+    font-weight: 700;
+    font-size: 16px;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 8px;
+    flex: 1;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: var(--radius-button);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.7);
+    transition: all 0.15s ease;
+    position: relative;
+    text-decoration: none;
+  }
+
+  .nav-item:hover {
+    background: rgba(255,255,255,0.08);
+    color: #ffffff;
+  }
+
+  .nav-item.active {
+    background: rgba(255,255,255,0.12);
+    color: #ffffff;
+  }
+
+  .nav-item svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .nav-badge {
+    margin-left: auto;
+    background: var(--color-error);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+  }
+
+  /* ============================================================
+     MAIN AREA
+     ============================================================ */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .header {
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+  }
+
+  .header-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  /* ============================================================
+     TABS
+     ============================================================ */
+  .tabs-bar {
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: 0 28px;
+    display: flex;
+    gap: 0;
+  }
+
+  .tab {
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s ease;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    font-family: var(--font-sans);
+  }
+
+  .tab:hover {
+    color: var(--color-text);
+  }
+
+  .tab.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+  }
+
+  /* ============================================================
+     SETTINGS CONTENT
+     ============================================================ */
+  .settings-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px;
+  }
+
+  .tab-panel {
+    display: none;
+  }
+
+  .tab-panel.active {
+    display: block;
+  }
+
+  .settings-section {
+    margin-bottom: 32px;
+  }
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 14px 20px;
+    align-items: center;
+  }
+
+  .form-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .form-input {
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-button);
+    font-size: 13px;
+    font-family: var(--font-sans);
+    color: var(--color-text);
+    background: var(--color-surface);
+    max-width: 280px;
+    transition: border-color 0.15s ease;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(107, 94, 86, 0.12);
+  }
+
+  .form-select {
+    padding: 8px 32px 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-button);
+    font-size: 13px;
+    font-family: var(--font-sans);
+    color: var(--color-text);
+    background: var(--color-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 10px center;
+    appearance: none;
+    max-width: 280px;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+  }
+
+  .form-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(107, 94, 86, 0.12);
+  }
+
+  /* Phase mapping table */
+  .mapping-table {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+
+  .mapping-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 16px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .mapping-row:last-child {
+    border-bottom: none;
+  }
+
+  .mapping-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text);
+    min-width: 110px;
+  }
+
+  .mapping-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .pill-phase {
+    background: var(--color-muted-bg);
+    color: var(--color-accent);
+  }
+
+  .pill-phase-backlog {
+    background: #ede9fe;
+    color: #7c3aed;
+  }
+
+  .pill-phase-progress {
+    background: #dbeafe;
+    color: #2563eb;
+  }
+
+  .pill-phase-review {
+    background: #fef3c7;
+    color: #b45309;
+  }
+
+  .pill-phase-done {
+    background: #ecfdf5;
+    color: #059669;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 20px;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-button);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .btn-primary:hover {
+    background: var(--color-primary-hover);
+  }
+
+  .btn-danger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 20px;
+    background: #fff;
+    color: var(--color-error);
+    border: 1px solid var(--color-error);
+    border-radius: var(--radius-button);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn-danger:hover {
+    background: var(--color-error);
+    color: #fff;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  /* Read-only field */
+  .form-readonly {
+    padding: 8px 12px;
+    background: var(--color-muted-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-button);
+    font-size: 13px;
+    color: var(--color-muted);
+    max-width: 280px;
+  }
+
+  .form-readonly-mono {
+    font-family: var(--font-mono);
+  }
+
+  /* Env vars */
+  .env-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .env-key {
+    padding: 7px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-button);
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--color-text);
+    background: var(--color-surface);
+    width: 160px;
+  }
+
+  .env-value {
+    padding: 7px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-button);
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--color-text);
+    background: var(--color-surface);
+    flex: 1;
+    max-width: 280px;
+  }
+
+  .env-key:focus, .env-value:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(107, 94, 86, 0.12);
+  }
+
+  .btn-icon-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--color-muted);
+    transition: all 0.15s ease;
+  }
+
+  .btn-icon-sm:hover {
+    background: var(--color-muted-bg);
+    color: var(--color-text);
+  }
+
+  .btn-icon-sm.danger:hover {
+    background: #fef2f2;
+    color: var(--color-error);
+    border-color: var(--color-error);
+  }
+
+  .btn-icon-sm svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .btn-text-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    background: none;
+    border: 1px dashed var(--color-border);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--font-sans);
+    color: var(--color-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn-text-sm:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  .btn-text-sm svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .mapping-override-note {
+    font-size: 12px;
+    color: var(--color-muted);
+    margin-bottom: 10px;
+    font-style: italic;
+  }
+
+  /* Editable tag input */
+  .tag-input-area {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+  }
+
+  .pill-removable {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 6px 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: default;
+  }
+
+  .pill-remove-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,0.1);
+    color: inherit;
+    font-size: 10px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    padding: 0;
+  }
+
+  .pill-remove-btn:hover {
+    background: rgba(0,0,0,0.25);
+  }
+
+  .pill-add-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1.5px dashed var(--color-border);
+    background: transparent;
+    color: var(--color-muted);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+  }
+
+  .pill-add-btn:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: rgba(107, 94, 86, 0.06);
+  }
+
+  .mapping-empty {
+    font-size: 12px;
+    color: var(--color-muted);
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     SIDEBAR
+     ============================================================ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="8"/>
+      <circle cx="12" cy="12" r="2.5"/>
+      <line x1="12" y1="2" x2="12" y2="9.5"/>
+      <line x1="12" y1="14.5" x2="12" y2="22"/>
+      <line x1="2" y1="12" x2="9.5" y2="12"/>
+      <line x1="14.5" y1="12" x2="22" y2="12"/>
+      <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/>
+      <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/>
+      <line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/>
+      <line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/>
+    </svg>
+    <span>Shipwright</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      Task Board
+    </a>
+
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+      </svg>
+      Projects
+    </a>
+
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+        <path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/>
+      </svg>
+      Inbox
+      <span class="nav-badge">2</span>
+    </a>
+
+    <a class="nav-item active" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+      </svg>
+      Settings
+    </a>
+  </nav>
+</aside>
+
+<!-- ============================================================
+     MAIN
+     ============================================================ -->
+<main class="main">
+  <div class="header">
+    <h1 class="header-title">Settings</h1>
+  </div>
+
+  <div class="tabs-bar">
+    <button class="tab active" data-tab="global" onclick="switchTab('global')">Global</button>
+    <button class="tab" data-tab="ai-portal" onclick="switchTab('ai-portal')">AI Portal</button>
+    <button class="tab" data-tab="saas-app" onclick="switchTab('saas-app')">SaaS App</button>
+  </div>
+
+  <div class="settings-content">
+
+    <!-- ========== GLOBAL TAB ========== -->
+    <div class="tab-panel active" id="panel-global">
+      <div class="settings-section">
+        <h2 class="section-title">Server</h2>
+        <div class="form-grid">
+          <label class="form-label">Port</label>
+          <input type="number" class="form-input" value="3847">
+
+          <label class="form-label">Max Concurrent</label>
+          <input type="number" class="form-input" value="3">
+
+          <label class="form-label">Default Autonomy</label>
+          <select class="form-select">
+            <option value="guided" selected>Guided</option>
+            <option value="autonomous">Autonomous</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h2 class="section-title">Phase-to-Status Mapping (Default)</h2>
+        <div class="mapping-table">
+          <div class="mapping-row">
+            <span class="mapping-label">Backlog</span>
+            <div class="tag-input-area">
+              <span class="mapping-empty">No phases mapped — status set automatically</span>
+            </div>
+          </div>
+          <div class="mapping-row">
+            <span class="mapping-label">In Progress</span>
+            <div class="tag-input-area">
+              <span class="pill pill-removable pill-phase-progress">project <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-progress">design <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-progress">plan <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-progress">build <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <button class="pill-add-btn" title="Add phase">+</button>
+            </div>
+          </div>
+          <div class="mapping-row">
+            <span class="mapping-label">In Review</span>
+            <div class="tag-input-area">
+              <span class="pill pill-removable pill-phase-review">test <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-review">security <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-review">deploy <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-review">changelog <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <button class="pill-add-btn" title="Add phase">+</button>
+            </div>
+          </div>
+          <div class="mapping-row">
+            <span class="mapping-label">Done</span>
+            <div class="tag-input-area">
+              <span class="mapping-empty">No phases mapped — status set automatically</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-primary">Save Changes</button>
+      </div>
+    </div>
+
+    <!-- ========== AI PORTAL PROJECT TAB ========== -->
+    <div class="tab-panel" id="panel-ai-portal">
+      <div class="settings-section">
+        <h2 class="section-title">Project Info</h2>
+        <div class="form-grid">
+          <label class="form-label">Name</label>
+          <div class="form-readonly">AI Portal</div>
+
+          <label class="form-label">Directory</label>
+          <div class="form-readonly form-readonly-mono">~/projects/aiportal</div>
+
+          <label class="form-label">Profile</label>
+          <select class="form-select">
+            <option value="supabase-nextjs" selected>supabase-nextjs</option>
+            <option value="custom">custom</option>
+          </select>
+
+          <label class="form-label">Autonomy</label>
+          <select class="form-select">
+            <option value="guided" selected>Guided</option>
+            <option value="autonomous">Autonomous</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h2 class="section-title">Environment Variables</h2>
+        <div class="env-row">
+          <input type="text" class="env-key" value="SUPABASE_URL" placeholder="Key">
+          <input type="text" class="env-value" value="https://abc.supabase.co" placeholder="Value">
+          <button class="btn-icon-sm danger" title="Remove">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="env-row">
+          <input type="text" class="env-key" value="SUPABASE_ANON_KEY" placeholder="Key">
+          <input type="text" class="env-value" value="eyJhbGciOi..." placeholder="Value">
+          <button class="btn-icon-sm danger" title="Remove">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <button class="btn-text-sm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Add Variable
+        </button>
+      </div>
+
+      <div class="settings-section">
+        <h2 class="section-title">Custom Phase Mapping</h2>
+        <p class="mapping-override-note">Overrides the global default mapping for this project.</p>
+        <div class="mapping-table">
+          <div class="mapping-row">
+            <span class="mapping-label">Backlog</span>
+            <div class="tag-input-area">
+              <span class="mapping-empty">No phases mapped — status set automatically</span>
+            </div>
+          </div>
+          <div class="mapping-row">
+            <span class="mapping-label">In Progress</span>
+            <div class="tag-input-area">
+              <span class="pill pill-removable pill-phase-progress">project <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-progress">design <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-progress">plan <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-progress">build <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <button class="pill-add-btn" title="Add phase">+</button>
+            </div>
+          </div>
+          <div class="mapping-row">
+            <span class="mapping-label">In Review</span>
+            <div class="tag-input-area">
+              <span class="pill pill-removable pill-phase-review">test <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-review">security <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-review">deploy <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-review">changelog <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <button class="pill-add-btn" title="Add phase">+</button>
+            </div>
+          </div>
+          <div class="mapping-row">
+            <span class="mapping-label">Done</span>
+            <div class="tag-input-area">
+              <span class="mapping-empty">No phases mapped — status set automatically</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-primary">Save Changes</button>
+        <button class="btn-danger">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+          </svg>
+          Delete Project
+        </button>
+      </div>
+    </div>
+
+    <!-- ========== SAAS APP PROJECT TAB (hidden by default) ========== -->
+    <div class="tab-panel" id="panel-saas-app">
+      <div class="settings-section">
+        <h2 class="section-title">Project Info</h2>
+        <div class="form-grid">
+          <label class="form-label">Name</label>
+          <div class="form-readonly">SaaS App</div>
+
+          <label class="form-label">Directory</label>
+          <div class="form-readonly form-readonly-mono">~/projects/saas-app</div>
+
+          <label class="form-label">Profile</label>
+          <select class="form-select">
+            <option value="supabase-nextjs" selected>supabase-nextjs</option>
+            <option value="custom">custom</option>
+          </select>
+
+          <label class="form-label">Autonomy</label>
+          <select class="form-select">
+            <option value="guided">Guided</option>
+            <option value="autonomous" selected>Autonomous</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h2 class="section-title">Environment Variables</h2>
+        <div class="env-row">
+          <input type="text" class="env-key" value="DATABASE_URL" placeholder="Key">
+          <input type="text" class="env-value" value="postgresql://..." placeholder="Value">
+          <button class="btn-icon-sm danger" title="Remove">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <button class="btn-text-sm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Add Variable
+        </button>
+      </div>
+
+      <div class="settings-section">
+        <h2 class="section-title">Custom Phase Mapping</h2>
+        <p class="mapping-override-note">Overrides the global default mapping for this project.</p>
+        <div class="mapping-table">
+          <div class="mapping-row">
+            <span class="mapping-label">Backlog</span>
+            <div class="tag-input-area">
+              <span class="mapping-empty">No phases mapped — status set automatically</span>
+            </div>
+          </div>
+          <div class="mapping-row">
+            <span class="mapping-label">In Progress</span>
+            <div class="tag-input-area">
+              <span class="pill pill-removable pill-phase-progress">project <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-progress">design <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-progress">plan <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-progress">build <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <button class="pill-add-btn" title="Add phase">+</button>
+            </div>
+          </div>
+          <div class="mapping-row">
+            <span class="mapping-label">In Review</span>
+            <div class="tag-input-area">
+              <span class="pill pill-removable pill-phase-review">test <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-review">security <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-review">deploy <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <span class="pill pill-removable pill-phase-review">changelog <button class="pill-remove-btn" title="Remove">&times;</button></span>
+              <button class="pill-add-btn" title="Add phase">+</button>
+            </div>
+          </div>
+          <div class="mapping-row">
+            <span class="mapping-label">Done</span>
+            <div class="tag-input-area">
+              <span class="mapping-empty">No phases mapped — status set automatically</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-primary">Save Changes</button>
+        <button class="btn-danger">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+          </svg>
+          Delete Project
+        </button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  function switchTab(tabId) {
+    // Update tab buttons
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+
+    // Update panels
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`panel-${tabId}`).classList.add('active');
+  }
+</script>
+
+</body>
+</html>

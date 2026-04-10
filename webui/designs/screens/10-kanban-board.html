@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shipwright Command Center — Kanban Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --color-primary: #6b5e56;
+    --color-primary-hover: #5a4f48;
+    --color-bg: #f5f0eb;
+    --color-surface: #ffffff;
+    --color-muted-bg: #ede8e1;
+    --color-text: #1a1a1a;
+    --color-muted: #6b7280;
+    --color-border: #e0dbd4;
+    --color-accent: #857568;
+    --color-success: #059669;
+    --color-warning: #D97706;
+    --color-error: #DC2626;
+    --color-info: #3B82F6;
+    --radius-card: 12px;
+    --radius-button: 8px;
+    --shadow-card: 0 6px 30px rgba(0,0,0,0.10);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ============================================================
+     SIDEBAR
+     ============================================================ */
+  .sidebar {
+    width: 200px;
+    min-width: 200px;
+    background: #5c5652;
+    border-right: none;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    z-index: 10;
+  }
+
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 16px 24px;
+  }
+
+  .sidebar-logo svg {
+    width: 28px;
+    height: 28px;
+    color: #ffffff;
+    flex-shrink: 0;
+  }
+
+  .sidebar-logo span {
+    font-weight: 700;
+    font-size: 16px;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 8px;
+    flex: 1;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: var(--radius-button);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.7);
+    transition: all 0.15s ease;
+    position: relative;
+    text-decoration: none;
+  }
+
+  .nav-item:hover {
+    background: rgba(255,255,255,0.08);
+    color: #ffffff;
+  }
+
+  .nav-item.active {
+    background: rgba(255,255,255,0.12);
+    color: #ffffff;
+  }
+
+  .nav-item svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .nav-badge {
+    margin-left: auto;
+    background: var(--color-error);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+  }
+
+  .sidebar-footer {
+    padding: 16px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .sidebar-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .sidebar-user {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  .sidebar-role {
+    font-size: 11px;
+    color: var(--color-muted);
+  }
+
+  /* ============================================================
+     MAIN AREA
+     ============================================================ */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .project-dropdown {
+    padding: 6px 28px 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1.5px solid var(--color-border);
+    background: var(--color-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 10px center;
+    color: var(--color-text);
+    appearance: none;
+    font-family: var(--font-sans);
+    white-space: nowrap;
+  }
+
+  .project-dropdown:hover {
+    border-color: var(--color-primary);
+  }
+
+  .project-dropdown:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(107, 94, 86, 0.12);
+  }
+
+  .header-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--color-border);
+  }
+
+  .view-toggle {
+    display: flex;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-button);
+    overflow: hidden;
+  }
+
+  .view-btn {
+    padding: 5px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: transparent;
+    color: var(--color-muted);
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .view-btn + .view-btn {
+    border-left: 1.5px solid var(--color-border);
+  }
+
+  .view-btn:hover {
+    background: var(--color-muted-bg);
+    color: var(--color-text);
+  }
+
+  .view-btn.active {
+    background: var(--color-muted-bg);
+    color: var(--color-primary);
+  }
+
+  .view-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .filters {
+    display: flex;
+    gap: 8px;
+    margin-left: 4px;
+  }
+
+  .filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-muted);
+    background: var(--color-muted-bg);
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .filter-btn:hover {
+    background: var(--color-border);
+    color: var(--color-text);
+  }
+
+  .filter-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .header-spacer {
+    flex: 1;
+  }
+
+  .btn-new-issue {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    border-radius: var(--radius-button);
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--color-primary);
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .btn-new-issue:hover {
+    background: var(--color-primary-hover);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-new-issue svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* ============================================================
+     BOARD
+     ============================================================ */
+  .board {
+    flex: 1;
+    display: flex;
+    gap: 16px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    align-items: flex-start;
+  }
+
+  .column {
+    min-width: 280px;
+    width: 280px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+
+  .column-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 14px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .column-count {
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+  }
+
+  .column-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 10px 14px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .column-cards::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .column-cards::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 2px;
+  }
+
+  /* Column tints */
+  .col-backlog { background: #f0eeec; }
+  .col-backlog .column-header { color: #6b7280; border-top: 3px solid #9ca3af; }
+  .col-backlog .column-count { background: #f3f4f6; color: #6b7280; }
+
+  .col-inprogress { background: rgba(217,119,6,0.08); }
+  .col-inprogress .column-header { color: #b45309; border-top: 3px solid #d97706; }
+  .col-inprogress .column-count { background: #fef3c7; color: #b45309; }
+
+  .col-inreview { background: rgba(5,150,105,0.08); }
+  .col-inreview .column-header { color: #047857; border-top: 3px solid #059669; }
+  .col-inreview .column-count { background: #d1fae5; color: #047857; }
+
+  .col-done { background: rgba(59,130,246,0.08); }
+  .col-done .column-header { color: #2563eb; border-top: 3px solid #3b82f6; }
+  .col-done .column-count { background: #dbeafe; color: #2563eb; }
+
+  /* Show-all link in Done column */
+  .show-all-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2563eb;
+    cursor: pointer;
+    border-radius: 10px;
+    background: rgba(59,130,246,0.06);
+    transition: all 0.15s ease;
+    text-decoration: none;
+  }
+
+  .show-all-link:hover {
+    background: rgba(59,130,246,0.12);
+    color: #1d4ed8;
+  }
+
+  /* ============================================================
+     CARD
+     ============================================================ */
+  .card {
+    background: var(--color-surface);
+    border-radius: 10px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: box-shadow 0.18s ease, transform 0.18s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    position: relative;
+  }
+
+  .card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    transform: translateY(-1px);
+  }
+
+  .card:hover .card-menu {
+    opacity: 1;
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--color-text);
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-menu {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-muted);
+    padding: 2px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .card-menu:hover {
+    background: var(--color-muted-bg);
+    color: var(--color-text);
+  }
+
+  .card-menu svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  /* Phase tags */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+
+  .tag-project  { background: #f3f4f6; color: #4b5563; }
+  .tag-design   { background: #f3e8ff; color: #7c3aed; }
+  .tag-plan     { background: #dbeafe; color: #2563eb; }
+  .tag-build    { background: #fff7ed; color: #c2410c; }
+  .tag-test     { background: #d1fae5; color: #047857; }
+  .tag-deploy   { background: #cffafe; color: #0891b2; }
+  .tag-iterate  { background: #ccfbf1; color: #0d9488; }
+
+  /* Priority dots */
+  .priority {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-muted);
+  }
+
+  .priority-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .priority-high .priority-dot { background: var(--color-error); }
+  .priority-medium .priority-dot { background: var(--color-warning); }
+  .priority-low .priority-dot { background: #9ca3af; }
+
+  /* Intent badge */
+  .intent-bug {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    background: #fef2f2;
+    color: var(--color-error);
+  }
+
+  /* Test counts */
+  .test-count {
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .test-count.pass { color: var(--color-success); }
+  .test-count.partial { color: var(--color-warning); }
+
+  /* Card footer */
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--color-muted);
+  }
+
+  .commit-hash {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-muted);
+    opacity: 0.75;
+  }
+
+  .time-ago {
+    font-size: 11px;
+    color: var(--color-muted);
+    opacity: 0.75;
+  }
+
+  /* Pulsing spinner for active tasks */
+  .spinner {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-warning);
+    display: inline-block;
+    animation: pulse 1.4s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.75); }
+  }
+
+  /* Done cards: faded */
+  .card-done .card-title {
+    color: var(--color-muted);
+  }
+
+  .card-done .card-meta,
+  .card-done .card-footer {
+    opacity: 0.6;
+  }
+
+  .done-check {
+    color: var(--color-success);
+    font-weight: 600;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .done-check svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* ============================================================
+     SCROLLBAR FOR BOARD
+     ============================================================ */
+  .board::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .board::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+  }
+
+  .board::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent);
+  }
+
+  /* ============================================================
+     RESPONSIVE
+     ============================================================ */
+  /* ============================================================
+     CARD START BUTTON (Backlog only)
+     ============================================================ */
+  .card-start-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #059669;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .card-start-btn:hover {
+    background: #047857;
+    transform: translateY(-1px);
+  }
+
+  .card-start-btn svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .header { padding: 10px 16px; }
+    .board { padding: 12px 16px; }
+    .column { min-width: 260px; width: 260px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     SIDEBAR
+     ============================================================ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <!-- Ship wheel icon -->
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="8"/>
+      <circle cx="12" cy="12" r="2.5"/>
+      <line x1="12" y1="2" x2="12" y2="9.5"/>
+      <line x1="12" y1="14.5" x2="12" y2="22"/>
+      <line x1="2" y1="12" x2="9.5" y2="12"/>
+      <line x1="14.5" y1="12" x2="22" y2="12"/>
+      <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/>
+      <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/>
+      <line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/>
+      <line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/>
+    </svg>
+    <span>Shipwright</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <!-- Task Board (active — this is the current page) -->
+    <a class="nav-item active" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      Task Board
+    </a>
+
+    <!-- Projects (folder icon) -->
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+      </svg>
+      Projects
+    </a>
+
+    <!-- Inbox with badge -->
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+        <path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/>
+      </svg>
+      Inbox
+      <span class="nav-badge">2</span>
+    </a>
+
+    <!-- Settings (gear icon) -->
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+      </svg>
+      Settings
+    </a>
+  </nav>
+
+  <!-- No user avatar — local single-user app, no auth -->
+</aside>
+
+<!-- ============================================================
+     MAIN
+     ============================================================ -->
+<main class="main">
+  <!-- Header -->
+  <header class="header">
+    <select class="project-dropdown">
+      <option value="all" selected>All Projects</option>
+      <option value="ai-portal">AI Portal</option>
+      <option value="saas-app">SaaS App</option>
+      <option value="content-tool">Content Tool</option>
+    </select>
+
+    <div class="header-divider"></div>
+
+    <div class="view-toggle">
+      <button class="view-btn active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        Board
+      </button>
+      <button class="view-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="8" y1="6" x2="21" y2="6"/>
+          <line x1="8" y1="12" x2="21" y2="12"/>
+          <line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/>
+          <line x1="3" y1="12" x2="3.01" y2="12"/>
+          <line x1="3" y1="18" x2="3.01" y2="18"/>
+        </svg>
+        List
+      </button>
+    </div>
+
+    <div class="filters">
+      <button class="filter-btn">
+        Phase
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <button class="filter-btn">
+        Priority
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="header-spacer"></div>
+
+    <button class="btn-new-issue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      New Issue
+    </button>
+  </header>
+
+  <!-- Board -->
+  <div class="board">
+
+    <!-- ==================== BACKLOG ==================== -->
+    <div class="column col-backlog">
+      <div class="column-header">
+        Backlog
+        <span class="column-count">3</span>
+      </div>
+      <div class="column-cards">
+        <!-- Card 1 -->
+        <div class="card">
+          <div class="card-top">
+            <span class="card-title">Write API documentation</span>
+            <button class="card-menu">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+          </div>
+          <div class="card-meta">
+            <span class="tag tag-plan">plan</span>
+          </div>
+          <div class="card-footer">
+            <span class="time-ago">5h ago</span>
+            <button class="card-start-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start</button>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="card">
+          <div class="card-top">
+            <span class="card-title">Mobile responsive optimization</span>
+            <button class="card-menu">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+          </div>
+          <div class="card-meta">
+            <span class="tag tag-design">design</span>
+            <span class="priority priority-medium"><span class="priority-dot"></span>medium</span>
+          </div>
+          <div class="card-footer">
+            <span class="time-ago">1d ago</span>
+            <button class="card-start-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start</button>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="card">
+          <div class="card-top">
+            <span class="card-title">Evaluate Redis caching layer</span>
+            <button class="card-menu">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+          </div>
+          <div class="card-meta">
+            <span class="tag tag-project">project</span>
+            <span class="priority priority-low"><span class="priority-dot"></span>low</span>
+          </div>
+          <div class="card-footer">
+            <span class="time-ago">3d ago</span>
+            <button class="card-start-btn"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== IN PROGRESS ==================== -->
+    <div class="column col-inprogress">
+      <div class="column-header">
+        In Progress
+        <span class="column-count">4</span>
+      </div>
+      <div class="column-cards">
+        <!-- Card 1 -->
+        <div class="card">
+          <div class="card-top">
+            <span class="card-title">Implement user authentication</span>
+            <button class="card-menu">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+          </div>
+          <div class="card-meta">
+            <span class="tag tag-build"><span class="spinner"></span>build</span>
+            <span class="priority priority-high"><span class="priority-dot"></span>high</span>
+            <span class="test-count pass">15/15 &#10003;</span>
+          </div>
+          <div class="card-footer">
+            <span class="commit-hash">abc1234</span>
+            <span class="time-ago">2h ago</span>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="card">
+          <div class="card-top">
+            <span class="card-title">Create analytics dashboard</span>
+            <button class="card-menu">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+          </div>
+          <div class="card-meta">
+            <span class="tag tag-build">build</span>
+            <span class="priority priority-medium"><span class="priority-dot"></span>medium</span>
+            <span class="test-count partial">8/12</span>
+          </div>
+          <div class="card-footer">
+            <span class="commit-hash">def5678</span>
+            <span class="time-ago">45m ago</span>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="card">
+          <div class="card-top">
+            <span class="card-title">Design checkout flow</span>
+            <button class="card-menu">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+          </div>
+          <div class="card-meta">
+            <span class="tag tag-design"><span class="spinner"></span>design</span>
+          </div>
+          <div class="card-footer">
+            <span class="time-ago">1h ago</span>
+          </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="card">
+          <div class="card-top">
+            <span class="card-title">Fix auth redirect bug</span>
+            <button class="card-menu">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+          </div>
+          <div class="card-meta">
+            <span class="tag tag-iterate"><span class="spinner"></span>iterate</span>
+            <span class="intent-bug">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              bug
+            </span>
+          </div>
+          <div class="card-footer">
+            <span class="commit-hash">gh1901a</span>
+            <span class="time-ago">20m ago</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== IN REVIEW ==================== -->
+    <div class="column col-inreview">
+      <div class="column-header">
+        In Review
+        <span class="column-count">1</span>
+      </div>
+      <div class="column-cards">
+        <!-- Card 1 -->
+        <div class="card">
+          <div class="card-top">
+            <span class="card-title">Integrate Stripe billing</span>
+            <button class="card-menu">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+          </div>
+          <div class="card-meta">
+            <span class="tag tag-test">test</span>
+            <span class="priority priority-high"><span class="priority-dot"></span>high</span>
+            <span class="test-count pass">45/45 &#10003;</span>
+          </div>
+          <div class="card-footer">
+            <span class="commit-hash">bca9012</span>
+            <span class="time-ago">3h ago</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== DONE ==================== -->
+    <div class="column col-done">
+      <div class="column-header">
+        Done
+        <span class="column-count">5</span>
+      </div>
+      <div class="column-cards">
+        <!-- Card 1 -->
+        <div class="card card-done">
+          <div class="card-top">
+            <span class="card-title">Set up CI/CD pipeline</span>
+            <button class="card-menu">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+          </div>
+          <div class="card-meta">
+            <span class="tag tag-deploy">deploy</span>
+            <span class="done-check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              done
+            </span>
+          </div>
+          <div class="card-footer">
+            <span class="commit-hash">e3f4a56</span>
+            <span class="time-ago">1d ago</span>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="card card-done">
+          <div class="card-top">
+            <span class="card-title">Implement dark mode toggle</span>
+            <button class="card-menu">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+          </div>
+          <div class="card-meta">
+            <span class="tag tag-build">build</span>
+            <span class="done-check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              done
+            </span>
+          </div>
+          <div class="card-footer">
+            <span class="commit-hash">7bc89d0</span>
+            <span class="time-ago">2d ago</span>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="card card-done">
+          <div class="card-top">
+            <span class="card-title">Create onboarding wizard</span>
+            <button class="card-menu">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+          </div>
+          <div class="card-meta">
+            <span class="tag tag-design">design</span>
+            <span class="done-check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              done
+            </span>
+          </div>
+          <div class="card-footer">
+            <span class="commit-hash">a1b2c3d</span>
+            <span class="time-ago">3d ago</span>
+          </div>
+        </div>
+
+        <!-- Show all link -->
+        <a class="show-all-link" href="#">Show all (5)</a>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+</body>
+</html>

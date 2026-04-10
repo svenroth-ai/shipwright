@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shipwright Command Center — Chat Detail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --color-primary: #6b5e56;
+    --color-primary-hover: #5a4f48;
+    --color-bg: #f5f0eb;
+    --color-surface: #ffffff;
+    --color-muted-bg: #ede8e1;
+    --color-text: #1a1a1a;
+    --color-muted: #6b7280;
+    --color-border: #e0dbd4;
+    --color-accent: #857568;
+    --color-success: #059669;
+    --color-warning: #D97706;
+    --color-error: #DC2626;
+    --radius-card: 12px;
+    --radius-button: 8px;
+    --shadow-card: 0 6px 30px rgba(0,0,0,0.10);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-text);
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+
+  .chat-panel {
+    width: 660px;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Header */
+  .chat-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+  .chat-header-dot {
+    width: 8px; height: 8px;
+    background: var(--color-success);
+    border-radius: 50%;
+  }
+  .chat-header h2 {
+    font-size: 15px;
+    font-weight: 600;
+    flex: 1;
+  }
+  .chat-header .session-id {
+    font-size: 11px;
+    color: var(--color-muted);
+    font-family: var(--font-mono);
+  }
+
+  /* Messages area */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* User message */
+  .msg-user {
+    align-self: flex-end;
+    max-width: 85%;
+  }
+  .msg-user .bubble {
+    background: var(--color-primary);
+    color: #fff;
+    padding: 12px 16px;
+    border-radius: var(--radius-card) var(--radius-card) 4px var(--radius-card);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .msg-user .timestamp {
+    text-align: right;
+    font-size: 11px;
+    color: var(--color-muted);
+    margin-top: 4px;
+    padding-right: 4px;
+  }
+
+  /* Claude message */
+  .msg-claude {
+    align-self: flex-start;
+    max-width: 90%;
+    display: flex;
+    gap: 10px;
+  }
+  .claude-avatar {
+    width: 28px; height: 28px;
+    background: var(--color-primary);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .msg-claude .bubble {
+    background: var(--color-muted-bg);
+    color: var(--color-text);
+    padding: 12px 16px;
+    border-radius: var(--radius-card) var(--radius-card) var(--radius-card) 4px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .msg-claude .bubble strong { font-weight: 600; }
+  .msg-claude .bubble ul {
+    margin: 6px 0 2px 18px;
+    list-style: disc;
+  }
+  .msg-claude .bubble li { margin-bottom: 3px; }
+  .msg-claude .bubble code {
+    font-family: var(--font-mono);
+    background: rgba(0,0,0,0.06);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 12.5px;
+  }
+  .msg-claude .timestamp {
+    font-size: 11px;
+    color: var(--color-muted);
+    margin-top: 4px;
+    padding-left: 38px;
+  }
+
+  /* Tool call cards */
+  .tool-card {
+    align-self: flex-start;
+    width: 92%;
+    margin-left: 38px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+  }
+  .tool-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .tool-header:hover { background: var(--color-muted-bg); }
+  .tool-icon {
+    width: 22px; height: 22px;
+    color: var(--color-accent);
+    flex-shrink: 0;
+  }
+  .tool-label {
+    font-size: 13px;
+    font-weight: 500;
+    flex: 1;
+    color: var(--color-text);
+  }
+  .tool-label span { color: var(--color-muted); font-weight: 400; }
+  .tool-chevron {
+    width: 16px; height: 16px;
+    color: var(--color-muted);
+    transition: transform 0.2s;
+  }
+  .tool-card.expanded .tool-chevron { transform: rotate(180deg); }
+  .tool-body {
+    display: none;
+    border-top: 1px solid var(--color-border);
+  }
+  .tool-card.expanded .tool-body { display: block; }
+
+  /* Diff view */
+  .diff-view {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.65;
+    overflow-x: auto;
+  }
+  .diff-line {
+    padding: 1px 14px;
+    white-space: pre;
+  }
+  .diff-line.removed {
+    background: #fef2f2;
+    color: var(--color-error);
+  }
+  .diff-line.added {
+    background: #f0fdf4;
+    color: #166534;
+  }
+  .diff-line.context {
+    color: var(--color-muted);
+  }
+
+  /* Terminal output */
+  .terminal {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.65;
+    padding: 12px 14px;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .terminal .t-green { color: #a6e3a1; }
+  .terminal .t-dim { color: #6c7086; }
+  .terminal .t-white { color: #fff; font-weight: 600; }
+  .terminal .t-pass { color: #a6e3a1; font-weight: 600; }
+
+  /* AskUser card */
+  .ask-card {
+    align-self: flex-start;
+    width: 92%;
+    margin-left: 38px;
+    border: 1px solid var(--color-border);
+    border-left: 3px solid var(--color-primary);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
+    padding: 18px 20px;
+  }
+  .ask-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-primary);
+    margin-bottom: 10px;
+  }
+  .ask-badge svg { width: 16px; height: 16px; }
+  .ask-question {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 6px;
+  }
+  .ask-context {
+    font-size: 13px;
+    color: var(--color-muted);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .ask-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .ask-option {
+    padding: 7px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--color-muted-bg);
+    color: var(--color-text);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .ask-option:hover {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+  }
+  .ask-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .ask-divider::before, .ask-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+  }
+  .ask-divider span {
+    font-size: 11px;
+    color: var(--color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .ask-input {
+    width: 100%;
+    padding: 9px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-button);
+    font-size: 13px;
+    font-family: var(--font-sans);
+    background: var(--color-muted-bg);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .ask-input:focus { border-color: var(--color-primary); }
+
+  /* Intent detection banner */
+  .intent-banner {
+    margin: 0 38px 0 38px;
+    padding: 10px 14px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: var(--radius-button);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+  }
+  .intent-banner svg { width: 16px; height: 16px; color: var(--color-warning); flex-shrink: 0; }
+  .intent-label { flex: 1; color: #92400e; }
+  .intent-label strong { font-weight: 600; }
+  .intent-actions { display: flex; gap: 6px; }
+  .intent-btn {
+    padding: 5px 12px;
+    border-radius: var(--radius-button);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    font-family: var(--font-sans);
+    transition: all 0.15s;
+  }
+  .intent-btn.primary {
+    background: var(--color-warning);
+    color: #fff;
+  }
+  .intent-btn.primary:hover { background: #b45309; }
+  .intent-btn.ghost {
+    background: transparent;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+  }
+  .intent-btn.ghost:hover { background: #fef3c7; }
+
+  /* Chat input */
+  .chat-input-area {
+    padding: 12px 24px 16px;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+  .chat-input-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .input-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    background: var(--color-surface);
+    color: var(--color-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .input-pill:hover { border-color: var(--color-primary); color: var(--color-text); }
+  .input-pill.active { background: var(--color-muted-bg); color: var(--color-text); border-color: var(--color-primary); }
+  .input-pill svg { width: 12px; height: 12px; flex-shrink: 0; }
+  .input-pill .pill-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .pill-dot.guided { background: var(--color-success); }
+  .pill-dot.autonomous { background: var(--color-warning); }
+  .input-pill-sep {
+    width: 1px;
+    height: 16px;
+    background: var(--color-border);
+    margin: 0 2px;
+  }
+  .chat-input-wrap {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    background: var(--color-muted-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 10px 14px;
+    transition: border-color 0.15s;
+  }
+  .chat-input-wrap:focus-within { border-color: var(--color-primary); }
+  .chat-input-wrap textarea {
+    flex: 1;
+    border: none;
+    background: none;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    resize: none;
+    outline: none;
+    min-height: 22px;
+    max-height: 120px;
+    color: var(--color-text);
+  }
+  .chat-input-wrap textarea::placeholder { color: var(--color-muted); }
+  .send-btn {
+    width: 34px; height: 34px;
+    background: var(--color-primary);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .send-btn:hover { background: var(--color-primary-hover); }
+  .send-btn svg { width: 16px; height: 16px; color: #fff; }
+  .input-hint {
+    font-size: 11px;
+    color: var(--color-muted);
+    margin-top: 6px;
+    padding-left: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="chat-panel">
+  <!-- Header -->
+  <div class="chat-header">
+    <div class="chat-header-dot"></div>
+    <h2>Auth Implementation</h2>
+    <span class="session-id">sw-8f3a</span>
+  </div>
+
+  <!-- Messages -->
+  <div class="messages">
+
+    <!-- 1. User message -->
+    <div class="msg-user">
+      <div class="bubble">Implement the login page with email and password authentication</div>
+      <div class="timestamp">2:34 PM</div>
+    </div>
+
+    <!-- 2. Claude text message -->
+    <div class="msg-claude">
+      <div class="claude-avatar">C</div>
+      <div>
+        <div class="bubble">
+          I'll implement the login page. Let me start by <strong>creating the auth components</strong> and setting up the form validation:
+          <ul>
+            <li>Email/password form with <code>react-hook-form</code></li>
+            <li>Server-side validation via API route</li>
+            <li>Session management with <strong>encrypted cookies</strong></li>
+          </ul>
+        </div>
+        <div class="timestamp">2:34 PM</div>
+      </div>
+    </div>
+
+    <!-- 3. Tool Card — Read (collapsed) -->
+    <div class="tool-card" id="tool-read">
+      <div class="tool-header" onclick="toggleTool('tool-read')">
+        <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        <div class="tool-label">Read <span>src/app/login/page.tsx</span></div>
+        <svg class="tool-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </div>
+      <div class="tool-body">
+        <div class="diff-view">
+          <div class="diff-line context">  export default function LoginPage() {</div>
+          <div class="diff-line context">    return &lt;div&gt;Login&lt;/div&gt;;</div>
+          <div class="diff-line context">  }</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Tool Card — Edit (expanded, showing diff) -->
+    <div class="tool-card expanded" id="tool-edit">
+      <div class="tool-header" onclick="toggleTool('tool-edit')">
+        <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        <div class="tool-label">Edit <span>src/app/login/page.tsx</span></div>
+        <svg class="tool-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </div>
+      <div class="tool-body">
+        <div class="diff-view">
+          <div class="diff-line context">  export default function LoginPage() {</div>
+          <div class="diff-line removed">-   return &lt;div&gt;Login&lt;/div&gt;;</div>
+          <div class="diff-line added">+   const { register, handleSubmit } = useForm&lt;LoginForm&gt;();</div>
+          <div class="diff-line added">+   const [error, setError] = useState&lt;string&gt;();</div>
+          <div class="diff-line added">+ </div>
+          <div class="diff-line added">+   const onSubmit = async (data: LoginForm) =&gt; {</div>
+          <div class="diff-line added">+     const res = await signIn("credentials", { ...data });</div>
+          <div class="diff-line added">+     if (res?.error) setError(res.error);</div>
+          <div class="diff-line added">+   };</div>
+          <div class="diff-line context">  }</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Tool Card — Bash (expanded, terminal output) -->
+    <div class="tool-card expanded" id="tool-bash">
+      <div class="tool-header" onclick="toggleTool('tool-bash')">
+        <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="4 17 10 11 4 5"/>
+          <line x1="12" y1="19" x2="20" y2="19"/>
+        </svg>
+        <div class="tool-label">Run <span>npx vitest run</span></div>
+        <svg class="tool-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </div>
+      <div class="tool-body">
+        <div class="terminal"><span class="t-green"> &#10003;</span> src/app/login/page.test.tsx <span class="t-dim">(3 tests)</span> <span class="t-dim">45ms</span>
+<span class="t-green"> &#10003;</span> src/lib/auth.test.ts <span class="t-dim">(5 tests)</span> <span class="t-dim">23ms</span>
+
+ <span class="t-white">Test Files</span>  <span class="t-pass">2 passed</span>
+ <span class="t-white">Tests</span>       <span class="t-pass">8 passed</span></div>
+      </div>
+    </div>
+
+    <!-- 6. Claude follow-up message -->
+    <div class="msg-claude">
+      <div class="claude-avatar">C</div>
+      <div>
+        <div class="bubble">
+          Login page implemented with email/password form. Tests passing <strong>(8/8)</strong>. Let me also add the password reset flow...
+        </div>
+        <div class="timestamp">2:36 PM</div>
+      </div>
+    </div>
+
+    <!-- 7. AskUserQuestion card -->
+    <div class="ask-card">
+      <div class="ask-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        Input Required
+      </div>
+      <div class="ask-question">Which authentication strategy should I use for password reset?</div>
+      <div class="ask-context">The spec mentions password reset but doesn't specify the mechanism.</div>
+      <div class="ask-options">
+        <button class="ask-option">Email Link</button>
+        <button class="ask-option">SMS Code</button>
+        <button class="ask-option">Magic Link</button>
+      </div>
+      <div class="ask-divider"><span>or</span></div>
+      <input class="ask-input" type="text" placeholder="Type your answer...">
+    </div>
+
+    <!-- 8. Intent detection banner -->
+    <div class="intent-banner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <div class="intent-label">Task detected: <strong>bug</strong> (0.85)</div>
+      <div class="intent-actions">
+        <button class="intent-btn primary">Start as Task</button>
+        <button class="intent-btn ghost">Ignore</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Chat input -->
+  <div class="chat-input-area">
+    <div class="chat-input-toolbar">
+      <!-- Model selector -->
+      <button class="input-pill active" title="Select model">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        Opus
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;margin-left:1px;"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="input-pill-sep"></div>
+      <!-- Mode selector -->
+      <button class="input-pill active" title="Permission mode">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Auto
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;margin-left:1px;"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="input-pill-sep"></div>
+      <!-- Effort selector -->
+      <button class="input-pill" title="Effort level">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Medium
+      </button>
+      <div class="input-pill-sep"></div>
+      <!-- Autonomy toggle -->
+      <button class="input-pill" title="Toggle autonomy mode">
+        <span class="pill-dot guided"></span>
+        Guided
+      </button>
+      <div class="input-pill-sep"></div>
+      <!-- Slash command hint -->
+      <button class="input-pill" title="Slash commands" style="color:var(--color-primary);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:13px;height:13px;"><line x1="7" y1="20" x2="17" y2="4"/></svg>
+        Commands
+      </button>
+      <!-- @ mention hint -->
+      <button class="input-pill" title="Reference files">
+        @ Files
+      </button>
+    </div>
+    <div class="chat-input-wrap">
+      <textarea rows="1" placeholder="Message Claude... (/ for commands, @ for files)"></textarea>
+      <button class="send-btn" aria-label="Send">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="19" x2="12" y2="5"/>
+          <polyline points="5 12 12 5 19 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="input-hint">Shift + Enter for new line · / for commands · @ for files</div>
+  </div>
+</div>
+
+<script>
+  function toggleTool(id) {
+    document.getElementById(id).classList.toggle('expanded');
+  }
+
+  // Auto-resize textarea
+  const ta = document.querySelector('.chat-input-wrap textarea');
+  ta.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shipwright Command Center — Task Detail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --color-primary: #6b5e56;
+    --color-primary-hover: #5a4f48;
+    --color-primary-dark: #4a403a;
+    --color-bg: #f5f0eb;
+    --color-surface: #ffffff;
+    --color-muted-bg: #ede8e1;
+    --color-text: #1a1a1a;
+    --color-muted: #6b7280;
+    --color-border: #e0dbd4;
+    --color-accent: #857568;
+    --color-success: #059669;
+    --color-warning: #D97706;
+    --color-error: #DC2626;
+    --color-info: #3B82F6;
+    --radius-card: 12px;
+    --radius-button: 8px;
+    --shadow-card: 0 6px 30px rgba(0,0,0,0.10);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-text);
+    height: 100vh;
+    overflow: hidden;
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ── Layout ── */
+  .app {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    grid-template-rows: auto 1fr;
+    height: 100vh;
+  }
+
+  /* ── Sidebar (matching board screen) ── */
+  .sidebar {
+    grid-row: 1 / -1;
+    width: 200px;
+    min-width: 200px;
+    background: #5c5652;
+    border-right: none;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 16px 24px;
+  }
+
+  .sidebar-logo svg {
+    width: 28px;
+    height: 28px;
+    color: #ffffff;
+    flex-shrink: 0;
+  }
+
+  .sidebar-logo span {
+    font-weight: 700;
+    font-size: 16px;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 8px;
+    flex: 1;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: var(--radius-button);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.7);
+    transition: all 0.15s ease;
+    position: relative;
+    text-decoration: none;
+  }
+
+  .nav-item:hover {
+    background: rgba(255,255,255,0.08);
+    color: #ffffff;
+  }
+
+  .nav-item.active {
+    background: rgba(255,255,255,0.12);
+    color: #ffffff;
+  }
+
+  .nav-item svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .nav-badge {
+    margin-left: auto;
+    background: var(--color-error);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+  }
+
+  .sidebar-footer {
+    padding: 16px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .sidebar-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .sidebar-user {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  .sidebar-role {
+    font-size: 11px;
+    color: var(--color-muted);
+  }
+
+  /* ── Task Header ── */
+  .task-header {
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .task-header-left {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--color-muted);
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: var(--font-sans);
+    padding: 2px 0;
+    margin-bottom: 6px;
+    transition: color 0.15s;
+  }
+
+  .back-btn:hover { color: var(--color-text); }
+
+  .back-btn svg { width: 14px; height: 14px; }
+
+  .task-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .task-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text);
+    letter-spacing: -0.3px;
+  }
+
+  .phase-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+
+  .phase-tag.build {
+    background: #FEF3C7;
+    color: #92400E;
+  }
+
+  .priority-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-error);
+  }
+
+  .priority-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--color-error);
+  }
+
+  .task-status-line {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--color-muted);
+  }
+
+  .task-status-line .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 500;
+    color: var(--color-warning);
+  }
+
+  .task-status-line .status-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-warning);
+  }
+
+  .task-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 18px;
+    position: relative;
+  }
+
+  .menu-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-button);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--color-muted);
+    transition: all 0.15s;
+    position: relative;
+  }
+
+  .menu-btn:hover {
+    background: var(--color-muted-bg);
+    color: var(--color-text);
+  }
+
+  .menu-btn svg { width: 16px; height: 16px; }
+
+  /* ── Menu Dropdown ── */
+  .menu-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-button);
+    box-shadow: var(--shadow-card);
+    min-width: 160px;
+    padding: 4px;
+    z-index: 100;
+    display: none;
+  }
+
+  .menu-dropdown.open {
+    display: block;
+  }
+
+  .menu-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s;
+    border: none;
+    background: none;
+    width: 100%;
+    font-family: var(--font-sans);
+  }
+
+  .menu-dropdown-item:hover {
+    background: var(--color-muted-bg);
+  }
+
+  .menu-dropdown-item svg {
+    width: 15px;
+    height: 15px;
+    color: var(--color-muted);
+    flex-shrink: 0;
+  }
+
+  .menu-dropdown-item.danger {
+    color: var(--color-error);
+  }
+
+  .menu-dropdown-item.danger svg {
+    color: var(--color-error);
+  }
+
+  .menu-dropdown-divider {
+    height: 1px;
+    background: var(--color-border);
+    margin: 4px 0;
+  }
+
+  /* ── Main Content (Chat + Viewer) ── */
+  .main-content {
+    display: flex;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ── Chat Panel ── */
+  .chat-panel {
+    flex: 6;
+    min-width: 350px;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg);
+    border-right: 1px solid var(--color-border);
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .messages::-webkit-scrollbar { width: 5px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+
+  /* Claude message */
+  .msg-claude {
+    display: flex;
+    gap: 12px;
+    max-width: 95%;
+  }
+
+  .msg-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    margin-top: 2px;
+  }
+
+  .msg-avatar.claude {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .msg-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .msg-sender {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--color-text);
+  }
+
+  .msg-content {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-text);
+  }
+
+  .msg-content p { margin-bottom: 8px; }
+  .msg-content p:last-child { margin-bottom: 0; }
+
+  .msg-content ul {
+    margin: 8px 0;
+    padding-left: 20px;
+  }
+
+  .msg-content li {
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: #374151;
+  }
+
+  .msg-content code {
+    background: var(--color-muted-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  /* Tool cards */
+  .tool-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-button);
+    margin: 12px 0;
+    overflow: hidden;
+    transition: all 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    min-height: 42px;
+  }
+
+  .tool-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+    min-height: 42px;
+  }
+
+  .tool-card-header:hover { background: var(--color-muted-bg); }
+
+  .tool-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .tool-icon svg { width: 13px; height: 13px; }
+
+  .tool-icon.read { background: #DBEAFE; color: #2563EB; }
+  .tool-icon.edit { background: #FEF3C7; color: #D97706; }
+  .tool-icon.bash { background: #D1FAE5; color: #059669; }
+
+  .tool-card-title {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text);
+    font-family: var(--font-mono);
+  }
+
+  .tool-card-status {
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .tool-card-status.success { color: var(--color-success); }
+  .tool-card-status.info { color: var(--color-info); }
+
+  .tool-card-chevron {
+    width: 16px;
+    height: 16px;
+    color: var(--color-muted);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+
+  .tool-card.expanded .tool-card-chevron { transform: rotate(90deg); }
+
+  .tool-card-body {
+    display: none;
+    border-top: 1px solid var(--color-border);
+    padding: 12px 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.6;
+    background: #fafaf8;
+  }
+
+  .tool-card.expanded .tool-card-body { display: block; }
+
+  /* Diff display */
+  .diff-line {
+    white-space: pre;
+    padding: 1px 8px;
+    border-radius: 3px;
+    margin: 1px 0;
+  }
+
+  .diff-add {
+    background: #D1FAE5;
+    color: #065F46;
+  }
+
+  .diff-context {
+    color: var(--color-muted);
+  }
+
+  .diff-file {
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 6px;
+  }
+
+  /* AskUser Card — white with amber accent */
+  .askuser-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-left: 3px solid #D97706;
+    border-radius: var(--radius-button);
+    padding: 16px;
+    margin: 12px 0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  .askuser-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #D97706;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .askuser-label svg { width: 14px; height: 14px; }
+
+  .askuser-question {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
+    margin-bottom: 12px;
+  }
+
+  .askuser-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .askuser-option {
+    padding: 8px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-button);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text);
+    background: var(--color-surface);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font-sans);
+  }
+
+  .askuser-option:hover {
+    border-color: var(--color-primary);
+    background: var(--color-muted-bg);
+  }
+
+  .askuser-freetext {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-button);
+    font-size: 13px;
+    font-family: var(--font-sans);
+    color: var(--color-text);
+    background: var(--color-bg);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .askuser-freetext::placeholder { color: var(--color-muted); }
+  .askuser-freetext:focus { border-color: var(--color-primary); }
+
+  /* ── Chat Input ── */
+  .chat-input-area {
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface);
+    padding: 16px 20px 20px;
+  }
+
+  .chat-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-muted);
+    transition: all 0.15s;
+    font-family: var(--font-sans);
+  }
+
+  .toolbar-pill:hover {
+    border-color: var(--color-primary);
+    color: var(--color-text);
+  }
+
+  .toolbar-pill.active {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+  }
+
+  .toolbar-pill.guided {
+    border-color: var(--color-success);
+    color: var(--color-success);
+  }
+
+  .toolbar-pill.guided::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-success);
+  }
+
+  .toolbar-pill svg { width: 12px; height: 12px; }
+
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .chat-textarea {
+    flex: 1;
+    resize: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 10px 14px;
+    font-size: 13px;
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    color: var(--color-text);
+    background: var(--color-bg);
+    outline: none;
+    min-height: 42px;
+    max-height: 120px;
+    transition: border-color 0.15s;
+  }
+
+  .chat-textarea::placeholder { color: var(--color-muted); }
+  .chat-textarea:focus { border-color: var(--color-primary); }
+
+  .send-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-button);
+    background: var(--color-primary);
+    border: none;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+
+  .send-btn:hover { background: var(--color-primary-hover); }
+  .send-btn svg { width: 16px; height: 16px; }
+
+  .chat-hint {
+    font-size: 10px;
+    color: var(--color-muted);
+    margin-top: 6px;
+    padding-left: 2px;
+  }
+
+  /* ── Resize Handle ── */
+  .resize-handle {
+    width: 8px;
+    cursor: col-resize;
+    background: transparent;
+    position: relative;
+    flex-shrink: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .resize-handle::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    background: var(--color-border);
+    transform: translateX(-50%);
+  }
+
+  .resize-handle-dots {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    z-index: 1;
+    opacity: 0.35;
+    transition: opacity 0.15s;
+  }
+
+  .resize-handle:hover .resize-handle-dots {
+    opacity: 0.7;
+  }
+
+  .resize-handle-dots span {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--color-muted);
+  }
+
+  .resize-handle:hover::before {
+    background: var(--color-primary);
+  }
+
+  /* ── Smart Viewer ── */
+  .viewer-panel {
+    flex: 4;
+    min-width: 280px;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+    overflow: hidden;
+  }
+
+  .viewer-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--color-border);
+    padding: 0 16px;
+    background: var(--color-bg);
+  }
+
+  .viewer-tab {
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+    font-family: var(--font-mono);
+  }
+
+  .viewer-tab:hover { color: var(--color-text); }
+
+  .viewer-tab.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+    background: var(--color-surface);
+  }
+
+  .viewer-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  .viewer-content::-webkit-scrollbar { width: 5px; }
+  .viewer-content::-webkit-scrollbar-track { background: transparent; }
+  .viewer-content::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+
+  /* Rendered markdown in viewer */
+  .viewer-md h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 12px;
+    letter-spacing: -0.3px;
+  }
+
+  .viewer-md h2 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-top: 24px;
+    margin-bottom: 10px;
+  }
+
+  .viewer-md h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-top: 20px;
+    margin-bottom: 8px;
+  }
+
+  .viewer-md p {
+    font-size: 13px;
+    line-height: 1.7;
+    color: #374151;
+    margin-bottom: 12px;
+  }
+
+  .viewer-md .fr-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--color-primary);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    letter-spacing: 0.3px;
+  }
+
+  .viewer-md .split-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--color-muted);
+    font-style: italic;
+    padding: 8px 14px;
+    background: var(--color-bg);
+    border-left: 3px solid var(--color-accent);
+    border-radius: 0 var(--radius-button) var(--radius-button) 0;
+    margin-bottom: 16px;
+  }
+
+  .viewer-md .split-info strong {
+    color: var(--color-text);
+    font-style: normal;
+  }
+
+  .viewer-md .shall-text {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--color-text);
+    margin-bottom: 16px;
+  }
+
+  .viewer-md .shall-text strong {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .viewer-md .criteria-list {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0;
+  }
+
+  .criteria-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 13px;
+    color: #374151;
+    border-bottom: 1px solid var(--color-bg);
+  }
+
+  .criteria-list li:last-child { border-bottom: none; }
+
+  .criteria-check {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid var(--color-border);
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .criteria-check.checked {
+    background: var(--color-success);
+    border-color: var(--color-success);
+  }
+
+  .criteria-check.checked svg { display: block; }
+  .criteria-check svg { display: none; width: 10px; height: 10px; color: #fff; }
+
+  .criteria-check.unchecked {
+    border-color: var(--color-border);
+    background: var(--color-bg);
+  }
+
+  .viewer-md .dep-block {
+    font-size: 12px;
+    color: #4B5563;
+    margin: 6px 0;
+    line-height: 1.7;
+  }
+
+  .dep-block strong {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+
+  .viewer-md .status-block {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  .status-block.in-progress {
+    background: #FEF3C7;
+    color: #92400E;
+  }
+
+  .status-block.in-progress::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #D97706;
+    animation: pulse-dot 1.5s infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .viewer-md .test-evidence {
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--color-muted);
+    margin-top: 4px;
+  }
+
+  .viewer-md .test-evidence .pass {
+    color: var(--color-success);
+    font-weight: 600;
+  }
+
+  .viewer-md .test-evidence .commit {
+    color: var(--color-primary);
+  }
+
+  .viewer-md blockquote {
+    border-left: 3px solid var(--color-accent);
+    padding: 10px 14px;
+    background: var(--color-bg);
+    border-radius: 0 var(--radius-button) var(--radius-button) 0;
+    margin: 12px 0;
+    font-size: 13px;
+    color: #4B5563;
+    font-style: italic;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .viewer-panel { display: none; }
+    .resize-handle { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ── Sidebar (consistent with board screen) ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <!-- Ship wheel icon (same as board) -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="8"/>
+        <circle cx="12" cy="12" r="2.5"/>
+        <line x1="12" y1="2" x2="12" y2="9.5"/>
+        <line x1="12" y1="14.5" x2="12" y2="22"/>
+        <line x1="2" y1="12" x2="9.5" y2="12"/>
+        <line x1="14.5" y1="12" x2="22" y2="12"/>
+        <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/>
+        <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/>
+        <line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/>
+        <line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/>
+      </svg>
+      <span>Shipwright</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- Task Board (not active - we're in task detail) -->
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Task Board
+      </a>
+
+      <!-- Projects -->
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+        </svg>
+        Projects
+      </a>
+
+      <!-- Inbox with badge -->
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+          <path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/>
+        </svg>
+        Inbox
+        <span class="nav-badge">2</span>
+      </a>
+
+      <!-- Settings -->
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+        Settings
+      </a>
+    </nav>
+
+    <!-- No user avatar — local single-user app, no auth -->
+  </aside>
+
+  <!-- ── Task Header ── -->
+  <header class="task-header">
+    <div class="task-header-left">
+      <button class="back-btn" onclick="history.back()">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 2 3 7 8 12"/></svg>
+        Back to Board
+      </button>
+      <div class="task-title-row">
+        <span class="task-title">Implement user authentication</span>
+        <span class="phase-tag build">build</span>
+        <span class="priority-tag"><span class="priority-dot"></span> high</span>
+      </div>
+      <div class="task-status-line">
+        <span class="status-badge">In Progress</span> &middot; Started 2h ago
+      </div>
+    </div>
+    <div class="task-header-actions">
+      <button class="menu-btn" id="menuBtn" onclick="toggleMenu()" title="Task actions">
+        <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="8" cy="13" r="1.5"/></svg>
+      </button>
+      <div class="menu-dropdown" id="menuDropdown">
+        <button class="menu-dropdown-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13.5H3.5a1 1 0 01-1-1V3.5a1 1 0 011-1H7l1.5 2h4a1 1 0 011 1v2"/><path d="M10 11l2 2 4-4"/></svg>
+          Close task
+        </button>
+        <button class="menu-dropdown-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2.5l2.5 2.5L6 12.5H3.5V10z"/></svg>
+          Edit details
+        </button>
+        <div class="menu-dropdown-divider"></div>
+        <button class="menu-dropdown-item danger">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><line x1="5.5" y1="5.5" x2="10.5" y2="10.5"/><line x1="10.5" y1="5.5" x2="5.5" y2="10.5"/></svg>
+          Cancel task
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Main Content ── -->
+  <div class="main-content">
+    <!-- Chat Panel -->
+    <section class="chat-panel">
+      <div class="messages" id="messages">
+
+        <!-- Claude message 1 -->
+        <div class="msg-claude">
+          <div class="msg-avatar claude">C</div>
+          <div class="msg-body">
+            <div class="msg-sender">Claude</div>
+            <div class="msg-content">
+              <p>I'll implement the login page with email and password authentication. Let me start by reading the spec and setting up the component structure.</p>
+              <ul>
+                <li>Read the requirement spec for FR-01.01</li>
+                <li>Create the <code>LoginPage</code> component with form validation</li>
+                <li>Add API route for <code>/api/auth/login</code></li>
+                <li>Write unit tests for all auth flows</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool: Read (collapsed) -->
+        <div class="tool-card" id="tool-read">
+          <div class="tool-card-header" onclick="toggleTool('tool-read')">
+            <div class="tool-icon read">
+              <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5h3.5a2 2 0 012 2V12a1.5 1.5 0 00-1.5-1.5H2z"/><path d="M12 3.5H8.5a2 2 0 00-2 2V12a1.5 1.5 0 011.5-1.5H12z"/></svg>
+            </div>
+            <span class="tool-card-title">Read planning/01-core/spec.md</span>
+            <span class="tool-card-status success">
+              <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2 6.5 5 9.5 10 3"/></svg>
+              Done
+            </span>
+            <svg class="tool-card-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 4 10 8 6 12"/></svg>
+          </div>
+          <div class="tool-card-body">
+            <div style="color: var(--color-muted); font-size: 11px;">142 lines read &middot; 3.2 KB</div>
+          </div>
+        </div>
+
+        <!-- Tool: Edit (expanded) -->
+        <div class="tool-card expanded" id="tool-edit">
+          <div class="tool-card-header" onclick="toggleTool('tool-edit')">
+            <div class="tool-icon edit">
+              <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 1.5l2.5 2.5L4.5 12H2v-2.5z"/></svg>
+            </div>
+            <span class="tool-card-title">Edit src/app/login/page.tsx</span>
+            <span class="tool-card-status success">
+              <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2 6.5 5 9.5 10 3"/></svg>
+              Applied
+            </span>
+            <svg class="tool-card-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 4 10 8 6 12"/></svg>
+          </div>
+          <div class="tool-card-body">
+            <div class="diff-file">src/app/login/page.tsx</div>
+            <div class="diff-line diff-context">  import { useState } from 'react';</div>
+            <div class="diff-line diff-add">+ import { signIn } from '@/lib/auth';</div>
+            <div class="diff-line diff-add">+ import { LoginForm } from '@/components/LoginForm';</div>
+            <div class="diff-line diff-context">  </div>
+            <div class="diff-line diff-context">  export default function LoginPage() {</div>
+            <div class="diff-line diff-add">+   const [error, setError] = useState&lt;string | null&gt;(null);</div>
+            <div class="diff-line diff-add">+   const handleSubmit = async (email: string, pass: string) =&gt; {</div>
+            <div class="diff-line diff-add">+     const res = await signIn({ email, password: pass });</div>
+            <div class="diff-line diff-add">+     if (!res.ok) setError(res.message);</div>
+            <div class="diff-line diff-add">+   };</div>
+          </div>
+        </div>
+
+        <!-- Tool: Bash (collapsed) -->
+        <div class="tool-card" id="tool-bash">
+          <div class="tool-card-header" onclick="toggleTool('tool-bash')">
+            <div class="tool-icon bash">
+              <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 5 7 8 4 11"/><line x1="8" y1="11" x2="12" y2="11"/></svg>
+            </div>
+            <span class="tool-card-title">Run npx vitest run</span>
+            <span class="tool-card-status success">
+              <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2 6.5 5 9.5 10 3"/></svg>
+              15/15 passed
+            </span>
+            <svg class="tool-card-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 4 10 8 6 12"/></svg>
+          </div>
+          <div class="tool-card-body">
+            <div style="color: var(--color-success);">
+              <div>Test Files  3 passed (3)</div>
+              <div>Tests       15 passed (15)</div>
+              <div>Duration    1.84s</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Claude message 2 -->
+        <div class="msg-claude">
+          <div class="msg-avatar claude">C</div>
+          <div class="msg-body">
+            <div class="msg-sender">Claude</div>
+            <div class="msg-content">
+              <p>Login page implemented with email/password form, validation, and error handling. All 15 tests are passing. I have a question about the authentication strategy before I proceed with the session layer.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- AskUser Card -->
+        <div class="askuser-card">
+          <div class="askuser-label">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="6"/><path d="M5.25 5.25a1.75 1.75 0 013.37.66c0 1.17-1.75 1.58-1.75 1.58"/><circle cx="7" cy="10.5" r="0.5" fill="currentColor"/></svg>
+            Waiting for your input
+          </div>
+          <div class="askuser-question">Which authentication strategy should I use?</div>
+          <div class="askuser-options">
+            <button class="askuser-option">JWT Tokens</button>
+            <button class="askuser-option">Session Cookies</button>
+            <button class="askuser-option">Magic Link</button>
+          </div>
+          <input type="text" class="askuser-freetext" placeholder="Or type your answer...">
+        </div>
+
+      </div>
+
+      <!-- Chat Input -->
+      <div class="chat-input-area">
+        <div class="chat-toolbar">
+          <button class="toolbar-pill active">Opus
+            <svg viewBox="0 0 10 10" fill="currentColor"><polygon points="3,2 7,5 3,8"/></svg>
+          </button>
+          <button class="toolbar-pill">Auto
+            <svg viewBox="0 0 10 10" fill="currentColor"><polygon points="3,2 7,5 3,8"/></svg>
+          </button>
+          <button class="toolbar-pill">Medium</button>
+          <button class="toolbar-pill guided">Guided</button>
+          <button class="toolbar-pill">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M2 9L6 3"/><path d="M6 3L6 9"/></svg>
+            Commands
+          </button>
+          <button class="toolbar-pill">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="6" cy="6" r="4.5"/><text x="6" y="8" text-anchor="middle" fill="currentColor" font-size="7" font-weight="600" stroke="none">@</text></svg>
+            Files
+          </button>
+        </div>
+        <div class="chat-input-row">
+          <textarea class="chat-textarea" rows="1" placeholder="Message Claude... (/ for commands, @ for files)"></textarea>
+          <button class="send-btn" title="Send message">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="12" y2="4"/><polyline points="6 4 12 4 12 10"/></svg>
+          </button>
+        </div>
+        <div class="chat-hint">Shift + Enter for new line</div>
+      </div>
+    </section>
+
+    <!-- Resize Handle -->
+    <div class="resize-handle" id="resizeHandle">
+      <div class="resize-handle-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+
+    <!-- Smart Viewer Panel -->
+    <section class="viewer-panel">
+      <div class="viewer-tabs">
+        <div class="viewer-tab active">spec.md</div>
+        <div class="viewer-tab">auth.tsx</div>
+      </div>
+      <div class="viewer-content">
+        <div class="viewer-md">
+          <!-- FR Badge -->
+          <div class="fr-badge">FR-01.01</div>
+
+          <h1>User Authentication</h1>
+
+          <!-- Split info / blockquote -->
+          <div class="split-info">
+            Split 01 of 03 &nbsp;|&nbsp; Priority: <strong>Must</strong>
+          </div>
+
+          <p class="shall-text">The system <strong>shall</strong> allow users to register with email and password.</p>
+
+          <h3>Acceptance Criteria</h3>
+          <ul class="criteria-list">
+            <li>
+              <span class="criteria-check checked">
+                <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 5.5 4 7.5 8 3"/></svg>
+              </span>
+              User can register with valid email and password (min 8 chars)
+            </li>
+            <li>
+              <span class="criteria-check checked">
+                <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 5.5 4 7.5 8 3"/></svg>
+              </span>
+              Duplicate email returns clear error message
+            </li>
+            <li>
+              <span class="criteria-check unchecked"></span>
+              Registration creates user record in Supabase Auth
+            </li>
+            <li>
+              <span class="criteria-check unchecked"></span>
+              Confirmation email is sent after registration
+            </li>
+          </ul>
+
+          <h3>Dependencies</h3>
+          <p class="dep-block">
+            <strong>Depends on:</strong> Supabase Auth configuration<br>
+            <strong>Provides to:</strong> Split 02 (auth context for frontend)
+          </p>
+
+          <h3>Status</h3>
+          <div class="status-block in-progress">In Progress</div>
+          <div class="test-evidence">
+            Tests: <span class="pass">15/15 passing</span> &nbsp;|&nbsp; Commit: <span class="commit">abc1234</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+  // Toggle tool card expand/collapse
+  function toggleTool(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('expanded');
+  }
+
+  // Menu dropdown toggle
+  function toggleMenu() {
+    const dropdown = document.getElementById('menuDropdown');
+    if (dropdown) dropdown.classList.toggle('open');
+  }
+
+  // Close menu when clicking outside
+  document.addEventListener('click', function(e) {
+    const btn = document.getElementById('menuBtn');
+    const dropdown = document.getElementById('menuDropdown');
+    if (dropdown && btn && !btn.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.classList.remove('open');
+    }
+  });
+
+  // Resize handle drag logic
+  (function() {
+    const handle = document.getElementById('resizeHandle');
+    const chatPanel = handle?.previousElementSibling;
+    const viewerPanel = handle?.nextElementSibling;
+    if (!handle || !chatPanel || !viewerPanel) return;
+
+    let isDragging = false;
+    let startX, startChatWidth, startViewerWidth;
+
+    handle.addEventListener('mousedown', function(e) {
+      isDragging = true;
+      startX = e.clientX;
+      startChatWidth = chatPanel.getBoundingClientRect().width;
+      startViewerWidth = viewerPanel.getBoundingClientRect().width;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      const totalWidth = startChatWidth + startViewerWidth;
+      const newChatWidth = Math.max(300, Math.min(totalWidth - 250, startChatWidth + dx));
+      const newViewerWidth = totalWidth - newChatWidth;
+      chatPanel.style.flex = 'none';
+      chatPanel.style.width = newChatWidth + 'px';
+      viewerPanel.style.flex = 'none';
+      viewerPanel.style.width = newViewerWidth + 'px';
+    });
+
+    document.addEventListener('mouseup', function() {
+      if (!isDragging) return;
+      isDragging = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+  })();
+
+  // Tab switching
+  document.querySelectorAll('.viewer-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.viewer-tab').forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+    });
+  });
+
+  // Auto-resize textarea
+  const textarea = document.querySelector('.chat-textarea');
+  if (textarea) {
+    textarea.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+  }
+</script>
+</body>
+</html>

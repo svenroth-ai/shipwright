@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shipwright Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --color-primary: #6b5e56;
+    --color-primary-hover: #5a4f48;
+    --color-primary-dark: #4a403a;
+    --color-bg: #f5f0eb;
+    --color-surface: #ffffff;
+    --color-muted-bg: #ede8e1;
+    --color-text: #1a1a1a;
+    --color-muted: #6b7280;
+    --color-border: #e0dbd4;
+    --color-accent: #857568;
+    --color-success: #059669;
+    --color-warning: #D97706;
+    --color-error: #DC2626;
+    --color-info: #2563EB;
+    --radius-card: 12px;
+    --radius-button: 8px;
+    --shadow-card: 0 6px 30px rgba(0,0,0,0.10);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-text);
+    height: 100vh;
+    overflow: hidden;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* ── Layout ── */
+  .app {
+    display: grid;
+    grid-template-columns: 48px 240px 1fr 350px;
+    grid-template-rows: 1fr;
+    height: 100vh;
+  }
+
+  @media (max-width: 1024px) {
+    .app { grid-template-columns: 48px 0px 1fr 0px; }
+    .sidebar, .viewer { display: none; }
+  }
+
+  /* ── Panel 1: Rail ── */
+  .rail {
+    background: var(--color-primary-dark);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+    gap: 4px;
+    z-index: 10;
+  }
+
+  .rail-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.12);
+    cursor: pointer;
+    position: relative;
+    transition: background 0.15s, color 0.15s;
+    border-left: 3px solid transparent;
+    margin-left: -3px;
+    padding-left: 3px;
+  }
+  .rail-avatar:hover { background: rgba(255,255,255,0.2); color: #fff; }
+  .rail-avatar.active {
+    background: rgba(255,255,255,0.22);
+    color: #fff;
+    border-left-color: #fff;
+  }
+  .rail-avatar .badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    background: var(--color-error);
+    border-radius: 50%;
+    border: 2px solid var(--color-primary-dark);
+  }
+
+  .rail-sep {
+    width: 24px;
+    height: 1px;
+    background: rgba(255,255,255,0.15);
+    margin: 8px 0;
+  }
+
+  .rail-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.55);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    position: relative;
+  }
+  .rail-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.85); }
+  .rail-btn svg { width: 18px; height: 18px; }
+  .rail-btn .inbox-count {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: var(--color-error);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    min-width: 14px;
+    height: 14px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--color-primary-dark);
+  }
+
+  .rail-spacer { flex: 1; }
+
+  /* ── Panel 2: Sidebar ── */
+  .sidebar {
+    background: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.04);
+  }
+
+  .sidebar-section {
+    padding: 16px 14px 8px;
+  }
+  .sidebar-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-muted);
+    margin-bottom: 8px;
+  }
+
+  .activity-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .activity-item:hover { background: var(--color-muted-bg); }
+
+  .activity-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .badge-fix  { background: #fef2f2; color: var(--color-error); }
+  .badge-feat { background: #ecfdf5; color: var(--color-success); }
+  .badge-chg  { background: #eff6ff; color: var(--color-info); }
+  .badge-docs { background: #fefce8; color: var(--color-warning); }
+
+  .activity-desc { flex: 1; font-size: 12px; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .activity-time { font-size: 11px; color: var(--color-muted); flex-shrink: 0; }
+
+  /* Pipeline */
+  .pipeline-run {
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.12s;
+    margin-bottom: 2px;
+  }
+  .pipeline-run:hover { background: var(--color-muted-bg); }
+  .pipeline-run svg { width: 14px; height: 14px; color: var(--color-muted); }
+
+  .phase-list { margin-left: 12px; }
+
+  .phase-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.12s;
+  }
+  .phase-item:hover { background: var(--color-muted-bg); }
+  .phase-item.active { background: var(--color-muted-bg); font-weight: 500; }
+
+  .status-icon { width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .status-done { color: var(--color-success); }
+  .status-active { color: var(--color-warning); }
+  .status-pending { color: var(--color-border); }
+
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .status-active svg { animation: pulse 1.5s ease-in-out infinite; }
+
+  .sub-phases { margin-left: 24px; }
+  .sub-phase {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--color-muted);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .sub-phase:hover { background: var(--color-muted-bg); }
+
+  /* ── Panel 3: Main (toolbar + chat) ── */
+  .main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--color-bg);
+  }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+  }
+
+  .toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font-sans);
+  }
+  .toolbar-btn:hover { background: var(--color-muted-bg); border-color: var(--color-accent); }
+  .toolbar-btn svg { width: 14px; height: 14px; }
+  .toolbar-btn.disabled { opacity: 0.4; pointer-events: none; }
+  .toolbar-btn.primary {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+  }
+  .toolbar-btn.primary:hover { background: var(--color-primary-hover); }
+  .toolbar-spacer { flex: 1; }
+
+  /* Chat area */
+  .chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .msg {
+    display: flex;
+    gap: 10px;
+    max-width: 680px;
+  }
+  .msg.claude { align-self: flex-start; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+
+  .msg-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .msg.claude .msg-avatar { background: var(--color-muted-bg); color: var(--color-primary); }
+  .msg.user .msg-avatar { background: var(--color-primary); color: #fff; }
+
+  .msg-bubble {
+    padding: 10px 14px;
+    border-radius: var(--radius-card);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .msg.claude .msg-bubble {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+  }
+  .msg.user .msg-bubble {
+    background: var(--color-primary);
+    color: #fff;
+  }
+  .msg-bubble code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: rgba(0,0,0,0.06);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .msg.user .msg-bubble code { background: rgba(255,255,255,0.15); }
+
+  .msg-bubble pre {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 12px 14px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 8px 0 4px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .msg-bubble pre code { background: none; padding: 0; color: inherit; }
+  .msg-bubble .hl-kw { color: #cba6f7; }
+  .msg-bubble .hl-fn { color: #89b4fa; }
+  .msg-bubble .hl-str { color: #a6e3a1; }
+  .msg-bubble .hl-cm { color: #6c7086; }
+  .msg-bubble .hl-tp { color: #f9e2af; }
+
+  /* AskUser card */
+  .ask-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 16px;
+    max-width: 480px;
+    box-shadow: var(--shadow-sm);
+  }
+  .ask-card-title {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ask-card-title svg { color: var(--color-warning); width: 16px; height: 16px; }
+  .ask-card-desc { font-size: 12px; color: var(--color-muted); margin-bottom: 12px; }
+  .ask-card-options { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .ask-card-opt {
+    padding: 6px 14px;
+    border-radius: var(--radius-button);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font-sans);
+  }
+  .ask-card-opt:hover { background: var(--color-muted-bg); border-color: var(--color-accent); }
+  .ask-card-opt.selected { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+  .ask-card-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-button);
+    font-size: 12px;
+    font-family: var(--font-sans);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .ask-card-input:focus { border-color: var(--color-accent); }
+
+  /* Chat input */
+  .chat-input-bar {
+    padding: 12px 24px 16px;
+    background: var(--color-bg);
+    flex-shrink: 0;
+  }
+  .chat-input-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .input-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    background: var(--color-surface);
+    color: var(--color-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .input-pill:hover { border-color: var(--color-primary); color: var(--color-text); }
+  .input-pill.active { background: var(--color-muted-bg); color: var(--color-text); border-color: var(--color-accent); }
+  .input-pill svg { width: 11px; height: 11px; flex-shrink: 0; }
+  .input-pill .pill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .pill-dot.guided { background: #059669; }
+  .input-pill-sep { width: 1px; height: 14px; background: var(--color-border); margin: 0 2px; }
+  .chat-input-wrap {
+    display: flex;
+    align-items: center;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    padding: 4px 4px 4px 14px;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.15s;
+  }
+  .chat-input-wrap:focus-within { border-color: var(--color-accent); }
+  .chat-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    font-family: var(--font-sans);
+    background: transparent;
+    padding: 8px 0;
+  }
+  .chat-send {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: var(--color-primary);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .chat-send:hover { background: var(--color-primary-hover); }
+  .chat-send svg { width: 16px; height: 16px; }
+
+  /* ── Panel 4: Viewer ── */
+  .viewer {
+    background: var(--color-surface);
+    border-left: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .viewer-resize {
+    position: absolute;
+    left: -3px;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: col-resize;
+    z-index: 5;
+  }
+  .viewer-resize:hover { background: rgba(107,94,86,0.12); }
+
+  .viewer-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--color-border);
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+  .viewer-tab {
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .viewer-tab:hover { color: var(--color-text); }
+  .viewer-tab.active { color: var(--color-text); border-bottom-color: var(--color-primary); }
+
+  .viewer-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 18px;
+  }
+  .viewer-content h1 { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--color-text); }
+  .viewer-content h2 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 20px 0 8px;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .viewer-content p { font-size: 13px; line-height: 1.7; color: #374151; margin-bottom: 10px; }
+  .viewer-content .req-id { font-family: var(--font-mono); font-size: 12px; color: var(--color-accent); }
+
+  .status-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .status-tag.done { background: #ecfdf5; color: var(--color-success); }
+  .status-tag.progress { background: #fefce8; color: var(--color-warning); }
+  .status-tag.todo { background: #f3f4f6; color: var(--color-muted); }
+
+  .viewer-content ul { margin: 6px 0 10px 20px; font-size: 13px; color: #374151; }
+  .viewer-content li { margin-bottom: 4px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Rail ── -->
+  <nav class="rail">
+    <div class="rail-avatar active" title="AI Portal">AP</div>
+    <div class="rail-avatar" title="SaaS App">
+      SA
+      <span class="badge"></span>
+    </div>
+    <div class="rail-avatar" title="CLI Tool">CT</div>
+
+    <div class="rail-sep"></div>
+
+    <div class="rail-btn" title="Add project">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+
+    <div class="rail-spacer"></div>
+
+    <div class="rail-btn" title="Inbox">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
+      <span class="inbox-count">2</span>
+    </div>
+
+    <div class="rail-sep"></div>
+
+    <div class="rail-btn" title="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </div>
+  </nav>
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Recent Activity</div>
+      <div class="activity-item">
+        <span class="activity-badge badge-fix">fix</span>
+        <span class="activity-desc">Auth token refresh</span>
+        <span class="activity-time">1h</span>
+      </div>
+      <div class="activity-item">
+        <span class="activity-badge badge-feat">feat</span>
+        <span class="activity-desc">Quiz scoring engine</span>
+        <span class="activity-time">3h</span>
+      </div>
+      <div class="activity-item">
+        <span class="activity-badge badge-chg">chg</span>
+        <span class="activity-desc">Visual theme update</span>
+        <span class="activity-time">1d</span>
+      </div>
+      <div class="activity-item">
+        <span class="activity-badge badge-docs">docs</span>
+        <span class="activity-desc">API reference v2</span>
+        <span class="activity-time">2d</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="pipeline-run">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        Pipeline Run #1
+      </div>
+
+      <div class="phase-list">
+        <div class="phase-item">
+          <span class="status-icon status-done"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 110 14A7 7 0 018 1zm3.03 4.97a.75.75 0 00-1.06 0L7 8.94 5.53 7.47a.75.75 0 10-1.06 1.06l2 2a.75.75 0 001.06 0l3.5-3.5a.75.75 0 000-1.06z"/></svg></span>
+          <span>project</span>
+        </div>
+        <div class="phase-item">
+          <span class="status-icon status-done"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 110 14A7 7 0 018 1zm3.03 4.97a.75.75 0 00-1.06 0L7 8.94 5.53 7.47a.75.75 0 10-1.06 1.06l2 2a.75.75 0 001.06 0l3.5-3.5a.75.75 0 000-1.06z"/></svg></span>
+          <span>design</span>
+        </div>
+        <div class="phase-item">
+          <span class="status-icon status-done"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 110 14A7 7 0 018 1zm3.03 4.97a.75.75 0 00-1.06 0L7 8.94 5.53 7.47a.75.75 0 10-1.06 1.06l2 2a.75.75 0 001.06 0l3.5-3.5a.75.75 0 000-1.06z"/></svg></span>
+          <span>plan</span>
+        </div>
+        <div class="phase-item active">
+          <span class="status-icon status-active"><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="7"/></svg></span>
+          <span>build</span>
+        </div>
+
+        <div class="sub-phases">
+          <div class="sub-phase">
+            <span class="status-icon status-done"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 110 14A7 7 0 018 1zm3.03 4.97a.75.75 0 00-1.06 0L7 8.94 5.53 7.47a.75.75 0 10-1.06 1.06l2 2a.75.75 0 001.06 0l3.5-3.5a.75.75 0 000-1.06z"/></svg></span>
+            01-auth
+          </div>
+          <div class="sub-phase">
+            <span class="status-icon status-active"><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="7"/></svg></span>
+            02-dashboard
+          </div>
+          <div class="sub-phase">
+            <span class="status-icon status-pending"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/></svg></span>
+            03-api
+          </div>
+        </div>
+
+        <div class="phase-item">
+          <span class="status-icon status-pending"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/></svg></span>
+          <span>test</span>
+        </div>
+        <div class="phase-item">
+          <span class="status-icon status-pending"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/></svg></span>
+          <span>deploy</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main: Toolbar + Chat ── -->
+  <main class="main">
+    <div class="toolbar">
+      <button class="toolbar-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Commit
+      </button>
+      <button class="toolbar-btn disabled">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+        Push
+      </button>
+      <button class="toolbar-btn disabled">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Deploy
+      </button>
+      <button class="toolbar-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Preview
+      </button>
+      <div class="toolbar-spacer"></div>
+      <button class="toolbar-btn primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Task
+      </button>
+    </div>
+
+    <div class="chat">
+      <!-- Claude message 1 -->
+      <div class="msg claude">
+        <div class="msg-avatar">C</div>
+        <div class="msg-bubble">
+          I've finished implementing the authentication module. The login page now supports email/password and OAuth via Google. Here's the session handler I added:
+          <pre><code><span class="hl-kw">async def</span> <span class="hl-fn">create_session</span>(user: <span class="hl-tp">User</span>) -> <span class="hl-tp">Session</span>:
+    <span class="hl-cm"># Generate secure token with 24h expiry</span>
+    token = secrets.token_urlsafe(<span class="hl-str">32</span>)
+    session = Session(
+        user_id=user.id,
+        token=token,
+        expires_at=utcnow() + timedelta(hours=<span class="hl-str">24</span>)
+    )
+    <span class="hl-kw">await</span> db.sessions.insert(session)
+    <span class="hl-kw">return</span> session</code></pre>
+          All 12 tests pass. Moving on to the dashboard now.
+        </div>
+      </div>
+
+      <!-- User message -->
+      <div class="msg user">
+        <div class="msg-avatar">SR</div>
+        <div class="msg-bubble">
+          Can you also add a "remember me" checkbox that extends the session to 30 days?
+        </div>
+      </div>
+
+      <!-- Claude message 2 -->
+      <div class="msg claude">
+        <div class="msg-avatar">C</div>
+        <div class="msg-bubble">
+          Sure, I'll add a <code>remember_me</code> parameter. When checked, the session expiry extends to 30 days and we'll set a persistent cookie. I need to clarify one thing first:
+        </div>
+      </div>
+
+      <!-- AskUser card -->
+      <div class="msg claude">
+        <div class="msg-avatar">C</div>
+        <div class="ask-card">
+          <div class="ask-card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Session storage for "Remember Me"
+          </div>
+          <div class="ask-card-desc">How should persistent sessions be stored? This affects both security and infrastructure complexity.</div>
+          <div class="ask-card-options">
+            <button class="ask-card-opt selected">Database (recommended)</button>
+            <button class="ask-card-opt">Redis</button>
+            <button class="ask-card-opt">Signed JWT</button>
+          </div>
+          <input class="ask-card-input" type="text" placeholder="Or describe a different approach...">
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input-bar">
+      <div class="chat-input-toolbar">
+        <button class="input-pill active" title="Select model">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+          Opus
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;margin-left:1px;"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="input-pill-sep"></div>
+        <button class="input-pill active" title="Permission mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Auto
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;margin-left:1px;"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="input-pill-sep"></div>
+        <button class="input-pill" title="Effort level">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Medium
+        </button>
+        <div class="input-pill-sep"></div>
+        <button class="input-pill" title="Shipwright autonomy">
+          <span class="pill-dot guided"></span>
+          Guided
+        </button>
+        <div class="input-pill-sep"></div>
+        <button class="input-pill" title="Slash commands" style="color:var(--color-primary);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:12px;height:12px;"><line x1="7" y1="20" x2="17" y2="4"/></svg>
+          Commands
+        </button>
+        <button class="input-pill" title="Reference files">@ Files</button>
+      </div>
+      <div class="chat-input-wrap">
+        <input class="chat-input" type="text" placeholder="Message Claude... (/ for commands, @ for files)">
+        <button class="chat-send">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── Viewer ── -->
+  <aside class="viewer">
+    <div class="viewer-resize"></div>
+    <div class="viewer-tabs">
+      <div class="viewer-tab active">spec.md</div>
+      <div class="viewer-tab">architecture.md</div>
+    </div>
+    <div class="viewer-content">
+      <h1>Requirements</h1>
+
+      <h2>
+        <span class="req-id">FR-01.01</span>
+        User Authentication
+        <span class="status-tag done">Done</span>
+      </h2>
+      <p>The system <strong>SHALL</strong> provide user authentication via email/password and OAuth 2.0 (Google). Sessions expire after 24 hours by default. A "remember me" option extends persistence to 30 days.</p>
+
+      <h2>
+        <span class="req-id">FR-01.02</span>
+        Dashboard Overview
+        <span class="status-tag progress">In Progress</span>
+      </h2>
+      <p>The system <strong>SHALL</strong> display a dashboard with the following widgets:</p>
+      <ul>
+        <li>Active project count and status summary</li>
+        <li>Recent activity feed (last 20 events)</li>
+        <li>Pipeline health indicator per project</li>
+        <li>Quick-action buttons for common tasks</li>
+      </ul>
+
+      <h2>
+        <span class="req-id">FR-01.03</span>
+        REST API
+        <span class="status-tag todo">To Do</span>
+      </h2>
+      <p>The system <strong>SHALL</strong> expose a RESTful API following OpenAPI 3.1 conventions. All endpoints require authentication via Bearer token. Rate limiting applies at 100 requests/minute per user.</p>
+
+      <h2>
+        <span class="req-id">NFR-01</span>
+        Performance
+        <span class="status-tag todo">To Do</span>
+      </h2>
+      <p>The system <strong>SHALL</strong> respond to API requests within 200ms (p95) under normal load. Dashboard page load <strong>SHALL NOT</strong> exceed 1.5 seconds on a 4G connection.</p>
+    </div>
+  </aside>
+
+</div>
+</body>
+</html>

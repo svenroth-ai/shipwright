@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shipwright Command Center — Design Review</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* === Theme tokens === */
+    :root {
+      --primary: #6b5e56;
+      --bg: #f5f0eb;
+      --surface: #ffffff;
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --border: #e0dbd4;
+      --radius: 8px;
+      --font: 'Inter', system-ui, sans-serif;
+    }
+
+    /* === Reset === */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .hidden { display: none !important; }
+    button { cursor: pointer; font: inherit; }
+
+    /* === Header === */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .header h1 span { color: var(--primary); }
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .actions button {
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      transition: all 0.15s;
+    }
+    .actions button:hover { background: var(--bg); color: var(--text); }
+    .actions button.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .export-btn {
+      background: var(--primary) !important;
+      color: #fff !important;
+      border-color: var(--primary) !important;
+    }
+    .export-btn:hover { opacity: 0.9; }
+    .feedback-count {
+      background: var(--primary);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      margin-right: 4px;
+    }
+
+    /* === Grid View === */
+    .grid-view {
+      padding: 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .split-heading {
+      grid-column: 1 / -1;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      padding: 16px 0 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .split-heading:first-child { padding-top: 0; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      cursor: pointer;
+      transition: box-shadow 0.15s, border-color 0.15s;
+      position: relative;
+    }
+    .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-color: var(--primary); }
+    .card .preview {
+      height: 200px;
+      overflow: hidden;
+      position: relative;
+      background: #fff;
+    }
+    .card .preview iframe {
+      width: 200%;
+      height: 200%;
+      transform: scale(0.5);
+      transform-origin: top left;
+      border: none;
+      pointer-events: none;
+    }
+    .card .info {
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+    }
+    .card .info .number {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-right: 8px;
+    }
+    .card .badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      padding: 1px 6px;
+      border-radius: 4px;
+      vertical-align: middle;
+    }
+    .badge.screen { background: #eff6ff; color: #2563eb; }
+    .badge.flow { background: #f0fdf4; color: #16a34a; }
+    .card .info .title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .card .info .frs {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .card.has-feedback::after {
+      content: '';
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 10px;
+      height: 10px;
+      background: var(--primary);
+      border-radius: 50%;
+      border: 2px solid #fff;
+      z-index: 2;
+    }
+
+    /* === Viewer === */
+    .viewer {
+      display: none;
+      flex-direction: column;
+      height: calc(100vh - 49px);
+    }
+    .viewer.active { display: flex; }
+    .kbd-hints {
+      display: flex;
+      gap: 16px;
+      padding: 4px 24px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .kbd-hints kbd {
+      display: inline-block;
+      padding: 1px 5px;
+      font-size: 11px;
+      font-family: inherit;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      margin-right: 3px;
+    }
+    .viewer-toolbar {
+      display: flex;
+      align-items: center;
+      padding: 8px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .nav-group { display: flex; align-items: center; gap: 4px; }
+    .back-btn {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .back-btn:hover { background: var(--bg); color: var(--text); }
+    .center-nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      justify-content: center;
+    }
+    .center-nav button {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      font-size: 14px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .center-nav button:hover:not(:disabled) { background: var(--bg); color: var(--text); }
+    .center-nav button:disabled { opacity: 0.3; cursor: default; }
+    .screen-select {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      font-size: 13px;
+      font-weight: 500;
+      min-width: 200px;
+      max-width: 320px;
+    }
+    .screen-counter {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .toggle-panel-btn {
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+    .toggle-panel-btn:hover { background: var(--bg); color: var(--text); }
+    .toggle-panel-btn.panel-open {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    /* Viewer body */
+    .viewer-body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    .viewer-frame {
+      flex: 1;
+      border: none;
+      background: #fff;
+    }
+
+    /* === Feedback Panel === */
+    .feedback-panel {
+      width: 340px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: width 0.2s ease;
+    }
+    .feedback-panel.collapsed {
+      width: 0;
+      border-left: none;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-header h3 {
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .panel-header button {
+      background: none;
+      border: none;
+      font-size: 18px;
+      color: var(--muted);
+      padding: 2px 4px;
+    }
+    .panel-header button:hover { color: var(--text); }
+    .panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Status buttons */
+    .status-row {
+      display: flex;
+      gap: 6px;
+    }
+    .status-btn {
+      flex: 1;
+      padding: 7px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      transition: all 0.15s;
+    }
+    .status-btn:hover { border-color: var(--muted); }
+    .status-btn.active-approved { background: #ecfdf5; color: #059669; border-color: #059669; }
+    .status-btn.active-changes { background: #fef3c7; color: #92400e; border-color: #d97706; }
+    .status-btn.active-rejected { background: #fef2f2; color: #dc2626; border-color: #dc2626; }
+
+    /* Previous rounds */
+    .prev-rounds { display: flex; flex-direction: column; gap: 6px; }
+    .prev-round-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+    .round-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--muted);
+    }
+    .round-status {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .round-status.s-approved { background: #ecfdf5; color: #059669; }
+    .round-status.s-changes { background: #fef3c7; color: #92400e; }
+    .round-status.s-rejected { background: #fef2f2; color: #dc2626; }
+    .round-text { color: var(--text); line-height: 1.5; white-space: pre-wrap; }
+
+    /* Textarea */
+    .panel-body textarea {
+      width: 100%;
+      min-height: 160px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      font-size: 13px;
+      font-family: inherit;
+      resize: vertical;
+      line-height: 1.5;
+    }
+    .panel-body textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.06);
+    }
+    .panel-body textarea::placeholder { color: var(--muted); }
+    .save-indicator {
+      font-size: 12px;
+      color: var(--muted);
+      min-height: 18px;
+    }
+
+    /* Panel footer */
+    .panel-footer {
+      display: flex;
+      gap: 6px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+    }
+    .panel-footer button {
+      flex: 1;
+      padding: 7px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+    .panel-footer button:hover { background: var(--bg); color: var(--text); }
+    .panel-footer .export-action {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .panel-footer .export-action:hover { opacity: 0.9; }
+
+    /* === Responsive === */
+    @media (max-width: 900px) {
+      .grid-view { grid-template-columns: 1fr; padding: 16px; }
+      .feedback-panel {
+        position: fixed;
+        right: 0;
+        top: 49px;
+        height: calc(100vh - 49px);
+        z-index: 50;
+        box-shadow: -4px 0 16px rgba(0,0,0,0.1);
+      }
+      .kbd-hints { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- === Header === -->
+  <div class="header">
+    <h1><span>Shipwright Command Center</span> Design Review</h1>
+    <div class="actions">
+      <span class="feedback-count" id="globalFeedbackCount" style="display:none">0</span>
+      <button id="btn-grid" class="active" onclick="showGrid()">Grid</button>
+      <button id="btn-viewer" onclick="showViewer(currentIndex)">Viewer</button>
+      <button class="export-btn" onclick="exportFeedback()">Export Feedback</button>
+    </div>
+  </div>
+
+  <!-- === Grid View === -->
+  <div class="grid-view" id="gridView">
+    <!-- Built by JS from screens array -->
+  </div>
+
+  <!-- === Viewer === -->
+  <div class="viewer" id="viewer">
+    <div class="kbd-hints">
+      <span><kbd>&larr;</kbd> Prev</span>
+      <span><kbd>&rarr;</kbd> Next</span>
+      <span><kbd>Esc</kbd> Grid</span>
+      <span><kbd>F</kbd> Toggle feedback</span>
+    </div>
+    <div class="viewer-toolbar">
+      <div class="nav-group">
+        <button class="back-btn" onclick="showGrid()">&larr; Grid</button>
+      </div>
+      <div class="center-nav">
+        <button id="prevBtn" onclick="navigate(-1)">&larr;</button>
+        <select class="screen-select" id="screenSelect" onchange="jumpTo(this.value)"></select>
+        <button id="nextBtn" onclick="navigate(1)">&rarr;</button>
+        <span class="screen-counter" id="viewerCounter"></span>
+      </div>
+      <div class="nav-group">
+        <button class="toggle-panel-btn" id="togglePanelBtn" onclick="togglePanel()">Feedback &rarr;</button>
+      </div>
+    </div>
+    <div class="viewer-body">
+      <iframe class="viewer-frame" id="viewerFrame"></iframe>
+      <div class="feedback-panel" id="feedbackPanel">
+        <div class="panel-header">
+          <h3 id="panelScreenTitle">Feedback</h3>
+          <button onclick="togglePanel()" title="Close">&times;</button>
+        </div>
+        <div class="panel-body">
+          <div class="status-row">
+            <button class="status-btn" data-status="approved" onclick="setStatus('approved')">Approved</button>
+            <button class="status-btn" data-status="changes" onclick="setStatus('changes')">Changes</button>
+            <button class="status-btn" data-status="rejected" onclick="setStatus('rejected')">Rejected</button>
+          </div>
+          <div class="prev-rounds" id="prevRounds"></div>
+          <textarea id="feedbackText" placeholder="What needs to change?&#10;&#10;- Colors...&#10;- Layout...&#10;- Typography..."></textarea>
+          <div class="save-indicator" id="saveIndicator"></div>
+        </div>
+        <div class="panel-footer">
+          <button onclick="clearCurrentFeedback()">Clear</button>
+          <button onclick="startNewRound()">New Round</button>
+          <button class="export-action" onclick="exportFeedback()">Export</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // === DATA — All Screens ===
+    const screens = [
+      {
+        split: "02 — Kanban Board & Task Detail",
+        num: "10",
+        title: "Kanban Board (Main View)",
+        file: "screens/10-kanban-board.html",
+        frs: "FR-02.05–12, FR-02.17–20, FR-02.34–35",
+        type: "screen"
+      },
+      {
+        split: "02 — Kanban Board & Task Detail",
+        num: "11",
+        title: "Task Detail (Chat + Viewer)",
+        file: "screens/11-task-detail.html",
+        frs: "FR-02.21–33",
+        type: "screen"
+      },
+      {
+        split: "03 — Features & Wizards",
+        num: "12",
+        title: "New Issue (Create + Auto-Enrich)",
+        file: "screens/12-new-issue.html",
+        frs: "FR-02.13–16, FR-03.18–19",
+        type: "screen"
+      },
+      {
+        split: "03 — Features & Wizards",
+        num: "13",
+        title: "Global Inbox",
+        file: "screens/13-global-inbox.html",
+        frs: "FR-03.22–23",
+        type: "screen"
+      },
+      {
+        split: "03 — Features & Wizards",
+        num: "14",
+        title: "Projects List",
+        file: "screens/14-projects.html",
+        frs: "FR-03.23a–23b",
+        type: "screen"
+      },
+      {
+        split: "03 — Features & Wizards",
+        num: "15",
+        title: "Settings (Global + Project)",
+        file: "screens/15-settings.html",
+        frs: "FR-03.24–26",
+        type: "screen"
+      },
+      {
+        split: "02 — Kanban Board & Task Detail",
+        num: "16",
+        title: "List View (Table Alternative)",
+        file: "screens/16-list-view.html",
+        frs: "FR-02.19–20",
+        type: "screen"
+      },
+      {
+        split: "02 — Kanban Board & Task Detail",
+        num: "17",
+        title: "Empty State (Welcome)",
+        file: "screens/17-empty-state.html",
+        frs: "—",
+        type: "screen"
+      },
+      {
+        split: "03 — Features & Wizards",
+        num: "05",
+        title: "Project Wizard (New Project)",
+        file: "screens/05-project-wizard.html",
+        frs: "FR-03.15–17",
+        type: "screen"
+      }
+    ];
+
+    // === STATE ===
+    const STORAGE_KEY = 'shipwright-design-feedback-command-center';
+    const ROUND_KEY = 'shipwright-design-round-command-center';
+    const HISTORY_KEY = 'shipwright-design-history-command-center';
+    let currentIndex = 0;
+    let saveTimeout = null;
+
+    // === ROUND MANAGEMENT ===
+    function getCurrentRound() {
+      return parseInt(localStorage.getItem(ROUND_KEY) || '1');
+    }
+
+    function startNewRound() {
+      const round = getCurrentRound();
+      const current = loadAllFeedback();
+      const history = loadHistory();
+      for (const [screenNum, fb] of Object.entries(current)) {
+        if (fb.text || fb.status) {
+          history.push({ screenNum, round, text: fb.text, status: fb.status });
+        }
+      }
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      localStorage.setItem(STORAGE_KEY, '{}');
+      localStorage.setItem(ROUND_KEY, String(round + 1));
+      updateFeedbackCounts();
+      loadScreen(currentIndex);
+      alert('Round ' + round + ' archived. Starting Round ' + (round + 1) + '.');
+    }
+
+    // === FEEDBACK CRUD ===
+    function loadAllFeedback() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
+    }
+
+    function saveFeedback(screenNum, data) {
+      const all = loadAllFeedback();
+      if (data.text || data.status) { all[screenNum] = data; } else { delete all[screenNum]; }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+      updateFeedbackCounts();
+    }
+
+    function getFeedback(screenNum) {
+      return loadAllFeedback()[screenNum] || { text: '', status: '' };
+    }
+
+    // === HISTORY ===
+    function loadHistory() {
+      try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
+    }
+
+    function getScreenHistory(screenNum) {
+      return loadHistory().filter(h => h.screenNum === screenNum);
+    }
+
+    // === STATUS ===
+    function setStatus(status) {
+      const s = screens[currentIndex];
+      const fb = getFeedback(s.num);
+      fb.status = fb.status === status ? '' : status;
+      fb.text = document.getElementById('feedbackText').value;
+      saveFeedback(s.num, fb);
+      updateStatusButtons(fb.status);
+    }
+
+    function updateStatusButtons(activeStatus) {
+      document.querySelectorAll('.status-btn').forEach(btn => {
+        btn.classList.remove('active-approved', 'active-changes', 'active-rejected');
+        if (activeStatus && btn.dataset.status === activeStatus) {
+          btn.classList.add('active-' + activeStatus);
+        }
+      });
+    }
+
+    // === AUTO-SAVE TEXTAREA ===
+    document.getElementById('feedbackText').addEventListener('input', () => {
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(() => {
+        const s = screens[currentIndex];
+        const fb = getFeedback(s.num);
+        fb.text = document.getElementById('feedbackText').value;
+        saveFeedback(s.num, fb);
+        showSaveIndicator();
+      }, 500);
+    });
+
+    function showSaveIndicator() {
+      const el = document.getElementById('saveIndicator');
+      el.textContent = 'Saved';
+      setTimeout(() => { el.textContent = ''; }, 1500);
+    }
+
+    function clearCurrentFeedback() {
+      const s = screens[currentIndex];
+      saveFeedback(s.num, { text: '', status: '' });
+      document.getElementById('feedbackText').value = '';
+      updateStatusButtons('');
+    }
+
+    // === GRID ===
+    function buildGrid() {
+      const grid = document.getElementById('gridView');
+      grid.innerHTML = '';
+      let currentSplit = '';
+      screens.forEach((s, i) => {
+        if (s.split !== currentSplit) {
+          currentSplit = s.split;
+          const heading = document.createElement('div');
+          heading.className = 'split-heading';
+          heading.textContent = currentSplit;
+          grid.appendChild(heading);
+        }
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.onclick = () => showViewer(i);
+        card.innerHTML =
+          '<div class="preview">' +
+            '<iframe src="' + s.file + '" loading="lazy" tabindex="-1"></iframe>' +
+          '</div>' +
+          '<div class="info">' +
+            '<span class="number">#' + s.num + '</span>' +
+            '<span class="badge ' + s.type + '">' + s.type + '</span>' +
+            '<div class="title">' + s.title + '</div>' +
+            '<div class="frs">' + s.frs + '</div>' +
+          '</div>';
+        grid.appendChild(card);
+      });
+      updateFeedbackCounts();
+    }
+
+    function buildSelect() {
+      const sel = document.getElementById('screenSelect');
+      sel.innerHTML = '';
+      screens.forEach((s, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = '#' + s.num + ' ' + s.title;
+        sel.appendChild(opt);
+      });
+    }
+
+    // === FEEDBACK COUNTS ===
+    function updateFeedbackCounts() {
+      const all = loadAllFeedback();
+      const count = Object.keys(all).length;
+      const el = document.getElementById('globalFeedbackCount');
+      if (count > 0) { el.style.display = 'inline-block'; el.textContent = count; }
+      else { el.style.display = 'none'; }
+      document.querySelectorAll('.card').forEach((card, i) => {
+        if (i < screens.length) {
+          const fb = all[screens[i].num];
+          card.classList.toggle('has-feedback', !!(fb && (fb.text || fb.status)));
+        }
+      });
+    }
+
+    // === VIEWER NAVIGATION ===
+    function showGrid() {
+      document.getElementById('gridView').classList.remove('hidden');
+      document.getElementById('viewer').classList.remove('active');
+      document.getElementById('btn-grid').classList.add('active');
+      document.getElementById('btn-viewer').classList.remove('active');
+      updateFeedbackCounts();
+    }
+
+    function showViewer(index) {
+      currentIndex = index;
+      document.getElementById('gridView').classList.add('hidden');
+      document.getElementById('viewer').classList.add('active');
+      document.getElementById('btn-grid').classList.remove('active');
+      document.getElementById('btn-viewer').classList.add('active');
+      loadScreen(index);
+    }
+
+    function loadScreen(index) {
+      const s = screens[index];
+      document.getElementById('viewerFrame').src = s.file;
+      document.getElementById('viewerCounter').textContent = (index + 1) + ' / ' + screens.length;
+      document.getElementById('screenSelect').value = index;
+      document.getElementById('prevBtn').disabled = index === 0;
+      document.getElementById('nextBtn').disabled = index === screens.length - 1;
+      document.getElementById('panelScreenTitle').textContent =
+        '#' + s.num + ' ' + s.title + ' (Round ' + getCurrentRound() + ')';
+
+      const prevEl = document.getElementById('prevRounds');
+      const history = getScreenHistory(s.num);
+      if (history.length > 0) {
+        prevEl.innerHTML = history.map(h => {
+          const sc = h.status
+            ? '<span class="round-status s-' + h.status + '">' + h.status.toUpperCase() + '</span>'
+            : '';
+          return '<div class="prev-round-item">' +
+            '<div class="round-label">Round ' + h.round + ' ' + sc + '</div>' +
+            '<div class="round-text">' + (h.text || '(no comment)') + '</div>' +
+          '</div>';
+        }).join('');
+      } else {
+        prevEl.innerHTML = '';
+      }
+
+      const fb = getFeedback(s.num);
+      document.getElementById('feedbackText').value = fb.text || '';
+      updateStatusButtons(fb.status);
+    }
+
+    function navigate(delta) {
+      const next = currentIndex + delta;
+      if (next >= 0 && next < screens.length) {
+        currentIndex = next;
+        loadScreen(currentIndex);
+      }
+    }
+
+    function jumpTo(val) {
+      const index = parseInt(val);
+      if (!isNaN(index) && index >= 0 && index < screens.length) {
+        currentIndex = index;
+        loadScreen(currentIndex);
+      }
+    }
+
+    function togglePanel() {
+      const panel = document.getElementById('feedbackPanel');
+      const btn = document.getElementById('togglePanelBtn');
+      panel.classList.toggle('collapsed');
+      const isOpen = !panel.classList.contains('collapsed');
+      btn.textContent = isOpen ? '\u2190 Feedback' : 'Feedback \u2192';
+      btn.classList.toggle('panel-open', isOpen);
+    }
+
+    // === KEYBOARD NAVIGATION ===
+    document.addEventListener('keydown', (e) => {
+      if (!document.getElementById('viewer').classList.contains('active')) return;
+      if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+      if (e.key === 'ArrowLeft') navigate(-1);
+      if (e.key === 'ArrowRight') navigate(1);
+      if (e.key === 'Escape') showGrid();
+      if (e.key === 'f' || e.key === 'F') togglePanel();
+    });
+
+    // === EXPORT ===
+    async function exportFeedback() {
+      const all = loadAllFeedback();
+      const entries = Object.keys(all).sort();
+      if (entries.length === 0) { alert('No feedback to export yet.'); return; }
+
+      const round = getCurrentRound();
+      let md = '# Design Feedback \u2014 Round ' + round + '\n\n';
+      md += '> Exported: ' + new Date().toISOString().split('T')[0] + '\n\n';
+
+      const approved = entries.filter(k => all[k].status === 'approved').length;
+      const changes  = entries.filter(k => all[k].status === 'changes').length;
+      const rejected = entries.filter(k => all[k].status === 'rejected').length;
+      md += '## Summary\n\n';
+      md += '| Status | Count |\n|--------|-------|\n';
+      md += '| Approved | ' + approved + ' |\n';
+      md += '| Changes Requested | ' + changes + ' |\n';
+      md += '| Rejected | ' + rejected + ' |\n';
+      md += '| Total Reviewed | ' + entries.length + ' / ' + screens.length + ' |\n\n';
+
+      let currentSplit = '';
+      screens.forEach(s => {
+        const fb = all[s.num];
+        if (!fb) return;
+        if (s.split !== currentSplit) {
+          currentSplit = s.split;
+          md += '## ' + currentSplit + '\n\n';
+        }
+        const statusLabel = fb.status === 'approved' ? 'APPROVED'
+          : fb.status === 'changes' ? 'CHANGES'
+          : fb.status === 'rejected' ? 'REJECTED' : 'REVIEWED';
+        md += '### #' + s.num + ' ' + s.title + ' \u2014 ' + statusLabel + '\n\n';
+        md += '**File:** ' + s.file + '  \n';
+        md += '**FRs:** ' + s.frs + '\n\n';
+        if (fb.text) { md += fb.text + '\n\n'; }
+        md += '---\n\n';
+      });
+
+      const blob = new Blob([md], { type: 'text/markdown' });
+
+      if (window.showSaveFilePicker) {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: 'design-feedback-round' + round + '.md',
+            types: [{ description: 'Markdown', accept: { 'text/markdown': ['.md'] } }],
+          });
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          return;
+        } catch (e) {
+          if (e.name === 'AbortError') return;
+        }
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'design-feedback-round' + round + '.md';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // === INIT ===
+    buildGrid();
+    buildSelect();
+    updateFeedbackCounts();
+  </script>
+</body>
+</html>

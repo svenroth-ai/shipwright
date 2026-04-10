@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shipwright Command Center — Global Inbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --color-primary: #6b5e56;
+    --color-primary-hover: #5a4f48;
+    --color-bg: #f5f0eb;
+    --color-surface: #ffffff;
+    --color-muted-bg: #ede8e1;
+    --color-text: #1a1a1a;
+    --color-muted: #6b7280;
+    --color-border: #e0dbd4;
+    --color-accent: #857568;
+    --color-success: #059669;
+    --color-warning: #D97706;
+    --color-error: #DC2626;
+    --color-info: #3B82F6;
+    --radius-card: 12px;
+    --radius-button: 8px;
+    --shadow-card: 0 6px 30px rgba(0,0,0,0.10);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-text);
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ============================================================
+     LAYOUT
+     ============================================================ */
+  .app {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    height: 100vh;
+  }
+
+  /* ============================================================
+     SIDEBAR
+     ============================================================ */
+  .sidebar {
+    width: 200px;
+    min-width: 200px;
+    background: #5c5652;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 16px 24px;
+  }
+
+  .sidebar-logo svg {
+    width: 28px;
+    height: 28px;
+    color: #ffffff;
+    flex-shrink: 0;
+  }
+
+  .sidebar-logo span {
+    font-weight: 700;
+    font-size: 16px;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 8px;
+    flex: 1;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: var(--radius-button);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.7);
+    transition: all 0.15s ease;
+    position: relative;
+    text-decoration: none;
+  }
+
+  .nav-item:hover {
+    background: rgba(255,255,255,0.08);
+    color: #ffffff;
+  }
+
+  .nav-item.active {
+    background: rgba(255,255,255,0.12);
+    color: #ffffff;
+  }
+
+  .nav-item svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .nav-badge {
+    margin-left: auto;
+    background: var(--color-error);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+  }
+
+  /* ============================================================
+     MAIN CONTENT
+     ============================================================ */
+  .main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  /* Header */
+  .inbox-header {
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .inbox-header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .inbox-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .inbox-count {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-muted);
+  }
+
+  .mark-all-btn {
+    background: none;
+    border: none;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-primary);
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: var(--radius-button);
+    transition: all 0.15s;
+  }
+
+  .mark-all-btn:hover {
+    background: var(--color-muted-bg);
+    color: var(--color-primary-hover);
+  }
+
+  /* Inbox Body */
+  .inbox-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 32px 40px;
+  }
+
+  /* Project Group */
+  .project-group {
+    margin-bottom: 28px;
+  }
+
+  .project-group-header {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--color-muted);
+    margin-bottom: 12px;
+    padding-left: 4px;
+  }
+
+  .project-group-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* ============================================================
+     QUESTION CARD (AskUser-style)
+     ============================================================ */
+  .question-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-left: 3px solid var(--color-warning);
+    border-radius: var(--radius-button);
+    padding: 18px 20px;
+    box-shadow: var(--shadow-sm);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    max-width: 680px;
+  }
+
+  .question-card.answered {
+    opacity: 0;
+    transform: translateX(40px);
+    pointer-events: none;
+  }
+
+  .question-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .task-context-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--color-muted-bg);
+    color: var(--color-muted);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 12px;
+    letter-spacing: 0.02em;
+  }
+
+  .task-context-pill svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .question-time {
+    font-size: 12px;
+    color: var(--color-muted);
+    font-weight: 400;
+  }
+
+  .question-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+
+  .question-context {
+    font-size: 13px;
+    color: var(--color-muted);
+    line-height: 1.5;
+    margin-bottom: 14px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Options row */
+  .question-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .option-btn {
+    padding: 7px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-button);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text);
+    background: var(--color-surface);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font-sans);
+  }
+
+  .option-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-muted-bg);
+  }
+
+  .option-btn:active {
+    background: var(--color-primary);
+    color: #ffffff;
+    border-color: var(--color-primary);
+  }
+
+  /* "or" divider */
+  .option-divider {
+    font-size: 12px;
+    color: var(--color-muted);
+    font-weight: 400;
+    padding: 0 2px;
+  }
+
+  /* Freetext input */
+  .freetext-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .freetext-input {
+    flex: 1;
+    padding: 7px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-button);
+    font-size: 13px;
+    font-family: var(--font-sans);
+    color: var(--color-text);
+    background: var(--color-bg);
+    outline: none;
+    transition: border-color 0.15s;
+    max-width: 360px;
+  }
+
+  .freetext-input::placeholder {
+    color: var(--color-muted);
+  }
+
+  .freetext-input:focus {
+    border-color: var(--color-primary);
+  }
+
+  .freetext-send {
+    padding: 7px 14px;
+    border: none;
+    border-radius: var(--radius-button);
+    background: var(--color-primary);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: background 0.15s;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s, background 0.15s;
+  }
+
+  .freetext-send.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .freetext-send:hover {
+    background: var(--color-primary-hover);
+  }
+
+  /* ============================================================
+     EMPTY STATE
+     ============================================================ */
+  .empty-state {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 24px;
+    text-align: center;
+  }
+
+  .empty-state.visible {
+    display: flex;
+  }
+
+  .empty-state svg {
+    width: 48px;
+    height: 48px;
+    color: var(--color-muted);
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  .empty-state-text {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-muted);
+  }
+
+  .empty-state-sub {
+    font-size: 13px;
+    color: var(--color-muted);
+    opacity: 0.7;
+    margin-top: 4px;
+  }
+
+  /* Scrollbar */
+  .inbox-body::-webkit-scrollbar { width: 6px; }
+  .inbox-body::-webkit-scrollbar-track { background: transparent; }
+  .inbox-body::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+  .inbox-body::-webkit-scrollbar-thumb:hover { background: var(--color-muted); }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<!-- ============================================================
+     SIDEBAR
+     ============================================================ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <!-- Ship wheel icon -->
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="8"/>
+      <circle cx="12" cy="12" r="2.5"/>
+      <line x1="12" y1="2" x2="12" y2="9.5"/>
+      <line x1="12" y1="14.5" x2="12" y2="22"/>
+      <line x1="2" y1="12" x2="9.5" y2="12"/>
+      <line x1="14.5" y1="12" x2="22" y2="12"/>
+      <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/>
+      <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/>
+      <line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/>
+      <line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/>
+    </svg>
+    <span>Shipwright</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <!-- Task Board -->
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      Task Board
+    </a>
+
+    <!-- Projects -->
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+      </svg>
+      Projects
+    </a>
+
+    <!-- Inbox (ACTIVE) -->
+    <a class="nav-item active" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+        <path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/>
+      </svg>
+      Inbox
+      <span class="nav-badge">3</span>
+    </a>
+
+    <!-- Settings -->
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+      </svg>
+      Settings
+    </a>
+  </nav>
+</aside>
+
+<!-- ============================================================
+     MAIN
+     ============================================================ -->
+<main class="main">
+
+  <!-- Inbox Header -->
+  <header class="inbox-header">
+    <div class="inbox-header-left">
+      <h1 class="inbox-title">Inbox</h1>
+      <span class="inbox-count">(3 open)</span>
+    </div>
+    <button class="mark-all-btn" onclick="markAllRead()">Mark all read</button>
+  </header>
+
+  <!-- Inbox Body -->
+  <div class="inbox-body" id="inboxBody">
+
+    <!-- ── AI Portal ── -->
+    <div class="project-group">
+      <div class="project-group-header">AI Portal</div>
+      <div class="project-group-cards">
+
+        <!-- Question 1 -->
+        <div class="question-card" id="q1">
+          <div class="question-card-top">
+            <span class="task-context-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+              </svg>
+              build / 02-dashboard
+            </span>
+            <span class="question-time">2h ago</span>
+          </div>
+          <div class="question-text">JWT oder Session-Auth?</div>
+          <div class="question-context">Implementing the session management layer for the dashboard. Need to decide on the authentication strategy before proceeding with the API middleware.</div>
+          <div class="question-options">
+            <button class="option-btn" onclick="answerQuestion('q1', this)">JWT</button>
+            <button class="option-btn" onclick="answerQuestion('q1', this)">Session</button>
+          </div>
+          <div class="freetext-row">
+            <span class="option-divider">or</span>
+            <input type="text" class="freetext-input" placeholder="Type your answer..." onkeydown="handleEnter(event, 'q1')" oninput="toggleSend(this)">
+            <button class="freetext-send" onclick="answerFreetext('q1', this)">Send</button>
+          </div>
+        </div>
+
+        <!-- Question 2 -->
+        <div class="question-card" id="q2">
+          <div class="question-card-top">
+            <span class="task-context-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              project / spec
+            </span>
+            <span class="question-time">5h ago</span>
+          </div>
+          <div class="question-text">Braucht ihr Multi-Tenancy?</div>
+          <div class="question-context">Die Anforderungsanalyse zeigt mehrere Nutzergruppen. Multi-Tenancy wuerde separate Datenisolation pro Organisation erfordern und die Architektur deutlich beeinflussen.</div>
+          <div class="question-options">
+            <button class="option-btn" onclick="answerQuestion('q2', this)">Ja</button>
+            <button class="option-btn" onclick="answerQuestion('q2', this)">Nein</button>
+          </div>
+          <div class="freetext-row">
+            <span class="option-divider">or</span>
+            <input type="text" class="freetext-input" placeholder="Type your answer..." onkeydown="handleEnter(event, 'q2')" oninput="toggleSend(this)">
+            <button class="freetext-send" onclick="answerFreetext('q2', this)">Send</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── SaaS App ── -->
+    <div class="project-group">
+      <div class="project-group-header">SaaS App</div>
+      <div class="project-group-cards">
+
+        <!-- Question 3 -->
+        <div class="question-card" id="q3">
+          <div class="question-card-top">
+            <span class="task-context-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <line x1="3" y1="9" x2="21" y2="9"/>
+                <line x1="9" y1="21" x2="9" y2="9"/>
+              </svg>
+              design / mockups
+            </span>
+            <span class="question-time">1d ago</span>
+          </div>
+          <div class="question-text">Mockup approved?</div>
+          <div class="question-context">The dashboard layout mockup is ready for review. Please confirm if the current design matches your expectations or if changes are needed.</div>
+          <div class="question-options">
+            <button class="option-btn" onclick="answerQuestion('q3', this)">Approve</button>
+            <button class="option-btn" onclick="answerQuestion('q3', this)">Changes needed</button>
+          </div>
+          <div class="freetext-row">
+            <span class="option-divider">or</span>
+            <input type="text" class="freetext-input" placeholder="Type your answer..." onkeydown="handleEnter(event, 'q3')" oninput="toggleSend(this)">
+            <button class="freetext-send" onclick="answerFreetext('q3', this)">Send</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Empty State (hidden when questions exist) ── -->
+    <div class="empty-state" id="emptyState">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+        <path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/>
+      </svg>
+      <div class="empty-state-text">No more questions -- all caught up!</div>
+      <div class="empty-state-sub">Questions from running pipelines will appear here.</div>
+    </div>
+
+  </div>
+
+</main>
+
+</div>
+
+<script>
+  let openCount = 3;
+
+  function updateCount() {
+    openCount--;
+    const countEl = document.querySelector('.inbox-count');
+    const badgeEl = document.querySelector('.nav-badge');
+    if (openCount > 0) {
+      countEl.textContent = '(' + openCount + ' open)';
+      badgeEl.textContent = openCount;
+    } else {
+      countEl.textContent = '(0 open)';
+      badgeEl.style.display = 'none';
+      document.getElementById('emptyState').classList.add('visible');
+    }
+  }
+
+  function answerQuestion(cardId, btn) {
+    const card = document.getElementById(cardId);
+    // Brief highlight on the clicked button
+    btn.style.background = 'var(--color-primary)';
+    btn.style.color = '#ffffff';
+    btn.style.borderColor = 'var(--color-primary)';
+    setTimeout(function() {
+      card.classList.add('answered');
+      updateCount();
+      setTimeout(function() {
+        card.style.display = 'none';
+        cleanupEmptyGroups();
+      }, 320);
+    }, 200);
+  }
+
+  function answerFreetext(cardId, btn) {
+    const card = document.getElementById(cardId);
+    const input = card.querySelector('.freetext-input');
+    if (!input.value.trim()) return;
+    card.classList.add('answered');
+    updateCount();
+    setTimeout(function() {
+      card.style.display = 'none';
+      cleanupEmptyGroups();
+    }, 320);
+  }
+
+  function handleEnter(event, cardId) {
+    if (event.key === 'Enter') {
+      const card = document.getElementById(cardId);
+      const sendBtn = card.querySelector('.freetext-send');
+      answerFreetext(cardId, sendBtn);
+    }
+  }
+
+  function toggleSend(input) {
+    const sendBtn = input.parentElement.querySelector('.freetext-send');
+    if (input.value.trim()) {
+      sendBtn.classList.add('visible');
+    } else {
+      sendBtn.classList.remove('visible');
+    }
+  }
+
+  function cleanupEmptyGroups() {
+    document.querySelectorAll('.project-group').forEach(function(group) {
+      const visibleCards = group.querySelectorAll('.question-card:not([style*="display: none"])');
+      if (visibleCards.length === 0) {
+        group.style.display = 'none';
+      }
+    });
+  }
+
+  function markAllRead() {
+    document.querySelectorAll('.question-card').forEach(function(card) {
+      card.classList.add('answered');
+      setTimeout(function() {
+        card.style.display = 'none';
+        cleanupEmptyGroups();
+      }, 320);
+    });
+    openCount = 0;
+    document.querySelector('.inbox-count').textContent = '(0 open)';
+    document.querySelector('.nav-badge').style.display = 'none';
+    setTimeout(function() {
+      document.getElementById('emptyState').classList.add('visible');
+    }, 350);
+  }
+</script>
+
+</body>
+</html>

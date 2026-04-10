@@ -1,0 +1,94 @@
+{
+  "sections": [
+    {
+      "name": "01-project-setup",
+      "status": "complete",
+      "commit": "fd90c2c70ddd28193b2225bcb9f78927338cc656",
+      "tests_passed": 15,
+      "tests_total": 15,
+      "code_review_findings": [],
+      "review_type": "self-review"
+    },
+    {
+      "name": "02-shared-types",
+      "status": "complete",
+      "commit": "0c5097af1fe023440efd14377baac54462970e79",
+      "tests_passed": 0,
+      "tests_total": 0,
+      "code_review_findings": [],
+      "review_type": "self-review"
+    },
+    {
+      "name": "03-event-system",
+      "status": "complete",
+      "commit": "8121221a9e4b038b3869a9f7cc15bae58f26847a",
+      "tests_passed": 16,
+      "tests_total": 16,
+      "code_review_findings": [],
+      "review_type": "self-review"
+    },
+    {
+      "name": "04-task-manager",
+      "status": "complete",
+      "commit": "6d6d3a847388b5ff9ebfcac0664744cb2a5cf61a",
+      "tests_passed": 15,
+      "tests_total": 15,
+      "code_review_findings": [],
+      "review_type": "self-review"
+    },
+    {
+      "name": "05-claude-adapter",
+      "status": "complete",
+      "commit": "4160b5bea57c7988c8f9c96b9176dafe017eccba",
+      "tests_passed": 18,
+      "tests_total": 18,
+      "code_review_findings": [],
+      "review_type": "self-review"
+    },
+    {
+      "name": "06-process-governor",
+      "status": "complete",
+      "commit": "bd2c3ef05bc34710ad97806a270fe1b7ec32ed0e",
+      "tests_passed": 9,
+      "tests_total": 9,
+      "code_review_findings": [],
+      "review_type": "self-review"
+    },
+    {
+      "name": "07-project-registry",
+      "status": "complete",
+      "commit": "986994039287d9e88cb9db2e865f4a01f4b44a09",
+      "tests_passed": 20,
+      "tests_total": 20,
+      "code_review_findings": [],
+      "review_type": "self-review"
+    },
+    {
+      "name": "08-inbox-chat",
+      "status": "complete",
+      "commit": "e895ddd8734ce21bd8b52a5bcdc55d19a78efdcd",
+      "tests_passed": 16,
+      "tests_total": 16,
+      "code_review_findings": [],
+      "review_type": "self-review"
+    },
+    {
+      "name": "09-sse-manager",
+      "status": "complete",
+      "commit": "874171d3d04959b7090e58eb6b8585ea0cf9366d",
+      "tests_passed": 13,
+      "tests_total": 13,
+      "code_review_findings": [],
+      "review_type": "self-review"
+    },
+    {
+      "name": "10-api-routes",
+      "status": "complete",
+      "commit": "d21e14315b504da77f52d276b7a5ea544945a211",
+      "tests_passed": 145,
+      "tests_total": 145,
+      "code_review_findings": [],
+      "review_type": "self-review"
+    }
+  ]
+}

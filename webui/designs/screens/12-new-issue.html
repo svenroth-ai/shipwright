@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shipwright — New Issue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --color-primary: #6b5e56;
+    --color-primary-hover: #5a4f48;
+    --color-bg: #f5f0eb;
+    --color-surface: #ffffff;
+    --color-muted-bg: #ede8e1;
+    --color-text: #1a1a1a;
+    --color-muted: #6b7280;
+    --color-border: #e0dbd4;
+    --color-accent: #857568;
+    --color-success: #059669;
+    --color-warning: #D97706;
+    --color-error: #DC2626;
+    --radius-card: 12px;
+    --radius-button: 8px;
+    --shadow-card: 0 6px 30px rgba(0,0,0,0.10);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-text);
+    min-height: 100vh;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* ── State Toggle ── */
+  .state-toggle {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 1000;
+    display: flex;
+    gap: 8px;
+  }
+
+  .state-toggle button {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-button);
+    cursor: pointer;
+    background: var(--color-surface);
+    color: var(--color-muted);
+    transition: all 0.2s;
+  }
+
+  .state-toggle button.active {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+  }
+
+  /* ── Kanban Board (background / state 2) ── */
+  .kanban-board {
+    padding: 32px;
+  }
+
+  .kanban-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .kanban-header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .btn-new-issue {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 20px;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-button);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s;
+  }
+
+  .btn-new-issue:hover { background: var(--color-primary-hover); }
+
+  .kanban-columns {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .kanban-col {
+    background: var(--color-muted-bg);
+    border-radius: var(--radius-card);
+    padding: 16px;
+    min-height: 400px;
+  }
+
+  .kanban-col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .kanban-col-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-muted);
+  }
+
+  .kanban-col-count {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-muted);
+    background: var(--color-surface);
+    border-radius: 10px;
+    padding: 2px 8px;
+  }
+
+  .kanban-card {
+    background: var(--color-surface);
+    border-radius: var(--radius-button);
+    padding: 14px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+    transition: box-shadow 0.2s;
+  }
+
+  .kanban-card:hover { box-shadow: var(--shadow-card); }
+
+  .kanban-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--color-text);
+  }
+
+  .kanban-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .pill-bug { background: #fde8e8; color: #b91c1c; }
+  .pill-feature { background: #dbeafe; color: #1d4ed8; }
+  .pill-iterate { background: #d1fae5; color: #047857; }
+  .pill-build { background: #e0e7ff; color: #4338ca; }
+  .pill-priority-med {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .priority-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .priority-dot-amber { background: var(--color-warning); }
+  .priority-dot-green { background: var(--color-success); }
+
+  .kanban-card-detail {
+    font-size: 11px;
+    color: var(--color-muted);
+    margin-top: 4px;
+  }
+
+  /* ── Ghost placeholder cards ── */
+  .ghost-card {
+    background: var(--color-surface);
+    border-radius: var(--radius-button);
+    padding: 14px;
+    margin-bottom: 10px;
+    border: 1px solid var(--color-border);
+    opacity: 0.5;
+  }
+
+  .ghost-line {
+    height: 10px;
+    background: var(--color-muted-bg);
+    border-radius: 4px;
+    margin-bottom: 6px;
+  }
+
+  .ghost-line:last-child { margin-bottom: 0; }
+  .ghost-line.short { width: 60%; }
+
+  /* ── New Card (state 2) ── */
+  .new-card {
+    animation: cardSlideIn 0.4s ease-out;
+  }
+
+  @keyframes cardSlideIn {
+    from { opacity: 0; transform: translateY(-12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .new-card-loading .kanban-card-title {
+    margin-bottom: 12px;
+  }
+
+  .loading-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--color-muted);
+    font-size: 12px;
+  }
+
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Shimmer effect for enrichment */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .shimmer-bar {
+    height: 10px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--color-muted-bg) 25%, #f0ebe4 50%, var(--color-muted-bg) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    margin-top: 8px;
+  }
+
+  .shimmer-bar.short { width: 50%; }
+
+  .enriched-meta {
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Modal Overlay ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 26, 26, 0.45);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: overlayIn 0.25s ease-out;
+  }
+
+  @keyframes overlayIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .modal {
+    background: var(--color-surface);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    width: 500px;
+    max-width: calc(100vw - 48px);
+    animation: modalIn 0.3s ease-out;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 0;
+  }
+
+  .modal-header h2 {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-muted);
+    padding: 4px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .modal-close:hover {
+    background: var(--color-muted-bg);
+    color: var(--color-text);
+  }
+
+  .modal-body {
+    padding: 20px 24px;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-group:last-child { margin-bottom: 0; }
+
+  .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 6px;
+  }
+
+  .form-input {
+    width: 100%;
+    height: 48px;
+    padding: 0 14px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-button);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .form-input:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(107, 94, 86, 0.1);
+  }
+
+  .form-textarea {
+    width: 100%;
+    padding: 12px 14px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-button);
+    outline: none;
+    resize: vertical;
+    min-height: 88px;
+    line-height: 1.5;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .form-textarea:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(107, 94, 86, 0.1);
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 0 24px 20px;
+  }
+
+  .btn {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: var(--radius-button);
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+  }
+
+  .btn-secondary {
+    background: var(--color-muted-bg);
+    color: var(--color-text);
+  }
+
+  .btn-secondary:hover {
+    background: var(--color-border);
+  }
+
+  .btn-primary {
+    background: var(--color-primary);
+    color: #fff;
+  }
+
+  .btn-primary:hover {
+    background: var(--color-primary-hover);
+  }
+
+  /* ── Start Immediately Checkbox ── */
+  .start-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+
+  .start-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .start-checkbox span {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  .start-checkbox .checkbox-hint {
+    display: block;
+    width: 100%;
+    padding-left: 24px;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--color-muted);
+  }
+
+  /* ── Blurred board behind modal ── */
+  .board-blurred {
+    filter: blur(2px);
+    pointer-events: none;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- State toggle -->
+<div class="state-toggle">
+  <button id="btn-state1" class="active" onclick="showState(1)">State 1: Create Issue</button>
+  <button id="btn-state2" onclick="showState(2)">State 2: Card Enriched</button>
+</div>
+
+<!-- Kanban Board (always visible, blurred in state 1) -->
+<div class="kanban-board" id="kanban-board">
+  <div class="kanban-header">
+    <h1>Issues</h1>
+    <button class="btn-new-issue" onclick="showState(1)">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      New Issue
+    </button>
+  </div>
+  <div class="kanban-columns">
+    <!-- Backlog -->
+    <div class="kanban-col">
+      <div class="kanban-col-header">
+        <span class="kanban-col-title">Backlog</span>
+        <span class="kanban-col-count" id="backlog-count">3</span>
+      </div>
+
+      <!-- New card slot (state 2 only) -->
+      <div id="new-card-slot"></div>
+
+      <!-- Existing backlog cards -->
+      <div class="kanban-card">
+        <div class="kanban-card-title">Add password reset flow</div>
+        <div class="kanban-card-meta">
+          <span class="pill pill-feature">feature</span>
+          <span class="pill pill-build">build</span>
+          <span class="pill pill-priority-med"><span class="priority-dot priority-dot-green"></span>&nbsp;low</span>
+        </div>
+        <div class="kanban-card-detail">Affected: FR-02.01 &middot; Complexity: medium</div>
+      </div>
+      <div class="ghost-card">
+        <div class="ghost-line" style="width:80%"></div>
+        <div class="ghost-line short"></div>
+      </div>
+      <div class="ghost-card">
+        <div class="ghost-line" style="width:70%"></div>
+        <div class="ghost-line short"></div>
+      </div>
+    </div>
+
+    <!-- In Progress -->
+    <div class="kanban-col">
+      <div class="kanban-col-header">
+        <span class="kanban-col-title">In Progress</span>
+        <span class="kanban-col-count">2</span>
+      </div>
+      <div class="kanban-card">
+        <div class="kanban-card-title">Refactor session middleware</div>
+        <div class="kanban-card-meta">
+          <span class="pill pill-feature">refactor</span>
+          <span class="pill pill-build">build</span>
+          <span class="pill pill-priority-med"><span class="priority-dot priority-dot-amber"></span>&nbsp;med</span>
+        </div>
+        <div class="kanban-card-detail">Affected: FR-03.02 &middot; Complexity: medium</div>
+      </div>
+      <div class="ghost-card">
+        <div class="ghost-line" style="width:75%"></div>
+        <div class="ghost-line short"></div>
+      </div>
+    </div>
+
+    <!-- Review -->
+    <div class="kanban-col">
+      <div class="kanban-col-header">
+        <span class="kanban-col-title">Review</span>
+        <span class="kanban-col-count">1</span>
+      </div>
+      <div class="kanban-card">
+        <div class="kanban-card-title">Update RBAC permissions</div>
+        <div class="kanban-card-meta">
+          <span class="pill pill-feature">feature</span>
+          <span class="pill pill-iterate">iterate</span>
+          <span class="pill pill-priority-med"><span class="priority-dot priority-dot-amber"></span>&nbsp;med</span>
+        </div>
+        <div class="kanban-card-detail">Affected: FR-01.05 &middot; Complexity: small</div>
+      </div>
+    </div>
+
+    <!-- Done -->
+    <div class="kanban-col">
+      <div class="kanban-col-header">
+        <span class="kanban-col-title">Done</span>
+        <span class="kanban-col-count">4</span>
+      </div>
+      <div class="ghost-card">
+        <div class="ghost-line" style="width:85%"></div>
+        <div class="ghost-line short"></div>
+      </div>
+      <div class="ghost-card">
+        <div class="ghost-line" style="width:65%"></div>
+        <div class="ghost-line short"></div>
+      </div>
+      <div class="ghost-card">
+        <div class="ghost-line" style="width:75%"></div>
+        <div class="ghost-line short"></div>
+      </div>
+      <div class="ghost-card">
+        <div class="ghost-line" style="width:70%"></div>
+        <div class="ghost-line short"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Overlay (state 1) -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>New Issue</h2>
+      <button class="modal-close" onclick="showState(2)" title="Close">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label" for="issue-title">Title</label>
+        <input class="form-input" id="issue-title" type="text" value="Fix the auth redirect bug" placeholder="Issue title...">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="issue-desc">Description</label>
+        <textarea class="form-textarea" id="issue-desc" rows="3" placeholder="Describe the issue...">When users log in with Google OAuth, they get redirected to /404 instead of /dashboard. Happens only on first login when no session cookie exists.</textarea>
+      </div>
+      <label class="start-checkbox">
+        <input type="checkbox" id="startImmediately">
+        <span>Start immediately</span>
+        <span class="checkbox-hint">Claude begins working as soon as the issue is created</span>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="showState(2)">Cancel</button>
+      <button class="btn btn-primary" onclick="showState(2)">Create Issue</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let enrichTimeout = null;
+
+  function showState(state) {
+    const overlay = document.getElementById('modal-overlay');
+    const board = document.getElementById('kanban-board');
+    const slot = document.getElementById('new-card-slot');
+    const countEl = document.getElementById('backlog-count');
+
+    // Clear any pending enrichment
+    if (enrichTimeout) {
+      clearTimeout(enrichTimeout);
+      enrichTimeout = null;
+    }
+
+    // Update toggle buttons
+    document.getElementById('btn-state1').classList.toggle('active', state === 1);
+    document.getElementById('btn-state2').classList.toggle('active', state === 2);
+
+    if (state === 1) {
+      // State 1: Show modal with blurred board
+      overlay.style.display = 'flex';
+      board.classList.add('board-blurred');
+      slot.innerHTML = '';
+      countEl.textContent = '3';
+    } else {
+      // State 2: Hide modal, show new card with enrichment animation
+      overlay.style.display = 'none';
+      board.classList.remove('board-blurred');
+      countEl.textContent = '4';
+
+      // Insert loading card
+      slot.innerHTML = `
+        <div class="kanban-card new-card new-card-loading" id="new-issue-card">
+          <div class="kanban-card-title">Fix the auth redirect bug</div>
+          <div id="card-enrich-area">
+            <div class="loading-row">
+              <span>Classifying...</span>
+              <div class="spinner"></div>
+            </div>
+            <div class="shimmer-bar"></div>
+            <div class="shimmer-bar short"></div>
+          </div>
+        </div>
+      `;
+
+      // After 1.5s, enrich the card
+      enrichTimeout = setTimeout(function() {
+        const area = document.getElementById('card-enrich-area');
+        if (!area) return;
+
+        area.innerHTML = `
+          <div class="kanban-card-meta enriched-meta">
+            <span class="pill pill-iterate">iterate</span>
+            <span class="pill pill-bug">bug</span>
+            <span class="pill pill-priority-med"><span class="priority-dot priority-dot-amber"></span>&nbsp;med</span>
+          </div>
+          <div class="kanban-card-detail enriched-meta" style="animation-delay:0.1s">
+            Affected: FR-01.03
+          </div>
+          <div class="kanban-card-detail enriched-meta" style="animation-delay:0.2s">
+            Complexity: small &mdash; 1 risk flag
+          </div>
+        `;
+      }, 1500);
+    }
+  }
+
+  // Initialize: show state 1
+  showState(1);
+</script>
+
+</body>
+</html>
