@@ -420,6 +420,26 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "{project_root}" --section "{section_name}" --step 10 --status complete --session-id "{session_id}"
 ```
 
+### Step 15a: Record Work Event
+
+**CRITICAL — call this immediately per section, do NOT batch across sections.**
+
+```bash
+uv run {shared_root}/scripts/tools/record_event.py \
+  --project-root "{project_root}" \
+  --type work_completed --source build \
+  --split "{current_split}" --section "{section_name}" \
+  --commit "$(git rev-parse HEAD)" \
+  --tests-passed {tests_passed} --tests-total {tests_total} \
+  --review-type "{review_type}" \
+  --affected-frs "{comma_separated_FRs}" \
+  --deduplicate-by-commit
+```
+
+Where `{comma_separated_FRs}` is the list of FRs from the section spec. If the section spec does not reference specific FRs, use the split-level FR range.
+
+If this step fails: log WARNING but do not block — the event can be re-recorded later. The dashboard (Fix 2) has a config fallback that covers missing events.
+
 ## Output
 
 When complete, return a JSON object as the **last line of your response**:

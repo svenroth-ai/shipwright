@@ -351,7 +351,23 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
         for we in build_events:
             splits_seen.setdefault(we.get("split", "default"), []).append(we)
 
-        lines.append(f"## Build History ({len(build_events)} events)")
+        # Merge in completed sections from build config that may be missing from events
+        # (defends against event deduplication bugs or skipped record_event calls)
+        build_info = collect_all_build_sections(project_root)
+        for sec in build_info["all"]:
+            if sec.get("status") == "complete":
+                split = sec.get("split", "default")
+                if not any(e.get("section") == sec["name"] for e in splits_seen.get(split, [])):
+                    splits_seen.setdefault(split, []).append({
+                        "section": sec["name"], "commit": sec.get("commit", "?"),
+                        "split": split,
+                        "tests": {"passed": sec.get("tests_passed", 0), "total": sec.get("tests_total", 0)},
+                        "review": {"type": sec.get("review_type", "self")},
+                        "affected_frs": [],
+                    })
+
+        total_entries = sum(len(secs) for secs in splits_seen.values())
+        lines.append(f"## Build History ({total_entries} events)")
         lines.append("")
 
         for split_name, secs in splits_seen.items():
