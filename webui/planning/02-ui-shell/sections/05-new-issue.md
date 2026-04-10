@@ -23,6 +23,10 @@ Build the New Issue creation flow: a modal dialog with Title and Description fie
 | `client/src/hooks/useCreateTask.test.ts` | Tests for create + classify flow |
 | `client/src/components/board/IntentBadge.test.tsx` | Tests for intent badge rendering |
 
+## Design Reference
+
+- **Primary:** `designs/screens/12-new-issue.html` — Modal dialog layout, title + description fields, submit button placement, loading state
+
 ## Implementation Steps
 
 1. **Create `client/src/hooks/useCreateTask.ts`**:

@@ -34,6 +34,11 @@ Build the Kanban Dashboard as the default home screen: project tabs for filterin
 | `client/src/components/board/ProjectTabs.test.tsx` | Unit test: tab rendering, selection |
 | `client/src/components/board/KanbanColumn.test.tsx` | Unit test: column header, empty state |
 
+## Design Reference
+
+- **Primary:** `designs/screens/10-kanban-board.html` — Column layout (4 equal-width flex columns), card structure (title, phase tag, priority, test count, commit), project tabs, filter bar
+- **Secondary:** `designs/screens/17-empty-state.html` — Empty board state when no tasks exist
+
 ## Implementation Steps
 
 1. **Create `client/src/components/board/PhaseTag.tsx`**:

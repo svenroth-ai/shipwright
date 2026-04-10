@@ -42,6 +42,12 @@ Implement three full-page views that slot into the sidebar navigation: a Project
 |------|--------|
 | `client/src/App.tsx` | Add routes for /projects, /inbox, /settings |
 
+## Design Reference
+
+- **Primary:** `designs/screens/14-projects.html` — Projects list page (cards with status, last active, action buttons)
+- **Primary:** `designs/screens/13-global-inbox.html` — Global inbox view (pending questions across all projects)
+- **Primary:** `designs/screens/15-settings.html` — Settings page (global settings, per-project settings, phase mapping)
+
 ## Implementation Steps
 
 1. **Define settings types** in `client/src/types/settings.ts`:

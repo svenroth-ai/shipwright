@@ -28,6 +28,11 @@ Build the filter bar above the board with phase and priority filter dropdowns, a
 | `client/src/components/board/TaskListView.test.tsx` | Tests for list view rendering and sorting |
 | `client/src/components/board/StatusIcon.test.tsx` | Tests for status icon mapping |
 
+## Design Reference
+
+- **Primary:** `designs/screens/16-list-view.html` — Table layout (sortable columns), row structure, view toggle button
+- **Secondary:** `designs/screens/10-kanban-board.html` — Filter bar above board (phase dropdown, priority dropdown, view toggle)
+
 ## Implementation Steps
 
 1. **Create `client/src/hooks/useBoardFilters.ts`**:

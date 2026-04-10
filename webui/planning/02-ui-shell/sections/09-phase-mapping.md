@@ -20,6 +20,10 @@ Implement the phase-to-status mapping logic that determines which Kanban column 
 | `client/src/hooks/usePhaseMapping.test.ts` | Tests for hook behavior |
 | `client/src/components/board/PhaseMappingConfig.test.tsx` | Tests for config UI |
 
+## Design Reference
+
+- **Secondary:** `designs/screens/15-settings.html` — Settings page layout (phase mapping is a subsection of project settings)
+
 ## Implementation Steps
 
 1. **Create `client/src/lib/phaseMapping.ts`**:

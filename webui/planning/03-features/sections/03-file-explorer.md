@@ -26,6 +26,10 @@ Build a slide-in File Explorer panel inside the Task Detail view with a recursiv
 | `client/src/components/explorer/TreeNode.test.tsx` | Tests for node interaction |
 | `client/src/components/explorer/GitStatusBadge.test.tsx` | Tests for git status display |
 
+## Design Reference
+
+- **Primary:** `designs/screens/11-task-detail.html` — File Explorer slide-in panel (inside Task Detail right side), tree structure, toggle button
+
 ## Implementation Steps
 
 1. **Define explorer types** in `client/src/types/explorer.ts`:

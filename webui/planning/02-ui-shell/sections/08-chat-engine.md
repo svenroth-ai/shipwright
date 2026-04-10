@@ -51,6 +51,10 @@ Build the complete chat experience for the Task Detail view: user and assistant 
 | `client/src/hooks/useStreamingChat.test.ts` | Buffer timing, token accumulation |
 | `client/src/hooks/useAutoScroll.test.ts` | Auto-scroll on/off based on scroll position |
 
+## Design Reference
+
+- **Primary:** `designs/screens/02-chat-detail.html` — Message bubbles (user/assistant), tool-call cards (collapsed by default), AskUser cards, input toolbar layout, streaming indicator
+
 ## Implementation Steps
 
 1. **Create `client/src/hooks/useChatSettings.ts`**:

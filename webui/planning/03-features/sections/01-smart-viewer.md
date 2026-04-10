@@ -28,6 +28,10 @@ Build the Smart Viewer shell inside the Task Detail right panel with a scrollabl
 | `client/src/components/viewer/renderers/MarkdownRenderer.test.tsx` | Tests for Markdown rendering |
 | `client/src/hooks/useViewerTabs.test.ts` | Tests for tab state hook |
 
+## Design Reference
+
+- **Primary:** `designs/screens/11-task-detail.html` — Right panel (Viewer ~40%), tab bar, content area, tab management (open/close/switch)
+
 ## Implementation Steps
 
 1. **Define viewer types** in `client/src/types/viewer.ts`:

@@ -26,6 +26,11 @@ Build the persistent application shell: a 200px sidebar navigation on the left w
 | `client/src/components/sidebar/SidebarNav.test.tsx` | Tests for sidebar nav behavior |
 | `client/src/components/sidebar/InboxBadge.test.tsx` | Tests for badge rendering |
 
+## Design Reference
+
+- **Primary:** `designs/screens/01-ide-active.html` — Sidebar layout (200px, icon + text, active highlight, collapsible), main content area, header structure
+- **Visual guidelines:** `designs/visual-guidelines.md` (if exists) — colors, spacing, typography
+
 ## Implementation Steps
 
 1. **Create `client/src/router.tsx`** with React Router v7 `createBrowserRouter`:

@@ -26,6 +26,10 @@ Build the Task Detail page: a header bar with back navigation and task metadata,
 | `client/src/components/detail/PanelLayout.test.tsx` | Tests for panel layout and resize |
 | `client/src/components/detail/ViewerSlot.test.tsx` | Tests for placeholder and tab API |
 
+## Design Reference
+
+- **Primary:** `designs/screens/11-task-detail.html` — Two-panel layout (Chat ~60%, Viewer ~40%), header bar with back nav and task metadata, resizable drag handle
+
 ## Implementation Steps
 
 1. **Create `client/src/hooks/usePanelResize.ts`**:

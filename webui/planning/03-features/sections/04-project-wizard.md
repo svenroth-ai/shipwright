@@ -31,6 +31,10 @@ Build a full-screen modal wizard for creating new Shipwright projects. The wizar
 | `client/src/components/wizard/steps/ProjectInfoStep.test.tsx` | Tests for Step 1 validation |
 | `client/src/components/wizard/steps/EnvVarsStep.test.tsx` | Tests for dynamic env vars |
 
+## Design Reference
+
+- **Primary:** `designs/screens/05-project-wizard.html` — 4-step wizard modal (Directory, Profile, Plugins, Review), step indicator, navigation buttons, validation states
+
 ## Implementation Steps
 
 1. **Define wizard types** in `client/src/types/wizard.ts`:
