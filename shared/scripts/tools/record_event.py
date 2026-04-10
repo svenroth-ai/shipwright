@@ -104,11 +104,17 @@ def read_events(project_root: Path) -> list[dict]:
     return events
 
 
-def has_commit(project_root: Path, commit: str) -> bool:
-    """Check if a work_completed event with this commit already exists."""
+def has_commit(project_root: Path, commit: str, section: str | None = None) -> bool:
+    """Check if a work_completed event with this commit (and section) already exists.
+
+    When *section* is provided, deduplication checks (section, commit) tuple.
+    This prevents collapsing multiple sections that share the same commit hash.
+    Without section, falls back to commit-only check (backwards compat).
+    """
     for event in read_events(project_root):
         if event.get("type") == "work_completed" and event.get("commit") == commit:
-            return True
+            if section is None or event.get("section") == section:
+                return True
     return False
 
 
@@ -308,9 +314,10 @@ def main(argv: list[str] | None = None) -> int:
 
     # Deduplication checks
     if args.deduplicate_by_commit and args.commit:
-        if has_commit(project_root, args.commit):
+        section = getattr(args, "section", None)
+        if has_commit(project_root, args.commit, section=section):
             result = {"success": True, "skipped": True, "reason": "duplicate_commit",
-                      "commit": args.commit}
+                      "commit": args.commit, "section": section}
             print(json.dumps(result, indent=2))
             return 0
 
