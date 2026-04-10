@@ -49,6 +49,20 @@ def main() -> int:
         }, indent=2))
         return 0
 
+    # Check if designs/screens/ exists (from /shipwright-design phase)
+    project_root = planning_dir.parent
+    designs_dir = project_root / "designs" / "screens"
+    has_mockups = designs_dir.is_dir()
+    mockup_files = sorted(f.name for f in designs_dir.glob("*.html")) if has_mockups else []
+    mockup_hint = ""
+    if mockup_files:
+        mockup_hint = (
+            f"\n\nDesign mockups exist at designs/screens/: {', '.join(mockup_files)}.\n"
+            "If this section involves UI (pages, layouts, components), add a "
+            "`## Design Reference` block before `## Implementation Steps` listing "
+            "the relevant mockup(s). Match by name/content. Skip for non-UI sections."
+        )
+
     tasks = []
     for section_name in missing:
         prompt = (
@@ -56,6 +70,7 @@ def main() -> int:
             f"Read the plan at: {plan_path}\n"
             f"Write the section to: {planning_dir}/sections/{section_name}.md\n\n"
             f"The section should be self-contained for /shipwright-build."
+            f"{mockup_hint}"
         )
         tasks.append({"section": section_name, "prompt": prompt})
 
