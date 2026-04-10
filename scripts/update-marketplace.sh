@@ -205,6 +205,64 @@ else
     echo "  [!!] shared/ not found in marketplace"
 fi
 
+# Step 4: Create plugins/ directory with symlinks for cross-plugin references
+# Several plugins reference siblings via {plugin_root}/../../plugins/shipwright-run/
+# In the cache, plugins live at cache/shipwright/shipwright-run/0.2.0/ (flat, no plugins/ subdir).
+# We create cache/shipwright/plugins/shipwright-X -> ../shipwright-X/<version>/ symlinks
+# so that ../../plugins/shipwright-run resolves correctly.
+echo ""
+echo "Creating cross-plugin symlinks..."
+PLUGINS_LINK_DIR="$HOME/.claude/plugins/cache/shipwright/plugins"
+mkdir -p "$PLUGINS_LINK_DIR"
+
+links_created=0
+links_updated=0
+
+for plugin in "${PLUGINS[@]}"; do
+    plugin_key="${plugin}@${MARKETPLACE_NAME}"
+
+    # Get the installed cache path
+    cache_target=$(python -c "
+import json, sys, os
+try:
+    ip = os.path.expanduser('~/.claude/plugins/installed_plugins.json')
+    data = json.load(open(ip))
+    key = sys.argv[1]
+    entries = data.get('plugins', {}).get(key, [])
+    if entries:
+        print(entries[0]['installPath'].replace(chr(92), '/'))
+    else:
+        print('')
+except Exception:
+    print('')
+" "$plugin_key" 2>/dev/null)
+
+    if [ -z "$cache_target" ] || [ ! -d "$cache_target" ]; then
+        continue
+    fi
+
+    link_path="$PLUGINS_LINK_DIR/$plugin"
+
+    # Remove existing link/dir if it points elsewhere
+    if [ -L "$link_path" ]; then
+        current_target=$(readlink "$link_path")
+        if [ "$current_target" != "$cache_target" ]; then
+            rm "$link_path"
+            ln -s "$cache_target" "$link_path"
+            ((links_updated++)) || true
+        fi
+    elif [ ! -e "$link_path" ]; then
+        ln -s "$cache_target" "$link_path"
+        ((links_created++)) || true
+    fi
+done
+
+if [ "$links_created" -gt 0 ] || [ "$links_updated" -gt 0 ]; then
+    echo "  [OK] ${links_created} created, ${links_updated} updated"
+else
+    echo "  [OK] all symlinks up to date"
+fi
+
 # Clean up stale version dirs (e.g. 0.0.0 from failed syncs)
 echo ""
 echo "Cleaning stale cache directories..."
