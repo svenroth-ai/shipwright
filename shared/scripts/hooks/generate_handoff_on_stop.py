@@ -103,7 +103,12 @@ def main() -> int:
     # Guard: skip if not in a shipwright-managed project
     has_run_config = (project_root / "shipwright_run_config.json").exists()
     has_agent_docs = (project_root / "agent_docs").is_dir()
-    if not has_run_config and not has_agent_docs:
+    has_any_config = any(
+        (project_root / f).exists()
+        for f in ("shipwright_project_config.json", "shipwright_plan_config.json",
+                  "shipwright_build_config.json", "shipwright_events.jsonl")
+    )
+    if not has_run_config and not has_agent_docs and not has_any_config:
         return 0
 
     try:

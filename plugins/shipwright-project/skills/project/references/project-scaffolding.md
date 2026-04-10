@@ -56,12 +56,6 @@ Fill with:
 - `{ARCHITECTURE_RULES}` — from profile's `architecture_rules` (as bullet list)
 - `{FOLDER_STRUCTURE}` — from profile's `folder_structure` (as tree)
 
-### 5. agent_docs/current_sprint.md
-
-Load template from `{plugin_root}/../../shared/templates/agent-docs/current-sprint.md.template`.
-
-Initialize with first split name and "not_started" status.
-
 ## Config Output
 
 Write `shipwright_project_config.json` to the project root:

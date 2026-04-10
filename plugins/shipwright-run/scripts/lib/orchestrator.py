@@ -107,16 +107,33 @@ def create_config(
     deploy_target: str,
     project_root: Path,
 ) -> dict[str, Any]:
-    """Create initial orchestrator config."""
+    """Create initial orchestrator config.
+
+    If a standalone config exists (from prior /shipwright-project or similar),
+    merges its completed_steps so already-finished phases are not repeated.
+    """
+    pipeline = build_pipeline()
+
+    # Merge: carry over completed_steps from standalone invocations
+    existing = load_run_config(project_root)
+    prior_completed: list[str] = []
+    if existing.get("standalone") and existing.get("completed_steps"):
+        # Only keep steps that exist in the new pipeline
+        prior_completed = [s for s in existing["completed_steps"] if s in pipeline]
+
+    # Determine starting step (first uncompleted pipeline step)
+    remaining = [s for s in pipeline if s not in prior_completed]
+    current_step = remaining[0] if remaining else None
+
     config = {
         "scope": scope,
         "profile": profile,
         "autonomy": autonomy,
         "deploy_target": deploy_target,
-        "pipeline": build_pipeline(),
-        "status": "in_progress",
-        "current_step": "project",
-        "completed_steps": [],
+        "pipeline": pipeline,
+        "status": "in_progress" if current_step else "complete",
+        "current_step": current_step,
+        "completed_steps": prior_completed,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     save_run_config(project_root, config)
@@ -186,7 +203,7 @@ def _reset_tool_counter(project_root: Path) -> None:
 def update_step(project_root: Path, step: str, status: str, *, force: bool = False) -> dict[str, Any]:
     """Update a pipeline step's status.
 
-    On completion, runs phase validation first (unless force=True).
+    On completion, runs phase validation first (unless force=True or standalone).
     If validation returns ask-level issues, sets status to "needs_validation"
     and returns without marking complete. The caller (SKILL.md) should then
     ask the user and re-call with force=True if the user approves.
@@ -195,9 +212,23 @@ def update_step(project_root: Path, step: str, status: str, *, force: bool = Fal
     """
     config = load_run_config(project_root)
 
+    # Bootstrap: standalone invocation without /shipwright-run
+    if not config:
+        config = {
+            "pipeline": build_pipeline(),
+            "status": "in_progress",
+            "current_step": step,
+            "completed_steps": [],
+            "standalone": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+    # Standalone configs skip interactive validation (no user to answer)
+    is_standalone = config.get("standalone", False)
+
     if status == "complete":
-        # Phase validation gate
-        if not force:
+        # Phase validation gate (skip for standalone — no interactive user)
+        if not force and not is_standalone:
             from phase_validators import validate_phase
             valid, issues = validate_phase(step, project_root)
             ask_issues = [i for i in issues if i["severity"] == "ask"]

@@ -8,6 +8,7 @@ Usage:
     uv run record_event.py --project-root <path> --type <event_type> [options]
 
 Event types:
+    task_created     -- A new task/issue was created (user or pipeline)
     work_completed   -- A build section or iterate change finished
     phase_started    -- Pipeline phase began
     phase_completed  -- Pipeline phase validated and complete
@@ -111,6 +112,14 @@ def has_commit(project_root: Path, commit: str) -> bool:
     return False
 
 
+def has_phase_event(project_root: Path, phase: str) -> bool:
+    """Check if a phase_completed event for this phase already exists."""
+    for event in read_events(project_root):
+        if event.get("type") == "phase_completed" and event.get("phase") == phase:
+            return True
+    return False
+
+
 def build_event(args: argparse.Namespace) -> dict:
     """Build the event dict from parsed CLI arguments."""
     event: dict = {
@@ -126,7 +135,14 @@ def build_event(args: argparse.Namespace) -> dict:
         event["session"] = session
 
     # Type-specific fields
-    if args.type == "work_completed":
+    if args.type == "task_created":
+        event["description"] = args.description
+        if args.intent:
+            event["intent"] = args.intent
+        if args.priority:
+            event["priority"] = args.priority
+
+    elif args.type == "work_completed":
         event["source"] = args.source
         event["commit"] = args.commit
         # Tests block
@@ -233,8 +249,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Record a Shipwright event")
     p.add_argument("--project-root", required=True, help="Project root directory")
     p.add_argument("--type", required=True,
-                   choices=["work_completed", "phase_started", "phase_completed",
-                            "split_completed", "test_run", "event_amended"],
+                   choices=["task_created", "work_completed", "phase_started",
+                            "phase_completed", "split_completed", "test_run",
+                            "event_amended"],
                    help="Event type")
 
     # work_completed
@@ -243,7 +260,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--split", help="Split name (e.g. 01-foundation)")
     p.add_argument("--section", help="Section name (e.g. 01-project-setup)")
     p.add_argument("--intent", help="Iterate intent: feature | change | bug")
-    p.add_argument("--description", help="Iterate change description")
+    p.add_argument("--description", help="Task or iterate change description")
+    p.add_argument("--priority", help="Task priority: high | medium | low")
     p.add_argument("--affected-frs", help="Comma-separated FR IDs")
     p.add_argument("--new-frs", help="Comma-separated new FR IDs")
     p.add_argument("--spec-updated", help="Path to updated spec file")
@@ -288,11 +306,18 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     project_root = Path(args.project_root).resolve()
 
-    # Deduplication check
+    # Deduplication checks
     if args.deduplicate_by_commit and args.commit:
         if has_commit(project_root, args.commit):
             result = {"success": True, "skipped": True, "reason": "duplicate_commit",
                       "commit": args.commit}
+            print(json.dumps(result, indent=2))
+            return 0
+
+    if args.type == "phase_completed" and args.phase:
+        if has_phase_event(project_root, args.phase):
+            result = {"success": True, "skipped": True, "reason": "duplicate_phase",
+                      "phase": args.phase}
             print(json.dumps(result, indent=2))
             return 0
 

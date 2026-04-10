@@ -70,6 +70,18 @@ Read these files for stack and architecture context before generating mockups:
 
 If a file does not exist, skip it silently.
 
+**Early tracking:** Mark design phase as in-progress in the project config (for session handoff):
+```bash
+# Read existing project config, add design_phase field
+python3 -c "
+import json; from pathlib import Path
+p = Path('shipwright_project_config.json')
+c = json.loads(p.read_text()) if p.exists() else {}
+c['design_phase'] = 'in_progress'
+p.write_text(json.dumps(c, indent=2) + '\n')
+"
+```
+
 ---
 
 ## Step 1: Read Specs

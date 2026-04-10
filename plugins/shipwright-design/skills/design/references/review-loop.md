@@ -72,6 +72,11 @@ uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
 # Update delivery dashboard
 uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "$(pwd)" --phase design --session-id "{SHIPWRIGHT_SESSION_ID}"
+
+# Record phase completion event (idempotent — skips if already recorded)
+uv run {shared_root}/scripts/tools/record_event.py \
+  --project-root "$(pwd)" --type phase_completed --phase design \
+  --detail "{N} screens, {M} flows"
 ```
 Where `{shared_root}` = `{plugin_root}/../../shared`.
 

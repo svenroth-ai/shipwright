@@ -106,6 +106,13 @@ Read `{plugin_root}/config.json` for external review and E2E settings.
 
 Check for session-specific overrides in `{planning_dir}/shipwright_plan_config.json`.
 
+**Early config:** Write a minimal plan config for phase tracking (enables session handoff if user stops early):
+```bash
+uv run {plugin_root}/scripts/checks/write-plan-config.py \
+  --project-root "$(pwd)" --status in_progress
+```
+This will be overwritten with the full config at Step 9 (completion).
+
 ### F. Print Session Report
 
 ```
@@ -327,6 +334,10 @@ See [e2e-test-plan.md](references/e2e-test-plan.md) for guidance.
 
 **Phase complete — update pipeline state:**
 ```bash
+# Update plan config to complete
+uv run {plugin_root}/scripts/checks/write-plan-config.py \
+  --project-root "$(pwd)" --status complete --split "{split_name}" --sections {N}
+
 # Mark plan phase complete (triggers compliance update automatically)
 uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
   update-step --project-root "$(pwd)" --step plan --status complete
@@ -335,6 +346,11 @@ uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
 uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "$(pwd)" --phase plan --detail "{N} sections for {split_name}" \
   --session-id "{SHIPWRIGHT_SESSION_ID}"
+
+# Record phase completion event (idempotent — skips if already recorded)
+uv run {shared_root}/scripts/tools/record_event.py \
+  --project-root "$(pwd)" --type phase_completed --phase plan \
+  --detail "{N} sections for {split_name}"
 ```
 Where `{shared_root}` = `{plugin_root}/../../shared`.
 

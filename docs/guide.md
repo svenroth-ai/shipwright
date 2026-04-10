@@ -1231,7 +1231,6 @@ The `agent_docs/` directory is the project's knowledge base for AI agents. Its c
 | `architecture.md` | System overview, stack table, data flow, security model | `/shipwright-project` |
 | `conventions.md` | Code patterns, naming, git workflow, component examples | `/shipwright-project` |
 | `decision_log.md` | Architecture Decision Records (ADR format) | All phases |
-| `current_sprint.md` | Active split, section status table, blockers | `/shipwright-plan`, `/shipwright-build` |
 | `session_handoff.md` | Recovery document: last events, git state, resume instructions | Auto-generated on context pressure or session end |
 | `build_dashboard.md` | Project activity: recent changes, test status, pipeline, build history | Updated after every phase and iterate |
 | `compliance_overrides.log` | Audit log of hook overrides | Hooks (when user says "Continue anyway") |

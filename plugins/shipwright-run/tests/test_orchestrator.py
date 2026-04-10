@@ -322,6 +322,53 @@ def test_cli_get_build_progress(tmp_path):
     assert output["next_section"] == "02-api"
 
 
+# --- Standalone bootstrap ---
+
+def test_update_step_no_config_bootstraps(tmp_path):
+    """update_step with no run_config bootstraps a standalone config."""
+    config = update_step(tmp_path, "project", "complete", force=True)
+    assert config["standalone"] is True
+    assert "project" in config["completed_steps"]
+    assert config["pipeline"]  # should have default pipeline
+    assert (tmp_path / "shipwright_run_config.json").exists()
+
+
+def test_update_step_standalone_skips_validation(tmp_path, mocker):
+    """Standalone configs skip phase validation (no interactive user)."""
+    mock_validate = mocker.patch("phase_validators.validate_phase", return_value=(True, []))
+    mocker.patch("orchestrator.run_compliance_update", return_value=None)
+    # Bootstrap + complete in one call (no force)
+    config = update_step(tmp_path, "project", "complete")
+    # validate_phase should NOT have been called (standalone skips it)
+    mock_validate.assert_not_called()
+    assert "project" in config["completed_steps"]
+
+
+def test_standalone_then_run_merges(tmp_path):
+    """Switching from standalone to orchestrator preserves completed_steps."""
+    # Simulate standalone completion
+    standalone = {
+        "standalone": True,
+        "pipeline": ["project", "design", "plan", "build", "test", "changelog", "deploy", "compliance"],
+        "status": "in_progress",
+        "current_step": "design",
+        "completed_steps": ["project"],
+    }
+    (tmp_path / "shipwright_run_config.json").write_text(
+        json.dumps(standalone), encoding="utf-8"
+    )
+
+    # Now create orchestrator config (simulating /shipwright-run)
+    config = create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_path)
+
+    # project should be carried over as completed
+    assert "project" in config["completed_steps"]
+    # current_step should be next after project (design)
+    assert config["current_step"] == "design"
+    # standalone flag should be gone (new config is not standalone)
+    assert "standalone" not in config
+
+
 # --- CLI ---
 
 def test_cli_write_config(tmp_path):
