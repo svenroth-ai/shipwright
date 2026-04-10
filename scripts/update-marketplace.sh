@@ -146,6 +146,65 @@ except Exception as e:
     ((synced++)) || true
 done
 
+# Step 3: Sync shared/ directory into cache root
+# Plugins reference {plugin_root}/../../shared/ which resolves to cache/shipwright/shared/
+# Without this, all finalization scripts (record_event, artifact_sync, etc.) are unreachable.
+echo ""
+echo "Syncing shared/ directory..."
+SHARED_SRC="$MARKETPLACE_DIR/shared"
+SHARED_TARGET="$HOME/.claude/plugins/cache/shipwright/shared"
+
+if [ -d "$SHARED_SRC" ]; then
+    mkdir -p "$SHARED_TARGET"
+
+    shared_changed=0
+    shared_added=0
+
+    while IFS= read -r -d '' file; do
+        rel_path="${file#$SHARED_SRC/}"
+        target_file="$SHARED_TARGET/$rel_path"
+        target_dir="$(dirname "$target_file")"
+
+        mkdir -p "$target_dir"
+
+        if [ ! -f "$target_file" ]; then
+            cp "$file" "$target_file"
+            ((shared_added++)) || true
+        elif ! diff -q --strip-trailing-cr "$file" "$target_file" > /dev/null 2>&1; then
+            cp "$file" "$target_file"
+            ((shared_changed++)) || true
+        fi
+    done < <(find "$SHARED_SRC" -type f \
+        -not -path "*/__pycache__/*" \
+        -not -path "*/.venv/*" \
+        -not -path "*/.pytest_cache/*" \
+        -not -name "*.pyc" \
+        -print0)
+
+    # Remove files in cache that no longer exist in source
+    shared_removed=0
+    while IFS= read -r -d '' cached_file; do
+        rel_path="${cached_file#$SHARED_TARGET/}"
+        src_file="$SHARED_SRC/$rel_path"
+        if [ ! -f "$src_file" ]; then
+            rm "$cached_file"
+            ((shared_removed++)) || true
+        fi
+    done < <(find "$SHARED_TARGET" -type f \
+        -not -path "*/__pycache__/*" \
+        -not -path "*/.venv/*" \
+        -not -path "*/.pytest_cache/*" \
+        -print0)
+
+    if [ "$shared_changed" -gt 0 ] || [ "$shared_added" -gt 0 ] || [ "$shared_removed" -gt 0 ]; then
+        echo "  [OK] shared: ${shared_added} added, ${shared_changed} updated, ${shared_removed} removed"
+    else
+        echo "  [OK] shared: up to date"
+    fi
+else
+    echo "  [!!] shared/ not found in marketplace"
+fi
+
 # Clean up stale version dirs (e.g. 0.0.0 from failed syncs)
 echo ""
 echo "Cleaning stale cache directories..."
