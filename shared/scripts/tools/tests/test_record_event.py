@@ -18,6 +18,7 @@ from scripts.tools.record_event import (
     build_event,
     generate_event_id,
     has_commit,
+    has_phase_event,
     main as record_main,
     parse_args,
     read_events,
@@ -133,6 +134,48 @@ class TestDeduplication:
         assert result == 0
         assert len(read_events(project)) == 1  # Still 1
 
+    def test_has_phase_event_true(self, project):
+        event = {"v": 1, "id": "evt-phase01", "ts": "T",
+                 "type": "phase_completed", "phase": "project"}
+        append_event(project, event)
+        assert has_phase_event(project, "project") is True
+
+    def test_has_phase_event_false(self, project):
+        assert has_phase_event(project, "project") is False
+
+    def test_phase_completed_dedup(self, project):
+        """Second phase_completed for same phase is automatically skipped."""
+        # First write
+        result = record_main([
+            "--project-root", str(project),
+            "--type", "phase_completed",
+            "--phase", "project",
+            "--detail", "3 splits created",
+        ])
+        assert result == 0
+        assert len(read_events(project)) == 1
+
+        # Second write — should be skipped (same phase)
+        result = record_main([
+            "--project-root", str(project),
+            "--type", "phase_completed",
+            "--phase", "project",
+        ])
+        assert result == 0
+        assert len(read_events(project)) == 1  # Still 1
+
+    def test_phase_completed_different_phases_not_deduped(self, project):
+        """phase_completed for different phases are NOT deduped."""
+        record_main([
+            "--project-root", str(project),
+            "--type", "phase_completed", "--phase", "project",
+        ])
+        record_main([
+            "--project-root", str(project),
+            "--type", "phase_completed", "--phase", "plan",
+        ])
+        assert len(read_events(project)) == 2
+
 
 # ---------------------------------------------------------------------------
 # Event building
@@ -180,6 +223,32 @@ class TestBuildEvent:
         assert event["tests"] == {"new": 3, "passed": 47, "total": 47}
         assert event["new_frs"] == ["FR-02.08"]
         assert event["adr_id"] == "ADR-055"
+
+    def test_task_created_minimal(self):
+        args = parse_args([
+            "--project-root", "/tmp",
+            "--type", "task_created",
+            "--description", "Fix auth redirect bug",
+        ])
+        event = build_event(args)
+        assert event["type"] == "task_created"
+        assert event["description"] == "Fix auth redirect bug"
+        assert "intent" not in event
+        assert "priority" not in event
+
+    def test_task_created_full(self):
+        args = parse_args([
+            "--project-root", "/tmp",
+            "--type", "task_created",
+            "--description", "Add search feature",
+            "--intent", "feature",
+            "--priority", "high",
+        ])
+        event = build_event(args)
+        assert event["type"] == "task_created"
+        assert event["description"] == "Add search feature"
+        assert event["intent"] == "feature"
+        assert event["priority"] == "high"
 
     def test_phase_completed(self):
         args = parse_args([

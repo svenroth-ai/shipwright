@@ -32,7 +32,7 @@ For any code changes after the initial build (features, bug fixes, refactoring, 
 
 **Read on demand** (volatile, changes per session):
 - @agent_docs/decision_log.md — when making or reviewing decisions
-- @agent_docs/current_sprint.md — when checking progress or planning next steps
+- @agent_docs/build_dashboard.md — when checking progress or planning next steps
 - @agent_docs/session_handoff.md — when resuming after a pause or /clear
 
 **Other references:**

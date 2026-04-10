@@ -48,6 +48,73 @@ def test_detect_phase_fallback_heuristic(tmp_project):
     assert detect_current_phase(tmp_project) == "build"
 
 
+def test_detect_phase_standalone_project_in_progress(tmp_project):
+    """Standalone: only project_config with in_progress → returns 'project'."""
+    (tmp_project / "shipwright_project_config.json").write_text(
+        json.dumps({"status": "in_progress", "scope": "full_app"}), encoding="utf-8"
+    )
+    assert detect_current_phase(tmp_project) == "project"
+
+
+def test_detect_phase_standalone_project_complete(tmp_project):
+    """Standalone: project complete → returns 'design' (next step)."""
+    (tmp_project / "shipwright_project_config.json").write_text(
+        json.dumps({"status": "complete"}), encoding="utf-8"
+    )
+    assert detect_current_phase(tmp_project) == "design"
+
+
+def test_detect_phase_standalone_design_in_progress(tmp_project):
+    """Standalone: design in progress (flag in project_config) → returns 'design'."""
+    (tmp_project / "shipwright_project_config.json").write_text(
+        json.dumps({"status": "complete", "design_phase": "in_progress"}),
+        encoding="utf-8",
+    )
+    assert detect_current_phase(tmp_project) == "design"
+
+
+def test_detect_phase_standalone_design_complete(tmp_project):
+    """Standalone: design complete → returns 'plan' (next step)."""
+    (tmp_project / "shipwright_project_config.json").write_text(
+        json.dumps({"status": "complete", "design_phase": "complete"}),
+        encoding="utf-8",
+    )
+    assert detect_current_phase(tmp_project) == "plan"
+
+
+def test_detect_phase_standalone_plan_in_progress(tmp_project):
+    """Standalone: plan in progress → returns 'plan'."""
+    (tmp_project / "shipwright_project_config.json").write_text(
+        json.dumps({"status": "complete", "design_phase": "complete"}),
+        encoding="utf-8",
+    )
+    (tmp_project / "shipwright_plan_config.json").write_text(
+        json.dumps({"status": "in_progress"}), encoding="utf-8"
+    )
+    assert detect_current_phase(tmp_project) == "plan"
+
+
+def test_detect_phase_standalone_plan_complete(tmp_project):
+    """Standalone: plan complete → returns 'build' (next step)."""
+    (tmp_project / "shipwright_plan_config.json").write_text(
+        json.dumps({"status": "complete"}), encoding="utf-8"
+    )
+    assert detect_current_phase(tmp_project) == "build"
+
+
+def test_detect_phase_stale_build_config_skipped(tmp_project):
+    """Stale build config with all-complete sections is ignored."""
+    (tmp_project / "shipwright_plan_config.json").write_text(
+        json.dumps({"status": "in_progress"}), encoding="utf-8"
+    )
+    (tmp_project / "shipwright_build_config.json").write_text(
+        json.dumps({"sections": [{"name": "01-x", "status": "complete"}]}),
+        encoding="utf-8",
+    )
+    # Plan in_progress should win over stale completed build
+    assert detect_current_phase(tmp_project) == "plan"
+
+
 def test_get_checkpoint_empty(tmp_project):
     checkpoint = get_checkpoint(tmp_project)
     assert checkpoint["phase"] == "not_started"

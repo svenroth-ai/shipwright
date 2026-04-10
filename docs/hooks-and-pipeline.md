@@ -339,8 +339,12 @@ The unified event log (`shipwright_events.jsonl`) is written to by these compone
 
 | Emitter | Event Type | When | Detail |
 |---------|-----------|------|--------|
+| WebUI / Iterate SKILL.md | `task_created` | User creates task or iterate starts | description, intent?, priority? |
+| Project SKILL.md (Step 8) | `phase_completed` (phase=project) | Scaffolding + specs validated | Split count via `--detail` |
+| Design review-loop.md (finalize) | `phase_completed` (phase=design) | Design finalized | Screen/flow count via `--detail` |
+| Plan SKILL.md (Step 9) | `phase_completed` (phase=plan) | Sections validated | Section count via `--detail` |
 | Orchestrator (between phases) | `phase_started` | Phase begins | — |
-| Orchestrator (between phases) | `phase_completed` | Phase validated + complete | — |
+| Orchestrator (between phases) | `phase_completed` | Phase validated + complete | — (deduplicated by record_event.py) |
 | Orchestrator (split loop) | `split_completed` | All sections of a split done | — |
 | Build SKILL.md (Step 10) | `work_completed` (source=build) | Section committed | — |
 | Iterate SKILL.md (F3.5) | `work_completed` (source=iterate) | Iterate change committed | — |

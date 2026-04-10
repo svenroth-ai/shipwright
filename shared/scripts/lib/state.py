@@ -14,35 +14,55 @@ from .config import read_all_configs
 def detect_current_phase(project_root: str | Path) -> str:
     """Detect which SDLC phase the project is currently in.
 
-    Returns one of: 'not_started', 'project', 'plan', 'build', 'test',
-    'changelog', 'deploy', 'complete'.
+    Returns one of: 'not_started', 'project', 'design', 'plan', 'build',
+    'test', 'changelog', 'deploy', 'complete'.
+
+    Two detection paths:
+    1. Primary: orchestrator's current_step (when /shipwright-run is used)
+    2. Fallback: heuristic from phase-specific configs (standalone invocation)
     """
     configs = read_all_configs(project_root)
 
-    if not configs["run"]:
-        return "not_started"
-
-    # Primary: use orchestrator's current_step (authoritative source)
+    # Primary: use orchestrator's current_step (authoritative when present)
     run = configs["run"]
-    current = run.get("current_step")
-    completed = run.get("completed_steps", [])
-    if current:
-        return current
-    # All pipeline steps completed
-    pipeline = run.get("pipeline", [])
-    if pipeline and set(pipeline).issubset(set(completed)):
-        return "complete"
+    if run:
+        current = run.get("current_step")
+        if current:
+            return current
+        # All pipeline steps completed
+        pipeline = run.get("pipeline", [])
+        completed = run.get("completed_steps", [])
+        if pipeline and set(pipeline).issubset(set(completed)):
+            return "complete"
 
-    # Fallback: heuristic for projects without run_config.current_step
+    # Fallback: heuristic for standalone invocation (no run_config or
+    # run_config without current_step). Check in-progress phases first,
+    # then derive next step from completed phases.
     build = configs["build"]
     if build.get("sections"):
-        return "build"
+        sections = build["sections"]
+        if any(s.get("status") != "complete" for s in sections):
+            return "build"
 
-    if configs["plan"].get("status") in ("in_progress", "complete"):
+    if configs["plan"].get("status") == "in_progress":
         return "plan"
 
-    if configs["project"].get("status") in ("in_progress", "complete"):
+    project = configs["project"]
+    if project.get("design_phase") == "in_progress":
+        return "design"
+
+    if project.get("status") == "in_progress":
         return "project"
+
+    # Completed phases: derive what comes next
+    if configs["plan"].get("status") == "complete":
+        return "build"
+
+    if project.get("design_phase") == "complete":
+        return "plan"
+
+    if project.get("status") == "complete":
+        return "design"
 
     return "not_started"
 

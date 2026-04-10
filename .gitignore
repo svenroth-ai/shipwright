@@ -41,8 +41,13 @@ coverage/
 
 # Shipwright runtime artifacts (generated in target projects, not in this repo)
 shipwright_*_config.json
+shipwright_events.jsonl
+shipwright_events.jsonl.lock
 agent_docs/session_handoff.md
+agent_docs/build_dashboard.md
+agent_docs/current_sprint.md
 .shipwright_toolcall_count
+compliance/
 
 # UV
 .uv/

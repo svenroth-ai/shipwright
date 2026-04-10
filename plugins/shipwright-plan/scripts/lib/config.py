@@ -36,7 +36,12 @@ def load_session_config(planning_dir: str | Path) -> dict[str, Any]:
 
 
 def save_session_config(planning_dir: str | Path, config: dict[str, Any]) -> None:
-    """Save session-specific config."""
+    """Save session-specific config to the planning directory.
+
+    DEPRECATED for shared pipeline state: this writes to {planning_dir}/,
+    but shared/scripts/lib/config.py reads from {project_root}/. Use
+    write-plan-config.py for pipeline-visible config instead.
+    """
     path = Path(planning_dir) / SESSION_CONFIG_NAME
     path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
 
