@@ -719,7 +719,7 @@ uv run {shared_root}/scripts/tools/record_event.py \
 ### F8: Update Compliance
 
 ```bash
-uv run {shared_root}/../../plugins/shipwright-compliance/scripts/tools/update_compliance.py \
+uv run {plugin_root}/../../plugins/shipwright-compliance/scripts/tools/update_compliance.py \
   --project-root "{project_root}" --phase iterate
 ```
 
