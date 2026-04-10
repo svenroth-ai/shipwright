@@ -1,0 +1,20 @@
+# Shipwright pipeline artifacts
+# NOTE: planning/, designs/, agent_docs/, configs are tracked for this project
+# because they ARE the project (not transient build artifacts of a target project)
+
+# Un-ignore what the root .gitignore blocks (this IS the WebUI project)
+!planning/
+!designs/
+!agent_docs/
+!shipwright_*_config.json
+
+# Runtime-only files (not tracked)
+shipwright_events.jsonl
+shipwright_events.jsonl.lock
+.shipwright-webui/
+.shipwright_toolcall_count
+
+# Build artifacts
+node_modules/
+dist/
+*.tsbuildinfo
