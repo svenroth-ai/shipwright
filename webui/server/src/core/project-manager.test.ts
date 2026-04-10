@@ -1,0 +1,109 @@
+import { describe, it, expect, vi } from "vitest";
+import { ProjectManager } from "./project-manager.js";
+import type { ProjectManagerDeps } from "./project-manager.js";
+
+function mockDeps(initialData: string = "[]"): ProjectManagerDeps {
+  const store: Record<string, string> = {};
+  return {
+    readFile: vi.fn(async (path: string) => store[path] ?? initialData),
+    writeFile: vi.fn(async (path: string, data: string) => { store[path] = data; }),
+    existsSync: vi.fn(() => true),
+    mkdirSync: vi.fn(),
+    readdirSync: vi.fn(() => []),
+  };
+}
+
+describe("ProjectManager", () => {
+  it("create assigns UUID, sets timestamps, persists", () => {
+    const deps = mockDeps();
+    const pm = new ProjectManager("/tmp/projects.json", deps);
+    const p = pm.create({ name: "Test", path: "/tmp/proj", profile: "default", status: "active" });
+    expect(p.id).toBeDefined();
+    expect(p.createdAt).toBeDefined();
+    expect(p.lastActive).toBeDefined();
+    expect(deps.writeFile).toHaveBeenCalled();
+  });
+
+  it("getAll returns projects sorted by lastActive desc", async () => {
+    const projects = [
+      { id: "p1", name: "Old", path: "/tmp/a", profile: "default", status: "active" as const, createdAt: "2026-01-01T00:00:00Z", lastActive: "2026-01-01T00:00:00Z" },
+      { id: "p2", name: "New", path: "/tmp/b", profile: "default", status: "active" as const, createdAt: "2026-01-02T00:00:00Z", lastActive: "2026-01-02T00:00:00Z" },
+    ];
+    const deps = mockDeps(JSON.stringify(projects));
+    const pm = new ProjectManager("/tmp/projects.json", deps);
+    await pm.load();
+    const all = pm.getAll();
+    expect(all[0].name).toBe("New");
+    expect(all[1].name).toBe("Old");
+  });
+
+  it("update merges patch and updates lastActive", () => {
+    const deps = mockDeps();
+    const pm = new ProjectManager("/tmp/projects.json", deps);
+    const p = pm.create({ name: "Test", path: "/tmp/proj", profile: "default", status: "active" });
+    const updated = pm.update(p.id, { name: "Updated" });
+    expect(updated.name).toBe("Updated");
+    expect(new Date(updated.lastActive).getTime()).toBeGreaterThanOrEqual(new Date(p.lastActive).getTime());
+  });
+
+  it("delete removes from map and persists", () => {
+    const deps = mockDeps();
+    const pm = new ProjectManager("/tmp/projects.json", deps);
+    const p = pm.create({ name: "Test", path: "/tmp/proj", profile: "default", status: "active" });
+    pm.delete(p.id);
+    expect(pm.getById(p.id)).toBeUndefined();
+  });
+
+  it("load with non-existent file creates directory and empty registry", async () => {
+    const deps = mockDeps();
+    (deps.existsSync as any).mockReturnValue(false);
+    const pm = new ProjectManager("/tmp/.shipwright-webui/projects.json", deps);
+    await pm.load();
+    expect(deps.mkdirSync).toHaveBeenCalled();
+    expect(deps.writeFile).toHaveBeenCalledWith("/tmp/.shipwright-webui/projects.json", "[]");
+  });
+
+  it("load with existing file populates map", async () => {
+    const projects = [{ id: "p1", name: "Test", path: "/tmp", profile: "default", status: "active", createdAt: "2026-01-01", lastActive: "2026-01-01" }];
+    const deps = mockDeps(JSON.stringify(projects));
+    const pm = new ProjectManager("/tmp/projects.json", deps);
+    await pm.load();
+    expect(pm.getById("p1")).toBeDefined();
+  });
+
+  it("discover finds directories with config files", () => {
+    const deps = mockDeps();
+    (deps.readdirSync as any).mockReturnValue([
+      { name: "proj1", isDirectory: () => true },
+      { name: "proj2", isDirectory: () => true },
+      { name: "file.txt", isDirectory: () => false },
+    ]);
+    (deps.existsSync as any).mockImplementation((p: string) =>
+      p.includes("proj1/shipwright_run_config.json") || p.includes("proj2/shipwright_project_config.json")
+    );
+    const pm = new ProjectManager("/tmp/projects.json", deps);
+    const found = pm.discover("/projects");
+    expect(found).toHaveLength(2);
+  });
+
+  it("discover ignores dirs without config", () => {
+    const deps = mockDeps();
+    (deps.readdirSync as any).mockReturnValue([{ name: "noconfig", isDirectory: () => true }]);
+    (deps.existsSync as any).mockReturnValue(false);
+    const pm = new ProjectManager("/tmp/projects.json", deps);
+    expect(pm.discover("/projects")).toHaveLength(0);
+  });
+
+  it("getById returns undefined for non-existent", () => {
+    const deps = mockDeps();
+    const pm = new ProjectManager("/tmp/projects.json", deps);
+    expect(pm.getById("nonexistent")).toBeUndefined();
+  });
+
+  it("create with non-existent path throws 400", () => {
+    const deps = mockDeps();
+    (deps.existsSync as any).mockReturnValue(false);
+    const pm = new ProjectManager("/tmp/projects.json", deps);
+    expect(() => pm.create({ name: "Test", path: "/nope", profile: "default", status: "active" })).toThrow();
+  });
+});
