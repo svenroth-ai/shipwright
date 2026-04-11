@@ -4,9 +4,11 @@ import { useTasks } from '../hooks/useTasks';
 import { ProjectTabs } from '../components/board/ProjectTabs';
 import { KanbanBoard } from '../components/board/KanbanBoard';
 import { NewIssueButton } from '../components/board/NewIssueButton';
+import { NewIssueModal } from '../components/board/NewIssueModal';
 
 export default function KanbanPage() {
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [showNewIssue, setShowNewIssue] = useState(false);
   const { data: projects = [] } = useProjects();
   const { data: tasks = [], isLoading, isError, refetch } = useTasks(activeProjectId ?? undefined);
 
@@ -21,7 +23,7 @@ export default function KanbanPage() {
         />
         <div className="flex items-center gap-2">
           {/* Filter bar slot — Section 06 */}
-          <NewIssueButton onClick={() => {/* Section 05 wires modal */}} />
+          <NewIssueButton onClick={() => setShowNewIssue(true)} />
         </div>
       </div>
 
@@ -47,6 +49,13 @@ export default function KanbanPage() {
           <KanbanBoard tasks={tasks} />
         )}
       </div>
+
+      <NewIssueModal
+        open={showNewIssue}
+        onOpenChange={setShowNewIssue}
+        activeProjectId={activeProjectId}
+        projects={projects}
+      />
     </div>
   );
 }
