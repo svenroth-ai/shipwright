@@ -53,7 +53,7 @@ Build the complete chat experience for the Task Detail view: user and assistant 
 
 ## Design Reference
 
-- **Primary:** `designs/screens/02-chat-detail.html` — Message bubbles (user/assistant), tool-call cards (collapsed by default), AskUser cards, input toolbar layout, streaming indicator
+- **Primary:** `designs/screens/11-task-detail.html` — Message bubbles (user/assistant), tool-call cards (collapsed by default), AskUser cards, input toolbar layout, streaming indicator
 
 ## Implementation Steps
 

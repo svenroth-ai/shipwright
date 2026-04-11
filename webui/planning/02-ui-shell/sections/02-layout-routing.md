@@ -28,7 +28,7 @@ Build the persistent application shell: a 200px sidebar navigation on the left w
 
 ## Design Reference
 
-- **Primary:** `designs/screens/01-ide-active.html` — Sidebar layout (200px, icon + text, active highlight, collapsible), main content area, header structure
+- **Primary:** `designs/screens/10-kanban-board.html` — Sidebar layout (200px, icon + text, active highlight, collapsible), main content area, header structure
 - **Visual guidelines:** `designs/visual-guidelines.md` (if exists) — colors, spacing, typography
 
 ## Implementation Steps
