@@ -3,6 +3,7 @@ import type { ShipwrightEvent } from "../../../client/src/types/event.js";
 export interface WriterDeps {
   appendFile: (path: string, data: string) => Promise<void>;
   lock: (path: string) => Promise<() => Promise<void>>;
+  ensureDir?: (path: string) => void;
 }
 
 export async function appendEvent(
@@ -10,6 +11,11 @@ export async function appendEvent(
   event: ShipwrightEvent,
   deps: WriterDeps
 ): Promise<void> {
+  // Ensure parent directory exists before lock/write
+  if (deps.ensureDir) {
+    const dir = filePath.substring(0, Math.max(filePath.lastIndexOf("/"), filePath.lastIndexOf("\\")));
+    if (dir) deps.ensureDir(dir);
+  }
   const release = await deps.lock(filePath);
   try {
     await deps.appendFile(filePath, JSON.stringify(event) + "\n");

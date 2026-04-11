@@ -17,7 +17,7 @@ function setup() {
     update: vi.fn((id: string, patch: any) => ({ ...mockProject, ...patch })),
     delete: vi.fn(),
   } as any;
-  const fileWatcher = { unwatchProject: vi.fn() } as any;
+  const fileWatcher = { unwatchProject: vi.fn(), watchProject: vi.fn() } as any;
   const eventStore = {} as any;
   const sseManager = { broadcast: vi.fn() } as any;
 
@@ -76,5 +76,42 @@ describe("Project Routes", () => {
     const { app } = setup();
     const res = await app.request("/api/projects/nonexistent");
     expect(res.status).toBe(404);
+  });
+
+  it("POST /api/projects initializes project directory with config files", async () => {
+    const projectManager = {
+      getAll: vi.fn(() => []),
+      create: vi.fn((data: any) => ({ ...mockProject, ...data })),
+    } as any;
+    const fileWatcher = { unwatchProject: vi.fn(), watchProject: vi.fn() } as any;
+    const eventStore = {} as any;
+    const sseManager = { broadcast: vi.fn() } as any;
+    const fsDeps = {
+      existsSync: vi.fn(() => false),
+      mkdirSync: vi.fn(),
+      writeFileSync: vi.fn(),
+    };
+
+    const app = new Hono();
+    app.onError(errorHandler);
+    app.route("/", createProjectRoutes(projectManager, fileWatcher, eventStore, sseManager, fsDeps));
+
+    const res = await app.request("/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "New App", path: "/tmp/new-app", profile: "supabase-nextjs" }),
+    });
+    expect(res.status).toBe(201);
+    // Directory was created
+    expect(fsDeps.mkdirSync).toHaveBeenCalled();
+    // Run config was written
+    expect(fsDeps.writeFileSync).toHaveBeenCalled();
+    const writtenPath = fsDeps.writeFileSync.mock.calls[0][0];
+    expect(writtenPath).toContain("shipwright_run_config.json");
+    const writtenContent = JSON.parse(fsDeps.writeFileSync.mock.calls[0][1]);
+    expect(writtenContent.profile).toBe("supabase-nextjs");
+    expect(writtenContent.project_summary.name).toBe("New App");
+    // File watcher was started for the new project
+    expect(fileWatcher.watchProject).toHaveBeenCalled();
   });
 });

@@ -25,9 +25,9 @@ export default function KanbanPage() {
   const filters = useBoardFilters();
   const filteredTasks = filters.filterTasks(tasks);
 
-  // Keyboard shortcut: Ctrl/Cmd+N to open new task
+  // Keyboard shortcut: Ctrl/Cmd+Shift+N to open new task (Ctrl+N is browser-reserved)
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'N') {
       e.preventDefault();
       setShowNewIssue(true);
     }
