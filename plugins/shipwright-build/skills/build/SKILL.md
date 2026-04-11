@@ -180,13 +180,16 @@ Parse the JSON output:
 
 **Always create a feature branch before making changes.**
 
+The setup script (Step D) returns `branch_name` in its JSON output. Use it directly:
+
 ```bash
-git checkout -b {branch_prefix}/{section_name}
+git checkout -b {branch_name}
 ```
 
-Example: `shipwright/01-auth`
+Branch naming pattern: `build/{project-slug}-{session-id}` (e.g., `build/my-app-20260411-120000`).
+Fallback without run config: `build/{session-id}`. Fallback without session-id: `build/{section-name}`.
 
-If branch already exists (resume): `git checkout {branch_prefix}/{section_name}`
+If branch already exists (resume): `git checkout {branch_name}`
 
 ### F. Load Config
 
@@ -211,7 +214,7 @@ SESSION REPORT
 ================================================================================
 Mode:           {new | resume}
 Section:        {section_name}
-Branch:         {branch_prefix}/{section_name}
+Branch:         {branch_name}
 Auto-push:      {enabled | disabled}
 Migration safe: {enabled | disabled}
 {Resume from:   Step {N} (if resuming)}
@@ -607,7 +610,7 @@ git commit -m "<message>"
 
 **Auto-push** (if enabled in config):
 ```bash
-git push -u origin {branch_prefix}/{section_name}
+git push -u origin {branch_name}
 ```
 
 **Dashboard update + context pressure check:**
@@ -786,7 +789,7 @@ This writes `agent_docs/session_handoff.md` so the next session can resume.
 1. All tests pass
 2. Code review completed
 3. Commit created with Conventional Commits format
-4. On feature branch `{branch_prefix}/{section_name}`
+4. On feature branch `{branch_name}`
 5. Decision log updated (if enabled)
 
 **Print Summary:**
@@ -795,13 +798,13 @@ This writes `agent_docs/session_handoff.md` so the next session can resume.
 SHIPWRIGHT-BUILD COMPLETE
 ================================================================================
 Section:    {section_name}
-Branch:     {branch_prefix}/{section_name}
+Branch:     {branch_name}
 Commit:     {commit_hash}
 Tests:      {N} passing
 Review:     {N} findings ({accepted} fixed, {declined} declined)
 
 Next steps:
-  1. Review changes: git log --oneline {branch_prefix}/{section_name}
+  1. Review changes: git log --oneline {branch_name}
   2. Build next section: /shipwright-build @sections/02-name.md
   3. When all sections done: /shipwright-changelog to create PR
 ================================================================================

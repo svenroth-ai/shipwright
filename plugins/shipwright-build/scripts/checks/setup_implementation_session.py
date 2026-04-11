@@ -82,21 +82,29 @@ def main() -> int:
     project_root = detect_project_root(section_path)
     config = load_build_config(project_root)
 
-    # Derive branch prefix from project name in run config, fallback to "shipwright"
-    branch_prefix = "shipwright"
+    # Derive branch name from session-id + project-slug (not section name)
+    # Pattern: build/{slug}-{session-id} or build/{session-id} or build/{section-name}
+    slug = ""
     run_config_path = project_root / "shipwright_run_config.json"
     if run_config_path.exists():
         try:
             run_config = json.loads(run_config_path.read_text(encoding="utf-8"))
             project_name = run_config.get("project_summary", {}).get("name", "")
             if project_name:
-                slug = re.sub(r"[^a-z0-9]+", "-", project_name.lower()).strip("-")
-                if slug:
-                    branch_prefix = slug
+                slug = re.sub(r"[^a-z0-9]+", "-", project_name.lower()).strip("-")[:20].rstrip("-")
         except (json.JSONDecodeError, OSError):
-            pass  # keep default
+            pass
 
-    branch_name = f"{branch_prefix}/{section_name}"
+    session_short = ""
+    if args.session_id:
+        session_short = args.session_id.replace("build-", "")
+
+    if slug and session_short:
+        branch_name = f"build/{slug}-{session_short}"
+    elif session_short:
+        branch_name = f"build/{session_short}"
+    else:
+        branch_name = f"build/{section_name}"
     branch_exists = check_branch_exists(branch_name)
 
     result = {

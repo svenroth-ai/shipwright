@@ -26,7 +26,7 @@ def test_setup_new_session(sample_section):
 
     assert output["success"] is True
     assert output["section_name"] == "01-auth"
-    assert output["branch_name"] == "shipwright/01-auth"
+    assert output["branch_name"] == "build/test-1"
     assert output["session_id"] == "build-test-1"
 
 
@@ -70,7 +70,28 @@ def test_setup_branch_prefix_from_run_config(sample_section):
     ])
 
     assert output["success"] is True
-    assert output["branch_name"] == "my-cool-app/01-auth"
+    # No session-id passed, so fallback to build/{section-name}
+    assert output["branch_name"] == "build/01-auth"
+
+
+def test_setup_branch_with_slug_and_session(sample_section):
+    """Branch uses build/{slug}-{session-id} when both available."""
+    project_root = sample_section.parent.parent.parent
+    (project_root / ".git").mkdir(exist_ok=True)
+    import json as json_mod
+    (project_root / "shipwright_run_config.json").write_text(
+        json_mod.dumps({"project_summary": {"name": "My Cool App"}}), encoding="utf-8"
+    )
+
+    plugin_root = str(Path(__file__).resolve().parent.parent)
+    output = run_setup([
+        "--file", str(sample_section),
+        "--plugin-root", plugin_root,
+        "--session-id", "build-20260411-120000",
+    ])
+
+    assert output["success"] is True
+    assert output["branch_name"] == "build/my-cool-app-20260411-120000"
 
 
 def test_setup_loads_config(sample_section):
