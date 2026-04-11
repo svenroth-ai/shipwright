@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useProjects } from '../hooks/useProjects';
 import { useTasks } from '../hooks/useTasks';
 import { useBoardFilters } from '../hooks/useBoardFilters';
@@ -13,6 +13,14 @@ export default function KanbanPage() {
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [showNewIssue, setShowNewIssue] = useState(false);
   const { data: projects = [] } = useProjects();
+
+  // Auto-select first project when projects load and none is selected
+  useEffect(() => {
+    if (!activeProjectId && projects.length > 0) {
+      setActiveProjectId(projects[0].id);
+    }
+  }, [activeProjectId, projects]);
+
   const { data: tasks = [], isLoading, isError, refetch } = useTasks(activeProjectId ?? undefined);
   const filters = useBoardFilters();
   const filteredTasks = filters.filterTasks(tasks);

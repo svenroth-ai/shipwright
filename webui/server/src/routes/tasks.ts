@@ -28,6 +28,17 @@ export interface TaskRouteDeps {
 export function createTaskRoutes(deps: TaskRouteDeps): Hono {
   const app = new Hono();
 
+  app.get("/api/tasks", (c) => {
+    const allProjects = deps.projectManager.getAll();
+    const allTasks = allProjects.flatMap((project) =>
+      deps.taskManager.getTasksWithKanban(
+        project.id,
+        project.settings?.phaseToStatusMapping
+      )
+    );
+    return c.json({ data: allTasks });
+  });
+
   app.get("/api/projects/:id/tasks", (c) => {
     const project = deps.projectManager.getById(c.req.param("id"));
     if (!project) throw new AppError("Project not found", 404);
