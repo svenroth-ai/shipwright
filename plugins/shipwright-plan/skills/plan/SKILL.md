@@ -83,7 +83,12 @@ The plugin_root is the directory two levels up from `scripts/checks/`.
 4. `agent_docs/architecture.md` — app structure, component tree, data flow
 5. Run: `git log --oneline -10` — recent commits
 
-If a file does not exist, skip it silently.
+If a file does not exist, skip it but print a WARNING:
+```
+WARNING: Operating with reduced project context.
+  Missing: {list of missing files}
+  Plan quality may be affected — architectural decisions and conventions not loaded.
+```
 
 ### D. Run Setup Script
 
@@ -232,7 +237,7 @@ uv run --project {plugin_root} {plugin_root}/scripts/llm_clients/review.py \
 
 This runs Gemini and OpenAI reviews **in parallel** via ThreadPoolExecutor.
 
-**If no API keys:** Skip gracefully with a note in the plan.
+**If no API keys:** Print WARNING to console ("External LLM review skipped — no GEMINI_API_KEY or OPENAI_API_KEY set") and add a note in the plan.
 
 **If review returns feedback:**
 1. Present feedback to user
@@ -300,7 +305,7 @@ Verify all sections declared in SECTION_MANIFEST have corresponding files.
 
 ## Step 8: E2E Test Plan (Shipwright Enhancement — Optional)
 
-**Only runs if `e2e_test_plan.enabled` is true in config.**
+**Runs if `e2e_test_plan.enabled` is true in config, OR if no config exists and the project has a UI** (i.e., `designs/screens/` contains HTML mockups, or `component_library` is set in profile). Default to enabled for UI projects.
 
 See [e2e-test-plan.md](references/e2e-test-plan.md) for guidance.
 
