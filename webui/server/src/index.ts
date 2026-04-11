@@ -169,6 +169,7 @@ if (isMainModule) {
         return release;
       },
       ensureDir: (p: string) => { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); },
+      ensureFile: (p: string) => { if (!fs.existsSync(p)) fs.writeFileSync(p, ""); },
     };
 
     // Replay events for each project

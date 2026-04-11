@@ -1,14 +1,23 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FolderOpen, ExternalLink, Settings as SettingsIcon } from 'lucide-react';
+import { Plus, FolderOpen, ExternalLink, Settings as SettingsIcon, Trash2 } from 'lucide-react';
 import { useProjects } from '../hooks/useProjects';
+import { useDeleteProject } from '../hooks/useDeleteProject';
 import { ProjectWizard } from '../components/wizard/ProjectWizard';
 import { formatRelativeTime } from '../lib/formatTime';
 
 export default function ProjectsPage() {
   const { data: projects = [], isLoading } = useProjects();
   const [showWizard, setShowWizard] = useState(false);
+  const deleteProject = useDeleteProject();
   const navigate = useNavigate();
+
+  function handleDelete(e: React.MouseEvent, projectId: string, projectName: string) {
+    e.stopPropagation();
+    if (confirm(`Remove "${projectName}" from the WebUI?\n\nProject files on disk will NOT be deleted.`)) {
+      deleteProject.mutate(projectId);
+    }
+  }
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -90,6 +99,13 @@ export default function ProjectsPage() {
                     aria-label="Project settings"
                   >
                     <SettingsIcon size={14} />
+                  </button>
+                  <button
+                    className="p-1.5 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                    onClick={(e) => handleDelete(e, project.id, project.name)}
+                    aria-label="Remove project"
+                  >
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>

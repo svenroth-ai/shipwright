@@ -4,6 +4,7 @@ export interface WriterDeps {
   appendFile: (path: string, data: string) => Promise<void>;
   lock: (path: string) => Promise<() => Promise<void>>;
   ensureDir?: (path: string) => void;
+  ensureFile?: (path: string) => void;
 }
 
 export async function appendEvent(
@@ -11,10 +12,13 @@ export async function appendEvent(
   event: ShipwrightEvent,
   deps: WriterDeps
 ): Promise<void> {
-  // Ensure parent directory exists before lock/write
+  // Ensure parent directory and file exist before lock (lockfile needs lstat)
   if (deps.ensureDir) {
     const dir = filePath.substring(0, Math.max(filePath.lastIndexOf("/"), filePath.lastIndexOf("\\")));
     if (dir) deps.ensureDir(dir);
+  }
+  if (deps.ensureFile) {
+    deps.ensureFile(filePath);
   }
   const release = await deps.lock(filePath);
   try {
