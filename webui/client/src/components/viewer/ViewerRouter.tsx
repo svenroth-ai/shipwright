@@ -1,6 +1,13 @@
 import type { ViewerTab } from '../../types/viewer';
 import { useFileContent } from '../../hooks/useFileContent';
 import { MarkdownRenderer } from './renderers/MarkdownRenderer';
+import { CodeRenderer } from './renderers/CodeRenderer';
+import { HtmlPreviewRenderer } from './renderers/HtmlPreviewRenderer';
+import { JsonTreeRenderer } from './renderers/JsonTreeRenderer';
+import { SpecOverlayRenderer } from './renderers/SpecOverlayRenderer';
+import { PlanOverlayRenderer } from './renderers/PlanOverlayRenderer';
+import { ConsistencyDashboard } from './renderers/ConsistencyDashboard';
+import { ExternalUrlRenderer } from './renderers/ExternalUrlRenderer';
 
 interface ViewerRouterProps {
   tab: ViewerTab;
@@ -27,25 +34,19 @@ export function ViewerRouter({ tab, projectId }: ViewerRouterProps) {
     case 'compliance':
       return <MarkdownRenderer {...rendererProps} />;
     case 'code':
-      return <div className="p-4 text-sm text-gray-500">Code renderer — Section 02</div>;
+      return <CodeRenderer {...rendererProps} />;
     case 'html':
-      return <div className="p-4 text-sm text-gray-500">HTML preview — Section 02</div>;
+      return <HtmlPreviewRenderer {...rendererProps} />;
     case 'json':
-      return <div className="p-4 text-sm text-gray-500">JSON tree — Section 02</div>;
+      return <JsonTreeRenderer {...rendererProps} />;
     case 'spec':
-      return <div className="p-4 text-sm text-gray-500">Spec overlay — Section 02</div>;
+      return <SpecOverlayRenderer {...rendererProps} />;
     case 'plan':
-      return <div className="p-4 text-sm text-gray-500">Plan overlay — Section 02</div>;
+      return <PlanOverlayRenderer {...rendererProps} />;
     case 'consistency':
-      return <div className="p-4 text-sm text-gray-500">Consistency dashboard — Section 02</div>;
+      return <ConsistencyDashboard {...rendererProps} />;
     case 'url':
-      return (
-        <div className="p-4 text-sm">
-          <a href={tab.filePath} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-            {tab.filePath}
-          </a>
-        </div>
-      );
+      return <ExternalUrlRenderer {...rendererProps} />;
     default:
       return <div className="flex items-center justify-center h-full text-sm text-gray-400">Unsupported file type</div>;
   }
