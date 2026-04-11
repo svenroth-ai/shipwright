@@ -1,6 +1,6 @@
 ---
 name: shipwright-plan
-description: Creates detailed implementation plans from spec files via research, interview, external LLM review, and TDD approach. Generates section-based plans for /shipwright-build. Use when you have a spec.md from /shipwright-project.
+description: "Creates detailed implementation plans from spec files via research, interview, external LLM review, and TDD approach. Generates section-based plans for /shipwright-build.\nTRIGGER when: user wants to plan implementation, create an implementation plan, break down a spec into sections, plan how to build something, create a technical design, generate build sections, or plan test strategy for a spec.\nDO NOT TRIGGER when: user asks to implement or write code (/shipwright-build), run tests (/shipwright-test), fix a bug or make a small change (/shipwright-iterate), deploy (/shipwright-deploy), define requirements (/shipwright-project), or design UI mockups (/shipwright-design)."
 license: MIT
 compatibility: Requires uv (Python 3.11+), git repository recommended. Optional: Gemini API key + OpenAI API key for external review.
 ---
@@ -59,7 +59,28 @@ The spec file should be output from /shipwright-project.
 ```
 **Stop and wait for user to re-invoke with correct path.**
 
-### C. Discover Plugin Root
+### C. Detect Invocation Mode
+
+Determine if running within the pipeline or standalone:
+
+1. Read `shipwright_run_config.json` (if exists)
+2. **Pipeline mode**: `status == "in_progress"` AND `current_step == "plan"`
+   - Full pipeline integration (update orchestrator state, enforce gates)
+3. **Standalone mode**: file missing OR `status == "complete"` OR `current_step != "plan"`
+   - Skip pipeline state updates (no `orchestrator.py update-step` calls)
+   - Skip upstream completion checks
+   - Still produce all artifacts (`shipwright_plan_config.json`, section files)
+   - **Mark artifacts**: When writing `shipwright_plan_config.json`, add `"mode": "standalone"` at the top level.
+   - Print: `"Running in standalone mode — pipeline state will not be updated."`
+4. If `status == "in_progress"` AND `current_step != "plan"`:
+   - Warn: `"Pipeline is in progress at step {current_step}. Running /shipwright-plan out of sequence may cause issues."`
+   - Ask user before continuing.
+
+**Hook auto-install**: If `shipwright_run_config.json` exists but `.claude/settings.json` does not contain the `UserPromptSubmit` hook for `suggest_iterate.py`, install it now (one-time, idempotent).
+
+Store the detected mode in a variable `invocation_mode` = `"pipeline"` | `"standalone"` for use in later steps.
+
+### D. Discover Plugin Root
 
 The SessionStart hook injects `SHIPWRIGHT_PLUGIN_ROOT=<path>` into your context.
 

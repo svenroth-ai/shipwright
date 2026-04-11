@@ -1,13 +1,155 @@
 #!/usr/bin/env python3
-"""UserPromptSubmit hook: suggest /shipwright-iterate when code changes are detected.
+"""UserPromptSubmit hook: phase-aware skill router for Shipwright projects.
 
-Installed in project .claude/settings.json by /shipwright-project.
-Only fires for completed Shipwright projects.
+Detects user intent and suggests the appropriate Shipwright skill.
+Installed in project .claude/settings.json by /shipwright-project or /shipwright-run.
+
+Routing logic:
+- For completed pipelines: matches phase-specific keywords first (test, deploy, etc.),
+  falls back to /shipwright-iterate for code changes.
+- For in-progress pipelines: warns when user intent doesn't match current pipeline step.
 """
 
 import json
+import re
 import sys
 from pathlib import Path
+
+# Multilingual pattern registry — en + de now, extensible for fr/it later
+PHASE_PATTERNS: dict[str, dict[str, str]] = {
+    "test": {
+        "en": r"\b(run|execute|check|verify)\s+(\w+\s+)?(tests?|test suite|unit tests?|e2e|visual|design fidelity)\b",
+        "de": r"\b(tests?\s+(laufen|ausführen|machen|starten|prüfen|nochmal)|teste\b|nochmal\s+\w*\s*tests?)",
+    },
+    "deploy": {
+        "en": r"\b(deploy\w*|push to prod|go live|publish|rollback)\b",
+        "de": r"\b(deploy\w*|veröffentlich\w*|ausroll\w*|live\s+stell\w*|rollback)\b",
+    },
+    "compliance": {
+        "en": r"\b(compliance|audit|traceability|SBOM|evidence)\b",
+        "de": r"\b(compliance|audit|nachverfolgbarkeit|SBOM|nachweis)\b",
+    },
+    "changelog": {
+        "en": r"\b(changelog|release notes|version bump|tag release)\b",
+        "de": r"\b(changelog|release notes|version|release erstellen)\b",
+    },
+    "design": {
+        "en": r"\b(design|mockup|wireframe|screen|UI design|layout)\s+(change|update|create|iterate)\b",
+        "de": r"\b(design|mockup|wireframe|layout)\s+(ändern|anpassen|erstellen|überarbeiten)\b",
+    },
+    "plan": {
+        "en": r"\b(replan|implementation plan|technical design)\b",
+        "de": r"\b(umplanen|neu planen|technisches design|implementierungsplan)\b",
+    },
+}
+
+SKILL_NAMES: dict[str, str] = {
+    "test": "/shipwright-test",
+    "deploy": "/shipwright-deploy",
+    "compliance": "/shipwright-compliance",
+    "changelog": "/shipwright-changelog",
+    "design": "/shipwright-design",
+    "plan": "/shipwright-plan",
+}
+
+
+def matches_phase(prompt: str, phase: str) -> bool:
+    """Match against ALL configured languages for a given phase."""
+    return any(
+        re.search(pat, prompt, re.IGNORECASE)
+        for pat in PHASE_PATTERNS[phase].values()
+    )
+
+
+def detect_phase_intent(prompt: str) -> str | None:
+    """Return the first matching phase name, or None."""
+    for phase in PHASE_PATTERNS:
+        if matches_phase(prompt, phase):
+            return phase
+    return None
+
+
+def handle_completed_pipeline(
+    prompt: str, project_root: Path, run_config: dict
+) -> dict | None:
+    """Route intent for completed pipelines. Returns hook output or None."""
+    # Phase-specific routing first
+    phase = detect_phase_intent(prompt)
+    if phase:
+        skill = SKILL_NAMES[phase]
+        return {
+            "hookSpecificOutput": {
+                "additionalContext": (
+                    f"[Shipwright] Detected intent: {phase}\n"
+                    f"Pipeline is complete. Suggested skill: {skill}\n"
+                    f"Invoke {skill} to handle this request."
+                ),
+            }
+        }
+
+    # Fall back to iterate classification for code changes
+    return classify_for_iterate(prompt, project_root)
+
+
+def handle_in_progress_pipeline(
+    prompt: str, run_config: dict
+) -> dict | None:
+    """Warn when user intent doesn't match current pipeline step."""
+    current_step = run_config.get("current_step", "unknown")
+    phase = detect_phase_intent(prompt)
+
+    if phase and phase != current_step:
+        skill = SKILL_NAMES[phase]
+        return {
+            "hookSpecificOutput": {
+                "additionalContext": (
+                    f"[Shipwright] Intent mismatch: you asked about '{phase}' "
+                    f"but the pipeline is at step '{current_step}'.\n"
+                    f"To run {skill} standalone, invoke it directly. "
+                    f"To continue the pipeline, use /shipwright-run."
+                ),
+            }
+        }
+
+    return None
+
+
+def classify_for_iterate(prompt: str, project_root: Path) -> dict | None:
+    """Existing iterate classification logic."""
+    script_dir = Path(__file__).resolve().parent.parent.parent
+    sys.path.insert(
+        0,
+        str(script_dir / "plugins" / "shipwright-iterate" / "scripts" / "lib"),
+    )
+
+    try:
+        from classify_intent import classify
+    except ImportError:
+        return None
+
+    sync_config_path = project_root / "shipwright_sync_config.json"
+    result = classify(
+        prompt,
+        str(sync_config_path) if sync_config_path.exists() else None,
+    )
+
+    if result["type"] == "none" or result["confidence"] < 0.7:
+        return None
+
+    intent_type = result["type"].upper()
+    frs = ", ".join(result["affected_frs"]) if result["affected_frs"] else "TBD"
+    summary = result["summary"]
+
+    return {
+        "hookSpecificOutput": {
+            "additionalContext": (
+                f"[Shipwright] Detected: {intent_type} — {summary}\n"
+                f"Affected FRs: {frs}\n"
+                f"Before making code changes, invoke /shipwright-iterate "
+                f"--type {result['type']} to keep specs, tests, and ADRs in sync."
+            ),
+        }
+    }
 
 
 def main():
@@ -27,16 +169,13 @@ def main():
     if not run_config_path.exists():
         sys.exit(0)
 
-    # Guard 2: Is the pipeline complete?
+    # Guard 2: Read config
     try:
         run_config = json.loads(run_config_path.read_text())
     except (json.JSONDecodeError, FileNotFoundError):
         sys.exit(0)
 
-    if run_config.get("status") != "complete":
-        sys.exit(0)
-
-    # Guard 3: Skip slash commands (user already using structured command)
+    # Guard 3: Skip slash commands (user already chose a skill)
     if prompt.startswith("/"):
         sys.exit(0)
 
@@ -44,47 +183,19 @@ def main():
     if len(prompt) < 10:
         sys.exit(0)
 
-    # Classify intent
-    # Import from plugin scripts (resolve relative to this file's location)
-    script_dir = Path(__file__).resolve().parent.parent.parent
-    sys.path.insert(0, str(script_dir / "plugins" / "shipwright-iterate" / "scripts" / "lib"))
+    status = run_config.get("status")
 
-    try:
-        from classify_intent import classify
-    except ImportError:
-        # Plugin not installed — skip silently
+    # Route based on pipeline status
+    if status == "complete":
+        output = handle_completed_pipeline(prompt, project_root, run_config)
+    elif status == "in_progress":
+        output = handle_in_progress_pipeline(prompt, run_config)
+    else:
         sys.exit(0)
 
-    sync_config_path = project_root / "shipwright_sync_config.json"
-    result = classify(
-        prompt,
-        str(sync_config_path) if sync_config_path.exists() else None,
-    )
+    if output:
+        print(json.dumps(output))
 
-    # Only suggest if confident
-    if result["type"] == "none" or result["confidence"] < 0.7:
-        sys.exit(0)
-
-    # Build suggestion message
-    intent_type = result["type"].upper()
-    frs = ", ".join(result["affected_frs"]) if result["affected_frs"] else "TBD"
-    summary = result["summary"]
-
-    context = (
-        f"[Shipwright] Detected: {intent_type} — {summary}\n"
-        f"Affected FRs: {frs}\n"
-        f"Before making code changes, invoke /shipwright-iterate --type {result['type']} "
-        f"to keep specs, tests, and ADRs in sync."
-    )
-
-    # Output as hookSpecificOutput
-    output = {
-        "hookSpecificOutput": {
-            "additionalContext": context,
-        }
-    }
-
-    print(json.dumps(output))
     sys.exit(0)
 
 

@@ -1,6 +1,6 @@
 ---
 name: shipwright-run
-description: "Master orchestrator for the Shipwright SDLC pipeline. From user description to deployed application. Use this as the single entry point: /shipwright-run"
+description: "Master orchestrator for the Shipwright SDLC pipeline. From user description to deployed application.\nTRIGGER when: user wants to run the full pipeline, start the complete SDLC process, build an entire application from scratch, or resume an interrupted pipeline. Also when user says 'shipwright run' or 'start the pipeline'.\nDO NOT TRIGGER when: user asks for a specific phase only (project, design, plan, build, test, deploy, changelog, compliance), or asks to fix/change/add something to an existing project (/shipwright-iterate). If the user wants only ONE phase, trigger that specific skill instead."
 license: MIT
 compatibility: Requires uv (Python 3.11+), git. Optional: JELASTIC_TOKEN for deploy.
 ---
@@ -341,6 +341,25 @@ The orchestrator reads config files written by each skill to determine:
 ---
 
 ## Step 6: Completion
+
+**Install phase-router hook** (if not already present):
+
+Check if `.claude/settings.json` in the project root contains the `UserPromptSubmit` hook for `suggest_iterate.py`. If not, install it:
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "type": "command",
+        "command": "uv run {shared_root}/scripts/hooks/suggest_iterate.py"
+      }
+    ]
+  }
+}
+```
+
+This ensures post-pipeline intent routing works even for projects created before this feature.
 
 ```
 ================================================================================

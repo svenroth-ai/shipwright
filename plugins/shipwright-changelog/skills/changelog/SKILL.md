@@ -1,6 +1,6 @@
 ---
 name: shipwright-changelog
-description: Parses Conventional Commits from git history, generates Keep-a-Changelog entries, creates version tags, and opens PRs. Use after /shipwright-build completes all sections.
+description: "Parses Conventional Commits from git history, generates Keep-a-Changelog entries, creates version tags, and opens PRs.\nTRIGGER when: user wants to create a changelog, generate release notes, tag a version, create a release, bump version number, create a PR for release, or review unreleased changes.\nDO NOT TRIGGER when: user asks to write code (/shipwright-build), run tests (/shipwright-test), fix a bug (/shipwright-iterate), deploy (/shipwright-deploy), create requirements (/shipwright-project), plan implementation (/shipwright-plan), or design UI (/shipwright-design)."
 license: MIT
 compatibility: Requires uv (Python 3.11+), git repository required, gh CLI for PR creation
 ---
@@ -41,7 +41,26 @@ Steps:
 
 The SessionStart hook injects `SHIPWRIGHT_PLUGIN_ROOT=<path>`. Use it directly.
 
-### C. Run Setup Script
+### C. Detect Invocation Mode
+
+Determine if running within the pipeline or standalone:
+
+1. Read `shipwright_run_config.json` (if exists)
+2. **Pipeline mode**: `status == "in_progress"` AND `current_step == "changelog"`
+   - Full pipeline integration (update orchestrator state, enforce gates)
+3. **Standalone mode**: file missing OR `status == "complete"` OR `current_step != "changelog"`
+   - Skip pipeline state updates (no `orchestrator.py update-step` calls)
+   - Still produce all artifacts (`CHANGELOG.md`, version tags, PRs)
+   - Print: `"Running in standalone mode — pipeline state will not be updated."`
+4. If `status == "in_progress"` AND `current_step != "changelog"`:
+   - Warn: `"Pipeline is in progress at step {current_step}. Running /shipwright-changelog out of sequence may cause issues."`
+   - Ask user before continuing.
+
+**Hook auto-install**: If `shipwright_run_config.json` exists but `.claude/settings.json` does not contain the `UserPromptSubmit` hook for `suggest_iterate.py`, install it now (one-time, idempotent).
+
+Store the detected mode in a variable `invocation_mode` = `"pipeline"` | `"standalone"` for use in later steps.
+
+### D. Run Setup Script
 
 ```bash
 uv run {plugin_root}/scripts/checks/setup-changelog.py \
