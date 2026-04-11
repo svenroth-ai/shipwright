@@ -168,6 +168,7 @@ if (isMainModule) {
         const release = await lockfile.lock(p, { retries: 3 });
         return release;
       },
+      ensureDir: (p: string) => { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); },
     };
 
     // Replay events for each project
@@ -213,7 +214,12 @@ if (isMainModule) {
     };
 
     // Mount routes
-    app.route("/", createProjectRoutes(projectManager, fileWatcher, eventStore, sseManager));
+    const projectFsDeps = {
+      existsSync: (p: string) => fs.existsSync(p),
+      mkdirSync: (p: string, o?: { recursive: boolean }) => fs.mkdirSync(p, o),
+      writeFileSync: (p: string, d: string) => fs.writeFileSync(p, d),
+    };
+    app.route("/", createProjectRoutes(projectManager, fileWatcher, eventStore, sseManager, projectFsDeps));
     const settingsPath = `${config.registryDir}/settings.json`;
     app.route("/", createTaskRoutes({
       taskManager,
