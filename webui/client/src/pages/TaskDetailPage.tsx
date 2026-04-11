@@ -3,6 +3,7 @@ import { useTasks } from '../hooks/useTasks';
 import { TaskHeader } from '../components/detail/TaskHeader';
 import { PanelLayout } from '../components/detail/PanelLayout';
 import { ViewerSlot } from '../components/detail/ViewerSlot';
+import { ChatPanel } from '../components/chat/ChatPanel';
 
 export default function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -41,11 +42,7 @@ export default function TaskDetailPage() {
     <div className="flex flex-col h-full">
       <TaskHeader task={task} />
       <PanelLayout
-        leftPanel={
-          <div className="h-full flex items-center justify-center text-gray-400 text-sm">
-            Chat — Section 08
-          </div>
-        }
+        leftPanel={<ChatPanel projectId={task.projectId} taskId={task.id} />}
         rightPanel={<ViewerSlot />}
       />
     </div>
