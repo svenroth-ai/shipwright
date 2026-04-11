@@ -56,3 +56,12 @@ export async function apiPut<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
 }
+
+export async function apiDelete(path: string): Promise<void> {
+  const response = await fetch(`${API_BASE}${path}`, { method: 'DELETE' });
+  if (!response.ok) {
+    let body: { error: string; detail?: string };
+    try { body = await response.json(); } catch { body = { error: response.statusText }; }
+    throw new ApiError(response.status, body);
+  }
+}
