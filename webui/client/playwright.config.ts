@@ -8,7 +8,7 @@ export default defineConfig({
   workers: 1,
   reporter: [['json', { outputFile: 'e2e-results.json' }], ['html']],
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3847',
+    baseURL: process.env.BASE_URL || 'http://localhost:5173',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -17,7 +17,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:3847',
+    url: 'http://localhost:5173',
     reuseExistingServer: true,
     timeout: 60000,
   },

@@ -30,10 +30,10 @@ const makeTab = (filePath: string, fileType: ViewerTab['fileType']): ViewerTab =
 });
 
 describe('ViewerRouter', () => {
-  it('shows code placeholder for code files', async () => {
+  it('renders code renderer for code files', async () => {
     renderRouter(makeTab('src/App.tsx', 'code'));
     await waitFor(() => {
-      expect(screen.getByText(/Code renderer/)).toBeInTheDocument();
+      expect(screen.getByTestId('code-renderer')).toBeInTheDocument();
     });
   });
 

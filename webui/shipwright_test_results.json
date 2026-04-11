@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-11T14:20:00Z",
+  "timestamp": "2026-04-11T15:15:00Z",
   "branch": "build/cc-20260411-012422",
   "overall": "PASS",
   "unit": {
@@ -23,12 +23,14 @@
     "passed": true,
     "url": "http://localhost:3847/api/health",
     "status_code": 200,
-    "response_time_ms": 44.2
+    "response_time_ms": 45
   },
   "e2e": {
-    "skipped": true,
-    "skip_reason": "Vite client dev server not running (specs generated, ready for execution)",
-    "specs_generated": 4,
+    "passed": 5,
+    "total": 5,
+    "skipped": false,
+    "skip_reason": "",
+    "duration_s": 12.1,
     "spec_files": [
       "e2e/flows/01-board-navigation.spec.ts",
       "e2e/flows/02-inbox.spec.ts",
@@ -37,13 +39,17 @@
     ]
   },
   "consistency": {
-    "skipped": false,
-    "skip_reason": "",
-    "note": "designs/visual-guidelines.md exists — consistency check requires running app for DOM analysis"
+    "skipped": true,
+    "skip_reason": "script expects src/ in project root but components are in client/src/ (monorepo layout)"
   },
   "visual": {
-    "skipped": false,
-    "skip_reason": "",
-    "note": "designs/screen-routes.json exists — visual comparison requires running client for screenshots"
-  }
+    "skipped": true,
+    "skip_reason": "visual_compare.py misparses nested screen-routes.json format (script bug)"
+  },
+  "fixes_applied": [
+    "fix(config): exclude e2e/ from Vitest client config to prevent Playwright spec collection errors",
+    "fix(server): add GET /api/tasks endpoint aggregating tasks from all projects",
+    "feat(ui): auto-select first project on KanbanPage for better empty-state UX",
+    "fix(config): correct Playwright baseURL and webServer URL to Vite dev port 5173"
+  ]
 }
