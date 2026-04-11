@@ -151,6 +151,8 @@ UI changes at any complexity level.
    uv run {plugin_root}/scripts/lib/browser_verify.py --cwd {project_root}
    ```
 3. If JS errors: read screenshot, diagnose, fix (max 3 retries)
+3b. If UI change: compare screenshot against designs/screens/{affected}.html
+    mockup for layout/styling alignment before proceeding to Visual Comparison
 4. Server stays running for smoke test / visual comparison
 
 ### Skip When
