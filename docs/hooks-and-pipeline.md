@@ -390,3 +390,34 @@ During `/shipwright-project` Step 7 (Scaffolding), if the project has a GitHub r
 | `delete_branch_on_merge` | `true` | Prevents stale feature branches after PR merges (CLI or UI) |
 
 This complements `gh pr merge --merge --delete-branch` in `/shipwright-changelog` Step 7, which only fires on CLI merges.
+
+---
+
+## Self-Healing Artifacts
+
+When a phase detects missing prerequisite artifacts, it should attempt to derive them from available project context before skipping. This is a **constitution rule** (ALWAYS section).
+
+### Derivation Chain
+
+| Missing Artifact | Derived From | Used By |
+|---|---|---|
+| `designs/visual-guidelines.md` | CSS `:root` variables in `designs/screens/*.html` | Build (Browser Verify), Test (Consistency) |
+| `designs/screen-routes.json` | Mockup filenames + router config (`src/router.tsx`) | Test (Visual Comparison) |
+| `planning/claude-plan-e2e.md` | `screen-routes.json` + `architecture.md` | Test (E2E Spec Generation) |
+| `dev_url` in build config | `CLAUDE.md` (`PORT=`), `package.json` scripts (`--port`) | Test (Smoke, E2E), Build (Browser Verify) |
+| `playwright.config.ts` | Template + `dev_url` port substitution | Test (E2E), Build (Browser Verify) |
+
+### Which Phases Auto-Generate
+
+| Phase | Can Auto-Generate |
+|---|---|
+| **Build** (Step 4.5) | `visual-guidelines.md`, `dev_url` detection |
+| **Test** (Step B3) | `visual-guidelines.md`, `screen-routes.json`, `claude-plan-e2e.md`, `dev_url`, `playwright.config.ts` |
+| **Plan** (Step 8) | `claude-plan-e2e.md` (if UI project, default enabled) |
+
+### Scripts Supporting Self-Healing
+
+| Script | Self-Healing | Details |
+|---|---|---|
+| `dev_server.py` | Reads `shipwright_build_config.json` for `dev_url` when profile is unknown | Fallback for custom profiles |
+| `playwright_setup.py` | Substitutes port from build config into template | Prevents hardcoded port 3000 |
