@@ -1,0 +1,38 @@
+{
+  "timestamp": "2026-04-11T13:04:00Z",
+  "branch": "build/cc-20260411-012422",
+  "overall": "PASS",
+  "unit": {
+    "passed": 299,
+    "total": 299,
+    "duration_s": 32,
+    "breakdown": {
+      "server": { "passed": 145, "total": 145, "files": 26 },
+      "client": { "passed": 154, "total": 154, "files": 47 }
+    }
+  },
+  "integration": {
+    "skipped": true,
+    "skip_reason": "tests/integration/ directory does not exist"
+  },
+  "pgtap": {
+    "skipped": true,
+    "skip_reason": "no supabase/tests/database/ directory"
+  },
+  "smoke": {
+    "skipped": true,
+    "skip_reason": "no DEV URL available"
+  },
+  "e2e": {
+    "skipped": true,
+    "skip_reason": "no Playwright config"
+  },
+  "consistency": {
+    "skipped": true,
+    "skip_reason": "no designs/visual-guidelines.md"
+  },
+  "visual": {
+    "skipped": true,
+    "skip_reason": "no screen-routes.json"
+  }
+}
