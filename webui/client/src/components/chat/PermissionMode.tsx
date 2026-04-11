@@ -2,11 +2,9 @@ import * as Popover from '@radix-ui/react-popover';
 import type { ModeOption } from '../../hooks/useChatSettings';
 
 const MODES: { value: ModeOption; label: string; desc: string }[] = [
-  { value: 'auto', label: 'Auto', desc: 'Let Claude decide' },
-  { value: 'ask', label: 'Ask', desc: 'Ask before actions' },
-  { value: 'edit', label: 'Edit', desc: 'Only edits, no commands' },
-  { value: 'plan', label: 'Plan', desc: 'Planning only' },
-  { value: 'bypass', label: 'Bypass', desc: 'Skip all checks' },
+  { value: 'default', label: 'Default', desc: 'Approve each action' },
+  { value: 'plan', label: 'Plan', desc: 'Planning only, no edits' },
+  { value: 'auto-accept', label: 'Auto-accept', desc: 'Accept all actions' },
 ];
 
 interface PermissionModeProps {
@@ -15,7 +13,7 @@ interface PermissionModeProps {
 }
 
 export function PermissionMode({ mode, onChange }: PermissionModeProps) {
-  const current = MODES.find((m) => m.value === mode)!;
+  const current = MODES.find((m) => m.value === mode) ?? MODES[0];
 
   return (
     <Popover.Root>
@@ -25,7 +23,7 @@ export function PermissionMode({ mode, onChange }: PermissionModeProps) {
         </button>
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Content className="bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px] z-50" sideOffset={4}>
+        <Popover.Content className="bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px] z-50" sideOffset={4}>
           {MODES.map((m) => (
             <button
               key={m.value}

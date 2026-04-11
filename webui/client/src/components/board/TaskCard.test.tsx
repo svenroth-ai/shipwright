@@ -8,6 +8,7 @@ import type { Task } from '../../types';
 const mockTask: Task = {
   id: 'task-abc1234',
   projectId: 'proj-1',
+  title: 'Implement magic link authentication',
   description: 'Implement magic link authentication',
   status: 'running',
   kanbanStatus: 'in_progress',

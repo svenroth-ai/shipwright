@@ -6,8 +6,8 @@ import { KanbanColumn } from './KanbanColumn';
 import type { Task } from '../../types';
 
 const baseTasks: Task[] = [
-  { id: 't1', projectId: 'p1', description: 'Task One', status: 'pending', kanbanStatus: 'backlog', sessionId: 's1', createdAt: '', updatedAt: '' },
-  { id: 't2', projectId: 'p1', description: 'Task Two', status: 'pending', kanbanStatus: 'backlog', sessionId: 's2', createdAt: '', updatedAt: '' },
+  { id: 't1', projectId: 'p1', title: 'Task One', description: 'Task One', status: 'pending', kanbanStatus: 'backlog', sessionId: 's1', createdAt: '', updatedAt: '' },
+  { id: 't2', projectId: 'p1', title: 'Task Two', description: 'Task Two', status: 'pending', kanbanStatus: 'backlog', sessionId: 's2', createdAt: '', updatedAt: '' },
 ];
 
 function renderColumn(tasks: Task[]) {

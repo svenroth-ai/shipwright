@@ -1,5 +1,6 @@
 export type EventType =
   | "task_created"
+  | "task_updated"
   | "phase_started"
   | "phase_completed"
   | "work_completed"

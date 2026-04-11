@@ -24,7 +24,7 @@ describe('useCreateTask', () => {
     server.use(
       http.post('/api/projects/:id/tasks', () =>
         HttpResponse.json({
-          data: { id: 'new-task', projectId: 'p1', description: 'Test', status: 'pending', kanbanStatus: 'backlog', sessionId: 's1', createdAt: '', updatedAt: '' },
+          data: { id: 'new-task', projectId: 'p1', title: 'Test', description: 'Test', status: 'pending', kanbanStatus: 'backlog', sessionId: 's1', createdAt: '', updatedAt: '' },
         }),
       ),
       http.post('/api/projects/:id/classify', () => {
@@ -36,7 +36,7 @@ describe('useCreateTask', () => {
     const { wrapper } = createWrapper();
     const { result } = renderHook(() => useCreateTask(), { wrapper });
 
-    result.current.createTask({ projectId: 'p1', description: 'Test' });
+    result.current.createTask({ projectId: 'p1', title: 'Test' });
 
     await waitFor(() => expect(result.current.isCreating).toBe(false));
     // Give fire-and-forget classify time to execute
@@ -49,7 +49,7 @@ describe('useCreateTask', () => {
     server.use(
       http.post('/api/projects/:id/tasks', () =>
         HttpResponse.json({
-          data: { id: 'new-task', projectId: 'p1', description: 'Test', status: 'pending', kanbanStatus: 'backlog', sessionId: 's1', createdAt: '', updatedAt: '' },
+          data: { id: 'new-task', projectId: 'p1', title: 'Test', description: 'Test', status: 'pending', kanbanStatus: 'backlog', sessionId: 's1', createdAt: '', updatedAt: '' },
         }),
       ),
       http.post('/api/projects/:id/classify', () =>
@@ -60,7 +60,7 @@ describe('useCreateTask', () => {
     const { wrapper } = createWrapper();
     const { result } = renderHook(() => useCreateTask(), { wrapper });
 
-    result.current.createTask({ projectId: 'p1', description: 'Test' });
+    result.current.createTask({ projectId: 'p1', title: 'Test' });
 
     // Task creation should succeed despite classify failure
     await waitFor(() => expect(result.current.isCreating).toBe(false));

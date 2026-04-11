@@ -6,7 +6,7 @@ import { ChatInput } from './ChatInput';
 
 function renderInput(props: Partial<React.ComponentProps<typeof ChatInput>> = {}) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const defaults = { onSend: vi.fn(), isStreaming: false, ...props };
+  const defaults = { onSend: vi.fn(), isStreaming: false, autonomy: 'guided' as const, ...props };
   return {
     ...render(
       <QueryClientProvider client={queryClient}>

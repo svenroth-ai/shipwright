@@ -4,7 +4,8 @@ import { queryKeys } from '../lib/queryKeys';
 
 interface CreateTaskParams {
   projectId: string;
-  description: string;
+  title: string;
+  description?: string;
   startImmediately?: boolean;
 }
 
@@ -12,8 +13,8 @@ export function useCreateTask() {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: ({ projectId, description, startImmediately = true }: CreateTaskParams) =>
-      apiPost(`/projects/${projectId}/tasks`, { description, startImmediately }),
+    mutationFn: ({ projectId, title, description = '', startImmediately = true }: CreateTaskParams) =>
+      apiPost(`/projects/${projectId}/tasks`, { title, description, startImmediately }),
     onSuccess: (_data, variables) => {
       // Always invalidate using the variables (reliable) not the response
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(variables.projectId) });

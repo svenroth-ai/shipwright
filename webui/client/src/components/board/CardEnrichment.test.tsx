@@ -4,7 +4,7 @@ import { CardEnrichment } from './CardEnrichment';
 import type { Task } from '../../types';
 
 const baseTask: Task = {
-  id: 't1', projectId: 'p1', description: 'Test', status: 'pending',
+  id: 't1', projectId: 'p1', title: 'Test', description: 'Test', status: 'pending',
   kanbanStatus: 'backlog', sessionId: 's1',
   createdAt: new Date(Date.now() - 60_000).toISOString(),
   updatedAt: new Date().toISOString(),

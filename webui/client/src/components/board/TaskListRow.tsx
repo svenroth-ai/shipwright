@@ -21,7 +21,7 @@ export function TaskListRow({ task }: TaskListRowProps) {
         <StatusIcon status={task.kanbanStatus} />
       </td>
       <td className="py-2.5 px-3 text-sm text-gray-900 font-medium max-w-[300px] truncate">
-        {task.description}
+        {task.title}
       </td>
       <td className="py-2.5 px-3">
         <PhaseTag phase={task.currentPhase} />
