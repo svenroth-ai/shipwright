@@ -421,8 +421,12 @@ If `recommend_checkpoint` is true AND section is not yet complete:
 
 **Skip this step if:**
 - Project has no UI (backend-only, CLI tool, library)
-- Profile has no `dev_server` config
 - No changes to frontend files in this section
+
+**Prerequisite self-healing** (before running):
+- If profile has no `dev_server` config but `shipwright_build_config.json` has `dev_url`: use that URL
+- If `designs/visual-guidelines.md` missing but mockups exist in `designs/screens/`: auto-generate from CSS `:root` variables (same derivation as test phase Step B3)
+- Print WARNING if prerequisites are missing and cannot be derived
 
 **Flow:**
 
@@ -435,6 +439,7 @@ uv run {plugin_root}/../../shared/scripts/playwright_setup.py --cwd {project_roo
 ```bash
 uv run {plugin_root}/../../shared/scripts/dev_server.py start --profile {profile} --cwd {project_root}
 ```
+If profile has no `dev_server` config: check `shipwright_build_config.json` for `dev_url` and start on that port.
 
 3. **Run browser verify:**
 ```bash
@@ -702,7 +707,11 @@ uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
 ```
 
 If `split_done == true AND all_done == true` (final split complete):
-1. Mark build phase complete (triggers compliance update automatically):
+1. **Persist dev_url** — detect dev server port and write to build config for downstream phases:
+   - Read `CLAUDE.md` for `PORT=` references
+   - Read `package.json` scripts for `--port` flags
+   - If found: add `"dev_url": "http://localhost:{port}"` to `shipwright_build_config.json`
+2. Mark build phase complete (triggers compliance update automatically):
 ```bash
 uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
   update-step --project-root "$(pwd)" --step build --status complete
