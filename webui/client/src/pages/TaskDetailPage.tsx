@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTasks } from '../hooks/useTasks';
 import { TaskHeader } from '../components/detail/TaskHeader';
 import { PanelLayout } from '../components/detail/PanelLayout';
-import { ViewerSlot } from '../components/detail/ViewerSlot';
+import { SmartViewer } from '../components/viewer/SmartViewer';
 import { ChatPanel } from '../components/chat/ChatPanel';
 
 export default function TaskDetailPage() {
@@ -43,7 +43,7 @@ export default function TaskDetailPage() {
       <TaskHeader task={task} />
       <PanelLayout
         leftPanel={<ChatPanel projectId={task.projectId} taskId={task.id} />}
-        rightPanel={<ViewerSlot />}
+        rightPanel={<SmartViewer projectId={task.projectId} />}
       />
     </div>
   );
