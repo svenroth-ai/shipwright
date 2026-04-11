@@ -5,6 +5,8 @@ import { queryKeys } from '../../lib/queryKeys';
 import type { Task } from '../../types';
 import { PhaseTag } from './PhaseTag';
 import { PriorityIndicator } from './PriorityIndicator';
+import { IntentBadge } from './IntentBadge';
+import { ComplexityIndicator } from './ComplexityIndicator';
 import { CardOverflowMenu } from './CardOverflowMenu';
 
 interface TaskCardProps {
@@ -43,10 +45,12 @@ export function TaskCard({ task }: TaskCardProps) {
         />
       </div>
 
-      {/* Middle: phase + priority */}
-      <div className="flex items-center gap-2 mb-2">
+      {/* Middle: phase + priority + intent + complexity */}
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
         <PhaseTag phase={task.currentPhase} />
         <PriorityIndicator priority={task.priority} />
+        <span className="transition-opacity duration-300"><IntentBadge intent={task.intent} /></span>
+        <span className="transition-opacity duration-300"><ComplexityIndicator complexity={task.complexity} /></span>
       </div>
 
       {/* Bottom: meta */}
