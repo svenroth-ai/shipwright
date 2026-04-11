@@ -1,12 +1,12 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, CheckCircle, Trash2 } from 'lucide-react';
 
 interface CardOverflowMenuProps {
   onClose: () => void;
-  onCancel: () => void;
+  onDelete: () => void;
 }
 
-export function CardOverflowMenu({ onClose, onCancel }: CardOverflowMenuProps) {
+export function CardOverflowMenu({ onClose, onDelete }: CardOverflowMenuProps) {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -21,21 +21,22 @@ export function CardOverflowMenu({ onClose, onCancel }: CardOverflowMenuProps) {
 
       <DropdownMenu.Portal>
         <DropdownMenu.Content
-          className="bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[120px] z-50"
+          className="bg-white rounded-lg shadow-lg border border-[#e0dbd4] py-1 min-w-[130px] z-50"
           sideOffset={4}
           onClick={(e) => e.stopPropagation()}
         >
           <DropdownMenu.Item
-            className="px-3 py-1.5 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 outline-none"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 outline-none"
             onSelect={onClose}
           >
-            Close
+            <CheckCircle size={14} /> Close
           </DropdownMenu.Item>
+          <DropdownMenu.Separator className="h-px bg-gray-100 my-1" />
           <DropdownMenu.Item
-            className="px-3 py-1.5 text-sm text-red-600 cursor-pointer hover:bg-red-50 outline-none"
-            onSelect={onCancel}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 cursor-pointer hover:bg-red-50 outline-none"
+            onSelect={onDelete}
           >
-            Cancel
+            <Trash2 size={14} /> Delete
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>

@@ -1,11 +1,12 @@
-import { useRef } from 'react';
-import { ArrowDown } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { ArrowDown, AlertCircle } from 'lucide-react';
 import { useChat, useSendChat } from '../../hooks/useChat';
 import { useAutoScroll } from '../../hooks/useAutoScroll';
 import { useStreamingChat } from '../../hooks/useStreamingChat';
 import { ChatMessage } from './ChatMessage';
 import { AssistantMessage } from './AssistantMessage';
 import { ChatInput } from './ChatInput';
+import { ApiError } from '../../lib/api';
 
 interface ChatPanelProps {
   projectId: string;
@@ -18,15 +19,34 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
   const streaming = useStreamingChat();
   const scrollRef = useRef<HTMLDivElement>(null);
   const { isAtBottom, scrollToBottom } = useAutoScroll(scrollRef, [messages, streaming.displayContent]);
+  const [chatError, setChatError] = useState<string | null>(null);
 
-  function handleSend(message: string, settings: { model: string; mode: string; effort: string }) {
-    sendChat.mutate({ projectId, taskId, message, ...settings });
+  function handleSend(message: string, settings: { model: string; mode: string; effort: string; autonomy: string }) {
+    setChatError(null);
+    sendChat.mutate(
+      { projectId, taskId, message, ...settings },
+      {
+        onError: (err) => {
+          if (err instanceof ApiError && err.status === 400) {
+            setChatError('Task is not running. Start the task first using the Start button on the board.');
+          } else {
+            setChatError(err instanceof Error ? err.message : 'Failed to send message');
+          }
+        },
+      }
+    );
   }
 
   return (
     <div className="flex flex-col h-full" data-testid="chat-panel">
       {/* Message list */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 && !streaming.isStreaming && (
+          <div className="text-center text-gray-400 text-sm py-8">
+            <p>No messages yet.</p>
+            <p className="text-xs mt-1">Start the task to begin chatting with Claude.</p>
+          </div>
+        )}
         {messages.map((msg) => (
           <ChatMessage key={msg.id} message={msg} />
         ))}
@@ -34,6 +54,15 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
           <AssistantMessage content={streaming.displayContent} isStreaming />
         )}
       </div>
+
+      {/* Error banner */}
+      {chatError && (
+        <div className="mx-3 mb-2 flex items-start gap-2 px-3 py-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg">
+          <AlertCircle size={14} className="shrink-0 mt-0.5" />
+          <span>{chatError}</span>
+          <button className="ml-auto text-amber-500 hover:text-amber-700" onClick={() => setChatError(null)}>x</button>
+        </div>
+      )}
 
       {/* Scroll to bottom button */}
       {!isAtBottom && (
