@@ -1,9 +1,6 @@
-import './index.css';
+import { RouterProvider } from 'react-router-dom';
+import { router } from './router';
 
 export default function App() {
-  return (
-    <div>
-      <h1>Shipwright Command Center</h1>
-    </div>
-  );
+  return <RouterProvider router={router} />;
 }
