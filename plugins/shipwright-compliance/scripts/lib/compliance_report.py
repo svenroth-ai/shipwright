@@ -52,8 +52,10 @@ def generate(data: ComplianceData) -> str:
         artifact_rows.append("| Changelog | [CHANGELOG.md](../CHANGELOG.md) | Release notes |")
     if (data.project_root / "playwright-report" / "index.html").exists():
         artifact_rows.append("| Playwright Report | [playwright-report/index.html](../playwright-report/index.html) | Interactive E2E test results |")
-    if (data.project_root / "visual-build-report.json").exists():
-        artifact_rows.append("| Visual Report | [visual-build-report.json](../visual-build-report.json) | Per-screen visual verification (build → test) |")
+    if (data.project_root / "design-fidelity-report.json").exists():
+        artifact_rows.append("| Design Fidelity Report | [design-fidelity-report.json](../design-fidelity-report.json) | Per-screen design fidelity verification (build → test) |")
+    elif (data.project_root / "visual-build-report.json").exists():
+        artifact_rows.append("| Design Fidelity Report | [visual-build-report.json](../visual-build-report.json) | Per-screen design fidelity verification (build → test, legacy) |")
 
     lines.extend([
         "## Compliance Artifacts",

@@ -33,7 +33,7 @@ from pathlib import Path
 # Category definitions
 # ---------------------------------------------------------------------------
 
-# Root-cause group mapping (same taxonomy as visual comparison)
+# Root-cause group mapping (same taxonomy as design fidelity)
 ROOT_CAUSE_GROUPS = {
     "Spacing": ["heading_hierarchy", "spacing_patterns"],
     "Components": ["component_patterns", "form_patterns", "interactive_patterns"],

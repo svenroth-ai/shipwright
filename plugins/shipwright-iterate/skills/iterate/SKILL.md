@@ -287,7 +287,7 @@ Note: "touches_db" (ordinary query/model edits without schema changes) is NOT a 
 |---|---|---|
 | **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON, iterate_history | Never skippable |
 | **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations) | Only with explicit risk acknowledgment |
-| **Advisory** | Design check, mini-plan, visual comparison, E2E update, external LLM review, release prompt | Freely skippable |
+| **Advisory** | Design check, mini-plan, design fidelity, E2E update, external LLM review, release prompt | Freely skippable |
 | **Complexity-gated** | Iterate spec, context scan depth | Adjustable via "make it medium/small" |
 
 ---
@@ -457,8 +457,8 @@ See `references/design-and-testing.md` for details.
 ### Step 11: E2E Update (features that change user-visible behavior + medium+ changes with new flows)
 See `references/design-and-testing.md`.
 
-### Step 12: Visual Comparison (if structural UI)
-See `references/design-and-testing.md` for two-layer protocol (code fidelity + root-cause grouping).
+### Step 12: Design Fidelity (if structural UI)
+See `references/design-and-testing.md` for structural extraction + agent deep analysis protocol.
 
 ### Step 13: Escalation Check
 See Section 7 (Mid-Flight Escalation).
@@ -549,7 +549,7 @@ Large is a "soft boundary" — force-continue supported with mandatory review + 
 | Integration Test | if CRUD | if CRUD | full suite | — |
 | pgTAP DB Test | if new RLS | if new RLS | full suite | — |
 | E2E Update | if feature+UI | if feature+UI | always | — |
-| Visual Comparison | skip | if structural UI | if UI | — |
+| Design Fidelity | skip | if structural UI | if UI | — |
 | architecture.md | if structural impact | if structural impact | if structural impact | — |
 | Test Results JSON | always | always | always | — |
 | run_config iterate_history | always | always | always | — |
@@ -690,7 +690,7 @@ Write latest-run state to `shipwright_test_results.json`:
     "integration": { "status": "passed|failed|skipped|not_run", "passed": N, "total": N },
     "pgtap": { "status": "passed|failed|skipped|not_run", "passed": N, "total": N },
     "e2e": { "status": "passed|partial|skipped|not_run", "passed": N, "total": N },
-    "visual": { "status": "passed|partial|skipped|not_run", "passed": N, "total": N },
+    "design_fidelity": { "status": "passed|partial|skipped|not_run", "passed": N, "total": N },
     "smoke": { "status": "passed|skipped|not_run" },
     "degraded": []
   }
@@ -803,7 +803,7 @@ Type:       {FEATURE | CHANGE | BUG}
 Complexity: {level}
 Branch:     iterate/{short-description}
 Commit:     {hash}
-Tests:      {N} passing (unit: {N}, e2e: {N|skipped}, visual: {N|skipped})
+Tests:      {N} passing (unit: {N}, e2e: {N|skipped}, design_fidelity: {N|skipped})
 Specs:      {iterate spec path | FR update only | no changes}
 ADR:        Logged in decision_log.md
 CHANGELOG:  Updated ([Unreleased])
@@ -826,7 +826,7 @@ When metadata is incomplete:
 - **Code-reviewer unavailable:** self-review only, flag in ADR as "review-limited"
 - **review.py unavailable / no API key:** skip external review, note in ADR
 - **Pipeline handoff fails:** print manual instructions + handoff file path
-- **No designs/screens/:** skip mockup comparison in browser verify and design check, visual_fidelity marked "degraded", note in ADR
+- **No designs/screens/:** skip mockup comparison in design fidelity check, design_fidelity marked "degraded", note in ADR
 
 Record all degraded conditions in `shipwright_test_results.json` → `degraded` array.
 

@@ -135,18 +135,18 @@ def _test_execution_summary(data: ComplianceData) -> list[str]:
                 f"| — | Playwright |"
             )
 
-        # Visual
-        if tr.visual_skipped:
+        # Design Fidelity
+        if tr.design_fidelity_skipped:
             vis_status = "SKIP"
-            vis_detail = tr.visual_skip_reason or "skipped"
-            lines.append(f"| Visual | {vis_status} | — | — | — | {vis_detail} |")
-        elif tr.visual_total > 0:
-            vis_status = "PASS" if tr.visual_passed == tr.visual_total else "WARNING"
-            vis_detail = "Mockup vs Live"
-            if tr.visual_report_path:
-                vis_detail += f" ([detail](visual-build-report.json))"
+            vis_detail = tr.design_fidelity_skip_reason or "skipped"
+            lines.append(f"| Design Fidelity | {vis_status} | — | — | — | {vis_detail} |")
+        elif tr.design_fidelity_total > 0:
+            vis_status = "PASS" if tr.design_fidelity_passed == tr.design_fidelity_total else "WARNING"
+            vis_detail = "Code-level mockup comparison"
+            if tr.design_fidelity_report_path:
+                vis_detail += f" ([detail](design-fidelity-report.json))"
             lines.append(
-                f"| Visual | {vis_status} | {tr.visual_passed} | {tr.visual_total} "
+                f"| Design Fidelity | {vis_status} | {tr.design_fidelity_passed} | {tr.design_fidelity_total} "
                 f"| — | {vis_detail} |"
             )
 

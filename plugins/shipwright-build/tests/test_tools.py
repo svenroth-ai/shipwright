@@ -151,11 +151,11 @@ def test_generate_session_handoff(tmp_path):
     assert "in_progress" in handoff
 
 
-# --- Visual comparison integration tests ---
+# --- Design fidelity integration tests ---
 
 
-def test_update_section_state_visual_fields(tmp_path):
-    """Visual fidelity fields are persisted to build config and visual report."""
+def test_update_section_state_design_fidelity_fields(tmp_path):
+    """Design fidelity fields are persisted to build config and fidelity report."""
     groups_file = tmp_path / "groups.json"
     groups_file.write_text(json.dumps([
         {"group": "Layout structure", "status": "fixed", "screens": ["01-login.html"], "attempts": 1},
@@ -167,22 +167,22 @@ def test_update_section_state_visual_fields(tmp_path):
         "--section", "01-auth",
         "--status", "complete",
         "--commit", "abc123",
-        "--visual-fidelity", "partial",
-        "--visual-groups-file", str(groups_file),
-        "--visual-screen", "01-login.html",
+        "--design-fidelity", "partial",
+        "--design-groups-file", str(groups_file),
+        "--design-screen", "01-login.html",
         "--project-root", str(tmp_path),
     ])
 
     assert output["success"] is True
 
-    # Check build config has visual_fidelity + pointer
+    # Check build config has design_fidelity + pointer
     config = json.loads((tmp_path / "shipwright_build_config.json").read_text(encoding="utf-8"))
     section = config["sections"][0]
-    assert section["visual_fidelity"] == "partial"
-    assert section["visual_report"] == "visual-build-report.json"
+    assert section["design_fidelity"] == "partial"
+    assert section["design_report"] == "design-fidelity-report.json"
 
-    # Check visual-build-report.json was created
-    report = json.loads((tmp_path / "visual-build-report.json").read_text(encoding="utf-8"))
+    # Check design-fidelity-report.json was created
+    report = json.loads((tmp_path / "design-fidelity-report.json").read_text(encoding="utf-8"))
     assert "01-login.html" in report["screens"]
     screen = report["screens"]["01-login.html"]
     assert screen["section"] == "01-auth"
@@ -194,8 +194,8 @@ def test_update_section_state_visual_fields(tmp_path):
     assert not groups_file.exists()
 
 
-def test_visual_report_merge_multiple_sections(tmp_path):
-    """Multiple sections merge into the same visual-build-report.json."""
+def test_design_fidelity_report_merge_multiple_sections(tmp_path):
+    """Multiple sections merge into the same design-fidelity-report.json."""
     # Section 1
     groups1 = tmp_path / "g1.json"
     groups1.write_text(json.dumps([
@@ -205,9 +205,9 @@ def test_visual_report_merge_multiple_sections(tmp_path):
     run_tool("update_section_state.py", [
         "--section", "01-auth",
         "--status", "complete",
-        "--visual-fidelity", "full",
-        "--visual-groups-file", str(groups1),
-        "--visual-screen", "01-login.html",
+        "--design-fidelity", "full",
+        "--design-groups-file", str(groups1),
+        "--design-screen", "01-login.html",
         "--project-root", str(tmp_path),
     ])
 
@@ -220,41 +220,41 @@ def test_visual_report_merge_multiple_sections(tmp_path):
     run_tool("update_section_state.py", [
         "--section", "02-dashboard",
         "--status", "complete",
-        "--visual-fidelity", "full",
-        "--visual-groups-file", str(groups2),
-        "--visual-screen", "02-dashboard.html",
+        "--design-fidelity", "full",
+        "--design-groups-file", str(groups2),
+        "--design-screen", "02-dashboard.html",
         "--project-root", str(tmp_path),
     ])
 
     # Both screens should be in report
-    report = json.loads((tmp_path / "visual-build-report.json").read_text(encoding="utf-8"))
+    report = json.loads((tmp_path / "design-fidelity-report.json").read_text(encoding="utf-8"))
     assert "01-login.html" in report["screens"]
     assert "02-dashboard.html" in report["screens"]
     assert report["screens"]["01-login.html"]["section"] == "01-auth"
     assert report["screens"]["02-dashboard.html"]["section"] == "02-dashboard"
 
 
-def test_visual_report_build_complete_marker(tmp_path):
+def test_design_fidelity_report_build_complete_marker(tmp_path):
     """--build-complete sets the top-level marker."""
     run_tool("update_section_state.py", [
         "--section", "01-auth",
         "--status", "complete",
-        "--visual-fidelity", "full",
-        "--visual-screen", "01-login.html",
+        "--design-fidelity", "full",
+        "--design-screen", "01-login.html",
         "--build-complete",
         "--project-root", str(tmp_path),
     ])
 
-    report = json.loads((tmp_path / "visual-build-report.json").read_text(encoding="utf-8"))
+    report = json.loads((tmp_path / "design-fidelity-report.json").read_text(encoding="utf-8"))
     assert report["build_complete"] is True
 
 
-def test_no_visual_report_when_no_visual_args(tmp_path):
-    """Without visual args, no visual-build-report.json is created."""
+def test_no_design_fidelity_report_when_no_args(tmp_path):
+    """Without design fidelity args, no design-fidelity-report.json is created."""
     run_tool("update_section_state.py", [
         "--section", "01-auth",
         "--status", "complete",
         "--project-root", str(tmp_path),
     ])
 
-    assert not (tmp_path / "visual-build-report.json").exists()
+    assert not (tmp_path / "design-fidelity-report.json").exists()

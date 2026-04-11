@@ -98,11 +98,11 @@ class TestResults:
     e2e_failures: list[str] = field(default_factory=list)
     e2e_skipped: bool = False
     e2e_skip_reason: str = ""
-    visual_passed: int = 0
-    visual_total: int = 0
-    visual_skipped: bool = False
-    visual_skip_reason: str = ""
-    visual_report_path: str = ""  # Path to visual-build-report.json if available
+    design_fidelity_passed: int = 0
+    design_fidelity_total: int = 0
+    design_fidelity_skipped: bool = False
+    design_fidelity_skip_reason: str = ""
+    design_fidelity_report_path: str = ""  # Path to design-fidelity-report.json if available
     consistency_passed: int = 0
     consistency_total: int = 0
     consistency_skipped: bool = False
@@ -623,14 +623,16 @@ def _parse_test_results_file(path: Path) -> TestResults | None:
     pgtap = data.get("pgtap", {})
     smoke = data.get("smoke", {})
     e2e = data.get("e2e", {})
-    visual = data.get("visual", {})
+    design_fidelity = data.get("design_fidelity", data.get("visual", {}))
     consistency = data.get("consistency", {})
 
-    # Check for visual-build-report.json alongside the test results file
-    visual_report_path = ""
-    report_candidate = path.parent / "visual-build-report.json"
-    if report_candidate.exists():
-        visual_report_path = str(report_candidate)
+    # Check for design-fidelity-report.json alongside the test results file (with fallback)
+    design_fidelity_report_path = ""
+    for report_name in ("design-fidelity-report.json", "visual-build-report.json"):
+        report_candidate = path.parent / report_name
+        if report_candidate.exists():
+            design_fidelity_report_path = str(report_candidate)
+            break
 
     return TestResults(
         schema_version=data.get("schema_version", 1),
@@ -657,11 +659,11 @@ def _parse_test_results_file(path: Path) -> TestResults | None:
         e2e_failures=e2e.get("failures", []),
         e2e_skipped=e2e.get("skipped", False),
         e2e_skip_reason=e2e.get("reason", ""),
-        visual_passed=visual.get("passed", 0),
-        visual_total=visual.get("total", 0),
-        visual_skipped=visual.get("skipped", False),
-        visual_skip_reason=visual.get("skip_reason", ""),
-        visual_report_path=visual_report_path,
+        design_fidelity_passed=design_fidelity.get("passed", 0),
+        design_fidelity_total=design_fidelity.get("total", 0),
+        design_fidelity_skipped=design_fidelity.get("skipped", False),
+        design_fidelity_skip_reason=design_fidelity.get("skip_reason", ""),
+        design_fidelity_report_path=design_fidelity_report_path,
         consistency_passed=consistency.get("passed", 0),
         consistency_total=consistency.get("total", 0),
         consistency_skipped=consistency.get("skipped", False),
@@ -722,10 +724,10 @@ def collect_test_results(project_root: Path) -> TestResults | None:
         e2e_failures=[f for r in all_results for f in r.e2e_failures],
         e2e_skipped=all_results[-1].e2e_skipped,
         e2e_skip_reason=all_results[-1].e2e_skip_reason,
-        visual_passed=sum(r.visual_passed for r in all_results),
-        visual_total=sum(r.visual_total for r in all_results),
-        visual_skipped=all_results[-1].visual_skipped,
-        visual_skip_reason=all_results[-1].visual_skip_reason,
+        design_fidelity_passed=sum(r.design_fidelity_passed for r in all_results),
+        design_fidelity_total=sum(r.design_fidelity_total for r in all_results),
+        design_fidelity_skipped=all_results[-1].design_fidelity_skipped,
+        design_fidelity_skip_reason=all_results[-1].design_fidelity_skip_reason,
     )
 
 
