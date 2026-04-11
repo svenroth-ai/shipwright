@@ -35,7 +35,7 @@ describe('TaskDetailPage', () => {
       expect(screen.getByText('Implement auth')).toBeInTheDocument();
     });
     expect(screen.getByText('Back to Board')).toBeInTheDocument();
-    expect(screen.getByTestId('viewer-slot')).toBeInTheDocument();
+    expect(screen.getByTestId('smart-viewer')).toBeInTheDocument();
   });
 
   it('shows task not found for invalid taskId', async () => {

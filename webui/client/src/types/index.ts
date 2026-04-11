@@ -7,3 +7,5 @@ export type { PipelineRun, PipelinePhase, PhaseStatus } from "./pipeline.js";
 export type { SSEEvent, SSEEventType } from "./sse.js";
 export type { GlobalSettings } from "./settings.js";
 export type { ApiResponse, ApiError, PaginatedResponse } from "./api.js";
+export type { ViewerTab, FileType, RendererProps } from "./viewer.js";
+export { resolveFileType } from "./viewer.js";
