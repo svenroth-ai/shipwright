@@ -170,7 +170,7 @@ def test_resume_midway(tmp_project):
     result = get_next_step(tmp_project)
     assert result["next_step"] == "test"
     assert set(result["completed"]) == {"project", "design", "plan", "build"}
-    assert result["remaining"] == ["test", "changelog", "deploy", "compliance"]
+    assert result["remaining"] == ["test", "changelog", "compliance", "deploy"]
 
 
 # --- CLI ---

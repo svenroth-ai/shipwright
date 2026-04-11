@@ -30,7 +30,7 @@ PHASE_REPORTS = {
     "build": ["rtm", "test_evidence", "change_history", "sbom", "dashboard"],
     "test": ["test_evidence", "dashboard"],
     "deploy": ["dashboard"],
-    "changelog": ["change_history", "dashboard"],
+    "changelog": ["rtm", "test_evidence", "change_history", "sbom", "dashboard"],
     "iterate": ["rtm", "test_evidence", "change_history", "sbom", "dashboard"],
 }
 

@@ -628,6 +628,12 @@ supabase test db
 If ANY test fails: **STOP.** Go back to the build step and fix before continuing.
 Do not proceed to F1 with failing tests.
 
+**If profile has UI and all tests pass:**
+```
+→ Run /shipwright-preview to verify changes visually before committing.
+  Preview URL: {dev_url from shipwright_build_config.json}
+```
+
 ### F1: Drift Check
 
 ```bash

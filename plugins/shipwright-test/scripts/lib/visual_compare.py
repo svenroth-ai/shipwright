@@ -219,8 +219,9 @@ def run_visual_comparison(
 
     Args:
         project_root: Path to the project root directory.
-        base_url: Base URL of the live application.
-        screens: Optional list of screen filenames to compare (e.g. ["01-login.html"]).
+        base_url: Base URL of the live application. If set to the default and
+                  screen-routes.json contains a "base_url" field, that value is used.
+        screens: Optional list of mockup filenames to compare (e.g. ["screens/01-login.html"]).
                  When provided, only these screens are compared. When None, all screens
                  from screen-routes.json are compared.
     """
@@ -233,7 +234,7 @@ def run_visual_comparison(
         }
 
     try:
-        routes = json.loads(routes_path.read_text(encoding="utf-8"))
+        data = json.loads(routes_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as e:
         return {
             "passed": 0, "total": 0, "skipped": True,
@@ -241,7 +242,22 @@ def run_visual_comparison(
             "comparisons": [], "report_path": "",
         }
 
-    if not routes:
+    # Support nested format ({"base_url": ..., "screens": [...]}) and legacy flat dict
+    if isinstance(data, dict) and "screens" in data:
+        base_url_from_json = data.get("base_url")
+        if base_url_from_json and base_url == "http://localhost:3000":
+            base_url = base_url_from_json
+        screen_list: list[dict] = data["screens"]
+    elif isinstance(data, dict):
+        # Legacy flat dict: {filename: route_or_config}
+        screen_list = [
+            {"mockup": k, **(v if isinstance(v, dict) else {"route": v})}
+            for k, v in data.items()
+        ]
+    else:
+        screen_list = []
+
+    if not screen_list:
         return {
             "passed": 0, "total": 0, "skipped": True,
             "skip_reason": "screen-routes.json is empty",
@@ -250,7 +266,7 @@ def run_visual_comparison(
 
     # Filter to requested screens if specified
     if screens is not None:
-        available = set(routes.keys())
+        available = {s.get("mockup", "") for s in screen_list}
         requested = set(screens)
         missing = requested - available
         if missing:
@@ -264,7 +280,7 @@ def run_visual_comparison(
                     f"{sorted(missing)}. Available: {sorted(available)}"
                 ),
             }
-        routes = {k: v for k, v in routes.items() if k in requested}
+        screen_list = [s for s in screen_list if s.get("mockup") in requested]
 
     # Load env for auth (from .env.local via @next/env or OS env)
     _load_env_local(project_root)
@@ -276,10 +292,12 @@ def run_visual_comparison(
     passed = 0
     total = 0
 
-    for mockup_file, config_value in routes.items():
+    for entry in screen_list:
         total += 1
-        route, auth_role = _parse_route_config(config_value)
-        mockup_path = project_root / "designs" / "screens" / mockup_file
+        mockup_file = entry.get("mockup", "")
+        route = entry.get("route", "/")
+        auth_role = entry.get("auth")
+        mockup_path = project_root / "designs" / mockup_file
 
         if not mockup_path.exists():
             comparisons.append({

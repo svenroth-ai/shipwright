@@ -159,8 +159,8 @@ The orchestrator dispatches to each skill in sequence:
 4. /shipwright-test       → Run all tests (full codebase, all splits merged)
 5. /shipwright-security   → Security scan (if AIKIDO_CLIENT_ID set)
 6. /shipwright-changelog  → Changelog + PR + Merge (aggregated across all splits)
-7. /shipwright-deploy     → Deploy to DEV (from merged main, all splits)
-8. /shipwright-compliance → Final compliance report generation (all artifacts)
+7. /shipwright-compliance → Final compliance report generation (all artifacts)
+8. /shipwright-deploy     → Deploy to DEV (from merged main, all splits)
 ```
 
 **Important:** Steps 3a-3b repeat for EACH split. After build completes for one split,
@@ -170,14 +170,14 @@ Test, changelog, and deploy run ONCE after all splits are built.
 
 ### Compliance Phase (Final)
 
-After deploy completes (or is skipped), invoke:
+After changelog completes, invoke:
 ```
 /shipwright-compliance
 ```
-This generates the final, complete compliance package. Incremental updates during the
-pipeline are still useful for monitoring, but this final run ensures all reports
-reflect the deployed state. The phase validator (INFORM level) will note which
-artifacts were generated and which may need attention.
+This generates the final, complete compliance package before deployment. Incremental
+updates during earlier phases track progress, but this final run ensures all reports
+(RTM, test evidence, change history, SBOM, dashboard) are consistent and complete.
+Compliance is the quality gate before deploy — all docs must be finalized before publishing.
 
 ### Split Transition (automatic after build)
 

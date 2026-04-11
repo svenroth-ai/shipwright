@@ -35,7 +35,7 @@ CONFIG_NAME = "shipwright_run_config.json"
 _THIS_PLUGIN = Path(__file__).parent.parent.parent
 _COMPLIANCE_SCRIPT = _THIS_PLUGIN.parent / "shipwright-compliance" / "scripts" / "tools" / "update_compliance.py"
 
-PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "deploy", "compliance"]
+PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "compliance", "deploy"]
 
 # Conditional steps: included only when their check function returns True
 CONDITIONAL_STEPS = {
@@ -183,11 +183,23 @@ def run_compliance_update(project_root: Path, phase: str) -> dict[str, Any] | No
              "--project-root", str(project_root),
              "--phase", phase],
             capture_output=True, text=True, encoding="utf-8", timeout=30,
+            cwd=str(project_root),
         )
         if result.returncode == 0 and result.stdout.strip():
             return json.loads(result.stdout)
-    except (subprocess.TimeoutExpired, json.JSONDecodeError, OSError):
-        pass
+        # Non-zero exit or empty stdout — log for diagnostics
+        sys.stderr.write(json.dumps({
+            "level": "warn",
+            "message": f"Compliance update failed for phase '{phase}'",
+            "returncode": result.returncode,
+            "stderr": (result.stderr or "")[:500],
+        }) + "\n")
+    except (subprocess.TimeoutExpired, json.JSONDecodeError, OSError) as exc:
+        sys.stderr.write(json.dumps({
+            "level": "warn",
+            "message": f"Compliance update error for phase '{phase}'",
+            "error": str(exc),
+        }) + "\n")
     return None
 
 
