@@ -26,7 +26,7 @@ Runs tests across all layers based on stack profile.
 Usage: /shipwright-test
    or: /shipwright-test --fix        (auto-fix failures, max 3 retries)
    or: /shipwright-test --e2e-only   (only Playwright E2E)
-   or: /shipwright-test --visual     (only visual comparison)
+   or: /shipwright-test --design-fidelity  (only design fidelity check)
    or: Invoked by /shipwright-run (orchestrator)
 
 Test layers:
@@ -36,7 +36,7 @@ Test layers:
   2.  Smoke test (HTTP 200 on DEV URL)
   3.  Playwright E2E (if UI project + DEV URL available)
   3.6 Cross-page consistency (if designs/visual-guidelines.md exists)
-  4.  Visual comparison (if designs/screen-routes.json exists)
+  4.  Design fidelity (if designs/screen-routes.json exists)
   5.  Security scan → see /shipwright-security
 ================================================================================
 ```
@@ -376,7 +376,7 @@ uv run {plugin_root}/scripts/lib/playwright_runner.py --cwd {project_root}
    **Commit between fix rounds** — each successful group fix gets its own commit
    to prevent losing progress on session interruption.
 
-6. Dev server remains running for Visual Comparison (Step 3.7). Stopped there.
+6. Dev server remains running for Design Fidelity (Step 3.7). Stopped there.
 
 If no Playwright config exists and setup fails: skip with note.
 
@@ -432,7 +432,7 @@ Parse JSON output: `passed`, `total`, `skipped`, `categories`, `root_cause_group
 
 **3. If INCONSISTENT categories found:**
 
-Print outlier summary grouped by root cause (same taxonomy as visual comparison):
+Print outlier summary grouped by root cause (same taxonomy as design fidelity):
 
 | Root Cause | Categories | Fix Scope |
 |------------|-----------|-----------|
@@ -465,87 +465,64 @@ e. If same issue persists after 3 attempts: park with diagnosis
 
 ---
 
-## Step 3.7: Visual Comparison — Regressions-Only (if applicable)
+## Step 3.7: Design Fidelity Verification — Regressions-Only (if applicable)
 
-**Condition:** Runs if `designs/screen-routes.json` exists in the project root. Also runs standalone via `--visual` flag.
+**Condition:** Runs if `designs/screen-routes.json` exists in the project root. Also runs standalone via `--design-fidelity` flag.
 
-**Purpose:** Detect and fix visual regressions introduced by later build sections (cross-section side effects). Build handles the bulk of visual fixes per-section; Test is the safety net. Non-blocking (WARNING level) — visual differences don't fail the pipeline.
+**Purpose:** Detect and fix design fidelity regressions introduced by later build sections (cross-section side effects). Build handles the bulk of fidelity checks per-section; Test is the safety net. Non-blocking (WARNING level) — fidelity differences don't fail the pipeline.
 
-**1. Ensure dev server is running** (should be up from E2E step):
+**1. Run structural extraction:**
 ```bash
-uv run {plugin_root}/../../shared/scripts/dev_server.py status --cwd {project_root}
-```
-If not running, start it:
-```bash
-uv run {plugin_root}/../../shared/scripts/dev_server.py start --profile {profile} --cwd {project_root}
-```
-
-**2. Read build visual results:**
-Read `visual-build-report.json` from the project root. Build a screen-status map: `{screen: status}`.
-- If file is missing or fails to parse → **fallback**: treat all screens as unchecked (full fix behavior, backward-compatible).
-- If `build_complete: false` → log WARNING ("Build may still be in progress"), proceed with triage anyway.
-
-**3. Run visual comparison (all screens):**
-```bash
-uv run {plugin_root}/scripts/lib/visual_compare.py \
-  --cwd "{project_root}" \
-  --base-url "http://localhost:{port}"
+uv run {plugin_root}/scripts/lib/design_fidelity_check.py \
+  --cwd "{project_root}"
 ```
 
 Parse the JSON output:
-- `skipped: true` → no screen-routes.json, skip to step 7
-- `passed == total` → all screens match, PASS, skip to step 6
-- `passed < total` → mismatches found, proceed to triage
+- `skipped: true` → no screen-routes.json, skip to step 6
+- All screens `status: "pass"` → PASS, skip to step 5
+- Some screens `status: "needs_review"` → proceed to triage
 
-**4. Triage against build results:**
+**2. Read build fidelity results:**
+Read `design-fidelity-report.json` from the project root. Build a screen-status map: `{screen: status}`.
+- If file is missing or fails to parse → **fallback**: treat all screens as unchecked (full analysis, backward-compatible).
+- If `build_complete: false` → log WARNING ("Build may still be in progress"), proceed with triage anyway.
 
-For each screen with visual mismatches, determine its category using `visual-build-report.json` screen status (NOT the script's `match` field — that only indicates screenshot capture success):
+**3. Triage against build results:**
+
+For each screen with `status: "needs_review"`, determine its category using `design-fidelity-report.json`:
 
 | Category | Condition | Priority | Action |
 |----------|-----------|----------|--------|
-| **Resolved** | Screen was `partial` in Build, now passes | Log only | Log as positive outcome, no fix needed |
-| **Regression** | Screen was `full` in Build, now fails | Prio 1 | Cross-section side effect — fix loop |
+| **Resolved** | Screen was `partial` in Build, now auto-passes | Log only | Log as positive outcome |
+| **Regression** | Screen was `full` in Build, now has failures | Prio 1 | Cross-section side effect — agent deep review |
 | **Persistent Failure** | Screen was `partial` in Build, still fails | Prio 2 | Build gave up — one more try |
-| **Unchecked** | Screen not in build report | Prio 3 | Never verified — full fix loop |
+| **Unchecked** | Screen not in build report | Prio 3 | Never verified — full agent review |
 
-If a screen appears in multiple groups in the build report: status = worst-case (partial if in ANY parked group).
+**4. Agent deep review (for flagged screens):**
 
-**5. Fix loop (Regressions + Persistent Failures + Unchecked only):**
+For each flagged screen:
+a. Read the mockup HTML source at `{mockup_path}`
+b. Read the implementation TSX source at `{implementation_files[0]}`
+c. Compare against 5 dimensions: Layout Structure, Component Order, Component Types, Card Patterns, shadcn Rules
+d. If mismatches found: fix implementation, run unit tests, commit: `fix(test-fidelity): {description}`
+e. Re-run `design_fidelity_check.py --screen {screen}` to verify fix
+f. Max 3 retries per screen; if unresolvable: park with diagnosis
 
-Group failures by root cause (identical taxonomy to Build):
+**After all screens attempted:**
+- Report summary: which screens fixed, which parked, with diagnosis per parked screen
+- **ASK user** for direction on parked screens (one consolidated dialog)
+- **Commit between fix rounds** — each fix gets its own commit
 
-| Root Cause | Example | Fix Scope |
-|------------|---------|-----------|
-| **Layout structure** | Sidebar vs header, missing nav sections | Layout components, shell |
-| **Colors/typography** | Wrong primary color, font-family | globals.css, CSS variables |
-| **Missing components** | No logo, no stats section, no CTA | Individual pages/components |
-| **Spacing/shadows/radius** | Wrong padding, no card shadow | Tailwind classes, globals.css |
-
-Fix loop per group (max 3 retries per group):
-
-a. Read both mockup screenshot + live screenshot for a representative screen in the group
-b. Identify specific CSS/layout/component divergences
-c. Fix source files (components, globals.css, layout.tsx, page.tsx)
-d. Rebuild app: `npm run build` (production) or wait for dev server HMR
-e. Re-run `visual_compare.py` for this group's screens
-f. If fix works: **commit the fix** with message `fix(test-visual): {description}`, move to next group
-g. If same issue persists after 3 attempts on this group: **park it** with diagnosis, move to next group
-
-**After all groups attempted:**
-- Report summary: which groups fixed, which parked, with diagnosis per parked group
-- **ASK user** for direction on parked groups (one consolidated dialog, not per group)
-- **Commit between fix rounds** — each successful group fix gets its own commit
-
-**6. Record results** in `shipwright_test_results.json`:
+**5. Record results** in `shipwright_test_results.json`:
 ```json
 {
-  "visual": {
+  "design_fidelity": {
     "passed": N,
     "total": N,
     "skipped": false,
-    "comparisons": [
-      {"mockup": "01-login.html", "route": "/login", "match": true},
-      {"mockup": "08-dashboard.html", "route": "/dashboard", "match": false}
+    "screens": [
+      {"mockup": "01-login.html", "route": "/login", "status": "pass"},
+      {"mockup": "08-dashboard.html", "route": "/dashboard", "status": "needs_review"}
     ],
     "triage": {
       "regressions": 1,
@@ -557,7 +534,7 @@ g. If same issue persists after 3 attempts on this group: **park it** with diagn
 }
 ```
 
-**7. Stop dev server** (always — whether visual ran or was skipped):
+**6. Stop dev server** (always — whether design fidelity ran or was skipped):
 ```bash
 uv run {plugin_root}/../../shared/scripts/dev_server.py stop --cwd {project_root}
 ```
@@ -588,7 +565,7 @@ pgTAP:         {passed}/{total} passed ({duration}s) | SKIP: {reason}
 Smoke test:    {PASS | FAIL | SKIP} ({url}, {response_time}ms)
 E2E tests:     {passed}/{total} passed | SKIP
 Consistency:   {passed}/{total} categories consistent | SKIP
-Visual tests:  {passed}/{total} matched | SKIP
+Design fidelity: {passed}/{total} checked | SKIP
 Security:      {via /shipwright-security | not run}
 
 Overall:       {PASS | FAIL}
@@ -623,7 +600,7 @@ Test results determine pipeline continuation:
 | **Smoke test** | **Pipeline stops** (blocking) | App not running = can't deploy |
 | **E2E tests** | **Warning only** (non-blocking) | E2E can be flaky; log failures but continue |
 | **Consistency** | **Warning only** (non-blocking) | Cross-page cosmetic issues don't gate deployment |
-| **Visual tests** | **Warning only** (non-blocking) | Visual divergence ≠ broken functionality |
+| **Design fidelity** | **Warning only** (non-blocking) | Fidelity divergence ≠ broken functionality |
 
 If unit tests, integration tests, pgTAP tests, or smoke test FAIL: set phase status to `FAIL` and inform user. Do NOT proceed to deploy.
 
@@ -639,7 +616,7 @@ Before marking the test phase complete, ALL test layers must have an explicit re
 | Smoke test | `pass`, `fail`, or `skipped: {reason}` |
 | E2E tests | `pass`, `fail`, or `skipped: {reason}` |
 | Consistency | `pass`, `warning`, or `skipped: {reason}` |
-| Visual tests | `pass`, `fail`, or `skipped: {reason}` |
+| Design fidelity | `pass`, `fail`, or `skipped: {reason}` |
 
 If any layer has NO result (was never executed and has no skip reason):
 - **Do NOT mark test phase as complete**
@@ -657,7 +634,7 @@ Valid skip reasons:
 - `skipped: smoke test failed` (E2E, because prerequisite not met)
 - `skipped: no designs/visual-guidelines.md` (Consistency)
 - `skipped: profile has no UI` (Consistency)
-- `skipped: no screen-routes.json` (Visual)
+- `skipped: no screen-routes.json` (Design fidelity)
 
 **Reflection — Capture Test Learnings** (before marking phase complete):
 

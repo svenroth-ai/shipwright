@@ -20,8 +20,8 @@ Shipwright infers your stack, interviews you about requirements, designs the UI,
 
 - **IREB-aligned specs** from a structured requirements interview - testable acceptance criteria from day one
 - **HTML design mockups** with visual guidelines, design tokens, and a browser-based review viewer
-- **Test-Driven Development** with automated unit, integration (real DB), pgTAP (RLS), smoke, E2E, and visual comparison testing
-- **Visual fidelity verification** - screenshot comparison with root-cause grouping catches UI drift automatically
+- **Test-Driven Development** with automated unit, integration (real DB), pgTAP (RLS), smoke, E2E, and design fidelity testing
+- **Design fidelity verification** - code-level comparison of implementation vs mockup HTML catches UI drift automatically
 - **Compliance documentation** generated automatically: traceability matrix, test evidence, change history, SBOM
 - **Architecture docs** (`architecture.md`, `conventions.md`, `decision_log.md`) kept in sync by every phase
 - **A constitution** with mechanical enforcement - hooks block dangerous actions, not advisory prose
@@ -515,10 +515,10 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 - Installs dependencies listed in the section spec
 - Writes tests first (TDD red phase) -- tests should fail for the right reasons
 - Implements code until all tests pass (green phase), running tests after each significant change
-- For UI projects, performs a two-layer visual fidelity check:
-  - **Code-level fidelity** -- compares implementation code against mockup HTML for layout structure, component hierarchy, and shadcn/ui patterns before taking any screenshots
-  - **Screenshot comparison with root-cause grouping** -- runs `visual_compare.py` to capture mockup and live screenshots side-by-side, groups failures by cause (layout structure, colors/typography, missing components, spacing/shadows), runs targeted fix loops (max 3 retries per group), and commits each visual fix separately
-- Visual fix results are tracked in `visual-build-report.json` -- this artifact feeds into the test phase for regression detection
+- For UI projects, performs a design fidelity check:
+  - **Code-level fidelity** -- runs `design_fidelity_check.py` to extract structural summaries from mockup HTML and implementation TSX, then compares layout structure, component hierarchy, component types, card patterns, and shadcn/ui rules
+  - Auto-checks provide quick pass/fail signals; screens that fail auto-checks get deeper agent analysis where the agent reads both source files side-by-side
+- Design fidelity results are tracked in `design-fidelity-report.json` -- this artifact feeds into the test phase for regression detection
 - Optionally refactors for cleanliness without changing behavior
 - Runs a two-tier code review: a quick self-review checklist (always), plus a full subagent-based review for large diffs, high-risk sections, or security-sensitive files
 - Applies accepted review fixes, re-runs tests to confirm no regressions
@@ -528,7 +528,7 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 **Standalone usage.** Yes. Run `/shipwright-build @sections/01-auth.md` for any section file. When used standalone, you manage the section order yourself. When used within the pipeline, the orchestrator feeds sections in dependency order and handles split transitions automatically.
 ### 4.6 Testing -- /shipwright-test
 
-**Purpose:** Runs your project's full test suite across multiple layers -- unit tests, integration tests (real DB), pgTAP database tests, smoke tests, end-to-end (E2E) browser tests, cross-page UI consistency checks, and visual comparison -- to catch bugs before deployment. It is profile-aware, meaning it automatically picks the right test runners and URLs based on your stack.
+**Purpose:** Runs your project's full test suite across multiple layers -- unit tests, integration tests (real DB), pgTAP database tests, smoke tests, end-to-end (E2E) browser tests, cross-page UI consistency checks, and design fidelity verification -- to catch bugs before deployment. It is profile-aware, meaning it automatically picks the right test runners and URLs based on your stack.
 
 **Command & Arguments:**
 
@@ -554,8 +554,8 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 - E2E test results (pass/fail/skip counts)
 - Auto-generated E2E specs in `e2e/flows/` and `e2e/pages/` if test plans exist but specs do not
 - `playwright-report/index.html` -- interactive HTML report with screenshots, linked from compliance reports
-- Visual comparison report (`designs/visual-comparison/index.html`) with side-by-side mockup vs live screenshots
-- Visual triage results in `shipwright_test_results.json` (regressions, persistent failures, resolved screens)
+- Design fidelity verification results (code-level comparison of implementation vs mockup HTML)
+- Design fidelity triage results in `shipwright_test_results.json` (regressions, persistent failures, resolved screens)
 - Updated `agent_docs/conventions.md` with test learnings (when flaky patterns or infra quirks discovered)
 - A summary report printed to the terminal
 
@@ -568,7 +568,7 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 5. Runs a smoke test against your dev URL (checking for HTTP 200 on `/api/health`). If the server is not running, it attempts to diagnose and fix the issue before skipping.
 4. If E2E test plans exist from `/shipwright-plan` but no `.spec.ts` files have been written yet, it generates Playwright specs from the plans using the Page Object Model pattern.
 5. Runs Playwright E2E tests (starts and stops the dev server automatically). Failed tests can be debugged with a browser-fixer subagent that reads screenshots and error messages.
-6. Runs visual comparison as a **regressions-only safety net**. Reads `visual-build-report.json` (what the build phase already verified) and triages each screen: regressions (was passing in build, now failing), persistent failures (build gave up), and unchecked screens (never verified). Only fixes regressions and persistent failures -- resolved screens are skipped. Uses the same root-cause grouping and fix loops as build.
+6. Runs design fidelity verification as a **regressions-only safety net**. Reads `design-fidelity-report.json` (what the build phase already verified) and triages each screen: regressions (was passing in build, now failing), persistent failures (build gave up), and unchecked screens (never verified). Only fixes regressions and persistent failures -- resolved screens are skipped. Uses code-level structural comparison (no screenshots) with agent deep analysis for flagged screens.
 7. Runs an E2E results verification step: compares `shipwright_test_results.json` against Playwright's authoritative `e2e-results.json` to catch count discrepancies (e.g., setup project tests being counted as E2E tests). If numbers diverge, the pipeline corrects `shipwright_test_results.json` and documents the reason.
 8. Produces a structured results summary with explicit status for every layer.
 
@@ -582,7 +582,7 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 | Smoke test | Pipeline stops (blocking) | If the app is not running, deployment is pointless |
 | E2E tests | Warning only (non-blocking) | E2E tests can be flaky; failures are logged but do not block |
 | Cross-page consistency | Warning only (advisory) | Cross-page UI inconsistencies are logged but do not block deployment |
-| Visual comparison | Warning only (advisory) | Visual mismatches are logged but do not block deployment |
+| Design fidelity | Warning only (advisory) | Fidelity mismatches are logged but do not block deployment |
 
 Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason}`) before the phase is considered complete. If any layer has no result, the phase stays in `incomplete` status.
 
@@ -955,7 +955,7 @@ Every skill works standalone -- you do not always need the full pipeline:
 | `/shipwright-build @sections/01-models.md` | Just implement one section |
 | `/shipwright-test` | Just run the test suite |
 | `/shipwright-preview` | Start local dev server and open in browser |
-| `/shipwright-test --visual` | Run visual comparison only (mockup vs live screenshots) |
+| `/shipwright-test --design-fidelity` | Run design fidelity check only (code-level mockup vs implementation) |
 | `/shipwright-deploy` | Just deploy to Jelastic |
 | `/shipwright-changelog` | Just generate changelog and create a PR |
 | `/shipwright-compliance` | Just generate compliance reports |
@@ -1105,7 +1105,7 @@ Not all phases can be skipped. Iterate defines three categories:
 |----------|----------|----------------|
 | **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON | Never |
 | **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations) | Only with explicit risk acknowledgment |
-| **Advisory** | Design check, mini-plan, visual comparison, E2E update, external LLM review | Freely skippable |
+| **Advisory** | Design check, mini-plan, design fidelity, E2E update, external LLM review | Freely skippable |
 
 ### Escape Hatch and Escalation
 

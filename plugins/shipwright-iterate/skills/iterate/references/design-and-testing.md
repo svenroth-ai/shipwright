@@ -1,6 +1,6 @@
 # Design & Testing Reference
 
-Consolidated protocol for: Design Check, Scoped Testing, Browser Verify, Visual Comparison, E2E Update, Smoke Test.
+Consolidated protocol for: Design Check, Scoped Testing, Browser Verify, Design Fidelity, E2E Update, Smoke Test.
 
 ---
 
@@ -152,8 +152,8 @@ UI changes at any complexity level.
    ```
 3. If JS errors: read screenshot, diagnose, fix (max 3 retries)
 3b. If UI change: compare screenshot against designs/screens/{affected}.html
-    mockup for layout/styling alignment before proceeding to Visual Comparison
-4. Server stays running for smoke test / visual comparison
+    mockup for layout/styling alignment before proceeding to Design Fidelity
+4. Server stays running for smoke test / design fidelity
 
 ### Skip When
 No UI change in this iteration.
@@ -163,7 +163,7 @@ No UI change in this iteration.
 ## Smoke Test
 
 ### When
-Dev server is already running (browser verify or visual comparison started it).
+Dev server is already running (browser verify or design fidelity started it).
 
 ### Protocol
 Quick HTTP 200 check on affected routes. Nearly free since server is up.
@@ -176,56 +176,48 @@ Yes — if a route returns non-200, stop and investigate before proceeding.
 
 ---
 
-## Design Fidelity + Visual Comparison
+## Design Fidelity Analysis
 
-### Layer A: Code-Level Fidelity Check
-Before taking screenshots, compare implementation code against mockup HTML:
+### Step 1: Structural Extraction
+Run the design fidelity helper to get automated check results:
+```bash
+uv run {test_plugin_root}/scripts/lib/design_fidelity_check.py \
+  --cwd "{project_root}" --screen {affected_screen1} --screen {affected_screen2}
+```
+
+Use `--screen` flag to filter to screens affected by this iteration.
+
+### Step 2: Auto-Check Review
+If all `auto_checks` pass for all screens → log "Design fidelity: auto-pass", skip to Escalation.
+
+### Step 3: Agent Deep Analysis (for screens with failures)
+For each screen with `status: "needs_review"`, read BOTH files:
+- The mockup HTML at `{mockup_path}`
+- The implementation TSX at `{implementation_files[0]}`
+
+Compare against 5 dimensions:
 1. **Layout Structure** — grid/flex match mockup?
 2. **Component Order** — same visual hierarchy?
 3. **Component Types** — table vs card grid? Tabs vs accordion?
-4. **shadcn Rules** — gap not space-y? Semantic colors? Proper card composition?
+4. **Card Patterns** — full composition? (CardHeader + CardTitle + CardContent + CardFooter)
+5. **shadcn Rules** — gap not space-y? Semantic colors? Proper card composition?
 
-Fix mismatches in code first, re-run unit tests to verify no regressions.
+Fix mismatches, re-run unit tests to verify no regressions, commit: `fix(fidelity): {description}`.
 
-### Layer B: Screenshot Comparison with Root-Cause Grouping
-After code-level fidelity passes:
+### Step 4: Verify fixes
+Re-run `design_fidelity_check.py --screen {fixed_screens}` to confirm fixes. Max 3 retries per screen. If unresolvable after 3 attempts: **revert uncommitted changes**, park with diagnosis.
 
-1. Run visual comparison:
-   ```bash
-   uv run {test_plugin_root}/scripts/lib/visual_compare.py \
-     --cwd "{project_root}" --base-url "http://localhost:{port}"
-   ```
-   Use `--screen` flag to filter to specific screens when only certain screens are relevant:
-   ```bash
-   uv run ... --screen 01-login.html --screen 02-register.html
-   ```
+After all screens:
+- Report summary (fixed vs parked screens with diagnosis)
+- ASK user for direction on parked screens
+- Each successful fix gets its own commit
 
-2. Group failures by root cause:
-   | Root Cause | Example | Fix Scope |
-   |---|---|---|
-   | **Layout structure** | Sidebar vs header, missing nav | Layout components, shell |
-   | **Colors/typography** | Wrong primary color, font | globals.css, CSS variables |
-   | **Missing components** | No logo, no stats section | Individual pages/components |
-   | **Spacing/shadows/radius** | Wrong padding, no shadow | Tailwind classes, globals.css |
-
-3. Fix loop per group (max 3 retries per group, max 8 total):
-   a. Read mockup + live screenshots for representative screen
-   b. Inspect DOM/classes FIRST, then targeted fix
-   c. Re-run visual_compare.py for this group's screens
-   d. If fix works: commit with `fix(visual): {description}`
-   e. If same issue persists after 3 attempts: **revert uncommitted changes**, park it with diagnosis
-
-4. After all groups:
-   - Report summary (fixed vs parked groups with diagnosis)
-   - ASK user for direction on parked groups
-   - Each successful group fix gets its own commit
-
-> **Note on full pipeline:** In `/shipwright-build`, visual comparison runs per-section with root-cause grouping (same taxonomy, same fix loop). In `/shipwright-test`, visual comparison runs as a regressions-only safety net — it triages screens against `visual-build-report.json` and only fixes regressions (screens that passed in build but now fail) and persistent failures. Iterate does NOT use this two-phase split — visual comparison happens once (Step 12) with the full fix loop above.
+> **Note on full pipeline:** In `/shipwright-build`, design fidelity runs per-section in Step 7.5 using the same `design_fidelity_check.py` helper + agent deep analysis. In `/shipwright-test`, design fidelity runs as a regressions-only safety net — it triages screens against `design-fidelity-report.json`. Iterate does NOT use this two-phase split — design fidelity happens once with the full analysis above.
 
 ### Escalation
 If still mismatched after fix loops:
-- Mark `visual_fidelity: "partial"` in test results
-- Log warning with diagnosis per parked group, continue (do NOT hard-fail)
+- Mark `design_fidelity: "partial"` in test results
+- Log warning with diagnosis per parked screen, continue (do NOT hard-fail)
 
 ### Skip When
 No UI structural change, text/color-only tweaks, logic-only fixes.
@@ -234,7 +226,7 @@ No UI structural change, text/color-only tweaks, logic-only fixes.
 
 ## Cross-Page Consistency Re-Check (medium+ UI changes)
 
-After visual comparison, verify no new cross-page inconsistencies introduced by this change:
+After design fidelity analysis, verify no new cross-page inconsistencies introduced by this change:
 
 1. **Run scoped check:**
 ```bash

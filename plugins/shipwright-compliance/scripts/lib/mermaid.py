@@ -174,15 +174,15 @@ def testing_pyramid_diagram(sections: list[SectionInfo], test_results=None) -> s
         e2e_label = "E2E Tests<br/>not run"
         e2e_color = "#9E9E9E"
 
-    # Visual layer — from test_results if available
-    if tr and not tr.visual_skipped and tr.visual_total > 0:
-        vis_label = f"Visual<br/>{tr.visual_passed}/{tr.visual_total} screens"
-        vis_color = "#4CAF50" if tr.visual_passed == tr.visual_total else "#FFC107"
-    elif tr and tr.visual_skipped:
-        vis_label = "Visual<br/>skipped"
+    # Design fidelity layer — from test_results if available
+    if tr and not tr.design_fidelity_skipped and tr.design_fidelity_total > 0:
+        vis_label = f"Design Fidelity<br/>{tr.design_fidelity_passed}/{tr.design_fidelity_total} screens"
+        vis_color = "#4CAF50" if tr.design_fidelity_passed == tr.design_fidelity_total else "#FFC107"
+    elif tr and tr.design_fidelity_skipped:
+        vis_label = "Design Fidelity<br/>skipped"
         vis_color = "#9E9E9E"
     else:
-        vis_label = "Visual<br/>not run"
+        vis_label = "Design Fidelity<br/>not run"
         vis_color = "#9E9E9E"
 
     # Security layer — always informational

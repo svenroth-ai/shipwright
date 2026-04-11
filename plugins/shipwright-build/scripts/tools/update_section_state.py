@@ -4,11 +4,11 @@
 Usage:
     uv run update_section_state.py --section <name> --status <status> --commit <hash>
     uv run update_section_state.py --section <name> --status complete --commit <hash> \
-        --visual-fidelity partial --visual-groups-file /tmp/groups.json \
-        --visual-screen 01-login.html --visual-screen 02-register.html
+        --design-fidelity partial --design-groups-file /tmp/groups.json \
+        --design-screen 01-login.html --design-screen 02-register.html
 
 Updates shipwright_build_config.json in the project root.
-Also updates visual-build-report.json (canonical Build→Test visual artifact).
+Also updates design-fidelity-report.json (canonical Build→Test design fidelity artifact).
 """
 
 import argparse
@@ -36,20 +36,20 @@ def _atomic_write_json(path: Path, data: dict) -> None:
         raise
 
 
-def _update_visual_build_report(
+def _update_design_fidelity_report(
     project_root: Path,
     section: str,
-    visual_fidelity: str,
-    visual_groups: list[dict] | None,
-    visual_screens: list[str],
+    design_fidelity: str,
+    design_groups: list[dict] | None,
+    design_screens: list[str],
     build_complete: bool = False,
 ) -> None:
-    """Update visual-build-report.json with screen-centric visual data for this section.
+    """Update design-fidelity-report.json with screen-centric fidelity data for this section.
 
     Read-merge-write: preserves data from other sections. Validates screen uniqueness
     (warns on duplicates, last-writer-wins).
     """
-    report_path = project_root / "visual-build-report.json"
+    report_path = project_root / "design-fidelity-report.json"
 
     report: dict = {"build_complete": False, "screens": {}}
     if report_path.exists():
@@ -65,8 +65,8 @@ def _update_visual_build_report(
     groups_fixed = []
     groups_parked = []
     diagnosis = ""
-    if visual_groups:
-        for g in visual_groups:
+    if design_groups:
+        for g in design_groups:
             status = g.get("status", "n/a")
             if status == "fixed":
                 groups_fixed.append(g.get("group", ""))
@@ -77,13 +77,13 @@ def _update_visual_build_report(
 
     # Determine per-screen status: worst-case if screen appears in any parked group
     screen_in_parked = set()
-    if visual_groups:
-        for g in visual_groups:
+    if design_groups:
+        for g in design_groups:
             if g.get("status") == "parked":
                 for s in g.get("screens", []):
                     screen_in_parked.add(s)
 
-    for screen in visual_screens:
+    for screen in design_screens:
         # Warn on duplicate (screen already owned by different section)
         existing = report["screens"].get(screen)
         if existing and existing.get("section") != section:
@@ -93,7 +93,7 @@ def _update_visual_build_report(
                 file=sys.stderr,
             )
 
-        screen_status = "partial" if screen in screen_in_parked else visual_fidelity
+        screen_status = "partial" if screen in screen_in_parked else design_fidelity
         report["screens"][screen] = {
             "section": section,
             "status": screen_status,
@@ -119,15 +119,15 @@ def main() -> int:
     parser.add_argument("--review-type", choices=["self-review", "full-review"],
                         help="Type of code review performed")
     parser.add_argument("--project-root", help="Project root (default: cwd)")
-    # Visual comparison fields
-    parser.add_argument("--visual-fidelity", choices=["full", "partial", "skipped"],
-                        help="Visual fidelity result for this section")
-    parser.add_argument("--visual-groups-file",
-                        help="Path to temp JSON file with visual groups array (cleaned up after read)")
-    parser.add_argument("--visual-screen", action="append", dest="visual_screens", metavar="FILENAME",
+    # Design fidelity fields
+    parser.add_argument("--design-fidelity", choices=["full", "partial", "skipped"],
+                        help="Design fidelity result for this section")
+    parser.add_argument("--design-groups-file",
+                        help="Path to temp JSON file with design fidelity groups array (cleaned up after read)")
+    parser.add_argument("--design-screen", action="append", dest="design_screens", metavar="FILENAME",
                         help="Screen filename checked in this section (repeatable)")
     parser.add_argument("--build-complete", action="store_true",
-                        help="Mark build as complete in visual-build-report.json")
+                        help="Mark build as complete in design-fidelity-report.json")
     args = parser.parse_args()
 
     project_root = Path(args.project_root).resolve() if args.project_root else Path.cwd()
@@ -151,16 +151,16 @@ def main() -> int:
             print(json.dumps({"success": False, "error": "Invalid JSON for --review-findings"}))
             return 1
 
-    # Parse visual groups from file if provided
-    visual_groups = None
-    if args.visual_groups_file:
-        groups_path = Path(args.visual_groups_file)
+    # Parse design fidelity groups from file if provided
+    design_groups = None
+    if args.design_groups_file:
+        groups_path = Path(args.design_groups_file)
         try:
-            visual_groups = json.loads(groups_path.read_text(encoding="utf-8"))
+            design_groups = json.loads(groups_path.read_text(encoding="utf-8"))
             # Clean up temp file after reading
             groups_path.unlink(missing_ok=True)
         except (json.JSONDecodeError, OSError) as e:
-            print(json.dumps({"success": False, "error": f"Failed to read visual groups file: {e}"}))
+            print(json.dumps({"success": False, "error": f"Failed to read design groups file: {e}"}))
             return 1
 
     # Build section data update
@@ -176,9 +176,9 @@ def main() -> int:
             section_data["code_review_findings"] = review_findings
         if args.review_type:
             section_data["review_type"] = args.review_type
-        if args.visual_fidelity:
-            section_data["visual_fidelity"] = args.visual_fidelity
-            section_data["visual_report"] = "visual-build-report.json"
+        if args.design_fidelity:
+            section_data["design_fidelity"] = args.design_fidelity
+            section_data["design_report"] = "design-fidelity-report.json"
 
     # Update or add section
     found = False
@@ -196,14 +196,14 @@ def main() -> int:
     config["sections"] = sections
     _atomic_write_json(config_path, config)
 
-    # Update visual-build-report.json if visual data provided
-    if args.visual_fidelity and args.visual_screens:
-        _update_visual_build_report(
+    # Update design-fidelity-report.json if design fidelity data provided
+    if args.design_fidelity and args.design_screens:
+        _update_design_fidelity_report(
             project_root,
             section=args.section,
-            visual_fidelity=args.visual_fidelity,
-            visual_groups=visual_groups,
-            visual_screens=args.visual_screens,
+            design_fidelity=args.design_fidelity,
+            design_groups=design_groups,
+            design_screens=args.design_screens,
             build_complete=args.build_complete,
         )
 

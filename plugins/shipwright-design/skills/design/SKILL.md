@@ -496,7 +496,7 @@ REVIEW YOUR SCREENS
 ================================================================================
 ```
 
-**Generate screen-routes.json** for visual testing (`/shipwright-test --visual`):
+**Generate screen-routes.json** for design fidelity testing (`/shipwright-test --design-fidelity`):
 
 After all screens are generated, create `designs/screen-routes.json` mapping each mockup to its app route:
 

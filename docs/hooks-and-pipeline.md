@@ -51,7 +51,7 @@ CONDITIONAL_STEPS = {"security": {"env_var": "AIKIDO_CLIENT_ID", "after": "test"
 PIPELINE_PHASES = ["project", "design", "plan", "build", "test", "changelog", "deploy", "compliance"]
 ```
 Dashboard uses `PIPELINE_PHASES` as canonical order, merging dynamic steps (e.g., "security") from `run_config["pipeline"]`.
-After build completes: shows split summary table. After test completes: shows test layer results (unit/integration/pgtap/smoke/e2e/visual).
+After build completes: shows split summary table. After test completes: shows test layer results (unit/integration/pgtap/smoke/e2e/design_fidelity).
 
 ---
 
@@ -402,7 +402,7 @@ When a phase detects missing prerequisite artifacts, it should attempt to derive
 | Missing Artifact | Derived From | Used By |
 |---|---|---|
 | `designs/visual-guidelines.md` | CSS `:root` variables in `designs/screens/*.html` | Build (Browser Verify), Test (Consistency) |
-| `designs/screen-routes.json` | Mockup filenames + router config (`src/router.tsx`) | Test (Visual Comparison) |
+| `designs/screen-routes.json` | Mockup filenames + router config (`src/router.tsx`) | Test (Design Fidelity), Build (Design Fidelity) |
 | `planning/claude-plan-e2e.md` | `screen-routes.json` + `architecture.md` | Test (E2E Spec Generation) |
 | `dev_url` in build config | `CLAUDE.md` (`PORT=`), `package.json` scripts (`--port`) | Test (Smoke, E2E), Build (Browser Verify) |
 | `playwright.config.ts` | Template + `dev_url` port substitution | Test (E2E), Build (Browser Verify) |
