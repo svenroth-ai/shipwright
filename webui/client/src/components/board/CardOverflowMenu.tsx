@@ -1,12 +1,13 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { MoreHorizontal, CheckCircle, Trash2 } from 'lucide-react';
+import { MoreHorizontal, CheckCircle, Pencil, Trash2 } from 'lucide-react';
 
 interface CardOverflowMenuProps {
   onClose: () => void;
   onDelete: () => void;
+  onEdit?: () => void;
 }
 
-export function CardOverflowMenu({ onClose, onDelete }: CardOverflowMenuProps) {
+export function CardOverflowMenu({ onClose, onDelete, onEdit }: CardOverflowMenuProps) {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -25,6 +26,17 @@ export function CardOverflowMenu({ onClose, onDelete }: CardOverflowMenuProps) {
           sideOffset={4}
           onClick={(e) => e.stopPropagation()}
         >
+          {onEdit && (
+            <>
+              <DropdownMenu.Item
+                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 outline-none"
+                onSelect={onEdit}
+              >
+                <Pencil size={14} /> Edit task
+              </DropdownMenu.Item>
+              <DropdownMenu.Separator className="h-px bg-gray-100 my-1" />
+            </>
+          )}
           <DropdownMenu.Item
             className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 outline-none"
             onSelect={onClose}

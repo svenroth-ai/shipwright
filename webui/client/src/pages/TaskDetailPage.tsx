@@ -1,14 +1,17 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTasks } from '../hooks/useTasks';
 import { TaskHeader } from '../components/detail/TaskHeader';
 import { PanelLayout } from '../components/detail/PanelLayout';
 import { SmartViewer } from '../components/viewer/SmartViewer';
 import { ChatPanel } from '../components/chat/ChatPanel';
+import { EditTaskModal } from '../components/board/EditTaskModal';
 
 export default function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
   const { data: tasks = [], isLoading } = useTasks();
+  const [editOpen, setEditOpen] = useState(false);
 
   const task = tasks.find((t) => t.id === taskId);
 
@@ -38,13 +41,16 @@ export default function TaskDetailPage() {
     );
   }
 
+  const isPending = task.status === 'pending' || task.kanbanStatus === 'backlog';
+
   return (
     <div className="flex flex-col h-full">
-      <TaskHeader task={task} />
+      <TaskHeader task={task} onEdit={isPending ? () => setEditOpen(true) : undefined} />
       <PanelLayout
         leftPanel={<ChatPanel projectId={task.projectId} taskId={task.id} />}
         rightPanel={<SmartViewer projectId={task.projectId} />}
       />
+      <EditTaskModal open={editOpen} onOpenChange={setEditOpen} task={task} />
     </div>
   );
 }

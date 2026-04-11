@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiPatch } from '../../lib/api';
@@ -8,6 +9,7 @@ import { PriorityIndicator } from './PriorityIndicator';
 import { IntentBadge } from './IntentBadge';
 import { ComplexityIndicator } from './ComplexityIndicator';
 import { CardOverflowMenu } from './CardOverflowMenu';
+import { EditTaskModal } from './EditTaskModal';
 import { StartTaskButton } from './StartTaskButton';
 import { formatRelativeTime } from '../../lib/formatTime';
 
@@ -19,6 +21,7 @@ interface TaskCardProps {
 export function TaskCard({ task, columnStatus }: TaskCardProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [editOpen, setEditOpen] = useState(false);
 
   const updateStatus = useMutation({
     mutationFn: (status: string) =>
@@ -32,41 +35,50 @@ export function TaskCard({ task, columnStatus }: TaskCardProps) {
   const isBacklog = columnStatus === 'backlog' || task.kanbanStatus === 'backlog';
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      className="bg-white rounded-xl p-3 cursor-pointer shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-px transition-all group border-0"
-      onClick={() => navigate(`/tasks/${task.id}`)}
-      onKeyDown={(e) => e.key === 'Enter' && navigate(`/tasks/${task.id}`)}
-    >
-      {/* Top: title + overflow */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <span className="text-sm font-semibold text-gray-900 line-clamp-2 flex-1">
-          {task.title}
-        </span>
-        <CardOverflowMenu
-          onClose={() => updateStatus.mutate('closed')}
-          onDelete={() => updateStatus.mutate('cancelled')}
-        />
+    <>
+      <div
+        role="button"
+        tabIndex={0}
+        className="bg-white rounded-xl p-3 cursor-pointer shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-px transition-all group border-0"
+        onClick={() => navigate(`/tasks/${task.id}`)}
+        onKeyDown={(e) => e.key === 'Enter' && navigate(`/tasks/${task.id}`)}
+      >
+        {/* Top: title + overflow */}
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <span className="text-sm font-semibold text-gray-900 line-clamp-2 flex-1">
+            {task.title}
+          </span>
+          <CardOverflowMenu
+            onClose={() => updateStatus.mutate('closed')}
+            onDelete={() => updateStatus.mutate('cancelled')}
+            onEdit={isBacklog ? () => setEditOpen(true) : undefined}
+          />
+        </div>
+
+        {/* Middle: phase + priority + intent + complexity */}
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
+          <PhaseTag phase={task.currentPhase} />
+          <PriorityIndicator priority={task.priority} />
+          <span className="transition-opacity duration-300"><IntentBadge intent={task.intent} /></span>
+          <span className="transition-opacity duration-300"><ComplexityIndicator complexity={task.complexity} /></span>
+        </div>
+
+        {/* Bottom: time-ago + id + start button */}
+        <div className="flex items-center gap-3 text-[11px] text-gray-400">
+          <span>{formatRelativeTime(task.updatedAt)}</span>
+          <span>#{task.id.slice(0, 7)}</span>
+          <span className="flex-1" />
+          {isBacklog && (
+            <StartTaskButton projectId={task.projectId} taskId={task.id} />
+          )}
+        </div>
       </div>
 
-      {/* Middle: phase + priority + intent + complexity */}
-      <div className="flex items-center gap-2 mb-2 flex-wrap">
-        <PhaseTag phase={task.currentPhase} />
-        <PriorityIndicator priority={task.priority} />
-        <span className="transition-opacity duration-300"><IntentBadge intent={task.intent} /></span>
-        <span className="transition-opacity duration-300"><ComplexityIndicator complexity={task.complexity} /></span>
-      </div>
-
-      {/* Bottom: time-ago + id + start button */}
-      <div className="flex items-center gap-3 text-[11px] text-gray-400">
-        <span>{formatRelativeTime(task.updatedAt)}</span>
-        <span>#{task.id.slice(0, 7)}</span>
-        <span className="flex-1" />
-        {isBacklog && (
-          <StartTaskButton projectId={task.projectId} taskId={task.id} />
-        )}
-      </div>
-    </div>
+      <EditTaskModal
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        task={task}
+      />
+    </>
   );
 }
