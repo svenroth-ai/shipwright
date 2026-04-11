@@ -18,6 +18,7 @@ export const mockTasks: Task[] = [
   {
     id: 'task-1',
     projectId: 'proj-1',
+    title: 'Implement auth',
     description: 'Implement auth',
     status: 'running',
     kanbanStatus: 'in_progress',
@@ -29,6 +30,7 @@ export const mockTasks: Task[] = [
   {
     id: 'task-2',
     projectId: 'proj-1',
+    title: 'Fix login bug',
     description: 'Fix login bug',
     status: 'done',
     kanbanStatus: 'done',

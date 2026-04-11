@@ -6,9 +6,9 @@ import { TaskListView } from './TaskListView';
 import type { Task } from '../../types';
 
 const mockTasks: Task[] = [
-  { id: 't1', projectId: 'p1', description: 'Alpha task', status: 'running', kanbanStatus: 'in_progress', currentPhase: 'build', priority: 'P1', sessionId: 's1', createdAt: '2026-04-10T10:00:00Z', updatedAt: '2026-04-10T10:00:00Z' },
-  { id: 't2', projectId: 'p1', description: 'Beta task', status: 'done', kanbanStatus: 'done', currentPhase: 'test', priority: 'P2', sessionId: 's2', createdAt: '2026-04-09T08:00:00Z', updatedAt: '2026-04-09T08:00:00Z' },
-  { id: 't3', projectId: 'p1', description: 'Charlie task', status: 'pending', kanbanStatus: 'backlog', sessionId: 's3', createdAt: '2026-04-08T08:00:00Z', updatedAt: '2026-04-08T08:00:00Z' },
+  { id: 't1', projectId: 'p1', title: 'Alpha task', description: 'Alpha task', status: 'running', kanbanStatus: 'in_progress', currentPhase: 'build', priority: 'P1', sessionId: 's1', createdAt: '2026-04-10T10:00:00Z', updatedAt: '2026-04-10T10:00:00Z' },
+  { id: 't2', projectId: 'p1', title: 'Beta task', description: 'Beta task', status: 'done', kanbanStatus: 'done', currentPhase: 'test', priority: 'P2', sessionId: 's2', createdAt: '2026-04-09T08:00:00Z', updatedAt: '2026-04-09T08:00:00Z' },
+  { id: 't3', projectId: 'p1', title: 'Charlie task', description: 'Charlie task', status: 'pending', kanbanStatus: 'backlog', sessionId: 's3', createdAt: '2026-04-08T08:00:00Z', updatedAt: '2026-04-08T08:00:00Z' },
 ];
 
 function renderList(tasks = mockTasks) {

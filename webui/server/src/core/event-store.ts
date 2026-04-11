@@ -5,6 +5,7 @@ import type { PipelinePhase, PhaseStatus } from "../../../client/src/types/pipel
 interface TaskStateEntry {
   id: string;
   projectId: string;
+  title: string;
   description: string;
   status: TaskStatus;
   currentPhase?: string;
@@ -42,10 +43,26 @@ export class EventStore {
 
     switch (event.type) {
       case "task_created": {
+        const rawDesc = (event.description as string) ?? "";
+        const eventTitle = (event.title as string) ?? "";
+        // Backward compat: if no title in event, extract from description (first line before \n\n)
+        let title = eventTitle;
+        let description = rawDesc;
+        if (!title && rawDesc) {
+          const splitIdx = rawDesc.indexOf("\n\n");
+          if (splitIdx > 0) {
+            title = rawDesc.slice(0, splitIdx);
+            description = rawDesc.slice(splitIdx + 2);
+          } else {
+            title = rawDesc;
+            description = "";
+          }
+        }
         this.taskStates.set(taskId, {
           id: taskId,
           projectId,
-          description: (event.description as string) ?? "",
+          title,
+          description,
           status: "pending",
           intent: event.intent,
           priority: event.priority,
@@ -104,6 +121,15 @@ export class EventStore {
         const task = this.taskStates.get(taskId);
         if (task) {
           task.status = "failed";
+          task.updatedAt = event.timestamp;
+        }
+        break;
+      }
+      case "task_updated": {
+        const task = this.taskStates.get(taskId);
+        if (task) {
+          if (event.title) task.title = event.title as string;
+          if (event.description !== undefined) task.description = event.description as string;
           task.updatedAt = event.timestamp;
         }
         break;

@@ -73,20 +73,23 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
     const project = deps.projectManager.getById(c.req.param("id"));
     if (!project) throw new AppError("Project not found", 404);
     const body = await c.req.json();
-    if (!body.description) throw new AppError("description is required", 400);
+    const title = body.title || body.description;
+    if (!title) throw new AppError("title or description is required", 400);
+    const description = body.description ?? "";
 
     const startImmediately = body.startImmediately !== false; // default true
     const taskId = randomUUID();
     const sessionId = randomUUID();
     const eventsPath = `${project.path}/shipwright_events.jsonl`;
 
-    await deps.emitTaskCreatedEvent(eventsPath, taskId, project.id, body.description, body.intent, body.priority);
+    await deps.emitTaskCreatedEvent(eventsPath, taskId, project.id, description, body.intent, body.priority);
     deps.eventStore.addEvent(project.id, {
       type: "task_created",
       timestamp: new Date().toISOString(),
       task_id: taskId,
       project_id: project.id,
-      description: body.description,
+      title,
+      description,
     });
 
     let startStatus: "started" | "queued" | "failed" = "started";
@@ -112,7 +115,7 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
     const mapping = await getPhaseMapping(project.settings);
     const task = deps.taskManager.getTasksWithKanban(project.id, mapping).find((t) => t.id === taskId);
     const status = startStatus === "queued" ? 202 : 201;
-    return c.json({ data: task ?? { id: taskId, projectId: project.id, description: body.description, status: "pending", kanbanStatus: "backlog", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), sessionId }, startStatus }, status);
+    return c.json({ data: task ?? { id: taskId, projectId: project.id, title, description, status: "pending", kanbanStatus: "backlog", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), sessionId }, startStatus }, status);
   });
 
   // Fix 4: Start a pending task
@@ -150,6 +153,39 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
       console.error(JSON.stringify({ level: "warn", message: "Task start failed", taskId, error: String(err) }));
       return c.json({ data: { taskId, status: "start_failed", error: String(err) } }, 500);
     }
+  });
+
+  app.patch("/api/projects/:id/tasks/:taskId/description", async (c) => {
+    const project = deps.projectManager.getById(c.req.param("id"));
+    if (!project) throw new AppError("Project not found", 404);
+    const body = await c.req.json();
+    if (!body.title && !body.description) {
+      throw new AppError("title or description is required", 400);
+    }
+
+    const taskId = c.req.param("taskId");
+    const task = deps.taskManager.getTaskById(project.id, taskId);
+    if (!task) throw new AppError("Task not found", 404);
+    if (task.status !== "pending") {
+      throw new AppError("Can only edit description of pending tasks", 409);
+    }
+
+    deps.eventStore.addEvent(project.id, {
+      type: "task_updated",
+      timestamp: new Date().toISOString(),
+      task_id: taskId,
+      ...(body.title && { title: body.title }),
+      ...(body.description !== undefined && { description: body.description }),
+    });
+
+    deps.sseManager.broadcast({
+      type: "task:updated",
+      payload: { taskId, projectId: project.id },
+      timestamp: new Date().toISOString(),
+    });
+
+    const updated = deps.taskManager.getTaskById(project.id, taskId);
+    return c.json({ data: updated });
   });
 
   app.patch("/api/projects/:id/tasks/:taskId/status", async (c) => {

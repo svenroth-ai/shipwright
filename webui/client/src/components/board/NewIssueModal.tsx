@@ -34,7 +34,7 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
   function handleSubmit() {
     if (!title.trim() || !projectId) return;
 
-    createTask({ projectId, description: `${title.trim()}${description.trim() ? `\n\n${description.trim()}` : ''}`, startImmediately });
+    createTask({ projectId, title: title.trim(), description: description.trim(), startImmediately });
     setTitle('');
     setDescription('');
     onOpenChange(false);

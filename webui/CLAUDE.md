@@ -29,7 +29,7 @@ webui/
         intent-classifier.ts # Shell-out to classify_intent.py + classify_complexity.py
       routes/
         projects.ts         # GET/POST/PATCH/DELETE /api/projects
-        tasks.ts            # GET/POST /api/projects/:id/tasks
+        tasks.ts            # GET/POST /api/projects/:id/tasks, PATCH .../status, .../description
         inbox.ts            # GET /api/inbox, POST /api/inbox/:id/answer
         chat.ts             # GET/POST /api/projects/:id/chat
         pipeline.ts         # GET /api/projects/:id/pipeline

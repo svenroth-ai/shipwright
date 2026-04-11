@@ -7,6 +7,7 @@ export type PhaseToStatusMapping = Record<string, KanbanStatus>;
 export interface Task {
   id: string;
   projectId: string;
+  title: string;
   description: string;
   intent?: string;
   priority?: string;

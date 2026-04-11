@@ -42,7 +42,7 @@ export function TaskCard({ task, columnStatus }: TaskCardProps) {
       {/* Top: title + overflow */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <span className="text-sm font-semibold text-gray-900 line-clamp-2 flex-1">
-          {task.description}
+          {task.title}
         </span>
         <CardOverflowMenu
           onClose={() => updateStatus.mutate('closed')}

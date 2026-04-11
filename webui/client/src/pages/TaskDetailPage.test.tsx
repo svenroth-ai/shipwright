@@ -32,7 +32,7 @@ describe('TaskDetailPage', () => {
   it('renders task header and panels when task found', async () => {
     renderPage('task-1');
     await waitFor(() => {
-      expect(screen.getByText('Implement auth')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Implement auth' })).toBeInTheDocument();
     });
     expect(screen.getByText('Back to Board')).toBeInTheDocument();
     expect(screen.getByTestId('smart-viewer')).toBeInTheDocument();

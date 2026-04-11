@@ -3,13 +3,15 @@ import { Send } from 'lucide-react';
 import { ChatToolbar } from './ChatToolbar';
 import { SlashCommandPopup } from './SlashCommandPopup';
 import { useChatSettings } from '../../hooks/useChatSettings';
+import type { AutonomyOption } from '../../types/settings';
 
 interface ChatInputProps {
   onSend: (message: string, settings: { model: string; mode: string; effort: string; autonomy: string }) => void;
   isStreaming: boolean;
+  autonomy: AutonomyOption;
 }
 
-export function ChatInput({ onSend, isStreaming }: ChatInputProps) {
+export function ChatInput({ onSend, isStreaming, autonomy }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [showSlashPopup, setShowSlashPopup] = useState(false);
   const [slashQuery, setSlashQuery] = useState('');
@@ -19,7 +21,7 @@ export function ChatInput({ onSend, isStreaming }: ChatInputProps) {
   function handleSend() {
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
-    onSend(trimmed, { model: settings.model, mode: settings.mode, effort: settings.effort, autonomy: settings.autonomy });
+    onSend(trimmed, { model: settings.model, mode: settings.mode, effort: settings.effort, autonomy });
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   }
@@ -74,8 +76,7 @@ export function ChatInput({ onSend, isStreaming }: ChatInputProps) {
         setMode={settings.setMode}
         effort={settings.effort}
         setEffort={settings.setEffort}
-        autonomy={settings.autonomy}
-        setAutonomy={settings.setAutonomy}
+        autonomy={autonomy}
       />
       <div className="relative px-3 pb-3">
         <SlashCommandPopup

@@ -3,10 +3,13 @@ import { ArrowDown, AlertCircle } from 'lucide-react';
 import { useChat, useSendChat } from '../../hooks/useChat';
 import { useAutoScroll } from '../../hooks/useAutoScroll';
 import { useStreamingChat } from '../../hooks/useStreamingChat';
+import { useProject } from '../../hooks/useProjects';
+import { useSettings } from '../../hooks/useSettings';
 import { ChatMessage } from './ChatMessage';
 import { AssistantMessage } from './AssistantMessage';
 import { ChatInput } from './ChatInput';
 import { ApiError } from '../../lib/api';
+import type { AutonomyOption } from '../../types/settings';
 
 interface ChatPanelProps {
   projectId: string;
@@ -15,11 +18,15 @@ interface ChatPanelProps {
 
 export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
   const { data: messages = [] } = useChat(projectId, taskId);
+  const { data: project } = useProject(projectId);
+  const { data: globalSettings } = useSettings();
   const sendChat = useSendChat();
   const streaming = useStreamingChat();
   const scrollRef = useRef<HTMLDivElement>(null);
   const { isAtBottom, scrollToBottom } = useAutoScroll(scrollRef, [messages, streaming.displayContent]);
   const [chatError, setChatError] = useState<string | null>(null);
+
+  const autonomy: AutonomyOption = project?.settings?.autonomy ?? globalSettings?.defaultAutonomy ?? 'guided';
 
   function handleSend(message: string, settings: { model: string; mode: string; effort: string; autonomy: string }) {
     setChatError(null);
@@ -81,6 +88,7 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
       <ChatInput
         onSend={handleSend}
         isStreaming={streaming.isStreaming}
+        autonomy={autonomy}
       />
     </div>
   );
