@@ -17,7 +17,7 @@ You receive these parameters in the prompt:
 - `project_root`: Absolute path to the project root
 - `plugin_root`: Absolute path to the shipwright-build plugin
 - `shared_root`: Absolute path to the shared directory
-- `branch_prefix`: Branch prefix (e.g., `myapp`)
+- `branch_name`: Full branch name (e.g., `build/myapp-20260411-120000`)
 - `section_name`: Section name (e.g., `01-auth`)
 - `session_id`: Shipwright session ID
 
@@ -52,7 +52,7 @@ uv run {plugin_root}/scripts/checks/setup_implementation_session.py \
 ### Step 2: Create Feature Branch
 
 ```bash
-git checkout -b {branch_prefix}/{section_name} 2>/dev/null || git checkout {branch_prefix}/{section_name}
+git checkout -b {branch_name} 2>/dev/null || git checkout {branch_name}
 ```
 
 ### Step 3: Environment Validation
@@ -360,7 +360,7 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
 
 If `auto_push` is true in config:
 ```bash
-git push -u origin {branch_prefix}/{section_name}
+git push -u origin {branch_name}
 ```
 
 ### Step 14: Update Decision Log
@@ -449,7 +449,7 @@ When complete, return a JSON object as the **last line of your response**:
   "section": "{section_name}",
   "status": "complete",
   "commit": "{full_commit_hash}",
-  "branch": "{branch_prefix}/{section_name}",
+  "branch": "{branch_name}",
   "tests_passed": 12,
   "tests_total": 12,
   "review_findings": [

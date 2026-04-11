@@ -34,7 +34,7 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
         - `project_root`: `$(pwd)` (absolute path)
         - `plugin_root`: `{build_plugin_root}` (sibling: `{plugin_root}/../shipwright-build`)
         - `shared_root`: `{shared_root}` (= `{plugin_root}/../../shared`)
-        - `branch_prefix`: from `shipwright_run_config.json`
+        - `branch_name`: from `setup_implementation_session.py` output (pattern: `build/{slug}-{session-id}`)
         - `section_name`: `{section}`
         - `session_id`: `{SHIPWRIGHT_SESSION_ID}`
       - Do **NOT** use `run_in_background` — sections must be sequential
