@@ -1,6 +1,6 @@
 ---
 name: shipwright-test
-description: Profile-aware test runner. Runs unit tests, smoke tests, Playwright E2E, and optional security scans. Use after /shipwright-build or /shipwright-deploy.
+description: "Profile-aware test runner. Runs unit tests, smoke tests, Playwright E2E, and optional security scans.\nTRIGGER when: user wants to run tests, execute test suite, check if tests pass, run unit tests, run E2E tests, run integration tests, verify test results, check design fidelity, visual comparison, compare UI with mockup, verify against design, run visual tests, or fix failing tests.\nDO NOT TRIGGER when: user asks to write new code or implement a section (/shipwright-build), fix a bug by changing code (/shipwright-iterate), deploy (/shipwright-deploy), create requirements (/shipwright-project), plan implementation (/shipwright-plan), or design UI (/shipwright-design)."
 license: MIT
 compatibility: Requires uv (Python 3.11+). Optional: Playwright.
 ---
@@ -55,7 +55,28 @@ Load profile from `{plugin_root}/../../shared/profiles/{profile}.json`.
 
 If no config: detect from package.json / pyproject.toml.
 
-### B2. Load Project Context
+### B2. Detect Invocation Mode
+
+Determine if running within the pipeline or standalone:
+
+1. Read `shipwright_run_config.json` (if exists)
+2. **Pipeline mode**: `status == "in_progress"` AND `current_step == "test"`
+   - Full pipeline integration (update orchestrator state, enforce gates)
+3. **Standalone mode**: file missing OR `status == "complete"` OR `current_step != "test"`
+   - Skip pipeline state updates (no `orchestrator.py update-step` calls)
+   - Skip upstream completion checks
+   - Still produce all artifacts (`shipwright_test_results.json`, event log)
+   - **Mark artifacts**: When writing `shipwright_test_results.json`, add `"mode": "standalone"` at the top level. This tells the pipeline validator to ignore standalone results and require a fresh pipeline test run.
+   - Print: `"Running in standalone mode — pipeline state will not be updated."`
+4. If `status == "in_progress"` AND `current_step != "test"`:
+   - Warn: `"Pipeline is in progress at step {current_step}. Running /shipwright-test out of sequence may cause issues."`
+   - Ask user before continuing.
+
+**Hook auto-install**: If `shipwright_run_config.json` exists but `.claude/settings.json` does not contain the `UserPromptSubmit` hook for `suggest_iterate.py`, install it now (one-time, idempotent).
+
+Store the detected mode in a variable `invocation_mode` = `"pipeline"` | `"standalone"` for use in later steps.
+
+### B3. Load Project Context
 
 Read these files for app context before running tests:
 
@@ -64,7 +85,7 @@ Read these files for app context before running tests:
 
 If a file does not exist, skip it silently.
 
-### B3. Prerequisite Self-Healing
+### B4. Prerequisite Self-Healing
 
 Before determining test strategy, check for missing artifacts and auto-generate where possible.
 This follows the constitution rule: **never silently skip a test layer due to missing prerequisites.**

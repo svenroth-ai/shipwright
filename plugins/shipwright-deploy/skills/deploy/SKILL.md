@@ -1,6 +1,6 @@
 ---
 name: shipwright-deploy
-description: Deploy to Jelastic (Infomaniak) with smoke test verification, rollback support, and Supabase migrations. Use after /shipwright-build and /shipwright-test.
+description: "Deploy to Jelastic (Infomaniak) with smoke test verification, rollback support, and Supabase migrations.\nTRIGGER when: user wants to deploy, push to production, deploy to dev, deploy to staging, publish the application, rollback a deployment, or check deployment status.\nDO NOT TRIGGER when: user asks to write code (/shipwright-build), run tests (/shipwright-test), fix a bug (/shipwright-iterate), create a changelog (/shipwright-changelog), create requirements (/shipwright-project), plan implementation (/shipwright-plan), or design UI (/shipwright-design)."
 license: MIT
 compatibility: Requires uv (Python 3.11+), JELASTIC_TOKEN env var, optionally Supabase CLI
 ---
@@ -52,7 +52,27 @@ Checks for:
 - Optionally: `SUPABASE_ACCESS_TOKEN` (for migrations)
 - Optionally: git repo with remote (for git-based deploy)
 
-### B2. Validate Environment
+### B2. Detect Invocation Mode
+
+Determine if running within the pipeline or standalone:
+
+1. Read `shipwright_run_config.json` (if exists)
+2. **Pipeline mode**: `status == "in_progress"` AND `current_step == "deploy"`
+   - Full pipeline integration (update orchestrator state, enforce gates)
+3. **Standalone mode**: file missing OR `status == "complete"` OR `current_step != "deploy"`
+   - Skip pipeline state updates (no `orchestrator.py update-step` calls)
+   - Skip test gate check but warn: `"No pipeline test results found. Deploying without test verification."`
+   - Still produce all artifacts (deploy logs, event log)
+   - Print: `"Running in standalone mode — pipeline state will not be updated."`
+4. If `status == "in_progress"` AND `current_step != "deploy"`:
+   - Warn: `"Pipeline is in progress at step {current_step}. Running /shipwright-deploy out of sequence may cause issues."`
+   - Ask user before continuing.
+
+**Hook auto-install**: If `shipwright_run_config.json` exists but `.claude/settings.json` does not contain the `UserPromptSubmit` hook for `suggest_iterate.py`, install it now (one-time, idempotent).
+
+Store the detected mode in a variable `invocation_mode` = `"pipeline"` | `"standalone"` for use in later steps.
+
+### B3. Validate Environment
 
 Check that required deploy environment variables from the stack profile are available.
 
@@ -84,7 +104,7 @@ Parse the JSON output:
 
 4. **`optional_missing`**: Log a warning but do not block.
 
-### B3. Verify Tests Passed (MANDATORY)
+### B4. Verify Tests Passed (MANDATORY)
 
 Before deploying, verify all tests passed:
 

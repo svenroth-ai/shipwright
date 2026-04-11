@@ -1,6 +1,6 @@
 ---
 name: shipwright-project
-description: Decomposes project requirements into well-scoped planning units for /shipwright-plan. Generates CLAUDE.md and agent_docs for the target project. Use when starting a new project or extending an existing one.
+description: "Decomposes project requirements into well-scoped planning units for /shipwright-plan. Generates CLAUDE.md and agent_docs for the target project.\nTRIGGER when: user wants to start a new project, define requirements, create a project spec, decompose a project into components, scaffold a new application, set up project structure, analyze requirements, or extend an existing project with new features that need full planning.\nDO NOT TRIGGER when: user asks to implement code (/shipwright-build), run tests (/shipwright-test), fix a bug or make a small change (/shipwright-iterate), deploy (/shipwright-deploy), generate a changelog (/shipwright-changelog), plan implementation details for an existing spec (/shipwright-plan), or design UI mockups (/shipwright-design)."
 license: MIT
 compatibility: Requires uv (Python 3.11+), git repository recommended
 ---
@@ -90,9 +90,29 @@ AskUserQuestion:
     - "{inferred_name}/planning" (e.g., "time-tracker/planning")
     - Current directory
 ```
-Create the planning directory and proceed to Step D.
+Create the planning directory and proceed to Step E.
 
-### D. Discover Plugin Root
+### D. Detect Invocation Mode
+
+Determine if running within the pipeline or standalone:
+
+1. Read `shipwright_run_config.json` (if exists)
+2. **Pipeline mode**: `status == "in_progress"` AND `current_step == "project"`
+   - Full pipeline integration (update orchestrator state, enforce gates)
+3. **Standalone mode**: file missing OR `status == "complete"` OR `current_step != "project"`
+   - Skip pipeline state updates (no `orchestrator.py update-step` calls)
+   - Skip upstream completion checks
+   - Still produce all artifacts (configs, specs, agent_docs)
+   - Print: `"Running in standalone mode — pipeline state will not be updated."`
+4. If `status == "in_progress"` AND `current_step != "project"`:
+   - Warn: `"Pipeline is in progress at step {current_step}. Running /shipwright-project out of sequence may cause issues."`
+   - Ask user before continuing.
+
+**Hook auto-install**: If `shipwright_run_config.json` exists but `.claude/settings.json` does not contain the `UserPromptSubmit` hook for `suggest_iterate.py`, install it now (one-time, idempotent).
+
+Store the detected mode in a variable `invocation_mode` = `"pipeline"` | `"standalone"` for use in later steps.
+
+### E. Discover Plugin Root
 
 **CRITICAL: Locate plugin root BEFORE running any scripts.**
 
@@ -320,6 +340,26 @@ See [project-scaffolding.md](references/project-scaffolding.md) for details.
 - Write to `.claude/rules/{name}.md` in the project root (strip the `.template` suffix)
 - If the profile has no `"rules"` field, skip this step
 - These rules load conditionally in Claude Code: test rules only activate when editing test files, API rules only for API files, etc.
+
+**Install phase-router hook:**
+
+Check if `.claude/settings.json` exists in the project root. If it does, read it and merge. If not, create it.
+Ensure the `UserPromptSubmit` hook for `suggest_iterate.py` is present:
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "type": "command",
+        "command": "uv run {plugin_root}/../../shared/scripts/hooks/suggest_iterate.py"
+      }
+    ]
+  }
+}
+```
+
+If `.claude/settings.json` already has other hooks, merge — do not overwrite existing entries.
 
 **Write config:**
 ```bash

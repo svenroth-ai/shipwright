@@ -1,6 +1,6 @@
 ---
 name: shipwright-design
-description: Generate UI mockups from IREB specs as standalone HTML. Screens + user flows, iteratable via chat. Use after /shipwright-project, before /shipwright-plan.
+description: "Generate UI mockups from IREB specs as standalone HTML. Screens + user flows, iteratable via chat.\nTRIGGER when: user wants to create UI mockups, design screens, generate HTML wireframes, create visual designs, design a user interface, preview a layout, create user flow diagrams, iterate on a screen design, or process design feedback.\nDO NOT TRIGGER when: user asks to implement code (/shipwright-build), run tests (/shipwright-test), fix a bug or change code (/shipwright-iterate), deploy (/shipwright-deploy), create requirements (/shipwright-project), or plan implementation details (/shipwright-plan)."
 license: MIT
 compatibility: Requires uv (Python 3.11+). No external dependencies.
 ---
@@ -57,7 +57,28 @@ Output:
 - Generate only missing screens
 - Skip to [Upload Mode](#upload-mode)
 
-### C. Discover Plugin Root
+### C. Detect Invocation Mode
+
+Determine if running within the pipeline or standalone:
+
+1. Read `shipwright_run_config.json` (if exists)
+2. **Pipeline mode**: `status == "in_progress"` AND `current_step == "design"`
+   - Full pipeline integration (update orchestrator state, enforce gates)
+3. **Standalone mode**: file missing OR `status == "complete"` OR `current_step != "design"`
+   - Skip pipeline state updates (no `orchestrator.py update-step` calls)
+   - Skip upstream completion checks
+   - Still produce all artifacts (mockup HTML files, design-manifest.md)
+   - If no `shipwright_project_config.json` exists, work with whatever specs are available in `planning/`. If none exist, ask user to describe what screens they need.
+   - Print: `"Running in standalone mode — pipeline state will not be updated."`
+4. If `status == "in_progress"` AND `current_step != "design"`:
+   - Warn: `"Pipeline is in progress at step {current_step}. Running /shipwright-design out of sequence may cause issues."`
+   - Ask user before continuing.
+
+**Hook auto-install**: If `shipwright_run_config.json` exists but `.claude/settings.json` does not contain the `UserPromptSubmit` hook for `suggest_iterate.py`, install it now (one-time, idempotent).
+
+Store the detected mode in a variable `invocation_mode` = `"pipeline"` | `"standalone"` for use in later steps.
+
+### D. Discover Plugin Root
 
 The SessionStart hook injects `SHIPWRIGHT_PLUGIN_ROOT=<path>`. Use it directly.
 

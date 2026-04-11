@@ -1,6 +1,6 @@
 ---
 name: shipwright-preview
-description: Start local dev server and show browser preview URL. Available after first build split. Use when user wants to see the app, preview changes, or check the UI.
+description: "Start local dev server and show browser preview URL. Available after first build split.\nTRIGGER when: user wants to see the app, preview changes, check the UI, open the browser, show me the app, start the dev server, or view the running application.\nDO NOT TRIGGER when: user asks to write code, run tests, deploy, or any other SDLC phase."
 license: MIT
 compatibility: Requires Node.js and project dependencies installed (npm install).
 ---

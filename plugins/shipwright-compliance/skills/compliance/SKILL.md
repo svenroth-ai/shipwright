@@ -1,6 +1,6 @@
 ---
 name: shipwright-compliance
-description: Generates audit-ready compliance documentation from Shipwright pipeline data. Produces traceability matrix, test evidence, change history, SBOM, and dashboard with Mermaid diagrams. Use at any point during or after the SDLC pipeline.
+description: "Generates audit-ready compliance documentation from Shipwright pipeline data. Produces traceability matrix, test evidence, change history, SBOM, and dashboard with Mermaid diagrams.\nTRIGGER when: user wants compliance reports, audit documentation, traceability matrix, test evidence report, SBOM, change history, or compliance dashboard. Also when user asks about regulatory compliance, audit readiness, or documentation for auditors.\nDO NOT TRIGGER when: user asks to write code (/shipwright-build), run tests (/shipwright-test), fix a bug (/shipwright-iterate), deploy (/shipwright-deploy), create requirements (/shipwright-project), plan implementation (/shipwright-plan), or design UI (/shipwright-design)."
 license: MIT
 compatibility: Requires uv (Python 3.11+), git repository required
 ---

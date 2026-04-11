@@ -176,7 +176,11 @@ def _validate_build(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
 
 
 def _validate_test(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
-    """Test phase: results file exists, all layers have results or valid skip reasons."""
+    """Test phase: results file exists, all layers have results or valid skip reasons.
+
+    Standalone-mode results (mode == "standalone") are ignored by the pipeline
+    validator — the test phase must run again within the pipeline context.
+    """
     issues: list[dict[str, str]] = []
     results_path = project_root / "shipwright_test_results.json"
 
@@ -193,6 +197,17 @@ def _validate_test(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
         issues.append({
             "severity": "ask",
             "message": "shipwright_test_results.json is corrupt or unreadable. Re-run tests?",
+        })
+        return False, issues
+
+    # Ignore standalone results — pipeline must run its own test phase
+    if results.get("mode") == "standalone":
+        issues.append({
+            "severity": "ask",
+            "message": (
+                "Test results were produced in standalone mode (not part of this pipeline run). "
+                "Re-run /shipwright-test within the pipeline for accurate validation."
+            ),
         })
         return False, issues
 

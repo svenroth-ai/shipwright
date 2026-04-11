@@ -1,0 +1,222 @@
+"""Tests for suggest_iterate.py phase router hook.
+
+Tests the multilingual phase detection and routing logic.
+Does NOT test the classify_intent fallback (that's tested separately in shipwright-iterate).
+"""
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+HOOK_SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "hooks" / "suggest_iterate.py"
+
+# Import the module directly for unit testing helper functions
+sys.path.insert(0, str(HOOK_SCRIPT.parent))
+from suggest_iterate import detect_phase_intent, matches_phase
+
+
+# --- Unit tests for pattern matching ---
+
+
+class TestMatchesPhase:
+    """Test multilingual pattern matching for each phase."""
+
+    @pytest.mark.parametrize("prompt", [
+        "run tests",
+        "run the tests",
+        "execute test suite",
+        "check unit tests",
+        "verify e2e",
+        "check design fidelity",
+    ])
+    def test_test_phase_english(self, prompt):
+        assert matches_phase(prompt, "test")
+
+    @pytest.mark.parametrize("prompt", [
+        "tests laufen lassen",
+        "tests ausführen",
+        "tests machen",
+        "teste das",
+        "nochmal tests",
+    ])
+    def test_test_phase_german(self, prompt):
+        assert matches_phase(prompt, "test")
+
+    @pytest.mark.parametrize("prompt", [
+        "deploy to production",
+        "push to prod",
+        "go live",
+        "rollback the deployment",
+    ])
+    def test_deploy_phase_english(self, prompt):
+        assert matches_phase(prompt, "deploy")
+
+    @pytest.mark.parametrize("prompt", [
+        "bitte deployen",
+        "veröffentlichen",
+        "ausrollen auf staging",
+        "live stellen",
+    ])
+    def test_deploy_phase_german(self, prompt):
+        assert matches_phase(prompt, "deploy")
+
+    @pytest.mark.parametrize("prompt", [
+        "generate compliance report",
+        "create audit documentation",
+        "show traceability matrix",
+        "generate SBOM",
+    ])
+    def test_compliance_phase(self, prompt):
+        assert matches_phase(prompt, "compliance")
+
+    @pytest.mark.parametrize("prompt", [
+        "create changelog",
+        "generate release notes",
+        "tag release",
+        "version bump",
+    ])
+    def test_changelog_phase(self, prompt):
+        assert matches_phase(prompt, "changelog")
+
+    @pytest.mark.parametrize("prompt", [
+        "replan the implementation",
+        "create an implementation plan",
+        "neu planen",
+        "umplanen wegen neuer Anforderungen",
+    ])
+    def test_plan_phase(self, prompt):
+        assert matches_phase(prompt, "plan")
+
+    @pytest.mark.parametrize("prompt", [
+        "design update the login screen",
+        "mockup ändern",
+        "wireframe erstellen",
+        "layout überarbeiten",
+    ])
+    def test_design_phase(self, prompt):
+        assert matches_phase(prompt, "design")
+
+
+class TestDetectPhaseIntent:
+    """Test that detect_phase_intent returns correct phase or None."""
+
+    def test_returns_test_for_english(self):
+        assert detect_phase_intent("please run tests") == "test"
+
+    def test_returns_test_for_german(self):
+        assert detect_phase_intent("tests nochmal laufen lassen") == "test"
+
+    def test_returns_deploy(self):
+        assert detect_phase_intent("deploy to staging") == "deploy"
+
+    def test_returns_compliance(self):
+        assert detect_phase_intent("generate compliance report") == "compliance"
+
+    def test_returns_none_for_code_change(self):
+        """Code changes should NOT match any phase — falls through to iterate."""
+        assert detect_phase_intent("fix the login button color") is None
+
+    def test_returns_none_for_greeting(self):
+        assert detect_phase_intent("hello how are you") is None
+
+    def test_returns_none_for_vague_request(self):
+        assert detect_phase_intent("I need help with something") is None
+
+
+class TestNonMatches:
+    """Ensure prompts don't false-positive on wrong phases."""
+
+    def test_fix_bug_not_test(self):
+        """'fix a bug' should NOT trigger test phase."""
+        assert not matches_phase("fix the authentication bug", "test")
+
+    def test_plan_word_in_sentence(self):
+        """'plan' alone shouldn't trigger — needs 'replan' or 'implementation plan'."""
+        assert not matches_phase("I plan to fix this later", "plan")
+
+    def test_deploy_in_unrelated(self):
+        assert not matches_phase("the employee onboarding workflow is broken", "deploy")
+
+
+# --- Integration tests via subprocess ---
+
+
+class TestHookIntegration:
+    """Test the full hook script via subprocess."""
+
+    def _run_hook(self, prompt: str, cwd: str, config: dict | None = None) -> subprocess.CompletedProcess:
+        """Run suggest_iterate.py as subprocess with given stdin."""
+        if config is not None:
+            config_path = Path(cwd) / "shipwright_run_config.json"
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+
+        stdin_data = json.dumps({"prompt": prompt, "cwd": cwd})
+        return subprocess.run(
+            [sys.executable, str(HOOK_SCRIPT)],
+            input=stdin_data,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+
+    def test_no_config_exits_silently(self, tmp_path):
+        result = self._run_hook("run tests please", str(tmp_path))
+        assert result.returncode == 0
+        assert result.stdout.strip() == ""
+
+    def test_slash_command_skipped(self, tmp_path):
+        result = self._run_hook("/shipwright-test", str(tmp_path), config={"status": "complete"})
+        assert result.returncode == 0
+        assert result.stdout.strip() == ""
+
+    def test_short_message_skipped(self, tmp_path):
+        result = self._run_hook("hi", str(tmp_path), config={"status": "complete"})
+        assert result.returncode == 0
+        assert result.stdout.strip() == ""
+
+    def test_completed_pipeline_routes_to_test(self, tmp_path):
+        result = self._run_hook("run the tests again", str(tmp_path), config={"status": "complete"})
+        assert result.returncode == 0
+        output = json.loads(result.stdout)
+        context = output["hookSpecificOutput"]["additionalContext"]
+        assert "/shipwright-test" in context
+        assert "test" in context.lower()
+
+    def test_completed_pipeline_routes_to_deploy(self, tmp_path):
+        result = self._run_hook("deploy to production now", str(tmp_path), config={"status": "complete"})
+        assert result.returncode == 0
+        output = json.loads(result.stdout)
+        context = output["hookSpecificOutput"]["additionalContext"]
+        assert "/shipwright-deploy" in context
+
+    def test_in_progress_warns_on_mismatch(self, tmp_path):
+        result = self._run_hook(
+            "run the tests",
+            str(tmp_path),
+            config={"status": "in_progress", "current_step": "build"},
+        )
+        assert result.returncode == 0
+        output = json.loads(result.stdout)
+        context = output["hookSpecificOutput"]["additionalContext"]
+        assert "mismatch" in context.lower() or "build" in context
+
+    def test_in_progress_no_output_when_matching(self, tmp_path):
+        """If user intent matches current step, no additional context needed."""
+        result = self._run_hook(
+            "run the tests",
+            str(tmp_path),
+            config={"status": "in_progress", "current_step": "test"},
+        )
+        assert result.returncode == 0
+        assert result.stdout.strip() == ""
+
+    def test_german_prompt_routes_correctly(self, tmp_path):
+        result = self._run_hook("tests nochmal laufen lassen", str(tmp_path), config={"status": "complete"})
+        assert result.returncode == 0
+        output = json.loads(result.stdout)
+        context = output["hookSpecificOutput"]["additionalContext"]
+        assert "/shipwright-test" in context
