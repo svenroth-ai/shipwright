@@ -96,6 +96,19 @@ export class ClaudeAdapter {
       });
     }
 
+    child.on("error", (err) => {
+      console.error(
+        JSON.stringify({
+          level: "error",
+          source: "claude-cli",
+          taskId: options.taskId,
+          message: `Spawn error: ${err.message}`,
+        })
+      );
+      claudeProcess.state = "exited";
+      claudeProcess.exitCode = 1;
+    });
+
     child.on("close", (code) => {
       claudeProcess.state = "exited";
       claudeProcess.exitCode = code ?? undefined;

@@ -26,6 +26,11 @@ export interface TaskRouteDeps {
   readGlobalSettings?: () => Promise<Record<string, unknown>>;
 }
 
+function buildPrompt(title: string, description?: string): string {
+  if (description) return `${title}\n\n${description}`;
+  return title;
+}
+
 export function createTaskRoutes(deps: TaskRouteDeps): Hono {
   const app = new Hono();
 
@@ -102,7 +107,7 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
           sessionId,
           resume: false,
           pluginDirs: project.settings?.claudePluginDirs ?? [],
-          prompt: body.description,
+          prompt: buildPrompt(title, description),
         });
         if (result === "queued") startStatus = "queued";
       } catch (err) {
@@ -142,7 +147,7 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
         sessionId,
         resume: true,
         pluginDirs: project.settings?.claudePluginDirs ?? [],
-        prompt: task.description,
+        prompt: buildPrompt(task.title, task.description),
       });
 
       if (result === "queued") {

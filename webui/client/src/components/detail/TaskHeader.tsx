@@ -129,15 +129,12 @@ export function TaskHeader({ task }: TaskHeaderProps) {
           <>
             {/* Title row */}
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]">{task.title}</h1>
+              <h1 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]" title={task.description || undefined}>{task.title}</h1>
               <PhaseTag phase={task.currentPhase} />
               <PriorityIndicator priority={task.priority} />
             </div>
 
-            {/* Description (smaller, lighter) */}
-            {task.description && (
-              <p className="text-sm text-gray-500 font-normal mt-0.5 line-clamp-2">{task.description}</p>
-            )}
+            {/* Description shown only as tooltip on title if present */}
           </>
         )}
 
