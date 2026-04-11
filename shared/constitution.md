@@ -24,6 +24,7 @@
 - Service-role client is for test setup/teardown ONLY — never use it for test assertions
 - Integration tests must only run against localhost/127.0.0.1 Supabase instances
 - Diagnose test failures before skipping — attempt autonomous fix (e.g., restart services, seed data, fix config), escalate to user if fix fails after 2 attempts
+- When a pipeline phase detects missing prerequisite artifacts, attempt to generate them from available project context before skipping. Derivation chain: mockup CSS → visual-guidelines, mockup filenames + router → screen-routes, CLAUDE.md/package.json → dev_url. If auto-generation fails, ASK the user — never silently skip a test layer or validation step
 - Verify after non-trivial edits — run `tsc --noEmit` (TypeScript) or project linter before reporting success
 - Re-read files before editing in long sessions (10+ messages) — do not trust cached content after auto-compaction
 - State explicitly when search results may be truncated — never silently work with incomplete data
