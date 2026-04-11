@@ -1,9 +1,11 @@
 import { Outlet } from 'react-router-dom';
 import { SidebarNav } from '../components/sidebar/SidebarNav';
+import { useSSE } from '../hooks/useSSE';
+import { useInboxCount } from '../hooks/useInbox';
 
 export function MainLayout() {
-  // TODO: Replace with useInbox() hook from Section 03
-  const inboxCount = 0;
+  useSSE();
+  const inboxCount = useInboxCount();
 
   return (
     <div className="flex h-screen overflow-hidden">

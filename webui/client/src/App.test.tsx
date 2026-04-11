@@ -3,8 +3,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import App from './App';
 
-// Mock matchMedia for sidebar collapse detection
 beforeEach(() => {
+  // Mock EventSource for useSSE
+  vi.stubGlobal('EventSource', vi.fn().mockImplementation(() => ({
+    onopen: null,
+    onerror: null,
+    onmessage: null,
+    close: vi.fn(),
+  })));
+  // Mock matchMedia for sidebar
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     matches: false,
     media: query,
