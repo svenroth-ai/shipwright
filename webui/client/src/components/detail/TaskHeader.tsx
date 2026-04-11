@@ -1,8 +1,8 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, MoreVertical, CheckCircle, Pencil, Trash2, Play, Check, X } from 'lucide-react';
+import { ArrowLeft, MoreVertical, CheckCircle, Pencil, Trash2, Play, FileText } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import * as Popover from '@radix-ui/react-popover';
 import { apiPatch } from '../../lib/api';
 import { queryKeys } from '../../lib/queryKeys';
 import { useStartTask } from '../../hooks/useStartTask';
@@ -14,6 +14,7 @@ import { formatRelativeTime } from '../../lib/formatTime';
 
 interface TaskHeaderProps {
   task: Task;
+  onEdit?: () => void;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -25,13 +26,10 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: 'Cancelled',
 };
 
-export function TaskHeader({ task }: TaskHeaderProps) {
+export function TaskHeader({ task, onEdit }: TaskHeaderProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const startTask = useStartTask();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState(task.title);
-  const [editDesc, setEditDesc] = useState(task.description);
 
   const updateStatus = useMutation({
     mutationFn: (status: string) =>
@@ -42,47 +40,11 @@ export function TaskHeader({ task }: TaskHeaderProps) {
     },
   });
 
-  const updateDetails = useMutation({
-    mutationFn: (data: { title?: string; description?: string }) =>
-      apiPatch(`/projects/${task.projectId}/tasks/${task.id}/description`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(task.projectId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
-      setIsEditing(false);
-    },
-  });
-
   const isPending = task.status === 'pending' || task.kanbanStatus === 'backlog';
-
-  function handleStartEdit() {
-    setEditTitle(task.title);
-    setEditDesc(task.description);
-    setIsEditing(true);
-  }
-
-  function handleSaveEdit() {
-    const t = editTitle.trim();
-    const d = editDesc.trim();
-    if (!t) return;
-    const patch: { title?: string; description?: string } = {};
-    if (t !== task.title) patch.title = t;
-    if (d !== task.description) patch.description = d;
-    if (Object.keys(patch).length > 0) {
-      updateDetails.mutate(patch);
-    } else {
-      setIsEditing(false);
-    }
-  }
-
-  function handleCancelEdit() {
-    setEditTitle(task.title);
-    setEditDesc(task.description);
-    setIsEditing(false);
-  }
 
   return (
     <header className="flex items-start gap-4 px-6 py-3.5 border-b border-[#e0dbd4] bg-white">
-      {/* Left: back, title, description, status */}
+      {/* Left: back, title, status */}
       <div className="flex-1 min-w-0">
         <button
           onClick={() => navigate(-1)}
@@ -92,58 +54,43 @@ export function TaskHeader({ task }: TaskHeaderProps) {
           Back to Board
         </button>
 
-        {isEditing ? (
-          <div className="space-y-2 mb-1">
-            <div className="flex items-center gap-2">
-              <input
-                autoFocus
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSaveEdit();
-                  if (e.key === 'Escape') handleCancelEdit();
-                }}
-                className="text-lg font-semibold text-gray-900 bg-gray-50 border border-gray-300 rounded-lg px-2 py-0.5 flex-1 min-w-0 outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
-                placeholder="Task title"
-              />
-              <button onClick={handleSaveEdit} className="p-1 text-green-600 hover:bg-green-50 rounded" title="Save">
-                <Check size={16} />
-              </button>
-              <button onClick={handleCancelEdit} className="p-1 text-gray-400 hover:bg-gray-100 rounded" title="Cancel">
-                <X size={16} />
-              </button>
-            </div>
-            <textarea
-              value={editDesc}
-              onChange={(e) => setEditDesc(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSaveEdit();
-                if (e.key === 'Escape') handleCancelEdit();
-              }}
-              rows={3}
-              className="w-full text-sm text-gray-600 bg-gray-50 border border-gray-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] resize-none"
-              placeholder="Description (optional)"
-            />
-          </div>
-        ) : (
-          <>
-            {/* Title row */}
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]" title={task.description || undefined}>{task.title}</h1>
-              <PhaseTag phase={task.currentPhase} />
-              <PriorityIndicator priority={task.priority} />
-            </div>
+        {/* Title row */}
+        <div className="flex items-center gap-2.5 flex-wrap mb-2">
+          <h1 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]">{task.title}</h1>
+          <PhaseTag phase={task.currentPhase} />
+          <PriorityIndicator priority={task.priority} />
+        </div>
 
-            {/* Description shown only as tooltip on title if present */}
-          </>
-        )}
-
-        {/* Status line */}
-        <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-500">
+        {/* Status line + Show Description */}
+        <div className="flex items-center gap-1.5 text-xs text-gray-500">
           <StatusIcon status={task.kanbanStatus} />
           <span className="font-medium">{STATUS_LABELS[task.kanbanStatus] ?? task.kanbanStatus}</span>
           <span>&middot;</span>
           <span>{formatRelativeTime(task.updatedAt)}</span>
+
+          {task.description && (
+            <>
+              <span>&middot;</span>
+              <Popover.Root>
+                <Popover.Trigger asChild>
+                  <button className="flex items-center gap-1 text-[var(--color-primary)] hover:underline cursor-pointer">
+                    <FileText size={11} />
+                    Show Description
+                  </button>
+                </Popover.Trigger>
+                <Popover.Portal>
+                  <Popover.Content
+                    className="bg-white rounded-lg shadow-[var(--shadow-card)] border border-[#e0dbd4] p-3 max-w-[400px] z-50"
+                    sideOffset={6}
+                    align="start"
+                  >
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{task.description}</p>
+                    <Popover.Arrow className="fill-white" />
+                  </Popover.Content>
+                </Popover.Portal>
+              </Popover.Root>
+            </>
+          )}
         </div>
       </div>
 
@@ -174,12 +121,14 @@ export function TaskHeader({ task }: TaskHeaderProps) {
                     <Play size={15} className="text-green-600" /> Start task
                   </DropdownMenu.Item>
 
-                  <DropdownMenu.Item
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 rounded-md outline-none"
-                    onSelect={handleStartEdit}
-                  >
-                    <Pencil size={15} className="text-gray-500" /> Edit details
-                  </DropdownMenu.Item>
+                  {onEdit && (
+                    <DropdownMenu.Item
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 rounded-md outline-none"
+                      onSelect={onEdit}
+                    >
+                      <Pencil size={15} className="text-gray-500" /> Edit task
+                    </DropdownMenu.Item>
+                  )}
 
                   <DropdownMenu.Separator className="h-px bg-[#e0dbd4] my-1" />
                 </>

@@ -1375,15 +1375,29 @@ Or read `CHANGELOG.md` in the repository root for release notes.
 
 The Shipwright Command Center is a local web application for managing multiple Shipwright projects in parallel. It provides a visual Kanban board, task management, real-time progress tracking, and an inbox for Claude's questions.
 
-### Quick Start
+### Quick Start (Development)
 
 ```bash
-cd webui
-npm install          # First time only
-npm run dev          # Starts server (port 3847) + client (port 5173)
+cd webui/server && npm install
+cd ../client && npm install
+cd .. && npm run dev    # Starts server (port 3847) + client (port 5173)
 ```
 
 Open **http://localhost:5173** in your browser.
+
+### Installation (Windows Auto-Start)
+
+To have the server start automatically on Windows login (no console window):
+
+```powershell
+.\webui\scripts\install-windows.ps1
+```
+
+This creates a Windows Startup shortcut that launches the server in the background. The server log is written to `~/.shipwright-webui/server.log`. To uninstall:
+
+```powershell
+.\webui\scripts\install-windows.ps1 -Uninstall
+```
 
 ### Creating a Project
 
@@ -1423,7 +1437,7 @@ Four tabs:
 |-----|---------|
 | **Global** | Max concurrent tasks, default autonomy (Guided/Autonomous), heartbeat interval |
 | **Phase Mapping** | Configure which pipeline phases map to which Kanban columns |
-| **Project** | View per-project settings (profile, status, path) |
+| **Project** | Per-project settings: autonomy override (Inherit/Guided/Autonomous), environment variables (key-value pairs passed to Claude CLI), profile, status, path |
 | **About** | Version info, environment details |
 
 ### Architecture
