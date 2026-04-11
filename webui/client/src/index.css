@@ -15,7 +15,8 @@
   --font-family: 'Inter', sans-serif;
   --radius: 12px;
   --color-border: #e0dbd4;
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-card: 0 6px 30px rgba(0, 0, 0, 0.10);
+  --shadow-card-hover: 0 10px 40px rgba(0, 0, 0, 0.16);
 }
 
 body {

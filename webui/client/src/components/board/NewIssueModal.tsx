@@ -57,9 +57,9 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
         >
           <div className="flex items-center justify-between mb-4">
             <Dialog.Title className="text-lg font-semibold text-gray-900">
-              New Issue
+              New Task
             </Dialog.Title>
-            <Dialog.Description className="sr-only">Create a new task issue</Dialog.Description>
+            <Dialog.Description className="sr-only">Create a new task</Dialog.Description>
             <Dialog.Close asChild>
               <button className="p-1 rounded hover:bg-gray-100" aria-label="Close">
                 <X size={18} className="text-gray-400" />
@@ -144,7 +144,7 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
               onClick={handleSubmit}
               className="px-4 py-2 text-sm font-semibold text-white bg-[var(--color-primary)] rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isCreating ? 'Creating...' : 'Create Issue'}
+              {isCreating ? 'Creating...' : 'Create Task'}
             </button>
           </div>
         </Dialog.Content>

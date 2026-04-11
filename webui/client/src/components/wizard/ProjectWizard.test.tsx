@@ -24,7 +24,9 @@ describe('ProjectWizard', () => {
   it('navigates to step 2 on Next', async () => {
     renderWizard();
     await userEvent.type(screen.getByPlaceholderText('My Awesome App'), 'Test');
-    await userEvent.type(screen.getByPlaceholderText(/home/), '/tmp/test');
+    // Path input placeholder changed
+    const pathInput = screen.getByPlaceholderText(/Users|home|projects/);
+    await userEvent.type(pathInput, '/tmp/test');
     await userEvent.click(screen.getByText('Next'));
     expect(screen.getByText('Stack & Profile')).toBeInTheDocument();
   });
@@ -32,5 +34,10 @@ describe('ProjectWizard', () => {
   it('disables Next when name is empty', () => {
     renderWizard();
     expect(screen.getByText('Next')).toBeDisabled();
+  });
+
+  it('shows browse button', () => {
+    renderWizard();
+    expect(screen.getByText('Browse')).toBeInTheDocument();
   });
 });

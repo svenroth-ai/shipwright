@@ -43,9 +43,23 @@ export function SidebarNav({ inboxCount }: SidebarNavProps) {
             <Menu size={20} className="text-white" />
           </button>
         ) : (
-          <span className="text-base font-bold text-white">
-            Shipwright
-          </span>
+          <>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-white shrink-0">
+              <circle cx="12" cy="12" r="8"/>
+              <circle cx="12" cy="12" r="2.5"/>
+              <line x1="12" y1="2" x2="12" y2="9.5"/>
+              <line x1="12" y1="14.5" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="9.5" y2="12"/>
+              <line x1="14.5" y1="12" x2="22" y2="12"/>
+              <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/>
+              <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/>
+              <line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/>
+              <line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/>
+            </svg>
+            <span className="text-base font-bold text-white">
+              Shipwright
+            </span>
+          </>
         )}
       </div>
 

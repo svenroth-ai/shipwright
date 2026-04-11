@@ -1,8 +1,6 @@
 const PROFILES = [
-  { id: 'nextjs-supabase', name: 'Next.js + Supabase', desc: 'Full-stack TypeScript' },
-  { id: 'react-vite', name: 'React + Vite', desc: 'SPA with Vite bundler' },
-  { id: 'python-fastapi', name: 'Python + FastAPI', desc: 'REST API backend' },
-  { id: 'custom', name: 'Custom', desc: 'Manual configuration' },
+  { id: 'supabase-nextjs', name: 'Next.js + Supabase', desc: 'Full-stack TypeScript with Supabase Auth, DB, and Storage' },
+  { id: 'custom', name: 'Custom', desc: 'Manual configuration — define your own stack' },
 ];
 
 interface StackProfileStepProps {
@@ -20,7 +18,7 @@ export function StackProfileStep({ profile, onProfileChange }: StackProfileStepP
           className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
             profile === p.id
               ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5'
-              : 'border-gray-200 hover:border-gray-300'
+              : 'border-[#e0dbd4] hover:border-gray-300'
           }`}
           onClick={() => onProfileChange(p.id)}
         >

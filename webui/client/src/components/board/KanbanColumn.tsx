@@ -1,4 +1,5 @@
 import * as ScrollArea from '@radix-ui/react-scroll-area';
+import { Plus } from 'lucide-react';
 import type { Task, KanbanStatus } from '../../types';
 import { TaskCard } from './TaskCard';
 
@@ -22,9 +23,10 @@ interface KanbanColumnProps {
   title: string;
   tasks: Task[];
   status: KanbanStatus;
+  onNewTask?: () => void;
 }
 
-export function KanbanColumn({ title, tasks, status }: KanbanColumnProps) {
+export function KanbanColumn({ title, tasks, status, onNewTask }: KanbanColumnProps) {
   const style = COLUMN_STYLES[status] ?? COLUMN_STYLES.backlog;
 
   return (
@@ -39,7 +41,17 @@ export function KanbanColumn({ title, tasks, status }: KanbanColumnProps) {
       <ScrollArea.Root className="flex-1 overflow-hidden">
         <ScrollArea.Viewport className="h-full px-2.5 pb-3.5">
           {tasks.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-8">No tasks</p>
+            <div className="text-center py-8">
+              <p className="text-sm text-gray-400 mb-2">No tasks</p>
+              {status === 'backlog' && onNewTask && (
+                <button
+                  onClick={onNewTask}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-500 rounded-lg border border-dashed border-gray-300 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors"
+                >
+                  <Plus size={12} /> Add task
+                </button>
+              )}
+            </div>
           ) : (
             <div className="flex flex-col gap-2">
               {tasks.map((task) => (

@@ -35,7 +35,7 @@ export function TaskCard({ task, columnStatus }: TaskCardProps) {
     <div
       role="button"
       tabIndex={0}
-      className="bg-white rounded-[10px] p-3 cursor-pointer shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] hover:-translate-y-px transition-all group"
+      className="bg-white rounded-xl p-3 cursor-pointer shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-px transition-all group border-0"
       onClick={() => navigate(`/tasks/${task.id}`)}
       onKeyDown={(e) => e.key === 'Enter' && navigate(`/tasks/${task.id}`)}
     >

@@ -40,11 +40,11 @@ describe('KanbanPage', () => {
     });
   });
 
-  it('renders All tab and New Issue button', async () => {
+  it('renders project dropdown and New Task button', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText('All')).toBeInTheDocument();
-      expect(screen.getByText('New Issue')).toBeInTheDocument();
+      expect(screen.getByText('All Projects')).toBeInTheDocument();
+      expect(screen.getByText('New Task')).toBeInTheDocument();
     });
   });
 
