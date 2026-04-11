@@ -54,11 +54,22 @@ def setup(cwd: Path, profile: str | None = None) -> dict:
         e2e_dir.mkdir(parents=True)
         actions.append("Created e2e/ directory")
 
-    # 2. Copy playwright.config.ts
+    # 2. Copy playwright.config.ts (with port substitution from build config)
     config_path = cwd / "playwright.config.ts"
     template_config = templates_dir / "playwright.config.ts.template"
     if not config_path.exists() and template_config.exists():
-        shutil.copy2(template_config, config_path)
+        content = template_config.read_text(encoding="utf-8")
+        # Self-healing: substitute port from build config if available
+        build_cfg = cwd / "shipwright_build_config.json"
+        if build_cfg.exists():
+            try:
+                data = json.loads(build_cfg.read_text(encoding="utf-8"))
+                dev_url = data.get("dev_url", "")
+                if dev_url and dev_url != "http://localhost:3000":
+                    content = content.replace("http://localhost:3000", dev_url)
+            except (json.JSONDecodeError, OSError):
+                pass
+        config_path.write_text(content, encoding="utf-8")
         actions.append("Created playwright.config.ts from template")
 
     # 3. Copy browser-verify.ts

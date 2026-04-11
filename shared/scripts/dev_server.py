@@ -91,10 +91,27 @@ def _clear_state(cwd: Path) -> None:
         state_path.unlink()
 
 
-def _get_config(profile: str | None) -> dict:
-    """Get dev server config for profile."""
+def _get_config(profile: str | None, cwd: Path | None = None) -> dict:
+    """Get dev server config for profile.
+
+    Falls back to shipwright_build_config.json for custom/unknown profiles.
+    """
     if profile and profile in PROFILE_DEV_SERVERS:
         return PROFILE_DEV_SERVERS[profile]
+    # Try build config for custom profiles (self-healing)
+    if cwd:
+        build_config = cwd / "shipwright_build_config.json"
+        if build_config.exists():
+            try:
+                data = json.loads(build_config.read_text(encoding="utf-8"))
+                dev_url = data.get("dev_url", "")
+                if dev_url:
+                    from urllib.parse import urlparse
+                    parsed = urlparse(dev_url)
+                    port = parsed.port or 3000
+                    return {**DEFAULT_DEV_SERVER, "port": port}
+            except (json.JSONDecodeError, OSError):
+                pass
     return DEFAULT_DEV_SERVER
 
 
@@ -110,7 +127,7 @@ def _wait_for_ready(port: int, timeout: int) -> bool:
 
 def cmd_start(cwd: Path, profile: str | None) -> dict:
     """Start the dev server."""
-    config = _get_config(profile)
+    config = _get_config(profile, cwd=cwd)
     port = config["port"]
     timeout = config["ready_timeout_seconds"]
 

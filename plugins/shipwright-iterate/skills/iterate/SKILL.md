@@ -130,7 +130,7 @@ Options:
 
 Note: `shipwright_run_config.json` was already read in Step B (Validate Project).
 
-If a file does not exist, skip it silently (not all projects have all artifacts).
+If a file does not exist, skip it but print WARNING: "Operating with incomplete project context — missing: {list of missing files}". Not all projects have all artifacts, but the warning helps diagnose unexpected behavior downstream.
 
 ### C. Generate Run ID
 
