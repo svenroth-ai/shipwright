@@ -16,18 +16,18 @@ export function SidebarNavItem({ icon: Icon, label, to, badge, collapsed }: Side
       to={to}
       end={to === '/'}
       className={({ isActive }) =>
-        `flex items-center gap-3 px-3 py-2 rounded-r-lg text-sm border-l-[3px] transition-colors ${
+        `flex items-center gap-[10px] px-3 py-[9px] rounded-lg text-sm transition-colors ${
           isActive
-            ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)] active'
-            : 'border-transparent hover:bg-gray-100'
+            ? 'bg-white/[0.12] text-white'
+            : 'text-white/70 hover:bg-white/[0.08] hover:text-white'
         }`
       }
     >
       <Icon
-        size={20}
+        size={18}
         className="shrink-0"
       />
-      <span className={collapsed ? 'sr-only' : 'font-medium text-gray-700 flex-1'}>
+      <span className={collapsed ? 'sr-only' : 'font-medium flex-1'}>
         {label}
       </span>
       {badge}

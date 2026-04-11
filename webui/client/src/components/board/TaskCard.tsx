@@ -2,18 +2,21 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiPatch } from '../../lib/api';
 import { queryKeys } from '../../lib/queryKeys';
-import type { Task } from '../../types';
+import type { Task, KanbanStatus } from '../../types';
 import { PhaseTag } from './PhaseTag';
 import { PriorityIndicator } from './PriorityIndicator';
 import { IntentBadge } from './IntentBadge';
 import { ComplexityIndicator } from './ComplexityIndicator';
 import { CardOverflowMenu } from './CardOverflowMenu';
+import { StartTaskButton } from './StartTaskButton';
+import { formatRelativeTime } from '../../lib/formatTime';
 
 interface TaskCardProps {
   task: Task;
+  columnStatus?: KanbanStatus;
 }
 
-export function TaskCard({ task }: TaskCardProps) {
+export function TaskCard({ task, columnStatus }: TaskCardProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -25,6 +28,8 @@ export function TaskCard({ task }: TaskCardProps) {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
     },
   });
+
+  const isBacklog = columnStatus === 'backlog' || task.kanbanStatus === 'backlog';
 
   return (
     <div
@@ -53,10 +58,14 @@ export function TaskCard({ task }: TaskCardProps) {
         <span className="transition-opacity duration-300"><ComplexityIndicator complexity={task.complexity} /></span>
       </div>
 
-      {/* Bottom: meta */}
+      {/* Bottom: time-ago + id + start button */}
       <div className="flex items-center gap-3 text-[11px] text-gray-400">
-        <span>Tests: --</span>
+        <span>{formatRelativeTime(task.updatedAt)}</span>
         <span>#{task.id.slice(0, 7)}</span>
+        <span className="flex-1" />
+        {isBacklog && (
+          <StartTaskButton projectId={task.projectId} taskId={task.id} />
+        )}
       </div>
     </div>
   );

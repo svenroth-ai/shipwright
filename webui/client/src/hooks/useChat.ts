@@ -18,14 +18,15 @@ interface SendChatParams {
   model?: string;
   mode?: string;
   effort?: string;
+  autonomy?: string;
 }
 
 export function useSendChat() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ projectId, taskId, message, model, mode, effort }: SendChatParams) =>
-      apiPost(`/projects/${projectId}/chat`, { message, taskId, model, mode, effort }),
+    mutationFn: ({ projectId, taskId, message, model, mode, effort, autonomy }: SendChatParams) =>
+      apiPost(`/projects/${projectId}/chat`, { message, taskId, model, mode, effort, autonomy }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.chat.byTask(variables.projectId, variables.taskId),

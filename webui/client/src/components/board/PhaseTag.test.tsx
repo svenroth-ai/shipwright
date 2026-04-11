@@ -9,21 +9,24 @@ describe('PhaseTag', () => {
   });
 
   it.each([
-    ['build', 'bg-orange-500'],
-    ['test', 'bg-green-500'],
-    ['deploy', 'bg-teal-500'],
-    ['plan', 'bg-blue-500'],
-    ['design', 'bg-purple-500'],
-    ['project', 'bg-gray-400'],
-  ])('renders %s phase with correct color class', (phase, expectedClass) => {
+    ['build', 'bg-orange-50', 'text-orange-700'],
+    ['test', 'bg-green-100', 'text-green-700'],
+    ['deploy', 'bg-cyan-100', 'text-cyan-700'],
+    ['plan', 'bg-blue-100', 'text-blue-700'],
+    ['design', 'bg-purple-100', 'text-purple-700'],
+    ['project', 'bg-gray-100', 'text-gray-600'],
+    ['iterate', 'bg-teal-100', 'text-teal-700'],
+  ])('renders %s phase with correct color classes', (phase, expectedBg, expectedText) => {
     render(<PhaseTag phase={phase} />);
     const tag = screen.getByText(phase);
-    expect(tag.className).toContain(expectedClass);
+    expect(tag.className).toContain(expectedBg);
+    expect(tag.className).toContain(expectedText);
   });
 
   it('falls back to gray for unknown phase', () => {
     render(<PhaseTag phase="unknown" />);
     const tag = screen.getByText('unknown');
-    expect(tag.className).toContain('bg-gray-400');
+    expect(tag.className).toContain('bg-gray-100');
+    expect(tag.className).toContain('text-gray-600');
   });
 });

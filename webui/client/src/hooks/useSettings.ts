@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiFetch, apiPatch } from '../lib/api';
+import { apiFetch, apiPut } from '../lib/api';
 import type { GlobalSettings } from '../types';
 
 export function useSettings() {
@@ -14,7 +14,7 @@ export function useSaveSettings() {
 
   return useMutation({
     mutationFn: (settings: Partial<GlobalSettings>) =>
-      apiPatch<GlobalSettings>('/settings', settings),
+      apiPut<GlobalSettings>('/settings', settings),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
     },

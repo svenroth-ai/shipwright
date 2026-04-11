@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Inbox, Check } from 'lucide-react';
 import { useInbox, useAnswerInbox } from '../hooks/useInbox';
+import { useProjects } from '../hooks/useProjects';
 import { formatRelativeTime } from '../lib/formatTime';
 
 export default function InboxPage() {
   const { data: items = [], isLoading } = useInbox();
+  const { data: projects = [] } = useProjects();
   const answerMutation = useAnswerInbox();
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
@@ -17,6 +19,18 @@ export default function InboxPage() {
     answerMutation.mutate({ id, answer });
     setAnswers((prev) => { const next = { ...prev }; delete next[id]; return next; });
   }
+
+  function getProjectName(projectId: string) {
+    return projects.find((p) => p.id === projectId)?.name ?? 'Unknown';
+  }
+
+  // Group pending by project
+  const pendingByProject = pending.reduce<Record<string, typeof pending>>((acc, item) => {
+    const key = item.projectId;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(item);
+    return acc;
+  }, {});
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -34,24 +48,39 @@ export default function InboxPage() {
         </div>
       ) : (
         <>
-          {pending.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-sm font-semibold text-gray-500 uppercase mb-3">Pending ({pending.length})</h2>
+          {Object.entries(pendingByProject).map(([projectId, projectItems]) => (
+            <div key={projectId} className="mb-8">
+              <h2 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                {getProjectName(projectId)} ({projectItems.length})
+              </h2>
               <div className="space-y-3">
-                {pending.map((item) => (
-                  <div key={item.id} className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                {projectItems.map((item) => (
+                  <div key={item.id} className="bg-white border border-[#e0dbd4] border-l-[3px] border-l-amber-500 rounded-xl p-4">
+                    {/* Context pill */}
+                    {item.context && (
+                      <span className="inline-block px-2 py-0.5 text-[10px] font-semibold rounded-full bg-orange-50 text-orange-700 mb-2">
+                        {item.context}
+                      </span>
+                    )}
                     <p className="text-sm font-medium text-gray-900 mb-2">{item.question}</p>
                     {item.options && item.options.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-2">
                         {item.options.map((opt) => (
                           <button
                             key={opt}
-                            className="px-3 py-1 text-xs rounded-full border border-gray-300 bg-white hover:border-[var(--color-primary)]"
+                            className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+                              answers[item.id] === opt
+                                ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                                : 'border-gray-300 bg-white hover:border-[var(--color-primary)]'
+                            }`}
                             onClick={() => { setAnswers((prev) => ({ ...prev, [item.id]: opt })); }}
                           >
                             {opt}
                           </button>
                         ))}
+                        {item.options.length > 0 && (
+                          <span className="text-[10px] text-gray-300 self-center">or</span>
+                        )}
                       </div>
                     )}
                     <div className="flex gap-2">
@@ -60,7 +89,7 @@ export default function InboxPage() {
                         value={answers[item.id] ?? ''}
                         onChange={(e) => setAnswers((prev) => ({ ...prev, [item.id]: e.target.value }))}
                         placeholder="Type answer..."
-                        className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg"
+                        className="flex-1 px-3 py-1.5 text-sm border border-[#e0dbd4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
                         onKeyDown={(e) => e.key === 'Enter' && handleAnswer(item.id)}
                       />
                       <button
@@ -75,11 +104,20 @@ export default function InboxPage() {
                 ))}
               </div>
             </div>
+          ))}
+
+          {pending.length === 0 && (
+            <div className="text-center py-8 text-gray-400 mb-6">
+              <Inbox size={36} className="mx-auto mb-2 opacity-40" />
+              <p className="text-sm">No pending questions</p>
+            </div>
           )}
 
           {answered.length > 0 && (
             <div>
-              <h2 className="text-sm font-semibold text-gray-500 uppercase mb-3">Answered ({answered.length})</h2>
+              <h2 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                Answered ({answered.length})
+              </h2>
               <div className="space-y-2">
                 {answered.map((item) => (
                   <div key={item.id} className="p-3 bg-gray-50 border border-gray-100 rounded-lg flex items-start gap-2">

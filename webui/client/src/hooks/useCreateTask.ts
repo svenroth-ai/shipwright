@@ -6,14 +6,15 @@ import type { Task } from '../types';
 interface CreateTaskParams {
   projectId: string;
   description: string;
+  startImmediately?: boolean;
 }
 
 export function useCreateTask() {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: ({ projectId, description }: CreateTaskParams) =>
-      apiPost<Task>(`/projects/${projectId}/tasks`, { description }),
+    mutationFn: ({ projectId, description, startImmediately = true }: CreateTaskParams) =>
+      apiPost<Task>(`/projects/${projectId}/tasks`, { description, startImmediately }),
     onSuccess: (task) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(task.projectId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });

@@ -7,6 +7,7 @@ import { StackProfileStep } from './StackProfileStep';
 import { EnvVarsStep } from './EnvVarsStep';
 import { ConfirmationStep } from './ConfirmationStep';
 import { useCreateProject } from '../../hooks/useCreateProject';
+import { useSettings } from '../../hooks/useSettings';
 
 interface ProjectWizardProps {
   open: boolean;
@@ -14,10 +15,11 @@ interface ProjectWizardProps {
 }
 
 export function ProjectWizard({ open, onOpenChange }: ProjectWizardProps) {
+  const { data: settings } = useSettings();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [path, setPath] = useState('');
-  const [profile, setProfile] = useState('custom');
+  const [profile, setProfile] = useState(settings?.defaultProfile ?? 'custom');
   const createProject = useCreateProject();
 
   function handleNext() {

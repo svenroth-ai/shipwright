@@ -5,7 +5,7 @@ import { SlashCommandPopup } from './SlashCommandPopup';
 import { useChatSettings } from '../../hooks/useChatSettings';
 
 interface ChatInputProps {
-  onSend: (message: string, settings: { model: string; mode: string; effort: string }) => void;
+  onSend: (message: string, settings: { model: string; mode: string; effort: string; autonomy: string }) => void;
   isStreaming: boolean;
 }
 
@@ -19,7 +19,7 @@ export function ChatInput({ onSend, isStreaming }: ChatInputProps) {
   function handleSend() {
     const trimmed = input.trim();
     if (!trimmed || isStreaming) return;
-    onSend(trimmed, { model: settings.model, mode: settings.mode, effort: settings.effort });
+    onSend(trimmed, { model: settings.model, mode: settings.mode, effort: settings.effort, autonomy: settings.autonomy });
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   }
