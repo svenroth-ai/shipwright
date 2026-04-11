@@ -89,25 +89,30 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
       description: body.description,
     });
 
+    let startStatus: "started" | "queued" | "failed" = "started";
     if (startImmediately) {
-      const result = await deps.governor.acquire({
-        projectDir: project.path,
-        projectId: project.id,
-        taskId,
-        sessionId,
-        resume: false,
-        pluginDirs: project.settings?.claudePluginDirs ?? [],
-        prompt: body.description,
-      });
-
-      if (result === "queued") {
-        return c.json({ data: { taskId, status: "queued" } }, 202);
+      try {
+        const result = await deps.governor.acquire({
+          projectDir: project.path,
+          projectId: project.id,
+          taskId,
+          sessionId,
+          resume: false,
+          pluginDirs: project.settings?.claudePluginDirs ?? [],
+          prompt: body.description,
+        });
+        if (result === "queued") startStatus = "queued";
+      } catch (err) {
+        // Task is created even if Claude CLI spawn fails
+        console.error(JSON.stringify({ level: "warn", message: "Task created but process spawn failed", taskId, error: String(err) }));
+        startStatus = "failed";
       }
     }
 
     const mapping = await getPhaseMapping(project.settings);
     const task = deps.taskManager.getTasksWithKanban(project.id, mapping).find((t) => t.id === taskId);
-    return c.json({ data: task ?? { id: taskId, status: "pending" } }, 201);
+    const status = startStatus === "queued" ? 202 : 201;
+    return c.json({ data: task ?? { id: taskId, projectId: project.id, description: body.description, status: "pending", kanbanStatus: "backlog", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), sessionId }, startStatus }, status);
   });
 
   // Fix 4: Start a pending task
@@ -126,21 +131,25 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
     }
 
     const sessionId = randomUUID();
-    const result = await deps.governor.acquire({
-      projectDir: project.path,
-      projectId: project.id,
-      taskId,
-      sessionId,
-      resume: true,
-      pluginDirs: project.settings?.claudePluginDirs ?? [],
-      prompt: task.description,
-    });
+    try {
+      const result = await deps.governor.acquire({
+        projectDir: project.path,
+        projectId: project.id,
+        taskId,
+        sessionId,
+        resume: true,
+        pluginDirs: project.settings?.claudePluginDirs ?? [],
+        prompt: task.description,
+      });
 
-    if (result === "queued") {
-      return c.json({ data: { taskId, status: "queued" } }, 202);
+      if (result === "queued") {
+        return c.json({ data: { taskId, status: "queued" } }, 202);
+      }
+      return c.json({ data: { taskId, status: "running" } });
+    } catch (err) {
+      console.error(JSON.stringify({ level: "warn", message: "Task start failed", taskId, error: String(err) }));
+      return c.json({ data: { taskId, status: "start_failed", error: String(err) } }, 500);
     }
-
-    return c.json({ data: { taskId, status: "running" } });
   });
 
   app.patch("/api/projects/:id/tasks/:taskId/status", async (c) => {
