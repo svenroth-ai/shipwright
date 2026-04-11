@@ -22,7 +22,7 @@ export function TaskCard({ task, columnStatus }: TaskCardProps) {
 
   const updateStatus = useMutation({
     mutationFn: (status: string) =>
-      apiPatch(`/projects/${task.projectId}/tasks/${task.id}`, { status }),
+      apiPatch(`/projects/${task.projectId}/tasks/${task.id}/status`, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(task.projectId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
@@ -45,8 +45,8 @@ export function TaskCard({ task, columnStatus }: TaskCardProps) {
           {task.description}
         </span>
         <CardOverflowMenu
-          onClose={() => updateStatus.mutate('done')}
-          onCancel={() => updateStatus.mutate('cancelled')}
+          onClose={() => updateStatus.mutate('closed')}
+          onDelete={() => updateStatus.mutate('cancelled')}
         />
       </div>
 
