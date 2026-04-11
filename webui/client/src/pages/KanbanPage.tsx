@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { useProjects } from '../hooks/useProjects';
 import { useTasks } from '../hooks/useTasks';
+import { useBoardFilters } from '../hooks/useBoardFilters';
 import { ProjectTabs } from '../components/board/ProjectTabs';
 import { KanbanBoard } from '../components/board/KanbanBoard';
+import { FilterBar } from '../components/board/FilterBar';
+import { TaskListView } from '../components/board/TaskListView';
 import { NewIssueButton } from '../components/board/NewIssueButton';
 import { NewIssueModal } from '../components/board/NewIssueModal';
 
@@ -11,6 +14,8 @@ export default function KanbanPage() {
   const [showNewIssue, setShowNewIssue] = useState(false);
   const { data: projects = [] } = useProjects();
   const { data: tasks = [], isLoading, isError, refetch } = useTasks(activeProjectId ?? undefined);
+  const filters = useBoardFilters();
+  const filteredTasks = filters.filterTasks(tasks);
 
   return (
     <div className="flex flex-col h-full">
@@ -21,13 +26,23 @@ export default function KanbanPage() {
           activeProjectId={activeProjectId}
           onSelect={setActiveProjectId}
         />
-        <div className="flex items-center gap-2">
-          {/* Filter bar slot — Section 06 */}
-          <NewIssueButton onClick={() => setShowNewIssue(true)} />
-        </div>
+        <NewIssueButton onClick={() => setShowNewIssue(true)} />
       </div>
 
-      {/* Board area */}
+      {/* Filter bar */}
+      <div className="px-6 py-2 border-b border-gray-100 bg-white">
+        <FilterBar
+          selectedPhases={filters.selectedPhases}
+          togglePhase={filters.togglePhase}
+          clearPhases={filters.clearPhases}
+          selectedPriority={filters.selectedPriority}
+          setPriority={filters.setPriority}
+          viewMode={filters.viewMode}
+          setViewMode={filters.setViewMode}
+        />
+      </div>
+
+      {/* Board/List area */}
       <div className="flex-1 p-5 overflow-hidden">
         {isLoading ? (
           <div className="flex gap-4 h-full">
@@ -45,8 +60,10 @@ export default function KanbanPage() {
               Retry
             </button>
           </div>
+        ) : filters.viewMode === 'list' ? (
+          <TaskListView tasks={filteredTasks} />
         ) : (
-          <KanbanBoard tasks={tasks} />
+          <KanbanBoard tasks={filteredTasks} />
         )}
       </div>
 
