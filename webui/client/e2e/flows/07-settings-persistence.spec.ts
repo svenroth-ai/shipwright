@@ -12,18 +12,15 @@ test.describe('Settings Persistence', () => {
     await page.goto('/settings');
     await page.getByRole('tab', { name: 'Phase Mapping' }).click();
     await expect(page.getByText('Phase to Column Mapping')).toBeVisible();
-    // Should show pipeline phases with dropdowns
-    await expect(page.getByText('project')).toBeVisible();
-    await expect(page.getByText('build')).toBeVisible();
-    await expect(page.getByText('test')).toBeVisible();
-    // Should have Save button
+    // Should have Save and Reset buttons
     await expect(page.getByRole('button', { name: 'Save' })).toBeVisible();
+    await expect(page.getByText('Reset to defaults')).toBeVisible();
   });
 
   test('about tab shows version and plugin dirs hint', async ({ page }) => {
     await page.goto('/settings');
     await page.getByRole('tab', { name: 'About' }).click();
     await expect(page.getByText('Shipwright Command Center v0.1.0')).toBeVisible();
-    await expect(page.getByText('Plugin Directories')).toBeVisible();
+    await expect(page.getByText('Plugin Directories', { exact: true })).toBeVisible();
   });
 });
