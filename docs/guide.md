@@ -1371,6 +1371,75 @@ Or read `CHANGELOG.md` in the repository root for release notes.
 
 ---
 
+## 11. Command Center (WebUI)
+
+The Shipwright Command Center is a local web application for managing multiple Shipwright projects in parallel. It provides a visual Kanban board, task management, real-time progress tracking, and an inbox for Claude's questions.
+
+### Quick Start
+
+```bash
+cd webui
+npm install          # First time only
+npm run dev          # Starts server (port 3847) + client (port 5173)
+```
+
+Open **http://localhost:5173** in your browser.
+
+### Creating a Project
+
+1. Click **Create Project** (top-right on Projects page, or in the sidebar)
+2. Enter project name and directory path (use Browse to select)
+3. Choose stack profile (Next.js + Supabase or Custom)
+4. Review and confirm
+
+### Creating a Task
+
+1. Click **New Task** (top-right on Task Board) or press **Ctrl+N** / **Cmd+N**
+2. Enter a task title and optional description
+3. Select a project (if not already filtered)
+4. Check/uncheck "Start immediately" — when checked, Claude CLI starts right away
+5. Click **Create Task**
+
+The task appears in the **Backlog** column. If "Start immediately" was checked, it moves to **In Progress** as Claude works on it. Backlog tasks show a **Start** button to launch them manually.
+
+### Task Board
+
+The Kanban board has four columns: **Backlog**, **In Progress**, **In Review**, and **Done**. Tasks move between columns automatically based on their pipeline phase. The phase-to-column mapping is configurable in Settings.
+
+- **Project dropdown** (top-left) filters tasks by project or shows all
+- **Phase / Priority filters** narrow visible tasks
+- **Board / List** toggle switches between Kanban and table view
+- Cards show: title, phase tag, priority, time-ago, and intent/complexity badges
+
+### Inbox
+
+When Claude needs your input during a task, the question appears in the **Inbox**. Answer by selecting an option or typing a response. The answer is delivered to Claude's running process via stdin.
+
+### Settings
+
+Four tabs:
+
+| Tab | Purpose |
+|-----|---------|
+| **Global** | Max concurrent tasks, default autonomy (Guided/Autonomous), heartbeat interval |
+| **Phase Mapping** | Configure which pipeline phases map to which Kanban columns |
+| **Project** | View per-project settings (profile, status, path) |
+| **About** | Version info, environment details |
+
+### Architecture
+
+- **Backend**: Hono (Node.js) on port 3847 — REST API + SSE for real-time updates
+- **Frontend**: React 19 + Vite + TailwindCSS 4 + Radix UI
+- **No database**: Event log (JSONL) + JSON files only
+- **No auth**: Single-user local application
+
+Data is stored in:
+- `~/.shipwright-webui/` — project registry, process PIDs, global settings
+- `{projectDir}/shipwright_events.jsonl` — task events
+- `{projectDir}/.shipwright-webui/` — chat history, inbox items
+
+---
+
 ## Appendix B: Command Reference
 
 | Command | Arguments | Flags | Purpose |

@@ -57,6 +57,16 @@ if ! command -v git &>/dev/null; then
     ((missing++))
 fi
 
+if ! command -v node &>/dev/null; then
+    echo "  [!!] Node.js not found (optional — needed for WebUI)."
+    echo "       Install Node.js 18+: https://nodejs.org/"
+else
+    node_major=$(node -e "console.log(process.versions.node.split('.')[0])")
+    if [ "$node_major" -lt 18 ]; then
+        echo "  [!!] Node.js 18+ recommended for WebUI (found $node_major)"
+    fi
+fi
+
 if [ $missing -gt 0 ]; then
     echo ""
     echo "$missing prerequisite(s) missing. Install them and re-run."
@@ -71,6 +81,23 @@ echo ""
 echo "Installing Python dependencies..."
 cd "$REPO_ROOT" && uv sync --quiet
 echo "  Done."
+echo ""
+
+# ── Install WebUI dependencies ──
+
+echo "Installing WebUI dependencies..."
+if [ -d "$REPO_ROOT/webui" ]; then
+    if command -v npm &>/dev/null; then
+        cd "$REPO_ROOT/webui/server" && npm install --silent 2>/dev/null
+        cd "$REPO_ROOT/webui/client" && npm install --silent 2>/dev/null
+        echo "  Done."
+    else
+        echo "  [!!] npm not found — WebUI dependencies not installed."
+        echo "       Install Node.js 18+ to use the Command Center WebUI."
+    fi
+else
+    echo "  WebUI directory not found — skipping."
+fi
 echo ""
 
 # ── Create shell alias ──
@@ -132,4 +159,8 @@ echo ""
 echo " Reload your shell:  source $SHELL_RC"
 echo " Then run:           shipwright"
 echo " Then type:          /shipwright-run"
+echo ""
+echo " WebUI (Command Center):"
+echo "   cd webui && npm run dev"
+echo "   Open http://localhost:5173"
 echo "========================================"
