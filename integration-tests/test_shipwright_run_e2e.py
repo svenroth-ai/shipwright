@@ -159,16 +159,11 @@ class TestFullPipelineE2E:
              "--step", "build", "--status", "complete"],
         )
 
-        # Skip test + deploy (no real infra)
+        # Skip test (no real infra)
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
              "--step", "test", "--status", "complete"],
-        )
-        run_script(
-            str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
-            ["update-step", "--project-root", str(project),
-             "--step", "deploy", "--status", "complete"],
         )
 
         # === Phase 5: shipwright-changelog ===
@@ -190,6 +185,18 @@ class TestFullPipelineE2E:
              "--step", "changelog", "--status", "complete"],
         )
 
+        # Skip compliance + deploy (no real infra)
+        run_script(
+            str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
+            ["update-step", "--project-root", str(project),
+             "--step", "compliance", "--status", "complete"],
+        )
+        run_script(
+            str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
+            ["update-step", "--project-root", str(project),
+             "--step", "deploy", "--status", "complete"],
+        )
+
         # === Verify final state ===
         config = json.loads(
             (project / "shipwright_run_config.json").read_text(encoding="utf-8")
@@ -197,7 +204,7 @@ class TestFullPipelineE2E:
         assert config["status"] == "complete"
         assert config["current_step"] is None
         assert set(config["completed_steps"]) == {
-            "project", "design", "plan", "build", "test", "deploy", "changelog"
+            "project", "design", "plan", "build", "test", "changelog", "compliance", "deploy"
         }
 
 

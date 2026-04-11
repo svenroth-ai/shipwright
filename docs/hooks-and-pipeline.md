@@ -25,9 +25,9 @@ flowchart TD
     SECURITY -->|No| CHANGELOG
     SEC_SCAN --> CHANGELOG[Changelog]
 
-    CHANGELOG --> DEPLOY[Deploy]
-    DEPLOY --> COMPLIANCE[Compliance — final]
-    COMPLIANCE --> DONE([Complete])
+    CHANGELOG --> COMPLIANCE[Compliance — final]
+    COMPLIANCE --> DEPLOY[Deploy]
+    DEPLOY --> DONE([Complete])
 
     %% Side-effects (dashed)
     PROJECT -.->|incremental| COMP_INC[Compliance Update]
@@ -42,7 +42,7 @@ flowchart TD
 **File:** `plugins/shipwright-run/scripts/lib/orchestrator.py`
 
 ```python
-PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "deploy", "compliance"]
+PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "compliance", "deploy"]
 CONDITIONAL_STEPS = {"security": {"env_var": "AIKIDO_CLIENT_ID", "after": "test"}}
 ```
 

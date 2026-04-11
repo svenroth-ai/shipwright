@@ -596,6 +596,14 @@ Overall:       {PASS | FAIL}
 ================================================================================
 ```
 
+**If profile has UI** (component_library set, or client-side framework detected):
+```
+================================================================================
+  Verify visually:  /shipwright-preview
+  Preview URL:      {dev_url from shipwright_build_config.json}
+================================================================================
+```
+
 If `--fix` was used:
 ```
 Auto-fix attempts: {N}
