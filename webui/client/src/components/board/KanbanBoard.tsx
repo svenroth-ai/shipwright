@@ -7,9 +7,10 @@ const MAX_DONE_VISIBLE = 10;
 
 interface KanbanBoardProps {
   tasks: Task[];
+  onNewTask?: () => void;
 }
 
-export function KanbanBoard({ tasks }: KanbanBoardProps) {
+export function KanbanBoard({ tasks, onNewTask }: KanbanBoardProps) {
   const [showAllDone, setShowAllDone] = useState(false);
 
   const grouped = useMemo(() => {
@@ -45,6 +46,7 @@ export function KanbanBoard({ tasks }: KanbanBoardProps) {
                 title={COLUMN_LABELS[status]}
                 tasks={columnTasks}
                 status={status}
+                onNewTask={onNewTask}
               />
               <button
                 className="flex items-center justify-center px-3.5 py-2.5 text-[13px] font-semibold text-blue-600 cursor-pointer rounded-[10px] bg-blue-500/[0.06] hover:bg-blue-500/[0.12] transition-colors mt-1"

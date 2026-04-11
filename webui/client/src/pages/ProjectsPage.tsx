@@ -23,7 +23,7 @@ export default function ProjectsPage() {
           className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-[var(--color-primary)] rounded-lg hover:opacity-90"
           onClick={() => setShowWizard(true)}
         >
-          <Plus size={16} /> New Project
+          <Plus size={16} /> Create Project
         </button>
       </div>
 
@@ -42,7 +42,7 @@ export default function ProjectsPage() {
             className="px-4 py-2 text-sm font-semibold text-white bg-[var(--color-primary)] rounded-lg hover:opacity-90"
             onClick={() => setShowWizard(true)}
           >
-            <Plus size={16} className="inline mr-1" /> Create Project
+            <Plus size={16} className="inline mr-1 -mt-0.5" /> Create Project
           </button>
         </div>
       ) : (
@@ -50,7 +50,7 @@ export default function ProjectsPage() {
           {projects.map((project) => (
             <div
               key={project.id}
-              className="bg-white rounded-xl border border-[#e0dbd4] p-5 hover:shadow-md cursor-pointer transition-shadow flex flex-col"
+              className="bg-white rounded-xl border-0 p-5 shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] cursor-pointer transition-shadow flex flex-col"
               onClick={() => navigate(`/?project=${project.id}`)}
             >
               {/* Top: name + status */}

@@ -26,7 +26,7 @@ describe('ProjectsPage', () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('Projects')).toBeInTheDocument();
-      expect(screen.getByText('New Project')).toBeInTheDocument();
+      expect(screen.getByText('Create Project')).toBeInTheDocument();
     });
   });
 

@@ -12,7 +12,7 @@ test.describe('Chat Settings', () => {
 
   test('settings page has Global Settings tab with autonomy toggle', async ({ page }) => {
     await page.goto('/settings');
-    await expect(page.getByRole('tab', { name: 'Global Settings' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Global' })).toBeVisible();
     await expect(page.getByText('Default Autonomy')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Guided' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Autonomous' })).toBeVisible();

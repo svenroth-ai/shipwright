@@ -37,13 +37,13 @@ describe('NewIssueModal', () => {
 
   it('submit button is disabled when title is empty', () => {
     renderModal();
-    expect(screen.getByText('Create Issue')).toBeDisabled();
+    expect(screen.getByText('Create Task')).toBeDisabled();
   });
 
   it('submit button enables when title has content', async () => {
     renderModal();
     await userEvent.type(screen.getByLabelText('Title'), 'Fix login');
-    expect(screen.getByText('Create Issue')).toBeEnabled();
+    expect(screen.getByText('Create Task')).toBeEnabled();
   });
 
   it('shows project selector when activeProjectId is null', () => {

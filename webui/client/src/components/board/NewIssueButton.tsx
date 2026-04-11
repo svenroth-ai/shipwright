@@ -11,7 +11,7 @@ export function NewIssueButton({ onClick }: NewIssueButtonProps) {
       onClick={onClick}
     >
       <Plus size={14} />
-      New Issue
+      New Task
     </button>
   );
 }

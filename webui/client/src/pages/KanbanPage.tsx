@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useProjects } from '../hooks/useProjects';
 import { useTasks } from '../hooks/useTasks';
 import { useBoardFilters } from '../hooks/useBoardFilters';
@@ -24,6 +24,19 @@ export default function KanbanPage() {
   const { data: tasks = [], isLoading, isError, refetch } = useTasks(activeProjectId ?? undefined);
   const filters = useBoardFilters();
   const filteredTasks = filters.filterTasks(tasks);
+
+  // Keyboard shortcut: Ctrl/Cmd+N to open new task
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+      e.preventDefault();
+      setShowNewIssue(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   return (
     <div className="flex flex-col h-full">
@@ -71,7 +84,7 @@ export default function KanbanPage() {
         ) : filters.viewMode === 'list' ? (
           <TaskListView tasks={filteredTasks} />
         ) : (
-          <KanbanBoard tasks={filteredTasks} />
+          <KanbanBoard tasks={filteredTasks} onNewTask={() => setShowNewIssue(true)} />
         )}
       </div>
 

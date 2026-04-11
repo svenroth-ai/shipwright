@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiPost } from '../lib/api';
 import { queryKeys } from '../lib/queryKeys';
-import type { Task } from '../types';
 
 interface CreateTaskParams {
   projectId: string;
@@ -14,13 +13,14 @@ export function useCreateTask() {
 
   const mutation = useMutation({
     mutationFn: ({ projectId, description, startImmediately = true }: CreateTaskParams) =>
-      apiPost<Task>(`/projects/${projectId}/tasks`, { description, startImmediately }),
-    onSuccess: (task) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(task.projectId) });
+      apiPost(`/projects/${projectId}/tasks`, { description, startImmediately }),
+    onSuccess: (_data, variables) => {
+      // Always invalidate using the variables (reliable) not the response
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(variables.projectId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
 
       // Fire-and-forget classification
-      apiPost(`/projects/${task.projectId}/classify`, { taskId: task.id }).catch(() => {
+      apiPost(`/projects/${variables.projectId}/classify`, { taskId: (_data as { id?: string })?.id }).catch(() => {
         // Classification failure is non-critical
       });
     },
