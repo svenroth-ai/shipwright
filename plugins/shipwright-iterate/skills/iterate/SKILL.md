@@ -235,10 +235,11 @@ This replaces manual Plan Mode — iterate handles scoping automatically.
 
 Use answers to populate the Iterate Spec (Step 1).
 
-#### Medium — CHANGE (1-2 questions)
+#### Medium — CHANGE (1-3 questions)
 
 1. "What exactly should change and why?"
 2. "Are there related areas that should remain unchanged?"
+3. [If UI change] "Which screen mockup(s) from designs/screens/ show the target state?"
 
 Use answers to populate the Iterate Spec (Step 1) and scope the Spec Update (Step 2).
 
@@ -353,7 +354,11 @@ Create `planning/iterate/{date}-{short-description}.md` using this template:
 - {from interview answer — what explicitly will NOT be done}
 
 ## Design Notes
-{Filled during design check phase, leave empty initially}
+{Filled during Design Check. Include:
+ - Affected mockup files from designs/screens/ (e.g. "10-kanban-board.html")
+ - Design tokens applied (colors, spacing, typography)
+ - New vs modified components
+ - Deviations from visual guidelines with justification}
 ```
 
 ### Step 2: Spec Update (always)
@@ -489,6 +494,8 @@ Check if the spec itself was incorrect. If yes, update. If no, skip.
    - API (request/response) → check network calls, status codes, payloads
    - Data (DB/state) → check queries, migrations, state shape
    - External (third-party) → check service status, API changes
+   - [If UI layer] Compare current state against designs/screens/{relevant}.html
+     to determine intended behavior before fixing
 3. **Root Cause** — trace from symptom to cause. Ask "why?" at each level.
    Do NOT fix the first thing that looks wrong — that's symptom-patching.
 4. **Write a failing test** that proves the root cause (not just the symptom):
@@ -813,6 +820,7 @@ When metadata is incomplete:
 - **Code-reviewer unavailable:** self-review only, flag in ADR as "review-limited"
 - **review.py unavailable / no API key:** skip external review, note in ADR
 - **Pipeline handoff fails:** print manual instructions + handoff file path
+- **No designs/screens/:** skip mockup comparison in browser verify and design check, visual_fidelity marked "degraded", note in ADR
 
 Record all degraded conditions in `shipwright_test_results.json` → `degraded` array.
 
