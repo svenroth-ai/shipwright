@@ -15,6 +15,7 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [projectId, setProjectId] = useState(activeProjectId ?? '');
+  const [startImmediately, setStartImmediately] = useState(true);
   const titleRef = useRef<HTMLInputElement>(null);
   const { createTask, isCreating } = useCreateTask();
 
@@ -33,7 +34,7 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
   function handleSubmit() {
     if (!title.trim() || !projectId) return;
 
-    createTask({ projectId, description: `${title.trim()}${description.trim() ? `\n\n${description.trim()}` : ''}` });
+    createTask({ projectId, description: `${title.trim()}${description.trim() ? `\n\n${description.trim()}` : ''}`, startImmediately });
     setTitle('');
     setDescription('');
     onOpenChange(false);
@@ -73,7 +74,7 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
               <select
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
+                className="w-full px-3 py-2 border border-[#e0dbd4] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
               >
                 <option value="">Select a project...</option>
                 {projects.map((p) => (
@@ -94,7 +95,7 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="What needs to be done?"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
+              className="w-full px-3 py-2 border border-[#e0dbd4] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
                   e.preventDefault();
@@ -114,9 +115,23 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add details, context, or acceptance criteria..."
               rows={4}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
+              className="w-full px-3 py-2 border border-[#e0dbd4] rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
             />
           </div>
+
+          {/* Start immediately checkbox */}
+          <label className="flex items-start gap-2 mb-4 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={startImmediately}
+              onChange={(e) => setStartImmediately(e.target.checked)}
+              className="mt-0.5 rounded border-gray-300 text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+            />
+            <div>
+              <span className="text-sm font-medium text-gray-700">Start immediately</span>
+              <p className="text-xs text-gray-400">Launch Claude CLI right after creation</p>
+            </div>
+          </label>
 
           <div className="flex justify-end gap-2">
             <Dialog.Close asChild>

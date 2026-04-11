@@ -19,7 +19,7 @@ export function createInboxRoutes(
   app.post("/api/inbox/:id/answer", async (c) => {
     const body = await c.req.json();
     if (!body.answer) throw new AppError("answer is required", 400);
-    const item = inboxManager.answer(c.req.param("id"), body.answer);
+    const item = await inboxManager.answer(c.req.param("id"), body.answer);
     sseManager.broadcast({
       type: "inbox:answered",
       payload: { id: item.id, projectId: item.projectId },

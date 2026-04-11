@@ -105,7 +105,7 @@ if (isMainModule) {
           input?.question ?? "Question from Claude",
           input?.context,
           input?.options
-        );
+        ).catch((err) => console.error(JSON.stringify({ level: "error", message: "Inbox persist error", error: String(err) })));
       }
     });
 
@@ -143,13 +143,20 @@ if (isMainModule) {
     const taskManager = new TaskManager(eventStore);
 
     // 8. Inbox manager
+    const inboxStoreDeps = {
+      readFile: (p: string, e: string) => readFile(p, e as BufferEncoding),
+      appendFile: (p: string, d: string) => appendFile(p, d),
+      writeFile: (p: string, d: string) => writeFile(p, d),
+      existsSync: (p: string) => fs.existsSync(p),
+      mkdirSync: (p: string, o?: { recursive: boolean }) => fs.mkdirSync(p, o),
+    };
     const inboxManager = new InboxManager(governor, adapter, (item) => {
       sseManager.broadcast({
         type: "inbox:new",
         payload: item,
         timestamp: new Date().toISOString(),
       });
-    });
+    }, inboxStoreDeps);
 
     // 9. File watcher
     const fileWatcher = new FileWatcher({ watch: chokidar.watch });
@@ -173,6 +180,7 @@ if (isMainModule) {
       const eventsPath = `${project.path}/shipwright_events.jsonl`;
       const events = await readEventsFromFile(eventsPath, fsDeps);
       eventStore.replayProject(project.id, events);
+      await inboxManager.loadFromDisk(project.id, project.path);
 
       fileWatcher.watchProject(project.id, project.path, (type, _path) => {
         if (type === "event") {
@@ -206,6 +214,7 @@ if (isMainModule) {
 
     // Mount routes
     app.route("/", createProjectRoutes(projectManager, fileWatcher, eventStore, sseManager));
+    const settingsPath = `${config.registryDir}/settings.json`;
     app.route("/", createTaskRoutes({
       taskManager,
       eventStore,
@@ -215,13 +224,22 @@ if (isMainModule) {
       projectManager,
       emitTaskCreatedEvent: (fp, tid, pid, desc, intent, priority) =>
         emitTaskCreatedEvent(fp, tid, pid, desc, intent, priority, writerDeps),
+      readGlobalSettings: async () => {
+        if (!fs.existsSync(settingsPath)) return {};
+        try {
+          const content = await readFile(settingsPath, "utf-8");
+          return JSON.parse(content);
+        } catch {
+          return {};
+        }
+      },
     }));
     app.route("/", createInboxRoutes(inboxManager, sseManager));
     app.route("/", createChatRoutes(chatStore, governor, adapter, projectManager));
     app.route("/", createPipelineRoutes(eventStore, projectManager));
     app.route("/", createDocsRoutes(projectManager));
     app.route("/", createClassifyRoutes(projectManager));
-    app.route("/", createSettingsRoutes(`${config.registryDir}/settings.json`, settingsDeps));
+    app.route("/", createSettingsRoutes(settingsPath, settingsDeps));
     app.route("/", createSSERoute(sseManager));
 
     // Graceful shutdown

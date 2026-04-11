@@ -38,13 +38,13 @@ describe('SidebarNav', () => {
   it('highlights active item for root route', () => {
     renderWithRouter(['/']);
     const taskBoardLink = screen.getByText('Task Board').closest('a');
-    expect(taskBoardLink?.className).toMatch(/active/);
+    expect(taskBoardLink?.className).toContain('bg-white');
   });
 
   it('highlights active item for inbox route', () => {
     renderWithRouter(['/inbox']);
     const inboxLink = screen.getByText('Inbox').closest('a');
-    expect(inboxLink?.className).toMatch(/active/);
+    expect(inboxLink?.className).toContain('bg-white');
   });
 
   it('shows inbox badge when count > 0', () => {

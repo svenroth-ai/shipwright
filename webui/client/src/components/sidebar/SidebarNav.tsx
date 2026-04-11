@@ -30,27 +30,27 @@ export function SidebarNav({ inboxCount }: SidebarNavProps) {
     <aside
       className={`${
         collapsed ? 'w-[60px] min-w-[60px]' : 'w-[200px] min-w-[200px]'
-      } h-screen bg-white border-r border-gray-200 flex flex-col transition-[width] duration-200`}
+      } h-screen bg-[var(--color-sidebar-bg)] flex flex-col transition-[width] duration-200`}
     >
       {/* Brand */}
-      <div className="flex items-center gap-2 px-4 py-4 border-b border-gray-100">
+      <div className="flex items-center gap-2 px-4 py-5 pb-6">
         {collapsed ? (
           <button
             onClick={() => setCollapsed(false)}
-            className="p-1 rounded hover:bg-gray-100"
+            className="p-1 rounded hover:bg-white/10"
             aria-label="Expand sidebar"
           >
-            <Menu size={20} className="text-[var(--color-primary)]" />
+            <Menu size={20} className="text-white" />
           </button>
         ) : (
-          <span className="text-base font-semibold text-[var(--color-primary)]">
+          <span className="text-base font-bold text-white">
             Shipwright
           </span>
         )}
       </div>
 
       {/* Nav items */}
-      <nav className="flex-1 flex flex-col gap-1 py-4 px-3">
+      <nav className="flex-1 flex flex-col gap-1 py-2 px-3">
         <SidebarNavItem
           icon={LayoutDashboard}
           label="Task Board"
@@ -73,7 +73,7 @@ export function SidebarNav({ inboxCount }: SidebarNavProps) {
       </nav>
 
       {/* Bottom: Settings */}
-      <div className="border-t border-gray-200 px-3 py-3">
+      <div className="border-t border-white/10 px-3 py-3">
         <SidebarNavItem
           icon={Settings}
           label="Settings"

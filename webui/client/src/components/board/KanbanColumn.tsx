@@ -43,7 +43,7 @@ export function KanbanColumn({ title, tasks, status }: KanbanColumnProps) {
           ) : (
             <div className="flex flex-col gap-2">
               {tasks.map((task) => (
-                <TaskCard key={task.id} task={task} />
+                <TaskCard key={task.id} task={task} columnStatus={status} />
               ))}
             </div>
           )}

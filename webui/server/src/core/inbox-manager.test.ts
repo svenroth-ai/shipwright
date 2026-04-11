@@ -20,9 +20,9 @@ function setup(processState: string = "running") {
 }
 
 describe("InboxManager", () => {
-  it("addQuestion creates item with correct fields", () => {
+  it("addQuestion creates item with correct fields", async () => {
     const { mgr } = setup();
-    const item = mgr.addQuestion("p1", "t1", "Continue?", "context", ["yes", "no"]);
+    const item = await mgr.addQuestion("p1", "t1", "Continue?", "context", ["yes", "no"]);
     expect(item.id).toBeDefined();
     expect(item.projectId).toBe("p1");
     expect(item.taskId).toBe("t1");
@@ -31,70 +31,110 @@ describe("InboxManager", () => {
     expect(item.createdAt).toBeDefined();
   });
 
-  it("addQuestion calls onNotify", () => {
+  it("addQuestion calls onNotify", async () => {
     const { mgr, onNotify } = setup();
-    const item = mgr.addQuestion("p1", "t1", "Continue?");
+    const item = await mgr.addQuestion("p1", "t1", "Continue?");
     expect(onNotify).toHaveBeenCalledWith(item);
   });
 
-  it("answer delivers text to stdin", () => {
+  it("answer delivers text to stdin", async () => {
     const { mgr, adapter } = setup();
-    mgr.addQuestion("p1", "t1", "Continue?");
+    await mgr.addQuestion("p1", "t1", "Continue?");
     const items = mgr.getAll();
-    mgr.answer(items[0].id, "yes");
+    await mgr.answer(items[0].id, "yes");
     expect(adapter.sendStdin).toHaveBeenCalled();
   });
 
-  it("answer marks item as answered", () => {
+  it("answer marks item as answered", async () => {
     const { mgr } = setup();
-    mgr.addQuestion("p1", "t1", "Continue?");
+    await mgr.addQuestion("p1", "t1", "Continue?");
     const items = mgr.getAll();
-    const answered = mgr.answer(items[0].id, "yes");
+    const answered = await mgr.answer(items[0].id, "yes");
     expect(answered.status).toBe("answered");
     expect(answered.answeredAt).toBeDefined();
   });
 
-  it("answer on non-existent item throws 404", () => {
+  it("answer on non-existent item throws 404", async () => {
     const { mgr } = setup();
-    expect(() => mgr.answer("nonexistent", "yes")).toThrow("Inbox item not found");
+    await expect(mgr.answer("nonexistent", "yes")).rejects.toThrow("Inbox item not found");
   });
 
-  it("answer on already-answered item throws 400", () => {
+  it("answer on already-answered item throws 400", async () => {
     const { mgr } = setup();
-    mgr.addQuestion("p1", "t1", "Continue?");
+    await mgr.addQuestion("p1", "t1", "Continue?");
     const items = mgr.getAll();
-    mgr.answer(items[0].id, "yes");
-    expect(() => mgr.answer(items[0].id, "no")).toThrow("Already answered");
+    await mgr.answer(items[0].id, "yes");
+    await expect(mgr.answer(items[0].id, "no")).rejects.toThrow("Already answered");
   });
 
-  it("answer when process not running throws 400", () => {
+  it("answer when process not running throws 400", async () => {
     const { mgr } = setup("none");
-    mgr.addQuestion("p1", "t1", "Continue?");
+    await mgr.addQuestion("p1", "t1", "Continue?");
     const items = mgr.getAll();
-    expect(() => mgr.answer(items[0].id, "yes")).toThrow("Process no longer running");
+    await expect(mgr.answer(items[0].id, "yes")).rejects.toThrow("Process no longer running");
   });
 
-  it("getAll returns items sorted by createdAt desc", () => {
+  it("getAll returns items sorted by createdAt desc", async () => {
     const { mgr } = setup();
-    mgr.addQuestion("p1", "t1", "First?");
-    mgr.addQuestion("p1", "t1", "Second?");
+    await mgr.addQuestion("p1", "t1", "First?");
+    await mgr.addQuestion("p1", "t1", "Second?");
     const all = mgr.getAll();
     expect(all).toHaveLength(2);
   });
 
-  it("getAll with status filter returns only matching", () => {
+  it("getAll with status filter returns only matching", async () => {
     const { mgr } = setup();
-    mgr.addQuestion("p1", "t1", "Q1");
-    mgr.addQuestion("p1", "t1", "Q2");
+    await mgr.addQuestion("p1", "t1", "Q1");
+    await mgr.addQuestion("p1", "t1", "Q2");
     const items = mgr.getAll();
-    mgr.answer(items[0].id, "yes");
+    await mgr.answer(items[0].id, "yes");
     expect(mgr.getAll({ status: "pending" })).toHaveLength(1);
   });
 
-  it("getByProject filters by projectId", () => {
+  it("getByProject filters by projectId", async () => {
     const { mgr } = setup();
-    mgr.addQuestion("p1", "t1", "Q1");
-    mgr.addQuestion("p2", "t2", "Q2");
+    await mgr.addQuestion("p1", "t1", "Q1");
+    await mgr.addQuestion("p2", "t2", "Q2");
     expect(mgr.getByProject("p1")).toHaveLength(1);
+  });
+
+  it("persists inbox items to disk when storageDeps provided", async () => {
+    const onNotify = vi.fn();
+    const governor = {
+      getProcess: vi.fn(() => ({ pid: 123, taskId: "t1", state: "running", process: {} })),
+    } as unknown as ProcessGovernor;
+    const adapter = { sendStdin: vi.fn() } as unknown as ClaudeAdapter;
+    const storageDeps = {
+      readFile: vi.fn().mockResolvedValue(""),
+      appendFile: vi.fn().mockResolvedValue(undefined),
+      writeFile: vi.fn().mockResolvedValue(undefined),
+      existsSync: vi.fn().mockReturnValue(false),
+      mkdirSync: vi.fn(),
+    };
+    const mgr = new InboxManager(governor, adapter, onNotify, storageDeps);
+    mgr.registerProject("p1", "/tmp/project");
+
+    await mgr.addQuestion("p1", "t1", "Continue?");
+    expect(storageDeps.mkdirSync).toHaveBeenCalled();
+    expect(storageDeps.appendFile).toHaveBeenCalled();
+  });
+
+  it("loads inbox items from disk", async () => {
+    const onNotify = vi.fn();
+    const governor = { getProcess: vi.fn() } as unknown as ProcessGovernor;
+    const adapter = { sendStdin: vi.fn() } as unknown as ClaudeAdapter;
+    const item = JSON.stringify({ id: "i1", projectId: "p1", taskId: "t1", question: "Q?", status: "pending", createdAt: new Date().toISOString() });
+    const storageDeps = {
+      readFile: vi.fn().mockResolvedValue(item + "\n"),
+      appendFile: vi.fn().mockResolvedValue(undefined),
+      writeFile: vi.fn().mockResolvedValue(undefined),
+      existsSync: vi.fn().mockReturnValue(true),
+      mkdirSync: vi.fn(),
+    };
+    const mgr = new InboxManager(governor, adapter, onNotify, storageDeps);
+
+    await mgr.loadFromDisk("p1", "/tmp/project");
+    expect(mgr.getAll()).toHaveLength(1);
+    expect(mgr.getAll()[0].question).toBe("Q?");
   });
 });

@@ -42,6 +42,12 @@ export function createChatRoutes(
       type: "user" as const,
       content: body.message,
       timestamp: new Date().toISOString(),
+      settings: {
+        model: body.model,
+        mode: body.mode,
+        effort: body.effort,
+        autonomy: body.autonomy,
+      },
     };
     await chatStore.append(project.path, body.taskId, chatMessage);
     return c.json({ data: chatMessage });

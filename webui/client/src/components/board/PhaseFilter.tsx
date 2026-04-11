@@ -8,6 +8,7 @@ const PHASES = [
   { name: 'build', color: 'bg-orange-500' },
   { name: 'test', color: 'bg-green-500' },
   { name: 'deploy', color: 'bg-teal-500' },
+  { name: 'iterate', color: 'bg-teal-400' },
 ];
 
 interface PhaseFilterProps {
@@ -34,7 +35,7 @@ export function PhaseFilter({ selectedPhases, onToggle, onClear }: PhaseFilterPr
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 min-w-[160px] z-50"
+          className="bg-white rounded-lg shadow-lg border border-[#e0dbd4] p-2 min-w-[160px] z-50"
           sideOffset={4}
         >
           {PHASES.map((phase) => (
