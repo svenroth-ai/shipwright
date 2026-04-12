@@ -36,6 +36,27 @@ function dedupeMessages(messages: import('../../types').ChatMessage[]): import('
   return out;
 }
 
+/**
+ * Determine whether we should show the "waiting for Claude" indicator.
+ * Shows immediately when:
+ *   - The SSE stream is active (Claude is producing output), OR
+ *   - The last persisted message is a user message (follow-up in flight), OR
+ *   - The send mutation is pending (network round-trip)
+ *
+ * This avoids the long delay where the user sees nothing between clicking
+ * Send and Claude CLI starting to produce NDJSON (~5–10s cold start).
+ */
+function isAwaitingResponse(
+  messages: import('../../types').ChatMessage[],
+  sendPending: boolean,
+  streaming: boolean,
+): boolean {
+  if (streaming) return true;
+  if (sendPending) return true;
+  const last = messages[messages.length - 1];
+  return last?.type === 'user';
+}
+
 export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
   const { data: rawMessages = [] } = useChat(projectId, taskId);
   const messages = dedupeMessages(rawMessages);
@@ -44,7 +65,8 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
   const sendChat = useSendChat();
   const streaming = useStreamingChat();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { isAtBottom, scrollToBottom } = useAutoScroll(scrollRef, [messages, streaming.displayContent, streaming.streamingMessages]);
+  const awaiting = isAwaitingResponse(messages, sendChat.isPending, streaming.isStreaming);
+  const { isAtBottom, scrollToBottom } = useAutoScroll(scrollRef, [messages, streaming.displayContent, streaming.streamingMessages, awaiting]);
   const [chatError, setChatError] = useState<string | null>(null);
 
   const autonomy: AutonomyOption = project?.settings?.autonomy ?? globalSettings?.defaultAutonomy ?? 'guided';
@@ -87,7 +109,7 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
         ref={scrollRef}
         className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-6 py-5 flex flex-col gap-[18px]"
       >
-        {messages.length === 0 && !streaming.isStreaming && (
+        {messages.length === 0 && !awaiting && (
           <div className="text-center text-gray-400 text-sm py-8">
             <p>No messages yet.</p>
             <p className="text-xs mt-1">Start the task to begin chatting with Claude.</p>
@@ -97,19 +119,17 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
           <ChatMessage key={msg.id} message={msg} />
         ))}
 
-        {/* Streaming: show tool calls and thinking blocks in real-time */}
-        {streaming.isStreaming && (
-          <>
-            {streaming.streamingMessages.map((msg) => (
-              <ChatMessage key={msg.id} message={msg} />
-            ))}
-            {streaming.displayContent && (
-              <AssistantMessage content={streaming.displayContent} isStreaming />
-            )}
-            {!streaming.displayContent && streaming.streamingMessages.length === 0 && (
-              <AssistantMessage content="" isStreaming />
-            )}
-          </>
+        {/* Streaming: real-time tool calls, thinking, streamed text */}
+        {streaming.isStreaming &&
+          streaming.streamingMessages.map((msg) => <ChatMessage key={msg.id} message={msg} />)}
+        {streaming.isStreaming && streaming.displayContent && (
+          <AssistantMessage content={streaming.displayContent} isStreaming />
+        )}
+
+        {/* Awaiting response indicator — shows whenever we're waiting for Claude
+            output, including the cold-start gap before SSE starts streaming. */}
+        {awaiting && !streaming.displayContent && (
+          <AssistantMessage content="" isStreaming />
         )}
       </div>
 
@@ -135,10 +155,10 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
         </div>
       )}
 
-      {/* Input area */}
+      {/* Input area — disable while awaiting (prevents double-send race) */}
       <ChatInput
         onSend={handleSend}
-        isStreaming={streaming.isStreaming}
+        isStreaming={awaiting}
         autonomy={autonomy}
       />
     </div>
