@@ -15,6 +15,7 @@ export interface ClaudeProcess {
   sessionId: string;
   state: ProcessState;
   exitCode?: number;
+  spawnedAt: number;
   process: ChildProcess;
 }
 
@@ -102,6 +103,7 @@ export class ClaudeAdapter {
       projectId: options.projectId,
       sessionId: options.sessionId ?? options.taskId,
       state: "spawning",
+      spawnedAt: Date.now(),
       process: child,
     };
 

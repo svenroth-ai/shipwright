@@ -154,8 +154,16 @@ if (isMainModule) {
       `${config.registryDir}/pids.json`
     );
 
-    // 5. Heartbeat
-    const heartbeat = new HeartbeatScheduler(governor, governorDeps, { schedule: cron.schedule });
+    // 5. Heartbeat — notifies frontend when dead process detected
+    const heartbeat = new HeartbeatScheduler(governor, governorDeps, { schedule: cron.schedule }, {
+      onDeadProcess: (taskId, projectId) => {
+        sseManager.broadcast({
+          type: "task:updated",
+          payload: { taskId, projectId },
+          timestamp: new Date().toISOString(),
+        });
+      },
+    });
 
     // 6. Project manager
     const projectManagerDeps = {
@@ -286,9 +294,16 @@ if (isMainModule) {
     app.route("/", createSettingsRoutes(settingsPath, settingsDeps));
     app.route("/", createSSERoute(sseManager));
 
-    // Graceful shutdown
+    // Graceful shutdown with timeout
     const shutdown = async () => {
       console.log("Shutting down...");
+      // Force exit after 5s if processes don't terminate
+      const forceTimer = setTimeout(() => {
+        console.error("Shutdown timeout — force exiting");
+        process.exit(1);
+      }, 5000);
+      forceTimer.unref();
+
       heartbeat.stop();
       fileWatcher.unwatchAll();
       sseManager.closeAll();
