@@ -1,5 +1,10 @@
 export type ChatMessageType = "assistant" | "tool_use" | "tool_result" | "result" | "user" | "system" | "thinking";
 
+export interface ChatImage {
+  media_type: string;
+  data: string; // base64 (no data: prefix)
+}
+
 export interface ChatMessage {
   id: string;
   taskId: string;
@@ -10,6 +15,7 @@ export interface ChatMessage {
   toolOutput?: unknown;
   isError?: boolean;
   model?: string;
+  images?: ChatImage[];
   timestamp: string;
 }
 
