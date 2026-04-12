@@ -15,7 +15,7 @@ import { requestLogger } from "./middleware/logger.js";
 import { EventStore } from "./core/event-store.js";
 import { SSEManager } from "./core/sse-manager.js";
 import { ClaudeAdapter } from "./core/claude-adapter.js";
-import { isAskUserQuestion } from "./core/ndjson-parser.js";
+import { isAskUserQuestion, extractContentBlocks } from "./core/ndjson-parser.js";
 import { ProcessGovernor } from "./core/process-governor.js";
 import { HeartbeatScheduler } from "./core/heartbeat.js";
 import { ProjectManager } from "./core/project-manager.js";
@@ -99,29 +99,32 @@ if (isMainModule) {
 
     // 3. Claude adapter with event forwarding + chat persistence
     const adapter = new ClaudeAdapter({ spawn }, (taskId, msg) => {
-      // Forward to SSE
+      // Find project for this task (needed for SSE payload and persistence)
+      let projectId: string | undefined;
+      let projectPath: string | undefined;
+      const allProjects = projectManager.getAll();
+      for (const proj of allProjects) {
+        const task = taskManager.getTaskById(proj.id, taskId);
+        if (task) {
+          projectId = proj.id;
+          projectPath = proj.path;
+          break;
+        }
+      }
+
+      // Forward raw NDJSON to SSE for real-time streaming
       sseManager.broadcast({
         type: "chat:message",
-        payload: { taskId, message: msg },
+        payload: { taskId, projectId, message: msg },
         timestamp: new Date().toISOString(),
       });
 
-      // Persist assistant messages to chat store
-      if (msg.type === "assistant" && msg.message) {
-        // Find the project for this task
-        const allProjects = projectManager.getAll();
-        for (const proj of allProjects) {
-          const task = taskManager.getTaskById(proj.id, taskId);
-          if (task) {
-            chatStore.append(proj.path, taskId, {
-              id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-              taskId,
-              type: "assistant",
-              content: typeof msg.message === "string" ? msg.message : JSON.stringify(msg.message),
-              timestamp: new Date().toISOString(),
-            }).catch((err) => console.error(JSON.stringify({ level: "error", message: "Chat persist error", error: String(err) })));
-            break;
-          }
+      // Extract structured ChatMessages and persist ALL types
+      const chatMessages = extractContentBlocks(taskId, msg);
+      if (chatMessages.length > 0 && projectPath) {
+        for (const chatMsg of chatMessages) {
+          chatStore.append(projectPath, taskId, chatMsg)
+            .catch((err) => console.error(JSON.stringify({ level: "error", message: "Chat persist error", error: String(err) })));
         }
       }
 

@@ -7,6 +7,7 @@ import TaskDetailPage from './TaskDetailPage';
 beforeEach(() => {
   vi.stubGlobal('EventSource', vi.fn().mockImplementation(() => ({
     onopen: null, onerror: null, onmessage: null, close: vi.fn(),
+    addEventListener: vi.fn(), removeEventListener: vi.fn(),
   })));
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     matches: false, media: query,

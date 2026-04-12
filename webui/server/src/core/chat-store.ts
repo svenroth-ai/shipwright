@@ -7,6 +7,65 @@ export interface ChatStoreDeps {
   mkdirSync: (path: string, opts?: { recursive: boolean }) => void;
 }
 
+/**
+ * Migrate a legacy message where content is a JSON-stringified Claude CLI
+ * message object (pre-chat-rendering format) into properly typed messages.
+ * Old format: { type: "assistant", content: '{"model":"...","content":[{"type":"text","text":"..."}]}' }
+ * New format: separate messages for each content block with extracted text.
+ */
+function migrateLegacyMessage(msg: ChatMessage): ChatMessage[] {
+  // Only migrate assistant messages with JSON-blob content
+  if (msg.type !== "assistant" || !msg.content.startsWith("{")) {
+    return [msg];
+  }
+
+  try {
+    const parsed = JSON.parse(msg.content);
+    // Check if this looks like a Claude CLI message object
+    if (!parsed.content || !Array.isArray(parsed.content)) {
+      return [msg];
+    }
+
+    const model = parsed.model as string | undefined;
+    const results: ChatMessage[] = [];
+    let counter = 0;
+
+    for (const block of parsed.content) {
+      if (block.type === "text" && typeof block.text === "string") {
+        results.push({
+          ...msg,
+          id: `${msg.id}-migrated-${counter++}`,
+          type: "assistant",
+          content: block.text,
+          model,
+        });
+      } else if (block.type === "tool_use") {
+        results.push({
+          ...msg,
+          id: `${msg.id}-migrated-${counter++}`,
+          type: "tool_use",
+          content: "",
+          toolName: block.name,
+          toolInput: block.input,
+          model,
+        });
+      } else if (block.type === "thinking" && typeof block.thinking === "string") {
+        results.push({
+          ...msg,
+          id: `${msg.id}-migrated-${counter++}`,
+          type: "thinking",
+          content: block.thinking,
+          model,
+        });
+      }
+    }
+
+    return results.length > 0 ? results : [msg];
+  } catch {
+    return [msg];
+  }
+}
+
 export class ChatStore {
   constructor(private deps: ChatStoreDeps) {}
 
@@ -32,7 +91,9 @@ export class ChatStore {
       try {
         const parsed = JSON.parse(line);
         if (parsed.id && parsed.timestamp) {
-          messages.push(parsed as ChatMessage);
+          // Migrate legacy JSON-blob messages to new format
+          const migrated = migrateLegacyMessage(parsed as ChatMessage);
+          messages.push(...migrated);
         }
       } catch {
         // Skip malformed lines

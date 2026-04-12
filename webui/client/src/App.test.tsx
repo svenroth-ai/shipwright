@@ -10,6 +10,8 @@ beforeEach(() => {
     onerror: null,
     onmessage: null,
     close: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
   })));
   // Mock matchMedia for sidebar
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({

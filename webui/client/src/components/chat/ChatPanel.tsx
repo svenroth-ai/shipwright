@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { ArrowDown, AlertCircle } from 'lucide-react';
 import { useChat, useSendChat } from '../../hooks/useChat';
 import { useAutoScroll } from '../../hooks/useAutoScroll';
 import { useStreamingChat } from '../../hooks/useStreamingChat';
+import { useStreamingSSE } from '../../hooks/useStreamingSSE';
 import { useProject } from '../../hooks/useProjects';
 import { useSettings } from '../../hooks/useSettings';
 import { ChatMessage } from './ChatMessage';
@@ -23,10 +24,21 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
   const sendChat = useSendChat();
   const streaming = useStreamingChat();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { isAtBottom, scrollToBottom } = useAutoScroll(scrollRef, [messages, streaming.displayContent]);
+  const { isAtBottom, scrollToBottom } = useAutoScroll(scrollRef, [messages, streaming.displayContent, streaming.streamingMessages]);
   const [chatError, setChatError] = useState<string | null>(null);
 
   const autonomy: AutonomyOption = project?.settings?.autonomy ?? globalSettings?.defaultAutonomy ?? 'guided';
+
+  // Wire SSE events into the streaming hook for real-time display
+  const handleStreamMessage = useCallback(
+    (tid: string, msg: import('../../types').NdjsonMessage) => {
+      streaming.processNdjsonMessage(tid, msg);
+    },
+    [streaming.processNdjsonMessage],
+  );
+  const handleStreamStart = useCallback(() => streaming.startStream(), [streaming.startStream]);
+  const handleStreamEnd = useCallback(() => streaming.endStream(), [streaming.endStream]);
+  useStreamingSSE(taskId, handleStreamMessage, handleStreamStart, handleStreamEnd);
 
   function handleSend(message: string, settings: { model: string; mode: string; effort: string; autonomy: string }) {
     setChatError(null);
@@ -57,8 +69,20 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
         {messages.map((msg) => (
           <ChatMessage key={msg.id} message={msg} />
         ))}
+
+        {/* Streaming: show tool calls and thinking blocks in real-time */}
         {streaming.isStreaming && (
-          <AssistantMessage content={streaming.displayContent} isStreaming />
+          <>
+            {streaming.streamingMessages.map((msg) => (
+              <ChatMessage key={msg.id} message={msg} />
+            ))}
+            {streaming.displayContent && (
+              <AssistantMessage content={streaming.displayContent} isStreaming />
+            )}
+            {!streaming.displayContent && streaming.streamingMessages.length === 0 && (
+              <AssistantMessage content="" isStreaming />
+            )}
+          </>
         )}
       </div>
 

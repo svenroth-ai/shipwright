@@ -10,6 +10,16 @@ interface SSEPayload {
   [key: string]: unknown;
 }
 
+const SSE_EVENT_TYPES: SSEEventType[] = [
+  'task:created',
+  'task:updated',
+  'inbox:new',
+  'inbox:answered',
+  'chat:message',
+  'pipeline:updated',
+  'project:updated',
+];
+
 function invalidateForEvent(
   queryClient: ReturnType<typeof useQueryClient>,
   type: SSEEventType,
@@ -25,6 +35,8 @@ function invalidateForEvent(
     case 'task:updated':
       if (projectId) queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(projectId) });
       if (projectId && taskId) queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(projectId, taskId) });
+      // Also invalidate the all-tasks query so kanban board updates
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
       break;
     case 'inbox:new':
     case 'inbox:answered':
@@ -52,14 +64,19 @@ export function useSSE() {
     es.onopen = () => setIsConnected(true);
     es.onerror = () => setIsConnected(false);
 
-    es.onmessage = (event) => {
-      try {
-        const parsed = JSON.parse(event.data) as { type: SSEEventType; payload: SSEPayload };
-        invalidateForEvent(queryClient, parsed.type, parsed.payload);
-      } catch {
-        // ignore malformed SSE data
-      }
-    };
+    // Listen for each named SSE event type individually.
+    // The server sends named events (event: chat:message, etc.) which
+    // are NOT caught by onmessage — they require addEventListener.
+    for (const eventType of SSE_EVENT_TYPES) {
+      es.addEventListener(eventType, (event) => {
+        try {
+          const payload = JSON.parse((event as MessageEvent).data) as SSEPayload;
+          invalidateForEvent(queryClient, eventType, payload);
+        } catch {
+          // ignore malformed SSE data
+        }
+      });
+    }
 
     return () => {
       es.close();
