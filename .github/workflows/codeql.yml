@@ -1,0 +1,43 @@
+name: CodeQL
+
+# DORMANT: Auto-triggers are disabled until Phase B (Go-Live).
+# To activate: uncomment the pull_request, push, and schedule triggers below.
+on:
+  # pull_request:
+  #   branches: [main]
+  # push:
+  #   branches: [main]
+  # schedule:
+  #   - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

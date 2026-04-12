@@ -1,0 +1,76 @@
+name: Feature Request
+description: Suggest a new capability or improvement for Shipwright
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a feature! Please note: Shipwright has strong opinions about its architecture. Features that conflict with the project's direction may be declined. Large features will be discussed here before any code is written.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the pain point or limitation you're hitting. What prompted this request?
+      placeholder: When I try to X, Shipwright does Y, but I need Z because...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How would you solve this? (High-level is fine — we'll work out details together.)
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What else did you try or consider? Why aren't those sufficient?
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area does this affect?
+      options:
+        - Pipeline orchestration (shipwright-run)
+        - Requirements / planning (project, design, plan)
+        - Build / test / deploy
+        - Security scanning
+        - Compliance reporting
+        - WebUI
+        - Documentation
+        - Profiles / stack support
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Concrete use case
+      description: A real scenario where this would help
+      placeholder: I'm building X with Y stack, and when I do Z, I want the tool to...
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Are you willing to contribute?
+      options:
+        - label: I'd be willing to submit a PR myself (after design discussion)
+        - label: I can help test and provide feedback
+        - label: I'm requesting only — I cannot contribute code
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have searched existing issues and this is not a duplicate
+          required: true
+        - label: I have read [CONTRIBUTING.md](../CONTRIBUTING.md) and understand that architectural changes require discussion first
+          required: true

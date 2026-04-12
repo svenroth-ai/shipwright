@@ -1,0 +1,184 @@
+# Shipwright Dependabot configuration
+#
+# DORMANT MODE: open-pull-requests-limit is set to 0 for all ecosystems
+# until Phase B (Go-Live). Dependabot builds its internal dependency graph
+# but opens zero PRs, so it does not spam the maintainer during active
+# development. To activate: change all `open-pull-requests-limit: 0`
+# entries to `5` (or your preferred limit).
+
+version: 2
+updates:
+  # ------------------------------------------------------------------
+  # Python — root project
+  # ------------------------------------------------------------------
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 0
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # ------------------------------------------------------------------
+  # Python — individual plugins
+  # ------------------------------------------------------------------
+  - package-ecosystem: "pip"
+    directory: "/plugins/shipwright-build"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "python", "plugin"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "pip"
+    directory: "/plugins/shipwright-changelog"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "python", "plugin"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "pip"
+    directory: "/plugins/shipwright-compliance"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "python", "plugin"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "pip"
+    directory: "/plugins/shipwright-deploy"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "python", "plugin"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "pip"
+    directory: "/plugins/shipwright-design"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "python", "plugin"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "pip"
+    directory: "/plugins/shipwright-iterate"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "python", "plugin"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "pip"
+    directory: "/plugins/shipwright-plan"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "python", "plugin"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "pip"
+    directory: "/plugins/shipwright-preview"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "python", "plugin"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "pip"
+    directory: "/plugins/shipwright-project"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "python", "plugin"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "pip"
+    directory: "/plugins/shipwright-run"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "python", "plugin"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "pip"
+    directory: "/plugins/shipwright-security"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "python", "plugin", "security"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "pip"
+    directory: "/plugins/shipwright-test"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "python", "plugin"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # ------------------------------------------------------------------
+  # npm — WebUI
+  # ------------------------------------------------------------------
+  - package-ecosystem: "npm"
+    directory: "/webui/client"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "javascript", "webui"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "npm"
+    directory: "/webui/server"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "javascript", "webui"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # ------------------------------------------------------------------
+  # GitHub Actions
+  # ------------------------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    labels: ["dependencies", "ci"]
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerability
+    url: https://github.com/svenroth-ai/shipwright/security/advisories/new
+    about: Report security vulnerabilities privately via GitHub Security Advisories — NOT public issues
+  - name: Question or Discussion
+    url: https://github.com/svenroth-ai/shipwright/discussions
+    about: Open a Discussion for questions, ideas, or general conversation (enable Discussions first)
+  - name: Documentation
+    url: https://github.com/svenroth-ai/shipwright/blob/main/docs/guide.md
+    about: The complete Shipwright guide
