@@ -64,7 +64,7 @@ export default function KanbanPage() {
       </div>
 
       {/* Board/List area */}
-      <div className="flex-1 p-5 overflow-hidden">
+      <div className="flex-1 p-5 overflow-auto">
         {isLoading ? (
           <div className="flex gap-4 h-full">
             {Array.from({ length: 4 }).map((_, i) => (
