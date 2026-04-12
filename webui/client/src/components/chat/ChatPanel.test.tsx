@@ -6,6 +6,8 @@ import { ChatPanel } from './ChatPanel';
 beforeEach(() => {
   vi.stubGlobal('EventSource', vi.fn().mockImplementation(() => ({
     onopen: null, onerror: null, onmessage: null, close: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
   })));
 });
 

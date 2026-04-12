@@ -83,4 +83,51 @@ describe("ChatStore", () => {
     expect(store.exists("/proj", "t1")).toBe(true);
     expect(store.exists("/proj", "t2")).toBe(false);
   });
+
+  it("migrates legacy JSON-blob assistant messages on load", async () => {
+    const deps = mockDeps();
+    const path = "/proj/.shipwright-webui/chat-history/t1.jsonl";
+    const legacyMsg: ChatMessage = {
+      id: "old-1",
+      taskId: "t1",
+      type: "assistant",
+      content: JSON.stringify({
+        model: "claude-opus-4-5-20251101",
+        type: "message",
+        role: "assistant",
+        content: [
+          { type: "text", text: "I'll create the file." },
+          { type: "tool_use", id: "toolu_123", name: "Write", input: { file_path: "/test.txt", content: "Hello" } },
+        ],
+      }),
+      timestamp: "2026-01-01T00:00:00Z",
+    };
+    deps.storage[path] = JSON.stringify(legacyMsg) + "\n";
+    const store = new ChatStore(deps);
+    const messages = await store.load("/proj", "t1");
+    expect(messages).toHaveLength(2);
+    expect(messages[0].type).toBe("assistant");
+    expect(messages[0].content).toBe("I'll create the file.");
+    expect(messages[0].model).toBe("claude-opus-4-5-20251101");
+    expect(messages[1].type).toBe("tool_use");
+    expect(messages[1].toolName).toBe("Write");
+    expect(messages[1].toolInput).toEqual({ file_path: "/test.txt", content: "Hello" });
+  });
+
+  it("does not migrate non-JSON assistant content", async () => {
+    const deps = mockDeps();
+    const path = "/proj/.shipwright-webui/chat-history/t1.jsonl";
+    const normalMsg: ChatMessage = {
+      id: "new-1",
+      taskId: "t1",
+      type: "assistant",
+      content: "This is plain text",
+      timestamp: "2026-01-01T00:00:00Z",
+    };
+    deps.storage[path] = JSON.stringify(normalMsg) + "\n";
+    const store = new ChatStore(deps);
+    const messages = await store.load("/proj", "t1");
+    expect(messages).toHaveLength(1);
+    expect(messages[0].content).toBe("This is plain text");
+  });
 });

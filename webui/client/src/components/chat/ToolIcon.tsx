@@ -1,4 +1,4 @@
-import { Terminal, FileText, Search, Pencil, FileEdit, Wrench } from 'lucide-react';
+import { Terminal, FileText, Search, Pencil, FileEdit, Wrench, FolderSearch, Globe, Bot, ListTodo, Notebook } from 'lucide-react';
 
 const TOOL_ICONS: Record<string, typeof Terminal> = {
   Bash: Terminal,
@@ -6,6 +6,12 @@ const TOOL_ICONS: Record<string, typeof Terminal> = {
   Grep: Search,
   Edit: Pencil,
   Write: FileEdit,
+  Glob: FolderSearch,
+  WebFetch: Globe,
+  WebSearch: Globe,
+  Agent: Bot,
+  TodoWrite: ListTodo,
+  NotebookEdit: Notebook,
 };
 
 interface ToolIconProps {

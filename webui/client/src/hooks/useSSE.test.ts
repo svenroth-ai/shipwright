@@ -9,14 +9,32 @@ let mockEventSource: {
   onerror: ((event: Event) => void) | null;
   onmessage: ((event: MessageEvent) => void) | null;
   close: ReturnType<typeof vi.fn>;
+  addEventListener: ReturnType<typeof vi.fn>;
+  removeEventListener: ReturnType<typeof vi.fn>;
+  _listeners: Map<string, Array<(event: MessageEvent) => void>>;
 };
 
+function fireNamedEvent(type: string, payload: unknown) {
+  const listeners = mockEventSource._listeners.get(type) ?? [];
+  const event = new MessageEvent(type, { data: JSON.stringify(payload) });
+  for (const listener of listeners) {
+    listener(event);
+  }
+}
+
 beforeEach(() => {
+  const listeners = new Map<string, Array<(event: MessageEvent) => void>>();
   mockEventSource = {
     onopen: null,
     onerror: null,
     onmessage: null,
     close: vi.fn(),
+    addEventListener: vi.fn((type: string, handler: (event: MessageEvent) => void) => {
+      if (!listeners.has(type)) listeners.set(type, []);
+      listeners.get(type)!.push(handler);
+    }),
+    removeEventListener: vi.fn(),
+    _listeners: listeners,
   };
 
   vi.stubGlobal('EventSource', vi.fn().mockImplementation(() => mockEventSource));
@@ -58,6 +76,15 @@ describe('useSSE', () => {
     expect(result.current.isConnected).toBe(true);
   });
 
+  it('registers addEventListener for each SSE event type', () => {
+    const { wrapper } = createWrapper();
+    renderHook(() => useSSE(), { wrapper });
+
+    expect(mockEventSource.addEventListener).toHaveBeenCalledWith('task:created', expect.any(Function));
+    expect(mockEventSource.addEventListener).toHaveBeenCalledWith('chat:message', expect.any(Function));
+    expect(mockEventSource.addEventListener).toHaveBeenCalledWith('inbox:new', expect.any(Function));
+  });
+
   it('invalidates task queries on task:created event', () => {
     const { wrapper, queryClient } = createWrapper();
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
@@ -65,14 +92,7 @@ describe('useSSE', () => {
     renderHook(() => useSSE(), { wrapper });
 
     act(() => {
-      mockEventSource.onmessage?.(
-        new MessageEvent('message', {
-          data: JSON.stringify({
-            type: 'task:created',
-            payload: { projectId: 'proj-1' },
-          }),
-        }),
-      );
+      fireNamedEvent('task:created', { projectId: 'proj-1' });
     });
 
     expect(spy).toHaveBeenCalled();
@@ -85,14 +105,7 @@ describe('useSSE', () => {
     renderHook(() => useSSE(), { wrapper });
 
     act(() => {
-      mockEventSource.onmessage?.(
-        new MessageEvent('message', {
-          data: JSON.stringify({
-            type: 'inbox:new',
-            payload: { projectId: 'proj-1', taskId: 'task-1' },
-          }),
-        }),
-      );
+      fireNamedEvent('inbox:new', { projectId: 'proj-1', taskId: 'task-1' });
     });
 
     expect(spy).toHaveBeenCalledWith(
