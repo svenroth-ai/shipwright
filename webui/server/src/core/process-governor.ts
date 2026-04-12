@@ -76,10 +76,12 @@ export class ProcessGovernor {
     if (dir && !this.deps.existsSync(dir)) {
       this.deps.mkdirSync(dir, { recursive: true });
     }
-    const pids = Array.from(this.activeProcesses.values()).map((p) => ({
-      pid: p.pid,
-      taskId: p.taskId,
-    }));
+    const pids = Array.from(this.activeProcesses.values())
+      .filter((p) => p.pid > 0)
+      .map((p) => ({
+        pid: p.pid,
+        taskId: p.taskId,
+      }));
     await this.deps.writeFile(this.pidFilePath, JSON.stringify(pids));
   }
 
@@ -100,6 +102,11 @@ export class ProcessGovernor {
 
     for (const entry of pids) {
       if (this.activeProcesses.has(entry.taskId)) continue;
+      // Skip invalid PIDs (0 = own process group, negative = process group)
+      if (!entry.pid || entry.pid <= 0) {
+        stale++;
+        continue;
+      }
       if (this.deps.isProcessRunning(entry.pid)) {
         try {
           this.deps.kill(entry.pid);

@@ -1,5 +1,7 @@
 import type { ChildProcess } from "child_process";
 import type { Readable } from "stream";
+import path from "path";
+import fs from "fs";
 import type { NdjsonMessage } from "../../../client/src/types/chat.js";
 import { parseNdjsonLine } from "./ndjson-parser.js";
 import { AppError } from "../middleware/error-handler.js";
@@ -20,7 +22,7 @@ export interface SpawnDeps {
   spawn: (
     command: string,
     args: string[],
-    options: { cwd: string; stdio: [string, string, string] }
+    options: { cwd: string; stdio: [string, string, string]; shell?: boolean }
   ) => ChildProcess;
 }
 
@@ -35,6 +37,27 @@ export interface ClaudeSpawnOptions {
   claudeCliPath?: string;
 }
 
+/**
+ * Resolve the Claude CLI command for the current platform.
+ * On Windows, .cmd shims don't pipe stdout correctly through shell: true,
+ * so we resolve the actual cli.js and run it directly with node.
+ */
+function resolveClaudeCommand(cliPath?: string): { command: string; prefixArgs: string[] } {
+  if (cliPath) return { command: cliPath, prefixArgs: [] };
+
+  if (process.platform === "win32") {
+    // Resolve the npm global cli.js directly to avoid cmd.exe stdout buffering issues
+    const npmGlobal = process.env.APPDATA
+      ? path.join(process.env.APPDATA, "npm", "node_modules", "@anthropic-ai", "claude-code", "cli.js")
+      : null;
+    if (npmGlobal && fs.existsSync(npmGlobal)) {
+      return { command: process.execPath, prefixArgs: [npmGlobal] };
+    }
+  }
+
+  return { command: "claude", prefixArgs: [] };
+}
+
 export class ClaudeAdapter {
   constructor(
     private deps: SpawnDeps,
@@ -42,7 +65,11 @@ export class ClaudeAdapter {
   ) {}
 
   spawn(options: ClaudeSpawnOptions): ClaudeProcess {
-    const args: string[] = ["--output-format", "stream-json"];
+    const args: string[] = [
+      "--output-format", "stream-json",
+      "--verbose",
+      "--dangerously-skip-permissions",
+    ];
 
     for (const dir of options.pluginDirs) {
       args.push("--plugin-dir", dir);
@@ -56,10 +83,17 @@ export class ClaudeAdapter {
 
     args.push("-p", options.prompt);
 
-    const command = options.claudeCliPath ?? "claude";
-    const child = this.deps.spawn(command, args, {
+    const { command, prefixArgs } = resolveClaudeCommand(options.claudeCliPath);
+    const fullArgs = [...prefixArgs, ...args];
+
+    console.log(JSON.stringify({ level: "info", source: "claude-adapter", taskId: options.taskId, command, argsCount: fullArgs.length }));
+
+    // stdin must be 'ignore' for print mode (-p), otherwise Claude CLI hangs
+    // waiting for terminal input. For interactive/resume mode, stdin is piped.
+    const stdinMode = options.resume ? "pipe" : "ignore";
+    const child = this.deps.spawn(command, fullArgs, {
       cwd: options.projectDir,
-      stdio: ["pipe", "pipe", "pipe"],
+      stdio: [stdinMode as "pipe", "pipe", "pipe"],
     });
 
     const claudeProcess: ClaudeProcess = {
