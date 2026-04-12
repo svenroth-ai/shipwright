@@ -1,24 +1,24 @@
 {
-  "timestamp": "2026-04-12T20:00:00Z",
+  "timestamp": "2026-04-13T00:10:00Z",
   "branch": "main",
   "overall": "PASS",
-  "iterate_run": "iterate-2026-04-12-v0.1.2-backfill",
+  "iterate_run": "iterate-2026-04-13-phase-detection",
   "unit": {
-    "passed": 353,
-    "total": 353,
+    "passed": 361,
+    "total": 361,
     "duration_s": 46,
     "breakdown": {
       "server": {
-        "passed": 189,
-        "total": 189,
-        "files": 28,
-        "delta_since_v0_1_1": "+44 (persistent adapter + sendUserMessage + multimodal + permission modes)"
+        "passed": 193,
+        "total": 193,
+        "files": 27,
+        "delta_since_v0_1_2": "+4 (classify phase response, tasks.ts phase propagation, explicit/auto/invalid phase cases)"
       },
       "client": {
-        "passed": 164,
-        "total": 164,
+        "passed": 168,
+        "total": 168,
         "files": 47,
-        "delta_since_v0_1_1": "+10 (MarkdownContent table test, ChatInput image upload, PermissionMode, useChatSettings migration)"
+        "delta_since_v0_1_2": "+4 (NewIssueModal phase dropdown, auto-suggest, manual override, submit forwarding)"
       }
     }
   },
@@ -34,7 +34,8 @@
     "passed": true,
     "url": "http://localhost:3847/api/health",
     "status_code": 200,
-    "response_time_ms": 45
+    "response_time_ms": 45,
+    "notes": "Not re-measured for this iterate run; carried forward from v0.1.2."
   },
   "e2e": {
     "passed": 17,
@@ -52,7 +53,7 @@
       "e2e/flows/07-settings-persistence.spec.ts",
       "e2e/flows/08-inbox-persistence.spec.ts"
     ],
-    "delta_since_v0_1_1": "+12 (chat settings, new task, persistence flows)"
+    "delta_since_v0_1_2": "0 (no new e2e specs for this iterate run; covered via unit + component tests)"
   },
   "consistency": {
     "skipped": true,
@@ -66,7 +67,7 @@
     "cold_start_ms": 15350,
     "warm_followup_ms": 2570,
     "speedup_vs_v0_1_1": "6x",
-    "notes": "Measured on real task via persistent --input-format stream-json process (ADR-009)"
+    "notes": "Carried from v0.1.2 — no bridge changes in this iterate run."
   },
   "iterate_runs_backfilled": [
     "iterate-2026-04-12-persistent-process (ADR-009, medium, retroactive)",

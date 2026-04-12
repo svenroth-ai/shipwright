@@ -1,8 +1,30 @@
 import { useState, useRef, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
+import { X, Sparkles } from 'lucide-react';
 import type { Project } from '../../types';
 import { useCreateTask } from '../../hooks/useCreateTask';
+import { apiPost } from '../../lib/api';
+
+const PHASE_OPTIONS = [
+  { value: 'project', label: 'Project' },
+  { value: 'design', label: 'Design' },
+  { value: 'plan', label: 'Plan' },
+  { value: 'build', label: 'Build' },
+  { value: 'test', label: 'Test' },
+  { value: 'deploy', label: 'Deploy' },
+  { value: 'changelog', label: 'Changelog' },
+  { value: 'compliance', label: 'Compliance' },
+] as const;
+
+const DEFAULT_PHASE = 'project';
+const CLASSIFY_DEBOUNCE_MS = 400;
+
+interface ClassifyResponse {
+  intent?: string;
+  complexity?: string;
+  phase?: string;
+  phase_confidence?: number;
+}
 
 interface NewIssueModalProps {
   open: boolean;
@@ -16,6 +38,8 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
   const [description, setDescription] = useState('');
   const [projectId, setProjectId] = useState(activeProjectId ?? '');
   const [startImmediately, setStartImmediately] = useState(true);
+  const [phase, setPhase] = useState<string>(DEFAULT_PHASE);
+  const [phaseIsAuto, setPhaseIsAuto] = useState(true);
   const titleRef = useRef<HTMLInputElement>(null);
   const { createTask, isCreating } = useCreateTask();
 
@@ -31,13 +55,65 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
     }
   }, [open]);
 
+  // Reset auto-phase state when modal closes
+  useEffect(() => {
+    if (!open) {
+      setPhase(DEFAULT_PHASE);
+      setPhaseIsAuto(true);
+    }
+  }, [open]);
+
+  // Debounced phase auto-classification
+  useEffect(() => {
+    if (!open || !phaseIsAuto || !projectId) return;
+
+    const combined = `${title} ${description}`.trim();
+    if (!combined) {
+      setPhase(DEFAULT_PHASE);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      let cancelled = false;
+      apiPost<ClassifyResponse>(`/projects/${projectId}/classify`, { description: combined })
+        .then((data) => {
+          if (cancelled) return;
+          const suggested = data?.phase;
+          if (suggested && PHASE_OPTIONS.some((p) => p.value === suggested)) {
+            setPhase(suggested);
+          }
+        })
+        .catch(() => {
+          // Silent: keep current default
+        });
+      return () => {
+        cancelled = true;
+      };
+    }, CLASSIFY_DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+  }, [open, phaseIsAuto, projectId, title, description]);
+
   function handleSubmit() {
     if (!title.trim() || !projectId) return;
 
-    createTask({ projectId, title: title.trim(), description: description.trim(), startImmediately });
+    createTask({
+      projectId,
+      title: title.trim(),
+      description: description.trim(),
+      startImmediately,
+      phase,
+    });
     setTitle('');
     setDescription('');
+    setPhase(DEFAULT_PHASE);
+    setPhaseIsAuto(true);
     onOpenChange(false);
+  }
+
+  function handlePhaseChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    setPhase(e.target.value);
+    setPhaseIsAuto(false);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -117,6 +193,29 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
               rows={4}
               className="w-full px-3 py-2 border border-[#e0dbd4] rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
             />
+          </div>
+
+          {/* Phase selector */}
+          <div className="mb-3">
+            <label htmlFor="issue-phase" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
+              <span>Phase</span>
+              {phaseIsAuto && (
+                <span className="inline-flex items-center gap-1 text-xs text-[var(--color-primary)]" title="Auto-suggested">
+                  <Sparkles size={12} aria-label="Auto-suggested" />
+                  <span>auto</span>
+                </span>
+              )}
+            </label>
+            <select
+              id="issue-phase"
+              value={phase}
+              onChange={handlePhaseChange}
+              className="w-full px-3 py-2 border border-[#e0dbd4] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
+            >
+              {PHASE_OPTIONS.map((p) => (
+                <option key={p.value} value={p.value}>{p.label}</option>
+              ))}
+            </select>
           </div>
 
           {/* Start immediately checkbox */}

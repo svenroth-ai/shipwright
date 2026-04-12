@@ -8,6 +8,7 @@ import type { SSEManager } from "../core/sse-manager.js";
 import type { ProjectManager } from "../core/project-manager.js";
 import type { ChatStore } from "../core/chat-store.js";
 import { AppError } from "../middleware/error-handler.js";
+import { classifyPhase, VALID_PHASES, type Phase } from "../bridge/intent-classifier.js";
 
 export interface TaskRouteDeps {
   taskManager: TaskManager;
@@ -45,6 +46,29 @@ function coercePermissionMode(raw: unknown): PermissionMode {
     return raw as PermissionMode;
   }
   return "bypassPermissions";
+}
+
+function coercePhase(raw: unknown): Phase | undefined {
+  if (typeof raw === "string" && (VALID_PHASES as readonly string[]).includes(raw)) {
+    return raw as Phase;
+  }
+  return undefined;
+}
+
+async function resolvePhase(
+  raw: unknown,
+  title: string,
+  description: string,
+  projectPath: string
+): Promise<Phase> {
+  const explicit = coercePhase(raw);
+  if (explicit) return explicit;
+  try {
+    const result = await classifyPhase(`${title} ${description}`.trim(), projectPath);
+    return (coercePhase(result.phase) ?? "project") as Phase;
+  } catch {
+    return "project";
+  }
 }
 
 export function createTaskRoutes(deps: TaskRouteDeps): Hono {
@@ -114,6 +138,7 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
     });
 
     const permissionMode = coercePermissionMode(body.mode);
+    const phase = await resolvePhase(body.phase, title, description, project.path);
 
     let startStatus: "started" | "queued" | "failed" = "started";
     if (startImmediately) {
@@ -136,10 +161,10 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
             timestamp: new Date().toISOString(),
             task_id: taskId,
             project_id: project.id,
-            phase: "build",
+            phase,
           });
           if (deps.emitPhaseStartedEvent) {
-            await deps.emitPhaseStartedEvent(eventsPath, taskId, project.id, "build");
+            await deps.emitPhaseStartedEvent(eventsPath, taskId, project.id, phase);
           }
           deps.sseManager.broadcast({
             type: "task:updated",

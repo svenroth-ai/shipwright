@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-04-13
+
+WebUI Command Center — phase detection for task creation. The New Task
+modal now auto-suggests a pipeline phase from the task description, and
+the server emits `phase_started` events with the detected phase instead
+of a hardcoded `"build"`.
+
+### Added
+- **Phase detection for task creation** — new rule-based classifier
+  `classify_phase.py` (keywords + priority tie-break) exposed via
+  `classifyPhase()` in `intent-classifier.ts`. Deterministic, offline,
+  no external dependencies.
+- **Phase field on `POST /api/projects/:id/classify`** — response now
+  includes `phase` and `phase_confidence` alongside `intent` and
+  `complexity`.
+- **Phase dropdown in `NewIssueModal`** — 8 options (project, design,
+  plan, build, test, deploy, changelog, compliance) with a debounced
+  auto-suggest (400ms) that calls `/classify`, shows a Sparkle "auto"
+  indicator when suggested, and turns manual the moment the user picks
+  a value.
+
+### Changed
+- **`POST /api/projects/:id/tasks` accepts `body.phase`** — when
+  omitted, `classifyPhase()` is invoked against the title+description
+  and the result is used in the `phase_started` event (fallback:
+  `project`). Previously the event was hardcoded to `"build"`.
+
 ## [0.1.2] - 2026-04-12
 
 WebUI Command Center — v0.1 triage second round. Three thematic iterate
