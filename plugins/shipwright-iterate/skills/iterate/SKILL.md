@@ -604,7 +604,9 @@ See `references/iteration-planning.md` for full protocol including handoff file 
 
 ## Finalization (all paths)
 
-**CRITICAL: Steps F0–F11 (including F3a) are MANDATORY. Do NOT skip any step.**
+**CRITICAL: Steps F0–F11 (including F3a, F5a, F5b, F5c) are MANDATORY. Do NOT skip any step.**
+
+> **Order matters.** F3/F3a/F4/F5/F5a/F5b/F5c all write tracked artifacts and MUST run before F6 so a single atomic commit stages them. F7 is the only step that legitimately runs after F6 (it needs the commit hash and writes only to a gitignored event log). Do not reorder.
 
 ### F0: Fresh Verification Gate
 
@@ -697,14 +699,86 @@ Write latest-run state to `shipwright_test_results.json`:
 }
 ```
 
+> **Why the next three steps run BEFORE the commit (F6):** `update_compliance.py`,
+> `update_build_dashboard.py`, and the `iterate_history` append all write artifact
+> files that are tracked in the repo (or may be tracked, depending on project
+> `.gitignore`). Running them after F6 would dirty the working tree immediately
+> after committing and force a `git commit --amend` — which conflicts with the
+> "never amend" rule in the global `CLAUDE.md`. None of these three scripts need
+> the new commit hash: compliance and dashboard take no `--commit` flag, and
+> `iterate_history` entries intentionally omit the commit hash (the canonical
+> `run_id` ↔ commit mapping lives in `shipwright_events.jsonl`, populated by F7).
+> Do NOT move F5a/F5b/F5c back to after F6 without first verifying they no
+> longer write tracked files.
+
+### F5a: Update Compliance
+
+```bash
+uv run {plugin_root}/../../plugins/shipwright-compliance/scripts/tools/update_compliance.py \
+  --project-root "{project_root}" --phase iterate
+```
+
+### F5b: Update Build Dashboard
+
+```bash
+uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+  --project-root "{project_root}" \
+  --phase iterate \
+  --detail "{type}: {short_description}"
+```
+
+### F5c: Update iterate_history
+
+Append entry to `shipwright_run_config.json` → `iterate_history` array:
+```json
+{
+  "run_id": "{run_id}",
+  "date": "{YYYY-MM-DD}",
+  "type": "{feature|change|bug}",
+  "complexity": "{trivial|small|medium}",
+  "branch": "iterate/{short-description}",
+  "spec": "{path to iterate spec or null}",
+  "tests_passed": true
+}
+```
+
+Retention: keep last 50 entries. Older entries preserved in `shipwright_events.jsonl`.
+
+Note: the commit hash is intentionally NOT stored here. Look it up in
+`shipwright_events.jsonl` by `run_id` (F7 records the real commit hash there).
+This omission is what lets F5c run pre-commit in a single atomic F6.
+
 ### F6: Commit (Conventional Commits)
 
 - **Feature:** `feat({scope}): {description}`
 - **Change:** `refactor({scope}): {description}` or `feat` if user-facing
 - **Bug:** `fix({scope}): {description}`
 
+By this point F3, F3a, F4, F5, F5a, F5b, and F5c have all written their
+artifacts into the working tree. Stage everything explicitly rather than
+using `git add -A` (avoids accidentally picking up unrelated dirty files):
+
 ```bash
-git add -A
+# Code + tests (run-specific paths)
+git add <source files edited in build>
+git add <test files added/modified in build>
+
+# Finalization artifacts (always)
+git add CHANGELOG.md
+git add {project_root}/agent_docs/decision_log.md
+git add {project_root}/agent_docs/build_dashboard.md
+git add {project_root}/shipwright_test_results.json
+git add {project_root}/shipwright_run_config.json
+
+# Conditional finalization artifacts
+git add {project_root}/agent_docs/conventions.md       # if F3a wrote learnings
+git add {project_root}/agent_docs/architecture.md      # if F2 flagged structural impact
+git add {project_root}/planning/**/spec.md             # if F1 flagged drift
+git add {project_root}/planning/iterate/*.md           # if medium+ (iterate spec / mini-plan)
+
+# Compliance artifacts (if the project tracks compliance/)
+git add {project_root}/compliance/
+
 git commit -m "<type>(<scope>): <description>
 
 <body>
@@ -713,7 +787,15 @@ Run-ID: {run_id}
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
+If a path in the list above doesn't exist in the current project, skip that
+`git add` — it just means that particular artifact wasn't touched by this run.
+Never add `-A` to bypass the list.
+
 ### F7: Record Event
+
+F7 is the only finalization step that requires the new commit hash. It writes
+only to `shipwright_events.jsonl` (gitignored in every Shipwright profile),
+so running it post-commit produces no tracked-file drift.
 
 ```bash
 uv run {shared_root}/scripts/tools/record_event.py \
@@ -728,40 +810,6 @@ uv run {shared_root}/scripts/tools/record_event.py \
   --adr-id "ADR-{NNN}" \
   --deduplicate-by-commit
 ```
-
-### F8: Update Compliance
-
-```bash
-uv run {plugin_root}/../../plugins/shipwright-compliance/scripts/tools/update_compliance.py \
-  --project-root "{project_root}" --phase iterate
-```
-
-### F9: Update Build Dashboard
-
-```bash
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
-  --project-root "{project_root}" \
-  --phase iterate \
-  --detail "{type}: {short_description}"
-```
-
-### F10: Update iterate_history
-
-Append entry to `shipwright_run_config.json` → `iterate_history` array:
-```json
-{
-  "run_id": "{run_id}",
-  "date": "{YYYY-MM-DD}",
-  "type": "{feature|change|bug}",
-  "complexity": "{trivial|small|medium}",
-  "branch": "iterate/{short-description}",
-  "commit": "{hash}",
-  "spec": "{path to iterate spec or null}",
-  "tests_passed": true
-}
-```
-
-Retention: keep last 50 entries. Older entries preserved in `shipwright_events.jsonl`.
 
 ### F11: Merge, Push & Verify
 
