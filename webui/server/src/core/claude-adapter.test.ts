@@ -25,7 +25,6 @@ const baseOptions: ClaudeSpawnOptions = {
   projectId: "p1",
   taskId: "t1",
   sessionId: "s1",
-  resume: false,
   pluginDirs: ["/plugins/a", "/plugins/b"],
   prompt: "Fix the bug",
 };
@@ -85,30 +84,66 @@ describe("ClaudeAdapter", () => {
     expect(proc.exitCode).toBe(1);
   });
 
-  it("sendStdin writes to stdin pipe", () => {
+  it("sendUserMessage writes NDJSON user message to stdin", async () => {
     const { child, stdin } = createFakeChild();
     const deps = createMockDeps(child);
     const adapter = new ClaudeAdapter(deps, () => {});
+
+    // Attach listener BEFORE spawn so we catch the initial prompt too
+    const chunks: string[] = [];
+    stdin.on("data", (d: Buffer) => chunks.push(d.toString()));
+
     const proc = adapter.spawn(baseOptions);
     proc.state = "running";
+    adapter.sendUserMessage(proc, "follow-up question");
+
+    await new Promise((r) => setTimeout(r, 20));
+
+    const allLines = chunks.join("").split("\n").filter(Boolean);
+    const parsed = allLines.map((l) => JSON.parse(l));
+    const followUp = parsed.find((p) => p.message.content === "follow-up question");
+    expect(followUp).toBeDefined();
+    expect(followUp!.type).toBe("user");
+    expect(followUp!.message.role).toBe("user");
+    expect(followUp!.session_id).toBe("s1");
+  });
+
+  it("sendUserMessage supports multimodal content blocks", async () => {
+    const { child, stdin } = createFakeChild();
+    const deps = createMockDeps(child);
+    const adapter = new ClaudeAdapter(deps, () => {});
 
     const chunks: string[] = [];
     stdin.on("data", (d: Buffer) => chunks.push(d.toString()));
-    adapter.sendStdin(proc, "my answer");
-    expect(chunks.join("")).toBe("my answer\n");
+
+    const proc = adapter.spawn(baseOptions);
+    proc.state = "running";
+    adapter.sendUserMessage(proc, [
+      { type: "text", text: "what is this?" },
+      { type: "image", source: { type: "base64", media_type: "image/png", data: "abc" } },
+    ]);
+
+    await new Promise((r) => setTimeout(r, 20));
+
+    const allMsgs = chunks.join("").split("\n").filter(Boolean).map((s) => JSON.parse(s));
+    const multimodal = allMsgs.find((m) => Array.isArray(m.message.content));
+    expect(multimodal).toBeDefined();
+    expect(multimodal!.message.content).toHaveLength(2);
+    expect(multimodal!.message.content[0]).toEqual({ type: "text", text: "what is this?" });
+    expect(multimodal!.message.content[1].type).toBe("image");
   });
 
-  it("sendStdin on exited process throws", () => {
+  it("sendUserMessage on exited process throws", () => {
     const { child } = createFakeChild();
     const deps = createMockDeps(child);
     const adapter = new ClaudeAdapter(deps, () => {});
     const proc = adapter.spawn(baseOptions);
     proc.state = "exited";
 
-    expect(() => adapter.sendStdin(proc, "answer")).toThrow("Process has exited");
+    expect(() => adapter.sendUserMessage(proc, "answer")).toThrow("Claude process has exited");
   });
 
-  it("builds correct args for new session", () => {
+  it("builds correct args for persistent NDJSON mode", () => {
     const { child } = createFakeChild();
     const deps = createMockDeps(child);
     const adapter = new ClaudeAdapter(deps, () => {});
@@ -116,24 +151,16 @@ describe("ClaudeAdapter", () => {
 
     const spawnCall = (deps.spawn as any).mock.calls[0];
     const args: string[] = spawnCall[1];
+    expect(args).toContain("--input-format");
     expect(args).toContain("--output-format");
     expect(args).toContain("stream-json");
     expect(args).toContain("--session-id");
     expect(args).toContain("s1");
-    expect(args).toContain("-p");
-    expect(args).toContain("Fix the bug");
     expect(args).toContain("--plugin-dir");
-  });
-
-  it("builds correct args for resume session", () => {
-    const { child } = createFakeChild();
-    const deps = createMockDeps(child);
-    const adapter = new ClaudeAdapter(deps, () => {});
-    adapter.spawn({ ...baseOptions, resume: true });
-
-    const args: string[] = (deps.spawn as any).mock.calls[0][1];
-    expect(args).toContain("--continue");
-    expect(args).not.toContain("--session-id");
+    expect(args).toContain("/plugins/a");
+    expect(args).toContain("/plugins/b");
+    // stdin must be piped now so we can send NDJSON
+    expect(spawnCall[2].stdio[0]).toBe("pipe");
   });
 
   it("uses custom CLI path when provided", () => {

@@ -22,10 +22,9 @@ import { ProjectManager } from "./core/project-manager.js";
 import { TaskManager } from "./core/task-manager.js";
 import { InboxManager } from "./core/inbox-manager.js";
 import { ChatStore } from "./core/chat-store.js";
-import { SessionRegistry } from "./core/session-registry.js";
 import { FileWatcher } from "./core/file-watcher.js";
 import { readEventsFromFile } from "./bridge/event-reader.js";
-import { emitTaskCreatedEvent, emitPhaseStartedEvent, emitWorkCompletedEvent, emitWorkFailedEvent } from "./bridge/event-writer.js";
+import { emitTaskCreatedEvent, emitPhaseStartedEvent, emitWorkFailedEvent } from "./bridge/event-writer.js";
 
 import { createProjectRoutes } from "./routes/projects.js";
 import { createTaskRoutes } from "./routes/tasks.js";
@@ -98,18 +97,6 @@ if (isMainModule) {
     };
     const chatStore = new ChatStore(chatStoreDeps);
 
-    // Session registry — tracks real Claude session_id per task for --resume
-    const sessionRegistry = new SessionRegistry(
-      {
-        readFile: (p: string, e: string) => readFile(p, e as BufferEncoding),
-        writeFile: (p: string, d: string) => writeFile(p, d),
-        existsSync: (p: string) => fs.existsSync(p),
-        mkdirSync: (p: string, o?: { recursive: boolean }) => fs.mkdirSync(p, o),
-      },
-      `${config.registryDir}/sessions.json`
-    );
-    await sessionRegistry.load();
-
     // Event writer deps — hoisted so adapter's onExit can use them
     const writerDeps = {
       appendFile: (p: string, d: string) => appendFile(p, d),
@@ -145,14 +132,6 @@ if (isMainModule) {
           timestamp: new Date().toISOString(),
         });
 
-        // Capture real Claude session_id from system/init events
-        if (msg.type === "system" && typeof (msg as Record<string, unknown>).session_id === "string") {
-          const claudeSessionId = (msg as Record<string, unknown>).session_id as string;
-          sessionRegistry.set(taskId, claudeSessionId).catch((err) =>
-            console.error(JSON.stringify({ level: "error", message: "Session registry write failed", error: String(err) }))
-          );
-        }
-
         // Extract structured ChatMessages and persist ALL types
         const chatMessages = extractContentBlocks(taskId, msg);
         if (chatMessages.length > 0 && projectPath) {
@@ -174,26 +153,15 @@ if (isMainModule) {
           ).catch((err) => console.error(JSON.stringify({ level: "error", message: "Inbox persist error", error: String(err) })));
         }
       },
-      // onExit: emit work_completed / work_failed, release governor, notify clients
+      // onExit: in persistent-process mode, the CLI stays alive for the whole
+      // task conversation. Exit here means either:
+      //   - user intentionally terminated (SIGTERM → exitCode null): silent
+      //   - CLI crashed (exitCode > 0): emit work_failed
+      //   - normal exit code 0: shouldn't happen in persistent mode, treat as ok
       (taskId, projectId, exitCode) => {
         const proj = projectManager.getById(projectId);
         if (!proj) return;
         const eventsPath = `${proj.path}/shipwright_events.jsonl`;
-        const isSuccess = exitCode === 0 || exitCode === null;
-
-        // Update event store + persist event
-        eventStore.addEvent(projectId, {
-          type: isSuccess ? "work_completed" : "work_failed",
-          timestamp: new Date().toISOString(),
-          task_id: taskId,
-          project_id: projectId,
-          ...(isSuccess ? {} : { detail: `Claude CLI exited with code ${exitCode}` }),
-        });
-
-        const emitEvent = isSuccess
-          ? emitWorkCompletedEvent(eventsPath, taskId, projectId, writerDeps)
-          : emitWorkFailedEvent(eventsPath, taskId, projectId, `Exit code ${exitCode}`, writerDeps);
-        emitEvent.catch((err) => console.error(JSON.stringify({ level: "error", message: "Lifecycle event write failed", error: String(err) })));
 
         // Release from governor + notify
         governor.release(taskId).catch(() => {});
@@ -202,6 +170,20 @@ if (isMainModule) {
           payload: { taskId, projectId },
           timestamp: new Date().toISOString(),
         });
+
+        // Intentional terminate (SIGTERM) or normal exit → no lifecycle event
+        if (exitCode === null || exitCode === 0) return;
+
+        // Abnormal exit → work_failed
+        eventStore.addEvent(projectId, {
+          type: "work_failed",
+          timestamp: new Date().toISOString(),
+          task_id: taskId,
+          project_id: projectId,
+          detail: `Claude CLI exited with code ${exitCode}`,
+        });
+        emitWorkFailedEvent(eventsPath, taskId, projectId, `Exit code ${exitCode}`, writerDeps)
+          .catch((err) => console.error(JSON.stringify({ level: "error", message: "Lifecycle event write failed", error: String(err) })));
       }
     );
 
@@ -346,7 +328,7 @@ if (isMainModule) {
       },
     }));
     app.route("/", createInboxRoutes(inboxManager, sseManager));
-    app.route("/", createChatRoutes(chatStore, governor, adapter, projectManager, taskManager, eventStore, sseManager, sessionRegistry));
+    app.route("/", createChatRoutes(chatStore, governor, adapter, projectManager));
     app.route("/", createPipelineRoutes(eventStore, projectManager));
     app.route("/", createDocsRoutes(projectManager));
     app.route("/", createClassifyRoutes(projectManager));
