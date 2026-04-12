@@ -32,7 +32,13 @@ export interface ClaudeSpawnOptions {
   projectId: string;
   taskId: string;
   sessionId?: string;
-  resume: boolean;
+  /**
+   * Session behavior:
+   * - false: new session with --session-id
+   * - true: resume last session in cwd with --continue
+   * - "explicit": resume specific session with --resume <sessionId>
+   */
+  resume: boolean | "explicit";
   pluginDirs: string[];
   prompt: string;
   claudeCliPath?: string;
@@ -77,7 +83,9 @@ export class ClaudeAdapter {
       args.push("--plugin-dir", dir);
     }
 
-    if (options.resume) {
+    if (options.resume === "explicit" && options.sessionId) {
+      args.push("--resume", options.sessionId);
+    } else if (options.resume === true) {
       args.push("--continue");
     } else if (options.sessionId) {
       args.push("--session-id", options.sessionId);
@@ -88,11 +96,12 @@ export class ClaudeAdapter {
     const { command, prefixArgs } = resolveClaudeCommand(options.claudeCliPath);
     const fullArgs = [...prefixArgs, ...args];
 
-    console.log(JSON.stringify({ level: "info", source: "claude-adapter", taskId: options.taskId, command, argsCount: fullArgs.length }));
+    console.log(JSON.stringify({ level: "info", source: "claude-adapter", taskId: options.taskId, command, argsCount: fullArgs.length, resume: options.resume }));
 
-    // stdin must be 'ignore' for print mode (-p), otherwise Claude CLI hangs
-    // waiting for terminal input. For interactive/resume mode, stdin is piped.
-    const stdinMode = options.resume ? "pipe" : "ignore";
+    // In print mode (-p) Claude CLI exits after the response, so stdin should
+    // be ignored regardless of resume flag. Interactive follow-ups are handled
+    // by re-spawning with --resume <sessionId> + the new user message as prompt.
+    const stdinMode = "ignore";
     const child = this.deps.spawn(command, fullArgs, {
       cwd: options.projectDir,
       stdio: [stdinMode as "pipe", "pipe", "pipe"],
