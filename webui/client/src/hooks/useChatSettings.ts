@@ -1,7 +1,14 @@
 import { useLocalStorage } from './useLocalStorage';
 
 export type ModelOption = 'opus' | 'sonnet' | 'haiku';
-export type ModeOption = 'default' | 'plan' | 'auto-accept';
+
+/**
+ * Claude CLI permission modes (matches --permission-mode flag values).
+ * Default in our UI is `bypassPermissions` — the same mode VS Code's
+ * Claude extension ships with. Users who want stricter approval can
+ * switch via the pill in the chat toolbar.
+ */
+export type ModeOption = 'default' | 'acceptEdits' | 'plan' | 'bypassPermissions';
 export type EffortOption = 'low' | 'medium' | 'high';
 
 export interface ChatSettings {
@@ -10,10 +17,24 @@ export interface ChatSettings {
   effort: EffortOption;
 }
 
+/**
+ * Migrate legacy localStorage values that used the old mode names
+ * (default/plan/auto-accept) to the new CLI-aligned names.
+ */
+function migrateMode(raw: unknown): ModeOption {
+  if (raw === 'default' || raw === 'acceptEdits' || raw === 'plan' || raw === 'bypassPermissions') {
+    return raw;
+  }
+  if (raw === 'auto-accept') return 'acceptEdits';
+  return 'bypassPermissions';
+}
+
 export function useChatSettings() {
   const [model, setModel] = useLocalStorage<ModelOption>('chat-model', 'sonnet');
-  const [mode, setMode] = useLocalStorage<ModeOption>('chat-mode', 'default');
+  const [rawMode, setRawMode] = useLocalStorage<ModeOption>('chat-mode', 'bypassPermissions');
   const [effort, setEffort] = useLocalStorage<EffortOption>('chat-effort', 'medium');
 
-  return { model, setModel, mode, setMode, effort, setEffort };
+  const mode = migrateMode(rawMode);
+
+  return { model, setModel, mode, setMode: setRawMode, effort, setEffort };
 }
