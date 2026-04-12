@@ -92,10 +92,16 @@ def handle_completed_pipeline(
 
 
 def handle_in_progress_pipeline(
-    prompt: str, run_config: dict
+    prompt: str, project_root: Path, run_config: dict
 ) -> dict | None:
-    """Warn when user intent doesn't match current pipeline step."""
+    """Route intent for in-progress pipelines.
+
+    After test completion, non-phase prompts fall through to iterate so
+    code-change requests don't get dropped while changelog/deploy/compliance
+    remain pending.
+    """
     current_step = run_config.get("current_step", "unknown")
+    completed_steps = set(run_config.get("completed_steps", []))
     phase = detect_phase_intent(prompt)
 
     if phase and phase != current_step:
@@ -111,15 +117,18 @@ def handle_in_progress_pipeline(
             }
         }
 
+    if phase is None and "test" in completed_steps:
+        return classify_for_iterate(prompt, project_root)
+
     return None
 
 
 def classify_for_iterate(prompt: str, project_root: Path) -> dict | None:
     """Existing iterate classification logic."""
-    script_dir = Path(__file__).resolve().parent.parent.parent
+    repo_root = Path(__file__).resolve().parent.parent.parent.parent
     sys.path.insert(
         0,
-        str(script_dir / "plugins" / "shipwright-iterate" / "scripts" / "lib"),
+        str(repo_root / "plugins" / "shipwright-iterate" / "scripts" / "lib"),
     )
 
     try:
@@ -189,7 +198,7 @@ def main():
     if status == "complete":
         output = handle_completed_pipeline(prompt, project_root, run_config)
     elif status == "in_progress":
-        output = handle_in_progress_pipeline(prompt, run_config)
+        output = handle_in_progress_pipeline(prompt, project_root, run_config)
     else:
         sys.exit(0)
 
