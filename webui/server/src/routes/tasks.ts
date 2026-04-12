@@ -113,7 +113,6 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
           projectId: project.id,
           taskId,
           sessionId,
-          resume: false,
           pluginDirs: project.settings?.claudePluginDirs ?? [],
           prompt: buildPrompt(title, description),
         });
@@ -165,10 +164,6 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
       throw new AppError("Task is already running", 409);
     }
 
-    // Check if this task has a prior chat history — only then resume.
-    // Without history, --continue would resume an UNRELATED session
-    // (Claude CLI's --continue resumes the last session in the cwd).
-    const hasPriorHistory = deps.chatStore?.exists(project.path, taskId) ?? false;
     const sessionId = randomUUID();
     const eventsPath = `${project.path}/shipwright_events.jsonl`;
     try {
@@ -177,7 +172,6 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
         projectId: project.id,
         taskId,
         sessionId,
-        resume: hasPriorHistory,
         pluginDirs: project.settings?.claudePluginDirs ?? [],
         prompt: buildPrompt(task.title, task.description),
       });

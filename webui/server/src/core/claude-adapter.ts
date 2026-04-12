@@ -32,17 +32,22 @@ export interface ClaudeSpawnOptions {
   projectId: string;
   taskId: string;
   sessionId?: string;
-  /**
-   * Session behavior:
-   * - false: new session with --session-id
-   * - true: resume last session in cwd with --continue
-   * - "explicit": resume specific session with --resume <sessionId>
-   */
-  resume: boolean | "explicit";
   pluginDirs: string[];
+  /**
+   * Initial user prompt. Will be sent as the first NDJSON "user" message
+   * after spawn. Follow-ups go via sendUserMessage().
+   */
   prompt: string;
   claudeCliPath?: string;
 }
+
+/** Anthropic content-block types (subset used by sendUserMessage). */
+export type UserContentBlock =
+  | { type: "text"; text: string }
+  | {
+      type: "image";
+      source: { type: "base64"; media_type: string; data: string };
+    };
 
 /**
  * Resolve the Claude CLI command for the current platform.
@@ -53,7 +58,6 @@ function resolveClaudeCommand(cliPath?: string): { command: string; prefixArgs: 
   if (cliPath) return { command: cliPath, prefixArgs: [] };
 
   if (process.platform === "win32") {
-    // Resolve the npm global cli.js directly to avoid cmd.exe stdout buffering issues
     const npmGlobal = process.env.APPDATA
       ? path.join(process.env.APPDATA, "npm", "node_modules", "@anthropic-ai", "claude-code", "cli.js")
       : null;
@@ -65,6 +69,22 @@ function resolveClaudeCommand(cliPath?: string): { command: string; prefixArgs: 
   return { command: "claude", prefixArgs: [] };
 }
 
+/**
+ * Persistent Claude CLI process per task.
+ *
+ * Uses `--input-format stream-json --output-format stream-json` so the CLI
+ * reads NDJSON user messages from stdin and writes NDJSON events to stdout,
+ * staying alive across multiple turns. This eliminates the 5–10s cold-start
+ * penalty on every follow-up message.
+ *
+ * Message flow:
+ *   1. spawn() starts the CLI with empty placeholder prompt
+ *   2. Once stdout yields the first `system/init` event, we send the initial
+ *      user message as NDJSON on stdin
+ *   3. sendUserMessage() can be called at any time to send follow-ups on the
+ *      same pipe — no respawn, no cold start
+ *   4. terminate() kills the process when the task is closed
+ */
 export class ClaudeAdapter {
   constructor(
     private deps: SpawnDeps,
@@ -74,6 +94,7 @@ export class ClaudeAdapter {
 
   spawn(options: ClaudeSpawnOptions): ClaudeProcess {
     const args: string[] = [
+      "--input-format", "stream-json",
       "--output-format", "stream-json",
       "--verbose",
       "--dangerously-skip-permissions",
@@ -83,28 +104,30 @@ export class ClaudeAdapter {
       args.push("--plugin-dir", dir);
     }
 
-    if (options.resume === "explicit" && options.sessionId) {
-      args.push("--resume", options.sessionId);
-    } else if (options.resume === true) {
-      args.push("--continue");
-    } else if (options.sessionId) {
+    if (options.sessionId) {
       args.push("--session-id", options.sessionId);
     }
 
-    args.push("-p", options.prompt);
+    // `-p` with placeholder is required when using --input-format stream-json.
+    // Claude CLI still waits on stdin for actual messages.
+    args.push("-p", "placeholder");
 
     const { command, prefixArgs } = resolveClaudeCommand(options.claudeCliPath);
     const fullArgs = [...prefixArgs, ...args];
 
-    console.log(JSON.stringify({ level: "info", source: "claude-adapter", taskId: options.taskId, command, argsCount: fullArgs.length, resume: options.resume }));
+    console.log(JSON.stringify({
+      level: "info",
+      source: "claude-adapter",
+      taskId: options.taskId,
+      command,
+      argsCount: fullArgs.length,
+      mode: "persistent-ndjson",
+    }));
 
-    // In print mode (-p) Claude CLI exits after the response, so stdin should
-    // be ignored regardless of resume flag. Interactive follow-ups are handled
-    // by re-spawning with --resume <sessionId> + the new user message as prompt.
-    const stdinMode = "ignore";
+    // stdin must be piped so we can write NDJSON user messages to the CLI
     const child = this.deps.spawn(command, fullArgs, {
       cwd: options.projectDir,
-      stdio: [stdinMode as "pipe", "pipe", "pipe"],
+      stdio: ["pipe", "pipe", "pipe"],
     });
 
     const claudeProcess: ClaudeProcess = {
@@ -117,10 +140,29 @@ export class ClaudeAdapter {
       process: child,
     };
 
+    // Queue the initial prompt; will be sent when stdin is ready
+    let initialPromptSent = false;
+    const sendInitialPrompt = () => {
+      if (initialPromptSent) return;
+      initialPromptSent = true;
+      try {
+        this.sendUserMessage(claudeProcess, options.prompt);
+      } catch (err) {
+        console.error(JSON.stringify({
+          level: "error",
+          source: "claude-adapter",
+          taskId: options.taskId,
+          message: `Initial prompt send failed: ${String(err)}`,
+        }));
+      }
+    };
+
     if (child.stdout) {
       this.readLines(child.stdout, (line) => {
         if (claudeProcess.state === "spawning") {
           claudeProcess.state = "running";
+          // The CLI is ready once it has produced any output
+          sendInitialPrompt();
         }
         const msg = parseNdjsonLine(line);
         if (msg) {
@@ -142,15 +184,17 @@ export class ClaudeAdapter {
       });
     }
 
+    // Also send initial prompt on stdin "drain" / after small delay as fallback
+    // in case the CLI waits for input before producing any output.
+    setTimeout(sendInitialPrompt, 2000);
+
     child.on("error", (err) => {
-      console.error(
-        JSON.stringify({
-          level: "error",
-          source: "claude-cli",
-          taskId: options.taskId,
-          message: `Spawn error: ${err.message}`,
-        })
-      );
+      console.error(JSON.stringify({
+        level: "error",
+        source: "claude-cli",
+        taskId: options.taskId,
+        message: `Spawn error: ${err.message}`,
+      }));
       claudeProcess.state = "exited";
       claudeProcess.exitCode = 1;
     });
@@ -162,7 +206,11 @@ export class ClaudeAdapter {
         try {
           this.onExit(options.taskId, options.projectId, code);
         } catch (err) {
-          console.error(JSON.stringify({ level: "error", message: "onExit handler failed", error: String(err) }));
+          console.error(JSON.stringify({
+            level: "error",
+            message: "onExit handler failed",
+            error: String(err),
+          }));
         }
       }
     });
@@ -170,14 +218,56 @@ export class ClaudeAdapter {
     return claudeProcess;
   }
 
-  sendStdin(process: ClaudeProcess, input: string): void {
+  /**
+   * Send a user message (text or multimodal) as NDJSON on stdin.
+   * Works as initial prompt AND as follow-up — same pipe, same process.
+   */
+  sendUserMessage(
+    process: ClaudeProcess,
+    content: string | UserContentBlock[]
+  ): void {
     if (process.state === "exited") {
-      throw new AppError("Process has exited", 400);
+      throw new AppError("Claude process has exited", 400);
     }
-    process.process.stdin?.write(input + "\n");
+    const stdin = process.process.stdin;
+    if (!stdin || stdin.destroyed) {
+      throw new AppError("Claude process stdin not available", 500);
+    }
+
+    const message = {
+      type: "user",
+      message: {
+        role: "user",
+        content: typeof content === "string" ? content : content,
+      },
+      parent_tool_use_id: null,
+      session_id: process.sessionId,
+    };
+
+    const line = JSON.stringify(message) + "\n";
+    stdin.write(line, (err) => {
+      if (err) {
+        console.error(JSON.stringify({
+          level: "error",
+          source: "claude-adapter",
+          taskId: process.taskId,
+          message: `stdin write error: ${err.message}`,
+        }));
+      }
+    });
+  }
+
+  /** Legacy name kept for existing callers — forwards to sendUserMessage. */
+  sendStdin(process: ClaudeProcess, input: string): void {
+    this.sendUserMessage(process, input);
   }
 
   terminate(process: ClaudeProcess): void {
+    try {
+      process.process.stdin?.end();
+    } catch {
+      // ignore
+    }
     process.process.kill("SIGTERM");
     process.state = "exited";
   }

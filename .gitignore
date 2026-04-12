@@ -63,3 +63,4 @@ compliance/
 
 # Specifications (internal only)
 Spec/
+.companion-ref/
