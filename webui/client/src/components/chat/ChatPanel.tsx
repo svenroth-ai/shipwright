@@ -116,7 +116,7 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
       {/* Message list — warm beige background, vertical scroll only */}
       <div
         ref={scrollRef}
-        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-6 py-5 flex flex-col gap-[18px]"
+        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-6 pt-3 pb-5 flex flex-col gap-[14px]"
       >
         {messages.length === 0 && !awaiting && (
           <div className="text-center text-gray-400 text-sm py-8">
