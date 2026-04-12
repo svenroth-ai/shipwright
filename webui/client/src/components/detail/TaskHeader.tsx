@@ -43,26 +43,26 @@ export function TaskHeader({ task, onEdit }: TaskHeaderProps) {
   const isPending = task.status === 'pending' || task.kanbanStatus === 'backlog';
 
   return (
-    <header className="flex items-start gap-4 px-6 py-3.5 border-b border-[#e0dbd4] bg-white">
+    <header className="flex items-start gap-4 px-6 py-2 border-b border-[#e0dbd4] bg-white">
       {/* Left: back, title, status */}
       <div className="flex-1 min-w-0">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors mb-1.5"
+          className="flex items-center gap-1.5 text-[11px] text-gray-500 hover:text-gray-900 transition-colors mb-0.5"
         >
-          <ArrowLeft size={14} />
+          <ArrowLeft size={12} />
           Back to Board
         </button>
 
         {/* Title row */}
-        <div className="flex items-center gap-2.5 flex-wrap mb-2">
-          <h1 className="text-lg font-semibold text-gray-900 tracking-[-0.3px]">{task.title}</h1>
+        <div className="flex items-center gap-2.5 flex-wrap mb-0.5">
+          <h1 className="text-base font-semibold text-gray-900 tracking-[-0.3px]">{task.title}</h1>
           <PhaseTag phase={task.currentPhase} />
           <PriorityIndicator priority={task.priority} />
         </div>
 
         {/* Status line + Show Description */}
-        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+        <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
           <StatusIcon status={task.kanbanStatus} />
           <span className="font-medium">{STATUS_LABELS[task.kanbanStatus] ?? task.kanbanStatus}</span>
           <span>&middot;</span>
@@ -95,7 +95,7 @@ export function TaskHeader({ task, onEdit }: TaskHeaderProps) {
       </div>
 
       {/* Right: three-dot menu */}
-      <div className="pt-5">
+      <div className="pt-2">
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
             <button
