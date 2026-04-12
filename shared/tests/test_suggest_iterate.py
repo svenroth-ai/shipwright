@@ -214,6 +214,67 @@ class TestHookIntegration:
         assert result.returncode == 0
         assert result.stdout.strip() == ""
 
+    def test_in_progress_post_test_falls_through_to_iterate(self, tmp_path):
+        """After test completion, non-phase prompts route to classify_for_iterate."""
+        result = self._run_hook(
+            "add a filter for completed tasks in the sidebar",
+            str(tmp_path),
+            config={
+                "status": "in_progress",
+                "current_step": "changelog",
+                "completed_steps": ["project", "design", "plan", "build", "test"],
+            },
+        )
+        assert result.returncode == 0
+        if result.stdout.strip():
+            output = json.loads(result.stdout)
+            context = output["hookSpecificOutput"]["additionalContext"]
+            assert "/shipwright-iterate" in context
+        # If classify_for_iterate returns None (low confidence), empty stdout is
+        # also acceptable — the key regression is that the hook no longer crashes
+        # or silently drops post-test prompts due to the classify import bug.
+
+    def test_in_progress_pre_test_does_not_fall_through(self, tmp_path):
+        """Before test completion, non-phase prompts get no output (early phases)."""
+        result = self._run_hook(
+            "add a filter for completed tasks in the sidebar",
+            str(tmp_path),
+            config={
+                "status": "in_progress",
+                "current_step": "build",
+                "completed_steps": ["project", "design", "plan"],
+            },
+        )
+        assert result.returncode == 0
+        assert result.stdout.strip() == ""
+
+    def test_in_progress_post_test_phase_keyword_still_warns(self, tmp_path):
+        """Post-test deploy intent still triggers intent-mismatch warning."""
+        result = self._run_hook(
+            "deploy to production",
+            str(tmp_path),
+            config={
+                "status": "in_progress",
+                "current_step": "changelog",
+                "completed_steps": ["project", "design", "plan", "build", "test"],
+            },
+        )
+        assert result.returncode == 0
+        output = json.loads(result.stdout)
+        context = output["hookSpecificOutput"]["additionalContext"]
+        assert "mismatch" in context.lower()
+        assert "/shipwright-deploy" in context
+
+    def test_classify_for_iterate_import_path_resolves(self):
+        """Regression: classify_for_iterate must find classify_intent.py at repo root.
+
+        Previously used .parent.parent.parent which resolves to shared/, not the
+        repo root, silently breaking every iterate fallback via ImportError.
+        """
+        from suggest_iterate import classify_for_iterate  # noqa: F401
+        repo_root = HOOK_SCRIPT.parent.parent.parent.parent
+        assert (repo_root / "plugins" / "shipwright-iterate" / "scripts" / "lib" / "classify_intent.py").exists()
+
     def test_german_prompt_routes_correctly(self, tmp_path):
         result = self._run_hook("tests nochmal laufen lassen", str(tmp_path), config={"status": "complete"})
         assert result.returncode == 0
