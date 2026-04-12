@@ -24,7 +24,7 @@ import { InboxManager } from "./core/inbox-manager.js";
 import { ChatStore } from "./core/chat-store.js";
 import { FileWatcher } from "./core/file-watcher.js";
 import { readEventsFromFile } from "./bridge/event-reader.js";
-import { emitTaskCreatedEvent } from "./bridge/event-writer.js";
+import { emitTaskCreatedEvent, emitPhaseStartedEvent, emitWorkCompletedEvent, emitWorkFailedEvent } from "./bridge/event-writer.js";
 
 import { createProjectRoutes } from "./routes/projects.js";
 import { createTaskRoutes } from "./routes/tasks.js";
@@ -97,49 +97,92 @@ if (isMainModule) {
     };
     const chatStore = new ChatStore(chatStoreDeps);
 
-    // 3. Claude adapter with event forwarding + chat persistence
-    const adapter = new ClaudeAdapter({ spawn }, (taskId, msg) => {
-      // Find project for this task (needed for SSE payload and persistence)
-      let projectId: string | undefined;
-      let projectPath: string | undefined;
-      const allProjects = projectManager.getAll();
-      for (const proj of allProjects) {
-        const task = taskManager.getTaskById(proj.id, taskId);
-        if (task) {
-          projectId = proj.id;
-          projectPath = proj.path;
-          break;
+    // Event writer deps — hoisted so adapter's onExit can use them
+    const writerDeps = {
+      appendFile: (p: string, d: string) => appendFile(p, d),
+      lock: async (p: string) => {
+        const release = await lockfile.lock(p, { retries: 3 });
+        return release;
+      },
+      ensureDir: (p: string) => { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); },
+      ensureFile: (p: string) => { if (!fs.existsSync(p)) fs.writeFileSync(p, ""); },
+    };
+
+    // 3. Claude adapter with event forwarding + chat persistence + lifecycle events
+    const adapter = new ClaudeAdapter(
+      { spawn },
+      (taskId, msg) => {
+        // Find project for this task (needed for SSE payload and persistence)
+        let projectId: string | undefined;
+        let projectPath: string | undefined;
+        const allProjects = projectManager.getAll();
+        for (const proj of allProjects) {
+          const task = taskManager.getTaskById(proj.id, taskId);
+          if (task) {
+            projectId = proj.id;
+            projectPath = proj.path;
+            break;
+          }
         }
-      }
 
-      // Forward raw NDJSON to SSE for real-time streaming
-      sseManager.broadcast({
-        type: "chat:message",
-        payload: { taskId, projectId, message: msg },
-        timestamp: new Date().toISOString(),
-      });
+        // Forward raw NDJSON to SSE for real-time streaming
+        sseManager.broadcast({
+          type: "chat:message",
+          payload: { taskId, projectId, message: msg },
+          timestamp: new Date().toISOString(),
+        });
 
-      // Extract structured ChatMessages and persist ALL types
-      const chatMessages = extractContentBlocks(taskId, msg);
-      if (chatMessages.length > 0 && projectPath) {
-        for (const chatMsg of chatMessages) {
-          chatStore.append(projectPath, taskId, chatMsg)
-            .catch((err) => console.error(JSON.stringify({ level: "error", message: "Chat persist error", error: String(err) })));
+        // Extract structured ChatMessages and persist ALL types
+        const chatMessages = extractContentBlocks(taskId, msg);
+        if (chatMessages.length > 0 && projectPath) {
+          for (const chatMsg of chatMessages) {
+            chatStore.append(projectPath, taskId, chatMsg)
+              .catch((err) => console.error(JSON.stringify({ level: "error", message: "Chat persist error", error: String(err) })));
+          }
         }
-      }
 
-      // Check for AskUserQuestion
-      if (isAskUserQuestion(msg)) {
-        const input = msg.tool_input as { question?: string; context?: string; options?: string[] } | undefined;
-        inboxManager.addQuestion(
-          "", // projectId resolved by task lookup
-          taskId,
-          input?.question ?? "Question from Claude",
-          input?.context,
-          input?.options
-        ).catch((err) => console.error(JSON.stringify({ level: "error", message: "Inbox persist error", error: String(err) })));
+        // Check for AskUserQuestion
+        if (isAskUserQuestion(msg)) {
+          const input = msg.tool_input as { question?: string; context?: string; options?: string[] } | undefined;
+          inboxManager.addQuestion(
+            "", // projectId resolved by task lookup
+            taskId,
+            input?.question ?? "Question from Claude",
+            input?.context,
+            input?.options
+          ).catch((err) => console.error(JSON.stringify({ level: "error", message: "Inbox persist error", error: String(err) })));
+        }
+      },
+      // onExit: emit work_completed / work_failed, release governor, notify clients
+      (taskId, projectId, exitCode) => {
+        const proj = projectManager.getById(projectId);
+        if (!proj) return;
+        const eventsPath = `${proj.path}/shipwright_events.jsonl`;
+        const isSuccess = exitCode === 0 || exitCode === null;
+
+        // Update event store + persist event
+        eventStore.addEvent(projectId, {
+          type: isSuccess ? "work_completed" : "work_failed",
+          timestamp: new Date().toISOString(),
+          task_id: taskId,
+          project_id: projectId,
+          ...(isSuccess ? {} : { detail: `Claude CLI exited with code ${exitCode}` }),
+        });
+
+        const emitEvent = isSuccess
+          ? emitWorkCompletedEvent(eventsPath, taskId, projectId, writerDeps)
+          : emitWorkFailedEvent(eventsPath, taskId, projectId, `Exit code ${exitCode}`, writerDeps);
+        emitEvent.catch((err) => console.error(JSON.stringify({ level: "error", message: "Lifecycle event write failed", error: String(err) })));
+
+        // Release from governor + notify
+        governor.release(taskId).catch(() => {});
+        sseManager.broadcast({
+          type: "task:updated",
+          payload: { taskId, projectId },
+          timestamp: new Date().toISOString(),
+        });
       }
-    });
+    );
 
     // 4. Process governor
     const governorDeps = {
@@ -202,17 +245,6 @@ if (isMainModule) {
 
     // 9. File watcher
     const fileWatcher = new FileWatcher({ watch: chokidar.watch });
-
-    // 10. Event writer deps
-    const writerDeps = {
-      appendFile: (p: string, d: string) => appendFile(p, d),
-      lock: async (p: string) => {
-        const release = await lockfile.lock(p, { retries: 3 });
-        return release;
-      },
-      ensureDir: (p: string) => { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); },
-      ensureFile: (p: string) => { if (!fs.existsSync(p)) fs.writeFileSync(p, ""); },
-    };
 
     // Replay events for each project
     const fsDeps = {
@@ -277,8 +309,11 @@ if (isMainModule) {
       adapter,
       sseManager,
       projectManager,
+      chatStore,
       emitTaskCreatedEvent: (fp, tid, pid, desc, intent, priority) =>
         emitTaskCreatedEvent(fp, tid, pid, desc, intent, priority, writerDeps),
+      emitPhaseStartedEvent: (fp, tid, pid, phase) =>
+        emitPhaseStartedEvent(fp, tid, pid, phase, writerDeps),
       readGlobalSettings: async () => {
         if (!fs.existsSync(settingsPath)) return {};
         try {
