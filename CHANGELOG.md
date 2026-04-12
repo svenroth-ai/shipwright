@@ -5,6 +5,132 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-04-12
+
+WebUI Command Center — v0.1 triage second round. Three thematic iterate
+runs (retroactively documented): persistent Claude process architecture,
+chat rendering redesign via companion port, and VS Code permission modes.
+Eliminates the 5–10s cold-start penalty on every chat follow-up (6× speedup
+measured), fixes broken markdown tables, and aligns the permission UX with
+the VS Code Claude extension.
+
+### Fixed
+- **Cold-start eliminated on chat follow-ups** — switched from spawn-per-message
+  to a single persistent Claude CLI process per task using `--input-format
+  stream-json`. Measured: initial task 15.35s (cold, one-off) → follow-up
+  chat 2.57s (warm). ~6× speedup. (commits 97f10bd, 17be46a, 60167fa, ec9b0e1)
+- **Markdown tables render correctly** — previously collapsed into garbage
+  like `"SpieleTordiff.Punkte"` due to `@tailwindcss/typography` cell
+  handling. Replaced with explicit `react-markdown` component overrides
+  ported from companion (MIT). (commit 15928b8)
+- **Horizontal scroll bar in chat** — long Bash commands and JSON tool
+  inputs pushed the chat container wider than viewport. Fixed via
+  `min-w-0 overflow-x-hidden` on flex containers and `max-w-full
+  break-words` on `<pre>` elements. (commit 840e888)
+- **SSE named events never received by client** — pre-existing bug where
+  `EventSource.onmessage` was used instead of `addEventListener(eventType,
+  handler)`. Server emits `event: chat:message\n...` which onmessage does
+  NOT catch. Fixed all named SSE events at once. (commit 97f10bd)
+- **Streaming indicator appeared too late** — only fired after Claude's
+  first NDJSON event (~5–10s delay). Now fires immediately on user-send
+  via `isAwaitingResponse` helper combining `streaming.isStreaming ||
+  lastMessageIsUser || sendChat.isPending`. (commit f2c0032)
+- **Task Kanban status stuck in backlog** — `/tasks` and `/tasks/:id/start`
+  spawned Claude but never emitted `phase_started` events. Kanban board
+  now transitions to "In Progress" immediately. (commit 17be46a)
+- **Permission popover stayed open after select** — wrapped each mode
+  button in `Popover.Close asChild` so clicking commits AND closes.
+  (commit 265ec07)
+- **`result` + `assistant` duplicate rendering** — Claude CLI emits both
+  with identical content at end of each turn. Deduped in `ChatPanel` via
+  `dedupeMessages` helper. (commit f2c0032)
+- **`system/init` NDJSON blob rendered as giant text wall** — now collapsed
+  to `"Session started · claude-opus-4-6"` one-liner. (commit 840e888)
+
+### Added
+- **Image upload in chat** via paperclip button (file picker) and clipboard
+  paste. Attached images shown as 48×48 thumbnails above the textarea with
+  remove button. Sent to Claude CLI as multimodal content blocks (`{type:
+  "image", source: {type: "base64", media_type, data}}`). Persisted on
+  user messages, shown as thumbnails on reload. (commit 15928b8)
+- **VS Code-style permission modes** — 4 modes with icons and descriptions
+  matching the VS Code Claude extension: Ask before edits (Hand icon) /
+  Edit automatically (Code2) / Plan mode (ClipboardList) / Bypass
+  permissions (Link2, default). Wired to `--permission-mode <mode>` or
+  `--dangerously-skip-permissions` on spawn. Legacy localStorage values
+  auto-migrated. (commit 27fce3a)
+- **MarkdownContent component** ported from The-Vibe-Company/companion
+  (MIT) — full artifact support: headings h1–h4, paragraphs, lists,
+  tables with borders, blockquotes, hr, links, inline code, fenced code
+  blocks with language header. (commit 15928b8)
+- **Task lifecycle events** — `phase_started` emitted on task creation
+  (Kanban transitions to "In Progress"), `work_completed` / `work_failed`
+  emitted on Claude CLI exit via adapter `onExit` callback. (commit 17be46a)
+- **`useStreamingSSE` hook** — consumes named SSE events and feeds NDJSON
+  messages into the streaming chat UI state in real time. (commit 97f10bd)
+- **`ThinkingBlock` component** — collapsible block for Claude's thinking
+  output with character count. (commit 97f10bd)
+- **`ToolIconTile` component** — colored icon tiles per tool type (blue
+  for Read/Grep/Glob, amber for Edit/Write, green for Bash, purple for
+  Agent/Task). (commit 840e888)
+- **`PermissionMode.tsx` rewrite** with Radix Popover + Lucide icons +
+  descriptions + active checkmark. (commit 27fce3a)
+- **`readFileAsBase64` helper** (ported from companion MIT). (commit 15928b8)
+
+### Changed
+- **Claude CLI process model**: one persistent process per task instead
+  of spawn-per-message. stdin=pipe, NDJSON user messages written via new
+  `sendUserMessage(proc, content)` API. Process stays alive throughout
+  the conversation. (commit ec9b0e1)
+- **Default permission mode** is now `bypassPermissions` (was `default`).
+  Matches VS Code extension default. (commit 27fce3a)
+- **Claude messages** render as white rounded cards with subtle shadow
+  on the beige chat background. **User messages** render as left-aligned
+  grey bubbles (`#d4cbbc`), no longer right-aligned primary-brown bubbles.
+  (commits 840e888, 27fce3a, 265ec07)
+- **All NDJSON message types persisted** in chat-store (assistant, tool_use,
+  tool_result, thinking, system, result) — previously only assistant text
+  was saved, tool calls were lost on reload. Legacy JSON-blob rows
+  auto-migrated on read. (commit 97f10bd)
+- **`useCreateTask`** forwards `mode` + `model` in the POST `/tasks` body.
+- **`useChat`** forwards `images` in the POST `/chat` body.
+- **SSE `chat:message` payload** now includes `projectId` so the client
+  can invalidate the correct query cache key. (commit 97f10bd)
+
+### Removed
+- **`SessionRegistry`** (server/src/core/session-registry.ts + tests). It
+  was introduced in 60167fa to map our task UUID to Claude's real session
+  id for `--resume <sessionId>` respawn support, then deleted in ec9b0e1
+  because the persistent process IS the session — no lookup needed.
+  ~350 LOC removed. (commit ec9b0e1)
+- **`--dangerously-skip-permissions` as unconditional flag** — now
+  conditional on mode selection. (commit 27fce3a)
+
+### Attribution
+- `MarkdownContent.tsx` and `image.ts` ported from
+  [The-Vibe-Company/companion](https://github.com/The-Vibe-Company/companion)
+  (MIT license) — `web/src/components/MessageBubble.tsx` and
+  `web/src/utils/image.ts` respectively. Same React 19 + remark-gfm
+  stack. Company's `cc-*` Tailwind tokens swapped for our `--color-*`
+  CSS custom properties; structurally identical.
+
+### Iterate Runs (retroactive backfill)
+This v0.1.2 release was made via a retroactive backfill after 12 commits
+had already landed on `main` without going through `/shipwright-iterate`.
+Three thematic iterate runs were documented retroactively:
+- `iterate-2026-04-12-persistent-process` (ADR-009, complexity medium)
+- `iterate-2026-04-12-chat-rendering` (ADR-010, complexity medium)
+- `iterate-2026-04-12-permission-modes` (ADR-011, complexity small)
+See `webui/planning/iterate/` for specs and `webui/agent_docs/decision_log.md`
+for the ADRs.
+
+### Tests
+- Server: 189 / 189 passing (added tests for persistent adapter,
+  multimodal sendUserMessage, permission mode coercion)
+- Client: 164 / 164 passing (added tests for markdown tables, image
+  upload flow, permission mode component)
+- E2E: 17 / 17 passing
+
 ## [0.1.1] - 2026-04-12
 
 Focused triage and fix round for the WebUI Command Center. The Kanban board
@@ -113,5 +239,6 @@ pipeline built on Claude Code, from project description to deployed application.
 - Kanban board scroll overflow handling
 - Task creation ENOENT and project directory initialization
 
+[0.1.2]: https://github.com/svenroth-ai/shipwright/releases/tag/v0.1.2
 [0.1.1]: https://github.com/svenroth-ai/shipwright/releases/tag/v0.1.1
 [0.1.0]: https://github.com/svenroth-ai/shipwright/releases/tag/v0.1.0
