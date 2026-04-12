@@ -32,7 +32,7 @@ export function KanbanBoard({ tasks, onNewTask }: KanbanBoardProps) {
   }, [tasks]);
 
   return (
-    <div className="flex gap-4 flex-1 overflow-x-auto h-full items-start">
+    <div className="flex gap-4 overflow-x-auto h-full">
       {VISIBLE_COLUMNS.map((status) => {
         let columnTasks = grouped[status];
 
