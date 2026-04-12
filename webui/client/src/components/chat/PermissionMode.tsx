@@ -86,28 +86,29 @@ export function PermissionMode({ mode, onChange }: PermissionModeProps) {
             const MIcon = m.icon;
             const isActive = m.value === mode;
             return (
-              <button
-                key={m.value}
-                onClick={() => onChange(m.value)}
-                className={`flex items-start gap-3 w-full px-3 py-2.5 text-left hover:bg-[var(--color-muted-bg,#ede8e1)] transition-colors ${
-                  isActive ? 'bg-[var(--color-muted-bg,#ede8e1)]' : ''
-                }`}
-              >
-                <div className="flex items-center justify-center w-7 h-7 rounded-md bg-gray-100 text-gray-600 shrink-0 mt-0.5">
-                  <MIcon size={14} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-semibold text-gray-900 flex items-center gap-2">
-                    {m.label}
+              <Popover.Close asChild key={m.value}>
+                <button
+                  onClick={() => onChange(m.value)}
+                  className={`flex items-start gap-3 w-full px-3 py-2.5 text-left hover:bg-[var(--color-muted-bg,#ede8e1)] transition-colors ${
+                    isActive ? 'bg-[var(--color-muted-bg,#ede8e1)]' : ''
+                  }`}
+                >
+                  <div className="flex items-center justify-center w-7 h-7 rounded-md bg-gray-100 text-gray-600 shrink-0 mt-0.5">
+                    <MIcon size={14} />
                   </div>
-                  <div className="text-[11px] text-gray-500 leading-snug mt-0.5">
-                    {m.description}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-semibold text-gray-900 flex items-center gap-2">
+                      {m.label}
+                    </div>
+                    <div className="text-[11px] text-gray-500 leading-snug mt-0.5">
+                      {m.description}
+                    </div>
                   </div>
-                </div>
-                {isActive && (
-                  <Check size={14} className="text-[var(--color-primary,#6b5e56)] shrink-0 mt-1" />
-                )}
-              </button>
+                  {isActive && (
+                    <Check size={14} className="text-[var(--color-primary,#6b5e56)] shrink-0 mt-1" />
+                  )}
+                </button>
+              </Popover.Close>
             );
           })}
         </Popover.Content>
