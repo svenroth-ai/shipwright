@@ -27,7 +27,7 @@ export interface TaskRouteDeps {
 }
 
 function buildPrompt(title: string, description?: string): string {
-  if (description) return `${title}\n\n${description}`;
+  if (description) return `${title} — ${description}`;
   return title;
 }
 

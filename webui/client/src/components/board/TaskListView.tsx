@@ -22,7 +22,7 @@ export function TaskListView({ tasks }: TaskListViewProps) {
       let cmp = 0;
       switch (sortField) {
         case 'title':
-          cmp = a.description.localeCompare(b.description);
+          cmp = a.title.localeCompare(b.title);
           break;
         case 'phase':
           cmp = (a.currentPhase ?? '').localeCompare(b.currentPhase ?? '');
@@ -81,12 +81,13 @@ export function TaskListView({ tasks }: TaskListViewProps) {
               Commit
             </th>
             <SortHeader field="updated" label="Updated" />
+            <th className="py-2.5 px-2 w-8" />
           </tr>
         </thead>
         <tbody>
           {sorted.length === 0 ? (
             <tr>
-              <td colSpan={7} className="py-8 text-center text-sm text-gray-400">
+              <td colSpan={8} className="py-8 text-center text-sm text-gray-400">
                 No tasks match current filters
               </td>
             </tr>

@@ -72,8 +72,18 @@ const isMainModule =
   (process.argv[1].endsWith("index.ts") ||
     process.argv[1].endsWith("index.js"));
 
+
 if (isMainModule) {
-  void (async () => {
+  void (async () => { try {
+    // Safety net: never crash the server on unhandled errors
+    process.on("uncaughtException", (err) => {
+      console.error(JSON.stringify({ level: "error", message: "Uncaught exception (server stays alive)", error: String(err), stack: err.stack }));
+    });
+    process.on("unhandledRejection", (reason) => {
+      console.error(JSON.stringify({ level: "error", message: "Unhandled rejection (server stays alive)", error: String(reason) }));
+    });
+
+
     // 1. Core stores
     const eventStore = new EventStore();
     const sseManager = new SSEManager();
@@ -87,7 +97,7 @@ if (isMainModule) {
     };
     const chatStore = new ChatStore(chatStoreDeps);
 
-    // 3. Claude adapter with event forwarding
+    // 3. Claude adapter with event forwarding + chat persistence
     const adapter = new ClaudeAdapter({ spawn }, (taskId, msg) => {
       // Forward to SSE
       sseManager.broadcast({
@@ -95,6 +105,25 @@ if (isMainModule) {
         payload: { taskId, message: msg },
         timestamp: new Date().toISOString(),
       });
+
+      // Persist assistant messages to chat store
+      if (msg.type === "assistant" && msg.message) {
+        // Find the project for this task
+        const allProjects = projectManager.getAll();
+        for (const proj of allProjects) {
+          const task = taskManager.getTaskById(proj.id, taskId);
+          if (task) {
+            chatStore.append(proj.path, taskId, {
+              id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+              taskId,
+              type: "assistant",
+              content: typeof msg.message === "string" ? msg.message : JSON.stringify(msg.message),
+              timestamp: new Date().toISOString(),
+            }).catch((err) => console.error(JSON.stringify({ level: "error", message: "Chat persist error", error: String(err) })));
+            break;
+          }
+        }
+      }
 
       // Check for AskUserQuestion
       if (isAskUserQuestion(msg)) {
@@ -136,8 +165,10 @@ if (isMainModule) {
       mkdirSync: (p: string, o?: { recursive: boolean }) => fs.mkdirSync(p, o),
       readdirSync: (p: string, o?: { withFileTypes: boolean }) => fs.readdirSync(p, o as any) as any,
     };
+
     const projectManager = new ProjectManager(`${config.registryDir}/projects.json`, projectManagerDeps);
     await projectManager.load();
+
 
     // 7. Task manager
     const taskManager = new TaskManager(eventStore);
@@ -179,10 +210,14 @@ if (isMainModule) {
     };
 
     for (const project of projectManager.getAll()) {
+
       const eventsPath = `${project.path}/shipwright_events.jsonl`;
       const events = await readEventsFromFile(eventsPath, fsDeps);
+
       eventStore.replayProject(project.id, events);
+
       await inboxManager.loadFromDisk(project.id, project.path);
+
 
       fileWatcher.watchProject(project.id, project.path, (type, _path) => {
         if (type === "event") {
@@ -202,8 +237,10 @@ if (isMainModule) {
       });
     }
 
+
     // Cleanup orphans and start heartbeat
-    await governor.cleanupOrphans();
+    const orphanResult = await governor.cleanupOrphans();
+    console.log("[boot] Orphan cleanup:", orphanResult);
     heartbeat.start();
 
     // Settings deps
@@ -265,9 +302,14 @@ if (isMainModule) {
     process.on("SIGINT", shutdown);
 
     // Start server
+
     serve({ fetch: app.fetch, port: config.port }, (info) => {
       console.log(`Shipwright Command Center listening on http://localhost:${info.port}`);
     });
+  } catch (err) {
+    console.error("FATAL: Server startup failed:", err);
+    process.exit(1);
+  }
   })();
 }
 
