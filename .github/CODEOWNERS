@@ -1,0 +1,27 @@
+# Shipwright CODEOWNERS
+#
+# Order matters: the last matching pattern takes precedence.
+# Every PR requires review from the listed owner(s) for the touched paths.
+#
+# See: https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default: the maintainer reviews everything
+*                               @svenroth-ai
+
+# High-sensitivity paths — must be reviewed manually, no auto-merge
+plugins/*/hooks/                @svenroth-ai
+plugins/*/skills/               @svenroth-ai
+plugins/*/agents/               @svenroth-ai
+plugins/*/scripts/              @svenroth-ai
+
+# The security plugin itself — especially sensitive
+plugins/shipwright-security/    @svenroth-ai
+
+# The orchestrator controls the entire pipeline
+plugins/shipwright-run/         @svenroth-ai
+
+# Shared libraries affect every plugin
+shared/                         @svenroth-ai
+
+# CI/CD — changes could compromise releases or leak secrets
+.github/                        @svenroth-ai

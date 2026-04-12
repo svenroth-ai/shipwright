@@ -1,0 +1,119 @@
+name: Bug Report
+description: Report a reproducible problem in Shipwright
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out this template completely so we can reproduce and fix the issue.
+
+        **For security vulnerabilities, do not use this form.** See [SECURITY.md](../SECURITY.md) instead.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: A clear, concise description of the bug.
+      placeholder: When I run `/shipwright-run`, the pipeline fails at the build step with...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: plugin
+    attributes:
+      label: Which plugin?
+      description: Select the plugin where the bug occurs
+      options:
+        - shipwright-run (orchestrator)
+        - shipwright-project
+        - shipwright-design
+        - shipwright-plan
+        - shipwright-build
+        - shipwright-test
+        - shipwright-security
+        - shipwright-deploy
+        - shipwright-changelog
+        - shipwright-compliance
+        - shipwright-iterate
+        - shipwright-preview
+        - webui
+        - shared / other
+        - not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal reproduction steps
+      placeholder: |
+        1. Clone the repo
+        2. Run `/shipwright-run "..."`
+        3. Observe error X
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened? Include error messages.
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: shipwright-version
+    attributes:
+      label: Shipwright version
+      description: Output of `git rev-parse HEAD` or the release tag you're on
+      placeholder: e.g. v0.9.0-beta.1 or commit hash
+    validations:
+      required: true
+
+  - type: input
+    id: claude-version
+    attributes:
+      label: Claude Code version
+      description: Output of `claude --version`
+      placeholder: e.g. 2.1.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - WSL
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Any error output, stack traces, or `agent_docs/` session handoff content
+      render: shell
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have searched existing issues and this is not a duplicate
+          required: true
+        - label: I have read [SECURITY.md](../SECURITY.md) and confirmed this is not a security vulnerability
+          required: true

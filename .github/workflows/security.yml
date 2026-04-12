@@ -1,0 +1,130 @@
+name: Security Scan
+
+# DORMANT: Auto-triggers are disabled until Phase B (Go-Live).
+# To activate: uncomment the pull_request and schedule triggers below.
+on:
+  # pull_request:
+  #   branches: [main]
+  # schedule:
+  #   - cron: '0 6 * * 1'  # Monday 06:00 UTC — weekly full scan
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write  # to post PR comments
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: Shipwright Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # needed for diff against origin/main
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.11
+
+      - name: Install shipwright-security dependencies
+        working-directory: plugins/shipwright-security
+        run: uv sync
+
+      # --- OSS scanner installation ---
+
+      - name: Install Semgrep
+        run: pip install semgrep
+
+      - name: Install Trivy
+        run: |
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo gpg --dearmor -o /usr/share/keyrings/trivy.gpg
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+
+      - name: Install Gitleaks
+        run: |
+          GITLEAKS_VERSION="8.21.2"
+          wget -qO- "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar xz
+          sudo mv gitleaks /usr/local/bin/
+          gitleaks version
+
+      # --- Run scans ---
+
+      - name: Run OSS security scan (Semgrep + Trivy + Gitleaks)
+        working-directory: plugins/shipwright-security
+        run: |
+          uv run scripts/tools/scan.py \
+            --path ../.. \
+            --output ${{ github.workspace }}/findings.json \
+            --scan-types sast,sca,secret-detection \
+            --repo "${{ github.repository }}"
+        continue-on-error: true  # don't fail the step; let the threshold check decide
+
+      - name: Run Prompt Injection scan
+        working-directory: plugins/shipwright-security
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            uv run scripts/tools/prompt_injection_scan.py \
+              --diff origin/${{ github.base_ref }} \
+              --path ../.. \
+              --output ${{ github.workspace }}/prompt_risks.json \
+              --repo "${{ github.repository }}"
+          else
+            uv run scripts/tools/prompt_injection_scan.py \
+              --full \
+              --path ../.. \
+              --output ${{ github.workspace }}/prompt_risks.json \
+              --repo "${{ github.repository }}"
+          fi
+        continue-on-error: true
+
+      - name: Generate combined report
+        working-directory: plugins/shipwright-security
+        run: |
+          uv run scripts/tools/generate_security_report.py \
+            --input ${{ github.workspace }}/findings.json \
+            --prompt-risks ${{ github.workspace }}/prompt_risks.json \
+            --output ${{ github.workspace }}/report.md \
+            --repo "${{ github.repository }}" \
+            --pr-mode
+
+      - name: Post PR comment
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: ${{ github.workspace }}/report.md
+          edit-mode: replace
+
+      - name: Check for critical findings
+        shell: bash
+        run: |
+          set -e
+          critical=$(jq '[.findings[]? | select(.severity == "critical")] | length' findings.json 2>/dev/null || echo 0)
+          prompt_critical=$(jq '[.findings[]? | select(.severity == "critical")] | length' prompt_risks.json 2>/dev/null || echo 0)
+          total=$((critical + prompt_critical))
+          echo "Critical findings: $total"
+          if [ "$total" -gt 0 ]; then
+            echo "::error::Found $total critical security findings — blocking merge"
+            exit 1
+          fi
+
+      - name: Upload scan artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results
+          path: |
+            findings.json
+            prompt_risks.json
+            report.md
+          retention-days: 30

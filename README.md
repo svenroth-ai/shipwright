@@ -1,6 +1,11 @@
 # Shipwright SDLC
 
+![Status](https://img.shields.io/badge/status-early--access--beta-orange)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
 AI-powered software delivery lifecycle framework built on [Claude Code](https://docs.anthropic.com/en/docs/claude-code). From user description to deployed, tested, secured application — in one command.
+
+> **Early Access Beta:** Shipwright is currently in Early Access. Expect rough edges. Please [report issues](https://github.com/svenroth-ai/shipwright/issues/new/choose) — but do not use it for production-critical workflows without thorough evaluation.
 
 ## What is Shipwright?
 
@@ -147,6 +152,43 @@ plugins/shipwright-{name}/
 9. **Progressive disclosure** — CLAUDE.md stays lean (~200 lines), details live in `@agent_docs/`
 
 For the complete documentation — including phase-by-phase details, configuration, troubleshooting, and the full constitution — see **[docs/guide.md](docs/guide.md)**.
+
+## Security
+
+Shipwright uses its own `shipwright-security` plugin to scan every change to this repository. Every commit on `main` has passed:
+
+- **Semgrep** — Static Application Security Testing (SAST)
+- **Trivy** — Software Composition Analysis (SCA, CVE detection)
+- **Gitleaks** — Secret detection in code and git history
+- **Shipwright Prompt Injection Scanner** — Custom scanner for malicious patterns in skill definitions, hooks, and agent files (Claude Code specific)
+- **CodeQL** — GitHub's SAST engine
+
+We dogfood our own security tooling — the same plugin that ships with Shipwright protects Shipwright itself.
+
+### Running the scanners locally
+
+```bash
+# Semgrep + Trivy + Gitleaks
+uv run plugins/shipwright-security/scripts/tools/scan.py \
+  --path . --output findings.json
+
+# Shipwright Prompt Injection Scanner
+uv run plugins/shipwright-security/scripts/tools/prompt_injection_scan.py \
+  --full --path . --output prompt_risks.json
+
+# Combined Markdown report
+uv run plugins/shipwright-security/scripts/tools/generate_security_report.py \
+  --input findings.json --prompt-risks prompt_risks.json \
+  --output security_report.md
+```
+
+### Reporting vulnerabilities
+
+See [SECURITY.md](SECURITY.md) for our vulnerability disclosure policy. Do not file public issues for security problems — use [GitHub Security Advisories](https://github.com/svenroth-ai/shipwright/security/advisories/new).
+
+## Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR. Note that changes to skills, hooks, or agents require a preceding GitHub issue for discussion — this is part of our security model.
 
 ## Quality & Safety
 
