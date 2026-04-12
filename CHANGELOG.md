@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-04-12
+
+Focused triage and fix round for the WebUI Command Center. The Kanban board
+now reflects real task lifecycle, chat follow-ups actually reach Claude, and
+the chat visuals match design mockup 11.
+
+### Fixed
+
+- **Task lifecycle events** — clicking Start (or creating with `startImmediately`)
+  now transitions the Kanban card to In Progress and, on Claude CLI exit, to Done
+  or Failed. Previously the governor spawned the process but never emitted
+  `phase_started` / `work_completed` / `work_failed` events, so tasks stayed in
+  Backlog forever.
+- **Interactive chat** — chat follow-ups previously returned "Task is not
+  running" because Claude CLI was launched in print mode (`-p`) and exited
+  after the first response, leaving `sendStdin` writing into `stdio=ignore`.
+  Each chat POST now spawns a fresh Claude process with `--resume <sessionId>`
+  and the user message as the new prompt.
+- **Session ID capture** — Claude CLI ignores the UUID we pass to `--session-id`
+  and generates its own internally. New `SessionRegistry` captures the real
+  `session_id` from the first `system/init` NDJSON event and persists it to
+  `~/.shipwright-webui/sessions.json` so follow-ups can resolve the correct
+  session for `--resume`.
+- **Chat rendering** — components now match mockup `11-task-detail.html`:
+  Claude messages have an avatar + sender label + flat content (no bubble),
+  tool cards are white with colored icon tiles (blue Read/Grep/Glob,
+  amber Edit/Write, green Bash, purple Agent/Task), monospace titles formatted
+  as `Run <cmd>` / `Read <path>`, and a Done/Error status badge.
+- **Horizontal scroll** — `min-w-0` + `overflow-x-hidden` on the chat container
+  and `max-w-full break-words` on tool card `pre` elements eliminate the
+  horizontal scrollbar when long Bash commands or JSON inputs appear.
+- **System init noise** — the giant `system/init` NDJSON blob is now collapsed
+  to a subtle "Session started · claude-opus-4-6" line.
+- **Result deduplication** — Claude CLI emits both an `assistant` and a
+  `result` event with identical content; the UI now dedupes them.
+
+### Added
+
+- `SessionRegistry` core module with load/set/get + disk persistence (8 unit tests).
+- `ToolIconTile` component with per-tool color mapping matching the mockup.
+- `dedupeMessages` helper in ChatPanel.
+- `ClaudeSpawnOptions.resume` now supports `"explicit"` mode for
+  `--resume <sessionId>`.
+
+### Tests
+
+- Server: 197/197 (added SessionRegistry + chat route tests).
+- Client: 164/164 (updated chat component tests for new layout).
+
 ## [0.1.0] - 2026-04-12
 
 Initial release of the Shipwright SDLC Framework — an AI-powered development
@@ -64,4 +113,5 @@ pipeline built on Claude Code, from project description to deployed application.
 - Kanban board scroll overflow handling
 - Task creation ENOENT and project directory initialization
 
+[0.1.1]: https://github.com/svenroth-ai/shipwright/releases/tag/v0.1.1
 [0.1.0]: https://github.com/svenroth-ai/shipwright/releases/tag/v0.1.0
