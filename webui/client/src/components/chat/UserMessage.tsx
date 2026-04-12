@@ -15,7 +15,7 @@ export function UserMessage({ message }: UserMessageProps) {
   }).images;
 
   return (
-    <div className="bg-[#e8e2d8] text-gray-900 rounded-xl px-4 py-3 max-w-full min-w-0 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+    <div className="bg-[#d4cbbc] text-gray-900 rounded-xl px-4 py-3 max-w-full min-w-0 shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
       {images && images.length > 0 && (
         <div className="flex gap-2 flex-wrap mb-2">
           {images.map((img, i) => (
