@@ -54,3 +54,58 @@ export async function emitTaskCreatedEvent(
 
   return event;
 }
+
+export async function emitPhaseStartedEvent(
+  filePath: string,
+  taskId: string,
+  projectId: string,
+  phase: string,
+  deps: WriterDeps
+): Promise<ShipwrightEvent> {
+  const event: ShipwrightEvent = {
+    type: "phase_started",
+    timestamp: new Date().toISOString(),
+    task_id: taskId,
+    project_id: projectId,
+    phase,
+    source: "webui",
+  };
+  await appendEvent(filePath, event, deps);
+  return event;
+}
+
+export async function emitWorkCompletedEvent(
+  filePath: string,
+  taskId: string,
+  projectId: string,
+  deps: WriterDeps
+): Promise<ShipwrightEvent> {
+  const event: ShipwrightEvent = {
+    type: "work_completed",
+    timestamp: new Date().toISOString(),
+    task_id: taskId,
+    project_id: projectId,
+    source: "webui",
+  };
+  await appendEvent(filePath, event, deps);
+  return event;
+}
+
+export async function emitWorkFailedEvent(
+  filePath: string,
+  taskId: string,
+  projectId: string,
+  detail: string,
+  deps: WriterDeps
+): Promise<ShipwrightEvent> {
+  const event: ShipwrightEvent = {
+    type: "work_failed",
+    timestamp: new Date().toISOString(),
+    task_id: taskId,
+    project_id: projectId,
+    detail,
+    source: "webui",
+  };
+  await appendEvent(filePath, event, deps);
+  return event;
+}

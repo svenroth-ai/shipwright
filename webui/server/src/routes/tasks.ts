@@ -6,6 +6,7 @@ import type { ProcessGovernor } from "../core/process-governor.js";
 import type { ClaudeAdapter } from "../core/claude-adapter.js";
 import type { SSEManager } from "../core/sse-manager.js";
 import type { ProjectManager } from "../core/project-manager.js";
+import type { ChatStore } from "../core/chat-store.js";
 import { AppError } from "../middleware/error-handler.js";
 
 export interface TaskRouteDeps {
@@ -15,6 +16,7 @@ export interface TaskRouteDeps {
   adapter: ClaudeAdapter;
   sseManager: SSEManager;
   projectManager: ProjectManager;
+  chatStore?: ChatStore;
   emitTaskCreatedEvent: (
     filePath: string,
     taskId: string,
@@ -22,6 +24,12 @@ export interface TaskRouteDeps {
     description: string,
     intent?: string,
     priority?: string
+  ) => Promise<unknown>;
+  emitPhaseStartedEvent?: (
+    filePath: string,
+    taskId: string,
+    projectId: string,
+    phase: string
   ) => Promise<unknown>;
   readGlobalSettings?: () => Promise<Record<string, unknown>>;
 }
@@ -109,7 +117,26 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
           pluginDirs: project.settings?.claudePluginDirs ?? [],
           prompt: buildPrompt(title, description),
         });
-        if (result === "queued") startStatus = "queued";
+        if (result === "queued") {
+          startStatus = "queued";
+        } else {
+          // Emit phase_started so kanban updates to "in_progress"
+          deps.eventStore.addEvent(project.id, {
+            type: "phase_started",
+            timestamp: new Date().toISOString(),
+            task_id: taskId,
+            project_id: project.id,
+            phase: "build",
+          });
+          if (deps.emitPhaseStartedEvent) {
+            await deps.emitPhaseStartedEvent(eventsPath, taskId, project.id, "build");
+          }
+          deps.sseManager.broadcast({
+            type: "task:updated",
+            payload: { taskId, projectId: project.id },
+            timestamp: new Date().toISOString(),
+          });
+        }
       } catch (err) {
         // Task is created even if Claude CLI spawn fails
         console.error(JSON.stringify({ level: "warn", message: "Task created but process spawn failed", taskId, error: String(err) }));
@@ -138,14 +165,19 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
       throw new AppError("Task is already running", 409);
     }
 
+    // Check if this task has a prior chat history — only then resume.
+    // Without history, --continue would resume an UNRELATED session
+    // (Claude CLI's --continue resumes the last session in the cwd).
+    const hasPriorHistory = deps.chatStore?.exists(project.path, taskId) ?? false;
     const sessionId = randomUUID();
+    const eventsPath = `${project.path}/shipwright_events.jsonl`;
     try {
       const result = await deps.governor.acquire({
         projectDir: project.path,
         projectId: project.id,
         taskId,
         sessionId,
-        resume: true,
+        resume: hasPriorHistory,
         pluginDirs: project.settings?.claudePluginDirs ?? [],
         prompt: buildPrompt(task.title, task.description),
       });
@@ -153,6 +185,24 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
       if (result === "queued") {
         return c.json({ data: { taskId, status: "queued" } }, 202);
       }
+
+      // Emit phase_started so kanban updates to "in_progress"
+      deps.eventStore.addEvent(project.id, {
+        type: "phase_started",
+        timestamp: new Date().toISOString(),
+        task_id: taskId,
+        project_id: project.id,
+        phase: "build",
+      });
+      if (deps.emitPhaseStartedEvent) {
+        await deps.emitPhaseStartedEvent(eventsPath, taskId, project.id, "build");
+      }
+      deps.sseManager.broadcast({
+        type: "task:updated",
+        payload: { taskId, projectId: project.id },
+        timestamp: new Date().toISOString(),
+      });
+
       return c.json({ data: { taskId, status: "running" } });
     } catch (err) {
       console.error(JSON.stringify({ level: "warn", message: "Task start failed", taskId, error: String(err) }));

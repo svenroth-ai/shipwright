@@ -62,7 +62,8 @@ function resolveClaudeCommand(cliPath?: string): { command: string; prefixArgs: 
 export class ClaudeAdapter {
   constructor(
     private deps: SpawnDeps,
-    private onEvent: (taskId: string, msg: NdjsonMessage) => void
+    private onEvent: (taskId: string, msg: NdjsonMessage) => void,
+    private onExit?: (taskId: string, projectId: string, exitCode: number | null) => void
   ) {}
 
   spawn(options: ClaudeSpawnOptions): ClaudeProcess {
@@ -148,6 +149,13 @@ export class ClaudeAdapter {
     child.on("close", (code) => {
       claudeProcess.state = "exited";
       claudeProcess.exitCode = code ?? undefined;
+      if (this.onExit) {
+        try {
+          this.onExit(options.taskId, options.projectId, code);
+        } catch (err) {
+          console.error(JSON.stringify({ level: "error", message: "onExit handler failed", error: String(err) }));
+        }
+      }
     });
 
     return claudeProcess;
