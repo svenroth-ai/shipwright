@@ -17,8 +17,28 @@ interface ChatPanelProps {
   taskId: string;
 }
 
+/**
+ * Filter out duplicate "result" messages that echo the preceding assistant
+ * text. Claude CLI emits both an assistant event and a final result event
+ * with the same content — rendering both is noise.
+ */
+function dedupeMessages(messages: import('../../types').ChatMessage[]): import('../../types').ChatMessage[] {
+  const out: typeof messages = [];
+  for (const msg of messages) {
+    if (msg.type === 'result') {
+      const prev = out[out.length - 1];
+      if (prev && prev.type === 'assistant' && prev.content === msg.content) {
+        continue; // skip duplicate
+      }
+    }
+    out.push(msg);
+  }
+  return out;
+}
+
 export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
-  const { data: messages = [] } = useChat(projectId, taskId);
+  const { data: rawMessages = [] } = useChat(projectId, taskId);
+  const messages = dedupeMessages(rawMessages);
   const { data: project } = useProject(projectId);
   const { data: globalSettings } = useSettings();
   const sendChat = useSendChat();
@@ -57,9 +77,16 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
   }
 
   return (
-    <div className="flex flex-col h-full" data-testid="chat-panel">
-      {/* Message list */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div
+      className="flex flex-col h-full min-w-0 overflow-hidden"
+      style={{ background: 'var(--color-bg, #f5f0eb)' }}
+      data-testid="chat-panel"
+    >
+      {/* Message list — warm beige background, vertical scroll only */}
+      <div
+        ref={scrollRef}
+        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-6 py-5 flex flex-col gap-[18px]"
+      >
         {messages.length === 0 && !streaming.isStreaming && (
           <div className="text-center text-gray-400 text-sm py-8">
             <p>No messages yet.</p>

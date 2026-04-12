@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { ChevronRight, AlertTriangle } from 'lucide-react';
+import { ChevronRight, Check, AlertTriangle } from 'lucide-react';
 import type { ChatMessage } from '../../types';
-import { ToolIcon } from './ToolIcon';
+import { ToolIconTile } from './ToolIcon';
 
 interface ToolCallCardProps {
   message: ChatMessage;
@@ -10,6 +10,14 @@ interface ToolCallCardProps {
 
 const MAX_OUTPUT_LINES = 50;
 
+/**
+ * Matches mockup 11-task-detail.html .tool-card structure:
+ *   - White background, subtle border + shadow
+ *   - Colored icon tile (blue for Read, amber for Edit, green for Bash)
+ *   - Monospace title with file path / command
+ *   - Success/error status badge right-aligned
+ *   - Expandable body with input/output
+ */
 export function ToolCallCard({ message }: ToolCallCardProps) {
   const [open, setOpen] = useState(false);
   const [showFullOutput, setShowFullOutput] = useState(false);
@@ -23,70 +31,72 @@ export function ToolCallCard({ message }: ToolCallCardProps) {
     : typeof message.toolOutput === 'string'
       ? message.toolOutput
       : JSON.stringify(message.toolOutput, null, 2);
-  const summary = getSummary(toolName, input);
+  const title = formatTitle(toolName, input);
 
   const outputLines = output?.split('\n') ?? [];
   const isTruncated = outputLines.length > MAX_OUTPUT_LINES && !showFullOutput;
   const displayOutput = isTruncated ? outputLines.slice(0, MAX_OUTPUT_LINES).join('\n') : output;
 
-  // Error styling
-  const borderColor = isError ? 'border-red-300' : 'border-gray-200';
-  const bgColor = isError ? 'bg-red-50' : 'bg-gray-100';
-  const hoverBg = isError ? 'hover:bg-red-100' : 'hover:bg-gray-150';
-  const nameColor = isError ? 'text-red-700' : 'text-gray-700';
-  const summaryColor = isError ? 'text-red-400' : 'text-gray-400';
-
   return (
     <Collapsible.Root open={open} onOpenChange={setOpen}>
-      <div className={`${bgColor} rounded-lg border ${borderColor} overflow-hidden`}>
+      <div
+        className="bg-white rounded-lg overflow-hidden transition-all min-w-0 max-w-full"
+        style={{
+          border: `1px solid ${isError ? '#FCA5A5' : 'var(--color-border, #e0dbd4)'}`,
+          boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+          minHeight: '42px',
+        }}
+      >
         <Collapsible.Trigger asChild>
-          <button className={`flex items-center gap-2 px-3 py-2 w-full text-left ${hoverBg} cursor-pointer`}>
-            <ChevronRight
-              size={14}
-              className={`${isError ? 'text-red-400' : 'text-gray-400'} transition-transform ${open ? 'rotate-90' : ''}`}
-            />
-            {isError ? (
-              <AlertTriangle size={16} className="text-red-400 shrink-0" />
-            ) : (
-              <ToolIcon toolName={toolName} />
-            )}
-            <span className={`text-xs font-medium ${nameColor}`}>
-              {isResult ? `${toolName} result` : toolName}
+          <button
+            className="flex items-center gap-2.5 px-3.5 py-2.5 w-full text-left hover:bg-[var(--color-muted-bg,#ede8e1)] cursor-pointer transition-colors min-w-0"
+            style={{ minHeight: '42px' }}
+          >
+            <ToolIconTile toolName={toolName} />
+            <span className="flex-1 text-[13px] font-medium text-gray-900 font-mono truncate min-w-0">
+              {title}
             </span>
-            {isError && (
-              <span className="text-[10px] font-medium text-red-500 bg-red-100 px-1.5 py-0.5 rounded">
-                error
+            {isError ? (
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-red-600 shrink-0">
+                <AlertTriangle size={12} />
+                Error
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-green-700 shrink-0">
+                <Check size={12} />
+                {isResult ? 'Done' : 'Running'}
               </span>
             )}
-            {!open && summary && (
-              <span className={`text-xs ${summaryColor} truncate flex-1`}>{summary}</span>
-            )}
+            <ChevronRight
+              size={16}
+              className={`text-gray-400 shrink-0 transition-transform ${open ? 'rotate-90' : ''}`}
+            />
           </button>
         </Collapsible.Trigger>
 
         <Collapsible.Content>
-          <div className={`px-3 pb-3 border-t ${borderColor}`}>
+          <div className="border-t px-3.5 py-3 font-mono text-xs leading-relaxed bg-[#fafaf8] min-w-0 overflow-hidden" style={{ borderColor: 'var(--color-border, #e0dbd4)' }}>
             {input != null && !isResult && (
-              <div className="mt-2">
-                <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">Input</p>
-                <pre className="text-xs bg-gray-50 rounded p-2 overflow-x-auto max-h-[200px] overflow-y-auto">
+              <div className="mb-2">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-1">Input</div>
+                <pre className="text-xs bg-white rounded p-2 overflow-x-auto max-h-[200px] overflow-y-auto max-w-full border border-gray-100">
                   {typeof input === 'string' ? input : JSON.stringify(input, null, 2)}
                 </pre>
               </div>
             )}
             {(output || isResult) && (
-              <div className="mt-2">
-                <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-1">
                   {isResult ? 'Result' : 'Output'}
-                </p>
-                <pre className={`text-xs rounded p-2 overflow-x-auto max-h-[300px] overflow-y-auto whitespace-pre-wrap ${
-                  isError ? 'bg-red-50 text-red-800' : 'bg-gray-50'
+                </div>
+                <pre className={`text-xs rounded p-2 overflow-x-auto max-h-[300px] overflow-y-auto whitespace-pre-wrap max-w-full border break-words ${
+                  isError ? 'bg-red-50 text-red-800 border-red-200' : 'bg-white border-gray-100'
                 }`}>
                   {displayOutput || '(no output)'}
                 </pre>
                 {isTruncated && (
                   <button
-                    className="text-xs text-[var(--color-primary)] hover:underline mt-1"
+                    className="text-xs text-[var(--color-primary,#6b5e56)] hover:underline mt-1"
                     onClick={() => setShowFullOutput(true)}
                   >
                     Show more ({outputLines.length - MAX_OUTPUT_LINES} more lines)
@@ -101,13 +111,19 @@ export function ToolCallCard({ message }: ToolCallCardProps) {
   );
 }
 
-function getSummary(toolName: string, input: unknown): string {
-  if (!input || typeof input !== 'object') return '';
+function formatTitle(toolName: string, input: unknown): string {
+  if (!input || typeof input !== 'object') return toolName;
   const obj = input as Record<string, unknown>;
-  if (toolName === 'Bash') return String(obj.command ?? '').slice(0, 60);
-  if (toolName === 'Read' || toolName === 'Write' || toolName === 'Edit') return String(obj.file_path ?? obj.path ?? '');
-  if (toolName === 'Grep') return String(obj.pattern ?? '');
-  if (toolName === 'Glob') return String(obj.pattern ?? '');
-  if (toolName === 'Agent') return String(obj.description ?? '').slice(0, 60);
-  return '';
+  if (toolName === 'Bash') {
+    const cmd = String(obj.command ?? '');
+    return cmd ? `Run ${cmd}` : toolName;
+  }
+  if (toolName === 'Read') return `Read ${obj.file_path ?? obj.path ?? ''}`;
+  if (toolName === 'Write') return `Write ${obj.file_path ?? obj.path ?? ''}`;
+  if (toolName === 'Edit') return `Edit ${obj.file_path ?? obj.path ?? ''}`;
+  if (toolName === 'Grep') return `Grep ${obj.pattern ?? ''}`;
+  if (toolName === 'Glob') return `Glob ${obj.pattern ?? ''}`;
+  if (toolName === 'Agent' || toolName === 'Task') return `${toolName} ${obj.description ?? ''}`;
+  if (toolName === 'WebFetch' || toolName === 'WebSearch') return `${toolName} ${obj.url ?? obj.query ?? ''}`;
+  return toolName;
 }

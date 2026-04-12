@@ -12,13 +12,19 @@ const msg: ChatMessage = {
 };
 
 describe('AssistantMessage', () => {
-  it('renders markdown content', () => {
+  it('renders markdown content with Claude sender label', () => {
     render(<AssistantMessage message={msg} />);
+    expect(screen.getByText('Claude')).toBeInTheDocument();
     expect(screen.getByText('Hello')).toBeInTheDocument();
     expect(screen.getByText('bold')).toBeInTheDocument();
   });
 
-  it('renders streaming indicator when streaming', () => {
+  it('renders avatar "C"', () => {
+    render(<AssistantMessage message={msg} />);
+    expect(screen.getByText('C')).toBeInTheDocument();
+  });
+
+  it('renders streaming content with indicator', () => {
     render(<AssistantMessage content="Thinking..." isStreaming />);
     expect(screen.getByText('Thinking...')).toBeInTheDocument();
   });
