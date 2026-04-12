@@ -22,6 +22,7 @@ import { ProjectManager } from "./core/project-manager.js";
 import { TaskManager } from "./core/task-manager.js";
 import { InboxManager } from "./core/inbox-manager.js";
 import { ChatStore } from "./core/chat-store.js";
+import { SessionRegistry } from "./core/session-registry.js";
 import { FileWatcher } from "./core/file-watcher.js";
 import { readEventsFromFile } from "./bridge/event-reader.js";
 import { emitTaskCreatedEvent, emitPhaseStartedEvent, emitWorkCompletedEvent, emitWorkFailedEvent } from "./bridge/event-writer.js";
@@ -97,6 +98,18 @@ if (isMainModule) {
     };
     const chatStore = new ChatStore(chatStoreDeps);
 
+    // Session registry — tracks real Claude session_id per task for --resume
+    const sessionRegistry = new SessionRegistry(
+      {
+        readFile: (p: string, e: string) => readFile(p, e as BufferEncoding),
+        writeFile: (p: string, d: string) => writeFile(p, d),
+        existsSync: (p: string) => fs.existsSync(p),
+        mkdirSync: (p: string, o?: { recursive: boolean }) => fs.mkdirSync(p, o),
+      },
+      `${config.registryDir}/sessions.json`
+    );
+    await sessionRegistry.load();
+
     // Event writer deps — hoisted so adapter's onExit can use them
     const writerDeps = {
       appendFile: (p: string, d: string) => appendFile(p, d),
@@ -131,6 +144,14 @@ if (isMainModule) {
           payload: { taskId, projectId, message: msg },
           timestamp: new Date().toISOString(),
         });
+
+        // Capture real Claude session_id from system/init events
+        if (msg.type === "system" && typeof (msg as Record<string, unknown>).session_id === "string") {
+          const claudeSessionId = (msg as Record<string, unknown>).session_id as string;
+          sessionRegistry.set(taskId, claudeSessionId).catch((err) =>
+            console.error(JSON.stringify({ level: "error", message: "Session registry write failed", error: String(err) }))
+          );
+        }
 
         // Extract structured ChatMessages and persist ALL types
         const chatMessages = extractContentBlocks(taskId, msg);
@@ -325,7 +346,7 @@ if (isMainModule) {
       },
     }));
     app.route("/", createInboxRoutes(inboxManager, sseManager));
-    app.route("/", createChatRoutes(chatStore, governor, adapter, projectManager));
+    app.route("/", createChatRoutes(chatStore, governor, adapter, projectManager, taskManager, eventStore, sseManager, sessionRegistry));
     app.route("/", createPipelineRoutes(eventStore, projectManager));
     app.route("/", createDocsRoutes(projectManager));
     app.route("/", createClassifyRoutes(projectManager));
