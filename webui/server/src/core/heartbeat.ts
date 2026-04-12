@@ -4,6 +4,10 @@ export interface CronDeps {
   schedule: (expression: string, callback: () => void) => { stop: () => void };
 }
 
+export interface HeartbeatEventSink {
+  onDeadProcess: (taskId: string, projectId: string) => void;
+}
+
 export class HeartbeatScheduler {
   private job: { stop: () => void } | null = null;
 
@@ -11,6 +15,7 @@ export class HeartbeatScheduler {
     private governor: ProcessGovernor,
     private deps: GovernorDeps,
     private cronDeps: CronDeps,
+    private eventSink?: HeartbeatEventSink,
     private expression: string = "*/30 * * * * *"
   ) {}
 
@@ -38,6 +43,7 @@ export class HeartbeatScheduler {
           })
         );
         this.governor.release(proc.taskId);
+        this.eventSink?.onDeadProcess(proc.taskId, proc.projectId);
       }
     }
     console.log(

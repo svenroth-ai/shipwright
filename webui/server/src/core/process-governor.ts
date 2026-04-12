@@ -1,3 +1,4 @@
+import path from "path";
 import type { ClaudeProcess, ClaudeSpawnOptions, ClaudeAdapter } from "./claude-adapter.js";
 
 export interface GovernorDeps {
@@ -8,36 +9,6 @@ export interface GovernorDeps {
   existsSync: (path: string) => boolean;
   mkdirSync: (path: string, opts?: { recursive: boolean }) => void;
 }
-
-export const defaultGovernorDeps: GovernorDeps = {
-  isProcessRunning: (pid: number) => {
-    try {
-      process.kill(pid, 0);
-      return true;
-    } catch {
-      return false;
-    }
-  },
-  kill: (pid: number, signal?: string) => {
-    process.kill(pid, signal as NodeJS.Signals);
-  },
-  readFile: async (path, encoding) => {
-    const fs = await import("fs/promises");
-    return fs.readFile(path, encoding as BufferEncoding);
-  },
-  writeFile: async (path, data) => {
-    const fs = await import("fs/promises");
-    await fs.writeFile(path, data);
-  },
-  existsSync: (path) => {
-    const fs = require("fs");
-    return fs.existsSync(path);
-  },
-  mkdirSync: (path, opts) => {
-    const fs = require("fs");
-    fs.mkdirSync(path, opts);
-  },
-};
 
 export class ProcessGovernor {
   private activeProcesses = new Map<string, ClaudeProcess>();
@@ -72,7 +43,7 @@ export class ProcessGovernor {
   }
 
   async persistPids(): Promise<void> {
-    const dir = this.pidFilePath.substring(0, this.pidFilePath.lastIndexOf("/"));
+    const dir = path.dirname(this.pidFilePath);
     if (dir && !this.deps.existsSync(dir)) {
       this.deps.mkdirSync(dir, { recursive: true });
     }
@@ -81,11 +52,12 @@ export class ProcessGovernor {
       .map((p) => ({
         pid: p.pid,
         taskId: p.taskId,
+        spawnedAt: p.spawnedAt,
       }));
     await this.deps.writeFile(this.pidFilePath, JSON.stringify(pids));
   }
 
-  async loadPids(): Promise<Array<{ pid: number; taskId: string }>> {
+  async loadPids(): Promise<Array<{ pid: number; taskId: string; spawnedAt?: number }>> {
     if (!this.deps.existsSync(this.pidFilePath)) return [];
     try {
       const content = await this.deps.readFile(this.pidFilePath, "utf-8");
@@ -108,6 +80,13 @@ export class ProcessGovernor {
         continue;
       }
       if (this.deps.isProcessRunning(entry.pid)) {
+        // Only kill if we have a spawn timestamp and process is < 24h old
+        // (mitigates PID recycling — stale PIDs from days ago are likely reused)
+        const age = entry.spawnedAt ? Date.now() - entry.spawnedAt : Infinity;
+        if (age > 86_400_000) {
+          stale++;
+          continue;
+        }
         try {
           this.deps.kill(entry.pid);
           killed++;

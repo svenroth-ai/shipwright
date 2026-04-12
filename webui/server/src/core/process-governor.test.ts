@@ -23,6 +23,7 @@ function mockAdapter(): ClaudeAdapter {
       projectId: opts.projectId,
       sessionId: opts.sessionId ?? opts.taskId,
       state: "running",
+      spawnedAt: Date.now(),
       process: {} as any,
     })),
   } as unknown as ClaudeAdapter;
@@ -85,8 +86,8 @@ describe("ProcessGovernor", () => {
     const deps = mockDeps();
     (deps.readFile as any).mockResolvedValue(
       JSON.stringify([
-        { pid: 111, taskId: "orphan1" },
-        { pid: 222, taskId: "stale1" },
+        { pid: 111, taskId: "orphan1", spawnedAt: Date.now() - 60_000 },
+        { pid: 222, taskId: "stale1", spawnedAt: Date.now() - 60_000 },
       ])
     );
     (deps.isProcessRunning as any).mockImplementation((pid: number) => pid === 111);
