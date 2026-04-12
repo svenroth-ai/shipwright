@@ -82,10 +82,19 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
   const handleStreamEnd = useCallback(() => streaming.endStream(), [streaming.endStream]);
   useStreamingSSE(taskId, handleStreamMessage, handleStreamStart, handleStreamEnd);
 
-  function handleSend(message: string, settings: { model: string; mode: string; effort: string; autonomy: string }) {
+  function handleSend(payload: import('./ChatInput').ChatSendPayload) {
     setChatError(null);
     sendChat.mutate(
-      { projectId, taskId, message, ...settings },
+      {
+        projectId,
+        taskId,
+        message: payload.message,
+        ...(payload.images ? { images: payload.images } : {}),
+        model: payload.model,
+        mode: payload.mode,
+        effort: payload.effort,
+        autonomy: payload.autonomy,
+      },
       {
         onError: (err) => {
           if (err instanceof ApiError && err.status === 400) {

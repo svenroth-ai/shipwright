@@ -25,7 +25,7 @@ describe('ChatPanel', () => {
     renderPanel();
     await waitFor(() => {
       expect(screen.getByTestId('chat-panel')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Send a message...')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Send a message or paste an image...')).toBeInTheDocument();
     });
   });
 
