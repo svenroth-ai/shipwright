@@ -30,7 +30,7 @@ export function KanbanColumn({ title, tasks, status, onNewTask }: KanbanColumnPr
   const style = COLUMN_STYLES[status] ?? COLUMN_STYLES.backlog;
 
   return (
-    <div className={`min-w-[280px] w-[280px] shrink-0 flex flex-col max-h-full rounded-xl overflow-hidden ${style.bg}`}>
+    <div className={`min-w-[280px] w-[280px] shrink-0 flex flex-col h-full rounded-xl overflow-hidden ${style.bg}`}>
       <div className={`flex items-center gap-2 px-3.5 pt-3.5 pb-2.5 text-[13px] font-semibold uppercase tracking-wider ${style.headerColor} ${style.borderTop}`}>
         {title}
         <span className={`text-[11px] font-bold min-w-[20px] h-5 rounded-full flex items-center justify-center px-1.5 ${style.countBg} ${style.countColor}`}>

@@ -63,8 +63,8 @@ export default function KanbanPage() {
         />
       </div>
 
-      {/* Board/List area */}
-      <div className="flex-1 min-h-0 p-5 overflow-auto">
+      {/* Board/List area — columns scroll internally via Radix ScrollArea */}
+      <div className="flex-1 min-h-0 p-5">
         {isLoading ? (
           <div className="flex gap-4 h-full">
             {Array.from({ length: 4 }).map((_, i) => (
