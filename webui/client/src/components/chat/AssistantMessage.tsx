@@ -9,15 +9,25 @@ interface AssistantMessageProps {
 }
 
 /**
- * Claude's message — flat, left-aligned, no avatar, no sender label.
- * Just markdown flowing on the page background (VS Code chat style).
+ * Claude's message — white card with subtle shadow on the beige chat
+ * background. Gives tables, code blocks, and block quotes a clean
+ * readable surface while still looking visually distinct from tool
+ * cards (no heavy border, just a soft shadow).
  */
 export function AssistantMessage({ message, content, isStreaming }: AssistantMessageProps) {
   const text = content ?? message?.content ?? '';
 
   if (isStreaming && !text) {
-    return <StreamingIndicator />;
+    return (
+      <div className="bg-white rounded-xl px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] max-w-full min-w-0">
+        <StreamingIndicator />
+      </div>
+    );
   }
 
-  return <MarkdownContent text={text} showCursor={isStreaming} />;
+  return (
+    <div className="bg-white rounded-xl px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] max-w-full min-w-0">
+      <MarkdownContent text={text} showCursor={isStreaming} />
+    </div>
+  );
 }

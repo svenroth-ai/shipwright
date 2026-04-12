@@ -27,6 +27,8 @@ export interface SpawnDeps {
   ) => ChildProcess;
 }
 
+export type PermissionMode = "default" | "acceptEdits" | "plan" | "bypassPermissions";
+
 export interface ClaudeSpawnOptions {
   projectDir: string;
   projectId: string;
@@ -38,6 +40,11 @@ export interface ClaudeSpawnOptions {
    * after spawn. Follow-ups go via sendUserMessage().
    */
   prompt: string;
+  /**
+   * Claude CLI permission mode — matches --permission-mode flag values.
+   * Defaults to bypassPermissions which is what VS Code's extension uses.
+   */
+  permissionMode?: PermissionMode;
   claudeCliPath?: string;
 }
 
@@ -97,8 +104,17 @@ export class ClaudeAdapter {
       "--input-format", "stream-json",
       "--output-format", "stream-json",
       "--verbose",
-      "--dangerously-skip-permissions",
     ];
+
+    // Permission mode. "bypassPermissions" uses the shortcut flag
+    // --dangerously-skip-permissions (what VS Code ships with). Other
+    // modes use the explicit --permission-mode flag.
+    const mode: PermissionMode = options.permissionMode ?? "bypassPermissions";
+    if (mode === "bypassPermissions") {
+      args.push("--dangerously-skip-permissions");
+    } else {
+      args.push("--permission-mode", mode);
+    }
 
     for (const dir of options.pluginDirs) {
       args.push("--plugin-dir", dir);

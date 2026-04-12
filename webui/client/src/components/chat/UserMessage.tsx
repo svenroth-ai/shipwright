@@ -6,11 +6,8 @@ interface UserMessageProps {
 }
 
 /**
- * User message — left-aligned, flat layout matching VS Code's Claude
- * extension. A thin primary-colored left border and a subtle background
- * tint distinguish it from Claude's messages without using a bubble.
- *
- * Also renders any attached images as thumbnails above the text.
+ * User message — subtle grey bubble, left-aligned. Readable on the
+ * beige chat background but visually distinct from Claude's white cards.
  */
 export function UserMessage({ message }: UserMessageProps) {
   const images = (message as unknown as {
@@ -18,10 +15,7 @@ export function UserMessage({ message }: UserMessageProps) {
   }).images;
 
   return (
-    <div className="min-w-0 max-w-full border-l-2 border-[var(--color-primary,#6b5e56)] pl-3 py-0.5">
-      <div className="text-[11px] font-semibold text-[var(--color-primary,#6b5e56)] mb-1 uppercase tracking-wide">
-        You
-      </div>
+    <div className="bg-[#e8e2d8] text-gray-900 rounded-xl px-4 py-3 max-w-full min-w-0 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
       {images && images.length > 0 && (
         <div className="flex gap-2 flex-wrap mb-2">
           {images.map((img, i) => (

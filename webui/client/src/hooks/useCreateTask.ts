@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiPost } from '../lib/api';
 import { queryKeys } from '../lib/queryKeys';
+import { useChatSettings } from './useChatSettings';
 
 interface CreateTaskParams {
   projectId: string;
@@ -11,10 +12,11 @@ interface CreateTaskParams {
 
 export function useCreateTask() {
   const queryClient = useQueryClient();
+  const { mode, model } = useChatSettings();
 
   const mutation = useMutation({
     mutationFn: ({ projectId, title, description = '', startImmediately = true }: CreateTaskParams) =>
-      apiPost(`/projects/${projectId}/tasks`, { title, description, startImmediately }),
+      apiPost(`/projects/${projectId}/tasks`, { title, description, startImmediately, mode, model }),
     onSuccess: (_data, variables) => {
       // Always invalidate using the variables (reliable) not the response
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(variables.projectId) });

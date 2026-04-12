@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import type { TaskManager } from "../core/task-manager.js";
 import type { EventStore } from "../core/event-store.js";
 import type { ProcessGovernor } from "../core/process-governor.js";
-import type { ClaudeAdapter } from "../core/claude-adapter.js";
+import type { ClaudeAdapter, PermissionMode } from "../core/claude-adapter.js";
 import type { SSEManager } from "../core/sse-manager.js";
 import type { ProjectManager } from "../core/project-manager.js";
 import type { ChatStore } from "../core/chat-store.js";
@@ -37,6 +37,14 @@ export interface TaskRouteDeps {
 function buildPrompt(title: string, description?: string): string {
   if (description) return `${title} — ${description}`;
   return title;
+}
+
+const VALID_PERMISSION_MODES: PermissionMode[] = ["default", "acceptEdits", "plan", "bypassPermissions"];
+function coercePermissionMode(raw: unknown): PermissionMode {
+  if (typeof raw === "string" && (VALID_PERMISSION_MODES as string[]).includes(raw)) {
+    return raw as PermissionMode;
+  }
+  return "bypassPermissions";
 }
 
 export function createTaskRoutes(deps: TaskRouteDeps): Hono {
@@ -105,6 +113,8 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
       description,
     });
 
+    const permissionMode = coercePermissionMode(body.mode);
+
     let startStatus: "started" | "queued" | "failed" = "started";
     if (startImmediately) {
       try {
@@ -115,6 +125,7 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
           sessionId,
           pluginDirs: project.settings?.claudePluginDirs ?? [],
           prompt: buildPrompt(title, description),
+          permissionMode,
         });
         if (result === "queued") {
           startStatus = "queued";
@@ -166,6 +177,8 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
 
     const sessionId = randomUUID();
     const eventsPath = `${project.path}/shipwright_events.jsonl`;
+    const body = await c.req.json().catch(() => ({} as Record<string, unknown>));
+    const permissionMode = coercePermissionMode(body.mode);
     try {
       const result = await deps.governor.acquire({
         projectDir: project.path,
@@ -174,6 +187,7 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
         sessionId,
         pluginDirs: project.settings?.claudePluginDirs ?? [],
         prompt: buildPrompt(task.title, task.description),
+        permissionMode,
       });
 
       if (result === "queued") {
