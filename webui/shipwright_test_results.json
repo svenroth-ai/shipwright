@@ -1,14 +1,25 @@
 {
-  "timestamp": "2026-04-11T15:15:00Z",
-  "branch": "build/cc-20260411-012422",
+  "timestamp": "2026-04-12T20:00:00Z",
+  "branch": "main",
   "overall": "PASS",
+  "iterate_run": "iterate-2026-04-12-v0.1.2-backfill",
   "unit": {
-    "passed": 299,
-    "total": 299,
-    "duration_s": 31,
+    "passed": 353,
+    "total": 353,
+    "duration_s": 46,
     "breakdown": {
-      "server": { "passed": 145, "total": 145, "files": 26 },
-      "client": { "passed": 154, "total": 154, "files": 47 }
+      "server": {
+        "passed": 189,
+        "total": 189,
+        "files": 28,
+        "delta_since_v0_1_1": "+44 (persistent adapter + sendUserMessage + multimodal + permission modes)"
+      },
+      "client": {
+        "passed": 164,
+        "total": 164,
+        "files": 47,
+        "delta_since_v0_1_1": "+10 (MarkdownContent table test, ChatInput image upload, PermissionMode, useChatSettings migration)"
+      }
     }
   },
   "integration": {
@@ -26,17 +37,22 @@
     "response_time_ms": 45
   },
   "e2e": {
-    "passed": 5,
-    "total": 5,
+    "passed": 17,
+    "total": 17,
     "skipped": false,
     "skip_reason": "",
-    "duration_s": 12.1,
+    "duration_s": 45,
     "spec_files": [
       "e2e/flows/01-board-navigation.spec.ts",
       "e2e/flows/02-inbox.spec.ts",
       "e2e/flows/03-projects.spec.ts",
-      "e2e/flows/04-settings.spec.ts"
-    ]
+      "e2e/flows/04-settings.spec.ts",
+      "e2e/flows/05-chat-settings.spec.ts",
+      "e2e/flows/06-new-task.spec.ts",
+      "e2e/flows/07-settings-persistence.spec.ts",
+      "e2e/flows/08-inbox-persistence.spec.ts"
+    ],
+    "delta_since_v0_1_1": "+12 (chat settings, new task, persistence flows)"
   },
   "consistency": {
     "skipped": true,
@@ -46,10 +62,15 @@
     "skipped": true,
     "skip_reason": "visual_compare.py misparses nested screen-routes.json format (script bug)"
   },
-  "fixes_applied": [
-    "fix(config): exclude e2e/ from Vitest client config to prevent Playwright spec collection errors",
-    "fix(server): add GET /api/tasks endpoint aggregating tasks from all projects",
-    "feat(ui): auto-select first project on KanbanPage for better empty-state UX",
-    "fix(config): correct Playwright baseURL and webServer URL to Vite dev port 5173"
+  "bridge_performance": {
+    "cold_start_ms": 15350,
+    "warm_followup_ms": 2570,
+    "speedup_vs_v0_1_1": "6x",
+    "notes": "Measured on real task via persistent --input-format stream-json process (ADR-009)"
+  },
+  "iterate_runs_backfilled": [
+    "iterate-2026-04-12-persistent-process (ADR-009, medium, retroactive)",
+    "iterate-2026-04-12-chat-rendering (ADR-010, medium, retroactive)",
+    "iterate-2026-04-12-permission-modes (ADR-011, small, retroactive)"
   ]
 }
