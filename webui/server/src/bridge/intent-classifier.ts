@@ -9,6 +9,24 @@ export interface ComplexityResult {
   complexity: string;
 }
 
+export interface PhaseResult {
+  phase: string;
+  confidence: number;
+}
+
+export const VALID_PHASES = [
+  "project",
+  "design",
+  "plan",
+  "build",
+  "test",
+  "deploy",
+  "changelog",
+  "compliance",
+] as const;
+
+export type Phase = (typeof VALID_PHASES)[number];
+
 function runScript(
   command: string,
   args: string[],
@@ -68,5 +86,30 @@ export async function classifyComplexity(
     return JSON.parse(output.trim());
   } catch {
     return { complexity: "unknown" };
+  }
+}
+
+export async function classifyPhase(
+  description: string,
+  projectDir: string
+): Promise<PhaseResult> {
+  try {
+    const output = await runScript(
+      "uv",
+      ["run", "classify_phase.py", description],
+      projectDir
+    );
+    const parsed = JSON.parse(output.trim()) as { phase?: string; confidence?: number };
+    const phase =
+      typeof parsed.phase === "string" && (VALID_PHASES as readonly string[]).includes(parsed.phase)
+        ? parsed.phase
+        : "project";
+    const confidence =
+      typeof parsed.confidence === "number" && Number.isFinite(parsed.confidence)
+        ? parsed.confidence
+        : 0;
+    return { phase, confidence };
+  } catch {
+    return { phase: "project", confidence: 0 };
   }
 }

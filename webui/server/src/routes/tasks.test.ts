@@ -3,6 +3,16 @@ import { Hono } from "hono";
 import { createTaskRoutes } from "./tasks.js";
 import { errorHandler } from "../middleware/error-handler.js";
 
+vi.mock("../bridge/intent-classifier.js", async () => {
+  const actual = await vi.importActual<typeof import("../bridge/intent-classifier.js")>(
+    "../bridge/intent-classifier.js"
+  );
+  return {
+    ...actual,
+    classifyPhase: vi.fn(async () => ({ phase: "build", confidence: 0.8 })),
+  };
+});
+
 const mockProject = { id: "p1", name: "Test", path: "/tmp", profile: "default", status: "active", createdAt: "2026-01-01", lastActive: "2026-01-01" };
 const mockTask = { id: "t1", projectId: "p1", description: "Fix", status: "pending", kanbanStatus: "backlog", sessionId: "s1", createdAt: "2026-01-01", updatedAt: "2026-01-01" };
 
@@ -181,6 +191,51 @@ describe("Task Routes", () => {
       body: JSON.stringify({ status: "invalid" }),
     });
     expect(res.status).toBe(400);
+  });
+
+  it("POST /tasks with explicit phase emits phase_started with that phase", async () => {
+    const { app, deps } = setup();
+    const res = await app.request("/api/projects/p1/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: "Sketch the hero area", phase: "design" }),
+    });
+    expect(res.status).toBe(201);
+    const phaseEvent = deps.eventStore.addEvent.mock.calls.find(
+      ([, ev]: [string, { type: string }]) => ev.type === "phase_started"
+    );
+    expect(phaseEvent).toBeDefined();
+    expect(phaseEvent[1].phase).toBe("design");
+  });
+
+  it("POST /tasks without phase auto-classifies and emits phase_started", async () => {
+    const { app, deps } = setup();
+    const res = await app.request("/api/projects/p1/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: "implement auth hook" }),
+    });
+    expect(res.status).toBe(201);
+    const phaseEvent = deps.eventStore.addEvent.mock.calls.find(
+      ([, ev]: [string, { type: string }]) => ev.type === "phase_started"
+    );
+    expect(phaseEvent).toBeDefined();
+    // Mocked classifyPhase returns "build"
+    expect(phaseEvent[1].phase).toBe("build");
+  });
+
+  it("POST /tasks with invalid phase falls back to auto-classification", async () => {
+    const { app, deps } = setup();
+    const res = await app.request("/api/projects/p1/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: "anything", phase: "bogus-phase" }),
+    });
+    expect(res.status).toBe(201);
+    const phaseEvent = deps.eventStore.addEvent.mock.calls.find(
+      ([, ev]: [string, { type: string }]) => ev.type === "phase_started"
+    );
+    expect(phaseEvent[1].phase).toBe("build");
   });
 
   it("GET /api/tasks returns tasks from all projects", async () => {

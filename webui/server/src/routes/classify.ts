@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { ProjectManager } from "../core/project-manager.js";
 import { AppError } from "../middleware/error-handler.js";
-import { classifyIntent, classifyComplexity } from "../bridge/intent-classifier.js";
+import { classifyIntent, classifyComplexity, classifyPhase } from "../bridge/intent-classifier.js";
 
 export function createClassifyRoutes(projectManager: ProjectManager): Hono {
   const app = new Hono();
@@ -12,9 +12,10 @@ export function createClassifyRoutes(projectManager: ProjectManager): Hono {
     const body = await c.req.json();
     if (!body.description) throw new AppError("description is required", 400);
 
-    const [intentResult, complexityResult] = await Promise.all([
+    const [intentResult, complexityResult, phaseResult] = await Promise.all([
       classifyIntent(body.description, project.path),
       classifyComplexity(body.description, project.path),
+      classifyPhase(body.description, project.path),
     ]);
 
     return c.json({
@@ -22,6 +23,8 @@ export function createClassifyRoutes(projectManager: ProjectManager): Hono {
         intent: intentResult.intent,
         complexity: complexityResult.complexity,
         affected_frs: intentResult.affected_frs,
+        phase: phaseResult.phase,
+        phase_confidence: phaseResult.confidence,
       },
     });
   });
