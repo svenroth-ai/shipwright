@@ -168,22 +168,36 @@ export class InboxManager {
       throw new AppError("Process no longer running", 400);
     }
 
-    // Iterate 7: when the item id is a real Anthropic `tool_use_id` (stable
-    // across refresh since iterate-6), reply with a structured `tool_result`
-    // content block. This is what makes Claude CLI actually unblock its
-    // pending AskUserQuestion call instead of emitting the markdown fallback
-    // question list. Legacy random-UUID items (pre-iterate-6) still fall
-    // through to the plain-text stdin path for backwards compat.
-    if (looksLikeToolUseId(item.id)) {
-      this.adapter.sendUserMessage(proc, [
-        { type: "tool_result", tool_use_id: item.id, content: answerText },
-      ]);
+    // Iterate 11 REVERT: always deliver the answer as plain text on stdin.
+    //
+    // Iterate 7 tried to send a structured `tool_result` content block
+    // via `adapter.sendUserMessage` assuming Claude CLI was blocked on
+    // the pending `tool_use AskUserQuestion` call and would unblock on
+    // the matching `tool_result`. That assumption was WRONG for `-p` +
+    // `--input-format stream-json` mode: Claude does NOT block on
+    // tool_use, the turn just keeps generating and ends with a `result`
+    // event. By the time the user clicks answer, the conversation has
+    // moved past the tool_use, and sending a `tool_result` as the next
+    // user message violates Anthropic's API rule ("tool_result must be
+    // in user message immediately after the assistant message containing
+    // the matching tool_use"). Observed as API 400:
+    //     "unexpected tool_use_id found in tool_result blocks ...
+    //      Each tool_result block must have a corresponding tool_use
+    //      block in the previous message."
+    //
+    // Plain-text delivery avoids the API violation entirely and still
+    // reaches Claude — the model reads "Yes" / "Persönliche ToDo App"
+    // as the next user turn and continues the interview. The markdown
+    // fallback that Claude emits alongside the tool_use is out of our
+    // control server-side; iterate 9's `collapseAskUserQuestionRun`
+    // still hides it on the client.
+    this.adapter.sendStdin(proc, answerText);
 
-      // Mirror the delivered tool_result as a ChatMessage in the chat-store
-      // so (a) the folded tool-card transitions to "Done" in place, (b) the
-      // "Answered: X" state survives a page refresh without relying on the
-      // inbox-only store, and (c) foldToolResults has an authoritative
-      // entry to consume. Only fires when chatHooks + project dir are set.
+    // Mirror the answer as a synthetic `tool_result` ChatMessage in the
+    // chat-store for `toolu_`-prefixed items so the folded tool-card
+    // transitions to "Done" and the "Answered: X" state survives a
+    // refresh. Purely local UI state — does NOT hit the Anthropic API.
+    if (looksLikeToolUseId(item.id)) {
       const projectDir = this.projectPaths.get(item.projectId);
       if (this.chatHooks && projectDir) {
         const resultMessage: ChatMessage = {
@@ -196,8 +210,6 @@ export class InboxManager {
         };
         await this.chatHooks.appendChatMessage(projectDir, item.taskId, resultMessage);
       }
-    } else {
-      this.adapter.sendStdin(proc, answerText);
     }
 
     item.answer = answerText;

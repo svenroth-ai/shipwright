@@ -824,13 +824,24 @@ git push origin "$main_branch"
 
 **Update session handoff** to reflect completed state:
 ```bash
-uv run {shared_root}/scripts/tools/generate_session_handoff.py
+uv run {shared_root}/scripts/tools/generate_session_handoff.py --project-root "{project_root}"
 ```
 
 **Gate check:** Verify F7 (Record Event) was executed:
 ```bash
 grep "$(git rev-parse HEAD)" "{project_root}/shipwright_events.jsonl" > /dev/null 2>&1
 ```
+
+**Iterate 11 — deterministic verifier.** After the gate check, run the
+finalization verifier and fail the iterate run on red:
+```bash
+uv run {shared_root}/scripts/tools/verify_iterate_finalization.py \
+  --run-id "{run_id}" \
+  --project-root "{project_root}" \
+  --commit "$(git rev-parse HEAD)"
+```
+Exit 0 = green (or warnings only), exit 1 = at least one required
+artifact missing. Add `--strict` to treat warnings as errors.
 
 ### F12: Release Prompt
 

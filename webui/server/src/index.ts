@@ -363,6 +363,18 @@ if (isMainModule) {
           const files = fs.readdirSync(chatHistoryDir).filter((f) => f.endsWith(".jsonl"));
           for (const file of files) {
             const taskId = file.replace(/\.jsonl$/, "");
+
+            // Iterate 11 — skip replay for tasks that are terminal or
+            // gone. No point surfacing inbox items the user can't
+            // actually answer (process is dead). The route-level
+            // filter hides them anyway but skipping here also keeps
+            // the in-memory map clean.
+            const task = taskManager.getTaskById(project.id, taskId);
+            if (!task) continue;
+            if (["done", "failed", "cancelled", "orphaned"].includes(task.status)) {
+              continue;
+            }
+
             const messages = await chatStore.load(project.path, taskId);
             const orphans = findOrphanAskUserQuestions(messages);
             for (const orphan of orphans) {
@@ -465,7 +477,9 @@ if (isMainModule) {
         }
       },
     }));
-    app.route("/", createInboxRoutes(inboxManager, sseManager));
+    // Iterate 11 — pass taskManager + projectManager so the inbox route
+    // can filter out ghost items for terminal/nonexistent tasks.
+    app.route("/", createInboxRoutes(inboxManager, sseManager, taskManager, projectManager));
     app.route("/", createChatRoutes(chatStore, governor, adapter, projectManager));
     app.route("/", createPipelineRoutes(eventStore, projectManager));
     app.route("/", createDocsRoutes(projectManager));
