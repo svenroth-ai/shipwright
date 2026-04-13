@@ -142,13 +142,35 @@ if (isMainModule) {
           }
         }
 
-        // Check for AskUserQuestion — use the shared extractor so the inbox
-        // entry sees the same question text + options as the chat AskUserCard.
-        if (isAskUserQuestion(msg)) {
+        // Check for AskUserQuestion — iterate over the extracted tool_use
+        // ChatMessages so we cover BOTH standalone tool_use NDJSON events
+        // and assistant-wrapped content-block tool_use entries. Use the
+        // chat message's toolUseId as the inbox item id so the client's
+        // AskUserCard (which sees the same ChatMessage) can correlate with
+        // the persisted inbox item even after a page refresh. See ADR-018.
+        for (const chatMsg of chatMessages) {
+          if (chatMsg.type === "tool_use" && chatMsg.toolName === "AskUserQuestion") {
+            const payload = extractAskUserPayload(chatMsg.toolInput);
+            inboxManager.addQuestion(
+              "", // projectId resolved by task lookup
+              taskId,
+              payload.question || "Question from Claude",
+              payload.context,
+              payload.options,
+              chatMsg.toolUseId,
+            ).catch((err) => console.error(JSON.stringify({ level: "error", message: "Inbox persist error", error: String(err) })));
+          }
+        }
+
+        // Legacy path: standalone tool_use event with AskUserQuestion.
+        // extractContentBlocks already covers this so the for-loop above
+        // handles it too, but keep this guard for any historical NDJSON
+        // shapes that don't flow through extractContentBlocks.
+        if (isAskUserQuestion(msg) && chatMessages.length === 0) {
           const rawInput = msg.tool_input ?? (msg.message as { tool_input?: unknown } | undefined)?.tool_input;
           const payload = extractAskUserPayload(rawInput);
           inboxManager.addQuestion(
-            "", // projectId resolved by task lookup
+            "",
             taskId,
             payload.question || "Question from Claude",
             payload.context,

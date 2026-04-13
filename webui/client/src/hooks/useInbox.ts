@@ -15,6 +15,18 @@ export function useInboxCount() {
   return data?.filter((item) => item.status === 'pending').length ?? 0;
 }
 
+/**
+ * Look up a single inbox item by id (typically the ChatMessage.toolUseId).
+ * Returns undefined while loading or when no matching item exists. AskUserCard
+ * uses this to hydrate its answered state from persisted server state on
+ * mount, so refreshing the page keeps the "Answered" display. See ADR-018.
+ */
+export function useInboxItem(id: string | undefined): InboxItem | undefined {
+  const { data } = useInbox();
+  if (!id || !data) return undefined;
+  return data.find((item) => item.id === id);
+}
+
 export function useAnswerInbox() {
   const queryClient = useQueryClient();
 

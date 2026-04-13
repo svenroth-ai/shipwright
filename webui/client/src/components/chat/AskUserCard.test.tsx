@@ -1,14 +1,17 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AskUserCard } from './AskUserCard';
 import type { ChatMessage } from '../../types';
 
+const answerMutateMock = vi.fn();
 vi.mock('../../hooks/useInbox', () => ({
-  useAnswerInbox: () => ({ mutate: vi.fn(), isPending: false }),
+  useAnswerInbox: () => ({ mutate: (args: unknown) => answerMutateMock(args), isPending: false }),
+  useInboxItem: () => undefined,
 }));
 
-function renderCard(toolInput: unknown, content = '') {
+function renderCard(toolInput: unknown, content = '', toolUseId?: string) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const message: ChatMessage = {
     id: 'ask-1',
@@ -17,6 +20,7 @@ function renderCard(toolInput: unknown, content = '') {
     content,
     toolName: 'AskUserQuestion',
     toolInput,
+    toolUseId,
     timestamp: '2026-04-13T00:00:00Z',
   };
   return render(
@@ -27,6 +31,42 @@ function renderCard(toolInput: unknown, content = '') {
 }
 
 describe('AskUserCard', () => {
+  beforeEach(() => {
+    answerMutateMock.mockReset();
+  });
+
+  it('submits the answer keyed on message.toolUseId when present', async () => {
+    renderCard(
+      {
+        questions: [
+          {
+            question: 'Pick one',
+            options: [{ label: 'Alpha' }, { label: 'Bravo' }],
+            multiSelect: false,
+          },
+        ],
+      },
+      '',
+      'toolu_01HelloWorld',
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Alpha' }));
+    await user.click(screen.getByRole('button', { name: 'Submit Answer' }));
+    expect(answerMutateMock).toHaveBeenCalledWith({ id: 'toolu_01HelloWorld', answer: 'Alpha' });
+  });
+
+  it('falls back to message.id as inbox id when toolUseId is missing (legacy)', async () => {
+    renderCard(
+      { questions: [{ question: 'Legacy?', options: [{ label: 'Yes' }], multiSelect: false }] },
+      '',
+      undefined,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Yes' }));
+    await user.click(screen.getByRole('button', { name: 'Submit Answer' }));
+    expect(answerMutateMock).toHaveBeenCalledWith({ id: 'ask-1', answer: 'Yes' });
+  });
+
   it('renders question text from the real Claude Code schema (questions[0].options direct)', () => {
     // Real shape verified from chat-history jsonl on 2026-04-13.
     renderCard({

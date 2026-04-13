@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Check } from 'lucide-react';
 import type { ChatMessage } from '../../types';
-import { useAnswerInbox } from '../../hooks/useInbox';
+import { useAnswerInbox, useInboxItem } from '../../hooks/useInbox';
 import { extractAskUserPayload } from '../../lib/askUserPayload';
 
 interface AskUserCardProps {
@@ -11,25 +11,32 @@ interface AskUserCardProps {
 export function AskUserCard({ message }: AskUserCardProps) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [freetext, setFreetext] = useState('');
-  const [isAnswered, setIsAnswered] = useState(false);
+  const [localAnswered, setLocalAnswered] = useState(false);
   const answerMutation = useAnswerInbox();
 
   const payload = extractAskUserPayload(message.toolInput);
   const question = payload.question || message.content || 'Question from Claude';
   const options = payload.options ?? [];
   const header = payload.header;
-  const inboxId = String(
-    (message.toolInput && typeof message.toolInput === 'object' && 'inboxId' in message.toolInput
-      ? (message.toolInput as { inboxId?: unknown }).inboxId
-      : undefined) ?? message.id,
-  );
+
+  // Use the Anthropic toolUseId (propagated by iterate-2's parser + iterate-5's
+  // streaming hook) as the inbox item id so it survives page refreshes and
+  // correlates 1:1 with the persisted server-side inbox entry. Fall back to
+  // message.id for legacy messages that don't have a toolUseId. See ADR-018.
+  const inboxId = message.toolUseId ?? message.id;
+
+  // Hydrate "answered" state from the persisted server inbox so refresh keeps
+  // the green "Answered: X" display.
+  const persistedItem = useInboxItem(inboxId);
+  const isAnswered = localAnswered || persistedItem?.status === 'answered';
+  const persistedAnswer = persistedItem?.answer;
 
   function handleSubmit() {
     const answer = selectedOption ?? freetext.trim();
     if (!answer) return;
 
     answerMutation.mutate({ id: inboxId, answer });
-    setIsAnswered(true);
+    setLocalAnswered(true);
   }
 
   return (
@@ -81,7 +88,7 @@ export function AskUserCard({ message }: AskUserCardProps) {
         ) : (
           <div className="flex items-center gap-2 text-sm text-green-700">
             <Check size={16} />
-            <span>Answered: {selectedOption ?? freetext}</span>
+            <span>Answered: {persistedAnswer ?? selectedOption ?? freetext}</span>
           </div>
         )}
       </div>

@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:fresh": "node ../scripts/dev-restart.js",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "vitest"

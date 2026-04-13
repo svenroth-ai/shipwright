@@ -87,10 +87,15 @@ export class InboxManager {
     taskId: string,
     question: string,
     context?: string,
-    options?: string[]
+    options?: string[],
+    toolUseId?: string,
   ): Promise<InboxItem> {
+    // Prefer the stable Anthropic tool_use_id over a fresh random UUID so the
+    // client's ChatMessage.toolUseId can find the item back after a refresh
+    // (and so the iterate-7 tool_result refactor has a correlation key for
+    // free). Fall back to a random id only when toolUseId is missing.
     const item: InboxItem = {
-      id: randomUUID(),
+      id: toolUseId ?? randomUUID(),
       projectId,
       taskId,
       question,
