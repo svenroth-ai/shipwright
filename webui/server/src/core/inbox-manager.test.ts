@@ -195,6 +195,55 @@ describe("InboxManager", () => {
     expect(appendChatMessage).not.toHaveBeenCalled();
   });
 
+  // ──────────────────────────────────────────────────────────────────────
+  // Iterate 11.1 — inbox-level dedupe of Claude's same-turn duplicates
+  // ──────────────────────────────────────────────────────────────────────
+
+  it("addQuestion dedupes same-text question for the same task (returns existing)", async () => {
+    const { mgr, onNotify } = setup();
+    const first = await mgr.addQuestion("p1", "t1", "Which option?", undefined, ["a", "b"], "toolu_01");
+    const second = await mgr.addQuestion("p1", "t1", "which option ?", undefined, ["a", "b"], "toolu_02");
+
+    // Both calls return an item, but they reference the SAME underlying
+    // entry — the first write wins. The onNotify mock should only have
+    // fired once (for the original add).
+    expect(second.id).toBe(first.id);
+    expect(mgr.getAll()).toHaveLength(1);
+    expect(onNotify).toHaveBeenCalledTimes(1);
+  });
+
+  it("addQuestion dedupe ignores whitespace, case, and punctuation", async () => {
+    const { mgr } = setup();
+    await mgr.addQuestion("p1", "t1", "Was für eine ToDo-App?", undefined, [], "toolu_01");
+    await mgr.addQuestion("p1", "t1", "was FÜR eine  ToDo App!?", undefined, [], "toolu_02");
+    expect(mgr.getAll()).toHaveLength(1);
+  });
+
+  it("addQuestion does NOT dedupe different questions for the same task", async () => {
+    const { mgr } = setup();
+    await mgr.addQuestion("p1", "t1", "Which framework?", undefined, [], "toolu_01");
+    await mgr.addQuestion("p1", "t1", "Which database?", undefined, [], "toolu_02");
+    expect(mgr.getAll()).toHaveLength(2);
+  });
+
+  it("addQuestion does NOT dedupe the same text across different tasks", async () => {
+    const { mgr } = setup();
+    await mgr.addQuestion("p1", "t1", "Same question?", undefined, [], "toolu_01");
+    await mgr.addQuestion("p1", "t2", "Same question?", undefined, [], "toolu_02");
+    expect(mgr.getAll()).toHaveLength(2);
+  });
+
+  it("addQuestion with a text matching an ANSWERED item still persists as new", async () => {
+    const { mgr } = setup();
+    await mgr.addQuestion("p1", "t1", "Pick one", undefined, [], "toolu_01");
+    await mgr.answer("toolu_01", "x");
+    // The original item is now answered. A new question with the same text
+    // should NOT be deduped — Claude is asking again in a new turn.
+    const second = await mgr.addQuestion("p1", "t1", "Pick one", undefined, [], "toolu_02");
+    expect(second.id).toBe("toolu_02");
+    expect(mgr.getAll()).toHaveLength(2);
+  });
+
   it("loads inbox items from disk", async () => {
     const onNotify = vi.fn();
     const governor = { getProcess: vi.fn() } as unknown as ProcessGovernor;

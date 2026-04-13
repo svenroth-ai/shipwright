@@ -3,6 +3,7 @@ import type { InboxManager } from "../core/inbox-manager.js";
 import type { SSEManager } from "../core/sse-manager.js";
 import type { TaskManager } from "../core/task-manager.js";
 import type { ProjectManager } from "../core/project-manager.js";
+import type { ProcessGovernor } from "../core/process-governor.js";
 import type { InboxStatus, InboxItem } from "../../../client/src/types/inbox.js";
 import type { TaskStatus } from "../../../client/src/types/task.js";
 import { AppError } from "../middleware/error-handler.js";
@@ -28,6 +29,7 @@ export function createInboxRoutes(
   sseManager: SSEManager,
   taskManager?: TaskManager,
   projectManager?: ProjectManager,
+  governor?: ProcessGovernor,
 ): Hono {
   const app = new Hono();
 
@@ -45,7 +47,25 @@ export function createInboxRoutes(
     }
     const active = all.filter((item: InboxItem) => {
       const task = taskManager.getTaskById(item.projectId, item.taskId);
-      return task !== undefined && isActive(task.status);
+      if (!task) return false;
+      if (!isActive(task.status)) return false;
+
+      // Iterate 11.1 — zombie-task guard. Task status in the in-memory
+      // event store says "running" but the governor doesn't have a live
+      // process for it. That happens when the Claude CLI died without
+      // emitting work_completed / work_failed (server crash, manual
+      // kill, etc.). The event-store status is stale; treat the task
+      // as orphaned for inbox purposes.
+      //
+      // Architectural cleanup deferred to iterate 12: emit a synthetic
+      // `task_orphaned` event on startup for running-but-dead tasks so
+      // the status updates for real. For now the route-level filter
+      // suppresses the noise.
+      if (governor && task.status === "running") {
+        const proc = governor.getProcess(item.taskId);
+        if (!proc || proc.state === "exited") return false;
+      }
+      return true;
     });
     return c.json({ data: active });
   });

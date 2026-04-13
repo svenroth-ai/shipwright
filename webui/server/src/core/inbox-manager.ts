@@ -35,6 +35,18 @@ function looksLikeToolUseId(id: string): boolean {
   return id.startsWith("toolu_");
 }
 
+/** Iterate 11.1 — normalize a question string so that Claude's
+ *  same-turn duplicate AskUserQuestions collapse to one inbox item.
+ *  Strip case + whitespace + punctuation so small variations like
+ *  "Was für eine App?" vs "was FÜR eine App" vs "Was für eine App!"
+ *  all produce the same signature. */
+function normalizeQuestion(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9äöüß]/g, "");
+}
+
 export class InboxManager {
   private items = new Map<string, InboxItem>();
   private storageDeps?: InboxStoreDeps;
@@ -138,6 +150,29 @@ export class InboxManager {
     options?: string[],
     toolUseId?: string,
   ): Promise<InboxItem> {
+    // Iterate 11.1 — dedupe against existing PENDING items for the
+    // same task by normalized question text. Claude emits the same
+    // AskUserQuestion twice in one turn (observed in iterate-9 live
+    // test) with slightly different wording but semantically identical
+    // questions. Iterate 9's client-side `collapseAskUserQuestionRun`
+    // hides them in the chat panel, but the inbox was still showing
+    // both because each had a distinct `toolu_*` id. We dedupe at
+    // write time so the InboxPage, the inbox count, and any future
+    // consumer all see one item. First-write-wins: the existing
+    // pending item is returned unchanged, no persist, no onNotify.
+    const sig = normalizeQuestion(question);
+    if (sig) {
+      for (const existing of this.items.values()) {
+        if (
+          existing.taskId === taskId &&
+          existing.status === "pending" &&
+          normalizeQuestion(existing.question) === sig
+        ) {
+          return existing;
+        }
+      }
+    }
+
     // Prefer the stable Anthropic tool_use_id over a fresh random UUID so the
     // client's ChatMessage.toolUseId can find the item back after a refresh
     // (and so the iterate-7 tool_result refactor has a correlation key for
