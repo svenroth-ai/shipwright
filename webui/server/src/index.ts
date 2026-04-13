@@ -479,7 +479,9 @@ if (isMainModule) {
     }));
     // Iterate 11 — pass taskManager + projectManager so the inbox route
     // can filter out ghost items for terminal/nonexistent tasks.
-    app.route("/", createInboxRoutes(inboxManager, sseManager, taskManager, projectManager));
+    // Iterate 11.1 — also pass governor so zombie tasks (running in the
+    // event store but no live process) get filtered too.
+    app.route("/", createInboxRoutes(inboxManager, sseManager, taskManager, projectManager, governor));
     app.route("/", createChatRoutes(chatStore, governor, adapter, projectManager));
     app.route("/", createPipelineRoutes(eventStore, projectManager));
     app.route("/", createDocsRoutes(projectManager));
