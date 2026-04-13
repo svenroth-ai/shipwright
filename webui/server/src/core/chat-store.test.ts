@@ -114,6 +114,78 @@ describe("ChatStore", () => {
     expect(messages[1].toolInput).toEqual({ file_path: "/test.txt", content: "Hello" });
   });
 
+  // Regression: chat-store must reject exact-duplicate appends within a short
+  // time window. Claude CLI's stream-json has occasionally been observed
+  // emitting near-identical tool_use events seconds apart (see ADR-016). The
+  // parser now drops content_block_* events that were one source of dupes,
+  // but this defense in depth also catches future quirks.
+  it("append skips an exact structural duplicate within the dedupe window", async () => {
+    const deps = mockDeps();
+    const store = new ChatStore(deps);
+    await store.append("/proj", "t1", msg1);
+    await store.append("/proj", "t1", { ...msg1, id: "different-id" }); // same content/type, new id
+    const path = "/proj/.shipwright-webui/chat-history/t1.jsonl";
+    const lines = deps.storage[path].trim().split("\n");
+    expect(lines).toHaveLength(1);
+  });
+
+  it("append keeps a message that differs only in content (not a dup)", async () => {
+    const deps = mockDeps();
+    const store = new ChatStore(deps);
+    await store.append("/proj", "t1", msg1);
+    await store.append("/proj", "t1", { ...msg1, id: "m1b", content: "Hello!" });
+    const path = "/proj/.shipwright-webui/chat-history/t1.jsonl";
+    const lines = deps.storage[path].trim().split("\n");
+    expect(lines).toHaveLength(2);
+  });
+
+  it("append dedupes tool_use with identical toolName+toolInput", async () => {
+    const deps = mockDeps();
+    const store = new ChatStore(deps);
+    const toolMsg: ChatMessage = {
+      id: "tu1",
+      taskId: "t1",
+      type: "tool_use",
+      content: "",
+      toolName: "AskUserQuestion",
+      toolInput: { questions: [{ question: "pick one", options: ["a", "b"] }] },
+      timestamp: "2026-01-01T00:00:00Z",
+    };
+    await store.append("/proj", "t1", toolMsg);
+    await store.append("/proj", "t1", { ...toolMsg, id: "tu2" });
+    const path = "/proj/.shipwright-webui/chat-history/t1.jsonl";
+    const lines = deps.storage[path].trim().split("\n");
+    expect(lines).toHaveLength(1);
+  });
+
+  it("append keeps tool_use entries that differ by toolInput suffix (Claude refinement)", async () => {
+    const deps = mockDeps();
+    const store = new ChatStore(deps);
+    const toolMsg1: ChatMessage = {
+      id: "tu1",
+      taskId: "t1",
+      type: "tool_use",
+      content: "",
+      toolName: "AskUserQuestion",
+      toolInput: { questions: [{ options: ["todoappdemo/planning"] }] },
+      timestamp: "2026-01-01T00:00:00Z",
+    };
+    const toolMsg2 = {
+      ...toolMsg1,
+      id: "tu2",
+      toolInput: { questions: [{ options: ["todoappdemo/planning (Recommended)"] }] },
+    };
+    await store.append("/proj", "t1", toolMsg1);
+    await store.append("/proj", "t1", toolMsg2);
+    const path = "/proj/.shipwright-webui/chat-history/t1.jsonl";
+    const lines = deps.storage[path].trim().split("\n");
+    // Different content → both kept. (Bug A parser fix is what prevents the
+    // partial-from-content_block version from even reaching the store; this
+    // test documents that IF two non-identical variants do reach us, we
+    // don't conflate them.)
+    expect(lines).toHaveLength(2);
+  });
+
   it("does not migrate non-JSON assistant content", async () => {
     const deps = mockDeps();
     const path = "/proj/.shipwright-webui/chat-history/t1.jsonl";

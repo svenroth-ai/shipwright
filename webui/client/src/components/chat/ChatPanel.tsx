@@ -69,6 +69,16 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
   const sendChat = useSendChat();
   const streaming = useStreamingChat();
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Bug B guard: during streaming, useSSE invalidates the chat query on every
+  // chat:message event, so `messages` quickly catches up with whatever text is
+  // in `streaming.displayContent`. Without this check the user sees both the
+  // persisted assistant card AND the still-streaming card with the same text.
+  // See ADR-016.
+  const displayContentIsPersisted = !!(
+    streaming.displayContent &&
+    messages.some((m) => m.type === 'assistant' && m.content === streaming.displayContent)
+  );
   const awaiting = isAwaitingResponse(messages, sendChat.isPending, streaming.isStreaming);
   const { isAtBottom, scrollToBottom } = useAutoScroll(scrollRef, [messages, streaming.displayContent, streaming.streamingMessages, awaiting]);
   const [chatError, setChatError] = useState<string | null>(null);
@@ -142,7 +152,7 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
           foldToolResults(
             dedupeStreamingMessages(messages, streaming.streamingMessages),
           ).map((msg) => <ChatMessage key={msg.id} message={msg} />)}
-        {streaming.isStreaming && streaming.displayContent && (
+        {streaming.isStreaming && streaming.displayContent && !displayContentIsPersisted && (
           <AssistantMessage content={streaming.displayContent} isStreaming />
         )}
 

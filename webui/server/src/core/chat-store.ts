@@ -66,6 +66,27 @@ function migrateLegacyMessage(msg: ChatMessage): ChatMessage[] {
   }
 }
 
+/** Defense-in-depth: remember the last few signatures per task so we can
+ *  drop exact structural duplicates that sneak through the parser. */
+const DEDUPE_WINDOW_SIZE = 8;
+const DEDUPE_WINDOW_MS = 10_000;
+
+interface RecentEntry {
+  signature: string;
+  at: number;
+}
+
+function signatureOf(message: ChatMessage): string {
+  const toolInputKey = message.toolInput === undefined ? "" : JSON.stringify(message.toolInput);
+  return [
+    message.type,
+    message.toolName ?? "",
+    message.content,
+    toolInputKey,
+    message.isError ? "err" : "",
+  ].join("\x1f");
+}
+
 export class ChatStore {
   constructor(private deps: ChatStoreDeps) {}
 
@@ -73,9 +94,33 @@ export class ChatStore {
     return `${projectDir}/.shipwright-webui/chat-history`;
   }
 
+  /** Per-task rolling window of the most recently appended message signatures. */
+  private recent = new Map<string, RecentEntry[]>();
+
   async append(projectDir: string, taskId: string, message: ChatMessage): Promise<void> {
     const base = this.basePath(projectDir);
     this.deps.mkdirSync(base, { recursive: true });
+
+    const key = `${projectDir}::${taskId}`;
+    const now = Date.now();
+    const sig = signatureOf(message);
+    const recent = this.recent.get(key) ?? [];
+
+    // Drop entries older than the window
+    const fresh = recent.filter((e) => now - e.at <= DEDUPE_WINDOW_MS);
+
+    if (fresh.some((e) => e.signature === sig)) {
+      // Exact duplicate within the dedupe window → skip. Keeps the append-only
+      // chat-history lossless at the `rm` level (disk state is what it is) but
+      // shields us from double-persistence bugs upstream. See ADR-016.
+      this.recent.set(key, fresh);
+      return;
+    }
+
+    fresh.push({ signature: sig, at: now });
+    while (fresh.length > DEDUPE_WINDOW_SIZE) fresh.shift();
+    this.recent.set(key, fresh);
+
     await this.deps.appendFile(`${base}/${taskId}.jsonl`, JSON.stringify(message) + "\n");
   }
 

@@ -1,26 +1,31 @@
 {
-  "timestamp": "2026-04-13T08:40:00Z",
-  "branch": "iterate/ask-user-card-fix",
+  "timestamp": "2026-04-13T10:50:00Z",
+  "branch": "iterate/chat-dup-root-cause",
   "overall": "PASS",
-  "iterate_run": "iterate-2026-04-13-ask-user-card-fix",
+  "iterate_run": "iterate-2026-04-13-chat-dup-root-cause",
   "unit": {
-    "passed": 397,
-    "total": 397,
-    "duration_s": 53,
+    "passed": 404,
+    "total": 404,
+    "duration_s": 80,
     "breakdown": {
       "server": {
-        "passed": 199,
-        "total": 199,
+        "passed": 206,
+        "total": 206,
         "files": 27,
-        "delta_since_previous_iterate": "0 (server changes covered by existing integration + route tests; no new server-side unit for the inbox-path wiring, extractor is unit-tested in client lib and shared)"
+        "delta_since_previous_iterate": "+7 (ndjson-parser content_block_* empty-return x3, chat-store dedupe window x4)"
       },
       "client": {
         "passed": 198,
         "total": 198,
         "files": 51,
-        "delta_since_previous_iterate": "+19 (askUserPayload x7, dedupeStreamingMessages x6, AskUserCard component x6)"
+        "delta_since_previous_iterate": "0 (ChatPanel displayContent guard is inline predicate, not independently unit-tested; AskUserCard visual tests don't assert classNames)"
       }
     }
+  },
+  "iterate_plugin": {
+    "passed": 59,
+    "total": 59,
+    "delta_since_previous_iterate": "+13 (classify_phase.py new test file with regression for 'Build a ToDo-App' → project)"
   },
   "integration": {
     "skipped": true,
