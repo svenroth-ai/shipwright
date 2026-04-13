@@ -76,8 +76,20 @@ const isMainModule =
 
 if (isMainModule) {
   void (async () => { try {
-    // Safety net: never crash the server on unhandled errors
+    // Safety net: keep the server alive on runtime errors from request
+    // handlers BUT exit cleanly on fatal startup errors so `tsx watch`
+    // can re-spawn the process. EADDRINUSE is the big one — it fires
+    // during the reload window where the old process is still releasing
+    // port 3847, and if we swallow it the new process sits there running
+    // but not actually bound, masking every subsequent file change. See
+    // ADR-018 for the full story.
+    const FATAL_ERROR_CODES = new Set(["EADDRINUSE", "EACCES", "EADDRNOTAVAIL"]);
     process.on("uncaughtException", (err) => {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code && FATAL_ERROR_CODES.has(code)) {
+        console.error(JSON.stringify({ level: "fatal", message: `Fatal startup error (${code}) — exiting so tsx watch can retry`, error: String(err), code }));
+        process.exit(1);
+      }
       console.error(JSON.stringify({ level: "error", message: "Uncaught exception (server stays alive)", error: String(err), stack: err.stack }));
     });
     process.on("unhandledRejection", (reason) => {
