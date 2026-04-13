@@ -164,14 +164,28 @@ def generate_handoff(
 
 def main() -> None:
     """CLI entry point."""
+    import argparse
     import os
 
-    project_root = Path(os.getcwd())
+    parser = argparse.ArgumentParser(description="Generate session_handoff.md from project state")
+    parser.add_argument(
+        "--project-root",
+        default=None,
+        help="Project directory (default: CWD). Iterate 11 added this so the "
+        "iterate skill's F11 step writes to the right project instead of "
+        "whatever directory the skill was invoked from.",
+    )
+    parser.add_argument(
+        "--reason",
+        default="context compaction",
+        help="Why this handoff was generated (shown in the output)",
+    )
+    args = parser.parse_args()
+
+    project_root = Path(args.project_root).resolve() if args.project_root else Path(os.getcwd())
     session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
 
-    reason = sys.argv[1] if len(sys.argv) > 1 else "context compaction"
-
-    content = generate_handoff(project_root, session_id, reason)
+    content = generate_handoff(project_root, session_id, args.reason)
 
     # Ensure agent_docs/ exists
     agent_docs = project_root / "agent_docs"

@@ -1,27 +1,32 @@
 {
-  "timestamp": "2026-04-13T16:05:00Z",
-  "branch": "iterate/runtime-config",
+  "timestamp": "2026-04-13T22:20:00Z",
+  "branch": "iterate/ux-hotfixes-and-verifier",
   "overall": "PASS",
-  "iterate_run": "iterate-2026-04-13-runtime-config",
+  "iterate_run": "iterate-2026-04-13-ux-hotfixes-and-verifier",
   "unit": {
-    "passed": 466,
-    "total": 466,
+    "passed": 481,
+    "total": 481,
     "breakdown": {
       "server": {
-        "passed": 253,
-        "total": 253,
-        "delta_since_previous_iterate": "+11 (claude-adapter session-id capture x2, --resume flag x1, tasks /mode endpoint x5, project-manager updateAutonomy x3)"
+        "passed": 268,
+        "total": 268,
+        "delta_since_previous_iterate": "+15 (inbox route terminal-task filter x3, inbox-manager revert cases x2; plus rerun of pre-existing suites)"
       },
       "client": {
         "passed": 213,
         "total": 213,
-        "delta_since_previous_iterate": "0 (PermissionMode wiring covered by existing snapshot coverage)"
+        "delta_since_previous_iterate": "0 (model selector + chat panel changes covered by existing tests)"
       }
     }
   },
   "iterate_plugin": { "passed": 59, "total": 59 },
-  "shared": { "passed": 153, "total": 155, "known_failures": ["test_config.py x2 pre-existing"] },
-  "smoke": { "passed": true, "notes": "client tsc clean; server tsc has 13 pre-existing rootDir/external-lib errors unchanged since iterate 7" },
-  "e2e": { "passed": 17, "total": 17, "duration_s": 24.5 },
-  "degraded": ["server tsc: 13 pre-existing cross-boundary + chokidar/node-cron type errors, same state as iterate 7-9"]
+  "shared": {
+    "passed": 171,
+    "total": 173,
+    "delta_since_previous_iterate": "+18 (verify_iterate_finalization.py tests: run_id check, events commit check, ADR in decision_log check, CHANGELOG [Unreleased] check, session_handoff freshness check, orchestrator happy/red paths)",
+    "known_failures": ["test_config.py x2 pre-existing"]
+  },
+  "smoke": { "passed": true, "notes": "client tsc clean; server tsc 13 pre-existing rootDir/external-lib errors unchanged since iterate 7" },
+  "e2e": { "passed": 17, "total": 17, "duration_s": 19.7 },
+  "degraded": ["server tsc pre-existing (unchanged)", "shared test_config.py 2 pre-existing failures"]
 }
