@@ -1,7 +1,18 @@
 import type { EffortOption } from '../../hooks/useChatSettings';
 
-const CYCLE: EffortOption[] = ['low', 'medium', 'high'];
-const LABELS: Record<EffortOption, string> = { low: 'Low', medium: 'Med', high: 'High' };
+const CYCLE: EffortOption[] = ['low', 'medium', 'high', 'max'];
+const LABELS: Record<EffortOption, string> = {
+  low: 'Low',
+  medium: 'Med',
+  high: 'High',
+  max: 'Max',
+};
+const TITLES: Record<EffortOption, string> = {
+  low: 'Low — default thinking',
+  medium: 'Medium — /think',
+  high: 'High — /think hard',
+  max: 'Max — /ultrathink',
+};
 
 interface EffortPillProps {
   effort: EffortOption;
@@ -18,7 +29,7 @@ export function EffortPill({ effort, onChange }: EffortPillProps) {
     <button
       className="px-2 py-1 rounded-md bg-gray-100 text-xs font-medium hover:bg-gray-200 cursor-pointer"
       onClick={handleClick}
-      title={`Effort: ${LABELS[effort]}`}
+      title={TITLES[effort]}
     >
       {LABELS[effort]}
     </button>
