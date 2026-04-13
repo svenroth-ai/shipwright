@@ -23,11 +23,18 @@ plugins/                    # Claude Code plugins (one per SDLC phase)
 webui/                      # Shipwright Command Center (Hono + React 19)
   server/                   # Hono backend (port 3847)
   client/                   # React 19 / Vite 6 frontend
+  agent_docs/               # Build/iterate artifacts generated during dev
+  designs/                  # HTML mockups of the Command Center UI
+  planning/                 # webui-specific iterate planning specs
+  scripts/                  # webui-specific scripts (install-windows.ps1, dev-restart.js)
 shared/                     # Shared across all plugins
   profiles/                 # Stack profile definitions (JSON)
   templates/                # CLAUDE.md, agent_docs, CI templates
   scripts/                  # Shared Python utilities
+  tests/                    # Tests for shared scripts and hooks
 scripts/                    # Top-level scripts (install.sh, verify-setup.sh)
+docs/                       # User-facing docs (guide.md, hooks-and-pipeline.md)
+planning/                   # Iterate planning specs (shipwright-core changes)
 integration-tests/          # Cross-plugin integration tests
 ```
 

@@ -8,6 +8,10 @@
 ## Structure
 ```
 webui/
+  agent_docs/                   # Build/iterate artifacts generated during dev
+  designs/                      # HTML mockups of the Command Center UI
+  planning/                     # webui-specific iterate planning specs
+  scripts/                      # install-windows.ps1, dev-restart.js
   server/                       # Hono backend (port 3847)
     src/
       index.ts                  # Server entry
@@ -47,6 +51,7 @@ webui/
     package.json
     tsconfig.json
   client/                       # React 19 / Vite 6 frontend
+    e2e/                        # Playwright E2E specs
     src/
       main.tsx
       App.tsx
@@ -64,10 +69,10 @@ webui/
       contexts/                 # React contexts
       hooks/                    # TanStack Query + SSE hooks
       lib/                      # Utilities and API clients
+      test/                     # Vitest test utilities and setup
       types/                    # Shared TypeScript types
     index.html
     vite.config.ts
-    tailwind.config.ts
     package.json
     tsconfig.json
 ```
