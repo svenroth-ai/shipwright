@@ -172,6 +172,46 @@ describe("ClaudeAdapter", () => {
     expect((deps.spawn as any).mock.calls[0][0]).toBe("/usr/local/bin/claude");
   });
 
+  // Iterate 10 — capture real Claude session_id from system/init for --resume
+  it("captures claudeSessionId from system/init NDJSON event", async () => {
+    const { child, stdout } = createFakeChild();
+    const deps = createMockDeps(child);
+    const adapter = new ClaudeAdapter(deps, () => {});
+
+    const proc = adapter.spawn(baseOptions);
+    stdout.write(
+      JSON.stringify({ type: "system", subtype: "init", session_id: "real-claude-sess-abc123" }) + "\n",
+    );
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(proc.claudeSessionId).toBe("real-claude-sess-abc123");
+  });
+
+  it("ignores non-init system events for session capture", async () => {
+    const { child, stdout } = createFakeChild();
+    const deps = createMockDeps(child);
+    const adapter = new ClaudeAdapter(deps, () => {});
+
+    const proc = adapter.spawn(baseOptions);
+    stdout.write(JSON.stringify({ type: "system", subtype: "other", session_id: "wrong" }) + "\n");
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(proc.claudeSessionId).toBeUndefined();
+  });
+
+  it("pushes --resume instead of --session-id when resumeSession is true", () => {
+    const { child } = createFakeChild();
+    const deps = createMockDeps(child);
+    const adapter = new ClaudeAdapter(deps, () => {});
+    adapter.spawn({ ...baseOptions, sessionId: "real-claude-sess-abc", resumeSession: true });
+
+    const args: string[] = (deps.spawn as any).mock.calls[0][1];
+    expect(args).toContain("--resume");
+    const resumeIdx = args.indexOf("--resume");
+    expect(args[resumeIdx + 1]).toBe("real-claude-sess-abc");
+    expect(args).not.toContain("--session-id");
+  });
+
   // Iterate 9 — model wire-through
   it("pushes --model <alias> when model is set", () => {
     const { child } = createFakeChild();

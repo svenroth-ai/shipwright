@@ -16,17 +16,44 @@ vi.mock("../bridge/intent-classifier.js", async () => {
 const mockProject = { id: "p1", name: "Test", path: "/tmp", profile: "default", status: "active", createdAt: "2026-01-01", lastActive: "2026-01-01" };
 const mockTask = { id: "t1", projectId: "p1", description: "Fix", status: "pending", kanbanStatus: "backlog", sessionId: "s1", createdAt: "2026-01-01", updatedAt: "2026-01-01" };
 
-function setup(queueFull = false) {
+function setup(queueFull = false, opts: {
+  runningProcess?: {
+    state?: string;
+    claudeSessionId?: string;
+  } | null;
+  pendingInboxForTask?: string | null;
+} = {}) {
+  const runningProcess = opts.runningProcess === null
+    ? undefined
+    : {
+        pid: 123,
+        taskId: "t1",
+        state: opts.runningProcess?.state ?? "running",
+        claudeSessionId: opts.runningProcess?.claudeSessionId,
+        ...opts.runningProcess,
+      };
   const deps = {
     taskManager: {
       getTasksWithKanban: vi.fn(() => [mockTask]),
       getTaskById: vi.fn((pid: string, tid: string) => tid === "t1" ? mockTask : undefined),
     },
     eventStore: { addEvent: vi.fn() },
-    governor: { acquire: vi.fn(async () => queueFull ? "queued" : { pid: 123, taskId: "t1" }) },
-    adapter: {},
+    governor: {
+      acquire: vi.fn(async () => queueFull ? "queued" : { pid: 123, taskId: "t1" }),
+      getProcess: vi.fn((tid: string) => (tid === "t1" && runningProcess ? runningProcess : undefined)),
+      release: vi.fn(async () => {}),
+    },
+    adapter: {
+      terminate: vi.fn(),
+    },
     sseManager: { broadcast: vi.fn() },
     projectManager: { getById: vi.fn((id: string) => id === "p1" ? mockProject : undefined) },
+    inboxManager: {
+      getByProject: vi.fn(() => {
+        if (!opts.pendingInboxForTask) return [];
+        return [{ id: "inbox1", projectId: "p1", taskId: opts.pendingInboxForTask, status: "pending" }];
+      }),
+    },
     emitTaskCreatedEvent: vi.fn(async () => ({})),
     emitTaskCancelledEvent: vi.fn(async () => ({})),
     emitWorkCompletedEvent: vi.fn(async () => ({})),
@@ -65,6 +92,77 @@ describe("Task Routes", () => {
       body: JSON.stringify({ description: "Queued task" }),
     });
     expect(res.status).toBe(202);
+  });
+
+  // Iterate 10 — mid-task permission mode switching
+  it("POST /tasks/:id/mode respawns with --resume + new permissionMode", async () => {
+    const { app, deps } = setup(false, {
+      runningProcess: { state: "running", claudeSessionId: "real-claude-sess-xyz" },
+    });
+    const res = await app.request("/api/projects/p1/tasks/t1/mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "plan" }),
+    });
+    expect(res.status).toBe(200);
+    expect(deps.adapter.terminate).toHaveBeenCalledTimes(1);
+    expect(deps.governor.release).toHaveBeenCalledWith("t1");
+    expect(deps.governor.acquire).toHaveBeenCalledTimes(1);
+    const opts = deps.governor.acquire.mock.calls[0][0];
+    expect(opts.sessionId).toBe("real-claude-sess-xyz");
+    expect(opts.resumeSession).toBe(true);
+    expect(opts.permissionMode).toBe("plan");
+  });
+
+  it("POST /tasks/:id/mode returns 409 when a pending inbox item exists", async () => {
+    const { app, deps } = setup(false, {
+      runningProcess: { state: "running", claudeSessionId: "real-claude-sess-xyz" },
+      pendingInboxForTask: "t1",
+    });
+    const res = await app.request("/api/projects/p1/tasks/t1/mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "plan" }),
+    });
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.error).toMatch(/pending question|Answer/i);
+    expect(deps.adapter.terminate).not.toHaveBeenCalled();
+  });
+
+  it("POST /tasks/:id/mode returns 409 when session_id not yet captured", async () => {
+    const { app, deps } = setup(false, {
+      runningProcess: { state: "running", claudeSessionId: undefined },
+    });
+    const res = await app.request("/api/projects/p1/tasks/t1/mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "acceptEdits" }),
+    });
+    expect(res.status).toBe(409);
+    expect(deps.adapter.terminate).not.toHaveBeenCalled();
+  });
+
+  it("POST /tasks/:id/mode returns 400 when process is not running", async () => {
+    const { app } = setup(false, { runningProcess: null });
+    const res = await app.request("/api/projects/p1/tasks/t1/mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "plan" }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("POST /tasks/:id/mode validates the mode enum (unknown rejected as 400)", async () => {
+    const { app } = setup(false, {
+      runningProcess: { state: "running", claudeSessionId: "real-claude-sess-xyz" },
+    });
+    const res = await app.request("/api/projects/p1/tasks/t1/mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "turbo-mode" }),
+    });
+    expect(res.status).toBe(400);
   });
 
   // Iterate 9 — model + effort wire-through

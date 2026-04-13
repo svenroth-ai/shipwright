@@ -76,6 +76,56 @@ export class ProjectManager {
     return updated;
   }
 
+  /**
+   * Iterate 10 — write the per-project autonomy setting into BOTH
+   * projects.json (in-memory + webui registry) AND the project's own
+   * `shipwright_run_config.json` so the Shipwright plugin chain
+   * (shipwright-project, shipwright-build, etc.) actually reads the
+   * same value. Prior to this, autonomy set via the webui Settings page
+   * was a silent placebo because the plugins load run_config.json
+   * directly, not projects.json.
+   *
+   * The run_config write merges with existing content so we don't
+   * clobber other fields. A missing file is created fresh with just
+   * the autonomy field. Write failures are logged but non-fatal —
+   * the in-memory update always succeeds so the UI stays responsive.
+   */
+  async updateAutonomy(id: string, autonomy: "guided" | "autonomous"): Promise<Project> {
+    const existing = this.projects.get(id);
+    if (!existing) throw new AppError("Project not found", 404);
+
+    // 1. Update in-memory + projects.json
+    const updated = this.update(id, {
+      settings: { ...existing.settings, autonomy },
+    });
+
+    // 2. Merge into <project>/shipwright_run_config.json (non-fatal).
+    const runConfigPath = `${existing.path}/shipwright_run_config.json`;
+    try {
+      let runConfig: Record<string, unknown> = {};
+      if (this.deps.existsSync(runConfigPath)) {
+        const content = await this.deps.readFile(runConfigPath, "utf-8");
+        try {
+          runConfig = JSON.parse(content) as Record<string, unknown>;
+        } catch {
+          // Malformed — fall back to fresh object so we don't lose the write.
+          runConfig = {};
+        }
+      }
+      runConfig.autonomy = autonomy;
+      await this.deps.writeFile(runConfigPath, JSON.stringify(runConfig, null, 2));
+    } catch (err) {
+      console.error(JSON.stringify({
+        level: "warn",
+        message: "Autonomy sync to shipwright_run_config.json failed",
+        projectId: id,
+        error: String(err),
+      }));
+    }
+
+    return updated;
+  }
+
   delete(id: string): void {
     if (!this.projects.has(id)) throw new AppError("Project not found", 404);
     this.projects.delete(id);
