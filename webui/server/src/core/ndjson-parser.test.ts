@@ -182,6 +182,41 @@ describe("extractContentBlocks", () => {
     expect(msgs).toHaveLength(0);
   });
 
+  // Regression: content_block_start/delta must NOT produce ChatMessages.
+  // Claude CLI's stream-json mode emits these events with partial state while
+  // the tool_input JSON is being generated token-by-token, and then the full
+  // `assistant` event with the complete content[] array. If both paths persist,
+  // we get duplicate ChatMessages for the same logical tool call with
+  // slightly-different content (the partial version vs the final version).
+  // Only the `assistant` event should drive persistence.
+  it("returns empty for content_block_start with a tool_use block (not persisted)", () => {
+    const msgs = extractContentBlocks("t1", {
+      type: "content_block_start",
+      content_block: {
+        type: "tool_use",
+        name: "AskUserQuestion",
+        input: { questions: [{ question: "partial" }] },
+      },
+    });
+    expect(msgs).toHaveLength(0);
+  });
+
+  it("returns empty for content_block_delta with a text block (not persisted)", () => {
+    const msgs = extractContentBlocks("t1", {
+      type: "content_block_delta",
+      content_block: { type: "text", text: "partial streaming token" },
+    });
+    expect(msgs).toHaveLength(0);
+  });
+
+  it("returns empty for content_block_start with a thinking block (not persisted)", () => {
+    const msgs = extractContentBlocks("t1", {
+      type: "content_block_start",
+      content_block: { type: "thinking", thinking: "partial thought..." },
+    });
+    expect(msgs).toHaveLength(0);
+  });
+
   it("returns empty for assistant with no message", () => {
     const msgs = extractContentBlocks("t1", { type: "assistant" });
     expect(msgs).toHaveLength(0);

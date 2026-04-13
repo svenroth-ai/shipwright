@@ -20,7 +20,13 @@ PHASE_KEYWORDS: dict[str, set[str]] = {
         "milestones", "estimate",
     },
     "build": {
-        "implement", "code", "build", "function", "component",
+        # NOTE: "build" (the verb) is intentionally NOT in this set.
+        # In user task titles "build a X" almost always means "create a new X",
+        # which is a project-creation intent, not the Shipwright build phase.
+        # Keeping "build" here made "Build a ToDo-App" classify as build
+        # (score 1 via "build") vs project (score 1 via "app") with the tie
+        # going to build, which showed a wrong phase badge on the kanban card.
+        "implement", "code", "function", "component",
         "refactor", "endpoint", "route", "hook",
     },
     "test": {
@@ -39,7 +45,7 @@ PHASE_KEYWORDS: dict[str, set[str]] = {
     },
 }
 
-PHASE_PRIORITY = ["design", "test", "deploy", "compliance", "changelog", "plan", "build", "project"]
+PHASE_PRIORITY = ["design", "test", "deploy", "compliance", "changelog", "plan", "project", "build"]
 
 DEFAULT_PHASE = "project"
 

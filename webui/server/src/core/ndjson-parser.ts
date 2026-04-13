@@ -126,29 +126,19 @@ export function extractContentBlocks(
     return [];
   }
 
-  // content_block events (streaming delta)
-  if (msg.type === "content_block_start" || msg.type === "content_block_delta") {
-    const block = msg.content_block;
-    if (!block) return [];
-    if (block.type === "thinking" && block.thinking) {
-      return [{
-        id: makeId(), taskId, type: "thinking",
-        content: block.thinking, timestamp: now,
-      }];
-    }
-    if (block.type === "text" && block.text) {
-      return [{
-        id: makeId(), taskId, type: "assistant",
-        content: block.text, timestamp: now,
-      }];
-    }
-    if (block.type === "tool_use") {
-      return [{
-        id: makeId(), taskId, type: "tool_use",
-        content: "", toolName: block.name, toolInput: block.input,
-        timestamp: now,
-      }];
-    }
+  // content_block_start / content_block_delta events are intentionally NOT
+  // persisted. Claude CLI's stream-json mode emits these events with partial
+  // state while a content block is being generated (e.g. while Claude is
+  // token-by-token building up a tool_use's input JSON), and then emits the
+  // full `assistant` event with the complete content[] array once generation
+  // finishes. If we processed both paths, we'd persist the same logical
+  // message twice — once with partial data (e.g. tool_input missing its
+  // "(Recommended)" suffix) and once with the final data. That produced the
+  // duplicate-tool-call cards and duplicate assistant-text bubbles the user
+  // saw on 2026-04-13. The client's useStreamingChat hook intentionally does
+  // not consume content_block_* events either — live text streaming runs off
+  // the `assistant` event's text blocks via appendToken. See ADR-016.
+  if (msg.type === "content_block_start" || msg.type === "content_block_delta" || msg.type === "content_block_stop") {
     return [];
   }
 
