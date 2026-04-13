@@ -135,7 +135,7 @@ describe("EventStore + TaskManager — real file I/O", () => {
       ensureFile: (p: string) => { if (!fs.existsSync(p)) fs.writeFileSync(p, ""); },
     };
 
-    await emitTaskCreatedEvent(eventsFile, "task-1", "proj-1", "Build login page", "feat", "P1", writerDeps);
+    await emitTaskCreatedEvent(eventsFile, "task-1", "proj-1", "Build login page", "feat", "P1", undefined, writerDeps);
     await appendEvent(eventsFile, {
       type: "phase_started",
       timestamp: new Date().toISOString(),

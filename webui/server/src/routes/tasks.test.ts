@@ -224,6 +224,95 @@ describe("Task Routes", () => {
     expect(phaseEvent[1].phase).toBe("build");
   });
 
+  it("POST /tasks/:taskId/start uses task.requestedPhase when set", async () => {
+    const taskWithPhase = { ...mockTask, requestedPhase: "design" };
+    const deps = {
+      taskManager: {
+        getTasksWithKanban: vi.fn(() => [taskWithPhase]),
+        getTaskById: vi.fn(() => taskWithPhase),
+      },
+      eventStore: { addEvent: vi.fn() },
+      governor: { acquire: vi.fn(async () => ({ pid: 456 })), getProcess: vi.fn(() => undefined) },
+      adapter: {},
+      sseManager: { broadcast: vi.fn() },
+      projectManager: { getById: vi.fn(() => mockProject) },
+      emitTaskCreatedEvent: vi.fn(async () => ({})),
+    } as any;
+    const app = new Hono();
+    app.onError(errorHandler);
+    app.route("/", createTaskRoutes(deps));
+
+    const res = await app.request("/api/projects/p1/tasks/t1/start", { method: "POST" });
+    expect(res.status).toBe(200);
+    const phaseEvent = deps.eventStore.addEvent.mock.calls.find(
+      ([, ev]: [string, { type: string }]) => ev.type === "phase_started"
+    );
+    expect(phaseEvent).toBeDefined();
+    expect(phaseEvent[1].phase).toBe("design");
+  });
+
+  it("POST /tasks/:taskId/start falls back to classifyPhase when requestedPhase missing", async () => {
+    const taskNoPhase = { ...mockTask, title: "implement auth hook", description: "" };
+    const deps = {
+      taskManager: {
+        getTasksWithKanban: vi.fn(() => [taskNoPhase]),
+        getTaskById: vi.fn(() => taskNoPhase),
+      },
+      eventStore: { addEvent: vi.fn() },
+      governor: { acquire: vi.fn(async () => ({ pid: 456 })), getProcess: vi.fn(() => undefined) },
+      adapter: {},
+      sseManager: { broadcast: vi.fn() },
+      projectManager: { getById: vi.fn(() => mockProject) },
+      emitTaskCreatedEvent: vi.fn(async () => ({})),
+    } as any;
+    const app = new Hono();
+    app.onError(errorHandler);
+    app.route("/", createTaskRoutes(deps));
+
+    const res = await app.request("/api/projects/p1/tasks/t1/start", { method: "POST" });
+    expect(res.status).toBe(200);
+    const phaseEvent = deps.eventStore.addEvent.mock.calls.find(
+      ([, ev]: [string, { type: string }]) => ev.type === "phase_started"
+    );
+    // Mocked classifyPhase returns "build"
+    expect(phaseEvent[1].phase).toBe("build");
+  });
+
+  it("POST /tasks with explicit phase persists it on task_created event", async () => {
+    const { app } = setup();
+    const writerCalls: Array<{ phase?: string }> = [];
+    // capture via emitTaskCreatedEvent shim
+    const deps2 = {
+      taskManager: {
+        getTasksWithKanban: vi.fn(() => [mockTask]),
+        getTaskById: vi.fn(() => mockTask),
+      },
+      eventStore: { addEvent: vi.fn() },
+      governor: { acquire: vi.fn(async () => ({ pid: 123 })) },
+      adapter: {},
+      sseManager: { broadcast: vi.fn() },
+      projectManager: { getById: vi.fn(() => mockProject) },
+      emitTaskCreatedEvent: vi.fn(async (...args: unknown[]) => {
+        // The 7th positional arg is phase
+        const phase = args[6] as string | undefined;
+        writerCalls.push({ phase });
+        return {};
+      }),
+    } as any;
+    const app2 = new Hono();
+    app2.onError(errorHandler);
+    app2.route("/", createTaskRoutes(deps2));
+    const res = await app2.request("/api/projects/p1/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: "design hero", phase: "design" }),
+    });
+    expect(res.status).toBe(201);
+    expect(writerCalls).toHaveLength(1);
+    expect(writerCalls[0].phase).toBe("design");
+    void app;
+  });
+
   it("POST /tasks with invalid phase falls back to auto-classification", async () => {
     const { app, deps } = setup();
     const res = await app.request("/api/projects/p1/tasks", {

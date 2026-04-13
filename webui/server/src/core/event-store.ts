@@ -9,6 +9,7 @@ interface TaskStateEntry {
   description: string;
   status: TaskStatus;
   currentPhase?: string;
+  requestedPhase?: string;
   intent?: string;
   priority?: string;
   sessionId: string;
@@ -66,6 +67,7 @@ export class EventStore {
           status: "pending",
           intent: event.intent,
           priority: event.priority,
+          requestedPhase: typeof event.phase === "string" ? event.phase : undefined,
           sessionId: (event.session_id as string) ?? taskId,
           createdAt: event.timestamp,
           updatedAt: event.timestamp,

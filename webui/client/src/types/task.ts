@@ -15,6 +15,7 @@ export interface Task {
   status: TaskStatus;
   kanbanStatus: KanbanStatus;
   currentPhase?: string;
+  requestedPhase?: string;
   sessionId: string;
   pid?: number;
   exitCode?: number;

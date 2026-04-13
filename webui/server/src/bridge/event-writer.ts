@@ -35,6 +35,7 @@ export async function emitTaskCreatedEvent(
   description: string,
   intent?: string,
   priority?: string,
+  phase?: string,
   deps?: WriterDeps
 ): Promise<ShipwrightEvent> {
   const event: ShipwrightEvent = {
@@ -46,6 +47,7 @@ export async function emitTaskCreatedEvent(
     source: "webui",
     ...(intent && { intent }),
     ...(priority && { priority }),
+    ...(phase && { phase }),
   };
 
   if (deps) {

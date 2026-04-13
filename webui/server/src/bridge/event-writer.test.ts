@@ -55,6 +55,7 @@ describe("emitTaskCreatedEvent", () => {
       "Fix bug",
       "fix",
       "low",
+      undefined,
       deps
     );
     expect(event.type).toBe("task_created");
@@ -65,5 +66,21 @@ describe("emitTaskCreatedEvent", () => {
     expect(event.priority).toBe("low");
     expect(event.source).toBe("webui");
     expect(event.timestamp).toBeDefined();
+    expect(event.phase).toBeUndefined();
+  });
+
+  it("includes phase when provided", async () => {
+    const deps = mockDeps();
+    const event = await emitTaskCreatedEvent(
+      "events.jsonl",
+      "t1",
+      "p1",
+      "Design hero",
+      undefined,
+      undefined,
+      "design",
+      deps
+    );
+    expect(event.phase).toBe("design");
   });
 });
