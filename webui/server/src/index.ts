@@ -43,6 +43,7 @@ import { createPipelineRoutes } from "./routes/pipeline.js";
 import { createDocsRoutes } from "./routes/docs.js";
 import { createClassifyRoutes } from "./routes/classify.js";
 import { createSettingsRoutes } from "./routes/settings.js";
+import { createCapabilitiesRoutes } from "./routes/capabilities.js";
 import { createSSERoute } from "./routes/sse.js";
 
 const config = getConfig();
@@ -452,6 +453,7 @@ if (isMainModule) {
     app.route("/", createDocsRoutes(projectManager));
     app.route("/", createClassifyRoutes(projectManager));
     app.route("/", createSettingsRoutes(settingsPath, settingsDeps));
+    app.route("/", createCapabilitiesRoutes());
     app.route("/", createSSERoute(sseManager));
 
     // Graceful shutdown with timeout
