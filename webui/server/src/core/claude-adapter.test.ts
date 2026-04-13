@@ -172,6 +172,29 @@ describe("ClaudeAdapter", () => {
     expect((deps.spawn as any).mock.calls[0][0]).toBe("/usr/local/bin/claude");
   });
 
+  // Iterate 9 — model wire-through
+  it("pushes --model <alias> when model is set", () => {
+    const { child } = createFakeChild();
+    const deps = createMockDeps(child);
+    const adapter = new ClaudeAdapter(deps, () => {});
+    adapter.spawn({ ...baseOptions, model: "sonnet" });
+
+    const args: string[] = (deps.spawn as any).mock.calls[0][1];
+    const modelIdx = args.indexOf("--model");
+    expect(modelIdx).toBeGreaterThanOrEqual(0);
+    expect(args[modelIdx + 1]).toBe("sonnet");
+  });
+
+  it("omits --model when model is undefined (uses CLI default)", () => {
+    const { child } = createFakeChild();
+    const deps = createMockDeps(child);
+    const adapter = new ClaudeAdapter(deps, () => {});
+    adapter.spawn(baseOptions);
+
+    const args: string[] = (deps.spawn as any).mock.calls[0][1];
+    expect(args).not.toContain("--model");
+  });
+
   it("terminate sends signal and sets state", () => {
     const { child } = createFakeChild();
     const deps = createMockDeps(child);

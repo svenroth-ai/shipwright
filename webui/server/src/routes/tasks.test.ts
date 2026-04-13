@@ -67,6 +67,54 @@ describe("Task Routes", () => {
     expect(res.status).toBe(202);
   });
 
+  // Iterate 9 — model + effort wire-through
+  it("POST /tasks forwards body.model to governor.acquire as model option", async () => {
+    const { app, deps } = setup();
+    await app.request("/api/projects/p1/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: "Build auth", model: "sonnet" }),
+    });
+    expect(deps.governor.acquire).toHaveBeenCalled();
+    const opts = deps.governor.acquire.mock.calls[0][0];
+    expect(opts.model).toBe("sonnet");
+  });
+
+  it("POST /tasks omits model when body.model is invalid", async () => {
+    const { app, deps } = setup();
+    await app.request("/api/projects/p1/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: "Build auth", model: "bananasaurus" }),
+    });
+    const opts = deps.governor.acquire.mock.calls[0][0];
+    expect(opts.model).toBeUndefined();
+  });
+
+  it("POST /tasks wraps prompt with /think hard when effort=high", async () => {
+    const { app, deps } = setup();
+    await app.request("/api/projects/p1/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: "Design the auth layer", effort: "high" }),
+    });
+    const opts = deps.governor.acquire.mock.calls[0][0];
+    expect(opts.prompt).toMatch(/^\/think hard\n\n/);
+    expect(opts.prompt).toContain("Design the auth layer");
+  });
+
+  it("POST /tasks passes prompt unchanged when effort=low", async () => {
+    const { app, deps } = setup();
+    await app.request("/api/projects/p1/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: "Trivial fix", effort: "low" }),
+    });
+    const opts = deps.governor.acquire.mock.calls[0][0];
+    expect(opts.prompt).not.toMatch(/^\/think/);
+    expect(opts.prompt).toContain("Trivial fix");
+  });
+
   it("PATCH task status with cancelled returns updated", async () => {
     const { app } = setup();
     const res = await app.request("/api/projects/p1/tasks/t1/status", {

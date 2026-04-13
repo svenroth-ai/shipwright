@@ -23,6 +23,7 @@ import { ProjectManager } from "./core/project-manager.js";
 import { TaskManager } from "./core/task-manager.js";
 import { InboxManager } from "./core/inbox-manager.js";
 import { ChatStore } from "./core/chat-store.js";
+import { findOrphanAskUserQuestions } from "./core/inbox-replay.js";
 import { FileWatcher } from "./core/file-watcher.js";
 import { readEventsFromFile } from "./bridge/event-reader.js";
 import {
@@ -167,34 +168,43 @@ if (isMainModule) {
         // chat message's toolUseId as the inbox item id so the client's
         // AskUserCard (which sees the same ChatMessage) can correlate with
         // the persisted inbox item even after a page refresh. See ADR-018.
-        for (const chatMsg of chatMessages) {
-          if (chatMsg.type === "tool_use" && chatMsg.toolName === "AskUserQuestion") {
-            const payload = extractAskUserPayload(chatMsg.toolInput);
+        //
+        // Iterate 9: pass the REAL projectId (resolved at the top of the
+        // callback via `allProjects` + `getTaskById`). Previously we passed
+        // an empty string here with a stale "resolved by task lookup" TODO —
+        // there was no such resolver, so inbox.jsonl was never written
+        // (persistItem bails on empty projectId) and grouping by project
+        // silently broke. See iterate-2026-04-13-wiring-fixes spec.
+        if (projectId) {
+          for (const chatMsg of chatMessages) {
+            if (chatMsg.type === "tool_use" && chatMsg.toolName === "AskUserQuestion") {
+              const payload = extractAskUserPayload(chatMsg.toolInput);
+              inboxManager.addQuestion(
+                projectId,
+                taskId,
+                payload.question || "Question from Claude",
+                payload.context,
+                payload.options,
+                chatMsg.toolUseId,
+              ).catch((err) => console.error(JSON.stringify({ level: "error", message: "Inbox persist error", error: String(err) })));
+            }
+          }
+
+          // Legacy path: standalone tool_use event with AskUserQuestion.
+          // extractContentBlocks already covers this so the for-loop above
+          // handles it too, but keep this guard for any historical NDJSON
+          // shapes that don't flow through extractContentBlocks.
+          if (isAskUserQuestion(msg) && chatMessages.length === 0) {
+            const rawInput = msg.tool_input ?? (msg.message as { tool_input?: unknown } | undefined)?.tool_input;
+            const payload = extractAskUserPayload(rawInput);
             inboxManager.addQuestion(
-              "", // projectId resolved by task lookup
+              projectId,
               taskId,
               payload.question || "Question from Claude",
               payload.context,
               payload.options,
-              chatMsg.toolUseId,
             ).catch((err) => console.error(JSON.stringify({ level: "error", message: "Inbox persist error", error: String(err) })));
           }
-        }
-
-        // Legacy path: standalone tool_use event with AskUserQuestion.
-        // extractContentBlocks already covers this so the for-loop above
-        // handles it too, but keep this guard for any historical NDJSON
-        // shapes that don't flow through extractContentBlocks.
-        if (isAskUserQuestion(msg) && chatMessages.length === 0) {
-          const rawInput = msg.tool_input ?? (msg.message as { tool_input?: unknown } | undefined)?.tool_input;
-          const payload = extractAskUserPayload(rawInput);
-          inboxManager.addQuestion(
-            "",
-            taskId,
-            payload.question || "Question from Claude",
-            payload.context,
-            payload.options,
-          ).catch((err) => console.error(JSON.stringify({ level: "error", message: "Inbox persist error", error: String(err) })));
         }
       },
       // onExit: in persistent-process mode, the CLI stays alive for the whole
@@ -321,6 +331,47 @@ if (isMainModule) {
       eventStore.replayProject(project.id, events);
 
       await inboxManager.loadFromDisk(project.id, project.path);
+
+      // Iterate 9 — chat-history replay for inbox. Walks every
+      // chat-history/*.jsonl for this project and reconstructs InboxItems
+      // for any tool_use AskUserQuestion that doesn't have a matching
+      // tool_result yet. Without this, open questions from a task running
+      // before the restart silently disappear from the inbox UI. The
+      // reconstructed items won't be answerable until the task is
+      // restarted (the Claude process is dead), but at least the user
+      // sees them and understands what's pending.
+      try {
+        const chatHistoryDir = `${project.path}/.shipwright-webui/chat-history`;
+        if (fs.existsSync(chatHistoryDir)) {
+          const files = fs.readdirSync(chatHistoryDir).filter((f) => f.endsWith(".jsonl"));
+          for (const file of files) {
+            const taskId = file.replace(/\.jsonl$/, "");
+            const messages = await chatStore.load(project.path, taskId);
+            const orphans = findOrphanAskUserQuestions(messages);
+            for (const orphan of orphans) {
+              // Skip if the inbox already knows this item (loadFromDisk
+              // already picked it up from inbox.jsonl). Without this guard
+              // persistItem would append a duplicate line for every restart.
+              if (inboxManager.getById(orphan.toolUseId)) continue;
+              await inboxManager.addQuestion(
+                project.id,
+                orphan.taskId,
+                orphan.question,
+                orphan.context,
+                orphan.options,
+                orphan.toolUseId,
+              );
+            }
+          }
+        }
+      } catch (err) {
+        console.error(JSON.stringify({
+          level: "warn",
+          message: "Inbox chat-history replay failed",
+          project: project.id,
+          error: String(err),
+        }));
+      }
 
 
       fileWatcher.watchProject(project.id, project.path, (type, _path) => {

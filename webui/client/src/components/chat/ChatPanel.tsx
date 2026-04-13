@@ -12,6 +12,7 @@ import { ChatInput } from './ChatInput';
 import { ApiError } from '../../lib/api';
 import { foldToolResults } from '../../lib/foldToolResults';
 import { dedupeStreamingMessages } from '../../lib/dedupeStreamingMessages';
+import { collapseAskUserQuestionRun } from '../../lib/collapseAskUserQuestion';
 import { ChatAwaitingContext } from '../../contexts/ChatAwaitingContext';
 import type { AutonomyOption } from '../../types/settings';
 
@@ -62,9 +63,14 @@ function isAwaitingResponse(
 
 export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
   const { data: rawMessages = [] } = useChat(projectId, taskId);
-  // Fold tool_result into matching tool_use BEFORE dedupe, so tool cards show
-  // their final "Done"/"Error" status instead of a perpetual "Running" badge.
-  const messages = dedupeMessages(foldToolResults(rawMessages));
+  // Fold tool_result into matching tool_use first (so tool cards flip to
+  // "Done"), then dedupe result/assistant echoes, then collapse Claude's
+  // AskUserQuestion fallback noise (iterate 9 — duplicate cards + markdown
+  // "Let me know…" list that Claude emits in the same turn as the real
+  // tool call). Order matters: collapse sees the already-folded shape.
+  const messages = collapseAskUserQuestionRun(
+    dedupeMessages(foldToolResults(rawMessages)),
+  );
 
   const { data: project } = useProject(projectId);
   const { data: globalSettings } = useSettings();
@@ -169,8 +175,10 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
             - Then fold tool_result into matching tool_use so a live tool card
               transitions from "Running" to "Done" in place. */}
         {streaming.isStreaming &&
-          foldToolResults(
-            dedupeStreamingMessages(messages, streaming.streamingMessages),
+          collapseAskUserQuestionRun(
+            foldToolResults(
+              dedupeStreamingMessages(messages, streaming.streamingMessages),
+            ),
           ).map((msg) => <ChatMessage key={msg.id} message={msg} />)}
         {streaming.isStreaming && streaming.displayContent && !displayContentIsPersisted && (
           <AssistantMessage content={streaming.displayContent} isStreaming />
