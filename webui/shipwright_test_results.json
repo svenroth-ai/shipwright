@@ -1,72 +1,27 @@
 {
-  "timestamp": "2026-04-13T14:25:00Z",
-  "branch": "iterate/task-event-persist",
+  "timestamp": "2026-04-13T15:30:00Z",
+  "branch": "iterate/wiring-fixes",
   "overall": "PASS",
-  "iterate_run": "iterate-2026-04-13-task-event-persist",
+  "iterate_run": "iterate-2026-04-13-wiring-fixes",
   "unit": {
-    "passed": 425,
-    "total": 425,
-    "duration_s": 45,
+    "passed": 455,
+    "total": 455,
     "breakdown": {
       "server": {
-        "passed": 220,
-        "total": 220,
-        "files": 27,
-        "delta_since_previous_iterate": "+7 (event-writer: emitTaskCancelled, emitTaskUpdated x2, emitWorkCompleted; tasks routes: PATCH cancelled persists, PATCH closed persists, PATCH description persists)"
+        "passed": 242,
+        "total": 242,
+        "delta_since_previous_iterate": "+22 (claude-adapter model x2, effort-prompt x9, inbox-replay x7, tasks.ts model/effort wiring x4)"
       },
       "client": {
-        "passed": 205,
-        "total": 205,
-        "files": 52,
-        "delta_since_previous_iterate": "0"
+        "passed": 213,
+        "total": 213,
+        "delta_since_previous_iterate": "+8 (collapseAskUserQuestion x8)"
       }
     }
   },
-  "iterate_plugin": {
-    "passed": 59,
-    "total": 59,
-    "delta_since_previous_iterate": "0"
-  },
-  "shared": {
-    "passed": 153,
-    "total": 155,
-    "delta_since_previous_iterate": "0",
-    "known_failures": [
-      "tests/test_config.py::test_read_all_configs_empty — pre-existing",
-      "tests/test_config.py::test_config_handles_all_config_files — pre-existing"
-    ]
-  },
-  "integration": {
-    "skipped": true,
-    "skip_reason": "tests/integration/ directory does not exist"
-  },
-  "pgtap": {
-    "skipped": true,
-    "skip_reason": "no supabase/tests/database/ directory"
-  },
-  "smoke": {
-    "passed": true,
-    "url": "http://localhost:3847/api/health",
-    "status_code": 200,
-    "notes": "Server restarted during iterate 7. Manual verification of task delete/close/edit persistence pending user restart + retest."
-  },
-  "e2e": {
-    "passed": 17,
-    "total": 17,
-    "skipped": false,
-    "duration_s": 17.8,
-    "delta_since_previous_iterate": "0"
-  },
-  "consistency": {
-    "skipped": true,
-    "skip_reason": "monorepo layout mismatch"
-  },
-  "visual": {
-    "skipped": true,
-    "skip_reason": "no UI changes"
-  },
-  "degraded": [
-    "ESLint binary not installed locally — type-check clean",
-    "shared/test_config.py 2 pre-existing failures unrelated to iterate 8"
-  ]
+  "iterate_plugin": { "passed": 59, "total": 59, "delta_since_previous_iterate": "0" },
+  "shared": { "passed": 153, "total": 155, "known_failures": ["test_config.py x2 pre-existing"] },
+  "smoke": { "passed": true, "notes": "tsc clean for both client and server" },
+  "e2e": { "passed": 17, "total": 17, "duration_s": 14.9 },
+  "degraded": ["ESLint binary missing locally — tsc --noEmit clean", "shared test_config.py 2 pre-existing failures"]
 }

@@ -13,11 +13,19 @@ interface CreateTaskParams {
 
 export function useCreateTask() {
   const queryClient = useQueryClient();
-  const { mode, model } = useChatSettings();
+  const { mode, model, effort } = useChatSettings();
 
   const mutation = useMutation({
     mutationFn: ({ projectId, title, description = '', startImmediately = true, phase }: CreateTaskParams) =>
-      apiPost(`/projects/${projectId}/tasks`, { title, description, startImmediately, mode, model, ...(phase ? { phase } : {}) }),
+      apiPost(`/projects/${projectId}/tasks`, {
+        title,
+        description,
+        startImmediately,
+        mode,
+        model,
+        effort,
+        ...(phase ? { phase } : {}),
+      }),
     onSuccess: (_data, variables) => {
       // Always invalidate using the variables (reliable) not the response
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(variables.projectId) });

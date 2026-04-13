@@ -29,6 +29,10 @@ export interface SpawnDeps {
 
 export type PermissionMode = "default" | "acceptEdits" | "plan" | "bypassPermissions";
 
+/** Claude CLI accepts these short aliases directly via --model.
+ *  Kept narrow so we don't silently pass arbitrary strings into the CLI. */
+export type ModelAlias = "opus" | "sonnet" | "haiku";
+
 export interface ClaudeSpawnOptions {
   projectDir: string;
   projectId: string;
@@ -45,6 +49,13 @@ export interface ClaudeSpawnOptions {
    * Defaults to bypassPermissions which is what VS Code's extension uses.
    */
   permissionMode?: PermissionMode;
+  /**
+   * Claude CLI model alias — opus / sonnet / haiku. When set, pushes
+   * `--model <alias>` into the spawn args. When undefined, the CLI picks
+   * its compiled-in default (currently claude-opus-4-5). Iterate 9 wired
+   * this up after finding the UI toolbar selection was a placebo.
+   */
+  model?: ModelAlias;
   claudeCliPath?: string;
 }
 
@@ -126,6 +137,10 @@ export class ClaudeAdapter {
 
     if (options.sessionId) {
       args.push("--session-id", options.sessionId);
+    }
+
+    if (options.model) {
+      args.push("--model", options.model);
     }
 
     // `-p` with placeholder is required when using --input-format stream-json.

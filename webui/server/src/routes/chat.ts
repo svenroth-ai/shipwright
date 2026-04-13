@@ -4,6 +4,7 @@ import type { ChatStore } from "../core/chat-store.js";
 import type { ProcessGovernor } from "../core/process-governor.js";
 import type { ClaudeAdapter, UserContentBlock } from "../core/claude-adapter.js";
 import type { ProjectManager } from "../core/project-manager.js";
+import { wrapWithEffort, coerceEffort } from "../core/effort-prompt.js";
 import { AppError } from "../middleware/error-handler.js";
 
 interface ChatImagePayload {
@@ -33,12 +34,17 @@ export function createChatRoutes(
       taskId?: string;
       message?: string;
       images?: ChatImagePayload[];
+      effort?: unknown;
     };
     if (!body.taskId || (!body.message && !body.images?.length)) {
       throw new AppError("taskId and message (or images) are required", 400);
     }
 
     const taskId = body.taskId;
+    // Iterate 9 — apply effort prefix to follow-up messages so the toolbar's
+    // thinking-depth selector actually reaches Claude. No-op for "low".
+    const effort = coerceEffort(body.effort);
+    const wrappedMessage = body.message ? wrapWithEffort(body.message, effort) : body.message;
 
     // 1. Persist the user message immediately so it shows in the UI
     const userChatMessage = {
@@ -61,12 +67,13 @@ export function createChatRoutes(
     }
 
     // 3. Build the content payload: string for plain text, or an array of
-    //    text + image content blocks for multimodal messages.
+    //    text + image content blocks for multimodal messages. The text part
+    //    is already effort-wrapped (wrappedMessage).
     let content: string | UserContentBlock[];
     if (body.images && body.images.length > 0) {
       const blocks: UserContentBlock[] = [];
-      if (body.message) {
-        blocks.push({ type: "text", text: body.message });
+      if (wrappedMessage) {
+        blocks.push({ type: "text", text: wrappedMessage });
       }
       for (const img of body.images) {
         blocks.push({
@@ -76,7 +83,7 @@ export function createChatRoutes(
       }
       content = blocks;
     } else {
-      content = body.message ?? "";
+      content = wrappedMessage ?? "";
     }
 
     // 4. Send it to the persistent CLI process via NDJSON stdin
