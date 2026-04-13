@@ -3,7 +3,8 @@ import { randomUUID } from "crypto";
 import type { TaskManager } from "../core/task-manager.js";
 import type { EventStore } from "../core/event-store.js";
 import type { ProcessGovernor } from "../core/process-governor.js";
-import type { ClaudeAdapter, PermissionMode } from "../core/claude-adapter.js";
+import type { ClaudeAdapter, PermissionMode, ModelAlias } from "../core/claude-adapter.js";
+import { wrapWithEffort, coerceEffort } from "../core/effort-prompt.js";
 import type { SSEManager } from "../core/sse-manager.js";
 import type { ProjectManager } from "../core/project-manager.js";
 import type { ChatStore } from "../core/chat-store.js";
@@ -69,6 +70,14 @@ function coercePermissionMode(raw: unknown): PermissionMode {
     return raw as PermissionMode;
   }
   return "bypassPermissions";
+}
+
+const VALID_MODELS: ModelAlias[] = ["opus", "sonnet", "haiku"];
+function coerceModel(raw: unknown): ModelAlias | undefined {
+  if (typeof raw === "string" && (VALID_MODELS as string[]).includes(raw)) {
+    return raw as ModelAlias;
+  }
+  return undefined;
 }
 
 function coercePhase(raw: unknown): Phase | undefined {
@@ -151,6 +160,8 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
     const eventsPath = `${project.path}/shipwright_events.jsonl`;
 
     const permissionMode = coercePermissionMode(body.mode);
+    const model = coerceModel(body.model);
+    const effort = coerceEffort(body.effort);
     const phase = await resolvePhase(body.phase, title, description, project.path);
 
     await deps.emitTaskCreatedEvent(eventsPath, taskId, project.id, description, body.intent, body.priority, phase);
@@ -173,8 +184,9 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
           taskId,
           sessionId,
           pluginDirs: project.settings?.claudePluginDirs ?? [],
-          prompt: buildPrompt(title, description),
+          prompt: wrapWithEffort(buildPrompt(title, description), effort),
           permissionMode,
+          ...(model && { model }),
         });
         if (result === "queued") {
           startStatus = "queued";
@@ -228,6 +240,8 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
     const eventsPath = `${project.path}/shipwright_events.jsonl`;
     const body = await c.req.json().catch(() => ({} as Record<string, unknown>));
     const permissionMode = coercePermissionMode(body.mode);
+    const model = coerceModel(body.model);
+    const effort = coerceEffort(body.effort);
     // Resolve phase: explicit body.phase > task.requestedPhase > classify fallback > "project"
     const startPhase = await resolvePhase(
       body.phase ?? task.requestedPhase,
@@ -242,8 +256,9 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
         taskId,
         sessionId,
         pluginDirs: project.settings?.claudePluginDirs ?? [],
-        prompt: buildPrompt(task.title, task.description),
+        prompt: wrapWithEffort(buildPrompt(task.title, task.description), effort),
         permissionMode,
+        ...(model && { model }),
       });
 
       if (result === "queued") {

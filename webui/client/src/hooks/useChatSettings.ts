@@ -9,7 +9,7 @@ export type ModelOption = 'opus' | 'sonnet' | 'haiku';
  * switch via the pill in the chat toolbar.
  */
 export type ModeOption = 'default' | 'acceptEdits' | 'plan' | 'bypassPermissions';
-export type EffortOption = 'low' | 'medium' | 'high';
+export type EffortOption = 'low' | 'medium' | 'high' | 'max';
 
 export interface ChatSettings {
   model: ModelOption;
