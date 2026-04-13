@@ -2,20 +2,19 @@ import { describe, it, expect } from 'vitest';
 import { extractAskUserPayload } from './askUserPayload';
 
 describe('extractAskUserPayload', () => {
-  it('extracts from the Claude Code AskUserQuestion schema (questions[0].question + multiSelect.options)', () => {
+  it('extracts from the real Claude Code AskUserQuestion schema (questions[0].options direct + multiSelect boolean)', () => {
+    // Shape verified against a live chat-history jsonl dump on 2026-04-13.
     const toolInput = {
       questions: [
         {
-          header: 'Priority',
           question: 'What priority should this task have?',
-          multiSelect: {
-            mode: 'single',
-            options: [
-              { label: 'High', description: 'Blocks others' },
-              { label: 'Medium', description: 'Soon' },
-              { label: 'Low' },
-            ],
-          },
+          header: 'Priority',
+          options: [
+            { label: 'High', description: 'Blocks others' },
+            { label: 'Medium', description: 'Soon' },
+            { label: 'Low' },
+          ],
+          multiSelect: false,
         },
       ],
     };
@@ -23,6 +22,20 @@ describe('extractAskUserPayload', () => {
     expect(payload.question).toBe('What priority should this task have?');
     expect(payload.options).toEqual(['High', 'Medium', 'Low']);
     expect(payload.header).toBe('Priority');
+    expect(payload.allowMultiple).toBe(false);
+  });
+
+  it('flags allowMultiple when multiSelect boolean is true', () => {
+    const payload = extractAskUserPayload({
+      questions: [
+        {
+          question: 'Pick all that apply',
+          options: [{ label: 'A' }, { label: 'B' }],
+          multiSelect: true,
+        },
+      ],
+    });
+    expect(payload.allowMultiple).toBe(true);
   });
 
   it('falls back to legacy flat schema { question, context, options: string[] }', () => {

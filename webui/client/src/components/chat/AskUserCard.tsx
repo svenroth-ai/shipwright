@@ -35,10 +35,10 @@ export function AskUserCard({ message }: AskUserCardProps) {
   return (
     <div className="flex justify-start">
       <div
-        className="mr-auto max-w-[80%] bg-white border border-amber-200 border-l-4 border-l-amber-400 rounded-xl p-4 shadow-[var(--shadow-card)]"
+        className="mr-auto max-w-[80%] bg-white border border-orange-300 border-l-4 border-l-orange-500 rounded-xl p-4 shadow-[var(--shadow-card)]"
       >
         {header && (
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-600 mb-1">{header}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-orange-600 mb-1">{header}</p>
         )}
         <p className="text-sm font-semibold text-gray-900 mb-3">{question}</p>
 

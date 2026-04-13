@@ -20,7 +20,10 @@ export function AssistantMessage({ message, content, isStreaming }: AssistantMes
   if (isStreaming && !text) {
     return (
       <div className="bg-white rounded-xl px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] max-w-full min-w-0">
-        <StreamingIndicator />
+        <span className="inline-flex items-center gap-2 text-sm text-gray-500">
+          <StreamingIndicator />
+          <span className="italic">Thinking…</span>
+        </span>
       </div>
     );
   }

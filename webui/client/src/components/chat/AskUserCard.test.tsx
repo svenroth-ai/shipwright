@@ -27,19 +27,18 @@ function renderCard(toolInput: unknown, content = '') {
 }
 
 describe('AskUserCard', () => {
-  it('renders question text from the Claude Code nested schema', () => {
+  it('renders question text from the real Claude Code schema (questions[0].options direct)', () => {
+    // Real shape verified from chat-history jsonl on 2026-04-13.
     renderCard({
       questions: [
         {
-          header: 'Priority',
           question: 'How urgent is this?',
-          multiSelect: {
-            mode: 'single',
-            options: [
-              { label: 'High', description: 'Blocks release' },
-              { label: 'Low' },
-            ],
-          },
+          header: 'Priority',
+          options: [
+            { label: 'High', description: 'Blocks release' },
+            { label: 'Low' },
+          ],
+          multiSelect: false,
         },
       ],
     });
@@ -52,9 +51,8 @@ describe('AskUserCard', () => {
       questions: [
         {
           question: 'Pick one',
-          multiSelect: {
-            options: [{ label: 'Alpha' }, { label: 'Bravo' }, { label: 'Charlie' }],
-          },
+          options: [{ label: 'Alpha' }, { label: 'Bravo' }, { label: 'Charlie' }],
+          multiSelect: false,
         },
       ],
     });
