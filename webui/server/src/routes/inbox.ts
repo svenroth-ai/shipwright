@@ -29,7 +29,12 @@ export function createInboxRoutes(
   sseManager: SSEManager,
   taskManager?: TaskManager,
   projectManager?: ProjectManager,
-  governor?: ProcessGovernor,
+  // governor was iterate 11.1's zombie-check dep. Iterate 11.2 removed
+  // the check (was too aggressive, hid legit items after server restart)
+  // so the parameter is kept for backwards-compat of the 5-arg signature
+  // but no longer used. Iterate 12 will implement task_orphaned events
+  // at the event-store level, obsoleting any route-level zombie logic.
+  _governor?: ProcessGovernor,
 ): Hono {
   const app = new Hono();
 
@@ -45,29 +50,30 @@ export function createInboxRoutes(
     if (!taskManager || !projectManager) {
       return c.json({ data: all });
     }
-    const active = all.filter((item: InboxItem) => {
+    const taskActive = all.filter((item: InboxItem) => {
       const task = taskManager.getTaskById(item.projectId, item.taskId);
-      if (!task) return false;
-      if (!isActive(task.status)) return false;
-
-      // Iterate 11.1 — zombie-task guard. Task status in the in-memory
-      // event store says "running" but the governor doesn't have a live
-      // process for it. That happens when the Claude CLI died without
-      // emitting work_completed / work_failed (server crash, manual
-      // kill, etc.). The event-store status is stale; treat the task
-      // as orphaned for inbox purposes.
-      //
-      // Architectural cleanup deferred to iterate 12: emit a synthetic
-      // `task_orphaned` event on startup for running-but-dead tasks so
-      // the status updates for real. For now the route-level filter
-      // suppresses the noise.
-      if (governor && task.status === "running") {
-        const proc = governor.getProcess(item.taskId);
-        if (!proc || proc.state === "exited") return false;
-      }
-      return true;
+      return task !== undefined && isActive(task.status);
     });
-    return c.json({ data: active });
+
+    // Iterate 11.2 — "latest pending per task". For each task, keep
+    // only the item with the most recent `createdAt`. This collapses
+    // (a) accumulated pending items from an interview that asked
+    // multiple questions over multiple turns (user wants to see the
+    // CURRENT question, not 4 historical ones) and (b) Claude's
+    // same-turn duplicate AskUserQuestion emission (iterate-9 observed
+    // behavior). One rule, both symptoms covered.
+    const answered = taskActive.filter((i) => i.status === "answered");
+    const pendingByTask = new Map<string, InboxItem>();
+    for (const item of taskActive) {
+      if (item.status !== "pending") continue;
+      const existing = pendingByTask.get(item.taskId);
+      if (!existing || item.createdAt > existing.createdAt) {
+        pendingByTask.set(item.taskId, item);
+      }
+    }
+    const visible = [...pendingByTask.values(), ...answered];
+
+    return c.json({ data: visible });
   });
 
   app.post("/api/inbox/:id/answer", async (c) => {
