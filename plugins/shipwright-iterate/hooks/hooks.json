@@ -5,6 +5,10 @@
         {
           "type": "command",
           "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../shipwright-run/scripts/hooks/capture-session-id.py"
+        },
+        {
+          "type": "command",
+          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_drift.py"
         }
       ]
     }
