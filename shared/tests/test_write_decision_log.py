@@ -1,6 +1,11 @@
 """Tests for decision log writer (compact ADR format)."""
 
-from tools.write_decision_log import append_decision, get_next_adr_number
+from tools.write_decision_log import (
+    append_decision,
+    check_field_length,
+    collect_length_warnings,
+    get_next_adr_number,
+)
 
 
 def test_get_next_adr_number_empty():
@@ -139,6 +144,34 @@ def test_append_decision_does_not_overwrite(tmp_project):
     assert "Second" in content
     assert "### ADR-001:" in content
     assert "### ADR-002:" in content
+
+
+def test_check_field_length_under_budget_returns_none():
+    assert check_field_length("context", "short", max_chars=500) is None
+
+
+def test_check_field_length_over_budget_returns_warning():
+    long = "x" * 750
+    warning = check_field_length("context", long, max_chars=500)
+    assert warning is not None
+    assert "context" in warning
+    assert "750" in warning
+    assert "500" in warning
+
+
+def test_collect_length_warnings_collects_all_over_budget_fields():
+    warnings = collect_length_warnings(
+        context="x" * 600,
+        decision="short",
+        consequences="y" * 1000,
+        rationale="",
+        rejected="",
+    )
+    assert len(warnings) == 2
+    joined = "\n".join(warnings)
+    assert "context" in joined
+    assert "consequences" in joined
+    assert "decision" not in joined
 
 
 def test_optional_fields_omitted_when_empty(tmp_project):

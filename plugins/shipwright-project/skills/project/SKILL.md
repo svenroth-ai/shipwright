@@ -228,6 +228,7 @@ See [interview-protocol.md](references/interview-protocol.md) for detailed guida
 
 **Approach:**
 - Use AskUserQuestion adaptively
+- **One AskUserQuestion per question.** Do NOT batch multiple questions in a single markdown list — the host (Shipwright Command Center and any compatible CLI front-end) blocks on each AskUserQuestion call and waits for a `tool_result` reply before you can continue. Batching produces a fallback list that the user has to parse and answer manually, which defeats the point of the interactive interview.
 - No fixed number of questions — stop when you have enough to propose splits
 - Build understanding incrementally
 - For Chat/Inline: start broad ("What are you building?"), then narrow down

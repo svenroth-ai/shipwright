@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import type { InboxItem, InboxStatus } from "../../../client/src/types/inbox.js";
+import type { ChatMessage } from "../../../client/src/types/chat.js";
 import type { ProcessGovernor } from "./process-governor.js";
 import type { ClaudeAdapter } from "./claude-adapter.js";
 import { AppError } from "../middleware/error-handler.js";
@@ -12,18 +13,38 @@ export interface InboxStoreDeps {
   mkdirSync: (path: string, opts?: { recursive: boolean }) => void;
 }
 
+/** Hooks the inbox manager uses to persist the synthetic `tool_result`
+ *  chat message when a real `toolu_`-prefixed AskUserQuestion answer is
+ *  delivered. Optional — when omitted, the answer is still delivered to
+ *  Claude but no chat-store entry is written. Constructor-injected so
+ *  tests can mock without touching the filesystem. */
+export interface InboxChatHooks {
+  appendChatMessage: (projectDir: string, taskId: string, message: ChatMessage) => Promise<void>;
+}
+
+/** Returns true when the inbox item id is an Anthropic `tool_use_id`
+ *  (added in iterate-6). These ids are stable across refreshes and are
+ *  what the Claude CLI needs as the `tool_use_id` field in a tool_result
+ *  content block to unblock its current AskUserQuestion call. */
+function looksLikeToolUseId(id: string): boolean {
+  return id.startsWith("toolu_");
+}
+
 export class InboxManager {
   private items = new Map<string, InboxItem>();
   private storageDeps?: InboxStoreDeps;
+  private chatHooks?: InboxChatHooks;
   private projectPaths = new Map<string, string>(); // projectId -> projectDir
 
   constructor(
     private governor: ProcessGovernor,
     private adapter: ClaudeAdapter,
     private onNotify: (item: InboxItem) => void,
-    storageDeps?: InboxStoreDeps
+    storageDeps?: InboxStoreDeps,
+    chatHooks?: InboxChatHooks,
   ) {
     this.storageDeps = storageDeps;
+    this.chatHooks = chatHooks;
   }
 
   registerProject(projectId: string, projectDir: string): void {
@@ -120,7 +141,38 @@ export class InboxManager {
       throw new AppError("Process no longer running", 400);
     }
 
-    this.adapter.sendStdin(proc, answerText);
+    // Iterate 7: when the item id is a real Anthropic `tool_use_id` (stable
+    // across refresh since iterate-6), reply with a structured `tool_result`
+    // content block. This is what makes Claude CLI actually unblock its
+    // pending AskUserQuestion call instead of emitting the markdown fallback
+    // question list. Legacy random-UUID items (pre-iterate-6) still fall
+    // through to the plain-text stdin path for backwards compat.
+    if (looksLikeToolUseId(item.id)) {
+      this.adapter.sendUserMessage(proc, [
+        { type: "tool_result", tool_use_id: item.id, content: answerText },
+      ]);
+
+      // Mirror the delivered tool_result as a ChatMessage in the chat-store
+      // so (a) the folded tool-card transitions to "Done" in place, (b) the
+      // "Answered: X" state survives a page refresh without relying on the
+      // inbox-only store, and (c) foldToolResults has an authoritative
+      // entry to consume. Only fires when chatHooks + project dir are set.
+      const projectDir = this.projectPaths.get(item.projectId);
+      if (this.chatHooks && projectDir) {
+        const resultMessage: ChatMessage = {
+          id: `tool-result-${item.id}-${Date.now()}`,
+          taskId: item.taskId,
+          type: "tool_result",
+          content: answerText,
+          toolUseId: item.id,
+          timestamp: new Date().toISOString(),
+        };
+        await this.chatHooks.appendChatMessage(projectDir, item.taskId, resultMessage);
+      }
+    } else {
+      this.adapter.sendStdin(proc, answerText);
+    }
+
     item.answer = answerText;
     item.status = "answered";
     item.answeredAt = new Date().toISOString();

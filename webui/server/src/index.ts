@@ -281,7 +281,21 @@ if (isMainModule) {
         payload: item,
         timestamp: new Date().toISOString(),
       });
-    }, inboxStoreDeps);
+    }, inboxStoreDeps, {
+      // Iterate 7: persist the synthetic tool_result as a chat message so
+      // the folded tool-card flips to "Done" after an AskUserQuestion is
+      // answered. Also broadcasts to SSE so open clients see it live.
+      appendChatMessage: async (projectDir, taskId, message) => {
+        await chatStore.append(projectDir, taskId, message);
+        const resolvedProjectId =
+          projectManager.getAll().find((p) => p.path === projectDir)?.id ?? "";
+        sseManager.broadcast({
+          type: "chat:message",
+          payload: { taskId, projectId: resolvedProjectId, message },
+          timestamp: new Date().toISOString(),
+        });
+      },
+    });
 
     // 9. File watcher
     const fileWatcher = new FileWatcher({ watch: chokidar.watch });

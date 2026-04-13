@@ -48,13 +48,17 @@ export interface ClaudeSpawnOptions {
   claudeCliPath?: string;
 }
 
-/** Anthropic content-block types (subset used by sendUserMessage). */
+/** Anthropic content-block types (subset used by sendUserMessage).
+ *  `tool_result` was added in iterate 7 to unblock Claude CLI's pending
+ *  AskUserQuestion call — inbox-manager sends an answer as a tool_result
+ *  block referencing the stored tool_use_id. */
 export type UserContentBlock =
   | { type: "text"; text: string }
   | {
       type: "image";
       source: { type: "base64"; media_type: string; data: string };
-    };
+    }
+  | { type: "tool_result"; tool_use_id: string; content: string };
 
 /**
  * Resolve the Claude CLI command for the current platform.
