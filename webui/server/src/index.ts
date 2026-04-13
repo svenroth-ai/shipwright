@@ -119,15 +119,25 @@ if (isMainModule) {
     };
     const chatStore = new ChatStore(chatStoreDeps);
 
+    // Shared cross-process lock + file-exists guard. Reused by every
+    // JSON/JSONL writer below (events, projects, pids, inbox, settings)
+    // so all write sites behave identically and nobody can accidentally
+    // forget to serialize. proper-lockfile requires the target file to
+    // exist (lstat), hence ensureFileExists.
+    const lockPath = async (p: string) => {
+      const release = await lockfile.lock(p, { retries: 3 });
+      return release;
+    };
+    const ensureFileExists = (p: string) => {
+      if (!fs.existsSync(p)) fs.writeFileSync(p, "");
+    };
+
     // Event writer deps — hoisted so adapter's onExit can use them
     const writerDeps = {
       appendFile: (p: string, d: string) => appendFile(p, d),
-      lock: async (p: string) => {
-        const release = await lockfile.lock(p, { retries: 3 });
-        return release;
-      },
+      lock: lockPath,
       ensureDir: (p: string) => { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); },
-      ensureFile: (p: string) => { if (!fs.existsSync(p)) fs.writeFileSync(p, ""); },
+      ensureFile: ensureFileExists,
     };
 
     // 3. Claude adapter with event forwarding + chat persistence + lifecycle events
@@ -250,6 +260,8 @@ if (isMainModule) {
       writeFile: (p: string, d: string) => writeFile(p, d),
       existsSync: (p: string) => fs.existsSync(p),
       mkdirSync: (p: string, o?: { recursive: boolean }) => fs.mkdirSync(p, o),
+      lock: lockPath,
+      ensureFile: ensureFileExists,
     };
     const governor = new ProcessGovernor(
       config.maxConcurrent,
@@ -276,6 +288,8 @@ if (isMainModule) {
       existsSync: (p: string) => fs.existsSync(p),
       mkdirSync: (p: string, o?: { recursive: boolean }) => fs.mkdirSync(p, o),
       readdirSync: (p: string, o?: { withFileTypes: boolean }) => fs.readdirSync(p, o as any) as any,
+      lock: lockPath,
+      ensureFile: ensureFileExists,
     };
 
     const projectManager = new ProjectManager(`${config.registryDir}/projects.json`, projectManagerDeps);
@@ -292,6 +306,8 @@ if (isMainModule) {
       writeFile: (p: string, d: string) => writeFile(p, d),
       existsSync: (p: string) => fs.existsSync(p),
       mkdirSync: (p: string, o?: { recursive: boolean }) => fs.mkdirSync(p, o),
+      lock: lockPath,
+      ensureFile: ensureFileExists,
     };
     const inboxManager = new InboxManager(governor, adapter, (item) => {
       sseManager.broadcast({
@@ -405,6 +421,8 @@ if (isMainModule) {
       writeFile: (p: string, d: string) => writeFile(p, d),
       existsSync: (p: string) => fs.existsSync(p),
       mkdirSync: (p: string, o?: { recursive: boolean }) => fs.mkdirSync(p, o),
+      lock: lockPath,
+      ensureFile: ensureFileExists,
     };
 
     // Mount routes

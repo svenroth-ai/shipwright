@@ -8,6 +8,11 @@ export interface GovernorDeps {
   writeFile: (path: string, data: string) => Promise<void>;
   existsSync: (path: string) => boolean;
   mkdirSync: (path: string, opts?: { recursive: boolean }) => void;
+  // Optional: cross-process file lock + file-exists guard. Prevents the
+  // 30s heartbeat cleanup from colliding with acquire/release writes on
+  // pids.json. Omitted in unit tests (sequential persist calls).
+  lock?: (path: string) => Promise<() => Promise<void>>;
+  ensureFile?: (path: string) => void;
 }
 
 export class ProcessGovernor {
@@ -54,7 +59,21 @@ export class ProcessGovernor {
         taskId: p.taskId,
         spawnedAt: p.spawnedAt,
       }));
-    await this.deps.writeFile(this.pidFilePath, JSON.stringify(pids));
+    await this.writePidsLocked(JSON.stringify(pids));
+  }
+
+  private async writePidsLocked(data: string): Promise<void> {
+    if (this.deps.ensureFile) this.deps.ensureFile(this.pidFilePath);
+    if (!this.deps.lock) {
+      await this.deps.writeFile(this.pidFilePath, data);
+      return;
+    }
+    const release = await this.deps.lock(this.pidFilePath);
+    try {
+      await this.deps.writeFile(this.pidFilePath, data);
+    } finally {
+      await release();
+    }
   }
 
   async loadPids(): Promise<Array<{ pid: number; taskId: string; spawnedAt?: number }>> {
@@ -98,7 +117,7 @@ export class ProcessGovernor {
       }
     }
 
-    await this.deps.writeFile(this.pidFilePath, "[]");
+    await this.writePidsLocked("[]");
     console.log(JSON.stringify({ level: "info", message: "Orphan cleanup", killed, stale }));
     return { killed, stale };
   }
