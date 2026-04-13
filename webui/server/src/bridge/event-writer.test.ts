@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
-import { appendEvent, emitTaskCreatedEvent } from "./event-writer.js";
+import {
+  appendEvent,
+  emitTaskCreatedEvent,
+  emitTaskCancelledEvent,
+  emitTaskUpdatedEvent,
+  emitWorkCompletedEvent,
+} from "./event-writer.js";
 import type { WriterDeps } from "./event-writer.js";
 import type { ShipwrightEvent } from "../../../client/src/types/event.js";
 
@@ -82,5 +88,60 @@ describe("emitTaskCreatedEvent", () => {
       deps
     );
     expect(event.phase).toBe("design");
+  });
+});
+
+describe("emitTaskCancelledEvent", () => {
+  it("writes a task_cancelled event to disk and returns it", async () => {
+    const deps = mockDeps();
+    const event = await emitTaskCancelledEvent("events.jsonl", "t1", "p1", deps);
+    expect(event.type).toBe("task_cancelled");
+    expect(event.task_id).toBe("t1");
+    expect(event.project_id).toBe("p1");
+    expect(event.source).toBe("webui");
+    expect(deps.appended).toHaveLength(1);
+    expect(JSON.parse(deps.appended[0].trim()).type).toBe("task_cancelled");
+  });
+});
+
+describe("emitWorkCompletedEvent", () => {
+  it("writes a work_completed event to disk and returns it", async () => {
+    const deps = mockDeps();
+    const event = await emitWorkCompletedEvent("events.jsonl", "t1", "p1", deps);
+    expect(event.type).toBe("work_completed");
+    expect(event.task_id).toBe("t1");
+    expect(event.project_id).toBe("p1");
+    expect(deps.appended).toHaveLength(1);
+  });
+});
+
+describe("emitTaskUpdatedEvent", () => {
+  it("writes a task_updated event with title + description", async () => {
+    const deps = mockDeps();
+    const event = await emitTaskUpdatedEvent(
+      "events.jsonl",
+      "t1",
+      "p1",
+      { title: "New title", description: "New body" },
+      deps,
+    );
+    expect(event.type).toBe("task_updated");
+    expect(event.task_id).toBe("t1");
+    expect((event as Record<string, unknown>).title).toBe("New title");
+    expect((event as Record<string, unknown>).description).toBe("New body");
+    expect(deps.appended).toHaveLength(1);
+  });
+
+  it("writes only the fields that were passed", async () => {
+    const deps = mockDeps();
+    const event = await emitTaskUpdatedEvent(
+      "events.jsonl",
+      "t1",
+      "p1",
+      { description: "Only body" },
+      deps,
+    );
+    expect((event as Record<string, unknown>).title).toBeUndefined();
+    expect((event as Record<string, unknown>).description).toBe("Only body");
   });
 });

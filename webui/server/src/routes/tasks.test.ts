@@ -28,6 +28,9 @@ function setup(queueFull = false) {
     sseManager: { broadcast: vi.fn() },
     projectManager: { getById: vi.fn((id: string) => id === "p1" ? mockProject : undefined) },
     emitTaskCreatedEvent: vi.fn(async () => ({})),
+    emitTaskCancelledEvent: vi.fn(async () => ({})),
+    emitWorkCompletedEvent: vi.fn(async () => ({})),
+    emitTaskUpdatedEvent: vi.fn(async () => ({})),
   } as any;
   const app = new Hono();
   app.onError(errorHandler);
@@ -72,6 +75,50 @@ describe("Task Routes", () => {
       body: JSON.stringify({ status: "cancelled" }),
     });
     expect(res.status).toBe(200);
+  });
+
+  // Iterate 8 — task_cancelled / work_completed / task_updated must persist to disk
+  // so deleted / closed / edited tasks survive a server restart.
+  it("PATCH status=cancelled persists task_cancelled via emitTaskCancelledEvent", async () => {
+    const { app, deps } = setup();
+    const res = await app.request("/api/projects/p1/tasks/t1/status", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "cancelled" }),
+    });
+    expect(res.status).toBe(200);
+    expect(deps.emitTaskCancelledEvent).toHaveBeenCalledTimes(1);
+    const [filePath, taskId, projectId] = deps.emitTaskCancelledEvent.mock.calls[0];
+    expect(filePath).toMatch(/shipwright_events\.jsonl$/);
+    expect(taskId).toBe("t1");
+    expect(projectId).toBe("p1");
+  });
+
+  it("PATCH status=closed persists work_completed via emitWorkCompletedEvent", async () => {
+    const { app, deps } = setup();
+    const res = await app.request("/api/projects/p1/tasks/t1/status", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "closed" }),
+    });
+    expect(res.status).toBe(200);
+    expect(deps.emitWorkCompletedEvent).toHaveBeenCalledTimes(1);
+    expect(deps.emitTaskCancelledEvent).not.toHaveBeenCalled();
+  });
+
+  it("PATCH description persists task_updated via emitTaskUpdatedEvent", async () => {
+    const { app, deps } = setup();
+    const res = await app.request("/api/projects/p1/tasks/t1/description", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: "Updated body" }),
+    });
+    expect(res.status).toBe(200);
+    expect(deps.emitTaskUpdatedEvent).toHaveBeenCalledTimes(1);
+    const [, taskId, projectId, fields] = deps.emitTaskUpdatedEvent.mock.calls[0];
+    expect(taskId).toBe("t1");
+    expect(projectId).toBe("p1");
+    expect(fields).toEqual({ description: "Updated body" });
   });
 
   it("PATCH non-existent task returns 404", async () => {
