@@ -34,9 +34,14 @@ export function TaskHeader({ task, onEdit }: TaskHeaderProps) {
   const updateStatus = useMutation({
     mutationFn: (status: string) =>
       apiPatch(`/projects/${task.projectId}/tasks/${task.id}/status`, { status }),
-    onSuccess: () => {
+    onSuccess: (_data, status) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(task.projectId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+      // After delete (cancelled) or close, the task detail view no longer
+      // makes sense — redirect back to the kanban board.
+      if (status === 'cancelled' || status === 'closed') {
+        navigate('/');
+      }
     },
   });
 
