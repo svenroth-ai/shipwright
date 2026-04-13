@@ -332,18 +332,9 @@ If you installed via shell alias, start with `shipwright` and then type the comm
 
 ### What to Expect
 
-The pipeline runs through these phases in sequence:
+Your first run kicks off with a short confirmation of stack, scope, and autonomy. Then Shipwright asks 5-10 requirements questions and generates interactive HTML mockups you review in the browser. After that, planning, build, test, security scan, and changelog run largely unattended -- guided mode pauses at each phase transition so you stay in control, autonomous mode runs straight through. Deployment to DEV is automatic if configured; production always needs explicit confirmation.
 
-1. **SHIPWRIGHT-RUN** -- The orchestrator infers your stack (`supabase-nextjs`), scope (`Full Application`), and autonomy level (`guided`). You confirm or adjust before proceeding.
-2. **SHIPWRIGHT-PROJECT** -- Asks 5-10 questions about your requirements, then decomposes them into splits (logical work units) with IREB-aligned specifications and acceptance criteria.
-3. **SHIPWRIGHT-DESIGN** -- Generates interactive HTML mockups from your specs. You review them in a browser-based viewer and provide feedback until satisfied.
-4. **SHIPWRIGHT-PLAN** -- Creates a detailed implementation plan for each split. Optionally sends the plan to external LLMs (Gemini, OpenAI) for independent review.
-5. **SHIPWRIGHT-BUILD** -- Implements each section using TDD: writes tests first, then code, then runs a code review subagent. Each section gets a Conventional Commit on a feature branch.
-6. **SHIPWRIGHT-TEST** -- Runs the full test suite: unit tests (Vitest), integration tests (real DB), pgTAP (RLS), smoke tests, and Playwright E2E tests.
-7. **SHIPWRIGHT-DEPLOY** -- Deploys to Jelastic DEV (if configured). Runs a smoke test against the live environment and rolls back on failure.
-8. **SHIPWRIGHT-CHANGELOG** -- Parses Conventional Commits, generates a changelog entry, suggests a semver bump, and opens a pull request.
-
-Estimated time for a small app: 15-30 minutes.
+Estimated time for a small app: 15-30 minutes. See Chapter 4 for the full phase-by-phase breakdown.
 
 ### Guided vs Autonomous Mode
 
@@ -1210,7 +1201,7 @@ All degraded conditions are recorded in `shipwright_test_results.json` and noted
 
 ### Drift Check
 
-Use `/shipwright-sync --check` to verify all artifacts are in sync. This is a read-only diagnostic -- it reports drift but doesn't auto-fix.
+Shipwright runs a CLAUDE.md drift check automatically at every session start (via the `check_drift.py` hook). It compares each `CLAUDE.md` against the actual filesystem structure and `package.json` scripts, and surfaces obsolete directory listings or dead `npm run` references as an informational warning -- it never blocks. There is no manual command; the check is passive by design.
 
 ### vs. /shipwright-run
 
