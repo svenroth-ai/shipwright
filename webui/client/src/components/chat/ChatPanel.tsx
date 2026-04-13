@@ -11,6 +11,7 @@ import { AssistantMessage } from './AssistantMessage';
 import { ChatInput } from './ChatInput';
 import { ApiError } from '../../lib/api';
 import { foldToolResults } from '../../lib/foldToolResults';
+import { dedupeStreamingMessages } from '../../lib/dedupeStreamingMessages';
 import type { AutonomyOption } from '../../types/settings';
 
 interface ChatPanelProps {
@@ -132,12 +133,15 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
         ))}
 
         {/* Streaming: real-time tool calls, thinking, streamed text.
-            Fold tool_result into its matching tool_use so a live tool card
-            transitions from "Running" to "Done" in place. */}
+            - Dedupe against persisted messages first (useSSE invalidates the
+              chat query on every chat:message event, so a single NDJSON event
+              often ends up in both `messages` and `streamingMessages`).
+            - Then fold tool_result into matching tool_use so a live tool card
+              transitions from "Running" to "Done" in place. */}
         {streaming.isStreaming &&
-          foldToolResults(streaming.streamingMessages).map((msg) => (
-            <ChatMessage key={msg.id} message={msg} />
-          ))}
+          foldToolResults(
+            dedupeStreamingMessages(messages, streaming.streamingMessages),
+          ).map((msg) => <ChatMessage key={msg.id} message={msg} />)}
         {streaming.isStreaming && streaming.displayContent && (
           <AssistantMessage content={streaming.displayContent} isStreaming />
         )}
