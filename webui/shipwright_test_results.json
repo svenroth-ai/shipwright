@@ -1,27 +1,23 @@
 {
-  "timestamp": "2026-04-13T23:18:00Z",
-  "branch": "iterate/inbox-dedupe-and-zombie-filter",
+  "timestamp": "2026-04-13T23:27:00Z",
+  "branch": "iterate/inbox-latest-per-task",
   "overall": "PASS",
-  "iterate_run": "iterate-2026-04-13-inbox-dedupe-and-zombie-filter",
+  "iterate_run": "iterate-2026-04-13-inbox-latest-per-task",
   "unit": {
-    "passed": 489,
-    "total": 489,
+    "passed": 490,
+    "total": 490,
     "breakdown": {
       "server": {
-        "passed": 276,
-        "total": 276,
-        "delta_since_previous_iterate": "+8 (inbox-manager addQuestion dedupe x5: same-text dedupe, normalization, different-text, cross-task, answered-not-deduped; inbox route zombie filter x3: live vs zombie, exited process, no-governor backwards compat)"
+        "passed": 277,
+        "total": 277,
+        "delta_since_previous_iterate": "+1 net (removed 3 iterate-11.1 zombie tests, added 4 latest-per-task tests)"
       },
-      "client": {
-        "passed": 213,
-        "total": 213,
-        "delta_since_previous_iterate": "0 (server-only change)"
-      }
+      "client": { "passed": 213, "total": 213 }
     }
   },
   "iterate_plugin": { "passed": 59, "total": 59 },
   "shared": { "passed": 171, "total": 173, "known_failures": ["test_config.py x2 pre-existing"] },
   "smoke": { "passed": true },
-  "e2e": { "passed": 17, "total": 17, "skipped_in_this_iterate": true, "reason": "server-only change, iterate 11 E2E still valid" },
+  "e2e": { "skipped_in_this_iterate": true, "reason": "server-only route filter change" },
   "degraded": []
 }
