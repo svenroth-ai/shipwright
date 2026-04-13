@@ -1,24 +1,24 @@
 {
-  "timestamp": "2026-04-13T08:20:00Z",
-  "branch": "iterate/phase-dropdown-fix",
+  "timestamp": "2026-04-13T08:30:00Z",
+  "branch": "iterate/tool-call-merge",
   "overall": "PASS",
-  "iterate_run": "iterate-2026-04-13-phase-dropdown-fix",
+  "iterate_run": "iterate-2026-04-13-tool-call-merge",
   "unit": {
-    "passed": 368,
-    "total": 368,
-    "duration_s": 63,
+    "passed": 378,
+    "total": 378,
+    "duration_s": 64,
     "breakdown": {
       "server": {
         "passed": 199,
         "total": 199,
         "files": 27,
-        "delta_since_v0_1_3": "+6 (event-writer phase field, event-store requestedPhase, tasks.ts /start route phase propagation, explicit/auto/invalid phase coverage)"
+        "delta_since_previous_iterate": "0 (parser tests updated in place for toolUseId assertions)"
       },
       "client": {
-        "passed": 169,
-        "total": 169,
-        "files": 47,
-        "delta_since_v0_1_3": "+1 (NewIssueModal classify race condition — manual pick vs in-flight response)"
+        "passed": 179,
+        "total": 179,
+        "files": 48,
+        "delta_since_previous_iterate": "+10 (foldToolResults suite x7, ToolCallCard status cases x3; one existing test corrected from asserting the bug)"
       }
     }
   },
@@ -35,7 +35,7 @@
     "url": "http://localhost:3847/api/health",
     "status_code": 200,
     "response_time_ms": 45,
-    "notes": "Not re-measured for this iterate run; carried forward."
+    "notes": "Not re-measured; carried forward."
   },
   "e2e": {
     "passed": 17,
@@ -43,7 +43,7 @@
     "skipped": false,
     "skip_reason": "",
     "duration_s": 45,
-    "delta_since_v0_1_3": "0 (no new e2e specs for this iterate run; covered via unit + component tests)"
+    "delta_since_previous_iterate": "0"
   },
   "consistency": {
     "skipped": true,

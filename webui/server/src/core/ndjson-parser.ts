@@ -76,6 +76,7 @@ export function extractContentBlocks(
               content: "",
               toolName: block.name as string,
               toolInput: block.input,
+              toolUseId: typeof block.id === "string" ? block.id : undefined,
               model,
               timestamp: now,
             }];
@@ -114,6 +115,7 @@ export function extractContentBlocks(
             content: "",
             toolName: block.name as string,
             toolInput: block.input,
+            toolUseId: typeof block.id === "string" ? block.id : undefined,
             timestamp: now,
           }];
         }
@@ -152,11 +154,15 @@ export function extractContentBlocks(
 
   // tool_use — explicit tool invocation event
   if (msg.type === "tool_use") {
-    const toolName = msg.tool_name ?? (msg.message as { tool_name?: string } | undefined)?.tool_name ?? "Tool";
-    const toolInput = msg.tool_input ?? (msg.message as { tool_input?: unknown } | undefined)?.tool_input;
+    const msgObj = msg.message as { tool_name?: string; tool_input?: unknown; id?: string } | undefined;
+    const toolName = msg.tool_name ?? msgObj?.tool_name ?? "Tool";
+    const toolInput = msg.tool_input ?? msgObj?.tool_input;
+    const rawId = msg.id ?? msg.tool_use_id ?? msgObj?.id;
     return [{
       id: makeId(), taskId, type: "tool_use",
-      content: "", toolName, toolInput, timestamp: now,
+      content: "", toolName, toolInput,
+      toolUseId: typeof rawId === "string" ? rawId : undefined,
+      timestamp: now,
     }];
   }
 
@@ -164,9 +170,12 @@ export function extractContentBlocks(
   if (msg.type === "tool_result") {
     const content = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content ?? msg.message ?? "");
     const isError = msg.is_error === true || msg.subtype === "error";
+    const rawRef = msg.tool_use_id;
     return [{
       id: makeId(), taskId, type: "tool_result",
-      content, isError, timestamp: now,
+      content, isError,
+      toolUseId: typeof rawRef === "string" ? rawRef : undefined,
+      timestamp: now,
     }];
   }
 

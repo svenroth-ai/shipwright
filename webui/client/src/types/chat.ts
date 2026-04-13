@@ -13,6 +13,8 @@ export interface ChatMessage {
   toolName?: string;
   toolInput?: unknown;
   toolOutput?: unknown;
+  /** Anthropic API tool_use_id — used to fold tool_result into its matching tool_use card */
+  toolUseId?: string;
   isError?: boolean;
   model?: string;
   images?: ChatImage[];

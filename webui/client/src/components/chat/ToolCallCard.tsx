@@ -22,15 +22,19 @@ export function ToolCallCard({ message }: ToolCallCardProps) {
   const [open, setOpen] = useState(false);
   const [showFullOutput, setShowFullOutput] = useState(false);
 
-  const isResult = message.type === 'tool_result';
+  const isLegacyResult = message.type === 'tool_result';
+  const hasFoldedOutput = message.toolOutput !== undefined;
+  const isDone = isLegacyResult || hasFoldedOutput || message.isError === true;
   const isError = message.isError === true;
   const toolName = message.toolName ?? 'Tool';
   const input = message.toolInput;
-  const output = isResult
+  const output = isLegacyResult
     ? message.content
     : typeof message.toolOutput === 'string'
       ? message.toolOutput
-      : JSON.stringify(message.toolOutput, null, 2);
+      : message.toolOutput !== undefined
+        ? JSON.stringify(message.toolOutput, null, 2)
+        : undefined;
   const title = formatTitle(toolName, input);
 
   const outputLines = output?.split('\n') ?? [];
@@ -64,7 +68,7 @@ export function ToolCallCard({ message }: ToolCallCardProps) {
             ) : (
               <span className="flex items-center gap-1 text-[11px] font-semibold text-green-700 shrink-0">
                 <Check size={12} />
-                {isResult ? 'Done' : 'Running'}
+                {isDone ? 'Done' : 'Running'}
               </span>
             )}
             <ChevronRight
@@ -76,7 +80,7 @@ export function ToolCallCard({ message }: ToolCallCardProps) {
 
         <Collapsible.Content>
           <div className="border-t px-3.5 py-3 font-mono text-xs leading-relaxed bg-[#fafaf8] min-w-0 overflow-hidden" style={{ borderColor: 'var(--color-border, #e0dbd4)' }}>
-            {input != null && !isResult && (
+            {input != null && !isLegacyResult && (
               <div className="mb-2">
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-1">Input</div>
                 <pre className="text-xs bg-white rounded p-2 overflow-x-auto max-h-[200px] overflow-y-auto max-w-full border border-gray-100">
@@ -84,10 +88,10 @@ export function ToolCallCard({ message }: ToolCallCardProps) {
                 </pre>
               </div>
             )}
-            {(output || isResult) && (
+            {(output != null || isLegacyResult) && (
               <div>
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-1">
-                  {isResult ? 'Result' : 'Output'}
+                  {isLegacyResult ? 'Result' : 'Output'}
                 </div>
                 <pre className={`text-xs rounded p-2 overflow-x-auto max-h-[300px] overflow-y-auto whitespace-pre-wrap max-w-full border break-words ${
                   isError ? 'bg-red-50 text-red-800 border-red-200' : 'bg-white border-gray-100'
