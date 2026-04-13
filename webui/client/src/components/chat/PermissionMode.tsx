@@ -1,7 +1,9 @@
 import * as Popover from '@radix-ui/react-popover';
-import { Hand, Code2, ClipboardList, Link2, Check } from 'lucide-react';
-import type { ComponentType } from 'react';
+import { Hand, Code2, ClipboardList, Link2, Check, Loader2 } from 'lucide-react';
+import { useState, type ComponentType } from 'react';
 import type { ModeOption } from '../../hooks/useChatSettings';
+import { useChangeMode } from '../../hooks/useChangeMode';
+import { ApiError } from '../../lib/api';
 
 interface ModeEntry {
   value: ModeOption;
@@ -50,20 +52,56 @@ const MODES: ModeEntry[] = [
 interface PermissionModeProps {
   mode: ModeOption;
   onChange: (mode: ModeOption) => void;
+  /** Iterate 10 — when both are set, PermissionMode fires the mid-task
+   *  switch mutation and only updates `onChange` on success. */
+  projectId?: string;
+  taskId?: string;
 }
 
-export function PermissionMode({ mode, onChange }: PermissionModeProps) {
+export function PermissionMode({ mode, onChange, projectId, taskId }: PermissionModeProps) {
   const current = MODES.find((m) => m.value === mode) ?? MODES[3];
   const Icon = current.icon;
+  const [switchError, setSwitchError] = useState<string | null>(null);
+
+  // Mid-task switch mutation — only active when we have both ids. Always
+  // call the hook (rules of hooks), but no-op it when the ids are missing
+  // by short-circuiting handleSelect to just call onChange.
+  const changeMode = useChangeMode(projectId ?? '', taskId ?? '');
+  const canSwitchLive = Boolean(projectId && taskId);
+
+  function handleSelect(newMode: ModeOption) {
+    setSwitchError(null);
+    if (!canSwitchLive || newMode === mode) {
+      onChange(newMode);
+      return;
+    }
+    changeMode.mutate(newMode, {
+      onSuccess: () => {
+        onChange(newMode);
+      },
+      onError: (err) => {
+        if (err instanceof ApiError) {
+          setSwitchError(err.message);
+        } else {
+          setSwitchError(err instanceof Error ? err.message : 'Mode switch failed');
+        }
+      },
+    });
+  }
 
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
         <button
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[var(--color-border,#e0dbd4)] text-xs font-medium text-gray-700 bg-white hover:border-[var(--color-primary,#6b5e56)] hover:text-gray-900 transition-colors cursor-pointer"
-          title={current.description}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[var(--color-border,#e0dbd4)] text-xs font-medium text-gray-700 bg-white hover:border-[var(--color-primary,#6b5e56)] hover:text-gray-900 transition-colors cursor-pointer disabled:opacity-60"
+          title={switchError ?? current.description}
+          disabled={changeMode.isPending}
         >
-          <Icon size={12} />
+          {changeMode.isPending ? (
+            <Loader2 size={12} className="animate-spin" />
+          ) : (
+            <Icon size={12} />
+          )}
           {current.shortLabel}
         </button>
       </Popover.Trigger>
@@ -82,13 +120,18 @@ export function PermissionMode({ mode, onChange }: PermissionModeProps) {
               {' to switch'}
             </span>
           </div>
+          {switchError && (
+            <div className="px-3 py-2 text-[11px] text-red-600 border-b border-[var(--color-border,#e0dbd4)]">
+              {switchError}
+            </div>
+          )}
           {MODES.map((m) => {
             const MIcon = m.icon;
             const isActive = m.value === mode;
             return (
               <Popover.Close asChild key={m.value}>
                 <button
-                  onClick={() => onChange(m.value)}
+                  onClick={() => handleSelect(m.value)}
                   className={`flex items-start gap-3 w-full px-3 py-2.5 text-left hover:bg-[var(--color-muted-bg,#ede8e1)] transition-colors ${
                     isActive ? 'bg-[var(--color-muted-bg,#ede8e1)]' : ''
                   }`}

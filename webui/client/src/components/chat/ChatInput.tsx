@@ -19,9 +19,13 @@ interface ChatInputProps {
   onSend: (payload: ChatSendPayload) => void;
   isStreaming: boolean;
   autonomy: AutonomyOption;
+  /** Iterate 10 — when present, PermissionMode fires the mid-task
+   *  mode-switch mutation instead of just updating localStorage. */
+  projectId?: string;
+  taskId?: string;
 }
 
-export function ChatInput({ onSend, isStreaming, autonomy }: ChatInputProps) {
+export function ChatInput({ onSend, isStreaming, autonomy, projectId, taskId }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [images, setImages] = useState<ImageAttachment[]>([]);
   const [showSlashPopup, setShowSlashPopup] = useState(false);
@@ -130,7 +134,7 @@ export function ChatInput({ onSend, isStreaming, autonomy }: ChatInputProps) {
   const canSend = (input.trim().length > 0 || images.length > 0) && !isStreaming;
 
   return (
-    <div className="border-t border-[var(--color-border,#e0dbd4)] bg-white">
+    <div className="border-t border-[var(--color-border,#e0dbd4)] bg-white pt-2 pb-4">
       <ChatToolbar
         model={settings.model}
         setModel={settings.setModel}
@@ -139,6 +143,8 @@ export function ChatInput({ onSend, isStreaming, autonomy }: ChatInputProps) {
         effort={settings.effort}
         setEffort={settings.setEffort}
         autonomy={autonomy}
+        projectId={projectId}
+        taskId={taskId}
       />
 
       {/* Image thumbnails */}
@@ -163,7 +169,7 @@ export function ChatInput({ onSend, isStreaming, autonomy }: ChatInputProps) {
         </div>
       )}
 
-      <div className="relative px-3 pt-2 pb-3">
+      <div className="relative px-3 pt-2 pb-1">
         <SlashCommandPopup
           query={slashQuery}
           onSelect={handleSlashSelect}

@@ -79,7 +79,31 @@ export function createProjectRoutes(
 
   app.patch("/api/projects/:id", async (c) => {
     const body = await c.req.json();
-    const project = projectManager.update(c.req.param("id"), body);
+    const id = c.req.param("id");
+
+    // Iterate 10 — if the patch touches settings.autonomy, route through
+    // updateAutonomy so the per-project run_config.json stays in sync with
+    // projects.json. Other settings fields flow through the generic update.
+    const autonomyPatch =
+      body && typeof body === "object" && body.settings && typeof body.settings === "object"
+        ? (body.settings as Record<string, unknown>).autonomy
+        : undefined;
+
+    let project;
+    if (autonomyPatch === "guided" || autonomyPatch === "autonomous") {
+      project = await projectManager.updateAutonomy(id, autonomyPatch);
+      // Still apply any OTHER patch fields (envVars, name, etc) via update
+      const restPatch = { ...body } as Record<string, unknown>;
+      const restSettings = { ...(body.settings ?? {}) } as Record<string, unknown>;
+      delete restSettings.autonomy;
+      if (Object.keys(restSettings).length > 0 || Object.keys(restPatch).some((k) => k !== "settings")) {
+        const merged = { ...restPatch, settings: { ...project.settings, ...restSettings } };
+        project = projectManager.update(id, merged as Partial<typeof project>);
+      }
+    } else {
+      project = projectManager.update(id, body);
+    }
+
     return c.json({ data: project });
   });
 

@@ -213,11 +213,15 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
         </div>
       )}
 
-      {/* Input area — disable while awaiting (prevents double-send race) */}
+      {/* Input area — disable while awaiting (prevents double-send race).
+          projectId + taskId flow down so PermissionMode can fire the
+          mid-task mode-switch mutation (iterate 10). */}
       <ChatInput
         onSend={handleSend}
         isStreaming={awaiting}
         autonomy={autonomy}
+        projectId={projectId}
+        taskId={taskId}
       />
     </div>
     </ChatAwaitingContext.Provider>
