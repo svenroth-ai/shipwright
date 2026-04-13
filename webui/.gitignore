@@ -5,6 +5,7 @@ compliance/
 designs/
 planning/
 shipwright_*_config.json
+shipwright_test_results.json
 
 # Runtime
 shipwright_events.jsonl
