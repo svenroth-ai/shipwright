@@ -141,28 +141,25 @@ describe("InboxManager", () => {
     await mgr.addQuestion("p1", "t1", "Pick one", undefined, ["x", "y"], "toolu_02");
     const answered = await mgr.answer("toolu_02", "x");
     expect(answered.answer).toBe("x");
-    // Iterate 7: toolu_-prefixed ids go through sendUserMessage as a
-    // structured tool_result content block (not sendStdin plain text).
-    expect(adapter.sendUserMessage).toHaveBeenCalled();
+    // Iterate 11: ALL answers go through plain-text sendStdin (tool_result
+    // content blocks via sendUserMessage caused API 400 — see inbox-manager.ts).
+    expect(adapter.sendStdin).toHaveBeenCalled();
   });
 
   // ──────────────────────────────────────────────────────────────────────
-  // Iterate 7 — tool_result refactor
+  // Iterate 11 — plain-text delivery (revert iterate 7's tool_result path)
   // ──────────────────────────────────────────────────────────────────────
 
-  it("answer with toolu_-prefixed id sends tool_result content block", async () => {
+  it("answer with toolu_-prefixed id sends PLAIN TEXT via sendStdin", async () => {
     const { mgr, adapter } = setup();
     await mgr.addQuestion("p1", "t1", "Pick one", undefined, ["x", "y"], "toolu_01abc");
     await mgr.answer("toolu_01abc", "x");
 
-    expect(adapter.sendUserMessage).toHaveBeenCalledTimes(1);
-    const [, blocks] = (adapter.sendUserMessage as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(blocks).toEqual([
-      { type: "tool_result", tool_use_id: "toolu_01abc", content: "x" },
-    ]);
+    expect(adapter.sendStdin).toHaveBeenCalledWith(expect.anything(), "x");
+    expect(adapter.sendUserMessage).not.toHaveBeenCalled();
   });
 
-  it("answer with legacy random-UUID id falls back to plain-text sendStdin", async () => {
+  it("answer with legacy random-UUID id also sends plain text via sendStdin", async () => {
     const { mgr, adapter } = setup();
     await mgr.addQuestion("p1", "t1", "Legacy?");
     const items = mgr.getAll();

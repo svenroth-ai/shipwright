@@ -61,4 +61,73 @@ describe("Inbox Routes", () => {
     });
     expect(res.status).toBe(400);
   });
+
+  // ──────────────────────────────────────────────────────────────────
+  // Iterate 11 — filter out items whose task is terminal or gone
+  // ──────────────────────────────────────────────────────────────────
+
+  it("GET /api/inbox filters items whose task does not exist", async () => {
+    const inboxManager = {
+      getAll: vi.fn(() => [
+        { ...mockItem, id: "alive", taskId: "t-alive" },
+        { ...mockItem, id: "ghost", taskId: "t-missing" },
+      ]),
+    } as any;
+    const taskManager = {
+      getTaskById: vi.fn((_pid: string, tid: string) =>
+        tid === "t-alive" ? { id: tid, status: "running" } : undefined,
+      ),
+    } as any;
+    const projectManager = { getById: vi.fn() } as any;
+    const sseManager = { broadcast: vi.fn() } as any;
+    const app = new Hono();
+    app.onError(errorHandler);
+    app.route("/", createInboxRoutes(inboxManager, sseManager, taskManager, projectManager));
+
+    const res = await app.request("/api/inbox");
+    const body = await res.json();
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].id).toBe("alive");
+  });
+
+  it("GET /api/inbox filters items whose task is in a terminal status", async () => {
+    const inboxManager = {
+      getAll: vi.fn(() => [
+        { ...mockItem, id: "pending-task", taskId: "t1" },
+        { ...mockItem, id: "done-task", taskId: "t2" },
+        { ...mockItem, id: "cancelled-task", taskId: "t3" },
+        { ...mockItem, id: "failed-task", taskId: "t4" },
+        { ...mockItem, id: "running-task", taskId: "t5" },
+      ]),
+    } as any;
+    const taskStatuses: Record<string, string> = {
+      t1: "pending",
+      t2: "done",
+      t3: "cancelled",
+      t4: "failed",
+      t5: "running",
+    };
+    const taskManager = {
+      getTaskById: vi.fn((_pid: string, tid: string) =>
+        taskStatuses[tid] ? { id: tid, status: taskStatuses[tid] } : undefined,
+      ),
+    } as any;
+    const projectManager = { getById: vi.fn() } as any;
+    const sseManager = { broadcast: vi.fn() } as any;
+    const app = new Hono();
+    app.onError(errorHandler);
+    app.route("/", createInboxRoutes(inboxManager, sseManager, taskManager, projectManager));
+
+    const res = await app.request("/api/inbox");
+    const body = await res.json();
+    const ids = body.data.map((i: { id: string }) => i.id).sort();
+    expect(ids).toEqual(["pending-task", "running-task"]);
+  });
+
+  it("GET /api/inbox returns all items when taskManager is not wired (backwards compat)", async () => {
+    const { app } = setup();
+    const res = await app.request("/api/inbox");
+    const body = await res.json();
+    expect(body.data).toHaveLength(2);
+  });
 });
