@@ -51,6 +51,15 @@ export function useStreamingChat() {
   const processNdjsonMessage = useCallback((taskId: string, msg: NdjsonMessage) => {
     // Assistant text — Claude CLI format: { type: "assistant", message: { model, content: [...] } }
     if (msg.type === 'assistant' && msg.message) {
+      // Each assistant event is its own turn. Reset the displayContent buffer
+      // BEFORE accumulating the current event's text blocks so we don't
+      // concat "text1 + text2 + text3" across multiple assistant events in a
+      // single stream. The previous turn is already in persisted messages[]
+      // via SSE invalidation, and ChatPanel's Bug B guard will suppress the
+      // streaming render once messages[] catches up. See ADR-018.
+      textBufferRef.current = '';
+      setDisplayContent('');
+
       // Simple string message
       if (typeof msg.message === 'string') {
         appendToken(msg.message);

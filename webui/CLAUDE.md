@@ -100,3 +100,28 @@ SHIPWRIGHT_MAX_CONCURRENT=3   # Max parallel Claude processes
 5. **SSE for real-time** — server pushes, client subscribes via EventSource
 6. **Claude CLI as subprocess** — spawn with --output-format stream-json and --plugin-dir
 7. **Build Dashboard** — `agent_docs/build_dashboard.md` is auto-generated during implementation by `update_build_dashboard.py`. Do not edit manually.
+
+### Dev-server troubleshooting
+
+If recent code changes don't show up in the running webui, the `tsx watch`
+process has probably gone stale. This happens most often after `git merge`
+operations (file swaps don't always fire chokidar events on Windows) and
+after long dev sessions where multiple `npm run dev` calls left orphaned
+child processes.
+
+**One-command recovery** (kills every `tsx watch`/`vite`/node process
+owning ports 3847/5173/5177, then respawns `npm run dev` in
+`webui/server/`):
+
+```bash
+cd webui/server
+npm run dev:fresh
+```
+
+The client (`webui/client`) normally does not need a restart because Vite
+HMR handles file changes reliably. If the client is also stale, start it
+manually in a second terminal: `cd webui/client && npm run dev`.
+
+**Note:** this is a dev-only concern. Production users of shipwright never
+run `tsx watch` — they run the compiled server where the code doesn't
+change under them, so this class of problem cannot occur.

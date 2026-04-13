@@ -119,6 +119,29 @@ describe("InboxManager", () => {
     expect(storageDeps.appendFile).toHaveBeenCalled();
   });
 
+  it("addQuestion with toolUseId uses it as the item id (stable across refresh)", async () => {
+    const { mgr } = setup();
+    const item = await mgr.addQuestion("p1", "t1", "Which option?", undefined, ["a", "b"], "toolu_01AskUser");
+    expect(item.id).toBe("toolu_01AskUser");
+  });
+
+  it("addQuestion without toolUseId still generates a random id", async () => {
+    const { mgr } = setup();
+    const item = await mgr.addQuestion("p1", "t1", "Which option?");
+    expect(item.id).toBeDefined();
+    expect(item.id).not.toBe("toolu_01AskUser");
+    // Random UUIDs are 36 chars with dashes
+    expect(item.id.length).toBeGreaterThan(20);
+  });
+
+  it("answer(toolUseId, ...) finds the item created with that toolUseId", async () => {
+    const { mgr, adapter } = setup();
+    await mgr.addQuestion("p1", "t1", "Pick one", undefined, ["x", "y"], "toolu_02");
+    const answered = await mgr.answer("toolu_02", "x");
+    expect(answered.answer).toBe("x");
+    expect(adapter.sendStdin).toHaveBeenCalled();
+  });
+
   it("loads inbox items from disk", async () => {
     const onNotify = vi.fn();
     const governor = { getProcess: vi.fn() } as unknown as ProcessGovernor;

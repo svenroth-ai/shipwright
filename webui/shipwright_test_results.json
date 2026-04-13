@@ -1,24 +1,24 @@
 {
-  "timestamp": "2026-04-13T11:15:00Z",
-  "branch": "iterate/chat-polish-plus-restart",
+  "timestamp": "2026-04-13T12:20:00Z",
+  "branch": "iterate/chat-polish-2",
   "overall": "PASS",
-  "iterate_run": "iterate-2026-04-13-chat-polish-plus-restart",
+  "iterate_run": "iterate-2026-04-13-chat-polish-2",
   "unit": {
-    "passed": 405,
-    "total": 405,
-    "duration_s": 65,
+    "passed": 413,
+    "total": 413,
+    "duration_s": 60,
     "breakdown": {
       "server": {
-        "passed": 206,
-        "total": 206,
+        "passed": 209,
+        "total": 209,
         "files": 27,
-        "delta_since_previous_iterate": "0"
+        "delta_since_previous_iterate": "+3 (inbox-manager toolUseId cases: explicit toolUseId, fallback random, answer by toolUseId)"
       },
       "client": {
-        "passed": 199,
-        "total": 199,
-        "files": 51,
-        "delta_since_previous_iterate": "+1 (askUserPayload: allowMultiple + real schema test swap)"
+        "passed": 204,
+        "total": 204,
+        "files": 52,
+        "delta_since_previous_iterate": "+5 (useStreamingChat x3: current turn only, multi-block concat within event, startStream reset; AskUserCard x2: toolUseId inbox id, legacy fallback)"
       }
     }
   },
@@ -40,7 +40,7 @@
     "url": "http://localhost:3847/api/health",
     "status_code": 200,
     "response_time_ms": 45,
-    "notes": "Fresh server PID 59168 started 2026-04-13 11:10:25, running iterate-4 + iterate-5 code."
+    "notes": "Server PID 59168 from iterate-5 restart (2026-04-13 11:10:25) still current; tsx watch should reload Fix A/B."
   },
   "e2e": {
     "passed": 17,
