@@ -80,6 +80,7 @@ describe("extractContentBlocks", () => {
     expect(msgs[0].type).toBe("tool_use");
     expect(msgs[0].toolName).toBe("Write");
     expect(msgs[0].toolInput).toEqual({ file_path: "/hello.txt", content: "Hello" });
+    expect(msgs[0].toolUseId).toBe("toolu_123");
   });
 
   it("extracts mixed content blocks (text + tool_use + thinking)", () => {
@@ -136,11 +137,13 @@ describe("extractContentBlocks", () => {
     const msgs = extractContentBlocks("t1", {
       type: "tool_result",
       content: "file1.ts\nfile2.ts",
+      tool_use_id: "toolu_abc",
     });
     expect(msgs).toHaveLength(1);
     expect(msgs[0].type).toBe("tool_result");
     expect(msgs[0].content).toBe("file1.ts\nfile2.ts");
     expect(msgs[0].isError).toBeFalsy();
+    expect(msgs[0].toolUseId).toBe("toolu_abc");
   });
 
   it("marks error tool_result with isError flag", () => {

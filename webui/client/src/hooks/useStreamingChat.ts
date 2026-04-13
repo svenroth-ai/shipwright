@@ -76,6 +76,7 @@ export function useStreamingChat() {
             setStreamingMessages((prev) => [...prev, {
               id: makeId(), taskId, type: 'tool_use' as ChatMessageType,
               content: '', toolName: block.name as string, toolInput: block.input,
+              toolUseId: typeof block.id === 'string' ? block.id : undefined,
               timestamp: new Date().toISOString(),
             }]);
           }
@@ -98,11 +99,14 @@ export function useStreamingChat() {
 
     // Tool use — show tool card immediately
     if (msg.type === 'tool_use') {
-      const toolName = msg.tool_name ?? (msg.message as { tool_name?: string } | undefined)?.tool_name ?? 'Tool';
-      const toolInput = msg.tool_input ?? (msg.message as { tool_input?: unknown } | undefined)?.tool_input;
+      const msgObj = msg.message as { tool_name?: string; tool_input?: unknown; id?: string } | undefined;
+      const toolName = msg.tool_name ?? msgObj?.tool_name ?? 'Tool';
+      const toolInput = msg.tool_input ?? msgObj?.tool_input;
+      const rawId = msg.id ?? msg.tool_use_id ?? msgObj?.id;
       setStreamingMessages((prev) => [...prev, {
         id: makeId(), taskId, type: 'tool_use',
         content: '', toolName, toolInput,
+        toolUseId: typeof rawId === 'string' ? rawId : undefined,
         timestamp: new Date().toISOString(),
       }]);
       return;
@@ -112,9 +116,11 @@ export function useStreamingChat() {
     if (msg.type === 'tool_result') {
       const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content ?? msg.message ?? '');
       const isError = msg.is_error === true || msg.subtype === 'error';
+      const rawRef = msg.tool_use_id;
       setStreamingMessages((prev) => [...prev, {
         id: makeId(), taskId, type: 'tool_result',
         content, isError,
+        toolUseId: typeof rawRef === 'string' ? rawRef : undefined,
         timestamp: new Date().toISOString(),
       }]);
       return;

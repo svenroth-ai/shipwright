@@ -10,9 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Phase dropdown selection is now honored** — `POST /api/projects/:id/tasks/:taskId/start` no longer hardcodes `phase=build`; it reads `task.requestedPhase` (persisted via the `task_created` event) and falls back to `classifyPhase(title+description)` → `"project"`. (ADR-013)
 - **NewIssueModal auto-suggest race** — a late-arriving classify response could overwrite a manual phase pick. Fixed via `phaseIsAutoRef` + an effect-level `aborted` guard; manual selections always win.
+- **Tool call cards stop saying "Running" forever** — `tool_use` and `tool_result` are now folded together by `toolUseId` at render time via a new `foldToolResults` helper. Tool cards transition from "Running" → "Done" / "Error" in place as soon as the matching result arrives, both for live streaming and persisted chat history. (ADR-014)
 
 ### Changed
 - **`task_created` event gains optional `phase` field** — server persists the originally requested phase so deferred `/start` calls can restore it without re-classifying. `EventStore` reads `event.phase` into the new `task.requestedPhase` field.
+- **`ChatMessage.toolUseId`** — new optional field propagating Anthropic's `tool_use_id` so the frontend can match `tool_result` back to its originating `tool_use`. Extracted by both the NDJSON parser and `useStreamingChat`.
 
 ## [0.1.3] - 2026-04-13
 
