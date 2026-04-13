@@ -10,6 +10,8 @@ Before starting the interview:
 
 The interview surfaces the user's mental model. Claude has freedom to ask questions adaptively - there's no fixed number of rounds. The goal is reconciling context from the user's brain with Claude's intelligence.
 
+**One AskUserQuestion per question.** The host (Shipwright Command Center and any compatible CLI front-end) blocks on each AskUserQuestion call and waits for a `tool_result` reply before Claude can continue. Never batch multiple questions into a single markdown list — that bypasses the interactive interview and forces the user to parse and answer a wall of text.
+
 ## Scope-Aware Depth
 
 ### Full Application (deep interview)

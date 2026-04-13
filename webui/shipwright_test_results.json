@@ -1,24 +1,24 @@
 {
-  "timestamp": "2026-04-13T12:20:00Z",
-  "branch": "iterate/chat-polish-2",
+  "timestamp": "2026-04-13T13:45:00Z",
+  "branch": "iterate/tool-result-refactor",
   "overall": "PASS",
-  "iterate_run": "iterate-2026-04-13-chat-polish-2",
+  "iterate_run": "iterate-2026-04-13-tool-result-refactor",
   "unit": {
-    "passed": 413,
-    "total": 413,
-    "duration_s": 60,
+    "passed": 418,
+    "total": 418,
+    "duration_s": 75,
     "breakdown": {
       "server": {
-        "passed": 209,
-        "total": 209,
+        "passed": 213,
+        "total": 213,
         "files": 27,
-        "delta_since_previous_iterate": "+3 (inbox-manager toolUseId cases: explicit toolUseId, fallback random, answer by toolUseId)"
+        "delta_since_previous_iterate": "+4 (inbox-manager: tool_result block sent, legacy plain-text fallback, chat-store appendChatMessage hook, no chat-store on legacy)"
       },
       "client": {
-        "passed": 204,
-        "total": 204,
+        "passed": 205,
+        "total": 205,
         "files": 52,
-        "delta_since_previous_iterate": "+5 (useStreamingChat x3: current turn only, multi-block concat within event, startStream reset; AskUserCard x2: toolUseId inbox id, legacy fallback)"
+        "delta_since_previous_iterate": "+1 (AskUserCard: triggerAwaiting fires from ChatAwaitingContext on submit)"
       }
     }
   },
@@ -26,6 +26,15 @@
     "passed": 59,
     "total": 59,
     "delta_since_previous_iterate": "0"
+  },
+  "shared": {
+    "passed": 153,
+    "total": 155,
+    "delta_since_previous_iterate": "+3 (write_decision_log length budget: under-budget returns None, over-budget returns warning, collect_length_warnings)",
+    "known_failures": [
+      "tests/test_config.py::test_read_all_configs_empty — pre-existing CONFIG_FILES drift (events key not in expected set)",
+      "tests/test_config.py::test_config_handles_all_config_files — same root cause"
+    ]
   },
   "integration": {
     "skipped": true,
@@ -39,15 +48,13 @@
     "passed": true,
     "url": "http://localhost:3847/api/health",
     "status_code": 200,
-    "response_time_ms": 45,
-    "notes": "Server PID 59168 from iterate-5 restart (2026-04-13 11:10:25) still current; tsx watch should reload Fix A/B."
+    "notes": "Server unchanged from iterate-6 PID; tsx watch will reload on next file save. Manual verification deferred until restart."
   },
   "e2e": {
     "passed": 17,
     "total": 17,
     "skipped": false,
-    "skip_reason": "",
-    "duration_s": 45,
+    "duration_s": 26.2,
     "delta_since_previous_iterate": "0"
   },
   "consistency": {
@@ -56,7 +63,10 @@
   },
   "visual": {
     "skipped": true,
-    "skip_reason": "visual_compare.py misparses nested screen-routes.json format (script bug)"
+    "skip_reason": "no visual changes — iterate 7 is server protocol + client context wiring + plugin docs"
   },
-  "degraded": []
+  "degraded": [
+    "ESLint binary not installed locally — type-check (tsc --noEmit) clean for both client and server",
+    "shared/test_config.py 2 pre-existing failures unrelated to iterate 7"
+  ]
 }
