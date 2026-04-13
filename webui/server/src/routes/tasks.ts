@@ -8,6 +8,7 @@ import { wrapWithEffort, coerceEffort } from "../core/effort-prompt.js";
 import type { SSEManager } from "../core/sse-manager.js";
 import type { ProjectManager } from "../core/project-manager.js";
 import type { ChatStore } from "../core/chat-store.js";
+import type { InboxManager } from "../core/inbox-manager.js";
 import { AppError } from "../middleware/error-handler.js";
 import { classifyPhase, VALID_PHASES, type Phase } from "../bridge/intent-classifier.js";
 
@@ -19,6 +20,9 @@ export interface TaskRouteDeps {
   sseManager: SSEManager;
   projectManager: ProjectManager;
   chatStore?: ChatStore;
+  /** Iterate 10 — the mode-switch endpoint needs to check for pending
+   *  AskUserQuestion items before it's safe to respawn the process. */
+  inboxManager?: InboxManager;
   emitTaskCreatedEvent: (
     filePath: string,
     taskId: string,
@@ -371,6 +375,91 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
 
     const updated = deps.taskManager.getTaskById(project.id, taskId);
     return c.json({ data: updated });
+  });
+
+  // Iterate 10 — mid-task permission mode switching via --resume respawn.
+  // Supersedes ADR-011's "v0.1 not supported" stance: a single cold-start
+  // respawn is fine for an explicit user action (unlike per-message respawn
+  // which was the reason ADR-009 rejected the --resume approach).
+  app.post("/api/projects/:id/tasks/:taskId/mode", async (c) => {
+    const project = deps.projectManager.getById(c.req.param("id"));
+    if (!project) throw new AppError("Project not found", 404);
+
+    const body = await c.req.json().catch(() => ({} as Record<string, unknown>));
+    const rawMode = body.mode;
+    if (!rawMode || typeof rawMode !== "string" || !(VALID_PERMISSION_MODES as string[]).includes(rawMode)) {
+      throw new AppError(
+        `mode must be one of ${VALID_PERMISSION_MODES.join(", ")}`,
+        400,
+      );
+    }
+    const newMode = rawMode as PermissionMode;
+
+    const taskId = c.req.param("taskId");
+    const task = deps.taskManager.getTaskById(project.id, taskId);
+    if (!task) throw new AppError("Task not found", 404);
+
+    const proc = deps.governor.getProcess(taskId);
+    if (!proc || proc.state === "exited") {
+      throw new AppError("Task is not running — cannot switch mode", 400);
+    }
+
+    // Guard 1: the captured real Claude session_id must be available.
+    // If not yet captured (process still in first few hundred ms) we can't
+    // resume — tell the client to try again in a second.
+    if (!proc.claudeSessionId) {
+      throw new AppError(
+        "Session not yet established — try again in a second",
+        409,
+      );
+    }
+
+    // Guard 2: don't respawn while a pending AskUserQuestion is waiting.
+    // The respawned process would lose the tool_use correlation and the
+    // question would be orphaned. The mode switch only applies cleanly
+    // to the next decision point.
+    if (deps.inboxManager) {
+      const projectInbox = deps.inboxManager.getByProject(project.id);
+      const pendingForTask = projectInbox.some(
+        (item) => item.taskId === taskId && item.status === "pending",
+      );
+      if (pendingForTask) {
+        throw new AppError(
+          "Answer the pending question before switching mode",
+          409,
+        );
+      }
+    }
+
+    // All clear — terminate current process and respawn with --resume.
+    const claudeSessionId = proc.claudeSessionId;
+    deps.adapter.terminate(proc);
+    await deps.governor.release(taskId);
+
+    const result = await deps.governor.acquire({
+      projectDir: project.path,
+      projectId: project.id,
+      taskId,
+      sessionId: claudeSessionId,
+      resumeSession: true,
+      pluginDirs: project.settings?.claudePluginDirs ?? [],
+      prompt: "", // empty placeholder; Claude already has the full history
+      permissionMode: newMode,
+    });
+
+    deps.sseManager.broadcast({
+      type: "task:updated",
+      payload: { taskId, projectId: project.id, modeChanged: newMode },
+      timestamp: new Date().toISOString(),
+    });
+
+    return c.json({
+      data: {
+        taskId,
+        permissionMode: newMode,
+        status: result === "queued" ? "queued" : "running",
+      },
+    });
   });
 
   return app;

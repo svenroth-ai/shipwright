@@ -13,6 +13,13 @@ export interface ClaudeProcess {
   taskId: string;
   projectId: string;
   sessionId: string;
+  /**
+   * The REAL session id reported by Claude Code CLI in its first
+   * `system/init` NDJSON event. Captured lazily by readLines. Iterate 10
+   * uses this as the `--resume` argument for mid-task mode switches —
+   * our own UUID from `--session-id` is NOT resumable (ADR-009).
+   */
+  claudeSessionId?: string;
   state: ProcessState;
   exitCode?: number;
   spawnedAt: number;
@@ -56,6 +63,15 @@ export interface ClaudeSpawnOptions {
    * this up after finding the UI toolbar selection was a placebo.
    */
   model?: ModelAlias;
+  /**
+   * When true, the `sessionId` is emitted as `--resume <id>` instead of
+   * `--session-id <id>`. Used by iterate 10's mid-task mode switching:
+   * after SIGTERM'ing the current process we respawn with the REAL
+   * Claude session_id (captured from the previous process's system/init
+   * event — see `ClaudeProcess.claudeSessionId`) to pick up the same
+   * conversation with a different `--permission-mode`.
+   */
+  resumeSession?: boolean;
   claudeCliPath?: string;
 }
 
@@ -136,7 +152,15 @@ export class ClaudeAdapter {
     }
 
     if (options.sessionId) {
-      args.push("--session-id", options.sessionId);
+      // Iterate 10: --resume takes the REAL Claude session_id so a
+      // mid-task respawn continues the same conversation under a new
+      // permission-mode. --session-id is for NEW sessions tagged with
+      // a UUID we pick; Claude does not let you resume by that UUID.
+      if (options.resumeSession) {
+        args.push("--resume", options.sessionId);
+      } else {
+        args.push("--session-id", options.sessionId);
+      }
     }
 
     if (options.model) {
@@ -201,6 +225,20 @@ export class ClaudeAdapter {
         }
         const msg = parseNdjsonLine(line);
         if (msg) {
+          // Iterate 10: capture the real Claude session_id from the
+          // first system/init event. Needed for mid-task mode switching
+          // via `--resume <id>` — our own --session-id UUID is NOT
+          // resumable (ADR-009).
+          if (
+            !claudeProcess.claudeSessionId &&
+            msg.type === "system" &&
+            (msg as { subtype?: string }).subtype === "init"
+          ) {
+            const sid = (msg as { session_id?: unknown }).session_id;
+            if (typeof sid === "string" && sid.length > 0) {
+              claudeProcess.claudeSessionId = sid;
+            }
+          }
           this.onEvent(options.taskId, msg);
         }
       });

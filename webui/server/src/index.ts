@@ -422,6 +422,7 @@ if (isMainModule) {
       sseManager,
       projectManager,
       chatStore,
+      inboxManager,
       emitTaskCreatedEvent: (fp, tid, pid, desc, intent, priority, phase) =>
         emitTaskCreatedEvent(fp, tid, pid, desc, intent, priority, phase, writerDeps),
       emitPhaseStartedEvent: (fp, tid, pid, phase) =>

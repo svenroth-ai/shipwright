@@ -106,4 +106,66 @@ describe("ProjectManager", () => {
     const pm = new ProjectManager("/tmp/projects.json", deps);
     expect(() => pm.create({ name: "Test", path: "/nope", profile: "default", status: "active" })).toThrow();
   });
+
+  // Iterate 10 — autonomy sync to shipwright_run_config.json so the plugin
+  // chain (shipwright-project etc.) actually sees per-project autonomy
+  // set via the webui. Previously only stored in projects.json, which
+  // the plugins never read.
+  it("update with settings.autonomy writes merged shipwright_run_config.json", async () => {
+    const store: Record<string, string> = {
+      "/tmp/projects.json": "[]",
+      "/tmp/proj/shipwright_run_config.json": JSON.stringify({
+        pipeline: ["project", "build"],
+        status: "complete",
+        other_field: "preserved",
+      }),
+    };
+    const deps: ProjectManagerDeps = {
+      readFile: vi.fn(async (path: string) => store[path] ?? ""),
+      writeFile: vi.fn(async (path: string, data: string) => { store[path] = data; }),
+      existsSync: vi.fn((path: string) => path in store || path === "/tmp/proj"),
+      mkdirSync: vi.fn(),
+      readdirSync: vi.fn(() => []),
+    };
+    const pm = new ProjectManager("/tmp/projects.json", deps);
+    const p = pm.create({ name: "Test", path: "/tmp/proj", profile: "default", status: "active" });
+
+    await pm.updateAutonomy(p.id, "autonomous");
+
+    // Merged JSON: original fields preserved + autonomy added
+    const runCfg = JSON.parse(store["/tmp/proj/shipwright_run_config.json"]);
+    expect(runCfg.autonomy).toBe("autonomous");
+    expect(runCfg.pipeline).toEqual(["project", "build"]);
+    expect(runCfg.status).toBe("complete");
+    expect(runCfg.other_field).toBe("preserved");
+  });
+
+  it("updateAutonomy creates shipwright_run_config.json when missing (non-fatal)", async () => {
+    const store: Record<string, string> = { "/tmp/projects.json": "[]" };
+    const deps: ProjectManagerDeps = {
+      readFile: vi.fn(async (path: string) => store[path] ?? ""),
+      writeFile: vi.fn(async (path: string, data: string) => { store[path] = data; }),
+      existsSync: vi.fn((path: string) => path in store || path === "/tmp/proj"),
+      mkdirSync: vi.fn(),
+      readdirSync: vi.fn(() => []),
+    };
+    const pm = new ProjectManager("/tmp/projects.json", deps);
+    const p = pm.create({ name: "Test", path: "/tmp/proj", profile: "default", status: "active" });
+
+    await pm.updateAutonomy(p.id, "guided");
+
+    const runCfg = JSON.parse(store["/tmp/proj/shipwright_run_config.json"]);
+    expect(runCfg.autonomy).toBe("guided");
+  });
+
+  it("updateAutonomy also writes autonomy into project.settings in memory + projects.json", async () => {
+    const deps = mockDeps();
+    const pm = new ProjectManager("/tmp/projects.json", deps);
+    const p = pm.create({ name: "Test", path: "/tmp/proj", profile: "default", status: "active" });
+
+    await pm.updateAutonomy(p.id, "autonomous");
+
+    const reloaded = pm.getById(p.id);
+    expect(reloaded?.settings?.autonomy).toBe("autonomous");
+  });
 });
