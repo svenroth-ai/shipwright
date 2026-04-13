@@ -25,7 +25,14 @@ import { InboxManager } from "./core/inbox-manager.js";
 import { ChatStore } from "./core/chat-store.js";
 import { FileWatcher } from "./core/file-watcher.js";
 import { readEventsFromFile } from "./bridge/event-reader.js";
-import { emitTaskCreatedEvent, emitPhaseStartedEvent, emitWorkFailedEvent } from "./bridge/event-writer.js";
+import {
+  emitTaskCreatedEvent,
+  emitPhaseStartedEvent,
+  emitTaskCancelledEvent,
+  emitTaskUpdatedEvent,
+  emitWorkCompletedEvent,
+  emitWorkFailedEvent,
+} from "./bridge/event-writer.js";
 
 import { createProjectRoutes } from "./routes/projects.js";
 import { createTaskRoutes } from "./routes/tasks.js";
@@ -368,6 +375,15 @@ if (isMainModule) {
         emitTaskCreatedEvent(fp, tid, pid, desc, intent, priority, phase, writerDeps),
       emitPhaseStartedEvent: (fp, tid, pid, phase) =>
         emitPhaseStartedEvent(fp, tid, pid, phase, writerDeps),
+      // Iterate 8 — persist task_cancelled / work_completed / task_updated to
+      // shipwright_events.jsonl so deleted / closed / edited tasks survive a
+      // server restart instead of being resurrected by the event replay.
+      emitTaskCancelledEvent: (fp, tid, pid) =>
+        emitTaskCancelledEvent(fp, tid, pid, writerDeps),
+      emitWorkCompletedEvent: (fp, tid, pid) =>
+        emitWorkCompletedEvent(fp, tid, pid, writerDeps),
+      emitTaskUpdatedEvent: (fp, tid, pid, fields) =>
+        emitTaskUpdatedEvent(fp, tid, pid, fields, writerDeps),
       readGlobalSettings: async () => {
         if (!fs.existsSync(settingsPath)) return {};
         try {
