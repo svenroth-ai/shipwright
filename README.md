@@ -348,6 +348,8 @@ uv run pytest integration-tests/ -v
 
 *Early versions were forked from Pierce Lamb's [deep-project](https://github.com/piercelamb/deep-project), [deep-plan](https://github.com/piercelamb/deep-plan), and [deep-implement](https://github.com/piercelamb/deep-implement); current code has diverged substantially.*
 
+*Additional inspiration and industry best practices adopted from [obra/superpowers](https://github.com/obra/superpowers) (MIT) and [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) (MIT) — thanks to their authors.*
+
 ## License
 
 [MIT](LICENSE)
