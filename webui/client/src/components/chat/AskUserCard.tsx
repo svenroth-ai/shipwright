@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Check } from 'lucide-react';
 import type { ChatMessage } from '../../types';
 import { useAnswerInbox } from '../../hooks/useInbox';
+import { extractAskUserPayload } from '../../lib/askUserPayload';
 
 interface AskUserCardProps {
   message: ChatMessage;
@@ -13,11 +14,15 @@ export function AskUserCard({ message }: AskUserCardProps) {
   const [isAnswered, setIsAnswered] = useState(false);
   const answerMutation = useAnswerInbox();
 
-  // Extract from toolInput
-  const input = message.toolInput as Record<string, unknown> | undefined;
-  const question = String(input?.question ?? message.content);
-  const options = (input?.options as string[]) ?? [];
-  const inboxId = String(input?.inboxId ?? message.id);
+  const payload = extractAskUserPayload(message.toolInput);
+  const question = payload.question || message.content || 'Question from Claude';
+  const options = payload.options ?? [];
+  const header = payload.header;
+  const inboxId = String(
+    (message.toolInput && typeof message.toolInput === 'object' && 'inboxId' in message.toolInput
+      ? (message.toolInput as { inboxId?: unknown }).inboxId
+      : undefined) ?? message.id,
+  );
 
   function handleSubmit() {
     const answer = selectedOption ?? freetext.trim();
@@ -30,6 +35,9 @@ export function AskUserCard({ message }: AskUserCardProps) {
   return (
     <div className="flex justify-start">
       <div className="mr-auto max-w-[80%] border border-amber-200 bg-amber-50 rounded-xl p-4">
+        {header && (
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-700 mb-1">{header}</p>
+        )}
         <p className="text-sm font-semibold text-gray-900 mb-3">{question}</p>
 
         {!isAnswered ? (

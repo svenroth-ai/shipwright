@@ -1,24 +1,24 @@
 {
-  "timestamp": "2026-04-13T08:30:00Z",
-  "branch": "iterate/tool-call-merge",
+  "timestamp": "2026-04-13T08:40:00Z",
+  "branch": "iterate/ask-user-card-fix",
   "overall": "PASS",
-  "iterate_run": "iterate-2026-04-13-tool-call-merge",
+  "iterate_run": "iterate-2026-04-13-ask-user-card-fix",
   "unit": {
-    "passed": 378,
-    "total": 378,
-    "duration_s": 64,
+    "passed": 397,
+    "total": 397,
+    "duration_s": 53,
     "breakdown": {
       "server": {
         "passed": 199,
         "total": 199,
         "files": 27,
-        "delta_since_previous_iterate": "0 (parser tests updated in place for toolUseId assertions)"
+        "delta_since_previous_iterate": "0 (server changes covered by existing integration + route tests; no new server-side unit for the inbox-path wiring, extractor is unit-tested in client lib and shared)"
       },
       "client": {
-        "passed": 179,
-        "total": 179,
-        "files": 48,
-        "delta_since_previous_iterate": "+10 (foldToolResults suite x7, ToolCallCard status cases x3; one existing test corrected from asserting the bug)"
+        "passed": 198,
+        "total": 198,
+        "files": 51,
+        "delta_since_previous_iterate": "+19 (askUserPayload x7, dedupeStreamingMessages x6, AskUserCard component x6)"
       }
     }
   },

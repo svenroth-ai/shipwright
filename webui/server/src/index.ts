@@ -16,6 +16,7 @@ import { EventStore } from "./core/event-store.js";
 import { SSEManager } from "./core/sse-manager.js";
 import { ClaudeAdapter } from "./core/claude-adapter.js";
 import { isAskUserQuestion, extractContentBlocks } from "./core/ndjson-parser.js";
+import { extractAskUserPayload } from "../../client/src/lib/askUserPayload.js";
 import { ProcessGovernor } from "./core/process-governor.js";
 import { HeartbeatScheduler } from "./core/heartbeat.js";
 import { ProjectManager } from "./core/project-manager.js";
@@ -141,15 +142,17 @@ if (isMainModule) {
           }
         }
 
-        // Check for AskUserQuestion
+        // Check for AskUserQuestion — use the shared extractor so the inbox
+        // entry sees the same question text + options as the chat AskUserCard.
         if (isAskUserQuestion(msg)) {
-          const input = msg.tool_input as { question?: string; context?: string; options?: string[] } | undefined;
+          const rawInput = msg.tool_input ?? (msg.message as { tool_input?: unknown } | undefined)?.tool_input;
+          const payload = extractAskUserPayload(rawInput);
           inboxManager.addQuestion(
             "", // projectId resolved by task lookup
             taskId,
-            input?.question ?? "Question from Claude",
-            input?.context,
-            input?.options
+            payload.question || "Question from Claude",
+            payload.context,
+            payload.options,
           ).catch((err) => console.error(JSON.stringify({ level: "error", message: "Inbox persist error", error: String(err) })));
         }
       },
