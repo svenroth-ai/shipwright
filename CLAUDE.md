@@ -9,20 +9,26 @@
 ```
 plugins/                    # Claude Code plugins (one per SDLC phase)
   shipwright-run/           # Orchestrator (entry point)
-  shipwright-project/       # Requirements decomposition (fork of deep-project)
+  shipwright-project/       # Requirements decomposition (IREB)
   shipwright-design/        # UI mockups from IREB specs (HTML)
-  shipwright-plan/          # Planning (fork of deep-plan)
-  shipwright-build/         # Implementation (fork of deep-implement)
-  shipwright-test/          # Testing (unit + E2E + security)
-  shipwright-changelog/     # Git sync + changelog + PR
+  shipwright-plan/          # Deep planning + external LLM review
+  shipwright-build/         # TDD implementation
+  shipwright-test/          # Testing (unit + smoke + Playwright E2E)
+  shipwright-security/      # Scanner chain + remediation loop
   shipwright-deploy/        # Deployment (extensible flavors)
-  shipwright-compliance/    # IREB traceability, RTM, SBOM, reports
+  shipwright-changelog/     # Git sync + changelog + PR
+  shipwright-compliance/    # IREB traceability, RTM, SBOM, dashboard
+  shipwright-iterate/       # Daily iteration (complexity-adaptive)
+  shipwright-preview/       # Local browser preview
+webui/                      # Shipwright Command Center (Hono + React 19)
+  server/                   # Hono backend (port 3847)
+  client/                   # React 19 / Vite 6 frontend
 shared/                     # Shared across all plugins
   profiles/                 # Stack profile definitions (JSON)
   templates/                # CLAUDE.md, agent_docs, CI templates
   scripts/                  # Shared Python utilities
+scripts/                    # Top-level scripts (install.sh, verify-setup.sh)
 integration-tests/          # Cross-plugin integration tests
-Spec/                       # Design specifications (temporary)
 ```
 
 ## HOW
@@ -56,9 +62,8 @@ SHIPWRIGHT_PLUGIN_ROOT       # Absolute path to active plugin directory
 - All scripts invoked via `uv run`
 - Hooks use `${CLAUDE_PLUGIN_ROOT}` for path resolution
 - Config files: `shipwright_*_config.json` (written to target project)
-- Upstream: deep-project v0.2.1, deep-plan v0.3.2, deep-implement v0.2.1
-- Env var prefix: `SHIPWRIGHT_` (replaces upstream `DEEP_`)
-- Config file prefix: `shipwright_` (replaces upstream `deep_`)
+- Env var prefix: `SHIPWRIGHT_`
+- Config file prefix: `shipwright_`
 
 ### Hooks & Pipeline Reference
 - **Reference doc:** `docs/hooks-and-pipeline.md`
@@ -94,7 +99,5 @@ uv run pytest integration-tests/ -v
 ```
 
 ## Context
-- **Spec**: Spec/shipwright-sdlc-spec.md (v3.3)
-- **Tasks**: Spec/shipwright-sdlc-tasks.md
 - **Guide**: docs/guide.md (primary user-facing documentation)
-- **Upstream**: github.com/piercelamb/deep-{project,plan,implement}
+- **Hooks & Pipeline**: docs/hooks-and-pipeline.md (context loading, hooks registry, between-phase actions)

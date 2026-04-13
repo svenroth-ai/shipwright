@@ -3,21 +3,39 @@
 ![Status](https://img.shields.io/badge/status-early--access--beta-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-AI-powered software delivery lifecycle framework built on [Claude Code](https://docs.anthropic.com/en/docs/claude-code). From user description to deployed, tested, secured application — in one command.
-
-> **Early Access Beta:** Shipwright is currently in Early Access. Expect rough edges. Please [report issues](https://github.com/svenroth-ai/shipwright/issues/new/choose) — but do not use it for production-critical workflows without thorough evaluation.
-
-## What is Shipwright?
-
-Shipwright wraps the [Deep Trilogy](https://github.com/piercelamb/deep-project) (deep-project, deep-plan, deep-implement) into a full SDLC pipeline. Instead of running 3 separate skills manually, you invoke one command and the agent handles everything:
+**Shipwright is a structured SDLC framework for Claude Code.** From one-line description to deployed, tested, secured app — via a cleanly orchestrated pipeline of skills that also work on their own. Use it from the **Claude Code VSCode Extension or CLI terminal**, or through the **Shipwright Command Center** web UI — same product, two surfaces. Built for daily iteration, not one-shot generation. **Ships audit-ready compliance artifacts as a byproduct — no extra work.**
 
 ```
 /shipwright-run "A SaaS time tracking app with Supabase and Next.js"
 ```
 
-Shipwright infers your stack, deploys to DEV automatically, runs tests, creates changelogs, and opens PRs — while you focus on what matters.
+> **Early Access Beta:** Shipwright is currently in Early Access. Expect rough edges. Please [report issues](https://github.com/svenroth-ai/shipwright/issues/new/choose) — but do not use it for production-critical workflows without thorough evaluation.
 
-## Pipeline
+## Shipwright Command Center
+
+<table>
+<tr>
+<td width="50%"><img src="docs/images/command-center-board.png" alt="Shipwright Command Center — Kanban view" /></td>
+<td width="50%"><img src="docs/images/command-center-task-detail.png" alt="Shipwright Command Center — Task detail with Claude chat" /></td>
+</tr>
+<tr>
+<td><em>Kanban board across all your Shipwright projects — Backlog, In Progress, In Review, Done.</em></td>
+<td><em>Task detail with live Claude chat, tool calls, diffs, and IREB acceptance criteria side by side.</em></td>
+</tr>
+</table>
+
+The Command Center is the browser-based surface for the same skills you run in the terminal. It installs automatically with `scripts/install.sh` — see [Getting Started](#getting-started).
+
+## Why Shipwright?
+
+- **Structure over vibes.** IREB-aligned specs, TDD with acceptance criteria, mechanical hooks — not advisory prose.
+- **Flexible, not linear.** Run the full pipeline with `/shipwright-run`, iterate daily with `/shipwright-iterate`, or invoke any single skill on its own.
+- **Compliance without the overhead.** Traceability matrix, test evidence, change history, SBOM, and a dashboard — all generated automatically from an append-only event log. The audit paperwork that normally costs weeks of manual work ships as a byproduct of building the software.
+- **Mechanical quality gates.** Hooks block dangerous actions deterministically (exit code 2), so quality doesn't depend on the agent remembering the rules.
+
+## Initial Pipeline
+
+Run once via `/shipwright-run` for a new project — or invoke any single skill on its own at any time.
 
 ```
 User Description
@@ -48,7 +66,7 @@ User Description
 └─────────────┬──────────────┘
               ▼
 ┌────────────────────────────┐
-│ shipwright-security        │  Aikido API → Classify → Remediation Loop → Report
+│ shipwright-security        │  Scanner Chain → Classify → Remediation Loop → Report
 └─────────────┬──────────────┘
               ▼
 ┌────────────────────────────┐
@@ -57,44 +75,50 @@ User Description
               ▼
 ┌────────────────────────────┐
 │ shipwright-changelog       │  Parse Commits → Changelog → Version Tag → PR
+└─────────────┬──────────────┘
+              ▼
+┌────────────────────────────┐
+│ shipwright-compliance      │  Traceability → Test Evidence → Change History → SBOM → Dashboard
 └────────────────────────────┘
 ```
+
+After the initial build, day-to-day changes run through `/shipwright-iterate` — complexity-adaptive, keeps every artifact in sync.
+
+## Using Shipwright
+
+**From the Claude Code VSCode Extension or CLI terminal**
+
+```
+/shipwright-run "Build a SaaS time tracker with Supabase and Next.js"   # Full application
+/shipwright-run "Add team management with invite flow"                   # Extension to existing project
+/shipwright-iterate "Add dark mode toggle"                               # Daily iteration
+/shipwright-plan @sections/01-auth.md                                    # Single skill, standalone
+```
+
+**From the Shipwright Command Center**
+
+Multi-project Kanban, task-scoped chat with Claude, global inbox for agent questions, smart file viewer, project wizard. The Command Center spawns the same `claude` process under the hood — the skills, the events, the compliance artifacts are identical to the terminal path. It's a second surface for the same pipeline, not a parallel tool.
+
+**Standalone skills on any project**
+
+`/shipwright-test`, `/shipwright-plan`, `/shipwright-security`, and every other skill also work on projects that never went through the full pipeline. Point them at a repository and they run.
 
 ## Skills
 
 | Skill | Purpose |
 |-------|---------|
 | `shipwright-run` | Orchestrator — inference engine, scope detection, pipeline state machine |
+| `shipwright-iterate` | Daily iteration — intent classification, complexity assessment, adaptive pipeline |
 | `shipwright-project` | Requirements — IREB-aligned specs, scope detection, chat + file + inline input |
 | `shipwright-design` | UI Design — snippet-assembled HTML mockups, review viewer, design system flavors |
 | `shipwright-plan` | Planning — external LLM review, section-writer subagent, E2E test plan |
 | `shipwright-build` | Implementation — TDD loop, code-reviewer subagent, Conventional Commits |
 | `shipwright-test` | Testing — profile-aware (Vitest/Playwright), smoke test, `--fix` auto-repair |
-| `shipwright-security` | Security — Aikido API scanning, finding classification, remediation loop |
+| `shipwright-security` | Security — scanner chain, finding classification, remediation loop |
 | `shipwright-deploy` | Deployment — deployment flavors, DEV auto / PROD manual, clone-based rollback |
 | `shipwright-changelog` | Release — Keep-a-Changelog format, semver bump suggestion, PR creation |
+| `shipwright-compliance` | Compliance — IREB traceability, RTM, SBOM, test evidence, change history, dashboard |
 | `shipwright-preview` | Preview — local dev server, browser URL, profile-driven (available after first build split) |
-| `shipwright-compliance` | Compliance — IREB traceability, RTM, SBOM, test evidence, change history reports |
-
-## Modes
-
-### Full Application
-New project from scratch. Deep interview, multi-split decomposition, full pipeline.
-```
-/shipwright-run "Build a SaaS time tracker with Supabase and Next.js"
-```
-
-### Extension
-Add features to an existing project. Reads existing `CLAUDE.md`, light interview.
-```
-/shipwright-run "Add team management with invite flow"
-```
-
-### Iteration
-Quick change to existing project. Minimal questions, fast pipeline.
-```
-/shipwright-run --iterate "Add dark mode toggle"
-```
 
 ## Stack Profiles
 
@@ -104,28 +128,122 @@ Profiles define the entire stack: versions, folder structure, deploy target, tes
 |---------|-------|--------|
 | `supabase-nextjs` | Next.js 16 · Supabase · Tailwind 4 · shadcn/ui · Zustand · Vitest · Playwright | Jelastic (Infomaniak) |
 
+**Custom profiles.** Drop a new JSON file into `shared/profiles/` to define your own stack — versions, folder layout, deploy target, test strategy, linting, CI, and architecture rules. Shipwright picks it up automatically and the orchestrator can infer it from your project description.
+
+## Getting Started
+
+### Requirements
+
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (Pro or Max) — VSCode Extension or CLI
+- Python 3.11+ via [uv](https://docs.astral.sh/uv/)
+- Git
+- Node.js 18+ *(optional — needed for the Command Center WebUI)*
+
+### Install (recommended)
+
+```bash
+git clone https://github.com/svenroth-ai/shipwright.git ~/shipwright
+cd ~/shipwright
+./scripts/install.sh
+```
+
+`install.sh` handles everything in one step:
+
+- Checks prerequisites (Claude Code, Python 3.11+, uv, git, Node.js)
+- Installs Python dependencies via `uv sync`
+- Installs Command Center WebUI dependencies in `webui/server` and `webui/client`
+- Creates a `shipwright` shell alias that loads all plugins
+- Runs `scripts/verify-setup.sh` to confirm the install
+
+Afterwards, type `shipwright` in any terminal and go.
+
+### Start the Command Center
+
+The Command Center is two processes: a Hono backend (port 3847) and a Vite dev client. Open two terminals:
+
+```bash
+# Terminal 1 — backend
+cd webui/server && npm run dev
+
+# Terminal 2 — frontend
+cd webui/client && npm run dev
+```
+
+Then open the Vite URL printed in Terminal 2 in your browser.
+
+### Optional: Auto-start the Command Center on Windows
+
+```powershell
+powershell -ExecutionPolicy Bypass -File webui\scripts\install-windows.ps1
+```
+
+Creates a startup shortcut so the Command Center backend runs in the background on login. Uninstall with `-Uninstall`.
+
+### Install via Marketplace (VSCode Extension alternative)
+
+If you prefer the Claude Code plugin marketplace instead of a shell alias, add this to `~/.claude/settings.json`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "shipwright": { "source": { "source": "github", "repo": "svenroth-ai/shipwright" } }
+  },
+  "enabledPlugins": {
+    "shipwright-run@shipwright": true,
+    "shipwright-project@shipwright": true,
+    "shipwright-design@shipwright": true,
+    "shipwright-plan@shipwright": true,
+    "shipwright-build@shipwright": true,
+    "shipwright-test@shipwright": true,
+    "shipwright-security@shipwright": true,
+    "shipwright-deploy@shipwright": true,
+    "shipwright-changelog@shipwright": true,
+    "shipwright-compliance@shipwright": true,
+    "shipwright-iterate@shipwright": true,
+    "shipwright-preview@shipwright": true
+  }
+}
+```
+
+Then clone the repo and run `uv sync` plus `npm install` in `webui/server` and `webui/client` manually.
+
+For the full setup guide (troubleshooting, deployment targets, external LLM review, platform notes), see **[docs/guide.md](docs/guide.md)**.
+
 ## Architecture
 
 ```
 shipwright/
 ├── plugins/                          # Claude Code plugins (one per SDLC phase)
 │   ├── shipwright-run/               # Orchestrator
-│   ├── shipwright-project/           # Requirements decomposition
-│   ├── shipwright-plan/              # Deep planning
+│   ├── shipwright-project/           # Requirements decomposition (IREB)
+│   ├── shipwright-design/            # UI mockups (HTML)
+│   ├── shipwright-plan/              # Deep planning + external LLM review
 │   ├── shipwright-build/             # TDD implementation
-│   ├── shipwright-test/              # Test runner
-│   ├── shipwright-security/          # Security scanning (Aikido)
-│   ├── shipwright-deploy/            # Deployment
-│   └── shipwright-changelog/         # Changelog + PR
+│   ├── shipwright-test/              # Test runner (unit/smoke/E2E)
+│   ├── shipwright-security/          # Scanners + remediation
+│   ├── shipwright-deploy/            # Deployment (extensible flavors)
+│   ├── shipwright-changelog/         # Changelog + PR
+│   ├── shipwright-compliance/        # Traceability, RTM, SBOM, dashboard
+│   ├── shipwright-iterate/           # Daily iteration (complexity-adaptive)
+│   └── shipwright-preview/           # Local browser preview
+├── webui/                            # Shipwright Command Center (Hono + React 19)
+│   ├── server/                       # Hono backend (port 3847)
+│   └── client/                       # React 19 / Vite 6 frontend
 ├── shared/                           # Shared across plugins
 │   ├── profiles/                     # Stack profile definitions (JSON)
 │   ├── templates/                    # CLAUDE.md, agent_docs, CI/CD, rules templates
-│   └── scripts/                      # Shared utilities (errors, validation_loop, etc.)
-├── integration-tests/                # Cross-plugin integration tests
-└── Spec/                             # Design specifications
+│   └── scripts/                      # Shared Python utilities
+├── scripts/
+│   ├── install.sh                    # All-in-one installer
+│   └── verify-setup.sh               # Post-install verification
+├── docs/
+│   ├── guide.md                      # Canonical user guide
+│   └── hooks-and-pipeline.md         # Hooks registry + context loading
+└── integration-tests/                # Cross-plugin integration tests
 ```
 
 Each plugin follows the [Claude Code plugin structure](https://docs.anthropic.com/en/docs/claude-code):
+
 ```
 plugins/shipwright-{name}/
 ├── .claude-plugin/plugin.json        # Plugin metadata
@@ -145,17 +263,26 @@ plugins/shipwright-{name}/
 2. **DEV auto, PROD manual** — fast feedback loop, safe production
 3. **Every skill works standalone** — `shipwright-run` orchestrates, but each skill works independently
 4. **Test-first** — TDD with IREB acceptance criteria → testable specs from day one
-5. **Iteration is first-class** — `--iterate` is the daily workflow after initial build
+5. **Initial build is the exception, iteration is the rule** — `/shipwright-iterate` is the daily workflow after the first deploy
 6. **Resume anywhere** — file-based state allows interrupting and resuming at any point
 7. **Migration safety** — destructive SQL changes always require confirmation
 8. **Linters over instructions** — mechanical enforcement (hooks) beats advisory prose (CLAUDE.md rules)
 9. **Progressive disclosure** — CLAUDE.md stays lean (~200 lines), details live in `@agent_docs/`
 
-For the complete documentation — including phase-by-phase details, configuration, troubleshooting, and the full constitution — see **[docs/guide.md](docs/guide.md)**.
+## Documentation
+
+**→ [docs/guide.md](docs/guide.md) is the canonical guide.** It covers every phase, the constitution, quality gates, profiles, troubleshooting, and the full command reference.
+
+Other references:
+
+- [docs/hooks-and-pipeline.md](docs/hooks-and-pipeline.md) — hooks registry, context loading matrix, between-phase actions
+- [webui/CLAUDE.md](webui/CLAUDE.md) — Command Center deep-dive (architecture, routes, internals)
+- [CONTRIBUTING.md](CONTRIBUTING.md) — contribution workflow and security model
+- [SECURITY.md](SECURITY.md) — vulnerability disclosure
 
 ## Security
 
-Shipwright uses its own `shipwright-security` plugin to scan every change to this repository. Every commit on `main` has passed:
+Shipwright uses its own `shipwright-security` plugin to scan every change to this repository. **Starting with the Early Access release, every commit on `main` passes the full scanner chain:**
 
 - **Semgrep** — Static Application Security Testing (SAST)
 - **Trivy** — Software Composition Analysis (SCA, CVE detection)
@@ -186,10 +313,6 @@ uv run plugins/shipwright-security/scripts/tools/generate_security_report.py \
 
 See [SECURITY.md](SECURITY.md) for our vulnerability disclosure policy. Do not file public issues for security problems — use [GitHub Security Advisories](https://github.com/svenroth-ai/shipwright/security/advisories/new).
 
-## Contributing
-
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR. Note that changes to skills, hooks, or agents require a preceding GitHub issue for discussion — this is part of our security model.
-
 ## Quality & Safety
 
 Shipwright enforces quality through mechanical hooks — not advisory prose. Hooks fire on Claude Code events and block dangerous actions deterministically.
@@ -202,22 +325,11 @@ Shipwright enforces quality through mechanical hooks — not advisory prose. Hoo
 | File Size Guard | Source files exceeding 300 lines |
 | Drift Detection | Stale CLAUDE.md when source files changed |
 
-All hooks use exit code 2 (soft-block): you can override, but the override is logged. See the [full documentation](docs/guide.md) for details on the constitution, TDD workflow, code review, and migration safety.
+All hooks use exit code 2 (soft-block): you can override, but the override is logged. See **[docs/guide.md](docs/guide.md)** for details on the constitution, TDD workflow, code review, and migration safety.
 
-## Getting Started
+## Contributing
 
-```bash
-git clone https://github.com/svenroth-ai/shipwright.git ~/shipwright
-cd ~/shipwright && uv sync
-```
-
-Then type `/shipwright-run` in Claude Code. For the complete setup guide (deployment, external review, security scanning, platform notes), see **[docs/guide.md](docs/guide.md)**.
-
-### Requirements
-
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (Pro or Max subscription)
-- Python 3.11+ with [uv](https://docs.astral.sh/uv/)
-- Git
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR. Note that changes to skills, hooks, or agents require a preceding GitHub issue for discussion — this is part of our security model.
 
 ## Development
 
@@ -232,19 +344,12 @@ uv run pytest plugins/shipwright-project/tests/ -v
 uv run pytest integration-tests/ -v
 ```
 
-## Upstream
+---
 
-Shipwright builds on the [Deep Trilogy](https://github.com/piercelamb) by Pierce Lamb:
-- [deep-project](https://github.com/piercelamb/deep-project) v0.2.1 → `shipwright-project`
-- [deep-plan](https://github.com/piercelamb/deep-plan) v0.3.2 → `shipwright-plan`
-- [deep-implement](https://github.com/piercelamb/deep-implement) v0.2.1 → `shipwright-build`
-
-The remaining plugins (`shipwright-run`, `shipwright-test`, `shipwright-deploy`, `shipwright-changelog`) are original work.
+*Early versions were forked from Pierce Lamb's [deep-project](https://github.com/piercelamb/deep-project), [deep-plan](https://github.com/piercelamb/deep-plan), and [deep-implement](https://github.com/piercelamb/deep-implement); current code has diverged substantially.*
 
 ## License
 
 [MIT](LICENSE)
-
----
 
 Built by [svenroth.ai](https://github.com/svenroth-ai). Powered by Claude Code.
