@@ -664,6 +664,8 @@ uv run {shared_root}/scripts/tools/write_decision_log.py \
 
 Reference iterate spec and run_id in the ADR body.
 
+**Length budget (forward-only, applies to new ADRs).** Each field — `--context`, `--decision`, `--consequences`, `--rationale`, `--rejected` — should be **1-3 sentences, max ~500 characters**. `decision_log.md` is always-loaded Layer-1 context: every new iterate run pays for every verbose ADR in tokens. Keep entries self-contained but terse. Include rationale only if the decision isn't self-explanatory. `write_decision_log.py` will print a non-blocking stderr warning if a field exceeds 500 characters; it will still append the entry. Do NOT retroactively shorten existing ADRs — git churn for historical detail isn't worth it.
+
 ### F3a: Reflection — Capture Learnings
 
 Apply the reflection protocol (`references/reflection.md`):

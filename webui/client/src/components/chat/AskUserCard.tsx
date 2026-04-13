@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Check } from 'lucide-react';
 import type { ChatMessage } from '../../types';
 import { useAnswerInbox, useInboxItem } from '../../hooks/useInbox';
+import { useChatAwaiting } from '../../contexts/ChatAwaitingContext';
 import { extractAskUserPayload } from '../../lib/askUserPayload';
 
 interface AskUserCardProps {
@@ -13,6 +14,7 @@ export function AskUserCard({ message }: AskUserCardProps) {
   const [freetext, setFreetext] = useState('');
   const [localAnswered, setLocalAnswered] = useState(false);
   const answerMutation = useAnswerInbox();
+  const { triggerAwaiting } = useChatAwaiting();
 
   const payload = extractAskUserPayload(message.toolInput);
   const question = payload.question || message.content || 'Question from Claude';
@@ -35,6 +37,10 @@ export function AskUserCard({ message }: AskUserCardProps) {
     const answer = selectedOption ?? freetext.trim();
     if (!answer) return;
 
+    // Fire the awaiting indicator immediately so ChatPanel can show
+    // "Thinking…" before Claude CLI's first NDJSON event arrives.
+    // See iterate 7 spec — closes the 2-3s latency gap on inbox replies.
+    triggerAwaiting();
     answerMutation.mutate({ id: inboxId, answer });
     setLocalAnswered(true);
   }

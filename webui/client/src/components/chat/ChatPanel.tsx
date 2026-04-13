@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { ArrowDown, AlertCircle } from 'lucide-react';
 import { useChat, useSendChat } from '../../hooks/useChat';
 import { useAutoScroll } from '../../hooks/useAutoScroll';
@@ -12,6 +12,7 @@ import { ChatInput } from './ChatInput';
 import { ApiError } from '../../lib/api';
 import { foldToolResults } from '../../lib/foldToolResults';
 import { dedupeStreamingMessages } from '../../lib/dedupeStreamingMessages';
+import { ChatAwaitingContext } from '../../contexts/ChatAwaitingContext';
 import type { AutonomyOption } from '../../types/settings';
 
 interface ChatPanelProps {
@@ -64,11 +65,28 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
   // Fold tool_result into matching tool_use BEFORE dedupe, so tool cards show
   // their final "Done"/"Error" status instead of a perpetual "Running" badge.
   const messages = dedupeMessages(foldToolResults(rawMessages));
+
   const { data: project } = useProject(projectId);
   const { data: globalSettings } = useSettings();
   const sendChat = useSendChat();
   const streaming = useStreamingChat();
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Iterate 7 — inbox-answer latency. Local boolean flipped by
+  // `AskUserCard.handleSubmit` via ChatAwaitingContext so the "Thinking…"
+  // indicator fires immediately on answer submit, not 2-3s later.
+  // Cleared once Claude's stream actually starts — NOT on every new
+  // persisted message, because the server echoes our own tool_result into
+  // chat-store which would cause the indicator to flicker off before
+  // Claude begins producing its real reply.
+  const [awaitingFromInbox, setAwaitingFromInbox] = useState(false);
+  useEffect(() => {
+    if (streaming.isStreaming) setAwaitingFromInbox(false);
+  }, [streaming.isStreaming]);
+  const awaitingContextValue = useMemo(
+    () => ({ triggerAwaiting: () => setAwaitingFromInbox(true) }),
+    [],
+  );
 
   // Bug B guard: during streaming, useSSE invalidates the chat query on every
   // chat:message event, so `messages` quickly catches up with whatever text is
@@ -79,7 +97,8 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
     streaming.displayContent &&
     messages.some((m) => m.type === 'assistant' && m.content === streaming.displayContent)
   );
-  const awaiting = isAwaitingResponse(messages, sendChat.isPending, streaming.isStreaming);
+  const awaiting =
+    isAwaitingResponse(messages, sendChat.isPending, streaming.isStreaming) || awaitingFromInbox;
   const { isAtBottom, scrollToBottom } = useAutoScroll(scrollRef, [messages, streaming.displayContent, streaming.streamingMessages, awaiting]);
   const [chatError, setChatError] = useState<string | null>(null);
 
@@ -122,6 +141,7 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
   }
 
   return (
+    <ChatAwaitingContext.Provider value={awaitingContextValue}>
     <div
       className="flex flex-col h-full min-w-0 overflow-hidden"
       style={{ background: 'var(--color-bg, #f5f0eb)' }}
@@ -130,7 +150,7 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
       {/* Message list — warm beige background, vertical scroll only */}
       <div
         ref={scrollRef}
-        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-6 pt-3 pb-5 flex flex-col gap-[14px]"
+        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-6 py-5 flex flex-col gap-[18px]"
       >
         {messages.length === 0 && !awaiting && (
           <div className="text-center text-gray-400 text-sm py-8">
@@ -192,5 +212,6 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
         autonomy={autonomy}
       />
     </div>
+    </ChatAwaitingContext.Provider>
   );
 }

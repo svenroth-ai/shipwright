@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AskUserCard } from './AskUserCard';
+import { ChatAwaitingContext } from '../../contexts/ChatAwaitingContext';
 import type { ChatMessage } from '../../types';
 
 const answerMutateMock = vi.fn();
@@ -11,7 +12,12 @@ vi.mock('../../hooks/useInbox', () => ({
   useInboxItem: () => undefined,
 }));
 
-function renderCard(toolInput: unknown, content = '', toolUseId?: string) {
+function renderCard(
+  toolInput: unknown,
+  content = '',
+  toolUseId?: string,
+  awaitingValue?: { triggerAwaiting: () => void },
+) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const message: ChatMessage = {
     id: 'ask-1',
@@ -23,9 +29,14 @@ function renderCard(toolInput: unknown, content = '', toolUseId?: string) {
     toolUseId,
     timestamp: '2026-04-13T00:00:00Z',
   };
+  const card = <AskUserCard message={message} />;
   return render(
     <QueryClientProvider client={queryClient}>
-      <AskUserCard message={message} />
+      {awaitingValue ? (
+        <ChatAwaitingContext.Provider value={awaitingValue}>{card}</ChatAwaitingContext.Provider>
+      ) : (
+        card
+      )}
     </QueryClientProvider>,
   );
 }
@@ -121,5 +132,24 @@ describe('AskUserCard', () => {
   it('Submit Answer button is disabled until the user picks an option or types text', () => {
     renderCard({ questions: [{ question: 'Anything?' }] });
     expect(screen.getByRole('button', { name: 'Submit Answer' })).toBeDisabled();
+  });
+
+  // Iterate 7 — inbox-answer latency fix
+  it('calls ChatAwaitingContext.triggerAwaiting before submitting the answer', async () => {
+    const triggerAwaiting = vi.fn();
+    renderCard(
+      { questions: [{ question: 'Pick', options: [{ label: 'Yes' }], multiSelect: false }] },
+      '',
+      'toolu_01Latency',
+      { triggerAwaiting },
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Yes' }));
+    await user.click(screen.getByRole('button', { name: 'Submit Answer' }));
+
+    expect(triggerAwaiting).toHaveBeenCalledTimes(1);
+    // Must have fired before (or at least alongside) the answer mutation —
+    // otherwise the "Thinking…" indicator would still lag.
+    expect(answerMutateMock).toHaveBeenCalledTimes(1);
   });
 });

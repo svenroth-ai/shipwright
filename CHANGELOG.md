@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **AskUserQuestion answers actually unblock Claude CLI** — `inbox-manager.answer` used to send the user's reply as plain text on stdin, leaving Claude blocked on the AskUserQuestion call (the markdown fallback question list). It now sends a structured `{type:"tool_result", tool_use_id, content}` content block via `claude-adapter.sendUserMessage` whenever the inbox item id is a real Anthropic `toolu_`-prefixed id (which it is since iterate-6). The synthetic `tool_result` is also persisted to chat-store so the folded tool card transitions to "Done" and the "Answered: X" state survives a refresh. Legacy random-UUID inbox entries still fall through to the plain-text path. (ADR-019)
+- **"Thinking…" indicator fires immediately on AskUserCard submit** — previously waited 2-3 s for Claude's first NDJSON event because `ChatPanel.isAwaitingResponse` only watched `sendChat.isPending`, not the inbox-answer path. New `ChatAwaitingContext` lets `AskUserCard.handleSubmit` flip a local `awaitingFromInbox` flag in `ChatPanel` synchronously; cleared once the stream actually starts. (ADR-019)
+
+### Changed
+- **shipwright-project SKILL: explicit one-question-per-AskUserQuestion rule** — added a single line to both `SKILL.md` and `references/interview-protocol.md` clarifying that the host blocks on each `AskUserQuestion` call and waits for a `tool_result` reply, so questions must NOT be batched into a markdown list. (ADR-019)
+- **shipwright-iterate F3 ADR length budget (forward-only)** — `SKILL.md` F3 section spells out a 1-3-sentence, ~500-character per-field budget for new ADRs. `shared/scripts/tools/write_decision_log.py` emits a non-blocking stderr warning when any field exceeds 500 chars; the entry is still written. Existing ADRs are NOT retroactively shortened. (ADR-019)
+
+### Fixed (earlier in this release)
 - **Phase dropdown selection is now honored** — `POST /api/projects/:id/tasks/:taskId/start` no longer hardcodes `phase=build`; it reads `task.requestedPhase` (persisted via the `task_created` event) and falls back to `classifyPhase(title+description)` → `"project"`. (ADR-013)
 - **NewIssueModal auto-suggest race** — a late-arriving classify response could overwrite a manual phase pick. Fixed via `phaseIsAutoRef` + an effect-level `aborted` guard; manual selections always win.
 - **Tool call cards stop saying "Running" forever** — `tool_use` and `tool_result` are now folded together by `toolUseId` at render time via a new `foldToolResults` helper. Tool cards transition from "Running" → "Done" / "Error" in place as soon as the matching result arrives, both for live streaming and persisted chat history. (ADR-014)

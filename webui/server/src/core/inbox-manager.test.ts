@@ -14,9 +14,11 @@ function setup(processState: string = "running") {
   } as unknown as ProcessGovernor;
   const adapter = {
     sendStdin: vi.fn(),
+    sendUserMessage: vi.fn(),
   } as unknown as ClaudeAdapter;
-  const mgr = new InboxManager(governor, adapter, onNotify);
-  return { mgr, onNotify, governor, adapter };
+  const appendChatMessage = vi.fn(async () => {});
+  const mgr = new InboxManager(governor, adapter, onNotify, undefined, { appendChatMessage });
+  return { mgr, onNotify, governor, adapter, appendChatMessage };
 }
 
 describe("InboxManager", () => {
@@ -139,7 +141,61 @@ describe("InboxManager", () => {
     await mgr.addQuestion("p1", "t1", "Pick one", undefined, ["x", "y"], "toolu_02");
     const answered = await mgr.answer("toolu_02", "x");
     expect(answered.answer).toBe("x");
-    expect(adapter.sendStdin).toHaveBeenCalled();
+    // Iterate 7: toolu_-prefixed ids go through sendUserMessage as a
+    // structured tool_result content block (not sendStdin plain text).
+    expect(adapter.sendUserMessage).toHaveBeenCalled();
+  });
+
+  // ──────────────────────────────────────────────────────────────────────
+  // Iterate 7 — tool_result refactor
+  // ──────────────────────────────────────────────────────────────────────
+
+  it("answer with toolu_-prefixed id sends tool_result content block", async () => {
+    const { mgr, adapter } = setup();
+    await mgr.addQuestion("p1", "t1", "Pick one", undefined, ["x", "y"], "toolu_01abc");
+    await mgr.answer("toolu_01abc", "x");
+
+    expect(adapter.sendUserMessage).toHaveBeenCalledTimes(1);
+    const [, blocks] = (adapter.sendUserMessage as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(blocks).toEqual([
+      { type: "tool_result", tool_use_id: "toolu_01abc", content: "x" },
+    ]);
+  });
+
+  it("answer with legacy random-UUID id falls back to plain-text sendStdin", async () => {
+    const { mgr, adapter } = setup();
+    await mgr.addQuestion("p1", "t1", "Legacy?");
+    const items = mgr.getAll();
+    await mgr.answer(items[0].id, "yes");
+
+    expect(adapter.sendStdin).toHaveBeenCalledWith(expect.anything(), "yes");
+    expect(adapter.sendUserMessage).not.toHaveBeenCalled();
+  });
+
+  it("answer appends a tool_result ChatMessage to chat-store for tool_use_id answers", async () => {
+    const { mgr, appendChatMessage } = setup();
+    mgr.registerProject("p1", "/tmp/proj");
+    await mgr.addQuestion("p1", "t1", "Pick", undefined, ["a"], "toolu_42");
+    await mgr.answer("toolu_42", "a");
+
+    expect(appendChatMessage).toHaveBeenCalledTimes(1);
+    const [projectDir, taskId, message] = appendChatMessage.mock.calls[0];
+    expect(projectDir).toBe("/tmp/proj");
+    expect(taskId).toBe("t1");
+    expect(message).toMatchObject({
+      type: "tool_result",
+      content: "a",
+      toolUseId: "toolu_42",
+    });
+  });
+
+  it("answer does NOT append chat-store entry for legacy (non-toolu_) ids", async () => {
+    const { mgr, appendChatMessage } = setup();
+    mgr.registerProject("p1", "/tmp/proj");
+    await mgr.addQuestion("p1", "t1", "Legacy?");
+    const items = mgr.getAll();
+    await mgr.answer(items[0].id, "yes");
+    expect(appendChatMessage).not.toHaveBeenCalled();
   });
 
   it("loads inbox items from disk", async () => {

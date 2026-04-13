@@ -38,6 +38,56 @@ def _truncate_title(text: str, max_len: int = 60) -> str:
     return text[:max_len - 3].rsplit(" ", 1)[0] + "..."
 
 
+# ADR length budget — see shipwright-iterate SKILL.md F3.
+# decision_log.md is always-loaded Layer-1 context, so every verbose ADR field
+# shows up in the context window of every future iterate run. 500 chars is
+# ~1-3 sentences — enough to be self-contained without bloating the budget.
+ADR_FIELD_MAX_CHARS = 500
+
+
+def check_field_length(field_name: str, value: str, max_chars: int = ADR_FIELD_MAX_CHARS) -> str | None:
+    """Return a warning string if `value` exceeds the budget, else None.
+
+    Pure helper, no side effects. Used by `collect_length_warnings` to build
+    the full list of warnings and by tests to assert per-field behavior.
+    """
+    if not value:
+        return None
+    if len(value) <= max_chars:
+        return None
+    return (
+        f"ADR --{field_name} field is {len(value)} chars "
+        f"(budget: {max_chars}). Consider shortening to 1-3 sentences."
+    )
+
+
+def collect_length_warnings(
+    *,
+    context: str,
+    decision: str,
+    consequences: str,
+    rationale: str,
+    rejected: str,
+    max_chars: int = ADR_FIELD_MAX_CHARS,
+) -> list[str]:
+    """Return non-empty warning strings for every field over the budget.
+
+    Order matches the field names so humans can locate them in the CLI call.
+    """
+    warnings: list[str] = []
+    for name, value in (
+        ("context", context),
+        ("decision", decision),
+        ("consequences", consequences),
+        ("rationale", rationale),
+        ("rejected", rejected),
+    ):
+        warning = check_field_length(name, value, max_chars=max_chars)
+        if warning is not None:
+            warnings.append(warning)
+    return warnings
+
+
 def format_entry(
     number: int,
     section_ref: str,
@@ -172,6 +222,18 @@ def main() -> None:
     args = parser.parse_args()
 
     project_root = Path(args.project_root) if args.project_root else Path(os.getcwd())
+
+    # Emit non-blocking warnings for any field over the length budget.
+    # Always proceeds to append; the budget is advisory.
+    for warning in collect_length_warnings(
+        context=args.context,
+        decision=args.decision,
+        consequences=args.consequences,
+        rationale=args.rationale,
+        rejected=args.rejected,
+    ):
+        print(f"warning: {warning}", file=sys.stderr)
+
     number = append_decision(
         project_root,
         section_ref=args.section,
