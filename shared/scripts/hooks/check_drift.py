@@ -182,9 +182,14 @@ def _load_gitignore(root: str) -> set[str]:
 
 
 _HIDDEN_DIR_DEFAULTS = {
+    # Build/test artifacts
     "node_modules", "__pycache__", "dist", "build", ".venv", ".git",
     ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox", ".idea", ".vscode",
     "vendor", "e2e-results", "playwright-report", "test-results",
+    # Shipwright runtime artifacts of target projects (every shipwright-built
+    # project has these; they are state, not architecture, so they should not
+    # surface as drift findings when CLAUDE.md doesn't enumerate them).
+    "agent_docs", "designs", "planning", "compliance",
 }
 
 

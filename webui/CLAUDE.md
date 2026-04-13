@@ -8,9 +8,6 @@
 ## Structure
 ```
 webui/
-  agent_docs/                   # Build/iterate artifacts generated during dev
-  designs/                      # HTML mockups of the Command Center UI
-  planning/                     # webui-specific iterate planning specs
   scripts/                      # install-windows.ps1, dev-restart.js
   server/                       # Hono backend (port 3847)
     src/
