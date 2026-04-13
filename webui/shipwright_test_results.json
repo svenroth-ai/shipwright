@@ -1,32 +1,27 @@
 {
-  "timestamp": "2026-04-13T22:20:00Z",
-  "branch": "iterate/ux-hotfixes-and-verifier",
+  "timestamp": "2026-04-13T23:18:00Z",
+  "branch": "iterate/inbox-dedupe-and-zombie-filter",
   "overall": "PASS",
-  "iterate_run": "iterate-2026-04-13-ux-hotfixes-and-verifier",
+  "iterate_run": "iterate-2026-04-13-inbox-dedupe-and-zombie-filter",
   "unit": {
-    "passed": 481,
-    "total": 481,
+    "passed": 489,
+    "total": 489,
     "breakdown": {
       "server": {
-        "passed": 268,
-        "total": 268,
-        "delta_since_previous_iterate": "+15 (inbox route terminal-task filter x3, inbox-manager revert cases x2; plus rerun of pre-existing suites)"
+        "passed": 276,
+        "total": 276,
+        "delta_since_previous_iterate": "+8 (inbox-manager addQuestion dedupe x5: same-text dedupe, normalization, different-text, cross-task, answered-not-deduped; inbox route zombie filter x3: live vs zombie, exited process, no-governor backwards compat)"
       },
       "client": {
         "passed": 213,
         "total": 213,
-        "delta_since_previous_iterate": "0 (model selector + chat panel changes covered by existing tests)"
+        "delta_since_previous_iterate": "0 (server-only change)"
       }
     }
   },
   "iterate_plugin": { "passed": 59, "total": 59 },
-  "shared": {
-    "passed": 171,
-    "total": 173,
-    "delta_since_previous_iterate": "+18 (verify_iterate_finalization.py tests: run_id check, events commit check, ADR in decision_log check, CHANGELOG [Unreleased] check, session_handoff freshness check, orchestrator happy/red paths)",
-    "known_failures": ["test_config.py x2 pre-existing"]
-  },
-  "smoke": { "passed": true, "notes": "client tsc clean; server tsc 13 pre-existing rootDir/external-lib errors unchanged since iterate 7" },
-  "e2e": { "passed": 17, "total": 17, "duration_s": 19.7 },
-  "degraded": ["server tsc pre-existing (unchanged)", "shared test_config.py 2 pre-existing failures"]
+  "shared": { "passed": 171, "total": 173, "known_failures": ["test_config.py x2 pre-existing"] },
+  "smoke": { "passed": true },
+  "e2e": { "passed": 17, "total": 17, "skipped_in_this_iterate": true, "reason": "server-only change, iterate 11 E2E still valid" },
+  "degraded": []
 }

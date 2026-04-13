@@ -130,4 +130,75 @@ describe("Inbox Routes", () => {
     const body = await res.json();
     expect(body.data).toHaveLength(2);
   });
+
+  // ──────────────────────────────────────────────────────────────────
+  // Iterate 11.1 — zombie task filter (running status but no process)
+  // ──────────────────────────────────────────────────────────────────
+
+  it("GET /api/inbox filters zombie tasks (running status but no live governor process)", async () => {
+    const inboxManager = {
+      getAll: vi.fn(() => [
+        { ...mockItem, id: "live", taskId: "t-live" },
+        { ...mockItem, id: "zombie", taskId: "t-zombie" },
+      ]),
+    } as any;
+    const taskManager = {
+      getTaskById: vi.fn((_pid: string, tid: string) => ({ id: tid, status: "running" })),
+    } as any;
+    const projectManager = { getById: vi.fn() } as any;
+    const governor = {
+      getProcess: vi.fn((tid: string) =>
+        tid === "t-live" ? { pid: 123, state: "running" } : undefined,
+      ),
+    } as any;
+    const sseManager = { broadcast: vi.fn() } as any;
+    const app = new Hono();
+    app.onError(errorHandler);
+    app.route("/", createInboxRoutes(inboxManager, sseManager, taskManager, projectManager, governor));
+
+    const res = await app.request("/api/inbox");
+    const body = await res.json();
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].id).toBe("live");
+  });
+
+  it("GET /api/inbox treats process.state='exited' as zombie", async () => {
+    const inboxManager = {
+      getAll: vi.fn(() => [{ ...mockItem, id: "dying", taskId: "t1" }]),
+    } as any;
+    const taskManager = {
+      getTaskById: vi.fn(() => ({ id: "t1", status: "running" })),
+    } as any;
+    const projectManager = { getById: vi.fn() } as any;
+    const governor = {
+      getProcess: vi.fn(() => ({ pid: 123, state: "exited" })),
+    } as any;
+    const sseManager = { broadcast: vi.fn() } as any;
+    const app = new Hono();
+    app.onError(errorHandler);
+    app.route("/", createInboxRoutes(inboxManager, sseManager, taskManager, projectManager, governor));
+
+    const res = await app.request("/api/inbox");
+    const body = await res.json();
+    expect(body.data).toHaveLength(0);
+  });
+
+  it("GET /api/inbox keeps items for running task when governor is not wired (backwards compat)", async () => {
+    const inboxManager = {
+      getAll: vi.fn(() => [{ ...mockItem, id: "still-shown", taskId: "t1" }]),
+    } as any;
+    const taskManager = {
+      getTaskById: vi.fn(() => ({ id: "t1", status: "running" })),
+    } as any;
+    const projectManager = { getById: vi.fn() } as any;
+    const sseManager = { broadcast: vi.fn() } as any;
+    const app = new Hono();
+    app.onError(errorHandler);
+    // No governor arg — 5-arg signature should still work
+    app.route("/", createInboxRoutes(inboxManager, sseManager, taskManager, projectManager));
+
+    const res = await app.request("/api/inbox");
+    const body = await res.json();
+    expect(body.data).toHaveLength(1);
+  });
 });
