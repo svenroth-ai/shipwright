@@ -8,13 +8,27 @@ AI-assisted coding promises speed, but speed without structure produces fragile,
 
 ### The Solution
 
-Shipwright is a structured Software Delivery Lifecycle (SDLC) pipeline built on Claude Code. Instead of generating code from a prompt and hoping for the best, Shipwright runs your project through eight distinct phases -- from requirements decomposition to deployment -- in a single command:
+Shipwright is a structured Software Delivery Lifecycle (SDLC) pipeline built on Claude Code. Instead of generating code from a prompt and hoping for the best, Shipwright runs your project through a cleanly orchestrated pipeline of standalone skills -- from requirements decomposition to deployment -- in a single command, or one skill at a time when that's all you need:
 
 ```
 /shipwright-run "A SaaS time tracking app with Supabase and Next.js"
 ```
 
 Shipwright infers your stack, interviews you about requirements, designs the UI, plans the implementation, builds with TDD, runs tests, scans for vulnerabilities, deploys, and generates a changelog. You stay in control; the pipeline does the heavy lifting.
+
+After the initial build, daily work happens through `/shipwright-iterate` -- complexity-adaptive, keeps every artifact in sync. Every skill also works standalone, so you can reach for `/shipwright-plan`, `/shipwright-test`, or `/shipwright-security` on its own, any time.
+
+Every phase emits events into an append-only log. That log is the single source of truth -- and the raw material for audit-ready compliance documentation (traceability matrix, test evidence, SBOM, change history) that `/shipwright-compliance` generates automatically. You get the compliance paperwork that usually costs weeks of manual work as a byproduct of just building the software.
+
+You can drive all of this from the Claude Code VSCode Extension or CLI terminal, or through the **Shipwright Command Center** -- a local web UI with a Kanban board, task-scoped chat, and a global inbox for agent questions. It spawns the same skills under the hood; it's a surface, not a separate product.
+
+### Three ways to use it
+
+- **Full pipeline** -- `/shipwright-run "..."` drives the complete initial build, from requirements through deployment.
+- **Daily iteration** -- `/shipwright-iterate "..."` for every change after the first deploy. Classifies intent, assesses complexity, runs the right amount of process.
+- **Single skill** -- `/shipwright-plan`, `/shipwright-test`, `/shipwright-security`, or any other skill on its own -- even on projects that never used Shipwright before.
+
+All three work from the Claude Code VSCode Extension or CLI terminal, or through the Command Center WebUI.
 
 ### What You Get
 
@@ -68,7 +82,7 @@ User Description
   SHIPWRIGHT-ITERATE ....... Classify Intent --> Assess Complexity --> Adaptive Pipeline
 ```
 
-Each phase is a standalone Claude Code plugin. The orchestrator (`shipwright-run`) chains them together, but you can also invoke any skill individually.
+Each phase is a standalone Claude Code plugin. `/shipwright-run` orchestrates the full pipeline for the initial build, `/shipwright-iterate` drives daily changes afterwards, and every single skill can be invoked on its own. Pick the entry point that matches your moment -- from the terminal or from the Command Center WebUI.
 
 ### Design Principles
 
@@ -78,7 +92,7 @@ Shipwright follows nine design principles that shape every decision in the pipel
 2. **DEV auto, PROD manual.** Development deploys happen automatically for fast feedback. Production deploys always require explicit confirmation.
 3. **Every skill works standalone.** The orchestrator coordinates the pipeline, but each skill (project, plan, build, test, etc.) can be invoked independently.
 4. **Test-first.** Shipwright follows TDD with IREB acceptance criteria, producing testable specifications from day one.
-5. **All work is tracked uniformly.** Build sections and iterate changes are events in the same append-only log (`shipwright_events.jsonl`). The initial build is just the first batch of events. `/shipwright-iterate` is designed for daily workflow after the initial build -- quick changes with minimal overhead.
+5. **Initial build is the exception, iteration is the rule.** Build sections and iterate changes are events in the same append-only log (`shipwright_events.jsonl`). The initial build is just the first batch of events. `/shipwright-iterate` is designed for daily workflow after the initial build -- quick changes with minimal overhead.
 6. **Resume anywhere.** All pipeline state is file-based. The event log is the single source of truth for what happened, when, and with what test results. You can interrupt a run, close your session, and resume exactly where you left off.
 7. **Migration safety.** Destructive database changes (DROP TABLE, DROP COLUMN) always require explicit confirmation before execution.
 8. **Linters over instructions.** Mechanical enforcement through hooks beats advisory prose. Hooks block dangerous actions deterministically rather than relying on the agent to follow written rules.
@@ -147,7 +161,49 @@ Aligned with the five domains of Anthropic's [Claude Certified Architect](https:
 | Supabase CLI | Database migrations | `npm install -g supabase` |
 | Mermaid Preview (VSCode) | Rendering compliance Mermaid diagrams | VSCode Extensions: "Markdown Preview Mermaid Support" |
 
-### Installation Option A: Marketplace (Recommended)
+### Installation Option A: `scripts/install.sh` (Recommended)
+
+The fastest path -- one script installs everything (Python deps, WebUI deps, shell alias, verification).
+
+```bash
+git clone https://github.com/svenroth-ai/shipwright.git ~/shipwright
+cd ~/shipwright
+./scripts/install.sh
+```
+
+`install.sh` handles:
+
+- Prerequisite checks (Claude Code, Python 3.11+, uv, git, Node.js)
+- `uv sync` for Python dependencies
+- `npm install` in `webui/server` and `webui/client` for the Command Center
+- A `shipwright` shell alias that loads all plugins with a single command
+- `scripts/verify-setup.sh` to confirm the install
+
+Once done, type `shipwright` in any terminal and go.
+
+#### Start the Command Center
+
+The Command Center runs as two processes. Open two terminals:
+
+```bash
+# Terminal 1 -- Hono backend (port 3847)
+cd webui/server && npm run dev
+
+# Terminal 2 -- Vite client
+cd webui/client && npm run dev
+```
+
+Then open the Vite URL printed in Terminal 2 in your browser.
+
+#### Optional: Auto-start the Command Center on Windows
+
+```powershell
+powershell -ExecutionPolicy Bypass -File webui\scripts\install-windows.ps1
+```
+
+Creates a startup shortcut so the Command Center backend runs in the background on login. Uninstall with `-Uninstall`.
+
+### Installation Option B: Marketplace (VSCode Extension)
 
 The marketplace approach works in both the VSCode Extension and the CLI. Add the following to `~/.claude/settings.json`:
 
@@ -187,7 +243,7 @@ git clone https://github.com/svenroth-ai/shipwright.git ~/shipwright
 cd ~/shipwright && uv sync
 ```
 
-### Installation Option B: Shell Alias (CLI Only)
+### Installation Option C: Shell Alias (CLI Only, Manual)
 
 If you prefer not to register a marketplace, define a shell alias that loads all plugins.
 
@@ -198,11 +254,16 @@ shipwright() {
   claude \
     --plugin-dir ~/shipwright/plugins/shipwright-run \
     --plugin-dir ~/shipwright/plugins/shipwright-project \
+    --plugin-dir ~/shipwright/plugins/shipwright-design \
+    --plugin-dir ~/shipwright/plugins/shipwright-iterate \
     --plugin-dir ~/shipwright/plugins/shipwright-plan \
     --plugin-dir ~/shipwright/plugins/shipwright-build \
     --plugin-dir ~/shipwright/plugins/shipwright-test \
+    --plugin-dir ~/shipwright/plugins/shipwright-security \
     --plugin-dir ~/shipwright/plugins/shipwright-deploy \
     --plugin-dir ~/shipwright/plugins/shipwright-changelog \
+    --plugin-dir ~/shipwright/plugins/shipwright-compliance \
+    --plugin-dir ~/shipwright/plugins/shipwright-preview \
     "$@"
 }
 ```
@@ -214,11 +275,16 @@ function shipwright {
   claude `
     --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-run `
     --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-project `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-design `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-iterate `
     --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-plan `
     --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-build `
     --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-test `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-security `
     --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-deploy `
     --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-changelog `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-compliance `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-preview `
     @args
 }
 ```

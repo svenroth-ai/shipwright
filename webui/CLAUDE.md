@@ -8,72 +8,96 @@
 ## Structure
 ```
 webui/
-  server/
+  server/                       # Hono backend (port 3847)
     src/
-      index.ts              # Hono server (port 3847)
+      index.ts                  # Server entry
+      config.ts                 # Env config
       core/
-        claude-adapter.ts   # Claude CLI spawn + NDJSON parser
-        task-manager.ts     # In-memory task state from events + processes
-        project-manager.ts  # Multi-project registry CRUD
-        inbox-manager.ts    # Inbox aggregation + stdin delivery
-        process-governor.ts # Semaphore (max N concurrent) + orphan cleanup
-        heartbeat.ts        # Scheduler (node-cron, 30s interval)
-        file-watcher.ts     # chokidar on events + configs
-        chat-store.ts       # Chat history persist/load
-        sse-manager.ts      # SSE endpoint for real-time push
+        claude-adapter.ts       # Claude CLI spawn + NDJSON parser
+        ndjson-parser.ts        # NDJSON stream parsing (shared)
+        task-manager.ts         # In-memory task state from events + processes
+        project-manager.ts      # Multi-project registry CRUD
+        inbox-manager.ts        # Inbox aggregation + stdin delivery
+        process-governor.ts     # Semaphore (max N concurrent) + orphan cleanup
+        heartbeat.ts             # Scheduler (node-cron, 30s interval)
+        file-watcher.ts         # chokidar on events + configs
+        chat-store.ts           # Chat history persist/load
+        event-store.ts          # Event log read/write coordination
+        sse-manager.ts          # SSE endpoint for real-time push
       bridge/
-        config-reader.ts    # Reads shipwright_*_config.json
-        event-reader.ts     # Reads shipwright_events.jsonl
-        pipeline-state.ts   # Pipeline status from events + configs
-        doc-index.ts        # File tree for Smart Viewer
-        intent-classifier.ts # Shell-out to classify_intent.py + classify_complexity.py
+        config-reader.ts        # Reads shipwright_*_config.json
+        event-reader.ts         # Reads shipwright_events.jsonl
+        event-writer.ts         # Writes shipwright_events.jsonl entries
+        pipeline-state.ts       # Pipeline status from events + configs
+        doc-index.ts            # File tree for Smart Viewer
+        intent-classifier.ts    # Shell-out to classify_intent.py + classify_complexity.py
+      middleware/
+        error-handler.ts        # Centralized error response middleware
+        logger.ts               # Request logging
       routes/
-        projects.ts         # GET/POST/PATCH/DELETE /api/projects
-        tasks.ts            # GET/POST /api/projects/:id/tasks, PATCH .../status, .../description
-        inbox.ts            # GET /api/inbox, POST /api/inbox/:id/answer
-        chat.ts             # GET/POST /api/projects/:id/chat
-        pipeline.ts         # GET /api/projects/:id/pipeline
-        docs.ts             # GET /api/projects/:id/docs
-        classify.ts         # POST /api/projects/:id/classify
-        settings.ts         # GET/PUT /api/settings
-        sse.ts              # GET /api/events (SSE stream)
-  client/
+        projects.ts             # GET/POST/PATCH/DELETE /api/projects
+        tasks.ts                # GET/POST /api/projects/:id/tasks, PATCH .../status, .../description
+        inbox.ts                # GET /api/inbox, POST /api/inbox/:id/answer
+        chat.ts                 # GET/POST /api/projects/:id/chat
+        pipeline.ts             # GET /api/projects/:id/pipeline
+        docs.ts                 # GET /api/projects/:id/docs
+        classify.ts             # POST /api/projects/:id/classify
+        settings.ts             # GET/PUT /api/settings
+        sse.ts                  # GET /api/events (SSE stream)
+    package.json
+    tsconfig.json
+  client/                       # React 19 / Vite 6 frontend
     src/
+      main.tsx
       App.tsx
-      layouts/
-        MainLayout.tsx      # Kanban board + Task Detail layout
+      router.tsx                # react-router-dom route definitions
+      layouts/                  # Layout shells (Main, etc.)
+      pages/                    # Route-level pages (Kanban, TaskDetail, Inbox, Projects, Settings)
       components/
-        nav/                # Sidebar Navigation (200px, icon + text)
-        board/              # Kanban Board (columns, cards, filters, list view)
-        detail/             # Task Detail (header, two-panel chat+viewer)
-        chat/               # Chat Engine (messages, tools, diffs)
-        viewer/             # Smart File Viewer (tab renderers)
-        explorer/           # File Explorer (slide-in tree)
-        inbox/              # Inbox / Global Inbox view
-        wizard/             # Project Wizard (4-step modal)
-        settings/           # Settings page (global + per-project)
-      hooks/                # TanStack Query hooks + SSE hooks
-      types/                # Shared TypeScript types
+        sidebar/                # Sidebar navigation
+        board/                  # Kanban Board (columns, cards, filters, list view)
+        detail/                 # Task Detail (header, two-panel chat+viewer)
+        chat/                   # Chat engine (messages, tool calls, diffs)
+        viewer/                 # Smart File Viewer (tab renderers)
+        explorer/               # File Explorer (slide-in tree)
+        wizard/                 # Project Wizard (4-step modal)
+      contexts/                 # React contexts
+      hooks/                    # TanStack Query + SSE hooks
+      lib/                      # Utilities and API clients
+      types/                    # Shared TypeScript types
     index.html
     vite.config.ts
     tailwind.config.ts
-  package.json
-  tsconfig.json
+    package.json
+    tsconfig.json
 ```
 
 ## HOW
 
 ### Development
+
+`webui/` has **no root `package.json`** — server and client are independent workspaces. Run each in its own terminal:
+
 ```bash
-cd webui
-npm install                   # Install dependencies
-npm run dev                   # Start both server + client (concurrently)
-npm run dev:server            # Server only (Hono, port 3847)
-npm run dev:client            # Client only (Vite, port 5173, proxies to 3847)
+# Install (once)
+cd webui/server && npm install
+cd webui/client && npm install
+
+# Terminal 1 — Hono backend (tsx watch, port 3847)
+cd webui/server && npm run dev
+
+# Terminal 2 — Vite client (port from vite.config.ts, proxies /api to 3847)
+cd webui/client && npm run dev
+```
+
+Other scripts (run from the respective subdir):
+
+```bash
 npm run build                 # Production build
-npm run test                  # Run tests (Vitest)
-npm run test:e2e              # Run E2E tests (Playwright)
-npm run lint                  # ESLint + TypeScript check
+npm run test                  # Vitest
+npm run test:e2e              # Playwright (client only)
+npm run lint                  # ESLint
+npm run typecheck             # tsc --noEmit
 ```
 
 ### Key Environment Variables
