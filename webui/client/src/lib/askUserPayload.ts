@@ -1,26 +1,32 @@
 /**
  * Extract a flat AskUserQuestion payload from the raw tool_input that Claude
- * Code's built-in AskUserQuestion tool emits. The real schema is nested:
+ * Code's built-in AskUserQuestion tool emits.
+ *
+ * The real schema — verified against a live chat-history jsonl dump:
  *
  *   {
  *     questions: [
  *       {
- *         header: "Priority",
  *         question: "What priority?",
- *         multiSelect: {
- *           mode: "single" | "multi",
- *           options: [{ label: "High", description: "..." }, ...]
- *         }
+ *         header: "Priority",
+ *         options: [                      // <-- DIRECTLY on the question
+ *           { label: "High", description: "..." },
+ *           { label: "Low", description: "..." }
+ *         ],
+ *         multiSelect: false              // <-- BOOLEAN, not an object
  *       }
  *     ]
  *   }
  *
- * Older code in this repo assumed a flat `{ question, context, options }`
- * schema, which meant the chat card showed an empty textarea with no question
- * and no option chips. This helper supports both shapes and flattens them
- * into `{ question, context?, options?, header? }` so both the client
+ * (My earlier ADR-015 assumption that `options` lived under `multiSelect`
+ *  was wrong — the real shape has them as a sibling, with multiSelect just
+ *  being a boolean flag for whether multiple answers are allowed.)
+ *
+ * This helper flattens both the Claude Code nested shape AND a legacy flat
+ * `{ question, context, options }` shape into
+ * `{ question, header?, context?, options?, allowMultiple? }` so the client
  * rendering path (AskUserCard) and the server inbox path (index.ts) can use
- * the same extractor without duplicating shape-sniffing logic.
+ * the same extractor.
  */
 
 export interface AskUserPayload {
@@ -28,6 +34,8 @@ export interface AskUserPayload {
   context?: string;
   header?: string;
   options?: string[];
+  /** Present when the underlying schema marks the question as multi-select */
+  allowMultiple?: boolean;
 }
 
 function coerceOptions(raw: unknown): string[] | undefined {
@@ -50,15 +58,15 @@ export function extractAskUserPayload(toolInput: unknown): AskUserPayload {
   }
   const obj = toolInput as Record<string, unknown>;
 
-  // New Claude Code schema: { questions: [{ header, question, multiSelect: { options: [...] } }] }
+  // Claude Code nested schema: { questions: [{ question, header, options: [...], multiSelect: bool }] }
   if (Array.isArray(obj.questions)) {
     const first = obj.questions[0] as Record<string, unknown> | undefined;
     if (!first) return { question: '' };
     const question = typeof first.question === 'string' ? first.question : '';
     const header = typeof first.header === 'string' ? first.header : undefined;
-    const multiSelect = first.multiSelect as { options?: unknown } | undefined;
-    const options = multiSelect ? coerceOptions(multiSelect.options) : undefined;
-    return { question, header, options };
+    const options = coerceOptions(first.options);
+    const allowMultiple = first.multiSelect === true;
+    return { question, header, options, allowMultiple };
   }
 
   // Legacy flat schema: { question, context, options }
