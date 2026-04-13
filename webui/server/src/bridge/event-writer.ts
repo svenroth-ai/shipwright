@@ -93,6 +93,43 @@ export async function emitWorkCompletedEvent(
   return event;
 }
 
+export async function emitTaskCancelledEvent(
+  filePath: string,
+  taskId: string,
+  projectId: string,
+  deps: WriterDeps,
+): Promise<ShipwrightEvent> {
+  const event: ShipwrightEvent = {
+    type: "task_cancelled",
+    timestamp: new Date().toISOString(),
+    task_id: taskId,
+    project_id: projectId,
+    source: "webui",
+  };
+  await appendEvent(filePath, event, deps);
+  return event;
+}
+
+export async function emitTaskUpdatedEvent(
+  filePath: string,
+  taskId: string,
+  projectId: string,
+  fields: { title?: string; description?: string },
+  deps: WriterDeps,
+): Promise<ShipwrightEvent> {
+  const event: ShipwrightEvent = {
+    type: "task_updated",
+    timestamp: new Date().toISOString(),
+    task_id: taskId,
+    project_id: projectId,
+    source: "webui",
+    ...(fields.title !== undefined && { title: fields.title }),
+    ...(fields.description !== undefined && { description: fields.description }),
+  };
+  await appendEvent(filePath, event, deps);
+  return event;
+}
+
 export async function emitWorkFailedEvent(
   filePath: string,
   taskId: string,

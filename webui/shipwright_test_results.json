@@ -1,24 +1,24 @@
 {
-  "timestamp": "2026-04-13T13:45:00Z",
-  "branch": "iterate/tool-result-refactor",
+  "timestamp": "2026-04-13T14:25:00Z",
+  "branch": "iterate/task-event-persist",
   "overall": "PASS",
-  "iterate_run": "iterate-2026-04-13-tool-result-refactor",
+  "iterate_run": "iterate-2026-04-13-task-event-persist",
   "unit": {
-    "passed": 418,
-    "total": 418,
-    "duration_s": 75,
+    "passed": 425,
+    "total": 425,
+    "duration_s": 45,
     "breakdown": {
       "server": {
-        "passed": 213,
-        "total": 213,
+        "passed": 220,
+        "total": 220,
         "files": 27,
-        "delta_since_previous_iterate": "+4 (inbox-manager: tool_result block sent, legacy plain-text fallback, chat-store appendChatMessage hook, no chat-store on legacy)"
+        "delta_since_previous_iterate": "+7 (event-writer: emitTaskCancelled, emitTaskUpdated x2, emitWorkCompleted; tasks routes: PATCH cancelled persists, PATCH closed persists, PATCH description persists)"
       },
       "client": {
         "passed": 205,
         "total": 205,
         "files": 52,
-        "delta_since_previous_iterate": "+1 (AskUserCard: triggerAwaiting fires from ChatAwaitingContext on submit)"
+        "delta_since_previous_iterate": "0"
       }
     }
   },
@@ -30,10 +30,10 @@
   "shared": {
     "passed": 153,
     "total": 155,
-    "delta_since_previous_iterate": "+3 (write_decision_log length budget: under-budget returns None, over-budget returns warning, collect_length_warnings)",
+    "delta_since_previous_iterate": "0",
     "known_failures": [
-      "tests/test_config.py::test_read_all_configs_empty — pre-existing CONFIG_FILES drift (events key not in expected set)",
-      "tests/test_config.py::test_config_handles_all_config_files — same root cause"
+      "tests/test_config.py::test_read_all_configs_empty — pre-existing",
+      "tests/test_config.py::test_config_handles_all_config_files — pre-existing"
     ]
   },
   "integration": {
@@ -48,25 +48,25 @@
     "passed": true,
     "url": "http://localhost:3847/api/health",
     "status_code": 200,
-    "notes": "Server unchanged from iterate-6 PID; tsx watch will reload on next file save. Manual verification deferred until restart."
+    "notes": "Server restarted during iterate 7. Manual verification of task delete/close/edit persistence pending user restart + retest."
   },
   "e2e": {
     "passed": 17,
     "total": 17,
     "skipped": false,
-    "duration_s": 26.2,
+    "duration_s": 17.8,
     "delta_since_previous_iterate": "0"
   },
   "consistency": {
     "skipped": true,
-    "skip_reason": "script expects src/ in project root but components are in client/src/ (monorepo layout)"
+    "skip_reason": "monorepo layout mismatch"
   },
   "visual": {
     "skipped": true,
-    "skip_reason": "no visual changes — iterate 7 is server protocol + client context wiring + plugin docs"
+    "skip_reason": "no UI changes"
   },
   "degraded": [
-    "ESLint binary not installed locally — type-check (tsc --noEmit) clean for both client and server",
-    "shared/test_config.py 2 pre-existing failures unrelated to iterate 7"
+    "ESLint binary not installed locally — type-check clean",
+    "shared/test_config.py 2 pre-existing failures unrelated to iterate 8"
   ]
 }

@@ -33,6 +33,28 @@ export interface TaskRouteDeps {
     projectId: string,
     phase: string
   ) => Promise<unknown>;
+  /** Iterate 8 — persist task_cancelled to shipwright_events.jsonl so
+   *  deleted tasks don't reappear after a server restart. */
+  emitTaskCancelledEvent?: (
+    filePath: string,
+    taskId: string,
+    projectId: string,
+  ) => Promise<unknown>;
+  /** Iterate 8 — persist work_completed for manual "Close" action
+   *  so closed tasks stay closed across restarts. */
+  emitWorkCompletedEvent?: (
+    filePath: string,
+    taskId: string,
+    projectId: string,
+  ) => Promise<unknown>;
+  /** Iterate 8 — persist task_updated so description / title edits
+   *  survive restarts (without this the edit is memory-only). */
+  emitTaskUpdatedEvent?: (
+    filePath: string,
+    taskId: string,
+    projectId: string,
+    fields: { title?: string; description?: string },
+  ) => Promise<unknown>;
   readGlobalSettings?: () => Promise<Record<string, unknown>>;
 }
 
@@ -267,12 +289,22 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
       throw new AppError("Can only edit description of pending tasks", 409);
     }
 
+    // Persist the task_updated event to disk FIRST so description/title
+    // edits survive a server restart. Without this the edit is memory-only
+    // and the next replay reconstructs the task from the original event.
+    const eventsPath = `${project.path}/shipwright_events.jsonl`;
+    const fields: { title?: string; description?: string } = {
+      ...(body.title && { title: body.title }),
+      ...(body.description !== undefined && { description: body.description }),
+    };
+    if (deps.emitTaskUpdatedEvent) {
+      await deps.emitTaskUpdatedEvent(eventsPath, taskId, project.id, fields);
+    }
     deps.eventStore.addEvent(project.id, {
       type: "task_updated",
       timestamp: new Date().toISOString(),
       task_id: taskId,
-      ...(body.title && { title: body.title }),
-      ...(body.description !== undefined && { description: body.description }),
+      ...fields,
     });
 
     deps.sseManager.broadcast({
@@ -298,6 +330,17 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
     if (!task) throw new AppError("Task not found", 404);
 
     const eventType = body.status === "cancelled" ? "task_cancelled" : "work_completed";
+
+    // Persist to disk FIRST so deleted/closed tasks don't reappear on restart.
+    // In-memory EventStore update follows so the SSE broadcast reflects the
+    // authoritative state.
+    const eventsPath = `${project.path}/shipwright_events.jsonl`;
+    if (eventType === "task_cancelled" && deps.emitTaskCancelledEvent) {
+      await deps.emitTaskCancelledEvent(eventsPath, taskId, project.id);
+    } else if (eventType === "work_completed" && deps.emitWorkCompletedEvent) {
+      await deps.emitWorkCompletedEvent(eventsPath, taskId, project.id);
+    }
+
     deps.eventStore.addEvent(project.id, {
       type: eventType,
       timestamp: new Date().toISOString(),

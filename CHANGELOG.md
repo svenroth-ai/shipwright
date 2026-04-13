@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Deleted, closed, and edited tasks survive server restart** — `PATCH /api/projects/:id/tasks/:taskId/status` and `PATCH .../description` used to write `task_cancelled` / `work_completed` / `task_updated` events only to the in-memory `EventStore`, so the JSONL event log never saw them. On restart the replay rebuilt tasks from disk and resurrected everything the user had just deleted. Both handlers now call new `emitTaskCancelledEvent` / `emitWorkCompletedEvent` / `emitTaskUpdatedEvent` helpers (plus the previously-unused `emitWorkCompletedEvent` is finally wired) before the in-memory update, symmetric with the `task_created` path. (ADR-020)
+
+### Fixed (iterate 7)
 - **AskUserQuestion answers actually unblock Claude CLI** — `inbox-manager.answer` used to send the user's reply as plain text on stdin, leaving Claude blocked on the AskUserQuestion call (the markdown fallback question list). It now sends a structured `{type:"tool_result", tool_use_id, content}` content block via `claude-adapter.sendUserMessage` whenever the inbox item id is a real Anthropic `toolu_`-prefixed id (which it is since iterate-6). The synthetic `tool_result` is also persisted to chat-store so the folded tool card transitions to "Done" and the "Answered: X" state survives a refresh. Legacy random-UUID inbox entries still fall through to the plain-text path. (ADR-019)
 - **"Thinking…" indicator fires immediately on AskUserCard submit** — previously waited 2-3 s for Claude's first NDJSON event because `ChatPanel.isAwaitingResponse` only watched `sendChat.isPending`, not the inbox-answer path. New `ChatAwaitingContext` lets `AskUserCard.handleSubmit` flip a local `awaitingFromInbox` flag in `ChatPanel` synchronously; cleared once the stream actually starts. (ADR-019)
 
