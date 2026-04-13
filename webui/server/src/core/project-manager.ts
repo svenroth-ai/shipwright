@@ -8,6 +8,11 @@ export interface ProjectManagerDeps {
   existsSync: (path: string) => boolean;
   mkdirSync: (path: string, opts?: { recursive: boolean }) => void;
   readdirSync: (path: string, opts?: { withFileTypes: boolean }) => Array<{ name: string; isDirectory: () => boolean }>;
+  // Optional: cross-process file lock + file-exists guard. Injected by
+  // index.ts in production (wraps proper-lockfile). Omitted in unit tests,
+  // which exercise persist() sequentially against an in-memory store.
+  lock?: (path: string) => Promise<() => Promise<void>>;
+  ensureFile?: (path: string) => void;
 }
 
 export class ProjectManager {
@@ -166,6 +171,35 @@ export class ProjectManager {
 
   private persist(): void {
     const arr = Array.from(this.projects.values());
-    this.deps.writeFile(this.registryPath, JSON.stringify(arr, null, 2));
+    const data = JSON.stringify(arr, null, 2);
+    // Fire-and-forget: keeps create/update/delete/touchLastActive sync so
+    // route handlers don't need to await file I/O. proper-lockfile
+    // serializes concurrent writers in-process, so the JSON stays
+    // consistent even under bursty updates (e.g. multiple HTTP requests
+    // + touchLastActive from heartbeat). Errors are logged, not thrown,
+    // because the in-memory Map is still authoritative until next load.
+    void this.persistLocked(data).catch((err) =>
+      console.error(
+        JSON.stringify({
+          level: "error",
+          message: "projects.json persist failed",
+          error: String(err),
+        })
+      )
+    );
+  }
+
+  private async persistLocked(data: string): Promise<void> {
+    if (this.deps.ensureFile) this.deps.ensureFile(this.registryPath);
+    if (!this.deps.lock) {
+      await this.deps.writeFile(this.registryPath, data);
+      return;
+    }
+    const release = await this.deps.lock(this.registryPath);
+    try {
+      await this.deps.writeFile(this.registryPath, data);
+    } finally {
+      await release();
+    }
   }
 }

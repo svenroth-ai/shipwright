@@ -11,6 +11,11 @@ export interface InboxStoreDeps {
   writeFile: (path: string, data: string) => Promise<void>;
   existsSync: (path: string) => boolean;
   mkdirSync: (path: string, opts?: { recursive: boolean }) => void;
+  // Optional: cross-process file lock + file-exists guard. Prevents a
+  // new-question append from colliding with a concurrent answer rewrite
+  // on the same inbox.jsonl. Omitted in unit tests.
+  lock?: (path: string) => Promise<() => Promise<void>>;
+  ensureFile?: (path: string) => void;
 }
 
 /** Hooks the inbox manager uses to persist the synthetic `tool_result`
@@ -80,6 +85,22 @@ export class InboxManager {
     }
   }
 
+  /** Serializes any write (append or rewrite) against the inbox file so
+   *  a concurrent addQuestion-append can't be clobbered by an answer-
+   *  driven rewriteProject. The lock is shared across both code paths
+   *  since they target the same inbox.jsonl path. */
+  private async withInboxLock<T>(filePath: string, writer: () => Promise<T>): Promise<T> {
+    const deps = this.storageDeps!;
+    if (deps.ensureFile) deps.ensureFile(filePath);
+    if (!deps.lock) return writer();
+    const release = await deps.lock(filePath);
+    try {
+      return await writer();
+    } finally {
+      await release();
+    }
+  }
+
   private async persistItem(item: InboxItem): Promise<void> {
     if (!this.storageDeps) return;
     const projectDir = this.projectPaths.get(item.projectId);
@@ -87,7 +108,10 @@ export class InboxManager {
 
     const dir = `${projectDir}/.shipwright-webui`;
     this.storageDeps.mkdirSync(dir, { recursive: true });
-    await this.storageDeps.appendFile(this.inboxPath(projectDir), JSON.stringify(item) + "\n");
+    const filePath = this.inboxPath(projectDir);
+    await this.withInboxLock(filePath, () =>
+      this.storageDeps!.appendFile(filePath, JSON.stringify(item) + "\n")
+    );
   }
 
   private async rewriteProject(projectId: string): Promise<void> {
@@ -100,7 +124,10 @@ export class InboxManager {
 
     const items = Array.from(this.items.values()).filter((i) => i.projectId === projectId);
     const content = items.map((i) => JSON.stringify(i)).join("\n") + (items.length > 0 ? "\n" : "");
-    await this.storageDeps.writeFile(this.inboxPath(projectDir), content);
+    const filePath = this.inboxPath(projectDir);
+    await this.withInboxLock(filePath, () =>
+      this.storageDeps!.writeFile(filePath, content)
+    );
   }
 
   async addQuestion(
