@@ -24,7 +24,8 @@ export interface TaskRouteDeps {
     projectId: string,
     description: string,
     intent?: string,
-    priority?: string
+    priority?: string,
+    phase?: string
   ) => Promise<unknown>;
   emitPhaseStartedEvent?: (
     filePath: string,
@@ -127,7 +128,10 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
     const sessionId = randomUUID();
     const eventsPath = `${project.path}/shipwright_events.jsonl`;
 
-    await deps.emitTaskCreatedEvent(eventsPath, taskId, project.id, description, body.intent, body.priority);
+    const permissionMode = coercePermissionMode(body.mode);
+    const phase = await resolvePhase(body.phase, title, description, project.path);
+
+    await deps.emitTaskCreatedEvent(eventsPath, taskId, project.id, description, body.intent, body.priority, phase);
     deps.eventStore.addEvent(project.id, {
       type: "task_created",
       timestamp: new Date().toISOString(),
@@ -135,10 +139,8 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
       project_id: project.id,
       title,
       description,
+      phase,
     });
-
-    const permissionMode = coercePermissionMode(body.mode);
-    const phase = await resolvePhase(body.phase, title, description, project.path);
 
     let startStatus: "started" | "queued" | "failed" = "started";
     if (startImmediately) {
@@ -204,6 +206,13 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
     const eventsPath = `${project.path}/shipwright_events.jsonl`;
     const body = await c.req.json().catch(() => ({} as Record<string, unknown>));
     const permissionMode = coercePermissionMode(body.mode);
+    // Resolve phase: explicit body.phase > task.requestedPhase > classify fallback > "project"
+    const startPhase = await resolvePhase(
+      body.phase ?? task.requestedPhase,
+      task.title,
+      task.description ?? "",
+      project.path
+    );
     try {
       const result = await deps.governor.acquire({
         projectDir: project.path,
@@ -219,16 +228,16 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
         return c.json({ data: { taskId, status: "queued" } }, 202);
       }
 
-      // Emit phase_started so kanban updates to "in_progress"
+      // Emit phase_started so kanban updates using the resolved phase
       deps.eventStore.addEvent(project.id, {
         type: "phase_started",
         timestamp: new Date().toISOString(),
         task_id: taskId,
         project_id: project.id,
-        phase: "build",
+        phase: startPhase,
       });
       if (deps.emitPhaseStartedEvent) {
-        await deps.emitPhaseStartedEvent(eventsPath, taskId, project.id, "build");
+        await deps.emitPhaseStartedEvent(eventsPath, taskId, project.id, startPhase);
       }
       deps.sseManager.broadcast({
         type: "task:updated",

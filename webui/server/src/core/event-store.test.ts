@@ -82,6 +82,24 @@ describe("EventStore", () => {
     expect(store.getTasksForProject("p1")[0].currentPhase).toBe("build");
   });
 
+  it("task_created with phase populates task.requestedPhase", () => {
+    const store = new EventStore();
+    store.replayProject("p1", [
+      makeEvent({ type: "task_created", task_id: "t1", description: "Design hero", phase: "design" }),
+    ]);
+    const tasks = store.getTasksForProject("p1");
+    expect(tasks[0].requestedPhase).toBe("design");
+  });
+
+  it("task_created without phase leaves requestedPhase undefined", () => {
+    const store = new EventStore();
+    store.replayProject("p1", [
+      makeEvent({ type: "task_created", task_id: "t1", description: "Task" }),
+    ]);
+    const tasks = store.getTasksForProject("p1");
+    expect(tasks[0].requestedPhase).toBeUndefined();
+  });
+
   it("derives pipeline state with correct phase statuses", () => {
     const store = new EventStore();
     store.replayProject("p1", [

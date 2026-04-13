@@ -313,8 +313,8 @@ if (isMainModule) {
       sseManager,
       projectManager,
       chatStore,
-      emitTaskCreatedEvent: (fp, tid, pid, desc, intent, priority) =>
-        emitTaskCreatedEvent(fp, tid, pid, desc, intent, priority, writerDeps),
+      emitTaskCreatedEvent: (fp, tid, pid, desc, intent, priority, phase) =>
+        emitTaskCreatedEvent(fp, tid, pid, desc, intent, priority, phase, writerDeps),
       emitPhaseStartedEvent: (fp, tid, pid, phase) =>
         emitPhaseStartedEvent(fp, tid, pid, phase, writerDeps),
       readGlobalSettings: async () => {

@@ -1,24 +1,24 @@
 {
-  "timestamp": "2026-04-13T00:10:00Z",
-  "branch": "main",
+  "timestamp": "2026-04-13T08:20:00Z",
+  "branch": "iterate/phase-dropdown-fix",
   "overall": "PASS",
-  "iterate_run": "iterate-2026-04-13-phase-detection",
+  "iterate_run": "iterate-2026-04-13-phase-dropdown-fix",
   "unit": {
-    "passed": 361,
-    "total": 361,
-    "duration_s": 46,
+    "passed": 368,
+    "total": 368,
+    "duration_s": 63,
     "breakdown": {
       "server": {
-        "passed": 193,
-        "total": 193,
+        "passed": 199,
+        "total": 199,
         "files": 27,
-        "delta_since_v0_1_2": "+4 (classify phase response, tasks.ts phase propagation, explicit/auto/invalid phase cases)"
+        "delta_since_v0_1_3": "+6 (event-writer phase field, event-store requestedPhase, tasks.ts /start route phase propagation, explicit/auto/invalid phase coverage)"
       },
       "client": {
-        "passed": 168,
-        "total": 168,
+        "passed": 169,
+        "total": 169,
         "files": 47,
-        "delta_since_v0_1_2": "+4 (NewIssueModal phase dropdown, auto-suggest, manual override, submit forwarding)"
+        "delta_since_v0_1_3": "+1 (NewIssueModal classify race condition — manual pick vs in-flight response)"
       }
     }
   },
@@ -35,7 +35,7 @@
     "url": "http://localhost:3847/api/health",
     "status_code": 200,
     "response_time_ms": 45,
-    "notes": "Not re-measured for this iterate run; carried forward from v0.1.2."
+    "notes": "Not re-measured for this iterate run; carried forward."
   },
   "e2e": {
     "passed": 17,
@@ -43,17 +43,7 @@
     "skipped": false,
     "skip_reason": "",
     "duration_s": 45,
-    "spec_files": [
-      "e2e/flows/01-board-navigation.spec.ts",
-      "e2e/flows/02-inbox.spec.ts",
-      "e2e/flows/03-projects.spec.ts",
-      "e2e/flows/04-settings.spec.ts",
-      "e2e/flows/05-chat-settings.spec.ts",
-      "e2e/flows/06-new-task.spec.ts",
-      "e2e/flows/07-settings-persistence.spec.ts",
-      "e2e/flows/08-inbox-persistence.spec.ts"
-    ],
-    "delta_since_v0_1_2": "0 (no new e2e specs for this iterate run; covered via unit + component tests)"
+    "delta_since_v0_1_3": "0 (no new e2e specs for this iterate run; covered via unit + component tests)"
   },
   "consistency": {
     "skipped": true,
@@ -63,15 +53,5 @@
     "skipped": true,
     "skip_reason": "visual_compare.py misparses nested screen-routes.json format (script bug)"
   },
-  "bridge_performance": {
-    "cold_start_ms": 15350,
-    "warm_followup_ms": 2570,
-    "speedup_vs_v0_1_1": "6x",
-    "notes": "Carried from v0.1.2 — no bridge changes in this iterate run."
-  },
-  "iterate_runs_backfilled": [
-    "iterate-2026-04-12-persistent-process (ADR-009, medium, retroactive)",
-    "iterate-2026-04-12-chat-rendering (ADR-010, medium, retroactive)",
-    "iterate-2026-04-12-permission-modes (ADR-011, small, retroactive)"
-  ]
+  "degraded": []
 }

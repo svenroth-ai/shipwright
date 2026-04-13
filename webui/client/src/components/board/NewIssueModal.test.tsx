@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -111,6 +111,57 @@ describe('NewIssueModal', () => {
     await userEvent.selectOptions(screen.getByLabelText(/Phase/), 'build');
     expect((screen.getByLabelText(/Phase/) as HTMLSelectElement).value).toBe('build');
     expect(screen.queryByText('auto')).not.toBeInTheDocument();
+  });
+
+  it('manual phase pick is NOT overwritten by an in-flight classify response', async () => {
+    // Hold the classify promise so we can resolve it AFTER the manual override.
+    let resolveClassify: (value: unknown) => void = () => {};
+    const classifyPromise = new Promise((resolve) => {
+      resolveClassify = resolve;
+    });
+    apiPostMock.mockImplementation((path: string) => {
+      if (path.includes('/classify')) return classifyPromise;
+      return Promise.resolve({ id: 't1' });
+    });
+
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      renderModal();
+
+      // Type a title via fireEvent (synchronous, no userEvent internal timers).
+      fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'implement a hook' } });
+
+      // Advance past the 400ms debounce so the classify call fires.
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+
+      // apiPost('/classify') must have been called by now, and the promise is pending.
+      await waitFor(() => {
+        const calls = apiPostMock.mock.calls.filter(
+          ([path]) => typeof path === 'string' && path.includes('/classify'),
+        );
+        expect(calls.length).toBeGreaterThan(0);
+      });
+
+      // Manually pick "project" BEFORE the in-flight classify resolves.
+      fireEvent.change(screen.getByLabelText(/Phase/), { target: { value: 'project' } });
+      expect((screen.getByLabelText(/Phase/) as HTMLSelectElement).value).toBe('project');
+
+      // Now resolve the in-flight classify with "build".
+      await act(async () => {
+        resolveClassify({ phase: 'build', phase_confidence: 0.8 });
+        // flush microtasks
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      // The dropdown must NOT flip back to "build" — manual pick wins.
+      expect((screen.getByLabelText(/Phase/) as HTMLSelectElement).value).toBe('project');
+      expect(screen.queryByText('auto')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('submits the selected phase in the POST /tasks body', async () => {

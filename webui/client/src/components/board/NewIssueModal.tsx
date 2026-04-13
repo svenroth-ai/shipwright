@@ -40,8 +40,13 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
   const [startImmediately, setStartImmediately] = useState(true);
   const [phase, setPhase] = useState<string>(DEFAULT_PHASE);
   const [phaseIsAuto, setPhaseIsAuto] = useState(true);
+  const phaseIsAutoRef = useRef(true);
   const titleRef = useRef<HTMLInputElement>(null);
   const { createTask, isCreating } = useCreateTask();
+
+  useEffect(() => {
+    phaseIsAutoRef.current = phaseIsAuto;
+  }, [phaseIsAuto]);
 
   // Sync projectId when activeProjectId changes
   useEffect(() => {
@@ -73,11 +78,12 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
       return;
     }
 
+    let aborted = false;
     const timer = setTimeout(() => {
-      let cancelled = false;
       apiPost<ClassifyResponse>(`/projects/${projectId}/classify`, { description: combined })
         .then((data) => {
-          if (cancelled) return;
+          // Two guards: effect was aborted, OR user has since picked manually
+          if (aborted || !phaseIsAutoRef.current) return;
           const suggested = data?.phase;
           if (suggested && PHASE_OPTIONS.some((p) => p.value === suggested)) {
             setPhase(suggested);
@@ -86,12 +92,12 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
         .catch(() => {
           // Silent: keep current default
         });
-      return () => {
-        cancelled = true;
-      };
     }, CLASSIFY_DEBOUNCE_MS);
 
-    return () => clearTimeout(timer);
+    return () => {
+      aborted = true;
+      clearTimeout(timer);
+    };
   }, [open, phaseIsAuto, projectId, title, description]);
 
   function handleSubmit() {
