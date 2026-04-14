@@ -1,15 +1,19 @@
 /**
- * Effort wire-through — iterate 9.
+ * Effort wire-through — iterate 9, revised iterate 13.1.
  *
- * Claude Code CLI does not expose a `--thinking` or `--effort` flag. In the
- * VS Code Claude extension, "Max" maps to the `/ultrathink` slash command
- * and lesser levels map to `/think` / `/think hard`. These prefixes are just
- * text that Claude recognizes as a thinking-depth instruction — they work
- * equally well when prepended to any prompt, initial or follow-up.
+ * History: iterate 9 mapped effort levels to Claude Code's `/think`,
+ * `/think hard`, and `/ultrathink` slash commands, which previously
+ * controlled thinking depth. Claude Code CLI 2.1.1 REMOVED those slash
+ * commands (verified via `claude --help` — no `--thinking` flag, and
+ * the system/init slash_commands list no longer contains them). Sending
+ * `/think\n\n<prompt>` now produces a server error:
+ *     "Unknown slash command: think"
  *
- * This module is the single source of truth for (a) the valid effort level
- * set and (b) the text prefix each level maps to. Used by both the `/tasks`
- * and `/chat` routes.
+ * Until Claude Code exposes thinking depth again (either as a CLI flag
+ * or as new slash commands), all effort levels route through unchanged.
+ * The toolbar effort selector still works cosmetically but has no
+ * runtime effect. Revisit when the CLI adds a `--thinking-budget` flag
+ * or re-introduces `/think` style commands.
  */
 
 export type EffortLevel = "low" | "medium" | "high" | "max";
@@ -18,9 +22,9 @@ const VALID: readonly EffortLevel[] = ["low", "medium", "high", "max"] as const;
 
 const PREFIXES: Record<EffortLevel, string> = {
   low: "",
-  medium: "/think",
-  high: "/think hard",
-  max: "/ultrathink",
+  medium: "",
+  high: "",
+  max: "",
 };
 
 /**
