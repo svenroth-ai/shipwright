@@ -2,18 +2,16 @@ import type { NdjsonMessage, ChatMessage } from "../../../client/src/types/chat.
 import type { SSEEvent } from "../../../client/src/types/sse.js";
 
 /**
- * Iterate 13 / Phase 0: extract + broadcast + persist helper.
+ * Iterate 13: extract + broadcast + persist helper.
  *
- * Two modes, gated by SHIPWRIGHT_NEW_CHAT_PROTOCOL:
- * - new protocol (flag=1): extract ChatMessages first, then broadcast each one
- *   individually with `payload.message: ChatMessage`. Same stable id space as
- *   REST GET /chat so clients can dedupe by id.
- * - legacy (flag=0): broadcast raw NdjsonMessage, persist extracted ChatMessages.
- *   Kept for rollback until the client fully migrates.
+ * Extracts each NDJSON assistant event into one or more ChatMessages, then
+ * broadcasts each one individually over SSE with `payload.message: ChatMessage`.
+ * The SSE id space now matches the REST GET /chat id space, so clients can
+ * dedupe by id using mergeCommitted.
  *
  * Extracted into its own file so we can unit-test the routing logic without
  * spinning up the full Hono server and ClaudeAdapter wiring. See plan
- * vast-mapping-petal.md section "Phase 0".
+ * vast-mapping-petal.md.
  */
 export interface BroadcastDeps {
   sseManager: { broadcast(event: SSEEvent): void };
@@ -31,38 +29,20 @@ export interface BroadcastContext {
 export function broadcastAndPersistChat(
   ctx: BroadcastContext,
   deps: BroadcastDeps,
-  newProtocol: boolean,
 ): void {
-  const { taskId, projectId, projectPath, msg, chatMessages } = ctx;
+  const { taskId, projectId, projectPath, chatMessages } = ctx;
+  if (chatMessages.length === 0) return;
 
-  if (newProtocol) {
-    if (chatMessages.length === 0) return;
-    for (const chatMsg of chatMessages) {
-      if (projectPath) {
-        deps.chatStore.append(projectPath, taskId, chatMsg).catch((err) =>
-          console.error(JSON.stringify({ level: "error", message: "Chat persist error", error: String(err) })),
-        );
-      }
-      deps.sseManager.broadcast({
-        type: "chat:message",
-        payload: { taskId, projectId, message: chatMsg },
-        timestamp: chatMsg.timestamp,
-      });
-    }
-    return;
-  }
-
-  // Legacy path.
-  deps.sseManager.broadcast({
-    type: "chat:message",
-    payload: { taskId, projectId, message: msg },
-    timestamp: new Date().toISOString(),
-  });
-  if (chatMessages.length > 0 && projectPath) {
-    for (const chatMsg of chatMessages) {
+  for (const chatMsg of chatMessages) {
+    if (projectPath) {
       deps.chatStore.append(projectPath, taskId, chatMsg).catch((err) =>
         console.error(JSON.stringify({ level: "error", message: "Chat persist error", error: String(err) })),
       );
     }
+    deps.sseManager.broadcast({
+      type: "chat:message",
+      payload: { taskId, projectId, message: chatMsg },
+      timestamp: chatMsg.timestamp,
+    });
   }
 }
