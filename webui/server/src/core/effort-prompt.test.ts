@@ -1,25 +1,21 @@
 import { describe, it, expect } from "vitest";
 import { wrapWithEffort, coerceEffort } from "./effort-prompt.js";
 
-describe("wrapWithEffort", () => {
+describe("wrapWithEffort (iterate 13.1 — Claude CLI 2.1.1 removed /think slash commands)", () => {
   it("returns input unchanged for low", () => {
     expect(wrapWithEffort("hello", "low")).toBe("hello");
   });
 
-  it("prepends /think for medium", () => {
-    expect(wrapWithEffort("fix the bug", "medium")).toBe("/think\n\nfix the bug");
+  it("returns input unchanged for medium (was /think, removed in CLI 2.1.1)", () => {
+    expect(wrapWithEffort("fix the bug", "medium")).toBe("fix the bug");
   });
 
-  it("prepends /think hard for high", () => {
-    expect(wrapWithEffort("design the auth layer", "high")).toBe(
-      "/think hard\n\ndesign the auth layer",
-    );
+  it("returns input unchanged for high (was /think hard, removed in CLI 2.1.1)", () => {
+    expect(wrapWithEffort("design the auth layer", "high")).toBe("design the auth layer");
   });
 
-  it("prepends /ultrathink for max", () => {
-    expect(wrapWithEffort("plan migration strategy", "max")).toBe(
-      "/ultrathink\n\nplan migration strategy",
-    );
+  it("returns input unchanged for max (was /ultrathink, removed in CLI 2.1.1)", () => {
+    expect(wrapWithEffort("plan migration strategy", "max")).toBe("plan migration strategy");
   });
 
   it("returns input unchanged for unknown effort value", () => {
@@ -31,7 +27,7 @@ describe("wrapWithEffort", () => {
   });
 
   it("preserves empty input", () => {
-    expect(wrapWithEffort("", "max")).toBe("/ultrathink\n\n");
+    expect(wrapWithEffort("", "max")).toBe("");
   });
 });
 
