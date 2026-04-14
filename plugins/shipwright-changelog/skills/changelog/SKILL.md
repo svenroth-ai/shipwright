@@ -217,14 +217,44 @@ Where `{shared_root}` = `{plugin_root}/../../shared`.
 If no PR was created (on main), use `--detail "v{version} — tagged on main"`.
 
 **Phase complete — update pipeline state:**
-```bash
-# Mark changelog phase complete (triggers compliance update automatically)
-uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
-  update-step --project-root "$(pwd)" --step changelog --status complete
 
-# Update delivery dashboard
+Iterate 12.4 wires the changelog plugin into the Minimum Phase
+Completion Canon at C1/C2/C3 only. **C4 is skipped by policy** —
+release tagging is process management, not an architectural decision.
+**C5 is not applicable** — this plugin IS the one that writes
+`[Unreleased]` prepends; appending to `[Unreleased]` after a release
+would pollute the next version.
+
+```bash
+: "${SHIPWRIGHT_RUN_ID:=changelog-v{version}-$(date +%Y%m%d-%H%M%S)}"
+export SHIPWRIGHT_RUN_ID
+
+# C1 — already emitted as the phase_completed event above.
+
+# C2 — delivery dashboard
 uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "$(pwd)" --phase changelog --session-id "{SHIPWRIGHT_SESSION_ID}"
+
+# C3 (NEW 12.4) — canon-marker handoff
+uv run {shared_root}/scripts/tools/generate_session_handoff.py \
+  --project-root "$(pwd)" --canon-marker --phase changelog \
+  --reason "release v{version}"
+
+# C4 — SKIPPED by policy.
+# C5 — n/a (this plugin prepends the released version block; adding a
+#      new [Unreleased] bullet would collide with the next release).
+
+# phase_history (NEW 12.4)
+uv run {shared_root}/scripts/tools/append_phase_history.py \
+  --project-root "$(pwd)" --phase changelog --run-id "$SHIPWRIGHT_RUN_ID" \
+  --entry-json '{"version":"v{version}","outcome":"tagged"}'
+
+# Mark changelog phase complete (triggers compliance update automatically).
+# _validate_changelog() now runs test_checks + the new check_git_tag_exists
+# and check_changelog_version_matches_tag Sonder-Checks, so a broken tag
+# push or a CHANGELOG drift blocks this call.
+uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+  update-step --project-root "$(pwd)" --step changelog --status complete
 ```
 
 **Print Summary:**
