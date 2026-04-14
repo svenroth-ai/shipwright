@@ -16,6 +16,7 @@ import { EventStore } from "./core/event-store.js";
 import { SSEManager } from "./core/sse-manager.js";
 import { ClaudeAdapter } from "./core/claude-adapter.js";
 import { isAskUserQuestion, extractContentBlocks } from "./core/ndjson-parser.js";
+import { broadcastAndPersistChat } from "./core/chat-broadcast.js";
 import { extractAskUserPayload } from "../../client/src/lib/askUserPayload.js";
 import { ProcessGovernor } from "./core/process-governor.js";
 import { HeartbeatScheduler } from "./core/heartbeat.js";
@@ -157,21 +158,14 @@ if (isMainModule) {
           }
         }
 
-        // Forward raw NDJSON to SSE for real-time streaming
-        sseManager.broadcast({
-          type: "chat:message",
-          payload: { taskId, projectId, message: msg },
-          timestamp: new Date().toISOString(),
-        });
-
-        // Extract structured ChatMessages and persist ALL types
+        // Iterate 13 / Phase 0: route broadcast + persist through the helper
+        // so the logic is testable in isolation and switchable via env flag.
         const chatMessages = extractContentBlocks(taskId, msg);
-        if (chatMessages.length > 0 && projectPath) {
-          for (const chatMsg of chatMessages) {
-            chatStore.append(projectPath, taskId, chatMsg)
-              .catch((err) => console.error(JSON.stringify({ level: "error", message: "Chat persist error", error: String(err) })));
-          }
-        }
+        broadcastAndPersistChat(
+          { taskId, projectId, projectPath, msg, chatMessages },
+          { sseManager, chatStore },
+          process.env.SHIPWRIGHT_NEW_CHAT_PROTOCOL === "1",
+        );
 
         // Check for AskUserQuestion — iterate over the extracted tool_use
         // ChatMessages so we cover BOTH standalone tool_use NDJSON events
