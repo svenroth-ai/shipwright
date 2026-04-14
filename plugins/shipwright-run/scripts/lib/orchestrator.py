@@ -135,7 +135,17 @@ def create_config(
         "current_step": current_step,
         "completed_steps": prior_completed,
         "created_at": datetime.now(timezone.utc).isoformat(),
+        # Iterate 12.0 (ADR-027): per-phase audit trail parallel to
+        # iterate_history. Populated by tools/append_phase_history.py from
+        # 12.1+ phase canon wiring. Empty on fresh creation.
+        "phase_history": {},
     }
+
+    # Carry over phase_history from an existing standalone config so a
+    # subsequent /shipwright-run doesn't lose audit-trail entries.
+    if existing.get("phase_history"):
+        config["phase_history"] = existing["phase_history"]
+
     save_run_config(project_root, config)
     return config
 
@@ -233,6 +243,9 @@ def update_step(project_root: Path, step: str, status: str, *, force: bool = Fal
             "completed_steps": [],
             "standalone": True,
             "created_at": datetime.now(timezone.utc).isoformat(),
+            # Iterate 12.0 (ADR-027): empty phase_history on bootstrap so
+            # append_phase_history.py never has to synthesise the schema.
+            "phase_history": {},
         }
 
     # Standalone configs skip interactive validation (no user to answer)
