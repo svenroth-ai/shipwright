@@ -55,19 +55,18 @@ export function createInboxRoutes(
       return task !== undefined && isActive(task.status);
     });
 
-    // Iterate 11.2 — "latest pending per task". For each task, keep
-    // only the item with the most recent `createdAt`. This collapses
-    // (a) accumulated pending items from an interview that asked
-    // multiple questions over multiple turns (user wants to see the
-    // CURRENT question, not 4 historical ones) and (b) Claude's
-    // same-turn duplicate AskUserQuestion emission (iterate-9 observed
-    // behavior). One rule, both symptoms covered.
+    // Iterate 11.3 — "first pending per task" (oldest createdAt wins).
+    // User-confirmed: show the question Claude opened the interview
+    // with, not whichever later turn happens to still be pending.
+    // Same-turn duplicates (stale timestamps from Claude's double
+    // AskUserQuestion emission) collapse to whichever was inserted
+    // first, since strict `<` keeps the earlier insertion on ties.
     const answered = taskActive.filter((i) => i.status === "answered");
     const pendingByTask = new Map<string, InboxItem>();
     for (const item of taskActive) {
       if (item.status !== "pending") continue;
       const existing = pendingByTask.get(item.taskId);
-      if (!existing || item.createdAt > existing.createdAt) {
+      if (!existing || item.createdAt < existing.createdAt) {
         pendingByTask.set(item.taskId, item);
       }
     }

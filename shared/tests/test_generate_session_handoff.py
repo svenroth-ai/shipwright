@@ -1,5 +1,7 @@
 """Tests for session handoff generation."""
 
+import json
+
 from tools.generate_session_handoff import generate_handoff
 
 
@@ -27,6 +29,58 @@ def test_generate_handoff_includes_all_required_fields(tmp_project):
     assert "Reason" in content
     assert "Phase" in content
     assert "Config Files to Read" in content
+
+
+def test_generate_handoff_renders_last_iterate_when_history_present(tmp_project):
+    """Iterate 11.3 — run_config.iterate_history[-1] becomes a 'Last Iterate'
+    section so the handoff reflects iterate state instead of stale build state."""
+    run_cfg = {
+        "status": "complete",
+        "iterate_history": [
+            {
+                "run_id": "iterate-2026-04-13-foo",
+                "date": "2026-04-13",
+                "type": "feature",
+                "complexity": "small",
+                "branch": "iterate/foo",
+                "tests_passed": True,
+            },
+            {
+                "run_id": "iterate-2026-04-14-bar",
+                "date": "2026-04-14",
+                "type": "bug",
+                "complexity": "medium",
+                "branch": "iterate/bar",
+                "adr_id": "ADR-019",
+                "description": "fix inbox filter",
+                "tests_passed": True,
+            },
+        ],
+    }
+    (tmp_project / "shipwright_run_config.json").write_text(
+        json.dumps(run_cfg), encoding="utf-8"
+    )
+
+    content = generate_handoff(tmp_project, reason="iterate completion: iterate-2026-04-14-bar")
+    assert "## Last Iterate" in content
+    # The last entry wins, not the first
+    assert "iterate-2026-04-14-bar" in content
+    assert "iterate-2026-04-13-foo" not in content
+    assert "ADR-019" in content
+    assert "fix inbox filter" in content
+    assert "iterate/bar" in content
+    # Reason passes through
+    assert "iterate completion: iterate-2026-04-14-bar" in content
+    # Legacy build state block is still present (renamed from Current State)
+    assert "## Legacy build state" in content
+
+
+def test_generate_handoff_omits_last_iterate_when_no_history(tmp_project):
+    """Without iterate_history, no 'Last Iterate' section is rendered."""
+    content = generate_handoff(tmp_project)
+    assert "## Last Iterate" not in content
+    # Legacy block always rendered
+    assert "## Legacy build state" in content
 
 
 def test_generate_handoff_with_decision_log(project_with_configs):

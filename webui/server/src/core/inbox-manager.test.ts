@@ -244,6 +244,35 @@ describe("InboxManager", () => {
     expect(mgr.getAll()).toHaveLength(2);
   });
 
+  // ──────────────────────────────────────────────────────────────────────
+  // Iterate 11.3 — replay timestamp preservation
+  // ──────────────────────────────────────────────────────────────────────
+
+  it("addQuestion uses explicit createdAt when provided (replay path)", async () => {
+    const { mgr } = setup();
+    const ts = "2026-04-13T09:15:00.000Z";
+    const item = await mgr.addQuestion(
+      "p1",
+      "t1",
+      "Replayed question?",
+      undefined,
+      [],
+      "toolu_replay_01",
+      ts,
+    );
+    expect(item.createdAt).toBe(ts);
+  });
+
+  it("addQuestion defaults createdAt to now when not provided", async () => {
+    const { mgr } = setup();
+    const before = Date.now();
+    const item = await mgr.addQuestion("p1", "t1", "Fresh?");
+    const after = Date.now();
+    const got = new Date(item.createdAt).getTime();
+    expect(got).toBeGreaterThanOrEqual(before);
+    expect(got).toBeLessThanOrEqual(after);
+  });
+
   it("loads inbox items from disk", async () => {
     const onNotify = vi.fn();
     const governor = { getProcess: vi.fn() } as unknown as ProcessGovernor;
