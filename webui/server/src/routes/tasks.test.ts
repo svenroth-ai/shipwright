@@ -526,4 +526,59 @@ describe("Task Routes", () => {
     const body = await res.json();
     expect(body.data).toHaveLength(1);
   });
+
+  // Iterate 14.1 — POST /api/projects/:id/preview spawns /shipwright-preview
+  describe("POST /api/projects/:id/preview (iterate 14.1)", () => {
+    function setupPreview(hasPreview: boolean | undefined) {
+      const project = { ...mockProject, hasPreview };
+      const deps = {
+        taskManager: { getTasksWithKanban: vi.fn(() => []) },
+        eventStore: { addEvent: vi.fn() },
+        governor: { acquire: vi.fn(async () => ({ pid: 123, taskId: "preview-t" })) },
+        adapter: {},
+        sseManager: { broadcast: vi.fn() },
+        projectManager: { getById: vi.fn((id: string) => id === "p1" ? project : undefined) },
+        emitTaskCreatedEvent: vi.fn(async () => ({})),
+        emitPhaseStartedEvent: vi.fn(async () => ({})),
+      } as any;
+      const app = new Hono();
+      app.onError(errorHandler);
+      app.route("/", createTaskRoutes(deps));
+      return { app, deps };
+    }
+
+    it("returns 202 with taskId when project has preview capability", async () => {
+      const { app, deps } = setupPreview(true);
+      const res = await app.request("/api/projects/p1/preview", { method: "POST" });
+      expect(res.status).toBe(202);
+      const body = await res.json() as any;
+      expect(body.data.taskId).toBeDefined();
+      expect(body.data.startStatus).toBe("started");
+      // Governor spawned with the /shipwright-preview slash command as prompt
+      expect(deps.governor.acquire).toHaveBeenCalledTimes(1);
+      const acquireArgs = deps.governor.acquire.mock.calls[0][0];
+      expect(acquireArgs.prompt).toBe("/shipwright-preview");
+      expect(deps.emitTaskCreatedEvent).toHaveBeenCalled();
+    });
+
+    it("returns 403 when project lacks preview capability", async () => {
+      const { app, deps } = setupPreview(false);
+      const res = await app.request("/api/projects/p1/preview", { method: "POST" });
+      expect(res.status).toBe(403);
+      expect(deps.governor.acquire).not.toHaveBeenCalled();
+    });
+
+    it("returns 403 when hasPreview is undefined", async () => {
+      const { app, deps } = setupPreview(undefined);
+      const res = await app.request("/api/projects/p1/preview", { method: "POST" });
+      expect(res.status).toBe(403);
+      expect(deps.governor.acquire).not.toHaveBeenCalled();
+    });
+
+    it("returns 404 when project not found", async () => {
+      const { app } = setupPreview(true);
+      const res = await app.request("/api/projects/nonexistent/preview", { method: "POST" });
+      expect(res.status).toBe(404);
+    });
+  });
 });

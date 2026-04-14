@@ -374,6 +374,98 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
     return c.json({ data: updated });
   });
 
+  // Iterate 14.1 — start /shipwright-preview as a background task.
+  //
+  // Reuses the same task-create + governor.acquire pattern as the normal
+  // "Start immediately" POST /api/projects/:id/tasks flow. The prompt is
+  // the literal slash command "/shipwright-preview"; Claude CLI resolves
+  // that to the installed shipwright-preview plugin. Requires hasPreview
+  // on the project (profile declares a dev_server.command) otherwise 403.
+  //
+  // Route lives in tasks.ts (not projects.ts) because the spawn path needs
+  // governor/adapter/eventStore/etc. which are already wired here. Path
+  // still reads /api/projects/:id/preview for the client.
+  app.post("/api/projects/:id/preview", async (c) => {
+    const project = deps.projectManager.getById(c.req.param("id"));
+    if (!project) throw new AppError("Project not found", 404);
+
+    if (project.hasPreview !== true) {
+      throw new AppError(
+        "Project has no preview capability — profile lacks dev_server.command",
+        403,
+      );
+    }
+
+    const taskId = randomUUID();
+    const sessionId = randomUUID();
+    const eventsPath = `${project.path}/shipwright_events.jsonl`;
+    const title = "Preview — start dev server";
+    const description = "Start the local dev server and show the browser preview URL.";
+    const phase: Phase = "preview" as Phase;
+    const permissionMode: PermissionMode = "bypassPermissions";
+
+    await deps.emitTaskCreatedEvent(
+      eventsPath,
+      taskId,
+      project.id,
+      description,
+      "preview",
+      undefined,
+      phase,
+    );
+    deps.eventStore.addEvent(project.id, {
+      type: "task_created",
+      timestamp: new Date().toISOString(),
+      task_id: taskId,
+      project_id: project.id,
+      title,
+      description,
+      phase,
+    });
+
+    let startStatus: "started" | "queued" | "failed" = "started";
+    try {
+      const result = await deps.governor.acquire({
+        projectDir: project.path,
+        projectId: project.id,
+        taskId,
+        sessionId,
+        pluginDirs: project.settings?.claudePluginDirs ?? [],
+        prompt: "/shipwright-preview",
+        permissionMode,
+      });
+      if (result === "queued") {
+        startStatus = "queued";
+      } else {
+        deps.eventStore.addEvent(project.id, {
+          type: "phase_started",
+          timestamp: new Date().toISOString(),
+          task_id: taskId,
+          project_id: project.id,
+          phase,
+        });
+        if (deps.emitPhaseStartedEvent) {
+          await deps.emitPhaseStartedEvent(eventsPath, taskId, project.id, phase);
+        }
+        deps.sseManager.broadcast({
+          type: "task:updated",
+          payload: { taskId, projectId: project.id },
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (err) {
+      console.error(JSON.stringify({
+        level: "warn",
+        message: "Preview task created but process spawn failed",
+        taskId,
+        error: String(err),
+      }));
+      startStatus = "failed";
+    }
+
+    return c.json({ data: { taskId, startStatus } }, 202);
+  });
+
   // Iterate 10 — mid-task permission mode switching via --resume respawn.
   // Supersedes ADR-011's "v0.1 not supported" stance: a single cold-start
   // respawn is fine for an explicit user action (unlike per-message respawn

@@ -33,4 +33,10 @@ export interface Project {
    * Present in API responses; not stored in projects.json.
    */
   mode?: ProjectMode;
+  /**
+   * Iterate 14.1 — server-derived flag, true when the project's profile
+   * declares a `dev_server.command`. Drives the Preview button in the
+   * KanbanPage header. Present in API responses; not stored in projects.json.
+   */
+  hasPreview?: boolean;
 }
