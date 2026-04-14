@@ -5,7 +5,8 @@ export type EventType =
   | "phase_completed"
   | "work_completed"
   | "work_failed"
-  | "task_cancelled";
+  | "task_cancelled"
+  | "task_orphaned";
 
 export interface ShipwrightEvent {
   type: EventType;

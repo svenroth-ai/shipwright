@@ -144,6 +144,22 @@ export class EventStore {
         }
         break;
       }
+      case "task_orphaned": {
+        // Iterate 12.0b: applied when the heartbeat / startup
+        // reconciliation detects a task whose Claude process is gone but
+        // whose status is still "running" in the event store. Idempotency
+        // rule (GPT review): only flip to orphaned if the task is still
+        // running — prevents double-apply when startup reconciliation and
+        // the first heartbeat tick both land before the next event flush,
+        // and also prevents late-arriving orphan events from clobbering a
+        // legitimate work_completed / work_failed that arrived first.
+        const task = this.taskStates.get(taskId);
+        if (!task) break;
+        if (task.status !== "running") break;
+        task.status = "orphaned";
+        task.updatedAt = event.timestamp;
+        break;
+      }
     }
   }
 
@@ -181,14 +197,17 @@ export class EventStore {
       }));
   }
 
-  detectOrphans(): Task[] {
-    return Array.from(this.taskStates.values())
-      .filter((t) => t.status === "pending" || t.status === "running")
-      .map((t) => ({
-        ...t,
-        status: "orphaned" as const,
-        kanbanStatus: "backlog" as const,
-      }));
+  /**
+   * Return the in-memory state entry for a task, or undefined.
+   *
+   * Added in iterate 12.0b so the heartbeat reconciler can check a task's
+   * current status before emitting a `task_orphaned` event, without having
+   * to reach into the private `taskStates` map directly. The heartbeat
+   * uses this to avoid double-applying orphan events on tasks that have
+   * already completed or been cancelled between ticks.
+   */
+  getTaskState(taskId: string): TaskStateEntry | undefined {
+    return this.taskStates.get(taskId);
   }
 
   getPipelineState(projectId: string): PipelinePhase[] {

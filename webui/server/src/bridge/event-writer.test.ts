@@ -3,6 +3,7 @@ import {
   appendEvent,
   emitTaskCreatedEvent,
   emitTaskCancelledEvent,
+  emitTaskOrphanedEvent,
   emitTaskUpdatedEvent,
   emitWorkCompletedEvent,
 } from "./event-writer.js";
@@ -112,6 +113,40 @@ describe("emitWorkCompletedEvent", () => {
     expect(event.task_id).toBe("t1");
     expect(event.project_id).toBe("p1");
     expect(deps.appended).toHaveLength(1);
+  });
+});
+
+describe("emitTaskOrphanedEvent", () => {
+  it("writes a task_orphaned event with reason in detail field", async () => {
+    const deps = mockDeps();
+    const event = await emitTaskOrphanedEvent(
+      "events.jsonl",
+      "t1",
+      "p1",
+      "process_dead",
+      deps,
+    );
+    expect(event.type).toBe("task_orphaned");
+    expect(event.task_id).toBe("t1");
+    expect(event.project_id).toBe("p1");
+    expect(event.detail).toBe("process_dead");
+    expect(event.source).toBe("webui");
+    expect(deps.appended).toHaveLength(1);
+    const written = JSON.parse(deps.appended[0].trim());
+    expect(written.type).toBe("task_orphaned");
+    expect(written.detail).toBe("process_dead");
+  });
+
+  it("distinguishes stale_on_startup vs process_dead reasons", async () => {
+    const deps = mockDeps();
+    const startupEvent = await emitTaskOrphanedEvent(
+      "events.jsonl", "t1", "p1", "stale_on_startup", deps,
+    );
+    const heartbeatEvent = await emitTaskOrphanedEvent(
+      "events.jsonl", "t2", "p1", "process_dead", deps,
+    );
+    expect(startupEvent.detail).toBe("stale_on_startup");
+    expect(heartbeatEvent.detail).toBe("process_dead");
   });
 });
 

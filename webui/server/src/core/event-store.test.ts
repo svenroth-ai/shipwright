@@ -58,16 +58,77 @@ describe("EventStore", () => {
     expect(buildPhase?.status).toBe("completed");
   });
 
-  it("detectOrphans returns tasks with task_created but no completion", () => {
+  it("task_orphaned flips running task to orphaned and updates timestamp", () => {
     const store = new EventStore();
     store.replayProject("p1", [
-      makeEvent({ type: "task_created", task_id: "t1", description: "Orphan" }),
-      makeEvent({ type: "task_created", task_id: "t2", description: "Done" }),
-      makeEvent({ type: "work_completed", task_id: "t2" }),
+      makeEvent({ type: "task_created", task_id: "t1", description: "Task" }),
+      makeEvent({ type: "phase_started", task_id: "t1", phase: "build" }),
     ]);
-    const orphans = store.detectOrphans();
-    expect(orphans).toHaveLength(1);
-    expect(orphans[0].id).toBe("t1");
+    expect(store.getTaskState("t1")?.status).toBe("running");
+
+    store.addEvent("p1", makeEvent({
+      type: "task_orphaned",
+      task_id: "t1",
+      timestamp: "2026-04-14T10:00:00Z",
+    }));
+
+    const task = store.getTaskState("t1");
+    expect(task?.status).toBe("orphaned");
+    expect(task?.updatedAt).toBe("2026-04-14T10:00:00Z");
+  });
+
+  it("task_orphaned is idempotent — does not flip already-orphaned task again", () => {
+    const store = new EventStore();
+    store.replayProject("p1", [
+      makeEvent({ type: "task_created", task_id: "t1", description: "Task" }),
+      makeEvent({ type: "phase_started", task_id: "t1", phase: "build" }),
+    ]);
+
+    store.addEvent("p1", makeEvent({
+      type: "task_orphaned",
+      task_id: "t1",
+      timestamp: "2026-04-14T10:00:00Z",
+    }));
+    const firstUpdate = store.getTaskState("t1")?.updatedAt;
+
+    // Second emit (e.g. startup reconciliation + first heartbeat race)
+    store.addEvent("p1", makeEvent({
+      type: "task_orphaned",
+      task_id: "t1",
+      timestamp: "2026-04-14T10:01:00Z",
+    }));
+
+    // Status stays orphaned; updatedAt is NOT re-touched because the
+    // idempotency guard skipped the second apply.
+    expect(store.getTaskState("t1")?.status).toBe("orphaned");
+    expect(store.getTaskState("t1")?.updatedAt).toBe(firstUpdate);
+  });
+
+  it("task_orphaned does not clobber a done task (late orphan arrival)", () => {
+    const store = new EventStore();
+    store.replayProject("p1", [
+      makeEvent({ type: "task_created", task_id: "t1", description: "Task" }),
+      makeEvent({ type: "phase_started", task_id: "t1", phase: "build" }),
+      makeEvent({ type: "work_completed", task_id: "t1" }),
+    ]);
+    expect(store.getTaskState("t1")?.status).toBe("done");
+
+    // Late orphan event from a stale heartbeat tick — must be ignored.
+    store.addEvent("p1", makeEvent({
+      type: "task_orphaned",
+      task_id: "t1",
+    }));
+
+    expect(store.getTaskState("t1")?.status).toBe("done");
+  });
+
+  it("task_orphaned for unknown task is a no-op (no throw)", () => {
+    const store = new EventStore();
+    expect(() => store.addEvent("p1", makeEvent({
+      type: "task_orphaned",
+      task_id: "ghost",
+    }))).not.toThrow();
+    expect(store.getTaskState("ghost")).toBeUndefined();
   });
 
   it("addEvent incrementally updates state", () => {
