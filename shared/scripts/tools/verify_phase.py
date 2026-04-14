@@ -46,11 +46,14 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from tools.verifiers import (  # noqa: E402
     build_checks,
+    changelog_checks,
+    deploy_checks,
     design_checks,
     iterate_checks,
     plan_checks,
     project_checks,
     runtime_checks,
+    test_checks,
 )
 from tools.verifiers.common import (  # noqa: E402
     CheckResult,
@@ -62,10 +65,12 @@ from tools.verifiers.common import (  # noqa: E402
 # The phases that ``--phase all`` dispatches today.
 ALL_PHASES = frozenset({
     "iterate", "runtime", "project", "design", "plan", "build",
+    "test", "changelog", "deploy",
 })
 
 DISPATCHABLE_PHASES = frozenset({
-    "iterate", "runtime", "project", "design", "plan", "build", "all",
+    "iterate", "runtime", "project", "design", "plan", "build",
+    "test", "changelog", "deploy", "all",
 })
 
 
@@ -99,6 +104,18 @@ def dispatch_build(project_root: Path, run_id: str) -> list[CheckResult]:
     return build_checks.run_all_checks(project_root, run_id=run_id)
 
 
+def dispatch_test(project_root: Path, run_id: str) -> list[CheckResult]:
+    return test_checks.run_all_checks(project_root, run_id=run_id)
+
+
+def dispatch_changelog(project_root: Path, run_id: str) -> list[CheckResult]:
+    return changelog_checks.run_all_checks(project_root, run_id=run_id)
+
+
+def dispatch_deploy(project_root: Path, run_id: str) -> list[CheckResult]:
+    return deploy_checks.run_all_checks(project_root, run_id=run_id)
+
+
 def dispatch_all(project_root: Path, run_id: str, commit: str) -> list[CheckResult]:
     out: list[CheckResult] = []
     # iterate hard-requires --run-id, so skip it in the "all" sweep when
@@ -115,6 +132,12 @@ def dispatch_all(project_root: Path, run_id: str, commit: str) -> list[CheckResu
         out.extend(dispatch_plan(project_root, run_id))
     if "build" in ALL_PHASES:
         out.extend(dispatch_build(project_root, run_id))
+    if "test" in ALL_PHASES:
+        out.extend(dispatch_test(project_root, run_id))
+    if "changelog" in ALL_PHASES:
+        out.extend(dispatch_changelog(project_root, run_id))
+    if "deploy" in ALL_PHASES:
+        out.extend(dispatch_deploy(project_root, run_id))
     return out
 
 
@@ -161,6 +184,15 @@ def main() -> None:
     elif args.phase == "build":
         results = dispatch_build(project_root, args.run_id)
         title = "build finalization"
+    elif args.phase == "test":
+        results = dispatch_test(project_root, args.run_id)
+        title = "test finalization"
+    elif args.phase == "changelog":
+        results = dispatch_changelog(project_root, args.run_id)
+        title = "changelog finalization"
+    elif args.phase == "deploy":
+        results = dispatch_deploy(project_root, args.run_id)
+        title = "deploy finalization"
     else:  # all
         results = dispatch_all(project_root, args.run_id, args.commit)
         title = f"all phases ({', '.join(sorted(ALL_PHASES))})"

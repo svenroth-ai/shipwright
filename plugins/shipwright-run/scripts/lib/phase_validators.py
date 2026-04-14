@@ -48,6 +48,12 @@ def _run_canon_checks(
             from tools.verifiers.plan_checks import run_plan_checks as _run
         elif phase == "build":
             from tools.verifiers.build_checks import run_build_checks as _run
+        elif phase == "test":
+            from tools.verifiers.test_checks import run_test_checks as _run
+        elif phase == "changelog":
+            from tools.verifiers.changelog_checks import run_changelog_checks as _run
+        elif phase == "deploy":
+            from tools.verifiers.deploy_checks import run_deploy_checks as _run
         else:
             return
     except ImportError:
@@ -406,11 +412,18 @@ def _validate_test(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
                 ),
             })
 
+    _run_canon_checks("test", project_root, issues)
+    has_ask = any(i["severity"] == "ask" for i in issues)
     return not has_ask, issues
 
 
 def _validate_changelog(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
-    """Changelog phase: CHANGELOG.md exists."""
+    """Changelog phase: CHANGELOG.md exists. Iterate 12.4 augments with
+    the modular ``changelog_checks`` verifier (canon C1/C2/C3 +
+    Sonder-Checks ``check_git_tag_exists`` and
+    ``check_changelog_version_matches_tag`` + ``phase_history`` + ADR
+    integrity). C4/C5 are skipped by policy.
+    """
     issues: list[dict[str, str]] = []
 
     if not (project_root / "CHANGELOG.md").exists():
@@ -420,12 +433,21 @@ def _validate_changelog(project_root: Path) -> tuple[bool, list[dict[str, str]]]
         })
         return False, issues
 
-    return True, []
+    _run_canon_checks("changelog", project_root, issues)
+    has_ask = any(i["severity"] == "ask" for i in issues)
+    return not has_ask, issues
 
 
 def _validate_deploy(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
-    """Deploy phase: always passes (deploy handles its own success/failure)."""
-    return True, []
+    """Deploy phase: iterate 12.4 wires the modular ``deploy_checks``
+    verifier (test-gate pre-condition + canon C1/C2/C3 + phase_history
+    + ADR integrity). C4/C5 are skipped by policy (deploy is execution
+    + operational history, not a decision or product change).
+    """
+    issues: list[dict[str, str]] = []
+    _run_canon_checks("deploy", project_root, issues)
+    has_ask = any(i["severity"] == "ask" for i in issues)
+    return not has_ask, issues
 
 
 def _validate_compliance(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
