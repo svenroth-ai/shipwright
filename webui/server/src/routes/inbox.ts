@@ -55,18 +55,19 @@ export function createInboxRoutes(
       return task !== undefined && isActive(task.status);
     });
 
-    // Iterate 11.3 — "first pending per task" (oldest createdAt wins).
-    // User-confirmed: show the question Claude opened the interview
-    // with, not whichever later turn happens to still be pending.
-    // Same-turn duplicates (stale timestamps from Claude's double
-    // AskUserQuestion emission) collapse to whichever was inserted
-    // first, since strict `<` keeps the earlier insertion on ties.
+    // Iterate 13.2 — "latest pending per task" (newest createdAt wins).
+    // Revert of 11.3: because Claude CLI in `-p` stream-json mode does NOT
+    // block on AskUserQuestion (see ADR-023), the oldest pending question
+    // is typically STALE — Claude has already moved past it with a default
+    // decision. The newest pending question is the only one still
+    // meaningfully answerable. Strict `>` keeps the earlier insertion on
+    // ties, so same-turn duplicates still collapse deterministically.
     const answered = taskActive.filter((i) => i.status === "answered");
     const pendingByTask = new Map<string, InboxItem>();
     for (const item of taskActive) {
       if (item.status !== "pending") continue;
       const existing = pendingByTask.get(item.taskId);
-      if (!existing || item.createdAt < existing.createdAt) {
+      if (!existing || item.createdAt > existing.createdAt) {
         pendingByTask.set(item.taskId, item);
       }
     }

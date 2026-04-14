@@ -11,9 +11,12 @@ const PHASE_OPTIONS = [
   { value: 'plan', label: 'Plan' },
   { value: 'build', label: 'Build' },
   { value: 'test', label: 'Test' },
+  { value: 'security', label: 'Security' },
   { value: 'deploy', label: 'Deploy' },
   { value: 'changelog', label: 'Changelog' },
   { value: 'compliance', label: 'Compliance' },
+  { value: 'iterate', label: 'Iterate' },
+  { value: 'preview', label: 'Preview' },
 ] as const;
 
 const DEFAULT_PHASE = 'project';

@@ -6,8 +6,12 @@ export const DEFAULT_PHASE_MAPPING: Record<string, KanbanStatus> = {
   plan: 'backlog',
   build: 'in_progress',
   test: 'in_review',
+  security: 'in_review',
   changelog: 'done',
   deploy: 'done',
+  compliance: 'done',
+  iterate: 'in_progress',
+  preview: 'in_progress',
   done: 'done',
 };
 
@@ -19,7 +23,8 @@ export const KANBAN_COLUMNS = [
 ] as const;
 
 export const PIPELINE_PHASES = [
-  'project', 'design', 'plan', 'build', 'test', 'changelog', 'deploy', 'done',
+  'project', 'design', 'plan', 'build', 'test', 'security',
+  'changelog', 'deploy', 'compliance', 'iterate', 'preview', 'done',
 ] as const;
 
 export function resolvePhaseMapping(

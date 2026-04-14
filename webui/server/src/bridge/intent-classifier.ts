@@ -20,9 +20,12 @@ export const VALID_PHASES = [
   "plan",
   "build",
   "test",
+  "security",
   "deploy",
   "changelog",
   "compliance",
+  "iterate",
+  "preview",
 ] as const;
 
 export type Phase = (typeof VALID_PHASES)[number];
