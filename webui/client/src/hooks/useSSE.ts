@@ -27,18 +27,12 @@ const SSE_EVENT_TYPES: SSEEventType[] = [
   'project:updated',
 ];
 
-function isNewProtocol(): boolean {
-  return (
-    typeof import.meta !== 'undefined' &&
-    import.meta.env?.VITE_SHIPWRIGHT_NEW_CHAT_PROTOCOL === '1'
-  );
-}
-
 const TERMINAL_TASK_STATUSES = new Set(['done', 'failed', 'cancelled', 'archived']);
 
 const WATCHDOG_STALE_MS = 15_000;
 const WATCHDOG_STALLED_MS = 120_000;
 const TASK_UPDATED_GRACE_MS = 1_500;
+const WATCHDOG_TICK_MS = 5_000;
 
 function invalidateForEvent(
   queryClient: ReturnType<typeof useQueryClient>,
@@ -55,7 +49,7 @@ function invalidateForEvent(
     case 'task:updated':
       if (projectId) queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(projectId) });
       if (projectId && taskId) queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(projectId, taskId) });
-      // Also invalidate the all-tasks query so kanban board updates
+      // Kanban board
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
       break;
     case 'inbox:new':
@@ -63,14 +57,9 @@ function invalidateForEvent(
       queryClient.invalidateQueries({ queryKey: queryKeys.inbox.all });
       break;
     case 'chat:message':
-      // Iterate 13: when the new protocol is active, chat:message is handled
-      // directly in the event listener via setQueryData + turn status store,
-      // NOT through invalidation. When the old protocol is active we still
-      // invalidate so the legacy useStreamingSSE / useStreamingChat path
-      // keeps working. See plan vast-mapping-petal.md.
-      if (!isNewProtocol() && projectId && taskId) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.chat.byTask(projectId, taskId) });
-      }
+      // Iterate 13: chat:message is handled directly in the event listener
+      // via setQueryData + mergeCommitted. No invalidation — that was the
+      // root cause of the mid-turn flip-flop (see plan vast-mapping-petal.md).
       break;
     case 'pipeline:updated':
       if (projectId) queryClient.invalidateQueries({ queryKey: queryKeys.pipeline.byProject(projectId) });
@@ -118,8 +107,8 @@ export function handleChatMessagePayload(
     turn.setStatus(taskKey, nextStatus);
   }
 
-  // A `result` message cancels any pending task:updated grace timer — the
-  // stream completed cleanly, no need to force a stall.
+  // result cancels any pending task:updated grace timer — the stream
+  // completed cleanly, no forced stall.
   if (message.type === 'result') {
     const pending = graceTimers.get(taskKey);
     if (pending) {
@@ -139,12 +128,9 @@ export function handleTaskUpdatedForTurn(
 
   const taskKey = taskKeyOf(projectId, taskId);
   const slot = useTurnStatusStore.getState().byTask[taskKey];
-  // If no turn is active for this task we have nothing to grace-schedule.
   if (!slot || (slot.status !== 'streaming' && slot.status !== 'awaiting_model')) {
     return;
   }
-
-  // Don't schedule duplicate timers.
   if (graceTimers.has(taskKey)) return;
 
   const timer = setTimeout(() => {
@@ -176,33 +162,40 @@ export function useSSE() {
   const queryClient = useQueryClient();
   const [isConnected, setIsConnected] = useState(false);
   const graceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const wasConnectedRef = useRef(false);
 
   useEffect(() => {
     const es = new EventSource(`${API_BASE}/events`);
-    const newProtocol = isNewProtocol();
+    const graceTimers = graceTimersRef.current;
 
-    es.onopen = () => setIsConnected(true);
+    es.onopen = () => {
+      setIsConnected(true);
+      // Reconnect resync: if we were connected before, the SSE pipeline just
+      // recovered from an interruption. Refetch any active chat query so the
+      // cache catches up with anything that may have been missed.
+      if (wasConnectedRef.current) {
+        queryClient.refetchQueries({ queryKey: ['chat'] });
+      }
+      wasConnectedRef.current = true;
+    };
     es.onerror = () => setIsConnected(false);
 
-    // Listen for each named SSE event type individually.
-    // The server sends named events (event: chat:message, etc.) which
-    // are NOT caught by onmessage — they require addEventListener.
     for (const eventType of SSE_EVENT_TYPES) {
       es.addEventListener(eventType, (event) => {
         try {
           const raw = JSON.parse((event as MessageEvent).data) as SSEPayload;
 
-          if (eventType === 'chat:message' && newProtocol) {
+          if (eventType === 'chat:message') {
             handleChatMessagePayload(
               queryClient,
               raw as unknown as ChatMessageSSEPayload,
-              graceTimersRef.current,
+              graceTimers,
             );
             return;
           }
 
-          if (eventType === 'task:updated' && newProtocol) {
-            handleTaskUpdatedForTurn(raw as TaskUpdatedPayload, graceTimersRef.current);
+          if (eventType === 'task:updated') {
+            handleTaskUpdatedForTurn(raw as TaskUpdatedPayload, graceTimers);
           }
 
           invalidateForEvent(queryClient, eventType, raw);
@@ -212,14 +205,14 @@ export function useSSE() {
       });
     }
 
-    const watchdogInterval = newProtocol ? window.setInterval(() => tickWatchdog(), 5_000) : null;
+    const watchdogInterval = window.setInterval(() => tickWatchdog(), WATCHDOG_TICK_MS);
 
     return () => {
       es.close();
       setIsConnected(false);
-      if (watchdogInterval !== null) window.clearInterval(watchdogInterval);
-      for (const t of graceTimersRef.current.values()) clearTimeout(t);
-      graceTimersRef.current.clear();
+      window.clearInterval(watchdogInterval);
+      for (const t of graceTimers.values()) clearTimeout(t);
+      graceTimers.clear();
     };
   }, [queryClient]);
 

@@ -15,7 +15,7 @@ function chatMsg(id: string, type: ChatMessage["type"] = "assistant", content = 
   return { id, taskId: "t1", type, content, timestamp: "2026-04-14T10:00:00.000Z" };
 }
 
-describe("broadcastAndPersistChat — new protocol (flag=true)", () => {
+describe("broadcastAndPersistChat", () => {
   it("broadcasts one SSE event per extracted ChatMessage with matching id", () => {
     const { deps, broadcast, append } = makeDeps();
     const messages = [chatMsg("m-1", "assistant", "hi"), chatMsg("m-2", "tool_use"), chatMsg("m-3", "assistant", "bye")];
@@ -23,7 +23,6 @@ describe("broadcastAndPersistChat — new protocol (flag=true)", () => {
     broadcastAndPersistChat(
       { taskId: "t1", projectId: "p1", projectPath: "/tmp/p", msg: ndjson, chatMessages: messages },
       deps,
-      true,
     );
 
     expect(broadcast).toHaveBeenCalledTimes(3);
@@ -46,7 +45,6 @@ describe("broadcastAndPersistChat — new protocol (flag=true)", () => {
     broadcastAndPersistChat(
       { taskId: "t1", projectId: "p1", projectPath: "/tmp/p", msg: ndjson, chatMessages: messages },
       deps,
-      true,
     );
 
     const broadcastIds = broadcast.mock.calls.map(
@@ -62,7 +60,6 @@ describe("broadcastAndPersistChat — new protocol (flag=true)", () => {
     broadcastAndPersistChat(
       { taskId: "t1", projectId: "p1", projectPath: "/tmp/p", msg: ndjson, chatMessages: [] },
       deps,
-      true,
     );
     expect(broadcast).not.toHaveBeenCalled();
     expect(append).not.toHaveBeenCalled();
@@ -73,37 +70,6 @@ describe("broadcastAndPersistChat — new protocol (flag=true)", () => {
     broadcastAndPersistChat(
       { taskId: "t1", projectId: "p1", projectPath: undefined, msg: ndjson, chatMessages: [chatMsg("a")] },
       deps,
-      true,
-    );
-    expect(broadcast).toHaveBeenCalledTimes(1);
-    expect(append).not.toHaveBeenCalled();
-  });
-});
-
-describe("broadcastAndPersistChat — legacy protocol (flag=false)", () => {
-  it("broadcasts the raw NdjsonMessage once and persists all extracted ChatMessages", () => {
-    const { deps, broadcast, append } = makeDeps();
-    const messages = [chatMsg("m-1"), chatMsg("m-2")];
-
-    broadcastAndPersistChat(
-      { taskId: "t1", projectId: "p1", projectPath: "/tmp/p", msg: ndjson, chatMessages: messages },
-      deps,
-      false,
-    );
-
-    expect(broadcast).toHaveBeenCalledTimes(1);
-    const event = broadcast.mock.calls[0]![0] as SSEEvent<{ message: NdjsonMessage }>;
-    expect(event.type).toBe("chat:message");
-    expect(event.payload.message).toBe(ndjson);
-    expect(append).toHaveBeenCalledTimes(2);
-  });
-
-  it("still broadcasts raw NDJSON when chatMessages is empty (e.g. content_block_* events)", () => {
-    const { deps, broadcast, append } = makeDeps();
-    broadcastAndPersistChat(
-      { taskId: "t1", projectId: "p1", projectPath: "/tmp/p", msg: ndjson, chatMessages: [] },
-      deps,
-      false,
     );
     expect(broadcast).toHaveBeenCalledTimes(1);
     expect(append).not.toHaveBeenCalled();

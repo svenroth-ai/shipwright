@@ -158,13 +158,13 @@ if (isMainModule) {
           }
         }
 
-        // Iterate 13 / Phase 0: route broadcast + persist through the helper
-        // so the logic is testable in isolation and switchable via env flag.
+        // Iterate 13: extract ChatMessages first, then broadcast each one
+        // individually with the same stable id it gets persisted with.
+        // See plan vast-mapping-petal.md.
         const chatMessages = extractContentBlocks(taskId, msg);
         broadcastAndPersistChat(
           { taskId, projectId, projectPath, msg, chatMessages },
           { sseManager, chatStore },
-          process.env.SHIPWRIGHT_NEW_CHAT_PROTOCOL === "1",
         );
 
         // Check for AskUserQuestion — iterate over the extracted tool_use

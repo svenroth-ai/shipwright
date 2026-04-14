@@ -1,9 +1,8 @@
-import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { ArrowDown, AlertCircle } from 'lucide-react';
-import { useChat, useSendChat } from '../../hooks/useChat';
+import { useChat, useSendChat, useRefetchChatOnResume } from '../../hooks/useChat';
 import { useAutoScroll } from '../../hooks/useAutoScroll';
-import { useStreamingChat } from '../../hooks/useStreamingChat';
-import { useStreamingSSE } from '../../hooks/useStreamingSSE';
+import { useTurnStatus } from '../../hooks/useTurnStatus';
 import { useProject } from '../../hooks/useProjects';
 import { useSettings } from '../../hooks/useSettings';
 import { ChatMessage } from './ChatMessage';
@@ -11,8 +10,8 @@ import { AssistantMessage } from './AssistantMessage';
 import { ChatInput } from './ChatInput';
 import { ApiError } from '../../lib/api';
 import { foldToolResults } from '../../lib/foldToolResults';
-import { dedupeStreamingMessages } from '../../lib/dedupeStreamingMessages';
 import { collapseAskUserQuestionRun } from '../../lib/collapseAskUserQuestion';
+import { useTurnStatusStore, taskKeyOf } from '../../stores/turnStatusStore';
 import { ChatAwaitingContext } from '../../contexts/ChatAwaitingContext';
 import type { AutonomyOption } from '../../types/settings';
 
@@ -22,9 +21,16 @@ interface ChatPanelProps {
 }
 
 /**
- * Filter out duplicate "result" messages that echo the preceding assistant
- * text. Claude CLI emits both an assistant event and a final result event
- * with the same content — rendering both is noise.
+ * Iterate 13: ChatPanel now reads committed messages from a single source
+ * (the TanStack Query cache fed by useSSE via setQueryData + mergeCommitted)
+ * and per-turn lifecycle from turnStatusStore. The dual-render pipeline
+ * (persisted + streamingMessages with dedupe) is gone; ADR-016/018 band-aids
+ * deleted. See plan vast-mapping-petal.md.
+ *
+ * Keep the existing dedupeMessages helper as a render-time filter against
+ * result/assistant echoes — the server emits both and they carry distinct
+ * ids, so mergeCommitted correctly keeps both; this filter hides the dupe
+ * visually.
  */
 function dedupeMessages(messages: import('../../types').ChatMessage[]): import('../../types').ChatMessage[] {
   const out: typeof messages = [];
@@ -40,34 +46,11 @@ function dedupeMessages(messages: import('../../types').ChatMessage[]): import('
   return out;
 }
 
-/**
- * Determine whether we should show the "waiting for Claude" indicator.
- * Shows immediately when:
- *   - The SSE stream is active (Claude is producing output), OR
- *   - The last persisted message is a user message (follow-up in flight), OR
- *   - The send mutation is pending (network round-trip)
- *
- * This avoids the long delay where the user sees nothing between clicking
- * Send and Claude CLI starting to produce NDJSON (~5–10s cold start).
- */
-function isAwaitingResponse(
-  messages: import('../../types').ChatMessage[],
-  sendPending: boolean,
-  streaming: boolean,
-): boolean {
-  if (streaming) return true;
-  if (sendPending) return true;
-  const last = messages[messages.length - 1];
-  return last?.type === 'user';
-}
-
 export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
   const { data: rawMessages = [] } = useChat(projectId, taskId);
-  // Fold tool_result into matching tool_use first (so tool cards flip to
-  // "Done"), then dedupe result/assistant echoes, then collapse Claude's
-  // AskUserQuestion fallback noise (iterate 9 — duplicate cards + markdown
-  // "Let me know…" list that Claude emits in the same turn as the real
-  // tool call). Order matters: collapse sees the already-folded shape.
+  useRefetchChatOnResume(projectId, taskId);
+  // Fold tool_result into tool_use, then dedupe result/assistant echoes,
+  // then collapse Claude's AskUserQuestion fallback run (iterate 9).
   const messages = collapseAskUserQuestionRun(
     dedupeMessages(foldToolResults(rawMessages)),
   );
@@ -75,54 +58,67 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
   const { data: project } = useProject(projectId);
   const { data: globalSettings } = useSettings();
   const sendChat = useSendChat();
-  const streaming = useStreamingChat();
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Iterate 13: turn lifecycle state. Lives in Zustand so it survives
+  // ChatPanel unmount (task switch), fixing the round-2 task-switch amnesia
+  // concern. useSSE dispatches transitions when chat:message and
+  // task:updated events arrive.
+  const turn = useTurnStatus(projectId, taskId);
+
   // Iterate 7 — inbox-answer latency. Local boolean flipped by
-  // `AskUserCard.handleSubmit` via ChatAwaitingContext so the "Thinking…"
-  // indicator fires immediately on answer submit, not 2-3s later.
-  // Cleared once Claude's stream actually starts — NOT on every new
-  // persisted message, because the server echoes our own tool_result into
-  // chat-store which would cause the indicator to flicker off before
-  // Claude begins producing its real reply.
+  // AskUserCard.handleSubmit via ChatAwaitingContext so the "Thinking…"
+  // indicator fires immediately on answer submit. Cleared when a real
+  // streaming event arrives (turn.status transitions into streaming).
   const [awaitingFromInbox, setAwaitingFromInbox] = useState(false);
   useEffect(() => {
-    if (streaming.isStreaming) setAwaitingFromInbox(false);
-  }, [streaming.isStreaming]);
+    if (turn.status === 'streaming') setAwaitingFromInbox(false);
+  }, [turn.status]);
   const awaitingContextValue = useMemo(
-    () => ({ triggerAwaiting: () => setAwaitingFromInbox(true) }),
-    [],
+    () => ({
+      triggerAwaiting: () => {
+        setAwaitingFromInbox(true);
+        useTurnStatusStore
+          .getState()
+          .setStatus(taskKeyOf(projectId, taskId), 'awaiting_model');
+      },
+    }),
+    [projectId, taskId],
   );
 
-  // Bug B guard: during streaming, useSSE invalidates the chat query on every
-  // chat:message event, so `messages` quickly catches up with whatever text is
-  // in `streaming.displayContent`. Without this check the user sees both the
-  // persisted assistant card AND the still-streaming card with the same text.
-  // See ADR-016.
-  const displayContentIsPersisted = !!(
-    streaming.displayContent &&
-    messages.some((m) => m.type === 'assistant' && m.content === streaming.displayContent)
-  );
+  // "Waiting for Claude" indicator: show when the turn status is non-idle,
+  // when the send mutation is in flight, when the last persisted message is
+  // the user's prompt (cold-start gap), or when an inbox answer was just
+  // submitted.
+  const lastMessage = messages[messages.length - 1];
   const awaiting =
-    isAwaitingResponse(messages, sendChat.isPending, streaming.isStreaming) || awaitingFromInbox;
-  const { isAtBottom, scrollToBottom } = useAutoScroll(scrollRef, [messages, streaming.displayContent, streaming.streamingMessages, awaiting]);
+    turn.status === 'awaiting_model' ||
+    turn.status === 'streaming' ||
+    turn.status === 'awaiting_user' ||
+    sendChat.isPending ||
+    lastMessage?.type === 'user' ||
+    awaitingFromInbox;
+
+  // Only show the trailing streaming bubble when we're actively streaming
+  // AND the newest committed message is older than a heartbeat — i.e. there
+  // is a brief gap between turn start and the first block arriving. Once
+  // committed messages start flowing the unified list handles display.
+  const now = Date.now();
+  const lastMsgTs = lastMessage?.timestamp ? Date.parse(lastMessage.timestamp) : 0;
+  const showLeadingIndicator =
+    (turn.status === 'awaiting_model' || awaitingFromInbox || sendChat.isPending) &&
+    (!lastMessage || lastMessage.type === 'user' || now - lastMsgTs > 2_000);
+
+  const { isAtBottom, scrollToBottom } = useAutoScroll(scrollRef, [messages, turn.status, awaiting]);
   const [chatError, setChatError] = useState<string | null>(null);
 
   const autonomy: AutonomyOption = project?.settings?.autonomy ?? globalSettings?.defaultAutonomy ?? 'guided';
 
-  // Wire SSE events into the streaming hook for real-time display
-  const handleStreamMessage = useCallback(
-    (tid: string, msg: import('../../types').NdjsonMessage) => {
-      streaming.processNdjsonMessage(tid, msg);
-    },
-    [streaming.processNdjsonMessage],
-  );
-  const handleStreamStart = useCallback(() => streaming.startStream(), [streaming.startStream]);
-  const handleStreamEnd = useCallback(() => streaming.endStream(), [streaming.endStream]);
-  useStreamingSSE(taskId, handleStreamMessage, handleStreamStart, handleStreamEnd);
-
   function handleSend(payload: import('./ChatInput').ChatSendPayload) {
     setChatError(null);
+    useTurnStatusStore
+      .getState()
+      .setStatus(taskKeyOf(projectId, taskId), 'awaiting_model');
     sendChat.mutate(
       {
         projectId,
@@ -168,27 +164,10 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
           <ChatMessage key={msg.id} message={msg} />
         ))}
 
-        {/* Streaming: real-time tool calls, thinking, streamed text.
-            - Dedupe against persisted messages first (useSSE invalidates the
-              chat query on every chat:message event, so a single NDJSON event
-              often ends up in both `messages` and `streamingMessages`).
-            - Then fold tool_result into matching tool_use so a live tool card
-              transitions from "Running" to "Done" in place. */}
-        {streaming.isStreaming &&
-          collapseAskUserQuestionRun(
-            foldToolResults(
-              dedupeStreamingMessages(messages, streaming.streamingMessages),
-            ),
-          ).map((msg) => <ChatMessage key={msg.id} message={msg} />)}
-        {streaming.isStreaming && streaming.displayContent && !displayContentIsPersisted && (
-          <AssistantMessage content={streaming.displayContent} isStreaming />
-        )}
-
-        {/* Awaiting response indicator — shows whenever we're waiting for Claude
-            output, including the cold-start gap before SSE starts streaming. */}
-        {awaiting && !streaming.displayContent && (
-          <AssistantMessage content="" isStreaming />
-        )}
+        {/* Leading "awaiting / cold start" indicator — shows only when there
+            is no recent committed output, so we don't race with the real
+            streamed messages. */}
+        {showLeadingIndicator && <AssistantMessage content="" isStreaming />}
       </div>
 
       {/* Error banner */}
