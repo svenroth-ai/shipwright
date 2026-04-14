@@ -12,7 +12,7 @@ vi.mock('../../lib/api', () => ({
 }));
 
 const mockProjects: Project[] = [
-  { id: 'p1', name: 'Alpha', path: '/a', profile: 'custom', status: 'active', lastActive: '', createdAt: '' },
+  { id: 'p1', name: 'Alpha', path: '/a', profile: 'custom', status: 'active', lastActive: '', createdAt: '', mode: 'pipeline' },
 ];
 
 function renderModal(props: Partial<React.ComponentProps<typeof NewIssueModal>> = {}) {
@@ -73,14 +73,15 @@ describe('NewIssueModal', () => {
     expect(screen.queryByText('Select a project...')).not.toBeInTheDocument();
   });
 
-  it('renders phase dropdown with all 11 shipwright phases', () => {
+  it('renders phase dropdown with 9 shipwright phases (iterate/preview removed in 14.0)', () => {
     renderModal();
     const dropdown = screen.getByLabelText(/Phase/) as HTMLSelectElement;
     expect(dropdown).toBeInTheDocument();
     // project, design, plan, build, test, security, deploy, changelog,
-    // compliance, iterate, preview — 11 options. `run` is intentionally
-    // excluded (it is an orchestrator, not a task phase).
-    expect(dropdown.options).toHaveLength(11);
+    // compliance — 9 options. `iterate` and `preview` were removed in
+    // iterate 14.0 (iterate is derived from run_config status via
+    // getProjectMode, preview is a button-triggered action).
+    expect(dropdown.options).toHaveLength(9);
   });
 
   it('auto-suggests phase from classify endpoint and shows sparkle', async () => {
@@ -165,6 +166,42 @@ describe('NewIssueModal', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  // --- Iterate 14.0: project mode branching ---
+
+  it('pipeline mode shows "New Task" header and phase dropdown', () => {
+    renderModal({
+      projects: [
+        { id: 'p1', name: 'Alpha', path: '/a', profile: 'custom', status: 'active', lastActive: '', createdAt: '', mode: 'pipeline' },
+      ],
+    });
+    expect(screen.getByRole('heading', { name: 'New Task' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Phase/)).toBeInTheDocument();
+    expect(screen.queryByText(/No pipeline config/)).not.toBeInTheDocument();
+  });
+
+  it('iterate mode shows "New Iteration" header and hides phase dropdown', () => {
+    renderModal({
+      projects: [
+        { id: 'p1', name: 'Alpha', path: '/a', profile: 'custom', status: 'active', lastActive: '', createdAt: '', mode: 'iterate' },
+      ],
+    });
+    expect(screen.getByRole('heading', { name: 'New Iteration' })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Phase/)).not.toBeInTheDocument();
+  });
+
+  it('standalone mode shows phase dropdown plus info hint', () => {
+    renderModal({
+      projects: [
+        { id: 'p1', name: 'Alpha', path: '/a', profile: 'custom', status: 'active', lastActive: '', createdAt: '', mode: 'standalone' },
+      ],
+    });
+    expect(screen.getByRole('heading', { name: 'New Task' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Phase/)).toBeInTheDocument();
+    expect(
+      screen.getByText('No pipeline config — tasks run as standalone phases.'),
+    ).toBeInTheDocument();
   });
 
   it('submits the selected phase in the POST /tasks body', async () => {

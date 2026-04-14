@@ -3,6 +3,15 @@ import type { AutonomyOption } from "./settings.js";
 
 export type ProjectStatus = "active" | "archived" | "error";
 
+/**
+ * Iterate 14.0 — derived on the server from shipwright_run_config.json
+ * by getProjectMode(). Drives WebUI affordances:
+ *   pipeline   → default SDLC flow (phase dropdown visible, standard header)
+ *   iterate    → pipeline finished, further work is iteration (no phase dropdown)
+ *   standalone → no run_config present (ad-hoc project, info message shown)
+ */
+export type ProjectMode = "pipeline" | "iterate" | "standalone";
+
 export interface ProjectSettings {
   phaseToStatusMapping?: Record<string, KanbanStatus>;
   claudePluginDirs?: string[];
@@ -19,4 +28,9 @@ export interface Project {
   lastActive: string;
   settings?: ProjectSettings;
   createdAt: string;
+  /**
+   * Server-derived from shipwright_run_config.json via getProjectMode().
+   * Present in API responses; not stored in projects.json.
+   */
+  mode?: ProjectMode;
 }

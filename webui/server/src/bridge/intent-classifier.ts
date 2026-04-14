@@ -24,8 +24,6 @@ export const VALID_PHASES = [
   "deploy",
   "changelog",
   "compliance",
-  "iterate",
-  "preview",
 ] as const;
 
 export type Phase = (typeof VALID_PHASES)[number];

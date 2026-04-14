@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import type { Project } from "../../../client/src/types/project.js";
 import { AppError } from "../middleware/error-handler.js";
+import { getProjectMode } from "../bridge/config-reader.js";
 
 export interface ProjectManagerDeps {
   readFile: (path: string, encoding: string) => Promise<string>;
@@ -54,17 +55,30 @@ export class ProjectManager {
     };
     this.projects.set(project.id, project);
     this.persist();
-    return project;
+    return this.withMode(project);
+  }
+
+  /**
+   * Iterate 14.0 — projects are serialized with a derived `mode` field
+   * read from shipwright_run_config.json on each call. Kept here (not in
+   * route handlers) so every consumer — REST, SSE broadcasts, etc. —
+   * sees consistent mode values without each one re-deriving.
+   */
+  private withMode(project: Project): Project {
+    return { ...project, mode: getProjectMode(project.path) };
   }
 
   getAll(): Project[] {
-    return Array.from(this.projects.values()).sort(
-      (a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime()
-    );
+    return Array.from(this.projects.values())
+      .sort(
+        (a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime()
+      )
+      .map((p) => this.withMode(p));
   }
 
   getById(id: string): Project | undefined {
-    return this.projects.get(id);
+    const project = this.projects.get(id);
+    return project ? this.withMode(project) : undefined;
   }
 
   update(id: string, patch: Partial<Project>): Project {
@@ -78,7 +92,7 @@ export class ProjectManager {
     };
     this.projects.set(id, updated);
     this.persist();
-    return updated;
+    return this.withMode(updated);
   }
 
   /**
