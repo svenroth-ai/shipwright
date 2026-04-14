@@ -731,24 +731,79 @@ uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
   get-build-progress --project-root "$(pwd)"
 ```
 
+> **Iterate 12.3 canon hybrid.** C1 (`record_event`), C2
+> (`update_build_dashboard`) and C4 (`write_decision_log`) run **per
+> section** (above); C3 (canon-marker session_handoff) + C5
+> (`append_changelog_entry` one bullet per completed section) +
+> `phase_history` append run **once per split completion**, below.
+> Per-section C3/C5 would spam the handoff and create partial CHANGELOG
+> entries mid-split. Both split-done branches share the same canon
+> closure below.
+
+If `split_done == true` (either final split or split-loop), run the
+**split-level canon finalization** BEFORE the branch-specific work:
+
+```bash
+# Set SHIPWRIGHT_RUN_ID for this split's build run if not already set.
+# (The orchestrator propagates it when a full pipeline is driving; set
+# it manually for standalone /shipwright-build invocations.)
+: "${SHIPWRIGHT_RUN_ID:=build-$(date +%Y%m%d-%H%M%S)-{current_split}}"
+export SHIPWRIGHT_RUN_ID
+
+# C3 — Canon-marked session handoff (one per split completion).
+uv run {shared_root}/scripts/tools/generate_session_handoff.py \
+  --project-root "$(pwd)" --canon-marker --phase build \
+  --reason "build phase complete: {current_split}, {N} sections"
+
+# C5 — Append one CHANGELOG [Unreleased] bullet per completed section
+# of the split. The helper dedupes per category, so re-running is safe.
+# Category is derived from the conventional commit type of each section
+# commit (feat → Added, refactor → Changed, fix → Fixed). In practice,
+# iterate the build_config.sections[] with status=complete and match
+# the commit message prefix.
+for section in {completed_sections_of_current_split}; do
+  # Derive category + entry from each section's commit and name.
+  commit_type=$(git show --format=%s "{section_commit}" | awk -F: '{print $1}' | awk -F'(' '{print $1}')
+  case "$commit_type" in
+    feat) category=Added ;;
+    fix) category=Fixed ;;
+    refactor) category=Changed ;;
+    *) category=Added ;;
+  esac
+  uv run {shared_root}/scripts/tools/append_changelog_entry.py \
+    --project-root "$(pwd)" \
+    --category "$category" \
+    --entry "Build: {current_split}/{section_name} complete ({tests_passed}/{tests_total} tests)"
+done
+
+# phase_history — audit trail with per-section sub-entries.
+# Serialize completed sections from build_config as a JSON array.
+sections_json=$(jq -c '{split: .current_split, sections: [.sections[] | select(.status == "complete") | {id: .name, status: .status, commit: .commit, tests_passed: .tests_passed, tests_total: .tests_total}]}' shipwright_build_config.json)
+uv run {shared_root}/scripts/tools/append_phase_history.py \
+  --project-root "$(pwd)" --phase build --run-id "$SHIPWRIGHT_RUN_ID" \
+  --entry-json "$sections_json"
+```
+
+**Then run the branch-specific work:**
+
 If `split_done == true AND all_done == true` (final split complete):
 1. **Persist dev_url** — detect dev server port and write to build config for downstream phases:
    - Read `CLAUDE.md` for `PORT=` references
    - Read `package.json` scripts for `--port` flags
    - If found: add `"dev_url": "http://localhost:{port}"` to `shipwright_build_config.json`
-2. Mark build phase complete (triggers compliance update automatically):
+2. Mark build phase complete (triggers compliance update automatically).
+   `_validate_build()` now runs the modular build_checks verifier:
+   per-section C1/C4 iteration, phase-level C2/C3/C5, phase_history,
+   `check_build_test_files_exist` (B3) + `check_commit_sha_in_git` (B6)
+   preventive checks. Missing artifacts or test-file drift blocks
+   this call via ask-level issues.
 ```bash
 uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
   update-step --project-root "$(pwd)" --step build --status complete
 ```
-2. Push feature branch to remote:
+3. Push feature branch to remote:
 ```bash
 git push -u origin "$(git branch --show-current)"
-```
-3. Generate session handoff for next pipeline phase:
-```bash
-uv run {plugin_root}/scripts/tools/generate_session_handoff.py \
-  --project-root "$(pwd)" --section "all" --status "complete"
 ```
 4. Update delivery dashboard with pipeline status:
 ```bash
@@ -766,18 +821,13 @@ uv run {shared_root}/scripts/tools/archive_split.py \
 ```bash
 git push -u origin "$(git branch --show-current)"
 ```
-3. Generate session handoff for next split:
-```bash
-uv run {plugin_root}/scripts/tools/generate_session_handoff.py \
-  --project-root "$(pwd)" --section "{section_name}" --status "split-complete"
-```
-4. Print: "Split {current_split} complete. Archived to split_{prefix}_sections. Continuing to plan + build for next split. Test/changelog/deploy run once after all splits."
-5. Update delivery dashboard:
+3. Print: "Split {current_split} complete. Archived to split_{prefix}_sections. Continuing to plan + build for next split. Test/changelog/deploy run once after all splits."
+4. Update delivery dashboard:
 ```bash
 uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "$(pwd)" --section "{section_name}" --status complete --session-id "{SHIPWRIGHT_SESSION_ID}"
 ```
-6. **Mark build phase complete** for this split (pipeline continues to test → changelog → deploy, then orchestrator loops back to plan for next split):
+5. **Mark build phase complete** for this split (pipeline continues to test → changelog → deploy, then orchestrator loops back to plan for next split):
 ```bash
 uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
   update-step --project-root "$(pwd)" --step build --status complete
