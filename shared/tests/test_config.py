@@ -1,7 +1,5 @@
 """Tests for shared config handling."""
 
-import json
-
 from lib.config import (
     CONFIG_FILES,
     get_config_path,
@@ -54,7 +52,8 @@ def test_update_config_merges(tmp_project):
 
 def test_read_all_configs_empty(tmp_project):
     result = read_all_configs(tmp_project)
-    assert set(result.keys()) == set(CONFIG_FILES.keys())
+    json_skills = {k for k, v in CONFIG_FILES.items() if not v.endswith(".jsonl")}
+    assert set(result.keys()) == json_skills
     assert all(v == {} for v in result.values())
 
 
@@ -67,4 +66,12 @@ def test_read_all_configs_with_data(project_with_configs):
 
 
 def test_config_handles_all_config_files():
-    assert set(CONFIG_FILES.keys()) == {"run", "project", "plan", "build", "compliance", "security"}
+    assert set(CONFIG_FILES.keys()) == {
+        "run",
+        "project",
+        "plan",
+        "build",
+        "compliance",
+        "security",
+        "events",
+    }

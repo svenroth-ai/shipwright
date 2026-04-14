@@ -450,17 +450,22 @@ When a phase detects missing prerequisite artifacts, it should attempt to derive
 
 ## Minimum Phase Completion Canon (C1–C5)
 
-Iterate 12.0 (ADR-027) introduces the **Minimum Phase Completion Canon** —
+Iterate 12.0 introduces the **Minimum Phase Completion Canon** —
 a five-step finalization checklist that every decision-taking Shipwright
 phase should satisfy so cross-artifact sync invariants stay aligned.
 
 The canon is enforced by `shared/scripts/tools/verifiers/*_checks.py`
 (one module per phase) and dispatched through
-`shared/scripts/tools/verify_phase.py`. Iterate 12.0 ships the
+`shared/scripts/tools/verify_phase.py`. Iterate 12.0 shipped the
 infrastructure (verifier package, helper scripts, canon definition) and
 the **iterate** module (migrated from `verify_iterate_finalization.py`
-with identical behaviour); iterate 12.1–12.4 wire the canon into the
-remaining phases.
+with identical behaviour). Iterate 12.0b wired runtime zombie-task
+reconciliation; 12.1 added project + stop-hook conditional skip; 12.2
+added design + plan; 12.3 added build (canon hybrid per section / phase);
+12.4 added test, changelog and deploy. Iterate 12.6 closed the campaign
+with the Canon Coverage matrix below. **Iterate 12.5 (compliance) was
+struck** — compliance is future detective-only via shipwright-check,
+not a canon target.
 
 ### Canon Steps
 
@@ -551,20 +556,97 @@ A new top-level field in `shipwright_run_config.json` parallel to
 
 ```
 shared/scripts/tools/
-  verify_phase.py                  # Unified CLI: --phase iterate|runtime|all
+  verify_phase.py                  # Unified CLI: --phase <phase>|all
   verify_iterate_finalization.py   # Thin wrapper, same CLI as before (backwards compat)
   append_changelog_entry.py        # Canon C5 write path
   append_phase_history.py          # phase_history write path
   verifiers/
     __init__.py
     common.py                      # CheckResult, readers, generic C1–C5, ADR F1/F2/F3
-    iterate_checks.py              # 5 existing iterate checks (migrated 1:1)
-    runtime_checks.py              # Zombie-task stub (real in 12.0b)
+    iterate_checks.py              # 5 existing iterate checks (migrated 1:1)    — 12.0
+    runtime_checks.py              # Zombie-task replay check                     — 12.0b
+    project_checks.py              # Project phase-own + canon + phase_history   — 12.1
+    design_checks.py               # Design phase-own + canon (skip C4)          — 12.2
+    plan_checks.py                 # Plan phase-own + canon (skip C5) + check-plan C2/C3/C4 imports — 12.2
+    build_checks.py                # Build phase-own + canon hybrid + check-plan B3/B6 imports      — 12.3
+    test_checks.py                 # Test phase-own + canon (skip C4+C5)         — 12.4
+    changelog_checks.py            # Changelog canon + git-tag/version Sonder-Checks — 12.4
+    deploy_checks.py               # Deploy phase-own + canon (skip C4+C5)       — 12.4
 
 shared/scripts/lib/
   drift_parsers.py                 # Structure/dev-block/FR/ADR pure parsers
   file_lock.py                     # Cross-platform advisory lock
 ```
+
+### Canon Coverage — Iterate 12 Final State
+
+Matrix is **code-level coverage**, not runtime status on any given project.
+Every cell is derived from a grep audit of `plugins/shipwright-<phase>/skills/<phase>/SKILL.md`
+(tool call present in finalization step), `shared/scripts/tools/verifiers/<phase>_checks.py`
+(check function present), and `plugins/shipwright-run/scripts/lib/phase_validators.py::_validate_<phase>`
+(wired through `_run_canon_checks`).
+
+Legend: ✅ present · ⏭ skip by policy · n/a not applicable
+
+| Phase | C1 event | C2 dashboard | C3 handoff | C4 ADR | C5 CHANGELOG | phase_history | Verifier module | Phase validator |
+|---|---|---|---|---|---|---|---|---|
+| **iterate** | ✅ F7 | ✅ F5b | ✅ F11 | ✅ F3 | ✅ F4 | ✅ `iterate_history` | `iterate_checks.py` | `verify_iterate_finalization.py` |
+| **runtime** | n/a | n/a | n/a | n/a | n/a | n/a | `runtime_checks.py` (zombie replay) | — |
+| **project** | ✅ | ✅ | ✅ (canon-marker) | ✅ (Step 7) | ✅ | ✅ | `project_checks.py` | `_validate_project` |
+| **design** | ✅ | ✅ | ✅ (canon-marker) | ⏭ transformation | ✅ | ✅ | `design_checks.py` + FR coverage (check-plan C1 import) | `_validate_design` |
+| **plan** | ✅ | ✅ | ✅ (canon-marker) | ✅ (Step 2/5) | ⏭ internal | ✅ | `plan_checks.py` + section-manifest/FR-orphan/section-id (check-plan C2/C3/C4 imports) | `_validate_plan` |
+| **build** | ✅ per section | ✅ per section | ✅ phase-level | ✅ per section | ✅ phase-level (one bullet per section) | ✅ with `sections[]` sub-array | `build_checks.py` + B3 test-files + B6 commit-sha (check-plan imports) | `_validate_build` |
+| **test** | ✅ (`phase_completed` alongside `test_run`) | ✅ | ✅ (canon-marker) | ⏭ events, not decisions | ⏭ results in `shipwright_test_results.json` | ✅ | `test_checks.py` + `check_test_results_file_fresh` | `_validate_test` |
+| **changelog** | ✅ | ✅ | ✅ (canon-marker) | ⏭ process management | n/a (plugin owns prepend) | ✅ | `changelog_checks.py` + `check_git_tag_exists` + `check_changelog_version_matches_tag` Sonder-Checks | `_validate_changelog` |
+| **deploy** | ✅ | ✅ | ✅ (canon-marker) | ⏭ execution | ⏭ operational history | ✅ | `deploy_checks.py` + `check_test_gate_passed` phase-own | `_validate_deploy` |
+| **compliance** | n/a | n/a | n/a | n/a | n/a | n/a | (none) | (trivial pass) |
+
+**Compliance is intentionally NOT canon-wired.** Iterate 12.5 was struck
+from the campaign — compliance is a future **detective** checker via
+shipwright-check, not a productive phase. Today it runs as an
+auto-background-update after every phase via
+`plugins/shipwright-run/scripts/lib/orchestrator.run_compliance_update()`;
+the explicit `/shipwright-compliance` SKILL is deprecated pending refactor.
+See [Spec/shipwright-check-plan.md](../Spec/shipwright-check-plan.md) and
+the `project_compliance_rebuild.md` memory entry for the rebuild trigger.
+
+**F-block ADR integrity (F1/F2/F3)** runs out of `common.py` for every
+phase verifier automatically. F1 (sequential ids), F2 (valid status),
+F3 (supersession targets exist) are shared preventive checks ported
+from the shipwright-check plan.
+
+### Stop-Hook Conditional Skip (iterate 12.1)
+
+The `generate_handoff_on_stop.py` PostStop hook previously regenerated
+`session_handoff.md` at every turn end, overwriting any canon-marker
+handoff that a phase finalization step had just written. Iterate 12.1
+fixes this with a pure run-id match:
+
+1. `generate_session_handoff.py --canon-marker --phase <phase>` writes
+   YAML frontmatter containing `canon_generated: true` and
+   `run_id: <SHIPWRIGHT_RUN_ID>` at the top of `session_handoff.md`.
+2. `generate_handoff_on_stop.py` parses that frontmatter. If it exists
+   **and** the `run_id` matches the current `SHIPWRIGHT_RUN_ID` env var,
+   it skips regeneration entirely — no mtime heuristic, no clock skew
+   risk, no restart race.
+3. Non-canon handoffs regenerate as before. Handoffs with stale canon
+   frontmatter (different run_id) also regenerate.
+4. **Safe degrade:** `--canon-marker` without `SHIPWRIGHT_RUN_ID` logs
+   a warning to stderr and writes the handoff WITHOUT frontmatter, so
+   the Stop hook falls through to normal regeneration.
+
+### Audit Targets for the Verifier
+
+The canon verifier runs against **Shipwright-managed consumer projects**
+(those with `shipwright_run_config.json` at project root), not against
+the Shipwright monorepo itself. The monorepo root is plugin development
+and intentionally has no `shipwright_*_config.json`, `agent_docs/`, or
+`build_dashboard.md`; running `verify_phase.py --project-root . --phase all`
+against it will report many phase-own failures by design. The authoritative
+audit is code-level (the Coverage Matrix above), plus a runtime smoke
+test on `webui/` (which **is** a Shipwright-managed child project) —
+ERRORs there reflect historical drift from before the canon rollout and
+are not in scope for 12.6.
 
 ### Writer Audit (iterate 12.0 gate)
 
