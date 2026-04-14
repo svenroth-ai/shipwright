@@ -254,15 +254,45 @@ uv run {shared_root}/scripts/tools/record_event.py \
 Where `{shared_root}` = `{plugin_root}/../../shared`.
 
 **Phase complete — update pipeline state:**
-```bash
-# Mark deploy phase complete (triggers compliance update automatically)
-uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
-  update-step --project-root "$(pwd)" --step deploy --status complete
 
-# Update delivery dashboard
+Iterate 12.4 wires the deploy plugin into the Minimum Phase Completion
+Canon at C1/C2/C3 only. **C4 is skipped by policy** — deployment is
+execution, the architectural decision was made in plan. **C5 is also
+skipped** — deployment is operational history (it goes in `events.jsonl`
++ `phase_history`), not product change. Adding a CHANGELOG
+`[Unreleased]` bullet per deploy would duplicate the changelog plugin's
+version release block and pollute the next version's notes.
+
+```bash
+: "${SHIPWRIGHT_RUN_ID:=deploy-$(date +%Y%m%d-%H%M%S)-{env_name}}"
+export SHIPWRIGHT_RUN_ID
+
+# C1 — already emitted as the phase_completed event above.
+
+# C2 — delivery dashboard
 uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "$(pwd)" --phase deploy --detail "Deployed to {url}" \
   --session-id "{SHIPWRIGHT_SESSION_ID}"
+
+# C3 (NEW 12.4) — canon-marker handoff
+uv run {shared_root}/scripts/tools/generate_session_handoff.py \
+  --project-root "$(pwd)" --canon-marker --phase deploy \
+  --reason "deploy to {env_name}: {status}"
+
+# C4 — SKIPPED by policy (execution, not decision).
+# C5 — SKIPPED by policy (operational history, not product change;
+#      release narrative belongs to the changelog plugin).
+
+# phase_history (NEW 12.4)
+uv run {shared_root}/scripts/tools/append_phase_history.py \
+  --project-root "$(pwd)" --phase deploy --run-id "$SHIPWRIGHT_RUN_ID" \
+  --entry-json '{"target":"{env_name}","url":"{url}","version":"v{version}","outcome":"success"}'
+
+# Mark deploy phase complete (triggers compliance update automatically).
+# _validate_deploy() (new in 12.4) runs the test-gate pre-condition
+# plus the deploy_checks verifier (C1/C2/C3 + phase_history).
+uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+  update-step --project-root "$(pwd)" --step deploy --status complete
 ```
 
 **Reflection — Capture Deploy Learnings:**
