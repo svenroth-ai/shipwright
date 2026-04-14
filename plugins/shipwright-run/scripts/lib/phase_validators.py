@@ -23,6 +23,46 @@ sys.path.insert(0, str(_SHARED_SCRIPTS))
 from lib.config import read_config, collect_all_build_sections  # noqa: E402
 
 
+def _run_canon_checks(
+    phase: str,
+    project_root: Path,
+    issues: list[dict[str, str]],
+) -> None:
+    """Shared canon verifier bridge used by every iterate-12 phase
+    validator (project in 12.1; design + plan in 12.2).
+
+    Dispatches to the matching ``tools.verifiers.<phase>_checks``
+    module lazily so the import never fires in older test suites that
+    stubbed ``phase_validators`` without these files on the path.
+    Appends ask-level issues for every ERROR-severity result and
+    inform-level issues for every WARNING. SKIPPED and green results
+    are ignored.
+    """
+    try:
+        from tools.verifiers.common import Severity
+        if phase == "project":
+            from tools.verifiers.project_checks import run_project_checks as _run
+        elif phase == "design":
+            from tools.verifiers.design_checks import run_design_checks as _run
+        elif phase == "plan":
+            from tools.verifiers.plan_checks import run_plan_checks as _run
+        else:
+            return
+    except ImportError:
+        return
+
+    import os
+    run_id = os.environ.get("SHIPWRIGHT_RUN_ID", "")
+    for r in _run(project_root, run_id=run_id):
+        if r.is_skipped or r.ok:
+            continue
+        severity = "ask" if r.severity == Severity.ERROR.value else "inform"
+        issues.append({
+            "severity": severity,
+            "message": f"[canon] {r.name}: {r.detail}",
+        })
+
+
 def validate_phase(step: str, project_root: Path) -> tuple[bool, list[dict[str, str]]]:
     """Validate a phase before marking it complete.
 
@@ -73,40 +113,22 @@ def _validate_project(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
         })
         return False, issues
 
-    # Iterate 12.1 — run the modular project canon verifier. ERROR-severity
-    # failures surface as ask-level issues (block pipeline), WARNING
-    # results surface as inform-level notes. The verifier is imported
-    # lazily so existing _validate_project tests that don't exercise the
-    # canon path keep working without needing the new files on sys.path.
-    try:
-        from tools.verifiers.project_checks import run_project_checks
-        from tools.verifiers.common import Severity
-    except ImportError:
-        return True, issues
-
-    import os
-    run_id = os.environ.get("SHIPWRIGHT_RUN_ID", "")
-    canon_results = run_project_checks(project_root, run_id=run_id)
-    for r in canon_results:
-        if r.is_skipped or r.ok:
-            continue
-        if r.severity == Severity.ERROR.value:
-            issues.append({
-                "severity": "ask",
-                "message": f"[canon] {r.name}: {r.detail}",
-            })
-        else:
-            issues.append({
-                "severity": "inform",
-                "message": f"[canon] {r.name}: {r.detail}",
-            })
-
+    # Iterate 12.1 — run the modular project canon verifier via the
+    # shared _run_canon_checks bridge. ERROR-severity failures surface
+    # as ask-level issues (block pipeline), WARNING results surface as
+    # inform-level notes.
+    _run_canon_checks("project", project_root, issues)
     has_ask = any(i["severity"] == "ask" for i in issues)
     return not has_ask, issues
 
 
 def _validate_design(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
-    """Design phase: mockup HTML files exist (ASK — design may be intentionally skipped)."""
+    """Design phase: mockup HTML files exist (ASK — design may be
+    intentionally skipped). Iterate 12.2 augments with the modular
+    ``design_checks`` verifier (manifest screen existence, FR coverage,
+    canon C1/C2/C3/C5, ``phase_history``, ADR integrity). C4 is skipped
+    by policy — design is a transformation, not a decision-taking phase.
+    """
     issues: list[dict[str, str]] = []
     config = read_config("project", project_root)
     splits = config.get("splits", [])
@@ -128,11 +150,18 @@ def _validate_design(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
         })
         return False, issues
 
-    return True, []
+    _run_canon_checks("design", project_root, issues)
+    has_ask = any(i["severity"] == "ask" for i in issues)
+    return not has_ask, issues
 
 
 def _validate_plan(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
-    """Plan phase: sections defined and section files exist."""
+    """Plan phase: sections defined and section files exist. Iterate 12.2
+    augments with the modular ``plan_checks`` verifier (config status,
+    section manifest drift, FR orphans, section id validity, canon
+    C1/C2/C3/C4, ``phase_history``, ADR integrity). C5 is skipped by
+    policy — plan is an internal decomposition, not user-facing.
+    """
     issues: list[dict[str, str]] = []
     build_config = read_config("build", project_root)
 
@@ -162,7 +191,9 @@ def _validate_plan(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
         })
         return False, issues
 
-    return True, []
+    _run_canon_checks("plan", project_root, issues)
+    has_ask = any(i["severity"] == "ask" for i in issues)
+    return not has_ask, issues
 
 
 def _validate_build(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
