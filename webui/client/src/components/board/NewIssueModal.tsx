@@ -15,8 +15,6 @@ const PHASE_OPTIONS = [
   { value: 'deploy', label: 'Deploy' },
   { value: 'changelog', label: 'Changelog' },
   { value: 'compliance', label: 'Compliance' },
-  { value: 'iterate', label: 'Iterate' },
-  { value: 'preview', label: 'Preview' },
 ] as const;
 
 const DEFAULT_PHASE = 'project';
@@ -37,6 +35,17 @@ interface NewIssueModalProps {
 }
 
 export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }: NewIssueModalProps) {
+  // Iterate 14.0 — branch modal affordances on project mode.
+  // For cross-project "All" tab (activeProjectId null), fall back to pipeline
+  // mode; the chosen project's own mode kicks in once a real project is picked.
+  const activeProject = activeProjectId
+    ? projects.find((p) => p.id === activeProjectId)
+    : undefined;
+  const projectMode = activeProject?.mode ?? 'pipeline';
+  const headerTitle = projectMode === 'iterate' ? 'New Iteration' : 'New Task';
+  const showPhaseDropdown = projectMode !== 'iterate';
+  const showStandaloneHint = projectMode === 'standalone';
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [projectId, setProjectId] = useState(activeProjectId ?? '');
@@ -142,7 +151,7 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
         >
           <div className="flex items-center justify-between mb-4">
             <Dialog.Title className="text-lg font-semibold text-gray-900">
-              New Task
+              {headerTitle}
             </Dialog.Title>
             <Dialog.Description className="sr-only">Create a new task</Dialog.Description>
             <Dialog.Close asChild>
@@ -204,28 +213,35 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
             />
           </div>
 
-          {/* Phase selector */}
-          <div className="mb-3">
-            <label htmlFor="issue-phase" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
-              <span>Phase</span>
-              {phaseIsAuto && (
-                <span className="inline-flex items-center gap-1 text-xs text-[var(--color-primary)]" title="Auto-suggested">
-                  <Sparkles size={12} aria-label="Auto-suggested" />
-                  <span>auto</span>
-                </span>
+          {/* Phase selector — hidden in iterate mode (pipeline already complete) */}
+          {showPhaseDropdown && (
+            <div className="mb-3">
+              {showStandaloneHint && (
+                <p className="text-xs text-gray-500 mb-1">
+                  No pipeline config — tasks run as standalone phases.
+                </p>
               )}
-            </label>
-            <select
-              id="issue-phase"
-              value={phase}
-              onChange={handlePhaseChange}
-              className="w-full px-3 py-2 border border-[#e0dbd4] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
-            >
-              {PHASE_OPTIONS.map((p) => (
-                <option key={p.value} value={p.value}>{p.label}</option>
-              ))}
-            </select>
-          </div>
+              <label htmlFor="issue-phase" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
+                <span>Phase</span>
+                {phaseIsAuto && (
+                  <span className="inline-flex items-center gap-1 text-xs text-[var(--color-primary)]" title="Auto-suggested">
+                    <Sparkles size={12} aria-label="Auto-suggested" />
+                    <span>auto</span>
+                  </span>
+                )}
+              </label>
+              <select
+                id="issue-phase"
+                value={phase}
+                onChange={handlePhaseChange}
+                className="w-full px-3 py-2 border border-[#e0dbd4] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
+              >
+                {PHASE_OPTIONS.map((p) => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Start immediately checkbox */}
           <label className="flex items-start gap-2 mb-4 cursor-pointer">

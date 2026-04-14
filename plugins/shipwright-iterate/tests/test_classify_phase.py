@@ -79,3 +79,45 @@ class TestPhaseClassification:
     def test_project_word_is_project(self):
         result = classify("set up the project scaffolding")
         assert result["phase"] == "project"
+
+    # --- Iterate 14.0: phase dropdown cleanup ---
+    # `iterate` and `preview` were removed from PHASE_KEYWORDS/PHASE_PRIORITY
+    # because they're not task-level phases: iterate mode is derived from
+    # run_config status (getProjectMode), preview is a button-triggered action,
+    # not a classifiable task. classify_phase must never return either.
+
+    def test_never_returns_iterate_phase(self):
+        # Strong historical iterate signal words — must now fall back to
+        # another phase (or default project), never "iterate".
+        for text in [
+            "iterate on the login flow",
+            "tweak the sidebar spacing",
+            "polish the card component",
+            "adjust the header margin",
+            "small iteration",
+            "rework the button",
+        ]:
+            result = classify(text)
+            assert result["phase"] != "iterate", (
+                f"classify({text!r}) returned 'iterate' — should be removed"
+            )
+
+    def test_never_returns_preview_phase(self):
+        for text in [
+            "preview the app",
+            "start the dev-server",
+            "show me localhost",
+            "serve the build",
+        ]:
+            result = classify(text)
+            assert result["phase"] != "preview", (
+                f"classify({text!r}) returned 'preview' — should be removed"
+            )
+
+    def test_phase_keywords_contains_no_iterate_or_preview(self):
+        from classify_phase import PHASE_KEYWORDS, PHASE_PRIORITY
+
+        assert "iterate" not in PHASE_KEYWORDS
+        assert "preview" not in PHASE_KEYWORDS
+        assert "iterate" not in PHASE_PRIORITY
+        assert "preview" not in PHASE_PRIORITY
