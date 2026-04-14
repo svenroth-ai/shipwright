@@ -21,11 +21,12 @@ Exit codes:
 - 0 — all green (or warnings only)
 - 1 — at least one ERROR-severity failure (or any WARNING with ``--strict``)
 
-False-green prevention (GPT R2 review): in 12.0, ``--phase all`` only
-dispatches ``iterate`` by default — runtime is excluded unless the user
-explicitly passes ``--phase runtime``. The runtime stub would otherwise
-produce a SKIPPED result that callers might mis-read as a pass. In 12.0b
-runtime becomes real and joins the ``all`` set automatically.
+Iterate 12.0b replaced the ``runtime_checks`` stub with a real
+zombie-task reconciliation driven by the webui event-store +
+``pids.json``, so ``--phase all`` now dispatches both ``iterate`` and
+``runtime`` together. In 12.0 ``runtime`` was excluded from the ``all``
+set so SKIPPED results couldn't be misread as a pass — that guard is
+no longer needed.
 """
 
 from __future__ import annotations
@@ -48,12 +49,12 @@ from tools.verifiers.common import (  # noqa: E402
 )
 
 
-# The phases that ``--phase all`` dispatches in 12.0. Runtime is deliberately
-# excluded because its stub returns SKIPPED — including it in the default
-# "all" set would let callers interpret the skipped result as a pass, which
-# is the false-green that GPT R2 flagged. 12.0b replaces the stub with a
-# real check and this set expands to {"iterate", "runtime", ...}.
-ALL_PHASES_IN_12_0 = frozenset({"iterate"})
+# The phases that ``--phase all`` dispatches today.
+#
+# Iterate 12.0 excluded ``runtime`` because it was a stub (SKIPPED
+# severity would have looked like a pass). Iterate 12.0b ships the real
+# zombie-task check, so runtime now joins the default ``all`` set.
+ALL_PHASES_IN_12_0 = frozenset({"iterate", "runtime"})
 
 DISPATCHABLE_PHASES = frozenset({"iterate", "runtime", "all"})
 
@@ -69,11 +70,6 @@ def dispatch_iterate(project_root: Path, run_id: str, commit: str) -> list[Check
 
 
 def dispatch_runtime(project_root: Path) -> list[CheckResult]:
-    # Loud log on stderr so a misreading of SKIPPED as pass is hard.
-    print(
-        "WARN: runtime checks require iterate 12.0b webui changes — currently stub",
-        file=sys.stderr,
-    )
     return runtime_checks.run_all_checks(project_root)
 
 
@@ -81,6 +77,8 @@ def dispatch_all(project_root: Path, run_id: str, commit: str) -> list[CheckResu
     out: list[CheckResult] = []
     if "iterate" in ALL_PHASES_IN_12_0:
         out.extend(dispatch_iterate(project_root, run_id, commit))
+    if "runtime" in ALL_PHASES_IN_12_0:
+        out.extend(dispatch_runtime(project_root))
     return out
 
 
