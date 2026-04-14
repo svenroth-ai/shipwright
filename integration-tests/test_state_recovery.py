@@ -18,6 +18,23 @@ from conftest import (
 )
 
 
+def _write_review_marker(planning_dir: Path, status: str = "completed") -> None:
+    """Simulate a completed Step 5 external review pass.
+
+    Required since /shipwright-plan v0.3.0 — resume detection gates all
+    post-Step-5 transitions on the presence of this marker.
+    """
+    (planning_dir / "external_review_state.json").write_text(
+        json.dumps({
+            "status": status,
+            "provider": "openrouter",
+            "findings_count": 0,
+            "self_review_fallback_ran": False,
+            "timestamp": "2026-04-14T00:00:00Z",
+        })
+    )
+
+
 class TestProjectStateRecovery:
     """shipwright-project resume from various checkpoints."""
 
@@ -142,7 +159,7 @@ class TestPlanStateRecovery:
         assert result["resume_from_step"] == 3
 
     def test_resume_after_plan(self, trilogy_project):
-        """Resume detects plan.md with manifest → skip to step 6 (section splitting)."""
+        """Resume detects plan.md + review marker with manifest → skip to step 6."""
         planning = trilogy_project / "planning"
         self._setup_spec(planning)
 
@@ -156,6 +173,8 @@ class TestPlanStateRecovery:
         (spec.parent / "plan.md").write_text(
             "<!-- SECTION_MANIFEST\n01-models\nEND_MANIFEST -->\n# Plan\n"
         )
+        # v0.3.0+ gate: Step 5 must have written the review marker
+        _write_review_marker(spec.parent)
 
         result = run_script(PLAN_PLUGIN, "checks", "setup-planning-session.py", [
             "--file", str(spec), "--plugin-root", str(PLAN_PLUGIN),
@@ -181,6 +200,7 @@ class TestPlanStateRecovery:
         sections.mkdir(exist_ok=True)
         (sections / "01-models.md").write_text("# Done\n")
         # 02-routes missing
+        _write_review_marker(spec.parent)
 
         result = run_script(PLAN_PLUGIN, "checks", "setup-planning-session.py", [
             "--file", str(spec), "--plugin-root", str(PLAN_PLUGIN),
@@ -206,6 +226,7 @@ class TestPlanStateRecovery:
         sections = spec.parent / "sections"
         sections.mkdir(exist_ok=True)
         (sections / "01-models.md").write_text("# Done\n")
+        _write_review_marker(spec.parent)
 
         result = run_script(PLAN_PLUGIN, "checks", "setup-planning-session.py", [
             "--file", str(spec), "--plugin-root", str(PLAN_PLUGIN),

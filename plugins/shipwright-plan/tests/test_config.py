@@ -2,6 +2,7 @@
 
 from lib.config import (
     _deep_merge,
+    get_external_review_status,
     is_e2e_enabled,
     is_external_review_enabled,
     load_global_config,
@@ -57,6 +58,32 @@ def test_is_external_review_enabled_openrouter(monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test-123")
     config = {"external_review": {"feedback_iterations": 1}}
     assert is_external_review_enabled(config) is True
+
+
+def test_get_external_review_status_user_disabled():
+    config = {"external_review": {"feedback_iterations": 0}}
+    assert get_external_review_status(config) == "user_disabled"
+
+
+def test_get_external_review_status_missing_keys(monkeypatch, tmp_path):
+    # Isolate from repo .env.local by chdir-ing to an empty tmp dir
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    config = {"external_review": {"feedback_iterations": 1}}
+    assert get_external_review_status(config) == "missing_keys"
+
+
+def test_get_external_review_status_available_openrouter(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test-123")
+    config = {"external_review": {"feedback_iterations": 1}}
+    assert get_external_review_status(config) == "available"
 
 
 def test_is_e2e_enabled_default():

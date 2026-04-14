@@ -5,11 +5,19 @@
 Get the plan reviewed by external LLMs (Gemini + OpenAI) to catch blind spots.
 Claude reviewing its own plan misses systematic biases — external models help.
 
+External review is the **default** for /shipwright-plan. If keys are missing,
+the skill interactively asks the user whether to add one or fall back to a
+mandatory self-review pass. Silent-skip is not an option.
+
 ## Prerequisites
 
-- `GEMINI_API_KEY` environment variable set (or Vertex AI ADC configured)
-- `OPENAI_API_KEY` environment variable set
-- `external_review.feedback_iterations > 0` in config.json
+- **Recommended:** `OPENROUTER_API_KEY` (single key for both models) in the
+  project's `.env.local` at the repo root.
+- **Alternative:** `GEMINI_API_KEY` (or `GOOGLE_API_KEY` / Vertex AI ADC) and
+  `OPENAI_API_KEY` as direct provider keys.
+- `external_review.feedback_iterations > 0` in `config.json` (default: `1`).
+  Set to `0` only for explicit opt-out — the skill will then run the
+  mandatory self-review fallback.
 
 ## Script
 
@@ -37,5 +45,10 @@ uv run --project {plugin_root} {plugin_root}/scripts/llm_clients/review.py \
 ## Graceful Degradation
 
 - If one LLM fails: continue with the other's feedback
-- If both fail: skip review with a warning note
-- If no API keys: skip entirely (no error)
+- If both fail: log the failure, fall through to the self-review fallback block
+  (see SKILL.md Step 5), and write the marker with
+  `status: skipped_user_opt_out` plus `reason: "both providers failed"` so the
+  outcome is visible in the decision log.
+- If no API keys: the skill prompts the user interactively (SKILL.md Step 5
+  Branch B). Either keys are added + review runs, or the user opts out and the
+  self-review fallback runs. Never silently skipped.

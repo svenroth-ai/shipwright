@@ -286,6 +286,7 @@ plan SKILL completes
 | `shipwright_plan_config.json` | /shipwright-plan | Build (section references) |
 | `shipwright_project_session.json` | /shipwright-project | /shipwright-project (session resume state) |
 | `shipwright_plan_session.json` | /shipwright-plan | /shipwright-plan (session resume state) |
+| `external_review_state.json` | /shipwright-plan Step 5, /shipwright-iterate (medium+) | /shipwright-plan Step 6 resume gate, compliance evidence collector |
 | `shipwright_security_config.json` | /shipwright-security | /shipwright-security, compliance (scan results) |
 
 ---

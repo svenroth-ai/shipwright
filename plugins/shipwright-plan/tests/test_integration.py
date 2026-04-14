@@ -70,7 +70,19 @@ def test_full_planning_flow(tmp_path):
     assert check_result["success"] is True
     assert check_result["missing"] == []
 
-    # 7. Resume should detect step 8 (E2E/completion)
+    # 7. Simulate Step 5 completion (v0.3.0+ gate requires the marker before
+    # resume can advance past Step 5)
+    (planning / "external_review_state.json").write_text(
+        json.dumps({
+            "status": "completed",
+            "provider": "openrouter",
+            "findings_count": 2,
+            "self_review_fallback_ran": False,
+            "timestamp": "2026-04-14T00:00:00Z",
+        })
+    )
+
+    # 8. Resume should detect step 8 (E2E/completion)
     resume_result = run_script("setup-planning-session.py", [
         "--file", str(spec),
         "--plugin-root", plugin_root,
