@@ -55,7 +55,6 @@ interface SendChatParams {
   images?: Array<{ media_type: string; data: string }>;
   model?: string;
   mode?: string;
-  effort?: string;
   autonomy?: string;
 }
 
@@ -63,8 +62,8 @@ export function useSendChat() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ projectId, taskId, message, images, model, mode, effort, autonomy }: SendChatParams) =>
-      apiPost(`/projects/${projectId}/chat`, { message, taskId, images, model, mode, effort, autonomy }),
+    mutationFn: ({ projectId, taskId, message, images, model, mode, autonomy }: SendChatParams) =>
+      apiPost(`/projects/${projectId}/chat`, { message, taskId, images, model, mode, autonomy }),
     onSuccess: (_data, variables) => {
       // Refetch after the user's own message is persisted, so the user
       // message ChatMessage lands in the cache. This is the ONE place we
