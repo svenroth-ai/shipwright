@@ -80,6 +80,30 @@ SHIPWRIGHT_PLUGIN_ROOT       # Absolute path to active plugin directory
 - This document is the single source of truth for understanding what fires when,
   who reads/writes which artifacts, and the impact of pipeline changes.
 
+### When editing plugin-side files
+
+Changes under `plugins/*`, `shared/scripts/`, or any `SKILL.md` file do
+NOT auto-sync to the plugin cache at `~/.claude/plugins/cache/shipwright/`
+that Claude Code uses at runtime. After `git push`, run:
+
+```bash
+bash scripts/update-marketplace.sh
+```
+
+**Scope:** This is shipwright-monorepo-specific and only applies when
+developing the plugins themselves. End-users who consume the plugins via
+`/shipwright-iterate`, `/shipwright-build`, etc. on their own projects do
+NOT need this step — they run the installed/cached plugin versions.
+
+**Why it matters:** Without the sync, plugin-side fixes land in the dev
+repo but never reach runtime. Iterates 7-11 all had plugin-side fixes
+(SKILL.md F11 updates, shared script improvements) that silently never
+took effect because this step was skipped.
+
+**Enforcement:** Iterate 12's cross-plugin verifier audit will add a
+check for `cache vs repo` drift. Until then, remember to run this after
+any commit that touches plugin-side files.
+
 ### Documentation Guide
 - **Reference doc:** `docs/guide.md`
 - **Rule:** When adding a new skill, changing a skill's command/arguments/flags,

@@ -78,7 +78,41 @@ def generate_handoff(
         f"- **Timestamp**: {timestamp}",
         f"- **Reason**: {reason}",
         "",
-        "## Current State",
+    ]
+
+    # Iterate 11.3 — render "## Last Iterate" from run_config.iterate_history
+    # when present. This is the section most users actually want after a
+    # finalized iterate run; the legacy build checkpoint block below is kept
+    # for full-pipeline recovery flows.
+    run_cfg = configs.get("run") or {}
+    iterate_history = run_cfg.get("iterate_history") or []
+    if iterate_history:
+        last = iterate_history[-1]
+        lines += [
+            "## Last Iterate",
+            "",
+            f"- **Run ID**: {last.get('run_id', 'N/A')}",
+        ]
+        if last.get("date"):
+            lines.append(f"- **Date**: {last['date']}")
+        if last.get("type"):
+            lines.append(f"- **Type**: {last['type']}")
+        if last.get("complexity"):
+            lines.append(f"- **Complexity**: {last['complexity']}")
+        if last.get("branch"):
+            lines.append(f"- **Branch**: {last['branch']}")
+        if last.get("adr_id"):
+            lines.append(f"- **ADR**: {last['adr_id']}")
+        if last.get("description"):
+            lines.append(f"- **Description**: {last['description']}")
+        if "tests_passed" in last:
+            lines.append(f"- **Tests passed**: {last['tests_passed']}")
+        if last.get("spec"):
+            lines.append(f"- **Spec**: {last['spec']}")
+        lines.append("")
+
+    lines += [
+        "## Legacy build state",
         "",
         f"- **Phase**: {checkpoint['phase']}",
         f"- **Current Split**: {checkpoint.get('current_split', 'N/A')}",

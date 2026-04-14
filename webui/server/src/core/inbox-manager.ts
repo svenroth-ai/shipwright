@@ -149,6 +149,7 @@ export class InboxManager {
     context?: string,
     options?: string[],
     toolUseId?: string,
+    createdAt?: string,
   ): Promise<InboxItem> {
     // Iterate 11.1 — dedupe against existing PENDING items for the
     // same task by normalized question text. Claude emits the same
@@ -185,7 +186,7 @@ export class InboxManager {
       context,
       options,
       status: "pending",
-      createdAt: new Date().toISOString(),
+      createdAt: createdAt ?? new Date().toISOString(),
     };
     this.items.set(item.id, item);
     await this.persistItem(item);

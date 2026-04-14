@@ -132,11 +132,11 @@ describe("Inbox Routes", () => {
   });
 
   // ──────────────────────────────────────────────────────────────────
-  // Iterate 11.2 — "latest pending per task" (reverts 11.1 zombie filter,
-  // replaces with a rule that handles both symptoms)
+  // Iterate 11.3 — "first pending per task" (reverts 11.2 latest-wins
+  // to oldest-wins: show the question Claude opened the interview with)
   // ──────────────────────────────────────────────────────────────────
 
-  it("GET /api/inbox keeps only the LATEST pending item per task", async () => {
+  it("GET /api/inbox keeps only the FIRST pending item per task (oldest createdAt wins)", async () => {
     const inboxManager = {
       getAll: vi.fn(() => [
         { ...mockItem, id: "t1-old",    taskId: "t1", status: "pending", createdAt: "2026-04-13T10:00:00Z", question: "Plattform?" },
@@ -156,10 +156,54 @@ describe("Inbox Routes", () => {
     const res = await app.request("/api/inbox");
     const body = await res.json();
     expect(body.data).toHaveLength(1);
-    expect(body.data[0].id).toBe("t1-newest");
+    expect(body.data[0].id).toBe("t1-old");
   });
 
-  it("GET /api/inbox keeps one latest item per task across multiple tasks", async () => {
+  it("GET /api/inbox collapses same-turn duplicates with identical stale timestamps to the first inserted", async () => {
+    const staleTs = "2026-04-13T10:00:00Z";
+    const inboxManager = {
+      getAll: vi.fn(() => [
+        { ...mockItem, id: "t1-first",  taskId: "t1", status: "pending", createdAt: staleTs, question: "Was für eine App?" },
+        { ...mockItem, id: "t1-second", taskId: "t1", status: "pending", createdAt: staleTs, question: "Was für eine App!" },
+      ]),
+    } as any;
+    const taskManager = {
+      getTaskById: vi.fn(() => ({ id: "t1", status: "running" })),
+    } as any;
+    const projectManager = { getById: vi.fn() } as any;
+    const sseManager = { broadcast: vi.fn() } as any;
+    const app = new Hono();
+    app.onError(errorHandler);
+    app.route("/", createInboxRoutes(inboxManager, sseManager, taskManager, projectManager));
+
+    const res = await app.request("/api/inbox");
+    const body = await res.json();
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].id).toBe("t1-first");
+  });
+
+  it("GET /api/inbox returns a single pending item unchanged", async () => {
+    const inboxManager = {
+      getAll: vi.fn(() => [
+        { ...mockItem, id: "solo", taskId: "t1", status: "pending", createdAt: "2026-04-13T10:00:00Z" },
+      ]),
+    } as any;
+    const taskManager = {
+      getTaskById: vi.fn(() => ({ id: "t1", status: "running" })),
+    } as any;
+    const projectManager = { getById: vi.fn() } as any;
+    const sseManager = { broadcast: vi.fn() } as any;
+    const app = new Hono();
+    app.onError(errorHandler);
+    app.route("/", createInboxRoutes(inboxManager, sseManager, taskManager, projectManager));
+
+    const res = await app.request("/api/inbox");
+    const body = await res.json();
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].id).toBe("solo");
+  });
+
+  it("GET /api/inbox keeps one first item per task across multiple tasks", async () => {
     const inboxManager = {
       getAll: vi.fn(() => [
         { ...mockItem, id: "t1-old",    taskId: "t1", status: "pending", createdAt: "2026-04-13T10:00:00Z" },
@@ -180,33 +224,10 @@ describe("Inbox Routes", () => {
     const res = await app.request("/api/inbox");
     const body = await res.json();
     const ids = body.data.map((i: { id: string }) => i.id).sort();
-    expect(ids).toEqual(["t1-newest", "t2-newest"]);
+    expect(ids).toEqual(["t1-old", "t2-old"]);
   });
 
-  it("GET /api/inbox shows items for running tasks even when governor has no live process (no more 11.1 zombie filter)", async () => {
-    const inboxManager = {
-      getAll: vi.fn(() => [{ ...mockItem, id: "shown-anyway", taskId: "t1", status: "pending" }]),
-    } as any;
-    const taskManager = {
-      getTaskById: vi.fn(() => ({ id: "t1", status: "running" })),
-    } as any;
-    const projectManager = { getById: vi.fn() } as any;
-    // Governor says no live process. Iterate 11.2 IGNORES this — item still shown.
-    const governor = {
-      getProcess: vi.fn(() => undefined),
-    } as any;
-    const sseManager = { broadcast: vi.fn() } as any;
-    const app = new Hono();
-    app.onError(errorHandler);
-    app.route("/", createInboxRoutes(inboxManager, sseManager, taskManager, projectManager, governor));
-
-    const res = await app.request("/api/inbox");
-    const body = await res.json();
-    expect(body.data).toHaveLength(1);
-    expect(body.data[0].id).toBe("shown-anyway");
-  });
-
-  it("GET /api/inbox preserves answered items alongside the latest pending", async () => {
+  it("GET /api/inbox preserves answered items alongside the first pending", async () => {
     const inboxManager = {
       getAll: vi.fn(() => [
         { ...mockItem, id: "t1-answered",    taskId: "t1", status: "answered", createdAt: "2026-04-13T09:00:00Z" },
@@ -226,6 +247,6 @@ describe("Inbox Routes", () => {
     const res = await app.request("/api/inbox");
     const body = await res.json();
     const ids = body.data.map((i: { id: string }) => i.id).sort();
-    expect(ids).toEqual(["t1-answered", "t1-pending-new"]);
+    expect(ids).toEqual(["t1-answered", "t1-pending-old"]);
   });
 });

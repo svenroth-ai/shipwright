@@ -389,6 +389,7 @@ if (isMainModule) {
                 orphan.context,
                 orphan.options,
                 orphan.toolUseId,
+                orphan.createdAt,
               );
             }
           }

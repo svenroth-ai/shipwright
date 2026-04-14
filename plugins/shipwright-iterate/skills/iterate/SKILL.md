@@ -822,9 +822,13 @@ git merge iterate/{short-description}
 git push origin "$main_branch"
 ```
 
-**Update session handoff** to reflect completed state:
+**Update session handoff** to reflect completed state. Pass `--reason`
+so the handoff shows what caused the regeneration instead of the default
+`context compaction` (iterate 11.3):
 ```bash
-uv run {shared_root}/scripts/tools/generate_session_handoff.py --project-root "{project_root}"
+uv run {shared_root}/scripts/tools/generate_session_handoff.py \
+  --project-root "{project_root}" \
+  --reason "iterate completion: {run_id}"
 ```
 
 **Gate check:** Verify F7 (Record Event) was executed:
