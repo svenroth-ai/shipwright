@@ -21,8 +21,27 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import sys
+from pathlib import Path
+
+# Hook bootstrap: hook execution context may have an unpredictable sys.path.
+# Add the parent `shared/scripts` directory so `lib.drift_parsers` always
+# resolves even when the hook is invoked with a minimal environment.
+_SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
+
+from lib.drift_parsers import (  # noqa: E402  — after path bootstrap
+    HIDDEN_DIR_DEFAULTS,
+    build_paths_from_entries,
+    extract_dev_blocks,
+    extract_structure_block,
+    find_nearest_package_json,
+    load_gitignore,
+    parse_npm_run_refs,
+    parse_structure_entries,
+    read_package_scripts,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -101,97 +120,6 @@ def check_timestamp_drift(project_root: str) -> list[str]:
 # Content drift -- Structure block parsing
 # ---------------------------------------------------------------------------
 
-# Matches a Structure block line: optional indent, identifier (optionally
-# with trailing slash for dirs), optional `# comment`.
-_STRUCT_ENTRY_RE = re.compile(r"^(?P<indent>\s*)(?P<name>[\w.-]+)(?P<slash>/?)\s*(?:#.*)?$")
-
-# Matches a fenced code block following "## Structure" or "### Structure".
-_STRUCTURE_BLOCK_RE = re.compile(
-    r"#{2,3}\s+Structure\s*\n+```[^\n]*\n(.*?)\n```",
-    re.DOTALL | re.IGNORECASE,
-)
-
-
-def _extract_structure_block(content: str) -> str | None:
-    m = _STRUCTURE_BLOCK_RE.search(content)
-    return m.group(1) if m else None
-
-
-def _parse_structure_entries(block: str) -> list[tuple[int, str, bool]]:
-    """Return (indent, name, is_dir) for each recognizable entry."""
-    entries: list[tuple[int, str, bool]] = []
-    for line in block.splitlines():
-        if not line.strip():
-            continue
-        m = _STRUCT_ENTRY_RE.match(line)
-        if not m:
-            continue
-        name = m.group("name")
-        # Skip obvious non-entries (pure comments, backticks, etc.)
-        if name.startswith("_") and name.endswith("_"):
-            continue
-        entries.append((len(m.group("indent")), name, bool(m.group("slash"))))
-    return entries
-
-
-def _build_paths_from_entries(
-    entries: list[tuple[int, str, bool]],
-) -> list[tuple[str, bool]]:
-    """Resolve each entry into a POSIX-style path (using `/`).
-
-    Uses indent levels to reconstruct the parent chain.
-    Returns list of (relative_path, is_dir).
-    """
-    stack: list[tuple[int, str]] = []  # (indent, accumulated_path)
-    out: list[tuple[str, bool]] = []
-    for indent, name, is_dir in entries:
-        while stack and stack[-1][0] >= indent:
-            stack.pop()
-        parent = stack[-1][1] if stack else ""
-        path = f"{parent}/{name}" if parent else name
-        stack.append((indent, path))
-        out.append((path, is_dir))
-    return out
-
-
-def _load_gitignore(root: str) -> set[str]:
-    """Return the set of top-level names ignored by .gitignore (rough heuristic).
-
-    Only handles simple `name/` or `name` entries at the root level -- enough
-    to filter the common drift noise (node_modules, dist, .venv, etc.).
-    """
-    ignored: set[str] = set()
-    gi = os.path.join(root, ".gitignore")
-    if not os.path.exists(gi):
-        return ignored
-    try:
-        with open(gi, "r", encoding="utf-8") as f:
-            for raw in f:
-                line = raw.strip()
-                if not line or line.startswith("#"):
-                    continue
-                # strip leading slash and trailing slash
-                line = line.lstrip("/").rstrip("/")
-                # ignore patterns with wildcards beyond a plain name
-                if any(ch in line for ch in "*?[]"):
-                    continue
-                ignored.add(line)
-    except OSError:
-        pass
-    return ignored
-
-
-_HIDDEN_DIR_DEFAULTS = {
-    # Build/test artifacts
-    "node_modules", "__pycache__", "dist", "build", ".venv", ".git",
-    ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox", ".idea", ".vscode",
-    "vendor", "e2e-results", "playwright-report", "test-results",
-    # Shipwright runtime artifacts of target projects (every shipwright-built
-    # project has these; they are state, not architecture, so they should not
-    # surface as drift findings when CLAUDE.md doesn't enumerate them).
-    "agent_docs", "designs", "planning", "compliance",
-}
-
 
 def check_structure_drift(claude_md_path: str) -> list[str]:
     """Parse the Structure block and report filesystem mismatches."""
@@ -201,16 +129,16 @@ def check_structure_drift(claude_md_path: str) -> list[str]:
     except OSError:
         return []
 
-    block = _extract_structure_block(content)
+    block = extract_structure_block(content)
     if block is None:
         return []
 
-    entries = _parse_structure_entries(block)
+    entries = parse_structure_entries(block)
     if not entries:
         return []
 
     claude_dir = os.path.dirname(os.path.abspath(claude_md_path)) or "."
-    paths = _build_paths_from_entries(entries)
+    paths = build_paths_from_entries(entries)
 
     # Wrapper-root detection: some CLAUDE.md files start the tree with their
     # own directory name (e.g. `webui/` in `webui/CLAUDE.md`). In that case
@@ -257,7 +185,7 @@ def check_structure_drift(claude_md_path: str) -> list[str]:
             parent, name = "", rel_path
         documented_children.setdefault(parent, set()).add(name)
 
-    gitignored = _load_gitignore(resolve_base)
+    gitignored = load_gitignore(resolve_base)
 
     # (parent_rel_path, absolute_dir) pairs to check. Top level only for
     # non-wrapper roots; wrapper roots skip the "" level (siblings of webui/
@@ -287,7 +215,7 @@ def check_structure_drift(claude_md_path: str) -> list[str]:
         except OSError:
             continue
         undocumented = (
-            real - documented - _HIDDEN_DIR_DEFAULTS - gitignored
+            real - documented - HIDDEN_DIR_DEFAULTS - gitignored
         )
         for name in sorted(undocumented):
             display = f"{parent_rel}/{name}" if parent_rel else name
@@ -301,35 +229,6 @@ def check_structure_drift(claude_md_path: str) -> list[str]:
 # ---------------------------------------------------------------------------
 # Content drift -- Development command parsing
 # ---------------------------------------------------------------------------
-
-_DEV_BLOCK_RE = re.compile(
-    r"#{2,3}\s+Development\b.*?```bash\n(.*?)\n```",
-    re.DOTALL | re.IGNORECASE,
-)
-# Matches: "npm run <script>" with optional "cd <dir> && " prefix.
-_NPM_RUN_RE = re.compile(
-    r"(?:cd\s+(?P<cd>[\w./-]+)\s*&&\s*)?npm\s+run\s+(?P<script>[\w:-]+)"
-)
-
-
-def _extract_dev_blocks(content: str) -> list[str]:
-    return _DEV_BLOCK_RE.findall(content)
-
-
-def _find_nearest_package_json(start_dir: str, stop_at: str) -> str | None:
-    """Walk up from start_dir until a package.json is found or stop_at is reached."""
-    cur = os.path.abspath(start_dir)
-    stop = os.path.abspath(stop_at)
-    while True:
-        candidate = os.path.join(cur, "package.json")
-        if os.path.isfile(candidate):
-            return candidate
-        if cur == stop or len(cur) <= len(stop):
-            return None
-        parent = os.path.dirname(cur)
-        if parent == cur:
-            return None
-        cur = parent
 
 
 def check_command_drift(claude_md_path: str, repo_root: str) -> list[str]:
@@ -345,7 +244,7 @@ def check_command_drift(claude_md_path: str, repo_root: str) -> list[str]:
     except OSError:
         return []
 
-    blocks = _extract_dev_blocks(content)
+    blocks = extract_dev_blocks(content)
     if not blocks:
         return []
 
@@ -354,18 +253,15 @@ def check_command_drift(claude_md_path: str, repo_root: str) -> list[str]:
     seen: set[tuple[str, str]] = set()
 
     for block in blocks:
-        for match in _NPM_RUN_RE.finditer(block):
-            cd_target = match.group("cd")
-            script = match.group("script")
-
-            if cd_target:
-                pkg_dir = os.path.normpath(os.path.join(repo_root, cd_target))
-                pkg_path = os.path.join(pkg_dir, "package.json")
+        for ref in parse_npm_run_refs(block):
+            if ref.cd_target:
+                pkg_dir = os.path.normpath(os.path.join(repo_root, ref.cd_target))
+                pkg_path: str | None = os.path.join(pkg_dir, "package.json")
             else:
-                pkg_path = _find_nearest_package_json(claude_dir, repo_root)
+                pkg_path = find_nearest_package_json(claude_dir, repo_root)
                 pkg_dir = os.path.dirname(pkg_path) if pkg_path else claude_dir
 
-            key = (pkg_path or "", script)
+            key = (pkg_path or "", ref.script)
             if key in seen:
                 continue
             seen.add(key)
@@ -373,21 +269,15 @@ def check_command_drift(claude_md_path: str, repo_root: str) -> list[str]:
             if not pkg_path or not os.path.isfile(pkg_path):
                 rel_dir = os.path.relpath(pkg_dir, repo_root).replace(os.sep, "/")
                 findings.append(
-                    f"{claude_md_path}: references 'npm run {script}' but no package.json at {rel_dir}/"
+                    f"{claude_md_path}: references 'npm run {ref.script}' but no package.json at {rel_dir}/"
                 )
                 continue
 
-            try:
-                with open(pkg_path, "r", encoding="utf-8") as f:
-                    pkg = json.load(f)
-            except (OSError, json.JSONDecodeError):
-                continue
-
-            scripts = pkg.get("scripts", {})
-            if script not in scripts:
+            scripts = read_package_scripts(pkg_path)
+            if ref.script not in scripts:
                 rel_pkg = os.path.relpath(pkg_path, repo_root).replace(os.sep, "/")
                 findings.append(
-                    f"{claude_md_path}: references 'npm run {script}' but not defined in {rel_pkg}"
+                    f"{claude_md_path}: references 'npm run {ref.script}' but not defined in {rel_pkg}"
                 )
 
     return findings
