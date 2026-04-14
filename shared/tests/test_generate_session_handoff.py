@@ -83,6 +83,81 @@ def test_generate_handoff_omits_last_iterate_when_no_history(tmp_project):
     assert "## Legacy build state" in content
 
 
+def test_canon_frontmatter_prepended_at_top(tmp_project):
+    """Iterate 12.1: when canon_frontmatter dict is passed, the handoff
+    starts with a YAML block that stop-hook's parser can recognise."""
+    fm = {
+        "run_id": "project-20260414-alpha",
+        "phase": "project",
+        "reason": "project scaffolding complete",
+        "timestamp": "2026-04-14T10:00:00Z",
+    }
+    content = generate_handoff(tmp_project, session_id="s1", canon_frontmatter=fm)
+    assert content.startswith("---\ncanon_generated: true\n")
+    assert 'run_id: "project-20260414-alpha"' in content
+    assert 'phase: "project"' in content
+    # Legacy body still follows the frontmatter
+    assert "# Session Handoff" in content
+
+
+def test_canon_frontmatter_omitted_by_default(tmp_project):
+    """Without the kwarg, the handoff body is unchanged (backwards compat)."""
+    content = generate_handoff(tmp_project, session_id="s1")
+    assert not content.startswith("---\n")
+    assert content.lstrip().startswith("# Session Handoff")
+
+
+def test_cli_canon_marker_requires_run_id_env(tmp_project, monkeypatch, capsys):
+    """Iterate 12.1 safe-degrade: --canon-marker without SHIPWRIGHT_RUN_ID
+    drops the marker and emits a stderr warning; handoff is still written."""
+    import sys as _sys
+    from unittest.mock import patch
+
+    monkeypatch.delenv("SHIPWRIGHT_RUN_ID", raising=False)
+
+    argv = [
+        "generate_session_handoff.py",
+        "--project-root", str(tmp_project),
+        "--canon-marker",
+        "--phase", "project",
+        "--reason", "test",
+    ]
+    with patch.object(_sys, "argv", argv):
+        from tools.generate_session_handoff import main as handoff_main
+        handoff_main()
+
+    captured = capsys.readouterr()
+    assert "SHIPWRIGHT_RUN_ID is unset" in captured.err
+    handoff = tmp_project / "agent_docs" / "session_handoff.md"
+    assert handoff.exists()
+    # Safe-degrade: NO frontmatter written
+    assert not handoff.read_text(encoding="utf-8").startswith("---\n")
+
+
+def test_cli_canon_marker_writes_frontmatter_when_run_id_set(tmp_project, monkeypatch):
+    """With SHIPWRIGHT_RUN_ID set, the CLI writes the canon frontmatter."""
+    import sys as _sys
+    from unittest.mock import patch
+
+    monkeypatch.setenv("SHIPWRIGHT_RUN_ID", "project-20260414-test")
+
+    argv = [
+        "generate_session_handoff.py",
+        "--project-root", str(tmp_project),
+        "--canon-marker",
+        "--phase", "project",
+        "--reason", "project scaffolding complete",
+    ]
+    with patch.object(_sys, "argv", argv):
+        from tools.generate_session_handoff import main as handoff_main
+        handoff_main()
+
+    content = (tmp_project / "agent_docs" / "session_handoff.md").read_text(encoding="utf-8")
+    assert content.startswith("---\n")
+    assert 'run_id: "project-20260414-test"' in content
+    assert 'phase: "project"' in content
+
+
 def test_generate_handoff_with_decision_log(project_with_configs):
     # Create a decision log
     log_path = project_with_configs / "agent_docs" / "decision_log.md"

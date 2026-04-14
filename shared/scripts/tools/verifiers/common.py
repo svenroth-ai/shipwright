@@ -328,6 +328,45 @@ def check_c4_decision_log_has_phase_adr(
     return CheckResult(name, True, f"{len(hits)} ADR(s) referencing '{phase}'")
 
 
+def check_phase_history_has_run(
+    project_root: Path,
+    phase: str,
+    run_id: str,
+) -> CheckResult:
+    """Verify ``shipwright_run_config.json::phase_history[<phase>]``
+    contains an entry with the given ``run_id``.
+
+    Iterate 12.1 wires this into every phase-specific verifier module
+    so a failed ``append_phase_history.py`` call surfaces immediately
+    instead of silently leaving a gap in the audit trail. The
+    ``run_id`` match is exact — callers must pass the same id they
+    used at write time.
+    """
+    name = f"phase_history[{phase}] has run_id"
+    if not run_id:
+        return CheckResult(
+            name,
+            True,
+            "skipped (no --run-id supplied)",
+        )
+    data = read_run_config(project_root)
+    if not data:
+        return CheckResult(name, False, "shipwright_run_config.json missing or malformed")
+    history = data.get("phase_history")
+    if not isinstance(history, dict):
+        return CheckResult(name, False, "phase_history field missing")
+    bucket = history.get(phase)
+    if not isinstance(bucket, list):
+        return CheckResult(name, False, f"phase_history[{phase}] missing")
+    if any(entry.get("run_id") == run_id for entry in bucket):
+        return CheckResult(name, True, f"run_id={run_id} present in {phase} history")
+    return CheckResult(
+        name,
+        False,
+        f"run_id={run_id} not in phase_history[{phase}] ({len(bucket)} entries)",
+    )
+
+
 def check_c5_changelog_unreleased_has_phase_entry(
     project_root: Path,
     phase: str,

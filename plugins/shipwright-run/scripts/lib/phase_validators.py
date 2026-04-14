@@ -20,7 +20,7 @@ import sys
 _SHARED_SCRIPTS = Path(__file__).resolve().parent.parent.parent.parent.parent / "shared" / "scripts"
 sys.path.insert(0, str(_SHARED_SCRIPTS))
 
-from lib.config import read_config, collect_all_build_sections
+from lib.config import read_config, collect_all_build_sections  # noqa: E402
 
 
 def validate_phase(step: str, project_root: Path) -> tuple[bool, list[dict[str, str]]]:
@@ -37,7 +37,10 @@ def validate_phase(step: str, project_root: Path) -> tuple[bool, list[dict[str, 
 
 
 def _validate_project(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
-    """Project phase: config exists, splits defined, spec files present."""
+    """Project phase: config exists, splits defined, spec files present,
+    plus the iterate 12.1 Minimum Phase Completion Canon (C1/C2/C3/C4/C5
+    + phase_history + ADR integrity) via the modular verifier.
+    """
     issues: list[dict[str, str]] = []
     config = read_config("project", project_root)
 
@@ -70,7 +73,36 @@ def _validate_project(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
         })
         return False, issues
 
-    return True, []
+    # Iterate 12.1 — run the modular project canon verifier. ERROR-severity
+    # failures surface as ask-level issues (block pipeline), WARNING
+    # results surface as inform-level notes. The verifier is imported
+    # lazily so existing _validate_project tests that don't exercise the
+    # canon path keep working without needing the new files on sys.path.
+    try:
+        from tools.verifiers.project_checks import run_project_checks
+        from tools.verifiers.common import Severity
+    except ImportError:
+        return True, issues
+
+    import os
+    run_id = os.environ.get("SHIPWRIGHT_RUN_ID", "")
+    canon_results = run_project_checks(project_root, run_id=run_id)
+    for r in canon_results:
+        if r.is_skipped or r.ok:
+            continue
+        if r.severity == Severity.ERROR.value:
+            issues.append({
+                "severity": "ask",
+                "message": f"[canon] {r.name}: {r.detail}",
+            })
+        else:
+            issues.append({
+                "severity": "inform",
+                "message": f"[canon] {r.name}: {r.detail}",
+            })
+
+    has_ask = any(i["severity"] == "ask" for i in issues)
+    return not has_ask, issues
 
 
 def _validate_design(project_root: Path) -> tuple[bool, list[dict[str, str]]]:

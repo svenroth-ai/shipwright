@@ -9,7 +9,6 @@ Usage (from target project root):
 Writes to: agent_docs/session_handoff.md
 """
 
-import json
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -19,7 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from lib.config import read_all_configs, read_events
-from lib.state import detect_current_phase, get_checkpoint
+from lib.state import get_checkpoint
 
 
 def get_git_info(project_root: Path) -> dict[str, str]:
@@ -47,8 +46,20 @@ def generate_handoff(
     project_root: str | Path,
     session_id: str = "unknown",
     reason: str = "context compaction",
+    *,
+    canon_frontmatter: dict[str, str] | None = None,
 ) -> str:
-    """Generate session handoff markdown content."""
+    """Generate session handoff markdown content.
+
+    ``canon_frontmatter``: when set (iterate 12.1+), prepend a YAML
+    frontmatter block that marks the handoff as canon-generated so the
+    Stop hook's conditional-skip logic can recognise it and avoid
+    overwriting. The dict must contain ``run_id``, ``phase``, ``reason``,
+    and ``timestamp`` keys. The caller is responsible for populating
+    these — most callers go through ``main()`` which reads
+    ``SHIPWRIGHT_RUN_ID`` from the environment and refuses to write the
+    marker if it is missing (safe degrade, GPT R3 finding).
+    """
     project_root = Path(project_root)
     configs = read_all_configs(project_root)
     checkpoint = get_checkpoint(project_root)
@@ -67,8 +78,22 @@ def generate_handoff(
                 recent_decisions = prefix.lstrip("\n") + entries[-1][:500]
                 break
 
-    lines = [
-        f"# Session Handoff",
+    lines: list[str] = []
+
+    # Iterate 12.1: canon frontmatter. Order matters — YAML block MUST be
+    # at the very top of the file so `parse_canon_frontmatter` (stop-hook)
+    # can read it without scanning the rest of the doc.
+    if canon_frontmatter:
+        lines.append("---")
+        lines.append("canon_generated: true")
+        for key in ("run_id", "phase", "reason", "timestamp"):
+            value = canon_frontmatter.get(key, "")
+            lines.append(f'{key}: "{value}"')
+        lines.append("---")
+        lines.append("")
+
+    lines += [
+        "# Session Handoff",
         "",
         f"> Auto-generated {timestamp}",
         "",
@@ -214,12 +239,53 @@ def main() -> None:
         default="context compaction",
         help="Why this handoff was generated (shown in the output)",
     )
+    parser.add_argument(
+        "--canon-marker",
+        action="store_true",
+        help=(
+            "Iterate 12.1: write a YAML frontmatter block marking this "
+            "handoff as canon-generated (C3 step of a phase finalization). "
+            "The Stop hook skips regeneration for handoffs whose canon "
+            "frontmatter run_id matches the current SHIPWRIGHT_RUN_ID env "
+            "var. Requires SHIPWRIGHT_RUN_ID to be set — otherwise the "
+            "marker is dropped with a warning and the handoff is written "
+            "without frontmatter (safe degrade)."
+        ),
+    )
+    parser.add_argument(
+        "--phase",
+        default="",
+        help="Phase name to record in the canon frontmatter (project, design, …)",
+    )
     args = parser.parse_args()
 
     project_root = Path(args.project_root).resolve() if args.project_root else Path(os.getcwd())
     session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
 
-    content = generate_handoff(project_root, session_id, args.reason)
+    canon_frontmatter: dict[str, str] | None = None
+    if args.canon_marker:
+        run_id = os.environ.get("SHIPWRIGHT_RUN_ID", "").strip()
+        if not run_id:
+            print(
+                "WARN: --canon-marker requested but SHIPWRIGHT_RUN_ID is unset — "
+                "writing handoff WITHOUT canon frontmatter (Stop hook will regenerate "
+                "normally). Set SHIPWRIGHT_RUN_ID before calling this to enable the skip.",
+                file=sys.stderr,
+            )
+        else:
+            canon_frontmatter = {
+                "run_id": run_id,
+                "phase": args.phase,
+                "reason": args.reason,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+
+    content = generate_handoff(
+        project_root,
+        session_id,
+        args.reason,
+        canon_frontmatter=canon_frontmatter,
+    )
 
     # Ensure agent_docs/ exists
     agent_docs = project_root / "agent_docs"

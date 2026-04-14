@@ -5,9 +5,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from unittest.mock import patch
 
-import pytest
 
 
 # The hook script path
@@ -119,6 +117,146 @@ def test_handles_malformed_stdin(tmp_project):
     """Hook handles malformed stdin gracefully."""
     result = run_hook(tmp_project, stdin_data="not valid json{{{")
     assert result.returncode == 0
+
+
+def test_canon_marker_same_run_id_skips_regeneration(tmp_project):
+    """Iterate 12.1: Stop hook must NOT overwrite a handoff whose canon
+    frontmatter matches the current SHIPWRIGHT_RUN_ID."""
+    # Seed a pre-existing handoff that was written by a phase's C3 step.
+    agent_docs = tmp_project / "agent_docs"
+    agent_docs.mkdir(exist_ok=True)
+    handoff = agent_docs / "session_handoff.md"
+    canon_body = (
+        "---\n"
+        "canon_generated: true\n"
+        'run_id: "project-20260414-alpha"\n'
+        'phase: "project"\n'
+        'reason: "project scaffolding complete"\n'
+        'timestamp: "2026-04-14T10:00:00Z"\n'
+        "---\n"
+        "\n# Session Handoff\n\nOriginal canon content.\n"
+    )
+    handoff.write_text(canon_body, encoding="utf-8")
+
+    # Make this a shipwright project so the hook doesn't hit the guard clause.
+    (tmp_project / "shipwright_run_config.json").write_text(
+        json.dumps({"scope": "full_app"}), encoding="utf-8"
+    )
+
+    result = run_hook(
+        tmp_project,
+        env_extra={
+            "SHIPWRIGHT_RUN_ID": "project-20260414-alpha",
+            "SHIPWRIGHT_SESSION_ID": "test-session",
+        },
+    )
+    assert result.returncode == 0
+    # Body must still contain the original canon content — not regenerated.
+    assert handoff.read_text(encoding="utf-8") == canon_body
+    # Output should mention the skip.
+    output = json.loads(result.stdout)
+    assert "skipped" in output["hookSpecificOutput"]["additionalContext"].lower()
+
+
+def test_canon_marker_different_run_id_regenerates(tmp_project):
+    """A stale canon frontmatter from a prior run must not prevent
+    regeneration when the current run_id differs."""
+    agent_docs = tmp_project / "agent_docs"
+    agent_docs.mkdir(exist_ok=True)
+    handoff = agent_docs / "session_handoff.md"
+    handoff.write_text(
+        "---\n"
+        "canon_generated: true\n"
+        'run_id: "project-20260414-old"\n'
+        'phase: "project"\n'
+        'reason: "stale"\n'
+        'timestamp: "2026-04-14T08:00:00Z"\n'
+        "---\n"
+        "\n# Session Handoff\n\nStale content.\n",
+        encoding="utf-8",
+    )
+    (tmp_project / "shipwright_run_config.json").write_text(
+        json.dumps({"scope": "full_app"}), encoding="utf-8"
+    )
+
+    result = run_hook(
+        tmp_project,
+        env_extra={
+            "SHIPWRIGHT_RUN_ID": "project-20260414-new",
+            "SHIPWRIGHT_SESSION_ID": "test",
+        },
+    )
+    assert result.returncode == 0
+    content = handoff.read_text(encoding="utf-8")
+    # The regenerated handoff has the "session end" reason; the old
+    # "stale" reason is gone.
+    assert "stale" not in content
+    assert "session end" in content
+
+
+def test_canon_marker_missing_run_id_env_regenerates(tmp_project):
+    """When the frontmatter is present but SHIPWRIGHT_RUN_ID is unset,
+    the hook must fall through to normal regeneration (safe default)."""
+    agent_docs = tmp_project / "agent_docs"
+    agent_docs.mkdir(exist_ok=True)
+    (agent_docs / "session_handoff.md").write_text(
+        "---\n"
+        "canon_generated: true\n"
+        'run_id: "project-20260414-alpha"\n'
+        'phase: "project"\n'
+        'reason: "whatever"\n'
+        'timestamp: "2026-04-14T10:00:00Z"\n'
+        "---\n"
+        "\n# Session Handoff\n\nOld.\n",
+        encoding="utf-8",
+    )
+    (tmp_project / "shipwright_run_config.json").write_text(
+        json.dumps({"scope": "full_app"}), encoding="utf-8"
+    )
+
+    env = os.environ.copy()
+    env.pop("SHIPWRIGHT_RUN_ID", None)
+    env["SHIPWRIGHT_SESSION_ID"] = "test"
+
+    result = subprocess.run(
+        [sys.executable, str(HOOK_SCRIPT)],
+        input="{}",
+        capture_output=True,
+        text=True,
+        cwd=tmp_project,
+        env=env,
+    )
+    assert result.returncode == 0
+    content = (tmp_project / "agent_docs" / "session_handoff.md").read_text(encoding="utf-8")
+    # Should be regenerated — old content gone.
+    assert "Old." not in content
+    assert "# Session Handoff" in content
+
+
+def test_non_canon_handoff_always_regenerates(tmp_project):
+    """Plain handoff without frontmatter: regenerate every time, same
+    as pre-12.1 behaviour. Regression guard."""
+    agent_docs = tmp_project / "agent_docs"
+    agent_docs.mkdir(exist_ok=True)
+    (agent_docs / "session_handoff.md").write_text(
+        "# Session Handoff\n\nOld manual content.\n",
+        encoding="utf-8",
+    )
+    (tmp_project / "shipwright_run_config.json").write_text(
+        json.dumps({"scope": "full_app"}), encoding="utf-8"
+    )
+
+    result = run_hook(
+        tmp_project,
+        env_extra={
+            "SHIPWRIGHT_RUN_ID": "anything",
+            "SHIPWRIGHT_SESSION_ID": "test",
+        },
+    )
+    assert result.returncode == 0
+    content = (tmp_project / "agent_docs" / "session_handoff.md").read_text(encoding="utf-8")
+    assert "Old manual content" not in content
+    assert "session end" in content
 
 
 def test_with_full_config_set(project_with_configs):
