@@ -1,8 +1,8 @@
 """Unified CLI entrypoint for the Shipwright phase verifier.
 
-Iterate 12.0 ships this with two dispatchable phases: ``iterate`` and
-``runtime``. Iterate 12.1-12.4 will add ``project``, ``design``, ``plan``,
-``build``, ``test``, ``changelog``, ``deploy``.
+Iterate 12.0 shipped ``iterate`` + ``runtime``. Iterate 12.1 adds
+``project``. Iterate 12.2-12.4 will add ``design``, ``plan``, ``build``,
+``test``, ``changelog``, ``deploy``.
 
 Usage:
 
@@ -14,6 +14,9 @@ Usage:
         --phase runtime --project-root webui
 
     uv run shared/scripts/tools/verify_phase.py \\
+        --phase project --project-root webui --run-id project-2026-04-14-foo
+
+    uv run shared/scripts/tools/verify_phase.py \\
         --phase all --project-root webui --run-id iterate-foo
 
 Exit codes:
@@ -23,10 +26,10 @@ Exit codes:
 
 Iterate 12.0b replaced the ``runtime_checks`` stub with a real
 zombie-task reconciliation driven by the webui event-store +
-``pids.json``, so ``--phase all`` now dispatches both ``iterate`` and
-``runtime`` together. In 12.0 ``runtime`` was excluded from the ``all``
-set so SKIPPED results couldn't be misread as a pass — that guard is
-no longer needed.
+``pids.json``, so ``--phase all`` dispatches both ``iterate`` and
+``runtime`` together. Iterate 12.1 adds ``project`` to the ``all`` set;
+the ``--run-id`` arg is shared across all phases (project + iterate both
+use it to verify ``phase_history`` / ``iterate_history`` membership).
 """
 
 from __future__ import annotations
@@ -41,7 +44,11 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from tools.verifiers import iterate_checks, runtime_checks  # noqa: E402
+from tools.verifiers import (  # noqa: E402
+    iterate_checks,
+    project_checks,
+    runtime_checks,
+)
 from tools.verifiers.common import (  # noqa: E402
     CheckResult,
     format_report,
@@ -52,11 +59,12 @@ from tools.verifiers.common import (  # noqa: E402
 # The phases that ``--phase all`` dispatches today.
 #
 # Iterate 12.0 excluded ``runtime`` because it was a stub (SKIPPED
-# severity would have looked like a pass). Iterate 12.0b ships the real
-# zombie-task check, so runtime now joins the default ``all`` set.
-ALL_PHASES_IN_12_0 = frozenset({"iterate", "runtime"})
+# severity would have looked like a pass). 12.0b shipped the real
+# runtime check; 12.1 adds ``project`` after wiring the canon into the
+# project plugin's Step 8.
+ALL_PHASES = frozenset({"iterate", "runtime", "project"})
 
-DISPATCHABLE_PHASES = frozenset({"iterate", "runtime", "all"})
+DISPATCHABLE_PHASES = frozenset({"iterate", "runtime", "project", "all"})
 
 
 def dispatch_iterate(project_root: Path, run_id: str, commit: str) -> list[CheckResult]:
@@ -73,12 +81,20 @@ def dispatch_runtime(project_root: Path) -> list[CheckResult]:
     return runtime_checks.run_all_checks(project_root)
 
 
+def dispatch_project(project_root: Path, run_id: str) -> list[CheckResult]:
+    return project_checks.run_all_checks(project_root, run_id=run_id)
+
+
 def dispatch_all(project_root: Path, run_id: str, commit: str) -> list[CheckResult]:
     out: list[CheckResult] = []
-    if "iterate" in ALL_PHASES_IN_12_0:
+    if "iterate" in ALL_PHASES and run_id:
+        # Skip iterate in --phase all when no run_id — it would be a
+        # guaranteed failure (run_id is required for the iterate dispatch).
         out.extend(dispatch_iterate(project_root, run_id, commit))
-    if "runtime" in ALL_PHASES_IN_12_0:
+    if "runtime" in ALL_PHASES:
         out.extend(dispatch_runtime(project_root))
+    if "project" in ALL_PHASES:
+        out.extend(dispatch_project(project_root, run_id))
     return out
 
 
@@ -91,7 +107,12 @@ def main() -> None:
         help="Which phase's checks to run",
     )
     parser.add_argument("--project-root", default=".", help="Project directory")
-    parser.add_argument("--run-id", default="", help="Iterate run id (required for iterate phase)")
+    parser.add_argument(
+        "--run-id",
+        default="",
+        help="Phase run id — required for iterate, optional for project "
+        "(enables phase_history membership check).",
+    )
     parser.add_argument("--commit", default="", help="Current HEAD commit hash (iterate phase)")
     parser.add_argument(
         "--strict",
@@ -108,9 +129,12 @@ def main() -> None:
     elif args.phase == "runtime":
         results = dispatch_runtime(project_root)
         title = "runtime reconciliation"
+    elif args.phase == "project":
+        results = dispatch_project(project_root, args.run_id)
+        title = "project finalization"
     else:  # all
         results = dispatch_all(project_root, args.run_id, args.commit)
-        title = f"all phases ({', '.join(sorted(ALL_PHASES_IN_12_0))})"
+        title = f"all phases ({', '.join(sorted(ALL_PHASES))})"
 
     print(format_report(title, results))
 
