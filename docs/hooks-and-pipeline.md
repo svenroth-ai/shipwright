@@ -445,3 +445,136 @@ When a phase detects missing prerequisite artifacts, it should attempt to derive
 |---|---|---|
 | `dev_server.py` | Reads `shipwright_build_config.json` for `dev_url` when profile is unknown | Fallback for custom profiles |
 | `playwright_setup.py` | Substitutes port from build config into template | Prevents hardcoded port 3000 |
+
+---
+
+## Minimum Phase Completion Canon (C1–C5)
+
+Iterate 12.0 (ADR-027) introduces the **Minimum Phase Completion Canon** —
+a five-step finalization checklist that every decision-taking Shipwright
+phase should satisfy so cross-artifact sync invariants stay aligned.
+
+The canon is enforced by `shared/scripts/tools/verifiers/*_checks.py`
+(one module per phase) and dispatched through
+`shared/scripts/tools/verify_phase.py`. Iterate 12.0 ships the
+infrastructure (verifier package, helper scripts, canon definition) and
+the **iterate** module (migrated from `verify_iterate_finalization.py`
+with identical behaviour); iterate 12.1–12.4 wire the canon into the
+remaining phases.
+
+### Canon Steps
+
+| Step | Requirement | Tool | Severity |
+|---|---|---|---|
+| **C1** | `phase_completed` event recorded in `shipwright_events.jsonl` | `shared/scripts/tools/record_event.py --type phase_completed --source <phase>` | **ERROR** |
+| **C2** | `agent_docs/build_dashboard.md` reflects the phase | `shared/scripts/tools/update_build_dashboard.py --phase <phase>` | **WARNING** |
+| **C3** | `agent_docs/session_handoff.md` regenerated with phase-specific reason | `shared/scripts/tools/generate_session_handoff.py --reason "<phase>: …"` | **WARNING** |
+| **C4** | `agent_docs/decision_log.md` has a new ADR referencing the phase | `shared/scripts/tools/write_decision_log.py --title …` | **ERROR** (only for decision-taking phases) |
+| **C5** | `CHANGELOG.md [Unreleased]` has a bullet under the right Keep-a-Changelog category | `shared/scripts/tools/append_changelog_entry.py --category <Added\|Changed\|Fixed\|…> --entry "…"` | **ERROR** (only for user-facing phases) |
+
+### C4 Skip Criteria — Who Gets an ADR
+
+ADRs are for **actual architectural decisions**, not routine phase
+events. C4 applies to:
+
+- `iterate` — the canonical source of architectural decisions
+- `project` — initial architecture choices and constraint capture
+- `plan` — planning decisions that constrain build
+- `build` — per-section decisions (existing behaviour)
+
+C4 is **skipped** for:
+
+- `design` — transformation of an existing spec, not a new decision
+- `test` — execution, not a decision
+- `changelog` — a release event, not a decision
+- `deploy` — an operational event, not a decision
+- `compliance` — derived from other phases (detective, not productive)
+
+### C5 Skip Criteria — User-Facing vs. Operational
+
+C5 applies to phases whose output is visible in a product release:
+
+- `iterate` (existing behaviour)
+- `project` — category **Added**: "Project initialized: …"
+- `design` — category **Added**: "UI mockups: N screens, M flows"
+- `build` — category **Added**/**Changed**/**Fixed** per section,
+  appended at phase-completion (not per-section)
+- `deploy` — category **Changed**: "Deployed to <env>" (user visible)
+
+C5 is **skipped** for:
+
+- `plan` — internal, not user-visible
+- `test` — execution status lives in `shipwright_test_results.json`
+- `changelog` — this phase *owns* CHANGELOG prepends; writing to
+  [Unreleased] would collide with the release tagging flow
+- `compliance` — derived artifact, not a user-facing change
+
+### Helper Scripts
+
+Iterate 12.0 introduces two write helpers so every Canon caller goes
+through a deterministic, lock-serialised write path:
+
+- **`shared/scripts/tools/append_changelog_entry.py`** — atomic
+  Keep-a-Changelog writer with dedupe and cross-platform file-lock
+  (`CHANGELOG.md.lock`).
+- **`shared/scripts/tools/append_phase_history.py`** — atomic
+  read-modify-write on `shipwright_run_config.json::phase_history[<phase>]`,
+  with 50-entry retention per phase and file-lock
+  (`shipwright_run_config.json.lock`).
+
+Both helpers use `shared/scripts/lib/file_lock.py`, which wraps
+`fcntl.flock` on POSIX and `msvcrt.locking` on Windows with a hard
+5-second timeout (no silent retry).
+
+### `phase_history` Schema
+
+A new top-level field in `shipwright_run_config.json` parallel to
+`iterate_history`:
+
+```json
+{
+  "phase_history": {
+    "project": [{"run_id": "…", "date": "…", "outcome": "…", "splits": N}],
+    "design":  [{"run_id": "…", "date": "…", "screens": N, "flows": M}],
+    "build":   [{"run_id": "…", "date": "…", "split": "…", "sections": N}]
+  }
+}
+```
+
+- Retention: last 50 entries per phase.
+- `iterate` keeps writing to `iterate_history` (richer schema —
+  branch, spec path, tests_passed); it is NOT mirrored into
+  `phase_history`.
+- Phase modules fill `phase_history` starting in iterate 12.1.
+
+### Verifier Package Layout
+
+```
+shared/scripts/tools/
+  verify_phase.py                  # Unified CLI: --phase iterate|runtime|all
+  verify_iterate_finalization.py   # Thin wrapper, same CLI as before (backwards compat)
+  append_changelog_entry.py        # Canon C5 write path
+  append_phase_history.py          # phase_history write path
+  verifiers/
+    __init__.py
+    common.py                      # CheckResult, readers, generic C1–C5, ADR F1/F2/F3
+    iterate_checks.py              # 5 existing iterate checks (migrated 1:1)
+    runtime_checks.py              # Zombie-task stub (real in 12.0b)
+
+shared/scripts/lib/
+  drift_parsers.py                 # Structure/dev-block/FR/ADR pure parsers
+  file_lock.py                     # Cross-platform advisory lock
+```
+
+### Writer Audit (iterate 12.0 gate)
+
+Every writer of `shipwright_run_config.json` uses the read-modify-write
+pattern (`load_run_config` → mutate → `save_run_config`), so unknown
+top-level fields like `phase_history` are preserved automatically.
+Authoritative writers:
+
+- `plugins/shipwright-run/scripts/lib/orchestrator.py` — `save_run_config`,
+  called by `create_config` (initialises `phase_history: {}` on fresh
+  creation) and `update_step`.
+
+No other plugin writes this file directly.
