@@ -132,11 +132,13 @@ describe("Inbox Routes", () => {
   });
 
   // ──────────────────────────────────────────────────────────────────
-  // Iterate 11.3 — "first pending per task" (reverts 11.2 latest-wins
-  // to oldest-wins: show the question Claude opened the interview with)
+  // Iterate 13.2 — "latest pending per task" (reverts 11.3 back to
+  // newest-wins because Claude CLI in `-p` stream-json mode does NOT
+  // block on AskUserQuestion, so the oldest pending is usually stale
+  // and the newest is the only meaningfully answerable one.
   // ──────────────────────────────────────────────────────────────────
 
-  it("GET /api/inbox keeps only the FIRST pending item per task (oldest createdAt wins)", async () => {
+  it("GET /api/inbox keeps only the LATEST pending item per task (newest createdAt wins)", async () => {
     const inboxManager = {
       getAll: vi.fn(() => [
         { ...mockItem, id: "t1-old",    taskId: "t1", status: "pending", createdAt: "2026-04-13T10:00:00Z", question: "Plattform?" },
@@ -156,10 +158,10 @@ describe("Inbox Routes", () => {
     const res = await app.request("/api/inbox");
     const body = await res.json();
     expect(body.data).toHaveLength(1);
-    expect(body.data[0].id).toBe("t1-old");
+    expect(body.data[0].id).toBe("t1-newest");
   });
 
-  it("GET /api/inbox collapses same-turn duplicates with identical stale timestamps to the first inserted", async () => {
+  it("GET /api/inbox collapses same-turn duplicates with identical stale timestamps to the first inserted (tie-breaker)", async () => {
     const staleTs = "2026-04-13T10:00:00Z";
     const inboxManager = {
       getAll: vi.fn(() => [
@@ -179,6 +181,7 @@ describe("Inbox Routes", () => {
     const res = await app.request("/api/inbox");
     const body = await res.json();
     expect(body.data).toHaveLength(1);
+    // Strict `>` keeps the first insertion on ties (same createdAt).
     expect(body.data[0].id).toBe("t1-first");
   });
 
@@ -224,10 +227,10 @@ describe("Inbox Routes", () => {
     const res = await app.request("/api/inbox");
     const body = await res.json();
     const ids = body.data.map((i: { id: string }) => i.id).sort();
-    expect(ids).toEqual(["t1-old", "t2-old"]);
+    expect(ids).toEqual(["t1-newest", "t2-newest"]);
   });
 
-  it("GET /api/inbox preserves answered items alongside the first pending", async () => {
+  it("GET /api/inbox preserves answered items alongside the latest pending", async () => {
     const inboxManager = {
       getAll: vi.fn(() => [
         { ...mockItem, id: "t1-answered",    taskId: "t1", status: "answered", createdAt: "2026-04-13T09:00:00Z" },
@@ -247,6 +250,6 @@ describe("Inbox Routes", () => {
     const res = await app.request("/api/inbox");
     const body = await res.json();
     const ids = body.data.map((i: { id: string }) => i.id).sort();
-    expect(ids).toEqual(["t1-answered", "t1-pending-old"]);
+    expect(ids).toEqual(["t1-answered", "t1-pending-new"]);
   });
 });

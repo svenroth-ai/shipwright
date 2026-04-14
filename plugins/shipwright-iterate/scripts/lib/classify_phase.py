@@ -33,6 +33,10 @@ PHASE_KEYWORDS: dict[str, set[str]] = {
         "test", "tests", "e2e", "playwright", "vitest", "unit",
         "coverage", "regression", "bug", "fix",
     },
+    "security": {
+        "security", "vulnerability", "vulnerabilities", "scan", "cve",
+        "pentest",
+    },
     "deploy": {
         "deploy", "deployment", "release", "production", "publish",
         "staging", "rollout",
@@ -43,9 +47,18 @@ PHASE_KEYWORDS: dict[str, set[str]] = {
     "compliance": {
         "audit", "sbom", "compliance", "traceability", "evidence",
     },
+    "iterate": {
+        "iterate", "iteration", "tweak", "adjust", "polish", "rework",
+    },
+    "preview": {
+        "preview", "localhost", "dev-server", "devserver", "serve",
+    },
 }
 
-PHASE_PRIORITY = ["design", "test", "deploy", "compliance", "changelog", "plan", "project", "build"]
+PHASE_PRIORITY = [
+    "design", "test", "security", "deploy", "compliance", "changelog",
+    "plan", "iterate", "preview", "project", "build",
+]
 
 DEFAULT_PHASE = "project"
 

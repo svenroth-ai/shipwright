@@ -73,11 +73,14 @@ describe('NewIssueModal', () => {
     expect(screen.queryByText('Select a project...')).not.toBeInTheDocument();
   });
 
-  it('renders phase dropdown with 8 options', () => {
+  it('renders phase dropdown with all 11 shipwright phases', () => {
     renderModal();
     const dropdown = screen.getByLabelText(/Phase/) as HTMLSelectElement;
     expect(dropdown).toBeInTheDocument();
-    expect(dropdown.options).toHaveLength(8);
+    // project, design, plan, build, test, security, deploy, changelog,
+    // compliance, iterate, preview — 11 options. `run` is intentionally
+    // excluded (it is an orchestrator, not a task phase).
+    expect(dropdown.options).toHaveLength(11);
   });
 
   it('auto-suggests phase from classify endpoint and shows sparkle', async () => {
