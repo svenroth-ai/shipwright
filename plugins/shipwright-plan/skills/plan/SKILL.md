@@ -2,7 +2,7 @@
 name: shipwright-plan
 description: "Creates detailed implementation plans from spec files via research, interview, external LLM review, and TDD approach. Generates section-based plans for /shipwright-build.\nTRIGGER when: user wants to plan implementation, create an implementation plan, break down a spec into sections, plan how to build something, create a technical design, generate build sections, or plan test strategy for a spec.\nDO NOT TRIGGER when: user asks to implement or write code (/shipwright-build), run tests (/shipwright-test), fix a bug or make a small change (/shipwright-iterate), deploy (/shipwright-deploy), define requirements (/shipwright-project), or design UI mockups (/shipwright-design)."
 license: MIT
-compatibility: Requires uv (Python 3.11+), git repository recommended. Optional: Gemini API key + OpenAI API key for external review.
+compatibility: Requires uv (Python 3.11+), git repository recommended. Recommended: OPENROUTER_API_KEY (or GEMINI_API_KEY + OPENAI_API_KEY) for external LLM review in Step 5. If missing, the skill will ask you whether to skip external review and fall back to mandatory self-review.
 ---
 
 # Shipwright Plan Skill
@@ -36,7 +36,9 @@ Output:
 
 Requirements:
   - Spec file from /shipwright-project
-  - Optional: GEMINI_API_KEY + OPENAI_API_KEY for external review
+  - Recommended: OPENROUTER_API_KEY (or GEMINI_API_KEY + OPENAI_API_KEY)
+    for external LLM review. If missing, the skill will ask whether to
+    skip external review and fall back to mandatory self-review.
 ================================================================================
 ```
 
@@ -148,7 +150,7 @@ SESSION REPORT
 Mode:              {new | resume}
 Spec:              {spec_file}
 Planning dir:      {planning_dir}
-External review:   {enabled | disabled (no API keys)}
+External review:   {available | missing_keys (will prompt) | user_disabled}
 E2E test plan:     {enabled | disabled}
 {Resume from:      Step {N} (if resuming)}
 ================================================================================
@@ -240,15 +242,20 @@ See [section-index.md](references/section-index.md) for the SECTION_MANIFEST for
 
 ---
 
-## Step 5: External LLM Review (Optional)
+## Step 5: External LLM Review (Default + Fallback)
 
 See [external-review.md](references/external-review.md) for protocol.
 
-**Goal:** Get plan reviewed by Gemini and OpenAI for blind spots.
+**Goal:** Get the plan reviewed for blind spots — either by external LLMs (default) or, if unavailable, by a mandatory self-review pass ("2x denken").
 
-**Prerequisite:** External review enabled in config AND API keys available.
+**This step is NOT optional.** One of the three branches below must run to completion, and the marker file `{planning_dir}/external_review_state.json` must be written. Step 6 is gated on that marker.
 
-Run the review script:
+Read `external_review_status` from the session report (printed in First Actions > F). It is one of: `available`, `missing_keys`, `user_disabled`.
+
+### Branch A — `external_review_status == "available"`
+
+External review keys are present and `feedback_iterations > 0`. Run the full external review:
+
 ```bash
 uv run --project {plugin_root} {plugin_root}/scripts/llm_clients/review.py \
   --plan-file "{planning_dir}/plan.md" \
@@ -256,19 +263,14 @@ uv run --project {plugin_root} {plugin_root}/scripts/llm_clients/review.py \
   --plugin-root "{plugin_root}"
 ```
 
-This runs Gemini and OpenAI reviews **in parallel** via ThreadPoolExecutor.
+This runs Gemini and OpenAI reviews **in parallel** via ThreadPoolExecutor (OpenRouter when set, direct APIs otherwise).
 
-**If no API keys:** Print WARNING to console ("External LLM review skipped — no GEMINI_API_KEY or OPENAI_API_KEY set") and add a note in the plan.
+**Process findings:**
+1. Present both reviews to the user
+2. Integrate accepted suggestions into `plan.md`
+3. Mark each finding as addressed or declined (with reason)
 
-**If review returns feedback:**
-1. Present feedback to user
-2. Integrate valid suggestions into plan
-3. Mark feedback as addressed
-
-**Write review decisions to decision_log.md:**
-
-After processing review feedback, log each accepted or rejected finding as a decision:
-
+**Write each finding to decision_log.md** via:
 ```bash
 uv run {plugin_root}/../../shared/scripts/tools/write_decision_log.py \
   --section "External Review — {split_name}" \
@@ -279,11 +281,90 @@ uv run {plugin_root}/../../shared/scripts/tools/write_decision_log.py \
   --rejected "{if accepted: original approach | if rejected: the suggestion itself}"
 ```
 
-This ensures review-driven decisions (e.g., "add JWT custom claims for RLS", "use idempotent migrations") are visible in the decision log before build starts.
+Then go to **Step 5b**.
+
+### Branch B — `external_review_status == "missing_keys"`
+
+`feedback_iterations > 0` but no API key was found in `.env.local`. **Stop** and ask the user verbatim:
+
+> External LLM review is the recommended quality gate for this plan, but no `OPENROUTER_API_KEY` (or `GEMINI_API_KEY` / `OPENAI_API_KEY`) was found in `.env.local`.
+>
+> **Option 1 (recommended):** Add `OPENROUTER_API_KEY=...` to `.env.local` at the repo root and say "ready" — I'll re-check and run the external review.
+> **Option 2:** Skip external review. I'll fall back to a mandatory self-review ("2x denken") pass and log the opt-out in the decision log.
+>
+> Which option?
+
+Do NOT proceed until the user explicitly chooses.
+
+- **User picks Option 1:** wait for their "ready" confirmation, then re-check:
+  ```bash
+  uv run --project {plugin_root} {plugin_root}/scripts/checks/check-external-review-keys.py
+  ```
+  If `available: true`, fall into Branch A (run `review.py`, integrate, log, then Step 5b).
+  If still `false`, ask the user again (they may have edited the wrong file or forgotten to save).
+- **User picks Option 2:** run the **Self-Review Fallback** sub-block below. Capture their reason (e.g., "offline", "keys not yet provisioned") for the marker.
+
+### Branch C — `external_review_status == "user_disabled"`
+
+`feedback_iterations == 0` — explicit opt-out via config. Print:
+
+```
+External LLM review disabled via config (feedback_iterations: 0).
+Running mandatory self-review fallback ("2x denken") instead.
+```
+
+Run the **Self-Review Fallback** sub-block.
+
+### Self-Review Fallback (sub-block)
+
+This is the "2x denken" pass. Re-read `plan.md` with a critic's eye and apply this checklist. For each item, write a 1–2 sentence finding to `plan.md` under a new `## Self-Review (2x denken)` section, integrate any corrections, and log each finding to `decision_log.md`.
+
+1. **Architectural soundness:** Are there design decisions I would second-guess if I were reviewing someone else's plan? List concrete blind spots.
+2. **Section boundaries:** Is each section self-contained? Are there hidden cross-dependencies that will surface during /shipwright-build?
+3. **TDD coverage:** Does every section's test strategy validate behavior, or just implementation details?
+4. **Risk hotspots:** What's the single riskiest section? What could go wrong? Is there a mitigation in the plan?
+5. **Assumptions:** What assumptions did I make that the user did not explicitly confirm? List them and flag for user review.
+
+**Output format (append to plan.md):**
+```
+## Self-Review (2x denken)
+- **Architectural soundness:** {finding + action taken}
+- **Section boundaries:** {finding + action taken}
+- **TDD coverage:** {finding + action taken}
+- **Risk hotspots:** {finding + action taken}
+- **Assumptions:** {finding + action taken}
+- **Status:** {all clear | {N} issues corrected | {N} issues flagged for user}
+```
+
+Log each non-trivial finding to `decision_log.md` using `write_decision_log.py` with `--section "Self-Review — {split_name}"`.
+
+Then go to **Step 5b**.
+
+### Step 5b: Mark review state
+
+After exactly one branch completes, write the marker file so Step 6 can advance:
+
+```bash
+uv run --project {plugin_root} {plugin_root}/scripts/checks/mark-review-state.py \
+  --planning-dir "{planning_dir}" \
+  --status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
+  --provider "{openrouter | gemini | openai | null}" \
+  --findings-count {N} \
+  --reason "{optional reason for skip}"
+```
+
+- Branch A → `--status completed --provider {actual provider}`
+- Branch B Option 2 → `--status skipped_user_opt_out --reason "{user's reason}"`
+- Branch C → `--status skipped_config_disabled`
+
+**Checkpoint:** `{planning_dir}/external_review_state.json` exists.
 
 ---
 
 ## Step 6: Section Splitting
+
+**Gate:** Read `{planning_dir}/external_review_state.json`. If missing, STOP — Step 5 was not completed. Return to Step 5 and pick the appropriate branch. If present, proceed.
+
 
 See [section-splitting.md](references/section-splitting.md) for protocol.
 
@@ -387,7 +468,7 @@ SHIPWRIGHT-PLAN COMPLETE
 ================================================================================
 Plan:         {planning_dir}/plan.md
 Sections:     {N} sections generated
-External:     {reviewed by Gemini + OpenAI | skipped}
+Review:       {external via OpenRouter/Gemini/OpenAI | self-review fallback (user opt-out) | self-review fallback (config opt-out)}
 E2E Plan:     {generated | skipped}
 
 Section files:
@@ -409,13 +490,13 @@ Next steps:
 ## Error Handling
 
 ### Missing API Keys
-```
-Note: External LLM review skipped.
-  - GEMINI_API_KEY: {set | missing}
-  - OPENAI_API_KEY: {set | missing}
+Handled interactively in Step 5 Branch B. If no API key is detected in `.env.local`,
+the skill STOPS and asks the user whether to add a key (Option 1) or opt out into
+self-review fallback (Option 2). Never silently skipped.
 
-The plan was created without external review.
-You can add API keys and re-run to get external feedback.
+```
+Note (legacy): silent-skip behavior was removed. See Step 5 Branch B for the
+current interactive flow.
 ```
 
 ### Section Writer Failure

@@ -15,7 +15,11 @@ Detects intent (feature, change, bug), assesses complexity, runs the right amoun
 > 2. Via UserPromptSubmit hook context (automatic — `suggest_iterate.py` detects code-change intent
 >    and injects "[Shipwright] Detected: ..." context into the prompt)
 
-> **Dependencies:** `shipwright-plan` (for `review.py` external LLM review). Pin to v0.2.0+.
+> **Dependencies:** `shipwright-plan` v0.3.0+ — iterate reuses
+> `{plan_plugin_root}/scripts/llm_clients/review.py` for external LLM review
+> and `{plan_plugin_root}/scripts/checks/check-external-review-keys.py` +
+> `mark-review-state.py` for the interactive review gate introduced in plan
+> v0.3.0 (Step 5 Branch A/B/C). Medium+ iterate runs mirror the plan flow.
 
 ---
 
@@ -889,7 +893,7 @@ When metadata is incomplete:
 - **No visual-guidelines.md:** skip design check, note in ADR
 - **Browser verify fails to start:** fall back to test-only verification
 - **Code-reviewer unavailable:** self-review only, flag in ADR as "review-limited"
-- **review.py unavailable / no API key:** skip external review, note in ADR
+- **review.py unavailable / no API key + user chose skip:** Branch B Option 2 — fall back to the mandatory self-review that already ran, log the opt-out (with reason) in the iterate ADR, write `external_review_state.json` marker with `status: skipped_user_opt_out`
 - **Pipeline handoff fails:** print manual instructions + handoff file path
 - **No designs/screens/:** skip mockup comparison in design fidelity check, design_fidelity marked "degraded", note in ADR
 

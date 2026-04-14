@@ -37,6 +37,8 @@ def generate(data: ComplianceData) -> str:
     else:
         lines.extend(_quality_indicators_legacy(data))
 
+    lines.extend(_external_review_evidence(data))
+
     # Compliance artifacts
     artifact_rows = [
         "| Traceability Matrix | [traceability-matrix.md](./traceability-matrix.md) | Requirements → Work Events → Tests |",
@@ -140,6 +142,32 @@ def _project_velocity(data: ComplianceData) -> list[str]:
     if data.work_events:
         lines.append(f"- Last activity: {data.work_events[-1].timestamp[:10]}")
 
+    lines.append("")
+    return lines
+
+
+def _external_review_evidence(data: ComplianceData) -> list[str]:
+    """External LLM review audit evidence — one row per planning split.
+
+    Reads the markers written by shipwright-plan v0.3.0+ Step 5. Splits with
+    no marker are shown as "missing" so auditors can see the gap.
+    """
+    if not data.external_review_states:
+        return []
+
+    lines = [
+        "## External LLM Review Evidence",
+        "",
+        "| Split | Status | Provider | Findings | Self-review fallback | Reason |",
+        "|-------|--------|----------|----------|----------------------|--------|",
+    ]
+    for s in data.external_review_states:
+        provider = s.provider or "—"
+        fallback = "yes" if s.self_review_fallback_ran else "no"
+        reason = s.reason or "—"
+        lines.append(
+            f"| {s.split} | {s.status} | {provider} | {s.findings_count} | {fallback} | {reason} |"
+        )
     lines.append("")
     return lines
 

@@ -80,6 +80,31 @@ def is_external_review_enabled(config: dict[str, Any]) -> bool:
     return has_openrouter or has_gemini or has_openai
 
 
+def get_external_review_status(config: dict[str, Any]) -> str:
+    """Return the three-way review status for the planning session.
+
+    - "user_disabled": feedback_iterations == 0 (explicit opt-out in config).
+    - "available":    keys present AND feedback_iterations > 0 — review will run.
+    - "missing_keys": feedback_iterations > 0 but no API key in env.
+
+    The skill uses this to branch Step 5 (run review / prompt user / self-review).
+    """
+    from env import load_shipwright_env
+    load_shipwright_env()  # idempotent
+
+    ext = config.get("external_review", {})
+    if ext.get("feedback_iterations", 1) == 0:
+        return "user_disabled"
+
+    has_openrouter = bool(os.environ.get("OPENROUTER_API_KEY"))
+    has_gemini = bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
+    has_openai = bool(os.environ.get("OPENAI_API_KEY"))
+
+    if has_openrouter or has_gemini or has_openai:
+        return "available"
+    return "missing_keys"
+
+
 def is_e2e_enabled(config: dict[str, Any]) -> bool:
     """Check if E2E test plan generation is enabled."""
     return config.get("e2e_test_plan", {}).get("enabled", True)

@@ -215,6 +215,24 @@ class TestRunEvent:
 
 
 @dataclass
+class ExternalReviewState:
+    """External LLM review outcome for a planning split.
+
+    Written by shipwright-plan Step 5 (v0.3.0+) — either after running the
+    external review or after the user opted into the self-review fallback.
+    Provides audit evidence that the quality gate was considered even when
+    external review did not run.
+    """
+    split: str
+    status: str                   # completed | skipped_user_opt_out | skipped_config_disabled | missing
+    provider: str | None = None   # openrouter | gemini | openai | null
+    findings_count: int = 0
+    self_review_fallback_ran: bool = False
+    reason: str | None = None
+    timestamp: str = ""
+
+
+@dataclass
 class ComplianceData:
     project_root: Path
     # Event-sourced (primary)
@@ -232,6 +250,7 @@ class ComplianceData:
     dependencies: list[DependencyInfo] = field(default_factory=list)
     requirements: list[RequirementInfo] = field(default_factory=list)
     test_file_map: dict[str, list[str]] = field(default_factory=dict)
+    external_review_states: list[ExternalReviewState] = field(default_factory=list)
     # Known / baseline failures
     known_failures: list[KnownFailure] = field(default_factory=list)
     baseline_failure_count: int = 0
@@ -800,6 +819,50 @@ def _map_requirements_to_sections(
 # Test file mapping
 # ---------------------------------------------------------------------------
 
+def collect_external_review_states(project_root: Path) -> list[ExternalReviewState]:
+    """Scan planning/*/external_review_state.json for audit evidence.
+
+    The marker file is written by shipwright-plan v0.3.0+ Step 5 (and by
+    shipwright-iterate v0.4.0+ medium+ complexity runs). Splits without the
+    marker are reported with status="missing" so compliance can flag them.
+    """
+    planning_dir = project_root / "planning"
+    if not planning_dir.exists():
+        return []
+
+    states: list[ExternalReviewState] = []
+    for split_dir in sorted(planning_dir.iterdir()):
+        if not split_dir.is_dir():
+            continue
+        # Skip the iterate/ sub-dir — iterate runs produce run-scoped markers
+        # that are audited separately via events, not per-split RTM rows.
+        if split_dir.name == "iterate":
+            continue
+
+        marker_path = split_dir / "external_review_state.json"
+        if not marker_path.exists():
+            states.append(ExternalReviewState(split=split_dir.name, status="missing"))
+            continue
+
+        try:
+            data = json.loads(marker_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            states.append(ExternalReviewState(split=split_dir.name, status="missing"))
+            continue
+
+        states.append(ExternalReviewState(
+            split=split_dir.name,
+            status=str(data.get("status", "missing")),
+            provider=data.get("provider"),
+            findings_count=int(data.get("findings_count", 0) or 0),
+            self_review_fallback_ran=bool(data.get("self_review_fallback_ran", False)),
+            reason=data.get("reason"),
+            timestamp=str(data.get("timestamp", "")),
+        ))
+
+    return states
+
+
 def collect_test_files(project_root: Path) -> dict[str, list[str]]:
     """Scan tests/ directory and map test files to sections by path convention.
 
@@ -972,6 +1035,7 @@ def collect_all(project_root: Path) -> ComplianceData:
         dependencies=collect_dependencies(project_root),
         requirements=requirements,
         test_file_map=collect_test_files(project_root),
+        external_review_states=collect_external_review_states(project_root),
         # Known failures
         known_failures=known_failures,
         baseline_failure_count=baseline_count,

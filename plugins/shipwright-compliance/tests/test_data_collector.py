@@ -8,12 +8,14 @@ from pathlib import Path
 from scripts.lib.data_collector import (
     ComplianceData,
     DecisionEntry,
+    ExternalReviewState,
     SectionInfo,
     SplitInfo,
     collect_all,
     collect_configs,
     collect_decision_log,
     collect_dependencies,
+    collect_external_review_states,
     collect_sections,
     collect_splits,
 )
@@ -185,6 +187,76 @@ class TestCollectDependencies:
         deps = collect_dependencies(project_root)
         # No node_modules in fixture, so license should be unknown
         assert all(d.license == "unknown" for d in deps)
+
+
+class TestCollectExternalReviewStates:
+    def _seed_split(self, root: Path, split: str, marker: dict | None) -> None:
+        split_dir = root / "planning" / split
+        split_dir.mkdir(parents=True, exist_ok=True)
+        if marker is not None:
+            (split_dir / "external_review_state.json").write_text(json.dumps(marker))
+
+    def test_returns_empty_when_no_planning_dir(self, tmp_path: Path):
+        root = tmp_path / "proj"
+        root.mkdir()
+        assert collect_external_review_states(root) == []
+
+    def test_reads_completed_marker(self, tmp_path: Path):
+        root = tmp_path / "proj"
+        self._seed_split(root, "01-auth", {
+            "status": "completed",
+            "provider": "openrouter",
+            "findings_count": 5,
+            "self_review_fallback_ran": False,
+            "reason": None,
+            "timestamp": "2026-04-14T12:00:00Z",
+        })
+        states = collect_external_review_states(root)
+        assert len(states) == 1
+        s = states[0]
+        assert s.split == "01-auth"
+        assert s.status == "completed"
+        assert s.provider == "openrouter"
+        assert s.findings_count == 5
+        assert s.self_review_fallback_ran is False
+
+    def test_reads_opt_out_marker(self, tmp_path: Path):
+        root = tmp_path / "proj"
+        self._seed_split(root, "02-api", {
+            "status": "skipped_user_opt_out",
+            "provider": None,
+            "findings_count": 0,
+            "self_review_fallback_ran": True,
+            "reason": "offline demo",
+            "timestamp": "2026-04-14T13:00:00Z",
+        })
+        states = collect_external_review_states(root)
+        assert states[0].status == "skipped_user_opt_out"
+        assert states[0].reason == "offline demo"
+        assert states[0].self_review_fallback_ran is True
+
+    def test_missing_marker_reported_as_missing(self, tmp_path: Path):
+        root = tmp_path / "proj"
+        self._seed_split(root, "01-auth", marker=None)
+        states = collect_external_review_states(root)
+        assert len(states) == 1
+        assert states[0].status == "missing"
+
+    def test_skips_iterate_subdirectory(self, tmp_path: Path):
+        root = tmp_path / "proj"
+        self._seed_split(root, "01-auth", {"status": "completed"})
+        self._seed_split(root, "iterate", {"status": "completed"})
+        states = collect_external_review_states(root)
+        splits = {s.split for s in states}
+        assert splits == {"01-auth"}
+
+    def test_corrupt_marker_reported_as_missing(self, tmp_path: Path):
+        root = tmp_path / "proj"
+        split_dir = root / "planning" / "01-auth"
+        split_dir.mkdir(parents=True)
+        (split_dir / "external_review_state.json").write_text("{not valid json")
+        states = collect_external_review_states(root)
+        assert states[0].status == "missing"
 
 
 class TestCollectAll:

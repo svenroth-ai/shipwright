@@ -4,6 +4,20 @@ Consolidated protocol for: Self-Review, Full Code Review trigger, Session Handof
 
 ---
 
+## Why Self-Review is Mandatory
+
+Self-review is non-negotiable regardless of complexity or external-review
+availability. Trivial changes hide trivial mistakes; small iterations
+accumulate. This is the "2x denken" pass — re-read your own diff with a
+critic's eye before committing.
+
+- **Trivial / small complexity:** Self-Review Checklist is the only review.
+- **Medium+ complexity:** Self-Review + External LLM Review (or interactive
+  opt-out per [iteration-planning.md](iteration-planning.md) Branch B) +
+  code-reviewer subagent for large diffs.
+
+---
+
 ## Self-Review Checklist
 
 Run AFTER implementation, BEFORE commit. All change types, all complexity levels.

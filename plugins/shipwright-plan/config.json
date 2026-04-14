@@ -11,8 +11,8 @@
   "external_review": {
     "alert_if_missing": true,
     "feedback_iterations": 1,
-    "_comment_alert": "alert_if_missing: set false to skip external LLM checks silently",
-    "_comment_iterations": "feedback_iterations: number of review/integrate cycles (0 = skip external review entirely)"
+    "_comment_alert": "alert_if_missing: reserved (review is now interactive in Step 5 Branch B — never silently skipped)",
+    "_comment_iterations": "feedback_iterations: default 1 = external review is the default path. 0 = explicit opt-out; the skill then runs a mandatory self-review ('2x denken') fallback instead. If > 0 and no API key is set, the skill interactively prompts the user."
   },
   "models": {
     "gemini": "gemini-3.1-pro-preview",

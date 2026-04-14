@@ -90,20 +90,81 @@ Print the scope assessment with two options (see SKILL.md Section 8).
 
 ## External LLM Review Trigger
 
-**When:** Medium complexity (auto), or any complexity with `--review` flag.
+**Self-review is mandatory for ALL complexity levels** (see
+[iteration-reviews.md](iteration-reviews.md) — "2x denken" protocol).
+External LLM review is layered on top for medium+ complexity.
 
-### Invocation
-```bash
-uv run {plan_plugin_root}/scripts/llm_clients/review.py \
-  --mode iterate \
-  --spec-file "{iterate_spec_path}" \
-  --plan-file "{miniplan_path}" \
-  --plugin-root "{plan_plugin_root}"
-```
+### Trivial / small complexity
 
-### Handling Results
+External review is **NOT** run by default. Opt in via `--review` flag when
+invoking iterate. Fallback is always the self-review checklist in
+`iteration-reviews.md`.
+
+No `external_review_state.json` marker is written for trivial/small iterate
+runs — the self-review outcome lands in the iterate ADR.
+
+### Medium / large complexity — default external review with interactive opt-out
+
+Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
+
+1. Compute `external_review_status` via the plan plugin's helper (reuses the
+   same detector so behavior is identical):
+   ```bash
+   uv run {plan_plugin_root}/scripts/checks/check-external-review-keys.py
+   ```
+   Parse the JSON output. One of: `available`, `missing_keys`, `user_disabled`.
+
+2. **Branch A — `available`:** run external review as today.
+   ```bash
+   uv run {plan_plugin_root}/scripts/llm_clients/review.py \
+     --mode iterate \
+     --spec-file "{iterate_spec_path}" \
+     --plan-file "{miniplan_path}" \
+     --plugin-root "{plan_plugin_root}"
+   ```
+   Present findings, integrate into the mini-plan, log decisions to the
+   iterate ADR. Then write the marker (step 5 below).
+
+3. **Branch B — `missing_keys`:** STOP and ask the user verbatim:
+
+   > External LLM review is the recommended quality gate for this medium+
+   > iterate, but no `OPENROUTER_API_KEY` (or `GEMINI_API_KEY` /
+   > `OPENAI_API_KEY`) was found in `.env.local`.
+   >
+   > **Option 1 (recommended):** Add a key to `.env.local` and say "ready" —
+   > I'll re-check and run the review.
+   > **Option 2:** Skip external review. I'll rely on the mandatory
+   > self-review ("2x denken") already run in the previous step and log the
+   > opt-out in the iterate ADR.
+   >
+   > Which option?
+
+   - Option 1 → re-check via `check-external-review-keys.py`, then Branch A.
+   - Option 2 → log opt-out (with user's reason) in the iterate ADR. Self-review
+     was already completed — no second pass required.
+
+4. **Branch C — `user_disabled`:** config explicitly sets
+   `feedback_iterations: 0`. Print a notice and skip external review. Rely on
+   the mandatory self-review that already ran.
+
+5. **Write the marker** (all branches) so downstream phases and compliance
+   can see the decision:
+   ```bash
+   uv run {plan_plugin_root}/scripts/checks/mark-review-state.py \
+     --planning-dir "{iterate_planning_dir}" \
+     --status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
+     --provider "{openrouter | null}" \
+     --findings-count {N} \
+     --reason "{optional reason}"
+   ```
+   Iterate writes the marker under its run-scoped planning dir
+   (`planning/iterate/{run_id}-review-state.json` is the recommended
+   location — pass that path as `--planning-dir`).
+
+### Handling results (Branch A)
 - Parse JSON output: `reviews.gemini.feedback` + `reviews.openai.feedback`
 - Print findings summary to user
 - For high-severity findings: discuss with user before proceeding to build
 - For low/medium: note in ADR, proceed
-- If review fails/skipped: record in `degraded` array, note in ADR
+- If review fails mid-run (both providers error): fall through to Branch B
+  Option 2 flow, log in ADR with `reason: "both providers failed"`

@@ -23,7 +23,12 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from lib.config import load_global_config, is_external_review_enabled, is_e2e_enabled
+from lib.config import (
+    load_global_config,
+    is_external_review_enabled,
+    is_e2e_enabled,
+    get_external_review_status,
+)
 from lib.sections import parse_section_manifest, get_missing_sections
 
 
@@ -31,6 +36,7 @@ SESSION_STATE_FILE = "shipwright_plan_session.json"
 INTERVIEW_FILE = "shipwright_plan_interview.md"
 PLAN_FILE = "plan.md"
 E2E_PLAN_FILE = "claude-plan-e2e.md"
+REVIEW_STATE_FILE = "external_review_state.json"
 
 
 def detect_state(planning_dir: Path) -> dict:
@@ -38,6 +44,7 @@ def detect_state(planning_dir: Path) -> dict:
     interview_exists = (planning_dir / INTERVIEW_FILE).exists()
     plan_exists = (planning_dir / PLAN_FILE).exists()
     e2e_exists = (planning_dir / E2E_PLAN_FILE).exists()
+    review_state_exists = (planning_dir / REVIEW_STATE_FILE).exists()
 
     # Parse sections from plan if it exists
     sections_declared = []
@@ -51,8 +58,14 @@ def detect_state(planning_dir: Path) -> dict:
             sections_missing = get_missing_sections(planning_dir, sections_declared)
             sections_written = [s for s in sections_declared if s not in sections_missing]
 
-    # Determine resume step
-    if plan_exists and sections_declared and not sections_missing:
+    # Determine resume step.
+    # Step 5 (external review) must complete and write REVIEW_STATE_FILE before
+    # any later step can be resumed. This gate prevents silent-skip of review:
+    # if plan.md exists but the marker is missing (e.g. mid-Step-5 abort, or a
+    # pre-gate planning session), force re-entry at Step 5.
+    if plan_exists and not review_state_exists:
+        resume_step = 5  # External review gate
+    elif plan_exists and sections_declared and not sections_missing:
         resume_step = 8  # E2E or completion
     elif plan_exists and sections_declared and sections_missing:
         resume_step = 6  # Section splitting
@@ -67,6 +80,7 @@ def detect_state(planning_dir: Path) -> dict:
         "interview_exists": interview_exists,
         "plan_exists": plan_exists,
         "e2e_exists": e2e_exists,
+        "review_state_exists": review_state_exists,
         "sections_declared": sections_declared,
         "sections_written": sections_written,
         "sections_missing": sections_missing,
@@ -129,6 +143,7 @@ def main() -> int:
 
     # Load config for capabilities
     global_config = load_global_config(args.plugin_root)
+    review_status = get_external_review_status(global_config)
 
     result = {
         "success": True,
@@ -138,7 +153,9 @@ def main() -> int:
         "plugin_root": args.plugin_root,
         "resume_from_step": state["resume_step"] if not is_new else 1,
         "state": state,
-        "external_review_enabled": is_external_review_enabled(global_config),
+        "external_review_status": review_status,
+        # Compat alias: True only when keys are present AND feedback_iterations > 0.
+        "external_review_enabled": review_status == "available",
         "e2e_enabled": is_e2e_enabled(global_config),
         "session_id": args.session_id or "",
         "message": f"{'Starting new' if is_new else 'Resuming'} planning session in: {planning_dir}",
