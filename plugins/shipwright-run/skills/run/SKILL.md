@@ -140,6 +140,15 @@ Writes `shipwright_run_config.json`:
 }
 ```
 
+**Important — always pass `--profile`:** the webui Preview button (iterate 14.1)
+keys off `shipwright_run_config.json.profile` + the matching `shared/profiles/{name}.json`
+to decide whether the project can launch a dev server. Omitting `--profile` leaves
+the field null and the Preview button never appears, even for projects that
+clearly have a dev server (e.g. Next.js). When Step 2 inference returns a
+non-null profile, ALWAYS include it in the `write-config` call. For projects
+that match `supabase-nextjs` (Next.js + Supabase, or Next.js alone as the
+default), pass `--profile supabase-nextjs`.
+
 ---
 
 ## Step 5: Execute Pipeline

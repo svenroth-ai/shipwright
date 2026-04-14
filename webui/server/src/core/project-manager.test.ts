@@ -168,4 +168,112 @@ describe("ProjectManager", () => {
     const reloaded = pm.getById(p.id);
     expect(reloaded?.settings?.autonomy).toBe("autonomous");
   });
+
+  // Iterate 14.1 — hasPreviewCapability derives from
+  // shipwright_run_config.json.profile → shared/profiles/{name}.json.dev_server.command
+  // Cache keyed on run_config mtime so /api/projects list calls stay cheap.
+  describe("hasPreviewCapability (iterate 14.1)", () => {
+    function depsWithRunConfig(runConfig: unknown | null, profile: unknown | null): ProjectManagerDeps {
+      const runCfgPath = "/tmp/proj/shipwright_run_config.json";
+      const runCfgContent = runConfig === null ? null : JSON.stringify(runConfig);
+      return {
+        readFile: vi.fn(async () => "[]"),
+        writeFile: vi.fn(async () => {}),
+        existsSync: vi.fn((p: string) => {
+          if (p === runCfgPath) return runCfgContent !== null;
+          return true;
+        }),
+        mkdirSync: vi.fn(),
+        readdirSync: vi.fn(() => []),
+        statSync: vi.fn(() => ({ mtimeMs: 1000 })),
+        readFileSync: vi.fn(() => runCfgContent ?? ""),
+        loadProfile: vi.fn(() => profile as never),
+      };
+    }
+
+    it("returns false when run_config is missing", () => {
+      const deps = depsWithRunConfig(null, null);
+      const pm = new ProjectManager("/tmp/projects.json", deps);
+      expect(pm.hasPreviewCapability("/tmp/proj")).toBe(false);
+    });
+
+    it("returns false when run_config has no profile field", () => {
+      const deps = depsWithRunConfig({ status: "in_progress" }, null);
+      const pm = new ProjectManager("/tmp/projects.json", deps);
+      expect(pm.hasPreviewCapability("/tmp/proj")).toBe(false);
+    });
+
+    it("returns false when profile loads but has no dev_server.command", () => {
+      const deps = depsWithRunConfig(
+        { profile: "supabase-nextjs" },
+        { name: "supabase-nextjs" },
+      );
+      const pm = new ProjectManager("/tmp/projects.json", deps);
+      expect(pm.hasPreviewCapability("/tmp/proj")).toBe(false);
+    });
+
+    it("returns true when profile has dev_server.command", () => {
+      const deps = depsWithRunConfig(
+        { profile: "supabase-nextjs" },
+        { name: "supabase-nextjs", dev_server: { command: "npm run dev", port: 3000 } },
+      );
+      const pm = new ProjectManager("/tmp/projects.json", deps);
+      expect(pm.hasPreviewCapability("/tmp/proj")).toBe(true);
+    });
+
+    it("caches by mtime — second call does not re-read file", () => {
+      const deps = depsWithRunConfig(
+        { profile: "supabase-nextjs" },
+        { name: "supabase-nextjs", dev_server: { command: "npm run dev", port: 3000 } },
+      );
+      const pm = new ProjectManager("/tmp/projects.json", deps);
+      pm.hasPreviewCapability("/tmp/proj");
+      pm.hasPreviewCapability("/tmp/proj");
+      pm.hasPreviewCapability("/tmp/proj");
+      // Three calls, but readFileSync should only hit once (cache hit on 2 + 3).
+      expect((deps.readFileSync as any).mock.calls.length).toBe(1);
+    });
+
+    it("re-reads when mtime changes", () => {
+      const deps = depsWithRunConfig(
+        { profile: "supabase-nextjs" },
+        { name: "supabase-nextjs", dev_server: { command: "npm run dev", port: 3000 } },
+      );
+      let mtime = 1000;
+      (deps.statSync as any) = vi.fn(() => ({ mtimeMs: mtime }));
+      const pm = new ProjectManager("/tmp/projects.json", deps);
+      pm.hasPreviewCapability("/tmp/proj");
+      mtime = 2000;
+      pm.hasPreviewCapability("/tmp/proj");
+      expect((deps.readFileSync as any).mock.calls.length).toBe(2);
+    });
+
+    it("returns false on malformed run_config JSON", () => {
+      const deps = depsWithRunConfig({}, null);
+      (deps.readFileSync as any) = vi.fn(() => "{not json");
+      const pm = new ProjectManager("/tmp/projects.json", deps);
+      expect(pm.hasPreviewCapability("/tmp/proj")).toBe(false);
+    });
+  });
+
+  // Iterate 14.1 — Project serialization includes hasPreview.
+  it("getById returns Project with hasPreview from profile", () => {
+    const store: Record<string, string> = {
+      "/tmp/projects.json": "[]",
+    };
+    const deps: ProjectManagerDeps = {
+      readFile: vi.fn(async (path: string) => store[path] ?? ""),
+      writeFile: vi.fn(async (path: string, data: string) => { store[path] = data; }),
+      existsSync: vi.fn((path: string) => path in store || path === "/tmp/proj" || path === "/tmp/proj/shipwright_run_config.json"),
+      mkdirSync: vi.fn(),
+      readdirSync: vi.fn(() => []),
+      statSync: vi.fn(() => ({ mtimeMs: 1 })),
+      readFileSync: vi.fn(() => JSON.stringify({ profile: "supabase-nextjs" })),
+      loadProfile: vi.fn(() => ({ name: "supabase-nextjs", dev_server: { command: "npm run dev", port: 3000 } } as never)),
+    };
+    const pm = new ProjectManager("/tmp/projects.json", deps);
+    const p = pm.create({ name: "Test", path: "/tmp/proj", profile: "default", status: "active" });
+    const reloaded = pm.getById(p.id);
+    expect(reloaded?.hasPreview).toBe(true);
+  });
 });

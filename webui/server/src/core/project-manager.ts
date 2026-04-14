@@ -1,7 +1,9 @@
 import { randomUUID } from "crypto";
+import * as fs from "fs";
 import type { Project } from "../../../client/src/types/project.js";
 import { AppError } from "../middleware/error-handler.js";
 import { getProjectMode } from "../bridge/config-reader.js";
+import { loadProfile, getProfilesDir, type ProfileConfig } from "./profile-loader.js";
 
 export interface ProjectManagerDeps {
   readFile: (path: string, encoding: string) => Promise<string>;
@@ -14,10 +16,37 @@ export interface ProjectManagerDeps {
   // which exercise persist() sequentially against an in-memory store.
   lock?: (path: string) => Promise<() => Promise<void>>;
   ensureFile?: (path: string) => void;
+  // Iterate 14.1 — preview capability detection.
+  //
+  // statSync / readFileSync are used for mtime-cached sync reads of
+  // shipwright_run_config.json and shared/profiles/{name}.json so the
+  // derivation is safe to call from hot paths like getAll(). Both are
+  // optional — if omitted (unit tests) hasPreview is derived off
+  // loadProfile + plain read, which is fine because tests control the
+  // filesystem via existsSync/readFile anyway.
+  statSync?: (path: string) => { mtimeMs: number };
+  readFileSync?: (path: string, encoding: "utf-8" | "utf8") => string;
+  loadProfile?: (profileName: string) => ProfileConfig | null;
+}
+
+/**
+ * Iterate 14.1 — preview capability cache.
+ *
+ * Key = absolute projectPath. Invalidated when the project's
+ * shipwright_run_config.json mtime changes. Avoids re-reading the file
+ * on every /api/projects list call (which touches every project).
+ *
+ * Per-instance so tests get isolation. Production has exactly one
+ * ProjectManager, so this is effectively process-global.
+ */
+interface PreviewCapEntry {
+  hasPreview: boolean;
+  mtimeMs: number;
 }
 
 export class ProjectManager {
   private projects = new Map<string, Project>();
+  private previewCapCache = new Map<string, PreviewCapEntry>();
 
   constructor(
     private registryPath: string,
@@ -63,9 +92,76 @@ export class ProjectManager {
    * read from shipwright_run_config.json on each call. Kept here (not in
    * route handlers) so every consumer — REST, SSE broadcasts, etc. —
    * sees consistent mode values without each one re-deriving.
+   *
+   * Iterate 14.1 — also injects `hasPreview` derived from the profile's
+   * dev_server.command entry. Same pattern as mode: server-derived so
+   * clients never re-derive it.
    */
   private withMode(project: Project): Project {
-    return { ...project, mode: getProjectMode(project.path) };
+    return {
+      ...project,
+      mode: getProjectMode(project.path),
+      hasPreview: this.hasPreviewCapability(project.path),
+    };
+  }
+
+  /**
+   * Iterate 14.1 — true when the project's profile (as written into
+   * shipwright_run_config.json by shipwright-run) declares a dev_server.
+   *
+   * Chain:
+   *   projectPath → shipwright_run_config.json.profile →
+   *   shared/profiles/{profile}.json.dev_server.command exists?
+   *
+   * Any missing link → false (no preview button). The cache key is
+   * projectPath, invalidated on run_config mtime change. profile-loader
+   * has its own separate mtime cache so the profile JSON is only re-read
+   * when the profile file itself changes.
+   *
+   * Public for direct use by the preview-route authorization check.
+   */
+  hasPreviewCapability(projectPath: string): boolean {
+    const runCfgPath = `${projectPath}/shipwright_run_config.json`;
+    if (!this.deps.existsSync(runCfgPath)) return false;
+
+    // Try to stat for mtime-based cache. If the injected stat helper is
+    // absent (unit tests) or stat fails, we fall through to an uncached
+    // read each call — correctness over performance in that degraded path.
+    let mtimeMs: number | null = null;
+    try {
+      const stat = (this.deps.statSync ?? fs.statSync)(runCfgPath);
+      mtimeMs = stat.mtimeMs;
+      const cached = this.previewCapCache.get(projectPath);
+      if (cached && cached.mtimeMs === mtimeMs) return cached.hasPreview;
+    } catch {
+      // fall through — uncached read
+    }
+
+    let profileName = "";
+    try {
+      const readFileSync = this.deps.readFileSync ?? fs.readFileSync;
+      const content = readFileSync(runCfgPath, "utf-8") as string;
+      const config = JSON.parse(content) as { profile?: unknown };
+      if (typeof config.profile === "string") profileName = config.profile;
+    } catch {
+      return false;
+    }
+
+    if (!profileName) {
+      if (mtimeMs !== null) {
+        this.previewCapCache.set(projectPath, { hasPreview: false, mtimeMs });
+      }
+      return false;
+    }
+
+    const loader = this.deps.loadProfile ?? ((n: string) => loadProfile(n, getProfilesDir()));
+    const profile = loader(profileName);
+    const hasPreview = Boolean(profile?.dev_server?.command);
+
+    if (mtimeMs !== null) {
+      this.previewCapCache.set(projectPath, { hasPreview, mtimeMs });
+    }
+    return hasPreview;
   }
 
   getAll(): Project[] {

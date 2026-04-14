@@ -8,11 +8,13 @@ import { FilterBar } from '../components/board/FilterBar';
 import { TaskListView } from '../components/board/TaskListView';
 import { NewIssueButton } from '../components/board/NewIssueButton';
 import { NewIssueModal } from '../components/board/NewIssueModal';
+import { PreviewButton } from '../components/board/PreviewButton';
 
 export default function KanbanPage() {
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [showNewIssue, setShowNewIssue] = useState(false);
   const { data: projects = [] } = useProjects();
+  const activeProject = projects.find((p) => p.id === activeProjectId) ?? null;
 
   // Auto-select first project when projects load and none is selected
   useEffect(() => {
@@ -47,7 +49,12 @@ export default function KanbanPage() {
           activeProjectId={activeProjectId}
           onSelect={setActiveProjectId}
         />
-        <NewIssueButton onClick={() => setShowNewIssue(true)} />
+        <div className="flex items-center gap-2">
+          {activeProject?.hasPreview === true && (
+            <PreviewButton projectId={activeProject.id} />
+          )}
+          <NewIssueButton onClick={() => setShowNewIssue(true)} />
+        </div>
       </div>
 
       {/* Filter bar */}
