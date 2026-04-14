@@ -1,8 +1,10 @@
 """Unified CLI entrypoint for the Shipwright phase verifier.
 
 Iterate 12.0 shipped ``iterate`` + ``runtime``. Iterate 12.1 added
-``project``. Iterate 12.2 adds ``design`` + ``plan``. Iterate 12.3-12.4
-will add ``build``, ``test``, ``changelog``, ``deploy``.
+``project``. Iterate 12.2 added ``design`` + ``plan``. Iterate 12.3
+adds ``build`` (canon hybrid — per-section C1/C4 + phase-level C2/C3/C5
++ check-plan Group B3/B6 preventive imports). Iterate 12.4 will add
+``test``, ``changelog``, ``deploy``.
 
 Usage:
 
@@ -43,6 +45,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from tools.verifiers import (  # noqa: E402
+    build_checks,
     design_checks,
     iterate_checks,
     plan_checks,
@@ -57,10 +60,12 @@ from tools.verifiers.common import (  # noqa: E402
 
 
 # The phases that ``--phase all`` dispatches today.
-ALL_PHASES = frozenset({"iterate", "runtime", "project", "design", "plan"})
+ALL_PHASES = frozenset({
+    "iterate", "runtime", "project", "design", "plan", "build",
+})
 
 DISPATCHABLE_PHASES = frozenset({
-    "iterate", "runtime", "project", "design", "plan", "all",
+    "iterate", "runtime", "project", "design", "plan", "build", "all",
 })
 
 
@@ -90,6 +95,10 @@ def dispatch_plan(project_root: Path, run_id: str) -> list[CheckResult]:
     return plan_checks.run_all_checks(project_root, run_id=run_id)
 
 
+def dispatch_build(project_root: Path, run_id: str) -> list[CheckResult]:
+    return build_checks.run_all_checks(project_root, run_id=run_id)
+
+
 def dispatch_all(project_root: Path, run_id: str, commit: str) -> list[CheckResult]:
     out: list[CheckResult] = []
     # iterate hard-requires --run-id, so skip it in the "all" sweep when
@@ -104,6 +113,8 @@ def dispatch_all(project_root: Path, run_id: str, commit: str) -> list[CheckResu
         out.extend(dispatch_design(project_root, run_id))
     if "plan" in ALL_PHASES:
         out.extend(dispatch_plan(project_root, run_id))
+    if "build" in ALL_PHASES:
+        out.extend(dispatch_build(project_root, run_id))
     return out
 
 
@@ -147,6 +158,9 @@ def main() -> None:
     elif args.phase == "plan":
         results = dispatch_plan(project_root, args.run_id)
         title = "plan finalization"
+    elif args.phase == "build":
+        results = dispatch_build(project_root, args.run_id)
+        title = "build finalization"
     else:  # all
         results = dispatch_all(project_root, args.run_id, args.commit)
         title = f"all phases ({', '.join(sorted(ALL_PHASES))})"
