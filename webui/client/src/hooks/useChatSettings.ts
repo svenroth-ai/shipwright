@@ -9,12 +9,10 @@ export type ModelOption = 'opus' | 'sonnet' | 'haiku';
  * switch via the pill in the chat toolbar.
  */
 export type ModeOption = 'default' | 'acceptEdits' | 'plan' | 'bypassPermissions';
-export type EffortOption = 'low' | 'medium' | 'high' | 'max';
 
 export interface ChatSettings {
   model: ModelOption;
   mode: ModeOption;
-  effort: EffortOption;
 }
 
 /**
@@ -32,9 +30,8 @@ function migrateMode(raw: unknown): ModeOption {
 export function useChatSettings() {
   const [model, setModel] = useLocalStorage<ModelOption>('chat-model', 'sonnet');
   const [rawMode, setRawMode] = useLocalStorage<ModeOption>('chat-mode', 'bypassPermissions');
-  const [effort, setEffort] = useLocalStorage<EffortOption>('chat-effort', 'medium');
 
   const mode = migrateMode(rawMode);
 
-  return { model, setModel, mode, setMode: setRawMode, effort, setEffort };
+  return { model, setModel, mode, setMode: setRawMode };
 }

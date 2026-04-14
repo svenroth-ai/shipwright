@@ -13,7 +13,7 @@ interface CreateTaskParams {
 
 export function useCreateTask() {
   const queryClient = useQueryClient();
-  const { mode, model, effort } = useChatSettings();
+  const { mode, model } = useChatSettings();
 
   const mutation = useMutation({
     mutationFn: ({ projectId, title, description = '', startImmediately = true, phase }: CreateTaskParams) =>
@@ -23,7 +23,6 @@ export function useCreateTask() {
         startImmediately,
         mode,
         model,
-        effort,
         ...(phase ? { phase } : {}),
       }),
     onSuccess: (_data, variables) => {

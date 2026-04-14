@@ -11,7 +11,6 @@ export interface ChatSendPayload {
   images?: Array<{ media_type: string; data: string }>;
   model: string;
   mode: string;
-  effort: string;
   autonomy: string;
 }
 
@@ -44,7 +43,6 @@ export function ChatInput({ onSend, isStreaming, autonomy, projectId, taskId }: 
         : {}),
       model: settings.model,
       mode: settings.mode,
-      effort: settings.effort,
       autonomy,
     });
     setInput('');
@@ -140,8 +138,6 @@ export function ChatInput({ onSend, isStreaming, autonomy, projectId, taskId }: 
         setModel={settings.setModel}
         mode={settings.mode}
         setMode={settings.setMode}
-        effort={settings.effort}
-        setEffort={settings.setEffort}
         autonomy={autonomy}
         projectId={projectId}
         taskId={taskId}

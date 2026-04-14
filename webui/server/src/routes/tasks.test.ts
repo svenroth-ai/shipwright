@@ -189,7 +189,7 @@ describe("Task Routes", () => {
     expect(opts.model).toBeUndefined();
   });
 
-  it("POST /tasks wraps prompt with /think hard when effort=high", async () => {
+  it("POST /tasks ignores body.effort (CLI 2.1.1 no longer exposes thinking slash commands)", async () => {
     const { app, deps } = setup();
     await app.request("/api/projects/p1/tasks", {
       method: "POST",
@@ -197,20 +197,8 @@ describe("Task Routes", () => {
       body: JSON.stringify({ description: "Design the auth layer", effort: "high" }),
     });
     const opts = deps.governor.acquire.mock.calls[0][0];
-    expect(opts.prompt).toMatch(/^\/think hard\n\n/);
+    expect(opts.prompt).not.toMatch(/^\//);
     expect(opts.prompt).toContain("Design the auth layer");
-  });
-
-  it("POST /tasks passes prompt unchanged when effort=low", async () => {
-    const { app, deps } = setup();
-    await app.request("/api/projects/p1/tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description: "Trivial fix", effort: "low" }),
-    });
-    const opts = deps.governor.acquire.mock.calls[0][0];
-    expect(opts.prompt).not.toMatch(/^\/think/);
-    expect(opts.prompt).toContain("Trivial fix");
   });
 
   it("PATCH task status with cancelled returns updated", async () => {

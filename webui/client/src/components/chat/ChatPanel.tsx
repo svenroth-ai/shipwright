@@ -127,7 +127,6 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
         ...(payload.images ? { images: payload.images } : {}),
         model: payload.model,
         mode: payload.mode,
-        effort: payload.effort,
         autonomy: payload.autonomy,
       },
       {
