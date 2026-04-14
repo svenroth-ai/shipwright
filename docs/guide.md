@@ -368,6 +368,8 @@ Every skill works standalone. You can run `/shipwright-test` without having used
 
 Shipwright's pipeline consists of 10 phases, each handling a distinct step in the software delivery lifecycle. The phases run in sequence when you invoke the full pipeline via `/shipwright-run`, but every phase can also run as a standalone command. This chapter covers the first five phases: Orchestration, Project Decomposition, UI Design, Planning, and Implementation.
 
+**Phase finalization canon.** Every decision-taking phase runs a five-step finalization sequence at the end of its work — the **Minimum Phase Completion Canon** (C1–C5): record a `phase_completed` event, update the build dashboard, regenerate `session_handoff.md` with a canon marker, write an ADR (where applicable), and append a CHANGELOG bullet (where applicable). The unified verifier `verify_phase.py` enforces these cross-artifact invariants and runs automatically through `phase_validators.py` between phases. See [Chapter 9 — Pipeline Verifier and Phase Completion Canon](#pipeline-verifier-and-phase-completion-canon) for the full mechanics and skip criteria per phase.
+
 ---
 
 ### 4.1 Orchestration -- /shipwright-run
@@ -1273,6 +1275,43 @@ The secret scanner runs on every file write or edit and detects:
 
 It automatically skips `.env.example`, test fixtures, lock files, and vendor directories.
 
+### Pipeline Verifier and Phase Completion Canon
+
+Shipwright ships a **pipeline-wide finalization verifier** that runs after every phase to catch cross-artifact drift — the kind of failure mode where the code compiles, the tests pass, but `decision_log.md` is out of date, the `CHANGELOG` is missing a bullet, or the build dashboard still shows last week's state. The verifier lives at `shared/scripts/tools/verify_phase.py` and is dispatched automatically through `plugins/shipwright-run/scripts/lib/phase_validators.py` between phases; you can also invoke it manually.
+
+**What it checks — the Minimum Phase Completion Canon (C1–C5):**
+
+| Step | Invariant | Severity |
+|------|-----------|----------|
+| **C1** | `phase_completed` event exists in `shipwright_events.jsonl` for the phase | ERROR |
+| **C2** | `agent_docs/build_dashboard.md` mentions the phase | WARNING |
+| **C3** | `agent_docs/session_handoff.md` is fresh (canon-marker frontmatter) | WARNING |
+| **C4** | `agent_docs/decision_log.md` has an ADR referencing the phase | ERROR (decision-taking phases only) |
+| **C5** | `CHANGELOG.md [Unreleased]` has a bullet under the right category | ERROR (user-facing phases only) |
+
+Plus per-phase preventive checks: build verifies every section's test files exist on disk (**B3**) and every recorded section commit SHA is reachable via git (**B6**) — the latter catches history rewrites before they contaminate compliance. Plan verifies section manifest consistency, FR orphans, and section-id validity. Design verifies every screen in `design-manifest.md` exists and every FR is linked to at least one screen. Changelog runs two Sonder-Checks — the latest `## [vX.Y.Z]` in `CHANGELOG.md` must match an existing git tag, and the top version must match the latest `git tag --list v*`.
+
+C4 is skipped for design (transformation, not decision), test (events, not decisions), changelog (process), deploy (execution) and compliance (derived). C5 is skipped for plan (internal), test (results live in `shipwright_test_results.json`), changelog (owns its own prepend) and compliance. Severity is fixed per-check — you cannot downgrade an ERROR without touching the code.
+
+**Running it manually.** Against a Shipwright-managed project:
+
+```bash
+# All phases (omits iterate unless --run-id is given)
+uv run shared/scripts/tools/verify_phase.py --project-root . --phase all
+
+# Single phase
+uv run shared/scripts/tools/verify_phase.py --project-root . --phase build
+uv run shared/scripts/tools/verify_phase.py --project-root . --phase plan --strict
+
+# Iterate finalization (requires --run-id + --commit)
+uv run shared/scripts/tools/verify_iterate_finalization.py \
+  --run-id iterate-20260414-xxx --commit $(git rev-parse HEAD)
+```
+
+`--strict` treats warnings as errors. The exit code is 0 for green (or warnings-only without `--strict`) and 1 for any error.
+
+Full canon definition, skip criteria, and per-plugin coverage matrix live in [docs/hooks-and-pipeline.md § Minimum Phase Completion Canon](hooks-and-pipeline.md#minimum-phase-completion-canon-c1c5).
+
 ---
 
 ## 10. Generated Documentation
@@ -1526,3 +1565,17 @@ Data is stored in:
 | `/shipwright-changelog` | -- | -- | Parse Conventional Commits from git history, generate Keep-a-Changelog entries, suggest semver bump, create version tag, and open a pull request. |
 | `/shipwright-deploy` | -- | `--env prod` | Deploy to Jelastic (Infomaniak). DEV deploys automatically; PROD requires `--env prod` flag and explicit confirmation. Runs smoke test after deploy, rolls back on failure. |
 | `/shipwright-compliance` | -- | `--phase {name}` | Generate compliance reports: dashboard, RTM, test evidence, change history, and SBOM. The `--phase` flag updates reports incrementally for a specific phase. |
+
+### Verifier and Canon Helper Scripts
+
+These are invoked automatically by the pipeline but can also run standalone for audit and debugging. All live under `shared/scripts/tools/`.
+
+| Script | Purpose | Key flags |
+|--------|---------|-----------|
+| `verify_phase.py` | Unified finalization verifier. Dispatches to the per-phase verifier module in `verifiers/`. Runs automatically through `phase_validators.py` between phases. | `--project-root <path>` · `--phase iterate\|runtime\|project\|design\|plan\|build\|test\|changelog\|deploy\|all` · `--run-id <id>` (required for iterate) · `--commit <sha>` (iterate) · `--strict` (warnings → errors) |
+| `verify_iterate_finalization.py` | Backwards-compatible wrapper around `verifiers/iterate_checks.py` for the iterate finalization gate. | `--run-id <id>` · `--commit <sha>` · `--project-root <path>` · `--strict` |
+| `append_changelog_entry.py` | Atomic Keep-a-Changelog writer for canon step C5. Dedupes by entry body and holds `CHANGELOG.md.lock` via `file_lock.py` (cross-platform, 5 s timeout). | `--project-root <path>` · `--category Added\|Changed\|Fixed\|Deprecated\|Removed\|Security` · `--entry "..."` |
+| `append_phase_history.py` | Atomic read-modify-write on `shipwright_run_config.json::phase_history[<phase>]`. 50-entry retention per phase, file-lock serialised. | `--project-root <path>` · `--phase <phase>` · `--entry-json '{...}'` · `--run-id <id>` |
+| `generate_session_handoff.py` | Session-handoff writer. The `--canon-marker` flag lets phase finalization steps tag the handoff so the PostStop hook does not clobber it. | `--canon-marker` (emit YAML frontmatter with `canon_generated: true` + `run_id`) · `--phase <phase>` · `--reason "..."` · `--project-root <path>`. Requires `SHIPWRIGHT_RUN_ID` env var when `--canon-marker` is set (degrades safely with a stderr warning otherwise). |
+
+The per-phase verifier modules under `shared/scripts/tools/verifiers/` (`project_checks.py`, `design_checks.py`, `plan_checks.py`, `build_checks.py`, `test_checks.py`, `changelog_checks.py`, `deploy_checks.py`, `iterate_checks.py`, `runtime_checks.py`) share generic C1–C5 helpers and F1/F2/F3 ADR integrity checks from `common.py`. The full Canon Coverage matrix is in [docs/hooks-and-pipeline.md](hooks-and-pipeline.md#canon-coverage--iterate-12-final-state).
