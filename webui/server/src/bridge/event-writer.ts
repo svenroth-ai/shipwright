@@ -130,6 +130,30 @@ export async function emitTaskUpdatedEvent(
   return event;
 }
 
+export async function emitTaskOrphanedEvent(
+  filePath: string,
+  taskId: string,
+  projectId: string,
+  reason: string,
+  deps: WriterDeps,
+): Promise<ShipwrightEvent> {
+  // Iterate 12.0b: emitted by the heartbeat reconciler and by the
+  // startup reconciliation loop when a task is still "running" in the
+  // event store but its Claude process is gone. `reason` distinguishes
+  // the source so we can audit the event log: "process_dead" from
+  // heartbeat, "stale_on_startup" from the startup loop.
+  const event: ShipwrightEvent = {
+    type: "task_orphaned",
+    timestamp: new Date().toISOString(),
+    task_id: taskId,
+    project_id: projectId,
+    detail: reason,
+    source: "webui",
+  };
+  await appendEvent(filePath, event, deps);
+  return event;
+}
+
 export async function emitWorkFailedEvent(
   filePath: string,
   taskId: string,

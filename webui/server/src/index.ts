@@ -34,6 +34,7 @@ import {
   emitTaskUpdatedEvent,
   emitWorkCompletedEvent,
   emitWorkFailedEvent,
+  emitTaskOrphanedEvent,
 } from "./bridge/event-writer.js";
 
 import { createProjectRoutes } from "./routes/projects.js";
@@ -264,16 +265,12 @@ if (isMainModule) {
       `${config.registryDir}/pids.json`
     );
 
-    // 5. Heartbeat — notifies frontend when dead process detected
-    const heartbeat = new HeartbeatScheduler(governor, governorDeps, { schedule: cron.schedule }, {
-      onDeadProcess: (taskId, projectId) => {
-        sseManager.broadcast({
-          type: "task:updated",
-          payload: { taskId, projectId },
-          timestamp: new Date().toISOString(),
-        });
-      },
-    });
+    // 5. Heartbeat construction is deferred until after projectManager +
+    // eventStore are ready (iterate 12.0b: the reconciler needs both to
+    // emit `task_orphaned` events on dead-PID detection). The binding
+    // itself is created here with `let` so the shutdown handler lower
+    // down can still .stop() it.
+    let heartbeat!: HeartbeatScheduler;
 
     // 6. Project manager
     const projectManagerDeps = {
@@ -417,9 +414,81 @@ if (isMainModule) {
     }
 
 
-    // Cleanup orphans and start heartbeat
+    // Cleanup orphans (governor-side: kill dead PIDs, clear pids.json).
     const orphanResult = await governor.cleanupOrphans();
     console.log("[boot] Orphan cleanup:", orphanResult);
+
+    // Iterate 12.0b — construct the heartbeat NOW, with a reconciler
+    // wired up to eventStore + projectManager + the event writer so
+    // dead-PID detections persist as `task_orphaned` events. The
+    // construction has to happen after projectManager is initialised
+    // (the reconciler's resolveEventsPath closes over it). The early
+    // `let` above makes the binding visible to the shutdown handler.
+    heartbeat = new HeartbeatScheduler(
+      governor,
+      governorDeps,
+      { schedule: cron.schedule },
+      {
+        onDeadProcess: (taskId, projectId) => {
+          sseManager.broadcast({
+            type: "task:updated",
+            payload: { taskId, projectId },
+            timestamp: new Date().toISOString(),
+          });
+        },
+      },
+      "*/30 * * * * *",
+      {
+        eventStore: {
+          getTaskState: (taskId) => eventStore.getTaskState(taskId),
+          addEvent: (projectId, event) => eventStore.addEvent(projectId, event),
+        },
+        resolveEventsPath: (projectId) => {
+          const proj = projectManager.getAll().find((p) => p.id === projectId);
+          return proj ? `${proj.path}/shipwright_events.jsonl` : undefined;
+        },
+        emitTaskOrphaned: (eventsPath, taskId, projectId, reason) =>
+          emitTaskOrphanedEvent(eventsPath, taskId, projectId, reason, writerDeps),
+      },
+    );
+
+    // Iterate 12.0b — startup reconciliation.
+    // MUST run AFTER `governor.cleanupOrphans()` (otherwise we'd emit
+    // false-positive orphan events for legitimately running tasks whose
+    // PID file hadn't been cleaned yet) and BEFORE `heartbeat.start()`
+    // (so the first tick sees the reconciled state). Walks every known
+    // project's event-store tasks; any task still in `running` status
+    // without a live process gets a `task_orphaned` event with reason
+    // `stale_on_startup`. Errors are logged per-task and do not block
+    // the rest of the boot sequence.
+    for (const project of projectManager.getAll()) {
+      const tasks = eventStore.getTasksForProject(project.id);
+      const eventsPath = `${project.path}/shipwright_events.jsonl`;
+      for (const task of tasks) {
+        if (task.status !== "running") continue;
+        const proc = governor.getProcess(task.id);
+        if (proc && governorDeps.isProcessRunning(proc.pid)) continue;
+        try {
+          const event = await emitTaskOrphanedEvent(
+            eventsPath,
+            task.id,
+            project.id,
+            "stale_on_startup",
+            writerDeps,
+          );
+          eventStore.addEvent(project.id, event);
+        } catch (err) {
+          console.error(JSON.stringify({
+            level: "warn",
+            message: "Startup orphan reconciliation failed",
+            taskId: task.id,
+            projectId: project.id,
+            error: String(err),
+          }));
+        }
+      }
+    }
+
     heartbeat.start();
 
     // Settings deps
