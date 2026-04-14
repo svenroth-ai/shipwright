@@ -85,7 +85,13 @@ describe('collapseAskUserQuestionRun', () => {
     expect(out.map((m) => m.id)).toEqual(['ask-toolu_1', 'res-toolu_1', 'a-Grea']);
   });
 
-  it('treats folded tool_use (toolOutput set) as resolved', () => {
+  it('still suppresses the adjacent markdown fallback when the tool_use is already folded (iterate 13.1)', () => {
+    // Regression: after the user answers via the inbox, foldToolResults
+    // sets toolOutput on the tool_use. Previously collapseAskUserQuestionRun
+    // treated "folded" as "don't open suppression window", so the markdown
+    // fallback that was hidden while pending became visible again as soon
+    // as the answer landed. Now the suppression window opens regardless of
+    // resolution state.
     const folded = msg({
       id: 'ask-toolu_1',
       type: 'tool_use',
@@ -94,10 +100,35 @@ describe('collapseAskUserQuestionRun', () => {
       toolInput: { questions: [{ question: 'pick' }] },
       toolOutput: 'Yes',
     });
-    const messages = [folded, assistant('Great, proceeding.')];
+    const messages = [
+      folded,
+      assistant("I've asked you some questions: 1. Features 2. Completion 3. Styling 4. Lists"),
+    ];
     const out = collapseAskUserQuestionRun(messages);
-    expect(out).toHaveLength(2);
-    expect(out[1].content).toBe('Great, proceeding.');
+    expect(out).toHaveLength(1);
+    expect(out[0].id).toBe('ask-toolu_1');
+  });
+
+  it('reopens rendering at the next real action after a folded + markdown run', () => {
+    // A subsequent assistant text block separated from the AskUserQuestion
+    // by a non-text message (e.g. TodoWrite) belongs to a new "turn" and
+    // must render. The suppression window closes at the TodoWrite.
+    const folded = msg({
+      id: 'ask-toolu_1',
+      type: 'tool_use',
+      toolName: 'AskUserQuestion',
+      toolUseId: 'toolu_1',
+      toolOutput: 'Yes',
+    });
+    const messages = [
+      folded,
+      assistant('fallback 1'), // suppressed
+      assistant('fallback 2'), // suppressed
+      msg({ id: 'td1', type: 'tool_use', toolName: 'TodoWrite', toolUseId: 'toolu_td1', toolInput: {} }), // closes window
+      assistant('Got it — continuing'), // rendered
+    ];
+    const out = collapseAskUserQuestionRun(messages);
+    expect(out.map((m) => m.id)).toEqual(['ask-toolu_1', 'td1', 'a-Got ']);
   });
 
   it('passes through non-AskUserQuestion tool_uses during a pending run', () => {
