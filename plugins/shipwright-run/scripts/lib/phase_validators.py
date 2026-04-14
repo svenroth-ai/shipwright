@@ -46,6 +46,8 @@ def _run_canon_checks(
             from tools.verifiers.design_checks import run_design_checks as _run
         elif phase == "plan":
             from tools.verifiers.plan_checks import run_plan_checks as _run
+        elif phase == "build":
+            from tools.verifiers.build_checks import run_build_checks as _run
         else:
             return
     except ImportError:
@@ -199,8 +201,12 @@ def _validate_plan(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
 def _validate_build(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
     """Build phase: all current-split sections complete with tests.
 
-    Uses get_build_progress() logic to check only the current split,
-    not all splits. This avoids false negatives during split-loop.
+    Uses ``collect_all_build_sections`` to check only the current
+    split, not all splits. This avoids false negatives during the
+    split-loop. Iterate 12.3 augments with the modular ``build_checks``
+    verifier (per-section C1/C4, phase-level C2/C3/C5, phase_history
+    with sections sub-array, B3 test-file existence, B6 commit
+    reachability, ADR integrity).
     """
     issues: list[dict[str, str]] = []
     build_info = collect_all_build_sections(project_root)
@@ -235,7 +241,9 @@ def _validate_build(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
         })
         return False, issues
 
-    return True, []
+    _run_canon_checks("build", project_root, issues)
+    has_ask = any(i["severity"] == "ask" for i in issues)
+    return not has_ask, issues
 
 
 def _validate_test(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
