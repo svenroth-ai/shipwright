@@ -1,4 +1,4 @@
-import { Circle, CircleDot, CircleDashed, CheckCircle2, XCircle, MinusCircle } from 'lucide-react';
+import { Circle, CircleDot, CircleDashed, CheckCircle2, XCircle, MinusCircle, Pause } from 'lucide-react';
 import type { KanbanStatus } from '../../types';
 
 const STATUS_CONFIG: Record<KanbanStatus, { icon: typeof Circle; color: string; label: string }> = {
@@ -8,6 +8,9 @@ const STATUS_CONFIG: Record<KanbanStatus, { icon: typeof Circle; color: string; 
   done: { icon: CheckCircle2, color: 'text-green-500', label: 'Done' },
   failed: { icon: XCircle, color: 'text-red-500', label: 'Failed' },
   cancelled: { icon: MinusCircle, color: 'text-gray-400', label: 'Cancelled' },
+  // Iterate 14.7.0 — status icon for the list-view rendering of
+  // interrupted tasks (the kanban TaskCard has its own pause affordance).
+  interrupted: { icon: Pause, color: 'text-amber-500', label: 'Interrupted' },
 };
 
 interface StatusIconProps {

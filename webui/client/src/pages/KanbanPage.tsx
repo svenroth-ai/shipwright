@@ -10,20 +10,43 @@ import { CreateMenu } from '../components/board/CreateMenu';
 import { NewIssueModal } from '../components/board/NewIssueModal';
 import { NewPipelineModal } from '../components/board/NewPipelineModal';
 import { PreviewButton } from '../components/board/PreviewButton';
+import { getStored, setStored } from '../lib/localStorage';
+
+// Iterate 14.7.0 — P0.3 persistence key for the active project id.
+// `null` is a valid stored value meaning "All Projects" (P0.2).
+const ACTIVE_PROJECT_STORAGE_KEY = 'shipwright.activeProjectId';
 
 export default function KanbanPage() {
-  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  // Iterate 14.7.0 — P0.3: read the last active project id from
+  // localStorage as the initial state so F5 preserves the selection.
+  // Falls back to null (All Projects), which is now a valid state
+  // after P0.2 removed the forced-redirect effect.
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(
+    () => getStored<string | null>(ACTIVE_PROJECT_STORAGE_KEY, null),
+  );
   const [showNewIssue, setShowNewIssue] = useState(false);
   const [showNewPipeline, setShowNewPipeline] = useState(false);
   const { data: projects = [] } = useProjects();
   const activeProject = projects.find((p) => p.id === activeProjectId) ?? null;
 
-  // Auto-select first project when projects load and none is selected
+  // Iterate 14.7.0 — P0.2: DO NOT auto-select first project when
+  // activeProjectId is null. Null is a valid "All Projects" state.
+  // Iterate 14.7.0 — P0.3 edge case: if the stored id no longer
+  // matches any project (project was deleted), fall back to null
+  // (All Projects). This only runs after projects load, so the
+  // initial localStorage read isn't clobbered on first mount.
   useEffect(() => {
-    if (!activeProjectId && projects.length > 0) {
-      setActiveProjectId(projects[0].id);
+    if (activeProjectId && projects.length > 0 && !projects.find((p) => p.id === activeProjectId)) {
+      setActiveProjectId(null);
     }
   }, [activeProjectId, projects]);
+
+  // Iterate 14.7.0 — P0.3: persist every selection change to
+  // localStorage so the next reload picks it back up.
+  const handleSelectProject = useCallback((id: string | null) => {
+    setActiveProjectId(id);
+    setStored(ACTIVE_PROJECT_STORAGE_KEY, id);
+  }, []);
 
   const { data: tasks = [], isLoading, isError, refetch } = useTasks(activeProjectId ?? undefined);
   const filters = useBoardFilters();
@@ -72,7 +95,7 @@ export default function KanbanPage() {
         <ProjectTabs
           projects={projects}
           activeProjectId={activeProjectId}
-          onSelect={setActiveProjectId}
+          onSelect={handleSelectProject}
         />
         <div className="flex items-center gap-2">
           {activeProject?.hasPreview === true && (

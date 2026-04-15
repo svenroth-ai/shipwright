@@ -13,13 +13,28 @@ export const DEFAULT_PHASE_TO_STATUS_MAPPING: PhaseToStatusMapping = {
 };
 
 export function deriveKanbanStatus(
-  task: { currentPhase?: string; status: TaskStatus },
+  task: {
+    currentPhase?: string;
+    status: TaskStatus;
+    orphanReason?: string;
+    claudeSessionId?: string;
+  },
   mapping: PhaseToStatusMapping
 ): KanbanStatus {
   if (task.status === "done") return "done";
   if (task.status === "failed") return "failed";
   if (task.status === "cancelled") return "cancelled";
-  if (task.status === "orphaned") return "backlog";
+
+  // Iterate 14.7.0 — split orphan into `interrupted` (resumable, server
+  // restart killed the process) vs `backlog` (not resumable: process
+  // crashed mid-turn, or we never captured a real claudeSessionId so
+  // --resume would fail).
+  if (task.status === "orphaned") {
+    if (task.orphanReason === "stale_on_startup" && task.claudeSessionId) {
+      return "interrupted";
+    }
+    return "backlog";
+  }
 
   if (task.currentPhase && mapping[task.currentPhase]) {
     return mapping[task.currentPhase];

@@ -6,7 +6,9 @@ export type EventType =
   | "work_completed"
   | "work_failed"
   | "task_cancelled"
-  | "task_orphaned";
+  | "task_orphaned"
+  | "session_captured"
+  | "task_resumed";
 
 export interface ShipwrightEvent {
   type: EventType;

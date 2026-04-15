@@ -154,6 +154,51 @@ export async function emitTaskOrphanedEvent(
   return event;
 }
 
+export async function emitSessionCapturedEvent(
+  filePath: string,
+  taskId: string,
+  projectId: string,
+  sessionId: string,
+  deps: WriterDeps,
+): Promise<ShipwrightEvent> {
+  // Iterate 14.7.0 — persists the real Claude CLI session_id (from the
+  // first `system/init` NDJSON event) so that a later server restart
+  // can `--resume <session_id>` even though the in-memory process state
+  // is gone. Fired once per task on the first capture.
+  const event: ShipwrightEvent = {
+    type: "session_captured",
+    timestamp: new Date().toISOString(),
+    task_id: taskId,
+    project_id: projectId,
+    session_id: sessionId,
+    source: "webui",
+  };
+  await appendEvent(filePath, event, deps);
+  return event;
+}
+
+export async function emitTaskResumedEvent(
+  filePath: string,
+  taskId: string,
+  projectId: string,
+  sessionId: string,
+  deps: WriterDeps,
+): Promise<ShipwrightEvent> {
+  // Iterate 14.7.0 — flips an `interrupted` task back to `running` in
+  // the event log. Emitted after a successful --resume spawn from
+  // POST /api/projects/:id/tasks/:taskId/resume.
+  const event: ShipwrightEvent = {
+    type: "task_resumed",
+    timestamp: new Date().toISOString(),
+    task_id: taskId,
+    project_id: projectId,
+    session_id: sessionId,
+    source: "webui",
+  };
+  await appendEvent(filePath, event, deps);
+  return event;
+}
+
 export async function emitWorkFailedEvent(
   filePath: string,
   taskId: string,

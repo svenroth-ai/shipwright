@@ -21,11 +21,19 @@ export function KanbanBoard({ tasks, onNewTask }: KanbanBoardProps) {
       done: [],
       failed: [],
       cancelled: [],
+      interrupted: [],
     };
 
     for (const task of tasks) {
       const bucket = buckets[task.kanbanStatus];
       if (bucket) bucket.push(task);
+    }
+
+    // Iterate 14.7.0 — interrupted tasks live visually in the
+    // "In Progress" column alongside running tasks. The TaskCard
+    // itself adds a pause icon + Resume/Cancel affordances.
+    if (buckets.interrupted.length > 0) {
+      buckets.in_progress = [...buckets.interrupted, ...buckets.in_progress];
     }
 
     return buckets;

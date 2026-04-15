@@ -36,6 +36,8 @@ import {
   emitWorkCompletedEvent,
   emitWorkFailedEvent,
   emitTaskOrphanedEvent,
+  emitSessionCapturedEvent,
+  emitTaskResumedEvent,
 } from "./bridge/event-writer.js";
 
 import { createProjectRoutes } from "./routes/projects.js";
@@ -187,6 +189,14 @@ if (isMainModule) {
     }
 
     // 3. Claude adapter with event forwarding + chat persistence + lifecycle events
+    //
+    // Iterate 14.7.0 — the onEvent callback also watches for the first
+    // `system/init` NDJSON event per task and persists the real Claude
+    // `session_id` via a `session_captured` event. This lets the resume
+    // endpoint survive a server restart (in-memory claudeSessionId is
+    // otherwise lost). We track captured taskIds in a Set so we emit
+    // at most once per process lifetime per task.
+    const capturedSessionTaskIds = new Set<string>();
     const adapter = new ClaudeAdapter(
       { spawn },
       (taskId, msg) => {
@@ -200,6 +210,40 @@ if (isMainModule) {
             projectId = proj.id;
             projectPath = proj.path;
             break;
+          }
+        }
+
+        // Iterate 14.7.0 — one-shot session_captured emission.
+        // Runs before the chat extraction / inbox paths because we want
+        // the event in the store as soon as possible; any follow-up
+        // logic that inspects task.claudeSessionId on the same turn
+        // then sees it.
+        if (
+          projectId &&
+          projectPath &&
+          !capturedSessionTaskIds.has(taskId) &&
+          (msg as { type?: string }).type === "system" &&
+          (msg as { subtype?: string }).subtype === "init"
+        ) {
+          const sid = (msg as { session_id?: unknown }).session_id;
+          if (typeof sid === "string" && sid.length > 0) {
+            capturedSessionTaskIds.add(taskId);
+            const resolvedProjectId = projectId;
+            const eventsPath = `${projectPath}/shipwright_events.jsonl`;
+            eventStore.addEvent(resolvedProjectId, {
+              type: "session_captured",
+              timestamp: new Date().toISOString(),
+              task_id: taskId,
+              project_id: resolvedProjectId,
+              session_id: sid,
+            });
+            emitSessionCapturedEvent(eventsPath, taskId, resolvedProjectId, sid, writerDeps)
+              .catch((err) => console.error(JSON.stringify({
+                level: "warn",
+                message: "session_captured persist failed",
+                taskId,
+                error: String(err),
+              })));
           }
         }
 
@@ -662,6 +706,11 @@ if (isMainModule) {
         emitWorkCompletedEvent(fp, tid, pid, writerDeps),
       emitTaskUpdatedEvent: (fp, tid, pid, fields) =>
         emitTaskUpdatedEvent(fp, tid, pid, fields, writerDeps),
+      // Iterate 14.7.0 — persist task_resumed when the resume endpoint
+      // respawns Claude via --resume. Needed so `interrupted → running`
+      // survives another restart loop (defensive: should be rare).
+      emitTaskResumedEvent: (fp, tid, pid, sid) =>
+        emitTaskResumedEvent(fp, tid, pid, sid, writerDeps),
       readGlobalSettings: async () => {
         if (!fs.existsSync(settingsPath)) return {};
         try {

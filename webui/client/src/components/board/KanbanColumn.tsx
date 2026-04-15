@@ -10,6 +10,10 @@ const COLUMN_STYLES: Record<KanbanStatus, { bg: string; headerColor: string; bor
   done: { bg: 'bg-blue-500/[0.08]', headerColor: 'text-blue-600', borderTop: 'border-t-[3px] border-blue-500', countBg: 'bg-blue-100', countColor: 'text-blue-600' },
   failed: { bg: 'bg-red-500/[0.08]', headerColor: 'text-red-600', borderTop: 'border-t-[3px] border-red-500', countBg: 'bg-red-100', countColor: 'text-red-600' },
   cancelled: { bg: 'bg-gray-500/[0.08]', headerColor: 'text-gray-500', borderTop: 'border-t-[3px] border-gray-400', countBg: 'bg-gray-100', countColor: 'text-gray-500' },
+  // Iterate 14.7.0 — interrupted tasks render inside the in_progress
+  // column visually (see KanbanBoard), so these styles are unused but
+  // required by the exhaustive KanbanStatus record type.
+  interrupted: { bg: 'bg-amber-500/[0.08]', headerColor: 'text-amber-700', borderTop: 'border-t-[3px] border-amber-600', countBg: 'bg-amber-100', countColor: 'text-amber-700' },
 };
 
 const COLUMN_LABELS: Record<string, string> = {

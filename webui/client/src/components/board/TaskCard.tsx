@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Pause } from 'lucide-react';
 import { apiPatch } from '../../lib/api';
 import { queryKeys } from '../../lib/queryKeys';
 import type { Task, KanbanStatus } from '../../types';
@@ -11,6 +12,7 @@ import { ComplexityIndicator } from './ComplexityIndicator';
 import { CardOverflowMenu } from './CardOverflowMenu';
 import { EditTaskModal } from './EditTaskModal';
 import { StartTaskButton } from './StartTaskButton';
+import { useResumeTask } from '../../hooks/useResumeTask';
 import { formatRelativeTime } from '../../lib/formatTime';
 
 interface TaskCardProps {
@@ -22,6 +24,7 @@ export function TaskCard({ task, columnStatus }: TaskCardProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
+  const resumeTask = useResumeTask();
 
   const updateStatus = useMutation({
     mutationFn: (status: string) =>
@@ -33,6 +36,11 @@ export function TaskCard({ task, columnStatus }: TaskCardProps) {
   });
 
   const isBacklog = columnStatus === 'backlog' || task.kanbanStatus === 'backlog';
+  // Iterate 14.7.0 — interrupted tasks (server restart killed the
+  // Claude process while it was running) render with a pause icon
+  // and a Resume/Cancel action row. They live visually in the
+  // in_progress column.
+  const isInterrupted = task.kanbanStatus === 'interrupted';
 
   return (
     <>
@@ -48,11 +56,23 @@ export function TaskCard({ task, columnStatus }: TaskCardProps) {
           <span className="text-sm font-semibold text-gray-900 line-clamp-2 flex-1">
             {task.title}
           </span>
-          <CardOverflowMenu
-            onClose={() => updateStatus.mutate('closed')}
-            onDelete={() => updateStatus.mutate('cancelled')}
-            onEdit={isBacklog ? () => setEditOpen(true) : undefined}
-          />
+          <div className="flex items-center gap-1">
+            {isInterrupted && (
+              <span
+                className="text-amber-500"
+                title="Task was interrupted by server restart. Click Resume to continue."
+                aria-label="Task interrupted"
+                data-testid="interrupted-pause-icon"
+              >
+                <Pause size={14} fill="currentColor" />
+              </span>
+            )}
+            <CardOverflowMenu
+              onClose={() => updateStatus.mutate('closed')}
+              onDelete={() => updateStatus.mutate('cancelled')}
+              onEdit={isBacklog ? () => setEditOpen(true) : undefined}
+            />
+          </div>
         </div>
 
         {/* Middle: phase + priority + intent + complexity */}
@@ -72,6 +92,38 @@ export function TaskCard({ task, columnStatus }: TaskCardProps) {
             <StartTaskButton projectId={task.projectId} taskId={task.id} />
           )}
         </div>
+
+        {/* Iterate 14.7.0 — Resume / Cancel action row for interrupted
+            tasks. Rendered below the existing card body so the layout
+            for running tasks is unchanged. Both buttons stop event
+            propagation to avoid navigating into the task detail page. */}
+        {isInterrupted && (
+          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
+            <button
+              type="button"
+              data-testid="resume-task-button"
+              disabled={resumeTask.isPending}
+              onClick={(e) => {
+                e.stopPropagation();
+                resumeTask.mutate({ projectId: task.projectId, taskId: task.id });
+              }}
+              className="flex-1 px-2.5 py-1 text-[11px] font-semibold text-white bg-amber-500 rounded-md hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {resumeTask.isPending ? 'Resuming…' : 'Resume'}
+            </button>
+            <button
+              type="button"
+              data-testid="cancel-interrupted-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                updateStatus.mutate('cancelled');
+              }}
+              className="flex-1 px-2.5 py-1 text-[11px] font-semibold text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
 
       <EditTaskModal
