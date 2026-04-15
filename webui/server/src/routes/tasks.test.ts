@@ -581,4 +581,110 @@ describe("Task Routes", () => {
       expect(res.status).toBe(404);
     });
   });
+
+  // Iterate 14.7.0 — resume endpoint
+  describe("POST /api/projects/:id/tasks/:taskId/resume", () => {
+    function setupResume(opts: {
+      kanbanStatus?: string;
+      claudeSessionId?: string | undefined;
+      acquireThrows?: boolean;
+    } = {}) {
+      const kanbanStatus = opts.kanbanStatus ?? "interrupted";
+      const task = {
+        id: "t1",
+        projectId: "p1",
+        description: "Interrupted task",
+        status: "orphaned" as const,
+        kanbanStatus,
+        sessionId: "s1",
+        claudeSessionId: opts.claudeSessionId,
+        orphanReason: kanbanStatus === "interrupted" ? "stale_on_startup" : undefined,
+        createdAt: "2026-01-01",
+        updatedAt: "2026-01-01",
+      };
+      const deps = {
+        taskManager: {
+          getTasksWithKanban: vi.fn(() => [task]),
+          getTaskById: vi.fn(() => task),
+        },
+        eventStore: { addEvent: vi.fn() },
+        governor: {
+          acquire: opts.acquireThrows
+            ? vi.fn(async () => { throw new Error("spawn failed"); })
+            : vi.fn(async () => ({ pid: 123, taskId: "t1" })),
+          getProcess: vi.fn(() => undefined),
+          release: vi.fn(async () => {}),
+        },
+        adapter: { terminate: vi.fn() },
+        sseManager: { broadcast: vi.fn() },
+        projectManager: { getById: vi.fn((id: string) => id === "p1" ? mockProject : undefined) },
+        emitTaskCreatedEvent: vi.fn(async () => ({})),
+        emitTaskResumedEvent: vi.fn(async () => ({})),
+      } as any;
+      const app = new Hono();
+      app.onError(errorHandler);
+      app.route("/", createTaskRoutes(deps));
+      return { app, deps };
+    }
+
+    it("happy path: 202 + spawn with --resume + emit task_resumed", async () => {
+      const { app, deps } = setupResume({ claudeSessionId: "real-claude-sess-abc" });
+      const res = await app.request("/api/projects/p1/tasks/t1/resume", { method: "POST" });
+      expect(res.status).toBe(202);
+      const body = await res.json() as any;
+      expect(body.data.taskId).toBe("t1");
+      expect(body.data.status).toBe("running");
+
+      expect(deps.governor.acquire).toHaveBeenCalledTimes(1);
+      const acquireOpts = deps.governor.acquire.mock.calls[0][0];
+      expect(acquireOpts.sessionId).toBe("real-claude-sess-abc");
+      expect(acquireOpts.resumeSession).toBe(true);
+
+      expect(deps.emitTaskResumedEvent).toHaveBeenCalledTimes(1);
+      expect(deps.eventStore.addEvent).toHaveBeenCalledWith(
+        "p1",
+        expect.objectContaining({ type: "task_resumed", task_id: "t1" }),
+      );
+      expect(deps.sseManager.broadcast).toHaveBeenCalled();
+    });
+
+    it("returns 404 when task is not interrupted (e.g. still running)", async () => {
+      const { app, deps } = setupResume({
+        kanbanStatus: "in_progress",
+        claudeSessionId: "real-claude-sess-abc",
+      });
+      const res = await app.request("/api/projects/p1/tasks/t1/resume", { method: "POST" });
+      expect(res.status).toBe(404);
+      const body = await res.json() as any;
+      expect(body.error).toMatch(/not interrupted/i);
+      expect(deps.governor.acquire).not.toHaveBeenCalled();
+    });
+
+    it("returns 409 when interrupted but claudeSessionId missing (defence-in-depth)", async () => {
+      const { app, deps } = setupResume({
+        kanbanStatus: "interrupted",
+        claudeSessionId: undefined,
+      });
+      const res = await app.request("/api/projects/p1/tasks/t1/resume", { method: "POST" });
+      expect(res.status).toBe(409);
+      expect(deps.governor.acquire).not.toHaveBeenCalled();
+    });
+
+    it("returns 500 when spawn fails and does NOT emit task_resumed", async () => {
+      const { app, deps } = setupResume({
+        claudeSessionId: "real-claude-sess-abc",
+        acquireThrows: true,
+      });
+      const res = await app.request("/api/projects/p1/tasks/t1/resume", { method: "POST" });
+      expect(res.status).toBe(500);
+      expect(deps.emitTaskResumedEvent).not.toHaveBeenCalled();
+      expect(deps.eventStore.addEvent).not.toHaveBeenCalled();
+    });
+
+    it("returns 404 when project not found", async () => {
+      const { app } = setupResume({ claudeSessionId: "real-claude-sess-abc" });
+      const res = await app.request("/api/projects/nonexistent/tasks/t1/resume", { method: "POST" });
+      expect(res.status).toBe(404);
+    });
+  });
 });

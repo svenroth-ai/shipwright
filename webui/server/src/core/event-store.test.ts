@@ -131,6 +131,67 @@ describe("EventStore", () => {
     expect(store.getTaskState("ghost")).toBeUndefined();
   });
 
+  // Iterate 14.7.0 — session_captured + task_resumed + orphanReason
+  it("session_captured stores claudeSessionId on task state", () => {
+    const store = new EventStore();
+    store.replayProject("p1", [
+      makeEvent({ type: "task_created", task_id: "t1", description: "Task" }),
+      makeEvent({ type: "phase_started", task_id: "t1", phase: "build" }),
+      makeEvent({
+        type: "session_captured",
+        task_id: "t1",
+        project_id: "p1",
+        session_id: "real-claude-sess-abc",
+      }),
+    ]);
+    const task = store.getTaskState("t1");
+    expect(task?.claudeSessionId).toBe("real-claude-sess-abc");
+  });
+
+  it("task_orphaned records orphanReason from event detail", () => {
+    const store = new EventStore();
+    store.replayProject("p1", [
+      makeEvent({ type: "task_created", task_id: "t1", description: "Task" }),
+      makeEvent({ type: "phase_started", task_id: "t1", phase: "build" }),
+    ]);
+    store.addEvent("p1", makeEvent({
+      type: "task_orphaned",
+      task_id: "t1",
+      detail: "stale_on_startup",
+    }));
+    expect(store.getOrphanReason("t1")).toBe("stale_on_startup");
+  });
+
+  it("task_resumed flips orphaned task back to running and clears orphanReason", () => {
+    const store = new EventStore();
+    store.replayProject("p1", [
+      makeEvent({ type: "task_created", task_id: "t1", description: "Task" }),
+      makeEvent({ type: "phase_started", task_id: "t1", phase: "build" }),
+      makeEvent({
+        type: "session_captured",
+        task_id: "t1",
+        project_id: "p1",
+        session_id: "real-claude-sess-abc",
+      }),
+      makeEvent({ type: "task_orphaned", task_id: "t1", detail: "stale_on_startup" }),
+    ]);
+    expect(store.getTaskState("t1")?.status).toBe("orphaned");
+    expect(store.getOrphanReason("t1")).toBe("stale_on_startup");
+
+    store.addEvent("p1", makeEvent({
+      type: "task_resumed",
+      task_id: "t1",
+      project_id: "p1",
+      session_id: "real-claude-sess-abc",
+    }));
+
+    const task = store.getTaskState("t1");
+    expect(task?.status).toBe("running");
+    expect(store.getOrphanReason("t1")).toBeUndefined();
+    // claudeSessionId preserved (so a future interruption still resumes)
+    expect(task?.claudeSessionId).toBe("real-claude-sess-abc");
+  });
+
   it("addEvent incrementally updates state", () => {
     const store = new EventStore();
     store.replayProject("p1", [

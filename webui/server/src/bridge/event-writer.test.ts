@@ -6,6 +6,8 @@ import {
   emitTaskOrphanedEvent,
   emitTaskUpdatedEvent,
   emitWorkCompletedEvent,
+  emitSessionCapturedEvent,
+  emitTaskResumedEvent,
 } from "./event-writer.js";
 import type { WriterDeps } from "./event-writer.js";
 import type { ShipwrightEvent } from "../../../client/src/types/event.js";
@@ -178,5 +180,44 @@ describe("emitTaskUpdatedEvent", () => {
     );
     expect((event as Record<string, unknown>).title).toBeUndefined();
     expect((event as Record<string, unknown>).description).toBe("Only body");
+  });
+});
+
+// Iterate 14.7.0 — session_captured and task_resumed
+describe("emitSessionCapturedEvent", () => {
+  it("writes session_captured event with session_id payload", async () => {
+    const deps = mockDeps();
+    const event = await emitSessionCapturedEvent(
+      "events.jsonl",
+      "t1",
+      "p1",
+      "real-claude-sess-abc123",
+      deps,
+    );
+    expect(event.type).toBe("session_captured");
+    expect(event.task_id).toBe("t1");
+    expect(event.project_id).toBe("p1");
+    expect((event as Record<string, unknown>).session_id).toBe("real-claude-sess-abc123");
+    expect(deps.appended).toHaveLength(1);
+    const written = JSON.parse(deps.appended[0].trim());
+    expect(written.type).toBe("session_captured");
+    expect(written.session_id).toBe("real-claude-sess-abc123");
+  });
+});
+
+describe("emitTaskResumedEvent", () => {
+  it("writes task_resumed event with session_id", async () => {
+    const deps = mockDeps();
+    const event = await emitTaskResumedEvent(
+      "events.jsonl",
+      "t1",
+      "p1",
+      "real-claude-sess-abc123",
+      deps,
+    );
+    expect(event.type).toBe("task_resumed");
+    expect(event.task_id).toBe("t1");
+    expect((event as Record<string, unknown>).session_id).toBe("real-claude-sess-abc123");
+    expect(deps.appended).toHaveLength(1);
   });
 });

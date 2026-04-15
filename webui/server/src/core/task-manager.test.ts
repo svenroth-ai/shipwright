@@ -59,6 +59,42 @@ describe("deriveKanbanStatus", () => {
   it("status orphaned -> backlog", () => {
     expect(deriveKanbanStatus({ status: "orphaned" }, mapping)).toBe("backlog");
   });
+
+  // Iterate 14.7.0 — orphan reason split
+  it("status orphaned + stale_on_startup + claudeSessionId -> interrupted", () => {
+    expect(
+      deriveKanbanStatus(
+        {
+          status: "orphaned",
+          orphanReason: "stale_on_startup",
+          claudeSessionId: "real-claude-sess-abc",
+        },
+        mapping,
+      ),
+    ).toBe("interrupted");
+  });
+
+  it("status orphaned + stale_on_startup but no claudeSessionId -> backlog", () => {
+    expect(
+      deriveKanbanStatus(
+        { status: "orphaned", orphanReason: "stale_on_startup" },
+        mapping,
+      ),
+    ).toBe("backlog");
+  });
+
+  it("status orphaned + process_dead -> backlog (even with claudeSessionId)", () => {
+    expect(
+      deriveKanbanStatus(
+        {
+          status: "orphaned",
+          orphanReason: "process_dead",
+          claudeSessionId: "real-claude-sess-abc",
+        },
+        mapping,
+      ),
+    ).toBe("backlog");
+  });
 });
 
 describe("custom mapping", () => {

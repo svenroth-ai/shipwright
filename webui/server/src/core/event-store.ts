@@ -13,6 +13,20 @@ interface TaskStateEntry {
   intent?: string;
   priority?: string;
   sessionId: string;
+  /**
+   * Real Claude CLI `session_id` captured from the `system/init` NDJSON
+   * event. Used by the 14.7.0 resume endpoint to spawn with `--resume`.
+   * Persisted via `session_captured` events so it survives a server
+   * restart (ADR-022 mode-switch flow only had it in process memory).
+   */
+  claudeSessionId?: string;
+  /**
+   * Last `task_orphaned.detail` seen for this task. Iterate 14.7.0 uses
+   * this to split `orphaned → interrupted` (when the task was killed by
+   * a server restart and we still have a Claude session_id to resume)
+   * vs `orphaned → backlog` (process died mid-turn, nothing to resume).
+   */
+  orphanReason?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -153,10 +167,43 @@ export class EventStore {
         // the first heartbeat tick both land before the next event flush,
         // and also prevents late-arriving orphan events from clobbering a
         // legitimate work_completed / work_failed that arrived first.
+        //
+        // Iterate 14.7.0: also record the orphan `detail` on the task
+        // state so deriveKanbanStatus can distinguish `stale_on_startup`
+        // (restart-interrupted, resumable) from `process_dead` (crashed
+        // mid-turn, not resumable).
         const task = this.taskStates.get(taskId);
         if (!task) break;
         if (task.status !== "running") break;
         task.status = "orphaned";
+        task.orphanReason = typeof event.detail === "string" ? event.detail : undefined;
+        task.updatedAt = event.timestamp;
+        break;
+      }
+      case "session_captured": {
+        // Iterate 14.7.0: emitted when the Claude CLI reports its real
+        // session_id via system/init. Persisted so that a server restart
+        // can still resume the task via --resume <claudeSessionId>. The
+        // event payload carries `session_id` directly (not wrapped in
+        // meta) to match the jsonl schema used by event-writer.
+        const task = this.taskStates.get(taskId);
+        if (!task) break;
+        const sid = event.session_id;
+        if (typeof sid === "string" && sid.length > 0) {
+          task.claudeSessionId = sid;
+          task.updatedAt = event.timestamp;
+        }
+        break;
+      }
+      case "task_resumed": {
+        // Iterate 14.7.0: flipping an interrupted task back to running.
+        // Emitted by POST /api/projects/:id/tasks/:taskId/resume after
+        // a successful --resume spawn. Clears orphanReason so the derive
+        // helper doesn't misclassify the task on the next pass.
+        const task = this.taskStates.get(taskId);
+        if (!task) break;
+        task.status = "running";
+        task.orphanReason = undefined;
         task.updatedAt = event.timestamp;
         break;
       }
@@ -195,6 +242,15 @@ export class EventStore {
         ...t,
         kanbanStatus: "backlog" as const,
       }));
+  }
+
+  /**
+   * Iterate 14.7.0 — exposed so the task-manager's deriveKanbanStatus
+   * can look up the orphan reason for the `stale_on_startup` split
+   * without widening the Task shape exported to the client.
+   */
+  getOrphanReason(taskId: string): string | undefined {
+    return this.taskStates.get(taskId)?.orphanReason;
   }
 
   /**

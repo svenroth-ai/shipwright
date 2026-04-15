@@ -59,6 +59,14 @@ export interface TaskRouteDeps {
     projectId: string,
     fields: { title?: string; description?: string },
   ) => Promise<unknown>;
+  /** Iterate 14.7.0 — persist task_resumed so the resume endpoint's
+   *  status transition (interrupted → running) survives restarts. */
+  emitTaskResumedEvent?: (
+    filePath: string,
+    taskId: string,
+    projectId: string,
+    sessionId: string,
+  ) => Promise<unknown>;
   readGlobalSettings?: () => Promise<Record<string, unknown>>;
 }
 
@@ -464,6 +472,94 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
     }
 
     return c.json({ data: { taskId, startStatus } }, 202);
+  });
+
+  // Iterate 14.7.0 — resume a task that was interrupted by a server
+  // restart. Distinct from the `/mode` endpoint: that one respawns a
+  // still-running process to change permission mode, this one brings
+  // a dead process back to life using the persisted claudeSessionId.
+  //
+  // Preconditions:
+  //   - task exists for this project
+  //   - task's derived kanbanStatus === "interrupted" (so we know the
+  //     reconciliation loop tagged it as resumable, and the captured
+  //     claudeSessionId is present on task state)
+  //
+  // On success: emits `task_resumed` event, spawns Claude with
+  // `--resume <claudeSessionId>`, returns 202 with `running`.
+  app.post("/api/projects/:id/tasks/:taskId/resume", async (c) => {
+    const project = deps.projectManager.getById(c.req.param("id"));
+    if (!project) throw new AppError("Project not found", 404);
+
+    const taskId = c.req.param("taskId");
+    const mapping = await getPhaseMapping(project.settings);
+    const task = deps.taskManager.getTaskById(project.id, taskId, mapping);
+    if (!task) throw new AppError("Task not found", 404);
+
+    if (task.kanbanStatus !== "interrupted") {
+      throw new AppError("task not interrupted", 404);
+    }
+
+    const claudeSessionId = task.claudeSessionId;
+    if (!claudeSessionId) {
+      // Defence-in-depth: deriveKanbanStatus only returns "interrupted"
+      // when claudeSessionId is present, but guard anyway so a stale
+      // client-side payload can't crash the spawn path.
+      throw new AppError("task has no captured Claude session", 409);
+    }
+
+    const eventsPath = `${project.path}/shipwright_events.jsonl`;
+
+    try {
+      const result = await deps.governor.acquire({
+        projectDir: project.path,
+        projectId: project.id,
+        taskId,
+        sessionId: claudeSessionId,
+        resumeSession: true,
+        pluginDirs: project.settings?.claudePluginDirs ?? [],
+        prompt: "", // Claude has the full history from --resume
+        permissionMode: "bypassPermissions",
+      });
+
+      // Emit task_resumed to persist the transition. Do this AFTER a
+      // successful spawn so a failed governor.acquire doesn't leave a
+      // misleading "running" entry in the event log.
+      if (deps.emitTaskResumedEvent) {
+        await deps.emitTaskResumedEvent(eventsPath, taskId, project.id, claudeSessionId);
+      }
+      deps.eventStore.addEvent(project.id, {
+        type: "task_resumed",
+        timestamp: new Date().toISOString(),
+        task_id: taskId,
+        project_id: project.id,
+        session_id: claudeSessionId,
+      });
+
+      deps.sseManager.broadcast({
+        type: "task:updated",
+        payload: { taskId, projectId: project.id },
+        timestamp: new Date().toISOString(),
+      });
+
+      return c.json(
+        {
+          data: {
+            taskId,
+            status: result === "queued" ? "queued" : "running",
+          },
+        },
+        202,
+      );
+    } catch (err) {
+      console.error(JSON.stringify({
+        level: "warn",
+        message: "Task resume spawn failed",
+        taskId,
+        error: String(err),
+      }));
+      throw new AppError(`Resume failed: ${String(err)}`, 500);
+    }
   });
 
   // Iterate 10 — mid-task permission mode switching via --resume respawn.
