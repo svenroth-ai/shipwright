@@ -18,6 +18,13 @@ import type { AutonomyOption } from '../../types/settings';
 interface ChatPanelProps {
   projectId: string;
   taskId: string;
+  /**
+   * Iterate 14.7.1 — when true, scroll the chat to the newest message on
+   * mount. Set by TaskDetailPage when the URL contains `?focus=chat-bottom`
+   * (InboxPage → task navigation). Only fires once per mount; useAutoScroll
+   * continues to govern further user interaction.
+   */
+  focusBottomOnMount?: boolean;
 }
 
 /**
@@ -46,7 +53,7 @@ function dedupeMessages(messages: import('../../types').ChatMessage[]): import('
   return out;
 }
 
-export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
+export function ChatPanel({ projectId, taskId, focusBottomOnMount = false }: ChatPanelProps) {
   const { data: rawMessages = [] } = useChat(projectId, taskId);
   useRefetchChatOnResume(projectId, taskId);
   // Fold tool_result into tool_use, then dedupe result/assistant echoes,
@@ -111,6 +118,21 @@ export function ChatPanel({ projectId, taskId }: ChatPanelProps) {
 
   const { isAtBottom, scrollToBottom } = useAutoScroll(scrollRef, [messages, turn.status, awaiting]);
   const [chatError, setChatError] = useState<string | null>(null);
+
+  // Iterate 14.7.1 — Inbox → task deep-link arrives with `focusBottomOnMount`.
+  // Scroll once after the scroll container is populated. A short useEffect
+  // fires on mount; subsequent message arrivals are handled by useAutoScroll.
+  useEffect(() => {
+    if (!focusBottomOnMount) return;
+    // Wait one tick so the first render commits before measuring.
+    const id = requestAnimationFrame(() => {
+      scrollToBottom();
+    });
+    return () => cancelAnimationFrame(id);
+    // Intentionally depends only on the mount flag; message updates are
+    // handled separately by useAutoScroll.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusBottomOnMount]);
 
   const autonomy: AutonomyOption = project?.settings?.autonomy ?? globalSettings?.defaultAutonomy ?? 'guided';
 

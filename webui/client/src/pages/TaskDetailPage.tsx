@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTasks } from '../hooks/useTasks';
 import { TaskHeader } from '../components/detail/TaskHeader';
 import { PanelLayout } from '../components/detail/PanelLayout';
@@ -12,6 +12,11 @@ export default function TaskDetailPage() {
   const navigate = useNavigate();
   const { data: tasks = [], isLoading } = useTasks();
   const [editOpen, setEditOpen] = useState(false);
+  // Iterate 14.7.1 — Inbox → task navigation uses `?focus=chat-bottom` to
+  // hint that we should scroll the chat to the newest message on arrival.
+  // ChatPanel handles the actual scroll when it sees the prop set.
+  const [searchParams] = useSearchParams();
+  const focusChatBottom = searchParams.get('focus') === 'chat-bottom';
 
   const task = tasks.find((t) => t.id === taskId);
 
@@ -47,7 +52,13 @@ export default function TaskDetailPage() {
     <div className="flex flex-col h-full">
       <TaskHeader task={task} onEdit={isPending ? () => setEditOpen(true) : undefined} />
       <PanelLayout
-        leftPanel={<ChatPanel projectId={task.projectId} taskId={task.id} />}
+        leftPanel={
+          <ChatPanel
+            projectId={task.projectId}
+            taskId={task.id}
+            focusBottomOnMount={focusChatBottom}
+          />
+        }
         rightPanel={<SmartViewer projectId={task.projectId} />}
       />
       <EditTaskModal open={editOpen} onOpenChange={setEditOpen} task={task} />

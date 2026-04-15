@@ -4,6 +4,7 @@ import { X, Sparkles } from 'lucide-react';
 import type { Project } from '../../types';
 import { useCreateTask } from '../../hooks/useCreateTask';
 import { apiPost } from '../../lib/api';
+import { ModeBadge } from '../common/ModeBadge';
 
 const PHASE_OPTIONS = [
   { value: 'project', label: 'Project' },
@@ -149,6 +150,10 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
           className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-xl p-6 w-full max-w-[480px] z-50"
           onKeyDown={handleKeyDown}
         >
+          {/* Iterate 14.7.1 — diagonal mode badge pinned to the top-right of
+              the modal. Uses the currently selected project's mode; hidden
+              on the cross-project "All" tab until a project is chosen. */}
+          <ModeBadge mode={activeProject?.mode} />
           <div className="flex items-center justify-between mb-4">
             <Dialog.Title className="text-lg font-semibold text-gray-900">
               {headerTitle}

@@ -93,6 +93,24 @@ not gate tool_use on matching tool_result. Continuing generation after
 AskUserQuestion produces content that references answers the user has not
 given yet — Claude effectively hallucinates user responses.
 
+**When to use AskUserQuestion vs plain text**
+
+User-facing decision questions MUST use the `AskUserQuestion` tool, never
+markdown numbered lists or prose. Examples that REQUIRE the tool:
+- "Which approach should I take?" with multiple options
+- "Do you want X or Y?"
+- Any question where the user's answer determines the next turn's direction
+
+Examples that MAY stay in plain text:
+- Rhetorical questions while explaining reasoning
+- Clarifications within a longer explanation where no stop-and-wait is needed
+- Summary questions at the end of a report ("Does this look right?")
+
+Rationale: plain-text questions bypass the webui inbox system, so they stall
+silently — the user doesn't see them in their inbox, doesn't get a reminder,
+and has no structured options to click. Decision questions MUST route through
+AskUserQuestion to be actionable in the UI.
+
 ## Programmatic Enforcement
 
 These rules are also enforced by hooks (see `docs/hooks-and-pipeline.md`):
