@@ -482,7 +482,105 @@ describe("InboxManager — iterate 14.2 parts[] schema", () => {
     expect(writeFile).not.toHaveBeenCalled();
   });
 
-  it("loadFromDisk loads multi-part v2 entries with all parts intact", async () => {
+  // ──────────────────────────────────────────────────────────────────────
+  // Iterate 14.5 — `notBlocked` flag (setNotBlocked + roundtrip)
+  // ──────────────────────────────────────────────────────────────────────
+
+  it("setNotBlocked flips the flag and persists via rewrite", async () => {
+    const onNotify = vi.fn();
+    const governor = { getProcess: vi.fn() } as unknown as ProcessGovernor;
+    const adapter = { sendStdin: vi.fn() } as unknown as ClaudeAdapter;
+    const writeFile = vi.fn().mockResolvedValue(undefined);
+    const storageDeps = {
+      readFile: vi.fn().mockResolvedValue(""),
+      appendFile: vi.fn().mockResolvedValue(undefined),
+      writeFile,
+      existsSync: vi.fn().mockReturnValue(false),
+      mkdirSync: vi.fn(),
+    };
+    const mgr = new InboxManager(governor, adapter, onNotify, storageDeps);
+    mgr.registerProject("p1", "/tmp/project");
+
+    await mgr.addQuestion({
+      projectId: "p1",
+      taskId: "t1",
+      parts: [{ question: "Which DB?" }],
+      toolUseId: "toolu_notblocked",
+    });
+    writeFile.mockClear();
+
+    const updated = await mgr.setNotBlocked("toolu_notblocked", true);
+    expect(updated).toBeDefined();
+    expect(updated!.notBlocked).toBe(true);
+    // Rewrite triggered exactly once (persist path).
+    expect(writeFile).toHaveBeenCalledTimes(1);
+    // Rewritten line contains the notBlocked field.
+    const writtenContent = (writeFile.mock.calls[0][1] as string).trim();
+    const parsed = JSON.parse(writtenContent);
+    expect(parsed.notBlocked).toBe(true);
+  });
+
+  it("setNotBlocked on missing item returns undefined (no throw)", async () => {
+    const { mgr } = setup();
+    const result = await mgr.setNotBlocked("toolu_does_not_exist", true);
+    expect(result).toBeUndefined();
+  });
+
+  it("setNotBlocked is idempotent — already-flagged item does not rewrite", async () => {
+    const onNotify = vi.fn();
+    const governor = { getProcess: vi.fn() } as unknown as ProcessGovernor;
+    const adapter = { sendStdin: vi.fn() } as unknown as ClaudeAdapter;
+    const writeFile = vi.fn().mockResolvedValue(undefined);
+    const storageDeps = {
+      readFile: vi.fn().mockResolvedValue(""),
+      appendFile: vi.fn().mockResolvedValue(undefined),
+      writeFile,
+      existsSync: vi.fn().mockReturnValue(false),
+      mkdirSync: vi.fn(),
+    };
+    const mgr = new InboxManager(governor, adapter, onNotify, storageDeps);
+    mgr.registerProject("p1", "/tmp/project");
+
+    await mgr.addQuestion({
+      projectId: "p1",
+      taskId: "t1",
+      parts: [{ question: "Q?" }],
+      toolUseId: "toolu_idem",
+    });
+    await mgr.setNotBlocked("toolu_idem", true);
+    writeFile.mockClear();
+    await mgr.setNotBlocked("toolu_idem", true);
+    expect(writeFile).not.toHaveBeenCalled();
+  });
+
+  it("loadFromDisk round-trips the notBlocked field for v2 entries", async () => {
+    const onNotify = vi.fn();
+    const governor = { getProcess: vi.fn() } as unknown as ProcessGovernor;
+    const adapter = { sendStdin: vi.fn() } as unknown as ClaudeAdapter;
+    const persisted = {
+      id: "toolu_roundtrip",
+      projectId: "p1",
+      taskId: "t1",
+      parts: [{ question: "roundtrip?" }],
+      status: "pending",
+      createdAt: new Date().toISOString(),
+      notBlocked: true,
+    };
+    const storageDeps = {
+      readFile: vi.fn().mockResolvedValue(JSON.stringify(persisted) + "\n"),
+      appendFile: vi.fn().mockResolvedValue(undefined),
+      writeFile: vi.fn().mockResolvedValue(undefined),
+      existsSync: vi.fn().mockReturnValue(true),
+      mkdirSync: vi.fn(),
+    };
+    const mgr = new InboxManager(governor, adapter, onNotify, storageDeps);
+    await mgr.loadFromDisk("p1", "/tmp/project");
+    const loaded = mgr.getById("toolu_roundtrip");
+    expect(loaded).toBeDefined();
+    expect(loaded!.notBlocked).toBe(true);
+  });
+
+  it("loadFromDisk multi-part v2 entries with all parts intact", async () => {
     const onNotify = vi.fn();
     const governor = { getProcess: vi.fn() } as unknown as ProcessGovernor;
     const adapter = { sendStdin: vi.fn() } as unknown as ClaudeAdapter;

@@ -16,6 +16,7 @@ import { EventStore } from "./core/event-store.js";
 import { SSEManager } from "./core/sse-manager.js";
 import { ClaudeAdapter } from "./core/claude-adapter.js";
 import { isAskUserQuestion, extractContentBlocks } from "./core/ndjson-parser.js";
+import { classifyContentBlocks } from "./core/ask-user-guard.js";
 import { broadcastAndPersistChat } from "./core/chat-broadcast.js";
 import { extractAskUserPayload } from "../../client/src/lib/askUserPayload.js";
 import { ProcessGovernor } from "./core/process-governor.js";
@@ -144,6 +145,47 @@ if (isMainModule) {
       ensureFile: ensureFileExists,
     };
 
+    // Iterate 14.5 — per-task set of AskUserQuestion tool_use IDs that
+    // haven't been answered (by a matching tool_result) OR superseded (by
+    // continued generation in the same turn). When Claude ignores the
+    // constitution rule and keeps generating after AskUserQuestion we flip
+    // the item's `notBlocked` flag so AskUserCard can render an amber
+    // warning banner. Detection must live HERE (not inside inbox-manager)
+    // because 14.2's signature dedupe swallows same-signature duplicates,
+    // so the inbox manager never sees the second AskUserQuestion.
+    const pendingAskUserPerTask = new Map<string, Set<string>>();
+
+    function getPendingSet(taskId: string): Set<string> {
+      let s = pendingAskUserPerTask.get(taskId);
+      if (!s) {
+        s = new Set();
+        pendingAskUserPerTask.set(taskId, s);
+      }
+      return s;
+    }
+
+    async function flagNotBlocked(
+      toolUseId: string,
+      reason: "continued" | "turn_ended",
+    ): Promise<void> {
+      try {
+        const item = await inboxManager.setNotBlocked(toolUseId, true);
+        if (!item) return;
+        sseManager.broadcast({
+          type: "inbox:flag_not_blocked",
+          payload: { inboxItemId: item.id, toolUseId, reason },
+          timestamp: new Date().toISOString(),
+        });
+      } catch (err) {
+        console.error(JSON.stringify({
+          level: "error",
+          message: "setNotBlocked failed",
+          toolUseId,
+          error: String(err),
+        }));
+      }
+    }
+
     // 3. Claude adapter with event forwarding + chat persistence + lifecycle events
     const adapter = new ClaudeAdapter(
       { spawn },
@@ -184,11 +226,10 @@ if (isMainModule) {
         // (persistItem bails on empty projectId) and grouping by project
         // silently broke. See iterate-2026-04-13-wiring-fixes spec.
         if (projectId) {
+          // Iterate 14.2 — inbox creation pass. One inbox item per
+          // AskUserQuestion tool_use, with all questions mapped to parts[].
           for (const chatMsg of chatMessages) {
             if (chatMsg.type === "tool_use" && chatMsg.toolName === "AskUserQuestion") {
-              // Iterate 14.2 — one inbox item per tool_use, with ALL
-              // questions mapped to `parts[]`. The old read-questions[0]
-              // dropped parts 2..N silently.
               const payload = extractAskUserPayload(chatMsg.toolInput);
               if (payload.parts.length === 0) {
                 payload.parts.push({ question: "Question from Claude" });
@@ -200,6 +241,30 @@ if (isMainModule) {
                 toolUseId: chatMsg.toolUseId,
               }).catch((err) => console.error(JSON.stringify({ level: "error", message: "Inbox persist error", error: String(err) })));
             }
+          }
+
+          // Iterate 14.5 — AskUserQuestion "did Claude keep talking?" guard.
+          // Pure classifier in ./core/ask-user-guard.ts processes the ordered
+          // block batch against the current pending set and returns
+          // decisions we apply here. Runs AFTER inbox creation so the items
+          // exist when `setNotBlocked` looks them up.
+          const currentPending = pendingAskUserPerTask.get(taskId) ?? new Set<string>();
+          const decision = classifyContentBlocks(chatMessages, currentPending);
+          if (decision.register.length > 0) {
+            const set = getPendingSet(taskId);
+            for (const id of decision.register) set.add(id);
+          }
+          if (decision.resolve.length > 0) {
+            const set = pendingAskUserPerTask.get(taskId);
+            if (set) {
+              for (const id of decision.resolve) set.delete(id);
+            }
+          }
+          for (const flag of decision.flag) {
+            void flagNotBlocked(flag.toolUseId, flag.reason);
+          }
+          if (decision.turnEnded) {
+            pendingAskUserPerTask.delete(taskId);
           }
 
           // Legacy path: standalone tool_use event with AskUserQuestion.
@@ -226,6 +291,11 @@ if (isMainModule) {
       //   - CLI crashed (exitCode > 0): emit work_failed
       //   - normal exit code 0: shouldn't happen in persistent mode, treat as ok
       (taskId, projectId, exitCode) => {
+        // Iterate 14.5 — drop any dangling pending AskUserQuestion tool_use
+        // ids on exit. Flagging them as notBlocked here would be wrong
+        // (the user intentionally killed the task); just free the memory.
+        pendingAskUserPerTask.delete(taskId);
+
         const proj = projectManager.getById(projectId);
         if (!proj) return;
         const eventsPath = `${proj.path}/shipwright_events.jsonl`;

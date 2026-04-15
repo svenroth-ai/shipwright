@@ -6,8 +6,16 @@ export type SSEEventType =
   | "task:updated"
   | "inbox:new"
   | "inbox:answered"
+  | "inbox:flag_not_blocked"
   | "chat:message"
   | "pipeline:updated";
+
+/** Iterate 14.5 — payload for `inbox:flag_not_blocked` SSE broadcasts. */
+export interface InboxFlagNotBlockedPayload {
+  inboxItemId: string;
+  toolUseId: string;
+  reason: "continued" | "turn_ended";
+}
 
 export interface SSEEvent<T = unknown> {
   type: SSEEventType;

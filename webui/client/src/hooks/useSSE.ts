@@ -6,6 +6,7 @@ import { mergeCommitted } from '../lib/mergeCommitted';
 import { useTurnStatusStore, taskKeyOf, type TurnStatus } from '../stores/turnStatusStore';
 import type { SSEEventType, ChatMessageSSEPayload } from '../types';
 import type { ChatMessage } from '../types';
+import type { InboxItem } from '../types/inbox';
 
 interface SSEPayload {
   projectId?: string;
@@ -22,10 +23,54 @@ const SSE_EVENT_TYPES: SSEEventType[] = [
   'task:updated',
   'inbox:new',
   'inbox:answered',
+  'inbox:flag_not_blocked',
   'chat:message',
   'pipeline:updated',
   'project:updated',
 ];
+
+interface InboxFlagNotBlockedSSEPayload extends SSEPayload {
+  inboxItemId: string;
+  toolUseId: string;
+  reason: 'continued' | 'turn_ended';
+}
+
+/**
+ * Iterate 14.5 — patches the inbox query cache when the server reports
+ * that Claude continued generating after an AskUserQuestion. Marks the
+ * matching InboxItem as `notBlocked: true` in place so `useInboxItem()`
+ * (and AskUserCard via that hook) immediately re-renders with the amber
+ * warning banner. Falls back to a cache invalidation if the item isn't
+ * in the cache yet (rare — inbox is fetched on mount, so it usually is).
+ */
+export function handleInboxFlagNotBlocked(
+  queryClient: ReturnType<typeof useQueryClient>,
+  payload: InboxFlagNotBlockedSSEPayload,
+): void {
+  const { inboxItemId } = payload;
+  if (!inboxItemId) return;
+
+  let patched = false;
+  queryClient.setQueryData<InboxItem[]>(queryKeys.inbox.all, (prev) => {
+    if (!prev) return prev;
+    let changed = false;
+    const next = prev.map((item) => {
+      if (item.id === inboxItemId && item.notBlocked !== true) {
+        changed = true;
+        return { ...item, notBlocked: true };
+      }
+      return item;
+    });
+    if (changed) patched = true;
+    return changed ? next : prev;
+  });
+
+  // Defensive fallback: if the cache didn't contain the item we refetch
+  // so the next render still picks up the flag.
+  if (!patched) {
+    queryClient.invalidateQueries({ queryKey: queryKeys.inbox.all });
+  }
+}
 
 const TERMINAL_TASK_STATUSES = new Set(['done', 'failed', 'cancelled', 'archived']);
 
@@ -54,6 +99,7 @@ function invalidateForEvent(
       break;
     case 'inbox:new':
     case 'inbox:answered':
+    case 'inbox:flag_not_blocked':
       queryClient.invalidateQueries({ queryKey: queryKeys.inbox.all });
       break;
     case 'chat:message':
@@ -190,6 +236,14 @@ export function useSSE() {
               queryClient,
               raw as unknown as ChatMessageSSEPayload,
               graceTimers,
+            );
+            return;
+          }
+
+          if (eventType === 'inbox:flag_not_blocked') {
+            handleInboxFlagNotBlocked(
+              queryClient,
+              raw as InboxFlagNotBlockedSSEPayload,
             );
             return;
           }
