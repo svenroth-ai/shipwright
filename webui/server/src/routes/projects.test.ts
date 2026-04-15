@@ -78,6 +78,124 @@ describe("Project Routes", () => {
     expect(res.status).toBe(404);
   });
 
+  // ---- Iterate 14.4 — POST /api/projects/pipeline ----
+  describe("POST /api/projects/pipeline", () => {
+    function pipelineSetup(overrides: {
+      existingPaths?: string[];
+      hasRunConfig?: boolean;
+      pathIsDir?: boolean;
+      pathExists?: boolean;
+      profileExists?: boolean;
+      spawnFails?: boolean;
+    } = {}) {
+      const projectManager = {
+        getAll: vi.fn(() => (overrides.existingPaths ?? []).map((p, i) => ({
+          id: `existing-${i}`, name: "Existing", path: p, profile: "default",
+          status: "active", createdAt: "2026-01-01", lastActive: "2026-01-01",
+        }))),
+        getById: vi.fn(() => undefined),
+        create: vi.fn((data: any) => ({ id: "new-id", ...data, createdAt: "2026-01-01", lastActive: "2026-01-01" })),
+      } as any;
+      const fileWatcher = { watchProject: vi.fn(), unwatchProject: vi.fn() } as any;
+      const eventStore = {} as any;
+      const sseManager = { broadcast: vi.fn() } as any;
+      const fsDeps = {
+        existsSync: vi.fn((p: string) => {
+          if (p.endsWith("shipwright_run_config.json")) return overrides.hasRunConfig === true;
+          if (p.endsWith(".shipwright-webui")) return false;
+          return overrides.pathExists !== false;
+        }),
+        mkdirSync: vi.fn(),
+        writeFileSync: vi.fn(),
+        statSync: vi.fn(() => ({ isDirectory: () => overrides.pathIsDir !== false })),
+        loadProfile: vi.fn(() => overrides.profileExists !== false ? { name: "supabase-nextjs" } : null),
+        profilesDir: "/fake",
+        spawnInitialProjectPhase: vi.fn(async () => {
+          if (overrides.spawnFails) throw new Error("spawn failed");
+          return { taskId: "task-new" };
+        }),
+      };
+
+      const app = new Hono();
+      app.onError(errorHandler);
+      app.route("/", createProjectRoutes(projectManager, fileWatcher, eventStore, sseManager, fsDeps));
+      return { app, fsDeps, projectManager };
+    }
+
+    it("returns 202 on success and writes run_config + spawns task", async () => {
+      const { app, fsDeps } = pipelineSetup();
+      const res = await app.request("/api/projects/pipeline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "My App", path: "/tmp/my-app", profile: "supabase-nextjs" }),
+      });
+      expect(res.status).toBe(202);
+      const body = await res.json();
+      expect(body.data.projectId).toBe("new-id");
+      expect(body.data.taskId).toBe("task-new");
+      expect(fsDeps.writeFileSync).toHaveBeenCalled();
+      expect(fsDeps.spawnInitialProjectPhase).toHaveBeenCalled();
+      // Check run_config content
+      const writeCall = fsDeps.writeFileSync.mock.calls.find(([p]: any[]) =>
+        p.endsWith("shipwright_run_config.json"));
+      const written = JSON.parse(writeCall![1] as string);
+      expect(written.profile).toBe("supabase-nextjs");
+      expect(written.status).toBe("pending");
+      expect(written.standalone).toBe(false);
+      expect(written.pipeline).toContain("project");
+    });
+
+    it("rejects path traversal '..' segments with 400", async () => {
+      const { app } = pipelineSetup();
+      const res = await app.request("/api/projects/pipeline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "X", path: "/tmp/../etc", profile: "supabase-nextjs" }),
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 400 when target directory does not exist", async () => {
+      const { app } = pipelineSetup({ pathIsDir: false });
+      const res = await app.request("/api/projects/pipeline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "X", path: "/tmp/missing", profile: "supabase-nextjs" }),
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 409 when path is already registered", async () => {
+      const { app } = pipelineSetup({ existingPaths: ["/tmp/dup"] });
+      const res = await app.request("/api/projects/pipeline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "X", path: "/tmp/dup", profile: "supabase-nextjs" }),
+      });
+      expect(res.status).toBe(409);
+    });
+
+    it("returns 409 when run_config already exists at target", async () => {
+      const { app } = pipelineSetup({ hasRunConfig: true });
+      const res = await app.request("/api/projects/pipeline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "X", path: "/tmp/has-config", profile: "supabase-nextjs" }),
+      });
+      expect(res.status).toBe(409);
+    });
+
+    it("returns 400 when profile cannot be loaded", async () => {
+      const { app } = pipelineSetup({ profileExists: false });
+      const res = await app.request("/api/projects/pipeline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "X", path: "/tmp/x", profile: "nope" }),
+      });
+      expect(res.status).toBe(400);
+    });
+  });
+
   it("POST /api/projects initializes project directory with config files", async () => {
     const projectManager = {
       getAll: vi.fn(() => []),
