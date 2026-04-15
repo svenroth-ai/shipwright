@@ -854,13 +854,19 @@ Apply the reflection protocol (`references/reflection.md`):
 If the conversation is getting long (many tool calls, large context):
 
 ```bash
-uv run {plugin_root}/scripts/tools/generate_session_handoff.py \
+uv run {shared_root}/scripts/tools/generate_session_handoff.py \
   --project-root "$(pwd)" \
-  --section "{section_name}" \
-  --status "complete"
+  --reason "mid-build handoff: section {section_name} {complete|in_progress}"
 ```
 
-This writes `agent_docs/session_handoff.md` so the next session can resume.
+This writes `agent_docs/session_handoff.md` so the next session can
+resume. The shared writer reads `shipwright_build_config.json`
+automatically, so current split + current section + progress counts
+come from the persisted state without extra flags — only `--reason`
+is author-specific. Do NOT pass `--canon-marker` here; mid-build
+handoffs are not canon closures and must stay regeneratable by the
+Stop hook (canon marker is reserved for the split-level C3 closure
+in the finalization block above).
 
 ---
 
