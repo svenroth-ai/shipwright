@@ -45,8 +45,12 @@ export const mockInboxItems: InboxItem[] = [
     id: 'inbox-1',
     projectId: 'proj-1',
     taskId: 'task-1',
-    question: 'Which auth provider?',
-    options: ['Supabase', 'Firebase'],
+    parts: [
+      {
+        question: 'Which auth provider?',
+        options: ['Supabase', 'Firebase'],
+      },
+    ],
     status: 'pending',
     createdAt: '2026-04-10T10:02:00Z',
   },

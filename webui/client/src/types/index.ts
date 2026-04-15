@@ -1,7 +1,7 @@
 export type { Project, ProjectStatus, ProjectSettings } from "./project.js";
 export type { Task, TaskStatus, KanbanStatus, PhaseToStatusMapping } from "./task.js";
 export type { ShipwrightEvent, EventType } from "./event.js";
-export type { InboxItem, InboxStatus } from "./inbox.js";
+export type { InboxItem, InboxItemPart, InboxStatus } from "./inbox.js";
 export type { ChatMessage, ChatMessageType, NdjsonMessage } from "./chat.js";
 export type { PipelineRun, PipelinePhase, PhaseStatus } from "./pipeline.js";
 export type { SSEEvent, SSEEventType, ChatMessageSSEPayload } from "./sse.js";

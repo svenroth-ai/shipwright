@@ -1,17 +1,20 @@
 import type { ChatMessage } from "../../../client/src/types/chat.js";
+import type { InboxItemPart } from "../../../client/src/types/inbox.js";
 import { extractAskUserPayload } from "../../../client/src/lib/askUserPayload.js";
 
 /**
  * A single reconstructable inbox item extracted from chat history.
  * Used by `inbox-replay` to rehydrate pending AskUserQuestions after a
  * server restart — see iterate-2026-04-13-wiring-fixes spec for why.
+ *
+ * Iterate 14.2: switched from single question/options to full `parts[]`
+ * so multi-question AskUserQuestion tool_uses roundtrip through replay
+ * without losing parts 2..N.
  */
 export interface OrphanAskUserQuestion {
   taskId: string;
   toolUseId: string;
-  question: string;
-  context?: string;
-  options?: string[];
+  parts: InboxItemPart[];
   createdAt: string;
 }
 
@@ -46,12 +49,13 @@ export function findOrphanAskUserQuestions(
       !resolved.has(m.toolUseId)
     ) {
       const payload = extractAskUserPayload(m.toolInput);
+      const parts = payload.parts.length > 0
+        ? payload.parts
+        : [{ question: "Question from Claude" }];
       orphans.push({
         taskId: m.taskId,
         toolUseId: m.toolUseId,
-        question: payload.question || "Question from Claude",
-        context: payload.context,
-        options: payload.options,
+        parts,
         createdAt: m.timestamp,
       });
     }

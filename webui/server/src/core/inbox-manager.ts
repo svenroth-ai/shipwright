@@ -1,9 +1,10 @@
 import { randomUUID } from "crypto";
-import type { InboxItem, InboxStatus } from "../../../client/src/types/inbox.js";
+import type { InboxItem, InboxItemPart, InboxStatus } from "../../../client/src/types/inbox.js";
 import type { ChatMessage } from "../../../client/src/types/chat.js";
 import type { ProcessGovernor } from "./process-governor.js";
 import type { ClaudeAdapter } from "./claude-adapter.js";
 import { AppError } from "../middleware/error-handler.js";
+import { serializePartAnswers } from "../../../client/src/lib/askUserPayload.js";
 
 export interface InboxStoreDeps {
   readFile: (path: string, encoding: string) => Promise<string>;
@@ -47,6 +48,26 @@ function normalizeQuestion(text: string): string {
     .replace(/[^a-z0-9äöüß]/g, "");
 }
 
+/** Iterate 14.2 — dedupe signature for a multi-part item. Joins all part
+ *  questions so an item asking {A, B} collapses with another item asking
+ *  {A, B} but NOT with one asking {A, C}. */
+function inboxItemSignature(item: InboxItem): string {
+  return item.parts.map((p) => normalizeQuestion(p.question)).join("|");
+}
+
+/**
+ * Input shape for `addQuestion`. Either pass a ready-made `parts` array,
+ * OR fall back to the legacy single-question args for replay/backwards-compat.
+ * Iterate 14.2: new callers should always pass `parts`.
+ */
+export interface AddQuestionInput {
+  projectId: string;
+  taskId: string;
+  parts: InboxItemPart[];
+  toolUseId?: string;
+  createdAt?: string;
+}
+
 export class InboxManager {
   private items = new Map<string, InboxItem>();
   private storageDeps?: InboxStoreDeps;
@@ -81,16 +102,51 @@ export class InboxManager {
 
     try {
       const content = await this.storageDeps.readFile(filePath, "utf-8");
+      // Iterate 14.2 — per-line schema validation. Any entry that lacks a
+      // `parts` array is a v1 legacy entry (the old `{ question, options,
+      // answer }` shape). We skip it, count it as purged, and rewrite the
+      // file once at the end so the jsonl ends up in a clean v2 state.
+      //
+      // Rewrite does NOT wipe the whole file — it keeps every entry that
+      // survived validation. Robust against partial writes or mixed-schema
+      // files during dev.
+      let purgedCount = 0;
+      let retainedCount = 0;
       for (const line of content.split("\n")) {
         if (!line.trim()) continue;
         try {
-          const item = JSON.parse(line) as InboxItem;
-          if (item.id && item.projectId) {
-            this.items.set(item.id, item);
+          const parsed = JSON.parse(line) as unknown;
+          if (!parsed || typeof parsed !== "object") {
+            purgedCount++;
+            continue;
           }
+          const candidate = parsed as Partial<InboxItem>;
+          if (!candidate.id || !candidate.projectId) {
+            purgedCount++;
+            continue;
+          }
+          if (!Array.isArray(candidate.parts)) {
+            // v1 legacy — has `question`/`options`/`answer` at the top
+            // level. Skip entirely; user confirmed no backward-compat.
+            purgedCount++;
+            continue;
+          }
+          this.items.set(candidate.id, candidate as InboxItem);
+          retainedCount++;
         } catch {
-          // Skip malformed lines
+          // Malformed JSON line — skip but do NOT count as purge
+          // (existing behavior preserved).
         }
+      }
+
+      if (purgedCount > 0) {
+        console.warn(JSON.stringify({
+          level: "warn",
+          message: `Inbox: purged ${purgedCount} legacy entries on schema upgrade, ${retainedCount} v2 entries retained.`,
+          projectId,
+        }));
+        // Rewrite file to drop the v1 entries for good.
+        await this.rewriteProject(projectId);
       }
     } catch {
       // File read error — start fresh
@@ -142,32 +198,31 @@ export class InboxManager {
     );
   }
 
-  async addQuestion(
-    projectId: string,
-    taskId: string,
-    question: string,
-    context?: string,
-    options?: string[],
-    toolUseId?: string,
-    createdAt?: string,
-  ): Promise<InboxItem> {
-    // Iterate 11.1 — dedupe against existing PENDING items for the
-    // same task by normalized question text. Claude emits the same
-    // AskUserQuestion twice in one turn (observed in iterate-9 live
-    // test) with slightly different wording but semantically identical
-    // questions. Iterate 9's client-side `collapseAskUserQuestionRun`
-    // hides them in the chat panel, but the inbox was still showing
-    // both because each had a distinct `toolu_*` id. We dedupe at
-    // write time so the InboxPage, the inbox count, and any future
-    // consumer all see one item. First-write-wins: the existing
-    // pending item is returned unchanged, no persist, no onNotify.
-    const sig = normalizeQuestion(question);
-    if (sig) {
+  /**
+   * Iterate 14.2 — takes a full `parts` array (one per question in the
+   * underlying AskUserQuestion tool_use). Dedupes against existing pending
+   * items for the same task by the joined signature of all part questions.
+   */
+  async addQuestion(input: AddQuestionInput): Promise<InboxItem> {
+    const { projectId, taskId, parts, toolUseId, createdAt } = input;
+
+    if (!Array.isArray(parts) || parts.length === 0) {
+      throw new AppError("addQuestion requires at least one part", 400);
+    }
+
+    // Iterate 11.1 + 14.2 — dedupe against existing PENDING items for the
+    // same task by normalized signature (joined question text across all
+    // parts). Claude occasionally emits the same AskUserQuestion twice in
+    // one turn with slightly different wording but semantically identical
+    // content. First-write-wins: the existing pending item is returned
+    // unchanged, no persist, no onNotify.
+    const sig = parts.map((p) => normalizeQuestion(p.question)).join("|");
+    if (sig && sig.replace(/\|/g, "")) {
       for (const existing of this.items.values()) {
         if (
           existing.taskId === taskId &&
           existing.status === "pending" &&
-          normalizeQuestion(existing.question) === sig
+          inboxItemSignature(existing) === sig
         ) {
           return existing;
         }
@@ -182,9 +237,7 @@ export class InboxManager {
       id: toolUseId ?? randomUUID(),
       projectId,
       taskId,
-      question,
-      context,
-      options,
+      parts: parts.map((p) => ({ ...p })),
       status: "pending",
       createdAt: createdAt ?? new Date().toISOString(),
     };
@@ -194,7 +247,13 @@ export class InboxManager {
     return item;
   }
 
-  async answer(itemId: string, answerText: string): Promise<InboxItem> {
+  /**
+   * Iterate 14.2 — answer accepts a list of per-part answers indexed by
+   * `partIndex`. It fills them into the item's `parts[]`, requires ALL
+   * parts to end up answered, joins them with `serializePartAnswers`, and
+   * ships ONE tool_result to Claude CLI via the existing stdin path.
+   */
+  async answer(itemId: string, answers: Array<{ index: number; answer: string }>): Promise<InboxItem> {
     const item = this.items.get(itemId);
     if (!item) throw new AppError("Inbox item not found", 404);
     if (item.status === "answered") throw new AppError("Already answered", 400);
@@ -204,35 +263,36 @@ export class InboxManager {
       throw new AppError("Process no longer running", 400);
     }
 
-    // Iterate 11 REVERT: always deliver the answer as plain text on stdin.
-    //
-    // Iterate 7 tried to send a structured `tool_result` content block
-    // via `adapter.sendUserMessage` assuming Claude CLI was blocked on
-    // the pending `tool_use AskUserQuestion` call and would unblock on
-    // the matching `tool_result`. That assumption was WRONG for `-p` +
-    // `--input-format stream-json` mode: Claude does NOT block on
-    // tool_use, the turn just keeps generating and ends with a `result`
-    // event. By the time the user clicks answer, the conversation has
-    // moved past the tool_use, and sending a `tool_result` as the next
-    // user message violates Anthropic's API rule ("tool_result must be
-    // in user message immediately after the assistant message containing
-    // the matching tool_use"). Observed as API 400:
-    //     "unexpected tool_use_id found in tool_result blocks ...
-    //      Each tool_result block must have a corresponding tool_use
-    //      block in the previous message."
-    //
-    // Plain-text delivery avoids the API violation entirely and still
-    // reaches Claude — the model reads "Yes" / "Persönliche ToDo App"
-    // as the next user turn and continues the interview. The markdown
-    // fallback that Claude emits alongside the tool_use is out of our
-    // control server-side; iterate 9's `collapseAskUserQuestionRun`
-    // still hides it on the client.
-    this.adapter.sendStdin(proc, answerText);
+    // Write the incoming answers into their parts slots (in place).
+    const nowIso = new Date().toISOString();
+    for (const { index, answer } of answers) {
+      if (index < 0 || index >= item.parts.length) {
+        throw new AppError(`answer index ${index} out of range`, 400);
+      }
+      item.parts[index].answer = answer;
+      item.parts[index].answeredAt = nowIso;
+    }
 
-    // Mirror the answer as a synthetic `tool_result` ChatMessage in the
-    // chat-store for `toolu_`-prefixed items so the folded tool-card
-    // transitions to "Done" and the "Answered: X" state survives a
-    // refresh. Purely local UI state — does NOT hit the Anthropic API.
+    // Validate every part now has an answer (even empty string is allowed;
+    // it renders as "(skipped)" in the serialized tool_result).
+    const missing = item.parts.findIndex((p) => p.answer === undefined);
+    if (missing >= 0) {
+      throw new AppError(`part ${missing} still unanswered`, 400);
+    }
+
+    const joined = serializePartAnswers(item.parts);
+
+    // Iterate 11 REVERT: always deliver the joined answer as plain text on
+    // stdin. See the long comment on iterate 11 below for why structured
+    // tool_result content blocks fail. We still use the joined markdown
+    // format — Claude reads it as the next user turn and picks up all N
+    // answers in one go.
+    this.adapter.sendStdin(proc, joined);
+
+    // Mirror the joined answer as a synthetic `tool_result` ChatMessage in
+    // the chat-store for `toolu_`-prefixed items so the folded tool-card
+    // transitions to "Done" and the "Answered: X" state survives a refresh.
+    // Purely local UI state — does NOT hit the Anthropic API.
     if (looksLikeToolUseId(item.id)) {
       const projectDir = this.projectPaths.get(item.projectId);
       if (this.chatHooks && projectDir) {
@@ -240,17 +300,16 @@ export class InboxManager {
           id: `tool-result-${item.id}-${Date.now()}`,
           taskId: item.taskId,
           type: "tool_result",
-          content: answerText,
+          content: joined,
           toolUseId: item.id,
-          timestamp: new Date().toISOString(),
+          timestamp: nowIso,
         };
         await this.chatHooks.appendChatMessage(projectDir, item.taskId, resultMessage);
       }
     }
 
-    item.answer = answerText;
     item.status = "answered";
-    item.answeredAt = new Date().toISOString();
+    item.answeredAt = nowIso;
     await this.rewriteProject(item.projectId);
     return item;
   }

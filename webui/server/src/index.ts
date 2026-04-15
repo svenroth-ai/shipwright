@@ -184,15 +184,19 @@ if (isMainModule) {
         if (projectId) {
           for (const chatMsg of chatMessages) {
             if (chatMsg.type === "tool_use" && chatMsg.toolName === "AskUserQuestion") {
+              // Iterate 14.2 — one inbox item per tool_use, with ALL
+              // questions mapped to `parts[]`. The old read-questions[0]
+              // dropped parts 2..N silently.
               const payload = extractAskUserPayload(chatMsg.toolInput);
-              inboxManager.addQuestion(
+              if (payload.parts.length === 0) {
+                payload.parts.push({ question: "Question from Claude" });
+              }
+              inboxManager.addQuestion({
                 projectId,
                 taskId,
-                payload.question || "Question from Claude",
-                payload.context,
-                payload.options,
-                chatMsg.toolUseId,
-              ).catch((err) => console.error(JSON.stringify({ level: "error", message: "Inbox persist error", error: String(err) })));
+                parts: payload.parts,
+                toolUseId: chatMsg.toolUseId,
+              }).catch((err) => console.error(JSON.stringify({ level: "error", message: "Inbox persist error", error: String(err) })));
             }
           }
 
@@ -203,13 +207,14 @@ if (isMainModule) {
           if (isAskUserQuestion(msg) && chatMessages.length === 0) {
             const rawInput = msg.tool_input ?? (msg.message as { tool_input?: unknown } | undefined)?.tool_input;
             const payload = extractAskUserPayload(rawInput);
-            inboxManager.addQuestion(
+            if (payload.parts.length === 0) {
+              payload.parts.push({ question: "Question from Claude" });
+            }
+            inboxManager.addQuestion({
               projectId,
               taskId,
-              payload.question || "Question from Claude",
-              payload.context,
-              payload.options,
-            ).catch((err) => console.error(JSON.stringify({ level: "error", message: "Inbox persist error", error: String(err) })));
+              parts: payload.parts,
+            }).catch((err) => console.error(JSON.stringify({ level: "error", message: "Inbox persist error", error: String(err) })));
           }
         }
       },
@@ -373,15 +378,13 @@ if (isMainModule) {
               // already picked it up from inbox.jsonl). Without this guard
               // persistItem would append a duplicate line for every restart.
               if (inboxManager.getById(orphan.toolUseId)) continue;
-              await inboxManager.addQuestion(
-                project.id,
-                orphan.taskId,
-                orphan.question,
-                orphan.context,
-                orphan.options,
-                orphan.toolUseId,
-                orphan.createdAt,
-              );
+              await inboxManager.addQuestion({
+                projectId: project.id,
+                taskId: orphan.taskId,
+                parts: orphan.parts,
+                toolUseId: orphan.toolUseId,
+                createdAt: orphan.createdAt,
+              });
             }
           }
         }

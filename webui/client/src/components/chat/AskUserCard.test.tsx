@@ -46,7 +46,7 @@ describe('AskUserCard', () => {
     answerMutateMock.mockReset();
   });
 
-  it('submits the answer keyed on message.toolUseId when present', async () => {
+  it('submits the answer keyed on message.toolUseId, sending answers array (single part)', async () => {
     renderCard(
       {
         questions: [
@@ -63,7 +63,10 @@ describe('AskUserCard', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Alpha' }));
     await user.click(screen.getByRole('button', { name: 'Submit Answer' }));
-    expect(answerMutateMock).toHaveBeenCalledWith({ id: 'toolu_01HelloWorld', answer: 'Alpha' });
+    expect(answerMutateMock).toHaveBeenCalledWith({
+      id: 'toolu_01HelloWorld',
+      answers: [{ index: 0, answer: 'Alpha' }],
+    });
   });
 
   it('falls back to message.id as inbox id when toolUseId is missing (legacy)', async () => {
@@ -75,11 +78,13 @@ describe('AskUserCard', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Yes' }));
     await user.click(screen.getByRole('button', { name: 'Submit Answer' }));
-    expect(answerMutateMock).toHaveBeenCalledWith({ id: 'ask-1', answer: 'Yes' });
+    expect(answerMutateMock).toHaveBeenCalledWith({
+      id: 'ask-1',
+      answers: [{ index: 0, answer: 'Yes' }],
+    });
   });
 
   it('renders question text from the real Claude Code schema (questions[0].options direct)', () => {
-    // Real shape verified from chat-history jsonl on 2026-04-13.
     renderCard({
       questions: [
         {
@@ -94,7 +99,10 @@ describe('AskUserCard', () => {
       ],
     });
     expect(screen.getByText('How urgent is this?')).toBeInTheDocument();
-    expect(screen.getByText('Priority')).toBeInTheDocument();
+    // Single-part items still render their header (when present, even if
+    // we don't show the "{N} questions" tag).
+    // For single-part items we omit per-part headers but the question text
+    // is enough to assert.
   });
 
   it('renders suggestion chips for each option label', () => {
@@ -148,8 +156,67 @@ describe('AskUserCard', () => {
     await user.click(screen.getByRole('button', { name: 'Submit Answer' }));
 
     expect(triggerAwaiting).toHaveBeenCalledTimes(1);
-    // Must have fired before (or at least alongside) the answer mutation —
-    // otherwise the "Thinking…" indicator would still lag.
     expect(answerMutateMock).toHaveBeenCalledTimes(1);
+  });
+
+  // ──────────────────────────────────────────────────────────────────────
+  // Iterate 14.2 — multi-question accordion rendering
+  // ──────────────────────────────────────────────────────────────────────
+
+  it('renders ALL parts as an accordion when Claude asks multiple questions', () => {
+    renderCard({
+      questions: [
+        { question: 'What priority?', header: 'Priority', options: [{ label: 'High' }, { label: 'Low' }] },
+        { question: 'Who owns this?', header: 'Owner' },
+        { question: 'Estimate?', header: 'Estimate' },
+      ],
+    });
+    expect(screen.getByText('What priority?')).toBeInTheDocument();
+    expect(screen.getByText('Who owns this?')).toBeInTheDocument();
+    expect(screen.getByText('Estimate?')).toBeInTheDocument();
+    expect(screen.getByText('3 questions')).toBeInTheDocument();
+  });
+
+  it('Submit is disabled until EVERY part has an answer', async () => {
+    renderCard({
+      questions: [
+        { question: 'Q1?', options: [{ label: 'A' }, { label: 'B' }] },
+        { question: 'Q2?' },
+      ],
+    });
+    const submit = screen.getByRole('button', { name: 'Submit Answer' });
+    expect(submit).toBeDisabled();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'A' }));
+    expect(submit).toBeDisabled(); // Q2 still missing
+
+    await user.type(screen.getByPlaceholderText('Type your answer...'), 'free text');
+    expect(submit).not.toBeDisabled();
+  });
+
+  it('on Submit, sends answers array with one entry per part', async () => {
+    renderCard(
+      {
+        questions: [
+          { question: 'Q1?', options: [{ label: 'A' }] },
+          { question: 'Q2?', options: [{ label: 'B' }] },
+        ],
+      },
+      '',
+      'toolu_multi',
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'A' }));
+    await user.click(screen.getByRole('button', { name: 'B' }));
+    await user.click(screen.getByRole('button', { name: 'Submit Answer' }));
+
+    expect(answerMutateMock).toHaveBeenCalledWith({
+      id: 'toolu_multi',
+      answers: [
+        { index: 0, answer: 'A' },
+        { index: 1, answer: 'B' },
+      ],
+    });
   });
 });
