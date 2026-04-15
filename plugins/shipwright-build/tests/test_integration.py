@@ -81,13 +81,23 @@ def test_setup_and_track_section(tmp_path):
     )
     assert adr_num >= 1
 
-    # 4. Generate handoff
-    handoff_result = run_script("tools", "generate_session_handoff.py", [
-        "--project-root", str(project),
-        "--section", "01-auth",
-        "--status", "complete",
-    ])
-    assert handoff_result["success"] is True
+    # 4. Generate handoff via the shared writer (build no longer owns a
+    # local copy — the shared script reads build_config.sections
+    # automatically via get_checkpoint, so --section/--status flags are
+    # no longer needed).
+    shared_handoff = (
+        Path(__file__).resolve().parent.parent.parent.parent
+        / "shared" / "scripts" / "tools" / "generate_session_handoff.py"
+    )
+    handoff_proc = subprocess.run(
+        [
+            sys.executable, str(shared_handoff),
+            "--project-root", str(project),
+            "--reason", "mid-build handoff: section 01-auth complete",
+        ],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    assert handoff_proc.returncode == 0, handoff_proc.stderr
 
     # 5. Verify artifacts
     assert (project / "shipwright_build_config.json").exists()

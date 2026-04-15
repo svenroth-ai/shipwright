@@ -552,6 +552,20 @@ A new top-level field in `shipwright_run_config.json` parallel to
   `phase_history`.
 - Phase modules fill `phase_history` starting in iterate 12.1.
 
+#### Why two histories
+
+Shipwright intentionally keeps `iterate_history` and `phase_history`
+as separate top-level arrays in `shipwright_run_config.json`. They
+track different classes of work: iterate entries are user-invoked
+change sessions with a feature branch, PR, iterate spec file, and
+test results; phase entries are pipeline-internal execution units
+with a `phase_completed` event, canon-marker handoff, and dashboard
+update. Unifying the two schemas would either drop iterate-specific
+fields (branch, spec path, tests_passed) or force every phase entry
+to carry null columns for iterate-only attributes. Consumers that
+need a merged view should read both arrays and sort by date — the
+asymmetry is the schema, not tech-debt waiting for a migration.
+
 ### Verifier Package Layout
 
 ```

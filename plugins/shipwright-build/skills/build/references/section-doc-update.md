@@ -31,14 +31,14 @@ uv run {plugin_root}/../../shared/scripts/tools/write_decision_log.py \
 Before context limits, generate handoff:
 
 ```bash
-uv run {plugin_root}/scripts/tools/generate_session_handoff.py \
+uv run {shared_root}/scripts/tools/generate_session_handoff.py \
   --project-root "$(pwd)" \
-  --section "{section_name}" \
-  --status "{complete|in_progress}"
+  --reason "mid-build handoff: section {section_name}"
 ```
 
-This writes `agent_docs/session_handoff.md` with:
-- Current section and status
-- What's been done
-- What's remaining
-- Open questions or blockers
+This writes `agent_docs/session_handoff.md`. The shared handoff writer
+reads `shipwright_build_config.json` automatically, so the current
+split, current section, completion counts, last events, and recent
+ADRs all get populated from the persisted state — no extra flags
+needed. The `--reason` string becomes the header line so the next
+session understands at a glance why the handoff was written.

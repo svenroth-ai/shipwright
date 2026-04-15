@@ -132,23 +132,9 @@ def test_write_decision_log_creates_dir(tmp_path):
     assert (tmp_path / "agent_docs" / "decision_log.md").exists()
 
 
-def test_generate_session_handoff(tmp_path):
-    (tmp_path / "agent_docs").mkdir()
-
-    # Need to be in a git repo for handoff to work
-    subprocess.run(["git", "init", "-b", "main"], cwd=str(tmp_path),
-                    capture_output=True, encoding="utf-8")
-
-    output = run_tool("generate_session_handoff.py", [
-        "--project-root", str(tmp_path),
-        "--section", "01-auth",
-        "--status", "in_progress",
-    ])
-
-    assert output["success"] is True
-    handoff = (tmp_path / "agent_docs" / "session_handoff.md").read_text(encoding="utf-8")
-    assert "01-auth" in handoff
-    assert "in_progress" in handoff
+# Session handoff tests live in shared/tests/test_generate_session_handoff.py
+# (build plugin now calls shared/scripts/tools/generate_session_handoff.py
+# instead of maintaining its own copy).
 
 
 # --- Design fidelity integration tests ---
