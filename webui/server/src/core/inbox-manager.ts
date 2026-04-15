@@ -314,6 +314,32 @@ export class InboxManager {
     return item;
   }
 
+  /**
+   * Iterate 14.5 — mark an inbox item as `notBlocked`. Called by the
+   * SSE-handler in index.ts when Claude continues generating after an
+   * AskUserQuestion without waiting for the user's answer, or when the
+   * turn ends before a matching tool_result arrives. First-write-wins:
+   * flipping an already-flagged item is a no-op to avoid redundant
+   * rewrites. Persists the mutation to inbox.jsonl so the flag survives
+   * a server restart or page reload.
+   *
+   * Lives on InboxManager instead of inside `addQuestion` because 14.2's
+   * dedupe swallows second AskUserQuestions in the same turn — the inbox
+   * manager never sees them. Detection has to live in the SSE handler
+   * which tracks per-turn pending tool_use IDs and calls us back here.
+   */
+  async setNotBlocked(itemId: string, value: boolean): Promise<InboxItem | undefined> {
+    const item = this.items.get(itemId);
+    if (!item) return undefined;
+    if (item.notBlocked === value) return item;
+    item.notBlocked = value;
+    // Persist via rewrite — same pattern as `answer()`. A line-in-place
+    // patch would be nicer but the jsonl layout doesn't make that trivial
+    // and rewrite is already the existing mutation-persist pattern.
+    await this.rewriteProject(item.projectId);
+    return item;
+  }
+
   getAll(filter?: { status?: InboxStatus }): InboxItem[] {
     let items = Array.from(this.items.values());
     if (filter?.status) {

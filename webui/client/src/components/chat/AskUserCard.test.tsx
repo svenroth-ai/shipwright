@@ -7,9 +7,12 @@ import { ChatAwaitingContext } from '../../contexts/ChatAwaitingContext';
 import type { ChatMessage } from '../../types';
 
 const answerMutateMock = vi.fn();
+// Iterate 14.5 — mutable inbox-item stub so individual tests can control
+// the `notBlocked` / `status` values returned by the `useInboxItem` hook.
+let useInboxItemReturn: unknown = undefined;
 vi.mock('../../hooks/useInbox', () => ({
   useAnswerInbox: () => ({ mutate: (args: unknown) => answerMutateMock(args), isPending: false }),
-  useInboxItem: () => undefined,
+  useInboxItem: () => useInboxItemReturn,
 }));
 
 function renderCard(
@@ -44,6 +47,7 @@ function renderCard(
 describe('AskUserCard', () => {
   beforeEach(() => {
     answerMutateMock.mockReset();
+    useInboxItemReturn = undefined;
   });
 
   it('submits the answer keyed on message.toolUseId, sending answers array (single part)', async () => {
@@ -218,5 +222,66 @@ describe('AskUserCard', () => {
         { index: 1, answer: 'B' },
       ],
     });
+  });
+
+  // ──────────────────────────────────────────────────────────────────
+  // Iterate 14.5 — red flag warning banner
+  // ──────────────────────────────────────────────────────────────────
+
+  it('does NOT render the notBlocked banner when flag is absent', () => {
+    useInboxItemReturn = {
+      id: 'toolu_01',
+      projectId: 'p1',
+      taskId: 't1',
+      parts: [{ question: 'Pick one' }],
+      status: 'pending',
+      createdAt: '2026-04-14T00:00:00Z',
+    };
+    renderCard(
+      { questions: [{ question: 'Pick one', options: [{ label: 'Yes' }] }] },
+      '',
+      'toolu_01',
+    );
+    expect(screen.queryByTestId('ask-user-not-blocked-banner')).toBeNull();
+  });
+
+  it('renders the amber notBlocked banner when the persisted item has notBlocked=true', () => {
+    useInboxItemReturn = {
+      id: 'toolu_01',
+      projectId: 'p1',
+      taskId: 't1',
+      parts: [{ question: 'Pick one' }],
+      status: 'pending',
+      createdAt: '2026-04-14T00:00:00Z',
+      notBlocked: true,
+    };
+    renderCard(
+      { questions: [{ question: 'Pick one', options: [{ label: 'Yes' }] }] },
+      '',
+      'toolu_01',
+    );
+    const banner = screen.getByTestId('ask-user-not-blocked-banner');
+    expect(banner).toBeInTheDocument();
+    expect(banner.textContent).toContain('Claude did not wait');
+    expect(banner.textContent).toContain('tool_result');
+  });
+
+  it('notBlocked banner does NOT remove the Submit button', () => {
+    useInboxItemReturn = {
+      id: 'toolu_01',
+      projectId: 'p1',
+      taskId: 't1',
+      parts: [{ question: 'Pick one' }],
+      status: 'pending',
+      createdAt: '2026-04-14T00:00:00Z',
+      notBlocked: true,
+    };
+    renderCard(
+      { questions: [{ question: 'Pick one', options: [{ label: 'Yes' }] }] },
+      '',
+      'toolu_01',
+    );
+    // Submit button stays — no ignore / answer-anyway alternatives.
+    expect(screen.getByRole('button', { name: 'Submit Answer' })).toBeInTheDocument();
   });
 });

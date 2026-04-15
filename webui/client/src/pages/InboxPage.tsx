@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Inbox, Check } from 'lucide-react';
+import { Inbox, Check, AlertTriangle } from 'lucide-react';
 import { useInbox, useAnswerInbox } from '../hooks/useInbox';
 import { useProjects } from '../hooks/useProjects';
 import { formatRelativeTime } from '../lib/formatTime';
@@ -94,11 +94,24 @@ export default function InboxPage() {
                   const ready = isItemReady(item);
                   return (
                     <div key={item.id} className="bg-white border border-[#e0dbd4] border-l-[3px] border-l-amber-500 rounded-xl p-4">
-                      {item.parts.length > 1 && (
-                        <span className="inline-block px-2 py-0.5 text-[10px] font-semibold rounded-full bg-orange-50 text-orange-700 mb-2">
-                          {item.parts.length} questions
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2 mb-2">
+                        {item.notBlocked && (
+                          <span
+                            role="img"
+                            aria-label="Claude did not wait for your answer"
+                            title="Claude did not wait for your answer and kept generating"
+                            data-testid="inbox-not-blocked-icon"
+                            className="inline-flex items-center text-amber-600"
+                          >
+                            <AlertTriangle size={14} />
+                          </span>
+                        )}
+                        {item.parts.length > 1 && (
+                          <span className="inline-block px-2 py-0.5 text-[10px] font-semibold rounded-full bg-orange-50 text-orange-700">
+                            {item.parts.length} questions
+                          </span>
+                        )}
+                      </div>
 
                       <div className="space-y-3">
                         {item.parts.map((part, idx) => {

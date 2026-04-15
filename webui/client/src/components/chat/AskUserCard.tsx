@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, AlertTriangle } from 'lucide-react';
 import type { ChatMessage } from '../../types';
 import { useAnswerInbox, useInboxItem } from '../../hooks/useInbox';
 import { useChatAwaiting } from '../../contexts/ChatAwaitingContext';
@@ -44,6 +44,12 @@ export function AskUserCard({ message }: AskUserCardProps) {
   // the green "Answered" display.
   const persistedItem = useInboxItem(inboxId);
   const isAnswered = localAnswered || persistedItem?.status === 'answered';
+  // Iterate 14.5 — amber warning banner when Claude ignored the
+  // constitution rule and kept generating after AskUserQuestion without
+  // waiting for the user's answer. Flag lives on the persisted inbox
+  // item (`notBlocked`), seeded from the REST payload and live-updated
+  // by the `inbox:flag_not_blocked` SSE handler. Reconnect-resilient.
+  const showNotBlockedBanner = persistedItem?.notBlocked === true;
 
   function setAnswer(index: number, value: string) {
     setPartAnswers((prev) => ({ ...prev, [index]: value }));
@@ -76,6 +82,27 @@ export function AskUserCard({ message }: AskUserCardProps) {
   return (
     <div className="flex justify-start">
       <div className="mr-auto max-w-[80%] bg-white border border-orange-300 border-l-4 border-l-orange-500 rounded-xl p-4 shadow-[var(--shadow-card)]">
+        {showNotBlockedBanner && (
+          <div
+            role="alert"
+            data-testid="ask-user-not-blocked-banner"
+            className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+          >
+            <div className="flex items-start gap-2">
+              <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-600" />
+              <div>
+                <p className="font-medium">
+                  Claude did not wait for your answer and kept generating.
+                </p>
+                <p className="mt-1 text-amber-800">
+                  Your answer will still be sent as a tool_result. Depending on the turn
+                  state, Claude may use it now or process it in the next turn.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {parts.length > 1 && (
           <p className="text-[11px] font-semibold uppercase tracking-wider text-orange-600 mb-2">
             {parts.length} questions
