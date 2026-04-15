@@ -6,13 +6,15 @@ import { ProjectTabs } from '../components/board/ProjectTabs';
 import { KanbanBoard } from '../components/board/KanbanBoard';
 import { FilterBar } from '../components/board/FilterBar';
 import { TaskListView } from '../components/board/TaskListView';
-import { NewIssueButton } from '../components/board/NewIssueButton';
+import { CreateMenu } from '../components/board/CreateMenu';
 import { NewIssueModal } from '../components/board/NewIssueModal';
+import { NewPipelineModal } from '../components/board/NewPipelineModal';
 import { PreviewButton } from '../components/board/PreviewButton';
 
 export default function KanbanPage() {
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [showNewIssue, setShowNewIssue] = useState(false);
+  const [showNewPipeline, setShowNewPipeline] = useState(false);
   const { data: projects = [] } = useProjects();
   const activeProject = projects.find((p) => p.id === activeProjectId) ?? null;
 
@@ -27,13 +29,36 @@ export default function KanbanPage() {
   const filters = useBoardFilters();
   const filteredTasks = filters.filterTasks(tasks);
 
-  // Keyboard shortcut: Ctrl/Cmd+Shift+N to open new task (Ctrl+N is browser-reserved)
+  // Iterate 14.4 — Linear-style letter shortcuts for the create menu.
+  //   c        → New Task
+  //   Shift+C  → New Pipeline
+  // Replaces the old Ctrl+Shift+N binding (Chrome Incognito collides at OS
+  // level). Both shortcuts are guarded against editable-element focus and
+  // already-open modals.
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'N') {
+    const target = e.target as HTMLElement | null;
+    if (
+      target &&
+      (target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable)
+    ) {
+      return;
+    }
+    if (showNewIssue || showNewPipeline) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    if (e.key === 'C' && e.shiftKey) {
+      e.preventDefault();
+      setShowNewPipeline(true);
+      return;
+    }
+    if (e.key === 'c' && !e.shiftKey) {
       e.preventDefault();
       setShowNewIssue(true);
     }
-  }, []);
+  }, [showNewIssue, showNewPipeline]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -53,7 +78,10 @@ export default function KanbanPage() {
           {activeProject?.hasPreview === true && (
             <PreviewButton projectId={activeProject.id} />
           )}
-          <NewIssueButton onClick={() => setShowNewIssue(true)} />
+          <CreateMenu
+            onNewTask={() => setShowNewIssue(true)}
+            onNewPipeline={() => setShowNewPipeline(true)}
+          />
         </div>
       </div>
 
@@ -100,6 +128,10 @@ export default function KanbanPage() {
         onOpenChange={setShowNewIssue}
         activeProjectId={activeProjectId}
         projects={projects}
+      />
+      <NewPipelineModal
+        open={showNewPipeline}
+        onOpenChange={setShowNewPipeline}
       />
     </div>
   );

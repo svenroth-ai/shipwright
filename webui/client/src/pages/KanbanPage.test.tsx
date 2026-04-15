@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -41,12 +41,51 @@ describe('KanbanPage', () => {
     });
   });
 
-  it('renders project dropdown and New Task button', async () => {
+  it('renders project dropdown and Create menu button', async () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('All Projects')).toBeInTheDocument();
-      expect(screen.getByText('New Task')).toBeInTheDocument();
+      // Iterate 14.4 — bare "New" trigger replaces "New Task"
+      expect(screen.getByRole('button', { name: /create new/i })).toBeInTheDocument();
     });
+  });
+
+  it("opens NewIssueModal when 'c' is pressed on the body", async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /create new/i })).toBeInTheDocument();
+    });
+    fireEvent.keyDown(window, { key: 'c', shiftKey: false });
+    await waitFor(() => {
+      // NewIssueModal title for non-iterate mode is "New Task" (Dialog.Title)
+      const titles = screen.getAllByText('New Task');
+      expect(titles.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("opens NewPipelineModal when 'C' (Shift+c) is pressed on the body", async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /create new/i })).toBeInTheDocument();
+    });
+    fireEvent.keyDown(window, { key: 'C', shiftKey: true });
+    await waitFor(() => {
+      expect(screen.getByText('New Pipeline')).toBeInTheDocument();
+    });
+  });
+
+  it("does not open New Task when 'c' is pressed inside an INPUT element", async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /create new/i })).toBeInTheDocument();
+    });
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    input.focus();
+    fireEvent.keyDown(input, { key: 'c', shiftKey: false });
+    // Modal should NOT have opened
+    expect(screen.queryByText('New Pipeline')).not.toBeInTheDocument();
+    document.body.removeChild(input);
   });
 
   it('places tasks in correct columns', async () => {

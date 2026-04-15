@@ -46,7 +46,9 @@ import { createDocsRoutes } from "./routes/docs.js";
 import { createClassifyRoutes } from "./routes/classify.js";
 import { createSettingsRoutes } from "./routes/settings.js";
 import { createCapabilitiesRoutes } from "./routes/capabilities.js";
+import { createProfilesRoutes } from "./routes/profiles.js";
 import { createSSERoute } from "./routes/sse.js";
+import { randomUUID } from "crypto";
 
 const config = getConfig();
 const startTime = Date.now();
@@ -505,10 +507,66 @@ if (isMainModule) {
     };
 
     // Mount routes
+    // Iterate 14.4 — pipeline endpoint needs statSync + loadProfile +
+    // spawnInitialProjectPhase. The spawn callback creates the initial
+    // `project` phase task using the same governor.acquire pattern as
+    // POST /api/projects/:id/tasks (see routes/tasks.ts).
     const projectFsDeps = {
       existsSync: (p: string) => fs.existsSync(p),
       mkdirSync: (p: string, o?: { recursive: boolean }) => fs.mkdirSync(p, o),
       writeFileSync: (p: string, d: string) => fs.writeFileSync(p, d),
+      statSync: (p: string) => fs.statSync(p),
+      spawnInitialProjectPhase: async (proj: { id: string; path: string }) => {
+        const taskId = randomUUID();
+        const sessionId = randomUUID();
+        const eventsPath = `${proj.path}/shipwright_events.jsonl`;
+        const description = "Initial project phase — decompose requirements";
+        await emitTaskCreatedEvent(eventsPath, taskId, proj.id, description, undefined, undefined, "project", writerDeps);
+        eventStore.addEvent(proj.id, {
+          type: "task_created",
+          timestamp: new Date().toISOString(),
+          task_id: taskId,
+          project_id: proj.id,
+          title: "Project phase",
+          description,
+          phase: "project",
+        });
+        try {
+          const result = await governor.acquire({
+            projectDir: proj.path,
+            projectId: proj.id,
+            taskId,
+            sessionId,
+            pluginDirs: [],
+            prompt: "/shipwright-project:project",
+            permissionMode: "bypassPermissions",
+          });
+          if (result !== "queued") {
+            eventStore.addEvent(proj.id, {
+              type: "phase_started",
+              timestamp: new Date().toISOString(),
+              task_id: taskId,
+              project_id: proj.id,
+              phase: "project",
+            });
+            await emitPhaseStartedEvent(eventsPath, taskId, proj.id, "project", writerDeps);
+            sseManager.broadcast({
+              type: "task:updated",
+              payload: { taskId, projectId: proj.id },
+              timestamp: new Date().toISOString(),
+            });
+          }
+        } catch (err) {
+          console.error(JSON.stringify({
+            level: "warn",
+            message: "Initial project phase acquire failed",
+            taskId,
+            projectId: proj.id,
+            error: String(err),
+          }));
+        }
+        return { taskId };
+      },
     };
     app.route("/", createProjectRoutes(projectManager, fileWatcher, eventStore, sseManager, projectFsDeps));
     const settingsPath = `${config.registryDir}/settings.json`;
@@ -555,6 +613,7 @@ if (isMainModule) {
     app.route("/", createClassifyRoutes(projectManager));
     app.route("/", createSettingsRoutes(settingsPath, settingsDeps));
     app.route("/", createCapabilitiesRoutes());
+    app.route("/", createProfilesRoutes());
     app.route("/", createSSERoute(sseManager));
 
     // Graceful shutdown with timeout

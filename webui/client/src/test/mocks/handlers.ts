@@ -124,4 +124,8 @@ export const handlers: HttpHandler[] = [
   http.get('/api/projects/:id/pipeline', () =>
     HttpResponse.json({ data: mockPipeline }),
   ),
+
+  http.get('/api/profiles', () =>
+    HttpResponse.json({ data: [{ name: 'supabase-nextjs', label: 'Supabase + Next.js' }] }),
+  ),
 ];
