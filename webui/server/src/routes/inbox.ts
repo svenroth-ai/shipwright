@@ -78,8 +78,29 @@ export function createInboxRoutes(
 
   app.post("/api/inbox/:id/answer", async (c) => {
     const body = await c.req.json();
-    if (!body.answer) throw new AppError("answer is required", 400);
-    const item = await inboxManager.answer(c.req.param("id"), body.answer);
+    // Iterate 14.2 — body shape:
+    //   { answers: [{ index: 0, answer: "..." }, { index: 1, answer: "..." }] }
+    // Back-compat for a flat `{ answer: "..." }` body: maps to the sole
+    // part (index 0) — only valid when the item has a single part.
+    let answers: Array<{ index: number; answer: string }>;
+    if (Array.isArray(body.answers)) {
+      answers = body.answers.map((a: unknown) => {
+        if (!a || typeof a !== "object") {
+          throw new AppError("answers entries must be objects", 400);
+        }
+        const entry = a as { index?: unknown; answer?: unknown };
+        if (typeof entry.index !== "number" || typeof entry.answer !== "string") {
+          throw new AppError("each answer needs { index: number, answer: string }", 400);
+        }
+        return { index: entry.index, answer: entry.answer };
+      });
+    } else if (typeof body.answer === "string") {
+      answers = [{ index: 0, answer: body.answer }];
+    } else {
+      throw new AppError("answers array or legacy answer string is required", 400);
+    }
+
+    const item = await inboxManager.answer(c.req.param("id"), answers);
     sseManager.broadcast({
       type: "inbox:answered",
       payload: { id: item.id, projectId: item.projectId },

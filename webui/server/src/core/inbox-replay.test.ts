@@ -41,13 +41,35 @@ function toolResult(toolUseId: string, content = "Yes"): ChatMessage {
 }
 
 describe("findOrphanAskUserQuestions", () => {
-  it("returns orphan AskUserQuestion with toolUseId and extracted payload", () => {
+  it("returns orphan AskUserQuestion with toolUseId and extracted parts", () => {
     const orphans = findOrphanAskUserQuestions([askUserQuestion("toolu_1", "Pick?")]);
     expect(orphans).toHaveLength(1);
     expect(orphans[0].toolUseId).toBe("toolu_1");
-    expect(orphans[0].question).toBe("Pick?");
-    expect(orphans[0].options).toEqual(["Yes", "No"]);
+    expect(orphans[0].parts).toHaveLength(1);
+    expect(orphans[0].parts[0].question).toBe("Pick?");
+    expect(orphans[0].parts[0].options).toEqual(["Yes", "No"]);
     expect(orphans[0].taskId).toBe("t1");
+  });
+
+  it("preserves all parts for multi-question AskUserQuestion", () => {
+    const msg = makeMessage({
+      id: "ask-multi",
+      type: "tool_use",
+      toolName: "AskUserQuestion",
+      toolUseId: "toolu_multi",
+      toolInput: {
+        questions: [
+          { question: "First?", header: "Q1", options: [{ label: "Y" }, { label: "N" }] },
+          { question: "Second?", header: "Q2" },
+          { question: "Third?", multiSelect: true, options: [{ label: "A" }] },
+        ],
+      },
+    });
+    const orphans = findOrphanAskUserQuestions([msg]);
+    expect(orphans).toHaveLength(1);
+    expect(orphans[0].parts).toHaveLength(3);
+    expect(orphans[0].parts[0].header).toBe("Q1");
+    expect(orphans[0].parts[2].allowMultiple).toBe(true);
   });
 
   it("skips AskUserQuestions that already have a matching tool_result", () => {

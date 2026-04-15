@@ -1,92 +1,155 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Check } from 'lucide-react';
 import type { ChatMessage } from '../../types';
 import { useAnswerInbox, useInboxItem } from '../../hooks/useInbox';
 import { useChatAwaiting } from '../../contexts/ChatAwaitingContext';
 import { extractAskUserPayload } from '../../lib/askUserPayload';
+import type { InboxItemPart } from '../../types/inbox';
 
 interface AskUserCardProps {
   message: ChatMessage;
 }
 
+/**
+ * Iterate 14.2 — Accordion rendering for multi-question AskUserQuestion.
+ *
+ * Claude CLI always emits a `questions: Question[]` array, occasionally
+ * with 2-4 entries in one tool_use call. We render every part vertically
+ * (no expand/collapse — they're all visible at once) and gate Submit on
+ * having an answer for EVERY part. On submit we send the full answers
+ * array to the backend, which joins them into a single tool_result.
+ */
 export function AskUserCard({ message }: AskUserCardProps) {
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [freetext, setFreetext] = useState('');
-  const [localAnswered, setLocalAnswered] = useState(false);
   const answerMutation = useAnswerInbox();
   const { triggerAwaiting } = useChatAwaiting();
 
-  const payload = extractAskUserPayload(message.toolInput);
-  const question = payload.question || message.content || 'Question from Claude';
-  const options = payload.options ?? [];
-  const header = payload.header;
+  const payload = useMemo(() => extractAskUserPayload(message.toolInput), [message.toolInput]);
+  const parts: InboxItemPart[] = payload.parts.length > 0
+    ? payload.parts
+    : [{ question: message.content || 'Question from Claude' }];
 
-  // Use the Anthropic toolUseId (propagated by iterate-2's parser + iterate-5's
-  // streaming hook) as the inbox item id so it survives page refreshes and
-  // correlates 1:1 with the persisted server-side inbox entry. Fall back to
-  // message.id for legacy messages that don't have a toolUseId. See ADR-018.
+  // Per-part local answer state, indexed by part index.
+  // - For a single-select option list: the chosen option label.
+  // - For a multi-select option list: comma-joined label string.
+  // - For free text: the textarea value.
+  const [partAnswers, setPartAnswers] = useState<Record<number, string>>({});
+  const [localAnswered, setLocalAnswered] = useState(false);
+
+  // Use the Anthropic toolUseId as the inbox item id so it survives
+  // refreshes and correlates 1:1 with the persisted server-side entry.
+  // Fall back to message.id for legacy messages without a toolUseId.
   const inboxId = message.toolUseId ?? message.id;
 
-  // Hydrate "answered" state from the persisted server inbox so refresh keeps
-  // the green "Answered: X" display.
+  // Hydrate "answered" state from persisted server inbox so refresh keeps
+  // the green "Answered" display.
   const persistedItem = useInboxItem(inboxId);
   const isAnswered = localAnswered || persistedItem?.status === 'answered';
-  const persistedAnswer = persistedItem?.answer;
+
+  function setAnswer(index: number, value: string) {
+    setPartAnswers((prev) => ({ ...prev, [index]: value }));
+  }
+
+  function toggleMultiSelect(index: number, label: string) {
+    setPartAnswers((prev) => {
+      const current = prev[index] ?? '';
+      const tokens = current.length > 0 ? current.split(', ').map((t) => t.trim()) : [];
+      const exists = tokens.includes(label);
+      const next = exists ? tokens.filter((t) => t !== label) : [...tokens, label];
+      return { ...prev, [index]: next.join(', ') };
+    });
+  }
+
+  // Every part needs a non-empty answer before Submit is enabled.
+  const allAnswered = parts.every((_, idx) => {
+    const value = partAnswers[idx];
+    return typeof value === 'string' && value.trim().length > 0;
+  });
 
   function handleSubmit() {
-    const answer = selectedOption ?? freetext.trim();
-    if (!answer) return;
-
-    // Fire the awaiting indicator immediately so ChatPanel can show
-    // "Thinking…" before Claude CLI's first NDJSON event arrives.
-    // See iterate 7 spec — closes the 2-3s latency gap on inbox replies.
+    if (!allAnswered) return;
     triggerAwaiting();
-    answerMutation.mutate({ id: inboxId, answer });
+    const answers = parts.map((_, idx) => ({ index: idx, answer: partAnswers[idx] ?? '' }));
+    answerMutation.mutate({ id: inboxId, answers });
     setLocalAnswered(true);
   }
 
   return (
     <div className="flex justify-start">
-      <div
-        className="mr-auto max-w-[80%] bg-white border border-orange-300 border-l-4 border-l-orange-500 rounded-xl p-4 shadow-[var(--shadow-card)]"
-      >
-        {header && (
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-orange-600 mb-1">{header}</p>
+      <div className="mr-auto max-w-[80%] bg-white border border-orange-300 border-l-4 border-l-orange-500 rounded-xl p-4 shadow-[var(--shadow-card)]">
+        {parts.length > 1 && (
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-orange-600 mb-2">
+            {parts.length} questions
+          </p>
         )}
-        <p className="text-sm font-semibold text-gray-900 mb-3">{question}</p>
 
         {!isAnswered ? (
           <>
-            {options.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3">
-                {options.map((opt) => (
-                  <button
-                    key={opt}
-                    className={`px-3 py-1 rounded-full text-sm border transition-colors ${
-                      selectedOption === opt
-                        ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
-                        : 'bg-white border-gray-300 hover:border-[var(--color-primary)]'
-                    }`}
-                    onClick={() => { setSelectedOption(opt); setFreetext(''); }}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="space-y-4">
+              {parts.map((part, idx) => {
+                const headerLabel = part.header && part.header.trim().length > 0
+                  ? part.header.trim()
+                  : `Question ${idx + 1}`;
+                const value = partAnswers[idx] ?? '';
+                const options = part.options ?? [];
+                const isMulti = part.allowMultiple === true;
+                const selectedTokens = isMulti
+                  ? (value.length > 0 ? value.split(', ').map((t) => t.trim()) : [])
+                  : [];
 
-            <textarea
-              value={freetext}
-              onChange={(e) => { setFreetext(e.target.value); setSelectedOption(null); }}
-              placeholder="Type your answer..."
-              rows={2}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 mb-2"
-            />
+                return (
+                  <div key={idx} className="border-l-2 border-orange-200 pl-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-orange-600 mb-1">
+                      {headerLabel}
+                    </p>
+                    <p className="text-sm font-semibold text-gray-900 mb-2">{part.question}</p>
+
+                    {options.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {options.map((opt) => {
+                          const active = isMulti ? selectedTokens.includes(opt) : value === opt;
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              className={`px-3 py-1 rounded-full text-sm border transition-colors ${
+                                active
+                                  ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                                  : 'bg-white border-gray-300 hover:border-[var(--color-primary)]'
+                              }`}
+                              onClick={() => {
+                                if (isMulti) {
+                                  toggleMultiSelect(idx, opt);
+                                } else {
+                                  setAnswer(idx, opt);
+                                }
+                              }}
+                            >
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {!isMulti && options.length === 0 && (
+                      <textarea
+                        value={value}
+                        onChange={(e) => setAnswer(idx, e.target.value)}
+                        placeholder="Type your answer..."
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
             <button
-              disabled={!selectedOption && !freetext.trim()}
+              type="button"
+              disabled={!allAnswered}
               onClick={handleSubmit}
-              className="px-4 py-1.5 text-sm font-medium text-white bg-[var(--color-primary)] rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-4 px-4 py-1.5 text-sm font-medium text-white bg-[var(--color-primary)] rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Submit Answer
             </button>
@@ -94,7 +157,7 @@ export function AskUserCard({ message }: AskUserCardProps) {
         ) : (
           <div className="flex items-center gap-2 text-sm text-green-700">
             <Check size={16} />
-            <span>Answered: {persistedAnswer ?? selectedOption ?? freetext}</span>
+            <span>Answered ({parts.length} {parts.length === 1 ? 'question' : 'questions'})</span>
           </div>
         )}
       </div>

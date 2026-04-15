@@ -27,12 +27,23 @@ export function useInboxItem(id: string | undefined): InboxItem | undefined {
   return data.find((item) => item.id === id);
 }
 
+/**
+ * Iterate 14.2 — `answers` is an array of `{ index, answer }` so the
+ * UI can submit all parts of a multi-question AskUserQuestion in one
+ * round-trip. The legacy `{ id, answer: string }` shape is still
+ * accepted by the backend route (mapped to index: 0).
+ */
+export interface AnswerInboxArgs {
+  id: string;
+  answers: Array<{ index: number; answer: string }>;
+}
+
 export function useAnswerInbox() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, answer }: { id: string; answer: string }) =>
-      apiPost<InboxItem>(`/inbox/${id}/answer`, { answer }),
+    mutationFn: ({ id, answers }: AnswerInboxArgs) =>
+      apiPost<InboxItem>(`/inbox/${id}/answer`, { answers }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.inbox.all });
     },
