@@ -10,14 +10,24 @@ const PHASE_COLORS: Record<string, { bg: string; text: string }> = {
 
 const DEFAULT_COLOR = { bg: 'bg-gray-100', text: 'text-gray-600' };
 
+// Iterate 14.7.2 — when the Kanban board is in "All Projects" mode,
+// each card already carries a colored project strip on its left edge.
+// Rendering phase badges in their normal hues on top of that produces
+// a noisy, color-overloaded card. The monochrome variant neutralises
+// the phase tag so the project strip stays the dominant color signal.
+const MONOCHROME_COLOR = { bg: 'bg-gray-100', text: 'text-gray-700' };
+
 interface PhaseTagProps {
   phase?: string;
+  monochrome?: boolean;
 }
 
-export function PhaseTag({ phase }: PhaseTagProps) {
+export function PhaseTag({ phase, monochrome = false }: PhaseTagProps) {
   if (!phase) return null;
 
-  const { bg, text } = PHASE_COLORS[phase] ?? DEFAULT_COLOR;
+  const { bg, text } = monochrome
+    ? MONOCHROME_COLOR
+    : (PHASE_COLORS[phase] ?? DEFAULT_COLOR);
 
   return (
     <span

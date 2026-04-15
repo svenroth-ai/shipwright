@@ -14,13 +14,19 @@ import { EditTaskModal } from './EditTaskModal';
 import { StartTaskButton } from './StartTaskButton';
 import { useResumeTask } from '../../hooks/useResumeTask';
 import { formatRelativeTime } from '../../lib/formatTime';
+import { getProjectColor } from '../../lib/projectColor';
 
 interface TaskCardProps {
   task: Task;
   columnStatus?: KanbanStatus;
+  // Iterate 14.7.2 — when true, renders a colored left-edge strip
+  // derived from the projectId hash and switches the phase tag to
+  // monochrome. Controlled from KanbanPage when activeProjectId is
+  // null (the All Projects view).
+  showProjectStrip?: boolean;
 }
 
-export function TaskCard({ task, columnStatus }: TaskCardProps) {
+export function TaskCard({ task, columnStatus, showProjectStrip = false }: TaskCardProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
@@ -42,15 +48,33 @@ export function TaskCard({ task, columnStatus }: TaskCardProps) {
   // in_progress column.
   const isInterrupted = task.kanbanStatus === 'interrupted';
 
+  // Iterate 14.7.2 — only render the strip when we're in All Projects
+  // mode AND the task carries a projectId. Guards against edge cases
+  // where a test or legacy event lacks the field.
+  const stripVisible = showProjectStrip && Boolean(task.projectId);
+  const stripColor = stripVisible
+    ? getProjectColor(task.projectId).hslStripe
+    : undefined;
+
   return (
     <>
       <div
         role="button"
         tabIndex={0}
-        className="bg-white rounded-xl p-3 cursor-pointer shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-px transition-all group border-0"
+        className={`bg-white rounded-xl p-3 cursor-pointer shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-px transition-all group border-0 relative overflow-hidden ${
+          stripVisible ? 'pl-4' : ''
+        }`}
         onClick={() => navigate(`/tasks/${task.id}`)}
         onKeyDown={(e) => e.key === 'Enter' && navigate(`/tasks/${task.id}`)}
       >
+        {stripVisible && (
+          <span
+            data-testid="project-strip"
+            aria-hidden="true"
+            className="absolute left-0 top-0 bottom-0 w-1"
+            style={{ backgroundColor: stripColor }}
+          />
+        )}
         {/* Top: title + overflow */}
         <div className="flex items-start justify-between gap-2 mb-2">
           <span className="text-sm font-semibold text-gray-900 line-clamp-2 flex-1">
@@ -77,7 +101,7 @@ export function TaskCard({ task, columnStatus }: TaskCardProps) {
 
         {/* Middle: phase + priority + intent + complexity */}
         <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <PhaseTag phase={task.currentPhase} />
+          <PhaseTag phase={task.currentPhase} monochrome={showProjectStrip} />
           <PriorityIndicator priority={task.priority} />
           <span className="transition-opacity duration-300"><IntentBadge intent={task.intent} /></span>
           <span className="transition-opacity duration-300"><ComplexityIndicator complexity={task.complexity} /></span>
