@@ -4,6 +4,7 @@ import { queryKeys } from '../lib/queryKeys';
 import { API_BASE } from '../lib/api';
 import { mergeCommitted } from '../lib/mergeCommitted';
 import { useTurnStatusStore, taskKeyOf, type TurnStatus } from '../stores/turnStatusStore';
+import { useChatStore } from '../stores/chatStore';
 import type { SSEEventType, ChatMessageSSEPayload } from '../types';
 import type { ChatMessage } from '../types';
 import type { InboxItem } from '../types/inbox';
@@ -147,6 +148,14 @@ export function handleChatMessagePayload(
   const taskKey = taskKeyOf(projectId, taskId);
   const turn = useTurnStatusStore.getState();
   turn.recordEvent(taskKey, Date.now());
+
+  // Iterate 14.6 — capture system/init model so the toolbar can show the
+  // real running Claude model (CLI 2.1.1 defaults differ from hardcoded
+  // labels). First system message with a model field wins; subsequent
+  // ones are ignored by the store.
+  if (message.type === 'system' && typeof message.model === 'string') {
+    useChatStore.getState().setSystemInit(taskKey, { model: message.model });
+  }
 
   const nextStatus = statusForMessage(message);
   if (nextStatus) {

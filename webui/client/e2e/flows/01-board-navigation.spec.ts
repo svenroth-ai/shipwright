@@ -15,8 +15,10 @@ test.describe('Board Navigation', () => {
     await expect(page.getByRole('link', { name: /settings/i })).toBeVisible();
   });
 
-  test('new task button is visible', async ({ page }) => {
+  test('create button is visible', async ({ page }) => {
+    // Iterate 14.4 renamed the primary CTA from "New Task" to just "New"
+    // (split-button CreateMenu — see e2e/flows/13-create-menu.spec.ts).
     await page.goto('/');
-    await expect(page.getByText('New Task')).toBeVisible();
+    await expect(page.getByRole('button', { name: /create new/i })).toBeVisible();
   });
 });
