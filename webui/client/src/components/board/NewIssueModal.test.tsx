@@ -181,6 +181,22 @@ describe('NewIssueModal', () => {
     expect(screen.queryByText(/No pipeline config/)).not.toBeInTheDocument();
   });
 
+  // Iterate 14.7.1 — ModeBadge pinned to the top-right of the modal.
+  it('renders ModeBadge with the active project mode', () => {
+    renderModal({
+      projects: [
+        { id: 'p1', name: 'Alpha', path: '/a', profile: 'custom', status: 'active', lastActive: '', createdAt: '', mode: 'iterate' },
+      ],
+    });
+    expect(screen.getByTestId('mode-badge-iterate')).toBeInTheDocument();
+    expect(screen.getByTestId('mode-badge-iterate').textContent).toBe('Iterate');
+  });
+
+  it('hides ModeBadge on the cross-project "All" tab until a project is picked', () => {
+    renderModal({ activeProjectId: null });
+    expect(screen.queryByTestId(/^mode-badge-/)).toBeNull();
+  });
+
   it('iterate mode shows "New Iteration" header and hides phase dropdown', () => {
     renderModal({
       projects: [

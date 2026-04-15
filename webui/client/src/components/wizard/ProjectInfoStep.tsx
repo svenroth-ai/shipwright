@@ -1,4 +1,6 @@
-import { FolderOpen } from 'lucide-react';
+import { useState } from 'react';
+import { ClipboardPaste } from 'lucide-react';
+import { pasteFromClipboard, looksLikePath } from '../../lib/filePicker';
 
 interface ProjectInfoStepProps {
   name: string;
@@ -8,16 +10,20 @@ interface ProjectInfoStepProps {
 }
 
 export function ProjectInfoStep({ name, path, onNameChange, onPathChange }: ProjectInfoStepProps) {
-  async function handleBrowse() {
-    // Use File System Access API if available (Chromium)
-    if ('showDirectoryPicker' in window) {
-      try {
-        const handle = await (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker();
-        onPathChange(handle.name);
-      } catch {
-        // User cancelled
-      }
+  // Iterate 14.7.1 — the old "Browse" button tried `showDirectoryPicker`
+  // and got a sandboxed half-path back. Replaced with a clipboard-paste
+  // helper (see lib/filePicker.ts for the design rationale). The field
+  // itself stays freely editable as the primary input path.
+  const [pasteHint, setPasteHint] = useState<string | null>(null);
+
+  async function handlePaste() {
+    setPasteHint(null);
+    const raw = await pasteFromClipboard();
+    if (raw && looksLikePath(raw)) {
+      onPathChange(raw.trim());
+      return;
     }
+    setPasteHint("Clipboard doesn't look like a path — paste manually with Ctrl+V.");
   }
 
   return (
@@ -44,14 +50,17 @@ export function ProjectInfoStep({ name, path, onNameChange, onPathChange }: Proj
           />
           <button
             type="button"
-            onClick={handleBrowse}
+            onClick={handlePaste}
+            data-testid="project-path-paste"
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 border border-[#e0dbd4] rounded-lg hover:bg-gray-50 transition-colors shrink-0"
           >
-            <FolderOpen size={14} />
-            Browse
+            <ClipboardPaste size={14} />
+            Paste
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-1">Directory must exist. Existing project files are fine.</p>
+        <p className="text-xs text-gray-400 mt-1">
+          {pasteHint ?? 'Copy the full path from Explorer/Finder, then click Paste.'}
+        </p>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Inbox, Check, AlertTriangle } from 'lucide-react';
 import { useInbox, useAnswerInbox } from '../hooks/useInbox';
 import { useProjects } from '../hooks/useProjects';
@@ -18,6 +19,22 @@ export default function InboxPage() {
   const { data: items = [], isLoading } = useInbox();
   const { data: projects = [] } = useProjects();
   const answerMutation = useAnswerInbox();
+  const navigate = useNavigate();
+
+  // Iterate 14.7.1 — clicking an inbox item's outer card navigates to the
+  // owning task's detail view. The `?focus=chat-bottom` query string is
+  // interpreted by TaskDetailPage → ChatPanel to scroll to the newest
+  // message immediately, so the user lands on the question in context
+  // rather than the top of an empty chat. Inner interactive elements
+  // (option buttons, Answer button, inputs) stopPropagation so they don't
+  // accidentally fire the navigation.
+  function handleOpenTask(item: InboxItem) {
+    navigate(`/projects/${item.projectId}/tasks/${item.taskId}?focus=chat-bottom`);
+  }
+
+  function stop(e: React.MouseEvent | React.KeyboardEvent) {
+    e.stopPropagation();
+  }
   // Per-item, per-part-index local answer state.
   const [drafts, setDrafts] = useState<Record<string, Record<number, string>>>({});
 
@@ -93,7 +110,20 @@ export default function InboxPage() {
                   const draft = drafts[item.id] ?? {};
                   const ready = isItemReady(item);
                   return (
-                    <div key={item.id} className="bg-white border border-[#e0dbd4] border-l-[3px] border-l-amber-500 rounded-xl p-4">
+                    <div
+                      key={item.id}
+                      role="button"
+                      tabIndex={0}
+                      data-testid={`inbox-item-${item.id}`}
+                      onClick={() => handleOpenTask(item)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleOpenTask(item);
+                        }
+                      }}
+                      className="bg-white border border-[#e0dbd4] border-l-[3px] border-l-amber-500 rounded-xl p-4 cursor-pointer hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30"
+                    >
                       <div className="flex items-center gap-2 mb-2">
                         {item.notBlocked && (
                           <span
@@ -146,7 +176,8 @@ export default function InboxPage() {
                                             ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
                                             : 'border-gray-300 bg-white hover:border-[var(--color-primary)]'
                                         }`}
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                          e.stopPropagation();
                                           if (isMulti) {
                                             const next = tokens.includes(opt)
                                               ? tokens.filter((t) => t !== opt)
@@ -170,6 +201,7 @@ export default function InboxPage() {
                                   onChange={(e) => setDraft(item.id, idx, e.target.value)}
                                   placeholder="Type answer..."
                                   className="w-full px-3 py-1.5 text-sm border border-[#e0dbd4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
+                                  onClick={stop}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter' && item.parts.length === 1) handleAnswer(item);
                                   }}
@@ -185,8 +217,12 @@ export default function InboxPage() {
                         <button
                           type="button"
                           disabled={!ready}
+                          data-testid={`inbox-answer-${item.id}`}
                           className="px-3 py-1.5 text-xs font-medium text-white bg-[var(--color-primary)] rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                          onClick={() => handleAnswer(item)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAnswer(item);
+                          }}
                         >
                           Answer
                         </button>

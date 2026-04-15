@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { X, Workflow } from 'lucide-react';
+import { X, Workflow, ClipboardPaste } from 'lucide-react';
 import { apiFetch, apiPost, ApiError } from '../../lib/api';
 import { queryKeys } from '../../lib/queryKeys';
+import { pasteFromClipboard, looksLikePath } from '../../lib/filePicker';
 
 export interface ProfileSummary {
   name: string;
@@ -97,6 +98,19 @@ export function NewPipelineModal({ open, onOpenChange }: NewPipelineModalProps) 
     mutation.mutate({ name: name.trim(), path: path.trim(), profile });
   }
 
+  // Iterate 14.7.1 — clipboard-paste helper for the path field. Mirrors the
+  // New Project wizard behaviour (see ProjectInfoStep) so the two forms stay
+  // consistent. Non-path clipboard contents are ignored with an inline hint.
+  async function handlePastePath() {
+    const raw = await pasteFromClipboard();
+    if (raw && looksLikePath(raw)) {
+      setPath(raw.trim());
+      setErrorMessage(null);
+    } else {
+      setErrorMessage("Clipboard doesn't look like a path — paste manually with Ctrl+V.");
+    }
+  }
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
@@ -146,14 +160,25 @@ export function NewPipelineModal({ open, onOpenChange }: NewPipelineModalProps) 
             <label htmlFor="pipeline-path" className="block text-sm font-medium text-gray-700 mb-1">
               Project path
             </label>
-            <input
-              id="pipeline-path"
-              type="text"
-              value={path}
-              onChange={(e) => setPath(e.target.value)}
-              placeholder="/absolute/path/to/folder"
-              className="w-full px-3 py-2 border border-[#e0dbd4] rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
-            />
+            <div className="flex gap-2">
+              <input
+                id="pipeline-path"
+                type="text"
+                value={path}
+                onChange={(e) => setPath(e.target.value)}
+                placeholder="/absolute/path/to/folder"
+                className="flex-1 px-3 py-2 border border-[#e0dbd4] rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
+              />
+              <button
+                type="button"
+                onClick={handlePastePath}
+                data-testid="pipeline-path-paste"
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 border border-[#e0dbd4] rounded-lg hover:bg-gray-50 transition-colors shrink-0"
+              >
+                <ClipboardPaste size={14} />
+                Paste
+              </button>
+            </div>
           </div>
 
           <div className="mb-4">

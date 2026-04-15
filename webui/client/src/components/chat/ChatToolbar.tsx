@@ -3,7 +3,6 @@ import { PermissionMode } from './PermissionMode';
 import { AutonomyPill } from './AutonomyPill';
 import { useSystemInitModel } from '../../stores/chatStore';
 import { taskKeyOf } from '../../stores/turnStatusStore';
-import { formatModelLabel } from '../../lib/formatModelLabel';
 import type { ModelOption, ModeOption } from '../../hooks/useChatSettings';
 import type { AutonomyOption } from '../../types/settings';
 
@@ -28,23 +27,21 @@ export function ChatToolbar({
   projectId,
   taskId,
 }: ChatToolbarProps) {
-  // Iterate 14.6 — dynamic model label sourced from the CLI `system/init`
-  // event for this task. Falls back to "Claude" until the first system
-  // message arrives.
+  // Iterate 14.7.1 — collapsed ChatToolbar. The separate dynamic model label
+  // from 14.6 was dropped; ModelSelector itself now handles system/init sync
+  // and displays the concrete CLI model. We still thread the current task
+  // identity so ModelSelector can reset its manual-override flag on switch.
   const taskKey = projectId && taskId ? taskKeyOf(projectId, taskId) : '';
   const systemModel = useSystemInitModel(taskKey);
-  const runningLabel = formatModelLabel(systemModel);
 
   return (
     <div className="flex items-center gap-2 px-3 py-2">
-      <ModelSelector model={model} onChange={setModel} />
-      <span
-        className="text-[10px] text-gray-400 font-medium"
-        data-testid="running-model-label"
-        title={systemModel ? `Running: ${systemModel}` : 'Running model unknown (system/init not yet received)'}
-      >
-        {runningLabel}
-      </span>
+      <ModelSelector
+        model={model}
+        onChange={setModel}
+        systemInitModel={systemModel}
+        taskKey={taskKey}
+      />
       <PermissionMode mode={mode} onChange={setMode} projectId={projectId} taskId={taskId} />
       <AutonomyPill autonomy={autonomy} />
     </div>

@@ -36,8 +36,12 @@ describe('ProjectWizard', () => {
     expect(screen.getByText('Next')).toBeDisabled();
   });
 
-  it('shows browse button', () => {
+  // Iterate 14.7.1 — the old "Browse" button was renamed to "Paste" (the
+  // File System Access API never returned a usable absolute path; we now
+  // paste from the clipboard instead).
+  it('shows paste button for the project directory field', () => {
     renderWizard();
-    expect(screen.getByText('Browse')).toBeInTheDocument();
+    expect(screen.getByTestId('project-path-paste')).toBeInTheDocument();
+    expect(screen.getByText('Paste')).toBeInTheDocument();
   });
 });

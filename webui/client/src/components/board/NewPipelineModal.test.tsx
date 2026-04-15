@@ -79,6 +79,55 @@ describe('NewPipelineModal', () => {
     });
   });
 
+  it('iterate 14.7.1 — Paste button reads clipboard and fills the path field', async () => {
+    server.use(
+      http.get('/api/profiles', () =>
+        HttpResponse.json({ data: [{ name: 'supabase-nextjs', label: 'Supabase + Next.js' }] }),
+      ),
+    );
+    const readText = vi.fn().mockResolvedValue('C:\\Users\\sven\\pasted-path');
+    Object.defineProperty(globalThis.navigator, 'clipboard', {
+      configurable: true,
+      value: { readText },
+    });
+
+    renderModal();
+    await waitFor(() => {
+      expect((screen.getByLabelText(/stack profile/i) as HTMLSelectElement).value).toBe('supabase-nextjs');
+    });
+
+    const pasteBtn = screen.getByTestId('pipeline-path-paste');
+    fireEvent.click(pasteBtn);
+    await waitFor(() => {
+      expect((screen.getByLabelText(/project path/i) as HTMLInputElement).value).toBe(
+        'C:\\Users\\sven\\pasted-path',
+      );
+    });
+    expect(readText).toHaveBeenCalled();
+  });
+
+  it('iterate 14.7.1 — Paste button shows hint when clipboard is not a path', async () => {
+    server.use(
+      http.get('/api/profiles', () =>
+        HttpResponse.json({ data: [{ name: 'supabase-nextjs', label: 'Supabase + Next.js' }] }),
+      ),
+    );
+    Object.defineProperty(globalThis.navigator, 'clipboard', {
+      configurable: true,
+      value: { readText: vi.fn().mockResolvedValue('hello world') },
+    });
+
+    renderModal();
+    await waitFor(() => {
+      expect((screen.getByLabelText(/stack profile/i) as HTMLSelectElement).value).toBe('supabase-nextjs');
+    });
+
+    fireEvent.click(screen.getByTestId('pipeline-path-paste'));
+    await waitFor(() => {
+      expect(screen.getByText(/Clipboard doesn't look like a path/i)).toBeInTheDocument();
+    });
+  });
+
   it('shows inline error on 409 duplicate', async () => {
     server.use(
       http.get('/api/profiles', () =>
