@@ -1,6 +1,7 @@
 import * as Select from '@radix-ui/react-select';
 import { ChevronDown } from 'lucide-react';
 import type { Project } from '../../types';
+import { getProjectColor } from '../../lib/projectColor';
 
 interface ProjectTabsProps {
   projects: Project[];
@@ -40,15 +41,26 @@ export function ProjectTabs({ projects, activeProjectId, onSelect }: ProjectTabs
             >
               <Select.ItemText>All Projects</Select.ItemText>
             </Select.Item>
-            {projects.map((project) => (
-              <Select.Item
-                key={project.id}
-                value={project.id}
-                className="flex items-center px-3 py-2 text-sm rounded cursor-pointer hover:bg-gray-50 data-[highlighted]:bg-gray-50 outline-none"
-              >
-                <Select.ItemText>{project.name}</Select.ItemText>
-              </Select.Item>
-            ))}
+            {/* Iterate 14.7.2 — color dot legend. Dot always visible so
+                users can map card left-edge strips to project names. */}
+            {projects.map((project) => {
+              const color = getProjectColor(project.id);
+              return (
+                <Select.Item
+                  key={project.id}
+                  value={project.id}
+                  className="flex items-center gap-2 px-3 py-2 text-sm rounded cursor-pointer hover:bg-gray-50 data-[highlighted]:bg-gray-50 outline-none"
+                >
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: color.hsl }}
+                    aria-hidden="true"
+                    data-testid={`sidebar-project-dot-${project.id}`}
+                  />
+                  <Select.ItemText>{project.name}</Select.ItemText>
+                </Select.Item>
+              );
+            })}
           </Select.Viewport>
         </Select.Content>
       </Select.Portal>

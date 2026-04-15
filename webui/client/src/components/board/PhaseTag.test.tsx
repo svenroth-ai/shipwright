@@ -29,4 +29,13 @@ describe('PhaseTag', () => {
     expect(tag.className).toContain('bg-gray-100');
     expect(tag.className).toContain('text-gray-600');
   });
+
+  // Iterate 14.7.2 — monochrome mode for All-Projects view
+  it('renders grey regardless of phase when monochrome is true', () => {
+    render(<PhaseTag phase="build" monochrome />);
+    const tag = screen.getByText('build');
+    expect(tag.className).toContain('bg-gray-100');
+    expect(tag.className).toContain('text-gray-700');
+    expect(tag.className).not.toContain('bg-orange-50');
+  });
 });

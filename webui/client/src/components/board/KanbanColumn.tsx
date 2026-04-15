@@ -28,9 +28,12 @@ interface KanbanColumnProps {
   tasks: Task[];
   status: KanbanStatus;
   onNewTask?: () => void;
+  // Iterate 14.7.2 — threaded from KanbanBoard/KanbanPage; enables the
+  // colored project strip on every rendered TaskCard.
+  showProjectStrip?: boolean;
 }
 
-export function KanbanColumn({ title, tasks, status, onNewTask }: KanbanColumnProps) {
+export function KanbanColumn({ title, tasks, status, onNewTask, showProjectStrip = false }: KanbanColumnProps) {
   const style = COLUMN_STYLES[status] ?? COLUMN_STYLES.backlog;
 
   return (
@@ -59,7 +62,12 @@ export function KanbanColumn({ title, tasks, status, onNewTask }: KanbanColumnPr
           ) : (
             <div className="flex flex-col gap-2">
               {tasks.map((task) => (
-                <TaskCard key={task.id} task={task} columnStatus={status} />
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  columnStatus={status}
+                  showProjectStrip={showProjectStrip}
+                />
               ))}
             </div>
           )}

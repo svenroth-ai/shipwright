@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useProjects } from '../hooks/useProjects';
 import { useTasks } from '../hooks/useTasks';
 import { useBoardFilters } from '../hooks/useBoardFilters';
@@ -10,6 +10,7 @@ import { CreateMenu } from '../components/board/CreateMenu';
 import { NewIssueModal } from '../components/board/NewIssueModal';
 import { NewPipelineModal } from '../components/board/NewPipelineModal';
 import { PreviewButton } from '../components/board/PreviewButton';
+import { ProjectFilterChip } from '../components/board/ProjectFilterChip';
 import { getStored, setStored } from '../lib/localStorage';
 
 // Iterate 14.7.0 — P0.3 persistence key for the active project id.
@@ -28,6 +29,35 @@ export default function KanbanPage() {
   const [showNewPipeline, setShowNewPipeline] = useState(false);
   const { data: projects = [] } = useProjects();
   const activeProject = projects.find((p) => p.id === activeProjectId) ?? null;
+
+  // Iterate 14.7.2 — All-Projects multi-select filter. Empty set
+  // means "no filter, show all". Only relevant when activeProjectId
+  // is null. Reset on every toggle into single-project mode so the
+  // chip doesn't silently restrict anything unexpectedly.
+  const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const showProjectStrip = activeProjectId === null;
+  useEffect(() => {
+    if (activeProjectId !== null && selectedProjectIds.size > 0) {
+      setSelectedProjectIds(new Set());
+    }
+  }, [activeProjectId, selectedProjectIds.size]);
+
+  const toggleProjectFilter = useCallback((projectId: string) => {
+    setSelectedProjectIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(projectId)) {
+        next.delete(projectId);
+      } else {
+        next.add(projectId);
+      }
+      return next;
+    });
+  }, []);
+  const clearProjectFilter = useCallback(() => {
+    setSelectedProjectIds(new Set());
+  }, []);
 
   // Iterate 14.7.0 — P0.2: DO NOT auto-select first project when
   // activeProjectId is null. Null is a valid "All Projects" state.
@@ -50,7 +80,13 @@ export default function KanbanPage() {
 
   const { data: tasks = [], isLoading, isError, refetch } = useTasks(activeProjectId ?? undefined);
   const filters = useBoardFilters();
-  const filteredTasks = filters.filterTasks(tasks);
+  // Iterate 14.7.2 — apply the project multi-select filter BEFORE the
+  // phase/priority filters so the card count reflects both.
+  const projectFilteredTasks = useMemo(() => {
+    if (!showProjectStrip || selectedProjectIds.size === 0) return tasks;
+    return tasks.filter((t) => selectedProjectIds.has(t.projectId));
+  }, [tasks, showProjectStrip, selectedProjectIds]);
+  const filteredTasks = filters.filterTasks(projectFilteredTasks);
 
   // Iterate 14.4 — Linear-style letter shortcuts for the create menu.
   //   c        → New Task
@@ -109,16 +145,29 @@ export default function KanbanPage() {
       </div>
 
       {/* Filter bar */}
-      <div className="px-6 py-2 border-b border-gray-100 bg-white">
-        <FilterBar
-          selectedPhases={filters.selectedPhases}
-          togglePhase={filters.togglePhase}
-          clearPhases={filters.clearPhases}
-          selectedPriority={filters.selectedPriority}
-          setPriority={filters.setPriority}
-          viewMode={filters.viewMode}
-          setViewMode={filters.setViewMode}
-        />
+      <div className="px-6 py-2 border-b border-gray-100 bg-white flex items-center gap-3">
+        {/* Iterate 14.7.2 — project multi-select, only in All Projects
+            mode. Rendered before the generic FilterBar so it sits on
+            the left of the row, next to Phase/Priority filters. */}
+        {showProjectStrip && (
+          <ProjectFilterChip
+            projects={projects}
+            selectedProjectIds={selectedProjectIds}
+            onToggle={toggleProjectFilter}
+            onClear={clearProjectFilter}
+          />
+        )}
+        <div className="flex-1 min-w-0">
+          <FilterBar
+            selectedPhases={filters.selectedPhases}
+            togglePhase={filters.togglePhase}
+            clearPhases={filters.clearPhases}
+            selectedPriority={filters.selectedPriority}
+            setPriority={filters.setPriority}
+            viewMode={filters.viewMode}
+            setViewMode={filters.setViewMode}
+          />
+        </div>
       </div>
 
       {/* Board/List area — columns scroll internally via Radix ScrollArea */}
@@ -142,7 +191,11 @@ export default function KanbanPage() {
         ) : filters.viewMode === 'list' ? (
           <TaskListView tasks={filteredTasks} />
         ) : (
-          <KanbanBoard tasks={filteredTasks} onNewTask={() => setShowNewIssue(true)} />
+          <KanbanBoard
+            tasks={filteredTasks}
+            onNewTask={() => setShowNewIssue(true)}
+            showProjectStrip={showProjectStrip}
+          />
         )}
       </div>
 

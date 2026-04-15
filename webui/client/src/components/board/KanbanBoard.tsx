@@ -8,9 +8,12 @@ const MAX_DONE_VISIBLE = 10;
 interface KanbanBoardProps {
   tasks: Task[];
   onNewTask?: () => void;
+  // Iterate 14.7.2 — when true, cards render a colored project strip
+  // on the left edge. Threaded from KanbanPage based on activeProjectId.
+  showProjectStrip?: boolean;
 }
 
-export function KanbanBoard({ tasks, onNewTask }: KanbanBoardProps) {
+export function KanbanBoard({ tasks, onNewTask, showProjectStrip = false }: KanbanBoardProps) {
   const [showAllDone, setShowAllDone] = useState(false);
 
   const grouped = useMemo(() => {
@@ -55,6 +58,7 @@ export function KanbanBoard({ tasks, onNewTask }: KanbanBoardProps) {
                 tasks={columnTasks}
                 status={status}
                 onNewTask={onNewTask}
+                showProjectStrip={showProjectStrip}
               />
               <button
                 className="flex items-center justify-center px-3.5 py-2.5 text-[13px] font-semibold text-blue-600 cursor-pointer rounded-[10px] bg-blue-500/[0.06] hover:bg-blue-500/[0.12] transition-colors mt-1"
@@ -72,6 +76,7 @@ export function KanbanBoard({ tasks, onNewTask }: KanbanBoardProps) {
             title={COLUMN_LABELS[status]}
             tasks={columnTasks}
             status={status}
+            showProjectStrip={showProjectStrip}
           />
         );
       })}
