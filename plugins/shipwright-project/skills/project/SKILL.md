@@ -40,6 +40,30 @@ Output:
 ================================================================================
 ```
 
+### A.1 Startup Check (first turn only)
+
+Before starting the project interview:
+
+1. Check for `{project_path}/shipwright_run_config.json`.
+2. **If present**: skip this gate, proceed directly to the normal interview flow (Step B).
+3. **If missing**: call `AskUserQuestion` (single question):
+   - question: "This is a new project with no pipeline config. Full pipeline run (project → plan → build → test → deploy → changelog) or standalone spec (project phase only, no downstream pipeline)?"
+   - options: ["Full Pipeline", "Standalone Spec"]
+4. **END THIS TURN** per `shared/constitution.md` "Tool Call Discipline — AskUserQuestion" rule.
+
+### A.2 Startup Check — Next Turn (after user answer arrives)
+
+5. Read the user's choice from the AskUserQuestion tool_result.
+6. **If "Full Pipeline"**:
+   - Run the plugin script: `uv run {plugin_root}/scripts/write_run_config.py --project-root {project_path}`
+   - This writes `shipwright_run_config.json` with `status="pending"`, `profile=detected`, `created_at=now`.
+   - Then proceed with the normal interview flow.
+7. **If "Standalone Spec"**:
+   - Skip config writing entirely.
+   - Proceed with the normal interview flow (no downstream pipeline phases will fire).
+
+**Ownership rule:** the plugin EITHER writes the config (this gate) OR the webui writes it (via "New Pipeline" button creating the task with config pre-existing). Never both. Never call `/shipwright-run` skill from inside this plugin — the script does the write directly.
+
 ### B. Detect Scope
 
 Before validating input, determine the scope from context:

@@ -79,6 +79,20 @@
 | Smoke test | Pipeline stops (blocking) | App not running = can't deploy |
 | E2E tests | Warning only (non-blocking) | Can be flaky; log but continue |
 
+## Tool Call Discipline — AskUserQuestion
+
+After calling AskUserQuestion, STOP all generation in the current turn.
+
+- Do NOT call any further tools after AskUserQuestion in the same turn.
+- Do NOT continue narrating or writing markdown after the tool call.
+- End the response immediately. The tool_use call itself is the signal.
+- Wait for the next user turn containing tool_result with the answer.
+
+Rationale: the webui frontend runs Claude CLI in stream-json mode, which does
+not gate tool_use on matching tool_result. Continuing generation after
+AskUserQuestion produces content that references answers the user has not
+given yet — Claude effectively hallucinates user responses.
+
 ## Programmatic Enforcement
 
 These rules are also enforced by hooks (see `docs/hooks-and-pipeline.md`):
