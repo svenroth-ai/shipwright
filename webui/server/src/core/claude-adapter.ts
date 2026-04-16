@@ -34,7 +34,14 @@ export interface SpawnDeps {
   ) => ChildProcess;
 }
 
-export type PermissionMode = "default" | "acceptEdits" | "plan" | "bypassPermissions";
+/**
+ * Claude CLI permission modes.
+ *
+ * Iterate 14.9 — `auto` added. In Auto mode the CLI picks the best
+ * permission mode per turn (mirrors the VS Code extension's Auto mode
+ * toggle). We pass it straight through as `--permission-mode auto`.
+ */
+export type PermissionMode = "auto" | "default" | "acceptEdits" | "plan" | "bypassPermissions";
 
 /** Claude CLI accepts these short aliases directly via --model.
  *  Kept narrow so we don't silently pass arbitrary strings into the CLI. */

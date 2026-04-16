@@ -6,6 +6,7 @@ import { useTurnStatus } from '../../hooks/useTurnStatus';
 import { useProject } from '../../hooks/useProjects';
 import { useSettings } from '../../hooks/useSettings';
 import { useInterruptTask } from '../../hooks/useInterruptTask';
+import { useTask } from '../../hooks/useTask';
 import { ChatMessage } from './ChatMessage';
 import { AssistantMessage } from './AssistantMessage';
 import { ChatInput } from './ChatInput';
@@ -66,6 +67,10 @@ export function ChatPanel({ projectId, taskId, focusBottomOnMount = false }: Cha
 
   const { data: project } = useProject(projectId);
   const { data: globalSettings } = useSettings();
+  // Iterate 14.9 (Bug F2): flow task.status down to ChatInput so the
+  // Stop button doesn't get stuck after interrupt even if the turn
+  // store update lags behind the SSE round-trip.
+  const { data: task } = useTask(projectId, taskId);
   const sendChat = useSendChat();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -244,6 +249,7 @@ export function ChatPanel({ projectId, taskId, focusBottomOnMount = false }: Cha
         projectId={projectId}
         taskId={taskId}
         onInterrupt={() => interruptTask()}
+        taskStatus={task?.status}
       />
     </div>
     </ChatAwaitingContext.Provider>

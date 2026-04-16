@@ -45,11 +45,22 @@ export function TaskCard({ task, columnStatus, showProjectStrip = false, customC
   });
 
   const isBacklog = columnStatus === 'backlog' || task.kanbanStatus === 'backlog';
-  // Iterate 14.7.0 — interrupted tasks (server restart killed the
-  // Claude process while it was running) render with a pause icon
-  // and a Resume/Cancel action row. They live visually in the
-  // in_progress column.
-  const isInterrupted = task.kanbanStatus === 'interrupted';
+  // Iterate 14.7.0 — interrupted tasks (server restart or user Stop
+  // killed the Claude process while it was running) render with a
+  // pause icon and a Resume/Cancel action row.
+  //
+  // Iterate 14.9 (Bug F1): derive the flag from task.status +
+  // task.orphanReason directly. Previously this was driven by
+  // kanbanStatus === 'interrupted', which forced interrupted tasks
+  // into the "In Progress" column regardless of their phase. Now
+  // kanbanStatus reflects the phase's natural column (test →
+  // in_review, etc.) and this boolean controls only the card-level
+  // affordances.
+  const isInterrupted =
+    task.status === 'orphaned' &&
+    (task.orphanReason === 'stale_on_startup' ||
+      task.orphanReason === 'user_interrupted') &&
+    !!task.claudeSessionId;
 
   // Iterate 14.7.2 — only render the strip when we're in All Projects
   // mode AND the task carries a projectId. Guards against edge cases

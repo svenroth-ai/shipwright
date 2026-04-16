@@ -5,6 +5,13 @@ export type KanbanStatus =
   | "done"
   | "failed"
   | "cancelled"
+  /**
+   * @deprecated Iterate 14.9 — no longer returned by deriveKanbanStatus.
+   * Interrupted tasks keep their phase's natural column (e.g. test →
+   * in_review) and TaskCard derives the pause/Resume affordance from
+   * task.status + task.orphanReason directly. Kept in the union for
+   * type-level back-compat with buckets and phase-mapping configs.
+   */
   | "interrupted";
 
 export type TaskStatus =

@@ -82,13 +82,19 @@ describe('TaskCard', () => {
   });
 });
 
-// Iterate 14.7.0 — interrupted state rendering (P0.0)
+// Iterate 14.7.0 / 14.9 — interrupted state rendering.
+// As of 14.9, the pause/resume affordance is driven by task.status +
+// task.orphanReason (not kanbanStatus), so the card can sit in any
+// phase column and still show the Resume action.
 describe('TaskCard — interrupted state', () => {
   const interruptedTask: Task = {
     ...mockTask,
     id: 'task-interrupted',
     status: 'orphaned',
-    kanbanStatus: 'interrupted',
+    // Iterate 14.9: kanbanStatus is now the phase column (e.g. in_review
+    // for a test-phase orphan) rather than a magic "interrupted" bucket.
+    kanbanStatus: 'in_review',
+    currentPhase: 'test',
     orphanReason: 'stale_on_startup',
     claudeSessionId: 'real-claude-sess-abc',
   };
@@ -98,9 +104,36 @@ describe('TaskCard — interrupted state', () => {
     apiPatchSpy.mockClear();
   });
 
-  it('renders pause icon when kanbanStatus is interrupted', () => {
+  it('renders pause icon when task is a resumable orphan', () => {
     renderWithProviders(interruptedTask);
     expect(screen.getByTestId('interrupted-pause-icon')).toBeInTheDocument();
+  });
+
+  it('renders pause icon for user_interrupted orphans (Stop button flow)', () => {
+    const userInterrupted: Task = {
+      ...interruptedTask,
+      orphanReason: 'user_interrupted',
+    };
+    renderWithProviders(userInterrupted);
+    expect(screen.getByTestId('interrupted-pause-icon')).toBeInTheDocument();
+  });
+
+  it('does NOT render pause icon when orphanReason is process_dead (not resumable)', () => {
+    const deadTask: Task = {
+      ...interruptedTask,
+      orphanReason: 'process_dead',
+    };
+    renderWithProviders(deadTask);
+    expect(screen.queryByTestId('interrupted-pause-icon')).not.toBeInTheDocument();
+  });
+
+  it('does NOT render pause icon when claudeSessionId is missing', () => {
+    const noSessionTask: Task = {
+      ...interruptedTask,
+      claudeSessionId: undefined,
+    };
+    renderWithProviders(noSessionTask);
+    expect(screen.queryByTestId('interrupted-pause-icon')).not.toBeInTheDocument();
   });
 
   it('renders Resume and Cancel action buttons for interrupted tasks', () => {
@@ -109,7 +142,7 @@ describe('TaskCard — interrupted state', () => {
     expect(screen.getByTestId('cancel-interrupted-button')).toBeInTheDocument();
   });
 
-  it('does NOT render pause icon for non-interrupted tasks', () => {
+  it('does NOT render pause icon for non-orphaned tasks', () => {
     renderWithProviders(mockTask);
     expect(screen.queryByTestId('interrupted-pause-icon')).not.toBeInTheDocument();
     expect(screen.queryByTestId('resume-task-button')).not.toBeInTheDocument();

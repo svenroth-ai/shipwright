@@ -1,5 +1,5 @@
 import * as Popover from '@radix-ui/react-popover';
-import { Hand, Code2, ClipboardList, Link2, Check, Loader2 } from 'lucide-react';
+import { Hand, Code2, ClipboardList, Link2, Check, Loader2, Sparkles } from 'lucide-react';
 import { useState, type ComponentType } from 'react';
 import type { ModeOption } from '../../hooks/useChatSettings';
 import { useChangeMode } from '../../hooks/useChangeMode';
@@ -14,11 +14,18 @@ interface ModeEntry {
 }
 
 /**
- * Four permission modes matching VS Code's Claude extension.
- * `bypassPermissions` is the default — matches the VS Code default
- * and the user's expectation of "just run stuff".
+ * Permission modes matching the Claude CLI / VS Code extension.
+ * Iterate 14.9 — Auto mode added as the new default (Claude picks the
+ * best permission mode per turn; mirrors the VS Code extension toggle).
  */
 const MODES: ModeEntry[] = [
+  {
+    value: 'auto',
+    label: 'Auto mode',
+    shortLabel: 'Auto',
+    description: 'Claude will automatically choose the best permission mode for each task',
+    icon: Sparkles,
+  },
   {
     value: 'default',
     label: 'Ask before edits',
@@ -59,7 +66,9 @@ interface PermissionModeProps {
 }
 
 export function PermissionMode({ mode, onChange, projectId, taskId }: PermissionModeProps) {
-  const current = MODES.find((m) => m.value === mode) ?? MODES[3];
+  // Fallback to the first entry (Auto, iterate 14.9) if the mode value
+  // isn't recognised — previous default was bypassPermissions.
+  const current = MODES.find((m) => m.value === mode) ?? MODES[0];
   const Icon = current.icon;
   const [switchError, setSwitchError] = useState<string | null>(null);
 

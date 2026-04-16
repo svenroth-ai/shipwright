@@ -25,9 +25,23 @@ interface ChatInputProps {
   /** Iterate 14.8.3 — callback fired when user clicks the Stop button
    *  during streaming. Triggers the interrupt mutation. */
   onInterrupt?: () => void;
+  /**
+   * Iterate 14.9 (Bug F2): actual task status. When the task is no
+   * longer runnable (orphaned/done/failed/cancelled), the Stop button
+   * is suppressed even if `isStreaming` is still true due to a lagging
+   * turn-state update. Defense-in-depth against the SSE race that used
+   * to leave Stop stuck after interrupt.
+   */
+  taskStatus?: string;
 }
 
-export function ChatInput({ onSend, isStreaming, autonomy, projectId, taskId, onInterrupt }: ChatInputProps) {
+const RUNNABLE_STATUSES = new Set([
+  'pending',
+  'running',
+  'waiting',
+]);
+
+export function ChatInput({ onSend, isStreaming, autonomy, projectId, taskId, onInterrupt, taskStatus }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [images, setImages] = useState<ImageAttachment[]>([]);
   const [showSlashPopup, setShowSlashPopup] = useState(false);
@@ -36,9 +50,15 @@ export function ChatInput({ onSend, isStreaming, autonomy, projectId, taskId, on
   const fileInputRef = useRef<HTMLInputElement>(null);
   const settings = useChatSettings();
 
+  // Iterate 14.9 (Bug F2): treat the task as "not streaming" when its
+  // status is terminal/non-runnable even if the turn store is lagging.
+  // Declared up front so handleSend can read it.
+  const taskIsRunnable = taskStatus === undefined || RUNNABLE_STATUSES.has(taskStatus);
+  const effectiveStreaming = isStreaming && taskIsRunnable;
+
   function handleSend() {
     const trimmed = input.trim();
-    if ((!trimmed && images.length === 0) || isStreaming) return;
+    if ((!trimmed && images.length === 0) || effectiveStreaming) return;
     onSend({
       message: trimmed,
       ...(images.length > 0
@@ -132,7 +152,7 @@ export function ChatInput({ onSend, isStreaming, autonomy, projectId, taskId, on
     setImages((prev) => prev.filter((_, i) => i !== index));
   }
 
-  const canSend = (input.trim().length > 0 || images.length > 0) && !isStreaming;
+  const canSend = (input.trim().length > 0 || images.length > 0) && !effectiveStreaming;
 
   return (
     <div className="border-t border-[var(--color-border,#e0dbd4)] bg-white pt-2 pb-4">
@@ -203,7 +223,7 @@ export function ChatInput({ onSend, isStreaming, autonomy, projectId, taskId, on
             rows={1}
             className="flex-1 resize-none text-sm outline-none bg-transparent max-h-[150px]"
           />
-          {isStreaming && onInterrupt ? (
+          {effectiveStreaming && onInterrupt ? (
             <button
               type="button"
               onClick={onInterrupt}
