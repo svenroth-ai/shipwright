@@ -867,4 +867,82 @@ describe("Task Routes", () => {
       expect(opts.model).toBeUndefined();
     });
   });
+
+  // Iterate 14.8.3 — interrupt endpoint
+  describe("POST /api/projects/:id/tasks/:taskId/interrupt", () => {
+    it("happy path: 202 + terminates process + emits task_orphaned with user_interrupted", async () => {
+      const runningTask = { ...mockTask, status: "running" };
+      const deps = {
+        taskManager: {
+          getTasksWithKanban: vi.fn(() => [runningTask]),
+          getTaskById: vi.fn((pid: string, tid: string) => tid === "t1" ? runningTask : undefined),
+        },
+        eventStore: { addEvent: vi.fn() },
+        governor: {
+          acquire: vi.fn(),
+          getProcess: vi.fn((tid: string) => tid === "t1" ? { pid: 123, taskId: "t1", state: "running" } : undefined),
+          release: vi.fn(async () => {}),
+        },
+        adapter: { terminate: vi.fn() },
+        sseManager: { broadcast: vi.fn() },
+        projectManager: { getById: vi.fn((id: string) => id === "p1" ? mockProject : undefined) },
+        emitTaskCreatedEvent: vi.fn(async () => ({})),
+        emitTaskOrphanedEvent: vi.fn(async () => ({})),
+      } as any;
+      const app = new Hono();
+      app.onError(errorHandler);
+      app.route("/", createTaskRoutes(deps));
+
+      const res = await app.request("/api/projects/p1/tasks/t1/interrupt", { method: "POST" });
+      expect(res.status).toBe(202);
+      const body = await res.json() as any;
+      expect(body.taskId).toBe("t1");
+      expect(body.status).toBe("interrupted");
+
+      // Verify terminate was called
+      expect(deps.adapter.terminate).toHaveBeenCalledTimes(1);
+      expect(deps.governor.release).toHaveBeenCalledWith("t1");
+
+      // Verify task_orphaned event emitted with user_interrupted
+      expect(deps.emitTaskOrphanedEvent).toHaveBeenCalledTimes(1);
+      const [filePath, taskId, projectId, reason] = deps.emitTaskOrphanedEvent.mock.calls[0];
+      expect(filePath).toMatch(/shipwright_events\.jsonl$/);
+      expect(taskId).toBe("t1");
+      expect(projectId).toBe("p1");
+      expect(reason).toBe("user_interrupted");
+
+      // In-memory event store also updated
+      expect(deps.eventStore.addEvent).toHaveBeenCalledWith(
+        "p1",
+        expect.objectContaining({
+          type: "task_orphaned",
+          task_id: "t1",
+          detail: "user_interrupted",
+        }),
+      );
+
+      // SSE broadcast fired
+      expect(deps.sseManager.broadcast).toHaveBeenCalled();
+    });
+
+    it("returns 404 when task is not running (no process)", async () => {
+      const { app, deps } = setup(false, { runningProcess: null });
+      const res = await app.request("/api/projects/p1/tasks/t1/interrupt", { method: "POST" });
+      expect(res.status).toBe(404);
+      const body = await res.json() as any;
+      expect(body.error).toMatch(/not running/i);
+    });
+
+    it("returns 404 when task not found", async () => {
+      const { app } = setup();
+      const res = await app.request("/api/projects/p1/tasks/t99/interrupt", { method: "POST" });
+      expect(res.status).toBe(404);
+    });
+
+    it("returns 404 when project not found", async () => {
+      const { app } = setup();
+      const res = await app.request("/api/projects/nonexistent/tasks/t1/interrupt", { method: "POST" });
+      expect(res.status).toBe(404);
+    });
+  });
 });

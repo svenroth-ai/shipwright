@@ -732,6 +732,9 @@ if (isMainModule) {
       // survives another restart loop (defensive: should be rare).
       emitTaskResumedEvent: (fp, tid, pid, sid) =>
         emitTaskResumedEvent(fp, tid, pid, sid, writerDeps),
+      // Iterate 14.8.3 — persist task_orphaned when user clicks Stop.
+      emitTaskOrphanedEvent: (fp, tid, pid, reason) =>
+        emitTaskOrphanedEvent(fp, tid, pid, reason, writerDeps),
       readGlobalSettings: async () => {
         if (!fs.existsSync(settingsPath)) return {};
         try {

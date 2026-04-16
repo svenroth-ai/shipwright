@@ -48,4 +48,40 @@ describe('ChatInput', () => {
     const attachBtn = screen.getByTitle(/Attach image/i);
     expect(attachBtn).toBeInTheDocument();
   });
+
+  // Iterate 14.8.3 — Send/Stop toggle
+  it('renders Send button when not streaming', () => {
+    renderInput({ isStreaming: false });
+    expect(screen.getByTestId('send-button')).toBeInTheDocument();
+    expect(screen.queryByTestId('stop-button')).toBeNull();
+  });
+
+  it('renders Stop button when streaming and onInterrupt is provided', () => {
+    const onInterrupt = vi.fn();
+    renderInput({ isStreaming: true, onInterrupt });
+    expect(screen.getByTestId('stop-button')).toBeInTheDocument();
+    expect(screen.queryByTestId('send-button')).toBeNull();
+  });
+
+  it('renders Send button (disabled) when streaming but no onInterrupt', () => {
+    renderInput({ isStreaming: true });
+    // Without onInterrupt, the send button renders (disabled)
+    expect(screen.getByTestId('send-button')).toBeInTheDocument();
+    expect(screen.queryByTestId('stop-button')).toBeNull();
+  });
+
+  it('click Stop calls onInterrupt', async () => {
+    const onInterrupt = vi.fn();
+    renderInput({ isStreaming: true, onInterrupt });
+    await userEvent.click(screen.getByTestId('stop-button'));
+    expect(onInterrupt).toHaveBeenCalledTimes(1);
+  });
+
+  it('Enter key during streaming does NOT call onInterrupt', async () => {
+    const onInterrupt = vi.fn();
+    renderInput({ isStreaming: true, onInterrupt });
+    const textarea = screen.getByPlaceholderText(PLACEHOLDER);
+    await userEvent.type(textarea, 'test{enter}');
+    expect(onInterrupt).not.toHaveBeenCalled();
+  });
 });

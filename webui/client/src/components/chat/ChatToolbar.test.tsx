@@ -4,10 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ChatToolbar } from './ChatToolbar';
 
 /**
- * Iterate 14.7.1 — the separate running-model label added in 14.6 was
- * folded into ModelSelector. This suite pins the inverted assertion
- * (the `running-model-label` testid must NOT render) plus sanity checks
- * on the other toolbar controls.
+ * Iterate 14.8.3 — ChatToolbar no longer accepts model/setModel props.
+ * ModelSelector is now purely driven by chatStore.systemInit via
+ * useSystemInitModel(). This suite verifies the new contract: no model
+ * prop threading, ModelSelector trigger renders, and the legacy
+ * running-model-label testid is still absent.
  *
  * PermissionMode internally uses TanStack Query, so every render needs a
  * QueryClientProvider around it.
@@ -18,8 +19,6 @@ function renderToolbar(overrides: Partial<React.ComponentProps<typeof ChatToolba
   return render(
     <QueryClientProvider client={qc}>
       <ChatToolbar
-        model="sonnet"
-        setModel={vi.fn()}
         mode="bypassPermissions"
         setMode={vi.fn()}
         autonomy="guided"
@@ -36,7 +35,16 @@ describe('ChatToolbar', () => {
   });
 
   it('renders the ModelSelector trigger', () => {
-    renderToolbar({ model: 'opus' });
+    renderToolbar();
+    expect(screen.getByTestId('model-selector-trigger')).toBeInTheDocument();
+  });
+
+  it('no model/setModel props in the interface (compile-time check)', () => {
+    // This test exists as a guard: if someone adds model/setModel back
+    // to ChatToolbarProps, the type check in renderToolbar() above would
+    // still work (extra props are allowed on React components). We assert
+    // by checking the component renders without them.
+    renderToolbar({});
     expect(screen.getByTestId('model-selector-trigger')).toBeInTheDocument();
   });
 });

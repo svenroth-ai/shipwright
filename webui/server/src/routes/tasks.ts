@@ -67,6 +67,13 @@ export interface TaskRouteDeps {
     projectId: string,
     sessionId: string,
   ) => Promise<unknown>;
+  /** Iterate 14.8.3 — persist task_orphaned when user clicks Stop. */
+  emitTaskOrphanedEvent?: (
+    filePath: string,
+    taskId: string,
+    projectId: string,
+    reason: string,
+  ) => Promise<unknown>;
   readGlobalSettings?: () => Promise<Record<string, unknown>>;
 }
 
@@ -590,6 +597,50 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
       }));
       throw new AppError(`Resume failed: ${String(err)}`, 500);
     }
+  });
+
+  // Iterate 14.8.3 — user-initiated interrupt via Stop button.
+  // Terminates the active Claude process and emits `task_orphaned` with
+  // detail `user_interrupted`. The task becomes resumable via the existing
+  // Resume action (same path as stale_on_startup in 14.7.0).
+  app.post("/api/projects/:id/tasks/:taskId/interrupt", async (c) => {
+    const project = deps.projectManager.getById(c.req.param("id"));
+    if (!project) throw new AppError("Project not found", 404);
+
+    const taskId = c.req.param("taskId");
+    const task = deps.taskManager.getTaskById(project.id, taskId);
+    if (!task) throw new AppError("Task not found", 404);
+
+    const proc = deps.governor.getProcess(taskId);
+    if (!proc || proc.state === "exited") {
+      throw new AppError("task not running", 404);
+    }
+
+    // Terminate the process
+    deps.adapter.terminate(proc);
+    await deps.governor.release(taskId);
+
+    // Persist the orphaned event so the task shows as interrupted after restart
+    const eventsPath = `${project.path}/shipwright_events.jsonl`;
+    if (deps.emitTaskOrphanedEvent) {
+      await deps.emitTaskOrphanedEvent(eventsPath, taskId, project.id, "user_interrupted");
+    }
+    deps.eventStore.addEvent(project.id, {
+      type: "task_orphaned",
+      timestamp: new Date().toISOString(),
+      task_id: taskId,
+      project_id: project.id,
+      detail: "user_interrupted",
+      source: "webui",
+    });
+
+    deps.sseManager.broadcast({
+      type: "task:updated",
+      payload: { taskId, projectId: project.id },
+      timestamp: new Date().toISOString(),
+    });
+
+    return c.json({ taskId, status: "interrupted" }, 202);
   });
 
   // Iterate 10 — mid-task permission mode switching via --resume respawn.

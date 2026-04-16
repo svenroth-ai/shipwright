@@ -5,6 +5,7 @@ import { useAutoScroll } from '../../hooks/useAutoScroll';
 import { useTurnStatus } from '../../hooks/useTurnStatus';
 import { useProject } from '../../hooks/useProjects';
 import { useSettings } from '../../hooks/useSettings';
+import { useInterruptTask } from '../../hooks/useInterruptTask';
 import { ChatMessage } from './ChatMessage';
 import { AssistantMessage } from './AssistantMessage';
 import { ChatInput } from './ChatInput';
@@ -12,6 +13,7 @@ import { ApiError } from '../../lib/api';
 import { foldToolResults } from '../../lib/foldToolResults';
 import { collapseAskUserQuestionRun } from '../../lib/collapseAskUserQuestion';
 import { useTurnStatusStore, taskKeyOf } from '../../stores/turnStatusStore';
+import { useChatStore } from '../../stores/chatStore';
 import { ChatAwaitingContext } from '../../contexts/ChatAwaitingContext';
 import type { AutonomyOption } from '../../types/settings';
 
@@ -134,6 +136,25 @@ export function ChatPanel({ projectId, taskId, focusBottomOnMount = false }: Cha
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusBottomOnMount]);
 
+  // Iterate 14.8.3 — interrupt mutation for Stop button
+  const { mutate: interruptTask } = useInterruptTask(projectId, taskId);
+
+  // Iterate 14.8.3 — REST-to-chatStore hydration. When user reloads the page
+  // or switches to a historical task, the REST chat history fetch loads
+  // messages but never calls setSystemInit. Scan the REST result for the first
+  // system message with a model field and seed the chatStore so ModelSelector
+  // renders the correct label instead of "Claude" placeholder.
+  const taskKey = taskKeyOf(projectId, taskId);
+  const hydratedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!rawMessages.length || hydratedRef.current === taskKey) return;
+    const systemMessage = rawMessages.find((m) => m.type === 'system' && m.model);
+    if (systemMessage?.model) {
+      useChatStore.getState().setSystemInit(taskKey, { model: systemMessage.model });
+      hydratedRef.current = taskKey;
+    }
+  }, [rawMessages, taskKey]);
+
   const autonomy: AutonomyOption = project?.settings?.autonomy ?? globalSettings?.defaultAutonomy ?? 'guided';
 
   function handleSend(payload: import('./ChatInput').ChatSendPayload) {
@@ -222,6 +243,7 @@ export function ChatPanel({ projectId, taskId, focusBottomOnMount = false }: Cha
         autonomy={autonomy}
         projectId={projectId}
         taskId={taskId}
+        onInterrupt={() => interruptTask()}
       />
     </div>
     </ChatAwaitingContext.Provider>

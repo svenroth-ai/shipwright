@@ -1,6 +1,14 @@
 import type { Task, TaskStatus, KanbanStatus, PhaseToStatusMapping } from "../../../client/src/types/task.js";
 import type { EventStore } from "./event-store.js";
 
+/** Named constants for task_orphaned event detail values. Avoids string-literal
+ *  typos across the codebase (heartbeat, startup reconciliation, interrupt). */
+export const ORPHAN_REASONS = {
+  STALE_ON_STARTUP: "stale_on_startup",
+  PROCESS_DEAD: "process_dead",
+  USER_INTERRUPTED: "user_interrupted",
+} as const;
+
 export const DEFAULT_PHASE_TO_STATUS_MAPPING: PhaseToStatusMapping = {
   project: "in_progress",
   design: "in_progress",
@@ -31,7 +39,11 @@ export function deriveKanbanStatus(
   // crashed mid-turn, or we never captured a real claudeSessionId so
   // --resume would fail).
   if (task.status === "orphaned") {
-    if (task.orphanReason === "stale_on_startup" && task.claudeSessionId) {
+    if (
+      (task.orphanReason === ORPHAN_REASONS.STALE_ON_STARTUP ||
+        task.orphanReason === ORPHAN_REASONS.USER_INTERRUPTED) &&
+      task.claudeSessionId
+    ) {
       return "interrupted";
     }
     return "backlog";

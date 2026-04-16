@@ -3,6 +3,7 @@ import {
   deriveKanbanStatus,
   TaskManager,
   DEFAULT_PHASE_TO_STATUS_MAPPING,
+  ORPHAN_REASONS,
 } from "./task-manager.js";
 import type { EventStore } from "./event-store.js";
 import type { Task, TaskStatus, KanbanStatus, PhaseToStatusMapping } from "../../../client/src/types/task.js";
@@ -118,6 +119,37 @@ describe("deriveKanbanStatus", () => {
         mapping,
       ),
     ).toBe("backlog");
+  });
+
+  // Iterate 14.8.3 — user-initiated interrupt
+  it("status orphaned + user_interrupted + claudeSessionId -> interrupted", () => {
+    expect(
+      deriveKanbanStatus(
+        {
+          status: "orphaned",
+          orphanReason: "user_interrupted",
+          claudeSessionId: "real-claude-sess-abc",
+        },
+        mapping,
+      ),
+    ).toBe("interrupted");
+  });
+
+  it("status orphaned + user_interrupted but no claudeSessionId -> backlog", () => {
+    expect(
+      deriveKanbanStatus(
+        { status: "orphaned", orphanReason: "user_interrupted" },
+        mapping,
+      ),
+    ).toBe("backlog");
+  });
+});
+
+describe("ORPHAN_REASONS", () => {
+  it("exports the three expected reason constants", () => {
+    expect(ORPHAN_REASONS.STALE_ON_STARTUP).toBe("stale_on_startup");
+    expect(ORPHAN_REASONS.PROCESS_DEAD).toBe("process_dead");
+    expect(ORPHAN_REASONS.USER_INTERRUPTED).toBe("user_interrupted");
   });
 });
 
