@@ -527,6 +527,103 @@ describe("Task Routes", () => {
     expect(body.data).toHaveLength(1);
   });
 
+  // Iterate 14.8.0 — settings wire-through for phase mapping
+  describe("Phase mapping wire-through via readGlobalSettings", () => {
+    it("GET /api/projects/:id/tasks uses global phaseToStatusMapping when present", async () => {
+      // Build a task with currentPhase=project and status=running.
+      // Default mapping: project → in_progress. Global override: project → in_review.
+      const runningTask = {
+        ...mockTask,
+        id: "t-running",
+        currentPhase: "project",
+        status: "running",
+        kanbanStatus: "in_progress", // seed; will be overwritten by getTasksWithKanban
+      };
+      const deps = {
+        taskManager: {
+          getTasksWithKanban: vi.fn((_pid: string, mapping?: Record<string, string>) => {
+            // Simulate what TaskManager.getTasksWithKanban does: derive kanban from mapping
+            const resolved = { project: "in_progress", ...mapping };
+            return [{
+              ...runningTask,
+              kanbanStatus: resolved.project ?? "backlog",
+            }];
+          }),
+          getTaskById: vi.fn(() => runningTask),
+        },
+        eventStore: { addEvent: vi.fn() },
+        governor: {},
+        adapter: {},
+        sseManager: { broadcast: vi.fn() },
+        projectManager: {
+          getById: vi.fn((id: string) => id === "p1" ? mockProject : undefined),
+          getAll: vi.fn(() => [mockProject]),
+        },
+        emitTaskCreatedEvent: vi.fn(async () => ({})),
+        readGlobalSettings: vi.fn(async () => ({
+          phaseToStatusMapping: { project: "in_review" },
+        })),
+      } as any;
+      const app = new Hono();
+      app.onError(errorHandler);
+      app.route("/", createTaskRoutes(deps));
+
+      const res = await app.request("/api/projects/p1/tasks");
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.data[0].kanbanStatus).toBe("in_review");
+      // Verify readGlobalSettings was called
+      expect(deps.readGlobalSettings).toHaveBeenCalled();
+      // Verify the mapping was passed through to taskManager
+      expect(deps.taskManager.getTasksWithKanban).toHaveBeenCalledWith(
+        "p1",
+        expect.objectContaining({ project: "in_review" }),
+      );
+    });
+
+    it("GET /api/projects/:id/tasks uses default mapping when no global override exists", async () => {
+      const runningTask = {
+        ...mockTask,
+        id: "t-running",
+        currentPhase: "project",
+        status: "running",
+        kanbanStatus: "in_progress",
+      };
+      const deps = {
+        taskManager: {
+          getTasksWithKanban: vi.fn((_pid: string, mapping?: Record<string, string>) => {
+            // No custom mapping → project stays at default (in_progress)
+            return [{
+              ...runningTask,
+              kanbanStatus: mapping?.project ?? "in_progress",
+            }];
+          }),
+          getTaskById: vi.fn(() => runningTask),
+        },
+        eventStore: { addEvent: vi.fn() },
+        governor: {},
+        adapter: {},
+        sseManager: { broadcast: vi.fn() },
+        projectManager: {
+          getById: vi.fn((id: string) => id === "p1" ? mockProject : undefined),
+          getAll: vi.fn(() => [mockProject]),
+        },
+        emitTaskCreatedEvent: vi.fn(async () => ({})),
+        readGlobalSettings: vi.fn(async () => ({})),
+      } as any;
+      const app = new Hono();
+      app.onError(errorHandler);
+      app.route("/", createTaskRoutes(deps));
+
+      const res = await app.request("/api/projects/p1/tasks");
+      expect(res.status).toBe(200);
+      const body = await res.json() as any;
+      expect(body.data[0].kanbanStatus).toBe("in_progress");
+      // Mapping passed as undefined (no override), so TaskManager uses default
+      expect(deps.taskManager.getTasksWithKanban).toHaveBeenCalledWith("p1", undefined);
+    });
+  });
+
   // Iterate 14.1 — POST /api/projects/:id/preview spawns /shipwright-preview
   describe("POST /api/projects/:id/preview (iterate 14.1)", () => {
     function setupPreview(hasPreview: boolean | undefined) {

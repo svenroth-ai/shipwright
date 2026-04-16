@@ -1,16 +1,15 @@
 import type { KanbanStatus } from '../types';
 
 export const DEFAULT_PHASE_MAPPING: Record<string, KanbanStatus> = {
-  project: 'backlog',
-  design: 'backlog',
-  plan: 'backlog',
+  project: 'in_progress',
+  design: 'in_progress',
+  plan: 'in_progress',
   build: 'in_progress',
   test: 'in_review',
   security: 'in_review',
-  changelog: 'done',
-  deploy: 'done',
-  compliance: 'done',
-  done: 'done',
+  compliance: 'in_review',
+  changelog: 'in_review',
+  deploy: 'in_review',
 };
 
 export const KANBAN_COLUMNS = [
@@ -22,7 +21,7 @@ export const KANBAN_COLUMNS = [
 
 export const PIPELINE_PHASES = [
   'project', 'design', 'plan', 'build', 'test', 'security',
-  'changelog', 'deploy', 'compliance', 'done',
+  'compliance', 'changelog', 'deploy',
 ] as const;
 
 export function resolvePhaseMapping(

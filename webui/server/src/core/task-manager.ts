@@ -2,14 +2,15 @@ import type { Task, TaskStatus, KanbanStatus, PhaseToStatusMapping } from "../..
 import type { EventStore } from "./event-store.js";
 
 export const DEFAULT_PHASE_TO_STATUS_MAPPING: PhaseToStatusMapping = {
-  project: "backlog",
-  design: "backlog",
-  plan: "backlog",
+  project: "in_progress",
+  design: "in_progress",
+  plan: "in_progress",
   build: "in_progress",
   test: "in_review",
-  deploy: "done",
-  changelog: "done",
-  done: "done",
+  security: "in_review",
+  compliance: "in_review",
+  changelog: "in_review",
+  deploy: "in_review",
 };
 
 export function deriveKanbanStatus(

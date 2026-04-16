@@ -3,8 +3,8 @@ import { DEFAULT_PHASE_MAPPING, resolvePhaseMapping, getKanbanStatus } from './p
 
 describe('phaseMapping', () => {
   describe('DEFAULT_PHASE_MAPPING', () => {
-    it('maps project to backlog', () => {
-      expect(DEFAULT_PHASE_MAPPING['project']).toBe('backlog');
+    it('maps project to in_progress (new default)', () => {
+      expect(DEFAULT_PHASE_MAPPING['project']).toBe('in_progress');
     });
 
     it('maps build to in_progress', () => {
@@ -15,8 +15,20 @@ describe('phaseMapping', () => {
       expect(DEFAULT_PHASE_MAPPING['test']).toBe('in_review');
     });
 
-    it('maps deploy to done', () => {
-      expect(DEFAULT_PHASE_MAPPING['deploy']).toBe('done');
+    it('maps deploy to in_review (new default)', () => {
+      expect(DEFAULT_PHASE_MAPPING['deploy']).toBe('in_review');
+    });
+
+    it('maps security to in_review', () => {
+      expect(DEFAULT_PHASE_MAPPING['security']).toBe('in_review');
+    });
+
+    it('maps compliance to in_review', () => {
+      expect(DEFAULT_PHASE_MAPPING['compliance']).toBe('in_review');
+    });
+
+    it('maps changelog to in_review (new default)', () => {
+      expect(DEFAULT_PHASE_MAPPING['changelog']).toBe('in_review');
     });
   });
 

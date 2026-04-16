@@ -32,12 +32,36 @@ describe("deriveKanbanStatus", () => {
     expect(deriveKanbanStatus({ currentPhase: "test", status: "running" }, mapping)).toBe("in_review");
   });
 
-  it("phase project -> backlog", () => {
-    expect(deriveKanbanStatus({ currentPhase: "project", status: "running" }, mapping)).toBe("backlog");
+  it("phase project -> in_progress (new default)", () => {
+    expect(deriveKanbanStatus({ currentPhase: "project", status: "running" }, mapping)).toBe("in_progress");
   });
 
-  it("phase deploy -> done", () => {
-    expect(deriveKanbanStatus({ currentPhase: "deploy", status: "running" }, mapping)).toBe("done");
+  it("phase design -> in_progress (new default)", () => {
+    expect(deriveKanbanStatus({ currentPhase: "design", status: "running" }, mapping)).toBe("in_progress");
+  });
+
+  it("phase plan -> in_progress (new default)", () => {
+    expect(deriveKanbanStatus({ currentPhase: "plan", status: "running" }, mapping)).toBe("in_progress");
+  });
+
+  it("phase deploy -> in_review (new default)", () => {
+    expect(deriveKanbanStatus({ currentPhase: "deploy", status: "running" }, mapping)).toBe("in_review");
+  });
+
+  it("phase changelog -> in_review (new default)", () => {
+    expect(deriveKanbanStatus({ currentPhase: "changelog", status: "running" }, mapping)).toBe("in_review");
+  });
+
+  it("phase security -> in_review (new entry)", () => {
+    expect(deriveKanbanStatus({ currentPhase: "security", status: "running" }, mapping)).toBe("in_review");
+  });
+
+  it("phase compliance -> in_review (new entry)", () => {
+    expect(deriveKanbanStatus({ currentPhase: "compliance", status: "running" }, mapping)).toBe("in_review");
+  });
+
+  it("unknown-phase + running -> backlog (fallback)", () => {
+    expect(deriveKanbanStatus({ currentPhase: "unknown-phase", status: "running" }, mapping)).toBe("backlog");
   });
 
   it("no phase and status pending -> backlog", () => {
@@ -108,6 +132,16 @@ describe("custom mapping", () => {
     const custom: PhaseToStatusMapping = { build: "in_review" };
     const resolved = { ...DEFAULT_PHASE_TO_STATUS_MAPPING, ...custom };
     expect(deriveKanbanStatus({ currentPhase: "test", status: "running" }, resolved)).toBe("in_review");
+  });
+
+  it("resolveMapping({ project: 'in_review' }) overrides project to in_review", () => {
+    const mgr = new TaskManager({ getTasksForProject: () => [] } as unknown as EventStore);
+    const resolved = mgr.resolveMapping({ project: "in_review" });
+    expect(resolved.project).toBe("in_review");
+    // Other phases remain default
+    expect(resolved.build).toBe("in_progress");
+    expect(resolved.test).toBe("in_review");
+    expect(resolved.deploy).toBe("in_review");
   });
 });
 
