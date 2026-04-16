@@ -1,15 +1,23 @@
 import * as Popover from '@radix-ui/react-popover';
 import { ChevronDown } from 'lucide-react';
+import { PIPELINE_PHASES } from '../../lib/phaseMapping';
 
-const PHASES = [
-  { name: 'project', color: 'bg-gray-400' },
-  { name: 'design', color: 'bg-purple-500' },
-  { name: 'plan', color: 'bg-blue-500' },
-  { name: 'build', color: 'bg-orange-500' },
-  { name: 'test', color: 'bg-green-500' },
-  { name: 'deploy', color: 'bg-teal-500' },
-  { name: 'iterate', color: 'bg-teal-400' },
-];
+const PHASE_DOT_COLORS: Record<string, string> = {
+  project: 'bg-gray-400',
+  design: 'bg-purple-500',
+  plan: 'bg-blue-500',
+  build: 'bg-orange-500',
+  test: 'bg-green-500',
+  security: 'bg-red-500',
+  compliance: 'bg-indigo-500',
+  changelog: 'bg-yellow-500',
+  deploy: 'bg-teal-500',
+};
+
+const PHASES = PIPELINE_PHASES.map((name) => ({
+  name,
+  color: PHASE_DOT_COLORS[name] ?? 'bg-gray-400',
+}));
 
 interface PhaseFilterProps {
   selectedPhases: string[];

@@ -162,8 +162,6 @@ export default function KanbanPage() {
             selectedPhases={filters.selectedPhases}
             togglePhase={filters.togglePhase}
             clearPhases={filters.clearPhases}
-            selectedPriority={filters.selectedPriority}
-            setPriority={filters.setPriority}
             viewMode={filters.viewMode}
             setViewMode={filters.setViewMode}
           />
