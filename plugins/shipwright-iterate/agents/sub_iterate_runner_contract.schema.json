@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sub-iterate-runner-result",
+  "title": "Sub-Iterate Runner Result Contract",
+  "description": "JSON schema for the result returned by sub-iterate-runner subagent. Used by the campaign loop to verify subagent output.",
+  "oneOf": [
+    { "$ref": "#/$defs/success" },
+    { "$ref": "#/$defs/failure" },
+    { "$ref": "#/$defs/escalated" }
+  ],
+  "$defs": {
+    "success": {
+      "type": "object",
+      "required": ["sub_iterate_id", "status", "commit", "branch", "tests_passed", "tests_total"],
+      "properties": {
+        "sub_iterate_id": { "type": "string" },
+        "status": { "type": "string", "const": "complete" },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+        "branch": { "type": "string" },
+        "tests_passed": { "type": "integer", "minimum": 0 },
+        "tests_total": { "type": "integer", "minimum": 0 },
+        "complexity": { "type": "string", "enum": ["trivial", "small", "medium"] },
+        "changelog_bullet": { "type": "string" },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["title", "rationale"],
+            "properties": {
+              "title": { "type": "string" },
+              "rationale": { "type": "string" }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "failure": {
+      "type": "object",
+      "required": ["sub_iterate_id", "status", "error"],
+      "properties": {
+        "sub_iterate_id": { "type": "string" },
+        "status": { "type": "string", "const": "failed" },
+        "error": { "type": "string" },
+        "partial_commit": { "type": ["string", "null"] },
+        "tests_passed": { "type": "integer", "minimum": 0 },
+        "tests_total": { "type": "integer", "minimum": 0 },
+        "debug_log": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["attempt", "root_cause", "result"],
+            "properties": {
+              "attempt": { "type": "integer", "minimum": 1 },
+              "root_cause": { "type": "string" },
+              "result": { "type": "string" }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "escalated": {
+      "type": "object",
+      "required": ["sub_iterate_id", "status", "reason"],
+      "properties": {
+        "sub_iterate_id": { "type": "string" },
+        "status": { "type": "string", "const": "escalated" },
+        "reason": { "type": "string" },
+        "detected_complexity": { "type": "string", "enum": ["large"] },
+        "partial_commit": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    }
+  }
+}
