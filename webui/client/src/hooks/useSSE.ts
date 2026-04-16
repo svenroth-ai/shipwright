@@ -73,7 +73,12 @@ export function handleInboxFlagNotBlocked(
   }
 }
 
-const TERMINAL_TASK_STATUSES = new Set(['done', 'failed', 'cancelled', 'archived']);
+// Iterate 14.9 (Bug F2): `orphaned` counts as turn-terminal. When the
+// user clicks Stop, the interrupt endpoint emits task:updated with
+// status="orphaned"; the grace-timer path then transitions the turn
+// out of `streaming` so ChatInput flips back to the Send icon instead
+// of staying stuck on Stop.
+const TERMINAL_TASK_STATUSES = new Set(['done', 'failed', 'cancelled', 'archived', 'orphaned']);
 
 const WATCHDOG_STALE_MS = 15_000;
 const WATCHDOG_STALLED_MS = 120_000;

@@ -26,12 +26,12 @@ describe('ModelSelector', () => {
     expect(screen.getByTestId('model-selector-trigger').textContent).toBe('Opus 4.5');
   });
 
-  it('renders "Claude" fallback label (via formatModelLabel) when no systemInitModel', () => {
+  it('renders default label (via formatModelLabel) when no systemInitModel', () => {
     const onSwitchModel = vi.fn();
     render(<ModelSelector onSwitchModel={onSwitchModel} />);
-    // formatModelLabel returns "Claude" for undefined; but with no systemInitModel,
-    // activeId falls back to KNOWN_MODELS[0].id = claude-opus-4-6 → "Opus 4.6"
-    expect(screen.getByTestId('model-selector-trigger').textContent).toBe('Opus 4.6');
+    // With no systemInitModel, activeId falls back to KNOWN_MODELS[0].id
+    // which is claude-opus-7-0 (iterate 14.9 newest flagship) → "Opus 7.0"
+    expect(screen.getByTestId('model-selector-trigger').textContent).toBe('Opus 7.0');
   });
 
   it('click option calls onSwitchModel(id)', () => {
@@ -61,14 +61,19 @@ describe('ModelSelector', () => {
     expect(screen.getAllByText('Other: claude-future-9-9').length).toBeGreaterThanOrEqual(2);
   });
 
-  it('renders all five known CLI models in the dropdown', () => {
+  it('renders all known CLI models in the dropdown (iterate 14.9: Opus 7 added)', () => {
     const onSwitchModel = vi.fn();
     render(<ModelSelector onSwitchModel={onSwitchModel} />);
     openPopover();
-    expect(screen.getByText('Opus 4.5')).toBeInTheDocument();
-    expect(screen.getByText('Sonnet 4.6')).toBeInTheDocument();
-    expect(screen.getByText('Sonnet 4.5')).toBeInTheDocument();
-    expect(screen.getByText('Haiku 4.5')).toBeInTheDocument();
+    // With no systemInitModel, KNOWN_MODELS[0] (Opus 7.0) is the default
+    // active entry and also an option — so both the trigger label and the
+    // option share the "Opus 7.0" text. Use getAllByText for those.
+    expect(screen.getAllByText('Opus 7.0').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('Opus 4.6').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Opus 4.5').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Sonnet 4.6').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Sonnet 4.5').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Haiku 4.5').length).toBeGreaterThan(0);
     // Context labels shown
     expect(screen.getAllByText('1M ctx').length).toBeGreaterThan(0);
     expect(screen.getAllByText('200K ctx').length).toBeGreaterThan(0);
@@ -101,6 +106,16 @@ describe('matchKnownModel / aliasFromConcrete', () => {
     expect(matchKnownModel(undefined)).toBeNull();
   });
 
+  // Iterate 14.9 — Opus 7 support.
+  it('matches claude-opus-7-0 and its date-suffixed form', () => {
+    expect(matchKnownModel('claude-opus-7-0')?.id).toBe('claude-opus-7-0');
+    expect(matchKnownModel('claude-opus-7-0-20260401')?.id).toBe('claude-opus-7-0');
+  });
+
+  it('infers opus alias for claude-opus-7-0', () => {
+    expect(aliasFromConcrete('claude-opus-7-0')).toBe('opus');
+  });
+
   it('infers family alias from a concrete id', () => {
     expect(aliasFromConcrete('claude-opus-4-6')).toBe('opus');
     expect(aliasFromConcrete('claude-sonnet-4-5-x')).toBe('sonnet');
@@ -108,9 +123,10 @@ describe('matchKnownModel / aliasFromConcrete', () => {
     expect(aliasFromConcrete('something-weird')).toBe('sonnet'); // safest default
   });
 
-  it('exports exactly five known concrete models', () => {
-    expect(KNOWN_MODELS).toHaveLength(5);
+  it('exports the expected concrete models with Opus 7 at the top (iterate 14.9)', () => {
+    expect(KNOWN_MODELS).toHaveLength(6);
     expect(KNOWN_MODELS.map((m) => m.id)).toEqual([
+      'claude-opus-7-0',
       'claude-opus-4-6',
       'claude-opus-4-5',
       'claude-sonnet-4-6',

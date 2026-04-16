@@ -196,7 +196,12 @@ describe("Project Routes", () => {
     });
   });
 
-  it("POST /api/projects initializes project directory with config files", async () => {
+  it("POST /api/projects initializes project directory but does NOT write run_config (iterate 14.9)", async () => {
+    // Iterate 14.9 / Bug C — POST /api/projects is the generic registry
+    // endpoint and must NOT auto-write shipwright_run_config.json, because
+    // that forced every registered directory into "pipeline" mode and
+    // broke the Standalone affordance. Pipeline projects use the dedicated
+    // POST /api/projects/pipeline endpoint which writes run_config itself.
     const projectManager = {
       getAll: vi.fn(() => []),
       create: vi.fn((data: any) => ({ ...mockProject, ...data })),
@@ -220,15 +225,14 @@ describe("Project Routes", () => {
       body: JSON.stringify({ name: "New App", path: "/tmp/new-app", profile: "supabase-nextjs" }),
     });
     expect(res.status).toBe(201);
-    // Directory was created
+    // Directories (project dir + .shipwright-webui) were created
     expect(fsDeps.mkdirSync).toHaveBeenCalled();
-    // Run config was written
-    expect(fsDeps.writeFileSync).toHaveBeenCalled();
-    const writtenPath = fsDeps.writeFileSync.mock.calls[0][0];
-    expect(writtenPath).toContain("shipwright_run_config.json");
-    const writtenContent = JSON.parse(fsDeps.writeFileSync.mock.calls[0][1]);
-    expect(writtenContent.profile).toBe("supabase-nextjs");
-    expect(writtenContent.project_summary.name).toBe("New App");
+    // run_config.json must NOT have been written — that would flip the
+    // project to "pipeline" mode and break the Standalone badge/hint.
+    const writeCalls = fsDeps.writeFileSync.mock.calls.filter(
+      ([path]: [string]) => typeof path === "string" && path.includes("shipwright_run_config.json"),
+    );
+    expect(writeCalls).toHaveLength(0);
     // File watcher was started for the new project
     expect(fileWatcher.watchProject).toHaveBeenCalled();
   });

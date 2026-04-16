@@ -84,4 +84,34 @@ describe('ChatInput', () => {
     await userEvent.type(textarea, 'test{enter}');
     expect(onInterrupt).not.toHaveBeenCalled();
   });
+
+  // Iterate 14.9 (Bug F2): when taskStatus is terminal/non-runnable,
+  // the Stop button is suppressed even if isStreaming is still true.
+  it('renders Send (not Stop) when task is orphaned even if isStreaming=true', () => {
+    const onInterrupt = vi.fn();
+    renderInput({ isStreaming: true, onInterrupt, taskStatus: 'orphaned' });
+    expect(screen.getByTestId('send-button')).toBeInTheDocument();
+    expect(screen.queryByTestId('stop-button')).toBeNull();
+  });
+
+  it('renders Send (not Stop) when task is done even if isStreaming=true', () => {
+    const onInterrupt = vi.fn();
+    renderInput({ isStreaming: true, onInterrupt, taskStatus: 'done' });
+    expect(screen.getByTestId('send-button')).toBeInTheDocument();
+    expect(screen.queryByTestId('stop-button')).toBeNull();
+  });
+
+  it('renders Stop when task is running and isStreaming=true', () => {
+    const onInterrupt = vi.fn();
+    renderInput({ isStreaming: true, onInterrupt, taskStatus: 'running' });
+    expect(screen.getByTestId('stop-button')).toBeInTheDocument();
+    expect(screen.queryByTestId('send-button')).toBeNull();
+  });
+
+  it('treats undefined taskStatus as runnable (back-compat)', () => {
+    const onInterrupt = vi.fn();
+    renderInput({ isStreaming: true, onInterrupt, taskStatus: undefined });
+    // Without taskStatus, fall back to isStreaming-only behaviour.
+    expect(screen.getByTestId('stop-button')).toBeInTheDocument();
+  });
 });

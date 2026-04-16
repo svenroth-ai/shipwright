@@ -4,11 +4,12 @@ export type ModelOption = 'opus' | 'sonnet' | 'haiku';
 
 /**
  * Claude CLI permission modes (matches --permission-mode flag values).
- * Default in our UI is `bypassPermissions` — the same mode VS Code's
- * Claude extension ships with. Users who want stricter approval can
- * switch via the pill in the chat toolbar.
+ *
+ * Iterate 14.9 — `auto` added. In Auto mode the CLI picks the best
+ * permission mode per turn (mirrors the VS Code extension's Auto mode
+ * toggle). This is now the default for new chat sessions.
  */
-export type ModeOption = 'default' | 'acceptEdits' | 'plan' | 'bypassPermissions';
+export type ModeOption = 'auto' | 'default' | 'acceptEdits' | 'plan' | 'bypassPermissions';
 
 export interface ChatSettings {
   model: ModelOption;
@@ -20,16 +21,22 @@ export interface ChatSettings {
  * (default/plan/auto-accept) to the new CLI-aligned names.
  */
 function migrateMode(raw: unknown): ModeOption {
-  if (raw === 'default' || raw === 'acceptEdits' || raw === 'plan' || raw === 'bypassPermissions') {
+  if (
+    raw === 'auto' ||
+    raw === 'default' ||
+    raw === 'acceptEdits' ||
+    raw === 'plan' ||
+    raw === 'bypassPermissions'
+  ) {
     return raw;
   }
   if (raw === 'auto-accept') return 'acceptEdits';
-  return 'bypassPermissions';
+  return 'auto';
 }
 
 export function useChatSettings() {
   const [model, setModel] = useLocalStorage<ModelOption>('chat-model', 'sonnet');
-  const [rawMode, setRawMode] = useLocalStorage<ModeOption>('chat-mode', 'bypassPermissions');
+  const [rawMode, setRawMode] = useLocalStorage<ModeOption>('chat-mode', 'auto');
 
   const mode = migrateMode(rawMode);
 

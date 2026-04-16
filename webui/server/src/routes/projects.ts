@@ -41,24 +41,21 @@ export function createProjectRoutes(
       throw new AppError("name and path are required", 400);
     }
 
-    // Initialize project directory with minimal config files
+    // Iterate 14.9 — Bug C: this generic endpoint is used by the wizard
+    // to register ANY directory (including plain standalone folders with
+    // no Shipwright pipeline). Previously we auto-wrote a fresh
+    // shipwright_run_config.json with status "not_started", which forced
+    // getProjectMode() to return "pipeline" for every project — breaking
+    // the Standalone affordance (no "Standalone" badge, no hint in
+    // NewIssueModal).
+    //
+    // Now we only create the directory (if missing) and the
+    // `.shipwright-webui` workspace dir. Projects that need a real
+    // pipeline use `POST /api/projects/pipeline` which writes a
+    // proper run_config. Generic-register stays standalone.
     if (fsDeps) {
       if (!fsDeps.existsSync(body.path)) {
         fsDeps.mkdirSync(body.path, { recursive: true });
-      }
-      const runConfig = `${body.path}/shipwright_run_config.json`;
-      if (!fsDeps.existsSync(runConfig)) {
-        fsDeps.writeFileSync(runConfig, JSON.stringify({
-          scope: "full_app",
-          profile: body.profile ?? "custom",
-          autonomy: "guided",
-          pipeline: ["project", "design", "plan", "build", "test", "changelog", "deploy"],
-          status: "not_started",
-          current_step: null,
-          completed_steps: [],
-          project_summary: { name: body.name, description: body.description ?? "" },
-          updated_at: new Date().toISOString(),
-        }, null, 2));
       }
       // Ensure .shipwright-webui dir exists for chat/inbox
       const webuiDir = `${body.path}/.shipwright-webui`;

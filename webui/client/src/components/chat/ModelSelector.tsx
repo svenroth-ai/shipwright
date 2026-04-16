@@ -30,9 +30,11 @@ export interface ConcreteModel {
 
 export type ModelOption = 'opus' | 'sonnet' | 'haiku';
 
-// Iterate 14.7.1 — the five CLI-supported concrete models. Order matters:
+// Iterate 14.7.1 — CLI-supported concrete models. Order matters:
 // newest/flagship first within each family.
+// Iterate 14.9 — add Opus 7 as newest flagship.
 export const KNOWN_MODELS: ConcreteModel[] = [
+  { id: 'claude-opus-7-0', alias: 'opus', context: '1M' },
   { id: 'claude-opus-4-6', alias: 'opus', context: '1M' },
   { id: 'claude-opus-4-5', alias: 'opus', context: '200K' },
   { id: 'claude-sonnet-4-6', alias: 'sonnet', context: '1M' },

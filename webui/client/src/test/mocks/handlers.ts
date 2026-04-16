@@ -101,6 +101,13 @@ export const handlers: HttpHandler[] = [
     HttpResponse.json({ data: mockTasks }),
   ),
 
+  // Iterate 14.9 — useTask hook (consumed by ChatPanel for taskStatus).
+  http.get('/api/projects/:projectId/tasks/:taskId', ({ params }) => {
+    const task = mockTasks.find((t) => t.id === params.taskId);
+    if (!task) return HttpResponse.json({ error: 'Not found' }, { status: 404 });
+    return HttpResponse.json({ data: task });
+  }),
+
   http.get('/api/tasks', () =>
     HttpResponse.json({ data: mockTasks }),
   ),

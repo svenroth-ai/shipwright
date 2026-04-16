@@ -82,12 +82,14 @@ function buildPrompt(title: string, description?: string): string {
   return title;
 }
 
-const VALID_PERMISSION_MODES: PermissionMode[] = ["default", "acceptEdits", "plan", "bypassPermissions"];
+// Iterate 14.9 — `auto` added; also the new default fallback for
+// unknown input (matches the Settings → Global default).
+const VALID_PERMISSION_MODES: PermissionMode[] = ["auto", "default", "acceptEdits", "plan", "bypassPermissions"];
 function coercePermissionMode(raw: unknown): PermissionMode {
   if (typeof raw === "string" && (VALID_PERMISSION_MODES as string[]).includes(raw)) {
     return raw as PermissionMode;
   }
-  return "bypassPermissions";
+  return "auto";
 }
 
 const VALID_MODELS: ModelAlias[] = ["opus", "sonnet", "haiku"];
@@ -100,7 +102,9 @@ function coerceModel(raw: unknown): ModelAlias | undefined {
 
 // Iterate 14.8.2 — map concrete model id (stored in settings) to the
 // coarse CLI alias accepted by `claude --model <alias>`.
+// Iterate 14.9 — claude-opus-7-0 added.
 const CONCRETE_TO_ALIAS: Record<string, ModelAlias> = {
+  "claude-opus-7-0": "opus",
   "claude-opus-4-6": "opus",
   "claude-opus-4-5": "opus",
   "claude-sonnet-4-6": "sonnet",
@@ -518,9 +522,11 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
   //
   // Preconditions:
   //   - task exists for this project
-  //   - task's derived kanbanStatus === "interrupted" (so we know the
-  //     reconciliation loop tagged it as resumable, and the captured
-  //     claudeSessionId is present on task state)
+  //   - task.status === "orphaned" AND task.orphanReason is one of
+  //     {stale_on_startup, user_interrupted} (resumable set — iterate 14.9
+  //     moved the gate off kanbanStatus, which now reflects the phase's
+  //     natural column rather than a separate "interrupted" bucket)
+  //   - claudeSessionId was captured so --resume has something to use
   //
   // On success: emits `task_resumed` event, spawns Claude with
   // `--resume <claudeSessionId>`, returns 202 with `running`.
@@ -533,14 +539,24 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
     const task = deps.taskManager.getTaskById(project.id, taskId, mapping);
     if (!task) throw new AppError("Task not found", 404);
 
-    if (task.kanbanStatus !== "interrupted") {
+    // Iterate 14.9 (Bug F1): the gate used to check
+    // `task.kanbanStatus === "interrupted"` but interrupted tasks now
+    // stay in their phase column (test → in_review etc.). The
+    // authoritative signal is `status === "orphaned"` with a resumable
+    // orphanReason AND a captured claudeSessionId — same condition
+    // that drives the TaskCard pause icon.
+    const isResumableOrphan =
+      task.status === "orphaned" &&
+      (task.orphanReason === "stale_on_startup" ||
+        task.orphanReason === "user_interrupted");
+    if (!isResumableOrphan) {
       throw new AppError("task not interrupted", 404);
     }
 
     const claudeSessionId = task.claudeSessionId;
     if (!claudeSessionId) {
-      // Defence-in-depth: deriveKanbanStatus only returns "interrupted"
-      // when claudeSessionId is present, but guard anyway so a stale
+      // Defence-in-depth: the TaskCard only shows Resume when
+      // claudeSessionId is present, but guard anyway so a stale
       // client-side payload can't crash the spawn path.
       throw new AppError("task has no captured Claude session", 409);
     }
@@ -634,9 +650,14 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
       source: "webui",
     });
 
+    // Iterate 14.9 (Bug F2): include `status: "orphaned"` in the SSE
+    // payload so the client's handleTaskUpdatedForTurn immediately
+    // tears down the `streaming` turn status. Without this, isStreaming
+    // stays true after Stop, and ChatInput keeps showing the red square
+    // instead of reverting to the Send icon.
     deps.sseManager.broadcast({
       type: "task:updated",
-      payload: { taskId, projectId: project.id },
+      payload: { taskId, projectId: project.id, status: "orphaned" },
       timestamp: new Date().toISOString(),
     });
 

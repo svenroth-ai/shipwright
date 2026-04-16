@@ -29,19 +29,17 @@ export function KanbanBoard({ tasks, onNewTask, showProjectStrip = false, projec
       done: [],
       failed: [],
       cancelled: [],
+      // Iterate 14.9 — `interrupted` is kept in the union for type
+      // back-compat but deriveKanbanStatus no longer returns it.
+      // Interrupted tasks now live in their phase's natural column and
+      // TaskCard derives the pause/resume affordance from task.status
+      // + task.orphanReason directly (see TaskCard.tsx).
       interrupted: [],
     };
 
     for (const task of tasks) {
       const bucket = buckets[task.kanbanStatus];
       if (bucket) bucket.push(task);
-    }
-
-    // Iterate 14.7.0 — interrupted tasks live visually in the
-    // "In Progress" column alongside running tasks. The TaskCard
-    // itself adds a pause icon + Resume/Cancel affordances.
-    if (buckets.interrupted.length > 0) {
-      buckets.in_progress = [...buckets.interrupted, ...buckets.in_progress];
     }
 
     return buckets;

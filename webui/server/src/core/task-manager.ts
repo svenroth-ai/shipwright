@@ -21,6 +21,20 @@ export const DEFAULT_PHASE_TO_STATUS_MAPPING: PhaseToStatusMapping = {
   deploy: "in_review",
 };
 
+/**
+ * Derive the kanban column for a task.
+ *
+ * Iterate 14.9 (Bug F1): resumable orphans (stale_on_startup +
+ * user_interrupted with a captured claudeSessionId) now keep their
+ * phase's natural column instead of being forced into a separate
+ * "interrupted" bucket. TaskCard still renders the pause icon +
+ * Resume/Cancel actions — it derives that flag from task.status +
+ * task.orphanReason directly instead of reading kanbanStatus.
+ *
+ * Non-resumable orphans (process_dead, or missing claudeSessionId)
+ * still collapse into "backlog" so they surface as something the user
+ * can re-start explicitly.
+ */
 export function deriveKanbanStatus(
   task: {
     currentPhase?: string;
@@ -34,18 +48,21 @@ export function deriveKanbanStatus(
   if (task.status === "failed") return "failed";
   if (task.status === "cancelled") return "cancelled";
 
-  // Iterate 14.7.0 — split orphan into `interrupted` (resumable, server
-  // restart killed the process) vs `backlog` (not resumable: process
-  // crashed mid-turn, or we never captured a real claudeSessionId so
-  // --resume would fail).
   if (task.status === "orphaned") {
-    if (
+    const isResumable =
       (task.orphanReason === ORPHAN_REASONS.STALE_ON_STARTUP ||
         task.orphanReason === ORPHAN_REASONS.USER_INTERRUPTED) &&
-      task.claudeSessionId
-    ) {
-      return "interrupted";
+      !!task.claudeSessionId;
+
+    if (isResumable) {
+      // Stay in the phase's natural column (e.g. test → in_review) —
+      // don't force "In Progress" just because the task is paused.
+      if (task.currentPhase && mapping[task.currentPhase]) {
+        return mapping[task.currentPhase];
+      }
+      return "in_progress";
     }
+
     return "backlog";
   }
 

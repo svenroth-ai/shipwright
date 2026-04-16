@@ -85,8 +85,39 @@ describe("deriveKanbanStatus", () => {
     expect(deriveKanbanStatus({ status: "orphaned" }, mapping)).toBe("backlog");
   });
 
-  // Iterate 14.7.0 — orphan reason split
-  it("status orphaned + stale_on_startup + claudeSessionId -> interrupted", () => {
+  // Iterate 14.7.0 / 14.9 — resumable orphans now keep their phase column
+  // instead of being forced into a separate "interrupted" bucket.
+  // TaskCard derives the pause/resume affordance from task.status +
+  // task.orphanReason directly.
+  it("status orphaned + stale_on_startup + claudeSessionId + phase=build -> in_progress (phase column)", () => {
+    expect(
+      deriveKanbanStatus(
+        {
+          status: "orphaned",
+          orphanReason: "stale_on_startup",
+          claudeSessionId: "real-claude-sess-abc",
+          currentPhase: "build",
+        },
+        mapping,
+      ),
+    ).toBe("in_progress");
+  });
+
+  it("status orphaned + stale_on_startup + claudeSessionId + phase=test -> in_review (phase column)", () => {
+    expect(
+      deriveKanbanStatus(
+        {
+          status: "orphaned",
+          orphanReason: "stale_on_startup",
+          claudeSessionId: "real-claude-sess-abc",
+          currentPhase: "test",
+        },
+        mapping,
+      ),
+    ).toBe("in_review");
+  });
+
+  it("status orphaned + stale_on_startup + claudeSessionId + no phase -> in_progress (fallback)", () => {
     expect(
       deriveKanbanStatus(
         {
@@ -96,7 +127,7 @@ describe("deriveKanbanStatus", () => {
         },
         mapping,
       ),
-    ).toBe("interrupted");
+    ).toBe("in_progress");
   });
 
   it("status orphaned + stale_on_startup but no claudeSessionId -> backlog", () => {
@@ -122,17 +153,33 @@ describe("deriveKanbanStatus", () => {
   });
 
   // Iterate 14.8.3 — user-initiated interrupt
-  it("status orphaned + user_interrupted + claudeSessionId -> interrupted", () => {
+  // Iterate 14.9 — same as stale_on_startup: keep phase column.
+  it("status orphaned + user_interrupted + claudeSessionId + phase=test -> in_review (phase column)", () => {
     expect(
       deriveKanbanStatus(
         {
           status: "orphaned",
           orphanReason: "user_interrupted",
           claudeSessionId: "real-claude-sess-abc",
+          currentPhase: "test",
         },
         mapping,
       ),
-    ).toBe("interrupted");
+    ).toBe("in_review");
+  });
+
+  it("status orphaned + user_interrupted + claudeSessionId + phase=project -> in_progress", () => {
+    expect(
+      deriveKanbanStatus(
+        {
+          status: "orphaned",
+          orphanReason: "user_interrupted",
+          claudeSessionId: "real-claude-sess-abc",
+          currentPhase: "project",
+        },
+        mapping,
+      ),
+    ).toBe("in_progress");
   });
 
   it("status orphaned + user_interrupted but no claudeSessionId -> backlog", () => {

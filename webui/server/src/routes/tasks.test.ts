@@ -682,20 +682,32 @@ describe("Task Routes", () => {
   // Iterate 14.7.0 — resume endpoint
   describe("POST /api/projects/:id/tasks/:taskId/resume", () => {
     function setupResume(opts: {
+      /**
+       * Iterate 14.9: the resume gate now checks task.status +
+       * task.orphanReason (not kanbanStatus). kanbanStatus is still
+       * included in the fixture so the task looks realistic to
+       * consumers, but it's purely cosmetic from the endpoint's POV.
+       */
+      status?: "orphaned" | "running" | "done";
+      orphanReason?: string;
       kanbanStatus?: string;
       claudeSessionId?: string | undefined;
       acquireThrows?: boolean;
     } = {}) {
-      const kanbanStatus = opts.kanbanStatus ?? "interrupted";
+      const status = opts.status ?? "orphaned";
+      const orphanReason =
+        opts.orphanReason ??
+        (status === "orphaned" ? "stale_on_startup" : undefined);
+      const kanbanStatus = opts.kanbanStatus ?? "in_progress";
       const task = {
         id: "t1",
         projectId: "p1",
         description: "Interrupted task",
-        status: "orphaned" as const,
+        status: status as "orphaned",
         kanbanStatus,
         sessionId: "s1",
         claudeSessionId: opts.claudeSessionId,
-        orphanReason: kanbanStatus === "interrupted" ? "stale_on_startup" : undefined,
+        orphanReason,
         createdAt: "2026-01-01",
         updatedAt: "2026-01-01",
       };
@@ -745,9 +757,23 @@ describe("Task Routes", () => {
       expect(deps.sseManager.broadcast).toHaveBeenCalled();
     });
 
-    it("returns 404 when task is not interrupted (e.g. still running)", async () => {
+    it("returns 404 when task is not an orphan (e.g. still running)", async () => {
       const { app, deps } = setupResume({
-        kanbanStatus: "in_progress",
+        status: "running",
+        orphanReason: undefined,
+        claudeSessionId: "real-claude-sess-abc",
+      });
+      const res = await app.request("/api/projects/p1/tasks/t1/resume", { method: "POST" });
+      expect(res.status).toBe(404);
+      const body = await res.json() as any;
+      expect(body.error).toMatch(/not interrupted/i);
+      expect(deps.governor.acquire).not.toHaveBeenCalled();
+    });
+
+    it("returns 404 when orphan reason is process_dead (not resumable)", async () => {
+      const { app, deps } = setupResume({
+        status: "orphaned",
+        orphanReason: "process_dead",
         claudeSessionId: "real-claude-sess-abc",
       });
       const res = await app.request("/api/projects/p1/tasks/t1/resume", { method: "POST" });
@@ -759,12 +785,24 @@ describe("Task Routes", () => {
 
     it("returns 409 when interrupted but claudeSessionId missing (defence-in-depth)", async () => {
       const { app, deps } = setupResume({
-        kanbanStatus: "interrupted",
+        status: "orphaned",
+        orphanReason: "stale_on_startup",
         claudeSessionId: undefined,
       });
       const res = await app.request("/api/projects/p1/tasks/t1/resume", { method: "POST" });
       expect(res.status).toBe(409);
       expect(deps.governor.acquire).not.toHaveBeenCalled();
+    });
+
+    it("accepts user_interrupted orphan reason (iterate 14.9)", async () => {
+      const { app, deps } = setupResume({
+        status: "orphaned",
+        orphanReason: "user_interrupted",
+        claudeSessionId: "real-claude-sess-abc",
+      });
+      const res = await app.request("/api/projects/p1/tasks/t1/resume", { method: "POST" });
+      expect(res.status).toBe(202);
+      expect(deps.governor.acquire).toHaveBeenCalledTimes(1);
     });
 
     it("returns 500 when spawn fails and does NOT emit task_resumed", async () => {
@@ -841,8 +879,8 @@ describe("Task Routes", () => {
       expect(opts.model).toBe("haiku");
     });
 
-    it("uses bypassPermissions fallback when no settings and no body.mode", async () => {
-      // No readGlobalSettings, no body.mode → falls back to bypassPermissions
+    it("uses auto fallback when no settings and no body.mode (iterate 14.9)", async () => {
+      // No readGlobalSettings, no body.mode → falls back to auto (new default)
       const deps = {
         taskManager: { getTasksWithKanban: vi.fn(() => [mockTask]), getTaskById: vi.fn(() => mockTask) },
         eventStore: { addEvent: vi.fn() },
@@ -863,8 +901,31 @@ describe("Task Routes", () => {
         body: JSON.stringify({ description: "No settings" }),
       });
       const opts = deps.governor.acquire.mock.calls[0][0];
-      expect(opts.permissionMode).toBe("bypassPermissions");
+      expect(opts.permissionMode).toBe("auto");
       expect(opts.model).toBeUndefined();
+    });
+
+    it("accepts auto as a valid permission mode (iterate 14.9)", async () => {
+      const deps = {
+        taskManager: { getTasksWithKanban: vi.fn(() => [mockTask]), getTaskById: vi.fn(() => mockTask) },
+        eventStore: { addEvent: vi.fn() },
+        governor: { acquire: vi.fn(async () => ({ pid: 123 })) },
+        adapter: {},
+        sseManager: { broadcast: vi.fn() },
+        projectManager: { getById: vi.fn(() => mockProject), getAll: vi.fn(() => [mockProject]) },
+        emitTaskCreatedEvent: vi.fn(async () => ({})),
+      } as any;
+      const app = new Hono();
+      app.onError(errorHandler);
+      app.route("/", createTaskRoutes(deps));
+
+      await app.request("/api/projects/p1/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: "Auto mode task", mode: "auto" }),
+      });
+      const opts = deps.governor.acquire.mock.calls[0][0];
+      expect(opts.permissionMode).toBe("auto");
     });
   });
 
