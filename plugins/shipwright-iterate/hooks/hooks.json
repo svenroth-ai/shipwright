@@ -18,7 +18,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py"
+          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/iterate_stop_finalize.py"
         }
       ]
     }

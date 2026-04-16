@@ -705,33 +705,30 @@ Write latest-run state to `shipwright_test_results.json`:
 }
 ```
 
-> **Why the next three steps run BEFORE the commit (F6):** `update_compliance.py`,
-> `update_build_dashboard.py`, and the `iterate_history` append all write artifact
-> files that are tracked in the repo (or may be tracked, depending on project
-> `.gitignore`). Running them after F6 would dirty the working tree immediately
-> after committing and force a `git commit --amend` — which conflicts with the
-> "never amend" rule in the global `CLAUDE.md`. None of these three scripts need
-> the new commit hash: compliance and dashboard take no `--commit` flag, and
-> `iterate_history` entries intentionally omit the commit hash (the canonical
-> `run_id` ↔ commit mapping lives in `shipwright_events.jsonl`, populated by F7).
-> Do NOT move F5a/F5b/F5c back to after F6 without first verifying they no
-> longer write tracked files.
+> **Why the next steps run BEFORE the commit (F6):** the finalization script
+> and the `iterate_history` append write artifact files tracked in the repo.
+> Running them after F6 would dirty the working tree immediately after
+> committing and force a `git commit --amend` — which conflicts with the
+> "never amend" rule in the global `CLAUDE.md`.
 
-### F5a: Update Compliance
+### F5: Finalize Iterate Artifacts
+
+Run **one** script that handles compliance, dashboard, and handoff:
 
 ```bash
-uv run {plugin_root}/../../plugins/shipwright-compliance/scripts/tools/update_compliance.py \
-  --project-root "{project_root}" --phase iterate
-```
-
-### F5b: Update Build Dashboard
-
-```bash
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run {shared_root}/scripts/tools/finalize_iterate.py \
   --project-root "{project_root}" \
-  --phase iterate \
-  --detail "{type}: {short_description}"
+  --run-id "{run_id}" \
+  --reason "iterate: {short_description}"
 ```
+
+This replaces the former F5a (compliance), F5b (dashboard), and F11 (handoff)
+as a single deterministic step. The script is idempotent — safe to run
+multiple times. If you skip this step, the Stop hook will run it
+automatically as a fallback when the session ends.
+
+> **Note:** F7 (event recording with commit SHA) still runs separately
+> after F6 because it needs the commit hash that F6 produces.
 
 ### F5c: Update iterate_history
 
