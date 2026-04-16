@@ -6,6 +6,7 @@ import { useTurnStatus } from '../../hooks/useTurnStatus';
 import { useProject } from '../../hooks/useProjects';
 import { useSettings } from '../../hooks/useSettings';
 import { useInterruptTask } from '../../hooks/useInterruptTask';
+import { useResumeTask } from '../../hooks/useResumeTask';
 import { useTask } from '../../hooks/useTask';
 import { ChatMessage } from './ChatMessage';
 import { AssistantMessage } from './AssistantMessage';
@@ -144,6 +145,12 @@ export function ChatPanel({ projectId, taskId, focusBottomOnMount = false }: Cha
   // Iterate 14.8.3 — interrupt mutation for Stop button
   const { mutate: interruptTask } = useInterruptTask(projectId, taskId);
 
+  // Iterate 14.10 — Resume mutation for AskUserCard's pause indicator.
+  // Threaded down via ChatMessage so a pending question on an interrupted
+  // task can be resumed inline (matches the TaskCard kanban affordance).
+  const resumeTask = useResumeTask();
+  const handleResume = () => resumeTask.mutate({ projectId, taskId });
+
   // Iterate 14.8.3 — REST-to-chatStore hydration. When user reloads the page
   // or switches to a historical task, the REST chat history fetch loads
   // messages but never calls setSystemInit. Scan the REST result for the first
@@ -208,7 +215,14 @@ export function ChatPanel({ projectId, taskId, focusBottomOnMount = false }: Cha
           </div>
         )}
         {messages.map((msg) => (
-          <ChatMessage key={msg.id} message={msg} />
+          <ChatMessage
+            key={msg.id}
+            message={msg}
+            taskStatus={task?.status}
+            orphanReason={task?.orphanReason}
+            claudeSessionId={task?.claudeSessionId}
+            onResume={handleResume}
+          />
         ))}
 
         {/* Leading "awaiting / cold start" indicator — shows only when there

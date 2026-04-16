@@ -35,13 +35,38 @@ export interface SpawnDeps {
 }
 
 /**
- * Claude CLI permission modes.
+ * Claude CLI permission modes — UI-facing surface.
  *
- * Iterate 14.9 — `auto` added. In Auto mode the CLI picks the best
- * permission mode per turn (mirrors the VS Code extension's Auto mode
- * toggle). We pass it straight through as `--permission-mode auto`.
+ * Iterate 14.9 / 14.10 — `auto` is the user-facing label that mirrors the
+ * VS Code extension's "Auto mode" toggle. The CLI does NOT accept
+ * `--permission-mode auto`; the extension translates it to `dontAsk`
+ * before spawn (verified in CLI 2.1.1: only `acceptEdits, bypassPermissions,
+ * default, delegate, dontAsk, plan` are valid `--permission-mode` values).
+ *
+ * `auto` flows through the UI, REST payloads, settings.json, and the
+ * adapter's `permissionMode` option — but {@link modeForCli} translates
+ * it to `dontAsk` right before the CLI arg is appended. This keeps the
+ * UI label intact while shielding the CLI from the invalid value.
  */
 export type PermissionMode = "auto" | "default" | "acceptEdits" | "plan" | "bypassPermissions";
+
+/** Concrete `--permission-mode` argument values that Claude CLI 2.1.1
+ *  actually accepts. `auto` is never sent — see {@link modeForCli}. */
+export type CliPermissionMode = "default" | "acceptEdits" | "plan" | "bypassPermissions" | "dontAsk";
+
+/**
+ * Translate a UI-facing PermissionMode (or undefined) to the concrete
+ * value that goes after `--permission-mode` on the CLI. `auto` and
+ * `undefined` both resolve to `dontAsk` (matches the VS Code extension's
+ * Auto mode behaviour). Everything else passes through verbatim.
+ *
+ * Exported so route-level callsites can log both `uiMode` and `cliMode`
+ * in the `claude.spawn` event without re-implementing the mapping.
+ */
+export function modeForCli(mode: PermissionMode | string | undefined): CliPermissionMode {
+  if (mode === undefined || mode === "auto") return "dontAsk";
+  return mode as CliPermissionMode;
+}
 
 /** Claude CLI accepts these short aliases directly via --model.
  *  Kept narrow so we don't silently pass arbitrary strings into the CLI. */
@@ -147,11 +172,18 @@ export class ClaudeAdapter {
     // Permission mode. "bypassPermissions" uses the shortcut flag
     // --dangerously-skip-permissions (what VS Code ships with). Other
     // modes use the explicit --permission-mode flag.
-    const mode: PermissionMode = options.permissionMode ?? "bypassPermissions";
-    if (mode === "bypassPermissions") {
+    //
+    // Iterate 14.10 — translate UI-facing `auto` (and undefined) to the
+    // CLI's `dontAsk` value via {@link modeForCli}. `auto` was never a
+    // valid `--permission-mode` value; 14.9 sent it raw and every spawn
+    // failed silently. The `uiMode` is preserved for the log line so
+    // operators can audit the translation.
+    const uiMode: PermissionMode = options.permissionMode ?? "bypassPermissions";
+    const cliMode: CliPermissionMode = modeForCli(uiMode);
+    if (cliMode === "bypassPermissions") {
       args.push("--dangerously-skip-permissions");
     } else {
-      args.push("--permission-mode", mode);
+      args.push("--permission-mode", cliMode);
     }
 
     for (const dir of options.pluginDirs) {
@@ -181,12 +213,22 @@ export class ClaudeAdapter {
     const { command, prefixArgs } = resolveClaudeCommand(options.claudeCliPath);
     const fullArgs = [...prefixArgs, ...args];
 
+    // Iterate 14.10 — emit a structured `claude.spawn` event with the
+    // UI-facing `uiMode` and the actual `cliMode` we appended after
+    // `--permission-mode`. Operators can `grep claude.spawn` in the
+    // server log to confirm Auto mode is translated correctly without
+    // having to dump the full args array.
     console.log(JSON.stringify({
       level: "info",
+      event: "claude.spawn",
       source: "claude-adapter",
       taskId: options.taskId,
+      projectId: options.projectId,
       command,
       argsCount: fullArgs.length,
+      uiMode,
+      cliMode,
+      model: options.model,
       mode: "persistent-ndjson",
     }));
 

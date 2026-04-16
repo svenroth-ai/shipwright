@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Check, AlertTriangle } from 'lucide-react';
-import type { ChatMessage } from '../../types';
+import { Check, AlertTriangle, Pause } from 'lucide-react';
+import type { ChatMessage, TaskStatus } from '../../types';
 import { useAnswerInbox, useInboxItem } from '../../hooks/useInbox';
 import { useChatAwaiting } from '../../contexts/ChatAwaitingContext';
 import { extractAskUserPayload } from '../../lib/askUserPayload';
@@ -8,6 +8,22 @@ import type { InboxItemPart } from '../../types/inbox';
 
 interface AskUserCardProps {
   message: ChatMessage;
+  /**
+   * Iterate 14.10 — task lifecycle context threaded down from ChatPanel
+   * via ChatMessage. Used to render the pause indicator + Resume button
+   * at the top of the card when the task was interrupted while a
+   * pending AskUserQuestion was waiting on disk.
+   *
+   * The same conditions drive the TaskCard pause icon
+   * (status=orphaned + resumable orphanReason + claudeSessionId), so
+   * the chat view stays consistent with the kanban affordance.
+   */
+  taskStatus?: TaskStatus;
+  orphanReason?: string;
+  claudeSessionId?: string;
+  /** Click handler for the Resume button. Wired to useResumeTask in
+   *  ChatPanel. Omitted in tests that don't exercise resume. */
+  onResume?: () => void;
 }
 
 /**
@@ -19,9 +35,25 @@ interface AskUserCardProps {
  * having an answer for EVERY part. On submit we send the full answers
  * array to the backend, which joins them into a single tool_result.
  */
-export function AskUserCard({ message }: AskUserCardProps) {
+export function AskUserCard({
+  message,
+  taskStatus,
+  orphanReason,
+  claudeSessionId,
+  onResume,
+}: AskUserCardProps) {
   const answerMutation = useAnswerInbox();
   const { triggerAwaiting } = useChatAwaiting();
+
+  // Iterate 14.10 — derive interrupted state. Same gate the TaskCard uses
+  // (board/TaskCard.tsx ~line 59) so the chat view doesn't disagree with
+  // the kanban affordance. The Resume button is hidden if onResume is
+  // not wired (lets unit tests render the card without a router/hook
+  // pulling in a query client).
+  const isInterrupted =
+    taskStatus === 'orphaned' &&
+    (orphanReason === 'stale_on_startup' || orphanReason === 'user_interrupted') &&
+    !!claudeSessionId;
 
   const payload = useMemo(() => extractAskUserPayload(message.toolInput), [message.toolInput]);
   const parts: InboxItemPart[] = payload.parts.length > 0
@@ -82,6 +114,32 @@ export function AskUserCard({ message }: AskUserCardProps) {
   return (
     <div className="flex justify-start">
       <div className="mr-auto max-w-[80%] bg-white border border-orange-300 border-l-4 border-l-orange-500 rounded-xl p-4 shadow-[var(--shadow-card)]">
+        {/* Iterate 14.10 — interrupted-task pause indicator + Resume button.
+            Renders at the top of the card so the chat view matches the
+            TaskCard pause icon on the kanban; without this the user sees
+            the AskUserQuestion but no way to know the task is dead. */}
+        {isInterrupted && (
+          <div
+            data-testid="ask-user-pause-indicator"
+            className="flex items-center gap-2 mb-3 p-2 rounded bg-amber-50 border border-amber-200"
+          >
+            <Pause size={16} className="text-amber-700 shrink-0" />
+            <span className="text-xs text-amber-900 flex-1">
+              Task interrupted — resume to continue
+            </span>
+            {onResume && (
+              <button
+                type="button"
+                data-testid="ask-user-resume-button"
+                onClick={onResume}
+                className="px-2 py-1 text-xs bg-amber-700 text-white rounded hover:bg-amber-800"
+              >
+                Resume
+              </button>
+            )}
+          </div>
+        )}
+
         {showNotBlockedBanner && (
           <div
             role="alert"

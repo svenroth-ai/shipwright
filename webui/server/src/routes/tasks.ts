@@ -102,9 +102,10 @@ function coerceModel(raw: unknown): ModelAlias | undefined {
 
 // Iterate 14.8.2 — map concrete model id (stored in settings) to the
 // coarse CLI alias accepted by `claude --model <alias>`.
-// Iterate 14.9 — claude-opus-7-0 added.
+// Iterate 14.10 — claude-opus-4-7 is the correct CLI id for the new Opus
+// flagship (14.9 had guessed `claude-opus-7-0`, which the CLI rejects).
 const CONCRETE_TO_ALIAS: Record<string, ModelAlias> = {
-  "claude-opus-7-0": "opus",
+  "claude-opus-4-7": "opus",
   "claude-opus-4-6": "opus",
   "claude-opus-4-5": "opus",
   "claude-sonnet-4-6": "sonnet",
