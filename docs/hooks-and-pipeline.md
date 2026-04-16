@@ -94,7 +94,7 @@ Tool names use short form: `Bash`, `Write`, `Edit`, `Read`, `Glob`, `Grep`.
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
-| SessionStart | — | `capture-session-id.py` | Injects `SHIPWRIGHT_SESSION_ID`, `PLUGIN_ROOT`, `PROJECT_ROOT` into context |
+| SessionStart | — | `capture-session-id.py` | Injects `SHIPWRIGHT_SESSION_ID`, `PLUGIN_ROOT`, `PROJECT_ROOT` + loop vars (`ROOT_SESSION_ID`, `LOOP_ID`, `LOOP_UNIT_ID`) into context |
 | Stop | — | `generate-handoff.py` | Writes `agent_docs/session_handoff.md` for resume |
 
 ### shipwright-project
@@ -130,8 +130,9 @@ Tool names use short form: `Bash`, `Write`, `Edit`, `Read`, `Glob`, `Grep`.
 | PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_secrets.sh` | Scans written files for API keys, tokens, passwords |
 | PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_file_size.sh` | Warns if file exceeds size limit |
 | PostToolUse | — (catch-all) | `track_tool_calls.py` | Increments tool call counter for context pressure detection |
-| Stop | — | `generate-handoff.py` | Session handoff |
+| Stop | — | `generate-handoff.py` | Session handoff (namespaced to `planning/handoffs/<loop_id>/` when `SHIPWRIGHT_LOOP_ID` set) |
 | Stop | — | `check_documentation.py` | Verifies documentation artifacts are up to date |
+| Stop | — | `write_terminal_marker.py` | Writes `.shipwright/runs/<loop_id>/<unit_id>/DONE` (no-op without loop env vars) |
 
 ### shipwright-test
 
@@ -146,6 +147,7 @@ Tool names use short form: `Bash`, `Write`, `Edit`, `Read`, `Glob`, `Grep`.
 | SessionStart | — | `capture-session-id.py` | Session ID injection |
 | SessionStart | — | `check_drift.py` | Timestamp + content drift (catches Shipwright-repo self-drift when iterating on Shipwright itself) |
 | Stop | — | `iterate_stop_finalize.py` | Shared handoff + fallback `finalize_iterate.py` (compliance, dashboard, handoff). Freshness-gated: skips if `finalize_iterate.py` already ran. |
+| Stop | — | `write_terminal_marker.py` | Writes `.shipwright/runs/<loop_id>/<unit_id>/DONE` (no-op without loop env vars) |
 
 ### shipwright-changelog
 

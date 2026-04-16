@@ -1,0 +1,3 @@
+# Shipwright autonomous loop transient state
+.shipwright/loop.lock
+.shipwright/runs/
