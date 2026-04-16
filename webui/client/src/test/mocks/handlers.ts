@@ -128,4 +128,19 @@ export const handlers: HttpHandler[] = [
   http.get('/api/profiles', () =>
     HttpResponse.json({ data: [{ name: 'supabase-nextjs', label: 'Supabase + Next.js' }] }),
   ),
+
+  http.get('/api/settings', () =>
+    HttpResponse.json({ data: { port: 3847, maxConcurrent: 3, heartbeatIntervalMs: 30000 } }),
+  ),
+
+  http.put('/api/settings', async ({ request }) => {
+    const body = await request.json() as Record<string, unknown>;
+    return HttpResponse.json({ data: { port: 3847, maxConcurrent: 3, heartbeatIntervalMs: 30000, ...body } });
+  }),
+
+  http.patch('/api/projects/:id', async ({ request, params }) => {
+    const body = await request.json() as Record<string, unknown>;
+    const project = mockProjects.find((p) => p.id === params.id);
+    return HttpResponse.json({ data: { ...project, ...body } });
+  }),
 ];

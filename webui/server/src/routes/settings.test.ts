@@ -88,4 +88,62 @@ describe("Settings Routes", () => {
     const body = await res.json();
     expect(body.data.defaultAutonomy).toBe("autonomous");
   });
+
+  // Iterate 14.8.2 — defaultModel + defaultMode
+  it("GET /api/settings returns defaultModel when persisted", async () => {
+    const { app } = setup(JSON.stringify({ defaultModel: "claude-opus-4-6" }));
+    const res = await app.request("/api/settings");
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.defaultModel).toBe("claude-opus-4-6");
+  });
+
+  it("GET /api/settings returns defaultMode when persisted", async () => {
+    const { app } = setup(JSON.stringify({ defaultMode: "acceptEdits" }));
+    const res = await app.request("/api/settings");
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.defaultMode).toBe("acceptEdits");
+  });
+
+  it("PUT /api/settings with defaultModel persists and returns it", async () => {
+    const { app, storage } = setup();
+    const res = await app.request("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ defaultModel: "claude-sonnet-4-6" }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.defaultModel).toBe("claude-sonnet-4-6");
+    const written = JSON.parse(storage["/tmp/settings.json"]);
+    expect(written.defaultModel).toBe("claude-sonnet-4-6");
+  });
+
+  it("PUT /api/settings with defaultMode persists and returns it", async () => {
+    const { app, storage } = setup();
+    const res = await app.request("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ defaultMode: "plan" }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.defaultMode).toBe("plan");
+    const written = JSON.parse(storage["/tmp/settings.json"]);
+    expect(written.defaultMode).toBe("plan");
+  });
+
+  it("PUT /api/settings with both defaultModel and defaultMode together", async () => {
+    const { app } = setup();
+    const res = await app.request("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ defaultModel: "claude-haiku-4-5", defaultMode: "bypassPermissions" }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.defaultModel).toBe("claude-haiku-4-5");
+    expect(body.data.defaultMode).toBe("bypassPermissions");
+  });
 });

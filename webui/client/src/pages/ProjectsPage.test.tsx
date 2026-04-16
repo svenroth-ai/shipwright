@@ -37,4 +37,13 @@ describe('ProjectsPage', () => {
       expect(screen.getByText('Test Project')).toBeInTheDocument();
     });
   });
+
+  // Iterate 14.8.2 — gear icon navigates with deep-link query params
+  it('gear icon has aria-label "Project settings"', async () => {
+    renderPage();
+    await waitFor(() => {
+      const gearBtn = screen.getByLabelText('Project settings');
+      expect(gearBtn).toBeInTheDocument();
+    });
+  });
 });

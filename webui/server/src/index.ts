@@ -645,6 +645,26 @@ if (isMainModule) {
           description,
           phase: "project",
         });
+
+        // Iterate 14.8.2 — read default model from global settings.
+        // Permission mode for pipeline always stays bypassPermissions
+        // (the project phase is non-interactive by design).
+        const concreteToAlias: Record<string, string> = {
+          "claude-opus-4-6": "opus", "claude-opus-4-5": "opus",
+          "claude-sonnet-4-6": "sonnet", "claude-sonnet-4-5": "sonnet",
+          "claude-haiku-4-5": "haiku",
+        };
+        let defaultModel: "opus" | "sonnet" | "haiku" | undefined;
+        try {
+          if (fs.existsSync(settingsPath)) {
+            const raw = await readFile(settingsPath, "utf-8");
+            const parsed = JSON.parse(raw);
+            if (parsed.defaultModel && concreteToAlias[parsed.defaultModel]) {
+              defaultModel = concreteToAlias[parsed.defaultModel] as "opus" | "sonnet" | "haiku";
+            }
+          }
+        } catch { /* ignore */ }
+
         try {
           const result = await governor.acquire({
             projectDir: proj.path,
@@ -654,6 +674,7 @@ if (isMainModule) {
             pluginDirs: [],
             prompt: "/shipwright-project:project",
             permissionMode: "bypassPermissions",
+            ...(defaultModel && { model: defaultModel }),
           });
           if (result !== "queued") {
             eventStore.addEvent(proj.id, {

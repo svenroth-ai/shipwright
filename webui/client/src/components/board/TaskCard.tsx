@@ -24,9 +24,12 @@ interface TaskCardProps {
   // monochrome. Controlled from KanbanPage when activeProjectId is
   // null (the All Projects view).
   showProjectStrip?: boolean;
+  // Iterate 14.8.2 — optional custom color from project.settings.color.
+  // Overrides the hash-derived strip color.
+  customColor?: string;
 }
 
-export function TaskCard({ task, columnStatus, showProjectStrip = false }: TaskCardProps) {
+export function TaskCard({ task, columnStatus, showProjectStrip = false, customColor }: TaskCardProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
@@ -53,7 +56,7 @@ export function TaskCard({ task, columnStatus, showProjectStrip = false }: TaskC
   // where a test or legacy event lacks the field.
   const stripVisible = showProjectStrip && Boolean(task.projectId);
   const stripColor = stripVisible
-    ? getProjectColor(task.projectId).hslStripe
+    ? getProjectColor(task.projectId, customColor).hslStripe
     : undefined;
 
   return (

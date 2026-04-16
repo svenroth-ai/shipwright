@@ -39,4 +39,18 @@ describe('getProjectColor', () => {
     const c = getProjectColor('');
     expect(typeof c.hue).toBe('number');
   });
+
+  // Iterate 14.8.2 — custom color override
+  it('returns custom color when customColor param is provided', () => {
+    const c = getProjectColor('proj-1', '#ff0000');
+    expect(c.hsl).toBe('#ff0000');
+    expect(c.hslStripe).toBe('#ff0000');
+  });
+
+  it('ignores customColor when undefined (falls back to hash)', () => {
+    const withoutOverride = getProjectColor('proj-1');
+    const withUndefined = getProjectColor('proj-1', undefined);
+    expect(withoutOverride.hsl).toBe(withUndefined.hsl);
+    expect(withoutOverride.hslStripe).toBe(withUndefined.hslStripe);
+  });
 });

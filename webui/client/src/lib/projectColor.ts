@@ -29,7 +29,16 @@ export interface ProjectColor {
   hslStripe: string;
 }
 
-export function getProjectColor(projectId: string): ProjectColor {
+/**
+ * Returns a deterministic color for a project. If `customColor` is
+ * provided (from project.settings.color), it is used directly instead
+ * of the hash-derived hue. This lets users override the strip color
+ * via Settings > Project > Color picker.
+ */
+export function getProjectColor(projectId: string, customColor?: string): ProjectColor {
+  if (customColor) {
+    return { hue: 0, hsl: customColor, hslStripe: customColor };
+  }
   const hue = (simpleHash(projectId) % HUE_STEPS) * (360 / HUE_STEPS);
   const hsl = `hsl(${hue} ${SATURATION}% ${LIGHTNESS}%)`;
   return {

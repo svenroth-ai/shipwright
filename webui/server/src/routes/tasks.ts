@@ -91,6 +91,19 @@ function coerceModel(raw: unknown): ModelAlias | undefined {
   return undefined;
 }
 
+// Iterate 14.8.2 — map concrete model id (stored in settings) to the
+// coarse CLI alias accepted by `claude --model <alias>`.
+const CONCRETE_TO_ALIAS: Record<string, ModelAlias> = {
+  "claude-opus-4-6": "opus",
+  "claude-opus-4-5": "opus",
+  "claude-sonnet-4-6": "sonnet",
+  "claude-sonnet-4-5": "sonnet",
+  "claude-haiku-4-5": "haiku",
+};
+function aliasFromConcrete(concreteId: string): ModelAlias | undefined {
+  return CONCRETE_TO_ALIAS[concreteId];
+}
+
 function coercePhase(raw: unknown): Phase | undefined {
   if (typeof raw === "string" && (VALID_PHASES as readonly string[]).includes(raw)) {
     return raw as Phase;
@@ -170,8 +183,25 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
     const sessionId = randomUUID();
     const eventsPath = `${project.path}/shipwright_events.jsonl`;
 
-    const permissionMode = coercePermissionMode(body.mode);
-    const model = coerceModel(body.model);
+    // Iterate 14.8.2 — apply global defaults from settings when body
+    // doesn't specify model or mode explicitly.
+    let resolvedMode = body.mode;
+    let resolvedModel = body.model;
+    if ((!resolvedMode || !resolvedModel) && deps.readGlobalSettings) {
+      try {
+        const globalSettings = await deps.readGlobalSettings();
+        if (!resolvedMode && globalSettings.defaultMode) {
+          resolvedMode = globalSettings.defaultMode;
+        }
+        if (!resolvedModel && globalSettings.defaultModel) {
+          resolvedModel = aliasFromConcrete(globalSettings.defaultModel as string);
+        }
+      } catch {
+        // Fall through to hardcoded defaults
+      }
+    }
+    const permissionMode = coercePermissionMode(resolvedMode);
+    const model = coerceModel(resolvedModel);
     const phase = await resolvePhase(body.phase, title, description, project.path);
 
     await deps.emitTaskCreatedEvent(eventsPath, taskId, project.id, description, body.intent, body.priority, phase);
