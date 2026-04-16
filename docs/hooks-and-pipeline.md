@@ -90,32 +90,55 @@ Tool names use short form: `Bash`, `Write`, `Edit`, `Read`, `Glob`, `Grep`.
 
 ## Hooks Registry
 
+### Shared Hook: capture_session_id.py
+
+**Script:** `shared/scripts/hooks/capture_session_id.py` — the canonical
+SessionStart hook used by **every** plugin via
+`${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/capture_session_id.py`.
+
+Injects into Claude's session context:
+- `SHIPWRIGHT_SESSION_ID` — current session id
+- `SHIPWRIGHT_PLUGIN_ROOT` — active plugin directory
+- `SHIPWRIGHT_PROJECT_ROOT` — resolved via `resolve_project_root()`
+  (subdirectory-safe for monorepo layouts; falls back to `cwd`)
+- `SHIPWRIGHT_ROOT_SESSION_ID`, `SHIPWRIGHT_LOOP_ID`,
+  `SHIPWRIGHT_LOOP_UNIT_ID` — only emitted when parent runner set them
+  (autonomous-loop propagation, iterate 14.8+)
+
+Also appends `export SHIPWRIGHT_SESSION_ID=...` to `CLAUDE_ENV_FILE`
+(if provided) so bash subprocesses inherit the session id —
+`additionalContext` alone does not reach child processes spawned by
+Claude's Bash tool. Idempotent: never duplicates the export line.
+
+This single hook replaced 8 per-plugin duplicates that used to live
+under `plugins/*/scripts/hooks/capture-session-id.py` (iterate 14.9).
+
 ### shipwright-run
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
-| SessionStart | — | `capture-session-id.py` | Injects `SHIPWRIGHT_SESSION_ID`, `PLUGIN_ROOT`, `PROJECT_ROOT` + loop vars (`ROOT_SESSION_ID`, `LOOP_ID`, `LOOP_UNIT_ID`) into context |
+| SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | Stop | — | `generate-handoff.py` | Writes `agent_docs/session_handoff.md` for resume |
 
 ### shipwright-project
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
-| SessionStart | — | `capture-session-id.py` | Session ID injection |
+| SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-design
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
-| SessionStart | — | `capture-session-id.py` | Session ID injection |
+| SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-plan
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
-| SessionStart | — | `capture-session-id.py` | Session ID injection |
+| SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | SubagentStop | `shipwright-plan:section-writer` | `write-section-on-stop.py` | Persists section files from subagent output to disk |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
@@ -123,7 +146,7 @@ Tool names use short form: `Bash`, `Write`, `Edit`, `Read`, `Glob`, `Grep`.
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
-| SessionStart | — | `capture-session-id.py` | Session ID injection |
+| SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | SessionStart | — | `check_drift.py` | Timestamp drift + content drift (Structure block vs filesystem, Development `npm run` vs package.json) |
 | PreToolUse | `{"tools": ["Bash"]}` | `validate_command.sh` | Blocks dangerous shell commands (rm -rf, force push, etc.) |
 | PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_destructive_migration.sh` | Warns on DROP/DELETE in .sql files without down.sql |
@@ -144,7 +167,7 @@ Tool names use short form: `Bash`, `Write`, `Edit`, `Read`, `Glob`, `Grep`.
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
-| SessionStart | — | `capture-session-id.py` | Session ID injection |
+| SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | SessionStart | — | `check_drift.py` | Timestamp + content drift (catches Shipwright-repo self-drift when iterating on Shipwright itself) |
 | Stop | — | `iterate_stop_finalize.py` | Shared handoff + fallback `finalize_iterate.py` (compliance, dashboard, handoff). Freshness-gated: skips if `finalize_iterate.py` already ran. |
 | Stop | — | `write_terminal_marker.py` | Writes `.shipwright/runs/<loop_id>/<unit_id>/DONE` (no-op without loop env vars) |
@@ -153,21 +176,21 @@ Tool names use short form: `Bash`, `Write`, `Edit`, `Read`, `Glob`, `Grep`.
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
-| SessionStart | — | `capture-session-id.py` | Session ID injection |
+| SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-deploy
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
-| SessionStart | — | `capture-session-id.py` | Session ID injection |
+| SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-security
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
-| SessionStart | — | `capture_session_id.py` | Session ID injection |
+| SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | SessionStart | — | `check_drift.py` | Timestamp drift + content drift (Structure block vs filesystem, Development `npm run` vs package.json) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
@@ -175,7 +198,7 @@ Tool names use short form: `Bash`, `Write`, `Edit`, `Read`, `Glob`, `Grep`.
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
-| SessionStart | — | `capture-session-id.py` | Session ID injection |
+| SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | PreToolUse | `{"tools": ["Bash"]}` | `check_rtm_coverage.py` | Soft-blocks if RTM coverage < 80% threshold |
 | PreToolUse | `{"tools": ["Bash"]}` | `check_security_scan.py` | Checks security scan completion status |
 
@@ -310,14 +333,14 @@ Each plugin reads project context at startup to ensure consistency. This table s
 | spec.md (all splits) | ext | Step 1 | own | own section | — | — | B2 | read |
 | git log | ext | — | C2 | C2 | — | — | B2 | read |
 | test_results.json | — | — | — | — | B2 | B3 gate | B2 | read |
-| visual-guidelines.md | — | design | — | build | 3.6 | — | design ref | — |
+| visual-guidelines.md | — | creates | — | build | 3.6 | — | design ref | — |
 | events.jsonl | — | — | — | — | — | — | B2 | read |
 | run_config.json | — | — | — | — | — | — | B2 | read |
 | project_config.json | — | Step 1 | — | — | B | B2 | — | read |
-| build_config.json | — | — | — | D | — | — | — | read |
+| build_config.json | — | — | — | D (read+write) | — | — | — | read |
 
 **Key:** `read` = loaded at startup, `ext` = Extension scope only, `C2`/`B2`/`B3` = specific step name,
-`own` = only its own spec/section, `gate` = must-pass check before proceeding, `—` = not loaded.
+`own` = only its own spec/section, `gate` = must-pass check before proceeding, `creates` = generated by that phase (consumed by later phases), `read+write` = step reads existing state, mutates it, writes back, `—` = not loaded.
 
 ### Artifact Write Matrix
 

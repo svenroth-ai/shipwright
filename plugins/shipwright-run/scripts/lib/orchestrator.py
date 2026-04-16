@@ -394,7 +394,7 @@ def main() -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     p = subparsers.add_parser("write-config")
-    p.add_argument("--scope", required=True, choices=["full_app", "extension", "iterate"])
+    p.add_argument("--scope", required=True, choices=["full_app", "extension"])
     p.add_argument("--profile", default=None)
     p.add_argument("--autonomy", default="guided", choices=["guided", "autonomous"])
     p.add_argument("--deploy-target", default="jelastic-dev")

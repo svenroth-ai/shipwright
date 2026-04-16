@@ -6,7 +6,11 @@
 |--------|-------|
 | No `CLAUDE.md` in project root | Full Application |
 | `CLAUDE.md` exists + `agent_docs/` exists | Extension |
-| `--iterate` flag | Iteration (uses Extension scope internally) |
+
+> **Note:** There is no longer an `iterate` scope. Ongoing changes to
+> an existing project use the dedicated `/shipwright-iterate` skill,
+> which runs outside the orchestrator. The `--iterate` flag on
+> `inference.py` is deprecated and ignored.
 
 ## Profile Detection
 
@@ -22,8 +26,7 @@ Scan the user description for technology keywords:
 **Detection priority:**
 1. Explicit mention in description
 2. Existing `package.json` analysis (Extension scope)
-3. Existing `shipwright_run_config.json` (Iteration)
-4. Ask user
+3. Ask user
 
 ## Autonomy Levels
 

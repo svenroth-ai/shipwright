@@ -1,4 +1,8 @@
-"""Tests for shipwright-build hooks."""
+"""Tests for shipwright-build hooks (plugin-specific only).
+
+The SessionStart capture_session_id.py hook is shared across all
+plugins and tested in shared/tests/test_capture_session_id.py.
+"""
 
 import json
 import subprocess
@@ -6,23 +10,6 @@ import sys
 from pathlib import Path
 
 HOOKS_DIR = Path(__file__).resolve().parent.parent / "scripts" / "hooks"
-
-
-def test_capture_session_id(monkeypatch):
-    monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
-    monkeypatch.setenv("CLAUDE_PLUGIN_ROOT", "/fake/root")
-
-    result = subprocess.run(
-        [sys.executable, str(HOOKS_DIR / "capture-session-id.py")],
-        input=json.dumps({"session_id": "build-session-1"}),
-        capture_output=True, text=True, encoding="utf-8",
-    )
-
-    output = json.loads(result.stdout)
-    context = output["hookSpecificOutput"]["additionalContext"]
-    assert "SHIPWRIGHT_SESSION_ID=build-session-1" in context
-    assert "SHIPWRIGHT_PLUGIN_ROOT=/fake/root" in context
-    assert "DEEP_" not in context
 
 
 def test_validate_command_allows_normal():

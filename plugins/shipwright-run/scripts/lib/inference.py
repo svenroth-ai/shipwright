@@ -127,7 +127,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Inference engine")
     parser.add_argument("--description", required=True, help="User description")
     parser.add_argument("--project-root", help="Project root directory")
-    parser.add_argument("--iterate", action="store_true", help="Deprecated — use /shipwright-iterate instead")
+    # --iterate was a v0.2 flag; ongoing changes now route through
+    # /shipwright-iterate directly. Accepted silently so existing call
+    # sites do not crash, but it has no effect on inference output.
+    parser.add_argument("--iterate", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
 
     result = infer_settings(args.description, args.project_root)
