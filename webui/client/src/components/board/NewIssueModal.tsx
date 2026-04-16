@@ -150,14 +150,13 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
           className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-xl p-6 w-full max-w-[480px] z-50"
           onKeyDown={handleKeyDown}
         >
-          {/* Iterate 14.7.1 — diagonal mode badge pinned to the top-right of
-              the modal. Uses the currently selected project's mode; hidden
-              on the cross-project "All" tab until a project is chosen. */}
-          <ModeBadge mode={activeProject?.mode} />
           <div className="flex items-center justify-between mb-4">
-            <Dialog.Title className="text-lg font-semibold text-gray-900">
-              {headerTitle}
-            </Dialog.Title>
+            <div className="flex items-center gap-2">
+              <Dialog.Title className="text-lg font-semibold text-gray-900">
+                {headerTitle}
+              </Dialog.Title>
+              <ModeBadge mode={activeProject?.mode} />
+            </div>
             <Dialog.Description className="sr-only">Create a new task</Dialog.Description>
             <Dialog.Close asChild>
               <button className="p-1 rounded hover:bg-gray-100" aria-label="Close">
@@ -165,6 +164,11 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
               </button>
             </Dialog.Close>
           </div>
+          {showStandaloneHint && (
+            <p className="text-xs text-gray-500 -mt-3 mb-3">
+              No pipeline config — tasks run as standalone phases.
+            </p>
+          )}
 
           {/* Project selector (when All tab active) */}
           {!activeProjectId && (
@@ -221,11 +225,6 @@ export function NewIssueModal({ open, onOpenChange, activeProjectId, projects }:
           {/* Phase selector — hidden in iterate mode (pipeline already complete) */}
           {showPhaseDropdown && (
             <div className="mb-3">
-              {showStandaloneHint && (
-                <p className="text-xs text-gray-500 mb-1">
-                  No pipeline config — tasks run as standalone phases.
-                </p>
-              )}
               <label htmlFor="issue-phase" className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
                 <span>Phase</span>
                 {phaseIsAuto && (

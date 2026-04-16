@@ -7,8 +7,6 @@ function renderFilterBar(overrides = {}) {
     selectedPhases: [] as string[],
     togglePhase: vi.fn(),
     clearPhases: vi.fn(),
-    selectedPriority: null as string | null,
-    setPriority: vi.fn(),
     viewMode: 'board' as const,
     setViewMode: vi.fn(),
     ...overrides,
@@ -17,10 +15,14 @@ function renderFilterBar(overrides = {}) {
 }
 
 describe('FilterBar', () => {
-  it('renders phase and priority filter buttons', () => {
+  it('renders phase filter button', () => {
     renderFilterBar();
     expect(screen.getByText('Phase')).toBeInTheDocument();
-    expect(screen.getByText('Priority')).toBeInTheDocument();
+  });
+
+  it('does not render a priority filter', () => {
+    renderFilterBar();
+    expect(screen.queryByText('Priority')).not.toBeInTheDocument();
   });
 
   it('renders view toggle with Board and List', () => {
@@ -29,17 +31,14 @@ describe('FilterBar', () => {
     expect(screen.getByLabelText('List view')).toBeInTheDocument();
   });
 
-  it('shows filter chips when filters are active', () => {
-    renderFilterBar({ selectedPhases: ['build', 'test'], selectedPriority: 'P1' });
-    // Filter chips have remove buttons
+  it('shows filter chips when phase filters are active', () => {
+    renderFilterBar({ selectedPhases: ['build', 'test'] });
     expect(screen.getByLabelText('Remove build filter')).toBeInTheDocument();
     expect(screen.getByLabelText('Remove test filter')).toBeInTheDocument();
-    expect(screen.getByLabelText('Remove P1 filter')).toBeInTheDocument();
   });
 
   it('hides filter chips when no filters active', () => {
     const { container } = renderFilterBar();
-    // No filter chips rendered — only the filter buttons exist
     expect(container.querySelectorAll('[aria-label^="Remove"]').length).toBe(0);
   });
 });

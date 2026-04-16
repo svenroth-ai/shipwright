@@ -3,8 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { ModeBadge } from './ModeBadge';
 
 /**
- * Iterate 14.7.1 — ModeBadge pins the three known project modes to distinct
- * labels and color classes, and degrades cleanly when `mode` is missing.
+ * Iterate 14.8.1 — ModeBadge is now inline-flex (no absolute/rotate).
  */
 
 describe('ModeBadge', () => {
@@ -34,5 +33,13 @@ describe('ModeBadge', () => {
   it('renders nothing when mode is undefined', () => {
     const { container } = render(<ModeBadge mode={undefined} />);
     expect(container.firstChild).toBeNull();
+  });
+
+  it('uses inline-flex layout, not absolute positioning', () => {
+    render(<ModeBadge mode="pipeline" />);
+    const el = screen.getByTestId('mode-badge-pipeline');
+    expect(el.className).toMatch(/inline-flex/);
+    expect(el.className).not.toMatch(/absolute/);
+    expect(el.className).not.toMatch(/rotate-\[12deg\]/);
   });
 });

@@ -181,15 +181,19 @@ describe('NewIssueModal', () => {
     expect(screen.queryByText(/No pipeline config/)).not.toBeInTheDocument();
   });
 
-  // Iterate 14.7.1 — ModeBadge pinned to the top-right of the modal.
-  it('renders ModeBadge with the active project mode', () => {
+  // Iterate 14.8.1 — ModeBadge inline next to the modal title.
+  it('renders ModeBadge inline next to the title', () => {
     renderModal({
       projects: [
         { id: 'p1', name: 'Alpha', path: '/a', profile: 'custom', status: 'active', lastActive: '', createdAt: '', mode: 'iterate' },
       ],
     });
-    expect(screen.getByTestId('mode-badge-iterate')).toBeInTheDocument();
-    expect(screen.getByTestId('mode-badge-iterate').textContent).toBe('Iterate');
+    const badge = screen.getByTestId('mode-badge-iterate');
+    expect(badge).toBeInTheDocument();
+    expect(badge.textContent).toBe('Iterate');
+    // Badge and title share a flex parent
+    const title = screen.getByRole('heading', { name: 'New Iteration' });
+    expect(title.parentElement).toBe(badge.parentElement);
   });
 
   it('hides ModeBadge on the cross-project "All" tab until a project is picked', () => {
@@ -207,7 +211,7 @@ describe('NewIssueModal', () => {
     expect(screen.queryByLabelText(/Phase/)).not.toBeInTheDocument();
   });
 
-  it('standalone mode shows phase dropdown plus info hint', () => {
+  it('standalone mode shows phase dropdown plus info hint below title', () => {
     renderModal({
       projects: [
         { id: 'p1', name: 'Alpha', path: '/a', profile: 'custom', status: 'active', lastActive: '', createdAt: '', mode: 'standalone' },
@@ -218,6 +222,24 @@ describe('NewIssueModal', () => {
     expect(
       screen.getByText('No pipeline config — tasks run as standalone phases.'),
     ).toBeInTheDocument();
+  });
+
+  it('standalone hint is absent when mode is pipeline', () => {
+    renderModal({
+      projects: [
+        { id: 'p1', name: 'Alpha', path: '/a', profile: 'custom', status: 'active', lastActive: '', createdAt: '', mode: 'pipeline' },
+      ],
+    });
+    expect(screen.queryByText(/No pipeline config/)).not.toBeInTheDocument();
+  });
+
+  it('standalone hint is absent when mode is iterate', () => {
+    renderModal({
+      projects: [
+        { id: 'p1', name: 'Alpha', path: '/a', profile: 'custom', status: 'active', lastActive: '', createdAt: '', mode: 'iterate' },
+      ],
+    });
+    expect(screen.queryByText(/No pipeline config/)).not.toBeInTheDocument();
   });
 
   it('submits the selected phase in the POST /tasks body', async () => {

@@ -6,7 +6,6 @@ export type ViewMode = 'board' | 'list';
 
 export function useBoardFilters() {
   const [selectedPhases, setSelectedPhases] = useState<string[]>([]);
-  const [selectedPriority, setSelectedPriority] = useState<string | null>(null);
   const [viewMode, setViewMode] = useLocalStorage<ViewMode>('board-view-mode', 'board');
 
   const togglePhase = useCallback((phase: string) => {
@@ -19,23 +18,16 @@ export function useBoardFilters() {
 
   const clearAllFilters = useCallback(() => {
     setSelectedPhases([]);
-    setSelectedPriority(null);
   }, []);
 
-  const hasActiveFilters = selectedPhases.length > 0 || selectedPriority !== null;
+  const hasActiveFilters = selectedPhases.length > 0;
 
   const filterTasks = useCallback(
     (tasks: Task[]): Task[] => {
-      let filtered = tasks;
-      if (selectedPhases.length > 0) {
-        filtered = filtered.filter((t) => t.currentPhase && selectedPhases.includes(t.currentPhase));
-      }
-      if (selectedPriority) {
-        filtered = filtered.filter((t) => t.priority === selectedPriority);
-      }
-      return filtered;
+      if (selectedPhases.length === 0) return tasks;
+      return tasks.filter((t) => t.currentPhase && selectedPhases.includes(t.currentPhase));
     },
-    [selectedPhases, selectedPriority],
+    [selectedPhases],
   );
 
   return useMemo(
@@ -43,14 +35,12 @@ export function useBoardFilters() {
       selectedPhases,
       togglePhase,
       clearPhases,
-      selectedPriority,
-      setPriority: setSelectedPriority,
       viewMode,
       setViewMode,
       filterTasks,
       hasActiveFilters,
       clearAllFilters,
     }),
-    [selectedPhases, togglePhase, clearPhases, selectedPriority, viewMode, setViewMode, filterTasks, hasActiveFilters, clearAllFilters],
+    [selectedPhases, togglePhase, clearPhases, viewMode, setViewMode, filterTasks, hasActiveFilters, clearAllFilters],
   );
 }
