@@ -1,14 +1,13 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { useState } from 'react';
 import { ModelSelector, KNOWN_MODELS, matchKnownModel, aliasFromConcrete } from './ModelSelector';
-import type { ModelOption } from '../../hooks/useChatSettings';
 
 /**
- * Iterate 14.7.1 — ModelSelector overhaul. These tests assert the dropdown
- * now surfaces all five known CLI model ids, auto-syncs to system/init on
- * first event, respects manual override, and survives unknown ids via the
- * "Other: {raw}" fallback.
+ * Iterate 14.8.3 — ModelSelector redesign. Tests assert the new
+ * purely-props-driven contract: no localStorage, no userOverride/
+ * displayedId state, no taskKey reset. The selector reads
+ * systemInitModel to compute the label, and fires onSwitchModel
+ * when the user picks an option.
  */
 
 function openPopover() {
@@ -16,17 +15,58 @@ function openPopover() {
 }
 
 describe('ModelSelector', () => {
-  it('renders all five known CLI models in the dropdown', () => {
-    const onChange = vi.fn();
-    render(<ModelSelector model="sonnet" onChange={onChange} />);
+  it('renders label from systemInitModel', () => {
+    const onSwitchModel = vi.fn();
+    render(
+      <ModelSelector
+        systemInitModel="claude-opus-4-5-20251101"
+        onSwitchModel={onSwitchModel}
+      />,
+    );
+    expect(screen.getByTestId('model-selector-trigger').textContent).toBe('Opus 4.5');
+  });
+
+  it('renders "Claude" fallback label (via formatModelLabel) when no systemInitModel', () => {
+    const onSwitchModel = vi.fn();
+    render(<ModelSelector onSwitchModel={onSwitchModel} />);
+    // formatModelLabel returns "Claude" for undefined; but with no systemInitModel,
+    // activeId falls back to KNOWN_MODELS[0].id = claude-opus-4-6 → "Opus 4.6"
+    expect(screen.getByTestId('model-selector-trigger').textContent).toBe('Opus 4.6');
+  });
+
+  it('click option calls onSwitchModel(id)', () => {
+    const onSwitchModel = vi.fn();
+    render(
+      <ModelSelector
+        systemInitModel="claude-opus-4-5"
+        onSwitchModel={onSwitchModel}
+      />,
+    );
     openPopover();
-    // formatModelLabel turns claude-opus-4-6 → "Opus 4.6" etc. The trigger
-    // also renders one of these labels (the active one), so some names
-    // legitimately appear twice (trigger + option). Use getAllByText for
-    // the active family and getByText for the rest.
-    expect(screen.getAllByText('Sonnet 4.6').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('Opus 4.6')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Sonnet 4.6'));
+    expect(onSwitchModel).toHaveBeenCalledWith('claude-sonnet-4-6');
+  });
+
+  it('unknown model shows "Other: {id}" label', () => {
+    const onSwitchModel = vi.fn();
+    render(
+      <ModelSelector
+        systemInitModel="claude-future-9-9"
+        onSwitchModel={onSwitchModel}
+      />,
+    );
+    expect(screen.getByTestId('model-selector-trigger').textContent).toBe('Other: claude-future-9-9');
+    // After opening popover, the same label appears as an option
+    openPopover();
+    expect(screen.getAllByText('Other: claude-future-9-9').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('renders all five known CLI models in the dropdown', () => {
+    const onSwitchModel = vi.fn();
+    render(<ModelSelector onSwitchModel={onSwitchModel} />);
+    openPopover();
     expect(screen.getByText('Opus 4.5')).toBeInTheDocument();
+    expect(screen.getByText('Sonnet 4.6')).toBeInTheDocument();
     expect(screen.getByText('Sonnet 4.5')).toBeInTheDocument();
     expect(screen.getByText('Haiku 4.5')).toBeInTheDocument();
     // Context labels shown
@@ -34,105 +74,21 @@ describe('ModelSelector', () => {
     expect(screen.getAllByText('200K ctx').length).toBeGreaterThan(0);
   });
 
-  it('syncs the displayed label to systemInitModel on first event', () => {
-    const onChange = vi.fn();
-    const { rerender } = render(
-      <ModelSelector model="sonnet" onChange={onChange} taskKey="p1::t1" />,
-    );
-    // Initial: stored alias `sonnet` → first matching known model label.
-    expect(screen.getByTestId('model-selector-trigger').textContent).toBe('Sonnet 4.6');
-
-    // CLI reports opus-4-5 — the button should flip.
-    rerender(
-      <ModelSelector
-        model="sonnet"
-        onChange={onChange}
-        systemInitModel="claude-opus-4-5-20251101"
-        taskKey="p1::t1"
-      />,
-    );
-    expect(screen.getByTestId('model-selector-trigger').textContent).toBe('Opus 4.5');
-  });
-
-  it('respects user manual override once clicked, ignoring further systemInit updates', () => {
-    const onChange = vi.fn();
-    function Wrapper() {
-      const [sysInit, setSysInit] = useState<string | undefined>(undefined);
-      const [alias, setAlias] = useState<ModelOption>('sonnet');
-      return (
-        <div>
-          <ModelSelector
-            model={alias}
-            onChange={(m) => {
-              setAlias(m);
-              onChange(m);
-            }}
-            systemInitModel={sysInit}
-            taskKey="p1::t1"
-          />
-          <button data-testid="emit-init" onClick={() => setSysInit('claude-haiku-4-5')}>
-            emit
-          </button>
-        </div>
-      );
-    }
-    render(<Wrapper />);
-
-    // User manually picks Opus 4.6 before any systemInit event arrives.
-    openPopover();
-    fireEvent.click(screen.getByText('Opus 4.6'));
-    expect(onChange).toHaveBeenCalledWith('opus');
-    expect(screen.getByTestId('model-selector-trigger').textContent).toBe('Opus 4.6');
-
-    // Now a system/init event with Haiku arrives — must be ignored.
-    fireEvent.click(screen.getByTestId('emit-init'));
-    expect(screen.getByTestId('model-selector-trigger').textContent).toBe('Opus 4.6');
-  });
-
-  it('renders unknown model as an "Other: {raw}" option and selects it automatically', () => {
-    const onChange = vi.fn();
+  it('shows Running: tooltip when systemInitModel is set', () => {
+    const onSwitchModel = vi.fn();
     render(
       <ModelSelector
-        model="sonnet"
-        onChange={onChange}
-        systemInitModel="claude-future-9-9"
-        taskKey="p1::t1"
+        systemInitModel="claude-sonnet-4-6"
+        onSwitchModel={onSwitchModel}
       />,
     );
-    // Display shows the "Other: …" label for the unknown id.
-    expect(screen.getByTestId('model-selector-trigger').textContent).toBe('Other: claude-future-9-9');
-    // After opening the popover the same label appears as an option (so the
-    // text is now present twice — once on the trigger, once in the list).
-    openPopover();
-    expect(screen.getAllByText('Other: claude-future-9-9').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByTestId('model-selector-trigger').title).toBe('Running: claude-sonnet-4-6');
   });
 
-  it('resets the override flag when taskKey changes so next task auto-syncs again', () => {
-    const onChange = vi.fn();
-    const { rerender } = render(
-      <ModelSelector
-        model="sonnet"
-        onChange={onChange}
-        systemInitModel="claude-opus-4-5"
-        taskKey="p1::t1"
-      />,
-    );
-    // User overrides to Haiku 4.5 on task 1.
-    openPopover();
-    fireEvent.click(screen.getByText('Haiku 4.5'));
-    expect(screen.getByTestId('model-selector-trigger').textContent).toBe('Haiku 4.5');
-
-    // Switch to task 2 with a new systemInit model. The override must clear
-    // and the new task should show the fresh CLI-reported label.
-    rerender(
-      <ModelSelector
-        model="haiku"
-        onChange={onChange}
-        systemInitModel="claude-sonnet-4-6"
-        taskKey="p2::t2"
-      />,
-    );
-    expect(screen.getByTestId('model-selector-trigger').textContent).toBe('Sonnet 4.6');
+  it('shows generic tooltip when no systemInitModel', () => {
+    const onSwitchModel = vi.fn();
+    render(<ModelSelector onSwitchModel={onSwitchModel} />);
+    expect(screen.getByTestId('model-selector-trigger').title).toBe('Claude CLI model');
   });
 });
 

@@ -1,28 +1,22 @@
-import { useEffect, useState } from 'react';
 import * as Popover from '@radix-ui/react-popover';
-import type { ModelOption } from '../../hooks/useChatSettings';
 import { formatModelLabel } from '../../lib/formatModelLabel';
 
 /**
- * Iterate 14.7.1 — extended model selector.
+ * Iterate 14.8.3 — ModelSelector redesign.
  *
- * Background: earlier iterates shipped a coarse `opus|sonnet|haiku` selector
- * (the three aliases the Claude CLI accepts on `--model`). Iterate 14.6 then
- * added a separate dynamic label next to the dropdown that echoed the CLI's
- * real `system/init.model` (e.g. `claude-opus-4-5-20251101`). Having both a
- * dropdown AND a dynamic label was redundant and confusing.
+ * Replaced the previous dual-state (userOverride + displayedId) design with
+ * a purely props-driven component. The selector no longer touches
+ * localStorage or tracks its own display state. Instead:
  *
- * This iterate collapses the two controls into one: the dropdown now lists
- * concrete CLI model ids (opus-4-5, opus-4-6, sonnet-4-5, sonnet-4-6,
- * haiku-4-5), displayed via formatModelLabel (e.g. "Opus 4.6"). The selected
- * concrete id auto-syncs to the system/init model on first event, unless
- * the user has manually picked an option in this task's session. An unknown
- * model from system/init is appended as "Other: {raw}" so we never crash on
- * a new CLI build.
+ *   1. `systemInitModel` (from chatStore via ChatToolbar) seeds the active
+ *      label. When the CLI reports a model, the display updates.
+ *   2. `onSwitchModel` fires the /mode endpoint which respawns Claude with
+ *      the chosen model. The display does NOT change on click — it updates
+ *      when the new system/init event arrives via SSE and hydrates chatStore,
+ *      which flows back as a new `systemInitModel` prop.
  *
- * Wire compatibility: the CLI only accepts coarse aliases on --model. We map
- * the concrete id back to its family alias via `aliasFromConcrete()` before
- * calling `onChange`, so the server contract stays unchanged.
+ * This eliminates the taskKey-reset useEffect, the userOverride flag, and
+ * the displayedId sync dance — all sources of stale-label bugs.
  */
 
 export interface ConcreteModel {
@@ -33,6 +27,8 @@ export interface ConcreteModel {
   /** Optional context label shown next to the name (e.g. "1M", "200K"). */
   context?: string;
 }
+
+export type ModelOption = 'opus' | 'sonnet' | 'haiku';
 
 // Iterate 14.7.1 — the five CLI-supported concrete models. Order matters:
 // newest/flagship first within each family.
@@ -59,8 +55,8 @@ export function matchKnownModel(rawId: string | undefined | null): ConcreteModel
 }
 
 /** Coarse alias inferred from a concrete id by family name, used when we
- *  need to forward an `onChange(ModelOption)` after the user picked a
- *  concrete option. Falls back to 'sonnet' for unknown ids (safest middle). */
+ *  need to forward an alias after the user picked a concrete option. Falls
+ *  back to 'sonnet' for unknown ids (safest middle). */
 export function aliasFromConcrete(id: string): ModelOption {
   const lower = id.toLowerCase();
   if (lower.includes('opus')) return 'opus';
@@ -70,75 +66,32 @@ export function aliasFromConcrete(id: string): ModelOption {
 }
 
 interface ModelSelectorProps {
-  /** User-preference alias from localStorage (coarse family). */
-  model: ModelOption;
-  onChange: (model: ModelOption) => void;
-  /**
-   * Concrete CLI model id reported by the active task's `system/init` event.
-   * When set and the user hasn't manually picked in this session, the
-   * dropdown display flips to this id.
-   */
+  /** Raw model id from chatStore.systemInit for the active task. */
   systemInitModel?: string;
-  /**
-   * Stable key identifying the active task. When it changes (task switch)
-   * the "user manually changed" override is reset so the next task can
-   * auto-sync again.
-   */
-  taskKey?: string;
+  /** Callback fired when user selects a different model. Triggers mode
+   *  switch via /mode endpoint. */
+  onSwitchModel: (modelId: string) => void;
 }
 
-export function ModelSelector({ model, onChange, systemInitModel, taskKey }: ModelSelectorProps) {
-  // Track whether the user has manually picked in this session. Once true,
-  // we stop following systemInitModel — the explicit click wins.
-  const [userOverride, setUserOverride] = useState(false);
-  const [displayedId, setDisplayedId] = useState<string | null>(null);
-
-  // Reset override + display on task switch. Iterate 14.7.1 requirement: a
-  // new task starts fresh; the next system/init will seed the label again.
-  useEffect(() => {
-    setUserOverride(false);
-    setDisplayedId(null);
-  }, [taskKey]);
-
-  // Auto-sync from systemInitModel until user overrides.
-  useEffect(() => {
-    if (userOverride) return;
-    if (!systemInitModel) return;
-    setDisplayedId(systemInitModel);
-  }, [systemInitModel, userOverride]);
-
-  // Build the option list: the five known concrete models, plus an
-  // "Other: {raw}" fallback entry when systemInit reported an unknown id.
-  const knownList: ConcreteModel[] = KNOWN_MODELS;
+export function ModelSelector({ systemInitModel, onSwitchModel }: ModelSelectorProps) {
   const matchedInit = matchKnownModel(systemInitModel);
   const showOther = !!systemInitModel && !matchedInit;
   const otherEntry: ConcreteModel | null = showOther
     ? { id: systemInitModel!, alias: aliasFromConcrete(systemInitModel!) }
     : null;
 
-  // Decide which id is currently "active" for display purposes:
-  // 1) The user's latest pick (displayedId set by onClick), OR
-  // 2) The synced systemInit id (matched or raw other), OR
-  // 3) The first known model whose alias matches the stored `model` prop.
-  let activeId: string;
-  if (displayedId) {
-    activeId = displayedId;
-  } else if (matchedInit) {
-    activeId = matchedInit.id;
-  } else if (otherEntry) {
-    activeId = otherEntry.id;
-  } else {
-    activeId = knownList.find((m) => m.alias === model)?.id ?? knownList[0].id;
-  }
-
-  const activeLabel = matchKnownModel(activeId)
-    ? formatModelLabel(activeId)
-    : `Other: ${activeId}`;
+  const activeId = matchedInit?.id ?? otherEntry?.id ?? KNOWN_MODELS[0].id;
+  const formattedLabel = formatModelLabel(activeId);
+  // formatModelLabel returns "Claude" for unrecognized ids. If we have an
+  // otherEntry (unknown model from system/init), show "Other: {id}" instead.
+  const activeLabel = otherEntry && activeId === otherEntry.id
+    ? `Other: ${activeId}`
+    : formattedLabel;
 
   function handlePick(entry: ConcreteModel) {
-    setUserOverride(true);
-    setDisplayedId(entry.id);
-    onChange(entry.alias);
+    onSwitchModel(entry.id);
+    // Display does NOT change here — it updates when the new system/init
+    // event arrives and hydrates chatStore → systemInitModel prop changes.
   }
 
   return (
@@ -147,7 +100,7 @@ export function ModelSelector({ model, onChange, systemInitModel, taskKey }: Mod
         <button
           className="px-2 py-1 rounded-md bg-gray-100 text-xs font-medium hover:bg-gray-200 cursor-pointer"
           data-testid="model-selector-trigger"
-          title={systemInitModel ? `CLI reports: ${systemInitModel}` : 'Claude CLI model'}
+          title={systemInitModel ? `Running: ${systemInitModel}` : 'Claude CLI model'}
         >
           {activeLabel}
         </button>
@@ -157,7 +110,7 @@ export function ModelSelector({ model, onChange, systemInitModel, taskKey }: Mod
           className="bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[220px] z-50"
           sideOffset={4}
         >
-          {knownList.map((entry) => {
+          {KNOWN_MODELS.map((entry) => {
             const isActive = entry.id === activeId;
             return (
               <Popover.Close asChild key={entry.id}>

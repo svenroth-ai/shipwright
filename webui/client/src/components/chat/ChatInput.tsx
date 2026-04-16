@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Send, Paperclip, X } from 'lucide-react';
+import { Send, Square, Paperclip, X } from 'lucide-react';
 import { ChatToolbar } from './ChatToolbar';
 import { SlashCommandPopup } from './SlashCommandPopup';
 import { useChatSettings } from '../../hooks/useChatSettings';
@@ -22,9 +22,12 @@ interface ChatInputProps {
    *  mode-switch mutation instead of just updating localStorage. */
   projectId?: string;
   taskId?: string;
+  /** Iterate 14.8.3 — callback fired when user clicks the Stop button
+   *  during streaming. Triggers the interrupt mutation. */
+  onInterrupt?: () => void;
 }
 
-export function ChatInput({ onSend, isStreaming, autonomy, projectId, taskId }: ChatInputProps) {
+export function ChatInput({ onSend, isStreaming, autonomy, projectId, taskId, onInterrupt }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [images, setImages] = useState<ImageAttachment[]>([]);
   const [showSlashPopup, setShowSlashPopup] = useState(false);
@@ -134,8 +137,6 @@ export function ChatInput({ onSend, isStreaming, autonomy, projectId, taskId }: 
   return (
     <div className="border-t border-[var(--color-border,#e0dbd4)] bg-white pt-2 pb-4">
       <ChatToolbar
-        model={settings.model}
-        setModel={settings.setModel}
         mode={settings.mode}
         setMode={settings.setMode}
         autonomy={autonomy}
@@ -202,13 +203,26 @@ export function ChatInput({ onSend, isStreaming, autonomy, projectId, taskId }: 
             rows={1}
             className="flex-1 resize-none text-sm outline-none bg-transparent max-h-[150px]"
           />
-          <button
-            disabled={!canSend}
-            onClick={handleSend}
-            className="p-1.5 rounded-lg bg-[var(--color-primary)] text-white disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity shrink-0"
-          >
-            <Send size={16} />
-          </button>
+          {isStreaming && onInterrupt ? (
+            <button
+              type="button"
+              onClick={onInterrupt}
+              className="p-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors shrink-0"
+              title="Stop generation"
+              data-testid="stop-button"
+            >
+              <Square size={16} />
+            </button>
+          ) : (
+            <button
+              disabled={!canSend}
+              onClick={handleSend}
+              className="p-1.5 rounded-lg bg-[var(--color-primary)] text-white disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity shrink-0"
+              data-testid="send-button"
+            >
+              <Send size={16} />
+            </button>
+          )}
         </div>
       </div>
     </div>

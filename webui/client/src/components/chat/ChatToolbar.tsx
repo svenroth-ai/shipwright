@@ -3,12 +3,10 @@ import { PermissionMode } from './PermissionMode';
 import { AutonomyPill } from './AutonomyPill';
 import { useSystemInitModel } from '../../stores/chatStore';
 import { taskKeyOf } from '../../stores/turnStatusStore';
-import type { ModelOption, ModeOption } from '../../hooks/useChatSettings';
+import type { ModeOption } from '../../hooks/useChatSettings';
 import type { AutonomyOption } from '../../types/settings';
 
 interface ChatToolbarProps {
-  model: ModelOption;
-  setModel: (m: ModelOption) => void;
   mode: ModeOption;
   setMode: (m: ModeOption) => void;
   autonomy: AutonomyOption;
@@ -19,28 +17,31 @@ interface ChatToolbarProps {
 }
 
 export function ChatToolbar({
-  model,
-  setModel,
   mode,
   setMode,
   autonomy,
   projectId,
   taskId,
 }: ChatToolbarProps) {
-  // Iterate 14.7.1 — collapsed ChatToolbar. The separate dynamic model label
-  // from 14.6 was dropped; ModelSelector itself now handles system/init sync
-  // and displays the concrete CLI model. We still thread the current task
-  // identity so ModelSelector can reset its manual-override flag on switch.
+  // Iterate 14.8.3 — ModelSelector is now purely props-driven from
+  // chatStore.systemInit. No more model/setModel localStorage threading.
+  // The label updates when the new system/init SSE event arrives.
   const taskKey = projectId && taskId ? taskKeyOf(projectId, taskId) : '';
   const systemModel = useSystemInitModel(taskKey);
+
+  // onSwitchModel: integration point for future mid-task model switching.
+  // The /mode endpoint currently only supports permission-mode changes.
+  // When the CLI adds --model on --resume, this will fire a model-switch
+  // mutation. For now, model selection is informational (display-only).
+  const handleSwitchModel = (_modelId: string) => {
+    // Future: POST /api/projects/:id/tasks/:taskId/model { model: alias }
+  };
 
   return (
     <div className="flex items-center gap-2 px-3 py-2">
       <ModelSelector
-        model={model}
-        onChange={setModel}
         systemInitModel={systemModel}
-        taskKey={taskKey}
+        onSwitchModel={handleSwitchModel}
       />
       <PermissionMode mode={mode} onChange={setMode} projectId={projectId} taskId={taskId} />
       <AutonomyPill autonomy={autonomy} />
