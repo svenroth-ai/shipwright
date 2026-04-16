@@ -1,11 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, MoreVertical, CheckCircle, Pencil, Trash2, Play, FileText } from 'lucide-react';
+import { ArrowLeft, MoreVertical, CheckCircle, Pencil, Trash2, Play, FileText, Pause } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Popover from '@radix-ui/react-popover';
 import { apiPatch } from '../../lib/api';
 import { queryKeys } from '../../lib/queryKeys';
 import { useStartTask } from '../../hooks/useStartTask';
+import { useResumeTask } from '../../hooks/useResumeTask';
 import type { Task } from '../../types';
 import { PhaseTag } from '../board/PhaseTag';
 import { PriorityIndicator } from '../board/PriorityIndicator';
@@ -30,6 +31,7 @@ export function TaskHeader({ task, onEdit }: TaskHeaderProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const startTask = useStartTask();
+  const resumeTask = useResumeTask();
 
   const updateStatus = useMutation({
     mutationFn: (status: string) =>
@@ -46,6 +48,18 @@ export function TaskHeader({ task, onEdit }: TaskHeaderProps) {
   });
 
   const isPending = task.status === 'pending' || task.kanbanStatus === 'backlog';
+
+  // Iterate 14.11 — interrupted-task pause indicator + Resume button in
+  // the detail header. Same derivation used by TaskCard (board, 14.7.0)
+  // and AskUserCard (chat, 14.10): orphaned status + resumable
+  // orphanReason + captured claudeSessionId. Closes the third visibility
+  // gap — opening an interrupted task's detail page now surfaces the
+  // affordance regardless of whether a pending AskUserCard exists.
+  const isInterrupted =
+    task.status === 'orphaned' &&
+    (task.orphanReason === 'stale_on_startup' ||
+      task.orphanReason === 'user_interrupted') &&
+    !!task.claudeSessionId;
 
   return (
     <header className="flex items-start gap-4 px-6 py-3.5 border-b border-[#e0dbd4] bg-white">
@@ -97,6 +111,33 @@ export function TaskHeader({ task, onEdit }: TaskHeaderProps) {
             </>
           )}
         </div>
+
+        {/* Iterate 14.11 — pause indicator + Resume button for interrupted
+            tasks. Renders inline below the status row so the user always
+            sees the affordance on the detail page, not only when a
+            pending AskUserCard happens to be in the chat history. */}
+        {isInterrupted && (
+          <div
+            data-testid="header-pause-indicator"
+            className="flex items-center gap-2 mt-2 px-3 py-2 rounded bg-amber-50 border border-amber-200"
+          >
+            <Pause size={16} className="text-amber-700 shrink-0" />
+            <span className="text-sm text-amber-900 flex-1">
+              Task interrupted — resume to continue
+            </span>
+            <button
+              type="button"
+              data-testid="header-resume-button"
+              disabled={resumeTask.isPending}
+              onClick={() =>
+                resumeTask.mutate({ projectId: task.projectId, taskId: task.id })
+              }
+              className="px-3 py-1 text-xs font-semibold bg-amber-700 text-white rounded hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {resumeTask.isPending ? 'Resuming…' : 'Resume'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Right: three-dot menu */}
