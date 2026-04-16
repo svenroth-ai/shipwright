@@ -5,6 +5,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import SettingsPage from './SettingsPage';
 
 beforeEach(() => {
+  // Reset localStorage to a clean state for each test so the chat-mode
+  // sync assertions can read the post-save value with no leftover.
+  localStorage.clear();
   vi.stubGlobal('EventSource', vi.fn().mockImplementation(() => ({
     onopen: null, onerror: null, onmessage: null, close: vi.fn(),
     addEventListener: vi.fn(), removeEventListener: vi.fn(),
