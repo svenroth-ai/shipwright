@@ -1,9 +1,25 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect } from 'vitest';
-import { TaskHeader } from './TaskHeader';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Task } from '../../types';
+
+// Iterate 14.11 — mock api module for the resume-button click test.
+// Must be hoisted (vi.mock is lifted above imports), so the stubbed
+// apiPost / apiPatch can be asserted on.
+const apiPostSpy = vi.fn<(path: string, body: unknown) => Promise<unknown>>(
+  async () => ({}),
+);
+const apiPatchSpy = vi.fn<(path: string, body: unknown) => Promise<unknown>>(
+  async () => ({}),
+);
+vi.mock('../../lib/api', () => ({
+  apiPost: (path: string, body: unknown) => apiPostSpy(path, body),
+  apiPatch: (path: string, body: unknown) => apiPatchSpy(path, body),
+  apiFetch: vi.fn(async () => ({})),
+}));
+
+import { TaskHeader } from './TaskHeader';
 
 const mockTask: Task = {
   id: 'task-1',
@@ -31,6 +47,11 @@ function renderHeader(task = mockTask) {
 }
 
 describe('TaskHeader', () => {
+  beforeEach(() => {
+    apiPostSpy.mockClear();
+    apiPatchSpy.mockClear();
+  });
+
   it('renders task title', () => {
     renderHeader();
     expect(screen.getByText('Implement auth flow')).toBeInTheDocument();
@@ -61,5 +82,44 @@ describe('TaskHeader', () => {
     renderHeader({ ...mockTask, status: 'pending', kanbanStatus: 'backlog' });
     // Menu trigger is present
     expect(screen.getByLabelText('Task actions')).toBeInTheDocument();
+  });
+
+  // Iterate 14.11 — header pause indicator + Resume button
+  describe('interrupted task affordance', () => {
+    const interruptedTask: Task = {
+      ...mockTask,
+      status: 'orphaned',
+      orphanReason: 'stale_on_startup',
+      claudeSessionId: 'claude-session-abc',
+    };
+
+    it('renders pause indicator + Resume button when task is interrupted', () => {
+      renderHeader(interruptedTask);
+      expect(screen.getByTestId('header-pause-indicator')).toBeInTheDocument();
+      expect(screen.getByTestId('header-resume-button')).toBeInTheDocument();
+      expect(screen.getByText(/Task interrupted/)).toBeInTheDocument();
+    });
+
+    it('hides pause indicator when task is running', () => {
+      renderHeader(mockTask);
+      expect(screen.queryByTestId('header-pause-indicator')).toBeNull();
+      expect(screen.queryByTestId('header-resume-button')).toBeNull();
+    });
+
+    it('hides pause indicator when orphaned but missing claudeSessionId', () => {
+      renderHeader({ ...interruptedTask, claudeSessionId: undefined });
+      expect(screen.queryByTestId('header-pause-indicator')).toBeNull();
+    });
+
+    it('fires resume mutation when Resume button is clicked', async () => {
+      renderHeader(interruptedTask);
+      fireEvent.click(screen.getByTestId('header-resume-button'));
+      await waitFor(() => {
+        expect(apiPostSpy).toHaveBeenCalledWith(
+          '/projects/proj-1/tasks/task-1/resume',
+          {},
+        );
+      });
+    });
   });
 });
