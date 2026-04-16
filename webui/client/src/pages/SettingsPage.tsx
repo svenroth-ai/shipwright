@@ -11,6 +11,7 @@ import { queryKeys } from '../lib/queryKeys';
 import { PhaseMappingConfig } from '../components/board/PhaseMappingConfig';
 import { DEFAULT_PHASE_MAPPING } from '../lib/phaseMapping';
 import { getProjectColor } from '../lib/projectColor';
+import { useChatSettings, type ModeOption } from '../hooks/useChatSettings';
 import type { KanbanStatus, Project } from '../types';
 import type { AutonomyOption } from '../types/settings';
 
@@ -38,12 +39,38 @@ const MODE_OPTIONS = [
   { value: 'plan', label: 'Plan mode' },
 ];
 
+// Iterate 14.12 — `chat-mode` localStorage values that map cleanly to
+// the server-side default mode. Anything outside this list is left alone
+// (handles future modes the SettingsPage doesn't know about yet).
+const CHAT_MODE_VALUES: readonly ModeOption[] = [
+  'auto',
+  'default',
+  'acceptEdits',
+  'plan',
+  'bypassPermissions',
+];
+
 export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
   const { data: projects = [] } = useProjects();
   const saveMutation = useSaveSettings();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
+
+  // Iterate 14.12 (Bug 2) — keep localStorage `chat-mode` in lockstep
+  // with Settings → Default Mode. Without this, NewIssueModal's task
+  // creation reads the stale localStorage value (set ages ago in a
+  // previous session) and forwards it as `body.mode` to the server,
+  // which then ignores `settings.defaultMode` because body.mode is
+  // present. Result before fix: switching the dropdown to "Auto" did
+  // nothing — every new task spawned with bypassPermissions.
+  const { setMode: setLocalChatMode } = useChatSettings();
+  function saveDefaultMode(value: string) {
+    saveMutation.mutate({ defaultMode: value });
+    if ((CHAT_MODE_VALUES as readonly string[]).includes(value)) {
+      setLocalChatMode(value as ModeOption);
+    }
+  }
 
   // Iterate 14.8.2 — deep-link: read ?projectId= and ?tab= from URL
   const initialTab = searchParams.get('tab') ?? 'global';
@@ -160,7 +187,7 @@ export default function SettingsPage() {
               <select
                 data-testid="default-mode-select"
                 value={settings?.defaultMode ?? 'auto'}
-                onChange={(e) => saveMutation.mutate({ defaultMode: e.target.value })}
+                onChange={(e) => saveDefaultMode(e.target.value)}
                 className="px-2 py-1.5 border border-[#e0dbd4] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
               >
                 {MODE_OPTIONS.map((opt) => (

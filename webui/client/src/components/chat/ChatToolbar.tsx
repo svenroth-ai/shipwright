@@ -3,6 +3,7 @@ import { PermissionMode } from './PermissionMode';
 import { AutonomyPill } from './AutonomyPill';
 import { useSystemInitModel } from '../../stores/chatStore';
 import { taskKeyOf } from '../../stores/turnStatusStore';
+import { useSwitchModel } from '../../hooks/useSwitchModel';
 import type { ModeOption } from '../../hooks/useChatSettings';
 import type { AutonomyOption } from '../../types/settings';
 
@@ -29,12 +30,15 @@ export function ChatToolbar({
   const taskKey = projectId && taskId ? taskKeyOf(projectId, taskId) : '';
   const systemModel = useSystemInitModel(taskKey);
 
-  // onSwitchModel: integration point for future mid-task model switching.
-  // The /mode endpoint currently only supports permission-mode changes.
-  // When the CLI adds --model on --resume, this will fire a model-switch
-  // mutation. For now, model selection is informational (display-only).
-  const handleSwitchModel = (_modelId: string) => {
-    // Future: POST /api/projects/:id/tasks/:taskId/model { model: alias }
+  // Iterate 14.12 — mid-task model switching (Bug 1).
+  // 14.8.3 left this as a no-op TODO; the user reported that clicking
+  // Opus 4.7 in the dropdown did nothing. The hook is always called
+  // (rules of hooks); we short-circuit to a no-op when project/task ids
+  // aren't available (e.g. ChatToolbar rendered without an active task).
+  const switchModel = useSwitchModel(projectId ?? '', taskId ?? '');
+  const handleSwitchModel = (modelId: string) => {
+    if (!projectId || !taskId) return;
+    switchModel.mutate(modelId);
   };
 
   return (

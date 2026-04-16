@@ -165,6 +165,67 @@ describe("Task Routes", () => {
     expect(res.status).toBe(400);
   });
 
+  // Iterate 14.12 — mid-task model switching via /mode endpoint.
+  // Replaces the 14.8.3 client-side TODO ("Future: POST .../model {model}").
+  it("POST /tasks/:id/mode with body.model respawns with --resume + new model", async () => {
+    const { app, deps } = setup(false, {
+      runningProcess: { state: "running", claudeSessionId: "real-claude-sess-xyz" },
+    });
+    const res = await app.request("/api/projects/p1/tasks/t1/mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "opus" }),
+    });
+    expect(res.status).toBe(200);
+    expect(deps.adapter.terminate).toHaveBeenCalledTimes(1);
+    expect(deps.governor.release).toHaveBeenCalledWith("t1");
+    expect(deps.governor.acquire).toHaveBeenCalledTimes(1);
+    const opts = deps.governor.acquire.mock.calls[0][0];
+    expect(opts.sessionId).toBe("real-claude-sess-xyz");
+    expect(opts.resumeSession).toBe(true);
+    expect(opts.model).toBe("opus");
+  });
+
+  it("POST /tasks/:id/mode accepts both mode AND model in one request", async () => {
+    const { app, deps } = setup(false, {
+      runningProcess: { state: "running", claudeSessionId: "real-claude-sess-xyz" },
+    });
+    const res = await app.request("/api/projects/p1/tasks/t1/mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "auto", model: "opus" }),
+    });
+    expect(res.status).toBe(200);
+    const opts = deps.governor.acquire.mock.calls[0][0];
+    expect(opts.permissionMode).toBe("auto");
+    expect(opts.model).toBe("opus");
+  });
+
+  it("POST /tasks/:id/mode returns 400 when neither mode nor model is supplied", async () => {
+    const { app, deps } = setup(false, {
+      runningProcess: { state: "running", claudeSessionId: "real-claude-sess-xyz" },
+    });
+    const res = await app.request("/api/projects/p1/tasks/t1/mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(400);
+    expect(deps.adapter.terminate).not.toHaveBeenCalled();
+  });
+
+  it("POST /tasks/:id/mode rejects unknown model alias as 400", async () => {
+    const { app } = setup(false, {
+      runningProcess: { state: "running", claudeSessionId: "real-claude-sess-xyz" },
+    });
+    const res = await app.request("/api/projects/p1/tasks/t1/mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "gpt-5" }),
+    });
+    expect(res.status).toBe(400);
+  });
+
   // Iterate 9 — model + effort wire-through
   it("POST /tasks forwards body.model to governor.acquire as model option", async () => {
     const { app, deps } = setup();

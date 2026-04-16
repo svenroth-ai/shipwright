@@ -669,19 +669,47 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
   // Supersedes ADR-011's "v0.1 not supported" stance: a single cold-start
   // respawn is fine for an explicit user action (unlike per-message respawn
   // which was the reason ADR-009 rejected the --resume approach).
+  //
+  // Iterate 14.12 — also accepts an optional `model` field (alias:
+  // opus/sonnet/haiku) for mid-task model switching. Either `mode` or
+  // `model` is required; both can be supplied for an atomic switch.
+  // Bug fix: 14.8.3 left `handleSwitchModel` as a no-op stub on the client.
+  // The endpoint now actually wires the chosen model into the respawn args
+  // alongside the existing permission-mode logic.
   app.post("/api/projects/:id/tasks/:taskId/mode", async (c) => {
     const project = deps.projectManager.getById(c.req.param("id"));
     if (!project) throw new AppError("Project not found", 404);
 
     const body = await c.req.json().catch(() => ({} as Record<string, unknown>));
-    const rawMode = body.mode;
-    if (!rawMode || typeof rawMode !== "string" || !(VALID_PERMISSION_MODES as string[]).includes(rawMode)) {
-      throw new AppError(
-        `mode must be one of ${VALID_PERMISSION_MODES.join(", ")}`,
-        400,
-      );
+
+    // Mode is now optional; either mode OR model is required.
+    let newMode: PermissionMode | undefined;
+    if (body.mode !== undefined) {
+      const rawMode = body.mode;
+      if (typeof rawMode !== "string" || !(VALID_PERMISSION_MODES as string[]).includes(rawMode)) {
+        throw new AppError(
+          `mode must be one of ${VALID_PERMISSION_MODES.join(", ")}`,
+          400,
+        );
+      }
+      newMode = rawMode as PermissionMode;
     }
-    const newMode = rawMode as PermissionMode;
+
+    let newModel: ModelAlias | undefined;
+    if (body.model !== undefined) {
+      const coerced = coerceModel(body.model);
+      if (!coerced) {
+        throw new AppError(
+          `model must be one of ${VALID_MODELS.join(", ")}`,
+          400,
+        );
+      }
+      newModel = coerced;
+    }
+
+    if (!newMode && !newModel) {
+      throw new AppError("mode or model required", 400);
+    }
 
     const taskId = c.req.param("taskId");
     const task = deps.taskManager.getTaskById(project.id, taskId);
@@ -720,10 +748,17 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
     }
 
     // All clear — terminate current process and respawn with --resume.
+    // When only `model` is supplied, fall back to the current task's
+    // permission mode (or `bypassPermissions` default) so the respawn
+    // doesn't accidentally downgrade the mode just because the user was
+    // changing the model. The PermissionMode dropdown owns mode changes;
+    // the ModelSelector owns model changes — they should compose, not
+    // step on each other.
     const claudeSessionId = proc.claudeSessionId;
     deps.adapter.terminate(proc);
     await deps.governor.release(taskId);
 
+    const respawnMode: PermissionMode = newMode ?? "bypassPermissions";
     const result = await deps.governor.acquire({
       projectDir: project.path,
       projectId: project.id,
@@ -732,19 +767,26 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
       resumeSession: true,
       pluginDirs: project.settings?.claudePluginDirs ?? [],
       prompt: "", // empty placeholder; Claude already has the full history
-      permissionMode: newMode,
+      permissionMode: respawnMode,
+      ...(newModel && { model: newModel }),
     });
 
     deps.sseManager.broadcast({
       type: "task:updated",
-      payload: { taskId, projectId: project.id, modeChanged: newMode },
+      payload: {
+        taskId,
+        projectId: project.id,
+        ...(newMode && { modeChanged: newMode }),
+        ...(newModel && { modelChanged: newModel }),
+      },
       timestamp: new Date().toISOString(),
     });
 
     return c.json({
       data: {
         taskId,
-        permissionMode: newMode,
+        ...(newMode && { permissionMode: newMode }),
+        ...(newModel && { model: newModel }),
         status: result === "queued" ? "queued" : "running",
       },
     });
