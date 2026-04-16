@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { ClaudeAdapter } from "./claude-adapter.js";
+import { ClaudeAdapter, modeForCli } from "./claude-adapter.js";
 import type { ClaudeSpawnOptions, SpawnDeps } from "./claude-adapter.js";
 import { EventEmitter, PassThrough } from "stream";
 
@@ -243,5 +243,89 @@ describe("ClaudeAdapter", () => {
     adapter.terminate(proc);
     expect(proc.state).toBe("exited");
     expect(child.kill).toHaveBeenCalledWith("SIGTERM");
+  });
+
+  // Iterate 14.10 — Auto mode CLI mapping. The UI keeps `auto` as a
+  // user-facing label; the adapter translates it to `dontAsk` (the
+  // VS Code extension's internal mapping for Auto mode) before
+  // appending `--permission-mode`. Without this, every Auto-mode spawn
+  // since 14.9 was failing silently because the CLI doesn't accept
+  // `--permission-mode auto`.
+  it("translates permissionMode 'auto' to --permission-mode dontAsk", () => {
+    const { child } = createFakeChild();
+    const deps = createMockDeps(child);
+    const adapter = new ClaudeAdapter(deps, () => {});
+    adapter.spawn({ ...baseOptions, permissionMode: "auto" });
+
+    const args: string[] = (deps.spawn as any).mock.calls[0][1];
+    const idx = args.indexOf("--permission-mode");
+    expect(idx).toBeGreaterThanOrEqual(0);
+    expect(args[idx + 1]).toBe("dontAsk");
+    expect(args).not.toContain("auto");
+  });
+
+  it("passes acceptEdits / plan / default through to --permission-mode unchanged", () => {
+    for (const mode of ["acceptEdits", "plan", "default"] as const) {
+      const { child } = createFakeChild();
+      const deps = createMockDeps(child);
+      const adapter = new ClaudeAdapter(deps, () => {});
+      adapter.spawn({ ...baseOptions, permissionMode: mode });
+
+      const args: string[] = (deps.spawn as any).mock.calls[0][1];
+      const idx = args.indexOf("--permission-mode");
+      expect(idx).toBeGreaterThanOrEqual(0);
+      expect(args[idx + 1]).toBe(mode);
+    }
+  });
+
+  it("bypassPermissions still uses the --dangerously-skip-permissions shortcut", () => {
+    const { child } = createFakeChild();
+    const deps = createMockDeps(child);
+    const adapter = new ClaudeAdapter(deps, () => {});
+    adapter.spawn({ ...baseOptions, permissionMode: "bypassPermissions" });
+
+    const args: string[] = (deps.spawn as any).mock.calls[0][1];
+    expect(args).toContain("--dangerously-skip-permissions");
+    expect(args).not.toContain("--permission-mode");
+  });
+
+  it("logs claude.spawn event with both uiMode and cliMode for audit", () => {
+    const { child } = createFakeChild();
+    const deps = createMockDeps(child);
+    const adapter = new ClaudeAdapter(deps, () => {});
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    adapter.spawn({ ...baseOptions, permissionMode: "auto", model: "opus" });
+
+    const spawnLog = logSpy.mock.calls
+      .map((c) => c[0])
+      .filter((line) => typeof line === "string" && line.includes("claude.spawn"))
+      .map((line) => JSON.parse(line as string))[0];
+    expect(spawnLog).toBeDefined();
+    expect(spawnLog.event).toBe("claude.spawn");
+    expect(spawnLog.uiMode).toBe("auto");
+    expect(spawnLog.cliMode).toBe("dontAsk");
+    expect(spawnLog.model).toBe("opus");
+    expect(spawnLog.taskId).toBe("t1");
+    logSpy.mockRestore();
+  });
+});
+
+// Iterate 14.10 — pure unit tests for the modeForCli helper. The adapter's
+// spawn-level tests above cover the wiring; these guard the contract.
+describe("modeForCli", () => {
+  it("translates 'auto' to 'dontAsk' (matches VS Code extension Auto mode)", () => {
+    expect(modeForCli("auto")).toBe("dontAsk");
+  });
+
+  it("translates undefined to 'dontAsk'", () => {
+    expect(modeForCli(undefined)).toBe("dontAsk");
+  });
+
+  it("passes acceptEdits / plan / default / bypassPermissions through unchanged", () => {
+    expect(modeForCli("acceptEdits")).toBe("acceptEdits");
+    expect(modeForCli("plan")).toBe("plan");
+    expect(modeForCli("default")).toBe("default");
+    expect(modeForCli("bypassPermissions")).toBe("bypassPermissions");
   });
 });

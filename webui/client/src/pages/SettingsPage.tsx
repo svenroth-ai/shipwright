@@ -18,9 +18,9 @@ const TAB_CLASS =
   'px-4 py-2.5 text-sm font-medium text-gray-500 border-b-2 border-transparent data-[state=active]:text-[var(--color-primary)] data-[state=active]:border-[var(--color-primary)] hover:text-gray-700 transition-colors';
 
 // Iterate 14.8.2 — model options for the Default Model dropdown
-// Iterate 14.9 — Opus 7 added as newest flagship.
+// Iterate 14.10 — Opus 4.7 (correct CLI id, 14.9 had guessed wrong).
 const MODEL_OPTIONS = [
-  { value: 'claude-opus-7-0', label: 'Opus 7.0 (1M)' },
+  { value: 'claude-opus-4-7', label: 'Opus 4.7 (1M)' },
   { value: 'claude-opus-4-6', label: 'Opus 4.6 (1M)' },
   { value: 'claude-opus-4-5', label: 'Opus 4.5 (200K)' },
   { value: 'claude-sonnet-4-6', label: 'Sonnet 4.6 (1M)' },
@@ -141,7 +141,7 @@ export default function SettingsPage() {
               </div>
               <select
                 data-testid="default-model-select"
-                value={settings?.defaultModel ?? 'claude-opus-7-0'}
+                value={settings?.defaultModel ?? 'claude-opus-4-7'}
                 onChange={(e) => saveMutation.mutate({ defaultModel: e.target.value })}
                 className="px-2 py-1.5 border border-[#e0dbd4] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
               >

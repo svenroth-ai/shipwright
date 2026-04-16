@@ -30,8 +30,8 @@ describe('ModelSelector', () => {
     const onSwitchModel = vi.fn();
     render(<ModelSelector onSwitchModel={onSwitchModel} />);
     // With no systemInitModel, activeId falls back to KNOWN_MODELS[0].id
-    // which is claude-opus-7-0 (iterate 14.9 newest flagship) → "Opus 7.0"
-    expect(screen.getByTestId('model-selector-trigger').textContent).toBe('Opus 7.0');
+    // which is claude-opus-4-7 (iterate 14.10 newest flagship) → "Opus 4.7"
+    expect(screen.getByTestId('model-selector-trigger').textContent).toBe('Opus 4.7');
   });
 
   it('click option calls onSwitchModel(id)', () => {
@@ -61,14 +61,14 @@ describe('ModelSelector', () => {
     expect(screen.getAllByText('Other: claude-future-9-9').length).toBeGreaterThanOrEqual(2);
   });
 
-  it('renders all known CLI models in the dropdown (iterate 14.9: Opus 7 added)', () => {
+  it('renders all known CLI models in the dropdown (iterate 14.10: Opus 4.7 added)', () => {
     const onSwitchModel = vi.fn();
     render(<ModelSelector onSwitchModel={onSwitchModel} />);
     openPopover();
-    // With no systemInitModel, KNOWN_MODELS[0] (Opus 7.0) is the default
+    // With no systemInitModel, KNOWN_MODELS[0] (Opus 4.7) is the default
     // active entry and also an option — so both the trigger label and the
-    // option share the "Opus 7.0" text. Use getAllByText for those.
-    expect(screen.getAllByText('Opus 7.0').length).toBeGreaterThanOrEqual(2);
+    // option share the "Opus 4.7" text. Use getAllByText for those.
+    expect(screen.getAllByText('Opus 4.7').length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText('Opus 4.6').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Opus 4.5').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Sonnet 4.6').length).toBeGreaterThan(0);
@@ -106,14 +106,14 @@ describe('matchKnownModel / aliasFromConcrete', () => {
     expect(matchKnownModel(undefined)).toBeNull();
   });
 
-  // Iterate 14.9 — Opus 7 support.
-  it('matches claude-opus-7-0 and its date-suffixed form', () => {
-    expect(matchKnownModel('claude-opus-7-0')?.id).toBe('claude-opus-7-0');
-    expect(matchKnownModel('claude-opus-7-0-20260401')?.id).toBe('claude-opus-7-0');
+  // Iterate 14.10 — Opus 4.7 is the correct CLI id (14.9 guessed wrong).
+  it('matches claude-opus-4-7 and its date-suffixed form', () => {
+    expect(matchKnownModel('claude-opus-4-7')?.id).toBe('claude-opus-4-7');
+    expect(matchKnownModel('claude-opus-4-7-20260401')?.id).toBe('claude-opus-4-7');
   });
 
-  it('infers opus alias for claude-opus-7-0', () => {
-    expect(aliasFromConcrete('claude-opus-7-0')).toBe('opus');
+  it('infers opus alias for claude-opus-4-7', () => {
+    expect(aliasFromConcrete('claude-opus-4-7')).toBe('opus');
   });
 
   it('infers family alias from a concrete id', () => {
@@ -123,10 +123,10 @@ describe('matchKnownModel / aliasFromConcrete', () => {
     expect(aliasFromConcrete('something-weird')).toBe('sonnet'); // safest default
   });
 
-  it('exports the expected concrete models with Opus 7 at the top (iterate 14.9)', () => {
+  it('exports the expected concrete models with Opus 4.7 at the top (iterate 14.10)', () => {
     expect(KNOWN_MODELS).toHaveLength(6);
     expect(KNOWN_MODELS.map((m) => m.id)).toEqual([
-      'claude-opus-7-0',
+      'claude-opus-4-7',
       'claude-opus-4-6',
       'claude-opus-4-5',
       'claude-sonnet-4-6',

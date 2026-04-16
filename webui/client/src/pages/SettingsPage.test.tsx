@@ -30,17 +30,17 @@ describe('SettingsPage', () => {
     });
   });
 
-  // Iterate 14.8.2 / 14.9 — Global tab renders Default Model + Default Mode dropdowns
-  it('Global tab renders Default Model dropdown (defaults to Opus 7.0 in 14.9)', async () => {
+  // Iterate 14.8.2 / 14.10 — Global tab renders Default Model + Default Mode dropdowns
+  it('Global tab renders Default Model dropdown (defaults to Opus 4.7 in 14.10)', async () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByTestId('default-model-select')).toBeInTheDocument();
     });
     const select = screen.getByTestId('default-model-select') as HTMLSelectElement;
-    expect(select.value).toBe('claude-opus-7-0');
+    expect(select.value).toBe('claude-opus-4-7');
   });
 
-  it('Global tab renders Default Permission Mode dropdown (defaults to Auto in 14.9)', async () => {
+  it('Global tab renders Default Permission Mode dropdown (defaults to Auto in 14.10)', async () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByTestId('default-mode-select')).toBeInTheDocument();
@@ -59,13 +59,13 @@ describe('SettingsPage', () => {
     expect(select.options[0].textContent).toBe('Auto mode');
   });
 
-  it('Default Model dropdown lists Opus 7.0 as the first option', async () => {
+  it('Default Model dropdown lists Opus 4.7 as the first option', async () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByTestId('default-model-select')).toBeInTheDocument();
     });
     const select = screen.getByTestId('default-model-select') as HTMLSelectElement;
-    expect(select.options[0].value).toBe('claude-opus-7-0');
+    expect(select.options[0].value).toBe('claude-opus-4-7');
   });
 
   // Iterate 14.8.2 — Project tab renders color picker

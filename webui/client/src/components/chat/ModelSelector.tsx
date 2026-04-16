@@ -32,9 +32,12 @@ export type ModelOption = 'opus' | 'sonnet' | 'haiku';
 
 // Iterate 14.7.1 — CLI-supported concrete models. Order matters:
 // newest/flagship first within each family.
-// Iterate 14.9 — add Opus 7 as newest flagship.
+// Iterate 14.10 — Opus 4.7 is the correct CLI id for the newest flagship
+// (verified via `claude --model claude-opus-4-7 -p "."` returning the same
+// id in system/init). 14.9 guessed `claude-opus-7-0`, which is not a
+// real CLI-recognised identifier.
 export const KNOWN_MODELS: ConcreteModel[] = [
-  { id: 'claude-opus-7-0', alias: 'opus', context: '1M' },
+  { id: 'claude-opus-4-7', alias: 'opus', context: '1M' },
   { id: 'claude-opus-4-6', alias: 'opus', context: '1M' },
   { id: 'claude-opus-4-5', alias: 'opus', context: '200K' },
   { id: 'claude-sonnet-4-6', alias: 'sonnet', context: '1M' },

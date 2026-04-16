@@ -15,28 +15,57 @@ vi.mock('../../hooks/useInbox', () => ({
   useInboxItem: () => useInboxItemReturn,
 }));
 
+interface RenderOpts {
+  toolInput: unknown;
+  content?: string;
+  toolUseId?: string;
+  awaitingValue?: { triggerAwaiting: () => void };
+  // Iterate 14.10 — interrupted-task lifecycle props for the pause
+  // indicator. Optional so existing tests stay terse.
+  taskStatus?: import('../../types').TaskStatus;
+  orphanReason?: string;
+  claudeSessionId?: string;
+  onResume?: () => void;
+}
+
 function renderCard(
-  toolInput: unknown,
+  toolInputOrOpts: unknown | RenderOpts,
   content = '',
   toolUseId?: string,
   awaitingValue?: { triggerAwaiting: () => void },
 ) {
+  // Backwards-compatible: original signature passed bare toolInput. New
+  // tests pass a RenderOpts object so we don't have to maintain a long
+  // positional parameter list.
+  const opts: RenderOpts =
+    toolInputOrOpts && typeof toolInputOrOpts === 'object' && 'toolInput' in (toolInputOrOpts as object)
+      ? (toolInputOrOpts as RenderOpts)
+      : { toolInput: toolInputOrOpts, content, toolUseId, awaitingValue };
+
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const message: ChatMessage = {
     id: 'ask-1',
     taskId: 't1',
     type: 'tool_use',
-    content,
+    content: opts.content ?? '',
     toolName: 'AskUserQuestion',
-    toolInput,
-    toolUseId,
+    toolInput: opts.toolInput,
+    toolUseId: opts.toolUseId,
     timestamp: '2026-04-13T00:00:00Z',
   };
-  const card = <AskUserCard message={message} />;
+  const card = (
+    <AskUserCard
+      message={message}
+      taskStatus={opts.taskStatus}
+      orphanReason={opts.orphanReason}
+      claudeSessionId={opts.claudeSessionId}
+      onResume={opts.onResume}
+    />
+  );
   return render(
     <QueryClientProvider client={queryClient}>
-      {awaitingValue ? (
-        <ChatAwaitingContext.Provider value={awaitingValue}>{card}</ChatAwaitingContext.Provider>
+      {opts.awaitingValue ? (
+        <ChatAwaitingContext.Provider value={opts.awaitingValue}>{card}</ChatAwaitingContext.Provider>
       ) : (
         card
       )}
@@ -282,6 +311,94 @@ describe('AskUserCard', () => {
       'toolu_01',
     );
     // Submit button stays — no ignore / answer-anyway alternatives.
+    expect(screen.getByRole('button', { name: 'Submit Answer' })).toBeInTheDocument();
+  });
+
+  // ──────────────────────────────────────────────────────────────────
+  // Iterate 14.10 — pause indicator + Resume button
+  // ──────────────────────────────────────────────────────────────────
+
+  it('renders pause indicator + Resume button when task is interrupted (stale_on_startup)', () => {
+    const onResume = vi.fn();
+    renderCard({
+      toolInput: { questions: [{ question: 'Pick one', options: [{ label: 'Yes' }] }] },
+      taskStatus: 'orphaned',
+      orphanReason: 'stale_on_startup',
+      claudeSessionId: 'sess-abc',
+      onResume,
+    });
+    expect(screen.getByTestId('ask-user-pause-indicator')).toBeInTheDocument();
+    expect(screen.getByTestId('ask-user-resume-button')).toBeInTheDocument();
+  });
+
+  it('renders pause indicator when task was user-interrupted', () => {
+    renderCard({
+      toolInput: { questions: [{ question: 'Pick one' }] },
+      taskStatus: 'orphaned',
+      orphanReason: 'user_interrupted',
+      claudeSessionId: 'sess-xyz',
+      onResume: vi.fn(),
+    });
+    expect(screen.getByTestId('ask-user-pause-indicator')).toBeInTheDocument();
+  });
+
+  it('does NOT render pause indicator when task is running', () => {
+    renderCard({
+      toolInput: { questions: [{ question: 'Pick one' }] },
+      taskStatus: 'running',
+      orphanReason: undefined,
+      claudeSessionId: 'sess-abc',
+      onResume: vi.fn(),
+    });
+    expect(screen.queryByTestId('ask-user-pause-indicator')).toBeNull();
+  });
+
+  it('does NOT render pause indicator when claudeSessionId is missing (cannot resume)', () => {
+    renderCard({
+      toolInput: { questions: [{ question: 'Pick one' }] },
+      taskStatus: 'orphaned',
+      orphanReason: 'stale_on_startup',
+      claudeSessionId: undefined,
+      onResume: vi.fn(),
+    });
+    expect(screen.queryByTestId('ask-user-pause-indicator')).toBeNull();
+  });
+
+  it('does NOT render pause indicator for non-resumable orphan reasons (e.g. process_dead)', () => {
+    renderCard({
+      toolInput: { questions: [{ question: 'Pick one' }] },
+      taskStatus: 'orphaned',
+      orphanReason: 'process_dead',
+      claudeSessionId: 'sess-abc',
+      onResume: vi.fn(),
+    });
+    expect(screen.queryByTestId('ask-user-pause-indicator')).toBeNull();
+  });
+
+  it('Resume button click invokes onResume', async () => {
+    const onResume = vi.fn();
+    renderCard({
+      toolInput: { questions: [{ question: 'Pick one' }] },
+      taskStatus: 'orphaned',
+      orphanReason: 'stale_on_startup',
+      claudeSessionId: 'sess-abc',
+      onResume,
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId('ask-user-resume-button'));
+    expect(onResume).toHaveBeenCalledTimes(1);
+  });
+
+  it('pause indicator does NOT remove the question body / Submit button', () => {
+    renderCard({
+      toolInput: { questions: [{ question: 'Pick one', options: [{ label: 'Yes' }] }] },
+      taskStatus: 'orphaned',
+      orphanReason: 'stale_on_startup',
+      claudeSessionId: 'sess-abc',
+      onResume: vi.fn(),
+    });
+    expect(screen.getByText('Pick one')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Yes' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Submit Answer' })).toBeInTheDocument();
   });
 });

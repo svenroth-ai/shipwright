@@ -1,4 +1,4 @@
-import type { ChatMessage as ChatMessageType } from '../../types';
+import type { ChatMessage as ChatMessageType, TaskStatus } from '../../types';
 import { UserMessage } from './UserMessage';
 import { AssistantMessage } from './AssistantMessage';
 import { ToolCallCard } from './ToolCallCard';
@@ -8,6 +8,17 @@ import { AskUserCard } from './AskUserCard';
 interface ChatMessageProps {
   message: ChatMessageType;
   isStreaming?: boolean;
+  /**
+   * Iterate 14.10 — task lifecycle context for AskUserCard's pause
+   * indicator. ChatPanel reads it from useTask() and threads it down so
+   * that an interrupted task with a pending question shows a Resume
+   * button at the top of the AskUserCard, matching the TaskCard
+   * affordance on the kanban.
+   */
+  taskStatus?: TaskStatus;
+  orphanReason?: string;
+  claudeSessionId?: string;
+  onResume?: () => void;
 }
 
 /**
@@ -19,10 +30,25 @@ function isSystemInitBlob(content: string): boolean {
   return content.includes('"type":"system"') && content.includes('"subtype":"init"');
 }
 
-export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
+export function ChatMessage({
+  message,
+  isStreaming,
+  taskStatus,
+  orphanReason,
+  claudeSessionId,
+  onResume,
+}: ChatMessageProps) {
   // AskUserQuestion detection
   if (message.toolName === 'AskUserQuestion') {
-    return <AskUserCard message={message} />;
+    return (
+      <AskUserCard
+        message={message}
+        taskStatus={taskStatus}
+        orphanReason={orphanReason}
+        claudeSessionId={claudeSessionId}
+        onResume={onResume}
+      />
+    );
   }
 
   // Collapse result duplicates — if content exactly matches a prior assistant

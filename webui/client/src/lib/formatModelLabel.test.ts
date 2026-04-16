@@ -36,17 +36,14 @@ describe('formatModelLabel', () => {
     expect(formatModelLabel('claude-OPUS-4-5')).toBe('Opus 4.5');
   });
 
-  // Iterate 14.9 — Opus 7 support. The CLI id may or may not include
-  // a minor version; the regex tolerates both forms.
-  it('formats opus 7.0 shorthand (major.minor present)', () => {
-    expect(formatModelLabel('claude-opus-7-0')).toBe('Opus 7.0');
+  // Iterate 14.10 — Opus 4.7 is the real CLI id for the newest flagship
+  // (verified via `claude --model claude-opus-4-7 -p "."` returning the
+  // same id in system/init). 14.9 had guessed `claude-opus-7-0`.
+  it('formats opus 4.7 shorthand', () => {
+    expect(formatModelLabel('claude-opus-4-7')).toBe('Opus 4.7');
   });
 
-  it('formats opus 7 major-only (missing minor)', () => {
-    expect(formatModelLabel('claude-opus-7')).toBe('Opus 7');
-  });
-
-  it('formats opus 7.0 with CLI date suffix', () => {
-    expect(formatModelLabel('claude-opus-7-0-20260401')).toBe('Opus 7.0');
+  it('formats opus 4.7 with CLI date suffix', () => {
+    expect(formatModelLabel('claude-opus-4-7-20260401')).toBe('Opus 4.7');
   });
 });
