@@ -43,22 +43,18 @@ User description
 - Usually single split
 - Existing test suite extended
 
-## Iteration (`--iterate`)
+## Iteration
 
-Quick change to existing project.
+**Iteration is not a `/shipwright-run` scope.** For quick changes to an
+existing project, use the dedicated `/shipwright-iterate` skill, which
+has its own complexity-adaptive SDLC (trivial / small / medium / large)
+and does not route through the orchestrator at all.
 
 ```
-User description
-  → /shipwright-project (1-2 questions, 1 split)
-    → /shipwright-plan (1 spec → 1-2 sections)
-      → /shipwright-build (implement)
-    → /shipwright-test
-    → /shipwright-deploy (DEV)
-  → /shipwright-changelog
+/shipwright-iterate "Add dark mode toggle"
 ```
 
-**Characteristics:**
-- Skips full interview
-- Reuses existing config
-- 1 split, 1-2 sections
-- Fastest path through the pipeline
+See `plugins/shipwright-iterate/skills/iterate/SKILL.md` for the full
+flow. The `--iterate` flag on `/shipwright-run` and `inference.py` is
+deprecated and accepted only for backward compatibility — it does not
+change scope detection (existing projects resolve to `extension`).

@@ -4,7 +4,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../shipwright-run/scripts/hooks/capture-session-id.py"
+          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/capture_session_id.py"
         },
         {
           "type": "command",

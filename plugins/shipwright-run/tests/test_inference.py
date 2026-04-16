@@ -25,9 +25,15 @@ def test_scope_extension_existing_project(existing_project):
     assert any("CLAUDE.md" in s for s in signals)
 
 
-def test_scope_iterate_flag():
+def test_scope_iterate_flag_deprecated():
+    """The iterate flag is deprecated — /shipwright-iterate has its own
+    skill entry point. detect_scope only distinguishes full_app from
+    extension based on filesystem state; the iterate kwarg is silently
+    accepted for backward compatibility but does not change the output.
+    """
     scope, signals = detect_scope(iterate=True)
-    assert scope == "iterate"
+    # No project root given → defaults to full_app
+    assert scope == "full_app"
 
 
 # --- Profile detection ---
@@ -76,13 +82,18 @@ def test_infer_extension(existing_project):
     assert result["scope"] == "extension"
 
 
-def test_infer_iterate(existing_project):
+def test_infer_iterate_flag_deprecated(existing_project):
+    """The iterate kwarg is deprecated — existing projects always
+    resolve to 'extension' scope regardless of the flag. Users who
+    want iterate-mode behavior must invoke /shipwright-iterate directly.
+    """
     result = infer_settings(
         "Fix the login button",
         project_root=str(existing_project),
         iterate=True,
     )
-    assert result["scope"] == "iterate"
+    # Existing project with CLAUDE.md + agent_docs → extension, not iterate
+    assert result["scope"] == "extension"
 
 
 # --- CLI ---

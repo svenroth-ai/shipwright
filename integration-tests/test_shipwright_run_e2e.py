@@ -6,6 +6,11 @@ Tests the orchestrator's ability to:
 3. Track pipeline progress across all plugins
 4. Resume from any point
 5. Handle all three scope flows
+
+Note: These tests use --force on update-step calls because integration
+tests don't produce the full set of canon artifacts (events, dashboard,
+handoff, etc.) that the phase validators check since iterate 12.1.
+The canon compliance is tested separately in shared/tests/.
 """
 
 import json
@@ -93,18 +98,19 @@ class TestFullPipelineE2E:
         )
         (planning / "01-auth" / "spec.md").write_text("# Auth Spec\n")
 
-        # Update orchestrator: project complete
+        # Update orchestrator: project complete (--force skips canon validation
+        # which requires artifacts not produced in integration tests)
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
-             "--step", "project", "--status", "complete"],
+             "--step", "project", "--status", "complete", "--force"],
         )
 
         # === Phase 2.5: shipwright-design (skip in test, mark complete) ===
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
-             "--step", "design", "--status", "complete"],
+             "--step", "design", "--status", "complete", "--force"],
         )
 
         # === Phase 3: shipwright-plan ===
@@ -127,7 +133,7 @@ class TestFullPipelineE2E:
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
-             "--step", "plan", "--status", "complete"],
+             "--step", "plan", "--status", "complete", "--force"],
         )
 
         # === Phase 4: shipwright-build ===
@@ -156,14 +162,14 @@ class TestFullPipelineE2E:
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
-             "--step", "build", "--status", "complete"],
+             "--step", "build", "--status", "complete", "--force"],
         )
 
         # Skip test (no real infra)
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
-             "--step", "test", "--status", "complete"],
+             "--step", "test", "--status", "complete", "--force"],
         )
 
         # === Phase 5: shipwright-changelog ===
@@ -182,19 +188,19 @@ class TestFullPipelineE2E:
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
-             "--step", "changelog", "--status", "complete"],
+             "--step", "changelog", "--status", "complete", "--force"],
         )
 
         # Skip compliance + deploy (no real infra)
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
-             "--step", "compliance", "--status", "complete"],
+             "--step", "compliance", "--status", "complete", "--force"],
         )
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
-             "--step", "deploy", "--status", "complete"],
+             "--step", "deploy", "--status", "complete", "--force"],
         )
 
         # === Verify final state ===
@@ -224,20 +230,24 @@ class TestResumeFromAnyPoint:
              "--project-root", str(project)],
         )
 
+        # Pipeline order: project → design → plan → build → test →
+        # changelog → compliance → deploy (matches PIPELINE_STEPS in orchestrator.py)
         expected_next = {
             "project": "design",
             "design": "plan",
             "plan": "build",
             "build": "test",
             "test": "changelog",
-            "changelog": "deploy",
+            "changelog": "compliance",
+            "compliance": "deploy",
         }
 
         for step, expected in expected_next.items():
+            # --force skips canon validation (no artifacts in this test)
             run_script(
                 str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
                 ["update-step", "--project-root", str(project),
-                 "--step", step, "--status", "complete"],
+                 "--step", step, "--status", "complete", "--force"],
             )
             result = run_script(
                 str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
@@ -245,11 +255,11 @@ class TestResumeFromAnyPoint:
             )
             assert result["next_step"] == expected, f"After {step}, expected {expected} but got {result['next_step']}"
 
-        # After changelog, pipeline is complete
+        # After deploy, pipeline is complete
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
-             "--step", "changelog", "--status", "complete"],
+             "--step", "deploy", "--status", "complete", "--force"],
         )
         result = run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
@@ -259,9 +269,15 @@ class TestResumeFromAnyPoint:
 
 
 class TestIterateMode:
-    """Verify iterate mode detects existing project and simplifies flow."""
+    """Verify iterate mode detection and extension scope inference."""
 
-    def test_iterate_inference(self, tmp_path):
+    def test_existing_project_infers_extension(self, tmp_path):
+        """Existing project with CLAUDE.md + agent_docs → extension scope.
+
+        The --iterate flag is deprecated since /shipwright-iterate has its
+        own skill entry point. inference.py only distinguishes full_app
+        (greenfield) from extension (existing project).
+        """
         project = tmp_path / "existing-app"
         project.mkdir()
         (project / "CLAUDE.md").write_text("# Existing App\n")
@@ -270,11 +286,10 @@ class TestIterateMode:
         result = run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "inference.py"),
             ["--description", "Add dark mode toggle",
-             "--project-root", str(project),
-             "--iterate"],
+             "--project-root", str(project)],
         )
 
-        assert result["scope"] == "iterate"
+        assert result["scope"] == "extension"
 
     def test_extension_without_iterate_flag(self, tmp_path):
         """Existing project without --iterate → extension scope."""
@@ -289,4 +304,24 @@ class TestIterateMode:
              "--project-root", str(project)],
         )
 
+        assert result["scope"] == "extension"
+
+    def test_iterate_flag_deprecated_still_accepted(self, tmp_path):
+        """The --iterate flag is accepted without error (backward compat)
+        but doesn't change the output — scope is still inferred from
+        filesystem state, not the flag.
+        """
+        project = tmp_path / "existing-app"
+        project.mkdir()
+        (project / "CLAUDE.md").write_text("# Existing App\n")
+        (project / "agent_docs").mkdir()
+
+        result = run_script(
+            str(RUN_PLUGIN / "scripts" / "lib" / "inference.py"),
+            ["--description", "Fix login bug",
+             "--project-root", str(project),
+             "--iterate"],
+        )
+
+        # --iterate is deprecated and ignored; scope comes from filesystem
         assert result["scope"] == "extension"

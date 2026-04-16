@@ -799,7 +799,7 @@ Write latest-run state to `shipwright_test_results.json`:
 > committing and force a `git commit --amend` — which conflicts with the
 > "never amend" rule in the global `CLAUDE.md`.
 
-### F5: Finalize Iterate Artifacts
+### F5b: Finalize Iterate Artifacts
 
 Run **one** script that handles compliance, dashboard, and handoff:
 
