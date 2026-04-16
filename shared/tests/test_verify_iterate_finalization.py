@@ -21,6 +21,11 @@ from tools.verify_iterate_finalization import (
     check_session_handoff_fresh,
     run_all_checks,
 )
+from tools.verifiers.iterate_checks import (
+    check_build_dashboard_has_run_id,
+    check_architecture_reviewed,
+    check_conventions_reviewed,
+)
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -50,6 +55,10 @@ def seed_project(root: Path, run_id: str, commit_hash: str, adr: str = "ADR-999"
     )
 
     (root / "agent_docs" / "session_handoff.md").write_text("fresh")
+
+    (root / "agent_docs" / "build_dashboard.md").write_text(
+        f"# Build Dashboard\nrun_id: {run_id}\n"
+    )
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -256,3 +265,82 @@ def test_run_all_checks_returns_red_when_commit_not_in_events(tmp_path):
     results = run_all_checks(proj, run_id="iterate-foo", commit_hash="WRONG")
     red = [r for r in results if not r.ok]
     assert any("events" in r.name for r in red)
+
+
+# ──────────────────────────────────────────────────────────────────────
+# C2: check_build_dashboard_has_run_id
+# ──────────────────────────────────────────────────────────────────────
+
+def test_dashboard_passes_when_run_id_present(tmp_path):
+    proj = tmp_path / "webui"
+    proj.mkdir()
+    (proj / "agent_docs").mkdir()
+    (proj / "agent_docs" / "build_dashboard.md").write_text("run_id: iter-42\n")
+    result = check_build_dashboard_has_run_id(proj, "iter-42")
+    assert result.ok is True
+
+
+def test_dashboard_warns_when_run_id_missing(tmp_path):
+    proj = tmp_path / "webui"
+    proj.mkdir()
+    (proj / "agent_docs").mkdir()
+    (proj / "agent_docs" / "build_dashboard.md").write_text("old content\n")
+    result = check_build_dashboard_has_run_id(proj, "iter-42")
+    assert result.ok is False
+    assert result.severity == "warning"
+
+
+def test_dashboard_warns_when_file_missing(tmp_path):
+    proj = tmp_path / "webui"
+    proj.mkdir()
+    result = check_build_dashboard_has_run_id(proj, "iter-42")
+    assert result.ok is False
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Architecture/conventions staleness
+# ──────────────────────────────────────────────────────────────────────
+
+def test_architecture_passes_for_bugfix(tmp_path):
+    proj = tmp_path / "webui"
+    proj.mkdir()
+    (proj / "agent_docs").mkdir()
+    (proj / "shipwright_run_config.json").write_text(json.dumps({
+        "iterate_history": [{"run_id": "r1", "intent": "bug"}],
+    }))
+    (proj / "agent_docs" / "architecture.md").write_text("old")
+    result = check_architecture_reviewed(proj, "r1")
+    assert result.ok is True
+
+
+def test_architecture_warns_for_stale_feature(tmp_path):
+    proj = tmp_path / "webui"
+    proj.mkdir()
+    (proj / "agent_docs").mkdir()
+    cfg = proj / "shipwright_run_config.json"
+    cfg.write_text(json.dumps({
+        "iterate_history": [{"run_id": "r1", "intent": "change"}],
+    }))
+    import time
+    arch = proj / "agent_docs" / "architecture.md"
+    arch.write_text("old arch")
+    import os
+    os.utime(arch, (time.time() - 3600, time.time() - 3600))
+    result = check_architecture_reviewed(proj, "r1")
+    assert result.ok is False
+    assert result.severity == "warning"
+
+
+def test_architecture_passes_when_fresh(tmp_path):
+    proj = tmp_path / "webui"
+    proj.mkdir()
+    (proj / "agent_docs").mkdir()
+    cfg = proj / "shipwright_run_config.json"
+    cfg.write_text(json.dumps({
+        "iterate_history": [{"run_id": "r1", "intent": "feature"}],
+    }))
+    import time, os
+    os.utime(cfg, (time.time() - 3600, time.time() - 3600))
+    (proj / "agent_docs" / "architecture.md").write_text("fresh arch")
+    result = check_architecture_reviewed(proj, "r1")
+    assert result.ok is True

@@ -151,6 +151,156 @@ def check_session_handoff_fresh(
 
 
 # ---------------------------------------------------------------------------
+# C2 check — build_dashboard.md reflects the iterate run (Canon spec gap)
+# ---------------------------------------------------------------------------
+
+def check_build_dashboard_has_run_id(
+    project_root: Path,
+    run_id: str,
+) -> CheckResult:
+    """C2 check — ``build_dashboard.md`` references the current run_id.
+
+    Was defined in the Canon spec but never implemented until iterate 14.8.
+    """
+    name = "build_dashboard has run_id"
+    dashboard = project_root / "agent_docs" / "build_dashboard.md"
+    if not dashboard.exists():
+        return CheckResult(
+            name, False, "build_dashboard.md missing",
+            severity=Severity.WARNING.value,
+        )
+    content = dashboard.read_text(encoding="utf-8", errors="ignore")
+    if run_id and run_id in content:
+        return CheckResult(name, True, f"run_id={run_id} present")
+    return CheckResult(
+        name, False,
+        f"run_id={run_id} not found in build_dashboard.md",
+        severity=Severity.WARNING.value,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Cross-artifact warnings (non-canon — advisory only)
+# ---------------------------------------------------------------------------
+
+def check_compliance_reflects_run_id(
+    project_root: Path,
+    run_id: str,
+) -> CheckResult:
+    """Non-canon warning: compliance dashboard should reference the run."""
+    name = "compliance reflects run_id"
+    dashboard = project_root / "compliance" / "dashboard.md"
+    if not dashboard.exists():
+        return CheckResult(
+            name, False, "compliance/dashboard.md missing",
+            severity=Severity.WARNING.value,
+        )
+    content = dashboard.read_text(encoding="utf-8", errors="ignore")
+    cfg = project_root / "shipwright_run_config.json"
+    if cfg.exists():
+        try:
+            data = json.loads(cfg.read_text(encoding="utf-8"))
+            iterate_count = len(data.get("iterate_history", []))
+            if str(iterate_count) in content or run_id in content:
+                return CheckResult(name, True, f"compliance reflects iterate count/run_id")
+        except (json.JSONDecodeError, OSError):
+            pass
+    return CheckResult(
+        name, False,
+        f"compliance/dashboard.md may be stale (run_id={run_id} not found)",
+        severity=Severity.WARNING.value,
+    )
+
+
+def check_architecture_reviewed(
+    project_root: Path,
+    run_id: str,
+) -> CheckResult:
+    """Non-canon warning: architecture.md may need update after structural changes."""
+    name = "architecture.md reviewed"
+    cfg = project_root / "shipwright_run_config.json"
+    if not cfg.exists():
+        return CheckResult(name, None, "no run_config", severity=Severity.SKIPPED.value)
+    try:
+        data = json.loads(cfg.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return CheckResult(name, None, "malformed run_config", severity=Severity.SKIPPED.value)
+
+    entry = next(
+        (e for e in reversed(data.get("iterate_history", [])) if e.get("run_id") == run_id),
+        None,
+    )
+    if not entry:
+        return CheckResult(name, None, "run_id not in history", severity=Severity.SKIPPED.value)
+
+    intent = entry.get("intent", "")
+    if intent in ("bug", "fix"):
+        return CheckResult(name, True, f"intent={intent}, architecture update unlikely")
+
+    arch = project_root / "agent_docs" / "architecture.md"
+    if not arch.exists():
+        return CheckResult(
+            name, False, "architecture.md missing",
+            severity=Severity.WARNING.value,
+        )
+
+    arch_mtime = arch.stat().st_mtime
+    cfg_mtime = cfg.stat().st_mtime
+    if arch_mtime >= cfg_mtime:
+        return CheckResult(name, True, "architecture.md is fresh")
+
+    return CheckResult(
+        name, False,
+        f"architecture.md may need update (intent={intent}, arch older than run_config)",
+        severity=Severity.WARNING.value,
+    )
+
+
+def check_conventions_reviewed(
+    project_root: Path,
+    run_id: str,
+) -> CheckResult:
+    """Non-canon warning: conventions.md may need update after feature iterates."""
+    name = "conventions.md reviewed"
+    cfg = project_root / "shipwright_run_config.json"
+    if not cfg.exists():
+        return CheckResult(name, None, "no run_config", severity=Severity.SKIPPED.value)
+    try:
+        data = json.loads(cfg.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return CheckResult(name, None, "malformed run_config", severity=Severity.SKIPPED.value)
+
+    entry = next(
+        (e for e in reversed(data.get("iterate_history", [])) if e.get("run_id") == run_id),
+        None,
+    )
+    if not entry:
+        return CheckResult(name, None, "run_id not in history", severity=Severity.SKIPPED.value)
+
+    intent = entry.get("intent", "")
+    if intent in ("bug", "fix"):
+        return CheckResult(name, True, f"intent={intent}, conventions update unlikely")
+
+    conv = project_root / "agent_docs" / "conventions.md"
+    if not conv.exists():
+        return CheckResult(
+            name, False, "conventions.md missing",
+            severity=Severity.WARNING.value,
+        )
+
+    conv_mtime = conv.stat().st_mtime
+    cfg_mtime = cfg.stat().st_mtime
+    if conv_mtime >= cfg_mtime:
+        return CheckResult(name, True, "conventions.md is fresh")
+
+    return CheckResult(
+        name, False,
+        f"conventions.md may need update (intent={intent}, conventions older than run_config)",
+        severity=Severity.WARNING.value,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Orchestrator (kept for backwards compat with verify_iterate_finalization.py)
 # ---------------------------------------------------------------------------
 
@@ -168,4 +318,17 @@ def run_all_checks(
         check_adr_in_iterate_history(project_root, run_id),
         check_changelog_unreleased(project_root),
         check_session_handoff_fresh(project_root),
+        check_build_dashboard_has_run_id(project_root, run_id),
+    ]
+
+
+def run_cross_artifact_checks(
+    project_root: Path,
+    run_id: str,
+) -> list[CheckResult]:
+    """Non-canon advisory checks — called by Stop hook for drift detection."""
+    return [
+        check_compliance_reflects_run_id(project_root, run_id),
+        check_architecture_reviewed(project_root, run_id),
+        check_conventions_reviewed(project_root, run_id),
     ]

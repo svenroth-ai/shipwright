@@ -145,7 +145,7 @@ Tool names use short form: `Bash`, `Write`, `Edit`, `Read`, `Glob`, `Grep`.
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture-session-id.py` | Session ID injection |
 | SessionStart | — | `check_drift.py` | Timestamp + content drift (catches Shipwright-repo self-drift when iterating on Shipwright itself) |
-| Stop | — | `generate_handoff_on_stop.py` | Session handoff (enables resume via Step B1) |
+| Stop | — | `iterate_stop_finalize.py` | Shared handoff + fallback `finalize_iterate.py` (compliance, dashboard, handoff). Freshness-gated: skips if `finalize_iterate.py` already ran. |
 
 ### shipwright-changelog
 
@@ -325,11 +325,11 @@ Each plugin reads project context at startup to ensure consistency. This table s
 | `conventions.md` | project | write_decision_log.py (convention impact), reflection protocol (build, test, deploy, iterate) |
 | `decision_log.md` | project (init) | plan, build, deploy, iterate (via write_decision_log.py) |
 | `architecture.md` | project | write_decision_log.py (architecture impact) |
-| `build_dashboard.md` | update_build_dashboard.py | build, test, changelog, deploy, iterate |
-| `session_handoff.md` | generate_handoff_on_stop.py | all plugins (Stop hook) |
+| `build_dashboard.md` | update_build_dashboard.py | build, test, changelog, deploy, iterate, **Stop hook** (all plugins) |
+| `session_handoff.md` | generate_handoff_on_stop.py | all plugins (Stop hook), **finalize_iterate.py** (iterate) |
 | `events.jsonl` | record_event.py | build, iterate, test, deploy, changelog, orchestrator (append-only) |
 | `test_results.json` | test, iterate | test, iterate |
-| `compliance/*` | compliance plugin | update_compliance.py (all phases trigger) |
+| `compliance/*` | compliance plugin | update_compliance.py (all phases trigger), **Stop hook** (all plugins, best-effort), **finalize_iterate.py** (iterate) |
 | `sync_config.json` | project | iterate (FR mappings) |
 | `{migrations.dir}` (profile) | build, iterate (create + apply DEV, serialized) | deploy (PROD apply only) |
 
@@ -604,7 +604,7 @@ Legend: ✅ present · ⏭ skip by policy · n/a not applicable
 
 | Phase | C1 event | C2 dashboard | C3 handoff | C4 ADR | C5 CHANGELOG | phase_history | Verifier module | Phase validator |
 |---|---|---|---|---|---|---|---|---|
-| **iterate** | ✅ F7 | ✅ F5b | ✅ F11 | ✅ F3 | ✅ F4 | ✅ `iterate_history` | `iterate_checks.py` | `verify_iterate_finalization.py` |
+| **iterate** | ✅ F7 | ✅ F5 (`check_build_dashboard_has_run_id`, implemented 14.8) | ✅ F5/F11 | ✅ F3 | ✅ F4 | ✅ `iterate_history` | `iterate_checks.py` + cross-artifact warnings (compliance, architecture, conventions) | `verify_iterate_finalization.py` |
 | **runtime** | n/a | n/a | n/a | n/a | n/a | n/a | `runtime_checks.py` (zombie replay) | — |
 | **project** | ✅ | ✅ | ✅ (canon-marker) | ✅ (Step 7) | ✅ | ✅ | `project_checks.py` | `_validate_project` |
 | **design** | ✅ | ✅ | ✅ (canon-marker) | ⏭ transformation | ✅ | ✅ | `design_checks.py` + FR coverage (check-plan C1 import) | `_validate_design` |
@@ -615,12 +615,18 @@ Legend: ✅ present · ⏭ skip by policy · n/a not applicable
 | **deploy** | ✅ | ✅ | ✅ (canon-marker) | ⏭ execution | ⏭ operational history | ✅ | `deploy_checks.py` + `check_test_gate_passed` phase-own | `_validate_deploy` |
 | **compliance** | n/a | n/a | n/a | n/a | n/a | n/a | (none) | (trivial pass) |
 
-**Compliance is intentionally NOT canon-wired.** Iterate 12.5 was struck
-from the campaign — compliance is a future **detective** checker via
-shipwright-check, not a productive phase. Today it runs as an
-auto-background-update after every phase via
-`plugins/shipwright-run/scripts/lib/orchestrator.run_compliance_update()`;
-the explicit `/shipwright-compliance` SKILL is deprecated pending refactor.
+**Compliance is intentionally NOT canon-wired** (canon-level enforcement).
+Iterate 12.5 was struck from the campaign — compliance is a future
+**detective** checker via shipwright-audit, not a productive phase.
+However, as of iterate 14.8, compliance is updated **best-effort** by:
+1. The shared Stop hook (`generate_handoff_on_stop.py`) for all plugins
+2. `finalize_iterate.py` (primary path for iterate)
+3. `orchestrator.run_compliance_update()` (between-phase action for `/shipwright-run`)
+
+Non-canon advisory checks (`check_compliance_reflects_run_id`,
+`check_architecture_reviewed`, `check_conventions_reviewed`) detect
+stale cross-artifacts at WARNING level via `iterate_checks.run_cross_artifact_checks()`.
+The explicit `/shipwright-compliance` SKILL is deprecated pending refactor.
 See [Spec/shipwright-check-plan.md](../Spec/shipwright-check-plan.md) and
 the `project_compliance_rebuild.md` memory entry for the rebuild trigger.
 

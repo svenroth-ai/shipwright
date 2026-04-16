@@ -17,11 +17,18 @@ from pathlib import Path
 
 
 def _resolve_project_root() -> Path:
-    """Resolve project root from SHIPWRIGHT_PROJECT_ROOT env var, fallback to cwd."""
-    env_root = os.environ.get("SHIPWRIGHT_PROJECT_ROOT")
-    if env_root:
-        return Path(env_root)
-    return Path.cwd()
+    """Resolve project root via shared resolver, fallback to env/cwd."""
+    try:
+        scripts_dir = str(Path(__file__).resolve().parent.parent)
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        from lib.project_root import resolve_project_root
+        return resolve_project_root()
+    except (ImportError, ValueError):
+        env_root = os.environ.get("SHIPWRIGHT_PROJECT_ROOT")
+        if env_root:
+            return Path(env_root)
+        return Path.cwd()
 
 
 def _is_shipwright_project(root: Path) -> bool:

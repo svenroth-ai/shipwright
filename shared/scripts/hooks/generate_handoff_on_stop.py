@@ -165,7 +165,14 @@ def main() -> int:
     except Exception:
         pass
 
-    project_root = Path.cwd()
+    # Resolve project root — handles subdirectory projects (e.g. webui/)
+    try:
+        scripts_dir = Path(__file__).resolve().parent.parent
+        sys.path.insert(0, str(scripts_dir))
+        from lib.project_root import resolve_project_root
+        project_root = resolve_project_root()
+    except (ImportError, ValueError):
+        project_root = Path.cwd()
 
     # Guard: skip if not in a shipwright-managed project
     has_run_config = (project_root / "shipwright_run_config.json").exists()
@@ -221,6 +228,35 @@ def main() -> int:
             (agent_docs / "build_dashboard.md").write_text(dashboard, encoding="utf-8")
         except Exception:
             pass  # Dashboard update is best-effort
+
+        # Update compliance docs (best-effort, idempotent)
+        try:
+            compliance_dashboard = project_root / "compliance" / "dashboard.md"
+            run_cfg = project_root / "shipwright_run_config.json"
+            needs_update = (
+                run_cfg.exists()
+                and (not compliance_dashboard.exists()
+                     or compliance_dashboard.stat().st_mtime < run_cfg.stat().st_mtime)
+            )
+            if needs_update:
+                compliance_plugin = Path(__file__).resolve().parents[3] / "plugins" / "shipwright-compliance"
+                update_script = compliance_plugin / "scripts" / "tools" / "update_compliance.py"
+                if update_script.exists():
+                    phase = "iterate"
+                    if has_run_config:
+                        try:
+                            cfg_data = json.loads(run_cfg.read_text(encoding="utf-8"))
+                            phase = cfg_data.get("current_step", "iterate")
+                        except (json.JSONDecodeError, OSError):
+                            pass
+                    subprocess.run(
+                        [sys.executable, str(update_script),
+                         "--project-root", str(project_root),
+                         "--phase", phase],
+                        capture_output=True, timeout=30,
+                    )
+        except Exception:
+            pass  # Compliance update is best-effort
 
         # Fallback: detect incomplete phase-completion and trigger it
         try:

@@ -6,6 +6,17 @@ from __future__ import annotations
 import json
 import os
 import sys
+from pathlib import Path
+
+
+def _resolve_root() -> str:
+    """Find the Shipwright project root, tolerating subdirectory layouts."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "shared" / "scripts"))
+    try:
+        from lib.project_root import resolve_project_root
+        return str(resolve_project_root())
+    except (ImportError, ValueError):
+        return os.getcwd()
 
 
 def main() -> int:
@@ -26,7 +37,7 @@ def main() -> int:
     if plugin_root:
         context_parts.append(f"SHIPWRIGHT_PLUGIN_ROOT={plugin_root}")
 
-    context_parts.append(f"SHIPWRIGHT_PROJECT_ROOT={os.getcwd()}")
+    context_parts.append(f"SHIPWRIGHT_PROJECT_ROOT={_resolve_root()}")
 
     if context_parts:
         print(json.dumps({

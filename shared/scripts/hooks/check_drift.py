@@ -308,7 +308,13 @@ def _find_claude_md_files(root: str) -> list[str]:
 
 
 def main() -> int:
-    project_root = os.getcwd()
+    try:
+        scripts_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir)
+        sys.path.insert(0, scripts_dir)
+        from lib.project_root import resolve_project_root
+        project_root = str(resolve_project_root())
+    except (ImportError, ValueError):
+        project_root = os.getcwd()
     warnings: list[str] = []
 
     # 1. Timestamp drift (legacy behaviour)
