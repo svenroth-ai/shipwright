@@ -17,6 +17,8 @@ export interface ProjectSettings {
   claudePluginDirs?: string[];
   autonomy?: AutonomyOption;
   envVars?: Record<string, string>;
+  /** Iterate 14.8.2 — custom project color for the Kanban strip. */
+  color?: string;
 }
 
 export interface Project {

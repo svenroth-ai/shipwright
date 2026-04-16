@@ -784,4 +784,87 @@ describe("Task Routes", () => {
       expect(res.status).toBe(404);
     });
   });
+
+  // Iterate 14.8.2 — default model + mode from global settings
+  describe("POST /tasks applies defaults from global settings (iterate 14.8.2)", () => {
+    it("uses defaultModel from settings when body.model is absent", async () => {
+      const deps = {
+        taskManager: { getTasksWithKanban: vi.fn(() => [mockTask]), getTaskById: vi.fn(() => mockTask) },
+        eventStore: { addEvent: vi.fn() },
+        governor: { acquire: vi.fn(async () => ({ pid: 123 })) },
+        adapter: {},
+        sseManager: { broadcast: vi.fn() },
+        projectManager: { getById: vi.fn(() => mockProject), getAll: vi.fn(() => [mockProject]) },
+        emitTaskCreatedEvent: vi.fn(async () => ({})),
+        readGlobalSettings: vi.fn(async () => ({
+          defaultModel: "claude-sonnet-4-6",
+          defaultMode: "acceptEdits",
+        })),
+      } as any;
+      const app = new Hono();
+      app.onError(errorHandler);
+      app.route("/", createTaskRoutes(deps));
+
+      await app.request("/api/projects/p1/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: "Use defaults" }),
+      });
+      const opts = deps.governor.acquire.mock.calls[0][0];
+      expect(opts.model).toBe("sonnet");
+      expect(opts.permissionMode).toBe("acceptEdits");
+    });
+
+    it("explicit body.model overrides defaultModel from settings", async () => {
+      const deps = {
+        taskManager: { getTasksWithKanban: vi.fn(() => [mockTask]), getTaskById: vi.fn(() => mockTask) },
+        eventStore: { addEvent: vi.fn() },
+        governor: { acquire: vi.fn(async () => ({ pid: 123 })) },
+        adapter: {},
+        sseManager: { broadcast: vi.fn() },
+        projectManager: { getById: vi.fn(() => mockProject), getAll: vi.fn(() => [mockProject]) },
+        emitTaskCreatedEvent: vi.fn(async () => ({})),
+        readGlobalSettings: vi.fn(async () => ({
+          defaultModel: "claude-sonnet-4-6",
+        })),
+      } as any;
+      const app = new Hono();
+      app.onError(errorHandler);
+      app.route("/", createTaskRoutes(deps));
+
+      await app.request("/api/projects/p1/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: "Override model", model: "haiku" }),
+      });
+      const opts = deps.governor.acquire.mock.calls[0][0];
+      expect(opts.model).toBe("haiku");
+    });
+
+    it("uses bypassPermissions fallback when no settings and no body.mode", async () => {
+      // No readGlobalSettings, no body.mode → falls back to bypassPermissions
+      const deps = {
+        taskManager: { getTasksWithKanban: vi.fn(() => [mockTask]), getTaskById: vi.fn(() => mockTask) },
+        eventStore: { addEvent: vi.fn() },
+        governor: { acquire: vi.fn(async () => ({ pid: 123 })) },
+        adapter: {},
+        sseManager: { broadcast: vi.fn() },
+        projectManager: { getById: vi.fn(() => mockProject), getAll: vi.fn(() => [mockProject]) },
+        emitTaskCreatedEvent: vi.fn(async () => ({})),
+        // No readGlobalSettings
+      } as any;
+      const app = new Hono();
+      app.onError(errorHandler);
+      app.route("/", createTaskRoutes(deps));
+
+      await app.request("/api/projects/p1/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: "No settings" }),
+      });
+      const opts = deps.governor.acquire.mock.calls[0][0];
+      expect(opts.permissionMode).toBe("bypassPermissions");
+      expect(opts.model).toBeUndefined();
+    });
+  });
 });

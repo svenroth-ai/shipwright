@@ -5,15 +5,20 @@ import { KanbanColumn, COLUMN_LABELS } from './KanbanColumn';
 const VISIBLE_COLUMNS: KanbanStatus[] = ['backlog', 'in_progress', 'in_review', 'done'];
 const MAX_DONE_VISIBLE = 10;
 
+/** Iterate 14.8.2 — maps projectId → custom color (from project.settings.color). */
+export type ProjectColorMap = Record<string, string>;
+
 interface KanbanBoardProps {
   tasks: Task[];
   onNewTask?: () => void;
   // Iterate 14.7.2 — when true, cards render a colored project strip
   // on the left edge. Threaded from KanbanPage based on activeProjectId.
   showProjectStrip?: boolean;
+  // Iterate 14.8.2 — optional map of projectId → custom color.
+  projectColorMap?: ProjectColorMap;
 }
 
-export function KanbanBoard({ tasks, onNewTask, showProjectStrip = false }: KanbanBoardProps) {
+export function KanbanBoard({ tasks, onNewTask, showProjectStrip = false, projectColorMap = {} }: KanbanBoardProps) {
   const [showAllDone, setShowAllDone] = useState(false);
 
   const grouped = useMemo(() => {
@@ -59,6 +64,7 @@ export function KanbanBoard({ tasks, onNewTask, showProjectStrip = false }: Kanb
                 status={status}
                 onNewTask={onNewTask}
                 showProjectStrip={showProjectStrip}
+                projectColorMap={projectColorMap}
               />
               <button
                 className="flex items-center justify-center px-3.5 py-2.5 text-[13px] font-semibold text-blue-600 cursor-pointer rounded-[10px] bg-blue-500/[0.06] hover:bg-blue-500/[0.12] transition-colors mt-1"

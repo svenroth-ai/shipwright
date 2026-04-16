@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import * as Tabs from '@radix-ui/react-tabs';
 import * as Select from '@radix-ui/react-select';
 import { ChevronDown, Plus, Trash2 } from 'lucide-react';
@@ -9,18 +10,52 @@ import { apiPatch } from '../lib/api';
 import { queryKeys } from '../lib/queryKeys';
 import { PhaseMappingConfig } from '../components/board/PhaseMappingConfig';
 import { DEFAULT_PHASE_MAPPING } from '../lib/phaseMapping';
+import { getProjectColor } from '../lib/projectColor';
 import type { KanbanStatus, Project } from '../types';
 import type { AutonomyOption } from '../types/settings';
 
 const TAB_CLASS =
   'px-4 py-2.5 text-sm font-medium text-gray-500 border-b-2 border-transparent data-[state=active]:text-[var(--color-primary)] data-[state=active]:border-[var(--color-primary)] hover:text-gray-700 transition-colors';
 
+// Iterate 14.8.2 — model options for the Default Model dropdown
+const MODEL_OPTIONS = [
+  { value: 'claude-opus-4-6', label: 'Opus 4.6 (1M)' },
+  { value: 'claude-opus-4-5', label: 'Opus 4.5 (200K)' },
+  { value: 'claude-sonnet-4-6', label: 'Sonnet 4.6 (1M)' },
+  { value: 'claude-sonnet-4-5', label: 'Sonnet 4.5 (200K)' },
+  { value: 'claude-haiku-4-5', label: 'Haiku 4.5 (200K)' },
+];
+
+const MODE_OPTIONS = [
+  { value: 'bypassPermissions', label: 'Bypass permissions' },
+  { value: 'acceptEdits', label: 'Edit automatically' },
+  { value: 'default', label: 'Ask for permission' },
+  { value: 'plan', label: 'Plan mode' },
+];
+
 export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
   const { data: projects = [] } = useProjects();
   const saveMutation = useSaveSettings();
   const queryClient = useQueryClient();
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+
+  // Iterate 14.8.2 — deep-link: read ?projectId= and ?tab= from URL
+  const initialTab = searchParams.get('tab') ?? 'global';
+  const initialProjectId = searchParams.get('projectId') ?? null;
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(initialProjectId);
+
+  // If deep-linked projectId doesn't match any known project, fall back
+  // to the first project and log a warning.
+  useEffect(() => {
+    if (initialProjectId && projects.length > 0) {
+      const exists = projects.some((p) => p.id === initialProjectId);
+      if (!exists) {
+        console.warn(`[SettingsPage] Deep-link projectId "${initialProjectId}" not found — falling back to first project.`);
+        setSelectedProjectId(projects[0].id);
+      }
+    }
+  }, [initialProjectId, projects]);
 
   const updateProject = useMutation({
     mutationFn: ({ id, patch }: { id: string; patch: Partial<Project> }) =>
@@ -43,7 +78,7 @@ export default function SettingsPage() {
     <div className="p-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-semibold text-gray-900 mb-6">Settings</h1>
 
-      <Tabs.Root defaultValue="global">
+      <Tabs.Root defaultValue={initialTab}>
         <Tabs.List className="flex gap-0 border-b border-[#e0dbd4] mb-6">
           <Tabs.Trigger value="global" className={TAB_CLASS}>Global</Tabs.Trigger>
           <Tabs.Trigger value="phases" className={TAB_CLASS}>Phase Mapping</Tabs.Trigger>
@@ -91,6 +126,42 @@ export default function SettingsPage() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Iterate 14.8.2 — Default Model dropdown */}
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium text-gray-700">Default Model</div>
+                <div className="text-xs text-gray-400">Model used for new tasks when none specified</div>
+              </div>
+              <select
+                data-testid="default-model-select"
+                value={settings?.defaultModel ?? 'claude-opus-4-6'}
+                onChange={(e) => saveMutation.mutate({ defaultModel: e.target.value })}
+                className="px-2 py-1.5 border border-[#e0dbd4] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
+              >
+                {MODEL_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Iterate 14.8.2 — Default Permission Mode dropdown */}
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium text-gray-700">Default Permission Mode</div>
+                <div className="text-xs text-gray-400">Permission mode for new tasks when none specified</div>
+              </div>
+              <select
+                data-testid="default-mode-select"
+                value={settings?.defaultMode ?? 'acceptEdits'}
+                onChange={(e) => saveMutation.mutate({ defaultMode: e.target.value })}
+                className="px-2 py-1.5 border border-[#e0dbd4] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
+              >
+                {MODE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
             </div>
 
             <div className="flex items-center justify-between">
@@ -294,6 +365,26 @@ function ProjectSettingsPanel({ project, globalAutonomy, onUpdate }: ProjectSett
               );
             })}
           </div>
+        </div>
+      </div>
+
+      {/* Iterate 14.8.2 — Project Color */}
+      <div className="border-t border-gray-100 pt-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-medium text-gray-700">Project Color</div>
+            <div className="text-xs text-gray-400">Used as the colored strip on task cards in the All Projects view</div>
+          </div>
+          <input
+            type="color"
+            data-testid="project-color-picker"
+            value={project.settings?.color ?? getProjectColor(project.id).hsl}
+            onChange={(e) => {
+              const settings = { ...project.settings, color: e.target.value };
+              onUpdate({ settings });
+            }}
+            className="w-10 h-8 border border-[#e0dbd4] rounded-lg cursor-pointer"
+          />
         </div>
       </div>
 

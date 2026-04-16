@@ -1,6 +1,7 @@
 import * as ScrollArea from '@radix-ui/react-scroll-area';
 import { Plus } from 'lucide-react';
 import type { Task, KanbanStatus } from '../../types';
+import type { ProjectColorMap } from './KanbanBoard';
 import { TaskCard } from './TaskCard';
 
 const COLUMN_STYLES: Record<KanbanStatus, { bg: string; headerColor: string; borderTop: string; countBg: string; countColor: string }> = {
@@ -31,9 +32,11 @@ interface KanbanColumnProps {
   // Iterate 14.7.2 — threaded from KanbanBoard/KanbanPage; enables the
   // colored project strip on every rendered TaskCard.
   showProjectStrip?: boolean;
+  // Iterate 14.8.2 — maps projectId → custom color.
+  projectColorMap?: ProjectColorMap;
 }
 
-export function KanbanColumn({ title, tasks, status, onNewTask, showProjectStrip = false }: KanbanColumnProps) {
+export function KanbanColumn({ title, tasks, status, onNewTask, showProjectStrip = false, projectColorMap = {} }: KanbanColumnProps) {
   const style = COLUMN_STYLES[status] ?? COLUMN_STYLES.backlog;
 
   return (
@@ -67,6 +70,7 @@ export function KanbanColumn({ title, tasks, status, onNewTask, showProjectStrip
                   task={task}
                   columnStatus={status}
                   showProjectStrip={showProjectStrip}
+                  customColor={projectColorMap[task.projectId]}
                 />
               ))}
             </div>

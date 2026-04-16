@@ -95,7 +95,7 @@ export default function ProjectsPage() {
                   </button>
                   <button
                     className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 transition-colors"
-                    onClick={(e) => { e.stopPropagation(); navigate('/settings'); }}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/settings?projectId=${project.id}&tab=project`); }}
                     aria-label="Project settings"
                   >
                     <SettingsIcon size={14} />

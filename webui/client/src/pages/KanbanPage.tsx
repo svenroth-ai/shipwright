@@ -12,6 +12,7 @@ import { NewPipelineModal } from '../components/board/NewPipelineModal';
 import { PreviewButton } from '../components/board/PreviewButton';
 import { ProjectFilterChip } from '../components/board/ProjectFilterChip';
 import { getStored, setStored } from '../lib/localStorage';
+import type { ProjectColorMap } from '../components/board/KanbanBoard';
 
 // Iterate 14.7.0 — P0.3 persistence key for the active project id.
 // `null` is a valid stored value meaning "All Projects" (P0.2).
@@ -80,6 +81,16 @@ export default function KanbanPage() {
 
   const { data: tasks = [], isLoading, isError, refetch } = useTasks(activeProjectId ?? undefined);
   const filters = useBoardFilters();
+
+  // Iterate 14.8.2 — build a map of projectId → custom color from
+  // project.settings.color so TaskCard can use it for the strip.
+  const projectColorMap = useMemo<ProjectColorMap>(() => {
+    const map: ProjectColorMap = {};
+    for (const p of projects) {
+      if (p.settings?.color) map[p.id] = p.settings.color;
+    }
+    return map;
+  }, [projects]);
   // Iterate 14.7.2 — apply the project multi-select filter BEFORE the
   // phase/priority filters so the card count reflects both.
   const projectFilteredTasks = useMemo(() => {
@@ -193,6 +204,7 @@ export default function KanbanPage() {
             tasks={filteredTasks}
             onNewTask={() => setShowNewIssue(true)}
             showProjectStrip={showProjectStrip}
+            projectColorMap={projectColorMap}
           />
         )}
       </div>
