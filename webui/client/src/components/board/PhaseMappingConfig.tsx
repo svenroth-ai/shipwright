@@ -8,10 +8,10 @@ const PHASE_COLORS: Record<string, string> = {
   plan: 'bg-blue-500',
   build: 'bg-orange-500',
   test: 'bg-green-500',
+  security: 'bg-red-500',
+  compliance: 'bg-amber-500',
   changelog: 'bg-blue-400',
   deploy: 'bg-teal-500',
-  iterate: 'bg-teal-400',
-  done: 'bg-gray-600',
 };
 
 interface PhaseMappingConfigProps {
