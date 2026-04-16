@@ -39,6 +39,16 @@ def main() -> int:
 
     context_parts.append(f"SHIPWRIGHT_PROJECT_ROOT={_resolve_root()}")
 
+    root_sid = os.environ.get("SHIPWRIGHT_ROOT_SESSION_ID")
+    if root_sid:
+        context_parts.append(f"SHIPWRIGHT_ROOT_SESSION_ID={root_sid}")
+    loop_id = os.environ.get("SHIPWRIGHT_LOOP_ID")
+    if loop_id:
+        context_parts.append(f"SHIPWRIGHT_LOOP_ID={loop_id}")
+    loop_unit = os.environ.get("SHIPWRIGHT_LOOP_UNIT_ID")
+    if loop_unit:
+        context_parts.append(f"SHIPWRIGHT_LOOP_UNIT_ID={loop_unit}")
+
     if context_parts:
         print(json.dumps({
             "hookSpecificOutput": {

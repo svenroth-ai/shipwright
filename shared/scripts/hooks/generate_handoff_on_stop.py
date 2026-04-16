@@ -215,8 +215,17 @@ def main() -> int:
         session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
         content = generate_handoff(project_root, session_id, reason="session end")
 
-        agent_docs.mkdir(exist_ok=True)
-        handoff_path.write_text(content, encoding="utf-8")
+        loop_id = os.environ.get("SHIPWRIGHT_LOOP_ID")
+        loop_unit = os.environ.get("SHIPWRIGHT_LOOP_UNIT_ID")
+        if loop_id and loop_unit:
+            namespaced_dir = project_root / "planning" / "handoffs" / loop_id
+            namespaced_dir.mkdir(parents=True, exist_ok=True)
+            namespaced_path = namespaced_dir / f"{loop_unit}.md"
+            namespaced_path.write_text(content, encoding="utf-8")
+            handoff_path = namespaced_path
+        else:
+            agent_docs.mkdir(exist_ok=True)
+            handoff_path.write_text(content, encoding="utf-8")
 
         # Update build dashboard with "paused" status
         try:
@@ -271,10 +280,11 @@ def main() -> int:
         except Exception:
             pass  # Phase-completion fallback is best-effort
 
+        relative_path = handoff_path.relative_to(project_root) if handoff_path.is_relative_to(project_root) else handoff_path
         print(json.dumps({
             "hookSpecificOutput": {
                 "hookEventName": "Stop",
-                "additionalContext": "Session handoff generated at agent_docs/session_handoff.md",
+                "additionalContext": f"Session handoff generated at {relative_path}",
             }
         }))
     except Exception as e:

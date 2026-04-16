@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "section-builder-result",
+  "title": "Section Builder Result Contract",
+  "description": "JSON schema for the result returned by section-builder subagent. Used by the autonomous section loop to verify subagent output.",
+  "oneOf": [
+    { "$ref": "#/$defs/success" },
+    { "$ref": "#/$defs/failure" }
+  ],
+  "$defs": {
+    "success": {
+      "type": "object",
+      "required": ["section", "status", "commit", "branch", "tests_passed", "tests_total"],
+      "properties": {
+        "section": {
+          "type": "string",
+          "description": "Section name (e.g., '01-auth')"
+        },
+        "status": {
+          "type": "string",
+          "const": "complete"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,40}$",
+          "description": "Full or abbreviated git commit hash"
+        },
+        "branch": {
+          "type": "string",
+          "description": "Feature branch name"
+        },
+        "tests_passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tests_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "integration_passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "integration_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pgtap_passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pgtap_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "review_findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["finding", "status"],
+            "properties": {
+              "finding": { "type": "string" },
+              "status": {
+                "type": "string",
+                "enum": ["fixed", "deferred"]
+              }
+            }
+          }
+        },
+        "design_fidelity": {
+          "type": "string",
+          "enum": ["full", "partial", "skipped"]
+        },
+        "design_groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["group", "status"],
+            "properties": {
+              "group": { "type": "string" },
+              "status": { "type": "string", "enum": ["fixed", "parked"] },
+              "screens": { "type": "array", "items": { "type": "string" } },
+              "attempts": { "type": "integer", "minimum": 1 },
+              "diagnosis": { "type": "string" }
+            }
+          }
+        },
+        "design_screens_checked": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["title", "rationale"],
+            "properties": {
+              "title": { "type": "string" },
+              "rationale": { "type": "string" }
+            }
+          }
+        },
+        "manual_steps_pending": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "failure": {
+      "type": "object",
+      "required": ["section", "status", "error"],
+      "properties": {
+        "section": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "const": "failed"
+        },
+        "error": {
+          "type": "string",
+          "description": "What went wrong"
+        },
+        "partial_commit": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9a-f]{7,40}$"
+        },
+        "tests_passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tests_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "debug_log": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["attempt", "root_cause", "result"],
+            "properties": {
+              "attempt": { "type": "integer", "minimum": 1 },
+              "root_cause": { "type": "string" },
+              "result": { "type": "string" }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

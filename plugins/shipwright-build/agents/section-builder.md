@@ -410,6 +410,8 @@ If this step fails: log WARNING but do not block — the event can be re-recorde
 
 ## Output
 
+**Persist result for crash recovery:** Before returning, write the result JSON to `.shipwright/runs/{loop_id}/{section_name}/result.json` (where `loop_id` comes from `SHIPWRIGHT_LOOP_ID` env var). Skip this step if `SHIPWRIGHT_LOOP_ID` is not set (non-loop invocations). The result JSON schema is defined in `agents/section_builder_contract.schema.json`.
+
 When complete, return a JSON object as the **last line of your response**:
 
 ```json

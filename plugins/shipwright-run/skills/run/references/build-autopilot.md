@@ -26,7 +26,12 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
 
    **--- Autonomous mode: Subagent delegation ---**
 
-   c. **IF autonomy == "autonomous":** Spawn `section-builder` subagent (Agent tool):
+   c. **IF autonomy == "autonomous":** Export loop env vars, then spawn `section-builder` subagent (Agent tool):
+      ```bash
+      export SHIPWRIGHT_ROOT_SESSION_ID="${SHIPWRIGHT_SESSION_ID}"
+      export SHIPWRIGHT_LOOP_ID="run-build-${SHIPWRIGHT_SESSION_ID}"
+      export SHIPWRIGHT_LOOP_UNIT_ID="{section}"
+      ```
       - `description`: "Build section {section}"
       - `subagent_type`: "shipwright-build:section-builder"
       - `prompt`: Provide all required parameters:
@@ -40,17 +45,20 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
       - Do **NOT** use `run_in_background` — sections must be sequential
       - Do **NOT** use `isolation: "worktree"` — section N+1 needs section N's code
 
-   d. **Parse subagent result JSON.** Expected fields:
+   d. **Wait for terminal marker** (ensures Stop hooks completed):
+      Wait until `.shipwright/runs/{SHIPWRIGHT_LOOP_ID}/{section}/DONE` exists (timeout 30s).
+
+   e. **Parse subagent result JSON.** Expected fields:
       - `status`: "complete" or "failed"
       - `commit`, `branch`, `tests_passed`, `tests_total`, `review_findings`, `decisions`
 
-   e. **If status == "failed":**
+   f. **If status == "failed":**
       - Update dashboard with `--status failed`
       - Print error summary from result
       - **STOP** — do not continue to next section
       - Inform user of failure with diagnosis from result
 
-   f. **If status == "complete":**
+   g. **If status == "complete":**
       - Verify section state in config:
         ```bash
         uv run {shared_root}/scripts/tools/update_build_dashboard.py \
@@ -63,7 +71,7 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
 
    **--- Guided mode: Direct invocation (unchanged) ---**
 
-   g. **IF autonomy == "guided":**
+   h. **IF autonomy == "guided":**
       - Invoke: `/shipwright-build @{sections_dir}/{section}.md`
       - On return: update dashboard with `--status complete`
       - Check context pressure:
@@ -76,7 +84,7 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
         - Generate session handoff
         - Print checkpoint banner (see above) and **STOP**
 
-   h. Re-run `get-build-progress` and continue with next section
+   i. Re-run `get-build-progress` and continue with next section
 
 4. **All sections done:** Proceed to test phase (see `references/test-execution.md`)
 
