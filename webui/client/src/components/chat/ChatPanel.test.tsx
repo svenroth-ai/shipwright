@@ -90,6 +90,36 @@ describe('ChatPanel', () => {
       expect(screen.getByText('No messages yet.')).toBeInTheDocument();
     });
 
+    // Iterate 14.14 — when the user creates a task with an initial
+    // description, the user's prompt is already in the chat messages
+    // array by the time the task detail page mounts. The 14.13
+    // `messages.length === 0` gate silently suppressed the indicator
+    // in the one case it was designed for. Spinner must still render
+    // while awaiting the first system/init, even when the latest
+    // message is the user's own prompt.
+    it('renders spinner even when the last message is the user prompt (pre system/init)', async () => {
+      server.use(
+        http.get('/api/projects/:projectId/chat/:taskId', () =>
+          HttpResponse.json({
+            data: [
+              {
+                id: 'user-msg-1',
+                taskId: 'task-1',
+                type: 'user',
+                content: 'Build me an auth system',
+                timestamp: '2026-04-17T10:00:00Z',
+              },
+            ],
+          }),
+        ),
+      );
+      renderPanel();
+      await waitFor(() => {
+        expect(screen.getByTestId('chat-spawn-indicator')).toBeInTheDocument();
+      });
+      expect(screen.getByText('Starting Claude…')).toBeInTheDocument();
+    });
+
     it('does NOT render the spawn indicator for a done task', async () => {
       // Override the task lookup to return the `done` task (task-2),
       // and clear chat to be empty.

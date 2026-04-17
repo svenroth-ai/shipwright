@@ -74,8 +74,13 @@ describe('InboxPage', () => {
     });
     const card = screen.getByTestId('inbox-item-inbox-1');
     fireEvent.click(card);
+    // Iterate 14.14 — router only has `/tasks/:taskId` (no project-scoped
+    // nested path). The previous `/projects/:id/tasks/:taskId` hit
+    // react-router's 404 ErrorBoundary. The task detail page resolves
+    // projectId from the task object (useTasks), so dropping the prefix
+    // is sufficient.
     expect(navigateMock).toHaveBeenCalledWith(
-      '/projects/proj-1/tasks/task-1?focus=chat-bottom',
+      '/tasks/task-1?focus=chat-bottom',
     );
   });
 

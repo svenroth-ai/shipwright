@@ -103,12 +103,39 @@ export function AskUserCard({
     return typeof value === 'string' && value.trim().length > 0;
   });
 
+  // Iterate 14.14 — Bug 2. The answer mutation was previously fire-and-
+  // forget. If the POST failed (e.g. "Process no longer running" 400 after
+  // a respawn, or a transient 5xx), the card still flipped to "Answered"
+  // and the triggerAwaiting() spinner stayed on forever because the turn
+  // status never transitioned to `streaming`. Capture the error locally
+  // so the user can see *why* nothing happened and retry.
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   function handleSubmit() {
     if (!allAnswered) return;
+    setSubmitError(null);
     triggerAwaiting();
-    const answers = parts.map((_, idx) => ({ index: idx, answer: partAnswers[idx] ?? '' }));
-    answerMutation.mutate({ id: inboxId, answers });
+    // Flip the optimistic "Answered" state BEFORE firing the mutation so
+    // the onError rollback (which may run synchronously in some test
+    // doubles and asynchronously in production) always lands *after* the
+    // optimistic flip. Otherwise a sync onError would be overwritten by
+    // a later setLocalAnswered(true).
     setLocalAnswered(true);
+    const answers = parts.map((_, idx) => ({ index: idx, answer: partAnswers[idx] ?? '' }));
+    answerMutation.mutate(
+      { id: inboxId, answers },
+      {
+        onError: (err) => {
+          // Roll back the optimistic "Answered" state so the user can
+          // correct + re-submit. The triggerAwaiting() spinner will also
+          // clear on the next turn-status transition (or can be dismissed
+          // by closing the card).
+          setLocalAnswered(false);
+          const msg = err instanceof Error ? err.message : 'Failed to submit answer';
+          setSubmitError(msg);
+        },
+      },
+    );
   }
 
   return (
@@ -137,6 +164,30 @@ export function AskUserCard({
                 Resume
               </button>
             )}
+          </div>
+        )}
+
+        {submitError && (
+          <div
+            role="alert"
+            data-testid="ask-user-submit-error"
+            className="mb-3 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-900"
+          >
+            <div className="flex items-start gap-2">
+              <AlertTriangle size={16} className="mt-0.5 shrink-0 text-red-600" />
+              <div className="flex-1">
+                <p className="font-medium">Submit failed</p>
+                <p className="mt-1 text-red-800">{submitError}</p>
+              </div>
+              <button
+                type="button"
+                className="text-red-500 hover:text-red-700"
+                onClick={() => setSubmitError(null)}
+                aria-label="Dismiss error"
+              >
+                x
+              </button>
+            </div>
           </div>
         )}
 

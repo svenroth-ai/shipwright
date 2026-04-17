@@ -287,6 +287,22 @@ export class InboxManager {
     // tool_result content blocks fail. We still use the joined markdown
     // format — Claude reads it as the next user turn and picks up all N
     // answers in one go.
+    //
+    // Iterate 14.14 (Bug 2 observability): log the delivery so a future
+    // "answer submitted but Claude never responds" report can be traced
+    // to the process state + content at submit time. Keep the log
+    // structured (JSON) so it's greppable in prod.
+    console.info(JSON.stringify({
+      level: "info",
+      source: "inbox-manager",
+      message: "Delivering AskUserQuestion answer to Claude stdin",
+      taskId: item.taskId,
+      itemId: item.id,
+      notBlocked: item.notBlocked === true,
+      partCount: item.parts.length,
+      processState: proc.state,
+      processPid: proc.pid,
+    }));
     this.adapter.sendStdin(proc, joined);
 
     // Mirror the joined answer as a synthetic `tool_result` ChatMessage in

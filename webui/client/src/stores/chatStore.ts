@@ -6,6 +6,11 @@ import { create } from 'zustand';
  * toolbar can show "Opus 4.5" instead of a hardcoded label. Extend this
  * slice if future iterates need more init fields (session id, tools, etc).
  *
+ * Iterate 14.14 — semantics switched from first-write-wins to
+ * "last-write-wins when the model changes". Identical writes are
+ * idempotent no-ops (preserves 14.6's duplicate-SSE guard); a different
+ * model id overwrites (respawn after 14.12 mid-task model switch).
+ *
  * taskKey format matches `turnStatusStore`: `${projectId}::${taskId}`.
  */
 
@@ -25,12 +30,21 @@ export const useChatStore = create<ChatStore>((set) => ({
 
   setSystemInit: (taskKey, info) =>
     set((state) => {
-      // First capture wins — mirrors "first system/init SSE event" semantics.
-      if (state.systemInitByTask[taskKey]?.model) return state;
+      // Iterate 14.14 — last-write-wins *when the model changes*. Identical
+      // writes are short-circuited to preserve idempotency for duplicate
+      // SSE events (14.6's original intent). A mid-task model switch
+      // (14.12) respawns Claude and emits a new system/init with a
+      // different model id — that case must overwrite so ModelSelector
+      // and the chat "Session started · {model}" line stay in sync.
+      const current = state.systemInitByTask[taskKey];
+      const nextModel = info.model;
+      if (current?.model && nextModel && current.model === nextModel) {
+        return state;
+      }
       return {
         systemInitByTask: {
           ...state.systemInitByTask,
-          [taskKey]: { ...state.systemInitByTask[taskKey], ...info },
+          [taskKey]: { ...current, ...info },
         },
       };
     }),
