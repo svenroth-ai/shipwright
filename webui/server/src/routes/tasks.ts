@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import type { TaskManager } from "../core/task-manager.js";
 import type { EventStore } from "../core/event-store.js";
 import type { ProcessGovernor } from "../core/process-governor.js";
-import type { ClaudeAdapter, PermissionMode, ModelAlias } from "../core/claude-adapter.js";
+import type { ClaudeAdapter, PermissionMode } from "../core/claude-adapter.js";
 import type { SSEManager } from "../core/sse-manager.js";
 import type { ProjectManager } from "../core/project-manager.js";
 import type { ChatStore } from "../core/chat-store.js";
@@ -92,28 +92,24 @@ function coercePermissionMode(raw: unknown): PermissionMode {
   return "auto";
 }
 
-const VALID_MODELS: ModelAlias[] = ["opus", "sonnet", "haiku"];
-function coerceModel(raw: unknown): ModelAlias | undefined {
-  if (typeof raw === "string" && (VALID_MODELS as string[]).includes(raw)) {
-    return raw as ModelAlias;
-  }
-  return undefined;
-}
-
-// Iterate 14.8.2 — map concrete model id (stored in settings) to the
-// coarse CLI alias accepted by `claude --model <alias>`.
-// Iterate 14.10 — claude-opus-4-7 is the correct CLI id for the new Opus
-// flagship (14.9 had guessed `claude-opus-7-0`, which the CLI rejects).
-const CONCRETE_TO_ALIAS: Record<string, ModelAlias> = {
-  "claude-opus-4-7": "opus",
-  "claude-opus-4-6": "opus",
-  "claude-opus-4-5": "opus",
-  "claude-sonnet-4-6": "sonnet",
-  "claude-sonnet-4-5": "sonnet",
-  "claude-haiku-4-5": "haiku",
-};
-function aliasFromConcrete(concreteId: string): ModelAlias | undefined {
-  return CONCRETE_TO_ALIAS[concreteId];
+// Iterate 14.13 — model now flows through as a free-form string (concrete id
+// like `claude-opus-4-7` OR coarse alias like `opus`). The CLI accepts both
+// per `claude --help`. The previous narrow alias union silently dropped the
+// user's specific version pick when they chose Opus 4.7 in the dropdown:
+// the alias `opus` resolves to whatever the CLI considers the latest stable
+// opus (4.5 / 4.6 in CLI 2.1.1), so the system/init never reported 4.7. The
+// validation below trims and rejects empty / non-string values so we don't
+// hand the CLI garbage; the actual id-vs-alias check belongs to the CLI.
+const KNOWN_MODEL_PATTERN = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
+function coerceModel(raw: unknown): string | undefined {
+  if (typeof raw !== "string") return undefined;
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  // Defence-in-depth: only allow the lowercased dash-and-digit shape used by
+  // every Claude alias and concrete id we ship. Blocks shell metacharacters
+  // and accidental whitespace from leaking into the CLI args array.
+  if (!KNOWN_MODEL_PATTERN.test(trimmed)) return undefined;
+  return trimmed;
 }
 
 function coercePhase(raw: unknown): Phase | undefined {
@@ -197,6 +193,9 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
 
     // Iterate 14.8.2 — apply global defaults from settings when body
     // doesn't specify model or mode explicitly.
+    // Iterate 14.13 — defaultModel from settings is already a concrete id
+    // (e.g. `claude-opus-4-7`); pass it straight through to --model. The CLI
+    // accepts concrete ids verbatim so the alias-conversion dance is gone.
     let resolvedMode = body.mode;
     let resolvedModel = body.model;
     if ((!resolvedMode || !resolvedModel) && deps.readGlobalSettings) {
@@ -206,7 +205,7 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
           resolvedMode = globalSettings.defaultMode;
         }
         if (!resolvedModel && globalSettings.defaultModel) {
-          resolvedModel = aliasFromConcrete(globalSettings.defaultModel as string);
+          resolvedModel = globalSettings.defaultModel;
         }
       } catch {
         // Fall through to hardcoded defaults
@@ -695,12 +694,18 @@ export function createTaskRoutes(deps: TaskRouteDeps): Hono {
       newMode = rawMode as PermissionMode;
     }
 
-    let newModel: ModelAlias | undefined;
+    // Iterate 14.13 — accept any non-empty CLI-shaped string. The CLI
+    // accepts both coarse aliases ('opus') AND concrete ids
+    // ('claude-opus-4-7'), so the previous narrow alias union was wrong:
+    // it forced the WebUI to send the alias, which silently dropped the
+    // version pick (e.g. user picks 4.7 → CLI starts default-stable opus
+    // → system/init reports 4.5 → ModelSelector "stays" at 4.5).
+    let newModel: string | undefined;
     if (body.model !== undefined) {
       const coerced = coerceModel(body.model);
       if (!coerced) {
         throw new AppError(
-          `model must be one of ${VALID_MODELS.join(", ")}`,
+          "model must be a non-empty CLI model id or alias",
           400,
         );
       }

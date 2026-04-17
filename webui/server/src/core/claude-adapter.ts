@@ -68,8 +68,25 @@ export function modeForCli(mode: PermissionMode | string | undefined): CliPermis
   return mode as CliPermissionMode;
 }
 
-/** Claude CLI accepts these short aliases directly via --model.
- *  Kept narrow so we don't silently pass arbitrary strings into the CLI. */
+/**
+ * Claude CLI `--model` value.
+ *
+ * The CLI accepts BOTH the coarse alias (`opus`/`sonnet`/`haiku` — picks the
+ * latest stable in that family) AND a concrete id (`claude-opus-4-7`,
+ * `claude-sonnet-4-6-20251101`, etc.). Verified via `claude --help`:
+ *   "--model <model>  Provide an alias for the latest model (e.g. 'sonnet'
+ *    or 'opus') or a model's full name (e.g. 'claude-sonnet-4-5-20250929')."
+ *
+ * Iterate 14.13 — switched from a narrow `"opus" | "sonnet" | "haiku"` union
+ * to `string` because the alias loses version specificity. When the user
+ * picks "Opus 4.7" in the dropdown but we sent `opus`, the CLI defaulted to
+ * whatever it considers the latest stable opus (4.5 / 4.6 in CLI 2.1.1) and
+ * the system/init reported the wrong version — closing the loop on the user's
+ * selection. Now the concrete id flows through verbatim.
+ *
+ * The legacy `ModelAlias` export is retained for callers that want an
+ * explicit narrow type but it is no longer required by `ClaudeSpawnOptions`.
+ */
 export type ModelAlias = "opus" | "sonnet" | "haiku";
 
 export interface ClaudeSpawnOptions {
@@ -89,12 +106,17 @@ export interface ClaudeSpawnOptions {
    */
   permissionMode?: PermissionMode;
   /**
-   * Claude CLI model alias — opus / sonnet / haiku. When set, pushes
-   * `--model <alias>` into the spawn args. When undefined, the CLI picks
-   * its compiled-in default (currently claude-opus-4-5). Iterate 9 wired
-   * this up after finding the UI toolbar selection was a placebo.
+   * Claude CLI `--model` argument. Accepts EITHER a coarse family alias
+   * (`opus`/`sonnet`/`haiku`) OR a concrete model id
+   * (`claude-opus-4-7`, `claude-sonnet-4-6-20251101`, …) — the CLI handles
+   * both forms. When undefined, the CLI picks its compiled-in default
+   * (currently `claude-opus-4-5`).
+   *
+   * Iterate 14.13 — relaxed from `ModelAlias` to `string` so the WebUI can
+   * pin the user's exact selection (Opus 4.7) instead of the alias which
+   * resolves to whatever the CLI's default-stable-in-family happens to be.
    */
-  model?: ModelAlias;
+  model?: string;
   /**
    * When true, the `sessionId` is emitted as `--resume <id>` instead of
    * `--session-id <id>`. Used by iterate 10's mid-task mode switching:

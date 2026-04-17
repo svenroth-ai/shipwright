@@ -114,4 +114,38 @@ describe('ChatInput', () => {
     // Without taskStatus, fall back to isStreaming-only behaviour.
     expect(screen.getByTestId('stop-button')).toBeInTheDocument();
   });
+
+  // Iterate 14.13 — awaitingInit (spawn window) suppresses Send and
+  // swaps the textarea placeholder. Distinct from isStreaming: nothing
+  // is live yet so Stop is NOT shown.
+  it('disables Send and changes placeholder when awaitingInit=true', () => {
+    renderInput({ awaitingInit: true });
+    const sendBtn = screen.getByTestId('send-button');
+    expect(sendBtn).toBeDisabled();
+    expect(screen.getByPlaceholderText('Waiting for Claude…')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(PLACEHOLDER)).toBeNull();
+  });
+
+  it('disables the textarea itself when awaitingInit=true', () => {
+    renderInput({ awaitingInit: true });
+    expect(screen.getByPlaceholderText('Waiting for Claude…')).toBeDisabled();
+  });
+
+  it('Enter key during awaitingInit does NOT call onSend', async () => {
+    const onSend = vi.fn();
+    renderInput({ onSend, awaitingInit: true });
+    const textarea = screen.getByPlaceholderText('Waiting for Claude…');
+    // Disabled textareas don't accept input via userEvent.type, so simulate
+    // a keydown directly to confirm the handler short-circuits.
+    await userEvent.click(textarea);
+    await userEvent.keyboard('{enter}');
+    expect(onSend).not.toHaveBeenCalled();
+  });
+
+  it('does NOT show Stop during awaitingInit (nothing live to interrupt)', () => {
+    const onInterrupt = vi.fn();
+    renderInput({ awaitingInit: true, onInterrupt });
+    expect(screen.queryByTestId('stop-button')).toBeNull();
+    expect(screen.getByTestId('send-button')).toBeInTheDocument();
+  });
 });

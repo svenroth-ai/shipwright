@@ -15,7 +15,11 @@ function createWrapper() {
 }
 
 describe('useSwitchModel', () => {
-  it('POSTs to /api/projects/:id/tasks/:taskId/mode with the alias derived from the concrete id', async () => {
+  // Iterate 14.13 — sends the CONCRETE id directly (not the coarse alias).
+  // The 14.12 code converted to alias first, which dropped the user's exact
+  // version pick (CLI's `opus` alias resolves to whatever its compiled-in
+  // default-stable-in-family happens to be, e.g. 4.5 in CLI 2.1.1).
+  it('POSTs the concrete model id to /api/projects/:id/tasks/:taskId/mode', async () => {
     let receivedBody: Record<string, unknown> | null = null;
     let receivedUrl: string | null = null;
 
@@ -23,7 +27,7 @@ describe('useSwitchModel', () => {
       http.post('/api/projects/:projectId/tasks/:taskId/mode', async ({ request }) => {
         receivedUrl = request.url;
         receivedBody = (await request.json()) as Record<string, unknown>;
-        return HttpResponse.json({ data: { taskId: 'task-1', model: 'opus', status: 'running' } });
+        return HttpResponse.json({ data: { taskId: 'task-1', model: 'claude-opus-4-7', status: 'running' } });
       }),
     );
 
@@ -35,16 +39,16 @@ describe('useSwitchModel', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(receivedUrl).toContain('/api/projects/proj-1/tasks/task-1/mode');
-    expect(receivedBody).toEqual({ model: 'opus' });
+    expect(receivedBody).toEqual({ model: 'claude-opus-4-7' });
   });
 
-  it('maps Sonnet concrete id to sonnet alias', async () => {
+  it('passes a Sonnet concrete id through verbatim (no alias conversion)', async () => {
     let receivedBody: Record<string, unknown> | null = null;
 
     server.use(
       http.post('/api/projects/:projectId/tasks/:taskId/mode', async ({ request }) => {
         receivedBody = (await request.json()) as Record<string, unknown>;
-        return HttpResponse.json({ data: { taskId: 'task-1', model: 'sonnet', status: 'running' } });
+        return HttpResponse.json({ data: { taskId: 'task-1', model: 'claude-sonnet-4-6', status: 'running' } });
       }),
     );
 
@@ -55,7 +59,7 @@ describe('useSwitchModel', () => {
     result.current.mutate('claude-sonnet-4-6');
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(receivedBody).toEqual({ model: 'sonnet' });
+    expect(receivedBody).toEqual({ model: 'claude-sonnet-4-6' });
   });
 
   it('surfaces server 409 errors (e.g. pending question) as a mutation failure', async () => {

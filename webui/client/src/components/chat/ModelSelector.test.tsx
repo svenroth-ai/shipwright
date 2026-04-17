@@ -95,6 +95,48 @@ describe('ModelSelector', () => {
     render(<ModelSelector onSwitchModel={onSwitchModel} />);
     expect(screen.getByTestId('model-selector-trigger').title).toBe('Claude CLI model');
   });
+
+  // Iterate 14.13 — switching indicator. While the /mode mutation is in
+  // flight (1-2s respawn window) the trigger renders a spinner + label
+  // and the dropdown is disabled so the user can't double-fire the
+  // SIGTERM-then-respawn dance.
+  it('renders "Switching…" with spinner when isSwitching=true', () => {
+    const onSwitchModel = vi.fn();
+    render(
+      <ModelSelector
+        systemInitModel="claude-opus-4-5"
+        onSwitchModel={onSwitchModel}
+        isSwitching
+      />,
+    );
+    const trigger = screen.getByTestId('model-selector-trigger');
+    expect(trigger.textContent).toContain('Switching');
+    expect(screen.getByTestId('model-switching-spinner')).toBeInTheDocument();
+  });
+
+  it('disables the trigger when isSwitching=true (prevents double-fire)', () => {
+    const onSwitchModel = vi.fn();
+    render(
+      <ModelSelector
+        systemInitModel="claude-opus-4-5"
+        onSwitchModel={onSwitchModel}
+        isSwitching
+      />,
+    );
+    expect(screen.getByTestId('model-selector-trigger')).toBeDisabled();
+  });
+
+  it('renders the model label (no spinner) when isSwitching=false / unset', () => {
+    const onSwitchModel = vi.fn();
+    render(
+      <ModelSelector
+        systemInitModel="claude-opus-4-5"
+        onSwitchModel={onSwitchModel}
+      />,
+    );
+    expect(screen.queryByTestId('model-switching-spinner')).toBeNull();
+    expect(screen.getByTestId('model-selector-trigger').textContent).toBe('Opus 4.5');
+  });
 });
 
 describe('matchKnownModel / aliasFromConcrete', () => {
