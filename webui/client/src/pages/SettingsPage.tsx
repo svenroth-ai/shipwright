@@ -72,6 +72,28 @@ export default function SettingsPage() {
     }
   }
 
+  // Sub-iterate C — first-mount hydration of defaultModel when the
+  // server has no value set yet. Before, the dropdown displayed the
+  // hardcoded fallback `claude-opus-4-7` but never persisted it, so the
+  // server's settings.defaultModel stayed undefined and new tasks that
+  // came through useCreateTask with empty localStorage fell back to
+  // whatever the CLI considered the stable default. Persist once so the
+  // UI and the server agree.
+  const [persistedDefaultModel, setPersistedDefaultModel] = useState(false);
+  useEffect(() => {
+    if (persistedDefaultModel) return;
+    if (isLoading) return;
+    if (!settings) return;
+    if (settings.defaultModel) {
+      setPersistedDefaultModel(true);
+      return;
+    }
+    saveMutation.mutate(
+      { defaultModel: 'claude-opus-4-7' },
+      { onSuccess: () => setPersistedDefaultModel(true) },
+    );
+  }, [settings, isLoading, persistedDefaultModel, saveMutation]);
+
   // Iterate 14.8.2 — deep-link: read ?projectId= and ?tab= from URL
   const initialTab = searchParams.get('tab') ?? 'global';
   const initialProjectId = searchParams.get('projectId') ?? null;

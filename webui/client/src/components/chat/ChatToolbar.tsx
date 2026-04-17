@@ -4,7 +4,7 @@ import { AutonomyPill } from './AutonomyPill';
 import { useSystemInitModel } from '../../stores/chatStore';
 import { taskKeyOf } from '../../stores/turnStatusStore';
 import { useSwitchModel } from '../../hooks/useSwitchModel';
-import type { ModeOption } from '../../hooks/useChatSettings';
+import { useChatSettings, type ModeOption } from '../../hooks/useChatSettings';
 import type { AutonomyOption } from '../../types/settings';
 
 interface ChatToolbarProps {
@@ -24,19 +24,15 @@ export function ChatToolbar({
   projectId,
   taskId,
 }: ChatToolbarProps) {
-  // Iterate 14.8.3 — ModelSelector is now purely props-driven from
-  // chatStore.systemInit. No more model/setModel localStorage threading.
-  // The label updates when the new system/init SSE event arrives.
   const taskKey = projectId && taskId ? taskKeyOf(projectId, taskId) : '';
   const systemModel = useSystemInitModel(taskKey);
+  const { setModel } = useChatSettings();
 
-  // Iterate 14.12 — mid-task model switching (Bug 1).
-  // 14.8.3 left this as a no-op TODO; the user reported that clicking
-  // Opus 4.7 in the dropdown did nothing. The hook is always called
-  // (rules of hooks); we short-circuit to a no-op when project/task ids
-  // aren't available (e.g. ChatToolbar rendered without an active task).
   const switchModel = useSwitchModel(projectId ?? '', taskId ?? '');
   const handleSwitchModel = (modelId: string) => {
+    // Persist the pick so the next fresh task picks up the concrete id
+    // instead of falling back to settings.defaultModel.
+    setModel(modelId);
     if (!projectId || !taskId) return;
     switchModel.mutate(modelId);
   };
