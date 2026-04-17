@@ -2,6 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { server } from '../test/mocks/server';
 import SettingsPage from './SettingsPage';
 
 beforeEach(() => {
@@ -97,5 +99,47 @@ describe('SettingsPage', () => {
       );
     });
     warnSpy.mockRestore();
+  });
+
+  // Sub-iterate C — first-mount auto-persist of defaultModel when server
+  // has none. Before the fix, the dropdown displayed the hardcoded
+  // fallback but the server never saw it; task creation with empty
+  // localStorage then fell back to whatever the CLI considered stable.
+  it('auto-persists defaultModel=claude-opus-4-7 on first mount when unset', async () => {
+    let capturedBody: Record<string, unknown> | null = null;
+    server.use(
+      http.get('/api/settings', () =>
+        HttpResponse.json({ data: { port: 3847, maxConcurrent: 3, heartbeatIntervalMs: 30000 } }),
+      ),
+      http.put('/api/settings', async ({ request }) => {
+        const body = (await request.json()) as Record<string, unknown>;
+        if (capturedBody === null && 'defaultModel' in body) {
+          capturedBody = body;
+        }
+        return HttpResponse.json({ data: { port: 3847, maxConcurrent: 3, heartbeatIntervalMs: 30000, ...body } });
+      }),
+    );
+    renderPage();
+    await waitFor(() => expect(capturedBody).not.toBeNull(), { timeout: 3000 });
+    expect(capturedBody).toMatchObject({ defaultModel: 'claude-opus-4-7' });
+  });
+
+  it('does NOT re-persist defaultModel when server already has one', async () => {
+    let putCount = 0;
+    server.use(
+      http.get('/api/settings', () =>
+        HttpResponse.json({ data: { defaultModel: 'claude-sonnet-4-6' } }),
+      ),
+      http.put('/api/settings', async ({ request }) => {
+        putCount++;
+        const body = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ data: body });
+      }),
+    );
+    renderPage();
+    await screen.findByTestId('default-model-select');
+    // Allow effects to settle.
+    await new Promise((r) => setTimeout(r, 100));
+    expect(putCount).toBe(0);
   });
 });
