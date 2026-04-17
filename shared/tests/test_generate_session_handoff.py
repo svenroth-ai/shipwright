@@ -1,8 +1,12 @@
 """Tests for session handoff generation."""
 
 import json
+from datetime import datetime, timedelta, timezone
 
-from tools.generate_session_handoff import generate_handoff
+from tools.generate_session_handoff import (
+    _current_iterate_progress,
+    generate_handoff,
+)
 
 
 def test_generate_handoff_empty_project(tmp_project):
@@ -169,3 +173,137 @@ def test_generate_handoff_with_decision_log(project_with_configs):
     content = generate_handoff(project_with_configs)
     assert "Recent Decisions" in content
     assert "ADR-001" in content
+
+
+# ---------------------------------------------------------------------------
+# Iterate 14.15 — Resume safeguard: `_current_iterate_progress` must surface
+# enough evidence for B1 Resume to decide whether External Review is pending.
+# ---------------------------------------------------------------------------
+
+
+def _write_iterate_spec(
+    project_root, *, run_id: str, complexity: str, branch_tail: str
+) -> None:
+    """Create a minimal iterate spec file matching a branch tail."""
+    iterate_dir = project_root / "planning" / "iterate"
+    iterate_dir.mkdir(parents=True, exist_ok=True)
+    spec = iterate_dir / f"2026-04-17-{branch_tail}.md"
+    spec.write_text(
+        "\n".join([
+            f"# Iterate Spec: {branch_tail}",
+            "",
+            f"- **Run ID:** {run_id}",
+            "- **Type:** feature",
+            f"- **Complexity:** {complexity}",
+            "- **Status:** draft",
+        ]),
+        encoding="utf-8",
+    )
+
+
+def test_current_iterate_progress_off_branch_returns_empty(tmp_project):
+    """Non-iterate branches produce no section — avoids polluting the handoff
+    during normal pipeline work."""
+    assert _current_iterate_progress(tmp_project, {"branch": "main"}) == []
+    assert _current_iterate_progress(tmp_project, {"branch": ""}) == []
+
+
+def test_current_iterate_progress_flags_missing_review_on_medium(tmp_project):
+    """Medium+ iterate with no external review marker must be flagged so B1
+    Resume runs Step 4 before dispatching to the Remaining phase."""
+    _write_iterate_spec(
+        tmp_project,
+        run_id="iterate-2026-04-17-foo",
+        complexity="medium",
+        branch_tail="foo",
+    )
+    git_info = {"branch": "iterate/foo", "uncommitted_changes": ""}
+
+    lines = _current_iterate_progress(tmp_project, git_info)
+    text = "\n".join(lines)
+
+    assert "## Current Iterate Progress" in text
+    assert "iterate/foo" in text
+    assert "iterate-2026-04-17-foo" in text
+    assert "Complexity" in text and "medium" in text
+    assert "External Review Marker" in text and "missing" in text
+    assert "Mandatory replay on Resume" in text
+    assert "External LLM Review" in text
+
+
+def test_current_iterate_progress_fresh_marker_clears_replay(tmp_project):
+    """A run-scoped marker file proves Step 4 ran — no replay needed."""
+    _write_iterate_spec(
+        tmp_project,
+        run_id="iterate-2026-04-17-bar",
+        complexity="medium",
+        branch_tail="bar",
+    )
+    marker = tmp_project / "planning" / "iterate" / "iterate-2026-04-17-bar-external-review.json"
+    marker.write_text(
+        json.dumps({
+            "status": "completed",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "provider": "openrouter",
+            "findings_count": 2,
+        }),
+        encoding="utf-8",
+    )
+
+    lines = _current_iterate_progress(tmp_project, {"branch": "iterate/bar"})
+    text = "\n".join(lines)
+
+    assert "External Review Marker" in text and "completed" in text
+    assert "Mandatory replay on Resume" not in text
+
+
+def test_current_iterate_progress_stale_shared_marker_is_replay_trigger(tmp_project):
+    """A shared `external_review_state.json` predating the current spec means
+    the marker is for a prior run — must still trigger replay."""
+    _write_iterate_spec(
+        tmp_project,
+        run_id="iterate-2026-04-17-baz",
+        complexity="medium",
+        branch_tail="baz",
+    )
+    marker = tmp_project / "planning" / "iterate" / "external_review_state.json"
+    # Marker written 2 days before the spec file was created
+    stale_ts = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+    marker.write_text(
+        json.dumps({
+            "status": "completed",
+            "timestamp": stale_ts,
+            "provider": "openrouter",
+        }),
+        encoding="utf-8",
+    )
+    # Force the marker's filesystem mtime older than the spec
+    import os
+    spec_path = tmp_project / "planning" / "iterate" / "2026-04-17-baz.md"
+    now = datetime.now(timezone.utc).timestamp()
+    os.utime(marker, (now - 2 * 86400, now - 2 * 86400))
+    os.utime(spec_path, (now, now))
+
+    lines = _current_iterate_progress(tmp_project, {"branch": "iterate/baz"})
+    text = "\n".join(lines)
+
+    assert "stale" in text
+    assert "Mandatory replay on Resume" in text
+
+
+def test_current_iterate_progress_trivial_skips_review_replay(tmp_project):
+    """Trivial/small iterates never require external review — replay should
+    not flag it even without a marker."""
+    _write_iterate_spec(
+        tmp_project,
+        run_id="iterate-2026-04-17-qux",
+        complexity="small",
+        branch_tail="qux",
+    )
+
+    lines = _current_iterate_progress(tmp_project, {"branch": "iterate/qux"})
+    text = "\n".join(lines)
+
+    assert "External Review Marker" in text and "missing" in text
+    # Small complexity: no replay section should be rendered for review
+    assert "External LLM Review" not in text

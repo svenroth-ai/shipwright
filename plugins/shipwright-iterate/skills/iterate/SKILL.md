@@ -112,9 +112,30 @@ Options:
 
 **Wait for user choice.**
 
-- **Resume:** Read `agent_docs/session_handoff.md` for full state (completed phases, remaining work, test status, blocked items). Skip Steps C-G (Run ID, Intent, Complexity, Summary, Interview). Go directly to the phase listed under "Remaining" in handoff. Reuse the existing run_id, branch, and iterate spec.
+- **Resume:** Read `agent_docs/session_handoff.md` for full state (completed phases, remaining work, test status, blocked items). Skip Steps C-G (Run ID, Intent, Complexity, Summary, Interview). Reuse the existing run_id, branch, and iterate spec.
+
+  **Mandatory replay check (BEFORE dispatching to the Remaining phase).**
+  Mandatory phases are not skippable just because a previous session advanced
+  past them. The handoff's "Remaining" pointer is an advisory hint, not proof
+  that earlier phases actually ran — the generic Stop hook that writes the
+  handoff does not persist phase-progress markers. Verify explicitly:
+
+  1. **External LLM Review (medium+ only).** Check `planning/iterate/` for a
+     completion marker. Acceptable evidence: either
+     `planning/iterate/{run_id}-external-review.json`, OR
+     `planning/iterate/external_review_state.json` with a `timestamp` newer
+     than the iterate spec's mtime. If neither exists and complexity is
+     medium+ with `feedback_iterations > 0`, run Step 4 (External LLM Review)
+     FIRST, then continue. Trivial/small iterates skip this check.
+  2. **Self-Review.** Grep the iterate ADR for a `Self-Review:` block. If
+     absent, run Step 7 before commit — self-review is mandatory at every
+     complexity level.
+
+  Only after both checks pass, dispatch to the phase listed under "Remaining"
+  in the handoff (fall back to Build if no Remaining section is present — the
+  current handoff generator does not write one).
 - **Abandon:** Delete the iterate branch (`git branch -D iterate/{name}`), remove `agent_docs/session_handoff.md`, proceed with fresh run from Step B2.
-- **Complete:** Read handoff for context, skip to Finalization (F1-F11) to commit, record event, and merge what's already been built.
+- **Complete:** Read handoff for context, skip to Finalization (F1-F11) to commit, record event, and merge what's already been built. **Same replay check applies** — run External Review / Self-Review first if markers are missing, before F1.
 
 **If no in-progress run detected:** Continue to B2 normally.
 
