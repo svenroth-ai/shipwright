@@ -7,11 +7,27 @@ import { ChatAwaitingContext } from '../../contexts/ChatAwaitingContext';
 import type { ChatMessage } from '../../types';
 
 const answerMutateMock = vi.fn();
+// Iterate 14.14 — when set, the mock mutate invokes this on the next
+// call, letting tests exercise AskUserCard's new onError surfacing path
+// without changing the arity of `answerMutateMock` (old tests check its
+// call with a single `{ id, answers }` arg).
+let simulateMutateError: string | null = null;
 // Iterate 14.5 — mutable inbox-item stub so individual tests can control
 // the `notBlocked` / `status` values returned by the `useInboxItem` hook.
 let useInboxItemReturn: unknown = undefined;
 vi.mock('../../hooks/useInbox', () => ({
-  useAnswerInbox: () => ({ mutate: (args: unknown) => answerMutateMock(args), isPending: false }),
+  useAnswerInbox: () => ({
+    mutate: (
+      args: unknown,
+      options?: { onError?: (err: Error) => void; onSuccess?: () => void },
+    ) => {
+      answerMutateMock(args);
+      if (simulateMutateError && options?.onError) {
+        options.onError(new Error(simulateMutateError));
+      }
+    },
+    isPending: false,
+  }),
   useInboxItem: () => useInboxItemReturn,
 }));
 
@@ -77,6 +93,7 @@ describe('AskUserCard', () => {
   beforeEach(() => {
     answerMutateMock.mockReset();
     useInboxItemReturn = undefined;
+    simulateMutateError = null;
   });
 
   it('submits the answer keyed on message.toolUseId, sending answers array (single part)', async () => {
@@ -387,6 +404,51 @@ describe('AskUserCard', () => {
     const user = userEvent.setup();
     await user.click(screen.getByTestId('ask-user-resume-button'));
     expect(onResume).toHaveBeenCalledTimes(1);
+  });
+
+  // ────────────────────────────────────────────────────────────────
+  // Iterate 14.14 — Bug 2: surface submit errors instead of silently
+  // leaving the user in an "Answered" state with no Claude response.
+  // ────────────────────────────────────────────────────────────────
+
+  it('renders a submit-error banner when the answer mutation fails', async () => {
+    simulateMutateError = 'Process no longer running';
+    renderCard({
+      toolInput: {
+        questions: [{ question: 'Pick one', options: [{ label: 'Alpha' }], multiSelect: false }],
+      },
+      toolUseId: 'toolu_err',
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Alpha' }));
+    await user.click(screen.getByRole('button', { name: 'Submit Answer' }));
+
+    const banner = await screen.findByTestId('ask-user-submit-error');
+    expect(banner).toBeInTheDocument();
+    expect(banner).toHaveTextContent('Submit failed');
+    expect(banner).toHaveTextContent('Process no longer running');
+    // Failure rolls back optimistic "Answered" so the user can retry —
+    // the question body (with Submit button) is still present.
+    expect(screen.getByRole('button', { name: 'Submit Answer' })).toBeInTheDocument();
+  });
+
+  it('clears the submit-error banner on next successful submit', async () => {
+    simulateMutateError = 'Process no longer running';
+    renderCard({
+      toolInput: {
+        questions: [{ question: 'Pick one', options: [{ label: 'Alpha' }], multiSelect: false }],
+      },
+      toolUseId: 'toolu_retry',
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Alpha' }));
+    await user.click(screen.getByRole('button', { name: 'Submit Answer' }));
+    expect(await screen.findByTestId('ask-user-submit-error')).toBeInTheDocument();
+
+    // Retry without the simulated error.
+    simulateMutateError = null;
+    await user.click(screen.getByRole('button', { name: 'Submit Answer' }));
+    expect(screen.queryByTestId('ask-user-submit-error')).toBeNull();
   });
 
   it('pause indicator does NOT remove the question body / Submit button', () => {

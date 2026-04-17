@@ -153,16 +153,21 @@ export function ChatPanel({ projectId, taskId, focusBottomOnMount = false }: Cha
 
   // Iterate 14.8.3 — REST-to-chatStore hydration. When user reloads the page
   // or switches to a historical task, the REST chat history fetch loads
-  // messages but never calls setSystemInit. Scan the REST result for the first
-  // system message with a model field and seed the chatStore so ModelSelector
-  // renders the correct label instead of "Claude" placeholder.
+  // messages but never calls setSystemInit. Scan the REST result for the
+  // LATEST system message with a model field (iterate 14.14: after a
+  // mid-task model switch there are two system/init entries; we need the
+  // newer one) and seed the chatStore so ModelSelector renders the
+  // correct label instead of the "Claude" placeholder.
   const taskKey = taskKeyOf(projectId, taskId);
   const hydratedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!rawMessages.length || hydratedRef.current === taskKey) return;
-    const systemMessage = rawMessages.find((m) => m.type === 'system' && m.model);
-    if (systemMessage?.model) {
-      useChatStore.getState().setSystemInit(taskKey, { model: systemMessage.model });
+    let latestModel: string | undefined;
+    for (const m of rawMessages) {
+      if (m.type === 'system' && m.model) latestModel = m.model;
+    }
+    if (latestModel) {
+      useChatStore.getState().setSystemInit(taskKey, { model: latestModel });
       hydratedRef.current = taskKey;
     }
   }, [rawMessages, taskKey]);
@@ -223,18 +228,6 @@ export function ChatPanel({ projectId, taskId, focusBottomOnMount = false }: Cha
         ref={scrollRef}
         className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-6 py-5 flex flex-col gap-[18px]"
       >
-        {/* Iterate 14.13 — spawn indicator. Wins over the static empty
-            state when Claude is still booting (0–2s after task create or
-            model switch). Clears the moment system/init lands. */}
-        {messages.length === 0 && awaitingInit && (
-          <div
-            className="flex items-center justify-center gap-2 text-gray-500 text-sm py-8"
-            data-testid="chat-spawn-indicator"
-          >
-            <Loader2 size={16} className="animate-spin" />
-            <span>Starting Claude…</span>
-          </div>
-        )}
         {messages.length === 0 && !awaiting && !awaitingInit && (
           <div className="text-center text-gray-400 text-sm py-8">
             <p>No messages yet.</p>
@@ -252,10 +245,31 @@ export function ChatPanel({ projectId, taskId, focusBottomOnMount = false }: Cha
           />
         ))}
 
+        {/* Iterate 14.13/14.14 — spawn indicator. Renders at the bottom of
+            the message list whenever Claude is still booting (task is
+            pending/running, no system/init yet). 14.13 gated this on
+            `messages.length === 0` but the user's initial prompt is in
+            the messages array from the first render — the gate hid the
+            indicator in the exact case it was built for. Now the
+            indicator shows regardless of whether a user prompt is
+            already queued; it still clears the moment system/init
+            arrives (awaitingInit flips false). Suppresses the generic
+            leading indicator so we don't double-render. */}
+        {awaitingInit && (
+          <div
+            className="flex items-center justify-center gap-2 text-gray-500 text-sm py-8"
+            data-testid="chat-spawn-indicator"
+          >
+            <Loader2 size={16} className="animate-spin" />
+            <span>Starting Claude…</span>
+          </div>
+        )}
+
         {/* Leading "awaiting / cold start" indicator — shows only when there
             is no recent committed output, so we don't race with the real
-            streamed messages. */}
-        {showLeadingIndicator && <AssistantMessage content="" isStreaming />}
+            streamed messages. Suppressed while the spawn indicator owns
+            the slot. */}
+        {showLeadingIndicator && !awaitingInit && <AssistantMessage content="" isStreaming />}
       </div>
 
       {/* Error banner */}

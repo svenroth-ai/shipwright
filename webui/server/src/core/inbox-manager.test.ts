@@ -277,6 +277,54 @@ describe("InboxManager — iterate 14.2 parts[] schema", () => {
     expect(message.content).toBe("## Question 1\na");
   });
 
+  // ──────────────────────────────────────────────────────────────────────
+  // Iterate 14.14 — Bug 2 regression: answering a second AskUserQuestion
+  // after the turn has ended (`result` event) must STILL deliver the
+  // joined markdown to the persistent Claude process on stdin. This was
+  // reported as "chat stalls after second AUQ submit" — the user-visible
+  // scenario has both AUQs flagged `notBlocked` by the server-side guard
+  // (14.5) because Claude kept generating past them, then the user
+  // submits the newest (inbox latest-per-task filter) and nothing
+  // happens client-side. Lock in the server-side contract so we can
+  // differentiate server vs client/runtime regressions in future.
+  // ──────────────────────────────────────────────────────────────────────
+
+  it("second-AUQ answer still writes to process stdin after notBlocked flag + turn end", async () => {
+    const { mgr, adapter } = setup();
+    mgr.registerProject("p1", "/tmp/proj");
+    // Two AUQs in the same turn.
+    await mgr.addQuestion({
+      projectId: "p1",
+      taskId: "t1",
+      parts: singlePart("First?"),
+      toolUseId: "toolu_first",
+    });
+    await mgr.addQuestion({
+      projectId: "p1",
+      taskId: "t1",
+      parts: singlePart("Second?"),
+      toolUseId: "toolu_second",
+    });
+    // Turn ended — guard flags both items notBlocked (simulates the
+    // `turn_ended` decision from ask-user-guard.classifyContentBlocks).
+    await mgr.setNotBlocked("toolu_first", true);
+    await mgr.setNotBlocked("toolu_second", true);
+
+    // User submits the SECOND (newest pending — matches
+    // routes/inbox.ts "latest pending per task" filter).
+    await answerOne(mgr, "toolu_second", "B");
+
+    // The joined answer MUST reach the persistent Claude process.
+    expect(adapter.sendStdin).toHaveBeenCalledTimes(1);
+    const content = (adapter.sendStdin as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(content).toBe("## Question 1\nB");
+    // Item transitioned to answered regardless of the notBlocked flag.
+    expect(mgr.getById("toolu_second")!.status).toBe("answered");
+    expect(mgr.getById("toolu_second")!.notBlocked).toBe(true);
+    // First item untouched — still pending + notBlocked.
+    expect(mgr.getById("toolu_first")!.status).toBe("pending");
+  });
+
   it("answer does NOT append chat-store entry for legacy (non-toolu_) ids", async () => {
     const { mgr, appendChatMessage } = setup();
     mgr.registerProject("p1", "/tmp/proj");

@@ -28,8 +28,14 @@ export default function InboxPage() {
   // rather than the top of an empty chat. Inner interactive elements
   // (option buttons, Answer button, inputs) stopPropagation so they don't
   // accidentally fire the navigation.
+  //
+  // Iterate 14.14 — the original path `/projects/:id/tasks/:taskId` hit
+  // react-router's default 404 ErrorBoundary because the router only
+  // defines `/tasks/:taskId`. TaskDetailPage resolves projectId from the
+  // task object itself (useTasks() + t.id lookup), so the prefix is not
+  // needed.
   function handleOpenTask(item: InboxItem) {
-    navigate(`/projects/${item.projectId}/tasks/${item.taskId}?focus=chat-bottom`);
+    navigate(`/tasks/${item.taskId}?focus=chat-bottom`);
   }
 
   function stop(e: React.MouseEvent | React.KeyboardEvent) {
