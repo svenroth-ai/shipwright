@@ -33,6 +33,17 @@ interface ChatInputProps {
    * to leave Stop stuck after interrupt.
    */
   taskStatus?: string;
+  /**
+   * Iterate 14.13 — true while Claude is in the spawn window (task
+   * exists but no system/init has arrived yet). Disables the Send
+   * button and surfaces a "Waiting for Claude…" placeholder so the
+   * user understands why messages can't be sent yet (1-2s gap on fresh
+   * task or mid-task model switch). Distinct from `isStreaming` which
+   * covers the "we already sent something and Claude is responding"
+   * window — Stop stays Send during awaitingInit because there's
+   * nothing live to interrupt yet.
+   */
+  awaitingInit?: boolean;
 }
 
 const RUNNABLE_STATUSES = new Set([
@@ -41,7 +52,7 @@ const RUNNABLE_STATUSES = new Set([
   'waiting',
 ]);
 
-export function ChatInput({ onSend, isStreaming, autonomy, projectId, taskId, onInterrupt, taskStatus }: ChatInputProps) {
+export function ChatInput({ onSend, isStreaming, autonomy, projectId, taskId, onInterrupt, taskStatus, awaitingInit = false }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [images, setImages] = useState<ImageAttachment[]>([]);
   const [showSlashPopup, setShowSlashPopup] = useState(false);
@@ -58,7 +69,7 @@ export function ChatInput({ onSend, isStreaming, autonomy, projectId, taskId, on
 
   function handleSend() {
     const trimmed = input.trim();
-    if ((!trimmed && images.length === 0) || effectiveStreaming) return;
+    if ((!trimmed && images.length === 0) || effectiveStreaming || awaitingInit) return;
     onSend({
       message: trimmed,
       ...(images.length > 0
@@ -152,7 +163,7 @@ export function ChatInput({ onSend, isStreaming, autonomy, projectId, taskId, on
     setImages((prev) => prev.filter((_, i) => i !== index));
   }
 
-  const canSend = (input.trim().length > 0 || images.length > 0) && !effectiveStreaming;
+  const canSend = (input.trim().length > 0 || images.length > 0) && !effectiveStreaming && !awaitingInit;
 
   return (
     <div className="border-t border-[var(--color-border,#e0dbd4)] bg-white pt-2 pb-4">
@@ -219,9 +230,10 @@ export function ChatInput({ onSend, isStreaming, autonomy, projectId, taskId, on
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            placeholder="Send a message or paste an image..."
+            placeholder={awaitingInit ? 'Waiting for Claude…' : 'Send a message or paste an image...'}
             rows={1}
-            className="flex-1 resize-none text-sm outline-none bg-transparent max-h-[150px]"
+            className="flex-1 resize-none text-sm outline-none bg-transparent max-h-[150px] disabled:cursor-not-allowed disabled:opacity-70"
+            disabled={awaitingInit}
           />
           {effectiveStreaming && onInterrupt ? (
             <button

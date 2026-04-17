@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useMemo } from 'react';
-import { ArrowDown, AlertCircle } from 'lucide-react';
+import { ArrowDown, AlertCircle, Loader2 } from 'lucide-react';
 import { useChat, useSendChat, useRefetchChatOnResume } from '../../hooks/useChat';
 import { useAutoScroll } from '../../hooks/useAutoScroll';
 import { useTurnStatus } from '../../hooks/useTurnStatus';
@@ -15,7 +15,7 @@ import { ApiError } from '../../lib/api';
 import { foldToolResults } from '../../lib/foldToolResults';
 import { collapseAskUserQuestionRun } from '../../lib/collapseAskUserQuestion';
 import { useTurnStatusStore, taskKeyOf } from '../../stores/turnStatusStore';
-import { useChatStore } from '../../stores/chatStore';
+import { useChatStore, useSystemInitModel } from '../../stores/chatStore';
 import { ChatAwaitingContext } from '../../contexts/ChatAwaitingContext';
 import type { AutonomyOption } from '../../types/settings';
 
@@ -167,6 +167,21 @@ export function ChatPanel({ projectId, taskId, focusBottomOnMount = false }: Cha
     }
   }, [rawMessages, taskKey]);
 
+  // Iterate 14.13 — "Starting Claude…" spawn indicator. Between task
+  // creation (or model-switch respawn) and the first system/init NDJSON
+  // event there's a 1-2s window where the chat panel is empty and the
+  // user has no signal that Claude is starting up. Detect by combining:
+  //   (a) a task exists for this projectId/taskId
+  //   (b) the task status is in the "spawning / running" set
+  //   (c) chatStore.systemInit for this taskKey is still empty
+  // (c) flips false the moment system/init arrives via SSE — same data
+  // path that ModelSelector reads, so the indicator clears in lockstep
+  // with the model label appearing.
+  const systemInitModel = useSystemInitModel(taskKey);
+  const SPAWNING_STATUSES = new Set(['pending', 'running']);
+  const taskIsSpawning = !!task && SPAWNING_STATUSES.has(task.status);
+  const awaitingInit = taskIsSpawning && !systemInitModel;
+
   const autonomy: AutonomyOption = project?.settings?.autonomy ?? globalSettings?.defaultAutonomy ?? 'guided';
 
   function handleSend(payload: import('./ChatInput').ChatSendPayload) {
@@ -208,7 +223,19 @@ export function ChatPanel({ projectId, taskId, focusBottomOnMount = false }: Cha
         ref={scrollRef}
         className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-6 py-5 flex flex-col gap-[18px]"
       >
-        {messages.length === 0 && !awaiting && (
+        {/* Iterate 14.13 — spawn indicator. Wins over the static empty
+            state when Claude is still booting (0–2s after task create or
+            model switch). Clears the moment system/init lands. */}
+        {messages.length === 0 && awaitingInit && (
+          <div
+            className="flex items-center justify-center gap-2 text-gray-500 text-sm py-8"
+            data-testid="chat-spawn-indicator"
+          >
+            <Loader2 size={16} className="animate-spin" />
+            <span>Starting Claude…</span>
+          </div>
+        )}
+        {messages.length === 0 && !awaiting && !awaitingInit && (
           <div className="text-center text-gray-400 text-sm py-8">
             <p>No messages yet.</p>
             <p className="text-xs mt-1">Start the task to begin chatting with Claude.</p>
@@ -264,6 +291,7 @@ export function ChatPanel({ projectId, taskId, focusBottomOnMount = false }: Cha
         taskId={taskId}
         onInterrupt={() => interruptTask()}
         taskStatus={task?.status}
+        awaitingInit={awaitingInit}
       />
     </div>
     </ChatAwaitingContext.Provider>

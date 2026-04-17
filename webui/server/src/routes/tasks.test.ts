@@ -167,7 +167,30 @@ describe("Task Routes", () => {
 
   // Iterate 14.12 — mid-task model switching via /mode endpoint.
   // Replaces the 14.8.3 client-side TODO ("Future: POST .../model {model}").
-  it("POST /tasks/:id/mode with body.model respawns with --resume + new model", async () => {
+  // Iterate 14.13 — body.model now flows through verbatim (concrete id OR
+  // alias). The 14.12 narrow alias union dropped the user's exact version
+  // pick because the CLI's `opus` alias resolves to whatever it considers
+  // the latest stable opus, NOT the concrete id the user clicked.
+  it("POST /tasks/:id/mode with concrete model id respawns with --resume + that exact id", async () => {
+    const { app, deps } = setup(false, {
+      runningProcess: { state: "running", claudeSessionId: "real-claude-sess-xyz" },
+    });
+    const res = await app.request("/api/projects/p1/tasks/t1/mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "claude-opus-4-7" }),
+    });
+    expect(res.status).toBe(200);
+    expect(deps.adapter.terminate).toHaveBeenCalledTimes(1);
+    expect(deps.governor.release).toHaveBeenCalledWith("t1");
+    expect(deps.governor.acquire).toHaveBeenCalledTimes(1);
+    const opts = deps.governor.acquire.mock.calls[0][0];
+    expect(opts.sessionId).toBe("real-claude-sess-xyz");
+    expect(opts.resumeSession).toBe(true);
+    expect(opts.model).toBe("claude-opus-4-7");
+  });
+
+  it("POST /tasks/:id/mode also accepts coarse aliases for back-compat", async () => {
     const { app, deps } = setup(false, {
       runningProcess: { state: "running", claudeSessionId: "real-claude-sess-xyz" },
     });
@@ -177,12 +200,7 @@ describe("Task Routes", () => {
       body: JSON.stringify({ model: "opus" }),
     });
     expect(res.status).toBe(200);
-    expect(deps.adapter.terminate).toHaveBeenCalledTimes(1);
-    expect(deps.governor.release).toHaveBeenCalledWith("t1");
-    expect(deps.governor.acquire).toHaveBeenCalledTimes(1);
     const opts = deps.governor.acquire.mock.calls[0][0];
-    expect(opts.sessionId).toBe("real-claude-sess-xyz");
-    expect(opts.resumeSession).toBe(true);
     expect(opts.model).toBe("opus");
   });
 
@@ -193,12 +211,12 @@ describe("Task Routes", () => {
     const res = await app.request("/api/projects/p1/tasks/t1/mode", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: "auto", model: "opus" }),
+      body: JSON.stringify({ mode: "auto", model: "claude-opus-4-7" }),
     });
     expect(res.status).toBe(200);
     const opts = deps.governor.acquire.mock.calls[0][0];
     expect(opts.permissionMode).toBe("auto");
-    expect(opts.model).toBe("opus");
+    expect(opts.model).toBe("claude-opus-4-7");
   });
 
   it("POST /tasks/:id/mode returns 400 when neither mode nor model is supplied", async () => {
@@ -214,14 +232,29 @@ describe("Task Routes", () => {
     expect(deps.adapter.terminate).not.toHaveBeenCalled();
   });
 
-  it("POST /tasks/:id/mode rejects unknown model alias as 400", async () => {
+  // Iterate 14.13 — model validation is intentionally permissive (CLI
+  // shape only) so we can pass concrete ids the WebUI doesn't pre-know
+  // about. Empty / non-string / shell-unsafe values still 400.
+  it("POST /tasks/:id/mode rejects empty-string model as 400", async () => {
     const { app } = setup(false, {
       runningProcess: { state: "running", claudeSessionId: "real-claude-sess-xyz" },
     });
     const res = await app.request("/api/projects/p1/tasks/t1/mode", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "gpt-5" }),
+      body: JSON.stringify({ model: "   " }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("POST /tasks/:id/mode rejects shell-unsafe model strings as 400", async () => {
+    const { app } = setup(false, {
+      runningProcess: { state: "running", claudeSessionId: "real-claude-sess-xyz" },
+    });
+    const res = await app.request("/api/projects/p1/tasks/t1/mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "claude;rm -rf /" }),
     });
     expect(res.status).toBe(400);
   });
@@ -239,12 +272,38 @@ describe("Task Routes", () => {
     expect(opts.model).toBe("sonnet");
   });
 
-  it("POST /tasks omits model when body.model is invalid", async () => {
+  // Iterate 14.13 — model validation is shape-only (CLI accepts any
+  // alias-or-concrete-id string). `bananasaurus` is shape-valid so it
+  // passes through; clearly malformed inputs (whitespace, shell metas,
+  // non-strings) still drop. The CLI itself is the authoritative validator.
+  it("POST /tasks passes shape-valid model strings through (alias OR concrete id)", async () => {
     const { app, deps } = setup();
     await app.request("/api/projects/p1/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description: "Build auth", model: "bananasaurus" }),
+      body: JSON.stringify({ description: "Build auth", model: "claude-opus-4-7" }),
+    });
+    const opts = deps.governor.acquire.mock.calls[0][0];
+    expect(opts.model).toBe("claude-opus-4-7");
+  });
+
+  it("POST /tasks omits model when body.model is empty / whitespace / non-string", async () => {
+    const { app, deps } = setup();
+    await app.request("/api/projects/p1/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: "Build auth", model: "   " }),
+    });
+    const opts = deps.governor.acquire.mock.calls[0][0];
+    expect(opts.model).toBeUndefined();
+  });
+
+  it("POST /tasks omits model when body.model contains shell metacharacters", async () => {
+    const { app, deps } = setup();
+    await app.request("/api/projects/p1/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: "Build auth", model: "claude;rm" }),
     });
     const opts = deps.governor.acquire.mock.calls[0][0];
     expect(opts.model).toBeUndefined();
@@ -910,7 +969,11 @@ describe("Task Routes", () => {
         body: JSON.stringify({ description: "Use defaults" }),
       });
       const opts = deps.governor.acquire.mock.calls[0][0];
-      expect(opts.model).toBe("sonnet");
+      // Iterate 14.13 — defaultModel is now passed through as the concrete
+      // id (no alias conversion). The CLI accepts both forms; sending the
+      // concrete id pins the user's exact version pick instead of letting
+      // the alias resolve to whatever the CLI considers latest-stable.
+      expect(opts.model).toBe("claude-sonnet-4-6");
       expect(opts.permissionMode).toBe("acceptEdits");
     });
 

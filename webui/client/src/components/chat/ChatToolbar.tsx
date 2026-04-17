@@ -46,6 +46,7 @@ export function ChatToolbar({
       <ModelSelector
         systemInitModel={systemModel}
         onSwitchModel={handleSwitchModel}
+        isSwitching={switchModel.isPending}
       />
       <PermissionMode mode={mode} onChange={setMode} projectId={projectId} taskId={taskId} />
       <AutonomyPill autonomy={autonomy} />

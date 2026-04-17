@@ -1,4 +1,5 @@
 import * as Popover from '@radix-ui/react-popover';
+import { Loader2 } from 'lucide-react';
 import { formatModelLabel } from '../../lib/formatModelLabel';
 
 /**
@@ -76,9 +77,16 @@ interface ModelSelectorProps {
   /** Callback fired when user selects a different model. Triggers mode
    *  switch via /mode endpoint. */
   onSwitchModel: (modelId: string) => void;
+  /**
+   * Iterate 14.13 — true while {@link useSwitchModel} mutation is in flight.
+   * Renders the trigger as "Switching…" with a spinner and disables the
+   * dropdown so the user can't double-fire the respawn during the 1-2s
+   * gap between SIGTERM and the new system/init event.
+   */
+  isSwitching?: boolean;
 }
 
-export function ModelSelector({ systemInitModel, onSwitchModel }: ModelSelectorProps) {
+export function ModelSelector({ systemInitModel, onSwitchModel, isSwitching = false }: ModelSelectorProps) {
   const matchedInit = matchKnownModel(systemInitModel);
   const showOther = !!systemInitModel && !matchedInit;
   const otherEntry: ConcreteModel | null = showOther
@@ -103,11 +111,19 @@ export function ModelSelector({ systemInitModel, onSwitchModel }: ModelSelectorP
     <Popover.Root>
       <Popover.Trigger asChild>
         <button
-          className="px-2 py-1 rounded-md bg-gray-100 text-xs font-medium hover:bg-gray-200 cursor-pointer"
+          className="px-2 py-1 rounded-md bg-gray-100 text-xs font-medium hover:bg-gray-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
           data-testid="model-selector-trigger"
           title={systemInitModel ? `Running: ${systemInitModel}` : 'Claude CLI model'}
+          disabled={isSwitching}
         >
-          {activeLabel}
+          {isSwitching ? (
+            <>
+              <Loader2 size={12} className="animate-spin" data-testid="model-switching-spinner" />
+              <span>Switching…</span>
+            </>
+          ) : (
+            activeLabel
+          )}
         </button>
       </Popover.Trigger>
       <Popover.Portal>

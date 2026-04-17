@@ -68,12 +68,17 @@ describe('ChatToolbar', () => {
 
   // Iterate 14.12 (Bug 1) — clicking a model in the dropdown actually
   // fires the /mode mutation. The 14.8.3 stub left this as a no-op.
-  it('clicking a model in ModelSelector POSTs to /api/projects/:id/tasks/:taskId/mode', async () => {
+  // Iterate 14.13 — body now carries the CONCRETE id (e.g.
+  // `claude-opus-4-7`), not the coarse `opus` alias. The CLI accepts
+  // both forms but the alias resolves to whatever its compiled-in
+  // default-stable-in-family happens to be (4.5/4.6 in CLI 2.1.1),
+  // silently dropping the user's exact version pick.
+  it('clicking a model in ModelSelector POSTs the concrete id to /api/projects/:id/tasks/:taskId/mode', async () => {
     let receivedBody: Record<string, unknown> | null = null;
     server.use(
       http.post('/api/projects/:projectId/tasks/:taskId/mode', async ({ request }) => {
         receivedBody = (await request.json()) as Record<string, unknown>;
-        return HttpResponse.json({ data: { taskId: 'task-1', model: 'opus', status: 'running' } });
+        return HttpResponse.json({ data: { taskId: 'task-1', model: 'claude-opus-4-7', status: 'running' } });
       }),
     );
 
@@ -91,7 +96,7 @@ describe('ChatToolbar', () => {
     fireEvent.click(opusButton);
 
     await waitFor(() => expect(receivedBody).not.toBeNull());
-    expect(receivedBody).toEqual({ model: 'opus' });
+    expect(receivedBody).toEqual({ model: 'claude-opus-4-7' });
   });
 
   it('clicking a model when projectId/taskId are missing is a safe no-op', async () => {

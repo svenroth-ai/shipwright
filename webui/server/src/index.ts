@@ -649,19 +649,19 @@ if (isMainModule) {
         // Iterate 14.8.2 — read default model from global settings.
         // Permission mode for pipeline always stays bypassPermissions
         // (the project phase is non-interactive by design).
-        const concreteToAlias: Record<string, string> = {
-          "claude-opus-4-7": "opus",
-          "claude-opus-4-6": "opus", "claude-opus-4-5": "opus",
-          "claude-sonnet-4-6": "sonnet", "claude-sonnet-4-5": "sonnet",
-          "claude-haiku-4-5": "haiku",
-        };
-        let defaultModel: "opus" | "sonnet" | "haiku" | undefined;
+        // Iterate 14.13 — defaultModel is already a concrete CLI id
+        // (e.g. `claude-opus-4-7`); pass it straight through to --model.
+        // The CLI accepts both alias and concrete forms per `claude --help`,
+        // and the concrete id pins the user's exact version pick instead of
+        // letting the alias resolve to whatever the CLI's compiled-in
+        // default-stable-in-family happens to be.
+        let defaultModel: string | undefined;
         try {
           if (fs.existsSync(settingsPath)) {
             const raw = await readFile(settingsPath, "utf-8");
             const parsed = JSON.parse(raw);
-            if (parsed.defaultModel && concreteToAlias[parsed.defaultModel]) {
-              defaultModel = concreteToAlias[parsed.defaultModel] as "opus" | "sonnet" | "haiku";
+            if (typeof parsed.defaultModel === "string" && parsed.defaultModel.trim()) {
+              defaultModel = parsed.defaultModel.trim();
             }
           }
         } catch { /* ignore */ }
