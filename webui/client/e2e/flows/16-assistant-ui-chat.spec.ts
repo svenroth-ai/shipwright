@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 
 const RUNNING_TASK_ID = '7f1815f3-e319-4667-ad67-6a4d7a6c9bf8';
-const RUNNING_PROJECT_ID = 'be8ac738-6fca-4ed7-a9a9-8c18c7f29e6c';
 
 /**
  * Sub-iterate A — assistant-ui migration DOM/ARIA contract.
@@ -30,7 +29,7 @@ test.describe('Sub-iterate A — assistant-ui chat rendering', () => {
     page.on('pageerror', (err) => pageErrors.push(err.message));
 
     const mountStart = Date.now();
-    await page.goto(`/projects/${RUNNING_PROJECT_ID}/tasks/${RUNNING_TASK_ID}`);
+    await page.goto(`/tasks/${RUNNING_TASK_ID}`);
     await page.waitForLoadState('domcontentloaded');
 
     const chatPanel = page.getByTestId('chat-panel');
@@ -69,7 +68,7 @@ test.describe('Sub-iterate A — assistant-ui chat rendering', () => {
   });
 
   test('tool_use messages render as tool-call-card and are collapsed by default', async ({ page }) => {
-    await page.goto(`/projects/${RUNNING_PROJECT_ID}/tasks/${RUNNING_TASK_ID}`);
+    await page.goto(`/tasks/${RUNNING_TASK_ID}`);
     await page.waitForLoadState('domcontentloaded');
     await expect(page.getByTestId('chat-thread')).toBeVisible();
 
@@ -87,7 +86,7 @@ test.describe('Sub-iterate A — assistant-ui chat rendering', () => {
   });
 
   test('composer area is present and keyboard-reachable', async ({ page }) => {
-    await page.goto(`/projects/${RUNNING_PROJECT_ID}/tasks/${RUNNING_TASK_ID}`);
+    await page.goto(`/tasks/${RUNNING_TASK_ID}`);
     await page.waitForLoadState('domcontentloaded');
     await expect(page.getByTestId('chat-panel')).toBeVisible();
 
