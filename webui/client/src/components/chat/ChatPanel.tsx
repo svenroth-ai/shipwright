@@ -126,9 +126,22 @@ export function ChatPanel({ projectId, taskId, focusBottomOnMount = false }: Cha
   }, [rawMessages, taskKey]);
 
   const systemInitModel = useSystemInitModel(taskKey);
-  const SPAWNING_STATUSES = new Set(['pending', 'running']);
-  const taskIsSpawning = !!task && SPAWNING_STATUSES.has(task.status);
-  const awaitingInit = taskIsSpawning && !systemInitModel;
+  // Iterate 2026-04-18 modelswitch-spawn-ux — `task` is undefined on the
+  // very first mount of a freshly-created task (tasks query lag + 404
+  // race). Previously the spawn indicator only rendered when `task` was
+  // loaded AND its status was in SPAWNING_STATUSES, so new tasks saw the
+  // empty-state placeholder flash first. Now: if systemInit is empty,
+  // treat the panel as awaiting-init. We still guard against terminal
+  // tasks (don't render spinner once task loads with a terminal status).
+  const TERMINAL_TASK_STATUSES = new Set([
+    'done',
+    'failed',
+    'cancelled',
+    'archived',
+    'orphaned',
+  ]);
+  const taskIsTerminal = !!task && TERMINAL_TASK_STATUSES.has(task.status);
+  const awaitingInit = !systemInitModel && !taskIsTerminal;
 
   const autonomy: AutonomyOption =
     project?.settings?.autonomy ?? globalSettings?.defaultAutonomy ?? 'guided';
@@ -203,26 +216,13 @@ export function ChatPanel({ projectId, taskId, focusBottomOnMount = false }: Cha
     </div>
   ) : null;
 
-  const leadingIndicator = showLeadingIndicator && !awaitingInit ? (
-    <div
-      className="bg-white rounded-xl px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] max-w-full min-w-0"
-      data-testid="chat-leading-indicator"
-    >
-      <span className="inline-flex items-center gap-2 text-sm text-gray-500">
-        <span className="inline-flex gap-1 items-center" aria-hidden="true">
-          {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary,#6b5e56)]"
-              style={{ animation: 'chat-pulse 1.2s ease-in-out infinite', animationDelay: `${i * 0.2}s` }}
-            />
-          ))}
-          <style>{`@keyframes chat-pulse {0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-2px)}}`}</style>
-        </span>
-        <span className="italic">Thinking…</span>
-      </span>
-    </div>
-  ) : null;
+  // Iterate 2026-04-18 — legacy "weisser Balken" leading indicator
+  // removed. UAT report: users saw a visually ambiguous white card with
+  // no obvious text while awaiting the model's first reply. The spawn
+  // indicator now owns the visual slot during the boot gap; the in-turn
+  // "awaiting" signal rides on assistant-ui's built-in streaming
+  // rendering (isRunning → ThreadPrimitive rendering a progress state).
+  void showLeadingIndicator; // retained for potential future wiring
 
   return (
     <ChatAwaitingContext.Provider value={awaitingContextValue}>
@@ -236,12 +236,7 @@ export function ChatPanel({ projectId, taskId, focusBottomOnMount = false }: Cha
             messages={messages}
             isRunning={awaiting}
             onSend={handleThreadSend}
-            trailingSlot={
-              <>
-                {spawnSlot}
-                {leadingIndicator}
-              </>
-            }
+            trailingSlot={spawnSlot}
             emptyState={awaitingInit ? null : undefined}
             taskStatus={task?.status}
             orphanReason={task?.orphanReason}

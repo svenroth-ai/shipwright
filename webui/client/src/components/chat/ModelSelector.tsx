@@ -79,14 +79,28 @@ interface ModelSelectorProps {
   onSwitchModel: (modelId: string) => void;
   /**
    * Iterate 14.13 — true while {@link useSwitchModel} mutation is in flight.
-   * Renders the trigger as "Switching…" with a spinner and disables the
-   * dropdown so the user can't double-fire the respawn during the 1-2s
-   * gap between SIGTERM and the new system/init event.
+   * Legacy "Switching…" visual. Superseded (but still respected) by
+   * {@link pendingTargetModel} which carries the user's chosen target id.
    */
   isSwitching?: boolean;
+  /**
+   * Iterate 2026-04-18 modelswitch-spawn-ux — the model id the user just
+   * picked. While set, the trigger renders the TARGET label + a spinner
+   * (not the stale `systemInitModel` label) so the user has continuous
+   * visual feedback across the full 1-2s respawn. Cleared by the
+   * caller (ChatToolbar) once `systemInitModel` matches the target or
+   * on mutation error / timeout. Takes precedence over `isSwitching`
+   * for labelling.
+   */
+  pendingTargetModel?: string;
 }
 
-export function ModelSelector({ systemInitModel, onSwitchModel, isSwitching = false }: ModelSelectorProps) {
+export function ModelSelector({
+  systemInitModel,
+  onSwitchModel,
+  isSwitching = false,
+  pendingTargetModel,
+}: ModelSelectorProps) {
   const matchedInit = matchKnownModel(systemInitModel);
   const showOther = !!systemInitModel && !matchedInit;
   const otherEntry: ConcreteModel | null = showOther
@@ -95,16 +109,29 @@ export function ModelSelector({ systemInitModel, onSwitchModel, isSwitching = fa
 
   const activeId = matchedInit?.id ?? otherEntry?.id ?? KNOWN_MODELS[0].id;
   const formattedLabel = formatModelLabel(activeId);
-  // formatModelLabel returns "Claude" for unrecognized ids. If we have an
-  // otherEntry (unknown model from system/init), show "Other: {id}" instead.
   const activeLabel = otherEntry && activeId === otherEntry.id
     ? `Other: ${activeId}`
     : formattedLabel;
 
+  // Iterate 2026-04-18 — pending-target visual. When set, render the
+  // TARGET label + spinner; falls back to "Switching…" + spinner if only
+  // the legacy isSwitching is truthy. Disabled in both states.
+  const matchedPending = matchKnownModel(pendingTargetModel);
+  const pendingRawLabel = matchedPending
+    ? formatModelLabel(matchedPending.id)
+    : pendingTargetModel ?? '';
+  const pendingLabel = matchedPending
+    ? pendingRawLabel
+    : pendingTargetModel
+      ? pendingTargetModel // unknown id shown verbatim
+      : '';
+
+  const showPendingTarget = !!pendingTargetModel;
+  const showSwitchingOnly = !showPendingTarget && isSwitching;
+  const disabled = showPendingTarget || isSwitching;
+
   function handlePick(entry: ConcreteModel) {
     onSwitchModel(entry.id);
-    // Display does NOT change here — it updates when the new system/init
-    // event arrives and hydrates chatStore → systemInitModel prop changes.
   }
 
   return (
@@ -113,10 +140,22 @@ export function ModelSelector({ systemInitModel, onSwitchModel, isSwitching = fa
         <button
           className="px-2 py-1 rounded-md bg-gray-100 text-xs font-medium hover:bg-gray-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
           data-testid="model-selector-trigger"
-          title={systemInitModel ? `Running: ${systemInitModel}` : 'Claude CLI model'}
-          disabled={isSwitching}
+          data-pending-target={pendingTargetModel ?? undefined}
+          title={
+            showPendingTarget
+              ? `Switching to ${pendingTargetModel}…`
+              : systemInitModel
+                ? `Running: ${systemInitModel}`
+                : 'Claude CLI model'
+          }
+          disabled={disabled}
         >
-          {isSwitching ? (
+          {showPendingTarget ? (
+            <>
+              <Loader2 size={12} className="animate-spin" data-testid="model-switching-spinner" />
+              <span>{pendingLabel}</span>
+            </>
+          ) : showSwitchingOnly ? (
             <>
               <Loader2 size={12} className="animate-spin" data-testid="model-switching-spinner" />
               <span>Switching…</span>
