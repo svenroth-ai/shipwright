@@ -113,6 +113,65 @@ Claude's Bash tool. Idempotent: never duplicates the export line.
 This single hook replaced 8 per-plugin duplicates that used to live
 under `plugins/*/scripts/hooks/capture-session-id.py` (iterate 14.9).
 
+### Shared Hook: audit_phase_quality_on_stop.py
+
+**Script:** `shared/scripts/hooks/audit_phase_quality_on_stop.py` —
+consolidated Stop-event entry point for the Phase-Quality audit.
+Wired into every plugin that has a Stop hook (10 plugins; `run` and
+`preview` have no Stop hook).
+
+**Contract:**
+- Non-blocking. Always exits 0 even on internal errors.
+- Idempotent via `(phase, run_id, session_id)` triple.
+- Silent no-op for greenfield / non-Shipwright projects.
+- Gated off when `SHIPWRIGHT_PHASE_QUALITY=0`.
+
+**Categories (PR 1 of 4 epic):**
+- `canon` — C1-C5 Minimum Phase Completion Canon via
+  `shared/scripts/tools/verifiers/common.py` helpers. Covers the
+  standalone-Canon gap that was not enforced before (previously only
+  the orchestrator's `update_step` ran Canon).
+- `workflow`, `infrastructure`, `traceability`, `quality`, `spec` —
+  schema slots reserved for PR 2-4. Runners return empty lists in PR 1
+  so the finding JSON keeps a stable shape across rollout.
+
+**Artifacts written (deterministically regenerated):**
+| File | Purpose | Retention |
+|---|---|---|
+| `compliance/skill-compliance/<phase>-<run_id>-<session_id>.json` | Per-run Finding JSON (atomic write) | GC → `archive/` after 90d |
+| `compliance/skill-compliance-report.md` | Last 10 runs, markdown | cap 10 |
+| `agent_docs/skill-compliance-findings.md` | Last 5 runs, SessionStart-Injection source (PR 4 wires the injection) | cap 5 |
+| `compliance/skill-compliance-dashboard.md` | Phase × category status matrix | overwritten each run |
+
+Aggregate rewrites serialise through
+`.shipwright/locks/phase-quality.lock` so concurrent Stop events from
+multiple sessions don't lost-update the summaries.
+
+**Hook order per plugin (plan § 5.1):**
+- 9 plugins (project, design, plan, build, test, security, deploy,
+  changelog, compliance): `audit_phase_quality_on_stop` runs
+  **before** `generate_handoff_on_stop` so the finding JSON lands
+  before handoff summarises session state.
+- `iterate` Sonderfall: `iterate_stop_finalize` →
+  `audit_phase_quality_on_stop` → `write_terminal_marker`. Audit runs
+  **after** finalize so F5a/F5b/F7/F11 evidence is on disk when C1-C5
+  are evaluated.
+
+**Enforcement flags (all default OFF in code; PR 2-4 wire the effects):**
+| Flag | Default | Effect |
+|---|---|---|
+| `SHIPWRIGHT_PHASE_QUALITY` | `1` (on) | Set to `0` to disable the hook entirely — the documented rollback lever |
+| `SHIPWRIGHT_PHASE_QUALITY_MODE` | `audit_only` | `audit_inject` enables SessionStart-Injection (PR 4) |
+| `SHIPWRIGHT_ENFORCE_CRITICAL_GATES` | `0` | Orchestrator blocks on W5/W6/W7 FAIL (PR 4) |
+| `SHIPWRIGHT_ENFORCE_ALL_FAILS` | `0` | Orchestrator blocks on any FAIL (PR 4) |
+| `SHIPWRIGHT_SKIP_QUALITY_CHECK` | — | Comma-separated check ids to mark as SKIP (e.g. `C4,S9`) |
+| `SHIPWRIGHT_AUDIT_OVERRIDE_REASON` | — | Required justification logged alongside a SKIP |
+
+The `phase_quality` library (`shared/scripts/lib/phase_quality.py`)
+exposes the finding schema, plugin→phase mapping, and the six
+category runners used by the hook. All finding fields are stable
+across PR 1-4.
+
 ### shipwright-run
 
 | Event | Matcher | Script | What It Does |
@@ -125,6 +184,7 @@ under `plugins/*/scripts/hooks/capture-session-id.py` (iterate 14.9).
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-design
@@ -132,6 +192,7 @@ under `plugins/*/scripts/hooks/capture-session-id.py` (iterate 14.9).
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-plan
@@ -140,6 +201,7 @@ under `plugins/*/scripts/hooks/capture-session-id.py` (iterate 14.9).
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | SubagentStop | `shipwright-plan:section-writer` | `write-section-on-stop.py` | Persists section files from subagent output to disk |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-build
@@ -153,6 +215,7 @@ under `plugins/*/scripts/hooks/capture-session-id.py` (iterate 14.9).
 | PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_secrets.sh` | Scans written files for API keys, tokens, passwords |
 | PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_file_size.sh` | Warns if file exceeds size limit |
 | PostToolUse | — (catch-all) | `track_tool_calls.py` | Increments tool call counter for context pressure detection |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
 | Stop | — | `generate-handoff.py` | Session handoff (namespaced to `planning/handoffs/<loop_id>/` when `SHIPWRIGHT_LOOP_ID` set) |
 | Stop | — | `check_documentation.py` | Verifies documentation artifacts are up to date |
 | Stop | — | `write_terminal_marker.py` | Writes `.shipwright/runs/<loop_id>/<unit_id>/DONE` (no-op without loop env vars) |
@@ -161,6 +224,8 @@ under `plugins/*/scripts/hooks/capture-session-id.py` (iterate 14.9).
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
+| SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-iterate
@@ -170,6 +235,7 @@ under `plugins/*/scripts/hooks/capture-session-id.py` (iterate 14.9).
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | SessionStart | — | `check_drift.py` | Timestamp + content drift (catches Shipwright-repo self-drift when iterating on Shipwright itself) |
 | Stop | — | `iterate_stop_finalize.py` | Shared handoff + fallback `finalize_iterate.py` (compliance, dashboard, handoff). Freshness-gated: skips if `finalize_iterate.py` already ran. |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit — runs **after** finalize so F5a/F5b/F7/F11 evidence is on disk |
 | Stop | — | `write_terminal_marker.py` | Writes `.shipwright/runs/<loop_id>/<unit_id>/DONE` (no-op without loop env vars) |
 
 ### shipwright-changelog
@@ -177,13 +243,14 @@ under `plugins/*/scripts/hooks/capture-session-id.py` (iterate 14.9).
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-deploy
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
-| SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-security
@@ -192,6 +259,7 @@ under `plugins/*/scripts/hooks/capture-session-id.py` (iterate 14.9).
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | SessionStart | — | `check_drift.py` | Timestamp drift + content drift (Structure block vs filesystem, Development `npm run` vs package.json) |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-compliance
@@ -201,6 +269,8 @@ under `plugins/*/scripts/hooks/capture-session-id.py` (iterate 14.9).
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | PreToolUse | `{"tools": ["Bash"]}` | `check_rtm_coverage.py` | Soft-blocks if RTM coverage < 80% threshold |
 | PreToolUse | `{"tools": ["Bash"]}` | `check_security_scan.py` | Checks security scan completion status |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
+| Stop | — | `generate-handoff.py` | Session handoff |
 
 ### Project-installed (not a plugin hook)
 
