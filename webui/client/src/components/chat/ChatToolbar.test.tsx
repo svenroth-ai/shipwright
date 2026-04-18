@@ -151,6 +151,85 @@ describe('ChatToolbar', () => {
     );
   });
 
+  // Iterate modelswitch-uat-round2 (2026-04-18) — Retry button in the
+  // error banner for transient 409 "Session not yet established". Lets
+  // the user re-fire the switch once the CLI's session_id has been
+  // captured (~200-500ms after spawn) instead of manually re-opening
+  // the dropdown.
+  it('shows Retry button on 409 "Session not yet established" error', async () => {
+    server.use(
+      http.post('/api/projects/:projectId/tasks/:taskId/mode', async () =>
+        HttpResponse.json(
+          { error: 'Session not yet established — try again in a second' },
+          { status: 409 },
+        ),
+      ),
+    );
+
+    renderToolbar({ projectId: 'proj-1', taskId: 'task-1' });
+
+    const menus = await screen.findAllByRole('menu');
+    const modelMenu = menus.find((m) => m.textContent?.includes('Opus'))!;
+    const opus46 = await within(modelMenu).findByText(/Opus 4\.6/);
+    fireEvent.click(opus46);
+
+    await waitFor(() =>
+      expect(screen.getByTestId('model-switch-error')).toBeInTheDocument(),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('model-switch-retry')).toBeInTheDocument(),
+    );
+  });
+
+  it('does NOT show Retry button for non-transient errors (400 invalid model)', async () => {
+    server.use(
+      http.post('/api/projects/:projectId/tasks/:taskId/mode', async () =>
+        HttpResponse.json({ error: 'Invalid model' }, { status: 400 }),
+      ),
+    );
+
+    renderToolbar({ projectId: 'proj-1', taskId: 'task-1' });
+
+    const menus = await screen.findAllByRole('menu');
+    const modelMenu = menus.find((m) => m.textContent?.includes('Opus'))!;
+    const opus46 = await within(modelMenu).findByText(/Opus 4\.6/);
+    fireEvent.click(opus46);
+
+    await waitFor(() =>
+      expect(screen.getByTestId('model-switch-error')).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId('model-switch-retry')).toBeNull();
+  });
+
+  it('clicking Retry re-fires the mutation with the same target model', async () => {
+    let postCount = 0;
+    server.use(
+      http.post('/api/projects/:projectId/tasks/:taskId/mode', async ({ request }) => {
+        postCount++;
+        const body = (await request.json()) as Record<string, unknown>;
+        if (postCount === 1) {
+          return HttpResponse.json(
+            { error: 'Session not yet established — try again in a second' },
+            { status: 409 },
+          );
+        }
+        return HttpResponse.json({ data: { taskId: 'task-1', model: body.model, status: 'running' } });
+      }),
+    );
+
+    renderToolbar({ projectId: 'proj-1', taskId: 'task-1' });
+
+    const menus = await screen.findAllByRole('menu');
+    const modelMenu = menus.find((m) => m.textContent?.includes('Opus'))!;
+    const opus46 = await within(modelMenu).findByText(/Opus 4\.6/);
+    fireEvent.click(opus46);
+
+    await waitFor(() => expect(screen.getByTestId('model-switch-retry')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('model-switch-retry'));
+
+    await waitFor(() => expect(postCount).toBe(2));
+  });
+
   it('clicking a model when projectId/taskId are missing is a safe no-op', async () => {
     let mutationFired = false;
     server.use(

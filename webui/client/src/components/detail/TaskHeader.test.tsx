@@ -111,6 +111,23 @@ describe('TaskHeader', () => {
       expect(screen.queryByTestId('header-pause-indicator')).toBeNull();
     });
 
+    // Iterate modelswitch-uat-round2 (2026-04-18) — widen the gate. Any
+    // orphan reason with a captured sessionId is resumable, not just the
+    // 14.11 narrow list (stale_on_startup | user_interrupted).
+    it('renders Resume for orphan reasons outside the 14.11 narrow list (e.g. switch_timeout)', () => {
+      renderHeader({
+        ...interruptedTask,
+        orphanReason: 'switch_timeout' as string,
+      });
+      expect(screen.getByTestId('header-pause-indicator')).toBeInTheDocument();
+      expect(screen.getByTestId('header-resume-button')).toBeInTheDocument();
+    });
+
+    it('renders Resume for orphaned task with no orphanReason set', () => {
+      renderHeader({ ...interruptedTask, orphanReason: undefined });
+      expect(screen.getByTestId('header-pause-indicator')).toBeInTheDocument();
+    });
+
     it('fires resume mutation when Resume button is clicked', async () => {
       renderHeader(interruptedTask);
       fireEvent.click(screen.getByTestId('header-resume-button'));

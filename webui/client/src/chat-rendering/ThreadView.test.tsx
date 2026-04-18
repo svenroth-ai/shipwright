@@ -116,6 +116,52 @@ describe('ThreadView — Sub-iterate A DOM/ARIA contract', () => {
     expect(userMsgs.length).toBeGreaterThan(0);
   });
 
+  // Iterate modelswitch-uat-round2 (2026-04-18) — ExternalStoreRuntime
+  // inserts a "running-reply placeholder" MessagePrimitive when isRunning
+  // is true and the last real message is a user message. The placeholder
+  // has no content parts but our role-based chrome would render a ghost
+  // white bubble — the "weisser Balken nach Starting Claude" UAT report.
+  // Guard in ThreadMessage returns null when all parts are empty.
+  it('suppresses the ghost empty-assistant bubble when isRunning=true with only user messages', () => {
+    const synth: import('../types').ChatMessage[] = [
+      {
+        id: 'u1',
+        taskId: 't',
+        type: 'user',
+        content: 'Build me something',
+        timestamp: '2026-04-18T00:00:00.000Z',
+      },
+    ];
+    renderWithQuery(<ThreadView messages={synth} isRunning={true} onSend={() => {}} />);
+    const bubbles = screen.getAllByTestId('chat-message');
+    // Exactly one bubble: the user's message. No ghost assistant placeholder.
+    expect(bubbles.length).toBe(1);
+    expect(bubbles[0].getAttribute('data-role')).toBe('user');
+  });
+
+  it('still renders valid assistant messages with non-empty text', () => {
+    const synth: import('../types').ChatMessage[] = [
+      {
+        id: 'u1',
+        taskId: 't',
+        type: 'user',
+        content: 'hi',
+        timestamp: '2026-04-18T00:00:00.000Z',
+      },
+      {
+        id: 'a1',
+        taskId: 't',
+        type: 'assistant',
+        content: 'Hello back!',
+        timestamp: '2026-04-18T00:00:01.000Z',
+      },
+    ];
+    renderWithQuery(<ThreadView messages={synth} isRunning={false} onSend={() => {}} />);
+    const bubbles = screen.getAllByTestId('chat-message');
+    expect(bubbles.length).toBe(2);
+    expect(bubbles.filter((b) => b.getAttribute('data-role') === 'assistant').length).toBe(1);
+  });
+
   it('renders leading and trailing slots in-thread', () => {
     render(
       <ThreadView
