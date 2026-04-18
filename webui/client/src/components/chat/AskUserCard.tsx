@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, AlertTriangle, Pause } from 'lucide-react';
 import type { ChatMessage, TaskStatus } from '../../types';
 import { useAnswerInbox, useInboxItem } from '../../hooks/useInbox';
 import { useChatAwaiting } from '../../contexts/ChatAwaitingContext';
+import { useTurnStatus } from '../../hooks/useTurnStatus';
 import { extractAskUserPayload } from '../../lib/askUserPayload';
+import { beginAuqSubmit } from '../../lib/auqStallInstrumentation';
 import type { InboxItemPart } from '../../types/inbox';
 
 interface AskUserCardProps {
@@ -111,6 +113,21 @@ export function AskUserCard({
   // so the user can see *why* nothing happened and retry.
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Sub-iterate B — AUQ-stall observability. `stallHooksRef` holds the
+  // callbacks returned by beginAuqSubmit so the effect watching
+  // turn.status can fire onFirstStream() exactly once per submit.
+  const stallHooksRef = useRef<{
+    onAnswered: () => void;
+    onFirstStream: () => void;
+  } | null>(null);
+  const turn = useTurnStatus(message.taskId ? (message.taskId.split('::')[0] ?? '') : '', message.taskId ?? '');
+  useEffect(() => {
+    if (turn.status === 'streaming' && stallHooksRef.current) {
+      stallHooksRef.current.onFirstStream();
+      stallHooksRef.current = null;
+    }
+  }, [turn.status]);
+
   function handleSubmit() {
     if (!allAnswered) return;
     setSubmitError(null);
@@ -122,9 +139,14 @@ export function AskUserCard({
     // a later setLocalAnswered(true).
     setLocalAnswered(true);
     const answers = parts.map((_, idx) => ({ index: idx, answer: partAnswers[idx] ?? '' }));
+    const hooks = beginAuqSubmit(message.taskId ?? '', inboxId);
+    stallHooksRef.current = hooks;
     answerMutation.mutate(
       { id: inboxId, answers },
       {
+        onSuccess: () => {
+          hooks.onAnswered();
+        },
         onError: (err) => {
           // Roll back the optimistic "Answered" state so the user can
           // correct + re-submit. The triggerAwaiting() spinner will also
@@ -133,6 +155,10 @@ export function AskUserCard({
           setLocalAnswered(false);
           const msg = err instanceof Error ? err.message : 'Failed to submit answer';
           setSubmitError(msg);
+          // Still record the answered timestamp so the stall-metrics
+          // log shows the error path as a distinct trace.
+          hooks.onAnswered();
+          stallHooksRef.current = null;
         },
       },
     );

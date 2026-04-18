@@ -130,16 +130,18 @@ describe('ThreadView — Sub-iterate A DOM/ARIA contract', () => {
     expect(screen.getByTestId('trailing-marker')).toBeInTheDocument();
   });
 
-  it('renders AskUserQuestion tool_use as AskUserCard (not tool-call-card)', () => {
+  it('renders AskUserQuestion tool_use as AskUserCard (not tool-call-card) — Sub-iterate B', () => {
     const fixture = loadFixture('askuser-roundtrip');
     renderWithQuery(<ThreadView messages={fixture} isRunning={false} onSend={() => {}} />);
     // AskUserQuestion tool_use must NOT render as a generic tool card.
-    // Checking via the role-based testid path: no tool-call-card for
-    // AskUserQuestion ids; the original msg.toolName was AskUserQuestion.
     const toolCards = screen.queryAllByTestId('tool-call-card');
     for (const card of toolCards) {
       expect(card.textContent).not.toContain('AskUserQuestion');
     }
+    // Sub-iterate B contract: AskUserCard renders inline in the thread.
+    // The fixture contains one AskUserQuestion tool_use about "Plattform"
+    // — the question text must be visible in the DOM.
+    expect(screen.getAllByText(/Plattform/i).length).toBeGreaterThan(0);
   });
 });
 
