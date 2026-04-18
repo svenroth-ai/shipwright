@@ -20,12 +20,16 @@ interface ChatToolbarProps {
 
 /**
  * Iterate 2026-04-18 modelswitch-spawn-ux — timeout after which a pending
- * model switch is cleared from the UI with a timeout error. The CLI
- * respawn normally completes in 1-2s; 15s is generous enough to tolerate
- * cold-start churn but short enough to avoid a permanently-pending state
- * when the server silently loses the respawn.
+ * model switch is cleared from the UI with a timeout error.
+ *
+ * Iterate askuser-multiselect-bugs (2026-04-18) — widened from 15s → 30s.
+ * UAT reported timeouts on otherwise-successful switches under normal
+ * network + CLI load. CLI 2.1.1 `--resume <id> --model <new>` cold-start
+ * can exceed 15s on Windows with Defender scanning + plugin discovery
+ * (observed 20-25s in the wild). 30s tolerates that variance while still
+ * surfacing a clear error if the respawn actually got lost.
  */
-const PENDING_SWITCH_TIMEOUT_MS = 15_000;
+const PENDING_SWITCH_TIMEOUT_MS = 30_000;
 
 function normalizeModelId(id: string | undefined): string | undefined {
   if (!id) return undefined;

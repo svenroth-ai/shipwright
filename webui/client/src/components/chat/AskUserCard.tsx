@@ -62,11 +62,20 @@ export function AskUserCard({
     ? payload.parts
     : [{ question: message.content || 'Question from Claude' }];
 
-  // Per-part local answer state, indexed by part index.
-  // - For a single-select option list: the chosen option label.
-  // - For a multi-select option list: comma-joined label string.
-  // - For free text: the textarea value.
-  const [partAnswers, setPartAnswers] = useState<Record<number, string>>({});
+  // Per-part local answer state. Iterate askuser-multiselect-bugs
+  // (2026-04-18): split the previous single `Record<number, string>`
+  // into two maps so multi-select labels that *contain* `", "` (e.g.
+  // "Grundfunktionen (Erstellen, Abhaken, Löschen)") no longer get
+  // shredded by `split(', ')`. The joined-string representation was
+  // convenient for the API payload but round-trip-broken on parse.
+  //   textAnswers  : Record<number, string>   — single-select pick, or
+  //                                             free-text textarea.
+  //   multiAnswers : Record<number, string[]> — multi-select labels, in
+  //                                             selection order. Joined
+  //                                             with `", "` at submit
+  //                                             time only.
+  const [textAnswers, setTextAnswers] = useState<Record<number, string>>({});
+  const [multiAnswers, setMultiAnswers] = useState<Record<number, string[]>>({});
   const [localAnswered, setLocalAnswered] = useState(false);
 
   // Use the Anthropic toolUseId as the inbox item id so it survives
@@ -86,23 +95,36 @@ export function AskUserCard({
   const showNotBlockedBanner = persistedItem?.notBlocked === true;
 
   function setAnswer(index: number, value: string) {
-    setPartAnswers((prev) => ({ ...prev, [index]: value }));
+    setTextAnswers((prev) => ({ ...prev, [index]: value }));
   }
 
   function toggleMultiSelect(index: number, label: string) {
-    setPartAnswers((prev) => {
-      const current = prev[index] ?? '';
-      const tokens = current.length > 0 ? current.split(', ').map((t) => t.trim()) : [];
-      const exists = tokens.includes(label);
-      const next = exists ? tokens.filter((t) => t !== label) : [...tokens, label];
-      return { ...prev, [index]: next.join(', ') };
+    setMultiAnswers((prev) => {
+      const current = prev[index] ?? [];
+      const exists = current.includes(label);
+      const next = exists ? current.filter((t) => t !== label) : [...current, label];
+      return { ...prev, [index]: next };
     });
   }
 
+  /**
+   * Build the final string answer for a part, indexed by part index.
+   * Multi-select parts join their array with `", "` — the API payload
+   * shape is unchanged (parts[n].answer is still a string). Single-
+   * select / text parts pass through from textAnswers.
+   */
+  function answerFor(index: number, part: InboxItemPart): string {
+    if (part.allowMultiple === true) {
+      const arr = multiAnswers[index] ?? [];
+      return arr.join(', ');
+    }
+    return textAnswers[index] ?? '';
+  }
+
   // Every part needs a non-empty answer before Submit is enabled.
-  const allAnswered = parts.every((_, idx) => {
-    const value = partAnswers[idx];
-    return typeof value === 'string' && value.trim().length > 0;
+  const allAnswered = parts.every((part, idx) => {
+    const value = answerFor(idx, part);
+    return value.trim().length > 0;
   });
 
   // Iterate 14.14 — Bug 2. The answer mutation was previously fire-and-
@@ -138,7 +160,7 @@ export function AskUserCard({
     // optimistic flip. Otherwise a sync onError would be overwritten by
     // a later setLocalAnswered(true).
     setLocalAnswered(true);
-    const answers = parts.map((_, idx) => ({ index: idx, answer: partAnswers[idx] ?? '' }));
+    const answers = parts.map((part, idx) => ({ index: idx, answer: answerFor(idx, part) }));
     const hooks = beginAuqSubmit(message.taskId ?? '', inboxId);
     stallHooksRef.current = hooks;
     answerMutation.mutate(
@@ -218,23 +240,21 @@ export function AskUserCard({
         )}
 
         {showNotBlockedBanner && (
+          // Iterate askuser-multiselect-bugs (2026-04-18) — banner
+          // slimmed. Previously `p-3 + text-sm + size=16` — visually
+          // dominant + distracting from the actual question. Now a
+          // compact one-liner with a tiny info icon. Same testid,
+          // same role, same message intent (user must still know
+          // Claude didn't wait); just less loud.
           <div
-            role="alert"
+            role="status"
             data-testid="ask-user-not-blocked-banner"
-            className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+            className="mb-2 flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] text-amber-800"
           >
-            <div className="flex items-start gap-2">
-              <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-600" />
-              <div>
-                <p className="font-medium">
-                  Claude did not wait for your answer and kept generating.
-                </p>
-                <p className="mt-1 text-amber-800">
-                  Your answer will still be sent as a tool_result. Depending on the turn
-                  state, Claude may use it now or process it in the next turn.
-                </p>
-              </div>
-            </div>
+            <AlertTriangle size={11} className="shrink-0 text-amber-600" />
+            <span>
+              Claude kept generating — your answer will still be sent.
+            </span>
           </div>
         )}
 
@@ -251,12 +271,10 @@ export function AskUserCard({
                 const headerLabel = part.header && part.header.trim().length > 0
                   ? part.header.trim()
                   : `Question ${idx + 1}`;
-                const value = partAnswers[idx] ?? '';
                 const options = part.options ?? [];
                 const isMulti = part.allowMultiple === true;
-                const selectedTokens = isMulti
-                  ? (value.length > 0 ? value.split(', ').map((t) => t.trim()) : [])
-                  : [];
+                const textValue = textAnswers[idx] ?? '';
+                const selectedTokens = isMulti ? (multiAnswers[idx] ?? []) : [];
 
                 return (
                   <div key={idx} className="border-l-2 border-orange-200 pl-3">
@@ -268,7 +286,9 @@ export function AskUserCard({
                     {options.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-2">
                         {options.map((opt) => {
-                          const active = isMulti ? selectedTokens.includes(opt) : value === opt;
+                          const active = isMulti
+                            ? selectedTokens.includes(opt)
+                            : textValue === opt;
                           return (
                             <button
                               key={opt}
@@ -295,7 +315,7 @@ export function AskUserCard({
 
                     {!isMulti && options.length === 0 && (
                       <textarea
-                        value={value}
+                        value={textValue}
                         onChange={(e) => setAnswer(idx, e.target.value)}
                         placeholder="Type your answer..."
                         rows={2}

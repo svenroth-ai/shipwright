@@ -271,6 +271,85 @@ describe('AskUserCard', () => {
   });
 
   // ──────────────────────────────────────────────────────────────────
+  // Iterate askuser-multiselect-bugs (2026-04-18) — multi-select
+  // labels containing ", " (e.g. "Grundfunktionen (Erstellen, Abhaken,
+  // Löschen)") must toggle cleanly. The previous split(', ') / join(', ')
+  // round-trip broke these labels: split shredded them into multiple
+  // tokens, `includes(label)` always returned false, every click
+  // re-added the label → inbox ended up with 20+ duplicate copies.
+  // Fix: array-backed state per part.
+  // ──────────────────────────────────────────────────────────────────
+
+  it('multi-select with embedded ", " label toggles select → deselect cleanly', async () => {
+    const rawPayload = {
+      questions: [
+        {
+          question: 'Welche Features?',
+          multiSelect: true,
+          options: [
+            { label: 'Grundfunktionen (Erstellen, Abhaken, Löschen)' },
+            { label: 'Kategorien/Tags/Listen' },
+          ],
+        },
+      ],
+    };
+    renderCard(rawPayload, '', 'toolu_multi_comma');
+    const user = userEvent.setup();
+    const grundButton = screen.getByRole('button', {
+      name: /Grundfunktionen \(Erstellen, Abhaken, Löschen\)/,
+    });
+
+    // First click — selects.
+    await user.click(grundButton);
+    // The bg color changes when active. Query by active class.
+    expect(grundButton.className).toContain('bg-[var(--color-primary)]');
+
+    // Second click — deselects (NOT accumulates).
+    await user.click(grundButton);
+    expect(grundButton.className).not.toContain('bg-[var(--color-primary)]');
+
+    // Submit button should be disabled when nothing selected.
+    const submit = screen.getByRole('button', { name: 'Submit Answer' });
+    expect(submit).toBeDisabled();
+
+    // Re-select and submit — payload must contain the label EXACTLY ONCE.
+    await user.click(grundButton);
+    await user.click(submit);
+    expect(answerMutateMock).toHaveBeenCalledWith({
+      id: 'toolu_multi_comma',
+      answers: [
+        { index: 0, answer: 'Grundfunktionen (Erstellen, Abhaken, Löschen)' },
+      ],
+    });
+  });
+
+  it('multi-select with 2 comma-containing labels: both selected, joined at submit', async () => {
+    const rawPayload = {
+      questions: [
+        {
+          question: 'Pick features',
+          multiSelect: true,
+          options: [
+            { label: 'A, with comma' },
+            { label: 'B, also with comma' },
+          ],
+        },
+      ],
+    };
+    renderCard(rawPayload, '', 'toolu_multi2');
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'A, with comma' }));
+    await user.click(screen.getByRole('button', { name: 'B, also with comma' }));
+    await user.click(screen.getByRole('button', { name: 'Submit Answer' }));
+    expect(answerMutateMock).toHaveBeenCalledWith({
+      id: 'toolu_multi2',
+      answers: [
+        { index: 0, answer: 'A, with comma, B, also with comma' },
+      ],
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────
   // Iterate 14.5 — red flag warning banner
   // ──────────────────────────────────────────────────────────────────
 
@@ -308,8 +387,10 @@ describe('AskUserCard', () => {
     );
     const banner = screen.getByTestId('ask-user-not-blocked-banner');
     expect(banner).toBeInTheDocument();
-    expect(banner.textContent).toContain('Claude did not wait');
-    expect(banner.textContent).toContain('tool_result');
+    // Iterate askuser-multiselect-bugs — banner text slimmed to a
+    // one-liner. Assert on the new compact wording. The intent (user
+    // must know Claude didn't wait) is preserved.
+    expect(banner.textContent).toContain('Claude kept generating');
   });
 
   it('notBlocked banner does NOT remove the Submit button', () => {
