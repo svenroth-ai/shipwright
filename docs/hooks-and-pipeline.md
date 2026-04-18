@@ -126,14 +126,47 @@ Wired into every plugin that has a Stop hook (10 plugins; `run` and
 - Silent no-op for greenfield / non-Shipwright projects.
 - Gated off when `SHIPWRIGHT_PHASE_QUALITY=0`.
 
-**Categories (PR 1 of 4 epic):**
+**Categories (PR 1-2 of 4 epic):**
 - `canon` — C1-C5 Minimum Phase Completion Canon via
   `shared/scripts/tools/verifiers/common.py` helpers. Covers the
   standalone-Canon gap that was not enforced before (previously only
   the orchestrator's `update_step` ran Canon).
-- `workflow`, `infrastructure`, `traceability`, `quality`, `spec` —
-  schema slots reserved for PR 2-4. Runners return empty lists in PR 1
-  so the finding JSON keeps a stable shape across rollout.
+- `workflow` (PR 2) — phase-specific skill-step checks. Each phase has
+  a thin wrapper module in
+  `shared/scripts/tools/verifiers/<phase>_compliance.py` that returns
+  finding dicts; `run_workflow_checks` dispatches on phase name and is
+  resilient to broken wrappers (never crashes the Stop chain).
+- `infrastructure`, `traceability`, `quality`, `spec` — schema slots
+  reserved for PR 3-4. Runners return empty lists until then so the
+  finding JSON keeps a stable shape across rollout.
+
+**Workflow check catalog (PR 2 — plan § 3):**
+
+Each check emits a finding with `id`, `status` (PASS/FAIL/WARN/SKIP),
+`evidence`, optional `remediation`, and `tier`=2 for heuristic
+(never-enforcement) checks. Marker-based PASSes carry
+`provenance: unverified_marker` so the dashboard flags spoof-susceptible
+evidence (plan § 4.5).
+
+| ID | Phase | Default on Missing | Tier | Evidence Source |
+|---|---|---|---|---|
+| W1 | build | SKIP (never FAIL — R8) | 2 | `shipwright_events.jsonl`: `test_run` timestamp ≤ latest `work_completed` |
+| W2 | iterate | FAIL | 1 | `planning/iterate/{run_id}-external-review.json` OR `external_review_state.json` newer than spec |
+| W3 | iterate | FAIL | 1 | `work_completed` event (source=iterate) + `compliance/test-evidence.md` mtime <24h |
+| W4 | test | FAIL | 1 | `shipwright_test_results.json.coverage.total` ≥ `shipwright_test_config.json.coverage.min` (default 70) |
+| W5 | plan | FAIL | 1 | `planning/external_review_state.json` status=`completed` OR `skipped_*` with non-empty reason |
+| W6 | changelog | FAIL | 1 | Wrapper around `changelog_checks.check_git_tag_exists` |
+| W7 | deploy | FAIL | 1 | `shipwright_deploy_config.json.smoke_test_status` OR `test_results.smoke.status` OR latest `test_run` event layer `smoke.status == "pass"` |
+| Sec1 | security | FAIL | 1 | `compliance/security-scan-report.md` mtime ≥ latest `phase_started[security]` |
+| Sec2 | security | FAIL | 1 | No pipe-table row containing both `CRITICAL` and `UNRESOLVED`/`OPEN`/`FAIL` — or active override line in `compliance/compliance_overrides.log` |
+| Cmp1 | compliance | WARN | 2 | `compliance/dashboard.md` mentions every `run_config.completed_steps` phase (Tier-2, redundant with C2) |
+| Cmp2 | compliance | FAIL | 1 | `traceability-matrix.md` coverage ≥ `shipwright_compliance_config.json.enforcement.rtm_coverage_min` (default 80%) |
+| D1 | design | FAIL | 1 | ≥1 artifact: `designs/mockups/*.html` OR `agent_docs/screens.md` OR `agent_docs/user-flow.md` |
+| D2 | design | WARN | 2 | Both `agent_docs/screens.md` and `agent_docs/user-flow.md` present + non-empty |
+
+Tier-2 checks (W1, I4, T2, Q1, S3-S5, S7, S9, S10, Cmp1, D2) are
+permanently excluded from enforcement rollout — they land in the
+dashboard as heuristic signal only (plan § 3, § 9.2).
 
 **Artifacts written (deterministically regenerated):**
 | File | Purpose | Retention |
@@ -184,7 +217,7 @@ across PR 1-4.
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
-| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-design
@@ -192,7 +225,7 @@ across PR 1-4.
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
-| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + D1/D2 workflow) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-plan
@@ -201,7 +234,7 @@ across PR 1-4.
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | SubagentStop | `shipwright-plan:section-writer` | `write-section-on-stop.py` | Persists section files from subagent output to disk |
-| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W5 external-review marker) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-build
@@ -215,7 +248,7 @@ across PR 1-4.
 | PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_secrets.sh` | Scans written files for API keys, tokens, passwords |
 | PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_file_size.sh` | Warns if file exceeds size limit |
 | PostToolUse | — (catch-all) | `track_tool_calls.py` | Increments tool call counter for context pressure detection |
-| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W1 TDD-order heuristic, Tier-2) |
 | Stop | — | `generate-handoff.py` | Session handoff (namespaced to `planning/handoffs/<loop_id>/` when `SHIPWRIGHT_LOOP_ID` set) |
 | Stop | — | `check_documentation.py` | Verifies documentation artifacts are up to date |
 | Stop | — | `write_terminal_marker.py` | Writes `.shipwright/runs/<loop_id>/<unit_id>/DONE` (no-op without loop env vars) |
@@ -225,7 +258,7 @@ across PR 1-4.
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
-| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W4 coverage threshold) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-iterate
@@ -235,7 +268,7 @@ across PR 1-4.
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | SessionStart | — | `check_drift.py` | Timestamp + content drift (catches Shipwright-repo self-drift when iterating on Shipwright itself) |
 | Stop | — | `iterate_stop_finalize.py` | Shared handoff + fallback `finalize_iterate.py` (compliance, dashboard, handoff). Freshness-gated: skips if `finalize_iterate.py` already ran. |
-| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit — runs **after** finalize so F5a/F5b/F7/F11 evidence is on disk |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W2/W3 iterate workflow) — runs **after** finalize so F5a/F5b/F7/F11 evidence is on disk |
 | Stop | — | `write_terminal_marker.py` | Writes `.shipwright/runs/<loop_id>/<unit_id>/DONE` (no-op without loop env vars) |
 
 ### shipwright-changelog
@@ -243,14 +276,14 @@ across PR 1-4.
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
-| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W6 git-tag existence) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-deploy
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
-| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W7 smoke-test status) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-security
@@ -259,7 +292,7 @@ across PR 1-4.
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | SessionStart | — | `check_drift.py` | Timestamp drift + content drift (Structure block vs filesystem, Development `npm run` vs package.json) |
-| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + Sec1 report freshness + Sec2 unresolved CRITICAL check) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-compliance
@@ -269,7 +302,7 @@ across PR 1-4.
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | PreToolUse | `{"tools": ["Bash"]}` | `check_rtm_coverage.py` | Soft-blocks if RTM coverage < 80% threshold |
 | PreToolUse | `{"tools": ["Bash"]}` | `check_security_scan.py` | Checks security scan completion status |
-| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 in PR 1) |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + Cmp1 dashboard-per-phase Tier-2, Cmp2 RTM coverage) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### Project-installed (not a plugin hook)
