@@ -49,17 +49,17 @@ export function TaskHeader({ task, onEdit }: TaskHeaderProps) {
 
   const isPending = task.status === 'pending' || task.kanbanStatus === 'backlog';
 
-  // Iterate 14.11 — interrupted-task pause indicator + Resume button in
-  // the detail header. Same derivation used by TaskCard (board, 14.7.0)
-  // and AskUserCard (chat, 14.10): orphaned status + resumable
-  // orphanReason + captured claudeSessionId. Closes the third visibility
-  // gap — opening an interrupted task's detail page now surfaces the
-  // affordance regardless of whether a pending AskUserCard exists.
+  // Iterate 14.11 — interrupted-task pause indicator + Resume button.
+  //
+  // Iterate modelswitch-uat-round2 (2026-04-18) — widened the gate.
+  // The 14.11 narrow list (stale_on_startup | user_interrupted) missed
+  // orphan reasons added in later iterates (e.g. `switch_timeout`,
+  // `crash` — whenever the CLI exited non-zero after a mode-switch
+  // respawn). Rule of thumb: if the task is orphaned AND we still have
+  // the real Claude session_id captured, we can resume — regardless of
+  // WHY it got orphaned. The narrow list biased against newer reasons.
   const isInterrupted =
-    task.status === 'orphaned' &&
-    (task.orphanReason === 'stale_on_startup' ||
-      task.orphanReason === 'user_interrupted') &&
-    !!task.claudeSessionId;
+    task.status === 'orphaned' && !!task.claudeSessionId;
 
   return (
     <header className="flex items-start gap-4 px-6 py-3.5 border-b border-[#e0dbd4] bg-white">

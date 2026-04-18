@@ -45,6 +45,44 @@ describe('useCreateTask', () => {
     await waitFor(() => expect(classifyCalled).toBe(true), { timeout: 2000 });
   });
 
+  it('iterate modelswitch-uat-round2 — settings.defaultModel wins over localStorage chat-model', async () => {
+    // Reproduction of Finding 2: user had switched mid-task to Opus 4.6
+    // (persisted to localStorage), then created a new task. Expectation:
+    // new task uses settings.defaultModel (4.7), not the session-scoped
+    // localStorage override (4.6).
+    localStorage.setItem('chat-model', JSON.stringify('claude-opus-4-6'));
+    let capturedBody: Record<string, unknown> | null = null;
+    server.use(
+      http.get('/api/settings', () =>
+        HttpResponse.json({ data: { defaultModel: 'claude-opus-4-7' } }),
+      ),
+      http.post('/api/projects/:id/tasks', async ({ request }) => {
+        capturedBody = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({
+          data: { id: 'new-task', projectId: 'p1', title: 'T', description: '', status: 'pending', kanbanStatus: 'backlog', sessionId: 's', createdAt: '', updatedAt: '' },
+        });
+      }),
+      http.post('/api/projects/:id/classify', () =>
+        HttpResponse.json({ data: { success: true } }),
+      ),
+    );
+
+    const { wrapper } = createWrapper();
+    const { result } = renderHook(() => useCreateTask(), { wrapper });
+
+    // Wait for settings query to land.
+    await waitFor(() => {
+      // Internal check: the useSettings query should have resolved.
+      expect(localStorage.getItem('chat-model')).toBe('"claude-opus-4-6"');
+    });
+    // Give one more microtask for useSettings to populate.
+    await new Promise((r) => setTimeout(r, 30));
+
+    result.current.createTask({ projectId: 'p1', title: 'T' });
+    await waitFor(() => expect(result.current.isCreating).toBe(false));
+    expect(capturedBody).toMatchObject({ model: 'claude-opus-4-7' });
+  });
+
   it('Sub-iterate C — sends concrete CLI model id (not alias) when hydrated from settings.defaultModel', async () => {
     let capturedBody: Record<string, unknown> | null = null;
     server.use(
