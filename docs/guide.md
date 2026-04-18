@@ -1340,7 +1340,7 @@ The audit covers six categories (plan § 2, plan § 3):
 | Flag | Default | Effect |
 |---|---|---|
 | `SHIPWRIGHT_PHASE_QUALITY` | `1` (on) | `0` → hook disabled entirely (rollback lever) |
-| `SHIPWRIGHT_PHASE_QUALITY_MODE` | `audit_only` | `audit_inject` → SessionStart-Hook injects ≤3 Tier-1 FAILs as `additionalContext` at next session start |
+| `SHIPWRIGHT_PHASE_QUALITY_MODE` | `audit_inject` (on) | `audit_only` → disables SessionStart injection, findings only in dashboard files. Default injects ≤5 Tier-1 FAILs as `additionalContext` at next session start |
 | `SHIPWRIGHT_ENFORCE_CRITICAL_GATES` | `0` | `1` → orchestrator blocks phase-transition on `W5`/`W6`/`W7` FAIL |
 | `SHIPWRIGHT_SKIP_QUALITY_CHECK` | — | comma-separated check ids to mark as SKIP (e.g. `C4,S9`) |
 | `SHIPWRIGHT_AUDIT_OVERRIDE_REASON` | — | required when using `SHIPWRIGHT_SKIP_QUALITY_CHECK` |

@@ -243,7 +243,7 @@ multiple sessions don't lost-update the summaries.
 | Flag | Default | Effect |
 |---|---|---|
 | `SHIPWRIGHT_PHASE_QUALITY` | `1` (on) | Set to `0` to disable the hook entirely — the documented rollback lever |
-| `SHIPWRIGHT_PHASE_QUALITY_MODE` | `audit_only` | `audit_inject` enables SessionStart-Injection (PR 4) |
+| `SHIPWRIGHT_PHASE_QUALITY_MODE` | `audit_inject` (on) | Set to `audit_only` to opt out of SessionStart-Injection and keep findings dashboard-only. Default injects ≤5 Tier-1 FAILs. |
 | `SHIPWRIGHT_ENFORCE_CRITICAL_GATES` | `0` | Orchestrator blocks on W5/W6/W7 FAIL (PR 4) |
 | `SHIPWRIGHT_ENFORCE_ALL_FAILS` | `0` | Orchestrator blocks on any FAIL (PR 4) |
 | `SHIPWRIGHT_SKIP_QUALITY_CHECK` | — | Comma-separated check ids to mark as SKIP (e.g. `C4,S9`) |
@@ -258,11 +258,13 @@ across PR 1-4.
 
 The canonical SessionStart hook `shared/scripts/hooks/capture_session_id.py`
 reads `agent_docs/skill-compliance-findings.md` at session start and
-injects up to 3 Tier-1 FAILs as `additionalContext` when
-`SHIPWRIGHT_PHASE_QUALITY_MODE=audit_inject`. Default mode is
-`audit_only` (no injection). Only Tier-1 FAILs are injected; Tier-2
-ids (`W1`, `I4`, `T2`, `Q1`, `S3-S5`, `S7`, `S9`, `S10`, `Cmp1`,
-`D2`) are filtered out.
+injects up to **5 Tier-1 FAILs** as `additionalContext` unless the user
+has opted out via `SHIPWRIGHT_PHASE_QUALITY_MODE=audit_only`. Injection
+is the default since the Phase-Quality epic completed — rollout
+calculus shifted from "wait + opt in" to "ship signal + opt out on
+noise" for small/solo setups. Only Tier-1 FAILs are injected; Tier-2
+ids (`W1`, `I4`, `T2`, `Q1`, `S3-S5`, `S7`, `S9`, `S10`, `Cmp1`, `D2`)
+are filtered out.
 
 ```
 Session ends → Stop hook writes finding JSON + regenerates
@@ -270,10 +272,10 @@ Session ends → Stop hook writes finding JSON + regenerates
                     ↓
 Next session starts → capture_session_id.py reads summary file
                         ↓
-  SHIPWRIGHT_PHASE_QUALITY_MODE == audit_inject?
+  SHIPWRIGHT_PHASE_QUALITY_MODE == audit_only?
       │
-      yes → parse ≤ 3 Tier-1 FAILs → append to additionalContext
-      no  → no injection (default)
+      yes → no injection (explicit opt-out)
+      no  → parse ≤ 5 Tier-1 FAILs → append to additionalContext (default)
 ```
 
 **Orchestrator-Gate flow (PR 4):**
