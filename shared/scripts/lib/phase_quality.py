@@ -571,8 +571,32 @@ def run_quality_checks(phase: str, project_root: Path) -> list[dict[str, Any]]:
 
 
 def run_spec_checks(phase: str, project_root: Path, run_id: str) -> list[dict[str, Any]]:
-    del phase, project_root, run_id
-    return []
+    """Dispatch S1-S10 per the Plugin-Coverage table (plan § 5.1).
+
+    Phases covered: project (S1, S5-S8), iterate (S2-S5, S9-S10). Other
+    phases return []. Internal failures surface as a single error
+    finding so the Stop hook stays non-blocking (plan § 5.5).
+    """
+    if phase not in {"project", "iterate"}:
+        return []
+    skip_ids = skipped_check_ids()
+    try:
+        import importlib
+        module = importlib.import_module("tools.verifiers.spec_checks")
+        findings = module.run(phase, project_root, run_id)
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(
+            f"[phase-quality] spec_checks raised "
+            f"{type(exc).__name__}: {exc}\n"
+        )
+        return [{
+            "id": f"SPEC-{phase}",
+            "name": f"spec runner for {phase}",
+            "status": STATUS_FAIL,
+            "evidence": f"wrapper crashed: {type(exc).__name__}: {exc}",
+            "provenance": "error",
+        }]
+    return [apply_skip_override(f, skip_ids) for f in findings]
 
 
 # ---------------------------------------------------------------------------

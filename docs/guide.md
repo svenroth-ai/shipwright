@@ -1312,6 +1312,41 @@ uv run shared/scripts/tools/verify_iterate_finalization.py \
 
 Full canon definition, skip criteria, and per-plugin coverage matrix live in [docs/hooks-and-pipeline.md § Minimum Phase Completion Canon](hooks-and-pipeline.md#minimum-phase-completion-canon-c1c5).
 
+### Phase-Quality Audit (Consolidated Stop-Hook)
+
+Beyond the orchestrator-driven Canon, Shipwright runs a **consolidated Stop-Hook audit** at the end of every plugin session — orchestrated or standalone. It's observability, not a gate by default: the hook writes findings to `compliance/skill-compliance/` and regenerates three summary files but never blocks the session.
+
+The audit covers six categories (plan § 2, plan § 3):
+
+| Category | Count | Example checks |
+|---|---|---|
+| **Canon** | 5 (C1-C5) | phase_completed event, dashboard freshness, session handoff |
+| **Workflow** | 13 (W1-W7, Sec1-Sec2, Cmp1-Cmp2, D1-D2) | TDD order, F11 external review, coverage threshold, smoke-test status, git tag existence |
+| **Infrastructure** | 4 (I1-I4) | RTM/test-evidence/change-history/SBOM freshness vs phase events |
+| **Traceability** | 2 (T1-T2) | every spec FR mapped in RTM, no orphan RTM rows |
+| **Quality** | 2 (Q1-Q2) | ADR substance, planned sections ⊆ build completed |
+| **Spec** | 10 (S1-S10) | spec.md + FR headings, iterate-spec for medium+, CLAUDE.md + README presence + freshness, FR coherence |
+
+**Tier classification (plan § 3):** Of the 36 checks, 20 are Tier-1 (candidate for enforcement after burn-in) and 16 are Tier-2 (heuristic, never enforcement). Tier-2 ids are `W1`, `I4`, `T2`, `Q1`, `S3`, `S4`, `S5`, `S7`, `S9`, `S10`, `Cmp1`, `D2` — they always land as WARN/SKIP and carry `"tier": 2` so the dashboard can group them as low-signal.
+
+**Artifacts** (deterministically regenerated, hard-capped):
+- `compliance/skill-compliance/<phase>-<run_id>-<session>.json` — per-run finding (atomic, GC after 90 days)
+- `compliance/skill-compliance-report.md` — last 10 runs, markdown table
+- `agent_docs/skill-compliance-findings.md` — last 5 runs, source for SessionStart-Injection
+- `compliance/skill-compliance-dashboard.md` — phase × category matrix
+
+**Enforcement rollout (staggered, default OFF in code):**
+
+| Flag | Default | Effect |
+|---|---|---|
+| `SHIPWRIGHT_PHASE_QUALITY` | `1` (on) | `0` → hook disabled entirely (rollback lever) |
+| `SHIPWRIGHT_PHASE_QUALITY_MODE` | `audit_only` | `audit_inject` → SessionStart-Hook injects ≤3 Tier-1 FAILs as `additionalContext` at next session start |
+| `SHIPWRIGHT_ENFORCE_CRITICAL_GATES` | `0` | `1` → orchestrator blocks phase-transition on `W5`/`W6`/`W7` FAIL |
+| `SHIPWRIGHT_SKIP_QUALITY_CHECK` | — | comma-separated check ids to mark as SKIP (e.g. `C4,S9`) |
+| `SHIPWRIGHT_AUDIT_OVERRIDE_REASON` | — | required when using `SHIPWRIGHT_SKIP_QUALITY_CHECK` |
+
+The audit hook is always greenfield-safe (silent no-op when neither `shipwright_*_config.json` nor `agent_docs/` is present) and non-blocking (exit 0 even on internal errors). Hook wiring, finding schema and the detailed check catalog live in [docs/hooks-and-pipeline.md § audit_phase_quality_on_stop.py](hooks-and-pipeline.md#shared-hook-audit_phase_quality_on_stoppy).
+
 ---
 
 ## 10. Generated Documentation

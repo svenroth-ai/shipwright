@@ -37,6 +37,11 @@ _COMPLIANCE_SCRIPT = _THIS_PLUGIN.parent / "shipwright-compliance" / "scripts" /
 
 PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "compliance", "deploy"]
 
+# Plan § 4.4 / 9.2 — Orchestrator gate Critical-Check allowlist.
+# These FAILs block phase-transition only when
+# ``SHIPWRIGHT_ENFORCE_CRITICAL_GATES=1`` is set. Default OFF in code.
+_CRITICAL_GATE_CHECK_IDS: frozenset[str] = frozenset({"W5", "W6", "W7"})
+
 # Conditional steps: included only when their check function returns True
 CONDITIONAL_STEPS = {
     "security": {
@@ -213,6 +218,76 @@ def run_compliance_update(project_root: Path, phase: str) -> dict[str, Any] | No
     return None
 
 
+def _enforce_critical_gates_enabled() -> bool:
+    """Return True when SHIPWRIGHT_ENFORCE_CRITICAL_GATES opts-in.
+
+    Default OFF in code (plan § 9.1). Rollout week 6 flips it on for
+    W5/W6/W7 FAILs (plan § 9.2).
+    """
+    raw = os.environ.get("SHIPWRIGHT_ENFORCE_CRITICAL_GATES", "").strip().lower()
+    return raw in ("1", "true", "yes", "on")
+
+
+def _read_latest_phase_quality_finding(
+    project_root: Path, phase: str,
+) -> dict[str, Any] | None:
+    """Return the most recent Phase-Quality finding JSON for ``phase``.
+
+    The Stop hook writes per-run findings to
+    ``compliance/skill-compliance/<phase>-<run_id>-<session>.json``. We
+    pick the latest by mtime so the gate reflects the current run's
+    audit (plan § 4.4).
+    """
+    finding_dir = project_root / "compliance" / "skill-compliance"
+    if not finding_dir.is_dir():
+        return None
+
+    candidates = sorted(
+        finding_dir.glob(f"{phase}-*.json"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    for path in candidates:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if isinstance(data, dict):
+            return data
+    return None
+
+
+def _collect_critical_gate_issues(finding: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return ask-level validation issues for any critical-gate FAIL.
+
+    A "critical" FAIL is a finding whose ``id`` is in
+    ``_CRITICAL_GATE_CHECK_IDS`` with status=FAIL. SKIP/WARN/PASS are
+    ignored. Tier-2 findings are never considered — critical gating is
+    Tier-1 only by design (plan § 9.2).
+    """
+    issues: list[dict[str, Any]] = []
+    for category in ("workflow", "canon", "infrastructure",
+                     "traceability", "quality", "spec"):
+        for item in finding.get(category, []) or []:
+            if not isinstance(item, dict):
+                continue
+            if item.get("status") != "FAIL":
+                continue
+            check_id = item.get("id") or ""
+            if check_id not in _CRITICAL_GATE_CHECK_IDS:
+                continue
+            if item.get("tier") == 2:  # safety belt — never gate Tier-2
+                continue
+            issues.append({
+                "severity": "ask",
+                "name": f"{check_id} ({category})",
+                "reason": item.get("evidence") or "critical check failed",
+                "remediation": item.get("remediation")
+                    or "Re-run the validator or override via --force after fixing the root cause.",
+            })
+    return issues
+
+
 def _reset_tool_counter(project_root: Path) -> None:
     """Reset tool call counter to zero (between-skill cleanup)."""
     counter = project_root / ".shipwright_toolcall_count"
@@ -258,6 +333,15 @@ def update_step(project_root: Path, step: str, status: str, *, force: bool = Fal
             valid, issues = validate_phase(step, project_root)
             ask_issues = [i for i in issues if i["severity"] == "ask"]
             inform_issues = [i for i in issues if i["severity"] == "inform"]
+
+            # Phase-Quality critical-gate (plan § 4.4) — opt-in via
+            # SHIPWRIGHT_ENFORCE_CRITICAL_GATES=1. Default OFF. Pulls the
+            # most recent per-phase finding JSON written by the Stop hook
+            # and promotes any W5/W6/W7 FAIL into an ask-level issue.
+            if not force and _enforce_critical_gates_enabled():
+                finding = _read_latest_phase_quality_finding(project_root, step)
+                if finding:
+                    ask_issues.extend(_collect_critical_gate_issues(finding))
 
             # Record inform-level notes (non-blocking)
             if inform_issues:
