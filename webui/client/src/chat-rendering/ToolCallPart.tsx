@@ -1,5 +1,6 @@
 import type { ChatMessage } from '../types';
 import { ToolCallCard } from '../components/chat/ToolCallCard';
+import { AskUserCard } from '../components/chat/AskUserCard';
 import { useChatRendering } from './ChatRenderingContext';
 
 /**
@@ -7,15 +8,15 @@ import { useChatRendering } from './ChatRenderingContext';
  *
  *   { toolCallId, toolName, argsText, args, result?, isError? }
  *
- * We reconstruct a minimal `ChatMessage` from those fields so the existing
- * ToolCallCard (folded tool_use + tool_result rendering) keeps working
- * unchanged. The folded-output path (`toolOutput`) carries `result` from
- * assistant-ui through to the card's "Output" section.
+ * We dispatch by `toolName`:
+ *  - `AskUserQuestion` → AskUserCard (Sub-iterate B: first-class custom
+ *    tool UI — renders inline in the thread as a composer prompt rather
+ *    than a generic collapsible card).
+ *  - everything else → ToolCallCard (legacy shape).
  *
- * When available, we prefer the raw ChatMessage from ChatRenderingContext
- * (indexed by `toolCallId`, which matches ChatMessage.toolUseId after the
- * converter ran). The context lookup preserves fields like `model` and
- * `timestamp` that assistant-ui does not surface.
+ * The raw ChatMessage (for timestamps, model, images) is looked up from
+ * ChatRenderingContext by `toolCallId`, which matches
+ * `ChatMessage.toolUseId` after the converter has run.
  */
 interface ToolFallbackProps {
   toolCallId: string;
@@ -42,8 +43,30 @@ export function ToolCallPart({
   result,
   isError,
 }: ToolFallbackProps) {
-  const { messagesById } = useChatRendering();
+  const { messagesById, taskStatus, orphanReason, claudeSessionId, onResume } = useChatRendering();
   const source = findSourceMessage(messagesById, toolCallId);
+
+  if (toolName === 'AskUserQuestion') {
+    const askMessage: ChatMessage = source ?? {
+      id: toolCallId,
+      taskId: '',
+      type: 'tool_use',
+      content: '',
+      toolName,
+      toolInput: args,
+      toolUseId: toolCallId,
+      timestamp: new Date().toISOString(),
+    };
+    return (
+      <AskUserCard
+        message={askMessage}
+        taskStatus={taskStatus}
+        orphanReason={orphanReason}
+        claudeSessionId={claudeSessionId}
+        onResume={onResume}
+      />
+    );
+  }
 
   const message: ChatMessage = {
     id: source?.id ?? toolCallId,

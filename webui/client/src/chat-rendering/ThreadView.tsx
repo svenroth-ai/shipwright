@@ -8,11 +8,10 @@ import {
 } from '@assistant-ui/react';
 import type { ChatMessage, TaskStatus } from '../types';
 import { convertToThreadMessage, visibleChatMessages } from './convertToThreadMessage';
-import { ChatRenderingContext, useChatRendering } from './ChatRenderingContext';
+import { ChatRenderingContext } from './ChatRenderingContext';
 import { MarkdownTextPart } from './MarkdownTextPart';
 import { ReasoningPart } from './ReasoningPart';
 import { ToolCallPart } from './ToolCallPart';
-import { AskUserCard } from '../components/chat/AskUserCard';
 
 interface ThreadViewProps {
   messages: ChatMessage[];
@@ -126,26 +125,12 @@ export function ThreadView({
 type RoleLike = 'user' | 'assistant' | 'system';
 
 /**
- * Per-message renderer. Detects the AskUserQuestion tool_use and swaps
- * in AskUserCard. Otherwise delegates to MessagePrimitive.Parts.
+ * Per-message renderer. Dispatches through MessagePrimitive.Parts with
+ * named renderers per part type. AskUserQuestion is handled inside
+ * ToolCallPart (Sub-iterate B) — no message-level special case needed.
  */
 function ThreadMessage() {
-  const id = useMessage((m) => m.id);
   const role = useMessage((m) => m.role) as RoleLike;
-  const { messagesById, taskStatus, orphanReason, claudeSessionId, onResume } = useChatRendering();
-
-  const source = messagesById.get(id);
-  if (source?.type === 'tool_use' && source.toolName === 'AskUserQuestion') {
-    return (
-      <AskUserCard
-        message={source}
-        taskStatus={taskStatus}
-        orphanReason={orphanReason}
-        claudeSessionId={claudeSessionId}
-        onResume={onResume}
-      />
-    );
-  }
 
   return (
     <MessagePrimitive.Root
