@@ -126,7 +126,7 @@ Wired into every plugin that has a Stop hook (10 plugins; `run` and
 - Silent no-op for greenfield / non-Shipwright projects.
 - Gated off when `SHIPWRIGHT_PHASE_QUALITY=0`.
 
-**Categories (PR 1-3 of 4 epic):**
+**Categories (complete — epic PR 1-4):**
 - `canon` — C1-C5 Minimum Phase Completion Canon via
   `shared/scripts/tools/verifiers/common.py` helpers. Covers the
   standalone-Canon gap that was not enforced before (previously only
@@ -143,9 +143,11 @@ Wired into every plugin that has a Stop hook (10 plugins; `run` and
   lazy-imports each module and applies the plugin-coverage gate (plan
   § 5.1). Broken modules surface as one error finding — same resilience
   contract as the workflow dispatcher.
-- `spec` — schema slot reserved for PR 4. The runner returns an empty
-  list until then so the finding JSON keeps a stable shape across
-  rollout.
+- `spec` (PR 4) — cross-phase spec category at
+  `shared/scripts/tools/verifiers/spec_checks.py`. Runs S1-S10 against
+  the top-level spec (agent_docs/spec.md), per-iterate spec files,
+  CLAUDE.md, README.md, FR coherence, and git-based doc-freshness
+  heuristics. Uses `lib/spec_parser.py` for FR heading parsing.
 
 **Check catalog (PR 2-3 — plan § 3):**
 
@@ -196,6 +198,21 @@ evidence (plan § 4.5).
 | Q1 | project, plan, build, iterate | WARN (never FAIL — R13) | 2 | Latest ADR in `agent_docs/decision_log.md` has Context ≥50, Decision ≥30, Consequences ≥30 chars. Uses `lib/adr_parser.py` (handles both bullet-form and section-form). |
 | Q2 | build | FAIL | 1 | Every section in `shipwright_plan_snapshot.json` (falls back to `planning/sections/*.md` / `planning/<split>/sections/*.md`) has status ∈ {complete, completed, done} in `shipwright_build_config.json.sections`. SKIP when no plan material. |
 
+**Spec category (PR 4):** `shared/scripts/tools/verifiers/spec_checks.py`
+
+| ID | Phase(s) | Default on Missing | Tier | Evidence Source |
+|---|---|---|---|---|
+| S1 | project | FAIL | 1 | `agent_docs/spec.md` exists, non-empty, ≥1 `## FR-...` heading (via `lib/spec_parser.count_fr_headings`). |
+| S2 | iterate (medium+) | FAIL | 1 | `planning/iterate/<*run_id*>.md` present when `iterate_history[run_id].complexity` ∈ {medium, large}. SKIPs for trivial/small (R15). |
+| S3 | iterate (medium+) | WARN (never FAIL — R17) | 2 | `planning/iterate/<*run_id*>-miniplan.md` present when complexity ≥ medium. SKIPs below medium. |
+| S4 | iterate | WARN (never FAIL — R16) | 2 | Git-diff of `agent_docs/spec.md` over last 10 commits: removed FR ids must retain `status: deprecated`. SKIPs without git history. |
+| S5 | project, iterate | WARN (never FAIL) | 2 | Every FR heading across `agent_docs/spec.md`, `planning/*/spec.md`, and `planning/iterate/*.md` has Description + Acceptance sections (via `lib/spec_parser.compute_fr_coherence`). |
+| S6 | project | FAIL | 1 | `CLAUDE.md` exists at project root, non-empty. |
+| S7 | project | WARN (never FAIL) | 2 | `CLAUDE.md` has a `## Structure` fenced code block (via `lib/drift_parsers.extract_structure_block`). |
+| S8 | project | FAIL | 1 | `README.md` exists, non-empty. |
+| S9 | iterate (type=feature + UI-facing diff) | WARN (never FAIL — R17) | 2 | `README.md` touched within last 10 commits AND recent diff includes `webui/client/`, `frontend/`, `client/`, `web/`, `src/components/`, or `mobile/` path. SKIPs otherwise. |
+| S10 | iterate (type ∈ {feature, bug, bugfix}) | WARN (never FAIL — R17) | 2 | `CLAUDE.md` touched recently when new top-level directories appear in last 10 commits that aren't listed in the CLAUDE.md Structure block. SKIPs otherwise. |
+
 Tier-2 checks (W1, I4, T2, Q1, S3-S5, S7, S9, S10, Cmp1, D2) are
 permanently excluded from enforcement rollout — they land in the
 dashboard as heuristic signal only (plan § 3, § 9.2).
@@ -237,6 +254,64 @@ exposes the finding schema, plugin→phase mapping, and the six
 category runners used by the hook. All finding fields are stable
 across PR 1-4.
 
+**SessionStart-Injection flow (PR 4):**
+
+The canonical SessionStart hook `shared/scripts/hooks/capture_session_id.py`
+reads `agent_docs/skill-compliance-findings.md` at session start and
+injects up to 3 Tier-1 FAILs as `additionalContext` when
+`SHIPWRIGHT_PHASE_QUALITY_MODE=audit_inject`. Default mode is
+`audit_only` (no injection). Only Tier-1 FAILs are injected; Tier-2
+ids (`W1`, `I4`, `T2`, `Q1`, `S3-S5`, `S7`, `S9`, `S10`, `Cmp1`,
+`D2`) are filtered out.
+
+```
+Session ends → Stop hook writes finding JSON + regenerates
+                agent_docs/skill-compliance-findings.md
+                    ↓
+Next session starts → capture_session_id.py reads summary file
+                        ↓
+  SHIPWRIGHT_PHASE_QUALITY_MODE == audit_inject?
+      │
+      yes → parse ≤ 3 Tier-1 FAILs → append to additionalContext
+      no  → no injection (default)
+```
+
+**Orchestrator-Gate flow (PR 4):**
+
+`plugins/shipwright-run/scripts/lib/orchestrator.py::update_step`
+reads the most-recent per-phase Phase-Quality finding JSON and
+promotes any `W5`/`W6`/`W7` FAIL into an ask-level validation issue
+when `SHIPWRIGHT_ENFORCE_CRITICAL_GATES=1`. Default OFF — rollout
+week 6 flips the flag (plan § 9.2).
+
+```
+update_step(step, status=complete)
+    ↓
+not force AND not standalone?
+    ↓
+validate_phase() → base validator issues
+    ↓
+SHIPWRIGHT_ENFORCE_CRITICAL_GATES == 1?
+    │
+    yes → load compliance/skill-compliance/<step>-*.json (newest)
+          for each workflow finding with id ∈ {W5, W6, W7} AND status=FAIL
+            AND tier != 2:
+              append ask-level validation_issue with evidence+remediation
+    no  → skip critical gate
+    ↓
+ask-level issues present?
+    │
+    yes → config.status = needs_validation, save, return (user-blocking)
+    no  → mark step complete, advance pipeline
+```
+
+Only `W5`/`W6`/`W7` are in the critical-gate allowlist by design
+(plan § 9.2) — plan external-review, changelog tag, and deploy
+smoke-test are the three "must-not-ship-without" evidence points.
+Other FAILs remain audit-only forever (or until an explicit
+follow-up adds them to the allowlist). Tier-2 findings are never
+promoted, even if their id hypothetically coincides with a gate id.
+
 ### shipwright-run
 
 | Event | Matcher | Script | What It Does |
@@ -249,7 +324,7 @@ across PR 1-4.
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
-| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + T1/T2 traceability + Q1 ADR substance, Tier-2) |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + T1/T2 traceability + Q1 ADR substance Tier-2 + S1 spec-has-FR, S5 FR-coherence Tier-2, S6 CLAUDE.md, S7 Structure-block Tier-2, S8 README) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-design
@@ -300,7 +375,7 @@ across PR 1-4.
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | SessionStart | — | `check_drift.py` | Timestamp + content drift (catches Shipwright-repo self-drift when iterating on Shipwright itself) |
 | Stop | — | `iterate_stop_finalize.py` | Shared handoff + fallback `finalize_iterate.py` (compliance, dashboard, handoff). Freshness-gated: skips if `finalize_iterate.py` already ran. |
-| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W2/W3 iterate workflow + I1-I4 infrastructure + T1/T2 traceability + Q1 ADR substance) — runs **after** finalize so F5a/F5b/F7/F11 evidence is on disk |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W2/W3 iterate workflow + I1-I4 infrastructure + T1/T2 traceability + Q1 ADR substance + S2 iterate-spec for medium+ + S3 miniplan Tier-2 + S4 FR-preservation Tier-2 + S5 FR-coherence Tier-2 + S9 README-freshness Tier-2 + S10 CLAUDE.md-sync Tier-2) — runs **after** finalize so F5a/F5b/F7/F11 evidence is on disk |
 | Stop | — | `write_terminal_marker.py` | Writes `.shipwright/runs/<loop_id>/<unit_id>/DONE` (no-op without loop env vars) |
 
 ### shipwright-changelog
