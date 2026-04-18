@@ -5,6 +5,10 @@
 - **Architecture**: Hono backend (Node.js) + React 19 frontend (Vite 6), monorepo in `webui/`
 - **Stack**: TypeScript strict, Hono, React 19, Vite 6, TailwindCSS 4, Radix UI, TanStack React Query
 
+## Before touching chat rendering — READ FIRST
+
+Chat rendering uses vendored primitives from [`@assistant-ui/react`](https://github.com/Yonom/assistant-ui). Before editing any file under `webui/client/src/chat-rendering/` or `webui/client/src/components/chat/`, read [`agent_docs/chat-rendering.md`](agent_docs/chat-rendering.md). That document is the canonical state-ownership contract: it names the single writer for each store, lists the anti-patterns that ate iterates 14.9–14.14, and defines the converter contract + data-testid inventory. Ignoring it produces layered-state regressions.
+
 ## Structure
 ```
 webui/

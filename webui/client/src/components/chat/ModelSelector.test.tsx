@@ -137,6 +137,72 @@ describe('ModelSelector', () => {
     expect(screen.queryByTestId('model-switching-spinner')).toBeNull();
     expect(screen.getByTestId('model-selector-trigger').textContent).toBe('Opus 4.5');
   });
+
+  // Iterate 2026-04-18 modelswitch-spawn-ux — pendingTargetModel shows
+  // the CHOSEN model's label + spinner during the respawn gap, not the
+  // old label. isSwitching alone was insufficient: the mutation resolves
+  // in ~200ms while the CLI respawn + new system/init takes 1-2s. The
+  // caller (ChatToolbar) tracks the pending target and clears it when
+  // the new system/init arrives.
+  it('pendingTargetModel renders target label + spinner + pending-target testid', () => {
+    const onSwitchModel = vi.fn();
+    render(
+      <ModelSelector
+        systemInitModel="claude-opus-4-7"
+        onSwitchModel={onSwitchModel}
+        pendingTargetModel="claude-opus-4-6"
+      />,
+    );
+    const trigger = screen.getByTestId('model-selector-trigger');
+    // Target label is shown, not the old systemInitModel.
+    expect(trigger.textContent).toContain('Opus 4.6');
+    // Spinner present.
+    expect(screen.getByTestId('model-switching-spinner')).toBeInTheDocument();
+    // Pending-target attribute carries the concrete CLI id for tests.
+    expect(trigger.getAttribute('data-pending-target')).toBe('claude-opus-4-6');
+  });
+
+  it('pendingTargetModel disables the trigger (prevents double-fire)', () => {
+    const onSwitchModel = vi.fn();
+    render(
+      <ModelSelector
+        systemInitModel="claude-opus-4-7"
+        onSwitchModel={onSwitchModel}
+        pendingTargetModel="claude-opus-4-6"
+      />,
+    );
+    expect(screen.getByTestId('model-selector-trigger')).toBeDisabled();
+  });
+
+  it('pendingTargetModel takes precedence over isSwitching for labelling', () => {
+    // Both flags may coexist during the 200ms mutation window — pending
+    // target is the source of truth for what the user chose.
+    const onSwitchModel = vi.fn();
+    render(
+      <ModelSelector
+        systemInitModel="claude-opus-4-7"
+        onSwitchModel={onSwitchModel}
+        isSwitching
+        pendingTargetModel="claude-opus-4-6"
+      />,
+    );
+    const trigger = screen.getByTestId('model-selector-trigger');
+    expect(trigger.textContent).toContain('Opus 4.6');
+    expect(trigger.textContent).not.toContain('Switching');
+  });
+
+  it('pendingTargetModel falls back to "Other: id" for unknown target', () => {
+    const onSwitchModel = vi.fn();
+    render(
+      <ModelSelector
+        systemInitModel="claude-opus-4-7"
+        onSwitchModel={onSwitchModel}
+        pendingTargetModel="claude-future-9-9"
+      />,
+    );
+    const trigger = screen.getByTestId('model-selector-trigger');
+    expect(trigger.textContent).toContain('claude-future-9-9');
+  });
 });
 
 describe('matchKnownModel / aliasFromConcrete', () => {

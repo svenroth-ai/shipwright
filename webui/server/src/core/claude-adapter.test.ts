@@ -133,6 +133,58 @@ describe("ClaudeAdapter", () => {
     expect(multimodal!.message.content[1].type).toBe("image");
   });
 
+  it("sendUserMessage with empty string content is a no-op (no stdin write)", async () => {
+    // Iterate 2026-04-18 modelswitch-spawn-ux: mid-task mode/model switch
+    // passes `prompt: ""` to force a --resume spawn without a new user
+    // turn. Without this guard, Claude CLI treats the empty string as a
+    // user message and responds "Es sieht so aus, als wäre die Nachricht
+    // leer angekommen…" — surfaces as an unsolicited assistant reply in
+    // the chat. Guard: empty string → skip stdin write.
+    const { child, stdin } = createFakeChild();
+    const deps = createMockDeps(child);
+    const adapter = new ClaudeAdapter(deps, () => {});
+
+    const chunks: string[] = [];
+    stdin.on("data", (d: Buffer) => chunks.push(d.toString()));
+
+    const proc = adapter.spawn(baseOptions);
+    proc.state = "running";
+
+    adapter.sendUserMessage(proc, "");
+
+    await new Promise((r) => setTimeout(r, 20));
+
+    // No additional stdin writes after the initial baseOptions.prompt.
+    // (The initial prompt "Fix the bug" is allowed through.)
+    const lines = chunks.join("").split("\n").filter(Boolean);
+    const empties = lines
+      .map((l) => JSON.parse(l))
+      .filter((m) => m.message?.content === "");
+    expect(empties).toHaveLength(0);
+  });
+
+  it("sendUserMessage with whitespace-only content is also a no-op", async () => {
+    const { child, stdin } = createFakeChild();
+    const deps = createMockDeps(child);
+    const adapter = new ClaudeAdapter(deps, () => {});
+
+    const chunks: string[] = [];
+    stdin.on("data", (d: Buffer) => chunks.push(d.toString()));
+
+    const proc = adapter.spawn(baseOptions);
+    proc.state = "running";
+
+    adapter.sendUserMessage(proc, "   \n  ");
+
+    await new Promise((r) => setTimeout(r, 20));
+
+    const lines = chunks.join("").split("\n").filter(Boolean);
+    const blanks = lines
+      .map((l) => JSON.parse(l))
+      .filter((m) => typeof m.message?.content === "string" && m.message.content.trim() === "");
+    expect(blanks).toHaveLength(0);
+  });
+
   it("sendUserMessage on exited process throws", () => {
     const { child } = createFakeChild();
     const deps = createMockDeps(child);

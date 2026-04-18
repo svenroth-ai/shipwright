@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { ChevronRight, Brain } from 'lucide-react';
-import type { ChatMessage } from '../../types';
 
-interface ThinkingBlockProps {
-  message: ChatMessage;
+/**
+ * Renderer for the `reasoning` message part — assistant-ui's equivalent
+ * of Anthropic's `thinking` blocks. Collapsed by default, matches the
+ * warm neutral palette of the legacy ThinkingBlock component.
+ */
+interface Props {
+  text: string;
 }
 
 function formatCharCount(count: number): string {
@@ -12,22 +16,22 @@ function formatCharCount(count: number): string {
   return `${count} chars`;
 }
 
-/**
- * Dezent Thinking block, matching the mockup's warm neutral palette.
- * Not in the mockup explicitly, but fits the overall style.
- */
-export function ThinkingBlock({ message }: ThinkingBlockProps) {
+export function ReasoningPart({ text }: Props) {
   const [open, setOpen] = useState(false);
-  const charCount = message.content.length;
+  const charCount = text.length;
 
   return (
     <Collapsible.Root open={open} onOpenChange={setOpen}>
       <div
         className="rounded-lg overflow-hidden min-w-0 max-w-full bg-[var(--color-muted-bg,#ede8e1)]"
         style={{ border: '1px solid var(--color-border, #e0dbd4)' }}
+        data-testid="thinking-block"
       >
         <Collapsible.Trigger asChild>
-          <button className="flex items-center gap-2 px-3 py-2 w-full text-left hover:bg-[#e3ddd3] cursor-pointer">
+          <button
+            className="flex items-center gap-2 px-3 py-2 w-full text-left hover:bg-[#e3ddd3] cursor-pointer"
+            aria-label={`Thinking, ${formatCharCount(charCount)}`}
+          >
             <Brain size={14} className="text-gray-500 shrink-0" />
             <span className="text-xs font-medium text-gray-700">Thinking</span>
             <span className="text-[11px] text-gray-500 ml-auto">{formatCharCount(charCount)}</span>
@@ -37,11 +41,10 @@ export function ThinkingBlock({ message }: ThinkingBlockProps) {
             />
           </button>
         </Collapsible.Trigger>
-
         <Collapsible.Content>
           <div className="px-3 pb-3 border-t border-[var(--color-border,#e0dbd4)]">
             <pre className="mt-2 text-xs text-gray-700 rounded p-2 overflow-x-auto max-h-[400px] overflow-y-auto whitespace-pre-wrap bg-white max-w-full break-words">
-              {message.content}
+              {text}
             </pre>
           </div>
         </Collapsible.Content>
