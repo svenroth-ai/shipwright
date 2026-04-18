@@ -191,46 +191,50 @@ def test_read_latest_finding_none_on_greenfield(proj: Path):
 # ---------------------------------------------------------------------------
 
 
-def test_inject_mode_default_off(monkeypatch):
+def test_inject_mode_default_on(monkeypatch):
+    """Post-epic default: injection is ON unless explicitly opted out."""
     monkeypatch.delenv("SHIPWRIGHT_PHASE_QUALITY_MODE", raising=False)
-    assert cs._phase_quality_inject_enabled() is False
-
-
-def test_inject_mode_on_when_audit_inject(monkeypatch):
-    monkeypatch.setenv("SHIPWRIGHT_PHASE_QUALITY_MODE", "audit_inject")
     assert cs._phase_quality_inject_enabled() is True
 
 
-@pytest.mark.parametrize("value", ["audit_only", "other", "AUDIT_INJECT "])
-def test_inject_mode_requires_exact_audit_inject(monkeypatch, value):
-    """audit_inject is the only value that triggers injection.
+def test_inject_mode_off_when_audit_only(monkeypatch):
+    monkeypatch.setenv("SHIPWRIGHT_PHASE_QUALITY_MODE", "audit_only")
+    assert cs._phase_quality_inject_enabled() is False
 
-    Case-insensitive matching is intentional (we normalise via lower),
-    so we compare to a stripped lowercased variant.
-    """
+
+@pytest.mark.parametrize("value,expected", [
+    ("audit_only", False),     # explicit opt-out — only value that disables
+    ("audit_inject", True),    # legacy explicit opt-in still works
+    ("other", True),           # anything unknown → default ON
+    ("AUDIT_ONLY ", False),    # case-insensitive + whitespace-tolerant
+    ("", True),                # empty env var → default ON
+])
+def test_inject_mode_audit_only_is_only_disabler(monkeypatch, value, expected):
+    """audit_only is the only value that disables injection; default ON."""
     monkeypatch.setenv("SHIPWRIGHT_PHASE_QUALITY_MODE", value)
-    expected = value.strip().lower() == "audit_inject"
     assert cs._phase_quality_inject_enabled() is expected
 
 
-def test_collect_tier1_fails_caps_at_three():
-    """R20 — max 3 Tier-1 FAILs injected, rest dropped."""
+def test_collect_tier1_fails_caps_at_five():
+    """R20 (revised post-epic) — max 5 Tier-1 FAILs injected, rest dropped."""
     text = "\n".join([
         "## build — run-1",
-        "- audited_at: 2026-04-18",
+        "- audited_at: 2026-04-19",
         "- source: orchestrator",
-        "- totals: 0 PASS · 5 FAIL · 0 WARN · 0 SKIP",
+        "- totals: 0 PASS · 7 FAIL · 0 WARN · 0 SKIP",
         "- open FAILs:",
         "  - **W5** external review missing",
         "  - **W6** no git tag",
         "  - **W7** smoke not green",
         "  - **I1** RTM stale",
         "  - **I2** test evidence stale",
+        "  - **I3** change-history stale",
+        "  - **C1** no phase_completed event",
         "",
     ])
     fails = cs._collect_tier1_fails(text)
-    assert len(fails) == 3
-    assert [f["id"] for f in fails] == ["W5", "W6", "W7"]
+    assert len(fails) == 5
+    assert [f["id"] for f in fails] == ["W5", "W6", "W7", "I1", "I2"]
 
 
 def test_collect_tier1_fails_filters_tier2():
@@ -274,20 +278,22 @@ def test_format_injection_contains_phase_and_ids():
     assert "Phase-Quality" in text
 
 
-def test_build_injection_returns_empty_when_mode_off(tmp_path, monkeypatch):
-    monkeypatch.delenv("SHIPWRIGHT_PHASE_QUALITY_MODE", raising=False)
+def test_build_injection_returns_empty_when_mode_audit_only(tmp_path, monkeypatch):
+    """audit_only is the documented opt-out — even with findings, no inject."""
+    monkeypatch.setenv("SHIPWRIGHT_PHASE_QUALITY_MODE", "audit_only")
     _write_summary(tmp_path, (
         "## build — run-1\n- open FAILs:\n  - **W6** no tag\n"
     ))
     assert cs._build_phase_quality_injection(str(tmp_path)) == ""
 
 
-def test_build_injection_reads_summary_when_mode_on(tmp_path, monkeypatch):
-    monkeypatch.setenv("SHIPWRIGHT_PHASE_QUALITY_MODE", "audit_inject")
+def test_build_injection_reads_summary_by_default(tmp_path, monkeypatch):
+    """Default mode is inject-on; no env needed."""
+    monkeypatch.delenv("SHIPWRIGHT_PHASE_QUALITY_MODE", raising=False)
     (tmp_path / "agent_docs").mkdir()
     _write_summary(tmp_path, (
         "## build — run-1\n"
-        "- audited_at: 2026-04-18\n"
+        "- audited_at: 2026-04-19\n"
         "- source: orchestrator\n"
         "- totals: 0 PASS · 1 FAIL · 0 WARN · 0 SKIP\n"
         "- open FAILs:\n"
@@ -300,7 +306,8 @@ def test_build_injection_reads_summary_when_mode_on(tmp_path, monkeypatch):
 
 
 def test_build_injection_no_summary_file(tmp_path, monkeypatch):
-    monkeypatch.setenv("SHIPWRIGHT_PHASE_QUALITY_MODE", "audit_inject")
+    """Default mode on + missing summary → empty string (silent no-op)."""
+    monkeypatch.delenv("SHIPWRIGHT_PHASE_QUALITY_MODE", raising=False)
     assert cs._build_phase_quality_injection(str(tmp_path)) == ""
 
 
@@ -309,31 +316,14 @@ def test_build_injection_no_summary_file(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_capture_session_does_not_inject_by_default(tmp_path, monkeypatch):
-    """R20 — audit_only (default) never adds phase-quality context."""
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "agent_docs").mkdir()
-    _write_summary(tmp_path, (
-        "## build — run-1\n- open FAILs:\n  - **W6** no tag\n"
-    ))
-    result = _run_capture(
-        json.dumps({"session_id": "sess-x"}),
-        cwd=tmp_path,
-        CLAUDE_PLUGIN_ROOT="/fake/plugin",
-    )
-    if result.stdout.strip():
-        out = json.loads(result.stdout)
-        context = out["hookSpecificOutput"]["additionalContext"]
-        assert "Phase-Quality" not in context
-
-
-def test_capture_session_injects_when_audit_inject(tmp_path, monkeypatch):
+def test_capture_session_injects_by_default(tmp_path, monkeypatch):
+    """Post-epic default: injection ON, Claude sees Tier-1 FAILs at SessionStart."""
     monkeypatch.chdir(tmp_path)
     (tmp_path / "agent_docs").mkdir()
     (tmp_path / "shipwright_run_config.json").write_text("{}", encoding="utf-8")
     _write_summary(tmp_path, (
         "## build — run-1\n"
-        "- audited_at: 2026-04-18\n"
+        "- audited_at: 2026-04-19\n"
         "- source: orchestrator\n"
         "- totals: 0 PASS · 1 FAIL · 0 WARN · 0 SKIP\n"
         "- open FAILs:\n"
@@ -343,13 +333,31 @@ def test_capture_session_injects_when_audit_inject(tmp_path, monkeypatch):
         json.dumps({"session_id": "sess-x"}),
         cwd=tmp_path,
         CLAUDE_PLUGIN_ROOT="/fake/plugin",
-        SHIPWRIGHT_PHASE_QUALITY_MODE="audit_inject",
     )
     assert result.stdout.strip()
     out = json.loads(result.stdout)
     context = out["hookSpecificOutput"]["additionalContext"]
     assert "Phase-Quality" in context
     assert "W6" in context
+
+
+def test_capture_session_does_not_inject_when_audit_only(tmp_path, monkeypatch):
+    """audit_only is the documented opt-out lever for a silent session."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "agent_docs").mkdir()
+    _write_summary(tmp_path, (
+        "## build — run-1\n- open FAILs:\n  - **W6** no tag\n"
+    ))
+    result = _run_capture(
+        json.dumps({"session_id": "sess-x"}),
+        cwd=tmp_path,
+        CLAUDE_PLUGIN_ROOT="/fake/plugin",
+        SHIPWRIGHT_PHASE_QUALITY_MODE="audit_only",
+    )
+    if result.stdout.strip():
+        out = json.loads(result.stdout)
+        context = out["hookSpecificOutput"]["additionalContext"]
+        assert "Phase-Quality" not in context
 
 
 # ---------------------------------------------------------------------------

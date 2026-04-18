@@ -13,12 +13,16 @@ Also writes SHIPWRIGHT_SESSION_ID into CLAUDE_ENV_FILE (if provided) so
 bash subprocesses inherit it — additionalContext alone does not reach
 child processes spawned by Claude's Bash tool.
 
-**Phase-Quality injection (PR 4, Szenario C):** when
-``SHIPWRIGHT_PHASE_QUALITY_MODE=audit_inject`` is set, this hook also
-reads ``agent_docs/skill-compliance-findings.md`` and appends up to 3
-Tier-1 FAILs as ``additionalContext``. Default mode is ``audit_only``
-(no injection). Only Tier-1 FAILs are injected; Tier-2 (heuristic) is
-silent (plan § 4.3).
+**Phase-Quality injection (PR 4, Szenario C):** at SessionStart this
+hook reads ``agent_docs/skill-compliance-findings.md`` and appends up
+to 5 Tier-1 FAILs as ``additionalContext``. Only Tier-1 FAILs are
+injected; Tier-2 (heuristic) is silent (plan § 4.3).
+
+**Default is ON** (``audit_inject``) since the Phase-Quality epic
+completed — rollout calculus shifted from "wait 6 weeks, opt in" to
+"flip now, opt out on noise." Set
+``SHIPWRIGHT_PHASE_QUALITY_MODE=audit_only`` to disable injection and
+fall back to silent-file-only observability.
 
 This replaces the 8 per-plugin copies that used to live in
 plugins/*/scripts/hooks/capture-session-id.py. All plugin hooks.json
@@ -49,12 +53,19 @@ def _resolve_root() -> str:
         return os.getcwd()
 
 
-# Default OFF: unless SHIPWRIGHT_PHASE_QUALITY_MODE=audit_inject is set,
-# this hook never injects phase-quality FAILs into additionalContext.
-_INJECT_MODE = "audit_inject"
+# Default ON: injection is enabled unless the user explicitly opts out
+# via SHIPWRIGHT_PHASE_QUALITY_MODE=audit_only. Plan § 9.1 originally
+# defaulted this OFF during the 6-week staggered rollout; post-epic the
+# calculus flipped to "trust the rollback lever, ship the signal" for
+# small/solo setups.
+_OFF_MODE = "audit_only"
 
-# Plan § 4.3: cap at 3 FAILs to keep injection signal-to-noise usable.
-_MAX_INJECTED_FAILS = 3
+# Cap at 5 FAILs so a full phase-cluster (e.g. C1 + I1-I3 + W3) can
+# surface in one SessionStart without blowing Claude's first-response
+# context budget. Plan § 4.3 / R20 originally specified 3; raised after
+# rollout to 5 for better phase coverage while staying below the
+# "wall-of-text" threshold.
+_MAX_INJECTED_FAILS = 5
 
 # Tier-2 IDs that MUST never reach injection (even if the summary file
 # contains them). Mirrors TIER_2_CHECK_IDS in shared.scripts.lib.phase_quality.
@@ -72,9 +83,14 @@ _RUN_HEADER_RE = re.compile(r"^##\s+(?P<phase>[A-Za-z]+) — (?P<run>\S+)\s*$")
 
 
 def _phase_quality_inject_enabled() -> bool:
-    """Return True when SHIPWRIGHT_PHASE_QUALITY_MODE == audit_inject."""
+    """Return True unless SHIPWRIGHT_PHASE_QUALITY_MODE == audit_only.
+
+    Default ON — injection is the normal mode post-epic. The env var is
+    the documented opt-out lever (``audit_only`` → silent-file-only,
+    no SessionStart noise).
+    """
     mode = os.environ.get("SHIPWRIGHT_PHASE_QUALITY_MODE", "").strip().lower()
-    return mode == _INJECT_MODE
+    return mode != _OFF_MODE
 
 
 def _collect_tier1_fails(summary_text: str) -> list[dict[str, str]]:
