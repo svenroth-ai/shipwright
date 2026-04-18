@@ -1,0 +1,6 @@
+{"id":"md-001","taskId":"synthetic-markdown","type":"system","content":"{\"type\":\"system\",\"subtype\":\"init\",\"session_id\":\"syn-md-1\",\"model\":\"claude-opus-4-7\"}","model":"claude-opus-4-7","timestamp":"2026-04-18T09:00:00.000Z"}
+{"id":"md-002","taskId":"synthetic-markdown","type":"user","content":"Show me a Python snippet and a table.","timestamp":"2026-04-18T09:00:01.000Z"}
+{"id":"md-003-stream-1","taskId":"synthetic-markdown","type":"assistant","content":"Here is a snippet:\n\n```python\ndef add(a, b):\n    return a + b\n```","model":"claude-opus-4-7","timestamp":"2026-04-18T09:00:02.000Z"}
+{"id":"md-004-stream-incomplete","taskId":"synthetic-markdown","type":"assistant","content":"And a partial fence mid-stream:\n\n```python\ndef partial(x):\n    return x *","model":"claude-opus-4-7","timestamp":"2026-04-18T09:00:03.000Z"}
+{"id":"md-005","taskId":"synthetic-markdown","type":"assistant","content":"Here's a comparison:\n\n| Name | Value |\n| ---- | ----- |\n| foo  | 1     |\n| bar  | 2     |\n\nInline `code` and **bold** work too.","model":"claude-opus-4-7","timestamp":"2026-04-18T09:00:04.000Z"}
+{"id":"md-006","taskId":"synthetic-markdown","type":"result","content":"Done.","timestamp":"2026-04-18T09:00:05.000Z"}

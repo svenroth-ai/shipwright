@@ -1,10 +1,12 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createElement } from 'react';
 import { http, HttpResponse } from 'msw';
 import { server } from '../test/mocks/server';
 import { useCreateTask } from './useCreateTask';
+
+beforeEach(() => localStorage.clear());
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -41,6 +43,40 @@ describe('useCreateTask', () => {
     await waitFor(() => expect(result.current.isCreating).toBe(false));
     // Give fire-and-forget classify time to execute
     await waitFor(() => expect(classifyCalled).toBe(true), { timeout: 2000 });
+  });
+
+  it('Sub-iterate C — sends concrete CLI model id (not alias) when hydrated from settings.defaultModel', async () => {
+    let capturedBody: Record<string, unknown> | null = null;
+    server.use(
+      http.get('/api/settings', () =>
+        HttpResponse.json({ data: { defaultModel: 'claude-opus-4-7' } }),
+      ),
+      http.post('/api/projects/:id/tasks', async ({ request }) => {
+        capturedBody = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({
+          data: { id: 'new-task', projectId: 'p1', title: 'Test', description: '', status: 'pending', kanbanStatus: 'backlog', sessionId: 's1', createdAt: '', updatedAt: '' },
+        });
+      }),
+      http.post('/api/projects/:id/classify', () =>
+        HttpResponse.json({ data: { success: true } }),
+      ),
+    );
+
+    const { wrapper } = createWrapper();
+    const { result } = renderHook(() => useCreateTask(), { wrapper });
+
+    // Wait for settings hydration to populate localStorage.
+    await waitFor(() => expect(localStorage.getItem('chat-model')).toBe('"claude-opus-4-7"'));
+
+    result.current.createTask({ projectId: 'p1', title: 'Test' });
+    await waitFor(() => expect(result.current.isCreating).toBe(false));
+
+    expect(capturedBody).toMatchObject({ model: 'claude-opus-4-7' });
+    // Critical contract: never send the coarse alias.
+    const model = (capturedBody as unknown as { model?: string }).model;
+    expect(model).not.toBe('opus');
+    expect(model).not.toBe('sonnet');
+    expect(model).not.toBe('haiku');
   });
 
   it('handles classify failure gracefully', async () => {
