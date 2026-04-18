@@ -58,7 +58,10 @@ export function ChatToolbar({
   //   (c) PENDING_SWITCH_TIMEOUT_MS elapses → timeout, clear + show error
   const [pendingTarget, setPendingTarget] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
+  const [errorTargetModel, setErrorTargetModel] = useState<string | null>(null);
+  const [retryAttempts, setRetryAttempts] = useState(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const MAX_RETRY_ATTEMPTS = 3;
 
   function clearTimer(): void {
     if (timeoutRef.current !== null) {
@@ -81,10 +84,12 @@ export function ChatToolbar({
 
   useEffect(() => clearTimer, []);
 
-  const handleSwitchModel = (modelId: string) => {
+  const handleSwitchModel = (modelId: string, isRetry = false) => {
     setError(null);
     if (!projectId || !taskId) return;
     setPendingTarget(modelId);
+    setErrorTargetModel(modelId);
+    if (!isRetry) setRetryAttempts(0);
     clearTimer();
     timeoutRef.current = setTimeout(() => {
       timeoutRef.current = null;
@@ -112,6 +117,25 @@ export function ChatToolbar({
     });
   };
 
+  // Iterate modelswitch-uat-round2 (2026-04-18) — explicit Retry path
+  // for the 409 "Session not yet established" transient. CLI takes
+  // ~200-500ms after spawn to emit its first system/init event; a switch
+  // attempted within that window is rejected. The user hits Retry and
+  // the switch fires again against the (now hopefully captured)
+  // session_id.
+  function handleRetry() {
+    if (!errorTargetModel) return;
+    if (retryAttempts >= MAX_RETRY_ATTEMPTS) return;
+    setRetryAttempts((n) => n + 1);
+    handleSwitchModel(errorTargetModel, true);
+  }
+
+  const retryable =
+    !!error &&
+    !!errorTargetModel &&
+    retryAttempts < MAX_RETRY_ATTEMPTS &&
+    /session not yet established|try again in a second/i.test(error);
+
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-2 px-3 py-2">
@@ -126,15 +150,28 @@ export function ChatToolbar({
       </div>
       {error && (
         <div
-          className="mx-3 mb-1 flex items-start gap-2 px-2.5 py-1.5 text-[11px] text-red-700 bg-red-50 border border-red-200 rounded-md"
+          className="mx-3 mb-1 flex items-center gap-2 px-2.5 py-1.5 text-[11px] text-red-700 bg-red-50 border border-red-200 rounded-md"
           data-testid="model-switch-error"
           role="status"
         >
-          <AlertTriangle size={12} className="shrink-0 mt-0.5" />
+          <AlertTriangle size={12} className="shrink-0" />
           <span className="flex-1">{error}</span>
+          {retryable && (
+            <button
+              className="shrink-0 px-1.5 py-0.5 rounded border border-red-300 bg-white text-red-700 hover:bg-red-100 text-[10px] font-medium"
+              onClick={handleRetry}
+              data-testid="model-switch-retry"
+            >
+              Retry
+            </button>
+          )}
           <button
             className="shrink-0 text-red-500 hover:text-red-700"
-            onClick={() => setError(null)}
+            onClick={() => {
+              setError(null);
+              setErrorTargetModel(null);
+              setRetryAttempts(0);
+            }}
             aria-label="Dismiss"
           >
             <X size={12} />

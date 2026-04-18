@@ -131,6 +131,29 @@ type RoleLike = 'user' | 'assistant' | 'system';
  */
 function ThreadMessage() {
   const role = useMessage((m) => m.role) as RoleLike;
+  const content = useMessage((m) => m.content);
+
+  // Iterate modelswitch-uat-round2 — assistant-ui's ExternalStoreRuntime
+  // renders a MessagePrimitive shell for every `ThreadMessage` the
+  // runtime knows about, including a "running-reply placeholder" the
+  // runtime inserts when `isRunning=true` and the last real message is
+  // a user message. That placeholder has zero visible parts but still
+  // renders our `bg-white rounded-xl` chrome → the ghost "weisser Balken"
+  // the user reported after "Starting Claude…".
+  //
+  // Guard: if there are no parts OR every part is empty text/reasoning,
+  // render nothing. Real messages always have at least one non-empty
+  // text/tool-call/reasoning part via convertToThreadMessage.
+  const hasVisibleContent = Array.isArray(content) && content.some((part) => {
+    if (!part || typeof part !== 'object') return false;
+    const p = part as { type?: string; text?: string };
+    if (p.type === 'text' || p.type === 'reasoning') {
+      return typeof p.text === 'string' && p.text.trim().length > 0;
+    }
+    // Tool calls always count as visible (even while args/result stream in).
+    return true;
+  });
+  if (!hasVisibleContent) return null;
 
   return (
     <MessagePrimitive.Root
