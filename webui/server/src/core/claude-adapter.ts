@@ -378,6 +378,22 @@ export class ClaudeAdapter {
       throw new AppError("Claude process stdin not available", 500);
     }
 
+    // Iterate 2026-04-18 modelswitch-spawn-ux — skip stdin write on
+    // empty/whitespace content. The mid-task mode/model switch endpoint
+    // (POST /tasks/:id/mode) respawns the CLI with `--resume` and passes
+    // `prompt: ""` as a no-op placeholder; without this guard the
+    // respawned CLI reads the empty user turn and emits "Es sieht so aus,
+    // als wäre die Nachricht leer angekommen…" — a visible artifact on
+    // every model switch. Arrays of content blocks still go through
+    // (multimodal messages always have at least an image or non-empty
+    // text part; an empty blocks array is likewise a no-op).
+    if (typeof content === "string" && content.trim().length === 0) {
+      return;
+    }
+    if (Array.isArray(content) && content.length === 0) {
+      return;
+    }
+
     const message = {
       type: "user",
       message: {

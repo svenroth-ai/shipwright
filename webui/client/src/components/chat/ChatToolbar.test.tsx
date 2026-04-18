@@ -99,6 +99,58 @@ describe('ChatToolbar', () => {
     expect(receivedBody).toEqual({ model: 'claude-opus-4-7' });
   });
 
+  // Iterate 2026-04-18 modelswitch-spawn-ux — pending-target state machine.
+  // On switch click: set pendingTargetModel → render target label +
+  // spinner. Clear when systemInitModel catches up OR mutation errors.
+  it('sets pendingTargetModel on click and forwards it to ModelSelector', async () => {
+    server.use(
+      http.post('/api/projects/:projectId/tasks/:taskId/mode', async () =>
+        HttpResponse.json({ data: { taskId: 'task-1', model: 'claude-opus-4-6', status: 'running' } }),
+      ),
+    );
+
+    renderToolbar({ projectId: 'proj-1', taskId: 'task-1' });
+
+    const menus = await screen.findAllByRole('menu');
+    const modelMenu = menus.find((m) => m.textContent?.includes('Opus'))!;
+    const opus46 = await within(modelMenu).findByText(/Opus 4\.6/);
+    fireEvent.click(opus46);
+
+    await waitFor(() => {
+      const trigger = screen.getByTestId('model-selector-trigger');
+      expect(trigger.getAttribute('data-pending-target')).toBe('claude-opus-4-6');
+    });
+    expect(screen.getByTestId('model-selector-trigger').textContent).toContain('Opus 4.6');
+    expect(screen.getByTestId('model-switching-spinner')).toBeInTheDocument();
+  });
+
+  it('surfaces server error inline when /mode returns 409', async () => {
+    server.use(
+      http.post('/api/projects/:projectId/tasks/:taskId/mode', async () =>
+        HttpResponse.json(
+          { error: 'Answer the pending question before switching mode' },
+          { status: 409 },
+        ),
+      ),
+    );
+
+    renderToolbar({ projectId: 'proj-1', taskId: 'task-1' });
+
+    const menus = await screen.findAllByRole('menu');
+    const modelMenu = menus.find((m) => m.textContent?.includes('Opus'))!;
+    const opus46 = await within(modelMenu).findByText(/Opus 4\.6/);
+    fireEvent.click(opus46);
+
+    await waitFor(() =>
+      expect(screen.getByTestId('model-switch-error')).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId('model-switch-error').textContent).toContain('pending question');
+    // Pending target is cleared on error so the user can retry.
+    await waitFor(() =>
+      expect(screen.getByTestId('model-selector-trigger').getAttribute('data-pending-target')).toBeNull(),
+    );
+  });
+
   it('clicking a model when projectId/taskId are missing is a safe no-op', async () => {
     let mutationFired = false;
     server.use(
