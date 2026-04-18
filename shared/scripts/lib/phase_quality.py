@@ -415,13 +415,102 @@ def run_canon_checks(phase: str, project_root: Path) -> list[dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# Category stubs (PR 2-4 implement these; PR 1 returns empty lists so the
-# finding schema stays stable).
+# Finding-dict builder — shared by phase-specific *_compliance.py wrappers
 # ---------------------------------------------------------------------------
 
+def make_finding(
+    check_id: str,
+    status: str,
+    evidence: str,
+    *,
+    name: str = "",
+    remediation: str = "",
+    provenance: str = "",
+    tier: int | None = None,
+) -> dict[str, Any]:
+    """Build a finding dict with Tier-2 tagging auto-applied from
+    ``TIER_2_CHECK_IDS`` unless a caller supplies an explicit ``tier``.
+    """
+    finding: dict[str, Any] = {
+        "id": check_id,
+        "name": name or check_id,
+        "status": status,
+        "evidence": evidence,
+    }
+    if remediation:
+        finding["remediation"] = remediation
+    if provenance:
+        finding["provenance"] = provenance
+    effective_tier = tier if tier is not None else (2 if check_id in TIER_2_CHECK_IDS else None)
+    if effective_tier is not None:
+        finding["tier"] = effective_tier
+    return finding
+
+
+def apply_skip_override(
+    finding: dict[str, Any],
+    skip_ids: set[str] | None = None,
+) -> dict[str, Any]:
+    """Replace a finding with a SKIP if its id is in the env-var skip list."""
+    ids = skip_ids if skip_ids is not None else skipped_check_ids()
+    if finding.get("id") not in ids:
+        return finding
+    override = override_reason() or "skipped via SHIPWRIGHT_SKIP_QUALITY_CHECK"
+    new = dict(finding)
+    new["status"] = STATUS_SKIP
+    new["evidence"] = override
+    new["provenance"] = "override"
+    return new
+
+
+# ---------------------------------------------------------------------------
+# Workflow dispatcher — per-phase wrappers live in tools/verifiers/*_compliance
+# ---------------------------------------------------------------------------
+
+# Lazy imports to avoid circular-import pain and keep startup cost low when
+# a phase has no workflow checks (e.g. project). Each wrapper module exposes
+# ``run(project_root, run_id) -> list[dict]``.
+_WORKFLOW_PHASE_DISPATCH: dict[str, str] = {
+    "build": "build_compliance",
+    "iterate": "iterate_compliance",
+    "test": "test_compliance",
+    "plan": "plan_compliance",
+    "changelog": "changelog_compliance",
+    "deploy": "deploy_compliance",
+    "security": "security_compliance",
+    "compliance": "compliance_compliance",
+    "design": "design_compliance",
+}
+
+
 def run_workflow_checks(phase: str, project_root: Path, run_id: str) -> list[dict[str, Any]]:
-    del phase, project_root, run_id
-    return []
+    """Dispatch to the per-phase ``*_compliance.py`` wrapper.
+
+    Phases without workflow checks (``project``) return an empty list. Any
+    internal failure inside a wrapper is converted into a single error
+    finding so the Stop hook stays non-blocking (plan § 5.5).
+    """
+    module_name = _WORKFLOW_PHASE_DISPATCH.get(phase)
+    if not module_name:
+        return []
+    skip_ids = skipped_check_ids()
+    try:
+        import importlib
+        module = importlib.import_module(f"tools.verifiers.{module_name}")
+        findings = module.run(project_root, run_id)
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(
+            f"[phase-quality] workflow wrapper {module_name} raised "
+            f"{type(exc).__name__}: {exc}\n"
+        )
+        return [{
+            "id": f"WF-{phase}",
+            "name": f"workflow runner for {phase}",
+            "status": STATUS_FAIL,
+            "evidence": f"wrapper crashed: {type(exc).__name__}: {exc}",
+            "provenance": "error",
+        }]
+    return [apply_skip_override(f, skip_ids) for f in findings]
 
 
 def run_infrastructure_checks(phase: str, project_root: Path) -> list[dict[str, Any]]:
@@ -839,12 +928,14 @@ __all__ = [
     "TIER_2_CHECK_IDS",
     "LoadedFinding",
     "already_audited",
+    "apply_skip_override",
     "count_by_status",
     "finding_path",
     "flag_enabled",
     "gc_old_findings",
     "is_shipwright_project",
     "load_findings",
+    "make_finding",
     "phase_from_plugin_root",
     "phase_quality_enabled",
     "regenerate_all_aggregates",
