@@ -513,19 +513,61 @@ def run_workflow_checks(phase: str, project_root: Path, run_id: str) -> list[dic
     return [apply_skip_override(f, skip_ids) for f in findings]
 
 
+def _dispatch_shared_category(
+    phase: str,
+    project_root: Path,
+    module_name: str,
+) -> list[dict[str, Any]]:
+    """Shared wrapper for the Infra/Trace/Quality cross-phase modules.
+
+    Mirrors ``run_workflow_checks``: lazy import, per-check SKIP-override,
+    and try/except so a broken module surfaces as one error-finding
+    rather than crashing the Stop hook (plan § 5.5).
+    """
+    skip_ids = skipped_check_ids()
+    try:
+        import importlib
+        module = importlib.import_module(f"tools.verifiers.{module_name}")
+        findings = module.run(phase, project_root)
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(
+            f"[phase-quality] {module_name} raised "
+            f"{type(exc).__name__}: {exc}\n"
+        )
+        return [{
+            "id": f"{module_name.upper()[:3]}-{phase}",
+            "name": f"{module_name} runner for {phase}",
+            "status": STATUS_FAIL,
+            "evidence": f"wrapper crashed: {type(exc).__name__}: {exc}",
+            "provenance": "error",
+        }]
+    return [apply_skip_override(f, skip_ids) for f in findings]
+
+
 def run_infrastructure_checks(phase: str, project_root: Path) -> list[dict[str, Any]]:
-    del phase, project_root
-    return []
+    """Dispatch I1-I4 per the Plugin-Coverage table (plan § 5.1).
+
+    Phases covered: build, iterate (I1-I4); test (I2); changelog (I3).
+    Other phases return an empty list — infrastructure doesn't apply.
+    """
+    return _dispatch_shared_category(phase, project_root, "infrastructure_checks")
 
 
 def run_traceability_checks(phase: str, project_root: Path) -> list[dict[str, Any]]:
-    del phase, project_root
-    return []
+    """Dispatch T1-T2 per the Plugin-Coverage table (plan § 5.1).
+
+    Phases covered: project, iterate. Other phases return [].
+    """
+    return _dispatch_shared_category(phase, project_root, "traceability_checks")
 
 
 def run_quality_checks(phase: str, project_root: Path) -> list[dict[str, Any]]:
-    del phase, project_root
-    return []
+    """Dispatch Q1-Q2 per the Plugin-Coverage table (plan § 5.1).
+
+    Phases covered: project (Q1), plan (Q1), build (Q1+Q2),
+    iterate (Q1). Other phases return [].
+    """
+    return _dispatch_shared_category(phase, project_root, "quality_checks")
 
 
 def run_spec_checks(phase: str, project_root: Path, run_id: str) -> list[dict[str, Any]]:
