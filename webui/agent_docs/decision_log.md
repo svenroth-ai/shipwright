@@ -1,0 +1,557 @@
+# Decision Log — Shipwright Command Center
+
+## Project Interview (2026-04-09)
+
+### DEC-001: Hono over Express 5
+- **Context:** Need a Node.js backend framework for local single-user web app
+- **Decision:** Use Hono instead of Express 5
+- **Rationale:** Better TypeScript DX, built-in SSE (streamSSE()), lightweight (~14KB), modern patterns (Web Standard APIs). Express 5 still maturing, larger but less TypeScript-native.
+- **Rejected:** Express 5 (larger ecosystem but weaker TS), Fastify (solid but less modern DX)
+- **Impact:** All server code uses Hono patterns, Paperclip Express code needs mechanical adaptation
+
+### DEC-002: In-memory state from events (no tasks.json)
+- **Context:** Need task state management — plan proposed tasks.json + events as dual source
+- **Decision:** Pure in-memory state reconstructed from event log + active process tracking
+- **Rationale:** Single source of truth (events.jsonl), no sync issues, crash recovery via event replay. Running/waiting states from process manager (ephemeral by nature).
+- **Rejected:** tasks.json as primary store, hybrid model (tasks.json cache + events)
+- **Impact:** Server startup replays events, no persistent task file needed
+
+### DEC-003: New task_created event type
+- **Context:** Events only captured task completion (work_completed), not creation
+- **Decision:** Add task_created event type to record_event.py
+- **Rationale:** Enables full task lifecycle tracking, orphan detection (task_created without work_completed = crashed task), immediate visibility in UI
+- **Rejected:** In-memory only tracking (loses state on crash)
+- **Impact:** record_event.py needs extension, event reader needs to handle new type
+
+### DEC-004: Dual phase_completed deduplication
+- **Context:** Deploy/Changelog plugins now emit phase_completed with --detail, orchestrator also emits phase_completed without detail
+- **Decision:** Keep both, WebUI deduplicates (prefers event with detail field)
+- **Rationale:** Backwards compatible, no orchestrator change needed. Detail-bearing events are strictly more informative.
+- **Rejected:** Remove orchestrator emission (cleaner but breaks existing behavior)
+- **Impact:** Event reader needs dedup logic (group by type+phase+timestamp window)
+
+### DEC-005: SSE over WebSocket
+- **Context:** Need real-time server-to-client push
+- **Decision:** Server-Sent Events (SSE) instead of WebSocket/Socket.io
+- **Rationale:** Unidirectional push is sufficient (client-to-server via REST). SSE is simpler, native browser API, Hono has built-in support. Socket.io is overkill for local single-user.
+- **Rejected:** Socket.io (bidirectional overkill), raw WebSocket (more code for same result)
+- **Impact:** Frontend uses EventSource API, server uses Hono streamSSE()
+
+### DEC-006: WebUI stores chat history
+- **Context:** Claude CLI has own session management (--session-id). Do we also store?
+- **Decision:** Yes, WebUI persists parsed NDJSON stream per task
+- **Rationale:** Enables chat replay, task context switching, offline viewing. CLI sessions are opaque — WebUI needs parsed messages for rendering.
+- **Rejected:** CLI-only sessions (no replay, no task-context switching in UI)
+- **Impact:** Chat store module needed, storage in project's .shipwright-webui/chat-history/
+
+### DEC-007: Target audience — all Shipwright users
+- **Context:** Could be power-user-only or broadly accessible
+- **Decision:** All Shipwright users, "Replit light" — accessible but not dumbed down
+- **Rationale:** Masterclass product built around it. Users have some dev experience but aren't necessarily CLI experts.
+- **Rejected:** Power-user-only (limits audience), absolute beginner (too much hand-holding)
+- **Impact:** Good defaults, clear UI, minimal required configuration
+
+## UI Shell Spec Decisions (02-ui-shell)
+
+### KD-02.01: Kanban-first replaces 5-panel IDE layout
+- **Context:** Original spec used a 5-panel IDE layout (Rail, Sidebar, Chat, Viewer, Explorer)
+- **Decision:** Kanban-first UI with two views (Board + Task Detail)
+- **Rationale:** Kanban provides better multi-task overview; Task Detail preserves the deep chat experience. Board is more intuitive for project management than a code-IDE metaphor.
+- **Rejected:** 5-panel IDE layout (original spec), single-page chat UI
+- **Impact:** MainLayout.tsx becomes a router between Kanban Dashboard and Task Detail views; rail/ and sidebar/ components replaced by nav/ and board/
+
+### KD-02.02: Wider sidebar-nav (200px) replaces 48px rail
+- **Context:** Original spec had a narrow 48px icon-only rail
+- **Decision:** 200px sidebar-nav with icon + text labels
+- **Rationale:** Text labels improve discoverability; 200px is standard for app navigation (Slack, Linear, Notion).
+- **Rejected:** 48px icon-only rail (original), no sidebar
+- **Impact:** Navigation component changes from rail/ to nav/; width budget shifts from 48px to 200px
+
+### KD-02.03: No drag-and-drop on Kanban board
+- **Context:** Kanban boards typically support drag-and-drop card reordering
+- **Decision:** Cards auto-move via SSE events; no drag-and-drop
+- **Rationale:** Claude controls the pipeline — manual drag would create conflicting state. Automatic movement provides a "magic" feel where tasks progress on their own.
+- **Rejected:** Drag-and-drop with manual overrides
+- **Impact:** No DnD library needed; card position derived entirely from pipeline events
+
+### KD-02.04: Phase tags on cards replace horizontal pipeline steps
+- **Context:** Original spec had horizontal pipeline steps as a separate visualization
+- **Decision:** Phase tags rendered as colored pills on Kanban cards
+- **Rationale:** Phase info is on the card itself — no need for a separate visualization. Simpler and more space-efficient.
+- **Rejected:** Horizontal pipeline bar (original), separate pipeline panel
+- **Impact:** Eliminates pipeline/ component directory; phase info embedded in card component
+
+### KD-02.05: Immediate card creation, background classification
+- **Context:** New Issue flow could block on classification before showing the card
+- **Decision:** Card appears in Backlog immediately on submit; classification runs asynchronously
+- **Rationale:** Instant feedback is critical — users see their issue immediately. Classification enriches the card asynchronously.
+- **Rejected:** Classify first then create card; wait for classification
+- **Impact:** Two-phase card lifecycle: bare card on creation, enriched card after classify API returns
+
+### KD-02.06: SSE cache invalidation via TanStack Query
+- **Context:** SSE events could directly mutate React state or invalidate query caches
+- **Decision:** SSE events trigger queryClient.invalidateQueries(), not direct state mutation
+- **Rationale:** Query cache is the single source of truth for server state; avoids dual-state bugs.
+- **Rejected:** Direct state updates from SSE
+- **Impact:** SSE hook invalidates relevant query keys; no manual state management for server data
+
+### KD-02.07: 100ms streaming buffer for chat rendering
+- **Context:** Streaming chat tokens need buffering to avoid jitter
+- **Decision:** 100ms render buffer for chat message streaming
+- **Rationale:** Balances perceived responsiveness with smooth rendering; proven pattern from Claude.ai-style interfaces.
+- **Rejected:** No buffer (per-token), 250ms buffer
+- **Impact:** Chat rendering hook includes a 100ms flush interval
+
+### KD-02.08: Tool-call cards collapsed by default
+- **Context:** Tool-call events (Bash, Read, Edit, Write) could render expanded or collapsed
+- **Decision:** Collapsed by default, showing only tool name and summary line
+- **Rationale:** Long build sessions produce hundreds of tool calls; expanded-by-default creates overwhelming scroll.
+- **Rejected:** Expanded by default, no tool-call rendering
+- **Impact:** Collapsible card component with expand/collapse toggle
+
+### KD-02.09: Viewer SLOT pattern for Split 03
+- **Context:** Smart Viewer renderers could be built in Split 02 or deferred
+- **Decision:** Split 02 renders an empty placeholder slot; Split 03 plugs in actual renderers
+- **Rationale:** Keeps Split 02 focused on layout + chat; viewer renderers are independent and can be added incrementally.
+- **Rejected:** Build all renderers in Split 02
+- **Impact:** ViewerSlot component with tab management API (openTab, closeTab, activeTab)
+
+### KD-02.10: Panel widths in localStorage, not server-side
+- **Context:** Task Detail panel widths (Chat vs Viewer) could be persisted server-side or locally
+- **Decision:** localStorage persistence
+- **Rationale:** Layout preferences are per-browser; localStorage is simpler and faster.
+- **Rejected:** Persist in server settings API
+- **Impact:** useLocalStorage hook for panel width state
+
+## Features Spec Decisions (03-features)
+
+### KD-03.01: Smart Viewer inside Task Detail, not top-level
+- **Context:** Smart Viewer could be a permanent top-level panel or scoped to task detail
+- **Decision:** Smart Viewer lives inside Task Detail view (right panel)
+- **Rationale:** With Kanban-first, the board is the primary view. File viewing is contextual to a task, so it belongs inside the task detail rather than occupying permanent screen space.
+- **Rejected:** Permanent top-level panel (original 5-panel layout)
+- **Impact:** Viewer renders only when a task is open; no viewer on the Kanban Dashboard
+
+### KD-03.02: File Explorer slide-in inside Task Detail
+- **Context:** File Explorer could be global or task-scoped
+- **Decision:** Slide-in inside Task Detail view, hidden by default
+- **Rationale:** Files are browsed in the context of a specific task. Embedding the explorer inside the task detail keeps navigation task-scoped rather than global.
+- **Rejected:** Global slide-in from any view
+- **Impact:** Explorer toggle button in Task Detail toolbar; explorer component renders inside detail/
+
+### KD-03.03: Minimal New Issue Dialog
+- **Context:** New Issue could have many fields (type, priority, labels) or be minimal
+- **Decision:** Title + Description only; classification runs in background after creation
+- **Rationale:** Reduces friction for issue creation. Users want to capture ideas quickly. Auto-classification enriches the card asynchronously.
+- **Rejected:** Full-featured issue form with manual classification
+- **Impact:** Simple modal with two fields; POST to tasks API then fire-and-forget classify API call
+
+### KD-03.04: Reuse Python classify scripts via backend API
+- **Context:** Classification could be reimplemented in TypeScript or reuse existing Python scripts
+- **Decision:** Reuse classify_intent.py and classify_complexity.py via the backend classify API
+- **Rationale:** Scripts already implement the detection logic for the CLI. Running them post-creation avoids blocking the dialog on API latency.
+- **Rejected:** Reimplement in TypeScript, inline classification
+- **Impact:** Backend shells out to Python via uv run; frontend calls POST /api/projects/:id/classify
+
+### KD-03.05: Intent Detection downgraded to MAY
+- **Context:** Intent Detection was originally a Must-have feature
+- **Decision:** Downgraded from Must to May; scoped to Task Detail chat only
+- **Rationale:** With Kanban-first, there is no global chat input. Intent detection can still add value inside a task's chat, but it is lower priority since tasks are already explicitly scoped.
+- **Rejected:** Keep as Must-have
+- **Impact:** Optional feature; implementation deferred if time-constrained
+
+### KD-03.06: Directory validation, not emptiness validation
+- **Context:** Project Wizard could validate directory existence and/or emptiness
+- **Decision:** Validate directory existence only, not emptiness
+- **Rationale:** Users may want to add Shipwright to an existing project directory that already contains files.
+- **Rejected:** Validate both existence and emptiness
+- **Impact:** Wizard Step 1 checks fs.existsSync only
+
+### KD-03.07: Read-only viewer, no file editing
+- **Context:** Viewer could support inline editing or be strictly read-only
+- **Decision:** No file editing in the viewer or explorer — strictly read-only
+- **Rationale:** Claude handles all code changes. The viewer is for inspection and review, not manual editing. This avoids conflicts with Claude's file operations.
+- **Rejected:** Inline editing with save
+- **Impact:** No Monaco Editor; rehype-highlight sufficient for code display
+
+---
+
+### ADR-001: Dynamic CORS origin matching for localhost
+- **Date:** 2026-04-10
+- **Section:** Build — 01-project-setup
+- **Context:** CORS middleware needs to allow any localhost port during development
+- **Decision:** Use Hono cors() with dynamic origin callback that matches any origin containing 'localhost'
+- **Commit:** fd90c2c70ddd28193b2225bcb9f78927338cc656
+- **Rationale:** Simpler than maintaining a whitelist of ports; Vite dev server port may vary
+- **Consequences:** All localhost:* origins accepted during dev; null returned for non-localhost origins
+- **Rejected:** Static origin list (e.g. localhost:5173 only)
+
+---
+
+### ADR-002: Injectable FileSystemDeps for testability
+- **Date:** 2026-04-11
+- **Section:** Build — 03-event-system
+- **Context:** Event reader and writer need file access but must be unit-testable without real FS
+- **Decision:** Define FileSystemDeps/WriterDeps interfaces, inject mocks in tests, use real fs in production
+- **Commit:** 8121221
+- **Rationale:** Dependency injection pattern from spec (QR-01.09); proven in all Shipwright plugins
+- **Consequences:** All bridge modules are pure-function testable; no test-time file system side effects
+- **Rejected:** Jest module mocking (brittle), test-time temp files (slow, flaky on CI)
+
+---
+
+### ADR-003: Standalone NDJSON parser as separate module
+- **Date:** 2026-04-11
+- **Section:** Build — 05-claude-adapter
+- **Context:** NDJSON parsing needed by Claude adapter but also useful independently
+- **Decision:** Extract parseNdjsonLine() and isAskUserQuestion() into ndjson-parser.ts
+- **Commit:** 4160b5b
+- **Rationale:** Single responsibility; parser has 8 dedicated tests covering edge cases
+- **Consequences:** Adapter stays focused on process management; parser independently testable and reusable
+- **Rejected:** Inline parsing in adapter (harder to test edge cases independently)
+
+---
+
+### ADR-004: PID file for orphan detection across restarts
+- **Date:** 2026-04-11
+- **Section:** Build — 06-process-governor
+- **Context:** Server restarts need to detect and kill orphaned Claude processes from previous run
+- **Decision:** Persist active PIDs to ~/.shipwright-webui/pids.json, check on startup
+- **Commit:** bd2c3ef
+- **Rationale:** process.kill(pid, 0) check is fast and reliable; JSON persistence is atomic enough for single-user
+- **Consequences:** Reliable orphan cleanup; small JSON file written on every spawn/release
+- **Rejected:** OS-level process group tracking (platform-specific), no tracking (orphans accumulate)
+
+---
+
+### ADR-005: Task actions — Close + Delete (no Cancel)
+- **Date:** 2026-04-11
+- **Section:** Test Phase — Task Actions
+- **Context:** Task card menu had Close, Cancel, and Delete. "Cancel" was confusing.
+- **Decision:** Simplify to Close (→ Done) and Delete (→ remove). No separate "Cancel" action.
+- **Rationale:** Simpler mental model — task is either done or gone. "Cancelled" had no clear meaning.
+- **Consequences:** CardOverflowMenu and TaskHeader both use Close + Delete; same actions on card and detail page
+- **Rejected:** Three-action model (Close + Cancel + Delete)
+
+---
+
+### ADR-006: Autonomy as per-project setting (not chat toggle)
+- **Date:** 2026-04-11
+- **Section:** Test Phase — Autonomy
+- **Context:** Autonomy was a toggle on the chat toolbar, changeable per-message.
+- **Decision:** Autonomy is a per-project setting (Settings → Project tab). Chat toolbar shows read-only badge.
+- **Rationale:** Autonomy is a project-level decision (e.g., production app = guided, prototype = autonomous). Changing per-message is confusing and doesn't map to how Shipwright plugins implement it.
+- **Consequences:** Global default as fallback; project override takes precedence; ChatToolbar AutonomyPill becomes read-only
+- **Rejected:** Per-message toggle, global-only setting
+
+---
+
+### ADR-007: task_updated event for description edits
+- **Date:** 2026-04-11
+- **Section:** Test Phase — Task Edit
+- **Context:** Description editing needed for pending tasks, but no update mechanism existed.
+- **Decision:** New task_updated event type + PATCH /api/projects/:id/tasks/:taskId/description endpoint
+- **Rationale:** Consistent with event-sourced architecture. Only pending tasks can be edited (running tasks are owned by Claude).
+- **Consequences:** EventStore processes task_updated to merge description; API validates pending status
+- **Rejected:** Direct in-memory mutation without event (loses auditability)
+
+---
+
+### ADR-008: Path traversal prevention in doc-index
+- **Date:** 2026-04-11
+- **Section:** Build — 10-api-routes
+- **Context:** GET /api/projects/:id/docs?file=path reads arbitrary files within project directory
+- **Decision:** Resolve path with path.resolve(), verify startsWith(projectDir) before reading
+- **Commit:** d21e143
+- **Rationale:** OWASP path traversal prevention; defense in depth even for local-only app
+- **Consequences:** Prevents ../../etc/passwd style attacks; returns 400 AppError on violation
+- **Rejected:** No validation (local app argument), regex-based filtering (bypassable)
+
+---
+
+### ADR-009: Persistent Claude CLI Process via --input-format stream-json
+- **Date:** 2026-04-12
+- **Section:** Iterate — persistent-process
+- **Context:** Spawn-per-message Claude CLI via print mode (-p) incurred 5-10s cold start on every chat follow-up (plugin loading, API handshake, session setup). User feedback: 'Wenn ich jedes mal 10s warten muss drehe ich durch'. Completely unacceptable for an interactive chat.
+- **Decision:** Run exactly one persistent Claude CLI process per active task using --input-format stream-json + --output-format stream-json. Send user messages as NDJSON on stdin via a new sendUserMessage(proc, content) API. Process stays alive for the entire task conversation. Task lifecycle events (phase_started, work_completed, work_failed) emitted via the adapter's onExit callback.
+- **Commit:** ec9b0e1
+- **Consequences:** Measured 6x speedup: initial cold start 15.35s (one-off per task) → follow-up 2.57s (warm, just API latency). SessionRegistry and its 8 unit tests deleted (~350 LOC removed). chat.ts POST handler simplified from respawn+resume flow to single sendUserMessage call. Multimodal image input became straightforward (just content block arrays on the same pipe). No --permission-mode mid-task switching without respawn (acceptable for v0.1).
+- **Rejected:** --sdk-url ws:// WebSocket mode (hidden .hideHelp() flag in Claude CLI source, marked unstable); per-message respawn with --resume <sessionId> (tried in 60167fa, required SessionRegistry to map our UUID to Claude's real session_id from system/init events, still cold-started on every message).
+
+---
+
+### ADR-010: Companion MarkdownContent Port (MIT) for chat rendering
+- **Date:** 2026-04-12
+- **Section:** Iterate — chat-rendering
+- **Context:** Hand-rolled @tailwindcss/typography prose classes broke markdown tables in the chat: cells collapsed into each other (e.g., 'SpieleTordiff.Punkte' instead of 'Spiele | Tordiff | Punkte'). Users also wanted a VS Code-extension feel (flat messages, no avatar) and image upload. User explicit direction: 'Können wir das nicht von dem companion repo kopieren? Möchte nicht alles nochmals durchmachen'.
+- **Decision:** Port the MarkdownContent sub-component from The-Vibe-Company/companion/web/src/components/MessageBubble.tsx (MIT license) into webui/client/src/components/chat/MarkdownContent.tsx. Use explicit react-markdown component overrides for every element (h1-h4, p, ul/ol/li, table/thead/th/td, blockquote, hr, code, pre, a, strong, em) instead of relying on @tailwindcss/typography. Swap companion's cc-* Tailwind tokens for our CSS custom properties (--color-primary, --color-border, --color-muted-bg). Also port readFileAsBase64 helper from companion/web/src/utils/image.ts for clipboard paste support.
+- **Commit:** 15928b8
+- **Consequences:** All common markdown artifacts render correctly including tables with proper borders. Image upload feature lands alongside (paperclip button + clipboard paste + thumbnail strip). MIT attribution obligation added to CHANGELOG and file headers. Future updates from companion upstream are now a simple copy-merge operation. Same stack (React 19 + react-markdown + remark-gfm) so no new dependencies.
+- **Rejected:** Fix prose classes in place (fragile, ongoing maintenance burden for every table edge case); adopt a different Markdown library (unnecessary churn, same risk); write ad-hoc CSS overrides (already tried, user rejected).
+
+---
+
+### ADR-011: VS Code Permission Modes — Default is bypassPermissions
+- **Superseded by:** ADR-022 (2026-04-13) — mid-task mode switching is now supported via `--resume` respawn. ADR-011's "v0.1 not supported" stance no longer applies; the underlying reasoning (per-message respawn cost from ADR-009) doesn't apply to explicit one-off user actions.
+- **Date:** 2026-04-12
+- **Section:** Iterate — permission-modes
+- **Context:** The legacy 'Default | Plan | Auto-accept' permission dropdown was confusing and none of its values were actually wired to the Claude CLI spawn arguments. The adapter always used --dangerously-skip-permissions regardless of user selection. User asked for VS Code-style modes matching their mental model from the VS Code Claude extension.
+- **Decision:** Adopt the exact same 4-mode system as VS Code's Claude extension: Ask before edits (default) / Edit automatically (acceptEdits) / Plan mode (plan) / Bypass permissions (bypassPermissions). UI default = bypassPermissions (matches VS Code ship default). Wire client mode selection through POST /tasks body → coercePermissionMode validator → governor.acquire → adapter.spawn. Adapter picks --dangerously-skip-permissions for bypass or --permission-mode <mode> otherwise. Legacy localStorage values (default/plan/auto-accept) auto-migrated on read.
+- **Commit:** 27fce3a
+- **Consequences:** Client and server now consistent with Claude CLI's --permission-mode flag. Default matches VS Code expectation. Mid-task mode switching is NOT supported in v0.1 (would require process respawn or undocumented control_request protocol) — selected mode locks in for the whole task conversation. Popover closes on select via Popover.Close asChild wrap (265ec07).
+- **Rejected:** Keep legacy names (doesn't match CLI flag semantics, user confusion persists); hide the mode selector entirely (loses power-user control, bad UX for people running untrusted prompts); use raw CLI mode names only without friendly labels (bypassPermissions is unfriendly in chat).
+
+---
+
+### ADR-012: Rule-based phase detection via classify_phase.py
+- **Date:** 2026-04-13
+- **Section:** Iterate — phase-detection
+- **Context:** Task creation emitted phase_started events with a hardcoded phase of build, which prevented the kanban from reflecting non-build work (design, test, deploy) without manual intervention. Users asked to classify phase from the task description at creation time.
+- **Decision:** Add plugins/shipwright-iterate/scripts/lib/classify_phase.py (rule-based keyword + priority tie-break). Expose classifyPhase() in webui/server/src/bridge/intent-classifier.ts. POST /api/projects/:id/classify returns phase + phase_confidence. POST /api/projects/:id/tasks accepts body.phase; when absent, classifyPhase is invoked as fallback. NewIssueModal gains an 8-option phase dropdown with debounced auto-suggest + Sparkle indicator and manual override.
+- **Commit:** HEAD
+- **Consequences:** Phase_started events now reflect actual work type. UI surfaces an auto-suggest with override. Keyword-based classifier is deterministic, offline, and has no external dependencies. Future work may upgrade to LLM-based classification when latency budget allows.
+- **Rejected:** LLM-based classification rejected (latency + cost on a synchronous create path). Hardcoded mapping based on project profile rejected (too coarse, ignores user intent).
+
+---
+
+### ADR-013: Persist requested phase on task_created events; close NewIssueModal classify race
+- **Date:** 2026-04-13
+- **Section:** Iterate — phase-dropdown-fix
+- **Context:** After shipping ADR-012 (phase detection) the dropdown selection was still being lost in two ways: (1) the /api/projects/:id/tasks/:taskId/start route hardcoded phase=build regardless of what the user picked at creation time; (2) NewIssueModal's debounced classify call had no abort mechanism, so an in-flight response would overwrite a user's subsequent manual dropdown pick when it resolved.
+- **Decision:** (1) Server: task_created events now carry an optional phase field. EventStore reads it into task.requestedPhase. The /start route resolves the phase as body.phase > task.requestedPhase > classifyPhase(title+description) > 'project'. (2) Client: NewIssueModal tracks phaseIsAuto in a ref (phaseIsAutoRef) and the debounced classify's .then guards against both effect-abort and current phaseIsAutoRef.current before calling setPhase, so a late-arriving classify response cannot clobber a manual selection.
+- **Commit:** HEAD
+- **Consequences:** Phase dropdown is now authoritative in both immediate-start and deferred-start flows. Task model gains requestedPhase field. Existing task_created events without phase remain compatible (field is optional and EventStore treats missing as undefined). Client event handler uses a ref instead of closure-captured state — standard pattern for 'latest value in async callback'.
+- **Rejected:** (a) Re-classify on every /start call (wasteful; user's original intent lost). (b) AbortController for the classify fetch (would work but requires threading signal through apiPost; the ref guard achieves the same goal with less surface change). (c) Storing requestedPhase in a separate event type (phase_requested) — extra event noise for something that logically belongs on task_created.
+
+---
+
+### ADR-014: Fold tool_result into tool_use by toolUseId — live and persisted
+- **Date:** 2026-04-13
+- **Section:** Iterate — tool-call-merge
+- **Context:** Tool-call cards in the chat panel showed 'Running' forever. Root cause: tool_use and tool_result NDJSON events were persisted and rendered as two separate ChatMessage entries. The tool_use card's status came from message.type === 'tool_result', which never becomes true for the tool_use message itself. The NDJSON parser also did not propagate Anthropic's tool_use_id, so there was no key to match a tool_result back to its tool_use.
+- **Decision:** (1) Persist both tool_use and tool_result as separate ChatMessages (append-only, lossless), but propagate Anthropic's tool_use_id via a new optional ChatMessage.toolUseId field. (2) Introduce a pure foldToolResults(messages) helper in webui/client/src/lib/ that walks the list once, indexes tool_use by toolUseId, and folds matching tool_result into the parent tool_use by copying content into toolOutput and inheriting isError. Orphan tool_results and legacy messages without toolUseId pass through. (3) ChatPanel folds both the persisted message list and the live streaming list before rendering. (4) ToolCallCard status is now derived from isLegacyResult OR toolOutput !== undefined OR isError, so a folded tool_use correctly transitions to 'Done' / 'Error'.
+- **Commit:** HEAD
+- **Consequences:** Tool cards now transition from Running to Done in place as soon as the matching tool_result arrives, both during live streaming and when a persisted chat history loads. Chat store remains append-only. Backward compatible with pre-fold histories (tool_use without toolUseId stays 'Running' until a matching result; legacy standalone tool_result messages still render as their own 'Done' card). foldToolResults is O(N) single-pass and pure.
+- **Rejected:** (a) Merging at persist time in chat-store — would require rewriting existing jsonl entries which violates append-only. (b) Mutating streamingMessages in useStreamingChat when tool_result arrives — viable but forces an extra state-update pass and couples the hook to the render concern. A pure selector at render time is simpler and testable in isolation. (c) Storing tool_result inline on the assistant message — breaks the type shape and loses the chronological order for tools that span multiple assistant turns.
+
+---
+
+### ADR-015: Extract AskUserQuestion nested schema + dedupe streaming against persisted
+- **Date:** 2026-04-13
+- **Section:** Iterate — ask-user-card-fix
+- **Context:** AskUserCard rendered as two empty yellow boxes with a 'Type your answer...' textarea and a 'Submit Answer' button, but no question text and no suggestion chips. Two root causes: (1) The component read toolInput.question and toolInput.options as if the schema were flat, but Claude Code's built-in AskUserQuestion tool emits a nested shape { questions: [{ header, question, multiSelect: { mode, options: [{ label, description }] } }] }. With the flat keys missing, question fell through to message.content (empty) and options was an empty array. (2) Every NDJSON chat:message event is persisted to chat-store AND broadcast via SSE. useSSE invalidates the chat query on each broadcast, so useChat refetches during streaming and the persisted messages end up containing the same event that is also in streaming.streamingMessages. ChatPanel renders both arrays sequentially, producing two identical cards.
+- **Decision:** (1) New pure helper webui/client/src/lib/askUserPayload.ts with extractAskUserPayload(toolInput) that flattens both the nested Claude Code schema AND the legacy flat schema into { question, header?, context?, options? }. Used by AskUserCard.tsx for rendering and by server/index.ts for the inbox path — one extractor, two consumers. (2) New pure helper webui/client/src/lib/dedupeStreamingMessages.ts that removes streaming entries whose stable signature is already present in the persisted messages list. Signature: 'tool:<toolUseId>' for tool_use/tool_result when toolUseId is present, otherwise '<type>:<content-prefix-200>'. ChatPanel pipes streamingMessages through dedupeStreamingMessages BEFORE foldToolResults so the ordering is: persisted → rendered as-is; streaming → deduped against persisted → folded → rendered.
+- **Commit:** HEAD
+- **Consequences:** AskUserQuestion prompts now render with their actual question text, header tag, and option chips. Legacy flat schema still works. The chat panel no longer double-renders ANY event that landed in both stores during a stream, not just AskUserQuestion — tool calls, text, thinking blocks, everything. dedupeStreamingMessages is pure, O(N+M), and unit-tested. extractAskUserPayload is a single source of truth shared between client rendering and server inbox creation — future schema drift requires only one update.
+- **Rejected:** (a) Move dedupe to the SSE layer (don't invalidate chat on chat:message during stream) — couples useSSE to streaming state, messy. (b) Remove the inbox-manager path entirely and let the ChatMessage tool_use be the single surface — breaks the global Inbox page which reads from inboxManager. (c) Use message.id as the dedupe key — IDs are generated independently by the server parser and the client streaming hook, so they never match. (d) Render-time mergeByToolUseId of the streaming list into messages — couples persisted data with live data and breaks the 'persisted is authoritative' invariant.
+
+---
+
+### ADR-016: Kill content_block persistence + displayContent guard + AskUserCard redesign + classifier tiebreak
+- **Date:** 2026-04-13
+- **Section:** Iterate — chat-dup-root-cause
+- **Context:** Live test on port 5177 (2026-04-13) showed iterate 3's dedupeStreamingMessages was not sufficient. Chat shows every tool_use twice, every assistant text twice, and the phase badge on the kanban card displays 'build' for a 'Build a ToDo-App' task instead of 'project'. Root causes were deeper than the streaming-vs-persisted overlap my iterate 3 targeted. Four independent bugs were investigated by pulling the real chat-history jsonl from a recent task and grepping for duplicates: two tool_use AskUserQuestion entries with toolInput differing only by '(Recommended)' suffix appeared 4.6 seconds apart — proof that the server parser was persisting both the partial content_block event and the final assistant event for the same logical tool call. Separately, the assistant text showed twice in the chat because displayContent renders next to its already-persisted copy in messages. And the classifier's tiebreak had 'build' priority over 'project', which made 'Build a ToDo-App' classify as build since both scored 1.
+- **Decision:** (A) webui/server/src/core/ndjson-parser.ts — delete the content_block_start/delta/stop handler entirely. Return empty array. Claude CLI emits these events with partial state while generating a content block token-by-token; our client's useStreamingChat hook does not consume them (live text streaming runs off the assistant event's text blocks), so deleting the server-side path only removes the double-persist. (B) webui/client/src/components/chat/ChatPanel.tsx — before rendering the streaming displayContent AssistantMessage, check whether any persisted message already contains that exact text. If yes, suppress the streaming render. Inline pure predicate, no new state. (C) webui/server/src/core/chat-store.ts — defense-in-depth: ChatStore.append maintains an 8-entry, 10-second rolling window of recent message signatures per task. Exact structural duplicates (same type/toolName/content/JSON.stringify(toolInput)/isError) within the window are silently dropped. Prevents any future parser regression or Claude CLI stream quirk from producing duplicate persisted rows. (D) webui/client/src/components/chat/AskUserCard.tsx — visual redesign per user feedback: switch from solid bg-amber-50 to bg-white with border border-amber-200 plus a thick amber-400 left accent bar (border-l-4 border-l-amber-400) and a soft card shadow. Aligns chrome with the white Claude cards in mockup 11 while keeping the 'needs attention' amber signal via the left accent. (E) plugins/shipwright-iterate/scripts/lib/classify_phase.py — remove 'build' from the BUILD phase keyword set (the verb in a user title almost always means 'create', not the Shipwright build phase) AND reorder PHASE_PRIORITY so 'project' wins ties over 'build'. Regression: 'Build a ToDo-App' now classifies as project.
+- **Commit:** HEAD
+- **Consequences:** (A) No more duplicate persisted tool calls or assistant text from parser double-processing. Chat-history jsonl stays clean. (B) Streaming displayContent and persisted messages no longer show the same text twice during the invalidation window. (C) Defense in depth catches any future quirks. (D) AskUserCard visually aligns with the white-card chat language while keeping the amber-accent attention signal. (E) 'Build a ToDo-App' and similar create-new-app phrasings classify as project; Kanban card phase badge shows 'project' in the default mapping (project -> backlog). Still a separate UX question whether the kanban mapping should put project-phase tasks in in_progress when they are running, but that is not this iterate. All tests green: server 206 (+7), client 198, iterate plugin 59 (+13).
+- **Rejected:** (a) Keep the content_block handler and dedupe at render time — would require teaching the dedupe helper about partial-vs-final state of the same logical event, complex and brittle. (b) Move displayContent into streamingMessages so a single dedupe path covers both — would break the useStreamingChat hook contract and force a larger refactor for a one-line fix. (c) Add a delay before persisting content_block events to wait for assistant event — timing-sensitive, unreliable. (d) Special-case 'build a X' via regex in classify_phase.py — too narrow, doesn't cover 'construct a X', 'create a X', etc. Removing the standalone 'build' verb from the keyword set and reordering priority is the general fix.
+
+---
+
+### ADR-017: Correct AskUserQuestion schema path (options direct, multiSelect boolean) + orange accent + thinking label
+- **Date:** 2026-04-13
+- **Section:** Iterate — chat-polish-plus-restart
+- **Context:** Live test of iterate 4 on port 5177 uncovered: (1) the dev server had never been restarted since before iterate 1 — it was running 12h stale code, so all of iterate 1-4's server-side fixes were not in effect (phase_started still hardcoded build, content_block_* still double-persisted, toolUseId not extracted). (2) Even with a fresh server, the AskUserCard still rendered options-as-bullets in the following assistant message instead of chips inside the card, because my iterate-3 extractAskUserPayload read questions[0].multiSelect.options — assuming multiSelect was an object — when the real Claude Code schema has options as a sibling of multiSelect, and multiSelect is just a boolean flag for allow-multiple-answers. Verified by dumping the full toolInput from a chat-history jsonl. (3) The amber color scheme read as yellow against the chat background — user asked for orange. (4) The awaiting-response indicator showed only three tiny bouncing dots with no text — the user described it as just a blinking cursor in the white area, not obviously communicating thinking state.
+- **Decision:** (1) Kill the stale webui server (PID 60252, started 2026-04-12 22:36) and restart via npm run dev:server. Confirmed new PID 59168 started 11:10 running iterate-4 code. (2) Rewrite extractAskUserPayload to read options directly from questions[0].options as an array of {label, description} objects. Add allowMultiple boolean derived from questions[0].multiSelect === true. Update unit tests with the verified jsonl-dump shape. (3) Swap AskUserCard colors: bg-white + border-orange-300 + border-l-4 border-l-orange-500 + text-orange-600 header (was amber-200 / amber-400 / amber-600). (4) Replace bare StreamingIndicator in AssistantMessage empty-streaming state with an inline-flex row containing the dots + italic 'Thinking…' label in text-gray-500. More visible signal that Claude is working.
+- **Commit:** HEAD
+- **Consequences:** Post-restart, all iterate-1..4 server-side fixes finally take effect: phase badge reflects resolvePhase's classify result, content_block_* events are not double-persisted, task_created events carry the phase field, toolUseId propagates so foldToolResults can merge tool_use with tool_result, /start route honors task.requestedPhase. The AskUserCard now renders option chips inside the card (the schema fix was the bottleneck — even a correct visual design can't show chips if the extractor returns undefined). The orange color matches user preference. Thinking state is visible as 'Thinking…' text alongside dots. Still pending user verification: whether Claude's follow-up 'Ich warte auf deine Antwort' text still appears as a separate assistant message after the card (that's Claude's own output, not something we can hide server-side without a tool_result refactor — that's iterate-6 territory).
+- **Rejected:** (a) Restart the server via a hook or a package.json watch trigger — too invasive for a one-time fix; manual restart is what the user expects here. (b) Keep the legacy multiSelect.options fallback in the extractor 'just in case' — no — the jsonl dump is authoritative and keeping both paths would hide future schema drift. (c) Use a loud red 'ATTENTION' style for the AskUserCard — too harsh; orange is enough to stand out against the beige chat background.
+
+---
+
+### ADR-018: Reset displayContent per assistant event + inbox id = toolUseId + dev-restart helper
+- **Date:** 2026-04-13
+- **Section:** Iterate — chat-polish-2
+- **Context:** Post-iterate-5 live test surfaced four issues. (1) During streaming, the chat showed a big white card at the bottom containing ALL assistant text from the current stream concatenated together — appendToken in useStreamingChat accumulated text across every assistant event without resetting between turns. iterate-4's Bug B guard in ChatPanel only suppressed displayContent when exactly one persisted message matched it, so the accumulated concat blob never got suppressed. (2) Clicking an AskUserCard option showed 'Answered: X' locally but (a) Claude didn't act on it and (b) page refresh lost the state. Root cause: inbox-manager.addQuestion generated a fresh randomUUID for the inbox item id while the client posted to /inbox/:id/answer using message.id (the ChatMessage UUID, different value) — so the server couldn't find the item (404), and even if it could, 'isAnswered' was purely local React state with no hydration from persisted inbox. (3) Dev server had been running 12+ hours stale with orphaned tsx watch processes because tsx watch on Windows + chokidar sometimes misses git-merge file-swap events, and npm run dev invocations never cleaned up orphan children. (4) Claude emitting a markdown fallback listing all questions after the first AskUserCard is a separate architectural issue (inbox.answer sends plain text instead of a tool_result block referencing tool_use_id) — deferred to iterate 7, not this run.
+- **Decision:** (A) useStreamingChat.processNdjsonMessage resets textBufferRef and displayContent at the top of every assistant-event branch, so the display buffer only ever mirrors the CURRENT in-flight assistant turn. Previous turns are already in persisted messages[] via SSE invalidation, and ChatPanel's Bug B guard suppresses the streaming render once messages[] catches up. (B) inbox-manager.addQuestion accepts an optional toolUseId parameter. When provided it becomes the InboxItem.id instead of a random UUID, giving the client a stable correlation key. index.ts's AskUserQuestion detection now iterates the extracted tool_use ChatMessages (covering both standalone tool_use events AND assistant-wrapped content-block tool_use blocks — the latter was completely missed before) and passes the chat message's toolUseId. Client AskUserCard uses message.toolUseId as the inbox id (falls back to message.id for legacy). A new useInboxItem(id) hook reads the persisted inbox item and AskUserCard hydrates its isAnswered + answer display from it, so refresh preserves state. (C) New webui/scripts/dev-restart.js — cross-platform Node script that kills stale tsx watch / vite / node processes owning ports 3847/5173/5177 then respawns npm run dev in webui/server. Exposed as 'npm run dev:fresh' in webui/server/package.json. Documented in webui/CLAUDE.md under Dev-server troubleshooting.
+- **Commit:** HEAD
+- **Consequences:** Streaming chat no longer shows a concatenated blob at the bottom — only the current turn's text displays, and iterate-4's Bug B guard still kicks in once messages[] has it persisted. AskUserCard submits with the correct inbox id so the server finds the item, marks it answered, and sendStdin actually fires. Refresh preserves the Answered state from server-persisted inbox. Dev server staleness is now a one-command recovery, explicitly scoped as a dev-only concern (production users run compiled code). Tests: server 209 (+3 inbox-manager), client 204 (+5: streaming 3, AskUserCard 2). Still open (iterate 7): Claude's markdown-fallback questions list + Claude not blocking on AskUserQuestion — both require the tool_result refactor in inbox.answer + claude-adapter.sendUserMessage, plus a review of whether the shipwright-project plugin needs instruction alignment (per memory feedback_iterate7_scope).
+- **Rejected:** (a) Move displayContent dedupe to chat-store-level fingerprinting — too coupled, would need a new dedupe path just for the streaming render case. The reset-per-event fix is simpler and addresses the actual cause. (b) Use a synthetic id like 'msg.id + tool_use_index' as the inbox id — fragile, breaks on reload. toolUseId is stable and already propagated by iterate 2. (c) Run dev-restart as a git post-merge hook — too invasive; an opt-in npm script gives the same recovery without surprising developers mid-session. (d) Merge the tool_result refactor into this iterate — explicitly user-directed to split (see iterate-6 then iterate-7), and the plugin-side review (memory feedback_iterate7_scope) needs its own investigation.
+
+---
+
+### ADR-019: tool_result blocks unblock AskUserQuestion + inbox latency + plugin scope + ADR budget
+- **Date:** 2026-04-13
+- **Section:** Iterate — change: tool_result refactor
+- **Context:** Iterate-6 made inbox.id == toolUseId, but inbox-manager.answer still sent plain text on stdin so Claude CLI never received a structured tool_result and emitted markdown fallback questions. Inbox-answer also lagged 2-3s before Thinking shows. Plus iterate ADRs grew 1.9-4.7k chars each, bloating Layer-1 context.
+- **Decision:** InboxManager.answer sends a tool_result block via adapter.sendUserMessage for `toolu_`-prefixed ids and persists a tool_result ChatMessage; legacy UUIDs keep the plain-text fallback. AskUserCard fires triggerAwaiting via a new ChatAwaitingContext. shipwright-project SKILL + interview-protocol document per-question AskUserQuestion semantics. write_decision_log.py warns on fields >500 chars (forward-only).
+- **Commit:** PENDING
+- **Rationale:** tool_result is the Anthropic protocol for unblocking a tool call — anything else makes Claude assume the tool never returned. Context (vs prop drilling) keeps AskUserCard isolated from streaming hook internals.
+- **Consequences:** Claude CLI now unblocks correctly on AskUserQuestion answers — no more markdown fallback. Thinking indicator fires instantly on inbox submit. New ADRs stay terse without retroactive churn. Tests: server 213 (+4), client 205 (+1), shared 153 (+3 length helper), iterate plugin 59, e2e 17. Backwards compat: legacy UUID inbox items still answer via plain text.
+- **Rejected:** useIsMutating polling (clears on mutation success, not on first NDJSON event — wrong gap), lifting useStreamingChat into a context (too invasive), hard-failing on ADR length over budget (would block iterate 7 itself), unconditional tool_result for all ids (breaks legacy).
+
+---
+
+### ADR-020: Persist task_cancelled / work_completed / task_updated to events.jsonl
+- **Date:** 2026-04-13
+- **Section:** Iterate — bug: task event persistence
+- **Context:** tasks.ts /status and /description handlers wrote events only to the in-memory EventStore, never to shipwright_events.jsonl. On server restart the replay rebuilt tasks from the file and deleted/closed/edited tasks came back as pending.
+- **Decision:** Add emitTaskCancelledEvent + emitTaskUpdatedEvent helpers in bridge/event-writer.ts, wire them through TaskRouteDeps, and call them from /status and /description handlers BEFORE the in-memory addEvent so a disk failure leaves state untouched. Also wire the existing emitWorkCompletedEvent for the Close path.
+- **Commit:** PENDING
+- **Rationale:** Symmetric with the task_created path that already persists first then updates memory. Optional deps keep existing tests and non-production consumers working without the emitters wired.
+- **Consequences:** Deleted, closed, and edited tasks now survive a server restart. Adds 3 optional fn deps to TaskRouteDeps, all existing call sites forward from index.ts. Tests: server 220 (+7).
+- **Rejected:** Adding a DELETE /tasks/:id route (would still need to emit the same event). Writing only to memory and triggering a full snapshot rewrite on demand (inefficient and invites inconsistency).
+
+---
+
+### ADR-021: Inbox projectId + replay + collapse AskUserQuestion noise + model/effort wire-through
+- **Date:** 2026-04-13
+- **Section:** Iterate — bug: wiring fixes
+- **Context:** Iterate-7 live test surfaced 4 wiring bugs: inbox items had empty projectId and never persisted, Claude emits duplicate AskUserQuestion cards + a markdown fallback in one turn, model selector in the toolbar was a placebo, and effort selector was both unwired and missing the VS Code 'max' option.
+- **Decision:** index.ts passes the resolved projectId to inboxManager.addQuestion. New inbox-replay helper walks chat-history on startup and reconstructs orphan AskUserQuestions. New collapseAskUserQuestionRun client helper hides post-AskUserQuestion noise until a tool_result lands. claude-adapter.spawn pushes --model alias. New effort-prompt helper wraps the prompt with /think, /think hard or /ultrathink. UI toolbar gains the max effort option.
+- **Commit:** PENDING
+- **Rationale:** Effort cannot be a CLI flag (Claude Code has no --thinking) so slash-command prefixes are the only real knob. Chat-history is the authoritative source for reconstructing inbox state because inbox.jsonl may be stale or empty after previous bugs.
+- **Consequences:** Inbox items survive restart (loadFromDisk + replay). Doppel-cards and Lass-mich-wissen fallback no longer render in the chat. Toolbar model selection actually reaches the CLI. Thinking depth is honored via slash-command prefix. Tests: server 242 (+22), client 213 (+8).
+- **Rejected:** Auto-answering orphan inbox items on startup (would break the user's actual intent). Hiding the effort pill entirely (worse UX than a prefix that may or may not work perfectly). Passing --model via env var (flag is cleaner).
+
+---
+
+### ADR-022: Mid-task mode switching via --resume + autonomy sync to shipwright_run_config.json
+- **Date:** 2026-04-13
+- **Section:** Iterate — change: runtime config
+- **Context:** Iterate-9 wiring audit found two remaining runtime-config gaps: ADR-011 said mid-task permission mode switching was 'v0.1 not supported' because per-message respawn cold-started every turn, but a one-off explicit switch is a different tradeoff. Autonomy was stored in projects.json only and never reached the Shipwright plugin chain which reads from shipwright_run_config.json.
+- **Decision:** claude-adapter captures Claude's real session_id from system/init; new `resumeSession` flag emits `--resume <id>` in spawn. New `POST /tasks/:id/mode` terminates + respawns with `--resume` + new `--permission-mode`, guarded against pending AskUserQuestion and uncaptured session_id. `projectManager.updateAutonomy` writes autonomy into projects.json AND merges it into `<project>/shipwright_run_config.json` so the plugin chain reads it.
+- **Commit:** PENDING
+- **Rationale:** ADR-011's rejection was based on per-message respawn cost. For an explicit user action (click Plan Mode), one cold start is acceptable UX. Guarding on pending AskUserQuestion is simpler than synthesizing tool_results for an orphaned tool_use.
+- **Consequences:** Users can switch permission mode mid-conversation (one cold start per switch, full history preserved via --resume). Pending AskUserQuestion correctly blocks the switch with a 409. Per-project autonomy is now actually consumed by the plugin chain. Tests: server 253 (+11 for mode endpoint, adapter session-id capture, --resume flag, updateAutonomy sync).
+- **Rejected:** Undocumented control_request protocol (too risky). Autonomy read-through from run_config.json at project load (harder to reason about; write-through is simpler). Allowing mid-switch during pending questions (would orphan tool_use entries).
+
+---
+
+### ADR-023: Revert iterate-7 tool_result send (API 400) + inbox filter + model selector fixes + finalization verifier
+- **Date:** 2026-04-13
+- **Section:** Iterate — bug: UX hotfixes + verifier
+- **Context:** Iterate-10 live test surfaced: API 400 on inbox answers (iterate-7's tool_result stdin violates Anthropic's same-turn rule in -p mode), ghost inbox items for deleted tasks, model selector bugs (Sonnet context, popover doesn't close), doc drift (architecture.md stuck at ADR-018, no conventions learnings since iterate 7), stale session_handoff.md.
+- **Decision:** `inbox-manager.answer` reverts to plain-text `sendStdin` for all items (chat-store tool_result UI persistence stays). `/api/inbox` filters items whose task is terminal or missing. `ModelSelector` wraps options in `Popover.Close` and sets Sonnet to 1M. Architecture.md retrofits ADR-019-023, conventions.md gains iterate 8-11 learnings, ADR-011 gets superseded note. `generate_session_handoff.py` gains `--project-root` flag; iterate SKILL F11 passes it. New `verify_iterate_finalization.py` + 18 tests enforces finalization completeness.
+- **Commit:** PENDING
+- **Rationale:** Root cause of iterate 7 was treating -p stream-json Claude as a blocking tool caller. It's not — tool_use is advisory emission. Plain text fixes the API contract; collapseAskUserQuestionRun from iterate 9 hides the cosmetic fallback.
+- **Consequences:** API 400 eliminated — answering from inbox now works. Inbox shows only live items. Model selector closes on select with correct context. Iterate 12 can build on the verifier. Tests: server 268 (+15), client 213, shared 171 (+18 verifier), e2e 17.
+- **Rejected:** Keep tool_result path for some heuristic subset (complex, fragile). Delete ADR-011 entirely (loses ADR history). Full Companion Zustand rewrite (deferred to iterate 13). Stopping effort via slash-command prefix (stays — no CLI flag exists).
+
+---
+
+### ADR-024: Inbox dedupe by normalized question + zombie-task filter (no live process)
+- **Date:** 2026-04-13
+- **Section:** Iterate — bug: inbox dedupe + zombie filter
+- **Context:** Iterate 11's inbox filter reduced 8 → 6 items but left two remaining noise sources: (1) Claude's same-turn duplicate AskUserQuestions each got their own toolu_id and both passed through to the inbox; (2) tasks marked running in the event store but whose Claude process had died still leaked their pending items.
+- **Decision:** inbox-manager.addQuestion dedupes by normalized signature (taskId, normalize(question)) for pending items — first-write-wins, returns existing. /api/inbox filter extended with governor.getProcess(taskId) check: running status but exited/missing process = zombie → filtered.
+- **Commit:** PENDING
+- **Rationale:** First-write-wins dedupe matches iterate 9's client-side collapse behavior — consistent UX across chat and inbox. Route-level governor check is the minimum-risk hotfix; real fix is event-store level.
+- **Consequences:** Inbox now shows only live items for tasks whose Claude process is actually running. Claude's per-turn duplicate tool_use pattern no longer pollutes the list. Architectural cleanup of zombie detection (emitting a synthetic task_orphaned event on startup) is deferred to iterate 12 — the route-level filter is a band-aid that iterate 12 will replace with proper state.
+- **Rejected:** Time-window dedupe (fragile), signature-by-content-hash (over-aggressive for intentionally similar questions across turns), emitting task_orphaned events on server startup (correct but bigger — iterate 12).
+
+---
+
+### ADR-025: Revert 11.1 zombie filter + show latest pending inbox item per task
+- **Date:** 2026-04-13
+- **Section:** Iterate — bug: inbox latest-per-task
+- **Context:** Iterate 11.1's governor-based zombie filter was too aggressive — after a server restart the governor's activeProcesses map is empty, so ALL items from previously-running tasks were hidden even though the user wanted to see them (to clean up or restart). User expected to see the current question per task, not all accumulated ones.
+- **Decision:** Revert iterate 11.1's /api/inbox governor.getProcess zombie check (keep the parameter as _governor for 5-arg signature compat). Add a 'latest pending per task' filter: for each task with pending items keep only the one with the most recent createdAt. Terminal-task filter (iterate 11) and addQuestion dedupe (iterate 11.1) stay.
+- **Commit:** PENDING
+- **Rationale:** 'Latest per task' is the user's mental model — they want to see what Claude is currently waiting on, not every historical request. It also handles zombies gracefully: dead tasks show their last question so the user can decide to delete or restart.
+- **Consequences:** Both iterate-9's same-turn-duplicates AND iterate-11-context's 4-questions-from-interview accumulation are naturally collapsed by one rule. User sees exactly one current question per task, with answered items preserved. Server 277 (+1 net).
+- **Rejected:** Keep the zombie filter + add latest-per-task (double filtering, confusing). Emit task_orphaned events on startup (correct but architectural — iterate 12).
+
+---
+
+### ADR-027: Iterate 14 omnibus — phase cleanup, multi-question inbox, pipeline entry, constitution discipline
+- **Date:** 2026-04-15
+- **Section:** Iterate 14 (7 sub-iterates)
+- **Context:** Iterate 13 chat UX rebuild exposed follow-ups during a TodoApp4 live-test: (1) `iterate` / `preview` phases were incorrectly added to the dropdown in 13; (2) no UI entry point to start a new Shipwright pipeline; (3) `Ctrl+Shift+N` opened Chrome Incognito instead of NewIssueModal (OS-level browser reservation); (4) `AskUserQuestion` payloads with N>1 questions silently dropped questions 2-N (`askUserPayload.ts` read only `questions[0]`); (5) Claude CLI in stream-json mode does not gate `tool_use` on matching `tool_result`, so Claude sometimes kept generating after AskUserQuestion; (6) Model label was hardcoded "Opus 4.6".
+- **Decision:** Split into 7 sub-iterates (matches iterate 12.x pattern). Plan reviewed by Gemini 3.1 Pro Preview + GPT-5.4 via `shared/scripts/lib/llm_review.py` — revisions applied before implementation (critical: reject "plain user message" submit path in scope 9, fix `getProjectMode` terminal-status coverage, per-line JSONL validation vs blunt-wipe, clarify pipeline bootstrap ownership, swap Ctrl+K for Linear-style letter shortcuts). Scopes: (1) phase dropdown cleanup, (2) preview button + profile-loader + run plugin profile field, (3) getProjectMode + iterate auto-detection, (4) multi-question inbox `parts[]` schema, (5) constitution AskUserQuestion stop rule, (6) CreateMenu + NewPipelineModal + C/Shift+C shortcuts + `/api/profiles` + `/api/projects/pipeline` with path safety, (7) shipwright-project intro gate + `write_run_config.py`, (8) Playwright E2E suite +7 specs, (9) red-flag banner visual only (no submit-path changes), (10) dynamic model label.
+- **Commit:** ca30350 → 5ec16ff → 483c3b1 → c48fc1a → 13c3f79 → 9366dc6 → b123339
+- **Rationale:** Splitting follows the iterate 12.x precedent — smaller blast radius per commit, independent testing per sub-iterate, easier rollback, matches the autonomy preference (one plan, many executions, no continue gates). Profile-based preview detection (scope 2) preferred over package.json fast-path for architectural cleanliness — the run plugin owns the profile field, webui just reads it. Plugin bootstrap ownership resolved (scope 7): webui OR plugin writes `shipwright_run_config.json`, never both; plugin writes directly via `write_run_config.py`, not by invoking `/shipwright-run` skill (ambiguous skill-call path). Constitution rule (scope 5) placed in `shared/constitution.md` rather than per-plugin duplication — 12 plugins already reference it. Red-flag banner (scope 9) is visual-only because the reviewer flagged that "Answer anyway as plain user message" violates Anthropic API protocol (every `tool_use` requires matching `tool_result`). Letter-based shortcuts (c / Shift+C) over Ctrl+K because Ctrl+K is the universal command-palette standard (Slack/Linear/Notion) and semantically wrong for a create menu; letter shortcuts are Linear-style and have zero browser collisions.
+- **Consequences:** webui/server tests 274 → 343 (+69), webui/client tests 246 → 286 (+40), Playwright 8 → 15 specs (33 tests), shipwright-project tests 31 → 43 (+12), shipwright-iterate tests 62 (baseline unchanged). Plugin-side changes (shipwright-run SKILL.md, shipwright-project intro gate + new script, shared/constitution.md) synced to runtime via `scripts/update-marketplace.sh`. InboxItem schema is now `parts[]` — legacy v1 entries auto-purged via per-line validation on load (preserves valid entries, rewrites file). `POST /api/projects/pipeline` exposes a user-input filesystem write surface — path safety is critical (traversal reject, isDir, duplicate, existing-config 409). Model label is now dynamic from `system/init.model` event, falling back to "Claude" when not yet received. Inbox multi-question accordion blocks Submit until all parts answered (no partial submissions). `getProjectMode()` covers both `completed` and `complete` status values (webui/shipwright_run_config.json uses `complete`, other projects may use `completed`). `notBlocked` field persists across reconnect via JSONL roundtrip; server-side detection via pure state machine in `ask-user-guard.ts` is fully unit-testable without Claude.
+- **Rejected:** Force-continue as single large iterate (10 scopes in one commit/branch — unreviewable, no rollback granularity). Ctrl+K shortcut for CreateMenu (command-palette semantic collision — reviewer flag). "Answer anyway" as plain user message (violates Anthropic API protocol — Gemini reviewer critical finding). Blunt-wipe inbox JSONL on schema mismatch (too aggressive — per-line validation preserves valid entries). Plugin invoking `/shipwright-run` skill from within its own turn (skill-call ambiguity — reviewer flag). Ctrl+Shift+K as Firefox Web Console collision backup (non-overridable at browser level). Package.json fast-path for preview detection (deferred to future iterate when non-JS stacks exist). Per-ADR-per-sub-iterate (7 ADRs for one cohesive plan is overhead — one omnibus ADR mirrors the plan structure).
+
+---
+
+### ADR-028: Iterate 14.7 — Post-launch fixes, multi-project kanban, interrupted task status
+- **Date:** 2026-04-15
+- **Section:** Iterate 14.7 (3 sub-iterates)
+- **Context:** Manual testing of iterate 14 surfaced: (1) `task_orphaned` events emitted at server startup by iterate 12.0b's zombie reconciliation mapped running tasks to `backlog`, losing the visual "was in progress" signal when server restarted (dev:fresh, crash, intentional); (2) Kanban "All Projects" selection silently redirected to first project via a forced auto-select effect; (3) reload reset selected project to first in list; (4) ModelSelector + 14.6's dynamic model label were redundant and confusing; (5) Browse buttons in project wizard returned folder name only (browser sandboxing — `showDirectoryPicker` cannot return absolute paths); (6) inbox items were dead-end (no way to jump to task chat); (7) NewIssueModal had no visible indication of project mode (pipeline/iterate/standalone); (8) Claude sometimes asks decision questions as markdown numbered lists instead of AskUserQuestion tool use, bypassing inbox; (9) All-Projects aggregation showed cards indistinguishable by source project.
+- **Decision:** Split into three sub-iterates: **14.7.0** P0 blockers (task persistence + all-projects + localStorage), **14.7.1** P1 UX polish bundle (model selector sync + paste buttons + inbox nav + mode badge + constitution rule), **14.7.2** P2 multi-project kanban visual distinction (colored left-edge strip + monochrome phases + filter chip + sidebar legend). Executed autonomously without external LLM review (scope is UX polish + one state-machine addition for `interrupted` status, no architectural risk). Key technical decisions: (A) New `interrupted` kanban status distinct from `orphaned` — added new `session_captured` event emitted on first `system/init` per task so `session_id` persists across process restart (ADR-022 had left it in-process only); `POST /tasks/:id/resume` reuses ADR-022's `--resume <sessionId>` spawn path. (B) Browse → Paste rename is the honest UX because browser sandboxing forbids path disclosure; `navigator.clipboard.readText()` with `looksLikePath()` heuristic. (C) ModelSelector `userOverride` flag resets on task switch; auto-sync only applies until user manually picks. (D) Deterministic project color via `projectId` string hash → 12 HSL hues; monochrome phase badges when project strip is visible to prevent color overload. (E) Constitution extension in 14.7.1 P1.8 ships the markdown-questions-forbidden rule in one place (picked up by all 12 plugins already referencing `shared/constitution.md`).
+- **Commit:** 9dea2f8 → 035e4df → 9862ed8
+- **Rationale:** Autonomous execution matches the `feedback_iterate_autonomy` preference. Per-sub-iterate branches give rollback granularity and keep each agent's scope manageable. Resume button per-task (not bulk) because this is primarily a dev scenario — tasks interrupted by intentional server restart, rare in sustained operation. `interrupted` + `backlog` are intentionally distinct statuses rather than collapsed: `interrupted` means "was running and is resumable", `backlog` means "never started or died unrecoverably". Stripe + monochrome phases in All-Projects mode respects the rule of thumb "one color dimension at a time" — when cards need to show project identity, phase colors would compete for attention.
+- **Consequences:** webui/server tests 343 → 356 (+13, 14.7.0 only — 14.7.1 and 14.7.2 touched no server code). webui/client tests 286 → 339 (+53 across 14.7.0 +12, 14.7.1 +28, 14.7.2 +13). Plugin baselines unchanged. Playwright 33 specs preserved with one (15-model-label) updated for the 14.7.1 label deletion. `shared/constitution.md` touched in 14.7.1 → `scripts/update-marketplace.sh` ran at finalization to sync the plugin cache. New dependencies on existing ADR-022 infrastructure: `session_id` capture pipeline is now persisted via event log (was in-process only); future iterate may want to also persist full conversation state for hard-crash recovery. Test baseline shifts: consumers of `webui/client/src/components/chat/ChatToolbar` that reference `running-model-label` testid will break — updated in this iterate, noted for future reference. `TaskCard.tsx` now carries logic from both 14.7.0 (interrupted pause icon) and 14.7.2 (project strip + monochrome phase prop) — single file has three conditional rendering modes that interact, future maintenance should be mindful. `ProjectFilterChip` state lives in KanbanPage alongside `activeProjectId`; localStorage persistence from P0.3 currently persists `activeProjectId` only, NOT the filter chip selection — reload resets filter to "all selected" which is acceptable as a fresh start signal.
+- **Rejected:** Bulk Resume button (header "Resume all N") — deferred as premature optimization for dev-only scenario. Supervisor dependency like pm2/systemd as a prerequisite — existing `install-windows.ps1` handles Windows autostart via VBS wrapper; Mac/Linux equivalents deferred to post-14.7 install-docs backlog. Auto-resume on startup — too magical, hides errors (tasks may be in broken state when interrupted). Merging interrupted into existing `orphaned` status — loses the "resumable" vs "dead" distinction. `showDirectoryPicker` as real Browse implementation — File System Access API deliberately hides absolute paths for security. Per-ADR-per-sub-iterate — one omnibus ADR mirrors the plan structure (same pattern as ADR-027 for iterate 14).
+
+
+---
+
+### ADR-029: Last-write-wins chatStore + spawn indicator sans message-gate + AUQ submit error surfacing
+- **Date:** 2026-04-17
+- **Section:** Iterate — bug: post-14.13 bug sweep
+- **Context:** Four distinct bugs surfaced after 14.13 user-testing: (1) ModelSelector desynced from chat system/init after mid-task model switch because setSystemInit was first-write-wins; (2) second AskUserQuestion submit sometimes stalled with no Claude response and no visible error; (3) Inbox\u2192Task click hit react-router 404 because the nav target used a non-existent nested route; (4) 14.13 spawn indicator never rendered because its gate required messages.length === 0, but the user's initial prompt populates that array on task create.
+- **Decision:** chatStore.setSystemInit switched to last-write-wins when the model id differs (idempotent on identical writes). ChatPanel REST hydration now seeds from the LATEST system message, not the first. Spawn indicator render condition dropped the messages-length gate and renders at the bottom of the message list while awaitingInit is true; the generic leading indicator is suppressed while the spawn indicator owns the slot. InboxPage navigates to the existing /tasks/:taskId route (projectId is resolved client-side from the task object). AskUserCard now surfaces mutation errors via an inline banner + optimistic rollback; inbox-manager logs each answer delivery for runtime forensics of the still-unreproduced Bug 2 stall.
+- **Commit:** pending
+- **Rationale:** First-write-wins was correct for 14.6's duplicate-SSE concern but broke 14.12's respawn scenario; last-write-wins preserves both properties by short-circuiting on identical models. Router fix is a trivial path correction. The messages-length gate was a 14.13 oversight: the empty-chat case it was built for also populates messages[] with the initial user prompt. Error surfacing and observability log were added because Bug 2 cannot be reliably reproduced from the server-side tests (passed first try)\u2014the next occurrence needs client + server signals to debug.
+- **Consequences:** Mid-task model switch now updates both ModelSelector and the chat session-started line in lockstep. Inbox deep-links work again. Spawn indicator shows for the full 1-2s boot gap. If the answer POST fails silently (e.g. Process no longer running after a respawn race), the user sees the error instead of a frozen spinner. Bug 2 runtime root cause (Claude CLI behavior post-result) not yet pinned down; observability log + client error banner narrow the reproduction surface for the next user session.
+- **Rejected:** Clearing the chatStore on useSwitchModel.onMutate instead of changing setSystemInit semantics: narrower fix but leaves the REST-hydration path still picking first-system/init which breaks on page reload after switch. Adding the nested /projects/:id/tasks/:id route instead of dropping the prefix: more surface area with no user benefit since useTasks already resolves projectId. Retrying the answer POST automatically on 400/500: masks the underlying stall and ships a potentially amplified bug.
+
+---
+
+### ADR-030: Mid-task model switch pending-target UX + spawn indicator task-undefined + empty-prompt suppression
+- **Date:** 2026-04-18
+- **Section:** Iterate — bug: modelswitch-spawn-ux
+- **Context:** Campaign assistant-ui-migration UAT revealed: (1) fresh-task spawn indicator never rendered because the awaitingInit gate required task loaded (task=undefined transient state missed the window), (2) mid-task model switch had no visual feedback for the 1-2s CLI respawn because isSwitching tracked only the 200ms mutation, and (3) every respawn emitted an unsolicited 'Nachricht leer' assistant message because tasks.ts:774 passed prompt: '' through to claude-adapter.sendUserMessage which wrote {content:''} to CLI stdin.
+- **Decision:** Client: ModelSelector gains pendingTargetModel prop rendering target label + spinner until systemInitModel catches up. ChatToolbar owns the state machine (clear on systemInit match, on mutation error, or 15s timeout) and surfaces inline error banner (model-switch-error testid). ChatPanel awaitingInit widens to trigger when task is undefined/errored and systemInit is empty. Legacy dezent weisser leading-indicator removed. Server: claude-adapter.sendUserMessage guards empty/whitespace content — skips stdin write entirely, preventing the 'leere Nachricht' artifact on every respawn.
+- **Commit:** pending
+- **Rationale:** Tracking the respawn via systemInit rather than mutation isPending is the only way to bridge the client-server timing gap without polling. pendingTargetModel is stateful in ChatToolbar (not ModelSelector) so ChatToolbar can coordinate multiple signals (useSwitchModel.isPending, useSystemInitModel, timeout). Empty-prompt guard in adapter is the narrowest fix: the mode-switch endpoint's prompt:'' placeholder semantics are preserved (no new API) while stdin stays clean.
+- **Consequences:** New tests: adapter 2, ModelSelector 4, ChatToolbar 2, ChatPanel 2, Playwright 3 = 13 new green gates. Client 475/475 (was 467), server 404/404 (was 402). tsc unchanged. The pending-target visual gives continuous feedback across the full respawn window; errors (409 pending AUQ etc.) are surfaced inline instead of silent drop. The 'leere Nachricht' ghost message is eliminated for all future model/mode switches. 4.6->4.7 second-switch silent-failure case is now either visibly successful (pending-target shows 4.7 until system/init arrives) or visibly errored (banner shows server error).
+- **Rejected:** Client-side 1-2s delay before resolving the mutation (blocks retry, opaque to user). Server-side wait-for-system/init before returning from /mode endpoint (couples HTTP timeout to CLI boot, fragile). Synthetic 'ignore me' sentinel prompt on stdin (CLI would still surface it as a user turn). Adding optimistic ModelSelector state (label flips immediately to target even on failure — misleading).
+
+---
+
+### ADR-031: Second-round UAT fixes: new-task model precedence, ghost bubble, resume UX
+- **Date:** 2026-04-18
+- **Section:** Iterate — bug: modelswitch-uat-round2
+- **Context:** UAT after ADR-030 landed surfaced 5 follow-ups: (1) new tasks used localStorage model (e.g. 4.6 from a prior switch) instead of settings.defaultModel (4.7); (2) a ghost empty assistant bubble rendered after 'Starting Claude'; (3) orphan Resume banner only triggered for stale_on_startup | user_interrupted, missing other reasons like switch_timeout; (4) resume did not re-trigger the spawn indicator because the old system/init was still in the chatStore; (5) 409 'Session not yet established' errors left the user stuck with no retry affordance.
+- **Decision:** Client-only fixes. useCreateTask reads settings.defaultModel directly (not localStorage) for new-task body.model. ThreadMessage in ThreadView returns null when all content parts are empty (kills the ExternalStoreRuntime running-reply placeholder ghost). TaskHeader isInterrupted widened to 'orphaned && !!claudeSessionId' (drops the 14.11 narrow reason list). useResumeTask's onMutate clears systemInitByTask[taskKey]. ChatToolbar adds a Retry button inside model-switch-error for transient 409s (max 3 attempts).
+- **Commit:** pending
+- **Rationale:** Model precedence: new tasks are a global-settings concern (user's default), mid-task switches are session-scoped (user's in-flight override). Splitting them at the consumer is cleaner than building a smart merging rule in useChatSettings. Ghost bubble: filtering at the renderer is safer than fighting the runtime; the guard is a one-line content check. Resume clearSystemInit: mirrors the pattern of fresh task creation where the store is empty. Retry button: narrower than auto-retry (no magic), lets the user see the error first.
+- **Consequences:** New tests: useCreateTask +1, useResumeTask +2 (new file), TaskHeader +2, ChatToolbar +3, ThreadView +2 = 10 new specs. Client vitest 485/485 (was 475). Server vitest 404/404 unchanged. tsc clean. Playwright +0 new specs (unit coverage sufficient for these UX touches). Server-side concerns unchanged: the 409 itself and the switch-timeout orphan flow stay on the CLI / server side.
+- **Rejected:** Auto-retry on 409 with backoff (hides errors, can amplify a broken respawn). Removing localStorage model entirely (breaks in-chat send-model scope). Making systemInit always clear on any task.status change (too aggressive, breaks idempotent duplicate SSE).
+
+---
+
+### ADR-032: Multi-select split(', ') bug + notBlocked banner slimmed + switch timeout 15s->30s
+- **Date:** 2026-04-18
+- **Section:** Iterate — bug: askuser-multiselect-bugs
+- **Context:** UAT surfaced three regressions: (1) AskUserCard multi-select could not toggle labels containing ', ' (e.g. 'Grundfunktionen (Erstellen, Abhaken, Löschen)') — the option appeared unselectable while internally every click accumulated a duplicate copy (20+ in one inbox trace); (2) the notBlocked banner was visually dominant, distracting from the actual question; (3) PENDING_SWITCH_TIMEOUT_MS=15s triggered on otherwise-successful switches when CLI cold-start + Windows Defender + plugin discovery exceeded 15s.
+- **Decision:** Split AskUserCard's partAnswers map into two: textAnswers:Record<number,string> (single-select pick + free-text) and multiAnswers:Record<number,string[]> (multi-select labels, array in selection order). Join with ', ' only at submit time. Banner slimmed: text-xs + px-2 py-1 + size=11 icon + one-line wording. Timeout widened to 30s.
+- **Commit:** pending
+- **Rationale:** Array state is the only reliable fix — no separator is guaranteed not to appear inside labels emitted by Claude. String-join at submit keeps the API wire format stable. Timeout: runtime evidence (Demo 2 task cea73f00 switch took ~5s) suggests 15s was the happy-path budget; 30s tolerates Windows antivirus overhead.
+- **Consequences:** Multi-select labels containing ', ' now toggle cleanly (2 new specs verify). Banner still alerts but no longer dominates. Timeout tolerates slow CLI respawns. Client 487/487 (was 485). tsc unchanged.
+- **Rejected:** Escape ', ' with a sentinel before join (brittle — labels can contain anything). Change API to accept string[] directly (out of scope, larger refactor). Auto-retry on switch timeout (hides real failures).
+
+---
+
+### ADR-034: External-launch pivot (Plan D'' variant a)
+- **Date:** 2026-04-19
+- **Section:** Iterate — campaign: webui-acp-pivot (Plan D'' variant a)
+- **Context:** The in-webui chat architecture (iterates 14.x) repeatedly bled under the combined pressure of NDJSON heuristic parsing, assistant-ui state ownership, Claude CLI upgrade churn, and the subscription-vs-API-key constraint. Plan D (ACP host) died on upstream abandonment of `claude-code-acp`; Plan D' (SDK-direct via `@anthropic-ai/claude-code`) died when Anthropic retired the importable library surface and split `@anthropic-ai/claude-agent-sdk` behind an API-key gate (rejected: subscription-auth is load-bearing). Plan D'' revives Plan A now that `claude --session-id <uuid>` exists as a first-class CLI flag, closing the session↔task correlation gap that originally killed it.
+- **Decision:** Remove all in-webui chat runtime. Webui generates a UUID at task creation, emits a Copy command (`claude --session-id <uuid> --add-dir <cwd> [--resume <uuid>] [--plugin-dir <…>]` in PowerShell / cmd.exe / POSIX forms), and polls `~/.claude/projects/<encoded-cwd>/<uuid>.jsonl` for state. Server is stateless on transcript reads (client passes `fromByte` + `expectFingerprint`). Filename-first discovery (per Sub-iterate 0 PoC finding 1 — fork-session JSONLs begin with `file-history-snapshot` lines that carry no sessionId). Variant-a narrow scope: Copy launcher only (Terminal + VSCode + Desktop deferred to v2+); polling only (no SSE for transcript, no chokidar watchers); in-browser transcript viewer is read-only (no compose input).
+- **Commit:** 4d329ed → next push (autonomous campaign across sub-iterates 0→3).
+- **Rationale:** The 14.x history is architectural evidence that coupling webui to the CLI's stdio surface is unsustainable under upstream churn. External launch inverts the dependency: webui observes a file that Anthropic produces, and Anthropic owns the hard UX work (permission prompts, thinking display, plan mode). Webui becomes a task board + transcript reader + diagnostic surface. Scope cuts (no Terminal/VSCode launchers, no chokidar, no SSE transcript) are endorsed independently by both external reviewers (GPT-5.4 + Gemini 3.1 Pro) across three review rounds; landing a narrow v1 avoids replaying the 14.x failure class.
+- **Consequences:**
+  - Deleted server modules: claude-adapter, ndjson-parser, process-governor, chat-broadcast, chat-store, inbox-manager, inbox-replay, ask-user-guard, task-manager, event-store, heartbeat, file-watcher, sse-manager, capability-probe, all bridge/*, old chat/tasks/inbox/capabilities/classify/sse/pipeline/docs routes.
+  - Deleted client surface: chat-rendering/, components/chat/, components/board/, components/detail/, components/explorer/, components/viewer/, chat-specific hooks, Kanban page, old TaskDetailPage.
+  - Deleted deps: `@assistant-ui/react`, `@anthropic-ai/claude-code`, `claude-code-acp`, `@zed-industries/agent-client-protocol`, `tree-kill`, `uuid`, `node-cron`, `chokidar`, `react-markdown`, `mermaid`, `react-diff-viewer-continued`, `rehype-highlight`, `remark-gfm`, `@radix-ui/{collapsible,popover,scroll-area}`. 318 client + 51 server packages pruned.
+  - New production modules: core/{launcher, session-watcher, session-parser, inbox-derive, sdk-sessions-store, cli-compat}, routes/diagnostics, external/routes. New pages: TaskBoardPage, TaskDetailPage (rewrite), DiagnosticsPage, InboxPage (rewrite). New hooks: useExternalTasks, useLaunchTask, useTaskTranscript, useExternalInbox, useDiagnostics. New Playwright specs 30/32/33/34/35.
+  - Test coverage: server 131/131 + client 177/177 + Playwright 11/11 (all green).
+  - MIN_SUPPORTED_CLI = `2.1.114` pinned in `core/cli-compat.ts`, surfaced via `/api/diagnostics` + `DiagnosticsBanner`. Older CLIs show a persistent warning banner.
+  - Config + settings migration: `<registryDir>/sdk-sessions.json` is the new authoritative task store (schema-versioned, lockfile-guarded, per-row fault isolation). Legacy `chat-history/*.jsonl` and `shipwright_events.jsonl` are no longer read or written by webui. Projects on main pre-pivot continue to work with rollback via `main@040c27e`.
+- **Rejected:** In-webui chat via CLI-boundary wrapper (Plan B''; same 14.x risk profile). API-billing Agent SDK (violates subscription invariant). Pinning `@anthropic-ai/claude-code@1.0.128` for the retired library surface (stuck on a year-old CLI). Forking `claude-code-acp` (multi-day bridge rewrite against an abandoned upstream).
+- **Rollback:** Revert to `main@040c27e` restores the pre-pivot chat architecture. External-launch artifacts (`~/.claude/projects/<cwd>/<uuid>.jsonl`) persist — users can resume those sessions directly via `claude --resume <uuid>` from the CLI even without webui.
+

@@ -1,13 +1,19 @@
 # Shipwright Command Center (WebUI)
 
 ## WHAT
-- **Purpose**: Local web application for managing multiple Shipwright SDLC projects in parallel
-- **Architecture**: Hono backend (Node.js) + React 19 frontend (Vite 6), monorepo in `webui/`
-- **Stack**: TypeScript strict, Hono, React 19, Vite 6, TailwindCSS 4, Radix UI, TanStack React Query
+- **Purpose**: Local web application for managing multiple Shipwright SDLC projects in parallel.
+- **Architecture**: Hono backend (Node.js) + React 19 frontend (Vite 6), monorepo in `webui/`. **External-launch model (Plan D'' variant a, 2026-04-19)**: webui owns no Claude subprocess. The user runs Claude Code in their own terminal via a pre-bound `--session-id <uuid>` copy-command; webui observes the resulting JSONL at `~/.claude/projects/<encoded-cwd>/<uuid>.jsonl`.
+- **Stack**: TypeScript strict, Hono, React 19, Vite 6, TailwindCSS 4, Radix UI, TanStack React Query.
 
-## Before touching chat rendering — READ FIRST
+## Architecture reference
 
-Chat rendering uses vendored primitives from [`@assistant-ui/react`](https://github.com/Yonom/assistant-ui). Before editing any file under `webui/client/src/chat-rendering/` or `webui/client/src/components/chat/`, read [`agent_docs/chat-rendering.md`](agent_docs/chat-rendering.md). That document is the canonical state-ownership contract: it names the single writer for each store, lists the anti-patterns that ate iterates 14.9–14.14, and defines the converter contract + data-testid inventory. Ignoring it produces layered-state regressions.
+Plan of record: [`~/.claude/plans/plan-d-double-prime-external-launch.md`](../.claude/plans/plan-d-double-prime-external-launch.md).
+PoC findings that shaped the implementation: [`~/.claude/plans/external-launch-poc-results.md`](../.claude/plans/external-launch-poc-results.md).
+Decision record: `agent_docs/decision_log.md` ADR-034.
+
+Two hard rules, survivors of every review round:
+1. **Webui spawns no Claude process.** Users launch in their own terminal; webui observes the JSONL.
+2. **Server is stateless on transcript reads.** Client passes `?fromByte=<offset>&expectFingerprint=<fp>`; no per-session byte-offset cache lives server-side. Multi-tab works by construction.
 
 ## Structure
 ```
@@ -15,62 +21,59 @@ webui/
   scripts/                      # install-windows.ps1, dev-restart.js
   server/                       # Hono backend (port 3847)
     src/
-      index.ts                  # Server entry
+      index.ts                  # Server entry (~170 LOC — minimal wiring only)
       config.ts                 # Env config
       core/
-        claude-adapter.ts       # Claude CLI spawn + NDJSON parser
-        ndjson-parser.ts        # NDJSON stream parsing (shared)
-        task-manager.ts         # In-memory task state from events + processes
-        project-manager.ts      # Multi-project registry CRUD
-        inbox-manager.ts        # Inbox aggregation + stdin delivery
-        process-governor.ts     # Semaphore (max N concurrent) + orphan cleanup
-        heartbeat.ts             # Scheduler (node-cron, 30s interval)
-        file-watcher.ts         # chokidar on events + configs
-        chat-store.ts           # Chat history persist/load
-        event-store.ts          # Event log read/write coordination
-        sse-manager.ts          # SSE endpoint for real-time push
-      bridge/
-        config-reader.ts        # Reads shipwright_*_config.json
-        event-reader.ts         # Reads shipwright_events.jsonl
-        event-writer.ts         # Writes shipwright_events.jsonl entries
-        pipeline-state.ts       # Pipeline status from events + configs
-        doc-index.ts            # File tree for Smart Viewer
-        intent-classifier.ts    # Shell-out to classify_intent.py + classify_complexity.py
+        launcher.ts             # Copy-command generator (PS / cmd.exe / POSIX)
+        session-watcher.ts      # Filename-first JSONL discovery + byte-range reader
+        session-parser.ts       # Typed events from raw JSONL + unknown-fallback
+        inbox-derive.ts         # Pending tool_use extraction (best-effort)
+        sdk-sessions-store.ts   # Persistent task store (schema-versioned)
+        cli-compat.ts           # Claude CLI version gate (MIN_SUPPORTED_CLI)
+        project-manager.ts      # Project metadata CRUD (still used)
+        profile-loader.ts       # Stack profile loading (wizard)
+      external/
+        routes.ts               # /api/external/{tasks,launch,transcript,inbox,...}
       middleware/
         error-handler.ts        # Centralized error response middleware
         logger.ts               # Request logging
       routes/
         projects.ts             # GET/POST/PATCH/DELETE /api/projects
-        tasks.ts                # GET/POST /api/projects/:id/tasks, PATCH .../status, .../description
-        inbox.ts                # GET /api/inbox, POST /api/inbox/:id/answer
-        chat.ts                 # GET/POST /api/projects/:id/chat
-        pipeline.ts             # GET /api/projects/:id/pipeline
-        docs.ts                 # GET /api/projects/:id/docs
-        classify.ts             # POST /api/projects/:id/classify
+        diagnostics.ts          # GET /api/diagnostics (CLI + launcher + sessions)
         settings.ts             # GET/PUT /api/settings
-        sse.ts                  # GET /api/events (SSE stream)
+        profiles.ts             # GET /api/profiles
     package.json
     tsconfig.json
   client/                       # React 19 / Vite 6 frontend
-    e2e/                        # Playwright E2E specs
+    e2e/                        # Playwright E2E specs (30/32/33/34/35)
     src/
       main.tsx
       App.tsx
       router.tsx                # react-router-dom route definitions
-      layouts/                  # Layout shells (Main, etc.)
-      pages/                    # Route-level pages (Kanban, TaskDetail, Inbox, Projects, Settings)
+      layouts/                  # Layout shells (Main)
+      pages/
+        TaskBoardPage.tsx       # Task list + create (/)
+        TaskDetailPage.tsx      # LaunchRow + CopyCommandCard + SessionMetadata + TranscriptViewer
+        ProjectsPage.tsx        # Project registry + wizard
+        InboxPage.tsx           # Pending interactions (best-effort)
+        DiagnosticsPage.tsx     # CLI + launcher + sessions snapshot
+        SettingsPage.tsx        # Minimal stub (settings moved into user's Claude client)
       components/
+        external/
+          TranscriptViewer.tsx
+          LaunchRow.tsx
+          SessionMetadata.tsx
+          CopyCommandCard.tsx
+        common/
+          DiagnosticsBanner.tsx # Warns when CLI < MIN_SUPPORTED_CLI
         sidebar/                # Sidebar navigation
-        board/                  # Kanban Board (columns, cards, filters, list view)
-        detail/                 # Task Detail (header, two-panel chat+viewer)
-        chat/                   # Chat engine (messages, tool calls, diffs)
-        viewer/                 # Smart File Viewer (tab renderers)
-        explorer/               # File Explorer (slide-in tree)
         wizard/                 # Project Wizard (4-step modal)
+      external/
+        session-parser.ts       # Client-side parser (typed events for rendering)
+      hooks/                    # TanStack Query + polling hooks
+      lib/                      # externalApi.ts + utilities
       contexts/                 # React contexts
-      hooks/                    # TanStack Query + SSE hooks
-      lib/                      # Utilities and API clients
-      test/                     # Vitest test utilities and setup
+      test/                     # Vitest test utilities
       types/                    # Shared TypeScript types
     index.html
     vite.config.ts
@@ -92,7 +95,7 @@ cd webui/client && npm install
 # Terminal 1 — Hono backend (tsx watch, port 3847)
 cd webui/server && npm run dev
 
-# Terminal 2 — Vite client (port from vite.config.ts, proxies /api to 3847)
+# Terminal 2 — Vite client (port 5173 by default, proxies /api to 3847)
 cd webui/client && npm run dev
 ```
 
@@ -109,49 +112,40 @@ npm run typecheck             # tsc --noEmit
 ### Key Environment Variables
 ```
 PORT=3847                     # Server port
-SHIPWRIGHT_MAX_CONCURRENT=3   # Max parallel Claude processes
 ```
 
 ### Conventions
-- TypeScript strict mode everywhere
-- Hono routes in `server/src/routes/`, one file per resource
-- React components in `client/src/components/`, grouped by UI area
-- TanStack React Query for all data fetching (no raw fetch in components)
-- SSE via native EventSource API (no Socket.io)
-- TailwindCSS 4 for styling, Radix UI for accessible primitives
-- Files under 300 lines — split if larger
-- Conventional Commits (feat:, fix:, refactor:, test:, docs:, chore:)
+- TypeScript strict mode everywhere.
+- Hono routes in `server/src/routes/`, one file per resource. External-launch routes live at `server/src/external/routes.ts`.
+- React components in `client/src/components/`, grouped by UI area.
+- TanStack React Query for data fetching + sequential polling for transcript updates.
+- TailwindCSS 4 for styling, Radix UI for accessible primitives.
+- Files under 300 lines — split if larger.
+- Conventional Commits (feat:, fix:, refactor:, test:, docs:, chore:).
 
-### Architecture Rules
-1. **All file writes through backend only** — never from child processes or frontend
-2. **Event log is single source of truth** — task state derived from events + active processes
-3. **No database** — JSONL event log + JSON files only
-4. **No auth** — local single-user application
-5. **SSE for real-time** — server pushes, client subscribes via EventSource
-6. **Claude CLI as subprocess** — spawn with --output-format stream-json and --plugin-dir
-7. **Build Dashboard** — `agent_docs/build_dashboard.md` is auto-generated during implementation by `update_build_dashboard.py`. Do not edit manually.
+### Architecture rules (post-Plan-D'')
+1. **Webui never spawns Claude.** Launchers produce command strings; the user pastes them. Regression guard: Playwright spec `35-no-chat-panel.spec.ts`.
+2. **Task state is derived from `~/.claude/projects/<encoded-cwd>/<uuid>.jsonl` + the persistent store.** Session UUID is pre-bound at task creation via `crypto.randomUUID()`.
+3. **Discovery is filename-first.** `<uuid>.jsonl` is the primary match (PoC finding 1); first-line sessionId is a secondary sanity check.
+4. **Transcript endpoint is stateless.** `GET /api/external/tasks/:id/transcript?fromByte=<n>&expectFingerprint=<fp>` — multi-tab support comes for free.
+5. **UTF-8-safe chunking.** Server reads are cut on `\n` boundaries only.
+6. **Torn-read retry budget.** `core/session-watcher.ts` retries EBUSY/EPERM/EACCES/ENOENT up to 6 attempts with 50→1600 ms backoff.
+7. **No SSE for transcript.** Sequential 1 s polling on the client via `useTaskTranscript`.
+8. **No chokidar.** Heartbeat-free; watcher state is derived on demand from mtime probes.
+9. **Plugin dirs must be re-passed on every launch.** `--plugin-dir` does not reliably survive `--resume`.
+10. **MIN_SUPPORTED_CLI is pinned.** See `core/cli-compat.ts`. Anything older shows a banner via `/api/diagnostics`.
 
 ### Dev-server troubleshooting
 
-If recent code changes don't show up in the running webui, the `tsx watch`
-process has probably gone stale. This happens most often after `git merge`
-operations (file swaps don't always fire chokidar events on Windows) and
-after long dev sessions where multiple `npm run dev` calls left orphaned
-child processes.
-
-**One-command recovery** (kills every `tsx watch`/`vite`/node process
-owning ports 3847/5173/5177, then respawns `npm run dev` in
-`webui/server/`):
+If recent code changes don't show up in the running webui, `tsx watch` has
+probably gone stale on Windows. Kill the PID on :3847 explicitly:
 
 ```bash
-cd webui/server
-npm run dev:fresh
+# Windows:
+netstat -ano | findstr :3847
+taskkill //F //PID <pid>
+cd webui/server && npm run dev
 ```
 
-The client (`webui/client`) normally does not need a restart because Vite
-HMR handles file changes reliably. If the client is also stale, start it
-manually in a second terminal: `cd webui/client && npm run dev`.
-
-**Note:** this is a dev-only concern. Production users of shipwright never
-run `tsx watch` — they run the compiled server where the code doesn't
-change under them, so this class of problem cannot occur.
+`npm run dev:fresh` (the dev-restart.js helper) has a known Windows bug and
+is not recommended until fixed.
