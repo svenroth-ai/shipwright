@@ -5,6 +5,7 @@ import {
   deleteTask,
   getTask,
   listTasks,
+  renameTask,
   type ExternalTask,
 } from "../lib/externalApi";
 
@@ -42,6 +43,17 @@ export function useCloseExternalTask() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: closeTask,
+    onSuccess: (task) => {
+      qc.setQueryData(detailKey(task.taskId), task);
+      void qc.invalidateQueries({ queryKey: LIST_KEY });
+    },
+  });
+}
+
+export function useRenameTask() {
+  const qc = useQueryClient();
+  return useMutation<ExternalTask, Error, { taskId: string; title: string }>({
+    mutationFn: ({ taskId, title }) => renameTask(taskId, title),
     onSuccess: (task) => {
       qc.setQueryData(detailKey(task.taskId), task);
       void qc.invalidateQueries({ queryKey: LIST_KEY });
