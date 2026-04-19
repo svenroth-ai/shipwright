@@ -101,6 +101,58 @@ describe("SdkSessionsStore — persist/load round-trip", () => {
   });
 });
 
+describe("SdkSessionsStore — concurrent rename with proper-lockfile", () => {
+  /**
+   * Two writers race to rename the same task. With a serializing lock we
+   * expect both writes to succeed (one waits for the other) and the
+   * persisted file to contain one of the two titles — never a corrupted
+   * mid-state. We use a real temp file + the real proper-lockfile so the
+   * lock semantics aren't bypassed by the in-memory fake.
+   */
+  it("real proper-lockfile serializes two parallel rename+persist calls", async () => {
+    const fs = await import("node:fs");
+    const fsp = await import("node:fs/promises");
+    const path = await import("node:path");
+    const os = await import("node:os");
+    const lockfile = await import("proper-lockfile");
+
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sdk-sessions-lock-"));
+    const file = path.join(dir, "sdk-sessions.json");
+
+    const realDeps = {
+      readFile: (p: string, e: string) => fsp.readFile(p, e as BufferEncoding),
+      writeFile: (p: string, d: string) => fsp.writeFile(p, d),
+      existsSync: (p: string) => fs.existsSync(p),
+      mkdirSync: (p: string, o?: { recursive: boolean }) => { fs.mkdirSync(p, o); },
+      lock: async (p: string) => lockfile.lock(p, { retries: { retries: 5, minTimeout: 20 } }),
+      ensureFile: (p: string) => { if (!fs.existsSync(p)) fs.writeFileSync(p, ""); },
+    };
+
+    const seed = new SdkSessionsStore(file, realDeps);
+    await seed.load();
+    const t = seed.create({ title: "init", cwd: "/tmp" });
+    await seed.persist();
+
+    // Two independent store instances racing to rename the same task.
+    const a = new SdkSessionsStore(file, realDeps);
+    const b = new SdkSessionsStore(file, realDeps);
+    await a.load();
+    await b.load();
+    a.patch(t.taskId, { title: "from-a" });
+    b.patch(t.taskId, { title: "from-b" });
+    await Promise.all([a.persist(), b.persist()]);
+
+    const final = new SdkSessionsStore(file, realDeps);
+    await final.load();
+    const got = final.get(t.taskId);
+    expect(got).toBeDefined();
+    expect(["from-a", "from-b"]).toContain(got!.title);
+
+    // Cleanup.
+    try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* ignore */ }
+  }, 20_000);
+});
+
 describe("SdkSessionsStore — corruption tolerance", () => {
   it("starts empty when the file is malformed JSON (does not throw)", async () => {
     const deps = inMemoryDeps({ "/store/sdk-sessions.json": "this is not json" });

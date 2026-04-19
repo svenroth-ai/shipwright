@@ -21,6 +21,8 @@ import { LaunchRow } from "../components/external/LaunchRow";
 import { CopyCommandCard } from "../components/external/CopyCommandCard";
 import { SessionMetadata } from "../components/external/SessionMetadata";
 import { TranscriptViewer } from "../components/external/TranscriptViewer";
+import { TerminalLaunchButton } from "../components/external/TerminalLaunchButton";
+import { EditableTaskTitle } from "../components/external/EditableTaskTitle";
 
 export default function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -69,11 +71,14 @@ export default function TaskDetailPage() {
 
   return (
     <div className="flex h-full flex-col gap-4 p-4" data-testid="task-detail-page">
-      <header className="flex items-center gap-3">
-        <Link to="/" className="text-neutral-500 hover:text-neutral-900" aria-label="Back to board">
-          <ArrowLeft size={16} />
-        </Link>
-        <h1 className="text-lg font-semibold">{task.title}</h1>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Link to="/" className="text-neutral-500 hover:text-neutral-900" aria-label="Back to board">
+            <ArrowLeft size={16} />
+          </Link>
+          <EditableTaskTitle task={task} />
+        </div>
+        <TerminalLaunchButton task={task} variant="primary" />
       </header>
 
       <LaunchRow

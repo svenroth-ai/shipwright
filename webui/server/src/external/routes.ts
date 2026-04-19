@@ -29,6 +29,10 @@ import {
 const ACTIVE_IDLE_THRESHOLD_MS = 120_000;
 const IDLE_REACTIVATE_THRESHOLD_MS = 5_000;
 
+/** Hard cap on user-assigned titles. CLI accepts more, but UI legibility
+ * (TaskBoard cards, terminal title bar) breaks past ~200 chars. */
+const TITLE_MAX_LENGTH = 200;
+
 export function createExternalRoutes(args: {
   store: SdkSessionsStore;
   watcher: SessionWatcher;
@@ -72,6 +76,7 @@ export function createExternalRoutes(args: {
       cwd: task.cwd,
       resume,
       pluginDirs: task.pluginDirs,
+      title: task.title,
     });
     const updated = store.patch(task.taskId, {
       state: "awaiting_external_start",
@@ -79,6 +84,44 @@ export function createExternalRoutes(args: {
     });
     await store.persist();
     return c.json({ task: updated, commands });
+  });
+
+  /**
+   * Rename a task. Title is the source of truth for the next launch's
+   * `--name` flag (Claude's CLI picker title). Concurrent writers from
+   * multiple tabs are serialized by `proper-lockfile` inside the store's
+   * persist() call; on lock contention we surface 409 so the client can
+   * retry instead of overwriting silently.
+   */
+  app.patch("/api/external/tasks/:id", async (c) => {
+    const body = await c.req.json().catch(() => ({}));
+    const task = store.get(c.req.param("id"));
+    if (!task) return c.json({ error: "Task not found" }, 404);
+
+    if (typeof body.title !== "string") {
+      return c.json({ error: "title is required (string)" }, 400);
+    }
+    if (/[\r\n]/.test(body.title)) {
+      return c.json({ error: "title cannot contain newlines" }, 400);
+    }
+    const trimmed = body.title.trim();
+    if (trimmed.length === 0) {
+      return c.json({ error: "title cannot be empty" }, 400);
+    }
+    if (trimmed.length > TITLE_MAX_LENGTH) {
+      return c.json({ error: `title exceeds ${TITLE_MAX_LENGTH} characters` }, 400);
+    }
+
+    store.patch(task.taskId, { title: trimmed });
+    try {
+      await store.persist();
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException)?.code === "ELOCKED") {
+        return c.json({ error: "sdk-sessions.json is locked, retry" }, 409);
+      }
+      throw err;
+    }
+    return c.json({ task: store.get(task.taskId) });
   });
 
   app.post("/api/external/tasks/:id/fork", async (c) => {
@@ -101,6 +144,7 @@ export function createExternalRoutes(args: {
       fork: true,
       parentSessionUuid: parent.sessionUuid,
       pluginDirs: child.pluginDirs,
+      title: child.title,
     });
     store.patch(child.taskId, {
       state: "awaiting_external_start",
