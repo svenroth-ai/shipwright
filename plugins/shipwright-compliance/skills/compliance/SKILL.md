@@ -1,13 +1,21 @@
 ---
 name: shipwright-compliance
-description: "Generates audit-ready compliance documentation from Shipwright pipeline data. Produces traceability matrix, test evidence, change history, SBOM, and dashboard with Mermaid diagrams.\nTRIGGER when: user wants compliance reports, audit documentation, traceability matrix, test evidence report, SBOM, change history, or compliance dashboard. Also when user asks about regulatory compliance, audit readiness, or documentation for auditors.\nDO NOT TRIGGER when: user asks to write code (/shipwright-build), run tests (/shipwright-test), fix a bug (/shipwright-iterate), deploy (/shipwright-deploy), create requirements (/shipwright-project), plan implementation (/shipwright-plan), or design UI (/shipwright-design)."
+description: "On-demand detective audit for cross-artifact consistency plus auto-background compliance documentation. Scans specs, plans, configs, event log, ADRs, and compliance reports for drift that the preventive Canon gate and reactive Phase-Quality Stop hook don't catch. Still produces the traceability matrix, test evidence, change history, SBOM, and dashboard when auto-background updates fire between phases.\nTRIGGER when: user wants a cross-artifact consistency audit, drift check, FR coherence verify, ADR integrity check, compliance report, audit documentation, traceability matrix, test evidence report, SBOM, or change history. Also when user asks about regulatory compliance, audit readiness, or documentation for auditors.\nDO NOT TRIGGER when: user asks to write code (/shipwright-build), run tests (/shipwright-test), fix a bug (/shipwright-iterate), deploy (/shipwright-deploy), create requirements (/shipwright-project), plan implementation (/shipwright-plan), or design UI (/shipwright-design). If the user just wants to *add a feature*, route to /shipwright-iterate — do not accidentally consume 'add' / 'feature' prompts."
 license: MIT
 compatibility: Requires uv (Python 3.11+), git repository required
 ---
 
 # Shipwright Compliance Skill
 
-Generates audit-ready compliance reports from existing Shipwright pipeline data.
+Detective cross-artifact audit (`/shipwright-compliance`) plus the auto-background compliance-doc generation that fires after every phase completion. Plan v7 Option Z — plugin and command name unchanged; behavior expanded.
+
+Positioning (3-layer):
+
+| Layer | What | When |
+|---|---|---|
+| Preventive (Canon) | `phase_validators.py` at phase-complete | every phase |
+| Reactive (Phase-Quality) | Stop-hook `audit_phase_quality_on_stop.py` | every session end |
+| **Detective (this skill)** | `/shipwright-compliance` on-demand | explicit user invocation |
 
 ---
 
@@ -19,19 +27,28 @@ Generates audit-ready compliance reports from existing Shipwright pipeline data.
 
 ```
 ================================================================================
-SHIPWRIGHT-COMPLIANCE: Audit-Ready Documentation
+SHIPWRIGHT-COMPLIANCE: Detective Audit
 ================================================================================
-Aggregates pipeline data into compliance reports.
+Cross-artifact consistency scan.
 
-Usage: /shipwright-compliance
-   or: Invoked automatically by /shipwright-run (orchestrator)
+Usage:
+  /shipwright-compliance                  # full audit, writes report
+  /shipwright-compliance --fix            # also regenerate stale docs (Group E)
+  /shipwright-compliance --only C,F       # restrict to specific groups
+  /shipwright-compliance --format json    # JSON output only
 
-Reports:
-  - Dashboard         (compliance/dashboard.md)
-  - Traceability      (compliance/traceability-matrix.md)
-  - Test Evidence     (compliance/test-evidence.md)
-  - Change History    (compliance/change-history.md)
-  - SBOM              (compliance/sbom.md)
+Groups:
+  A — Artifact presence + path integrity (npm/uv/make, markdown links, config paths)
+  B — Config ↔ Config ↔ Event log coherence (splits, sections, commits, reverse scan)
+  C — Planning internal coherence (preventive re-run of plan_checks)
+  D — Implementation evidence (event-log FR coverage, section-test coverage)
+  E — Compliance-doc content staleness (regen + byte compare)
+  F — ADR structural integrity (preventive re-run)
+  G — Agent-docs freshness vs. git activity (scope match, ADR refs)
+
+Reports written:
+  - compliance/audit-report.md           ← human-readable summary
+  - shipwright_audit_report.json          ← structured payload
 ================================================================================
 ```
 
@@ -39,114 +56,87 @@ Reports:
 
 The SessionStart hook injects `SHIPWRIGHT_PLUGIN_ROOT=<path>`. Use it directly.
 
-### C. Run Setup Script
+---
+
+## Step 1: Parse Arguments
+
+Accept these flags (pass through to `run_audit.py`):
+
+- `--fix` — enable Group E per-doc auto-regeneration (writes to working tree, does **not** commit).
+- `--only <groups>` — comma-separated group letters (e.g. `C,F,E`). Defaults to all.
+- `--format md|json|both` — output format. Default `both`.
+
+## Step 2: Run the Audit
 
 ```bash
-uv run {plugin_root}/scripts/checks/setup_compliance.py \
+uv run {plugin_root}/scripts/audit/run_audit.py \
   --project-root "$(pwd)" \
-  --plugin-root "{plugin_root}" \
-  --session-id "{session_id}"
+  [--fix] [--only {groups}] [--format {format}]
 ```
 
-Parse JSON output for:
-- `available_data` — which config files and data sources exist
-- `existing_reports` — which compliance reports already exist
-- `mode` — `"new"` (first run) or `"update"` (reports exist)
-
----
-
-## Step 1: Assess Available Data
-
-**Goal:** Determine what compliance data is available.
-
-The setup script reports which data sources exist. Show the user:
-
-```
-================================================================================
-DATA SOURCES
-================================================================================
-Run Config:        {available / missing}
-Project Config:    {available / missing}
-Plan Config:       {available / missing}
-Build Config:      {available / missing}
-Decision Log:      {available / missing}
-Git History:       {available / missing}
-Dependencies:      {package.json / pyproject.toml / none}
-
-Mode: {Generating new reports / Updating existing reports}
-================================================================================
-```
-
-If no configs exist at all: print "No pipeline data found. Run /shipwright-run first." and stop.
-
----
-
-## Step 2: Generate Reports
-
-**Goal:** Generate all compliance artifacts.
-
-```bash
-uv run {plugin_root}/scripts/tools/generate_full_report.py \
-  --project-root "$(pwd)"
-```
-
-This script:
-1. Reads all available data via `data_collector.py`
-2. Generates all reports (RTM, Test Evidence, Change History, Dashboard, SBOM)
-3. Writes them to `compliance/` directory
-4. Writes `shipwright_compliance_config.json`
-5. Returns JSON summary
-
----
+Exit codes:
+- `0` — all groups passed (or only skipped/WARN-level findings).
+- `1` — at least one check failed. Report still written.
+- `2` — `--project-root` missing.
+- `3` — iterate-12 import-gate trip. See `audit-report.md → "Import Gate Error"` for the drift detail.
 
 ## Step 3: Present Results
 
-**Goal:** Show the user what was generated.
+Parse the JSON stdout (`report.any_fail`, `findings`, `fixes_applied`, `groups_run`, `groups_skipped`).
+
+Render to the user:
 
 ```
 ================================================================================
-SHIPWRIGHT-COMPLIANCE: COMPLETE
+DETECTIVE AUDIT: {PASS|FAIL}
 ================================================================================
-Reports generated:
-  - compliance/dashboard.md              ← Start here
-  - compliance/traceability-matrix.md
-  - compliance/test-evidence.md
-  - compliance/change-history.md
-  - compliance/sbom.md
+Groups run:        {letters}
+Groups skipped:    {letters + reasons}
 
-Summary:
-  Splits:           {N}
-  Sections:         {M} ({completed} complete)
-  Tests:            {passed}/{total} passing
-  Commits:          {count}
-  Decisions:        {count}
-  Packages:         {count} ({copyleft} copyleft)
+Findings by group:
+  A {fail}/{skip}/{pass}
+  B {fail}/{skip}/{pass}
+  ...
 
-Open compliance/dashboard.md for the full overview.
-Tip: Use Ctrl+Shift+V in VS Code to preview Mermaid diagrams.
+Top failures (detective-only):
+  - B7 "commit on main without work_completed event" — {evidence}
+  - E1 "RTM stale after FR-08.03 added" — diff at line 142
+
+Top failures (preventive re-run):
+  - C2 "plan.md references FR-05.02 not in spec.md"
+  - F3 "ADR-041 superseded but no replacement linked"
+
+Fixes applied:
+  - compliance/traceability-matrix.md (regenerated)
+
+Report:
+  compliance/audit-report.md
+  shipwright_audit_report.json
 ================================================================================
 ```
+
+For each failing detective finding, the report contains a copy-pasteable `/shipwright-iterate` command. Do not auto-run it — surface the suggestion and let the user decide.
 
 ---
 
-## Incremental Mode (Called by Orchestrator)
+## Auto-Background Compliance Updates
 
-When called by `shipwright-run` between phases, the orchestrator runs:
-
-```bash
-uv run {compliance_plugin_root}/scripts/tools/update_compliance.py \
-  --project-root "$(pwd)" --phase "{phase_name}"
-```
-
-This updates only the reports affected by the completed phase:
+Separately from `/shipwright-compliance`, `shipwright-run`'s orchestrator calls `scripts/tools/update_compliance.py --phase <name>` after every completed pipeline phase. That code path is unchanged by plan v7; it still regenerates the affected subset of compliance docs:
 
 | Phase | Reports Updated |
 |-------|----------------|
 | project | RTM, Dashboard |
 | plan | RTM, Dashboard |
-| build | RTM, Test Evidence, Change History, Dashboard |
+| build | RTM, Test Evidence, Change History, Dashboard, SBOM |
 | test | Test Evidence, Dashboard |
 | deploy | Dashboard |
-| changelog | Change History, Dashboard |
+| changelog | RTM, Test Evidence, Change History, Dashboard, SBOM |
+| iterate | RTM, Test Evidence, Change History, Dashboard, SBOM |
 
-No user interaction needed — runs silently in the background.
+No user interaction needed for auto-background mode. When the compliance plugin is missing (e.g. a partial install), the orchestrator now loud-fails with a stderr warning and writes a `compliance_update_failed` event — so a broken install is visible rather than silently skipped (plan v7, Step 1).
+
+---
+
+## Follow-up (plan v7 roadmap)
+
+Groups A, B, D, E, G (novel detective-only checks) are wired incrementally. Before every group lands, the CLI still reports its slot as `groups_skipped=[...,"not-implemented"]` — users see explicitly which coverage is missing.
