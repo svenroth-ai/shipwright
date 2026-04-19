@@ -1,67 +1,104 @@
-import { useState } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { useTasks } from '../hooks/useTasks';
-import { TaskHeader } from '../components/detail/TaskHeader';
-import { PanelLayout } from '../components/detail/PanelLayout';
-import { SmartViewer } from '../components/viewer/SmartViewer';
-import { ChatPanel } from '../components/chat/ChatPanel';
-import { EditTaskModal } from '../components/board/EditTaskModal';
+/*
+ * Task Detail — LaunchRow + CopyCommandCard + SessionMetadata +
+ * TranscriptViewer. Plan D'' variant-a TaskDetail.
+ *
+ * REPLACED: the previous chat-panel implementation (pre-iterate 14.x
+ * chat engine, assistant-ui + ndjson-parser). That path is deleted in
+ * Sub-iterate 3. This page is the single surface for an external-launch
+ * task in the new architecture.
+ */
+
+import { useCallback, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+
+import type { CopyCommandForms } from "../lib/externalApi";
+import { useExternalTask, useCloseExternalTask } from "../hooks/useExternalTasks";
+import { useForkTask, useLaunchTask } from "../hooks/useLaunchTask";
+import { useTaskTranscript } from "../hooks/useTaskTranscript";
+
+import { LaunchRow } from "../components/external/LaunchRow";
+import { CopyCommandCard } from "../components/external/CopyCommandCard";
+import { SessionMetadata } from "../components/external/SessionMetadata";
+import { TranscriptViewer } from "../components/external/TranscriptViewer";
 
 export default function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
-  const navigate = useNavigate();
-  const { data: tasks = [], isLoading } = useTasks();
-  const [editOpen, setEditOpen] = useState(false);
-  // Iterate 14.7.1 — Inbox → task navigation uses `?focus=chat-bottom` to
-  // hint that we should scroll the chat to the newest message on arrival.
-  // ChatPanel handles the actual scroll when it sees the prop set.
-  const [searchParams] = useSearchParams();
-  const focusChatBottom = searchParams.get('focus') === 'chat-bottom';
+  const { data: task, error } = useExternalTask(taskId);
+  const launchMut = useLaunchTask();
+  const forkMut = useForkTask();
+  const closeMut = useCloseExternalTask();
+  const transcript = useTaskTranscript(taskId ?? null);
 
-  const task = tasks.find((t) => t.id === taskId);
+  const [commands, setCommands] = useState<CopyCommandForms | null>(null);
 
-  if (isLoading) {
+  const handleLaunch = useCallback(
+    async ({ resume }: { resume: boolean }) => {
+      if (!taskId) return;
+      const result = await launchMut.mutateAsync({ taskId, resume });
+      setCommands(result.commands);
+    },
+    [taskId, launchMut],
+  );
+
+  const handleFork = useCallback(async () => {
+    if (!taskId || !task) return;
+    const result = await forkMut.mutateAsync({ taskId, title: `${task.title} — fork` });
+    setCommands(result.commands);
+  }, [taskId, task, forkMut]);
+
+  const handleClose = useCallback(() => {
+    if (!taskId) return;
+    closeMut.mutate(taskId);
+  }, [taskId, closeMut]);
+
+  if (error) {
     return (
-      <div className="flex flex-col h-full">
-        <div className="h-14 border-b bg-white animate-pulse" />
-        <div className="flex-1 flex">
-          <div className="w-3/5 bg-gray-50 animate-pulse" />
-          <div className="w-2/5 bg-gray-50 animate-pulse" />
-        </div>
+      <div className="p-4 text-sm text-red-700" data-testid="task-detail-error">
+        Error loading task: {String(error)}
       </div>
     );
   }
-
   if (!task) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-3">
-        <p className="text-gray-500 text-lg">Task not found</p>
-        <button
-          className="px-4 py-2 text-sm font-medium text-[var(--color-primary)] hover:underline"
-          onClick={() => navigate('/')}
-        >
-          Back to Board
-        </button>
+      <div className="p-4 text-sm text-neutral-500" data-testid="task-detail-loading">
+        Loading…
       </div>
     );
   }
 
-  const isPending = task.status === 'pending' || task.kanbanStatus === 'backlog';
-
   return (
-    <div className="flex flex-col h-full">
-      <TaskHeader task={task} onEdit={isPending ? () => setEditOpen(true) : undefined} />
-      <PanelLayout
-        leftPanel={
-          <ChatPanel
-            projectId={task.projectId}
-            taskId={task.id}
-            focusBottomOnMount={focusChatBottom}
-          />
-        }
-        rightPanel={<SmartViewer projectId={task.projectId} />}
+    <div className="flex h-full flex-col gap-4 p-4" data-testid="task-detail-page">
+      <header className="flex items-center gap-3">
+        <Link to="/" className="text-neutral-500 hover:text-neutral-900" aria-label="Back to board">
+          <ArrowLeft size={16} />
+        </Link>
+        <h1 className="text-lg font-semibold">{task.title}</h1>
+      </header>
+
+      <LaunchRow
+        task={task}
+        launching={launchMut.isPending || forkMut.isPending}
+        onLaunch={(args) => void handleLaunch(args)}
+        onFork={() => void handleFork()}
+        onClose={handleClose}
       />
-      <EditTaskModal open={editOpen} onOpenChange={setEditOpen} task={task} />
+
+      {commands && <CopyCommandCard commands={commands} />}
+
+      <SessionMetadata task={task} />
+
+      <section className="flex flex-col gap-2 rounded border border-neutral-200 bg-white p-3">
+        <div className="flex items-center justify-between text-xs text-neutral-500">
+          <span>Transcript</span>
+          <span>
+            status: <span data-testid="transcript-status">{transcript.status}</span>
+            {transcript.fingerprint && ` · fp ${transcript.fingerprint}`}
+            {` · ${transcript.size} B`}
+          </span>
+        </div>
+        <TranscriptViewer content={transcript.content} />
+      </section>
     </div>
   );
 }

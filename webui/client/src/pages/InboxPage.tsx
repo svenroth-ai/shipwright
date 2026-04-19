@@ -1,276 +1,77 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Inbox, Check, AlertTriangle } from 'lucide-react';
-import { useInbox, useAnswerInbox } from '../hooks/useInbox';
-import { useProjects } from '../hooks/useProjects';
-import { formatRelativeTime } from '../lib/formatTime';
-import type { InboxItem } from '../types/inbox';
-
-/**
- * Iterate 14.2 — multi-part inbox list.
- *
- * Each `InboxItem` now contains a `parts[]` array. For single-part items
- * the UI is unchanged. For multi-part items we surface a "{N} questions"
- * badge in the list and render an inline accordion with one input per
- * part. Submit is gated until every part has a non-empty answer, and
- * clicking it sends the full `answers` array to the backend in one POST.
+/*
+ * Inbox — "best-effort" pending interactions across tracked external-launch
+ * tasks. Round-3 plan integration explicitly labels the list as best-effort
+ * because heuristic tool_use-without-tool_result correlation can false-
+ * positive (long-running commands) and false-negative (plugin-owned
+ * non-standard tool shapes). Users answer in their own chat client; webui
+ * only surfaces the question here + offers dismiss.
  */
+
+import { Link } from "react-router-dom";
+import { AlertTriangle } from "lucide-react";
+
+import { useDismissInboxItem, useExternalInbox } from "../hooks/useExternalInbox";
+
 export default function InboxPage() {
-  const { data: items = [], isLoading } = useInbox();
-  const { data: projects = [] } = useProjects();
-  const answerMutation = useAnswerInbox();
-  const navigate = useNavigate();
-
-  // Iterate 14.7.1 — clicking an inbox item's outer card navigates to the
-  // owning task's detail view. The `?focus=chat-bottom` query string is
-  // interpreted by TaskDetailPage → ChatPanel to scroll to the newest
-  // message immediately, so the user lands on the question in context
-  // rather than the top of an empty chat. Inner interactive elements
-  // (option buttons, Answer button, inputs) stopPropagation so they don't
-  // accidentally fire the navigation.
-  //
-  // Iterate 14.14 — the original path `/projects/:id/tasks/:taskId` hit
-  // react-router's default 404 ErrorBoundary because the router only
-  // defines `/tasks/:taskId`. TaskDetailPage resolves projectId from the
-  // task object itself (useTasks() + t.id lookup), so the prefix is not
-  // needed.
-  function handleOpenTask(item: InboxItem) {
-    navigate(`/tasks/${item.taskId}?focus=chat-bottom`);
-  }
-
-  function stop(e: React.MouseEvent | React.KeyboardEvent) {
-    e.stopPropagation();
-  }
-  // Per-item, per-part-index local answer state.
-  const [drafts, setDrafts] = useState<Record<string, Record<number, string>>>({});
-
-  const pending = items.filter((i) => i.status === 'pending');
-  const answered = items.filter((i) => i.status === 'answered');
-
-  function setDraft(itemId: string, partIndex: number, value: string) {
-    setDrafts((prev) => ({
-      ...prev,
-      [itemId]: { ...(prev[itemId] ?? {}), [partIndex]: value },
-    }));
-  }
-
-  function clearDraft(itemId: string) {
-    setDrafts((prev) => {
-      const next = { ...prev };
-      delete next[itemId];
-      return next;
-    });
-  }
-
-  function isItemReady(item: InboxItem): boolean {
-    const draft = drafts[item.id] ?? {};
-    return item.parts.every((_, idx) => {
-      const v = draft[idx];
-      return typeof v === 'string' && v.trim().length > 0;
-    });
-  }
-
-  function handleAnswer(item: InboxItem) {
-    if (!isItemReady(item)) return;
-    const draft = drafts[item.id] ?? {};
-    const answers = item.parts.map((_, idx) => ({ index: idx, answer: draft[idx] ?? '' }));
-    answerMutation.mutate({ id: item.id, answers });
-    clearDraft(item.id);
-  }
-
-  function getProjectName(projectId: string) {
-    return projects.find((p) => p.id === projectId)?.name ?? 'Unknown';
-  }
-
-  // Group pending by project
-  const pendingByProject = pending.reduce<Record<string, typeof pending>>((acc, item) => {
-    const key = item.projectId;
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(item);
-    return acc;
-  }, {});
+  const { data: items = [], isLoading } = useExternalInbox();
+  const dismissMut = useDismissInboxItem();
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-semibold text-gray-900 mb-6">Inbox</h1>
+    <div className="flex h-full flex-col gap-4 p-4" data-testid="inbox-page">
+      <header>
+        <h1 className="text-xl font-semibold">Inbox</h1>
+        <p className="text-sm text-neutral-500">
+          Pending interactions (best-effort detection). Answer in your own terminal; dismiss false positives here.
+        </p>
+      </header>
 
-      {isLoading ? (
-        <div className="space-y-3">
-          {[1, 2].map((i) => <div key={i} className="h-24 bg-gray-100 rounded-xl animate-pulse" />)}
+      {isLoading && <div className="text-sm text-neutral-400">Loading…</div>}
+
+      {!isLoading && items.length === 0 && (
+        <div className="rounded border border-neutral-200 bg-white p-4 text-sm text-neutral-500" data-testid="inbox-empty">
+          No pending interactions.
         </div>
-      ) : pending.length === 0 && answered.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
-          <Inbox size={48} className="mx-auto mb-3 opacity-50" />
-          <p className="text-lg">All caught up</p>
-          <p className="text-sm">No questions waiting for your input</p>
-        </div>
-      ) : (
-        <>
-          {Object.entries(pendingByProject).map(([projectId, projectItems]) => (
-            <div key={projectId} className="mb-8">
-              <h2 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                {getProjectName(projectId)} ({projectItems.length})
-              </h2>
-              <div className="space-y-3">
-                {projectItems.map((item) => {
-                  const draft = drafts[item.id] ?? {};
-                  const ready = isItemReady(item);
-                  return (
-                    <div
-                      key={item.id}
-                      role="button"
-                      tabIndex={0}
-                      data-testid={`inbox-item-${item.id}`}
-                      onClick={() => handleOpenTask(item)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleOpenTask(item);
-                        }
-                      }}
-                      className="bg-white border border-[#e0dbd4] border-l-[3px] border-l-amber-500 rounded-xl p-4 cursor-pointer hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30"
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        {item.notBlocked && (
-                          <span
-                            role="img"
-                            aria-label="Claude did not wait for your answer"
-                            title="Claude did not wait for your answer and kept generating"
-                            data-testid="inbox-not-blocked-icon"
-                            className="inline-flex items-center text-amber-600"
-                          >
-                            <AlertTriangle size={14} />
-                          </span>
-                        )}
-                        {item.parts.length > 1 && (
-                          <span className="inline-block px-2 py-0.5 text-[10px] font-semibold rounded-full bg-orange-50 text-orange-700">
-                            {item.parts.length} questions
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="space-y-3">
-                        {item.parts.map((part, idx) => {
-                          const headerLabel = part.header && part.header.trim().length > 0
-                            ? part.header.trim()
-                            : `Question ${idx + 1}`;
-                          const value = draft[idx] ?? '';
-                          const options = part.options ?? [];
-                          const isMulti = part.allowMultiple === true;
-                          const tokens = isMulti
-                            ? (value.length > 0 ? value.split(', ').map((t) => t.trim()) : [])
-                            : [];
-
-                          return (
-                            <div key={idx} className={item.parts.length > 1 ? 'border-l-2 border-orange-200 pl-3' : ''}>
-                              {item.parts.length > 1 && (
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-orange-600 mb-1">
-                                  {headerLabel}
-                                </p>
-                              )}
-                              <p className="text-sm font-medium text-gray-900 mb-2">{part.question}</p>
-                              {options.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mb-2">
-                                  {options.map((opt) => {
-                                    const active = isMulti ? tokens.includes(opt) : value === opt;
-                                    return (
-                                      <button
-                                        key={opt}
-                                        type="button"
-                                        className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                                          active
-                                            ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-                                            : 'border-gray-300 bg-white hover:border-[var(--color-primary)]'
-                                        }`}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (isMulti) {
-                                            const next = tokens.includes(opt)
-                                              ? tokens.filter((t) => t !== opt)
-                                              : [...tokens, opt];
-                                            setDraft(item.id, idx, next.join(', '));
-                                          } else {
-                                            setDraft(item.id, idx, opt);
-                                          }
-                                        }}
-                                      >
-                                        {opt}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                              {!isMulti && options.length === 0 && (
-                                <input
-                                  type="text"
-                                  value={value}
-                                  onChange={(e) => setDraft(item.id, idx, e.target.value)}
-                                  placeholder="Type answer..."
-                                  className="w-full px-3 py-1.5 text-sm border border-[#e0dbd4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
-                                  onClick={stop}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && item.parts.length === 1) handleAnswer(item);
-                                  }}
-                                />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <div className="mt-3 flex items-center justify-between gap-2">
-                        <div className="text-[10px] text-gray-400">{formatRelativeTime(item.createdAt)}</div>
-                        <button
-                          type="button"
-                          disabled={!ready}
-                          data-testid={`inbox-answer-${item.id}`}
-                          className="px-3 py-1.5 text-xs font-medium text-white bg-[var(--color-primary)] rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAnswer(item);
-                          }}
-                        >
-                          Answer
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-
-          {pending.length === 0 && (
-            <div className="text-center py-8 text-gray-400 mb-6">
-              <Inbox size={36} className="mx-auto mb-2 opacity-40" />
-              <p className="text-sm">No pending questions</p>
-            </div>
-          )}
-
-          {answered.length > 0 && (
-            <div>
-              <h2 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                Answered ({answered.length})
-              </h2>
-              <div className="space-y-2">
-                {answered.map((item) => (
-                  <div key={item.id} className="p-3 bg-gray-50 border border-gray-100 rounded-lg flex items-start gap-2">
-                    <Check size={14} className="text-green-500 mt-0.5 shrink-0" />
-                    <div className="flex-1">
-                      {item.parts.map((p, idx) => (
-                        <div key={idx} className={idx > 0 ? 'mt-1.5' : ''}>
-                          <p className="text-sm text-gray-700">{p.question}</p>
-                          <p className="text-xs text-gray-500">Answer: {p.answer ?? '(skipped)'}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
       )}
+
+      <div className="flex flex-col gap-2">
+        {items.map((item) => (
+          <div
+            key={item.toolUseId}
+            className="flex items-start gap-3 rounded border border-amber-200 bg-amber-50 p-3"
+            data-testid={`inbox-item-${item.toolUseId}`}
+          >
+            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-700" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <Link
+                  to={`/tasks/${item.taskId}`}
+                  className="text-sm font-semibold text-amber-900 hover:underline"
+                >
+                  {item.taskTitle}
+                </Link>
+                <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-900">
+                  best-effort
+                </span>
+              </div>
+              <div className="text-xs text-amber-900">
+                <span className="font-mono">{item.toolName}</span> — id {item.toolUseId}
+              </div>
+              <pre className="mt-1 overflow-x-auto rounded bg-white p-1 text-[11px]">
+                {JSON.stringify(item.input, null, 2)}
+              </pre>
+            </div>
+            <button
+              type="button"
+              onClick={() => dismissMut.mutate(item.toolUseId)}
+              disabled={dismissMut.isPending}
+              className="shrink-0 rounded border border-amber-300 bg-white px-2 py-1 text-xs text-amber-900 hover:bg-amber-100 disabled:opacity-50"
+              data-testid={`dismiss-${item.toolUseId}`}
+            >
+              Dismiss
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
