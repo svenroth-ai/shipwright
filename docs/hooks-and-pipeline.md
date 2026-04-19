@@ -42,14 +42,27 @@ flowchart TD
 **File:** `plugins/shipwright-run/scripts/lib/orchestrator.py`
 
 ```python
-PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "compliance", "deploy"]
+PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "deploy"]
 CONDITIONAL_STEPS = {"security": {"env_var": "AIKIDO_CLIENT_ID", "after": "test"}}
 ```
+
+> **Plan v7 (Option Z) — 2026-04-19.** `"compliance"` was removed from
+> `PIPELINE_STEPS`. Compliance is no longer an explicit pipeline phase;
+> the auto-background doc update (`update_compliance.py --phase <name>`)
+> still fires after every completed phase, and the new on-demand
+> detective audit runs via `/shipwright-compliance` (`run_audit.py`).
+> Legacy projects with `"compliance"` in their `config["pipeline"]` are
+> migrated on the next `load_run_config()` call (entry removed from
+> `pipeline`, preserved in `completed_steps` as a historical marker,
+> logged as a `pipeline_migration` event).
 
 **Dashboard display order:** `shared/scripts/tools/update_build_dashboard.py`
 ```python
 PIPELINE_PHASES = ["project", "design", "plan", "build", "test", "changelog", "deploy", "compliance"]
 ```
+Note: the dashboard still renders a "compliance" column for historical
+context (iterate + standalone runs still populate compliance docs as a
+side effect); it is not a pipeline phase.
 Dashboard uses `PIPELINE_PHASES` as canonical order, merging dynamic steps (e.g., "security") from `run_config["pipeline"]`.
 After build completes: shows split summary table. After test completes: shows test layer results (unit/integration/pgtap/smoke/e2e/design_fidelity).
 
@@ -405,6 +418,22 @@ promoted, even if their id hypothetically coincides with a gate id.
 | Stop | — | `generate-handoff.py` | Session handoff |
 
 ### shipwright-compliance
+
+Two surfaces (plan v7 Option Z, 2026-04-19):
+
+1. **Auto-background doc update** (unchanged): `shipwright-run`'s
+   orchestrator calls `scripts/tools/update_compliance.py --phase <name>`
+   after every completed pipeline phase. Regenerates the affected
+   subset of compliance docs (RTM, test-evidence, change-history,
+   dashboard, SBOM). No user interaction. Silent-fail was replaced with
+   loud-fail in plan v7 Step 1 — a missing plugin now emits a stderr
+   JSON warning and records a `compliance_update_failed` event.
+2. **On-demand detective audit** (new in v7): `/shipwright-compliance`
+   invokes `scripts/audit/run_audit.py`. Reads specs, plan.md,
+   configs, shipwright_events.jsonl, ADRs, and the compliance docs.
+   Writes `compliance/audit-report.md` + `shipwright_audit_report.json`.
+   Does not modify anything unless `--fix` is passed (Group E per-doc
+   regen only).
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|

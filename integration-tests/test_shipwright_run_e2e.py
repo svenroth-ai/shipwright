@@ -191,12 +191,8 @@ class TestFullPipelineE2E:
              "--step", "changelog", "--status", "complete", "--force"],
         )
 
-        # Skip compliance + deploy (no real infra)
-        run_script(
-            str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
-            ["update-step", "--project-root", str(project),
-             "--step", "compliance", "--status", "complete", "--force"],
-        )
+        # Skip deploy (no real infra). Compliance is no longer a pipeline
+        # phase (plan v7 Option Z).
         run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "orchestrator.py"),
             ["update-step", "--project-root", str(project),
@@ -210,7 +206,7 @@ class TestFullPipelineE2E:
         assert config["status"] == "complete"
         assert config["current_step"] is None
         assert set(config["completed_steps"]) == {
-            "project", "design", "plan", "build", "test", "changelog", "compliance", "deploy"
+            "project", "design", "plan", "build", "test", "changelog", "deploy"
         }
 
 
@@ -231,15 +227,16 @@ class TestResumeFromAnyPoint:
         )
 
         # Pipeline order: project → design → plan → build → test →
-        # changelog → compliance → deploy (matches PIPELINE_STEPS in orchestrator.py)
+        # changelog → deploy (matches PIPELINE_STEPS in orchestrator.py).
+        # Compliance is no longer a pipeline phase (plan v7 Option Z) —
+        # it runs as an auto-background side-effect + on-demand detective audit.
         expected_next = {
             "project": "design",
             "design": "plan",
             "plan": "build",
             "build": "test",
             "test": "changelog",
-            "changelog": "compliance",
-            "compliance": "deploy",
+            "changelog": "deploy",
         }
 
         for step, expected in expected_next.items():

@@ -43,13 +43,42 @@ GENERATORS = {
 }
 
 
+def _run_check_mode(project_root: Path) -> dict:
+    """Staleness-only diff mode for /shipwright-compliance (plan v7, Step 2).
+
+    Regenerates each compliance doc in memory, byte-compares against disk
+    (with ``Generated:`` header stripped), writes nothing. Returns a JSON
+    payload shaped for the detective audit adapter.
+    """
+    from scripts.audit.audit_staleness import check_staleness
+
+    data = collect_all(project_root)
+    report = check_staleness(project_root, data)
+    return {
+        "mode": "check",
+        "success": True,
+        "staleness": report.to_dict(),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Incremental compliance update")
     parser.add_argument("--project-root", required=True, help="Project root directory")
-    parser.add_argument("--phase", required=True, help="Completed phase name")
+    parser.add_argument("--phase", help="Completed phase name (write-mode)")
+    parser.add_argument("--check", action="store_true",
+                        help="Staleness-only diff; writes nothing. Implies --phase is optional.")
     args = parser.parse_args()
 
     project_root = Path(args.project_root).resolve()
+
+    if args.check:
+        output = _run_check_mode(project_root)
+        print(json.dumps(output, indent=2))
+        return 0
+
+    if not args.phase:
+        parser.error("--phase is required unless --check is set")
+
     phase = args.phase
 
     reports_to_update = PHASE_REPORTS.get(phase, ["dashboard"])
