@@ -20,13 +20,37 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-# Ensure ``shared/scripts`` is on sys.path before importing anything from
+# Ensure ``shared/scripts`` is on sys.path BEFORE importing anything from
 # the verifier package. Mirrors plugins/shipwright-run/scripts/lib/
-# phase_validators.py.
+# phase_validators.py but is defensive against a common test-ordering
+# pitfall: ``plugins/shipwright-compliance/scripts`` also has a
+# ``tools/`` subpackage (the compliance plugin's own tools), so if that
+# path ends up at sys.path[0] first, ``from tools.verifiers import X``
+# resolves into the compliance plugin's ``tools`` (which has no
+# ``verifiers`` submodule) and fails with a confusing "No module named
+# 'tools.verifiers'" error. We fix this by (a) inserting shared/scripts
+# at position 0 and (b) evicting any already-cached ``tools`` module
+# that doesn't come from shared/scripts.
 _PLUGIN_ROOT = Path(__file__).resolve().parent.parent.parent
 _SHARED_SCRIPTS = _PLUGIN_ROOT.parent.parent / "shared" / "scripts"
-if str(_SHARED_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(_SHARED_SCRIPTS))
+_shared_scripts_str = str(_SHARED_SCRIPTS)
+if _shared_scripts_str in sys.path:
+    sys.path.remove(_shared_scripts_str)
+sys.path.insert(0, _shared_scripts_str)
+
+# Evict any ``tools`` package that was imported from a non-shared path
+# (see comment above). ``tools.verifiers.*`` re-imports will then resolve
+# cleanly against shared/scripts.
+_stale_tools = sys.modules.get("tools")
+if _stale_tools is not None:
+    _tools_file = getattr(_stale_tools, "__file__", "") or ""
+    _tools_path = getattr(_stale_tools, "__path__", None)
+    if _tools_path is not None:
+        _expected = str(_SHARED_SCRIPTS / "tools")
+        # ``_tools_path`` is a list (or _NamespacePath) of strings.
+        if not any(_expected in p for p in _tools_path):
+            for _k in [k for k in sys.modules if k == "tools" or k.startswith("tools.")]:
+                sys.modules.pop(_k, None)
 
 
 # ---------------------------------------------------------------------------
@@ -61,6 +85,46 @@ class ImportGateError(RuntimeError):
     """Raised when iterate-12 imports are drifting (rename / removal / arity)."""
 
 
+def _ensure_shared_scripts_first() -> None:
+    """Defensively put ``shared/scripts`` at sys.path[0] + evict stale ``tools``.
+
+    The same logic runs at module-import time, but later test files (e.g.
+    ``test_enforcement_hooks.py``) ``sys.path.insert(0, ...)`` the
+    compliance plugin's ``scripts/`` directory, and pytest's own
+    ``rootdir_fallback`` + ``conftest`` walker can pre-cache ``tools`` as
+    the compliance plugin's regular package before we get a chance to
+    act. Re-applying the fix here means ``verify_imports`` is robust
+    against whatever path/cache state the caller inherited.
+
+    The eviction is unconditional: if ANY ``tools`` module is cached
+    whose ``__path__`` doesn't include ``shared/scripts/tools``, blow it
+    away so the next ``import tools.verifiers.X`` walks sys.path afresh.
+    """
+    # Step 1: put shared/scripts at position 0.
+    s = str(_SHARED_SCRIPTS)
+    if s in sys.path:
+        sys.path.remove(s)
+    sys.path.insert(0, s)
+
+    # Step 2: evict any cached top-level package that doesn't resolve
+    # against shared/scripts. Both ``tools`` and ``lib`` exist as regular
+    # packages in both shared/scripts and the compliance plugin's
+    # scripts/; whichever is imported first wins the sys.modules slot,
+    # and later calls look up submodules there regardless of sys.path
+    # order. Cache eviction is the only reliable cross-order fix.
+    for pkg_name in ("tools", "lib"):
+        expected = str(_SHARED_SCRIPTS / pkg_name)
+        stale = sys.modules.get(pkg_name)
+        if stale is None:
+            continue
+        pkg_path = getattr(stale, "__path__", None)
+        if pkg_path is not None and any(expected in p for p in pkg_path):
+            continue  # already pointing at shared/scripts
+        for k in [k for k in sys.modules
+                  if k == pkg_name or k.startswith(pkg_name + ".")]:
+            sys.modules.pop(k, None)
+
+
 def verify_imports(symbols: list[tuple[str, str, int]] | None = None) -> None:
     """Fail fast if any required iterate-12 symbol is missing or reshaped.
 
@@ -70,6 +134,7 @@ def verify_imports(symbols: list[tuple[str, str, int]] | None = None) -> None:
     so the operator doesn't have to re-run the audit N times to discover
     N missing imports.
     """
+    _ensure_shared_scripts_first()
     symbols = symbols or REQUIRED_SYMBOLS
     errors: list[str] = []
 
@@ -198,6 +263,7 @@ def import_iterate12_checks() -> dict[str, Callable[..., Any]]:
     Runs ``verify_imports()`` first so we never return a partially-populated
     dict. Call this once per audit run and cache the result.
     """
+    _ensure_shared_scripts_first()
     verify_imports()
 
     from tools.verifiers.build_checks import (  # type: ignore  # noqa: E402
