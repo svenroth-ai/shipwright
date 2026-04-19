@@ -785,42 +785,60 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 
 ### 4.10 Compliance -- /shipwright-compliance
 
-**Purpose:** Aggregates data from all previous pipeline phases into audit-ready compliance documentation. It produces five standardized reports that trace requirements through implementation, testing, and deployment -- useful for regulated industries, enterprise customers, or internal governance.
+**Purpose (plan v7 Option Z, 2026-04-19 — expanded):** `/shipwright-compliance` now has two surfaces:
+
+1. **Auto-background compliance-doc generation** (side effect of every phase completion). The orchestrator calls `update_compliance.py --phase <name>` after each pipeline phase; no user interaction. Produces the same five reports (dashboard, RTM, test-evidence, change-history, SBOM) described below.
+2. **On-demand detective audit** (new). `/shipwright-compliance` invoked by a user runs `run_audit.py` — a cross-artifact consistency scan that catches drift the preventive Canon gate and reactive Phase-Quality Stop hook don't see (config ↔ event coherence, content rot in compliance docs, reverse-direction git-log scans, scope-to-doc heuristics, FR-vs-event evidence checks).
+
+Together with preventive Canon and reactive Phase-Quality, it's a three-layer quality net — see `docs/hooks-and-pipeline.md → shipwright-compliance` for the table.
 
 **Command & Arguments:**
 
 ```
-/shipwright-compliance
+/shipwright-compliance                          # full detective audit + report
+/shipwright-compliance --fix                    # also regenerate stale compliance docs (Group E)
+/shipwright-compliance --only C,F,E             # restrict to specific check groups
+/shipwright-compliance --format json            # JSON output only
 ```
 
-No flags or arguments. It reads existing pipeline data and generates (or updates) all reports automatically.
+**What the detective audit checks** (7 groups, ~22 checks; wired incrementally per plan v7):
 
-**What it needs:**
+- **A** Artifact presence + path integrity — `npm run`, `uv run`, `make` commands in READMEs resolve; markdown links resolve; config path fields point to real files.
+- **B** Config ↔ config ↔ event-log coherence — `project_config.splits[]` matches `planning/NN-*/`; build section test files exist; commits on main have matching `work_completed` events.
+- **C** Planning internal coherence (preventive re-run) — every spec FR appears in a plan section, plan section IDs valid, section manifest ↔ files.
+- **D** Implementation evidence — every FR has at least one `work_completed` event, every built section has `test_count > 0`.
+- **E** Compliance-doc content staleness — regenerate each doc in memory, strip volatile `Generated:` header, byte-compare against disk. Strictly deeper than Phase-Quality's mtime checks.
+- **F** ADR structural integrity (preventive re-run) — unique sequential IDs, valid status enum, supersession refs exist.
+- **G** Agent-docs freshness vs. git activity — conventional-commit scope ↔ architecture.md substring match (with stoplist/alias map), ADR-ID references in commit bodies vs. decision_log.
 
-- `shipwright_events.jsonl` -- The unified event log is the primary data source for all compliance reports. Each build section, iterate change, test run, and phase transition is a JSON event.
-- A git repository (for change history and commit data)
-- Dependency manifests (`package.json` or `pyproject.toml`) for SBOM generation
-- Planning specs (`planning/*/spec.md`) for requirement extraction
+**What it needs (detective audit):**
+- `shipwright_events.jsonl` — primary event source.
+- `planning/*/spec.md` and `planning/*/plan.md` — FR definitions + section manifests.
+- `agent_docs/decision_log.md` — ADRs.
+- `compliance/` docs (for Group E staleness comparison).
+- A git repo (Group B7 reverse-direction scan, Group G git-log activity).
 
-**What it produces:**
+**What it produces (detective audit):**
+- `compliance/audit-report.md` — human-readable report split into Preventive re-checks (C/F/B3/B6) and Detective-only checks (everything else). Fail-first ordering, suggested `/shipwright-iterate` command per finding, per-group summary table.
+- `shipwright_audit_report.json` — structured payload; every finding carries a `source` field (`detective-only` or `preventive-rerun`).
 
-- `compliance/dashboard.md` -- The starting point. Quality indicators, project velocity, and links to all compliance artifacts.
-- `compliance/traceability-matrix.md` -- Maps every requirement to the work events (build sections and iterate changes) that verify it, with a "Last Verified" column showing when each requirement was last tested.
-- `compliance/test-evidence.md` -- Collects test results across all layers (unit, integration, pgTAP, smoke, E2E, consistency, visual) with pass/fail counts and skip reasons. Provides evidence that the software was tested.
-- `compliance/change-history.md` -- Documents all commits, decisions (from `agent_docs/decision_log.md`), and version tags. Shows who changed what and why.
-- `compliance/sbom.md` -- Software Bill of Materials listing all dependencies with versions and license types. Flags copyleft licenses that may have legal implications.
+**What the auto-background generator produces** (unchanged from v6):
+- `compliance/dashboard.md` -- Start-here overview with quality indicators, project velocity, and links.
+- `compliance/traceability-matrix.md` -- Every requirement mapped to the work events that verify it, with a "Last Verified" column.
+- `compliance/test-evidence.md` -- Test results across unit / integration / pgTAP / smoke / E2E / consistency / visual, with pass/fail counts and skip reasons.
+- `compliance/change-history.md` -- All commits + decisions (from `agent_docs/decision_log.md`) + version tags.
+- `compliance/sbom.md` -- Software Bill of Materials with versions and license types. Flags copyleft licenses.
 
-**How it works:**
+**How the detective audit works:**
+1. `run_audit.py` loads `audit_config.json` (G2 scope stoplist, alias map, A4 path-field allowlist, B7 exclusions) and `ComplianceData`.
+2. Version gate probes every iterate-12 symbol the audit imports. On drift, the audit aborts with exit code 3 and a single message naming every missing / reshaped symbol — no silent coverage loss.
+3. Each registered group runs; failures in one group don't take down the others.
+4. Group E (per-doc staleness) optionally auto-regenerates the specific stale doc when `--fix` is passed. Other groups never write to the working tree.
+5. `audit_report.py` renders Markdown + JSON. stdout always carries the JSON payload with a `written` map pointing at the on-disk artifacts.
 
-1. Runs a setup script that inventories all available data sources (config files, git history, dependency manifests, decision logs). If no pipeline data exists at all, it stops with a message to run the pipeline first.
-2. Shows you which data sources were found and whether this is a first run ("new") or an update to existing reports.
-3. Calls the full report generator, which reads all available data, produces all five reports, and writes them to the `compliance/` directory.
-4. Writes `shipwright_compliance_config.json` with metadata about the generation run.
-5. Prints a summary showing counts of splits, sections, tests, commits, decisions, and packages (including copyleft license warnings).
+**Auto-background mode:** Unchanged. Still fires after every `/shipwright-run` phase. If the compliance plugin is missing, the orchestrator now **loud-fails** — stderr JSON warning + `compliance_update_failed` event — so a broken install is visible rather than silently skipped (plan v7 Step 1).
 
-**Incremental mode:** When running inside the orchestrator (`/shipwright-run`), compliance reports are updated silently after each phase completes. Only the reports affected by that phase are regenerated. For example, completing the build phase updates the traceability matrix, test evidence, change history, and dashboard -- but not the SBOM. This means your compliance documentation is always current without you needing to run it manually.
-
-**Standalone usage:** Yes. You can run `/shipwright-compliance` at any point during or after the pipeline. It works with whatever data is available -- if only project and plan data exist, it generates partial reports. As more phases complete, subsequent runs fill in the gaps. This makes it useful both as a final deliverable and as a progress tracker during development.
+**Standalone usage:** Yes. You can run `/shipwright-compliance` at any point during or after the pipeline. The detective audit works against whatever data is present — missing inputs surface as skipped findings with a concrete reason rather than fabricating passes.
 ## 5. Stack Profiles
 
 A **stack profile** is a JSON file that defines everything about your technology stack in one place: runtime versions, frontend and backend libraries, UI component library, testing frameworks, deployment target, folder structure, CI pipeline, and architecture rules. Profiles are stored in `~/shipwright/shared/profiles/`.
