@@ -144,11 +144,78 @@ def test_compliance_not_triggered_on_in_progress(tmp_project, mocker):
     mock_compliance.assert_not_called()
 
 
-def test_run_compliance_update_script_missing(tmp_project, mocker):
-    """Returns None when compliance plugin is not installed."""
+def test_run_compliance_update_script_missing(tmp_project, mocker, capsys):
+    """Missing script → loud stderr warn + compliance_update_failed event (plan v7)."""
     mocker.patch("orchestrator._COMPLIANCE_SCRIPT", tmp_project / "nonexistent.py")
+    mock_record = mocker.patch("orchestrator._record_compliance_update_failed")
+
     result = run_compliance_update(tmp_project, "project")
+
     assert result is None
+    captured = capsys.readouterr()
+    payload = json.loads(captured.err.strip())
+    assert payload["level"] == "warn"
+    assert payload["message"] == "compliance update script missing"
+    assert payload["phase"] == "project"
+    mock_record.assert_called_once_with(tmp_project, "project", reason="script_missing")
+
+
+def test_legacy_compliance_entry_migrated(tmp_project, mocker):
+    """Legacy pipeline with 'compliance' entry is filtered on load (plan v7)."""
+    mock_record = mocker.patch("orchestrator._record_pipeline_migration_event")
+    legacy = {
+        "scope": "full_app",
+        "profile": "supabase-nextjs",
+        "pipeline": ["project", "design", "plan", "build", "test",
+                     "changelog", "compliance", "deploy"],
+        "status": "in_progress",
+        "current_step": "test",
+        "completed_steps": ["project", "design", "plan", "build", "compliance"],
+    }
+    (tmp_project / "shipwright_run_config.json").write_text(
+        json.dumps(legacy), encoding="utf-8"
+    )
+
+    config = load_run_config(tmp_project)
+
+    assert "compliance" not in config["pipeline"]
+    assert config["pipeline"] == [
+        "project", "design", "plan", "build", "test", "changelog", "deploy",
+    ]
+    # Historical marker preserved in completed_steps
+    assert "compliance" in config["completed_steps"]
+    # Config was persisted
+    persisted = json.loads((tmp_project / "shipwright_run_config.json").read_text(encoding="utf-8"))
+    assert "compliance" not in persisted["pipeline"]
+    # Event recorded (once)
+    mock_record.assert_called_once()
+    assert mock_record.call_args.kwargs["removed"] == ["compliance"]
+
+
+def test_legacy_migration_idempotent(tmp_project, mocker):
+    """After migration, subsequent loads do not re-record the event."""
+    mock_record = mocker.patch("orchestrator._record_pipeline_migration_event")
+    legacy = {
+        "pipeline": ["project", "compliance", "deploy"],
+        "completed_steps": [],
+    }
+    (tmp_project / "shipwright_run_config.json").write_text(
+        json.dumps(legacy), encoding="utf-8"
+    )
+
+    load_run_config(tmp_project)  # first load migrates
+    load_run_config(tmp_project)  # second load is clean
+    load_run_config(tmp_project)  # third load is clean
+
+    assert mock_record.call_count == 1
+
+
+def test_fresh_config_has_no_compliance_in_pipeline(tmp_project):
+    """New projects created post-v7 never see 'compliance' in pipeline."""
+    assert "compliance" not in PIPELINE_STEPS
+    config = create_config("full_app", "supabase-nextjs", "guided",
+                           "jelastic-dev", tmp_project)
+    assert "compliance" not in config["pipeline"]
 
 
 def test_get_next_step_no_config(tmp_path):
@@ -170,7 +237,7 @@ def test_resume_midway(tmp_project):
     result = get_next_step(tmp_project)
     assert result["next_step"] == "test"
     assert set(result["completed"]) == {"project", "design", "plan", "build"}
-    assert result["remaining"] == ["test", "changelog", "compliance", "deploy"]
+    assert result["remaining"] == ["test", "changelog", "deploy"]
 
 
 # --- CLI ---
