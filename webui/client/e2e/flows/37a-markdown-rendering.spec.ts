@@ -79,7 +79,7 @@ test.describe("Markdown + code + ANSI + long-line rendering", () => {
     await expect(page.getByTestId("fenced-code").first()).toContainText("const pi = 3.14;");
 
     // Malformed middle line surfaces as an unknown event (not silently dropped).
-    await expect(page.getByTestId("event-unknown").first()).toBeVisible();
+    await expect(page.getByTestId("bubble-unknown").first()).toBeVisible();
 
     // Tool output renders ANSI-stripped (the literal text, not escape codes).
     const toolBlock = page.getByTestId("tool-output-block").first();

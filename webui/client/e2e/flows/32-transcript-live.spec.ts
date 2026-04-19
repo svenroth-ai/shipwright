@@ -50,8 +50,8 @@ test.describe("Live transcript polling", () => {
 
     // Transcript should render both events within 3 s (one poll cycle
     // plus generous slack).
-    await expect(page.getByTestId("event-user")).toBeVisible({ timeout: 5000 });
-    await expect(page.getByTestId("event-assistant")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("bubble-user")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("bubble-assistant")).toBeVisible({ timeout: 5000 });
 
     // Append a new assistant line externally.
     const extra =
