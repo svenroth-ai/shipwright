@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, FolderOpen, Inbox, Settings, Menu } from 'lucide-react';
+import { LayoutDashboard, FolderOpen, Inbox, Settings, Menu, Activity } from 'lucide-react';
 import { SidebarNavItem } from './SidebarNavItem';
 import { InboxBadge } from './InboxBadge';
 
@@ -82,6 +82,12 @@ export function SidebarNav({ inboxCount }: SidebarNavProps) {
           label="Inbox"
           to="/inbox"
           badge={<InboxBadge count={inboxCount} />}
+          collapsed={collapsed}
+        />
+        <SidebarNavItem
+          icon={Activity}
+          label="Diagnostics"
+          to="/diagnostics"
           collapsed={collapsed}
         />
       </nav>

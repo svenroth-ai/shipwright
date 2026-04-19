@@ -51,6 +51,11 @@ import { createSettingsRoutes } from "./routes/settings.js";
 import { createCapabilitiesRoutes } from "./routes/capabilities.js";
 import { createProfilesRoutes } from "./routes/profiles.js";
 import { createSSERoute } from "./routes/sse.js";
+import { createExternalRoutes } from "./external/routes.js";
+import { createDiagnosticsRoutes } from "./routes/diagnostics.js";
+import { SdkSessionsStore } from "./core/sdk-sessions-store.js";
+import { SessionWatcher } from "./core/session-watcher.js";
+import { probeClaudeVersion, type ClaudeVersionInfo } from "./core/cli-compat.js";
 import { randomUUID } from "crypto";
 
 const config = getConfig();
@@ -759,6 +764,33 @@ if (isMainModule) {
     app.route("/", createCapabilitiesRoutes());
     app.route("/", createProfilesRoutes());
     app.route("/", createSSERoute(sseManager));
+
+    // External-launch (Plan D'' variant a). Sub-iterate 1 hardening:
+    // persisted store + filename-first watcher + version gate + diagnostics.
+    // Still mounted under /api/external/* until Sub-iterate 2 renames.
+    const sdkSessionsPath = `${config.registryDir}/sdk-sessions.json`;
+    const sdkSessionsDeps = {
+      readFile: (p: string, e: string) => readFile(p, e as BufferEncoding),
+      writeFile: (p: string, d: string) => writeFile(p, d),
+      existsSync: (p: string) => fs.existsSync(p),
+      mkdirSync: (p: string, o?: { recursive: boolean }) => fs.mkdirSync(p, o),
+      lock: lockPath,
+      ensureFile: ensureFileExists,
+    };
+    const sdkSessionsStore = new SdkSessionsStore(sdkSessionsPath, sdkSessionsDeps);
+    await sdkSessionsStore.load();
+    const sessionWatcher = new SessionWatcher();
+    app.route("/", createExternalRoutes({ store: sdkSessionsStore, watcher: sessionWatcher }));
+
+    // Synchronous boot probe; surfaced via /api/diagnostics. Re-probed on
+    // demand each request so a CLI upgrade mid-session picks up without a
+    // restart.
+    let claudeVersion: ClaudeVersionInfo = probeClaudeVersion();
+    const versionInfo = (): ClaudeVersionInfo => {
+      if (!claudeVersion.raw) claudeVersion = probeClaudeVersion();
+      return claudeVersion;
+    };
+    app.route("/", createDiagnosticsRoutes({ store: sdkSessionsStore, versionInfo }));
 
     // Graceful shutdown with timeout
     const shutdown = async () => {
