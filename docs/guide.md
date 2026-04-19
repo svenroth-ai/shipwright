@@ -18,7 +18,7 @@ Shipwright infers your stack, interviews you about requirements, designs the UI,
 
 After the initial build, daily work happens through `/shipwright-iterate` -- complexity-adaptive, keeps every artifact in sync. Every skill also works standalone, so you can reach for `/shipwright-plan`, `/shipwright-test`, or `/shipwright-security` on its own, any time.
 
-Every phase emits events into an append-only log. That log is the single source of truth -- and the raw material for audit-ready compliance documentation (traceability matrix, test evidence, SBOM, change history) that `/shipwright-compliance` generates automatically. You get the compliance paperwork that usually costs weeks of manual work as a byproduct of just building the software.
+Every phase emits events into an append-only log. That log is the single source of truth -- and the raw material for audit-ready compliance documentation (traceability matrix, test evidence, SBOM, change history), regenerated automatically as a side effect of every phase completion. Drift that accumulates between sessions (manual edits, force-pushes, content rot that passes mtime checks) is caught on demand via `/shipwright-compliance` — a cross-artifact detective audit across 7 check groups. You get the compliance paperwork that usually costs weeks of manual work as a byproduct of just building the software.
 
 You can drive all of this from the Claude Code VSCode Extension or CLI terminal, or through the **Shipwright Command Center** -- a local web UI with a Kanban board, task-scoped chat, and a global inbox for agent questions. It spawns the same skills under the hood; it's a surface, not a separate product.
 
@@ -1002,7 +1002,7 @@ uv run shared/scripts/validate_env.py --project-root . --phase all
 
 Large projects are automatically decomposed into **splits** -- independent, shippable chunks of functionality. The `/shipwright-project` phase interviews you about requirements, then groups related features into splits. Each split gets its own spec, plan, and build cycle.
 
-The pipeline loops through splits sequentially: plan split 1, build all its sections, then plan split 2, build its sections, and so on. Testing, changelog, deployment, and compliance only run after all splits are complete.
+The pipeline loops through splits sequentially: plan split 1, build all its sections, then plan split 2, build its sections, and so on. Testing, changelog, and deployment only run after all splits are complete. Compliance docs are updated as an auto-background side effect of every phase completion, not as an explicit pipeline phase (see Chapter 4.10).
 
 For example, a SaaS app might decompose into:
 - **Split 1:** Authentication and user management
@@ -1035,7 +1035,7 @@ Every skill works standalone -- you do not always need the full pipeline:
 | `/shipwright-test --design-fidelity` | Run design fidelity check only (code-level mockup vs implementation) |
 | `/shipwright-deploy` | Just deploy to Jelastic |
 | `/shipwright-changelog` | Just generate changelog and create a PR |
-| `/shipwright-compliance` | Just generate compliance reports |
+| `/shipwright-compliance` | Detective cross-artifact audit (flags: `--fix` regenerate stale compliance docs, `--only A,B,E` restrict to groups, `--format md\|json\|both`) |
 
 When using skills individually, provide the input artifact (spec file, section file) as an argument. The skill reads what it needs from the project's config files.
 

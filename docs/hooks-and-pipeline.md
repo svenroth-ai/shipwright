@@ -25,16 +25,20 @@ flowchart TD
     SECURITY -->|No| CHANGELOG
     SEC_SCAN --> CHANGELOG[Changelog]
 
-    CHANGELOG --> COMPLIANCE[Compliance — final]
-    COMPLIANCE --> DEPLOY[Deploy]
+    CHANGELOG --> DEPLOY[Deploy]
     DEPLOY --> DONE([Complete])
 
-    %% Side-effects (dashed)
-    PROJECT -.->|incremental| COMP_INC[Compliance Update]
+    %% Side-effects (dashed) — auto-background compliance doc update
+    %% (plan v7 Option Z: compliance is no longer a pipeline phase; it
+    %% fires as a non-blocking side effect after every completed phase.
+    %% Detective audit runs on demand via /shipwright-compliance).
+    PROJECT -.->|incremental| COMP_INC[Compliance Doc Update]
     DESIGN -.->|incremental| COMP_INC
     PLAN -.->|incremental| COMP_INC
     BUILD -.->|incremental| COMP_INC
     TEST -.->|incremental| COMP_INC
+    CHANGELOG -.->|incremental| COMP_INC
+    DEPLOY -.->|incremental| COMP_INC
 ```
 
 ### Pipeline Constants
@@ -482,7 +486,12 @@ Called by `orchestrator.py:update_step()` before marking a phase complete. Retur
 | test | ASK | `shipwright_test_results.json` exists; all layers have results or valid skip reason; unit/smoke must pass (outcomes checked); E2E failures logged as inform-level warnings |
 | changelog | ASK | `CHANGELOG.md` exists |
 | deploy | PASS | Always passes |
-| compliance | INFORM | Lists which of 5 compliance artifacts are present (non-blocking) |
+
+> Plan v7 Option Z removed the `compliance` row — compliance is no
+> longer a pipeline phase, so it has no `update-step` gate. The
+> `_validate_compliance` function is retained only for backwards
+> compat with legacy `completed_steps=["...","compliance"]` entries
+> that went through the phase before the v7 migration.
 
 **Override mechanism:** `--force` flag on `update-step` skips validation (user approved via AskUserQuestion).
 
@@ -619,7 +628,8 @@ After build completes for a split:
 - `update_step()` calls `get_build_progress()`
 - If `all_done == false`: removes `plan` and `build` from `completed_steps`, sets `current_step = "plan"`
 - Records `split_completed` event via `record_event.py --type split_completed --split {name}`
-- Test/changelog/deploy/compliance only run after `all_done == true`
+- Test/changelog/deploy only run after `all_done == true` (compliance
+  docs are updated as a side effect after every completed phase)
 
 ---
 
@@ -879,12 +889,14 @@ Legend: ✅ present · ⏭ skip by policy · n/a not applicable
 | **test** | ✅ (`phase_completed` alongside `test_run`) | ✅ | ✅ (canon-marker) | ⏭ events, not decisions | ⏭ results in `shipwright_test_results.json` | ✅ | `test_checks.py` + `check_test_results_file_fresh` | `_validate_test` |
 | **changelog** | ✅ | ✅ | ✅ (canon-marker) | ⏭ process management | n/a (plugin owns prepend) | ✅ | `changelog_checks.py` + `check_git_tag_exists` + `check_changelog_version_matches_tag` Sonder-Checks | `_validate_changelog` |
 | **deploy** | ✅ | ✅ | ✅ (canon-marker) | ⏭ execution | ⏭ operational history | ✅ | `deploy_checks.py` + `check_test_gate_passed` phase-own | `_validate_deploy` |
-| **compliance** | n/a | n/a | n/a | n/a | n/a | n/a | (none) | (trivial pass) |
+| **compliance** | n/a | n/a | n/a | n/a | n/a | n/a | (not wired — detective audit on demand) | (not a pipeline phase since v7) |
 
 **Compliance is intentionally NOT canon-wired** (canon-level enforcement).
-Iterate 12.5 was struck from the campaign — compliance is a future
-**detective** checker via shipwright-audit, not a productive phase.
-However, as of iterate 14.8, compliance is updated **best-effort** by:
+Plan v7 Option Z (2026-04-19) removed compliance from `PIPELINE_STEPS`
+and shipped `/shipwright-compliance` as a **detective** cross-artifact
+audit (`scripts/audit/run_audit.py`) — on-demand only, never blocks.
+Iterate 12.5 (earlier campaign plan) was struck for the same reason.
+Compliance **docs** are updated **best-effort** by:
 1. The shared Stop hook (`generate_handoff_on_stop.py`) for all plugins
 2. `finalize_iterate.py` (primary path for iterate)
 3. `orchestrator.run_compliance_update()` (between-phase action for `/shipwright-run`)
@@ -892,9 +904,11 @@ However, as of iterate 14.8, compliance is updated **best-effort** by:
 Non-canon advisory checks (`check_compliance_reflects_run_id`,
 `check_architecture_reviewed`, `check_conventions_reviewed`) detect
 stale cross-artifacts at WARNING level via `iterate_checks.run_cross_artifact_checks()`.
-The explicit `/shipwright-compliance` SKILL is deprecated pending refactor.
-See [Spec/shipwright-check-plan.md](../Spec/shipwright-check-plan.md) and
-the `project_compliance_rebuild.md` memory entry for the rebuild trigger.
+The `/shipwright-compliance` SKILL is **active** (v7 content replacement).
+`skills/compliance/SKILL.md` now invokes `scripts/audit/run_audit.py`
+for a detective audit with `--fix` / `--only` / `--format` flags. See
+the `project_compliance_rebuild.md` memory entry for the ship state
+and follow-up iterates (Groups A/B/D/E/G novel checks).
 
 **F-block ADR integrity (F1/F2/F3)** runs out of `common.py` for every
 phase verifier automatically. F1 (sequential ids), F2 (valid status),
