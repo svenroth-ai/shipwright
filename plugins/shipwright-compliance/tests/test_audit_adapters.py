@@ -169,9 +169,13 @@ def test_check_result_to_finding_respects_severity_override():
 RUN_AUDIT = PLUGIN_ROOT / "scripts" / "audit" / "run_audit.py"
 
 
-def test_run_audit_skeleton_runs_with_no_checks(tmp_path):
-    """Skeleton produces a valid JSON report even before checks are wired."""
-    # Minimal fake project — enough for run_audit to find the root.
+def test_run_audit_skeleton_runs_end_to_end(tmp_path):
+    """CLI produces a valid JSON report on an empty project.
+
+    Registered groups (C, F as of Step 6) run against the fixture and
+    emit Findings (pass/fail) without crashing the CLI. Unregistered
+    groups land under ``groups_skipped``.
+    """
     (tmp_path / "shipwright_run_config.json").write_text(
         '{"status": "in_progress"}\n', encoding="utf-8",
     )
@@ -181,14 +185,17 @@ def test_run_audit_skeleton_runs_with_no_checks(tmp_path):
          "--project-root", str(tmp_path)],
         capture_output=True, text=True, encoding="utf-8",
     )
-    assert result.returncode == 0, result.stderr
+    # Exit code is 0 on all-pass, 1 on any-fail. A bare tmp_path has no
+    # decision_log.md so F* fail — that's legitimate drift. Both 0 and 1
+    # are success from the skeleton's perspective.
+    assert result.returncode in (0, 1), result.stderr
 
     import json
     payload = json.loads(result.stdout)
-    # Before Steps 4-8, every group is "not-implemented".
-    assert payload["findings"] == []
+    # Groups C + F are registered (Step 6), everything else is skipped.
     skipped_groups = {s["group"] for s in payload["groups_skipped"]}
-    assert skipped_groups == {"A", "B", "C", "D", "E", "F", "G"}
+    assert skipped_groups == {"A", "B", "D", "E", "G"}
+    assert set(payload["groups_run"]) == {"C", "F"}
 
 
 def test_run_audit_rejects_missing_project_root():

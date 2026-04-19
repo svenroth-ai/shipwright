@@ -23,6 +23,7 @@ _PLUGIN_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLUGIN_ROOT))
 
+from scripts.audit._registry import register_all  # noqa: E402
 from scripts.audit.audit_detector import run_all  # noqa: E402
 
 
@@ -51,6 +52,7 @@ def main(argv: list[str] | None = None) -> int:
 
     only = [g.strip() for g in args.only.split(",") if g.strip()] or None
 
+    register_all()
     report = run_all(project_root, only=only)
 
     if report.import_gate_error:
