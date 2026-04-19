@@ -229,6 +229,16 @@ def build_event(args: argparse.Namespace) -> dict:
         if args.fields:
             event["fields"] = json.loads(args.fields)
 
+    elif args.type == "compliance_update_failed":
+        if args.phase:
+            event["phase"] = args.phase
+        if args.detail:
+            event["detail"] = args.detail
+
+    elif args.type == "pipeline_migration":
+        if args.detail:
+            event["detail"] = args.detail
+
     return event
 
 
@@ -257,7 +267,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--type", required=True,
                    choices=["task_created", "work_completed", "phase_started",
                             "phase_completed", "split_completed", "test_run",
-                            "event_amended"],
+                            "event_amended",
+                            "compliance_update_failed", "pipeline_migration"],
                    help="Event type")
 
     # work_completed
