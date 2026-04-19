@@ -25,6 +25,7 @@ if str(_PLUGIN_ROOT) not in sys.path:
 
 from scripts.audit._registry import register_all  # noqa: E402
 from scripts.audit.audit_detector import run_all  # noqa: E402
+from scripts.audit.audit_report import render_markdown, write as write_report  # noqa: E402
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -59,9 +60,19 @@ def main(argv: list[str] | None = None) -> int:
         print(report.import_gate_error, file=sys.stderr)
         return 3
 
-    # Step 9 wires up Markdown + JSON rendering; for now print the
-    # structured dict so early integration tests have something to assert.
-    print(json.dumps(report.to_dict(), indent=2))
+    # Step 9 rendering. ``--format both`` writes compliance/audit-report.md
+    # AND shipwright_audit_report.json; ``--format md|json`` writes only
+    # the named one. stdout always carries the JSON payload so automated
+    # callers have a stable contract.
+    want_md = args.format in ("md", "both")
+    want_json = args.format in ("json", "both")
+    written = write_report(report, project_root,
+                           markdown=want_md, json_out=want_json)
+
+    payload = report.to_dict()
+    payload["written"] = {fmt: str(p.relative_to(project_root))
+                          for fmt, p in written.items()}
+    print(json.dumps(payload, indent=2))
     return 0 if not report.any_fail else 1
 
 
