@@ -35,7 +35,13 @@ CONFIG_NAME = "shipwright_run_config.json"
 _THIS_PLUGIN = Path(__file__).parent.parent.parent
 _COMPLIANCE_SCRIPT = _THIS_PLUGIN.parent / "shipwright-compliance" / "scripts" / "tools" / "update_compliance.py"
 
-PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "compliance", "deploy"]
+PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "deploy"]
+
+# Legacy pipeline entries removed by load_run_config migration. Kept for
+# documentation: projects migrated off a prior pipeline with "compliance" as
+# an explicit phase get that entry dropped from `pipeline` (not replayed) but
+# preserved in `completed_steps` as a historical marker.
+_LEGACY_PIPELINE_ENTRIES: frozenset[str] = frozenset({"compliance"})
 
 # Plan § 4.4 / 9.2 — Orchestrator gate Critical-Check allowlist.
 # These FAILs block phase-transition only when
@@ -86,7 +92,7 @@ def load_run_config(project_root: Path) -> dict[str, Any]:
     if not path.exists():
         return {}  # Valid: first run, no config yet
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        config = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         print(json.dumps({
             "warning": "Corrupt orchestrator config",
@@ -96,6 +102,74 @@ def load_run_config(project_root: Path) -> dict[str, Any]:
             "alternative": "Delete the file and re-run /shipwright-run to recreate",
         }), file=sys.stderr)
         return {}
+    return _migrate_legacy_pipeline_if_needed(project_root, config)
+
+
+def _migrate_legacy_pipeline_if_needed(
+    project_root: Path, config: dict[str, Any],
+) -> dict[str, Any]:
+    """Drop legacy entries (e.g. ``compliance``) from ``config["pipeline"]``.
+
+    Compliance is no longer a pipeline phase; it's an auto-background
+    side-effect + an on-demand detective audit via ``/shipwright-compliance``
+    (plan v7 Option Z). Legacy projects may have ``"compliance"`` in their
+    pipeline list — drop it. ``completed_steps`` is left untouched so the
+    historical record of completed compliance runs is preserved.
+
+    Idempotent: once filtered, subsequent loads short-circuit.
+    """
+    pipeline = config.get("pipeline")
+    if not isinstance(pipeline, list):
+        return config
+    stale = [s for s in pipeline if s in _LEGACY_PIPELINE_ENTRIES]
+    if not stale:
+        return config
+
+    config = dict(config)
+    config["pipeline"] = [s for s in pipeline if s not in _LEGACY_PIPELINE_ENTRIES]
+    save_run_config(project_root, config)
+    _record_pipeline_migration_event(project_root, removed=stale)
+    return config
+
+
+def _record_pipeline_migration_event(project_root: Path, *, removed: list[str]) -> None:
+    """Record a ``pipeline_migration`` event. Non-blocking on failure."""
+    record_script = _SHARED_SCRIPTS / "tools" / "record_event.py"
+    if not record_script.exists():
+        return
+    detail = f"removed from pipeline: {', '.join(removed)}"
+    try:
+        subprocess.run(
+            [sys.executable, str(record_script),
+             "--project-root", str(project_root),
+             "--type", "pipeline_migration",
+             "--detail", detail],
+            capture_output=True, text=True, encoding="utf-8", timeout=10,
+            cwd=str(project_root),
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        pass
+
+
+def _record_compliance_update_failed(
+    project_root: Path, phase: str, *, reason: str,
+) -> None:
+    """Record a ``compliance_update_failed`` event. Non-blocking on failure."""
+    record_script = _SHARED_SCRIPTS / "tools" / "record_event.py"
+    if not record_script.exists():
+        return
+    try:
+        subprocess.run(
+            [sys.executable, str(record_script),
+             "--project-root", str(project_root),
+             "--type", "compliance_update_failed",
+             "--phase", phase,
+             "--detail", reason],
+            capture_output=True, text=True, encoding="utf-8", timeout=10,
+            cwd=str(project_root),
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        pass
 
 
 def save_run_config(project_root: Path, config: dict[str, Any]) -> None:
@@ -190,6 +264,15 @@ def run_compliance_update(project_root: Path, phase: str) -> dict[str, Any] | No
     or on error (non-blocking).
     """
     if not _COMPLIANCE_SCRIPT.exists():
+        # Loud-fail (plan v7). Historically this branch returned None
+        # silently, which hid missing-plugin installs from users.
+        sys.stderr.write(json.dumps({
+            "level": "warn",
+            "message": "compliance update script missing",
+            "path": str(_COMPLIANCE_SCRIPT),
+            "phase": phase,
+        }) + "\n")
+        _record_compliance_update_failed(project_root, phase, reason="script_missing")
         return None
 
     try:
@@ -209,12 +292,19 @@ def run_compliance_update(project_root: Path, phase: str) -> dict[str, Any] | No
             "returncode": result.returncode,
             "stderr": (result.stderr or "")[:500],
         }) + "\n")
+        _record_compliance_update_failed(
+            project_root, phase,
+            reason=f"subprocess_exit_{result.returncode}",
+        )
     except (subprocess.TimeoutExpired, json.JSONDecodeError, OSError) as exc:
         sys.stderr.write(json.dumps({
             "level": "warn",
             "message": f"Compliance update error for phase '{phase}'",
             "error": str(exc),
         }) + "\n")
+        _record_compliance_update_failed(
+            project_root, phase, reason=f"subprocess_error:{type(exc).__name__}",
+        )
     return None
 
 
