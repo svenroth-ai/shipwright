@@ -164,7 +164,25 @@ def _build_phase_quality_injection(project_root: str) -> str:
     """Return the injection string, or empty when not applicable."""
     if not _phase_quality_inject_enabled():
         return ""
-    summary_path = Path(project_root) / "agent_docs" / "skill-compliance-findings.md"
+    pr = Path(project_root)
+    # Monorepo auto-descent guard — mirrors the audit hook. If cwd is a
+    # strict ancestor of project_root (resolver auto-descended into a
+    # managed subfolder while the user worked at a parent level), skip
+    # injection to avoid off-scope Tier-1 FAIL noise. Explicit opt-in via
+    # SHIPWRIGHT_PROJECT_ROOT env var pointing exactly at project_root.
+    try:
+        from lib.phase_quality import (
+            cwd_is_strict_ancestor_of,
+            project_root_was_explicitly_selected,
+        )
+    except ImportError:
+        pass
+    else:
+        cwd = Path.cwd()
+        if cwd_is_strict_ancestor_of(cwd, pr) \
+                and not project_root_was_explicitly_selected(pr):
+            return ""
+    summary_path = pr / "agent_docs" / "skill-compliance-findings.md"
     try:
         text = summary_path.read_text(encoding="utf-8")
     except (FileNotFoundError, OSError):

@@ -385,3 +385,69 @@ def test_phase_quality_flag_default_on(monkeypatch):
 def test_critical_gate_constants_frozen():
     """Defensive: critical gate set is exactly {W5, W6, W7}."""
     assert orchestrator._CRITICAL_GATE_CHECK_IDS == frozenset({"W5", "W6", "W7"})
+
+
+# ---------------------------------------------------------------------------
+# Monorepo Auto-Descent Guard — Injection path (plan v2 tests 21-24)
+# ---------------------------------------------------------------------------
+
+
+def _write_injection_summary(project_root: Path) -> None:
+    (project_root / "agent_docs").mkdir(exist_ok=True)
+    (project_root / "agent_docs" / "skill-compliance-findings.md").write_text(
+        "## build — run-1\n"
+        "- audited_at: 2026-04-19\n"
+        "- source: orchestrator\n"
+        "- totals: 0 PASS · 1 FAIL · 0 WARN · 0 SKIP\n"
+        "- open FAILs:\n"
+        "  - **W6** no git tag\n",
+        encoding="utf-8",
+    )
+
+
+def test_injection_silent_when_cwd_is_monorepo_root(tmp_path: Path, monkeypatch):
+    """Test 21: cwd = monorepo parent, project_root = managed subdir → silent."""
+    subdir = tmp_path / "managed"
+    subdir.mkdir()
+    _write_injection_summary(subdir)
+    monkeypatch.chdir(tmp_path)  # cwd is strict ancestor of subdir
+    monkeypatch.delenv("SHIPWRIGHT_PHASE_QUALITY_MODE", raising=False)
+    monkeypatch.delenv("SHIPWRIGHT_PROJECT_ROOT", raising=False)
+    assert cs._build_phase_quality_injection(str(subdir)) == ""
+
+
+def test_injection_fires_from_managed_subdir(tmp_path: Path, monkeypatch):
+    """Test 22 (Minor-8 regression guard): cwd == project_root → fires."""
+    _write_injection_summary(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("SHIPWRIGHT_PHASE_QUALITY_MODE", raising=False)
+    monkeypatch.delenv("SHIPWRIGHT_PROJECT_ROOT", raising=False)
+    text = cs._build_phase_quality_injection(str(tmp_path))
+    assert text
+    assert "W6" in text
+
+
+def test_injection_fires_from_descendant_of_project_root(tmp_path: Path, monkeypatch):
+    """Test 23: cwd is inside project_root → fires."""
+    _write_injection_summary(tmp_path)
+    src = tmp_path / "src" / "components"
+    src.mkdir(parents=True)
+    monkeypatch.chdir(src)
+    monkeypatch.delenv("SHIPWRIGHT_PHASE_QUALITY_MODE", raising=False)
+    monkeypatch.delenv("SHIPWRIGHT_PROJECT_ROOT", raising=False)
+    text = cs._build_phase_quality_injection(str(tmp_path))
+    assert text
+    assert "W6" in text
+
+
+def test_injection_fires_when_env_var_explicit_opt_in(tmp_path: Path, monkeypatch):
+    """Test 24: cwd = parent, env points to project_root → explicit opt-in fires."""
+    subdir = tmp_path / "managed"
+    subdir.mkdir()
+    _write_injection_summary(subdir)
+    monkeypatch.chdir(tmp_path)  # cwd is strict ancestor
+    monkeypatch.setenv("SHIPWRIGHT_PROJECT_ROOT", str(subdir))
+    monkeypatch.delenv("SHIPWRIGHT_PHASE_QUALITY_MODE", raising=False)
+    text = cs._build_phase_quality_injection(str(subdir))
+    assert text
+    assert "W6" in text

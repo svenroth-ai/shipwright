@@ -490,3 +490,244 @@ def test_nine_plugins_order_audit_before_handoff():
         assert idx_audit < idx_handoff, (
             f"{plugin}: audit at {idx_audit} must precede handoff at {idx_handoff}"
         )
+
+
+# ---------------------------------------------------------------------------
+# Monorepo Auto-Descent Guard — pure helpers (plan v2)
+# ---------------------------------------------------------------------------
+
+
+# --- cwd_is_strict_ancestor_of ---
+
+def test_strict_ancestor_true_for_parent(tmp_path: Path):
+    sub = tmp_path / "sub"
+    sub.mkdir()
+    assert pq.cwd_is_strict_ancestor_of(tmp_path, sub) is True
+
+
+def test_strict_ancestor_false_when_equal(tmp_path: Path):
+    assert pq.cwd_is_strict_ancestor_of(tmp_path, tmp_path) is False
+
+
+def test_strict_ancestor_false_when_descendant(tmp_path: Path):
+    sub = tmp_path / "sub"
+    sub.mkdir()
+    # cwd is descendant, project_root is parent → False (we're inside the managed folder)
+    assert pq.cwd_is_strict_ancestor_of(sub, tmp_path) is False
+
+
+def test_strict_ancestor_false_when_unrelated(tmp_path: Path):
+    a = tmp_path / "a"
+    b = tmp_path / "b"
+    a.mkdir()
+    b.mkdir()
+    assert pq.cwd_is_strict_ancestor_of(a, b) is False
+
+
+def test_strict_ancestor_follows_symlinks(tmp_path: Path):
+    """Path.resolve() should dereference the symlink before ancestry check."""
+    actual = tmp_path / "actual"
+    actual_sub = actual / "sub"
+    actual_sub.mkdir(parents=True)
+    link = tmp_path / "link"
+    try:
+        link.symlink_to(actual, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("Symlinks not supported on this platform/privileges")
+    # link/sub should be recognized as descendant of actual → not a strict ancestor
+    assert pq.cwd_is_strict_ancestor_of(link / "sub", actual) is False
+    # actual should be ancestor of link/sub (since link resolves to actual)
+    assert pq.cwd_is_strict_ancestor_of(actual, link / "sub") is True
+
+
+def test_strict_ancestor_handles_nonexistent_paths(tmp_path: Path):
+    """resolve(strict=False) tolerates missing paths; must not raise."""
+    ghost_cwd = tmp_path / "ghost-cwd"
+    ghost_sub = ghost_cwd / "sub"
+    # Neither exists — resolve still returns a path, ancestry check works
+    assert pq.cwd_is_strict_ancestor_of(ghost_cwd, ghost_sub) is True
+    assert pq.cwd_is_strict_ancestor_of(ghost_sub, ghost_cwd) is False
+
+
+def test_strict_ancestor_logs_and_returns_false_on_oserror(monkeypatch, capsys, tmp_path: Path):
+    """R5 (plan v2) — fail-open + stderr warning when resolve raises."""
+    from pathlib import Path as _Path
+
+    def fake_resolve(self, strict=False):
+        raise OSError("simulated failure")
+
+    monkeypatch.setattr(_Path, "resolve", fake_resolve)
+    assert pq.cwd_is_strict_ancestor_of(tmp_path, tmp_path / "sub") is False
+    stderr = capsys.readouterr().err
+    assert "cwd_is_strict_ancestor_of" in stderr
+    assert "resolve failed" in stderr
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows case-insensitive paths")
+def test_strict_ancestor_windows_case_insensitive(tmp_path: Path):
+    """On Windows, C:\\Foo\\Bar and C:\\FOO\\bar resolve to the same path."""
+    sub = tmp_path / "SubDir"
+    sub.mkdir()
+    upper_parent = Path(str(tmp_path).upper())
+    lower_sub = Path(str(sub).lower())
+    assert pq.cwd_is_strict_ancestor_of(upper_parent, lower_sub) is True
+
+
+# --- project_root_was_explicitly_selected ---
+
+def test_explicit_opt_in_false_when_env_unset(monkeypatch, tmp_path: Path):
+    monkeypatch.delenv("SHIPWRIGHT_PROJECT_ROOT", raising=False)
+    assert pq.project_root_was_explicitly_selected(tmp_path) is False
+
+
+def test_explicit_opt_in_false_on_whitespace_env(monkeypatch, tmp_path: Path):
+    monkeypatch.setenv("SHIPWRIGHT_PROJECT_ROOT", "   ")
+    assert pq.project_root_was_explicitly_selected(tmp_path) is False
+
+
+def test_explicit_opt_in_true_on_exact_match(monkeypatch, tmp_path: Path):
+    monkeypatch.setenv("SHIPWRIGHT_PROJECT_ROOT", str(tmp_path))
+    assert pq.project_root_was_explicitly_selected(tmp_path) is True
+
+
+def test_explicit_opt_in_false_on_different_path(monkeypatch, tmp_path: Path):
+    other = tmp_path / "other"
+    other.mkdir()
+    monkeypatch.setenv("SHIPWRIGHT_PROJECT_ROOT", str(other))
+    assert pq.project_root_was_explicitly_selected(tmp_path) is False
+
+
+def test_explicit_opt_in_accepts_relative_env_path(monkeypatch, tmp_path: Path):
+    sub = tmp_path / "subdir"
+    sub.mkdir()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("SHIPWRIGHT_PROJECT_ROOT", "subdir")
+    assert pq.project_root_was_explicitly_selected(sub) is True
+
+
+def test_explicit_opt_in_false_on_invalid_env_path(monkeypatch, tmp_path: Path):
+    """Non-existent env paths resolve to an abs path that won't match project_root."""
+    monkeypatch.setenv("SHIPWRIGHT_PROJECT_ROOT", "/definitely-does-not-exist-12345")
+    assert pq.project_root_was_explicitly_selected(tmp_path) is False
+
+
+def test_explicit_opt_in_symlink_resolution(monkeypatch, tmp_path: Path):
+    actual = tmp_path / "actual"
+    actual.mkdir()
+    link = tmp_path / "link"
+    try:
+        link.symlink_to(actual, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("Symlinks not supported on this platform/privileges")
+    # Env points to symlink, project_root is the real path → resolves to same
+    monkeypatch.setenv("SHIPWRIGHT_PROJECT_ROOT", str(link))
+    assert pq.project_root_was_explicitly_selected(actual) is True
+
+
+# ---------------------------------------------------------------------------
+# Monorepo Auto-Descent Guard — E2E (subprocess hook)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def monorepo_with_managed_subdir(tmp_path: Path) -> tuple[Path, Path]:
+    """Create (monorepo_root, managed_subdir) where only the subdir has markers.
+
+    monorepo_root has no agent_docs/ and no config markers → triggers
+    auto-descent in resolve_project_root().
+    """
+    subdir = tmp_path / "managed"
+    (subdir / "agent_docs").mkdir(parents=True)
+    (subdir / "shipwright_run_config.json").write_text(
+        json.dumps({
+            "run_id": "run-monorepo",
+            "current_step": "build",
+            "completed_steps": ["project", "design", "plan"],
+        }),
+        encoding="utf-8",
+    )
+    events = [
+        {"type": "phase_completed", "phase": "build", "timestamp": "2026-04-19T12:00:00Z"},
+    ]
+    (subdir / "shipwright_events.jsonl").write_text(
+        "\n".join(json.dumps(e) for e in events) + "\n",
+        encoding="utf-8",
+    )
+    (subdir / "agent_docs" / "build_dashboard.md").write_text(
+        "# Dashboard\n\n## build\nsection complete\n",
+        encoding="utf-8",
+    )
+    handoff = subdir / "agent_docs" / "session_handoff.md"
+    handoff.write_text("# Session Handoff\n\nReason: build: finalize\n", encoding="utf-8")
+    now = time.time()
+    os.utime(handoff, (now, now))
+    (subdir / "CHANGELOG.md").write_text(
+        "# Changelog\n\n## [Unreleased]\n\n### Added\n- build bullet\n",
+        encoding="utf-8",
+    )
+    (subdir / "agent_docs" / "decision_log.md").write_text(
+        "## ADR-001: build decision\n\n**Status:** Accepted\n\nBody.\n",
+        encoding="utf-8",
+    )
+    return tmp_path, subdir
+
+
+def test_audit_hook_silent_noop_from_monorepo_root(monorepo_with_managed_subdir):
+    """Running the hook from monorepo root (auto-descent case) must skip audit."""
+    monorepo_root, managed = monorepo_with_managed_subdir
+    result = _run_hook(monorepo_root)
+    assert result.returncode == 0, result.stderr
+    # No finding JSON anywhere (not in monorepo_root, not in managed subdir)
+    assert not (monorepo_root / pq.FINDING_DIR).exists()
+    assert not (managed / pq.FINDING_DIR).exists()
+
+
+def test_audit_hook_fires_when_cwd_is_managed_subdir(monorepo_with_managed_subdir):
+    """Running from inside managed subdir → audit fires normally."""
+    _monorepo_root, managed = monorepo_with_managed_subdir
+    result = _run_hook(managed)
+    assert result.returncode == 0, result.stderr
+    finding_dir = managed / pq.FINDING_DIR
+    assert finding_dir.is_dir()
+    assert list(finding_dir.glob("*.json"))
+
+
+def test_audit_hook_fires_when_env_var_points_to_project_root(monorepo_with_managed_subdir):
+    """Explicit opt-in via SHIPWRIGHT_PROJECT_ROOT resolving to the managed subdir."""
+    monorepo_root, managed = monorepo_with_managed_subdir
+    result = _run_hook(
+        monorepo_root,
+        extra_env={"SHIPWRIGHT_PROJECT_ROOT": str(managed)},
+    )
+    assert result.returncode == 0, result.stderr
+    # Finding written despite cwd != project_root
+    finding_dir = managed / pq.FINDING_DIR
+    assert finding_dir.is_dir()
+    assert list(finding_dir.glob("*.json"))
+
+
+def test_audit_hook_silent_noop_when_env_var_ambient_unrelated(
+    monorepo_with_managed_subdir, tmp_path: Path
+):
+    """Ambient env (points elsewhere) must NOT bypass the auto-descent guard."""
+    monorepo_root, managed = monorepo_with_managed_subdir
+    unrelated = tmp_path / "unrelated-no-markers"
+    unrelated.mkdir()
+    result = _run_hook(
+        monorepo_root,
+        extra_env={"SHIPWRIGHT_PROJECT_ROOT": str(unrelated)},
+    )
+    assert result.returncode == 0, result.stderr
+    # No finding (resolver fell through to auto-descent, opt-in didn't match)
+    assert not (managed / pq.FINDING_DIR).exists()
+
+
+def test_audit_hook_silent_noop_when_env_var_whitespace(monorepo_with_managed_subdir):
+    """Whitespace-only env is treated as unset → guard fires."""
+    monorepo_root, managed = monorepo_with_managed_subdir
+    result = _run_hook(
+        monorepo_root,
+        extra_env={"SHIPWRIGHT_PROJECT_ROOT": "   "},
+    )
+    assert result.returncode == 0, result.stderr
+    assert not (managed / pq.FINDING_DIR).exists()

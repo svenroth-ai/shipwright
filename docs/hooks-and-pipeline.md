@@ -141,7 +141,37 @@ Wired into every plugin that has a Stop hook (10 plugins; `run` and
 - Non-blocking. Always exits 0 even on internal errors.
 - Idempotent via `(phase, run_id, session_id)` triple.
 - Silent no-op for greenfield / non-Shipwright projects.
+- Silent no-op when the resolver auto-descended into a managed
+  subfolder while the user was actually working at a parent level
+  (Monorepo Auto-Descent Guard — see below).
 - Gated off when `SHIPWRIGHT_PHASE_QUALITY=0`.
+
+**Monorepo Auto-Descent Guard:** When the Stop-hook fires from a cwd
+that is a **strict ancestor** of the resolved `project_root` (i.e.
+`resolve_project_root()` found the managed project via auto-descent
+into a subdir), the hook silent no-ops. Goal: monorepo-root work does
+not pollute the audit trail of a managed subproject.
+
+*Opt-in for cross-dir audit (e.g. CI/automation):*
+- `cd <managed-subdir>` — cwd is then `project_root` or a descendant;
+  audit fires normally.
+- `SHIPWRIGHT_PROJECT_ROOT=<path>` **and** the resolved path matches
+  exactly the detected `project_root` — explicit user opt-in.
+
+*No bypass on ambient env:* when `SHIPWRIGHT_PROJECT_ROOT` is set for
+unrelated reasons (CI, parent shell) AND does not resolve to the
+current `project_root`, the guard still fires. This distinguishes
+deliberate opt-in from environment noise.
+
+*Cross-platform:* path comparisons use `.resolve(strict=False)` which
+dereferences symlinks and normalises Windows case-insensitivity. On
+resolution errors (broken mount, deleted cwd) the guard fails open
+with a stderr warning — safer than silently blocking every audit
+after one environment hiccup.
+
+The same guard applies to the SessionStart-Injection in
+`capture_session_id.py` so injection won't surface Tier-1 FAILs from
+off-scope audit runs that might have predated the guard.
 
 **Categories (complete — epic PR 1-4):**
 - `canon` — C1-C5 Minimum Phase Completion Canon via
