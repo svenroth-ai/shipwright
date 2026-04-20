@@ -31,6 +31,12 @@ export interface ExternalTask {
   parentTaskId?: string;
   parentSessionUuid?: string;
   title: string;
+  /**
+   * Iterate 3 section 02 — ADR-037. Always present on v2 server responses.
+   * The reserved literal "unassigned" represents the synthesized
+   * pseudo-project bucket.
+   */
+  projectId: string;
   state: ExternalTaskState;
   createdAt: string;
   launchedAt?: string;
@@ -93,8 +99,14 @@ async function httpJson<T>(input: string, init?: RequestInit): Promise<T> {
   return (await r.json()) as T;
 }
 
-export async function listTasks(): Promise<ExternalTask[]> {
-  const json = await httpJson<{ tasks: ExternalTask[] }>(`${EXTERNAL_API}/tasks`);
+export async function listTasks(args: { projectId?: string | null } = {}): Promise<ExternalTask[]> {
+  // Section 02 (iterate 3) — optional projectId filter. Null / undefined =
+  // all projects (server omits the filter). Reserved literal "unassigned"
+  // is a valid filter value.
+  const q = new URLSearchParams();
+  if (args.projectId) q.set("projectId", args.projectId);
+  const suffix = q.size > 0 ? `?${q.toString()}` : "";
+  const json = await httpJson<{ tasks: ExternalTask[] }>(`${EXTERNAL_API}/tasks${suffix}`);
   return json.tasks;
 }
 
@@ -107,6 +119,8 @@ export async function createTask(args: {
   title: string;
   cwd: string;
   pluginDirs?: string[];
+  /** Iterate 3 section 02 — optional; server defaults to "unassigned". */
+  projectId?: string;
 }): Promise<ExternalTask> {
   const json = await httpJson<{ task: ExternalTask }>(`${EXTERNAL_API}/tasks`, {
     method: "POST",
@@ -149,6 +163,23 @@ export async function renameTask(taskId: string, title: string): Promise<Externa
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title }),
+  });
+  return json.task;
+}
+
+/**
+ * Iterate 3 section 02 — PATCH the projectId of a task. Server validates
+ * against the known-project-id set + the reserved "unassigned" literal.
+ * Unknown id → throws (caller should surface an error toast).
+ */
+export async function assignTaskProject(
+  taskId: string,
+  projectId: string,
+): Promise<ExternalTask> {
+  const json = await httpJson<{ task: ExternalTask }>(`${EXTERNAL_API}/tasks/${taskId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ projectId }),
   });
   return json.task;
 }

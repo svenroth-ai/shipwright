@@ -109,7 +109,18 @@ if (isMainModule) {
       };
 
       // ProjectManager — still used by /api/projects + wizard.
-      const projectManagerDeps = {
+      // getTaskProjectIds (section 02) is late-bound below, after the
+      // sessionsStore is constructed.
+      const projectManagerDeps: {
+        readFile: (p: string, e: string) => Promise<string>;
+        writeFile: (p: string, d: string) => Promise<void>;
+        existsSync: (p: string) => boolean;
+        mkdirSync: (p: string, o?: { recursive: boolean }) => void;
+        readdirSync: (p: string, o?: { withFileTypes: boolean }) => Array<{ name: string; isDirectory: () => boolean }>;
+        lock: (p: string) => Promise<() => Promise<void>>;
+        ensureFile: (p: string) => void;
+        getTaskProjectIds?: () => Set<string>;
+      } = {
         readFile: (p: string, e: string) => readFile(p, e as BufferEncoding),
         writeFile: (p: string, d: string) => writeFile(p, d),
         existsSync: (p: string) => fs.existsSync(p),
@@ -129,6 +140,19 @@ if (isMainModule) {
       await projectManager.load();
 
       // External-launch store + watcher.
+      //
+      // Section 02 (iterate 3, ADR-037/038) — two cross-wirings:
+      //   1. projectManager.getTaskProjectIds reads from sessionsStore so
+      //      the Unassigned pseudo-project surfaces iff any task needs it.
+      //   2. sdkSessionsStore.getKnownProjectIds reads from projectManager
+      //      so stale projectIds on-disk (deleted projects, O26) resolve
+      //      to UNASSIGNED in memory on load.
+      //
+      // The wiring order matters — projectManager loads first (sync
+      // projects.json read) and the sessionsStore reads from it during
+      // its own load(). The sessionsStore is created fresh above so we
+      // pass a reference-equality callback that stays valid after both
+      // stores finish loading.
       const sdkSessionsPath = `${config.registryDir}/sdk-sessions.json`;
       const sdkSessionsDeps = {
         readFile: (p: string, e: string) => readFile(p, e as BufferEncoding),
@@ -137,9 +161,44 @@ if (isMainModule) {
         mkdirSync: (p: string, o?: { recursive: boolean }) => fs.mkdirSync(p, o),
         lock: lockPath,
         ensureFile: ensureFileExists,
+        getKnownProjectIds: () => new Set(projectManager.getAll().filter((p) => !p.synthesized).map((p) => p.id)),
       };
       const sdkSessionsStore = new SdkSessionsStore(sdkSessionsPath, sdkSessionsDeps);
       await sdkSessionsStore.load();
+
+      // Late-bind getTaskProjectIds on the already-constructed
+      // projectManager — its deps shape is public (mutable fields), so we
+      // append here rather than threading through constructor args above.
+      (projectManager as unknown as { deps: { getTaskProjectIds: () => Set<string> } }).deps.getTaskProjectIds =
+        () => new Set(sdkSessionsStore.list().map((t) => t.projectId));
+
+      // Boot-time diagnostic (spec step 7). Logs once if any session
+      // carries projectId="unassigned" while the on-disk file is still
+      // schemaVersion: 1 — confirms the write-on-touch migration is
+      // deferred as designed (ADR-038) rather than silently broken.
+      try {
+        if (fs.existsSync(sdkSessionsPath)) {
+          const raw = fs.readFileSync(sdkSessionsPath, "utf-8");
+          if (raw.trim()) {
+            const parsed = JSON.parse(raw) as { schemaVersion?: number };
+            const hasUnassignedInMemory = sdkSessionsStore
+              .list()
+              .some((t) => t.projectId === "unassigned");
+            if (parsed.schemaVersion === 1 && hasUnassignedInMemory) {
+              console.log(
+                JSON.stringify({
+                  level: "info",
+                  message:
+                    "sdk-sessions.json is still schemaVersion 1; v1→v2 migration will land on next task mutation (ADR-038)",
+                }),
+              );
+            }
+          }
+        }
+      } catch {
+        // Non-fatal — the diagnostic is purely informational.
+      }
+
       const sessionWatcher = new SessionWatcher();
 
       // Claude CLI version probe (refreshed on demand; post-upgrade clients
@@ -168,7 +227,18 @@ if (isMainModule) {
       app.route("/", createProjectRoutes(projectManager, projectFsDeps));
       app.route("/", createSettingsRoutes(settingsPath, settingsDeps));
       app.route("/", createProfilesRoutes());
-      app.route("/", createExternalRoutes({ store: sdkSessionsStore, watcher: sessionWatcher }));
+      app.route(
+        "/",
+        createExternalRoutes({
+          store: sdkSessionsStore,
+          watcher: sessionWatcher,
+          // Section 02 — PATCH/POST projectId validation. Excludes the
+          // synthesized Unassigned row (that sentinel is hard-coded valid
+          // inside validateProjectIdOrError).
+          getKnownProjectIds: () =>
+            new Set(projectManager.getAll().filter((p) => !p.synthesized).map((p) => p.id)),
+        }),
+      );
       app.route("/", createDiagnosticsRoutes({ store: sdkSessionsStore, versionInfo }));
 
       const shutdown = () => {

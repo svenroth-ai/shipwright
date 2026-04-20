@@ -22,6 +22,7 @@ import { parseSessionJsonl } from "../core/session-parser.js";
 import { deriveInbox, DEFAULT_USER_BLOCKING_TOOLS } from "../core/inbox-derive.js";
 import {
   SdkSessionsStore,
+  UNASSIGNED_PROJECT_ID,
   type ExternalTask,
   type ExternalTaskState,
 } from "../core/sdk-sessions-store.js";
@@ -36,9 +37,19 @@ const TITLE_MAX_LENGTH = 200;
 export function createExternalRoutes(args: {
   store: SdkSessionsStore;
   watcher: SessionWatcher;
+  /**
+   * Section 02 (iterate 3) — validates projectId on PATCH / POST. Returns
+   * the set of non-synthesized project ids currently known to the server.
+   * The reserved UNASSIGNED_PROJECT_ID sentinel is accepted independently
+   * of this set. Omitted in legacy callers — PATCH projectId support is
+   * gated on presence (iterate-2 callers still work without it, and the
+   * route returns 400 "projectId not supported" if a client sends one
+   * without wiring).
+   */
+  getKnownProjectIds?: () => Set<string>;
 }) {
   const app = new Hono();
-  const { store, watcher } = args;
+  const { store, watcher, getKnownProjectIds } = args;
 
   app.post("/api/external/tasks", async (c) => {
     const body = await c.req.json().catch(() => ({}));
@@ -51,13 +62,32 @@ export function createExternalRoutes(args: {
     const pluginDirs = Array.isArray(body.pluginDirs)
       ? body.pluginDirs.filter((p: unknown): p is string => typeof p === "string")
       : [];
-    const task = store.create({ title, cwd, pluginDirs });
+    // Section 02 (iterate 3) — allow callers to pass an explicit projectId
+    // at creation. Defaults to UNASSIGNED_PROJECT_ID via the store. Invalid
+    // ids are rejected symmetrically with PATCH so the TaskBoard inline
+    // form can't leak a stale project id from a deleted project.
+    let projectId: string | undefined;
+    if (typeof body.projectId === "string" && body.projectId.trim()) {
+      const candidate = body.projectId.trim();
+      const validation = validateProjectIdOrError(candidate, getKnownProjectIds);
+      if (validation) return c.json(validation, 400);
+      projectId = candidate;
+    }
+    const task = store.create({ title, cwd, pluginDirs, projectId });
     await store.persist();
     return c.json({ task });
   });
 
   app.get("/api/external/tasks", (c) => {
-    return c.json({ tasks: store.list() });
+    // Section 02 — optional ?projectId=<id> filter. Unvalidated on read
+    // (unknown id → empty list, not 400) because an orphaned URL from a
+    // deleted project is a benign state, not a user error. The reserved
+    // "unassigned" literal is a valid filter value for the synthesized
+    // bucket.
+    const filter = c.req.query("projectId");
+    const all = store.list();
+    const tasks = filter ? all.filter((t) => t.projectId === filter) : all;
+    return c.json({ tasks });
   });
 
   app.get("/api/external/tasks/:id", (c) => {
@@ -87,32 +117,55 @@ export function createExternalRoutes(args: {
   });
 
   /**
-   * Rename a task. Title is the source of truth for the next launch's
-   * `--name` flag (Claude's CLI picker title). Concurrent writers from
-   * multiple tabs are serialized by `proper-lockfile` inside the store's
-   * persist() call; on lock contention we surface 409 so the client can
-   * retry instead of overwriting silently.
+   * Patch a task. Title is the source of truth for the next launch's
+   * `--name` flag (Claude's CLI picker title). Section 02 (iterate 3)
+   * extends the body to accept `{projectId}` independently of title —
+   * at least one of the two must be present.
+   *
+   * Concurrent writers from multiple tabs are serialized by
+   * `proper-lockfile` inside the store's persist() call; on lock
+   * contention we surface 409 so the client can retry instead of
+   * overwriting silently.
    */
   app.patch("/api/external/tasks/:id", async (c) => {
     const body = await c.req.json().catch(() => ({}));
     const task = store.get(c.req.param("id"));
     if (!task) return c.json({ error: "Task not found" }, 404);
 
-    if (typeof body.title !== "string") {
-      return c.json({ error: "title is required (string)" }, 400);
-    }
-    if (/[\r\n]/.test(body.title)) {
-      return c.json({ error: "title cannot contain newlines" }, 400);
-    }
-    const trimmed = body.title.trim();
-    if (trimmed.length === 0) {
-      return c.json({ error: "title cannot be empty" }, 400);
-    }
-    if (trimmed.length > TITLE_MAX_LENGTH) {
-      return c.json({ error: `title exceeds ${TITLE_MAX_LENGTH} characters` }, 400);
+    const hasTitle = typeof body.title === "string";
+    const hasProjectId = typeof body.projectId === "string";
+
+    if (!hasTitle && !hasProjectId) {
+      return c.json({ error: "at_least_one_field_required" }, 400);
     }
 
-    store.patch(task.taskId, { title: trimmed });
+    const patch: Partial<ExternalTask> = {};
+
+    if (hasTitle) {
+      if (/[\r\n]/.test(body.title)) {
+        return c.json({ error: "title cannot contain newlines" }, 400);
+      }
+      const trimmed = body.title.trim();
+      if (trimmed.length === 0) {
+        return c.json({ error: "title cannot be empty" }, 400);
+      }
+      if (trimmed.length > TITLE_MAX_LENGTH) {
+        return c.json({ error: `title exceeds ${TITLE_MAX_LENGTH} characters` }, 400);
+      }
+      patch.title = trimmed;
+    }
+
+    if (hasProjectId) {
+      const candidate = body.projectId.trim();
+      if (candidate === "") {
+        return c.json({ error: "projectId cannot be empty" }, 400);
+      }
+      const validation = validateProjectIdOrError(candidate, getKnownProjectIds);
+      if (validation) return c.json(validation, 400);
+      patch.projectId = candidate;
+    }
+
+    store.patch(task.taskId, patch);
     try {
       await store.persist();
     } catch (err) {
@@ -137,6 +190,10 @@ export function createExternalRoutes(args: {
       pluginDirs: parent.pluginDirs,
       parentTaskId: parent.taskId,
       parentSessionUuid: parent.sessionUuid,
+      // Section 02 — forks inherit the parent's projectId. Falls through to
+      // UNASSIGNED_PROJECT_ID via the store's default when the parent is a
+      // legacy v1 task that has already been backfilled.
+      projectId: parent.projectId,
     });
     const commands = buildCopyCommands({
       sessionUuid: child.sessionUuid,
@@ -324,4 +381,26 @@ function parseIntSafe(value: string | undefined, fallback: number): number {
   if (!value) return fallback;
   const n = Number.parseInt(value, 10);
   return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
+
+/**
+ * Section 02 (iterate 3) — projectId validation.
+ *
+ * Returns a structured error body on rejection, or null when the id is
+ * acceptable. The reserved UNASSIGNED_PROJECT_ID sentinel is always
+ * valid (represents the synthesized bucket). If `getKnownProjectIds`
+ * is not wired, every non-sentinel id is rejected — the route demands
+ * explicit validation so a misconfigured server can't silently accept
+ * arbitrary strings.
+ */
+function validateProjectIdOrError(
+  candidate: string,
+  getKnownProjectIds: (() => Set<string>) | undefined,
+): { error: string; projectId: string } | null {
+  if (candidate === UNASSIGNED_PROJECT_ID) return null;
+  const known = getKnownProjectIds?.();
+  if (!known || !known.has(candidate)) {
+    return { error: "unknown_project_id", projectId: candidate };
+  }
+  return null;
 }

@@ -12,10 +12,19 @@ import {
 const LIST_KEY = ["external-tasks"] as const;
 const detailKey = (taskId: string) => ["external-task", taskId] as const;
 
-export function useExternalTasks() {
+/**
+ * List external tasks, optionally filtered by projectId (section 02).
+ *
+ * Passing `null` or omitting the arg = All Projects. Passing the reserved
+ * literal "unassigned" narrows to the synthesized bucket. The query key
+ * includes projectId so switching filters produces a fresh fetch without
+ * stale overlap.
+ */
+export function useExternalTasks(args: { projectId?: string | null } = {}) {
+  const projectId = args.projectId ?? null;
   return useQuery<ExternalTask[]>({
-    queryKey: LIST_KEY,
-    queryFn: listTasks,
+    queryKey: [...LIST_KEY, projectId] as const,
+    queryFn: () => listTasks({ projectId }),
     refetchInterval: 2_000,
     refetchIntervalInBackground: false,
   });

@@ -3,7 +3,7 @@
  *
  * Shape (on disk, `<registryDir>/sdk-sessions.json`):
  *   {
- *     schemaVersion: 1,
+ *     schemaVersion: 2,
  *     sessions: {
  *       [taskId]: {
  *         taskId,
@@ -14,6 +14,7 @@
  *         parentSessionUuid?,
  *         state,               // see PocTaskState below
  *         title,
+ *         projectId,           // v2 (iterate 3 section 02) — "unassigned" reserved
  *         createdAt,
  *         launchedAt?,
  *         firstJsonlObservedAt?,
@@ -22,6 +23,23 @@
  *       }
  *     }
  *   }
+ *
+ * Schema migration (ADR-038): CURRENT_SCHEMA_VERSION = 2. The loader
+ * accepts both v1 and v2 on disk. v1 rows are backfilled with
+ * `projectId: "unassigned"` in memory (write-on-touch — the first
+ * persist() after any mutation flushes the whole shape as v2). This
+ * keeps the migration incremental — large stores (300+ rows) migrate
+ * over days of normal use rather than on boot, and rollback is a
+ * one-line constant revert.
+ *
+ * O26 (deleted project references): if a dep `getKnownProjectIds` is
+ * injected, v2 rows whose projectId is not in the known set resolve
+ * to "unassigned" in memory and on the next persist. Keeps the task
+ * store coherent with projects.json without a separate reconcile job.
+ *
+ * O25 (forward compat): the v1 branch tolerates an unknown projectId
+ * field — older binaries don't crash when faced with a v2-ish row
+ * tagged v1 (e.g. after a partial rollback).
  *
  * Writes are guarded by proper-lockfile (via injected lock dep). Reads
  * are unguarded — the store is consulted on every request, and dirty
@@ -45,6 +63,13 @@ export type ExternalTaskState =
   | "launch_failed"
   | "done";
 
+/**
+ * Reserved projectId sentinel for the "Unassigned" pseudo-project bucket.
+ * Kept in sync with client/src/lib/projectIds.ts (intentional duplication
+ * per conventions.md — the two sides don't import each other).
+ */
+export const UNASSIGNED_PROJECT_ID = "unassigned";
+
 export interface ExternalTaskInboxState {
   pendingToolUseIds: string[];
   dismissedToolUseIds: string[];
@@ -61,6 +86,13 @@ export interface ExternalTask {
   parentSessionUuid?: string;
   state: ExternalTaskState;
   title: string;
+  /**
+   * v2 — iterate 3 section 02. ADR-037. Always a non-empty string; the
+   * reserved literal UNASSIGNED_PROJECT_ID represents tasks without a
+   * chosen project (and deleted-project references resolved via O26).
+   * v1 rows on disk are backfilled with UNASSIGNED_PROJECT_ID at load time.
+   */
+  projectId: string;
   createdAt: string;
   launchedAt?: string;
   firstJsonlObservedAt?: string;
@@ -69,7 +101,7 @@ export interface ExternalTask {
 }
 
 export interface SdkSessionsFile {
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
   sessions: Record<string, ExternalTask>;
 }
 
@@ -82,9 +114,16 @@ export interface SdkSessionsStoreDeps {
   lock?: (path: string) => Promise<() => Promise<void>>;
   /** Creates an empty file if missing (proper-lockfile requires lstat). */
   ensureFile: (path: string) => void;
+  /**
+   * Optional — section 02 O26. If provided, v2-loaded rows whose
+   * projectId is not in this set are resolved to UNASSIGNED_PROJECT_ID
+   * in memory. Next persist() writes the canonical value back.
+   * Omitted in unit tests (skips the resolve step).
+   */
+  getKnownProjectIds?: () => Set<string>;
 }
 
-const CURRENT_SCHEMA_VERSION = 1 as const;
+const CURRENT_SCHEMA_VERSION = 2 as const;
 
 export class SdkSessionsStore {
   private readonly path: string;
@@ -133,13 +172,13 @@ export class SdkSessionsStore {
       return;
     }
 
-    // Schema-version gate. Schema-v1 is current; v0 migration is a stub
-    // because no prior version exists in the wild.
+    // Schema-version gate. We accept v1 and v2 (ADR-038). Anything else
+    // → start empty (future version, won't silently misinterpret).
     const schemaVersion =
       parsed && typeof parsed === "object" && "schemaVersion" in parsed
         ? (parsed as { schemaVersion: unknown }).schemaVersion
         : undefined;
-    if (schemaVersion !== CURRENT_SCHEMA_VERSION) {
+    if (schemaVersion !== 1 && schemaVersion !== 2) {
       this.sessions.clear();
       this.loaded = true;
       return;
@@ -157,9 +196,25 @@ export class SdkSessionsStore {
 
     // Per-entry fault isolation: a bad row is dropped, the rest survive.
     for (const [taskId, value] of Object.entries(sessionsObj as Record<string, unknown>)) {
-      const task = validateExternalTask(taskId, value);
+      const task = validateExternalTask(taskId, value, schemaVersion);
       if (task) this.sessions.set(taskId, task);
     }
+
+    // O26: resolve stale projectId references to UNASSIGNED. Only runs when
+    // the wiring provides a known-project-id set (production has it; unit
+    // tests typically don't — which is fine, they test the pre-resolve shape).
+    if (this.deps.getKnownProjectIds) {
+      const known = this.deps.getKnownProjectIds();
+      for (const task of this.sessions.values()) {
+        if (
+          task.projectId !== UNASSIGNED_PROJECT_ID &&
+          !known.has(task.projectId)
+        ) {
+          task.projectId = UNASSIGNED_PROJECT_ID;
+        }
+      }
+    }
+
     this.loaded = true;
   }
 
@@ -169,6 +224,12 @@ export class SdkSessionsStore {
     pluginDirs?: string[];
     parentTaskId?: string;
     parentSessionUuid?: string;
+    /**
+     * v2 — iterate 3 section 02. Defaults to UNASSIGNED_PROJECT_ID when
+     * omitted. Callers that know the active project (e.g. the inline
+     * task-creation form on TaskBoardPage) pass it explicitly.
+     */
+    projectId?: string;
   }): ExternalTask {
     const task: ExternalTask = {
       taskId: randomUUID(),
@@ -178,6 +239,10 @@ export class SdkSessionsStore {
       parentTaskId: args.parentTaskId,
       parentSessionUuid: args.parentSessionUuid,
       title: args.title,
+      projectId:
+        typeof args.projectId === "string" && args.projectId.trim()
+          ? args.projectId.trim()
+          : UNASSIGNED_PROJECT_ID,
       state: "draft",
       createdAt: new Date().toISOString(),
       inbox: {
@@ -244,7 +309,11 @@ export class SdkSessionsStore {
 // ---------- schema validators (hand-rolled; zod stays out of the store
 // load path because a single malformed field shouldn't cascade-throw) ----------
 
-function validateExternalTask(taskId: string, raw: unknown): ExternalTask | null {
+function validateExternalTask(
+  taskId: string,
+  raw: unknown,
+  schemaVersion: 1 | 2,
+): ExternalTask | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
   if (r.taskId !== taskId) return null;
@@ -267,6 +336,24 @@ function validateExternalTask(taskId: string, raw: unknown): ExternalTask | null
   const state = validStates.includes(r.state as ExternalTaskState)
     ? (r.state as ExternalTaskState)
     : "draft";
+
+  // projectId branches on schemaVersion (ADR-038).
+  //
+  // v1: any projectId field on disk is untrusted (this is a compat-window
+  //   shape, e.g. an older binary read a v2 row tagged v1). Always
+  //   backfill UNASSIGNED_PROJECT_ID. External review O25.
+  // v2: require a non-empty string; soft-skip the row otherwise (null,
+  //   empty-string, or non-string = corrupt).
+  let projectId: string;
+  if (schemaVersion === 1) {
+    projectId = UNASSIGNED_PROJECT_ID;
+  } else {
+    if (typeof r.projectId !== "string" || r.projectId.trim() === "") {
+      return null;
+    }
+    projectId = r.projectId.trim();
+  }
+
   const rawInbox = r.inbox;
   const inbox: ExternalTaskInboxState =
     rawInbox && typeof rawInbox === "object"
@@ -296,6 +383,7 @@ function validateExternalTask(taskId: string, raw: unknown): ExternalTask | null
     parentTaskId: typeof r.parentTaskId === "string" ? r.parentTaskId : undefined,
     parentSessionUuid: typeof r.parentSessionUuid === "string" ? r.parentSessionUuid : undefined,
     title: r.title,
+    projectId,
     state,
     createdAt: r.createdAt,
     launchedAt: typeof r.launchedAt === "string" ? r.launchedAt : undefined,

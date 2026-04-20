@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { LayoutDashboard, FolderOpen, Inbox, Settings, Menu, Activity } from 'lucide-react';
 import { SidebarNavItem } from './SidebarNavItem';
 import { InboxBadge } from './InboxBadge';
+import { SidebarProjectList } from './SidebarProjectList';
 
 interface SidebarNavProps {
   inboxCount: number;
@@ -64,7 +65,7 @@ export function SidebarNav({ inboxCount }: SidebarNavProps) {
       </div>
 
       {/* Nav items */}
-      <nav className="flex-1 flex flex-col gap-1 py-2 px-3">
+      <nav className="flex flex-col gap-1 py-2 px-3">
         <SidebarNavItem
           icon={LayoutDashboard}
           label="Task Board"
@@ -91,6 +92,12 @@ export function SidebarNav({ inboxCount }: SidebarNavProps) {
           collapsed={collapsed}
         />
       </nav>
+
+      {/* Section 02 (iterate 3) — project list + active highlight. Hidden
+          when the sidebar collapses to icons only. */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <SidebarProjectList collapsed={collapsed} />
+      </div>
 
       {/* Bottom: Settings */}
       <div className="border-t border-white/10 px-3 py-3">

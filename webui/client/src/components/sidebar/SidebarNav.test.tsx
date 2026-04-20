@@ -1,13 +1,30 @@
+import type { ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SidebarNav } from './SidebarNav';
 
+// Section 02 (iterate 3) — SidebarNav now renders SidebarProjectList, which
+// uses TanStack Query via useProjects. Every test must wrap the tree in a
+// fresh QueryClientProvider so the hook doesn't throw "No QueryClient set".
+function makeWrapper() {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
+  });
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+  };
+}
+
 function renderWithRouter(initialEntries = ['/']) {
+  const Wrapper = makeWrapper();
   return render(
-    <MemoryRouter initialEntries={initialEntries}>
-      <SidebarNav inboxCount={0} />
-    </MemoryRouter>,
+    <Wrapper>
+      <MemoryRouter initialEntries={initialEntries}>
+        <SidebarNav inboxCount={0} />
+      </MemoryRouter>
+    </Wrapper>,
   );
 }
 
@@ -48,10 +65,13 @@ describe('SidebarNav', () => {
   });
 
   it('shows inbox badge when count > 0', () => {
+    const Wrapper = makeWrapper();
     render(
-      <MemoryRouter>
-        <SidebarNav inboxCount={3} />
-      </MemoryRouter>,
+      <Wrapper>
+        <MemoryRouter>
+          <SidebarNav inboxCount={3} />
+        </MemoryRouter>
+      </Wrapper>,
     );
     expect(screen.getByText('3')).toBeInTheDocument();
   });
