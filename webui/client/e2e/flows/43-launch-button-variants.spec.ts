@@ -56,12 +56,24 @@ test.describe("TerminalLaunchButton — variant consistency", () => {
     expect(compactClip).toContain("--session-id");
     expect(compactClip).not.toContain("--resume");
 
-    // Primary variant — TaskDetail header. Clear clipboard first so we
-    // don't accidentally read the compact variant's command back.
+    // Primary variant — TaskDetail header. Iterate 3 section 04 replaced
+    // the old `terminal-launch-btn` with the state-dependent CTA. Post
+    // first-launch the task is in awaiting_external_start (or later), so
+    // the CTA surfaces as "Copy Resume Command".
     await page.evaluate(() => navigator.clipboard.writeText(""));
     await page.goto(`/tasks/${task.taskId}`);
-    const primary = page.getByTestId("terminal-launch-btn");
-    await expect(primary).toBeVisible();
+    // Wait for one of the two CTA variants to land.
+    await page.waitForSelector(
+      '[data-testid="cta-copy-resume-command"], [data-testid="cta-launch-in-terminal"]',
+      { timeout: 5000 },
+    );
+    const primaryTestId = (await page
+      .getByTestId("cta-copy-resume-command")
+      .isVisible()
+      .catch(() => false))
+      ? "cta-copy-resume-command"
+      : "cta-launch-in-terminal";
+    const primary = page.getByTestId(primaryTestId);
     await primary.click();
     await expect(primary).toContainText(/Copied/i);
 

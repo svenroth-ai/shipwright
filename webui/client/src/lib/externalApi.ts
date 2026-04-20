@@ -402,3 +402,114 @@ export async function saveActionsStub(
     { method: "POST" },
   );
 }
+
+// -----------------------------------------------------------------------------
+// Section 04 (iterate 3) — tree + file routes for the SmartViewer 3-pane body.
+// Server-side ships in section 04a; the client wrappers below live here so
+// every caller (FolderTree, SmartViewer, renderers) imports from one place.
+// -----------------------------------------------------------------------------
+
+export interface TreeEntry {
+  name: string;
+  kind: "file" | "dir";
+  ignored: boolean;
+}
+
+export interface TreeResponse {
+  entries: TreeEntry[];
+}
+
+/**
+ * Section 04 — thrown by `fetchFileText` when either the server emits a 413
+ * (file_too_large) or the client-side 1 MB cap is hit pre-flight. UI
+ * components render a "File too large to preview inline" chip when they
+ * catch this. Keeps renderer code free of status-code branching.
+ */
+export class FileTooLargeError extends Error {
+  readonly maxBytes: number;
+  readonly size?: number;
+  readonly source: "server" | "client";
+  constructor(maxBytes: number, source: "server" | "client", size?: number) {
+    super("file_too_large");
+    this.name = "FileTooLargeError";
+    this.maxBytes = maxBytes;
+    this.size = size;
+    this.source = source;
+  }
+}
+
+/** Client-side byte cap for text/markdown/code renderers (see plan § 7 G4 + O33). */
+export const CLIENT_FILE_TEXT_MAX_BYTES = 1 * 1024 * 1024;
+
+/**
+ * Section 04 — fetch one level of the project's folder tree. `path` is a
+ * project-root-relative POSIX path; the server's `pathGuard` refuses
+ * traversal / absolute / drive-hop inputs.
+ */
+export async function fetchProjectTree(
+  projectId: string,
+  path?: string,
+): Promise<TreeResponse> {
+  const q = new URLSearchParams();
+  if (path !== undefined && path !== "") q.set("path", path);
+  const url = `${EXTERNAL_API}/projects/${encodeURIComponent(projectId)}/tree${
+    q.size > 0 ? `?${q.toString()}` : ""
+  }`;
+  const r = await fetch(url);
+  if (!r.ok) {
+    throw await decodeApiError(r);
+  }
+  return (await r.json()) as TreeResponse;
+}
+
+/**
+ * Section 04 — URL builder for the raw file endpoint. Used by
+ * `ImageRenderer` (`<img src={fileUrl(...)}>`). No fetch here — the
+ * component lets the browser stream the bytes directly.
+ */
+export function fileUrl(projectId: string, path: string): string {
+  const q = new URLSearchParams({ path });
+  return `${EXTERNAL_API}/projects/${encodeURIComponent(projectId)}/file?${q.toString()}`;
+}
+
+/**
+ * Section 04 — fetch file bytes as text for the Markdown / Code / Text
+ * renderers. Applies the client-side 1 MB cap (plan § 7 G4 + O33) via a
+ * HEAD-first round-trip when possible; when the server returns a 413 the
+ * error is rethrown as {@link FileTooLargeError}.
+ *
+ * Returns `{text, size}` so callers can report size in a status chip. The
+ * caller is responsible for UI branching on `FileTooLargeError` — this
+ * function never produces a UI string.
+ */
+export async function fetchFileText(
+  projectId: string,
+  path: string,
+): Promise<{ text: string; size: number }> {
+  const url = fileUrl(projectId, path);
+  const r = await fetch(url);
+  if (r.status === 413) {
+    let payload: Record<string, unknown> = {};
+    try {
+      payload = (await r.json()) as Record<string, unknown>;
+    } catch {
+      /* swallow */
+    }
+    const maxBytes =
+      typeof payload.maxBytes === "number"
+        ? (payload.maxBytes as number)
+        : 5 * 1024 * 1024;
+    const size =
+      typeof payload.size === "number" ? (payload.size as number) : undefined;
+    throw new FileTooLargeError(maxBytes, "server", size);
+  }
+  if (!r.ok) {
+    throw await decodeApiError(r);
+  }
+  const text = await r.text();
+  const size = text.length;
+  if (size > CLIENT_FILE_TEXT_MAX_BYTES) {
+    throw new FileTooLargeError(CLIENT_FILE_TEXT_MAX_BYTES, "client", size);
+  }
+  return { text, size };
+}

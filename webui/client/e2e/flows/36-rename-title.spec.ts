@@ -42,11 +42,27 @@ test.describe("TaskDetail title rename + launch sync", () => {
     await page.reload();
     await expect(page.getByTestId("task-title-display")).toHaveText(/after-rename/);
 
-    // Trigger a launch via the legacy LaunchRow (CopyCommandCard surfaces
-    // the resulting command). The PowerShell row must contain the
-    // --name flag with the renamed title.
-    await page.getByTestId("launch-copy-btn").click();
-    const ps = await page.getByTestId("copy-ps").textContent();
+    // Trigger a launch via the new header CTA (iterate 3 section 04 —
+    // LaunchRow / CopyCommandCard deleted). The command is copied to
+    // the clipboard; we assert --name carries the renamed title.
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await context.setExtraHTTPHeaders({
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    });
+    await page.evaluate(() => navigator.clipboard.writeText(""));
+    // Task is now in awaiting_external_start (or later) after the
+    // reload-after-rename navigation — the CTA surfaces Resume, not
+    // Launch. Both call the same launch endpoint; the result payload
+    // embeds --name '<title>' either way.
+    const resumeVisible = await page
+      .getByTestId("cta-copy-resume-command")
+      .isVisible()
+      .catch(() => false);
+    const ctaTestId = resumeVisible ? "cta-copy-resume-command" : "cta-launch-in-terminal";
+    await page.getByTestId(ctaTestId).click();
+    await expect(page.getByTestId(ctaTestId)).toContainText(/Copied/i, { timeout: 5000 });
+    const ps = await page.evaluate(() => navigator.clipboard.readText());
     expect(ps).toContain("--name 'after-rename'");
     expect(ps).not.toContain("--name 'before-rename'");
   });

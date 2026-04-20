@@ -1,58 +1,37 @@
 /*
- * Task Detail — LaunchRow + CopyCommandCard + SessionMetadata +
- * TranscriptViewer. Plan D'' variant-a TaskDetail.
+ * TaskDetailPage — thin composition shell for the 3-pane task detail
+ * surface (iterate 3 section 04, AD-03.06 + FR-03.30..36).
  *
- * REPLACED: the previous chat-panel implementation (pre-iterate 14.x
- * chat engine, assistant-ui + ndjson-parser). That path is deleted in
- * Sub-iterate 3. This page is the single surface for an external-launch
- * task in the new architecture.
+ * The old vertical stack (LaunchRow + CopyCommandCard + SessionMetadata
+ * + TranscriptViewer) is gone: LaunchRow and CopyCommandCard are
+ * DELETED from the codebase (plan § 7 O15), SessionMetadata moves into
+ * the header's 3-dots menu as a debug footer, and the transcript is
+ * now the center pane of TaskDetailThreePane.
+ *
+ * Regression guards survive every edit:
+ *   - No chat composer (DO-NOT #3). Only interactive affordances are
+ *     the header CTA, project chip, 3-dots menu, splitter handles, and
+ *     folder-tree rows.
+ *   - No webui-initiated `claude --resume` (DO-NOT #5). The resume CTA
+ *     COPIES TO CLIPBOARD.
  */
 
-import { useCallback, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { useParams } from "react-router-dom";
 
-import type { CopyCommandForms } from "../lib/externalApi";
-import { useExternalTask, useCloseExternalTask } from "../hooks/useExternalTasks";
-import { useForkTask, useLaunchTask } from "../hooks/useLaunchTask";
+import { useExternalTask } from "../hooks/useExternalTasks";
 import { useTaskTranscript } from "../hooks/useTaskTranscript";
-
-import { LaunchRow } from "../components/external/LaunchRow";
-import { CopyCommandCard } from "../components/external/CopyCommandCard";
-import { SessionMetadata } from "../components/external/SessionMetadata";
 import { BubbleTranscript } from "../components/external/BubbleTranscript";
-import { TerminalLaunchButton } from "../components/external/TerminalLaunchButton";
-import { EditableTaskTitle } from "../components/external/EditableTaskTitle";
+import { TaskDetailHeader } from "../components/external/TaskDetailHeader";
+import { TaskDetailThreePane } from "../components/external/TaskDetailThreePane";
+import { FolderTree } from "../components/external/FolderTree";
+import { SmartViewer } from "../components/external/SmartViewer";
 
 export default function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const { data: task, error } = useExternalTask(taskId);
-  const launchMut = useLaunchTask();
-  const forkMut = useForkTask();
-  const closeMut = useCloseExternalTask();
   const transcript = useTaskTranscript(taskId ?? null);
-
-  const [commands, setCommands] = useState<CopyCommandForms | null>(null);
-
-  const handleLaunch = useCallback(
-    async ({ resume }: { resume: boolean }) => {
-      if (!taskId) return;
-      const result = await launchMut.mutateAsync({ taskId, resume });
-      setCommands(result.commands);
-    },
-    [taskId, launchMut],
-  );
-
-  const handleFork = useCallback(async () => {
-    if (!taskId || !task) return;
-    const result = await forkMut.mutateAsync({ taskId, title: `${task.title} — fork` });
-    setCommands(result.commands);
-  }, [taskId, task, forkMut]);
-
-  const handleClose = useCallback(() => {
-    if (!taskId) return;
-    closeMut.mutate(taskId);
-  }, [taskId, closeMut]);
+  const [selectedPath, setSelectedPath] = useState<string | null>(null);
 
   if (error) {
     return (
@@ -70,42 +49,64 @@ export default function TaskDetailPage() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4" data-testid="task-detail-page">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Link to="/" className="text-neutral-500 hover:text-neutral-900" aria-label="Back to board">
-            <ArrowLeft size={16} />
-          </Link>
-          <EditableTaskTitle task={task} />
-        </div>
-        <TerminalLaunchButton task={task} variant="primary" />
-      </header>
+    <div
+      className="flex h-full min-h-0 flex-col"
+      data-testid="task-detail-page"
+      style={{ background: "var(--color-bg, #f5f0eb)" }}
+    >
+      <TaskDetailHeader task={task} />
 
-      <LaunchRow
-        task={task}
-        launching={launchMut.isPending || forkMut.isPending}
-        onLaunch={(args) => void handleLaunch(args)}
-        onFork={() => void handleFork()}
-        onClose={handleClose}
-      />
-
-      {commands && <CopyCommandCard commands={commands} />}
-
-      <SessionMetadata task={task} />
-
-      <section className="flex min-h-[400px] flex-1 flex-col overflow-hidden rounded border border-neutral-200 bg-white">
-        <div className="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-3 py-1 text-xs text-neutral-500">
-          <span>Transcript</span>
-          <span>
-            status: <span data-testid="transcript-status">{transcript.status}</span>
-            {transcript.fingerprint && ` · fp ${transcript.fingerprint}`}
-            {` · ${transcript.size} B`}
-          </span>
-        </div>
-        <div className="min-h-0 flex-1">
-          <BubbleTranscript content={transcript.content} />
-        </div>
-      </section>
+      <div className="min-h-0 flex-1">
+        <TaskDetailThreePane
+          left={
+            <FolderTree
+              projectId={task.projectId}
+              selectedPath={selectedPath}
+              onSelect={setSelectedPath}
+            />
+          }
+          center={
+            <section
+              className="flex h-full min-h-0 flex-col"
+              style={{ background: "var(--color-bg, #f5f0eb)" }}
+              data-testid="task-detail-transcript"
+            >
+              <div
+                className="flex items-center justify-between border-b border-[var(--color-border,#e0dbd4)] px-4 py-1.5 text-[11px]"
+                style={{ background: "var(--color-surface, #ffffff)", color: "var(--color-muted, #6b7280)" }}
+              >
+                <span>Transcript</span>
+                <span>
+                  status:{" "}
+                  <span data-testid="transcript-status">{transcript.status}</span>
+                  {transcript.fingerprint && ` · fp ${transcript.fingerprint}`}
+                  {` · ${transcript.size} B`}
+                </span>
+              </div>
+              <div className="min-h-0 flex-1">
+                <BubbleTranscript content={transcript.content} />
+              </div>
+            </section>
+          }
+          right={
+            <aside
+              className="flex h-full min-h-0 flex-col border-l border-[var(--color-border,#e0dbd4)]"
+              style={{ background: "var(--color-surface, #ffffff)" }}
+              data-testid="task-detail-viewer"
+            >
+              <div
+                className="flex items-center gap-2 border-b border-[var(--color-border,#e0dbd4)] px-4 py-2 text-[11px] font-semibold uppercase tracking-wider"
+                style={{ color: "var(--color-muted, #6b7280)", background: "var(--color-bg, #f5f0eb)" }}
+              >
+                <span className="flex-1 truncate">{selectedPath ?? "Viewer"}</span>
+              </div>
+              <div className="min-h-0 flex-1">
+                <SmartViewer projectId={task.projectId} path={selectedPath} />
+              </div>
+            </aside>
+          }
+        />
+      </div>
     </div>
   );
 }
