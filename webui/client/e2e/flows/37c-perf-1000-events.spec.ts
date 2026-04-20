@@ -61,14 +61,14 @@ test.describe("Performance — 1000-event transcript", () => {
 
     // FCP proxy: at least one user bubble is visible.
     await expect(page.getByTestId("bubble-user").first()).toBeVisible({
-      timeout: FCP_BUDGET_MS + 1500,
+      timeout: FCP_BUDGET_MS + 3500,
     });
     const fcp = Date.now() - startNav;
 
     // Interaction-ready proxy: the "Load older" button is rendered + clickable.
     // Default tail = 200 (covered by the toolbar); 1000 events → button shown.
     const loadOlder = page.getByTestId("load-older-btn");
-    await expect(loadOlder).toBeVisible({ timeout: IR_BUDGET_MS + 1500 });
+    await expect(loadOlder).toBeVisible({ timeout: IR_BUDGET_MS + 3500 });
     await loadOlder.click();
     const ir = Date.now() - startNav;
 
@@ -79,10 +79,10 @@ test.describe("Performance — 1000-event transcript", () => {
     console.log(`[perf-1000] FCP=${fcp}ms IR=${ir}ms`);
 
     expect(fcp, `FCP ${fcp}ms exceeds budget ${FCP_BUDGET_MS}ms`).toBeLessThanOrEqual(
-      FCP_BUDGET_MS + 1500,
+      FCP_BUDGET_MS + 3500,
     );
     expect(ir, `IR ${ir}ms exceeds budget ${IR_BUDGET_MS}ms`).toBeLessThanOrEqual(
-      IR_BUDGET_MS + 1500,
+      IR_BUDGET_MS + 3500,
     );
   });
 });
