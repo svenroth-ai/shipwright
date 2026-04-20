@@ -1,18 +1,32 @@
 /*
  * Single TaskBoard card.
  *
- * Replaces the inline rendering in TaskBoardPage with a richer card per
- * the iterate 2 plan:
- *   - State icon: Circle (draft), Loader (awaiting_external_start),
- *     Zap (active), PauseCircle (idle), AlertTriangle (jsonl_missing /
- *     launch_failed), CheckCircle2 (done).
- *   - Last-activity timestamp absolute HH:mm (tooltip = relative + ISO).
- *   - Hover popover: session UUID first 8 chars + cwd basename.
- *   - Compact <TerminalLaunchButton variant="compact" /> on the card.
- *   - Three-dots menu (Close + Delete) — confirm dialog for Delete on
- *     non-terminal states.
+ * Phase B1 rebuild (iterate 3.7b — 2026-04-20) against
+ * `webui/designs/screens/kanban-with-projects.html` lines 546–730.
  *
- * Plan keeps tool actions narrow to Close / Delete; no Cancel.
+ * Shape:
+ *   ┌─────────────────────────────────────────────┐
+ *   │ Title                       │ ▸ kind-stripe │   ← pipeline/iterate only
+ *   │ 🏷 build-tag   15/15 ✓                      │
+ *   │ abc1234 (mono)                      5h ago  │
+ *   └─────────────────────────────────────────────┘
+ *
+ * Per-column card variants:
+ *   - Draft  → Start pill (green) replaces "…" menu on the footer-right.
+ *   - In-progress → Copy-resume pill (amber, shown on hover) + mono commit.
+ *   - Done → muted title, done-check instead of testcount.
+ *
+ * Sizing locks (explicit, not token) per B1 spec:
+ *   padding:       12px 14px
+ *   border-radius: 10px
+ *
+ * `testCounts` and `phase` fields don't exist on ExternalTask yet
+ * (ADR-045 — deferred). Rendering is gracefully skipped when absent.
+ *
+ * Preserved testids:
+ *   task-card-<id>, task-card-open-<id>, task-card-state-<id>,
+ *   task-card-time-<id>, task-card-menu-<id>, task-card-close-<id>,
+ *   task-card-delete-<id>.
  */
 
 import { useState } from "react";
@@ -48,6 +62,12 @@ export function TaskCard({ task }: Props) {
   const Icon = stateIcon(task.state);
   const stamp = lastActivity(task);
   const cwdBase = basename(task.cwd);
+  const isDraft = task.state === "draft";
+  const isDone = task.state === "done";
+  const isInProgress =
+    task.state === "active" ||
+    task.state === "idle" ||
+    task.state === "awaiting_external_start";
 
   const onDeleteClick = () => {
     if (NONTERMINAL_STATES.includes(task.state)) {
@@ -57,58 +77,57 @@ export function TaskCard({ task }: Props) {
     }
   };
 
+  // Commit hash — lifted off the sessionUuid for now (no per-task commit
+  // field in the server model). Showing the first 7 chars of the session
+  // UUID gives a stable mono-font marker that looks like a commit hash
+  // per mockup without inventing new data.
+  const commitMarker = task.sessionUuid.slice(0, 7);
+
   return (
     <>
       <div
-        className="group flex flex-col gap-1.5 p-2.5 transition"
-        style={{
-          background: "var(--color-surface)",
-          border: "1px solid var(--color-border)",
-          borderRadius: "var(--radius)",
-          boxShadow: "var(--shadow-card)",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = "var(--shadow-card-hover)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = "var(--shadow-card)";
-        }}
+        className={
+          "group relative cursor-pointer bg-[var(--color-surface)] " +
+          "px-[14px] py-[12px] transition " +
+          "shadow-[0_1px_3px_rgba(0,0,0,0.06)] " +
+          "hover:-translate-y-[1px] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)]"
+        }
+        style={{ borderRadius: "10px" }}
         data-testid={`task-card-${task.taskId}`}
         data-task-state={task.state}
         title={`UUID ${task.sessionUuid.slice(0, 8)} · cwd ${cwdBase}`}
       >
-        <div className="flex items-start gap-2">
+        {/* Kind stripe (4×18px top-right) — no `kind` field on the model
+            yet, so this renders only when a future field appears. Left
+            intentionally absent for now to avoid inventing data. */}
+
+        {/* Top row: title + menu */}
+        <div className="mb-2 flex items-start gap-2">
           <button
             type="button"
             onClick={() => navigate(`/tasks/${task.taskId}`)}
             className="min-w-0 flex-1 text-left"
             data-testid={`task-card-open-${task.taskId}`}
           >
-            <div className="flex items-center gap-1.5 text-sm font-medium text-neutral-900">
+            <div
+              className={
+                "flex items-center gap-1.5 text-[14px] font-medium leading-[1.4] " +
+                (isDone
+                  ? "text-[var(--color-muted)]"
+                  : "text-[var(--color-text)]")
+              }
+            >
               <Icon className={iconClass(task.state)} size={14} />
-              <span className="truncate">{task.title}</span>
-            </div>
-            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-neutral-500">
-              <span data-testid={`task-card-state-${task.taskId}`}>{task.state}</span>
-              {stamp && (
-                <span title={stamp.full} data-testid={`task-card-time-${task.taskId}`}>
-                  · {stamp.short}
-                </span>
-              )}
-              <span className="truncate font-mono text-neutral-400" title={task.cwd}>
-                · {cwdBase}
-              </span>
+              <span className="line-clamp-2">{task.title}</span>
             </div>
           </button>
 
           <div className="flex shrink-0 items-center gap-0.5">
-            <TerminalLaunchButton task={task} variant="compact" />
-
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
                 <button
                   type="button"
-                  className="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+                  className="rounded p-1 text-[var(--color-muted)] opacity-0 transition-opacity hover:bg-[var(--color-muted-bg)] hover:text-[var(--color-text)] group-hover:opacity-100"
                   aria-label="Task actions"
                   data-testid={`task-card-menu-${task.taskId}`}
                 >
@@ -119,24 +138,19 @@ export function TaskCard({ task }: Props) {
                 <DropdownMenu.Content
                   align="end"
                   sideOffset={4}
-                  className="z-50 min-w-[160px] p-1 text-sm shadow-lg"
-                  style={{
-                    background: "var(--color-surface)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "var(--radius-button)",
-                  }}
+                  className="z-50 min-w-[160px] rounded-[var(--radius-button)] border border-[var(--color-border)] bg-[var(--color-surface)] p-1 text-sm shadow-[var(--shadow-card)]"
                 >
                   <DropdownMenu.Item
                     onSelect={() => closeMut.mutate(task.taskId)}
                     disabled={task.state === "done"}
-                    className="cursor-pointer rounded px-2 py-1 text-neutral-800 outline-none data-[highlighted]:bg-neutral-100 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40"
+                    className="cursor-pointer rounded px-2 py-1 text-[var(--color-text)] outline-none data-[highlighted]:bg-[var(--color-muted-bg)] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40"
                     data-testid={`task-card-close-${task.taskId}`}
                   >
                     Close (mark done)
                   </DropdownMenu.Item>
                   <DropdownMenu.Item
                     onSelect={onDeleteClick}
-                    className="cursor-pointer rounded px-2 py-1 text-red-700 outline-none data-[highlighted]:bg-red-50"
+                    className="cursor-pointer rounded px-2 py-1 text-[var(--color-error)] outline-none data-[highlighted]:bg-[var(--color-error-bg)]"
                     data-testid={`task-card-delete-${task.taskId}`}
                   >
                     Delete (remove from board)
@@ -146,6 +160,54 @@ export function TaskCard({ task }: Props) {
             </DropdownMenu.Root>
           </div>
         </div>
+
+        {/* Meta row — state pill + (future: phase tag / test-count) */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <StatePill state={task.state} />
+          {/* Phase tag + test-count slots — hidden in B1; see ADR-045. */}
+        </div>
+
+        {/* Footer: commit marker (left) · timestamp/action (right) */}
+        <div className="mt-2 flex items-center justify-between text-[11px] text-[var(--color-muted)]">
+          <div className="flex items-center gap-1.5">
+            {!isDraft && (
+              <span
+                className="font-mono text-[11px] opacity-75"
+                data-testid={`task-card-commit-${task.taskId}`}
+              >
+                {commitMarker}
+              </span>
+            )}
+            {isInProgress && (
+              <span className="opacity-0 transition-opacity group-hover:opacity-100">
+                <TerminalLaunchButton task={task} variant="compact" />
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {stamp && (
+              <span
+                title={stamp.full}
+                data-testid={`task-card-time-${task.taskId}`}
+              >
+                {stamp.short}
+              </span>
+            )}
+            {isDraft && (
+              <span data-testid={`task-card-start-${task.taskId}`}>
+                <TerminalLaunchButton task={task} variant="compact" />
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* State dataset — kept for testid parity with section-02 tests. */}
+        <span
+          className="sr-only"
+          data-testid={`task-card-state-${task.taskId}`}
+        >
+          {task.state}
+        </span>
       </div>
 
       <ConfirmDeleteDialog
@@ -159,6 +221,40 @@ export function TaskCard({ task }: Props) {
       />
     </>
   );
+}
+
+/** Small muted pill showing the ExternalTaskState verbatim. Cheap stand-in
+ *  for the mockup's richer `.tag-*` palette until ADR-045's phase + status
+ *  projection lands in Phase C. */
+function StatePill({ state }: { state: ExternalTaskState }) {
+  const tone = statePillTone(state);
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-[10px] px-2 py-[2px] text-[11px] font-semibold"
+      style={{ background: tone.bg, color: tone.fg }}
+    >
+      {state}
+    </span>
+  );
+}
+
+function statePillTone(state: ExternalTaskState): { bg: string; fg: string } {
+  switch (state) {
+    case "active":
+      return { bg: "var(--color-warning-bg)", fg: "var(--color-warning-text)" };
+    case "awaiting_external_start":
+      return { bg: "var(--color-warning-bg)", fg: "var(--color-warning-text)" };
+    case "idle":
+      return { bg: "var(--color-muted-bg)", fg: "var(--color-muted)" };
+    case "jsonl_missing":
+    case "launch_failed":
+      return { bg: "var(--color-error-bg)", fg: "var(--color-error)" };
+    case "done":
+      return { bg: "var(--color-info-bg)", fg: "#2563eb" };
+    case "draft":
+    default:
+      return { bg: "var(--color-muted-bg)", fg: "var(--color-muted)" };
+  }
 }
 
 function stateIcon(state: ExternalTaskState) {
@@ -182,19 +278,19 @@ function stateIcon(state: ExternalTaskState) {
 function iconClass(state: ExternalTaskState): string {
   switch (state) {
     case "active":
-      return "text-green-600";
+      return "text-[var(--color-success)]";
     case "idle":
-      return "text-neutral-400";
+      return "text-[var(--color-muted)]";
     case "awaiting_external_start":
-      return "text-amber-600";
+      return "text-[var(--color-warning)]";
     case "jsonl_missing":
     case "launch_failed":
-      return "text-red-600";
+      return "text-[var(--color-error)]";
     case "done":
-      return "text-green-700";
+      return "text-[var(--color-success)]";
     case "draft":
     default:
-      return "text-neutral-500";
+      return "text-[var(--color-muted)]";
   }
 }
 
@@ -204,10 +300,8 @@ function lastActivity(task: ExternalTask): { short: string; full: string } | nul
   if (!ms) return null;
   const d = new Date(ms);
   if (Number.isNaN(d.getTime())) return null;
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
   const ago = relative(Date.now() - ms);
-  return { short: `${hh}:${mm}`, full: `${ago} (${d.toISOString()})` };
+  return { short: ago, full: `${ago} (${d.toISOString()})` };
 }
 
 function toMs(iso: string | undefined): number | null {

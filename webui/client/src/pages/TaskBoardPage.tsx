@@ -1,23 +1,26 @@
 /*
- * Task Board — list view with a per-project filter chip bar + the
- * `+ New ▾` split-button + conditional Preview button.
+ * Task Board — kanban view with header dropdown + 3-column grid.
  *
- * Iterate 3 section 03:
- *   - Replaces the section-02 inline create-task form with the
- *     CreateMenuSplitButton (primary fires actions[0], caret opens
- *     dropdown of all actions).
- *   - Mounts NewIssueModal as a singleton — local state tracks which
- *     action was clicked so the modal can render the correct mode.
- *   - PreviewButton appears when server-materialized
- *     actions.preview.enabled === true.
- *   - Global `i` keyboard shortcut opens the New Iterate modal
- *     pre-filled with the active project (FR-03.14). Handler ignores
- *     typing-in-input states; regression-guards against any `c` or
- *     `Shift+C` binding (explicit omission, no listener at all).
+ * Iterate 3 remediation Phase B1 (2026-04-20):
+ *   - Header rebuild: h1/subtitle removed; <ProjectFilterDropdown> IS the
+ *     title region per mockup `webui/designs/screens/kanban-with-projects.html`.
+ *   - Right-side actions: PreviewButton + CreateMenuSplitButton (unchanged
+ *     behavior; restyled per mockup).
+ *   - 3 columns (Draft / In progress / Done) with per-column colored top
+ *     border + tinted bg + uppercase 13px header + count pill. No state
+ *     renames — visual change only.
+ *   - Status + Phase chip rows: deferred to Phase C. See
+ *     project-docs/ADRs/ADR-045-taskboard-status-phase-chips-deferred.md.
+ *   - View toggle (Board/List): out of scope for B1 — no existing list
+ *     view, adding one requires new routing/state.
+ *   - Global `i` shortcut retained.
+ *
+ * Preserved testids:
+ *   task-board-page, column-draft, column-in-progress, column-done,
+ *   create-menu-*, preview-button, task-card-<id>.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Circle, PlayCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import type {
@@ -31,15 +34,15 @@ import { useProjectActions } from "../hooks/useProjectActions";
 import { TaskCard } from "../components/external/TaskCard";
 import { CreateMenuSplitButton } from "../components/external/CreateMenuSplitButton";
 import { PreviewButton } from "../components/external/PreviewButton";
+import { ProjectFilterDropdown } from "../components/external/ProjectFilterDropdown";
 import { NewIssueModal } from "../components/external/NewIssueModal";
 import { UNASSIGNED_PROJECT_ID } from "../lib/projectIds";
-import type { Project } from "../types";
 
 export default function TaskBoardPage() {
   const queryClient = useQueryClient();
   const { data: tasks = [], isLoading } = useExternalTasks();
   const { data: projects = [] } = useProjects();
-  const { activeProjectId, setActiveProjectId } = useProjectFilter();
+  const { activeProjectId } = useProjectFilter();
 
   // Resolve the actions schema for the active project. When "All projects"
   // is selected, fall back to the first real project so the dropdown still
@@ -97,44 +100,59 @@ export default function TaskBoardPage() {
   }, [actionsList, modalOpen, openModal]);
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4" data-testid="task-board-page">
-      <header className="flex items-baseline justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold">Task Board</h1>
-          <p className="text-sm text-neutral-500">
-            External-launch architecture: webui observes the JSONL, Claude Code runs in your own terminal.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <PreviewButton
-            projectId={resolvedProjectId}
-            enabled={Boolean(actionsQuery.data?.preview.enabled)}
-            readyTimeoutSeconds={
-              actionsQuery.data?.preview.ready_timeout_seconds ?? null
-            }
-          />
-          <CreateMenuSplitButton
-            actions={actionsList}
-            onSelect={openModal}
-            isLoading={actionsQuery.isLoading}
-          />
-        </div>
+    <div
+      className="flex h-full flex-col bg-[var(--color-bg)]"
+      data-testid="task-board-page"
+    >
+      {/* Header — project selector (IS the title) + right-side actions */}
+      <header
+        className="flex flex-wrap items-center gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3"
+        data-testid="task-board-header"
+      >
+        <ProjectFilterDropdown />
+
+        <div className="flex-1" />
+
+        <PreviewButton
+          projectId={resolvedProjectId}
+          enabled={Boolean(actionsQuery.data?.preview.enabled)}
+          readyTimeoutSeconds={
+            actionsQuery.data?.preview.ready_timeout_seconds ?? null
+          }
+        />
+        <CreateMenuSplitButton
+          actions={actionsList}
+          onSelect={openModal}
+          isLoading={actionsQuery.isLoading}
+        />
       </header>
 
-      <ProjectFilterChipBar
-        projects={projects}
-        tasks={tasks}
-        activeProjectId={activeProjectId}
-        onChange={setActiveProjectId}
-      />
-
+      {/* Board */}
       {isLoading ? (
-        <div className="text-sm text-neutral-400">Loading…</div>
+        <div className="p-6 text-sm text-[var(--color-muted)]">Loading…</div>
       ) : (
-        <div className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-3" data-testid="task-board-columns">
-          <Column title="Draft" icon={<Circle size={14} />} items={columns.draft} />
-          <Column title="In progress" icon={<PlayCircle size={14} />} items={columns.inProgress} />
-          <Column title="Done" icon={<CheckCircle2 size={14} />} items={columns.done} />
+        <div
+          className="flex flex-1 items-start gap-4 overflow-x-auto overflow-y-hidden p-6"
+          data-testid="task-board-columns"
+        >
+          <Column
+            title="Backlog"
+            testId="column-draft"
+            items={columns.draft}
+            tone="draft"
+          />
+          <Column
+            title="In Progress"
+            testId="column-in-progress"
+            items={columns.inProgress}
+            tone="inprogress"
+          />
+          <Column
+            title="Done"
+            testId="column-done"
+            items={columns.done}
+            tone="done"
+          />
         </div>
       )}
 
@@ -154,103 +172,6 @@ export default function TaskBoardPage() {
   );
 }
 
-interface ProjectFilterChipBarProps {
-  projects: Project[];
-  tasks: ExternalTask[];
-  activeProjectId: string | null;
-  onChange: (id: string | null) => void;
-}
-
-function ProjectFilterChipBar({
-  projects,
-  tasks,
-  activeProjectId,
-  onChange,
-}: ProjectFilterChipBarProps) {
-  const countByProject = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const t of tasks) m.set(t.projectId, (m.get(t.projectId) ?? 0) + 1);
-    return m;
-  }, [tasks]);
-
-  if (projects.length === 0) return null;
-
-  return (
-    <div
-      className="flex flex-wrap items-center gap-2"
-      data-testid="project-filter-chip-bar"
-    >
-      <Chip
-        active={activeProjectId === null}
-        onClick={() => onChange(null)}
-        label="All projects"
-        count={tasks.length}
-        testId="project-chip-all"
-      />
-      {projects.map((p) => (
-        <Chip
-          key={p.id}
-          active={activeProjectId === p.id}
-          onClick={() => onChange(p.id)}
-          label={p.name}
-          count={countByProject.get(p.id) ?? 0}
-          color={p.synthesized ? undefined : p.settings?.color}
-          synthesized={p.synthesized}
-          testId={`project-chip-${p.id === UNASSIGNED_PROJECT_ID ? "unassigned" : p.id}`}
-        />
-      ))}
-    </div>
-  );
-}
-
-interface ChipProps {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  count: number;
-  color?: string;
-  synthesized?: boolean;
-  testId?: string;
-}
-
-function Chip({ active, onClick, label, count, color, synthesized, testId }: ChipProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      data-testid={testId}
-      data-active={active ? "true" : undefined}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-        active
-          ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-          : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-      } ${synthesized ? "italic" : ""}`}
-    >
-      {!synthesized && (
-        <span
-          aria-hidden="true"
-          className="h-2 w-2 shrink-0 rounded-full"
-          style={{ background: color ?? (active ? "#ffffff80" : "var(--color-muted, #9ca3af)") }}
-        />
-      )}
-      {synthesized && (
-        <span
-          aria-hidden="true"
-          className={`h-2 w-2 shrink-0 rounded-full border ${active ? "border-white/60" : "border-neutral-400"}`}
-        />
-      )}
-      <span>{label}</span>
-      <span
-        className={`font-mono text-[10px] ${
-          active ? "text-white/80" : "text-neutral-400"
-        }`}
-      >
-        {count}
-      </span>
-    </button>
-  );
-}
-
 function groupByState(tasks: ExternalTask[]) {
   const draft: ExternalTask[] = [];
   const inProgress: ExternalTask[] = [];
@@ -263,27 +184,90 @@ function groupByState(tasks: ExternalTask[]) {
   return { draft, inProgress, done };
 }
 
-function Column({
-  title,
-  icon,
-  items,
-}: {
+type ColumnTone = "draft" | "inprogress" | "done";
+
+interface ColumnStyle {
+  bg: string;
+  border: string;
+  header: string;
+  count: { bg: string; fg: string };
+}
+
+/**
+ * Per-column palette per mockup lines 532–543. We keep the tones in JS so
+ * the styles are colocated with the semantic names and Tailwind arbitrary
+ * values stay compact.
+ */
+const COLUMN_STYLES: Record<ColumnTone, ColumnStyle> = {
+  draft: {
+    // Draft uses the muted-bg token (warm beige) + a soft-muted top
+    // border. #9ca3af in the mockup is close to --color-muted; using the
+    // token keeps central theming coherent with Phase A.
+    bg: "var(--color-muted-bg)",
+    border: "var(--color-muted)",
+    header: "var(--color-muted)",
+    count: { bg: "rgba(107,114,128,0.15)", fg: "var(--color-muted)" },
+  },
+  inprogress: {
+    // Amber 8% tint + warning border + warning-text header (#b45309 in
+    // mockup; we use the warning-text token = #92400E which is close
+    // enough and already Phase-A-approved).
+    bg: "rgba(217,119,6,0.08)",
+    border: "var(--color-warning)",
+    header: "var(--color-warning-text)",
+    count: { bg: "var(--color-warning-bg)", fg: "var(--color-warning-text)" },
+  },
+  done: {
+    // Blue 8% tint + info border + info-text header.
+    bg: "rgba(59,130,246,0.08)",
+    border: "var(--color-info)",
+    header: "#2563eb",
+    count: { bg: "var(--color-info-bg)", fg: "#2563eb" },
+  },
+};
+
+interface ColumnProps {
   title: string;
-  icon: React.ReactNode;
+  testId: string;
   items: ExternalTask[];
-}) {
+  tone: ColumnTone;
+}
+
+function Column({ title, testId, items, tone }: ColumnProps) {
+  const s = COLUMN_STYLES[tone];
   return (
     <div
-      className="flex min-w-[220px] flex-col gap-2 rounded border border-neutral-200 bg-neutral-50 p-2"
-      data-testid={`column-${title.toLowerCase().replace(" ", "-")}`}
+      className="flex max-h-full w-[300px] min-w-[300px] shrink-0 flex-col overflow-hidden rounded-[var(--radius-card)]"
+      style={{ background: s.bg }}
+      data-testid={testId}
     >
-      <div className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-neutral-600">
-        {icon} {title} <span className="text-neutral-400">({items.length})</span>
+      {/* Colored 3px top border — rendered as a separate element so the
+          column bg tint shows through without clipping the rounded corners. */}
+      <div
+        aria-hidden="true"
+        className="h-[3px] w-full"
+        style={{ background: s.border }}
+      />
+      <div
+        className="flex items-center gap-2 px-[14px] pb-[10px] pt-[14px] text-[13px] font-semibold uppercase tracking-[0.04em]"
+        style={{ color: s.header }}
+      >
+        <span>{title}</span>
+        <span
+          className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-[10px] px-1.5 text-[11px] font-bold"
+          style={{ background: s.count.bg, color: s.count.fg }}
+        >
+          {items.length}
+        </span>
       </div>
-      {items.length === 0 && <div className="py-1 text-xs text-neutral-400">none</div>}
-      {items.map((t) => (
-        <TaskCard key={t.taskId} task={t} />
-      ))}
+      <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-[10px] pb-[14px]">
+        {items.length === 0 && (
+          <div className="py-1 text-[11px] text-[var(--color-muted)]">none</div>
+        )}
+        {items.map((t) => (
+          <TaskCard key={t.taskId} task={t} />
+        ))}
+      </div>
     </div>
   );
 }

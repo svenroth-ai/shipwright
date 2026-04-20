@@ -2,23 +2,22 @@
  * Preview dev-server CTA rendered on the TaskBoard header when the
  * project's resolved actions declare `preview.enabled === true`.
  *
- * Iterate 3 section 03 / FR-03.80..82:
+ * Iterate 3 section 03 / FR-03.80..82. Phase B1 restyle (2026-04-20):
+ *   - blue-info palette (text + border + hover bg) per mockup .btn-preview
+ *     (lines 248–268 of kanban-with-projects.html).
+ *   - 8px pulsing dot indicator when `loading` (a running dev-server spawn)
+ *     via the `pulse-preview-dot` keyframes defined inline.
+ *
+ * Error handling is unchanged from section 03:
  *   - POST /api/external/projects/:id/preview
  *   - On success → open the returned url in a new tab.
  *   - On failure → map the 5 structured codes to specific toast copies.
  *     UI strings live here (the decoder in externalApi.ts is string-free
  *     per O11).
- *
- * Toast copies (matching spec § 12 implementation-steps bulletpoints):
- *   preview_spawn_failed      → "Couldn't start the dev server. Check …"
- *   preview_port_in_use       → "Port {port} is already in use. …"
- *   preview_exited_early      → "The dev server exited immediately. …"
- *   preview_timeout           → "The dev server didn't start within {s}s. …"
- *   preview_profile_invalid   → "Project profile is incomplete. …"
  */
 
 import { useState } from "react";
-import { ExternalLink, Loader2, Monitor } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { startPreview, PreviewApiError, ApiError } from "../../lib/externalApi";
 
@@ -73,21 +72,53 @@ export function PreviewButton({
   };
 
   return (
-    <button
-      type="button"
-      onClick={() => void onClick()}
-      disabled={loading || !projectId}
-      data-testid="preview-button"
-      className="inline-flex items-center gap-1.5 rounded border border-[var(--color-border,#e0dbd4)] bg-white px-3 py-1.5 text-[13px] font-medium text-neutral-800 transition-colors hover:bg-[var(--color-muted-bg,#ede8e1)] disabled:cursor-not-allowed disabled:opacity-50"
-    >
-      {loading ? (
-        <Loader2 size={14} className="animate-spin" />
-      ) : (
-        <Monitor size={14} />
-      )}
-      Preview
-      {!loading && <ExternalLink size={12} className="opacity-60" />}
-    </button>
+    <>
+      {/* Inline keyframes — scoped to this component so the global index.css
+         stays Phase-A-authoritative (per B1 scope rules). */}
+      <style>{`
+        @keyframes pulse-preview-dot {
+          0%, 100% { opacity: 1; }
+          50%      { opacity: 0.4; }
+        }
+      `}</style>
+      <button
+        type="button"
+        onClick={() => void onClick()}
+        disabled={loading || !projectId}
+        data-testid="preview-button"
+        title="Spawn dev server for this project (npm run dev)"
+        className="inline-flex items-center gap-1.5 rounded-[var(--radius-button)] border-[1.5px] border-[#bfdbfe] bg-[var(--color-surface)] px-3 py-1.5 text-[13px] font-medium text-[var(--color-info)] transition-colors hover:border-[#93c5fd] hover:bg-[var(--color-info-bg)] disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {loading ? (
+          <Loader2 size={12} className="animate-spin" />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="inline-block h-2 w-2 rounded-full bg-[var(--color-info)]"
+            style={{
+              animation: "pulse-preview-dot 1.4s infinite",
+            }}
+          />
+        )}
+        {/* Globe / browser-window glyph per mockup — kept inline to avoid a
+            lucide bundle import just for one icon. */}
+        <svg
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-3.5 w-3.5"
+          aria-hidden="true"
+        >
+          <circle cx="8" cy="8" r="6.5" />
+          <ellipse cx="8" cy="8" rx="3" ry="6.5" />
+          <line x1="1.5" y1="8" x2="14.5" y2="8" />
+        </svg>
+        <span>Preview</span>
+      </button>
+    </>
   );
 }
 

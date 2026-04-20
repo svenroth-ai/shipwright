@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { LayoutDashboard, FolderOpen, Inbox, Settings, Menu, Activity } from 'lucide-react';
 import { SidebarNavItem } from './SidebarNavItem';
 import { InboxBadge } from './InboxBadge';
-import { SidebarProjectList } from './SidebarProjectList';
 
 interface SidebarNavProps {
   inboxCount: number;
@@ -93,11 +92,10 @@ export function SidebarNav({ inboxCount }: SidebarNavProps) {
         />
       </nav>
 
-      {/* Section 02 (iterate 3) — project list + active highlight. Hidden
-          when the sidebar collapses to icons only. */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <SidebarProjectList collapsed={collapsed} />
-      </div>
+      {/* Spacer — pushes Settings to the bottom. Phase B1 removed the
+          project list from the sidebar; the TaskBoard header dropdown is
+          now the single source of truth for project selection. */}
+      <div className="flex-1" />
 
       {/* Bottom: Settings */}
       <div className="border-t border-white/10 px-3 py-3">

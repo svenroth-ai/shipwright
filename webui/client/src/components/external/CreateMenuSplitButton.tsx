@@ -1,26 +1,36 @@
 /*
- * `+ New ▾` split-button (iterate 3 section 03 / FR-03.10..14).
+ * `+ New ▾` split-button (iterate 3 section 03 / FR-03.10..14; restyled in
+ * remediation Phase B1 against `webui/designs/screens/kanban-with-projects.html`
+ * lines 270–376).
  *
  * Layout:
  *   [   + <primary>   ][▾]
  *     └─ primary fires `actions[0]`   └─ caret opens the Radix DropdownMenu
  *
- * Tooltip: caret only. Hovering the primary stays silent so rapid
- * double-clicks remain a fluent path.
+ * Phase B1 restyle:
+ *   - Primary bg = --color-primary, caret bg = --color-primary-hover
+ *     (visually distinct caret per mockup .new-split-caret).
+ *   - Dropdown items: 28×28 rounded icon tile (amber/purple/emerald per
+ *     action id) + label (500) + description (muted) + kbd shortcut (mono
+ *     badge). Icon palette is data-driven off the action id, not the
+ *     `kind`, so the visual slot matches the design without widening the
+ *     ActionDefinition type.
+ *   - Tooltip stays on the caret only.
  *
- * Global `i` shortcut: registered in TaskBoardPage, NOT here. This
- * component only OWNS the click path; the keyboard handler is the
- * page's problem because it needs to gate on "user isn't typing in an
- * input" and ignore when modals are already open.
- *
- * Regression guard: there is NO `c` / `Shift+C` binding anywhere in
- * this file. Tests assert the explicit absence.
+ * Regression guard: NO `c` / `Shift+C` binding. Tests assert the absence.
  */
 
 import { useState } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { ChevronDown, Loader2, Plus } from "lucide-react";
+import {
+  ChevronDown,
+  CheckSquare,
+  Loader2,
+  Plus,
+  RotateCw,
+  Workflow,
+} from "lucide-react";
 
 import type { ActionDefinition } from "../../lib/externalApi";
 
@@ -31,6 +41,43 @@ interface CreateMenuSplitButtonProps {
   /** True while `useProjectActions` is loading. Disables the whole button. */
   isLoading?: boolean;
 }
+
+interface ActionVisual {
+  bg: string;
+  fg: string;
+  icon: React.ComponentType<{ size?: number }>;
+  kbd: string;
+}
+
+// Per-action visual slot — amber/purple/emerald tiles per mockup
+// .new-option-icon.{task,pipeline,iterate} (lines 345–347).
+const ACTION_VISUALS: Record<string, ActionVisual> = {
+  "new-task": {
+    bg: "#FEF3C7", // amber-100
+    fg: "#92400E", // amber-800 ≈ --color-warning-text
+    icon: CheckSquare,
+    kbd: "\u2318 \u21E7 T", // ⌘ ⇧ T
+  },
+  "new-pipeline": {
+    bg: "#F3E8FF", // purple-100 ≈ --color-purple-bg
+    fg: "#6B21A8", // purple-800 ≈ --color-purple-text
+    icon: Workflow,
+    kbd: "\u2318 \u21E7 P",
+  },
+  "new-iterate": {
+    bg: "#D1FAE5", // emerald-100 ≈ --color-success-bg
+    fg: "#065F46", // emerald-800 ≈ --color-success-text
+    icon: RotateCw,
+    kbd: "\u2318 \u21E7 I",
+  },
+};
+
+const DEFAULT_VISUAL: ActionVisual = {
+  bg: "var(--color-muted-bg)",
+  fg: "var(--color-muted)",
+  icon: Plus,
+  kbd: "",
+};
 
 export function CreateMenuSplitButton({
   actions,
@@ -44,7 +91,7 @@ export function CreateMenuSplitButton({
 
   return (
     <div
-      className="inline-flex overflow-hidden rounded border border-[var(--color-primary,#6b5e56)] shadow-sm"
+      className="inline-flex overflow-hidden rounded-[var(--radius-button)] border-[1.5px] border-[var(--color-primary)] shadow-sm"
       data-testid="create-menu-split-button"
     >
       <button
@@ -52,7 +99,7 @@ export function CreateMenuSplitButton({
         onClick={() => primary && onSelect(primary)}
         disabled={disabled}
         data-testid="create-menu-primary"
-        className="inline-flex items-center gap-1.5 border-r border-[var(--color-primary-hover,#5a4f48)] bg-[var(--color-primary,#6b5e56)] px-3 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-[var(--color-primary-hover,#5a4f48)] disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 border-r-[1.5px] border-[var(--color-primary-hover)] bg-[var(--color-primary)] px-3 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
         <span>{primary?.label ?? "New"}</span>
@@ -67,19 +114,23 @@ export function CreateMenuSplitButton({
                   disabled={disabled}
                   data-testid="create-menu-caret"
                   aria-label="More create options"
-                  className="inline-flex items-center justify-center bg-[var(--color-primary,#6b5e56)] px-2 text-white transition-colors hover:bg-[var(--color-primary-hover,#5a4f48)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center justify-center bg-[var(--color-primary-hover)] px-2 text-white transition-colors hover:bg-[#443a34] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <ChevronDown size={14} />
+                  <ChevronDown size={12} />
                 </button>
               </DropdownMenu.Trigger>
             </Tooltip.Trigger>
             <Tooltip.Portal>
               <Tooltip.Content
                 sideOffset={4}
-                className="rounded bg-neutral-900 px-2 py-1 text-[11px] text-white shadow"
+                className="rounded bg-[var(--color-text)] px-2 py-1 text-[11px] text-white shadow"
               >
-                Press <kbd className="rounded bg-white/15 px-1 font-mono text-[10px]">i</kbd> to open
-                <Tooltip.Arrow className="fill-neutral-900" />
+                Press{" "}
+                <kbd className="rounded bg-white/15 px-1 font-mono text-[10px]">
+                  i
+                </kbd>{" "}
+                to open
+                <Tooltip.Arrow className="fill-[var(--color-text)]" />
               </Tooltip.Content>
             </Tooltip.Portal>
           </Tooltip.Root>
@@ -88,25 +139,45 @@ export function CreateMenuSplitButton({
         <DropdownMenu.Portal>
           <DropdownMenu.Content
             align="end"
-            sideOffset={4}
-            className="z-50 min-w-[220px] rounded border border-[var(--color-border,#e0dbd4)] bg-white p-1 shadow-lg"
+            sideOffset={6}
+            className="z-50 min-w-[260px] rounded-[var(--radius-button)] border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-[var(--shadow-card)]"
             data-testid="create-menu-dropdown"
           >
-            {actions.map((a) => (
-              <DropdownMenu.Item
-                key={a.id}
-                data-testid={`create-menu-item-${a.id}`}
-                onSelect={() => onSelect(a)}
-                className="flex cursor-pointer flex-col gap-0.5 rounded px-3 py-2 text-[13px] text-neutral-900 outline-none hover:bg-[var(--color-muted-bg,#ede8e1)] focus:bg-[var(--color-muted-bg,#ede8e1)]"
-              >
-                <span className="font-medium">{a.label}</span>
-                {a.description && (
-                  <span className="text-[11px] text-neutral-500">
-                    {a.description}
+            {actions.map((a) => {
+              const v = ACTION_VISUALS[a.id] ?? DEFAULT_VISUAL;
+              const Icon = v.icon;
+              return (
+                <DropdownMenu.Item
+                  key={a.id}
+                  data-testid={`create-menu-item-${a.id}`}
+                  onSelect={() => onSelect(a)}
+                  className="flex cursor-pointer items-center gap-2.5 rounded-[6px] px-2.5 py-2 text-[13px] text-[var(--color-text)] outline-none focus:bg-[var(--color-muted-bg)] hover:bg-[var(--color-muted-bg)]"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px]"
+                    style={{ background: v.bg, color: v.fg }}
+                  >
+                    <Icon size={14} />
                   </span>
-                )}
-              </DropdownMenu.Item>
-            ))}
+                  <span className="flex min-w-0 flex-col">
+                    <span className="text-[13px] font-medium leading-tight text-[var(--color-text)]">
+                      {a.label}
+                    </span>
+                    {a.description && (
+                      <span className="mt-0.5 text-[11px] leading-snug text-[var(--color-muted)]">
+                        {a.description}
+                      </span>
+                    )}
+                  </span>
+                  {v.kbd && (
+                    <span className="ml-auto shrink-0 rounded-[3px] border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-[1px] font-mono text-[10px] text-[var(--color-muted)]">
+                      {v.kbd}
+                    </span>
+                  )}
+                </DropdownMenu.Item>
+              );
+            })}
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
