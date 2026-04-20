@@ -1,0 +1,5 @@
+{
+  "name": "parent-project",
+  "version": "0.1.0",
+  "dependencies": { "next": "^16.2.0" }
+}
