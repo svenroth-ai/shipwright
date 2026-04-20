@@ -80,6 +80,16 @@ def main() -> int:
     if not pq.is_shipwright_project(project_root):
         return 0
 
+    # Monorepo auto-descent guard: if the resolver auto-descended into a
+    # managed subfolder while the user was actually working at a parent
+    # level (monorepo root, unrelated subdir), skip the audit to avoid
+    # off-scope pollution. Opt-in for cross-dir audit via
+    # SHIPWRIGHT_PROJECT_ROOT env var pointing exactly at project_root.
+    cwd = Path.cwd()
+    if pq.cwd_is_strict_ancestor_of(cwd, project_root) \
+            and not pq.project_root_was_explicitly_selected(project_root):
+        return 0
+
     session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "").strip() or "unknown"
     run_id = pq.resolve_run_id(project_root, session_id)
     source = pq.resolve_source(project_root, phase)

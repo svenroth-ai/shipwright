@@ -182,6 +182,76 @@ def phase_from_plugin_root(plugin_root: str | os.PathLike[str] | None) -> str | 
     return PLUGIN_TO_PHASE.get(name)
 
 
+# ---------------------------------------------------------------------------
+# Monorepo Auto-Descent Guard (plan v7 — genau-b-machen-ist-functional-toucan)
+# ---------------------------------------------------------------------------
+
+def cwd_is_strict_ancestor_of(cwd: Path, project_root: Path) -> bool:
+    """Return True when *cwd* is a STRICT ancestor of *project_root*.
+
+    This is the "auto-descent happened" signal: ``resolve_project_root``
+    walked from ``cwd`` down into a subfolder because ``cwd`` itself had
+    no Shipwright markers. Callers compose this with
+    :func:`project_root_was_explicitly_selected` to decide whether to
+    skip audit-like side effects when the user is working at a parent
+    directory of a managed subfolder.
+
+    Returns ``False`` when:
+
+    - ``cwd == project_root`` (user is in the managed folder)
+    - ``cwd`` is below ``project_root`` (user is inside a subdir)
+    - ``cwd`` and ``project_root`` are unrelated paths
+    - Path resolution fails (fail-open + stderr log — avoids silently
+      blocking every audit after one environment hiccup; the off-scope
+      pollution risk stays bounded by subsequent functional invocations)
+
+    ``.resolve(strict=False)`` handles symlinks (dereferenced) and
+    Windows case-insensitivity (normalised) cross-platform.
+    """
+    try:
+        cwd_r = cwd.resolve(strict=False)
+        pr_r = project_root.resolve(strict=False)
+    except OSError as exc:
+        sys.stderr.write(
+            f"[phase-quality] cwd_is_strict_ancestor_of: resolve failed "
+            f"({type(exc).__name__}: {exc}) — assuming not-ancestor\n"
+        )
+        return False
+    if cwd_r == pr_r:
+        return False
+    return cwd_r in pr_r.parents
+
+
+def project_root_was_explicitly_selected(project_root: Path) -> bool:
+    """Return True when ``SHIPWRIGHT_PROJECT_ROOT`` resolves to ``project_root``.
+
+    Distinguishes two cases:
+
+    - **Deliberate opt-in**: user set ``SHIPWRIGHT_PROJECT_ROOT`` to point
+      at THIS specific managed project (e.g. for CI/automation running
+      from outside the managed folder). Returns ``True``.
+    - **Ambient env**: CI or parent shell has ``SHIPWRIGHT_PROJECT_ROOT``
+      set for unrelated reasons AND ``resolve_project_root`` didn't
+      actually use it (env path doesn't exist or isn't a Shipwright
+      project, so resolver fell through to auto-descent). Returns
+      ``False``.
+
+    Handles: empty string, whitespace-only, relative paths (resolved to
+    absolute via ``.resolve``), non-existent paths, symlinks, Windows
+    case-insensitivity. Any resolution failure returns ``False``
+    (conservative — don't grant opt-in on broken input).
+    """
+    env = os.environ.get("SHIPWRIGHT_PROJECT_ROOT", "").strip()
+    if not env:
+        return False
+    try:
+        env_r = Path(env).resolve(strict=False)
+        pr_r = project_root.resolve(strict=False)
+    except OSError:
+        return False
+    return env_r == pr_r
+
+
 def resolve_run_id(project_root: Path, session_id: str) -> str:
     """Composite-fallback run_id resolution (plan § 5.3).
 
@@ -1003,6 +1073,7 @@ __all__ = [
     "already_audited",
     "apply_skip_override",
     "count_by_status",
+    "cwd_is_strict_ancestor_of",
     "finding_path",
     "flag_enabled",
     "gc_old_findings",
@@ -1011,6 +1082,7 @@ __all__ = [
     "make_finding",
     "phase_from_plugin_root",
     "phase_quality_enabled",
+    "project_root_was_explicitly_selected",
     "regenerate_all_aggregates",
     "resolve_run_id",
     "resolve_source",
