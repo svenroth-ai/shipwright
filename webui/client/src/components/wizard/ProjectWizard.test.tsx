@@ -18,7 +18,9 @@ describe('ProjectWizard', () => {
     renderWizard();
     expect(screen.getByText('New Project')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('My Awesome App')).toBeInTheDocument();
-    expect(screen.getByText('Project Info')).toBeInTheDocument();
+    // Phase B5 — step label is now "Step 1 of 4 — Project Info" (one span).
+    expect(screen.getByText(/Step 1 of 4/)).toBeInTheDocument();
+    expect(screen.getByText(/Project Info/)).toBeInTheDocument();
   });
 
   it('navigates to step 2 on Next', async () => {
@@ -27,13 +29,14 @@ describe('ProjectWizard', () => {
     // Path input placeholder changed
     const pathInput = screen.getByPlaceholderText(/Users|home|projects/);
     await userEvent.type(pathInput, '/tmp/test');
-    await userEvent.click(screen.getByText('Next'));
-    expect(screen.getByText('Stack & Profile')).toBeInTheDocument();
+    await userEvent.click(screen.getByTestId('wizard-next'));
+    // Phase B5 — step label contains "Stack & Profile"; match it via regex.
+    expect(screen.getByText(/Stack & Profile/)).toBeInTheDocument();
   });
 
   it('disables Next when name is empty', () => {
     renderWizard();
-    expect(screen.getByText('Next')).toBeDisabled();
+    expect(screen.getByTestId('wizard-next')).toBeDisabled();
   });
 
   // Iterate 14.7.1 — the old "Browse" button was renamed to "Paste" (the
