@@ -2,11 +2,12 @@
  * Flow E — Inbox project filter + visual regression.
  *
  *   1. Navigate to /inbox — the InboxPage renders.
- *   2. Per FR-03.41, the Inbox SHOULD surface a project filter chip
- *      identical to the TaskBoard's. We assert the chip bar exists in
- *      the Inbox DOM (not just that it lives in the sidebar).
- *   3. With activeProjectId persisted from Sidebar, the Inbox respects
- *      the filter.
+ *   2. Per FR-03.41, the Inbox SHOULD surface a project filter primitive.
+ *      Iterate 3 remediation Phase A6 + B4 (2026-04-20) replaced the chip
+ *      bar with a shared ProjectFilterDropdown. The inbox surface mounts
+ *      that dropdown wrapped in `inbox-project-filter-dropdown`.
+ *   3. With activeProjectId persisted from the URL / localStorage, the
+ *      Inbox respects the filter.
  *   4. Visual contract: amber 3 px left-strip border on each row
  *      (not a full amber background) + right-aligned Answer + Dismiss
  *      buttons — per `designs/screens/13-global-inbox.html`.
@@ -17,23 +18,27 @@ import { test, expect } from "@playwright/test";
 const UAT_PROJECT_ID = "fa10a30a-21b1-48e0-a588-e7f721ca5bfc";
 
 test.describe("Flow E — Inbox project filter + visual treatment", () => {
-  test("Inbox renders + exposes the project-filter chip bar (FR-03.41)", async ({ page }) => {
+  test("Inbox renders + exposes the project-filter dropdown (FR-03.41)", async ({ page }) => {
     await page.goto("/inbox");
     await expect(page.getByTestId("inbox-page")).toBeVisible();
 
-    // FR-03.41: project filter chip present in the Inbox surface.
-    // Acceptable locators (defensive): data-testid="project-filter-chip-bar"
-    // OR any `[data-testid^="project-chip-"]` inside the inbox-page subtree.
+    // FR-03.41: project filter primitive present in the Inbox surface.
+    // Phase B4 mounts the shared ProjectFilterDropdown inside the
+    // `inbox-project-filter-dropdown` wrapper. Defensive: also accept the
+    // bare dropdown button if the wrapper testid ever moves.
     const inbox = page.getByTestId("inbox-page");
-    const inboxChipBar = inbox.getByTestId("project-filter-chip-bar");
-    const inboxChip = inbox.locator('[data-testid^="project-chip-"]').first();
-    const hasChipBar = (await inboxChipBar.count()) > 0;
-    const hasAnyChip = (await inboxChip.count()) > 0;
+    const wrapper = inbox.getByTestId("inbox-project-filter-dropdown");
+    const bareDropdown = inbox.getByTestId("project-filter-dropdown");
+    const hasWrapper = (await wrapper.count()) > 0;
+    const hasBareDropdown = (await bareDropdown.count()) > 0;
 
-    expect.soft(
-      hasChipBar || hasAnyChip,
-      "Inbox should render a project filter chip bar per FR-03.41 (or at least a single chip inside /inbox).",
+    expect(
+      hasWrapper || hasBareDropdown,
+      "Inbox should render a project filter dropdown per FR-03.41.",
     ).toBeTruthy();
+
+    // Sanity: the dropdown button itself is visible + clickable.
+    await expect(bareDropdown).toBeVisible();
   });
 
   test("persisted activeProjectId scopes the inbox list", async ({ page }) => {
