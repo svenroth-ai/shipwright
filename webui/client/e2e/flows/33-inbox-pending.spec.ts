@@ -45,7 +45,11 @@ test.describe("Inbox pending", () => {
 
     await page.goto("/inbox");
     await expect(page.getByTestId("inbox-page")).toBeVisible();
-    await expect(page.getByTestId(`inbox-item-${toolUseId}`)).toBeVisible({ timeout: 5000 });
+    // Inbox derivation iterates all persisted tasks; with a long-lived
+    // sdk-sessions store the response can take several seconds. Allow
+    // 15 s for the item to appear / disappear so the assertion isn't
+    // timing-coupled to test fixture accumulation.
+    await expect(page.getByTestId(`inbox-item-${toolUseId}`)).toBeVisible({ timeout: 15_000 });
     // Best-effort badge must be present — scope to inside the inbox item card
     // so the page header's "(best-effort detection)" prose doesn't collide.
     await expect(
@@ -61,6 +65,6 @@ test.describe("Inbox pending", () => {
       }) + "\n";
     appendFileSync(jsonlPath, match, "utf-8");
 
-    await expect(page.getByTestId(`inbox-item-${toolUseId}`)).toBeHidden({ timeout: 6000 });
+    await expect(page.getByTestId(`inbox-item-${toolUseId}`)).toBeHidden({ timeout: 15_000 });
   });
 });
