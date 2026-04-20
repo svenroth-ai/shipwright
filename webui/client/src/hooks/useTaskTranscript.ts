@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   getTranscript,
   type ExternalTask,
@@ -32,6 +33,7 @@ export interface UseTaskTranscriptResult {
  */
 export function useTaskTranscript(taskId: string | null, options: { intervalMs?: number } = {}) {
   const intervalMs = options.intervalMs ?? 1000;
+  const qc = useQueryClient();
   const [result, setResult] = useState<UseTaskTranscriptResult>({
     status: "idle",
     content: "",
@@ -80,6 +82,14 @@ export function useTaskTranscript(taskId: string | null, options: { intervalMs?:
             task: response.task,
             errorMessage: null,
           });
+        }
+        // Server-side state-machine transitions ride on the transcript
+        // response. Push the freshest task into TanStack's cache so
+        // SessionMetadata, EditableTaskTitle, and TerminalLaunchButton
+        // (all readers of useExternalTask) reflect new states without
+        // needing their own refetch interval.
+        if (response.task) {
+          qc.setQueryData(["external-task", response.task.taskId], response.task);
         }
       } catch (err) {
         if (cancelled) return;

@@ -228,6 +228,11 @@ export function createExternalRoutes(args: {
     };
     const out: AggregatedEntry[] = [];
     for (const task of store.list()) {
+      // Skip tasks the user has explicitly closed or whose session is
+      // unrecoverable — they cannot grow new pending interactions, and
+      // re-reading their JSONL is a major contributor to inbox latency
+      // when sdk-sessions.json accumulates many stale entries.
+      if (task.state === "done" || task.state === "launch_failed") continue;
       const loc = await watcher.findByUuid(task.sessionUuid);
       if (!loc) continue;
       let content = "";
