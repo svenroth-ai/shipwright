@@ -1,0 +1,114 @@
+// BFS route crawler for /shipwright-adopt.
+// Copies into target project as a Playwright spec and runs via `npx playwright test`.
+// Writes results to --output-json path provided via env SHIPWRIGHT_CRAWL_OUT.
+
+import { test, expect, Page } from '@playwright/test';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
+const BASE_URL = process.env.SHIPWRIGHT_CRAWL_BASE_URL || 'http://localhost:3000';
+const MAX_DEPTH = parseInt(process.env.SHIPWRIGHT_CRAWL_MAX_DEPTH || '3', 10);
+const MAX_PAGES = parseInt(process.env.SHIPWRIGHT_CRAWL_MAX_PAGES || '50', 10);
+const OUT_JSON = process.env.SHIPWRIGHT_CRAWL_OUT || '.shipwright/adopt/routes.json';
+const SCREENSHOTS_DIR = process.env.SHIPWRIGHT_CRAWL_SCREENSHOTS || '.shipwright/adopt/screenshots';
+const AUTH_TOKEN = process.env.SHIPWRIGHT_CRAWL_AUTH_TOKEN || '';
+
+interface RouteEntry {
+  url: string;
+  title: string;
+  h1: string;
+  h2: string[];
+  buttons: string[];
+  forms: { action: string; fields: string[] }[];
+  depth: number;
+  screenshot: string;
+}
+
+function sameOrigin(url: string, base: URL): boolean {
+  try {
+    const u = new URL(url, base);
+    return u.origin === base.origin;
+  } catch {
+    return false;
+  }
+}
+
+function safeFilename(url: string): string {
+  return url.replace(/^https?:\/\/[^/]+/, '').replace(/[^\w]+/g, '_').replace(/^_+|_+$/g, '') || 'root';
+}
+
+async function extractMeta(page: Page, url: string, depth: number, screenshotPath: string): Promise<RouteEntry> {
+  const title = await page.title().catch(() => '');
+  const h1 = await page.locator('h1').first().innerText().catch(() => '');
+  const h2 = await page.locator('h2').allInnerTexts().catch(() => []);
+  const buttons = await page.locator('button, [role="button"], a.button, [type="submit"]').allInnerTexts().catch(() => []);
+  const formHandles = await page.locator('form').all().catch(() => []);
+  const forms: { action: string; fields: string[] }[] = [];
+  for (const f of formHandles) {
+    const action = await f.getAttribute('action').catch(() => '') || '';
+    const inputs = await f.locator('input[name], textarea[name], select[name]').evaluateAll(
+      (els) => (els as HTMLElement[]).map((e) => (e as HTMLInputElement).name)
+    ).catch(() => []);
+    forms.push({ action, fields: inputs.slice(0, 20) });
+  }
+  await page.screenshot({ path: screenshotPath, fullPage: false }).catch(() => { /* ignore */ });
+  return {
+    url, title, h1,
+    h2: h2.slice(0, 5),
+    buttons: [...new Set(buttons.map((t) => t.trim()).filter(Boolean))].slice(0, 10),
+    forms,
+    depth,
+    screenshot: path.relative(process.cwd(), screenshotPath).replace(/\\/g, '/'),
+  };
+}
+
+test('shipwright-adopt route crawler', async ({ page, context }) => {
+  test.setTimeout(180_000);
+  fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
+  fs.mkdirSync(path.dirname(OUT_JSON), { recursive: true });
+
+  if (AUTH_TOKEN) {
+    await context.setExtraHTTPHeaders({ Authorization: `Bearer ${AUTH_TOKEN}` });
+  }
+
+  const base = new URL(BASE_URL);
+  const queue: { url: string; depth: number }[] = [{ url: BASE_URL, depth: 0 }];
+  const visited = new Set<string>();
+  const results: RouteEntry[] = [];
+
+  while (queue.length && results.length < MAX_PAGES) {
+    const { url, depth } = queue.shift()!;
+    const canonical = new URL(url, base).pathname + (new URL(url, base).search || '');
+    if (visited.has(canonical)) continue;
+    visited.add(canonical);
+
+    try {
+      const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15_000 });
+      if (!response || !response.ok()) continue;
+      await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => { /* ignore */ });
+
+      const screenshotPath = path.join(SCREENSHOTS_DIR, `${safeFilename(canonical)}.png`);
+      const entry = await extractMeta(page, canonical, depth, screenshotPath);
+      results.push(entry);
+
+      if (depth < MAX_DEPTH) {
+        const links = await page.locator('a[href]').evaluateAll((els) =>
+          (els as HTMLAnchorElement[]).map((a) => a.href).filter(Boolean)
+        ).catch(() => []);
+        for (const link of links) {
+          if (!sameOrigin(link, base)) continue;
+          if (link.startsWith('mailto:') || link.startsWith('tel:') || link.startsWith('javascript:')) continue;
+          const pathOnly = new URL(link, base).pathname;
+          if (visited.has(pathOnly)) continue;
+          queue.push({ url: link, depth: depth + 1 });
+        }
+      }
+    } catch (_e) {
+      // Swallow errors and move on — best-effort crawl
+      continue;
+    }
+  }
+
+  fs.writeFileSync(OUT_JSON, JSON.stringify(results, null, 2), 'utf-8');
+  expect(results.length).toBeGreaterThanOrEqual(0);  // always passes; crawl is advisory
+});

@@ -1,0 +1,291 @@
+"""Adopt-phase workflow compliance checks (Phase-Quality integration).
+
+Implements A1–A8 canon checks for /shipwright-adopt. A1–A3, A6, A7 are
+Tier-1 ERROR on FAIL (but the Stop-hook is non-blocking by default so
+failures just surface as ``additionalContext`` next session). A4, A5,
+A8 are Tier-2 heuristics that never block.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import sys
+from pathlib import Path
+from typing import Any
+
+_SHARED_SCRIPTS = Path(__file__).resolve().parents[2]
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
+
+from lib.phase_quality import (  # noqa: E402
+    STATUS_FAIL,
+    STATUS_PASS,
+    STATUS_SKIP,
+    STATUS_WARN,
+    make_finding,
+)
+
+
+REQUIRED_CONFIGS = [
+    "shipwright_run_config.json",
+    "shipwright_project_config.json",
+    "shipwright_plan_config.json",
+    "shipwright_build_config.json",
+    "shipwright_compliance_config.json",
+]
+
+
+def check_a1_configs_present(project_root: Path) -> dict[str, Any]:
+    """A1 (Tier-1): 5 required configs exist and parse as JSON."""
+    name = "A1 All shipwright_*_config.json present + valid JSON"
+    missing = [c for c in REQUIRED_CONFIGS if not (project_root / c).exists()]
+    if missing:
+        return make_finding(
+            "A1", STATUS_FAIL,
+            f"missing configs: {', '.join(missing)}",
+            name=name,
+            remediation="Re-run /shipwright-adopt — pre-flight should have aborted",
+            provenance="adopt_config_check",
+        )
+    for c in REQUIRED_CONFIGS:
+        try:
+            json.loads((project_root / c).read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as e:
+            return make_finding(
+                "A1", STATUS_FAIL,
+                f"invalid JSON in {c}: {e!r}",
+                name=name,
+                remediation="Fix the JSON or re-run /shipwright-adopt",
+                provenance="adopt_config_check",
+            )
+    return make_finding(
+        "A1", STATUS_PASS,
+        f"{len(REQUIRED_CONFIGS)} required configs present and valid",
+        name=name,
+        provenance="adopt_config_check",
+    )
+
+
+def check_a2_spec_has_frs(project_root: Path) -> dict[str, Any]:
+    """A2 (Tier-1): planning/*/spec.md contains >= 1 FR-NN.MM."""
+    name = "A2 planning/<split>/spec.md has >= 1 FR"
+    planning = project_root / "planning"
+    if not planning.is_dir():
+        return make_finding("A2", STATUS_FAIL, "missing planning/ directory",
+                            name=name, provenance="adopt_spec_check")
+    specs = list(planning.rglob("spec.md"))
+    if not specs:
+        return make_finding("A2", STATUS_FAIL, "no planning/<split>/spec.md found",
+                            name=name, provenance="adopt_spec_check")
+    for spec in specs:
+        content = spec.read_text(encoding="utf-8", errors="ignore")
+        if re.search(r"\bFR-\d+\.\d+\b", content):
+            return make_finding(
+                "A2", STATUS_PASS,
+                f"FR found in {spec.relative_to(project_root).as_posix()}",
+                name=name, provenance="adopt_spec_check",
+            )
+    return make_finding(
+        "A2", STATUS_FAIL,
+        "planning/*/spec.md: no FR-NN.MM reference in any spec",
+        name=name,
+        remediation="Manually add FRs or re-run /shipwright-adopt with more features",
+        provenance="adopt_spec_check",
+    )
+
+
+def check_a3_adoption_adr(project_root: Path) -> dict[str, Any]:
+    """A3 (Tier-1): decision_log.md has ADR-0001 with 'Adopt' in the title."""
+    name = "A3 decision_log.md has adoption ADR-0001"
+    log = project_root / "agent_docs" / "decision_log.md"
+    if not log.exists():
+        return make_finding("A3", STATUS_FAIL, "missing agent_docs/decision_log.md",
+                            name=name, provenance="adopt_adr_check")
+    content = log.read_text(encoding="utf-8", errors="ignore")
+    if re.search(r"ADR-0001[^\n]*[Aa]dopt", content):
+        return make_finding("A3", STATUS_PASS, "ADR-0001 Adopt decision found",
+                            name=name, provenance="adopt_adr_check")
+    return make_finding(
+        "A3", STATUS_FAIL,
+        "ADR-0001 not found or doesn't reference 'Adopt' in title",
+        name=name,
+        remediation="Add an ADR-0001 entry that documents the adoption decision",
+        provenance="adopt_adr_check",
+    )
+
+
+def check_a4_backfill_quality(project_root: Path) -> dict[str, Any]:
+    """A4 (Tier-2): if retroactive ADRs exist, they should have Context > 50 chars."""
+    name = "A4 ADR backfill quality (Tier-2)"
+    log = project_root / "agent_docs" / "decision_log.md"
+    if not log.exists():
+        return make_finding("A4", STATUS_SKIP, "no decision_log.md — nothing to assess",
+                            name=name, provenance="adopt_adr_check")
+    content = log.read_text(encoding="utf-8", errors="ignore")
+    # Find ADR-NNNN entries with 'retroactive' tag
+    entries = re.split(r"^## ADR-\d+", content, flags=re.MULTILINE)
+    retroactive = [e for e in entries if "retroactive" in e.lower()]
+    if not retroactive:
+        return make_finding("A4", STATUS_SKIP, "no retroactive ADRs found",
+                            name=name, provenance="adopt_adr_check")
+    short = [e for e in retroactive if len(e.strip()) < 150]
+    if short:
+        return make_finding(
+            "A4", STATUS_WARN,
+            f"{len(short)} retroactive ADR(s) have thin content (<150 chars) — "
+            "Layer-2 enrichment may have skipped or degraded",
+            name=name, provenance="adopt_adr_check",
+        )
+    return make_finding(
+        "A4", STATUS_PASS,
+        f"{len(retroactive)} retroactive ADR(s) with substantive Context",
+        name=name, provenance="adopt_adr_check",
+    )
+
+
+def check_a5_review_present(project_root: Path) -> dict[str, Any]:
+    """A5 (Tier-2): .shipwright/adopt/review.md exists (may document skip)."""
+    name = "A5 Layer-3 review artifact (Tier-2)"
+    review = project_root / ".shipwright" / "adopt" / "review.md"
+    if not review.exists():
+        return make_finding(
+            "A5", STATUS_WARN,
+            "missing .shipwright/adopt/review.md — run review_runner to document review or skip-reason",
+            name=name, provenance="adopt_review_check",
+        )
+    content = review.read_text(encoding="utf-8", errors="ignore")
+    if "SKIPPED" in content:
+        return make_finding(
+            "A5", STATUS_PASS,
+            "review skipped (documented reason present)",
+            name=name, provenance="adopt_review_check",
+        )
+    return make_finding(
+        "A5", STATUS_PASS,
+        "review completed and recorded",
+        name=name, provenance="adopt_review_check",
+    )
+
+
+def check_a6_hook_installed(project_root: Path) -> dict[str, Any]:
+    """A6 (Tier-1): .claude/settings.json has suggest_iterate UserPromptSubmit hook."""
+    name = "A6 UserPromptSubmit suggest_iterate hook installed"
+    settings = project_root / ".claude" / "settings.json"
+    if not settings.exists():
+        return make_finding("A6", STATUS_FAIL, "missing .claude/settings.json",
+                            name=name, provenance="adopt_hook_check")
+    try:
+        data = json.loads(settings.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        return make_finding("A6", STATUS_FAIL, f"invalid JSON: {e!r}",
+                            name=name, provenance="adopt_hook_check")
+    entries = data.get("hooks", {}).get("UserPromptSubmit", [])
+
+    def _has_suggest_iterate(items: list[Any]) -> bool:
+        for e in items:
+            if not isinstance(e, dict):
+                continue
+            if "suggest_iterate" in e.get("command", ""):
+                return True
+            nested = e.get("hooks", [])
+            if isinstance(nested, list) and _has_suggest_iterate(nested):
+                return True
+        return False
+
+    if _has_suggest_iterate(entries):
+        return make_finding("A6", STATUS_PASS, "suggest_iterate hook present",
+                            name=name, provenance="adopt_hook_check")
+    return make_finding(
+        "A6", STATUS_FAIL,
+        ".claude/settings.json UserPromptSubmit missing suggest_iterate hook",
+        name=name,
+        remediation="Re-run /shipwright-adopt or run hook_installer.install_suggest_iterate_hook",
+        provenance="adopt_hook_check",
+    )
+
+
+def check_a7_adopted_event(project_root: Path) -> dict[str, Any]:
+    """A7 (Tier-1): shipwright_events.jsonl has exactly 1 'adopted' event."""
+    name = "A7 shipwright_events.jsonl has exactly 1 'adopted' event"
+    events = project_root / "shipwright_events.jsonl"
+    if not events.exists():
+        return make_finding("A7", STATUS_FAIL, "missing shipwright_events.jsonl",
+                            name=name, provenance="adopt_event_check")
+    adopted = 0
+    for line in events.read_text(encoding="utf-8", errors="ignore").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            ev = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if ev.get("type") == "adopted":
+            adopted += 1
+    if adopted == 0:
+        return make_finding("A7", STATUS_FAIL, "no 'adopted' event found",
+                            name=name,
+                            remediation="Re-seed via event_seeder.seed_adopted_event",
+                            provenance="adopt_event_check")
+    if adopted > 1:
+        return make_finding("A7", STATUS_FAIL,
+                            f"expected exactly 1 'adopted' event, found {adopted}",
+                            name=name,
+                            remediation="Remove duplicate events",
+                            provenance="adopt_event_check")
+    return make_finding("A7", STATUS_PASS, "exactly 1 'adopted' event",
+                        name=name, provenance="adopt_event_check")
+
+
+def check_a8_e2e_baseline(project_root: Path) -> dict[str, Any]:
+    """A8 (Tier-2): e2e/flows/adopted-baseline.spec.ts exists if crawl succeeded.
+
+    SKIP when the crawl was skipped (documented in review.md or handoff).
+    WARN only if the spec is missing AND a crawl result suggests it should exist.
+    """
+    name = "A8 E2E adopted-baseline spec (Tier-2)"
+    spec = project_root / "e2e" / "flows" / "adopted-baseline.spec.ts"
+    routes = project_root / ".shipwright" / "adopt" / "routes.json"
+    if spec.exists():
+        return make_finding("A8", STATUS_PASS, "adopted-baseline.spec.ts present",
+                            name=name, provenance="adopt_e2e_check")
+    if routes.exists():
+        return make_finding(
+            "A8", STATUS_WARN,
+            "routes.json present but e2e/flows/adopted-baseline.spec.ts missing — "
+            "run e2e_baseline_generator to materialize it",
+            name=name, provenance="adopt_e2e_check",
+        )
+    return make_finding(
+        "A8", STATUS_SKIP,
+        "no Playwright crawl output — baseline suite skipped by design",
+        name=name, provenance="adopt_e2e_check",
+    )
+
+
+def run(project_root: Path, run_id: str) -> list[dict[str, Any]]:
+    """Return adopt-phase canon findings."""
+    return [
+        check_a1_configs_present(project_root),
+        check_a2_spec_has_frs(project_root),
+        check_a3_adoption_adr(project_root),
+        check_a4_backfill_quality(project_root),
+        check_a5_review_present(project_root),
+        check_a6_hook_installed(project_root),
+        check_a7_adopted_event(project_root),
+        check_a8_e2e_baseline(project_root),
+    ]
+
+
+__all__ = [
+    "check_a1_configs_present",
+    "check_a2_spec_has_frs",
+    "check_a3_adoption_adr",
+    "check_a4_backfill_quality",
+    "check_a5_review_present",
+    "check_a6_hook_installed",
+    "check_a7_adopted_event",
+    "check_a8_e2e_baseline",
+    "run",
+]
