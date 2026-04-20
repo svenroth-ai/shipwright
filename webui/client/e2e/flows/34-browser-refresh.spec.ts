@@ -35,7 +35,7 @@ test.describe("Browser refresh during JSONL write", () => {
     );
 
     await page.goto(`/tasks/${task.taskId}`);
-    await expect(page.getByTestId("event-user")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("bubble-user")).toBeVisible({ timeout: 5000 });
 
     // Append new content then refresh.
     appendFileSync(
@@ -53,7 +53,7 @@ test.describe("Browser refresh during JSONL write", () => {
     await expect(page.getByText("round 2")).toBeVisible({ timeout: 5000 });
 
     // Still exactly one of each.
-    const userCount = await page.getByTestId("event-user").count();
+    const userCount = await page.getByTestId("bubble-user").count();
     expect(userCount).toBe(1);
   });
 });

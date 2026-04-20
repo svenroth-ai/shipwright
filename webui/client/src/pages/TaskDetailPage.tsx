@@ -20,7 +20,9 @@ import { useTaskTranscript } from "../hooks/useTaskTranscript";
 import { LaunchRow } from "../components/external/LaunchRow";
 import { CopyCommandCard } from "../components/external/CopyCommandCard";
 import { SessionMetadata } from "../components/external/SessionMetadata";
-import { TranscriptViewer } from "../components/external/TranscriptViewer";
+import { BubbleTranscript } from "../components/external/BubbleTranscript";
+import { TerminalLaunchButton } from "../components/external/TerminalLaunchButton";
+import { EditableTaskTitle } from "../components/external/EditableTaskTitle";
 
 export default function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -69,11 +71,14 @@ export default function TaskDetailPage() {
 
   return (
     <div className="flex h-full flex-col gap-4 p-4" data-testid="task-detail-page">
-      <header className="flex items-center gap-3">
-        <Link to="/" className="text-neutral-500 hover:text-neutral-900" aria-label="Back to board">
-          <ArrowLeft size={16} />
-        </Link>
-        <h1 className="text-lg font-semibold">{task.title}</h1>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Link to="/" className="text-neutral-500 hover:text-neutral-900" aria-label="Back to board">
+            <ArrowLeft size={16} />
+          </Link>
+          <EditableTaskTitle task={task} />
+        </div>
+        <TerminalLaunchButton task={task} variant="primary" />
       </header>
 
       <LaunchRow
@@ -88,8 +93,8 @@ export default function TaskDetailPage() {
 
       <SessionMetadata task={task} />
 
-      <section className="flex flex-col gap-2 rounded border border-neutral-200 bg-white p-3">
-        <div className="flex items-center justify-between text-xs text-neutral-500">
+      <section className="flex min-h-[400px] flex-1 flex-col overflow-hidden rounded border border-neutral-200 bg-white">
+        <div className="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-3 py-1 text-xs text-neutral-500">
           <span>Transcript</span>
           <span>
             status: <span data-testid="transcript-status">{transcript.status}</span>
@@ -97,7 +102,9 @@ export default function TaskDetailPage() {
             {` · ${transcript.size} B`}
           </span>
         </div>
-        <TranscriptViewer content={transcript.content} />
+        <div className="min-h-0 flex-1">
+          <BubbleTranscript content={transcript.content} />
+        </div>
       </section>
     </div>
   );

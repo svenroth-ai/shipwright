@@ -60,10 +60,16 @@ webui/
         SettingsPage.tsx        # Minimal stub (settings moved into user's Claude client)
       components/
         external/
-          TranscriptViewer.tsx
-          LaunchRow.tsx
-          SessionMetadata.tsx
-          CopyCommandCard.tsx
+          BubbleTranscript.tsx       # Chat-style transcript (replaces TranscriptViewer)
+          MarkdownText.tsx           # react-markdown wrapper (XSS-safe + code cap)
+          ToolOutputBlock.tsx        # ANSI-stripped tool output
+          TerminalLaunchButton.tsx   # Shared launch CTA (compact / primary / inline)
+          EditableTaskTitle.tsx      # In-place title edit on TaskDetail
+          TaskCard.tsx               # TaskBoard card (state icon + menu + launch)
+          ConfirmDeleteDialog.tsx    # Delete confirm for non-terminal states
+          LaunchRow.tsx              # Resume / Fork / Close (legacy bag of buttons)
+          SessionMetadata.tsx        # State badge + UUID + cwd + timestamps
+          CopyCommandCard.tsx        # Three-shell-form fallback (post-Resume)
         common/
           DiagnosticsBanner.tsx # Warns when CLI < MIN_SUPPORTED_CLI
         sidebar/                # Sidebar navigation
@@ -123,7 +129,7 @@ PORT=3847                     # Server port
 - Files under 300 lines — split if larger.
 - Conventional Commits (feat:, fix:, refactor:, test:, docs:, chore:).
 
-### Architecture rules (post-Plan-D'')
+### Architecture rules (post-Plan-D'' + Iterate 2)
 1. **Webui never spawns Claude.** Launchers produce command strings; the user pastes them. Regression guard: Playwright spec `35-no-chat-panel.spec.ts`.
 2. **Task state is derived from `~/.claude/projects/<encoded-cwd>/<uuid>.jsonl` + the persistent store.** Session UUID is pre-bound at task creation via `crypto.randomUUID()`.
 3. **Discovery is filename-first.** `<uuid>.jsonl` is the primary match (PoC finding 1); first-line sessionId is a secondary sanity check.
@@ -134,6 +140,19 @@ PORT=3847                     # Server port
 8. **No chokidar.** Heartbeat-free; watcher state is derived on demand from mtime probes.
 9. **Plugin dirs must be re-passed on every launch.** `--plugin-dir` does not reliably survive `--resume`.
 10. **MIN_SUPPORTED_CLI is pinned.** See `core/cli-compat.ts`. Anything older shows a banner via `/api/diagnostics`.
+
+### DO-NOT regression guards (Iterate 2 / ADR-035)
+1. **DO NOT write into Claude's JSONL files under `~/.claude/projects/`.** Webui is a read-only polling observer of that directory. Title sync uses Claude's first-party `--name` CLI flag at launch time, not JSONL mutation or a sidecar file.
+2. **Auto-scroll pattern is CSS-first.** `overflow-anchor: auto` + `scroll-padding` on the scroll container is the primary path. `useAutoScroll` (ResizeObserver-light, ref-based, ~50 LOC) is the safety net for Chrome+polling cases. Do NOT reach for stale libraries like `react-scroll-to-bottom`. See ADR-035.
+3. **DO NOT re-introduce a chat composer.** External-launch architecture is load-bearing. See ADR-034. Spec 35 fails the build if a chat-* surface re-appears.
+4. **DO NOT re-add `@assistant-ui/*` packages.** Rendering is bespoke via `react-markdown` + `remark-gfm` + `rehype-highlight` + `strip-ansi`. The full stack is in `webui/client/package.json` already.
+5. **DO NOT run `claude --resume <uuid>` as a webui-initiated side-effect command** while the user's session may be active in their terminal. SQLite lock + JSONL interleave risk (EBUSY on Windows). Title updates take effect on next user-initiated launch only.
+6. **Multi-writer state files** (`sdk-sessions.json`, any future sidecars) MUST use `proper-lockfile`, not just temp-file + rename. The PATCH /tasks/:id endpoint surfaces ELOCKED as 409 so the client can retry instead of silently overwriting.
+7. **TSC baseline:** server has 4 pre-existing errors (cross-package imports + missing `@types/proper-lockfile`). Policy is "no regression" — new code must compile clean; existing errors are tracked but not required to fix in this iterate.
+
+### Title integration (`--name`)
+
+Webui owns the task title in `sdk-sessions.json`. Every launch command (initial OR resume) emits `--name "<title>"` after `--session-id` / `--resume`. Claude pre-seeds the picker title from this flag and produces `custom-title` + `agent-name` events in the JSONL. There is no mid-session sync. Renames take effect on the NEXT user-initiated launch — see `core/launcher.ts`, `external/routes.ts` PATCH handler, and `client/src/components/external/EditableTaskTitle.tsx`.
 
 ### Dev-server troubleshooting
 

@@ -144,6 +144,15 @@ export async function forkTask(
   );
 }
 
+export async function renameTask(taskId: string, title: string): Promise<ExternalTask> {
+  const json = await httpJson<{ task: ExternalTask }>(`${EXTERNAL_API}/tasks/${taskId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title }),
+  });
+  return json.task;
+}
+
 export async function closeTask(taskId: string): Promise<ExternalTask> {
   const json = await httpJson<{ task: ExternalTask }>(
     `${EXTERNAL_API}/tasks/${taskId}/close`,

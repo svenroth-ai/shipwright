@@ -27,6 +27,17 @@ export interface LaunchArgs {
   fork?: boolean;
   parentSessionUuid?: string;
   pluginDirs?: string[];
+  /**
+   * Optional task title forwarded to Claude as `-n, --name <title>`.
+   * Pre-seeds the session's display name (prompt box, /resume picker,
+   * terminal title). Empty / omitted → no `--name` flag emitted (Claude
+   * generates its own title).
+   *
+   * Embedded newlines are rejected with a thrown error — they break the
+   * single-line copy-paste flow and can hide injected commands inside
+   * the quoted string.
+   */
+  title?: string;
 }
 
 export interface LaunchResult {
@@ -61,9 +72,11 @@ interface Argv {
   fork: boolean;
   parentSessionUuid?: string;
   pluginDirs: string[];
+  title?: string;
 }
 
 function buildArgv(args: LaunchArgs): Argv {
+  const title = normalizeTitle(args.title);
   return {
     sessionUuid: args.sessionUuid,
     cwd: args.cwd,
@@ -71,12 +84,29 @@ function buildArgv(args: LaunchArgs): Argv {
     fork: Boolean(args.fork),
     parentSessionUuid: args.parentSessionUuid,
     pluginDirs: args.pluginDirs ?? [],
+    title,
   };
 }
 
+/**
+ * Trim outer whitespace and reject embedded newlines. Returns undefined
+ * for empty / whitespace-only input so callers can skip emitting `--name`.
+ */
+function normalizeTitle(raw: string | undefined): string | undefined {
+  if (typeof raw !== "string") return undefined;
+  if (/[\r\n]/.test(raw)) {
+    throw new Error("Title cannot contain newlines (would break the single-line copy-paste flow).");
+  }
+  const trimmed = raw.trim();
+  return trimmed === "" ? undefined : trimmed;
+}
+
 function renderPowershell(a: Argv): string {
-  const parts: string[] = ["claude", "--session-id", qPs(a.sessionUuid), "--add-dir", qPs(a.cwd)];
+  const parts: string[] = ["claude"];
+  appendSessionFlags(a, parts, qPs);
+  parts.push("--add-dir", qPs(a.cwd));
   appendResumeFork(a, parts, qPs);
+  appendName(a, parts, qPs);
   for (const d of a.pluginDirs) {
     parts.push("--plugin-dir", qPs(d));
   }
@@ -84,8 +114,11 @@ function renderPowershell(a: Argv): string {
 }
 
 function renderCmd(a: Argv): string {
-  const parts: string[] = ["claude", "--session-id", qCmd(a.sessionUuid), "--add-dir", qCmd(a.cwd)];
+  const parts: string[] = ["claude"];
+  appendSessionFlags(a, parts, qCmd);
+  parts.push("--add-dir", qCmd(a.cwd));
   appendResumeFork(a, parts, qCmd);
+  appendName(a, parts, qCmd);
   for (const d of a.pluginDirs) {
     parts.push("--plugin-dir", qCmd(d));
   }
@@ -95,12 +128,28 @@ function renderCmd(a: Argv): string {
 function renderPosix(a: Argv): string {
   const cwd = toPosixPath(a.cwd);
   const plugins = a.pluginDirs.map(toPosixPath);
-  const parts: string[] = ["claude", "--session-id", qPosix(a.sessionUuid), "--add-dir", qPosix(cwd)];
+  const parts: string[] = ["claude"];
+  appendSessionFlags(a, parts, qPosix);
+  parts.push("--add-dir", qPosix(cwd));
   appendResumeFork(a, parts, qPosix);
+  appendName(a, parts, qPosix);
   for (const d of plugins) {
     parts.push("--plugin-dir", qPosix(d));
   }
   return parts.join(" ");
+}
+
+/**
+ * Emit `--session-id <uuid>` only when the launch needs to PRE-BIND a new
+ * UUID — i.e. fresh starts and forks. The resume path identifies the
+ * session via `--resume <uuid>`; combining `--session-id` with `--resume`
+ * (without `--fork-session`) is rejected by Claude CLI 2.1.x with
+ * "--session-id can only be used with --continue or --resume if
+ * --fork-session is also specified."
+ */
+function appendSessionFlags(a: Argv, parts: string[], q: (v: string) => string): void {
+  if (a.resume && !a.fork) return;
+  parts.push("--session-id", q(a.sessionUuid));
 }
 
 function appendResumeFork(a: Argv, parts: string[], q: (v: string) => string): void {
@@ -113,6 +162,10 @@ function appendResumeFork(a: Argv, parts: string[], q: (v: string) => string): v
   } else if (a.resume) {
     parts.push("--resume", q(a.sessionUuid));
   }
+}
+
+function appendName(a: Argv, parts: string[], q: (v: string) => string): void {
+  if (a.title) parts.push("--name", q(a.title));
 }
 
 // --- shell-specific escaping ---

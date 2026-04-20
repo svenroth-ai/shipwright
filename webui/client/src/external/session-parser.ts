@@ -88,13 +88,27 @@ export function parseSessionJsonl(content: string): ParseResult {
   const lines = content.split("\n");
   const events: ParsedEvent[] = [];
   let malformed = 0;
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     if (!line) continue;
     let raw: Record<string, unknown>;
     try {
       raw = JSON.parse(line) as Record<string, unknown>;
     } catch {
+      // Last line of an actively-written file may be a torn read (the
+      // newline hasn't been flushed yet). Silently swallow that case.
+      // Middle-line parse failures point at real malformation or schema
+      // drift — emit an unknown stub with the raw text so the UI can
+      // show "skipped: bad JSON" instead of dropping silently.
       malformed++;
+      const isLastLine = i === lines.length - 1;
+      if (!isLastLine) {
+        events.push({
+          kind: "unknown",
+          originalType: "(unparseable)",
+          raw: { __rawLine: line.length > 500 ? `${line.slice(0, 500)}…` : line },
+        });
+      }
       continue;
     }
     events.push(parseOne(raw));
@@ -205,4 +219,83 @@ export function toolUses(e: AssistantEvent): Array<{ id: string; name: string; i
     }
   }
   return out;
+}
+
+/**
+ * Safe getter for AskUserQuestion's first question + options. Tolerates
+ * shape drift (missing parts, malformed input, non-array options) — the
+ * UI shows a generic fallback rather than crashing the transcript view.
+ *
+ * Observed shape: { input: { parts: [{ question: string, options: string[] }] } }.
+ * The fallback covers the case where Claude or a plugin emits a
+ * differently-named field (e.g. `query`, `prompt`).
+ */
+export function askUserQuestionSummary(input: unknown): {
+  question: string;
+  options: string[];
+  fallback: boolean;
+} {
+  if (!input || typeof input !== "object") {
+    return { question: "Question format unreadable", options: [], fallback: true };
+  }
+  const i = input as { parts?: unknown };
+  if (!Array.isArray(i.parts) || i.parts.length === 0) {
+    return { question: "Question format unreadable", options: [], fallback: true };
+  }
+  const first = i.parts[0];
+  if (!first || typeof first !== "object") {
+    return { question: "Question format unreadable", options: [], fallback: true };
+  }
+  const f = first as { question?: unknown; options?: unknown };
+  const question = typeof f.question === "string" && f.question.trim()
+    ? f.question
+    : "Question format unreadable";
+  const options = Array.isArray(f.options)
+    ? f.options.filter((o): o is string => typeof o === "string")
+    : [];
+  return { question, options, fallback: question === "Question format unreadable" };
+}
+
+/** Extracts tool_result blocks from a user event (Claude reports tool
+ * outputs as user-role events with `tool_result` content blocks). */
+export function toolResults(
+  e: UserEvent,
+): Array<{ tool_use_id: string; content: string; is_error: boolean }> {
+  const c = e.content;
+  if (!Array.isArray(c)) return [];
+  const out: Array<{ tool_use_id: string; content: string; is_error: boolean }> = [];
+  for (const block of c) {
+    if (block && typeof block === "object") {
+      const b = block as {
+        type?: unknown;
+        tool_use_id?: unknown;
+        content?: unknown;
+        is_error?: unknown;
+      };
+      if (b.type === "tool_result" && typeof b.tool_use_id === "string") {
+        const content = typeof b.content === "string"
+          ? b.content
+          : Array.isArray(b.content)
+          ? collectTextBlocks(b.content)
+          : "";
+        out.push({
+          tool_use_id: b.tool_use_id,
+          content,
+          is_error: Boolean(b.is_error),
+        });
+      }
+    }
+  }
+  return out;
+}
+
+function collectTextBlocks(blocks: unknown[]): string {
+  const parts: string[] = [];
+  for (const block of blocks) {
+    if (block && typeof block === "object") {
+      const b = block as { type?: unknown; text?: unknown };
+      if (b.type === "text" && typeof b.text === "string") parts.push(b.text);
+    }
+  }
+  return parts.join("\n");
 }
