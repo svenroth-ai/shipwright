@@ -1,47 +1,58 @@
 /*
- * Task Board — list + create. Click a card → navigates to /tasks/:taskId
- * for the LaunchRow + TranscriptViewer detail view.
+ * Task Board — list view with a per-project filter chip bar + the
+ * `+ New ▾` split-button + conditional Preview button.
  *
- * Replaces the old KanbanPage for the external-launch architecture.
- * Groups tasks into three columns: Draft, In progress, Done.
- *
- * Iterate 3 section 02:
- *   - Project filter chip bar above the columns, driven by the shared
- *     useProjectFilter hook. Chips derive from /api/projects (the server
- *     already appends the synthesized Unassigned row when relevant via
- *     ADR-037).
- *   - Inline task-creation form ships projectId in the request body:
- *     activeProjectId === null → "unassigned", else → activeProjectId.
- *     Phase stays empty — section 03 replaces this form with a modal that
- *     owns the phase dropdown.
+ * Iterate 3 section 03:
+ *   - Replaces the section-02 inline create-task form with the
+ *     CreateMenuSplitButton (primary fires actions[0], caret opens
+ *     dropdown of all actions).
+ *   - Mounts NewIssueModal as a singleton — local state tracks which
+ *     action was clicked so the modal can render the correct mode.
+ *   - PreviewButton appears when server-materialized
+ *     actions.preview.enabled === true.
+ *   - Global `i` keyboard shortcut opens the New Iterate modal
+ *     pre-filled with the active project (FR-03.14). Handler ignores
+ *     typing-in-input states; regression-guards against any `c` or
+ *     `Shift+C` binding (explicit omission, no listener at all).
  */
 
-import { useCallback, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Plus, CheckCircle2, Circle, PlayCircle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Circle, PlayCircle } from "lucide-react";
 
-import type { ExternalTask } from "../lib/externalApi";
-import { useCreateExternalTask, useExternalTasks } from "../hooks/useExternalTasks";
+import type {
+  ActionDefinition,
+  ExternalTask,
+} from "../lib/externalApi";
+import { useExternalTasks } from "../hooks/useExternalTasks";
 import { useProjects } from "../hooks/useProjects";
 import { useProjectFilter } from "../hooks/useProjectFilter";
+import { useProjectActions } from "../hooks/useProjectActions";
 import { TaskCard } from "../components/external/TaskCard";
+import { CreateMenuSplitButton } from "../components/external/CreateMenuSplitButton";
+import { PreviewButton } from "../components/external/PreviewButton";
+import { NewIssueModal } from "../components/external/NewIssueModal";
 import { UNASSIGNED_PROJECT_ID } from "../lib/projectIds";
 import type { Project } from "../types";
 
 export default function TaskBoardPage() {
-  const navigate = useNavigate();
   const { data: tasks = [], isLoading } = useExternalTasks();
   const { data: projects = [] } = useProjects();
   const { activeProjectId, setActiveProjectId } = useProjectFilter();
-  const createMut = useCreateExternalTask();
-  const [title, setTitle] = useState("");
-  const [cwd, setCwd] = useState("");
 
-  // Client-side filter on projectId. The server-side endpoint currently
-  // returns all tasks; filtering here keeps the network round-trip cheap
-  // (tasks are already in the query cache) and lets the chip bar react
-  // instantly to clicks. If task counts grow past ~500 the server should
-  // start honouring ?projectId=<id> (noted for iterate 4+).
+  // Resolve the actions schema for the active project. When "All projects"
+  // is selected, fall back to the first real project so the dropdown still
+  // shows something — the modal itself re-picks the project at launch time.
+  const resolvedProjectId = useMemo<string | null>(() => {
+    if (activeProjectId && activeProjectId !== UNASSIGNED_PROJECT_ID) {
+      return activeProjectId;
+    }
+    const first = projects.find((p) => !p.synthesized && p.id !== UNASSIGNED_PROJECT_ID);
+    return first?.id ?? null;
+  }, [activeProjectId, projects]);
+
+  const actionsQuery = useProjectActions(resolvedProjectId);
+  const actionsList: ActionDefinition[] = actionsQuery.data?.actions ?? [];
+
   const filteredTasks = useMemo<ExternalTask[]>(() => {
     if (activeProjectId === null) return tasks;
     return tasks.filter((t) => t.projectId === activeProjectId);
@@ -49,20 +60,39 @@ export default function TaskBoardPage() {
 
   const columns = useMemo(() => groupByState(filteredTasks), [filteredTasks]);
 
-  const handleCreate = useCallback(async () => {
-    if (!title.trim() || !cwd.trim()) return;
-    const task = await createMut.mutateAsync({
-      title: title.trim(),
-      cwd: cwd.trim(),
-      pluginDirs: [],
-      // Section 02 — the inline form adopts the current filter: explicit
-      // project when one is active, UNASSIGNED otherwise. Phase stays
-      // untouched (section 03 owns phase).
-      projectId: activeProjectId ?? UNASSIGNED_PROJECT_ID,
-    });
-    setTitle("");
-    navigate(`/tasks/${task.taskId}`);
-  }, [title, cwd, createMut, navigate, activeProjectId]);
+  // NewIssueModal state — singleton per page.
+  const [modalAction, setModalAction] = useState<ActionDefinition | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const openModal = useCallback((a: ActionDefinition) => {
+    setModalAction(a);
+    setModalOpen(true);
+  }, []);
+
+  // Global `i` shortcut — open the New Iterate modal (FR-03.14).
+  useEffect(() => {
+    const listener = (ev: KeyboardEvent) => {
+      if (ev.key !== "i" && ev.key !== "I") return;
+      if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+      // Ignore while the user is typing in an input / textarea / contenteditable.
+      const target = ev.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (target.isContentEditable) return;
+      }
+      // Don't fire when the modal is already open (avoid re-opening on keystroke).
+      if (modalOpen) return;
+
+      const iterate = actionsList.find((a) => a.id === "new-iterate");
+      if (iterate) {
+        ev.preventDefault();
+        openModal(iterate);
+      }
+    };
+    window.addEventListener("keydown", listener);
+    return () => window.removeEventListener("keydown", listener);
+  }, [actionsList, modalOpen, openModal]);
 
   return (
     <div className="flex h-full flex-col gap-4 p-4" data-testid="task-board-page">
@@ -73,6 +103,20 @@ export default function TaskBoardPage() {
             External-launch architecture: webui observes the JSONL, Claude Code runs in your own terminal.
           </p>
         </div>
+        <div className="flex items-center gap-2">
+          <PreviewButton
+            projectId={resolvedProjectId}
+            enabled={Boolean(actionsQuery.data?.preview.enabled)}
+            readyTimeoutSeconds={
+              actionsQuery.data?.preview.ready_timeout_seconds ?? null
+            }
+          />
+          <CreateMenuSplitButton
+            actions={actionsList}
+            onSelect={openModal}
+            isLoading={actionsQuery.isLoading}
+          />
+        </div>
       </header>
 
       <ProjectFilterChipBar
@@ -81,37 +125,6 @@ export default function TaskBoardPage() {
         activeProjectId={activeProjectId}
         onChange={setActiveProjectId}
       />
-
-      <section
-        className="flex flex-wrap gap-2 rounded border border-neutral-200 bg-white p-3"
-        data-testid="task-create-form"
-      >
-        <input
-          type="text"
-          className="min-w-[160px] flex-1 rounded border border-neutral-300 px-2 py-1 text-sm"
-          placeholder="Task title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          data-testid="task-title-input"
-        />
-        <input
-          type="text"
-          className="min-w-[320px] flex-[2] rounded border border-neutral-300 px-2 py-1 font-mono text-sm"
-          placeholder="Absolute working directory (e.g. C:\Users\me\my-project)"
-          value={cwd}
-          onChange={(e) => setCwd(e.target.value)}
-          data-testid="task-cwd-input"
-        />
-        <button
-          type="button"
-          onClick={() => void handleCreate()}
-          disabled={!title.trim() || !cwd.trim() || createMut.isPending}
-          className="inline-flex items-center gap-1.5 rounded bg-neutral-800 px-3 py-1 text-sm text-white hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
-          data-testid="task-create-btn"
-        >
-          <Plus size={14} /> {createMut.isPending ? "Creating…" : "Create task"}
-        </button>
-      </section>
 
       {isLoading ? (
         <div className="text-sm text-neutral-400">Loading…</div>
@@ -122,6 +135,13 @@ export default function TaskBoardPage() {
           <Column title="Done" icon={<CheckCircle2 size={14} />} items={columns.done} />
         </div>
       )}
+
+      <NewIssueModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        action={modalAction}
+        projectActions={actionsQuery.data}
+      />
     </div>
   );
 }

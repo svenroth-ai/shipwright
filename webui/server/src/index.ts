@@ -29,6 +29,11 @@ import { ProjectManager } from "./core/project-manager.js";
 import { SdkSessionsStore } from "./core/sdk-sessions-store.js";
 import { SessionWatcher } from "./core/session-watcher.js";
 import { probeClaudeVersion, type ClaudeVersionInfo } from "./core/cli-compat.js";
+import { PreviewSessionManager } from "./core/preview-session-manager.js";
+import {
+  loadProfile as loadProfileReal,
+  getProfilesDir,
+} from "./core/profile-loader.js";
 
 import { createProjectRoutes } from "./routes/projects.js";
 import { createSettingsRoutes } from "./routes/settings.js";
@@ -227,6 +232,12 @@ if (isMainModule) {
       app.route("/", createProjectRoutes(projectManager, projectFsDeps));
       app.route("/", createSettingsRoutes(settingsPath, settingsDeps));
       app.route("/", createProfilesRoutes());
+      // Section 03 (iterate 3) — preview-session manager. Single instance
+      // per server process so the dedup map lives across requests. Its
+      // killAll() runs on shutdown so user-spawned dev servers don't
+      // linger past a webui restart.
+      const previewManager = new PreviewSessionManager();
+
       app.route(
         "/",
         createExternalRoutes({
@@ -237,16 +248,95 @@ if (isMainModule) {
           // inside validateProjectIdOrError).
           getKnownProjectIds: () =>
             new Set(projectManager.getAll().filter((p) => !p.synthesized).map((p) => p.id)),
+          // Section 03 — actions / preview / stub routes. Synthesized row
+          // has no filesystem path so it's skipped by getProjectById.
+          getProjectById: (id) => {
+            const p = projectManager.getById(id);
+            if (!p || p.synthesized) return undefined;
+            return {
+              id: p.id,
+              name: p.name,
+              path: p.path,
+              profile: p.profile,
+              synthesized: p.synthesized,
+              settings: p.settings ? { color: p.settings.color } : undefined,
+            };
+          },
+          previewManager,
+          loadProfile: (name: string) => loadProfileReal(name, getProfilesDir()),
         }),
       );
       app.route("/", createDiagnosticsRoutes({ store: sdkSessionsStore, versionInfo }));
 
+      // Section 03 — boot-time profile coherence check (plan § 2.1 matrix).
+      // Warn (don't fail) when stack.frontend is declared but dev_server
+      // is not wired, or vice versa. Non-fatal — the API route resolves
+      // preview.enabled per request, but the log helps operators diagnose
+      // "why isn't Preview showing up?" without opening devtools.
+      try {
+        const all = projectManager.getAll().filter((p) => !p.synthesized);
+        for (const proj of all) {
+          if (!proj.profile) continue;
+          const prof = loadProfileReal(proj.profile, getProfilesDir()) as
+            | (ReturnType<typeof loadProfileReal> & { stack?: { frontend?: unknown } })
+            | null;
+          if (!prof) continue;
+          const hasFrontend = Boolean(
+            (prof as { stack?: { frontend?: unknown } }).stack?.frontend,
+          );
+          const hasDevServer = Boolean(prof.dev_server?.command);
+          if (hasFrontend && !hasDevServer) {
+            console.warn(
+              JSON.stringify({
+                level: "warn",
+                message:
+                  "profile declares stack.frontend but no dev_server.command — preview button will stay hidden",
+                projectId: proj.id,
+                profile: proj.profile,
+              }),
+            );
+          }
+          if (!hasFrontend && hasDevServer) {
+            console.warn(
+              JSON.stringify({
+                level: "warn",
+                message:
+                  "profile has dev_server.command but no stack.frontend — preview gate denies regardless (ADR-036)",
+                projectId: proj.id,
+                profile: proj.profile,
+              }),
+            );
+          }
+        }
+      } catch (err) {
+        // Non-fatal — the diagnostic is purely informational.
+        console.warn(
+          JSON.stringify({
+            level: "warn",
+            message: "boot-time profile coherence check threw",
+            error: String(err).slice(0, 200),
+          }),
+        );
+      }
+
       const shutdown = () => {
         console.log("Shutting down…");
+        try {
+          previewManager.killAll();
+        } catch {
+          // best-effort — ignore shutdown errors
+        }
         process.exit(0);
       };
       process.on("SIGTERM", shutdown);
       process.on("SIGINT", shutdown);
+      process.on("exit", () => {
+        try {
+          previewManager.killAll();
+        } catch {
+          // ignore
+        }
+      });
 
       serve({ fetch: app.fetch, port: config.port }, (info) => {
         console.log(`Shipwright Command Center listening on http://localhost:${info.port}`);

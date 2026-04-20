@@ -32,6 +32,32 @@ export default function SettingsPage() {
           "Copy command" launcher is the only available path.
         </p>
       </section>
+
+      {/* Section 03 (iterate 3) — actions.json stub link. Read-only; the
+          full in-app editor is deferred past iterate 3. */}
+      <section
+        className="rounded border border-neutral-200 bg-white p-4 text-sm"
+        data-testid="settings-configure-actions"
+      >
+        <h2 className="mb-1 font-semibold">Configure actions</h2>
+        <p className="text-neutral-500">
+          Each project declares its `+ New ▾` dropdown entries, phase allowlist, and
+          preview gate in{" "}
+          <code className="rounded bg-neutral-100 px-1 py-0.5 font-mono text-[12px]">
+            &lt;project.path&gt;/.webui/actions.json
+          </code>
+          . The in-app editor is coming in a future iterate — for now, check the{" "}
+          <a
+            href="https://github.com/svenroth-ai/shipwright#actions-schema"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[var(--color-primary)] underline"
+          >
+            actions schema docs
+          </a>{" "}
+          for the shape.
+        </p>
+      </section>
     </div>
   );
 }

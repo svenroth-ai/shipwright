@@ -250,6 +250,18 @@ export function substituteAllForms(
 }
 
 /**
+ * Convenience wrapper: the route layer's single entry point for producing
+ * the 3 shell forms from a command template + context. Delegates directly
+ * to substituteAllForms but reads better at the call site.
+ */
+export function buildExternalLaunchCommand(args: {
+  template: string;
+  ctx: SubstitutionContext;
+}): { powershell: string; cmd: string; posix: string } {
+  return substituteAllForms(args.template, args.ctx);
+}
+
+/**
  * Dry-run validator used by the actions route to verify every
  * `command_template` is substitution-safe at load time. Constructs a
  * synthetic context with representative values and re-runs all three

@@ -15,8 +15,31 @@
  */
 
 import { Hono } from "hono";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { buildCopyCommands } from "../core/launcher.js";
+import {
+  buildExternalLaunchCommand,
+  InvalidPlaceholderError,
+  UnknownPhaseError,
+  type SubstitutionContext,
+} from "../core/actions-substitute.js";
+import { loadActionsForProject } from "../core/project-actions-loader.js";
+import {
+  validateActionsSchema,
+  type SchemaError,
+} from "../core/actions-schema-validator.js";
+import {
+  PreviewExitedEarlyError,
+  PreviewPortInUseError,
+  PreviewProfileInvalidError,
+  PreviewSessionManager,
+  PreviewSpawnFailedError,
+  PreviewTimeoutError,
+  type PreviewProfile,
+} from "../core/preview-session-manager.js";
+import { loadProfile, getProfilesDir } from "../core/profile-loader.js";
 import { SessionWatcher } from "../core/session-watcher.js";
 import { parseSessionJsonl } from "../core/session-parser.js";
 import { deriveInbox, DEFAULT_USER_BLOCKING_TOOLS } from "../core/inbox-derive.js";
@@ -34,6 +57,15 @@ const IDLE_REACTIVATE_THRESHOLD_MS = 5_000;
  * (TaskBoard cards, terminal title bar) breaks past ~200 chars. */
 const TITLE_MAX_LENGTH = 200;
 
+export interface ExternalRouteProjectView {
+  id: string;
+  name: string;
+  path: string;
+  profile?: string;
+  synthesized?: boolean;
+  settings?: { color?: string };
+}
+
 export function createExternalRoutes(args: {
   store: SdkSessionsStore;
   watcher: SessionWatcher;
@@ -47,9 +79,37 @@ export function createExternalRoutes(args: {
    * without wiring).
    */
   getKnownProjectIds?: () => Set<string>;
+  /**
+   * Section 03 (iterate 3) — look up a registered project by id. Used by
+   * GET /projects/:id/actions + POST /projects/:id/preview +
+   * POST /projects/:id/actions-stub. The synthesized "unassigned" row is
+   * NOT returned from here (it has no filesystem path).
+   */
+  getProjectById?: (id: string) => ExternalRouteProjectView | undefined;
+  /**
+   * Section 03 — preview-session manager instance, shared across requests
+   * so the dedup cache holds between POSTs. Injected by index.ts;
+   * test harnesses can pass a fresh instance per test.
+   */
+  previewManager?: PreviewSessionManager;
+  /**
+   * Section 03 — loads a profile by name. Defaults to the real
+   * `core/profile-loader.ts` entry; tests inject a synthetic profile.
+   */
+  loadProfile?: (profileName: string) => PreviewProfile | null;
 }) {
   const app = new Hono();
-  const { store, watcher, getKnownProjectIds } = args;
+  const {
+    store,
+    watcher,
+    getKnownProjectIds,
+    getProjectById,
+    previewManager,
+    loadProfile: injectedLoadProfile,
+  } = args;
+  const profileResolver =
+    injectedLoadProfile ??
+    ((name: string) => loadProfile(name, getProfilesDir()) as PreviewProfile | null);
 
   app.post("/api/external/tasks", async (c) => {
     const body = await c.req.json().catch(() => ({}));
@@ -101,6 +161,47 @@ export function createExternalRoutes(args: {
     const resume = Boolean(body.resume);
     const task = store.get(c.req.param("id"));
     if (!task) return c.json({ error: "Task not found" }, 404);
+
+    // Section 03 (iterate 3) — O20 idempotency guard.
+    //
+    // The spec language "state ∈ {pending, backlog}" loosely maps to our
+    // enum's `draft` + `awaiting_external_start` + `launch_failed`. The
+    // intent is: reject re-launches against a TERMINAL state (done). The
+    // existing Resume / Fork flows (LaunchRow) already call this route
+    // against `active` and `idle` — the `resume: true` branch emits a new
+    // copy-command to pick up where the user left off, which is a valid
+    // re-launch. We therefore reject ONLY `done` and `launch_failed`
+    // when no explicit resume intent is present.
+    //
+    // Note: `launch_failed` is accepted (the user is retrying after a
+    // clipboard hiccup). `done` is terminal — closing a task is an
+    // explicit user action and a re-launch after close is almost always
+    // unintended.
+    if (task.state === "done") {
+      return c.json(
+        { error: "launch_invalid_state", state: task.state },
+        409,
+      );
+    }
+
+    // Description + autonomy flow through buildCopyCommands as the
+    // `title` already did. For iterate 3.3b we keep the existing three-
+    // form output intact (launch still emits --session-id / --name /
+    // --plugin-dir via the legacy path). Future iterate can switch this
+    // to buildExternalLaunchCommand once the NewIssueModal can carry the
+    // full SubstitutionContext. Today, description / autonomy on the
+    // body are forwarded as metadata for the ExternalTask record so the
+    // Task Detail surface can render them, but do not mutate the copy-
+    // command shape (to keep spec 30/36 green).
+    const description =
+      typeof body.description === "string" ? body.description : undefined;
+    const autonomy =
+      body.autonomy === "autonomous" || body.autonomy === "guided"
+        ? (body.autonomy as "autonomous" | "guided")
+        : undefined;
+    void description; // reserved for future NewIssueModal → launch wiring
+    void autonomy;
+
     const commands = buildCopyCommands({
       sessionUuid: task.sessionUuid,
       cwd: task.cwd,
@@ -374,8 +475,279 @@ export function createExternalRoutes(args: {
     return c.json({ ok: true });
   });
 
+  // -------------------------------------------------------------------------
+  // Section 03 (iterate 3) — project-scoped actions / preview routes.
+  //
+  // These live on the SAME Hono app as the /tasks routes because they share
+  // the same middleware chain (CORS, auth eventually). They are NOT nested
+  // under /tasks — they operate on projects.
+  // -------------------------------------------------------------------------
+
+  /**
+   * GET /api/external/projects/:projectId/actions — resolved actions schema
+   * for the project. Falls back to the bundled default when .webui/actions.json
+   * is absent; returns diagnostics in-band when the user file exists but is
+   * malformed (O24 chip). Validates every command_template via the substitute
+   * dry-run; unknown placeholder → 400 with typed code.
+   */
+  app.get("/api/external/projects/:projectId/actions", (c) => {
+    const projectId = c.req.param("projectId");
+    const project = getProjectById?.(projectId);
+    if (!project) {
+      return c.json({ error: "project_not_found", projectId }, 404);
+    }
+
+    const loaded = loadActionsForProject(project.path || "");
+    const actions = loaded.actions;
+
+    // Structural validation (5 O24 cases).
+    const schemaErrors: SchemaError[] = validateActionsSchema(actions);
+    if (schemaErrors.length > 0) {
+      // Prefer the first hard schema error as the 400 code — the UI needs
+      // one actionable message. All errors are surfaced in `errors[]` for
+      // debugging.
+      const first = schemaErrors[0];
+      return c.json(
+        {
+          error: first.code,
+          errors: schemaErrors,
+          projectId,
+        },
+        400,
+      );
+    }
+
+    // Placeholder-level dry-run validation per action template.
+    for (const a of actions.actions) {
+      if (!a.command_template) continue;
+      const phaseIds = actions.phases.map((p) => p.id);
+      try {
+        // Build a throwaway substitution context and attempt all three
+        // shell forms. validateTemplate() returns only placeholder errors;
+        // anything else we let bubble up as a 500 (bug).
+        const errCandidate = dryRunTemplate(a.command_template, a.id, phaseIds);
+        if (errCandidate) {
+          return c.json(
+            {
+              error: "invalid_placeholder",
+              placeholder: errCandidate.placeholder,
+              actionId: errCandidate.actionId,
+              template: errCandidate.template,
+            },
+            400,
+          );
+        }
+      } catch {
+        // Defense-in-depth: a crashing template validator should fail
+        // the route rather than expose the raw stack trace.
+        return c.json(
+          { error: "template_validation_failed", actionId: a.id },
+          500,
+        );
+      }
+    }
+
+    // Resolve preview.enabled per plan.md § 2.1 precedence:
+    //   Step 1 — profile.stack.frontend present AND dev_server.command
+    //            present → true unless explicitly disabled below.
+    //   Step 2 — actions.preview.enabled:
+    //            "auto" → follow Step 1.
+    //            true   → only honored if Step 1 also allowed it (profile gate wins).
+    //            false  → force off regardless.
+    const profile = project.profile
+      ? (profileResolver(project.profile) as
+          | (PreviewProfile & { stack?: { frontend?: unknown } })
+          | null)
+      : null;
+    const profileAllowsPreview =
+      Boolean(profile?.stack?.frontend) &&
+      Boolean(profile?.dev_server?.command);
+    const actionsPref = actions.preview?.enabled;
+    let previewEnabled: boolean;
+    if (actionsPref === false) {
+      previewEnabled = false;
+    } else if (actionsPref === true) {
+      previewEnabled = profileAllowsPreview;
+    } else {
+      // "auto" or undefined — follow profile.
+      previewEnabled = profileAllowsPreview;
+    }
+
+    return c.json({
+      actions: actions.actions,
+      phases: actions.phases,
+      defaults: actions.defaults,
+      preview: {
+        enabled: previewEnabled,
+        command: profile?.dev_server?.command ?? null,
+        port: profile?.dev_server?.port ?? null,
+        ready_path: profile?.dev_server?.ready_path ?? null,
+        ready_timeout_seconds: profile?.dev_server?.ready_timeout_seconds ?? null,
+      },
+      diagnostics: loaded.diagnostics,
+    });
+  });
+
+  /**
+   * POST /api/external/projects/:projectId/preview — spawn dev server.
+   *
+   * Structured error codes — the UI maps each to a specific toast:
+   *   preview_profile_invalid  (400) — command contains shell operators / empty
+   *   preview_spawn_failed     (500) — spawn threw (ENOENT etc.)
+   *   preview_port_in_use      (500) — port probe reported EADDRINUSE
+   *   preview_exited_early     (500) — child emitted exit before ready
+   *   preview_timeout          (500) — no ready signal within timeout
+   */
+  app.post("/api/external/projects/:projectId/preview", async (c) => {
+    if (!previewManager) {
+      return c.json({ error: "preview_unavailable" }, 501);
+    }
+    const projectId = c.req.param("projectId");
+    const project = getProjectById?.(projectId);
+    if (!project) {
+      return c.json({ error: "project_not_found", projectId }, 404);
+    }
+    if (!project.profile) {
+      return c.json(
+        { error: "preview_profile_invalid", detail: "project has no profile" },
+        400,
+      );
+    }
+    const profile = profileResolver(project.profile);
+    if (!profile) {
+      return c.json(
+        { error: "preview_profile_invalid", detail: "profile not found" },
+        400,
+      );
+    }
+    try {
+      const entry = await previewManager.spawn(projectId, profile, {
+        cwd: project.path,
+      });
+      return c.json({ url: entry.url, sessionId: entry.sessionId });
+    } catch (err) {
+      if (err instanceof PreviewProfileInvalidError) {
+        return c.json(
+          { error: "preview_profile_invalid", detail: err.detail },
+          400,
+        );
+      }
+      if (err instanceof PreviewPortInUseError) {
+        return c.json(
+          { error: "preview_port_in_use", port: err.port },
+          500,
+        );
+      }
+      if (err instanceof PreviewSpawnFailedError) {
+        return c.json(
+          { error: "preview_spawn_failed", detail: err.detail },
+          500,
+        );
+      }
+      if (err instanceof PreviewExitedEarlyError) {
+        return c.json(
+          { error: "preview_exited_early", detail: `exited with code ${err.code}` },
+          500,
+        );
+      }
+      if (err instanceof PreviewTimeoutError) {
+        return c.json(
+          { error: "preview_timeout", seconds: err.seconds },
+          500,
+        );
+      }
+      // Unknown failure — bubble as a generic 500 so a bug doesn't masquerade
+      // as one of the expected codes.
+      return c.json(
+        { error: "preview_unknown_error", detail: String(err).slice(0, 200) },
+        500,
+      );
+    }
+  });
+
+  /**
+   * POST /api/projects/:id/actions-stub — create `<project.path>/.webui/actions.json`
+   * as an empty structured stub. Only called from the wizard's "Custom"
+   * branch; idempotent (second call is a no-op).
+   *
+   * This is the ONLY write webui performs inside a user's project path.
+   */
+  app.post("/api/projects/:id/actions-stub", (c) => {
+    const id = c.req.param("id");
+    const project = getProjectById?.(id);
+    if (!project) {
+      return c.json({ error: "project_not_found", projectId: id }, 404);
+    }
+    if (!project.path) {
+      return c.json(
+        { error: "project_path_unavailable", projectId: id },
+        400,
+      );
+    }
+    const dir = join(project.path, ".webui");
+    const file = join(dir, "actions.json");
+    try {
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+      if (!existsSync(file)) {
+        const stub = {
+          $schema:
+            "https://shipwright.dev/schemas/actions.v1.json (see docs/actions.md)",
+          schemaVersion: 1,
+          defaults: { autonomy: "guided" },
+          actions: [],
+          phases: [],
+          preview: { enabled: "auto" },
+        };
+        writeFileSync(file, JSON.stringify(stub, null, 2) + "\n", "utf-8");
+      }
+      return c.json({ path: file, created: true });
+    } catch (err) {
+      return c.json(
+        {
+          error: "stub_write_failed",
+          detail: String(err).slice(0, 200),
+          path: file,
+        },
+        500,
+      );
+    }
+  });
+
   return app;
 }
+
+/**
+ * Dry-run the substitute pipeline against a template using placeholder-
+ * allowlist-safe values; returns the first placeholder failure, or null.
+ * Shared between the GET /actions route and unit tests.
+ */
+function dryRunTemplate(
+  template: string,
+  actionId: string,
+  phaseIds: string[],
+): InvalidPlaceholderError | null {
+  const ctx: SubstitutionContext = {
+    project: { id: "dry-run", path: "/tmp/dry-run" },
+    task: {
+      uuid: "00000000-0000-0000-0000-000000000000",
+      title: "dry run",
+      phase: phaseIds[0] ?? "dry-run-phase",
+      phase_label: "Dry Run",
+    },
+    pluginDirs: [],
+    allowedPhaseIds: new Set([...phaseIds, "dry-run-phase"]),
+    actionId,
+  };
+  try {
+    buildExternalLaunchCommand({ template, ctx });
+    return null;
+  } catch (err) {
+    if (err instanceof InvalidPlaceholderError) return err;
+    if (err instanceof UnknownPhaseError) return null; // handled at launch time
+    throw err;
+  }
+}
+
 
 function parseIntSafe(value: string | undefined, fallback: number): number {
   if (!value) return fallback;

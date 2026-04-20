@@ -7,6 +7,7 @@ import { StackProfileStep } from './StackProfileStep';
 import { EnvVarsStep } from './EnvVarsStep';
 import { ConfirmationStep } from './ConfirmationStep';
 import { useCreateProject } from '../../hooks/useCreateProject';
+import { useSaveActionsStub } from '../../hooks/useProjectActions';
 import { useSettings } from '../../hooks/useSettings';
 
 interface ProjectWizardProps {
@@ -14,13 +15,25 @@ interface ProjectWizardProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const DOCS_ACTIONS_URL = 'https://github.com/svenroth-ai/shipwright#actions-schema';
+
+/** Section 03 (iterate 3) — "Which workflow plugin?" radio options. */
+type WorkflowChoice = 'shipwright' | 'custom';
+
 export function ProjectWizard({ open, onOpenChange }: ProjectWizardProps) {
   const { data: settings } = useSettings();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [path, setPath] = useState('');
   const [profile, setProfile] = useState(settings?.defaultProfile ?? 'custom');
+  // Section 03 — workflow choice lives in the wizard's Confirmation step
+  // behind a "Show advanced options" accordion. Default is "shipwright" so
+  // the overwhelming majority never sees the toggle. "custom" writes an
+  // empty .webui/actions.json stub + opens the docs page.
+  const [workflowChoice, setWorkflowChoice] = useState<WorkflowChoice>('shipwright');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const createProject = useCreateProject();
+  const saveStub = useSaveActionsStub();
 
   function handleNext() {
     if (step < 3) setStep(step + 1);
@@ -34,7 +47,22 @@ export function ProjectWizard({ open, onOpenChange }: ProjectWizardProps) {
     createProject.mutate(
       { name, path, profile },
       {
-        onSuccess: () => {
+        onSuccess: async (created) => {
+          // Section 03 — Custom branch writes the .webui/actions.json stub
+          // on the just-created project and pops the docs page. Shipwright
+          // branch is a no-op (bundled default applies at load time).
+          if (workflowChoice === 'custom') {
+            try {
+              await saveStub.mutateAsync({ projectId: created.id });
+              if (typeof window !== 'undefined') {
+                window.open(DOCS_ACTIONS_URL, '_blank', 'noopener,noreferrer');
+              }
+            } catch (err) {
+              // Non-fatal — the project is created; the user can re-trigger
+              // the stub later via Settings. Log and continue closing.
+              console.error('saveActionsStub failed', err);
+            }
+          }
           onOpenChange(false);
           resetForm();
         },
@@ -47,6 +75,8 @@ export function ProjectWizard({ open, onOpenChange }: ProjectWizardProps) {
     setName('');
     setPath('');
     setProfile('custom');
+    setWorkflowChoice('shipwright');
+    setShowAdvanced(false);
   }
 
   const canProceed = step === 0 ? name.trim() && path.trim() : true;
@@ -75,7 +105,63 @@ export function ProjectWizard({ open, onOpenChange }: ProjectWizardProps) {
             {step === 0 && <ProjectInfoStep name={name} path={path} onNameChange={setName} onPathChange={setPath} />}
             {step === 1 && <StackProfileStep profile={profile} onProfileChange={setProfile} />}
             {step === 2 && <EnvVarsStep profile={profile} />}
-            {step === 3 && <ConfirmationStep name={name} path={path} profile={profile} />}
+            {step === 3 && (
+              <>
+                <ConfirmationStep name={name} path={path} profile={profile} />
+                {/* Section 03 — Workflow plugin selection, behind an
+                    accordion so the defaults-first path is frictionless (G2). */}
+                <details
+                  className="mt-4 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
+                  open={showAdvanced}
+                  onToggle={(e) =>
+                    setShowAdvanced((e.target as HTMLDetailsElement).open)
+                  }
+                  data-testid="wizard-advanced-accordion"
+                >
+                  <summary className="cursor-pointer select-none text-gray-600 hover:text-gray-900">
+                    Show advanced options
+                  </summary>
+                  <div className="mt-3 space-y-3" data-testid="wizard-workflow-choice">
+                    <p className="text-xs text-gray-500">Which workflow plugin?</p>
+                    <label className="flex items-start gap-2 rounded border border-gray-200 bg-white p-2 text-xs">
+                      <input
+                        type="radio"
+                        name="workflow-choice"
+                        checked={workflowChoice === 'shipwright'}
+                        onChange={() => setWorkflowChoice('shipwright')}
+                        data-testid="wizard-workflow-shipwright"
+                        className="mt-0.5"
+                      />
+                      <span>
+                        <strong className="font-semibold">Shipwright (recommended)</strong>
+                        <br />
+                        <span className="text-gray-500">
+                          Use the bundled actions preset — 3 actions, 9 phases, preview gate.
+                        </span>
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-2 rounded border border-gray-200 bg-white p-2 text-xs">
+                      <input
+                        type="radio"
+                        name="workflow-choice"
+                        checked={workflowChoice === 'custom'}
+                        onChange={() => setWorkflowChoice('custom')}
+                        data-testid="wizard-workflow-custom"
+                        className="mt-0.5"
+                      />
+                      <span>
+                        <strong className="font-semibold">Custom</strong>
+                        <br />
+                        <span className="text-gray-500">
+                          Write your own <code className="rounded bg-gray-100 px-1 font-mono">.webui/actions.json</code>.
+                          An empty structured stub is created on project creation; docs open in a new tab.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                </details>
+              </>
+            )}
           </div>
 
           <div className="flex justify-between mt-6">

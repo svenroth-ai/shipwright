@@ -132,7 +132,12 @@ export async function createTask(args: {
 
 export async function launchTask(
   taskId: string,
-  args: { resume?: boolean } = {},
+  args: {
+    resume?: boolean;
+    /** Section 03 (iterate 3) — forwarded as metadata when present. */
+    description?: string;
+    autonomy?: "guided" | "autonomous";
+  } = {},
 ): Promise<{ task: ExternalTask; commands: CopyCommandForms }> {
   return await httpJson<{ task: ExternalTask; commands: CopyCommandForms }>(
     `${EXTERNAL_API}/tasks/${taskId}/launch`,
@@ -142,6 +147,18 @@ export async function launchTask(
       body: JSON.stringify(args),
     },
   );
+}
+
+/**
+ * Section 03 (iterate 3) — typed alias for the extended launch body. Callers
+ * from NewIssueModal use this signature so TS catches accidental `resume`
+ * duplication.
+ */
+export async function launchExternalTask(
+  taskId: string,
+  args: { description?: string; autonomy?: "guided" | "autonomous" } = {},
+): Promise<{ task: ExternalTask; commands: CopyCommandForms }> {
+  return await launchTask(taskId, args);
 }
 
 export async function forkTask(
@@ -218,4 +235,170 @@ export async function dismissInboxItem(toolUseId: string): Promise<void> {
 
 export async function getDiagnostics(): Promise<DiagnosticsSnapshot> {
   return await httpJson<DiagnosticsSnapshot>("/api/diagnostics");
+}
+
+// -----------------------------------------------------------------------------
+// Section 03 (iterate 3) — actions schema + preview + actions-stub wrappers.
+// -----------------------------------------------------------------------------
+
+export interface ActionDefinition {
+  id: string;
+  label: string;
+  kind: "external_launch";
+  description?: string;
+  command_template?: string;
+  modal_fields?: string[];
+}
+
+export interface PhaseDefinition {
+  id: string;
+  label: string;
+  color?: string;
+}
+
+export interface PreviewSpec {
+  enabled: boolean;
+  command: string | null;
+  port: number | null;
+  ready_path: string | null;
+  ready_timeout_seconds: number | null;
+}
+
+export interface ResolvedProjectActions {
+  actions: ActionDefinition[];
+  phases: PhaseDefinition[];
+  defaults: { autonomy: "guided" | "autonomous" };
+  preview: PreviewSpec;
+  diagnostics: Array<{ code: string; path?: string; detail?: string }>;
+}
+
+/**
+ * Typed error hierarchy. The decoder below maps a server's structured
+ * `{error, detail, ...}` body to one of these classes; UI strings live in
+ * the consuming components, never in this module (O11).
+ */
+export class ApiError extends Error {
+  readonly code: string;
+  readonly detail?: string;
+  readonly status: number;
+  readonly payload: Record<string, unknown>;
+  constructor(code: string, status: number, payload: Record<string, unknown>) {
+    super(code);
+    this.name = "ApiError";
+    this.code = code;
+    this.status = status;
+    this.payload = payload;
+    this.detail =
+      typeof payload.detail === "string" ? payload.detail : undefined;
+  }
+}
+
+export class InvalidPlaceholderApiError extends ApiError {
+  readonly placeholder: string;
+  readonly actionId: string;
+  constructor(status: number, payload: Record<string, unknown>) {
+    super("invalid_placeholder", status, payload);
+    this.name = "InvalidPlaceholderApiError";
+    this.placeholder = String(payload.placeholder ?? "");
+    this.actionId = String(payload.actionId ?? "");
+  }
+}
+
+export class PreviewApiError extends ApiError {
+  readonly port?: number;
+  readonly seconds?: number;
+  constructor(code: string, status: number, payload: Record<string, unknown>) {
+    super(code, status, payload);
+    this.name = "PreviewApiError";
+    this.port =
+      typeof payload.port === "number" ? (payload.port as number) : undefined;
+    this.seconds =
+      typeof payload.seconds === "number"
+        ? (payload.seconds as number)
+        : undefined;
+  }
+}
+
+const PREVIEW_ERROR_CODES = new Set([
+  "preview_profile_invalid",
+  "preview_port_in_use",
+  "preview_spawn_failed",
+  "preview_exited_early",
+  "preview_timeout",
+  "preview_unknown_error",
+  "preview_unavailable",
+]);
+
+/**
+ * Decode a Response with status ≥ 400 into a typed Error subclass. Never
+ * produces UI strings — callers pick the toast copy based on `err.code`.
+ */
+export async function decodeApiError(r: Response): Promise<ApiError> {
+  let payload: Record<string, unknown> = {};
+  try {
+    payload = (await r.json()) as Record<string, unknown>;
+  } catch {
+    payload = { error: `HTTP ${r.status}` };
+  }
+  const code = typeof payload.error === "string" ? payload.error : `http_${r.status}`;
+  if (code === "invalid_placeholder") {
+    return new InvalidPlaceholderApiError(r.status, payload);
+  }
+  if (PREVIEW_ERROR_CODES.has(code)) {
+    return new PreviewApiError(code, r.status, payload);
+  }
+  return new ApiError(code, r.status, payload);
+}
+
+async function httpJsonTyped<T>(input: string, init?: RequestInit): Promise<T> {
+  const r = await fetch(input, init);
+  if (!r.ok) {
+    throw await decodeApiError(r);
+  }
+  return (await r.json()) as T;
+}
+
+/**
+ * Section 03 — resolved actions for a project. Hits
+ * `GET /api/external/projects/:projectId/actions` and returns the full
+ * shape including preview spec + loader diagnostics.
+ */
+export async function getProjectActions(
+  projectId: string,
+): Promise<ResolvedProjectActions> {
+  return await httpJsonTyped<ResolvedProjectActions>(
+    `${EXTERNAL_API}/projects/${encodeURIComponent(projectId)}/actions`,
+  );
+}
+
+/**
+ * Section 03 — start the project's dev preview. Returns `{url, sessionId}`
+ * on success. Throws PreviewApiError for the five structured failure codes
+ * (plus `preview_unknown_error` for a bug; UI surfaces as generic toast).
+ */
+export async function startPreview(
+  projectId: string,
+): Promise<{ url: string; sessionId: string }> {
+  return await httpJsonTyped<{ url: string; sessionId: string }>(
+    `${EXTERNAL_API}/projects/${encodeURIComponent(projectId)}/preview`,
+    { method: "POST" },
+  );
+}
+
+/**
+ * Section 03 — invoked by the Project Wizard's "Custom" branch. Creates an
+ * empty structured `.webui/actions.json` in the user's project. Idempotent
+ * on the server; a repeat call is a no-op on the disk content.
+ *
+ * `mode` is future-proofing — today only `"custom"` is honored server-side.
+ */
+export async function saveActionsStub(
+  projectId: string,
+  mode: "custom",
+): Promise<{ path: string; created: boolean }> {
+  void mode; // reserved for future server-side switches
+  return await httpJsonTyped<{ path: string; created: boolean }>(
+    `/api/projects/${encodeURIComponent(projectId)}/actions-stub`,
+    { method: "POST" },
+  );
 }
