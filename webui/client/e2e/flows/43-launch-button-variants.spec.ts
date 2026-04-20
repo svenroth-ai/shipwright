@@ -52,7 +52,9 @@ test.describe("TerminalLaunchButton — variant consistency", () => {
       compactClip = await page.evaluate(() => navigator.clipboard.readText());
       expect(compactClip).toContain(`--name '${uniqueTitle}'`);
     }).toPass({ timeout: 5000 });
+    // Compact = first launch on a draft task → fresh start, --session-id present.
     expect(compactClip).toContain("--session-id");
+    expect(compactClip).not.toContain("--resume");
 
     // Primary variant — TaskDetail header. Clear clipboard first so we
     // don't accidentally read the compact variant's command back.
@@ -64,14 +66,17 @@ test.describe("TerminalLaunchButton — variant consistency", () => {
     await expect(primary).toContainText(/Copied/i);
 
     const primaryClip = await page.evaluate(() => navigator.clipboard.readText());
-    expect(primaryClip).toContain("--session-id");
+    // Primary = second launch on the same task; state has transitioned past
+    // draft, so this is a resume command (--resume <uuid>, no --session-id).
+    // The CLI rejects --session-id + --resume together (without --fork-session).
+    expect(primaryClip).toContain("--resume");
+    expect(primaryClip).not.toContain("--session-id");
     expect(primaryClip).toContain(`--name '${uniqueTitle}'`);
 
-    // The two clipboards differ only by whether `--resume` was included
-    // (compact runs first when the task is `awaiting_external_start`,
-    // primary runs second after state has flipped). Both must include
-    // the same session UUID + name.
-    const uuidRe = /--session-id '([0-9a-f-]{36})'/;
-    expect(uuidRe.exec(compactClip)?.[1]).toBe(uuidRe.exec(primaryClip)?.[1]);
+    // The two clipboards target the SAME session UUID — once via
+    // --session-id (fresh), once via --resume (re-attach).
+    const compactUuidRe = /--session-id '([0-9a-f-]{36})'/;
+    const primaryUuidRe = /--resume '([0-9a-f-]{36})'/;
+    expect(compactUuidRe.exec(compactClip)?.[1]).toBe(primaryUuidRe.exec(primaryClip)?.[1]);
   });
 });

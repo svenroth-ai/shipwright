@@ -39,6 +39,25 @@ describe("launcher.buildCopyCommands", () => {
     expect(c.posix).toContain(`--resume '${SAMPLE_UUID}'`);
   });
 
+  it("OMITS --session-id on plain resume (CLI 2.1+ rejects the combo without --fork-session)", () => {
+    const c = buildCopyCommands({ sessionUuid: SAMPLE_UUID, cwd: WINDOWS_PATH_WITH_SPACE, resume: true });
+    expect(c.powershell).not.toContain("--session-id");
+    expect(c.cmd).not.toContain("--session-id");
+    expect(c.posix).not.toContain("--session-id");
+  });
+
+  it("KEEPS --session-id on fork (--fork-session is the required combinator)", () => {
+    const parent = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+    const c = buildCopyCommands({
+      sessionUuid: SAMPLE_UUID,
+      cwd: WINDOWS_PATH_WITH_SPACE,
+      fork: true,
+      parentSessionUuid: parent,
+    });
+    expect(c.powershell).toContain(`--session-id '${SAMPLE_UUID}'`);
+    expect(c.powershell).toContain("--fork-session");
+  });
+
   it("appends --resume <parent> --fork-session when fork=true", () => {
     const parent = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
     const c = buildCopyCommands({
