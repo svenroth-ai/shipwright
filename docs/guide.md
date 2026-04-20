@@ -20,7 +20,7 @@ After the initial build, daily work happens through `/shipwright-iterate` -- com
 
 Every phase emits events into an append-only log. That log is the single source of truth -- and the raw material for audit-ready compliance documentation (traceability matrix, test evidence, SBOM, change history), regenerated automatically as a side effect of every phase completion. Drift that accumulates between sessions (manual edits, force-pushes, content rot that passes mtime checks) is caught on demand via `/shipwright-compliance` — a cross-artifact detective audit across 7 check groups. You get the compliance paperwork that usually costs weeks of manual work as a byproduct of just building the software.
 
-You can drive all of this from the Claude Code VSCode Extension or CLI terminal, or through the **Shipwright Command Center** -- a local web UI with a Kanban board, task-scoped chat, and a global inbox for agent questions. It spawns the same skills under the hood; it's a surface, not a separate product.
+You can drive all of this from the Claude Code VSCode Extension or CLI terminal, or through the **Shipwright Command Center** — a local web UI with a kanban board across every Shipwright task, live transcripts per task, and a global inbox for agent questions. Instead of hunting through terminal windows or VS Code sessions, one place shows where everything stands. When you launch a new pipeline or iterate from the Command Center, it hands you the `claude` command to paste in your own terminal or VS Code Extension. Claude runs there; the Command Center follows the session live.
 
 ### Three ways to use it
 
@@ -28,7 +28,7 @@ You can drive all of this from the Claude Code VSCode Extension or CLI terminal,
 - **Daily iteration** -- `/shipwright-iterate "..."` for every change after the first deploy. Classifies intent, assesses complexity, runs the right amount of process.
 - **Single skill** -- `/shipwright-plan`, `/shipwright-test`, `/shipwright-security`, or any other skill on its own -- even on projects that never used Shipwright before.
 
-All three work from the Claude Code VSCode Extension or CLI terminal, or through the Command Center WebUI.
+All three work from the Claude Code VSCode Extension or CLI terminal directly. The Command Center WebUI layers a multi-project kanban on top — you still run Claude in your own terminal or VS Code Extension, you just stop juggling windows and VS Code sessions to see what's where.
 
 ### What You Get
 
@@ -82,7 +82,7 @@ User Description
   SHIPWRIGHT-ITERATE ....... Classify Intent --> Assess Complexity --> Adaptive Pipeline
 ```
 
-Each phase is a standalone Claude Code plugin. `/shipwright-run` orchestrates the full pipeline for the initial build, `/shipwright-iterate` drives daily changes afterwards, and every single skill can be invoked on its own. Pick the entry point that matches your moment -- from the terminal or from the Command Center WebUI.
+Each phase is a standalone Claude Code plugin. `/shipwright-run` orchestrates the full pipeline for the initial build, `/shipwright-iterate` drives daily changes afterwards, and every single skill can be invoked on its own. Pick the entry point that matches your moment: the terminal or VS Code Extension directly for single-project flow, or the Command Center WebUI when you're tracking multiple projects at once and want one board that says where everything stands.
 
 ### Design Principles
 
@@ -229,7 +229,8 @@ The marketplace approach works in both the VSCode Extension and the CLI. Add the
     "shipwright-changelog@shipwright": true,
     "shipwright-compliance@shipwright": true,
     "shipwright-iterate@shipwright": true,
-    "shipwright-preview@shipwright": true
+    "shipwright-preview@shipwright": true,
+    "shipwright-adopt@shipwright": true
   }
 }
 ```
@@ -264,6 +265,7 @@ shipwright() {
     --plugin-dir ~/shipwright/plugins/shipwright-changelog \
     --plugin-dir ~/shipwright/plugins/shipwright-compliance \
     --plugin-dir ~/shipwright/plugins/shipwright-preview \
+    --plugin-dir ~/shipwright/plugins/shipwright-adopt \
     "$@"
 }
 ```
@@ -285,6 +287,7 @@ function shipwright {
     --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-changelog `
     --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-compliance `
     --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-preview `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-adopt `
     @args
 }
 ```

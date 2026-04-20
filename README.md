@@ -3,7 +3,7 @@
 ![Status](https://img.shields.io/badge/status-early--access--beta-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-**Shipwright is a structured SDLC framework for Claude Code.** From one-line description to deployed, tested, secured app — via a cleanly orchestrated pipeline of skills that also work on their own. Use it from the **Claude Code VSCode Extension or CLI terminal**, or through the **Shipwright Command Center** web UI — same product, two surfaces. Built for daily iteration, not one-shot generation. **Ships audit-ready compliance artifacts as a byproduct — no extra work.**
+**Shipwright is a structured SDLC framework for Claude Code.** From one-line description to deployed, tested, secured app — via a cleanly orchestrated pipeline of skills that also work on their own. Use it from the **Claude Code VSCode Extension or CLI terminal** — or, for multi-project work, through the **Shipwright Command Center** web UI: one kanban board across every Shipwright task, so you stop juggling windows and VS Code sessions to see where things stand. Built for daily iteration, not one-shot generation. **Ships audit-ready compliance artifacts as a byproduct — no extra work.**
 
 ```
 /shipwright-run "A SaaS time tracking app with Supabase and Next.js"
@@ -19,12 +19,12 @@
 <td width="50%"><img src="docs/images/command-center-task-detail.png" alt="Shipwright Command Center — Task detail with Claude chat" /></td>
 </tr>
 <tr>
-<td><em>Kanban board across all your Shipwright projects — Backlog, In Progress, In Review, Done.</em></td>
-<td><em>Task detail with live Claude chat, tool calls, diffs, and IREB acceptance criteria side by side.</em></td>
+<td><em>Kanban board across every Shipwright project — Backlog, In Progress, In Review, Done. One place to see where everything stands.</em></td>
+<td><em>Task detail — live transcript with messages, tool calls, diffs, and IREB acceptance criteria side by side.</em></td>
 </tr>
 </table>
 
-The Command Center is the browser-based surface for the same skills you run in the terminal. It installs automatically with `scripts/install.sh` — see [Getting Started](#getting-started).
+The Command Center is the browser surface for the same skills you run in the terminal or VS Code Extension. Instead of keeping 4 terminal windows or VS Code sessions open for 4 projects, you get one kanban board, one inbox for agent questions, and one place to launch a new pipeline or iterate. Claude still runs in your own terminal or VS Code Extension — the Command Center generates a ready-to-paste command when you launch, then follows the session live. Installs automatically with `scripts/install.sh` — see [Getting Started](#getting-started).
 
 ## Why Shipwright?
 
@@ -97,7 +97,7 @@ After the initial build, day-to-day changes run through `/shipwright-iterate` �
 
 **From the Shipwright Command Center**
 
-Multi-project Kanban, task-scoped chat with Claude, global inbox for agent questions, smart file viewer, project wizard. The Command Center spawns the same `claude` process under the hood — the skills, the events, the compliance artifacts are identical to the terminal path. It's a second surface for the same pipeline, not a parallel tool.
+Multi-project kanban across every Shipwright task you touch. Click a task for its live transcript; click **Launch** to start a new pipeline or iterate. The Command Center hands you the exact `claude` command to paste in your terminal or VS Code Extension — Claude runs there, the Command Center follows along. Same skills, same events, same compliance artifacts as running directly. What you gain is the overview: 3+ projects, 8+ tasks, one board instead of a pile of windows and VS Code sessions.
 
 **Standalone skills on any project**
 
