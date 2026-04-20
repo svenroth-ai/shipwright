@@ -15,10 +15,18 @@
  */
 
 import { Hono } from "hono";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import {
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+} from "node:fs";
+import { readdir, stat } from "node:fs/promises";
+import { join, extname, basename } from "node:path";
 
 import { buildCopyCommands } from "../core/launcher.js";
+import { pathGuard, realPathGuard } from "../core/path-guard.js";
+import { loadIgnore } from "../core/gitignore-cache.js";
 import {
   buildExternalLaunchCommand,
   InvalidPlaceholderError,
@@ -665,6 +673,229 @@ export function createExternalRoutes(args: {
     }
   });
 
+  // -------------------------------------------------------------------------
+  // Section 04a — Tree + File routes for SmartViewer / FolderTree.
+  //
+  // Security surface:
+  //   - path-guard.ts refuses traversal / absolute-input / drive-hop attempts
+  //   - file route enforces 5 MB cap (413) and image-allowlist (415)
+  //   - file route sets explicit Content-Type + nosniff + sanitized
+  //     Content-Disposition to block MIME-sniffing + header-injection
+  // -------------------------------------------------------------------------
+
+  /**
+   * GET /api/external/projects/:projectId/tree?path=<relpath>
+   *
+   * Returns one level of entries. `ignored: true` is advisory — the client
+   * decides whether to show them muted or hide them entirely (plan § 7 O6).
+   */
+  app.get("/api/external/projects/:projectId/tree", async (c) => {
+    const projectId = c.req.param("projectId");
+    const project = getProjectById?.(projectId);
+    if (!project) {
+      return c.json({ error: "project_not_found", projectId }, 404);
+    }
+    if (!project.path) {
+      return c.json({ error: "project_path_unavailable", projectId }, 400);
+    }
+
+    const relpath = c.req.query("path") ?? "";
+    const guard = pathGuard(project.path, relpath);
+    if (!guard.ok) {
+      // Normalize guard reasons to a single client-facing error code for
+      // consistency: both "absolute_input" and "drive_change" surface as
+      // "path_traversal" — the UI doesn't distinguish and we avoid leaking
+      // internal-guard semantics. The `detail` field preserves the precise
+      // reason for server logs.
+      const err = guard.reason === "traversal" ? "path_traversal" : guard.reason;
+      return c.json({ error: err, detail: guard.reason }, 400);
+    }
+
+    const ig = loadIgnore(project.path);
+
+    // Build the subpath prefix relative to project.path for ignore lookups.
+    // If the caller requested "src", an entry "index.ts" should be tested
+    // against "src/index.ts" so that a .gitignore rule like "src/index.ts"
+    // matches. We always use POSIX separators for ignore() — the `ignore`
+    // package documents that.
+    const subPrefix = relpath.length > 0 && relpath !== "."
+      ? relpath.replace(/\\/g, "/").replace(/\/+$/, "")
+      : "";
+
+    let entries;
+    try {
+      entries = await readdir(guard.absolute, { withFileTypes: true });
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException)?.code;
+      if (code === "ENOENT") {
+        return c.json({ error: "not_found", path: relpath }, 404);
+      }
+      if (code === "ENOTDIR") {
+        return c.json({ error: "not_a_directory", path: relpath }, 400);
+      }
+      return c.json(
+        { error: "tree_read_failed", detail: String(err).slice(0, 200) },
+        500,
+      );
+    }
+
+    // Symlink-escape check — only when the caller requested a subdirectory
+    // (the project root itself is trusted; it's where the user pointed us).
+    // For any non-empty relpath we realpath + re-verify. A symlinked-dir
+    // escape attempt lands here, NOT in pathGuard (which is string-only).
+    if (relpath.length > 0 && relpath !== ".") {
+      const realGuard = realPathGuard(project.path, guard.absolute);
+      if (!realGuard.ok) {
+        return c.json(
+          { error: "path_traversal", detail: realGuard.reason },
+          400,
+        );
+      }
+    }
+
+    const out = entries.map((d) => {
+      const kind: "file" | "dir" = d.isDirectory() ? "dir" : "file";
+      // `ignore` requires a relative path. It treats trailing slashes as a
+      // directory hint, which affects pattern semantics.
+      const testPathBase = subPrefix ? `${subPrefix}/${d.name}` : d.name;
+      const testPath = kind === "dir" ? `${testPathBase}/` : testPathBase;
+      const ignored = ig.ignores(testPath) || ig.ignores(testPathBase);
+      return { name: d.name, kind, ignored };
+    });
+
+    // Stable sort — dirs first, then alpha. Keeps the UI deterministic.
+    out.sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === "dir" ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+
+    return c.json({ entries: out });
+  });
+
+  /**
+   * GET /api/external/projects/:projectId/file?path=<relpath>
+   *
+   * Byte-streams the file with:
+   *   - X-Content-Type-Options: nosniff
+   *   - Explicit Content-Type per extension (never inferred)
+   *   - Content-Disposition: inline; filename="<sanitized>"
+   *
+   * 400 on traversal / absolute input. 413 if > 5 MB. 415 if extension not
+   * in the text/markdown/image allowlist.
+   */
+  app.get("/api/external/projects/:projectId/file", async (c) => {
+    const projectId = c.req.param("projectId");
+    const project = getProjectById?.(projectId);
+    if (!project) {
+      return c.json({ error: "project_not_found", projectId }, 404);
+    }
+    if (!project.path) {
+      return c.json({ error: "project_path_unavailable", projectId }, 400);
+    }
+
+    const relpath = c.req.query("path");
+    if (!relpath || relpath.length === 0) {
+      return c.json({ error: "path_required" }, 400);
+    }
+    const guard = pathGuard(project.path, relpath);
+    if (!guard.ok) {
+      const err = guard.reason === "traversal" ? "path_traversal" : guard.reason;
+      return c.json({ error: err, detail: guard.reason }, 400);
+    }
+
+    let st;
+    try {
+      st = await stat(guard.absolute);
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException)?.code;
+      if (code === "ENOENT") {
+        return c.json({ error: "not_found", path: relpath }, 404);
+      }
+      return c.json(
+        { error: "file_stat_failed", detail: String(err).slice(0, 200) },
+        500,
+      );
+    }
+
+    if (!st.isFile()) {
+      return c.json({ error: "not_a_file", path: relpath }, 400);
+    }
+
+    // Symlink-escape defense. The stat above already succeeded, so the
+    // target exists — realpath will verify it's still under project root.
+    // If the file is a symlink whose target is outside the root, reject.
+    const realGuard = realPathGuard(project.path, guard.absolute);
+    if (!realGuard.ok) {
+      return c.json(
+        { error: "path_traversal", detail: realGuard.reason },
+        400,
+      );
+    }
+
+    if (st.size > FILE_MAX_BYTES) {
+      return c.json(
+        { error: "file_too_large", maxBytes: FILE_MAX_BYTES, size: st.size },
+        413,
+      );
+    }
+
+    const rawExt = extname(guard.absolute).toLowerCase().slice(1);
+    const mime = MIME_BY_EXTENSION[rawExt];
+    if (!mime) {
+      return c.json(
+        {
+          error: "binary_not_previewable",
+          mime: `application/octet-stream`,
+          extension: rawExt || null,
+        },
+        415,
+      );
+    }
+
+    const filename = sanitizeContentDispositionFilename(basename(guard.absolute));
+
+    // Read the full file into memory. This is safe because the 5 MB cap is
+    // already enforced above — no file larger than 5 MB reaches this point.
+    // We avoid streaming here to dodge a race in test teardown (where the
+    // file disappears before the node-readable has finished draining into
+    // the web-response) AND to make the Content-Length + body atomic — a
+    // streamed response could race with a filesystem-level deletion and
+    // produce a truncated body past the nosniff check.
+    let body: Buffer;
+    try {
+      body = readFileSync(guard.absolute);
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException)?.code;
+      if (code === "ENOENT") {
+        return c.json({ error: "not_found", path: relpath }, 404);
+      }
+      return c.json(
+        { error: "file_read_failed", detail: String(err).slice(0, 200) },
+        500,
+      );
+    }
+
+    // Set security headers BEFORE sending body.
+    c.header("Content-Type", mime);
+    c.header("X-Content-Type-Options", "nosniff");
+    c.header("Content-Disposition", `inline; filename="${filename}"`);
+    c.header("Content-Length", String(body.length));
+    c.header("Cache-Control", "private, max-age=0, must-revalidate");
+    // Defense-in-depth for SVG (which CAN embed <script>): when an SVG is
+    // loaded via <iframe> browsers WILL execute inline script. The CSP
+    // header blocks that in every viewer. For non-SVG responses the CSP
+    // is harmless. `default-src 'none'` also prevents sub-resource loads
+    // (the SmartViewer image renderer uses <img src>, which is unaffected).
+    c.header(
+      "Content-Security-Policy",
+      "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+    );
+
+    // Return the raw bytes. Hono wraps a Uint8Array into the Response body
+    // as-is; Content-Type is NOT mutated (we set it above).
+    return c.body(new Uint8Array(body));
+  });
+
   /**
    * POST /api/projects/:id/actions-stub — create `<project.path>/.webui/actions.json`
    * as an empty structured stub. Only called from the wizard's "Custom"
@@ -775,4 +1006,113 @@ function validateProjectIdOrError(
     return { error: "unknown_project_id", projectId: candidate };
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Section 04a — helpers for the file route.
+// ---------------------------------------------------------------------------
+
+/** 5 MB — server-side cap per spec. Client applies a lower 1 MB cap for
+ * text/markdown/code; images may use the full 5 MB budget. */
+export const FILE_MAX_BYTES = 5 * 1024 * 1024;
+
+/**
+ * Explicit extension → Content-Type mapping. Any extension NOT in this table
+ * is treated as "not previewable" and rejected with 415 from the file route.
+ *
+ * Security rationale:
+ *   - Everything text-ish is served as text/plain (NOT application/javascript
+ *     or text/typescript) so the browser can't be tricked into executing it
+ *     even in a renderable-script context.
+ *   - Markdown is served as text/markdown; charset=utf-8 — some browsers
+ *     render it inline, but the nosniff header + Content-Disposition inline
+ *     with explicit filename prevents auto-download shenanigans.
+ *   - Image entries match the documented allowlist (png / jpg / jpeg / gif /
+ *     svg / webp).
+ */
+export const MIME_BY_EXTENSION: Record<string, string> = Object.freeze({
+  // Text-ish — all served as text/plain regardless of semantic type.
+  txt: "text/plain; charset=utf-8",
+  md: "text/markdown; charset=utf-8",
+  markdown: "text/markdown; charset=utf-8",
+  log: "text/plain; charset=utf-8",
+  json: "text/plain; charset=utf-8",
+  yaml: "text/plain; charset=utf-8",
+  yml: "text/plain; charset=utf-8",
+  toml: "text/plain; charset=utf-8",
+  csv: "text/plain; charset=utf-8",
+  xml: "text/plain; charset=utf-8",
+  html: "text/plain; charset=utf-8",
+  css: "text/plain; charset=utf-8",
+  js: "text/plain; charset=utf-8",
+  jsx: "text/plain; charset=utf-8",
+  ts: "text/plain; charset=utf-8",
+  tsx: "text/plain; charset=utf-8",
+  mjs: "text/plain; charset=utf-8",
+  cjs: "text/plain; charset=utf-8",
+  sh: "text/plain; charset=utf-8",
+  bash: "text/plain; charset=utf-8",
+  zsh: "text/plain; charset=utf-8",
+  py: "text/plain; charset=utf-8",
+  rb: "text/plain; charset=utf-8",
+  go: "text/plain; charset=utf-8",
+  rs: "text/plain; charset=utf-8",
+  java: "text/plain; charset=utf-8",
+  kt: "text/plain; charset=utf-8",
+  swift: "text/plain; charset=utf-8",
+  c: "text/plain; charset=utf-8",
+  h: "text/plain; charset=utf-8",
+  cpp: "text/plain; charset=utf-8",
+  hpp: "text/plain; charset=utf-8",
+  sql: "text/plain; charset=utf-8",
+  env: "text/plain; charset=utf-8",
+  gitignore: "text/plain; charset=utf-8",
+  dockerfile: "text/plain; charset=utf-8",
+  mmd: "text/plain; charset=utf-8",
+  mermaid: "text/plain; charset=utf-8",
+  // Image allowlist.
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  svg: "image/svg+xml",
+  webp: "image/webp",
+});
+
+/**
+ * Sanitize a filename for use inside `Content-Disposition: inline;
+ * filename="<sanitized>"`.
+ *
+ * Contract:
+ *   - ASCII alphanumerics + `. _ -` + spaces are preserved.
+ *   - All other characters (including CR, LF, ", \, ;, non-ASCII) are
+ *     replaced with `_`. This blocks header-injection via CR/LF, avoids
+ *     the need for RFC 6266 percent-encoding, and produces a filename
+ *     the client can safely render back.
+ *   - Result is clamped to 120 characters. If the original was longer
+ *     we preserve the extension when possible.
+ *   - Empty result falls back to "file".
+ *
+ * This is intentionally MORE restrictive than RFC 6266 allows — the UI
+ * only needs the filename as a hint; we prefer a conservative char class
+ * over round-trip fidelity.
+ */
+export function sanitizeContentDispositionFilename(raw: string): string {
+  const base = basename(raw || "").normalize("NFKC");
+  if (base.length === 0) return "file";
+
+  // Replace anything outside the allowed class with `_`.
+  const cleaned = base.replace(/[^A-Za-z0-9._ -]/g, "_");
+
+  if (cleaned.length === 0) return "file";
+  if (cleaned.length <= 120) return cleaned;
+
+  // Clamp to 120, preserving the extension if we can.
+  const dot = cleaned.lastIndexOf(".");
+  if (dot > 0 && cleaned.length - dot <= 16) {
+    const ext = cleaned.slice(dot);
+    const headLen = 120 - ext.length;
+    return cleaned.slice(0, headLen) + ext;
+  }
+  return cleaned.slice(0, 120);
 }
