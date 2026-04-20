@@ -22,7 +22,8 @@ export function LaunchRow({ task, launching, onLaunch, onFork, onClose }: Props)
         type="button"
         disabled={launching || disabledAfterDone}
         onClick={() => onLaunch({ resume: false })}
-        className="inline-flex items-center gap-1.5 rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 bg-blue-600 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+        style={{ borderRadius: "var(--radius-button)" }}
         data-testid="launch-copy-btn"
       >
         <Copy size={14} />
@@ -32,7 +33,8 @@ export function LaunchRow({ task, launching, onLaunch, onFork, onClose }: Props)
         type="button"
         disabled={disabledAfterDone || task.state === "draft"}
         onClick={() => onLaunch({ resume: true })}
-        className="inline-flex items-center gap-1.5 rounded border border-neutral-300 bg-white px-3 py-1 text-sm hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 border border-neutral-300 bg-white px-3 py-1 text-sm hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+        style={{ borderRadius: "var(--radius-button)" }}
         data-testid="launch-resume-btn"
         title="Re-emit the command with --resume so your Claude session picks up where it left off."
       >
@@ -43,7 +45,8 @@ export function LaunchRow({ task, launching, onLaunch, onFork, onClose }: Props)
         type="button"
         disabled={task.state === "draft"}
         onClick={onFork}
-        className="inline-flex items-center gap-1.5 rounded border border-neutral-300 bg-white px-3 py-1 text-sm hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 border border-neutral-300 bg-white px-3 py-1 text-sm hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+        style={{ borderRadius: "var(--radius-button)" }}
         data-testid="launch-fork-btn"
         title="Create a sibling task derived from this one via --fork-session."
       >
@@ -55,7 +58,8 @@ export function LaunchRow({ task, launching, onLaunch, onFork, onClose }: Props)
       <button
         type="button"
         disabled
-        className="inline-flex items-center gap-1.5 rounded border border-neutral-200 bg-neutral-50 px-3 py-1 text-sm text-neutral-400"
+        className="inline-flex items-center gap-1.5 border border-neutral-200 bg-neutral-50 px-3 py-1 text-sm text-neutral-400"
+        style={{ borderRadius: "var(--radius-button)" }}
         title="Deferred to v2 (variant-a narrow): Terminal launcher ships after copy launcher is proven stable."
         data-testid="launch-terminal-btn"
       >
@@ -65,7 +69,8 @@ export function LaunchRow({ task, launching, onLaunch, onFork, onClose }: Props)
       <button
         type="button"
         disabled
-        className="inline-flex items-center gap-1.5 rounded border border-neutral-200 bg-neutral-50 px-3 py-1 text-sm text-neutral-400"
+        className="inline-flex items-center gap-1.5 border border-neutral-200 bg-neutral-50 px-3 py-1 text-sm text-neutral-400"
+        style={{ borderRadius: "var(--radius-button)" }}
         title="Deferred to v2 (variant-a narrow): VSCode launcher ships after the Claude Code VSCode extension exposes --ide binding."
         data-testid="launch-vscode-btn"
       >
@@ -77,7 +82,8 @@ export function LaunchRow({ task, launching, onLaunch, onFork, onClose }: Props)
         type="button"
         onClick={onClose}
         disabled={disabledAfterDone}
-        className="inline-flex items-center gap-1.5 rounded border border-neutral-300 bg-white px-3 py-1 text-sm hover:bg-neutral-50 disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 border border-neutral-300 bg-white px-3 py-1 text-sm hover:bg-neutral-50 disabled:opacity-50"
+        style={{ borderRadius: "var(--radius-button)" }}
         data-testid="close-task-btn"
       >
         Close task

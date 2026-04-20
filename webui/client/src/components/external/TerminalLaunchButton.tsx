@@ -80,7 +80,8 @@ export function TerminalLaunchButton({
         type="button"
         onClick={() => void copy()}
         disabled={launchMut.isPending}
-        className="rounded p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-50"
+        className="p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-50"
+        style={{ borderRadius: "var(--radius-button)" }}
         title={copied ? "Copied!" : "Copy launch command"}
         aria-label="Copy launch command"
         data-testid="terminal-launch-compact"
@@ -96,7 +97,8 @@ export function TerminalLaunchButton({
         type="button"
         onClick={() => void copy()}
         disabled={launchMut.isPending}
-        className="inline-flex items-center gap-2 rounded bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex items-center gap-2 bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
+        style={{ borderRadius: "var(--radius-button)" }}
         data-testid="terminal-launch-btn"
         aria-label={copied ? "Launch command copied" : "Copy launch command for terminal"}
       >

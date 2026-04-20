@@ -20,11 +20,13 @@ export function ToolOutputBlock({ text, isError = false }: Props) {
   const cleaned = stripControl(stripAnsi(text));
   return (
     <pre
-      className={`max-h-[400px] overflow-auto whitespace-pre-wrap break-words rounded p-2 font-mono text-[11px] leading-snug ${
-        isError
-          ? "border border-red-200 bg-red-50 text-red-900"
-          : "border border-neutral-200 bg-neutral-50 text-neutral-800"
-      }`}
+      className="max-h-[400px] overflow-auto whitespace-pre-wrap break-words p-2 font-mono text-[11px] leading-snug"
+      style={{
+        borderRadius: "var(--radius-button)",
+        border: isError ? "1px solid #FECACA" : "1px solid var(--color-border)",
+        background: isError ? "#FEF2F2" : "var(--color-background, #f5f0eb)",
+        color: isError ? "#7F1D1D" : "var(--color-text, #1a1a1a)",
+      }}
       data-testid="tool-output-block"
       data-is-error={isError ? "true" : "false"}
     >

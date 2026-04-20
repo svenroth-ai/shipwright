@@ -581,3 +581,92 @@
   - Storybook + Docker visual-regression goldens (≥ 0.5 d to set up; replaced by Playwright snapshot/behavioural specs).
 - **Rollback:** Each sub-iterate is its own commit. Reverting any one commit restores the prior surface without touching Claude's JSONL or the user's terminal session — the iterate stays inside the read-only contract.
 
+
+---
+
+### ADR-036: Visibility gate = profile.stack.frontend presence...
+- **Date:** 2026-04-20
+- **Section:** Plan Interview — iterate-3
+- **Context:** Spec FR-03.15 says Preview visibility gate reads 'stack.frontend' + spawn pulls from 'stack.frontend.dev'. Existing hasPreviewCapability reads 'dev_server.command' from profile-loader.ts. Two paths would require dual-writing the profile schema.
+- **Decision:** Visibility gate = profile.stack.frontend presence (object-not-null). Spawn target = profile.dev_server.command (existing schema, already used by hasPreviewCapability). No new stack.frontend.dev field.
+- **Commit:** n/a
+- **Consequences:** Harmonizes spec to code. Boot-time coherence check logs warning if stack.frontend exists but dev_server.command absent; button renders, spawn returns 500 with actionable message.
+- **Rejected:** Dual-write profile schema with new stack.frontend.dev field AND keep dev_server.command for backcompat — adds mental model burden, no user-visible benefit.
+
+---
+
+### ADR-037: (a) synthesize server-side. Deterministic...
+- **Date:** 2026-04-20
+- **Section:** Plan Interview — iterate-3
+- **Context:** Spec FR-03.01 says legacy tasks without projectId get 'Unassigned' pseudo-project. Options: (a) synthesize server-side read-only, (b) write real row into projects.json on first read.
+- **Decision:** (a) synthesize server-side. Deterministic id='unassigned', appears in getAll() output only when at least one task has projectId='unassigned' or null. Not persisted to projects.json.
+- **Commit:** n/a
+- **Consequences:** projects.json stays representing user intent. No orphaned 'Unassigned' row after user reassigns everything. Tasks with projectId=null are normalized to 'unassigned' on read via virtual field.
+- **Rejected:** (b) first-read migration writes real row — leaks migration state into user data model, hard to un-create later.
+
+---
+
+### ADR-038: (a) incremental migration. CURRENT_SCHEMA_VERSION=2; v1...
+- **Date:** 2026-04-20
+- **Section:** Plan Interview — iterate-3
+- **Context:** sdk-sessions.json v1 schema lacks projectId (spec 3.2 adds it). Options: (a) incremental v1→v2 write-on-touch, (b) batch-rewrite all rows on first boot.
+- **Decision:** (a) incremental migration. CURRENT_SCHEMA_VERSION=2; v1 load() assigns projectId='unassigned' in memory; next write of that row persists v2 shape. Header loads both v1 and v2 (forward-compat window).
+- **Commit:** n/a
+- **Consequences:** Zero risk of mid-migration crash on large stores (300+ rows). Migration completes over days of normal use. Rollback is one-line version constant revert.
+- **Rejected:** (b) batch-rewrite on boot — single-point failure, long boot on large stores, hostile rollback.
+
+---
+
+### ADR-039: New TS module lib/classifyPhase.ts (project-agnostic,...
+- **Date:** 2026-04-20
+- **Section:** Plan Interview — iterate-3
+- **Context:** Spec 3.2 mentions re-using 'pre-pivot classifyPhase logic if salvageable'. plugins/shipwright-project has classify_phase.py (Python, runs in IREB decomposition skill). Webui task-creation modal needs client-side debounced auto-classify without round-tripping Python.
+- **Decision:** New TS module lib/classifyPhase.ts (project-agnostic, takes phases from actions endpoint, tokenizes title, matches phase.id+label, tiebreak by array index). Pure function, <=80 LOC. Does NOT port or import classify_phase.py.
+- **Commit:** n/a
+- **Consequences:** Client-side debouncing works out of the box. No binding between webui and plugin-side Python. Independent test surface via Vitest.
+- **Rejected:** Port classify_phase.py — binds webui to a plugin whose classifier tuning is unrelated (IREB decomposition vs. webui task labeling).
+
+---
+
+### ADR-040: All 39 findings accepted and integrated. 10...
+- **Date:** 2026-04-20
+- **Section:** External Review \u2014 iterate-3
+- **Context:** Iterate 3 plan.md reviewed via OpenRouter (Gemini + GPT in parallel). 39 findings across security, architecture, completeness, performance, test-coverage, and spec-amendment drift.
+- **Decision:** All 39 findings accepted and integrated. 10 HIGH-severity items (command-injection escape matrix, path-traversal pathGuard, spawn shell:false, preview error taxonomy, stale standalone kind, stale complexity UAT, FR-03.02 scoped-strip override, FR-03.14 shortcut pruning, Save-vs-Launch E2E, actions-schema negative tests) folded into \u00a7\u00a7 2.1, 2.2, 4.2 of plan.md + section bodies 01-04. 29 MED/LOW items routed into section-writer briefs. Full disposition ledger in plan.md \u00a7 7.
+- **Commit:** n/a
+- **Consequences:** Test count targets lifted above spec baseline (Playwright \u226550, server \u2265475, client \u2265560). Preview subprocess hardened (shell:false + tokenize + dedup). NewIssueModal moved from section 02 to 03 to kill section-interdependency footgun. FR-03.30 header drops legacy LaunchRow; Fork deprioritized to iterate 4.
+- **Rejected:** Logging all 39 findings as individual ADRs (040-078) \u2014 rejected as noise; single umbrella ADR + plan.md ledger is the auditable record.
+
+---
+
+### ADR-041: Parser interface names stay product-shaped (text/title/name/mode)
+- **Date:** 2026-04-20
+- **Section:** Build — iterate-3 section 01 (parser hardening + LAF tokens)
+- **Context:** On-disk JSONL uses verbose CLI field names (`content`, `customTitle`, `agentName`, `permissionMode`) for the 4 new variants; the section spec describes them with short product-side names (`text`, `title`, `name`, `mode`). The parser mediates between them.
+- **Decision:** Parser emits product-shaped field names (`SystemEvent.text`, `CustomTitleEvent.title`, `AgentNameEvent.name`, `PermissionModeEvent.mode`) and extracts from the CLI payload. Accept both CLI and product-short field names on input for forward-compat.
+- **Commit:** (this iterate-3.1 commit)
+- **Consequences:** Renderer code stays stable if the CLI renames `customTitle` → `title` in a future release. One narrow extraction point in parser tolerates either shape. Duplicated across server + client parsers per `conventions.md:14`.
+- **Rejected:** Mirror CLI field names 1:1 in the parsed event (e.g. `event.customTitle`) — would leak CLI naming into every renderer + test.
+
+---
+
+### ADR-042: System visibility is a single global localStorage key, not per-task
+- **Date:** 2026-04-20
+- **Section:** Build — iterate-3 section 01
+- **Context:** System events (subtype `init` / `local_command` / `informational`) are noisy. Section spec + plan § 3 + external review O16 called for default-hidden behind a transcript-toolbar toggle. Toggle scope could be per-task or global.
+- **Decision:** Single global localStorage key `webui.transcript.showSystem`. `useSystemVisibility()` reads it lazily on mount, writes on toggle, and cross-tab-syncs via the `storage` event. Every transcript viewer in the app observes the same default.
+- **Commit:** (this iterate-3.1 commit)
+- **Consequences:** One preference to memorize. No per-task state bloat in `sdk-sessions.json`. Multi-tab reveals flip consistently. Covered E2E by spec 60 (default hidden → click → reload persists).
+- **Rejected:** Per-task or per-session preference — no user value, adds a write path into already-contended `sdk-sessions.json`.
+
+---
+
+### ADR-043: Attachment rendering keyed off payload presence, not a mime sniff
+- **Date:** 2026-04-20
+- **Section:** Build — iterate-3 section 01
+- **Context:** FR-03.53 upgrades the generic `attachment` chip to show a filename + thumbnail. Claude's JSONL payload for `attachment` is opaque — sometimes it carries `{filename, thumbnailUrl}`, sometimes it is a bare reference. Renderer must not crash on either shape.
+- **Decision:** Branch renders the full card when `filename` is present (using `thumbnailUrl` if available or an extension hint block otherwise); falls back to a generic muted chip when neither field is present. No mime sniffing, no network probe.
+- **Commit:** (this iterate-3.1 commit)
+- **Consequences:** Resilient to payload drift. Covered by the two unit tests `renders filename + thumbnail when payload provides them` + `falls back to generic chip when payload is opaque`.
+- **Rejected:** Require a canonical attachment schema from the CLI (blocks on upstream change); MIME-detect via extension beyond the hint block (unnecessary scope creep for the chip).
+

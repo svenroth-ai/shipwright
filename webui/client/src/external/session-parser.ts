@@ -21,6 +21,10 @@ export type ParsedEvent =
   | FileSnapshotEvent
   | AiTitleEvent
   | LastPromptEvent
+  | SystemEvent
+  | CustomTitleEvent
+  | AgentNameEvent
+  | PermissionModeEvent
   | UnknownEvent;
 
 export interface BaseEvent {
@@ -67,6 +71,27 @@ export interface AiTitleEvent extends BaseEvent {
 export interface LastPromptEvent extends BaseEvent {
   kind: "last-prompt";
   prompt: unknown;
+}
+
+export interface SystemEvent extends BaseEvent {
+  kind: "system";
+  text: string;
+  subtype?: string;
+}
+
+export interface CustomTitleEvent extends BaseEvent {
+  kind: "custom-title";
+  title: string;
+}
+
+export interface AgentNameEvent extends BaseEvent {
+  kind: "agent-name";
+  name: string;
+}
+
+export interface PermissionModeEvent extends BaseEvent {
+  kind: "permission-mode";
+  mode: string;
 }
 
 export interface UnknownEvent extends BaseEvent {
@@ -163,6 +188,47 @@ function parseOne(raw: Record<string, unknown>): ParsedEvent {
       };
     case "last-prompt":
       return { ...base, kind: "last-prompt", prompt: raw.prompt };
+    case "system": {
+      const content = typeof raw.content === "string" ? raw.content : "";
+      const text =
+        content ||
+        (typeof (raw as { text?: unknown }).text === "string"
+          ? ((raw as { text: string }).text)
+          : "");
+      return {
+        ...base,
+        kind: "system",
+        text,
+        subtype: typeof raw.subtype === "string" ? raw.subtype : undefined,
+      };
+    }
+    case "custom-title": {
+      const title =
+        typeof (raw as { customTitle?: unknown }).customTitle === "string"
+          ? ((raw as { customTitle: string }).customTitle)
+          : typeof (raw as { title?: unknown }).title === "string"
+          ? ((raw as { title: string }).title)
+          : "";
+      return { ...base, kind: "custom-title", title };
+    }
+    case "agent-name": {
+      const name =
+        typeof (raw as { agentName?: unknown }).agentName === "string"
+          ? ((raw as { agentName: string }).agentName)
+          : typeof (raw as { name?: unknown }).name === "string"
+          ? ((raw as { name: string }).name)
+          : "";
+      return { ...base, kind: "agent-name", name };
+    }
+    case "permission-mode": {
+      const mode =
+        typeof (raw as { permissionMode?: unknown }).permissionMode === "string"
+          ? ((raw as { permissionMode: string }).permissionMode)
+          : typeof (raw as { mode?: unknown }).mode === "string"
+          ? ((raw as { mode: string }).mode)
+          : "";
+      return { ...base, kind: "permission-mode", mode };
+    }
     default:
       return { ...base, kind: "unknown", originalType: type || "(no-type)", raw };
   }

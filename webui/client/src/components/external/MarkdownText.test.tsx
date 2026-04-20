@@ -97,6 +97,12 @@ describe("ToolOutputBlock", () => {
     render(<ToolOutputBlock text="oops" isError />);
     const block = screen.getByTestId("tool-output-block");
     expect(block.dataset.isError).toBe("true");
-    expect(block.className).toMatch(/red/);
+    // Error variant uses red tokens via inline style (post-iterate-3 LAF sweep).
+    // jsdom normalizes the hex palette to rgb() — match either form.
+    const background = (block as HTMLElement).style.background;
+    const color = (block as HTMLElement).style.color;
+    const combined = `${background} ${color}`.toLowerCase();
+    const redPattern = /(fef2f2|7f1d1d|red|254,\s*242,\s*242|127,\s*29,\s*29)/;
+    expect(combined).toMatch(redPattern);
   });
 });

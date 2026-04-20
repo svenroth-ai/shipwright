@@ -92,7 +92,8 @@ export function EditableTaskTitle({ task }: Props) {
         onBlur={() => void commit()}
         disabled={renameMut.isPending}
         maxLength={200}
-        className="w-full rounded border border-blue-400 bg-white px-2 py-1 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+        className="w-full border border-blue-400 bg-white px-2 py-1 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+        style={{ borderRadius: "var(--radius-button)" }}
         data-testid="task-title-input-edit"
       />
       {error && (

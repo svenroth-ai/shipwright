@@ -60,7 +60,19 @@ export function TaskCard({ task }: Props) {
   return (
     <>
       <div
-        className="group flex flex-col gap-1.5 rounded-lg border border-neutral-200 bg-white p-2.5 shadow-sm transition hover:border-blue-300 hover:shadow-md"
+        className="group flex flex-col gap-1.5 p-2.5 transition"
+        style={{
+          background: "var(--color-surface)",
+          border: "1px solid var(--color-border)",
+          borderRadius: "var(--radius)",
+          boxShadow: "var(--shadow-card)",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.boxShadow = "var(--shadow-card-hover)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.boxShadow = "var(--shadow-card)";
+        }}
         data-testid={`task-card-${task.taskId}`}
         data-task-state={task.state}
         title={`UUID ${task.sessionUuid.slice(0, 8)} · cwd ${cwdBase}`}
@@ -107,7 +119,12 @@ export function TaskCard({ task }: Props) {
                 <DropdownMenu.Content
                   align="end"
                   sideOffset={4}
-                  className="z-50 min-w-[160px] rounded-md border border-neutral-200 bg-white p-1 text-sm shadow-lg"
+                  className="z-50 min-w-[160px] p-1 text-sm shadow-lg"
+                  style={{
+                    background: "var(--color-surface)",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "var(--radius-button)",
+                  }}
                 >
                   <DropdownMenu.Item
                     onSelect={() => closeMut.mutate(task.taskId)}

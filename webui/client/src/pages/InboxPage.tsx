@@ -44,7 +44,12 @@ export default function InboxPage() {
 
       {!isLoading && items.length === 0 && (
         <div
-          className="rounded border border-neutral-200 bg-white p-4 text-sm text-neutral-500"
+          className="p-4 text-sm text-neutral-500"
+          style={{
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--radius-button)",
+          }}
           data-testid="inbox-empty"
         >
           No pending interactions.
@@ -57,7 +62,13 @@ export default function InboxPage() {
           return (
             <section
               key={g.sessionUuid}
-              className="rounded border border-neutral-200 bg-white p-3"
+              className="p-3"
+              style={{
+                background: "var(--color-surface)",
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--radius)",
+                boxShadow: "var(--shadow-card)",
+              }}
               data-testid={`inbox-session-${g.sessionUuid}`}
             >
               <header className="mb-2 flex items-center justify-between">

@@ -16,7 +16,15 @@ interface Props {
 
 export function SessionMetadata({ task }: Props) {
   return (
-    <div className="flex flex-col gap-1 rounded border border-neutral-200 bg-white p-3 text-sm" data-testid="session-metadata">
+    <div
+      className="flex flex-col gap-1 p-3 text-sm"
+      style={{
+        background: "var(--color-surface)",
+        border: "1px solid var(--color-border)",
+        borderRadius: "var(--radius-button)",
+      }}
+      data-testid="session-metadata"
+    >
       <div className="flex items-center gap-2">
         <span
           className={`rounded px-2 py-0.5 text-xs font-semibold ${STATE_STYLES[task.state]}`}
