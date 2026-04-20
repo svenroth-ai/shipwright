@@ -239,6 +239,16 @@ def build_event(args: argparse.Namespace) -> dict:
         if args.detail:
             event["detail"] = args.detail
 
+    elif args.type == "adopted":
+        # Written once per /shipwright-adopt run. Fields are best-effort:
+        # the skill-layer populates them from snapshot/run-config.
+        if args.source:
+            event["source"] = args.source
+        if args.commit:
+            event["commit_at_adoption"] = args.commit
+        if args.detail:
+            event["detail"] = args.detail
+
     return event
 
 
@@ -268,7 +278,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                    choices=["task_created", "work_completed", "phase_started",
                             "phase_completed", "split_completed", "test_run",
                             "event_amended",
-                            "compliance_update_failed", "pipeline_migration"],
+                            "compliance_update_failed", "pipeline_migration",
+                            "adopted"],
                    help="Event type")
 
     # work_completed

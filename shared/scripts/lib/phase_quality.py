@@ -63,10 +63,12 @@ PLUGIN_TO_PHASE: dict[str, str] = {
     "shipwright-changelog": "changelog",
     "shipwright-compliance": "compliance",
     "shipwright-iterate": "iterate",
+    "shipwright-adopt": "adopt",
 }
 
 # Phases that take ADR-worthy decisions (C4 applies).
-C4_PHASES: frozenset[str] = frozenset({"project", "plan", "build", "iterate"})
+# `adopt` included because /shipwright-adopt seeds ADR-0001 (adoption decision).
+C4_PHASES: frozenset[str] = frozenset({"project", "plan", "build", "iterate", "adopt"})
 
 # User-facing phases that prepend a CHANGELOG bullet (C5 applies).
 C5_PHASES: frozenset[str] = frozenset({"project", "design", "build", "deploy", "iterate"})
@@ -84,6 +86,10 @@ C5_CATEGORY: dict[str, str] = {
 # C1-C5 are all Tier-1.
 TIER_2_CHECK_IDS: frozenset[str] = frozenset({
     "W1", "I4", "T2", "Q1", "S3", "S4", "S5", "S7", "S9", "S10", "Cmp1", "D2",
+    # Adopt-specific Tier-2 (heuristic, non-blocking):
+    #   A4 = ADR-backfill quality, A5 = Layer-3 review presence,
+    #   A8 = E2E baseline suite existence.
+    "A4", "A5", "A8",
 })
 
 CATEGORIES: tuple[str, ...] = (
@@ -480,6 +486,7 @@ _WORKFLOW_PHASE_DISPATCH: dict[str, str] = {
     "security": "security_compliance",
     "compliance": "compliance_compliance",
     "design": "design_compliance",
+    "adopt": "adopt_compliance",
 }
 
 
