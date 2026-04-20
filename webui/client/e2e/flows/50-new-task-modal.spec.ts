@@ -21,11 +21,15 @@ test.describe("NewIssueModal — Save to Backlog", () => {
     // GET /api/projects does not accept a POST body create shortcut that
     // bypasses the filesystem check (project.path must exist on disk).
     // Fall through to an existing project if one is registered.
+    //
+    // Phase A5 (iterate 3 remediation, 2026-04-20): `/api/projects` returns
+    // `{ data: [...] }` per the apiFetch envelope convention — the prior
+    // `.projects` destructure was silent drift from iterate 2.
     const existing = await request.get("/api/projects");
-    const { projects } = (await existing.json()) as {
-      projects: Array<{ id: string; name: string; synthesized?: boolean }>;
+    const { data: projectList = [] } = (await existing.json()) as {
+      data?: Array<{ id: string; name: string; synthesized?: boolean }>;
     };
-    const project = projects.find((p) => !p.synthesized);
+    const project = projectList.find((p) => !p.synthesized);
     test.skip(!project, "Requires a registered project; run the project wizard first.");
 
     await page.goto("/");

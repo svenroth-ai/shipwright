@@ -61,6 +61,63 @@ import {
 const ACTIVE_IDLE_THRESHOLD_MS = 120_000;
 const IDLE_REACTIVATE_THRESHOLD_MS = 5_000;
 
+/*
+ * Iterate 3 remediation — Phase A4 (BUG 3 fix, 2026-04-20).
+ *
+ * `/api/external/inbox` used to re-parse the entire JSONL for every
+ * tracked task on every request (9–10 s latency against 216 sessions
+ * observed in UAT). The cache below memoizes the derived pending set
+ * keyed by `(sessionUuid, mtimeMs, dismissedKey, contentLength)`.
+ *
+ * - mtimeMs change (new events written) busts the cache naturally.
+ * - dismissedKey busts the cache when the user dismisses an entry so
+ *   the next inbox call reflects the reduced pending set.
+ * - contentLength captures the `lastProcessedByteOffset` we persist to
+ *   the store, so callers see a coherent pair.
+ *
+ * Pattern mirrors `core/project-actions-loader.ts:52-68`. No explicit
+ * invalidation needed; the key tuple naturally covers all cases.
+ */
+interface InboxDeriveCacheEntry {
+  /** Resolved on-disk path — lets us `stat()` directly on warm calls
+   *  instead of rescanning every subdir of ~/.claude/projects via
+   *  findByUuid (the actual hot-spot — the JSONL parse is cheap by
+   *  comparison). Falls back to findByUuid on stat failure. */
+  resolvedPath: string;
+  mtimeMs: number;
+  contentLength: number;
+  dismissedKey: string;
+  entries: Array<{
+    toolUseId: string;
+    toolName: string;
+    input: unknown;
+    taskTitle: string;
+  }>;
+  pendingIds: string[];
+}
+const inboxDeriveCache = new Map<string, InboxDeriveCacheEntry>();
+
+/**
+ * Negative-result cache for `findByUuid` misses (Phase A4). Sessions
+ * that haven't materialized on disk yet (e.g. `awaiting_external_start`
+ * tasks where the user hasn't pasted the launch command) previously
+ * triggered a full readdir scan across every subdirectory of
+ * `~/.claude/projects` on EVERY inbox call — the dominant latency
+ * source (60+ sessions × 216 subdir scans).
+ *
+ * With a short TTL we skip the scan for sessions we recently confirmed
+ * don't exist. The TTL is intentionally short so launch → discovery
+ * still converges quickly (~15 s worst case).
+ */
+const NEGATIVE_RESULT_TTL_MS = 15_000;
+const inboxNegativeCache = new Map<string, number>();
+
+/** Test helper — drops the per-session inbox caches. */
+export function clearInboxDeriveCache(): void {
+  inboxDeriveCache.clear();
+  inboxNegativeCache.clear();
+}
+
 /** Hard cap on user-assigned titles. CLI accepts more, but UI legibility
  * (TaskBoard cards, terminal title bar) breaks past ~200 chars. */
 const TITLE_MAX_LENGTH = 200;
@@ -380,9 +437,12 @@ export function createExternalRoutes(args: {
   });
 
   app.get("/api/external/inbox", async (c) => {
-    // Aggregate inbox across all tracked tasks. Re-derive each time —
-    // the fastpath (incremental via lastProcessedByteOffset) is Sub-iterate
-    // 1.5 work if latency on large transcripts proves painful.
+    // Aggregate inbox across all tracked tasks. Phase A4 (iterate 3
+    // remediation, 2026-04-20): per-session derive cache keyed by
+    // (sessionUuid, mtimeMs, dismissedKey, contentLength). Cold call
+    // still does the full scan; warm calls (no new events, no new
+    // dismissals) short-circuit to the cached entries array. Mirrors
+    // the mtime-cache pattern in `core/project-actions-loader.ts`.
     type AggregatedEntry = {
       taskId: string;
       sessionUuid: string;
@@ -393,14 +453,72 @@ export function createExternalRoutes(args: {
       bestEffort: true;
     };
     const out: AggregatedEntry[] = [];
+    let storeDirty = false;
     for (const task of store.list()) {
       // Skip tasks the user has explicitly closed or whose session is
       // unrecoverable — they cannot grow new pending interactions, and
       // re-reading their JSONL is a major contributor to inbox latency
       // when sdk-sessions.json accumulates many stale entries.
       if (task.state === "done" || task.state === "launch_failed") continue;
+
+      const dismissedKey = task.inbox.dismissedToolUseIds.slice().sort().join(",");
+      const cached = inboxDeriveCache.get(task.sessionUuid);
+
+      // Warm-path fastpath (Phase A4): avoid the full
+      // `findByUuid` readdir scan over every subdir of
+      // ~/.claude/projects by stat-ing the previously resolved path
+      // directly. If mtime is unchanged AND dismissed set is
+      // unchanged, reuse the cached entries and skip all I/O past
+      // the single stat call.
+      if (cached) {
+        let currentMtime: number | null = null;
+        try {
+          const s = await stat(cached.resolvedPath);
+          currentMtime = s.mtimeMs;
+        } catch {
+          // File moved/rotated — fall through to cold path below.
+          currentMtime = null;
+        }
+        if (
+          currentMtime !== null &&
+          currentMtime === cached.mtimeMs &&
+          cached.dismissedKey === dismissedKey
+        ) {
+          for (const e of cached.entries) {
+            out.push({
+              taskId: task.taskId,
+              sessionUuid: task.sessionUuid,
+              taskTitle: e.taskTitle,
+              toolUseId: e.toolUseId,
+              toolName: e.toolName,
+              input: e.input,
+              bestEffort: true,
+            });
+          }
+          continue;
+        }
+      }
+
+      // Cold path — either no cache entry, or the cached mtime is
+      // stale, or the cached file is gone. Do the full scan.
+      //
+      // Phase A4 (iterate 3 remediation) — skip the scan if we very
+      // recently confirmed no file exists for this session
+      // (`awaiting_external_start` tasks pre-launch). Short TTL so
+      // launch → discovery still converges fast.
+      const negUntil = inboxNegativeCache.get(task.sessionUuid);
+      const nowMs = Date.now();
+      if (negUntil !== undefined && negUntil > nowMs) continue;
+
       const loc = await watcher.findByUuid(task.sessionUuid);
-      if (!loc) continue;
+      if (!loc) {
+        inboxNegativeCache.set(task.sessionUuid, nowMs + NEGATIVE_RESULT_TTL_MS);
+        continue;
+      }
+      // Session materialized — bust any stale negative entry.
+      inboxNegativeCache.delete(task.sessionUuid);
+
+      // Cold / stale — re-read + re-derive.
       let content = "";
       try {
         const chunk = await watcher.readChunk({
@@ -418,7 +536,14 @@ export function createExternalRoutes(args: {
         allowlist: DEFAULT_USER_BLOCKING_TOOLS,
         dismissed: new Set(task.inbox.dismissedToolUseIds),
       });
+      const cacheEntries: InboxDeriveCacheEntry["entries"] = [];
       for (const e of result.pending) {
+        cacheEntries.push({
+          toolUseId: e.toolUseId,
+          toolName: e.toolName,
+          input: e.input,
+          taskTitle: task.title,
+        });
         out.push({
           taskId: task.taskId,
           sessionUuid: task.sessionUuid,
@@ -429,6 +554,7 @@ export function createExternalRoutes(args: {
           bestEffort: true,
         });
       }
+
       // Persist the observed pending set so the next restart doesn't
       // re-derive from scratch for UI latency.
       const nextPending = result.pending.map((e) => e.toolUseId);
@@ -443,9 +569,19 @@ export function createExternalRoutes(args: {
             lastProcessedByteOffset: content.length,
           },
         });
+        storeDirty = true;
       }
+
+      inboxDeriveCache.set(task.sessionUuid, {
+        resolvedPath: loc.path,
+        mtimeMs: loc.mtimeMs,
+        contentLength: content.length,
+        dismissedKey,
+        entries: cacheEntries,
+        pendingIds: nextPending,
+      });
     }
-    await store.persist();
+    if (storeDirty) await store.persist();
     return c.json({ items: out });
   });
 
@@ -462,6 +598,12 @@ export function createExternalRoutes(args: {
           lastProcessedByteOffset: task.inbox.lastProcessedByteOffset,
         },
       });
+      // Phase A4 — bust the derive cache for this session so the next
+      // GET /inbox call reflects the reduced pending set immediately.
+      // (The cache key includes dismissedKey so this is belt-and-braces,
+      // but the explicit delete guarantees no stale object sticks
+      // around even if the sort-order ever drifts.)
+      inboxDeriveCache.delete(task.sessionUuid);
       await store.persist();
       return c.json({ ok: true, taskId: task.taskId });
     }

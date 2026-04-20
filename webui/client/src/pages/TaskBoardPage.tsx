@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Circle, PlayCircle } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import type {
   ActionDefinition,
@@ -35,6 +36,7 @@ import { UNASSIGNED_PROJECT_ID } from "../lib/projectIds";
 import type { Project } from "../types";
 
 export default function TaskBoardPage() {
+  const queryClient = useQueryClient();
   const { data: tasks = [], isLoading } = useExternalTasks();
   const { data: projects = [] } = useProjects();
   const { activeProjectId, setActiveProjectId } = useProjectFilter();
@@ -141,6 +143,12 @@ export default function TaskBoardPage() {
         onOpenChange={setModalOpen}
         action={modalAction}
         projectActions={actionsQuery.data}
+        onTaskCreated={() => {
+          // Invalidate the external-tasks list so the new Draft row
+          // appears immediately instead of waiting up to 2s for the
+          // next refetchInterval tick. Phase A3 — iterate 3 remediation.
+          void queryClient.invalidateQueries({ queryKey: ["external-tasks"] });
+        }}
       />
     </div>
   );

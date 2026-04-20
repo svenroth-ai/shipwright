@@ -94,9 +94,12 @@ test.describe("Flow A — TaskBoard create → save / launch", () => {
     // ASSERT 3: we did NOT navigate away.
     expect(page.url()).not.toContain("/tasks/");
 
-    // ASSERT 4: the task appears in the Draft column without a reload.
-    // (useExternalTasks has a 2 s refetchInterval, so give it up to 3 s.)
-    await expect(page.getByTestId("column-draft")).toContainText(title, { timeout: 6_000 });
+    // ASSERT 4: the task appears in the Draft column IMMEDIATELY —
+    // TaskBoardPage now invalidates the external-tasks query on
+    // onTaskCreated, so we should NOT have to wait for the 2s
+    // refetchInterval tick. 1.5s is comfortably below that.
+    // (Phase A3 — iterate 3 remediation BUG 1.)
+    await expect(page.getByTestId("column-draft")).toContainText(title, { timeout: 1_500 });
 
     // ASSERT 5: the task persists through a hard reload (disk write).
     await page.reload();

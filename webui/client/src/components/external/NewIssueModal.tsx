@@ -51,7 +51,11 @@ export interface NewIssueModalProps {
   onTaskCreated?: () => void;
   /** Injected for tests — default uses navigator.clipboard.writeText. */
   writeToClipboard?: (text: string) => Promise<void>;
-  /** Injected for tests — default alerts. */
+  /** Injected for tests. Default is a no-op — Save-to-Backlog success is
+   *  already visible to the user via the task appearing in the Draft
+   *  column (onTaskCreated invalidates the query). The previous
+   *  `window.alert` default was an iterate-3 regression (see
+   *  `~/.claude/plans/iterate-3-remediation.md` BUG 1 / Phase A3). */
   onToast?: (msg: string, sev: "info" | "error") => void;
 }
 
@@ -69,8 +73,11 @@ export function NewIssueModal({
   writeToClipboard = async (text: string) => {
     await navigator.clipboard.writeText(text);
   },
-  onToast = (msg) => {
-    if (typeof window !== "undefined") window.alert(msg);
+  onToast = () => {
+    // No-op default. Tests inject a spy; the host page should pass a
+    // real toaster when one exists. See `~/.claude/plans/iterate-3-remediation.md`
+    // BUG 1 — the prior `window.alert` default blocked automation and was
+    // hostile UX.
   },
 }: NewIssueModalProps) {
   const navigate = useNavigate();
