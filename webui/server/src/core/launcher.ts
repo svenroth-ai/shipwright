@@ -102,7 +102,9 @@ function normalizeTitle(raw: string | undefined): string | undefined {
 }
 
 function renderPowershell(a: Argv): string {
-  const parts: string[] = ["claude", "--session-id", qPs(a.sessionUuid), "--add-dir", qPs(a.cwd)];
+  const parts: string[] = ["claude"];
+  appendSessionFlags(a, parts, qPs);
+  parts.push("--add-dir", qPs(a.cwd));
   appendResumeFork(a, parts, qPs);
   appendName(a, parts, qPs);
   for (const d of a.pluginDirs) {
@@ -112,7 +114,9 @@ function renderPowershell(a: Argv): string {
 }
 
 function renderCmd(a: Argv): string {
-  const parts: string[] = ["claude", "--session-id", qCmd(a.sessionUuid), "--add-dir", qCmd(a.cwd)];
+  const parts: string[] = ["claude"];
+  appendSessionFlags(a, parts, qCmd);
+  parts.push("--add-dir", qCmd(a.cwd));
   appendResumeFork(a, parts, qCmd);
   appendName(a, parts, qCmd);
   for (const d of a.pluginDirs) {
@@ -124,13 +128,28 @@ function renderCmd(a: Argv): string {
 function renderPosix(a: Argv): string {
   const cwd = toPosixPath(a.cwd);
   const plugins = a.pluginDirs.map(toPosixPath);
-  const parts: string[] = ["claude", "--session-id", qPosix(a.sessionUuid), "--add-dir", qPosix(cwd)];
+  const parts: string[] = ["claude"];
+  appendSessionFlags(a, parts, qPosix);
+  parts.push("--add-dir", qPosix(cwd));
   appendResumeFork(a, parts, qPosix);
   appendName(a, parts, qPosix);
   for (const d of plugins) {
     parts.push("--plugin-dir", qPosix(d));
   }
   return parts.join(" ");
+}
+
+/**
+ * Emit `--session-id <uuid>` only when the launch needs to PRE-BIND a new
+ * UUID — i.e. fresh starts and forks. The resume path identifies the
+ * session via `--resume <uuid>`; combining `--session-id` with `--resume`
+ * (without `--fork-session`) is rejected by Claude CLI 2.1.x with
+ * "--session-id can only be used with --continue or --resume if
+ * --fork-session is also specified."
+ */
+function appendSessionFlags(a: Argv, parts: string[], q: (v: string) => string): void {
+  if (a.resume && !a.fork) return;
+  parts.push("--session-id", q(a.sessionUuid));
 }
 
 function appendResumeFork(a: Argv, parts: string[], q: (v: string) => string): void {
