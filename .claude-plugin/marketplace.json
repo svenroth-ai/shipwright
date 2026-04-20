@@ -103,6 +103,14 @@
       "source": "./plugins/shipwright-preview",
       "category": "development",
       "tags": ["preview", "dev-server", "browser", "local"]
+    },
+    {
+      "name": "shipwright-adopt",
+      "description": "Onboard an existing (brownfield) repository into the Shipwright SDLC — analyze stack + routes + conventions, generate CLAUDE.md + agent_docs + configs + E2E baseline",
+      "version": "0.1.0",
+      "source": "./plugins/shipwright-adopt",
+      "category": "development",
+      "tags": ["adoption", "onboarding", "brownfield", "legacy", "documentation"]
     }
   ]
 }
