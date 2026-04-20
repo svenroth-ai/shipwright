@@ -119,6 +119,7 @@ Multi-project Kanban, task-scoped chat with Claude, global inbox for agent quest
 | `shipwright-changelog` | Release — Keep-a-Changelog format, semver bump suggestion, PR creation |
 | `shipwright-compliance` | Compliance — IREB traceability, RTM, SBOM, test evidence, change history, dashboard |
 | `shipwright-preview` | Preview — local dev server, browser URL, profile-driven (available after first build split) |
+| `shipwright-adopt` | Brownfield onboarding — analyze existing repo, generate CLAUDE.md + agent_docs + configs + E2E baseline |
 
 ## Stack Profiles
 
@@ -200,7 +201,8 @@ If you prefer the Claude Code plugin marketplace instead of a shell alias, add t
     "shipwright-changelog@shipwright": true,
     "shipwright-compliance@shipwright": true,
     "shipwright-iterate@shipwright": true,
-    "shipwright-preview@shipwright": true
+    "shipwright-preview@shipwright": true,
+    "shipwright-adopt@shipwright": true
   }
 }
 ```
@@ -225,7 +227,8 @@ shipwright/
 │   ├── shipwright-changelog/         # Changelog + PR
 │   ├── shipwright-compliance/        # Traceability, RTM, SBOM, dashboard
 │   ├── shipwright-iterate/           # Daily iteration (complexity-adaptive)
-│   └── shipwright-preview/           # Local browser preview
+│   ├── shipwright-preview/           # Local browser preview
+│   └── shipwright-adopt/             # Brownfield onboarding (analyze existing repos)
 ├── webui/                            # Shipwright Command Center (Hono + React 19)
 │   ├── server/                       # Hono backend (port 3847)
 │   └── client/                       # React 19 / Vite 6 frontend

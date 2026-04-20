@@ -21,6 +21,7 @@ PLUGINS=(
     shipwright-run shipwright-project shipwright-design shipwright-plan
     shipwright-build shipwright-test shipwright-deploy shipwright-changelog
     shipwright-compliance shipwright-security shipwright-iterate shipwright-preview
+    shipwright-adopt
 )
 
 echo "=== Shipwright Marketplace Update ==="

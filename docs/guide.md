@@ -313,6 +313,8 @@ You should see the SHIPWRIGHT-RUN banner. If you get "Plugin not found", check t
 
 ## 3. Your First Project
 
+> **Already have a codebase?** Skip to [Chapter 3.5 — Adopting an existing repo](#35-adopting-an-existing-repo) below. `/shipwright-project` and `/shipwright-run` are optimized for greenfield starts; brownfield repos use `/shipwright-adopt` instead.
+
 ### Step by Step
 
 Create a new project directory, initialize Git, and launch Shipwright:
@@ -364,6 +366,63 @@ You are not limited to a single command. Shipwright supports several input metho
 ```
 
 Every skill works standalone. You can run `/shipwright-test` without having used the rest of the pipeline, or invoke `/shipwright-plan` on a spec you wrote manually. The orchestrator is convenient, not mandatory.
+
+## 3.5 Adopting an existing repo
+
+If your repo already has code — commits, dependencies, routes, conventions — use **`/shipwright-adopt`**. It onboards the codebase into Shipwright without asking you to re-describe what the code already tells us, and it leaves the repo in a state where `/shipwright-iterate`, `/shipwright-test`, and `/shipwright-compliance` work as if the project had been built with Shipwright from day one.
+
+### When to use it
+
+- The repo has `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, or similar — not empty.
+- There's a git history with prior commits.
+- No `shipwright_run_config.json` exists yet.
+
+If those are true, `/shipwright-adopt` is the right entry point. `/shipwright-project` and `/shipwright-run` are greenfield-optimized and will waste effort asking you to describe code that's already there.
+
+### What it does
+
+1. **Layer 1 — deterministic analysis.** Scans manifests, tsconfig/eslint/prettier, folder layout, test frameworks, CI, and git log. Produces `.shipwright/adopt/snapshot.json`.
+2. **Layer 1.5 — Playwright route crawl (if web app).** Starts the dev-server, crawls the running app BFS-style, captures route + h1 + CTAs + screenshots into `.shipwright/adopt/routes.json`. Falls back to AST-based route inference if no dev-server is available.
+3. **Layer 2 — Claude Code semantic enrichment.** Inline with the skill, Claude reads the snapshot + sample files + screenshots and writes `enrichment.json` with a product description, FR labels, architecture prose, conventions prose, and retroactive ADR drafts.
+4. **Artifact generation.** Writes `CLAUDE.md`, `agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `planning/01-adopted/spec.md`, the six `shipwright_*_config.json` files, `shipwright_events.jsonl`, and `e2e/flows/adopted-baseline.spec.ts` (regression guard from the crawl).
+5. **Compliance seeding.** Generates `compliance/{sbom,change-history,traceability-matrix,test-evidence,dashboard}.md` via the existing compliance infrastructure.
+6. **Layer 3 — external LLM review.** Runs `llm_review.py` over the generated artifacts to flag hallucinations or contradictions (skipped gracefully if no API key is set).
+7. **Validation + commit.** Runs `validate_adoption.py`, then a single Conventional Commit `chore(shipwright): adopt repository into Shipwright SDLC`.
+
+### Usage
+
+```bash
+# Dry-run first to see what would happen
+/shipwright-adopt --dry-run
+
+# Apply
+/shipwright-adopt
+# With explicit profile / scope
+/shipwright-adopt --profile supabase-nextjs --scope full_app
+
+# Monorepo with a nested sub-project (e.g. webui/)
+/shipwright-adopt --exclude-path webui
+
+# Skip Playwright crawl (no dev-server, auth wall, or deliberate opt-out)
+/shipwright-adopt --skip-crawl
+```
+
+See Appendix B for all flags.
+
+### Nested sub-projects
+
+If Adopt finds a directory with its own `.git/`, `shipwright_run_config.json`, or `CLAUDE.md` + `agent_docs/`, it asks you whether to include, exclude, or adopt it separately. Default: exclude (the sub-project keeps its own pipeline state and can be adopted independently later). See `plugins/shipwright-adopt/skills/adopt/references/nested-project-policy.md` for details.
+
+### After adoption
+
+Everything afterward is identical to a natively-built Shipwright project:
+
+- `/shipwright-iterate "add a profile page"` — all future changes go through this
+- `/shipwright-test` — first real test run populates test-evidence compliance
+- `/shipwright-compliance` — on-demand detective audit of artifacts
+
+Do **not** run `/shipwright-project`, `/shipwright-plan`, or `/shipwright-build` on an adopted repo — adoption replaces those phases, and iterate covers ongoing work.
+
 ## 4. The Pipeline: Phase by Phase
 
 Shipwright's pipeline consists of 10 phases, each handling a distinct step in the software delivery lifecycle. The phases run in sequence when you invoke the full pipeline via `/shipwright-run`, but every phase can also run as a standalone command. This chapter covers the first five phases: Orchestration, Project Decomposition, UI Design, Planning, and Implementation.
@@ -1618,6 +1677,7 @@ Data is stored in:
 | `/shipwright-changelog` | -- | -- | Parse Conventional Commits from git history, generate Keep-a-Changelog entries, suggest semver bump, create version tag, and open a pull request. |
 | `/shipwright-deploy` | -- | `--env prod` | Deploy to Jelastic (Infomaniak). DEV deploys automatically; PROD requires `--env prod` flag and explicit confirmation. Runs smoke test after deploy, rolls back on failure. |
 | `/shipwright-compliance` | -- | `--phase {name}` | Generate compliance reports: dashboard, RTM, test evidence, change history, and SBOM. The `--phase` flag updates reports incrementally for a specific phase. |
+| `/shipwright-adopt` | -- | `--dry-run`, `--profile <name>`, `--scope full_app\|library\|cli`, `--include-nested`, `--exclude-path <p>`, `--skip-crawl`, `--crawl-base-url <url>`, `--crawl-auth-token <tok>`, `--crawl-max-depth <n>`, `--crawl-max-pages <n>`, `--no-backfill-events`, `--no-sync`, `--planning-split <name>` | Onboard an existing (brownfield) repo into Shipwright. Analyzes stack + routes + conventions + git history, writes CLAUDE.md + agent_docs + configs + compliance reports + an E2E baseline. Not a pipeline phase — runs once per repo. |
 
 ### Verifier and Canon Helper Scripts
 

@@ -447,9 +447,25 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + Cmp1 dashboard-per-phase Tier-2, Cmp2 RTM coverage) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
+### shipwright-adopt
+
+Non-pipeline skill — onboards a **brownfield** repo into the Shipwright SDLC. Runs once per repo, not on every pipeline execution, and does **not** appear in `PIPELINE_STEPS`.
+
+Reads: `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `composer.json`, `Gemfile`, `tsconfig.json`, `.eslintrc*`, `.prettierrc*`, `.editorconfig`, `README.md`, `.github/workflows/`, git log, plus route/page files for AST feature inference; optionally the running dev-server via Playwright BFS crawl.
+
+Writes: `CLAUDE.md`, `agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `planning/<split>/spec.md`, all six `shipwright_*_config.json` (run-config LAST), `shipwright_events.jsonl` (one `adopted` event + optional backfill), `.claude/settings.json` (merges the `suggest_iterate` UserPromptSubmit hook), `e2e/flows/adopted-baseline.spec.ts` when a Playwright crawl succeeded, `.shipwright/adopt/{snapshot,enrichment,routes}.json`, `.shipwright/adopt/review.md`, and seeds the five `compliance/*.md` via the existing compliance generators.
+
+Phase-Quality integration: registered as phase `adopt` in `PLUGIN_TO_PHASE`, `C4_PHASES`, and `_WORKFLOW_PHASE_DISPATCH`. The verifier module `shared/scripts/tools/verifiers/adopt_compliance.py` runs A1–A8 canon checks on every Stop hook after adoption completes. A4, A5, A8 are Tier-2 (heuristic, non-blocking); A1–A3, A6, A7 are Tier-1 ERROR on FAIL.
+
+| Event | Matcher | Script | What It Does |
+|-------|---------|--------|--------------|
+| SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
+| Stop | — | `audit_phase_quality_on_stop.py` (shared) | Runs A1–A8 canon via `adopt_compliance.run()` |
+| Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff |
+
 ### Project-installed (not a plugin hook)
 
-`shared/scripts/hooks/suggest_iterate.py` is installed into the **target project's** `.claude/settings.json` by `/shipwright-project`, `/shipwright-run`, and every phase skill (auto-install, idempotent). It fires on `UserPromptSubmit` inside any directory containing `shipwright_run_config.json`.
+`shared/scripts/hooks/suggest_iterate.py` is installed into the **target project's** `.claude/settings.json` by `/shipwright-project`, `/shipwright-run`, `/shipwright-adopt`, and every phase skill (auto-install, idempotent). It fires on `UserPromptSubmit` inside any directory containing `shipwright_run_config.json`.
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
