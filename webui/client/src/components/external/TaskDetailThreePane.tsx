@@ -183,7 +183,7 @@ export function TaskDetailThreePane({
           {left}
         </Panel>
         <PanelResizeHandle
-          className="group relative w-1.5 shrink-0 cursor-col-resize bg-[var(--color-border,#e0dbd4)] transition hover:bg-[var(--color-primary,#6b5e56)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary,#6b5e56)]"
+          className="group relative w-[5px] shrink-0 cursor-col-resize bg-transparent transition hover:bg-[var(--color-primary,#6b5e56)]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary,#6b5e56)]"
           data-testid="splitter-left"
           role="separator"
           aria-orientation="vertical"
@@ -209,7 +209,7 @@ export function TaskDetailThreePane({
           {center}
         </Panel>
         <PanelResizeHandle
-          className="group relative w-1.5 shrink-0 cursor-col-resize bg-[var(--color-border,#e0dbd4)] transition hover:bg-[var(--color-primary,#6b5e56)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary,#6b5e56)]"
+          className="group relative w-[5px] shrink-0 cursor-col-resize bg-transparent transition hover:bg-[var(--color-primary,#6b5e56)]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary,#6b5e56)]"
           data-testid="splitter-right"
           role="separator"
           aria-orientation="vertical"

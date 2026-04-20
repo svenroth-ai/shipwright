@@ -1,15 +1,16 @@
 /*
  * TaskDetailHeader — single header bar above the 3-pane body (iterate 3
- * section 04, FR-03.30).
+ * section 04, FR-03.30; visual rebuild in iterate 3.7b-3 / Phase B3).
  *
  * Owns:
+ *   - breadcrumb `Projects › <project.name>` above the title row
+ *   - title + state badge (pulsing dot, color-coded to state) + project chip
+ *   - sub-line: phase tag · Started {ago} · last event {ago} · {model}
  *   - state-dependent primary CTA:
  *       pending / draft / awaiting_external_start → "Launch in Terminal"
  *       active / idle                             → "Copy Resume Command"
  *       done / launch_failed / jsonl_missing      → no CTA
- *   - project chip popover (reassignment — ProjectChipMenu)
- *   - 3-dots menu with Close + Delete (+ debug SessionMetadata footer)
- *   - state badge, editable title, breadcrumb back link
+ *   - 3-dots menu: Rename · Copy session UUID · Close · Delete · debug toggle
  *
  * Regression guards:
  *   - NO chat composer anywhere (CLAUDE.md DO-NOT #3).
@@ -18,13 +19,16 @@
  *   - Fork has moved to iterate 4 — menu must NOT surface it.
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft,
+  ChevronRight,
   ChevronUp,
+  Clipboard,
   Copy,
   MoreVertical,
+  Pencil,
   Rocket,
   Terminal as TerminalIcon,
   Trash2,
@@ -35,25 +39,83 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import type {
   CopyCommandForms,
   ExternalTask,
+  ExternalTaskState,
 } from "../../lib/externalApi";
 import {
   useCloseExternalTask,
   useDeleteExternalTask,
 } from "../../hooks/useExternalTasks";
 import { useLaunchTask } from "../../hooks/useLaunchTask";
-import { EditableTaskTitle } from "./EditableTaskTitle";
+import { useProjects } from "../../hooks/useProjects";
+import { useTaskTranscript } from "../../hooks/useTaskTranscript";
+import { formatRelativeTime } from "../../lib/formatTime";
+import {
+  EditableTaskTitle,
+  type EditableTaskTitleHandle,
+} from "./EditableTaskTitle";
 import { ProjectChipMenu } from "./ProjectChipMenu";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 import { SessionMetadata } from "./SessionMetadata";
 
-const STATE_BADGE_STYLES: Record<ExternalTask["state"], string> = {
-  draft: "bg-neutral-200 text-neutral-800",
-  awaiting_external_start: "bg-amber-100 text-amber-900",
-  active: "bg-emerald-100 text-emerald-900",
-  idle: "bg-neutral-100 text-neutral-600",
-  jsonl_missing: "bg-red-100 text-red-900",
-  launch_failed: "bg-red-100 text-red-900",
-  done: "bg-neutral-300 text-neutral-600",
+/**
+ * State-badge visual definition. Background + foreground use HSL-flavoured
+ * tones that match the mockup chip palette; the `dot` is the pulsing
+ * circle rendered as a ::before equivalent (inline <span> with a
+ * Tailwind `animate-pulse`).
+ */
+const STATE_BADGE: Record<
+  ExternalTaskState,
+  { bg: string; fg: string; dot: string; label: string; pulse: boolean }
+> = {
+  draft: {
+    bg: "bg-[var(--color-muted-bg,#ede8e1)]",
+    fg: "text-[var(--color-muted,#6b7280)]",
+    dot: "bg-[var(--color-muted,#6b7280)]",
+    label: "Draft",
+    pulse: false,
+  },
+  awaiting_external_start: {
+    bg: "bg-[#FEF3C7]",
+    fg: "text-[#92400E]",
+    dot: "bg-[#D97706]",
+    label: "Awaiting launch",
+    pulse: true,
+  },
+  active: {
+    bg: "bg-[#FEF3C7]",
+    fg: "text-[#92400E]",
+    dot: "bg-[#D97706]",
+    label: "In progress",
+    pulse: true,
+  },
+  idle: {
+    bg: "bg-[var(--color-muted-bg,#ede8e1)]",
+    fg: "text-[var(--color-muted,#6b7280)]",
+    dot: "bg-[var(--color-muted,#6b7280)]",
+    label: "Idle",
+    pulse: false,
+  },
+  jsonl_missing: {
+    bg: "bg-[#FEE2E2]",
+    fg: "text-[#991B1B]",
+    dot: "bg-[var(--color-error,#DC2626)]",
+    label: "JSONL missing",
+    pulse: false,
+  },
+  launch_failed: {
+    bg: "bg-[#FEE2E2]",
+    fg: "text-[#991B1B]",
+    dot: "bg-[var(--color-error,#DC2626)]",
+    label: "Launch failed",
+    pulse: false,
+  },
+  done: {
+    bg: "bg-[#D1FAE5]",
+    fg: "text-[#065F46]",
+    dot: "bg-[var(--color-success,#059669)]",
+    label: "Done",
+    pulse: false,
+  },
 };
 
 type CtaMode = "launch" | "resume" | "none";
@@ -99,14 +161,65 @@ export function TaskDetailHeader({ task }: Props) {
   const launchMut = useLaunchTask();
   const closeMut = useCloseExternalTask();
   const deleteMut = useDeleteExternalTask();
+  const projectsQ = useProjects();
+  const transcript = useTaskTranscript(task.taskId);
 
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
   const [ctaError, setCtaError] = useState<string | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
+  const [uuidCopied, setUuidCopied] = useState(false);
   const copyResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const uuidResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const titleRef = useRef<EditableTaskTitleHandle | null>(null);
 
   const cta = ctaFor(task.state);
+  const badge = STATE_BADGE[task.state];
+
+  const projectName = useMemo(() => {
+    const list = projectsQ.data ?? [];
+    const found = list.find((p) => p.id === task.projectId);
+    if (found) return found.name;
+    if (task.projectId === "unassigned") return "Unassigned";
+    return task.projectId;
+  }, [projectsQ.data, task.projectId]);
+
+  /**
+   * Phase is derived best-effort from the task title (same triggers the
+   * TaskBoard uses). Iterate 3 does not yet store phase on tasks, so we
+   * fall back to a plain "Task" label when no trigger matches.
+   */
+  const phase = useMemo(() => {
+    const title = (task.title ?? "").toLowerCase();
+    if (/plan/.test(title)) return { label: "Plan", cls: "bg-[#DBEAFE] text-[#1E40AF]", dot: "bg-[#3B82F6]" };
+    if (/build|implement|fix/.test(title)) return { label: "Build", cls: "bg-[#FEF3C7] text-[#92400E]", dot: "bg-[#F59E0B]" };
+    if (/design|ui|mockup/.test(title)) return { label: "Design", cls: "bg-[#F3E8FF] text-[#6B21A8]", dot: "bg-[#A855F7]" };
+    if (/test|qa|e2e/.test(title)) return { label: "Test", cls: "bg-[#D1FAE5] text-[#065F46]", dot: "bg-[#059669]" };
+    if (/iterate/.test(title)) return { label: "Iterate", cls: "bg-[var(--color-muted-bg,#ede8e1)] text-[var(--color-muted,#6b7280)]", dot: "bg-[var(--color-accent,#857568)]" };
+    return null;
+  }, [task.title]);
+
+  // Compute "last event" from transcript ticks (polling). When transcript is
+  // still loading we fall back to launchedAt / createdAt.
+  const startedAt = task.launchedAt ?? task.firstJsonlObservedAt ?? task.createdAt;
+  const lastEventAt = task.lastJsonlSeenMtimeMs
+    ? new Date(task.lastJsonlSeenMtimeMs).toISOString()
+    : undefined;
+
+  // Best-effort model name — the parser strips the raw JSONL, so we scan
+  // the transcript text directly for the most recent `"model":"..."`
+  // occurrence (assistant events emit it at the message level). Harmless
+  // fallback to null when the transcript hasn't loaded yet.
+  const modelName = useMemo<string | null>(() => {
+    if (!transcript.content) return null;
+    const re = /"model"\s*:\s*"([^"]+)"/g;
+    let last: string | null = null;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(transcript.content)) !== null) {
+      last = m[1];
+    }
+    return last;
+  }, [transcript.content]);
 
   const flashCopied = useCallback((label: string) => {
     setCopiedLabel(label);
@@ -132,9 +245,6 @@ export function TaskDetailHeader({ task }: Props) {
   const handleResume = useCallback(async () => {
     setCtaError(null);
     try {
-      // Request a resume command. `resume: true` produces a --resume <uuid>
-      // command string in the server response — we COPY it to the
-      // clipboard (never spawn), satisfying DO-NOT #5.
       const { commands } = await launchMut.mutateAsync({
         taskId: task.taskId,
         resume: true,
@@ -152,20 +262,40 @@ export function TaskDetailHeader({ task }: Props) {
   }, [closeMut, task.taskId]);
 
   const handleDelete = useCallback(() => {
-    // Terminal / draft / launch_failed / jsonl_missing → delete without
-    // confirmation (there's no live CLI to worry about stranding).
-    if (isTerminalState(task.state) || task.state === "draft" || task.state === "launch_failed" || task.state === "jsonl_missing") {
+    if (
+      isTerminalState(task.state) ||
+      task.state === "draft" ||
+      task.state === "launch_failed" ||
+      task.state === "jsonl_missing"
+    ) {
       deleteMut.mutate(task.taskId);
       return;
     }
     setConfirmDeleteOpen(true);
   }, [deleteMut, task.state, task.taskId]);
 
+  const handleRename = useCallback(() => {
+    titleRef.current?.startEdit();
+  }, []);
+
+  const handleCopyUuid = useCallback(async () => {
+    try {
+      await writeClipboard(task.sessionUuid);
+      setUuidCopied(true);
+      if (uuidResetTimer.current) clearTimeout(uuidResetTimer.current);
+      uuidResetTimer.current = setTimeout(() => setUuidCopied(false), 1500);
+    } catch {
+      /* clipboard denied — no fatal path */
+    }
+  }, [task.sessionUuid]);
+
   return (
     <header
       className="relative flex w-full items-center gap-4 border-b border-[var(--color-border,#e0dbd4)] bg-[var(--color-surface,#ffffff)] px-6 py-3"
       data-testid="task-detail-header"
     >
+      {/* Inline keyframes so we do not have to touch index.css. */}
+      <style>{`@keyframes taskDetailPulseDot { 0%,100% { opacity: 1 } 50% { opacity: 0.4 } }`}</style>
       <Link
         to="/"
         className="text-[var(--color-muted,#6b7280)] transition hover:text-[var(--color-text,#1a1a1a)]"
@@ -176,21 +306,90 @@ export function TaskDetailHeader({ task }: Props) {
       </Link>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <EditableTaskTitle task={task} />
-        </div>
-        <div className="flex flex-wrap items-center gap-2 text-[11px]">
+        <nav
+          className="inline-flex items-center gap-1.5 text-[11px] text-[var(--color-muted,#6b7280)]"
+          aria-label="Breadcrumb"
+          data-testid="task-detail-breadcrumb"
+        >
+          <Link
+            to="/projects"
+            className="transition hover:text-[var(--color-text,#1a1a1a)]"
+          >
+            Projects
+          </Link>
+          <ChevronRight
+            size={10}
+            aria-hidden="true"
+            className="opacity-50"
+          />
+          <span className="truncate">{projectName}</span>
+        </nav>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          <EditableTaskTitle ref={titleRef} task={task} />
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-semibold ${STATE_BADGE_STYLES[task.state]}`}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${badge.bg} ${badge.fg}`}
             data-testid="task-state-badge"
           >
-            {task.state}
+            <span
+              className={`inline-block h-[7px] w-[7px] shrink-0 rounded-full ${badge.dot}`}
+              data-testid="task-detail-state-dot"
+              data-state={task.state}
+              style={
+                badge.pulse
+                  ? {
+                      animation: "taskDetailPulseDot 1.5s infinite",
+                    }
+                  : undefined
+              }
+            />
+            {badge.label}
           </span>
           <ProjectChipMenu task={task} />
         </div>
+
+        <div
+          className="flex flex-wrap items-center gap-2.5 font-mono text-[11px] text-[var(--color-muted,#6b7280)]"
+          data-testid="task-detail-subline"
+        >
+          {phase && (
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-[10px] px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-[0.04em] ${phase.cls}`}
+            >
+              <span
+                className={`inline-block h-[5px] w-[5px] rounded-full ${phase.dot}`}
+              />
+              {phase.label}
+            </span>
+          )}
+          {phase && (
+            <span
+              aria-hidden="true"
+              className="inline-block h-[10px] w-px bg-[var(--color-border,#e0dbd4)]"
+            />
+          )}
+          <span>
+            Started {formatRelativeTime(startedAt)}
+            {lastEventAt
+              ? ` · last event ${formatRelativeTime(lastEventAt)}`
+              : ""}
+          </span>
+          {modelName && (
+            <>
+              <span
+                aria-hidden="true"
+                className="inline-block h-[10px] w-px bg-[var(--color-border,#e0dbd4)]"
+              />
+              <span className="font-mono text-[11px]">{modelName}</span>
+            </>
+          )}
+        </div>
       </div>
 
-      <div className="flex items-center gap-2" data-testid="task-detail-actions">
+      <div
+        className="flex items-center gap-2"
+        data-testid="task-detail-actions"
+      >
         {cta === "launch" && (
           <button
             type="button"
@@ -245,9 +444,33 @@ export function TaskDetailHeader({ task }: Props) {
             <DropdownMenu.Content
               align="end"
               sideOffset={6}
-              className="z-50 min-w-[180px] rounded-lg border border-[var(--color-border,#e0dbd4)] bg-[var(--color-surface,#ffffff)] p-1 shadow-[var(--shadow-card,0_6px_30px_rgba(0,0,0,0.10))]"
+              className="z-50 min-w-[200px] rounded-lg border border-[var(--color-border,#e0dbd4)] bg-[var(--color-surface,#ffffff)] p-1 shadow-[var(--shadow-card,0_6px_30px_rgba(0,0,0,0.10))]"
               data-testid="task-detail-menu"
             >
+              <DropdownMenu.Item
+                onSelect={() => handleRename()}
+                className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[12px] text-[var(--color-text,#1a1a1a)] outline-none transition hover:bg-[var(--color-muted-bg,#ede8e1)]"
+                data-testid="task-detail-menu-rename"
+              >
+                <Pencil size={14} className="text-[var(--color-muted,#6b7280)]" />
+                Rename
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                onSelect={(e) => {
+                  // keep menu open briefly so the "Copied!" pip is visible
+                  e.preventDefault();
+                  void handleCopyUuid();
+                }}
+                className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[12px] text-[var(--color-text,#1a1a1a)] outline-none transition hover:bg-[var(--color-muted-bg,#ede8e1)]"
+                data-testid="task-detail-menu-copy-uuid"
+              >
+                <Clipboard
+                  size={14}
+                  className="text-[var(--color-muted,#6b7280)]"
+                />
+                {uuidCopied ? "Copied!" : "Copy session UUID"}
+              </DropdownMenu.Item>
+              <DropdownMenu.Separator className="my-1 h-px bg-[var(--color-border,#e0dbd4)]" />
               <DropdownMenu.Item
                 disabled={isTerminalState(task.state)}
                 onSelect={() => handleClose()}
@@ -262,7 +485,10 @@ export function TaskDetailHeader({ task }: Props) {
                 className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[12px] text-[var(--color-error,#DC2626)] outline-none transition hover:bg-[var(--color-error,#DC2626)]/10"
                 data-testid="task-detail-menu-delete"
               >
-                <Trash2 size={14} className="text-[var(--color-error,#DC2626)]" />
+                <Trash2
+                  size={14}
+                  className="text-[var(--color-error,#DC2626)]"
+                />
                 Delete task
               </DropdownMenu.Item>
               <DropdownMenu.Separator className="my-1 h-px bg-[var(--color-border,#e0dbd4)]" />

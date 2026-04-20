@@ -15,16 +15,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlertCircle,
   ChevronRight,
-  Folder,
-  FolderOpen,
   File as FileIcon,
-  FileText,
   FileCode,
   FileJson,
+  FileText,
+  Folder,
+  FolderOpen,
   ImageIcon,
-  AlertCircle,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 
 import {
@@ -138,6 +139,12 @@ export function FolderTree({ projectId, selectedPath, onSelect }: Props) {
     }
   }, [cache, loadDir]);
 
+  const refreshTree = useCallback(() => {
+    // Drop the whole cache so every level reloads fresh from the server.
+    setCache({});
+    void loadDir(ROOT);
+  }, [loadDir]);
+
   const toggleDir = useCallback(
     (path: string) => {
       setCache((prev) => {
@@ -246,7 +253,7 @@ export function FolderTree({ projectId, selectedPath, onSelect }: Props) {
       data-testid="folder-tree"
     >
       <div
-        className="flex items-center gap-2 border-b border-[var(--color-border,#e0dbd4)] px-4 py-2 text-[11px] font-semibold uppercase tracking-wider"
+        className="flex items-center gap-1 border-b border-[var(--color-border,#e0dbd4)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.08em]"
         style={{ color: "var(--color-muted, #6b7280)", background: "var(--color-bg, #f5f0eb)" }}
         data-testid="folder-tree-header"
       >
@@ -254,6 +261,16 @@ export function FolderTree({ projectId, selectedPath, onSelect }: Props) {
         {rootState?.loading && (
           <Loader2 size={12} className="animate-spin" aria-label="Loading" />
         )}
+        <button
+          type="button"
+          onClick={refreshTree}
+          className="inline-flex h-6 w-6 items-center justify-center rounded-[6px] text-[var(--color-muted,#6b7280)] transition hover:bg-[var(--color-muted-bg,#ede8e1)] hover:text-[var(--color-text,#1a1a1a)]"
+          title="Refresh tree"
+          aria-label="Refresh tree"
+          data-testid="folder-tree-refresh"
+        >
+          <RefreshCw size={12} aria-hidden="true" />
+        </button>
       </div>
       <div
         ref={treeRef}
@@ -352,6 +369,12 @@ export function FolderTree({ projectId, selectedPath, onSelect }: Props) {
           data-testid="folder-tree-hide-ignored-toggle"
         />
         <span className="cursor-pointer">Hide ignored entries</span>
+        <span
+          className="ml-auto text-[10px] italic opacity-70"
+          data-testid="folder-tree-saved-hint"
+        >
+          saved per project
+        </span>
       </label>
     </div>
   );
