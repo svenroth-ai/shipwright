@@ -1,4 +1,42 @@
 @import "tailwindcss";
+@import "highlight.js/styles/github-dark.css";
+
+/* Markdown body — minimal vertical rhythm so assistant text doesn't
+ * blow out the transcript bubble. Headings stay subtle. */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+  font-weight: 600;
+  margin: 0.4em 0 0.2em;
+}
+.markdown-body h1 { font-size: 1.1em; }
+.markdown-body h2 { font-size: 1.05em; }
+.markdown-body h3 { font-size: 1em; }
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0.3em 0;
+  padding-left: 1.2em;
+}
+.markdown-body li { margin: 0.15em 0; }
+.markdown-body table {
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  font-size: 0.9em;
+}
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid #d4d4d8;
+  padding: 0.25em 0.5em;
+}
+.markdown-body th { background: #f4f4f5; }
+.markdown-body blockquote {
+  border-left: 3px solid #d4d4d8;
+  padding-left: 0.6em;
+  color: #525252;
+  margin: 0.4em 0;
+}
+.markdown-body p:first-child { margin-top: 0; }
+.markdown-body p:last-child { margin-bottom: 0; }
 
 :root {
   --color-primary: #6b5e56;

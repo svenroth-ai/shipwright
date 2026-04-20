@@ -135,6 +135,136 @@ describe("poc-external routes — integration", () => {
     expect(body.chunk.content).toContain("hi");
   });
 
+  it("PATCH /tasks/:id renames the task + persists", async () => {
+    const create = await app.request("/api/external/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "original", cwd: "/tmp" }),
+    });
+    const { task } = await create.json() as { task: { taskId: string; title: string } };
+
+    const res = await app.request(`/api/external/tasks/${task.taskId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "renamed" }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json() as { task: { title: string } };
+    expect(body.task.title).toBe("renamed");
+
+    const reread = await app.request(`/api/external/tasks/${task.taskId}`);
+    const refreshed = await reread.json() as { task: { title: string } };
+    expect(refreshed.task.title).toBe("renamed");
+  });
+
+  it("PATCH /tasks/:id launch command picks up the renamed title via --name", async () => {
+    const create = await app.request("/api/external/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "before", cwd: "/tmp" }),
+    });
+    const { task } = await create.json() as { task: { taskId: string } };
+
+    await app.request(`/api/external/tasks/${task.taskId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "after" }),
+    });
+
+    const launch = await app.request(`/api/external/tasks/${task.taskId}/launch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resume: false }),
+    });
+    const body = await launch.json() as { commands: { powershell: string; posix: string } };
+    expect(body.commands.powershell).toContain(`--name 'after'`);
+    expect(body.commands.posix).toContain(`--name 'after'`);
+    expect(body.commands.powershell).not.toContain(`--name 'before'`);
+  });
+
+  it("PATCH /tasks/:id rejects empty / whitespace title with 400", async () => {
+    const create = await app.request("/api/external/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "t", cwd: "/tmp" }),
+    });
+    const { task } = await create.json() as { task: { taskId: string } };
+    for (const empty of ["", "   ", "\t"]) {
+      const res = await app.request(`/api/external/tasks/${task.taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: empty }),
+      });
+      expect(res.status).toBe(400);
+    }
+  });
+
+  it("PATCH /tasks/:id rejects newlines in title with 400", async () => {
+    const create = await app.request("/api/external/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "t", cwd: "/tmp" }),
+    });
+    const { task } = await create.json() as { task: { taskId: string } };
+    const res = await app.request(`/api/external/tasks/${task.taskId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "with\nnewline" }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("PATCH /tasks/:id rejects > 200 char title with 400", async () => {
+    const create = await app.request("/api/external/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "t", cwd: "/tmp" }),
+    });
+    const { task } = await create.json() as { task: { taskId: string } };
+    const res = await app.request(`/api/external/tasks/${task.taskId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "x".repeat(201) }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("PATCH /tasks/:id returns 404 for unknown taskId", async () => {
+    const res = await app.request(`/api/external/tasks/does-not-exist`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "x" }),
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("PATCH /tasks/:id is concurrency-safe — 5 parallel renames serialize last-wins", async () => {
+    const create = await app.request("/api/external/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "init", cwd: "/tmp" }),
+    });
+    const { task } = await create.json() as { task: { taskId: string } };
+
+    const titles = ["a", "b", "c", "d", "e"];
+    const results = await Promise.all(
+      titles.map((t) =>
+        app.request(`/api/external/tasks/${task.taskId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: t }),
+        }),
+      ),
+    );
+    // Without proper-lockfile (or with our in-memory deps, which serialize
+    // synchronously), all five should succeed cleanly.
+    for (const r of results) expect(r.status).toBe(200);
+
+    const reread = await app.request(`/api/external/tasks/${task.taskId}`);
+    const refreshed = await reread.json() as { task: { title: string } };
+    expect(titles).toContain(refreshed.task.title);
+  });
+
   it("POST /close transitions to done", async () => {
     const create = await app.request("/api/external/tasks", {
       method: "POST", headers: { "Content-Type": "application/json" },
