@@ -363,7 +363,7 @@ const PHASE_ICON: Record<
  *   ┌──┬──────────────────────────────────────────────────┐
  *   │▐▌│ [pill] build · 02-dashboard            2h ago   │
  *   │▐▌│ question text …                                  │
- *   │▐▌│ [Launch] [Copy resume]                           │
+ *   │▐▌│ [Launch] [Resume]                                │
  *   │▐▌│ [pill] JWT [pill] Session                        │
  *   │▐▌│ or [input your answer]  [Copy]                   │
  *   └──┴──────────────────────────────────────────────────┘
@@ -667,8 +667,8 @@ function InboxRow({
  * directly because that component couples the CTA mode to `task.state`
  * (draft → launch, otherwise → resume). The Inbox shows pending tool_use
  * questions that by definition come from active sessions, so the primary
- * CTA is almost always "Copy resume command" — but we also render an
- * explicit "Launch" action so users restarting from a terminated state
+ * CTA is almost always "Resume" — but we also render an explicit
+ * "Launch" action so users restarting from a terminated state
  * still have a path. Internally this uses the same `useLaunchTask`
  * mutation + clipboard helper.
  */
@@ -702,7 +702,7 @@ function InboxLaunchButton({
   };
 
   const Icon = mode === "launch" ? TerminalIcon : copied ? Copy : Rocket;
-  const idleLabel = mode === "launch" ? "Launch in Terminal" : "Copy Resume Command";
+  const idleLabel = mode === "launch" ? "Launch" : "Resume";
   const busyLabel = "Preparing…";
   const doneLabel = "Copied — paste into terminal";
   const label = launchMut.isPending ? busyLabel : copied ? doneLabel : idleLabel;

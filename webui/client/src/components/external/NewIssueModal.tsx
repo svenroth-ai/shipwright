@@ -451,12 +451,12 @@ export function NewIssueModal({
                 />
               </FieldLabel>
 
-              {/* Copy-command preview — live-updated, debounced 250ms. */}
+              {/* Command preview — live-updated, debounced 250ms. */}
               <FieldLabel
-                label="Copy-command preview"
+                label="Command preview"
                 hint={
                   mode === "new-task"
-                    ? "phase drives the slash command · only used when you click Launch"
+                    ? "phase drives the slash command · only used when you click Launch & Copy"
                     : "generated from .webui/actions.json · auto-updates"
                 }
               >
@@ -541,7 +541,7 @@ export function NewIssueModal({
                 disabled={!canSubmit}
                 className="inline-flex items-center gap-1.5 rounded-[var(--radius-button,8px)] bg-[var(--color-primary,#6b5e56)] px-4 py-1.5 text-[13px] font-semibold text-white hover:bg-[var(--color-primary-hover,#5a4f48)] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Launch
+                Launch & Copy
               </button>
             </div>
           </form>

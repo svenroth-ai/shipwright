@@ -1,3 +1,5 @@
+import { extractAskUserPayload } from "../lib/askUserPayload";
+
 /*
  * POC vertical slice — client-side session JSONL parser.
  *
@@ -288,38 +290,28 @@ export function toolUses(e: AssistantEvent): Array<{ id: string; name: string; i
 }
 
 /**
- * Safe getter for AskUserQuestion's first question + options. Tolerates
- * shape drift (missing parts, malformed input, non-array options) — the
- * UI shows a generic fallback rather than crashing the transcript view.
- *
- * Observed shape: { input: { parts: [{ question: string, options: string[] }] } }.
- * The fallback covers the case where Claude or a plugin emits a
- * differently-named field (e.g. `query`, `prompt`).
+ * Safe getter for AskUserQuestion's first question + options. Delegates to
+ * `extractAskUserPayload` so we accept every schema the real CLI emits —
+ * the nested `questions: [{ question, header, options: [{ label, ... }], multiSelect }]`
+ * form as well as the legacy flat `{ question, options }` form — and returns
+ * the first question's summary. Falls back to a generic placeholder when no
+ * readable question can be recovered.
  */
 export function askUserQuestionSummary(input: unknown): {
   question: string;
   options: string[];
   fallback: boolean;
 } {
-  if (!input || typeof input !== "object") {
+  const { parts } = extractAskUserPayload(input);
+  const first = parts[0];
+  if (!first || !first.question.trim()) {
     return { question: "Question format unreadable", options: [], fallback: true };
   }
-  const i = input as { parts?: unknown };
-  if (!Array.isArray(i.parts) || i.parts.length === 0) {
-    return { question: "Question format unreadable", options: [], fallback: true };
-  }
-  const first = i.parts[0];
-  if (!first || typeof first !== "object") {
-    return { question: "Question format unreadable", options: [], fallback: true };
-  }
-  const f = first as { question?: unknown; options?: unknown };
-  const question = typeof f.question === "string" && f.question.trim()
-    ? f.question
-    : "Question format unreadable";
-  const options = Array.isArray(f.options)
-    ? f.options.filter((o): o is string => typeof o === "string")
-    : [];
-  return { question, options, fallback: question === "Question format unreadable" };
+  return {
+    question: first.question,
+    options: first.options ?? [],
+    fallback: false,
+  };
 }
 
 /** Extracts tool_result blocks from a user event (Claude reports tool

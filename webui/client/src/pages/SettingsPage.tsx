@@ -20,8 +20,6 @@
  *     index.css are used.
  */
 
-import { Link } from "react-router-dom";
-
 export default function SettingsPage() {
   return (
     <div
@@ -56,18 +54,7 @@ export default function SettingsPage() {
               color: "var(--color-muted)",
             }}
           >
-            The pre-Plan-D'' settings (chat model, permission mode, phase
-            mapping) no longer apply to the external-launch architecture.
-            See{" "}
-            <Link
-              to="/diagnostics"
-              className="underline"
-              style={{ color: "var(--color-primary)" }}
-            >
-              Diagnostics
-            </Link>{" "}
-            for the CLI + launcher state; configure preferences in your
-            own Claude client.
+            Configure preferences in your own Claude client.
           </p>
         </div>
       </header>
@@ -167,18 +154,7 @@ export default function SettingsPage() {
             >
               &lt;project.path&gt;/.webui/actions.json
             </code>
-            . The in-app editor is coming in a future iterate — for now,
-            check the{" "}
-            <a
-              href="https://github.com/svenroth-ai/shipwright#actions-schema"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline"
-              style={{ color: "var(--color-primary)" }}
-            >
-              actions schema docs
-            </a>{" "}
-            for the shape.
+            . The in-app editor is coming in a future iterate.
           </p>
         </section>
       </div>

@@ -490,9 +490,12 @@ function renderBubble(event: ParsedEvent, resolved: Set<string>): ReactNode {
         <div
           className="max-w-[80%] px-3 py-2 text-sm"
           style={{
-            background: "var(--color-muted-bg, #ede8e1)",
+            // Darker than --color-muted-bg (too light per UAT 3.7d).
+            // --color-border (#e0dbd4) is the next-darker existing token;
+            // gives readable contrast without inventing a new token.
+            background: "var(--color-border, #e0dbd4)",
             color: "var(--color-text, #1a1a1a)",
-            border: "1px solid var(--color-border, #e0dbd4)",
+            border: "1px solid var(--color-accent, #857568)",
             borderRadius: "14px",
             borderTopRightRadius: "4px",
           }}

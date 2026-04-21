@@ -154,7 +154,10 @@ export function CommandPreviewPanel({
         borderLeft: `4px solid ${stripeColorFor(mode)}`,
       }}
     >
-      <pre className="whitespace-pre font-mono text-[12px] leading-[1.7] text-[#e6e6e6]">
+      <pre
+        className="font-mono text-[12px] leading-[1.7] text-[#e6e6e6]"
+        style={{ whiteSpace: "nowrap" }}
+      >
         {commandText}
       </pre>
     </div>

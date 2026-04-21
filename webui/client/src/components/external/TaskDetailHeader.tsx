@@ -7,14 +7,14 @@
  *   - title + state badge (pulsing dot, color-coded to state) + project chip
  *   - sub-line: phase tag · Started {ago} · last event {ago} · {model}
  *   - state-dependent primary CTA:
- *       pending / draft / awaiting_external_start → "Launch in Terminal"
- *       active / idle                             → "Copy Resume Command"
+ *       pending / draft / awaiting_external_start → "Launch"
+ *       active / idle                             → "Resume"
  *       done / launch_failed / jsonl_missing      → no CTA
  *   - 3-dots menu: Rename · Copy session UUID · Close · Delete · debug toggle
  *
  * Regression guards:
  *   - NO chat composer anywhere (CLAUDE.md DO-NOT #3).
- *   - "Copy Resume Command" COPIES TO CLIPBOARD — never spawns Claude
+ *   - "Resume" COPIES TO CLIPBOARD — never spawns Claude
  *     (DO-NOT #5).
  *   - Fork has moved to iterate 4 — menu must NOT surface it.
  */
@@ -397,14 +397,14 @@ export function TaskDetailHeader({ task }: Props) {
             disabled={launchMut.isPending}
             className="inline-flex items-center gap-2 rounded-[var(--radius-button,8px)] bg-[var(--color-primary,#6b5e56)] px-4 py-1.5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-[var(--color-primary-hover,#5a4f48)] disabled:opacity-60"
             data-testid="cta-launch-in-terminal"
-            aria-label="Launch in Terminal"
+            aria-label="Launch command — copy to clipboard"
           >
             <TerminalIcon size={14} />
             {launchMut.isPending
               ? "Preparing…"
               : copiedLabel === "Launch command copied"
               ? "Copied — paste into terminal"
-              : "Launch in Terminal"}
+              : "Launch"}
           </button>
         )}
         {cta === "resume" && (
@@ -414,7 +414,7 @@ export function TaskDetailHeader({ task }: Props) {
             disabled={launchMut.isPending}
             className="inline-flex items-center gap-2 rounded-[var(--radius-button,8px)] bg-[var(--color-primary,#6b5e56)] px-4 py-1.5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-[var(--color-primary-hover,#5a4f48)] disabled:opacity-60"
             data-testid="cta-copy-resume-command"
-            aria-label="Copy resume command"
+            aria-label="Resume command — copy to clipboard"
           >
             {copiedLabel === "Resume command copied" ? (
               <Copy size={14} />
@@ -425,7 +425,7 @@ export function TaskDetailHeader({ task }: Props) {
               ? "Preparing…"
               : copiedLabel === "Resume command copied"
               ? "Copied — paste into terminal"
-              : "Copy Resume Command"}
+              : "Resume"}
           </button>
         )}
 

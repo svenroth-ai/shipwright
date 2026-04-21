@@ -3,7 +3,7 @@
  *
  * Coverage:
  *  - CTA state machine (O31): pending/draft/awaiting_external_start →
- *    Launch; active/idle → Copy Resume Command; done → no CTA.
+ *    Launch; active/idle → Resume; done → no CTA.
  *  - State transitions re-render CTA without remount.
  *  - 3-dots menu surfaces ONLY Close + Delete (+ debug toggle) — fork is
  *    NOT present (deferred to iterate 4).
@@ -98,7 +98,7 @@ beforeEach(() => {
 });
 
 describe("TaskDetailHeader — CTA state machine (O31)", () => {
-  it("draft → renders 'Launch in Terminal' CTA", () => {
+  it("draft → renders 'Launch' CTA", () => {
     renderHeader(makeTask({ state: "draft" }));
     expect(screen.getByTestId("cta-launch-in-terminal")).toBeTruthy();
     expect(screen.queryByTestId("cta-copy-resume-command")).toBeNull();
@@ -109,13 +109,13 @@ describe("TaskDetailHeader — CTA state machine (O31)", () => {
     expect(screen.getByTestId("cta-launch-in-terminal")).toBeTruthy();
   });
 
-  it("active → 'Copy Resume Command' CTA", () => {
+  it("active → 'Resume' CTA", () => {
     renderHeader(makeTask({ state: "active" }));
     expect(screen.getByTestId("cta-copy-resume-command")).toBeTruthy();
     expect(screen.queryByTestId("cta-launch-in-terminal")).toBeNull();
   });
 
-  it("idle → 'Copy Resume Command' CTA", () => {
+  it("idle → 'Resume' CTA", () => {
     renderHeader(makeTask({ state: "idle" }));
     expect(screen.getByTestId("cta-copy-resume-command")).toBeTruthy();
   });

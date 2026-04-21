@@ -30,7 +30,7 @@
  *     wrapper + inner controls (menu, launch pill, start pill) suppress
  *     their click propagation so they don't double-fire the navigate.
  *   - `TerminalLaunchButton` is now rendered with `showLabel` so the hover
- *     affordance reads as "Copy resume" / "Launch" instead of a bare icon.
+ *     affordance reads as "Resume" / "Launch" instead of a bare icon.
  *
  * Preserved testids:
  *   task-card-<id>, task-card-open-<id>, task-card-state-<id>,

@@ -82,7 +82,7 @@ export function TerminalLaunchButton({
   }
 
   if (variant === "compact") {
-    const label = wantResume ? "Copy resume" : "Launch";
+    const label = wantResume ? "Resume" : "Launch";
     return (
       <button
         type="button"
