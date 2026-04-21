@@ -9,6 +9,9 @@
  *   primary  — full-size button: copy + show "Copied" + announce.
  *   compact  — icon-only with tooltip: copy.
  *   inline   — link-style: navigate to TaskDetail (then user copies there).
+ *   solid    — 3.7d-b1: always-visible brown-solid button (label + icon,
+ *              13px / 600 weight). Used on TaskCard for Launch + Resume
+ *              CTAs and anywhere else we want a primary action inline.
  *
  * Platform detection is browser-side: PowerShell on Windows, POSIX
  * elsewhere. Single button per platform — the cmd.exe variant from the
@@ -23,7 +26,7 @@ import { Copy, Terminal as TerminalIcon } from "lucide-react";
 import type { CopyCommandForms, ExternalTask } from "../../lib/externalApi";
 import { useLaunchTask } from "../../hooks/useLaunchTask";
 
-export type TerminalLaunchVariant = "primary" | "compact" | "inline";
+export type TerminalLaunchVariant = "primary" | "compact" | "inline" | "solid";
 
 interface Props {
   task: ExternalTask;
@@ -105,6 +108,38 @@ export function TerminalLaunchButton({
         {showLabel && (
           <span className="leading-none">{copied ? "Copied" : label}</span>
         )}
+      </button>
+    );
+  }
+
+  if (variant === "solid") {
+    // Brown-solid primary action. Used on TaskCards (Launch + Resume pair
+    // always-visible, 13px / 600 weight per mockup). Self-describing: the
+    // label always includes the mode, and a transient "Copied" state swaps
+    // in for 1.5s after click.
+    const label = wantResume ? "Resume" : "Launch";
+    return (
+      <button
+        type="button"
+        onClick={(ev) => {
+          ev.stopPropagation();
+          void copy();
+        }}
+        disabled={launchMut.isPending}
+        className={
+          "inline-flex items-center justify-center gap-1.5 " +
+          "bg-[var(--color-primary)] px-3 py-[5px] text-[13px] font-semibold text-white " +
+          "transition-colors hover:bg-[var(--color-primary-hover)] " +
+          "disabled:cursor-not-allowed disabled:opacity-60 " +
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-surface)]"
+        }
+        style={{ borderRadius: "var(--radius-button)" }}
+        title={copied ? "Copied!" : `Copy ${label} command`}
+        aria-label={`${label} command`}
+        data-testid={`terminal-launch-solid-${wantResume ? "resume" : "launch"}`}
+      >
+        <TerminalIcon size={13} />
+        <span className="leading-none">{copied ? "Copied" : label}</span>
       </button>
     );
   }

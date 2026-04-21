@@ -1,24 +1,43 @@
 /*
- * Compact List view for the TaskBoard.
+ * Table-backed List view for the TaskBoard.
  *
- * Iterate 3 remediation v2 — Surface 1 (2026-04-21). Minimal first pass:
- * one row per task, sorted by recency (lastJsonlSeenMtimeMs desc →
- * launchedAt → createdAt). Columns: title, state pill, commit marker,
- * timestamp, actions menu + launch pill. Matches the mockup intent
- * ("Board / List toggle") without rebuilding the entire kanban shell.
+ * Iterate 3 remediation v2 — Surface 1 (2026-04-21): first pass was a
+ * compact row list with a grid layout.
  *
- * Visual rules reuse the same warm-beige tokens as TaskCard — no new
- * tokens, no neutral or gray Tailwind utilities.
+ * Iterate 3.7d-b1 (2026-04-22) rebuild:
+ *   - Proper semantic <table> with <thead>/<tbody>.
+ *   - Columns: Title · State · Phase · Commit · Updated · Actions.
+ *   - Sortable headers:
+ *       - "Title"   → alphabetical toggle (asc/desc).
+ *       - "Updated" → default; last-activity desc by default, toggle on click.
+ *     The other headers are static labels (non-sortable for now — no obvious
+ *     meaningful sort for State / Phase / Commit beyond bucket-grouping).
+ *   - Full row click → TaskDetail. Actions column + menu stops propagation.
+ *   - Phase column: no phase field on ExternalTask yet (ADR-045 — deferred);
+ *     renders `—` until the phase projection lands.
+ *   - Commit column: short sessionUuid slice as a stand-in for a future
+ *     per-task commit field; draft tasks render `—` because a never-
+ *     launched task has no meaningful commit to show.
+ *
+ * Tokens only from index.css; no neutral-* / gray-* utilities. Same visual
+ * vocabulary as TaskCard so the two views feel like the same surface in
+ * different layouts.
  *
  * Testids:
- *   task-list-view (wrapper), task-list-row-<id>, task-list-title-<id>,
- *   task-list-menu-<id>, task-list-close-<id>, task-list-delete-<id>.
+ *   task-list-view, task-list-table,
+ *   task-list-header-<column>, task-list-row-<taskId>,
+ *   task-list-cell-<taskId>-<column>,
+ *   task-list-title-<id>, task-list-menu-<id>,
+ *   task-list-close-<id>, task-list-delete-<id>,
+ *   task-list-launch-<id>.
  */
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Circle,
   Loader,
   MoreHorizontal,
@@ -41,12 +60,40 @@ const NONTERMINAL_STATES: ExternalTaskState[] = [
   "awaiting_external_start",
 ];
 
+type SortKey = "title" | "updated";
+type SortDir = "asc" | "desc";
+
 interface Props {
   tasks: ExternalTask[];
 }
 
 export function TaskList({ tasks }: Props) {
-  const sorted = [...tasks].sort(byRecency);
+  const [sortKey, setSortKey] = useState<SortKey>("updated");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const sorted = useMemo(() => {
+    const arr = [...tasks];
+    if (sortKey === "title") {
+      arr.sort((a, b) =>
+        (a.title ?? "").localeCompare(b.title ?? "", undefined, {
+          sensitivity: "base",
+        }),
+      );
+    } else {
+      arr.sort((a, b) => lastActivityMs(a) - lastActivityMs(b));
+    }
+    if (sortDir === "desc") arr.reverse();
+    return arr;
+  }, [tasks, sortKey, sortDir]);
+
+  function onHeaderClick(next: SortKey) {
+    if (sortKey === next) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(next);
+      setSortDir(next === "title" ? "asc" : "desc");
+    }
+  }
 
   return (
     <div
@@ -55,36 +102,129 @@ export function TaskList({ tasks }: Props) {
     >
       <div
         className={
-          "overflow-hidden rounded-[var(--radius-card)] " +
+          "mx-auto w-full max-w-[1600px] overflow-hidden rounded-[var(--radius-card)] " +
           "border border-[var(--color-border)] bg-[var(--color-surface)]"
         }
       >
-        <div
-          className={
-            "grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3 " +
-            "border-b border-[var(--color-border)] bg-[var(--color-muted-bg)] " +
-            "px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--color-muted)]"
-          }
+        <table
+          data-testid="task-list-table"
+          className="w-full border-collapse text-left text-[13px]"
         >
-          <span>Title</span>
-          <span>State</span>
-          <span className="hidden md:block">Commit</span>
-          <span>Updated</span>
-          <span className="sr-only">Actions</span>
-        </div>
-        {sorted.length === 0 ? (
-          <div className="px-4 py-8 text-center text-[13px] text-[var(--color-muted)]">
-            No tasks match the current filter.
-          </div>
-        ) : (
-          <ul className="divide-y divide-[var(--color-border)]">
-            {sorted.map((t) => (
-              <TaskListRow key={t.taskId} task={t} />
-            ))}
-          </ul>
-        )}
+          <thead>
+            <tr
+              className={
+                "border-b border-[var(--color-border)] bg-[var(--color-muted-bg)] " +
+                "text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--color-muted)]"
+              }
+            >
+              <SortableTh
+                col="title"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onClick={onHeaderClick}
+              >
+                Title
+              </SortableTh>
+              <th
+                data-testid="task-list-header-state"
+                className="whitespace-nowrap px-4 py-2"
+              >
+                State
+              </th>
+              <th
+                data-testid="task-list-header-phase"
+                className="whitespace-nowrap px-4 py-2"
+              >
+                Phase
+              </th>
+              <th
+                data-testid="task-list-header-commit"
+                className="hidden whitespace-nowrap px-4 py-2 md:table-cell"
+              >
+                Commit
+              </th>
+              <SortableTh
+                col="updated"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onClick={onHeaderClick}
+              >
+                Updated
+              </SortableTh>
+              <th
+                data-testid="task-list-header-actions"
+                className="w-px whitespace-nowrap px-4 py-2 text-right"
+              >
+                <span className="sr-only">Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="px-4 py-8 text-center text-[13px] text-[var(--color-muted)]"
+                >
+                  No tasks match the current filter.
+                </td>
+              </tr>
+            ) : (
+              sorted.map((t) => <TaskListRow key={t.taskId} task={t} />)
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
+  );
+}
+
+interface SortableThProps {
+  col: SortKey;
+  sortKey: SortKey;
+  sortDir: SortDir;
+  onClick: (next: SortKey) => void;
+  children: React.ReactNode;
+}
+
+function SortableTh({
+  col,
+  sortKey,
+  sortDir,
+  onClick,
+  children,
+}: SortableThProps) {
+  const active = sortKey === col;
+  return (
+    <th
+      data-testid={`task-list-header-${col}`}
+      data-sort-active={active || undefined}
+      data-sort-dir={active ? sortDir : undefined}
+      className="whitespace-nowrap px-4 py-2"
+    >
+      <button
+        type="button"
+        onClick={() => onClick(col)}
+        className={
+          "inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.04em] " +
+          (active
+            ? "text-[var(--color-text)]"
+            : "text-[var(--color-muted)] hover:text-[var(--color-text)]")
+        }
+        aria-label={`Sort by ${String(children)} ${active && sortDir === "asc" ? "descending" : "ascending"}`}
+      >
+        <span>{children}</span>
+        {active ? (
+          sortDir === "asc" ? (
+            <ChevronUp size={12} />
+          ) : (
+            <ChevronDown size={12} />
+          )
+        ) : (
+          <ChevronDown size={12} className="opacity-40" />
+        )}
+      </button>
+    </th>
   );
 }
 
@@ -116,7 +256,7 @@ function TaskListRow({ task }: { task: ExternalTask }) {
 
   return (
     <>
-      <li
+      <tr
         role="button"
         tabIndex={0}
         onClick={go}
@@ -127,86 +267,115 @@ function TaskListRow({ task }: { task: ExternalTask }) {
           }
         }}
         className={
-          "grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-3 px-4 py-3 " +
-          "text-[13px] transition-colors hover:bg-[var(--color-muted-bg)] " +
-          "focus:outline-none focus-visible:bg-[var(--color-muted-bg)] cursor-pointer"
+          "cursor-pointer border-t border-[var(--color-border)] " +
+          "transition-colors hover:bg-[var(--color-muted-bg)] " +
+          "focus:outline-none focus-visible:bg-[var(--color-muted-bg)]"
         }
         data-testid={`task-list-row-${task.taskId}`}
         data-task-state={task.state}
       >
-        <div className="flex min-w-0 items-center gap-2">
-          <Icon className={iconClass(task.state)} size={14} />
-          <span
-            className={
-              "truncate font-medium " +
-              (isDone
-                ? "text-[var(--color-muted)]"
-                : "text-[var(--color-text)]")
-            }
-            data-testid={`task-list-title-${task.taskId}`}
-          >
-            {task.title}
-          </span>
-        </div>
-        <StatePill state={task.state} />
-        <span
-          className="hidden font-mono text-[11px] text-[var(--color-muted)] opacity-75 md:inline"
+        <td
+          className="min-w-0 px-4 py-3"
+          data-testid={`task-list-cell-${task.taskId}-title`}
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            <Icon className={iconClass(task.state)} size={14} />
+            <span
+              className={
+                "truncate font-medium " +
+                (isDone
+                  ? "text-[var(--color-muted)]"
+                  : "text-[var(--color-text)]")
+              }
+              data-testid={`task-list-title-${task.taskId}`}
+            >
+              {task.title}
+            </span>
+          </div>
+        </td>
+        <td
+          className="whitespace-nowrap px-4 py-3"
+          data-testid={`task-list-cell-${task.taskId}-state`}
+        >
+          <StatePill state={task.state} />
+        </td>
+        <td
+          className="whitespace-nowrap px-4 py-3 text-[11px] text-[var(--color-muted)]"
+          data-testid={`task-list-cell-${task.taskId}-phase`}
+        >
+          {/* ExternalTask has no `phase` field yet (ADR-045 — deferred).
+              Render an em-dash placeholder so the table keeps a stable
+              column width across states. */}
+          —
+        </td>
+        <td
+          className="hidden whitespace-nowrap px-4 py-3 font-mono text-[11px] text-[var(--color-muted)] opacity-75 md:table-cell"
+          data-testid={`task-list-cell-${task.taskId}-commit`}
         >
           {isDraft ? "—" : commitMarker}
-        </span>
-        <span
-          className="whitespace-nowrap text-[11px] text-[var(--color-muted)]"
+        </td>
+        <td
+          className="whitespace-nowrap px-4 py-3 text-[11px] text-[var(--color-muted)]"
           title={stamp?.full}
+          data-testid={`task-list-cell-${task.taskId}-updated`}
         >
           {stamp?.short ?? "—"}
-        </span>
-        <div className="flex shrink-0 items-center gap-1">
-          {(isDraft || isInProgress) && (
-            <span
-              onClick={(ev) => ev.stopPropagation()}
-              data-testid={`task-list-launch-${task.taskId}`}
-            >
-              <TerminalLaunchButton task={task} variant="compact" showLabel />
-            </span>
-          )}
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-              <button
-                type="button"
-                onClick={(ev) => ev.stopPropagation()}
-                className="rounded p-1 text-[var(--color-muted)] hover:bg-[var(--color-muted-bg)] hover:text-[var(--color-text)]"
-                aria-label="Task actions"
-                data-testid={`task-list-menu-${task.taskId}`}
-              >
-                <MoreHorizontal size={14} />
-              </button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content
-                align="end"
-                sideOffset={4}
-                className="z-50 min-w-[160px] rounded-[var(--radius-button)] border border-[var(--color-border)] bg-[var(--color-surface)] p-1 text-sm shadow-[var(--shadow-card)]"
-              >
-                <DropdownMenu.Item
-                  onSelect={() => closeMut.mutate(task.taskId)}
-                  disabled={task.state === "done"}
-                  className="cursor-pointer rounded px-2 py-1 text-[var(--color-text)] outline-none data-[highlighted]:bg-[var(--color-muted-bg)] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40"
-                  data-testid={`task-list-close-${task.taskId}`}
+        </td>
+        <td
+          className="whitespace-nowrap px-4 py-3 text-right"
+          data-testid={`task-list-cell-${task.taskId}-actions`}
+          onClick={(ev) => ev.stopPropagation()}
+          onKeyDown={(ev) => ev.stopPropagation()}
+        >
+          <div className="flex shrink-0 items-center justify-end gap-1">
+            {(isDraft || isInProgress) && (
+              <span data-testid={`task-list-launch-${task.taskId}`}>
+                <TerminalLaunchButton
+                  task={task}
+                  variant="compact"
+                  showLabel
+                />
+              </span>
+            )}
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <button
+                  type="button"
+                  onClick={(ev) => ev.stopPropagation()}
+                  className="rounded p-1 text-[var(--color-muted)] hover:bg-[var(--color-muted-bg)] hover:text-[var(--color-text)]"
+                  aria-label="Task actions"
+                  data-testid={`task-list-menu-${task.taskId}`}
                 >
-                  Close (mark done)
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onSelect={onDeleteClick}
-                  className="cursor-pointer rounded px-2 py-1 text-[var(--color-error)] outline-none data-[highlighted]:bg-[var(--color-error-bg)]"
-                  data-testid={`task-list-delete-${task.taskId}`}
+                  <MoreHorizontal size={14} />
+                </button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content
+                  align="end"
+                  sideOffset={4}
+                  className="z-50 min-w-[160px] rounded-[var(--radius-button)] border border-[var(--color-border)] bg-[var(--color-surface)] p-1 text-sm shadow-[var(--shadow-card)]"
                 >
-                  Delete (remove from board)
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>
-        </div>
-      </li>
+                  <DropdownMenu.Item
+                    onSelect={() => closeMut.mutate(task.taskId)}
+                    disabled={task.state === "done"}
+                    className="cursor-pointer rounded px-2 py-1 text-[var(--color-text)] outline-none data-[highlighted]:bg-[var(--color-muted-bg)] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40"
+                    data-testid={`task-list-close-${task.taskId}`}
+                  >
+                    Close (mark done)
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onSelect={onDeleteClick}
+                    className="cursor-pointer rounded px-2 py-1 text-[var(--color-error)] outline-none data-[highlighted]:bg-[var(--color-error-bg)]"
+                    data-testid={`task-list-delete-${task.taskId}`}
+                  >
+                    Delete (remove from board)
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+          </div>
+        </td>
+      </tr>
 
       <ConfirmDeleteDialog
         open={confirmDelete}
@@ -291,13 +460,21 @@ function iconClass(state: ExternalTaskState): string {
 function lastActivity(
   task: ExternalTask,
 ): { short: string; full: string } | null {
-  const ms =
-    task.lastJsonlSeenMtimeMs ?? toMs(task.launchedAt) ?? toMs(task.createdAt);
+  const ms = lastActivityMs(task);
   if (!ms) return null;
   const d = new Date(ms);
   if (Number.isNaN(d.getTime())) return null;
   const ago = relative(Date.now() - ms);
   return { short: ago, full: `${ago} (${d.toISOString()})` };
+}
+
+function lastActivityMs(task: ExternalTask): number {
+  return (
+    task.lastJsonlSeenMtimeMs ??
+    toMs(task.launchedAt) ??
+    toMs(task.createdAt) ??
+    0
+  );
 }
 
 function toMs(iso: string | undefined): number | null {
@@ -311,12 +488,4 @@ function relative(deltaMs: number): string {
   if (deltaMs < 3_600_000) return `${Math.floor(deltaMs / 60_000)}m ago`;
   if (deltaMs < 86_400_000) return `${Math.floor(deltaMs / 3_600_000)}h ago`;
   return `${Math.floor(deltaMs / 86_400_000)}d ago`;
-}
-
-function byRecency(a: ExternalTask, b: ExternalTask): number {
-  const am =
-    a.lastJsonlSeenMtimeMs ?? toMs(a.launchedAt) ?? toMs(a.createdAt) ?? 0;
-  const bm =
-    b.lastJsonlSeenMtimeMs ?? toMs(b.launchedAt) ?? toMs(b.createdAt) ?? 0;
-  return bm - am;
 }

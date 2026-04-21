@@ -14,22 +14,21 @@
  *     action id) + label (500) + kbd shortcut (mono badge). Icon palette
  *     is data-driven off the action id, not the `kind`, so the visual slot
  *     matches the design without widening the ActionDefinition type.
- *   - Tooltip stays on the caret only.
  *
- * Iterate 3 remediation v2 — Surface 1 (2026-04-21):
- *   - Dropped the per-item description subtitle to tighten the menu width.
- *     Previously the subtitles forced the dropdown to min-width 260px and
- *     still wrapped on narrow viewports. Description text is preserved via
- *     a native `title` attribute on the item so a hovering user still sees
- *     the long form.
- *   - min-width shrunk from 260px → 220px.
+ * Iterate 3.7d-b1 (2026-04-22):
+ *   - Re-introduced the per-item descriptive subtitle under the primary
+ *     label (matches mockup lines 926–950 — "Standalone task", "Full SDLC",
+ *     "Lightweight change"). dropdown widens back to 280px.
+ *   - Removed the `i`-shortcut Tooltip from the caret — Sven's UAT feedback
+ *     was that keyboard-shortcut tooltips on the caret are noise. The
+ *     shortcut still works globally (hooked up in TaskBoardPage).
+ *   - Subtitle text is purely descriptive — NOT wired to any shortcut.
  *
  * Regression guard: NO `c` / `Shift+C` binding. Tests assert the absence.
  */
 
 import { useState } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import * as Tooltip from "@radix-ui/react-tooltip";
 import {
   ChevronDown,
   CheckSquare,
@@ -54,28 +53,40 @@ interface ActionVisual {
   fg: string;
   icon: React.ComponentType<{ size?: number }>;
   kbd: string;
+  subtitle: string;
 }
 
 // Per-action visual slot — amber/purple/emerald tiles per mockup
 // .new-option-icon.{task,pipeline,iterate} (lines 345–347).
+//
+// Subtitle copy locked per kanban-with-projects.html mockup lines 926-950:
+//   - new-task:     "Standalone task — no pipeline, no copy-command."
+//   - new-pipeline: "Full SDLC from brief to deploy."
+//   - new-iterate:  "Lightweight change on a finished project."
+// We trimmed the mockup's code-literal hints ("Generates claude /shipwright-run …")
+// since those leak implementation into a UI tooltip. The trimmed forms still
+// carry the same semantic distinctions (standalone vs. pipeline vs. iterate).
 const ACTION_VISUALS: Record<string, ActionVisual> = {
   "new-task": {
     bg: "#FEF3C7", // amber-100
     fg: "#92400E", // amber-800 ≈ --color-warning-text
     icon: CheckSquare,
     kbd: "\u2318 \u21E7 T", // ⌘ ⇧ T
+    subtitle: "Quick ad-hoc session — no pipeline, no copy-command.",
   },
   "new-pipeline": {
     bg: "#F3E8FF", // purple-100 ≈ --color-purple-bg
     fg: "#6B21A8", // purple-800 ≈ --color-purple-text
     icon: Workflow,
     kbd: "\u2318 \u21E7 P",
+    subtitle: "Full SDLC from brief to deploy.",
   },
   "new-iterate": {
     bg: "#D1FAE5", // emerald-100 ≈ --color-success-bg
     fg: "#065F46", // emerald-800 ≈ --color-success-text
     icon: RotateCw,
     kbd: "\u2318 \u21E7 I",
+    subtitle: "Lightweight change on a finished project.",
   },
 };
 
@@ -84,6 +95,7 @@ const DEFAULT_VISUAL: ActionVisual = {
   fg: "var(--color-muted)",
   icon: Plus,
   kbd: "",
+  subtitle: "",
 };
 
 export function CreateMenuSplitButton({
@@ -112,53 +124,37 @@ export function CreateMenuSplitButton({
         <span>{primary?.label ?? "New"}</span>
       </button>
       <DropdownMenu.Root open={open} onOpenChange={setOpen}>
-        <Tooltip.Provider delayDuration={200}>
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-              <DropdownMenu.Trigger asChild>
-                <button
-                  type="button"
-                  disabled={disabled}
-                  data-testid="create-menu-caret"
-                  aria-label="More create options"
-                  className="inline-flex items-center justify-center bg-[var(--color-primary-hover)] px-2 text-white transition-colors hover:bg-[#443a34] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <ChevronDown size={12} />
-                </button>
-              </DropdownMenu.Trigger>
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Content
-                sideOffset={4}
-                className="rounded bg-[var(--color-text)] px-2 py-1 text-[11px] text-white shadow"
-              >
-                Press{" "}
-                <kbd className="rounded bg-white/15 px-1 font-mono text-[10px]">
-                  i
-                </kbd>{" "}
-                to open
-                <Tooltip.Arrow className="fill-[var(--color-text)]" />
-              </Tooltip.Content>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        </Tooltip.Provider>
+        <DropdownMenu.Trigger asChild>
+          <button
+            type="button"
+            disabled={disabled}
+            data-testid="create-menu-caret"
+            aria-label="More create options"
+            className="inline-flex items-center justify-center bg-[var(--color-primary-hover)] px-2 text-white transition-colors hover:bg-[#443a34] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <ChevronDown size={12} />
+          </button>
+        </DropdownMenu.Trigger>
 
         <DropdownMenu.Portal>
           <DropdownMenu.Content
             align="end"
             sideOffset={6}
-            className="z-50 min-w-[220px] rounded-[var(--radius-button)] border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-[var(--shadow-card)]"
+            className="z-50 min-w-[280px] rounded-[var(--radius-button)] border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-[var(--shadow-card)]"
             data-testid="create-menu-dropdown"
           >
             {actions.map((a) => {
               const v = ACTION_VISUALS[a.id] ?? DEFAULT_VISUAL;
               const Icon = v.icon;
+              // Subtitle: prefer the mockup-locked copy; fall back to whatever
+              // the server-provided action description is (keeps custom
+              // .webui/actions.json configurations usable).
+              const subtitle = v.subtitle || a.description || "";
               return (
                 <DropdownMenu.Item
                   key={a.id}
                   data-testid={`create-menu-item-${a.id}`}
                   onSelect={() => onSelect(a)}
-                  title={a.description}
                   className="flex cursor-pointer items-center gap-2.5 rounded-[6px] px-2.5 py-2 text-[13px] text-[var(--color-text)] outline-none focus:bg-[var(--color-muted-bg)] hover:bg-[var(--color-muted-bg)]"
                 >
                   <span
@@ -168,11 +164,24 @@ export function CreateMenuSplitButton({
                   >
                     <Icon size={14} />
                   </span>
-                  <span className="flex-1 truncate text-[13px] font-medium leading-tight text-[var(--color-text)]">
-                    {a.label}
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span
+                      className="truncate text-[13px] font-medium leading-tight text-[var(--color-text)]"
+                      data-testid={`create-menu-item-label-${a.id}`}
+                    >
+                      {a.label}
+                    </span>
+                    {subtitle && (
+                      <span
+                        className="truncate text-[11px] leading-[1.35] text-[var(--color-muted)]"
+                        data-testid={`create-menu-item-subtitle-${a.id}`}
+                      >
+                        {subtitle}
+                      </span>
+                    )}
                   </span>
                   {v.kbd && (
-                    <span className="ml-auto shrink-0 rounded-[3px] border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-[1px] font-mono text-[10px] text-[var(--color-muted)]">
+                    <span className="ml-auto shrink-0 self-start rounded-[3px] border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-[1px] font-mono text-[10px] text-[var(--color-muted)]">
                       {v.kbd}
                     </span>
                   )}

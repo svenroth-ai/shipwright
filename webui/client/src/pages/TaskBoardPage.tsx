@@ -21,6 +21,13 @@
  *     stripes unchanged (3px), draft stripe color tightened to a
  *     perceptible shade against the warm-beige page bg.
  *
+ * Iterate 3.7d-b1 (2026-04-22):
+ *   - Board centered inside a 1600px max-width container so ultra-wide
+ *     monitors get symmetric whitespace instead of a left-anchored board.
+ *     Board still fills the width up to 1600px — no regression on 1280px.
+ *   - Column gutter bumped 20 → 32px so the 3-column layout breathes.
+ *   - List view rebuilt as a proper <table> (moved into TaskList.tsx).
+ *
  * Preserved testids:
  *   task-board-page, task-board-header, task-board-columns,
  *   column-draft, column-in-progress, column-done,
@@ -28,6 +35,9 @@
  * New testids (iterate 3.7c-1):
  *   view-toggle-root, view-toggle-board, view-toggle-list,
  *   task-list-view, task-list-row-<id>.
+ * Iterate 3.7d-b1: the kanban columns container also carries
+ *   `data-board-container="true"` as a style hook (no new testid needed —
+ *   the existing `task-board-columns` testid remains the board root).
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -188,15 +198,21 @@ export default function TaskBoardPage() {
         />
       </header>
 
-      {/* Body — board (kanban) or list */}
+      {/* Body — board (kanban) or list.
+          The kanban body is wrapped in a 1600px max-width container so
+          ultra-wide monitors get symmetric whitespace on both sides while
+          staying full-bleed at ≤1600px. `.page-container` is intentionally
+          NOT reused (it caps at 1280px — too narrow for 3 × 320px
+          columns + 2 × 32px gutters = 1024px bare minimum + gutters). */}
       {isLoading ? (
         <div className="p-6 text-sm text-[var(--color-muted)]">Loading…</div>
       ) : view === "list" ? (
         <TaskList tasks={filteredTasks} />
       ) : (
         <div
-          className="flex flex-1 items-start gap-5 overflow-x-auto overflow-y-hidden px-7 py-5"
+          className="mx-auto flex w-full max-w-[1600px] flex-1 items-start gap-8 overflow-x-auto overflow-y-hidden px-7 py-5"
           data-testid="task-board-columns"
+          data-board-container="true"
         >
           <Column
             title="Backlog"

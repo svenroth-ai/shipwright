@@ -12,9 +12,9 @@
  *   └─────────────────────────────────────────────┘
  *
  * Per-column card variants:
- *   - Draft  → Start pill (green) replaces "…" menu on the footer-right.
- *   - In-progress → Copy-resume pill (amber, shown on hover) + mono commit.
- *   - Done → muted title, done-check instead of testcount.
+ *   - Draft  → Launch button only (can't resume a never-launched task).
+ *   - In-progress → Launch + Resume always-visible (brown solid).
+ *   - Done → neither launch nor resume (done-check indicator only).
  *
  * Sizing locks (explicit, not token) per B1 spec:
  *   padding:       12px 14px
@@ -29,13 +29,26 @@
  *     item (ADR-035). Keyboard support via Enter / Space on the role=button
  *     wrapper + inner controls (menu, launch pill, start pill) suppress
  *     their click propagation so they don't double-fire the navigate.
- *   - `TerminalLaunchButton` is now rendered with `showLabel` so the hover
- *     affordance reads as "Resume" / "Launch" instead of a bare icon.
+ *
+ * Iterate 3.7d-b1 (2026-04-22):
+ *   - Hover-gated launch chip replaced with always-visible brown solid
+ *     `solid` variant buttons (Launch + Resume). Sven UAT: hover-to-reveal
+ *     hides the primary action; make it always visible.
+ *   - Footer reflow: timestamp LEFT, action buttons RIGHT. Action buttons
+ *     wrap below the timestamp when the card is too narrow (flex-wrap).
+ *   - `…` menu now always visible (was hover-gated) — matches the new
+ *     "everything the user needs is visible" intent.
+ *   - Commit marker moved inline with the timestamp on the left.
  *
  * Preserved testids:
  *   task-card-<id>, task-card-open-<id>, task-card-state-<id>,
  *   task-card-time-<id>, task-card-menu-<id>, task-card-close-<id>,
  *   task-card-delete-<id>.
+ * New testids (iterate 3.7d-b1):
+ *   task-card-actions-<id>, task-card-launch-<id>, task-card-resume-<id>,
+ *   terminal-launch-solid-launch, terminal-launch-solid-resume
+ *   (the last two are the TerminalLaunchButton's own testids in `solid`
+ *   variant — not card-scoped but stable per button instance).
  */
 
 import { useState } from "react";
@@ -150,7 +163,7 @@ export function TaskCard({ task }: Props) {
                 <button
                   type="button"
                   onClick={(ev) => ev.stopPropagation()}
-                  className="rounded p-1 text-[var(--color-muted)] opacity-0 transition-opacity hover:bg-[var(--color-muted-bg)] hover:text-[var(--color-text)] group-hover:opacity-100"
+                  className="rounded p-1 text-[var(--color-muted)] transition-colors hover:bg-[var(--color-muted-bg)] hover:text-[var(--color-text)]"
                   aria-label="Task actions"
                   data-testid={`task-card-menu-${task.taskId}`}
                 >
@@ -190,11 +203,22 @@ export function TaskCard({ task }: Props) {
           {/* Phase tag + test-count slots — hidden in B1; see ADR-045. */}
         </div>
 
-        {/* Footer: commit marker (left) · timestamp/action (right).
-            Launch / Start pills stop propagation so clicking them copies
-            the command instead of navigating to detail. */}
-        <div className="mt-2 flex items-center justify-between text-[11px] text-[var(--color-muted)]">
-          <div className="flex items-center gap-1.5">
+        {/* Footer: timestamp + commit marker LEFT, action buttons RIGHT.
+            Layout uses flex-wrap so on narrow cards the action buttons
+            stack below the timestamp instead of overflowing. Each action
+            button stops click propagation so it copies the command instead
+            of navigating to TaskDetail (iterate 3.7d-b1). */}
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--color-muted)]">
+          <div className="flex items-center gap-2 min-w-0">
+            {stamp && (
+              <span
+                title={stamp.full}
+                data-testid={`task-card-time-${task.taskId}`}
+                className="whitespace-nowrap"
+              >
+                {stamp.short}
+              </span>
+            )}
             {!isDraft && (
               <span
                 className="font-mono text-[11px] opacity-75"
@@ -203,35 +227,45 @@ export function TaskCard({ task }: Props) {
                 {commitMarker}
               </span>
             )}
-            {isInProgress && (
-              <span className="opacity-0 transition-opacity group-hover:opacity-100">
-                <TerminalLaunchButton
-                  task={task}
-                  variant="compact"
-                  showLabel
-                />
-              </span>
-            )}
           </div>
-          <div className="flex items-center gap-1.5">
-            {stamp && (
-              <span
-                title={stamp.full}
-                data-testid={`task-card-time-${task.taskId}`}
-              >
-                {stamp.short}
-              </span>
-            )}
-            {isDraft && (
-              <span data-testid={`task-card-start-${task.taskId}`}>
-                <TerminalLaunchButton
-                  task={task}
-                  variant="compact"
-                  showLabel
-                />
-              </span>
-            )}
-          </div>
+          {!isDone && (
+            <div
+              className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2"
+              data-testid={`task-card-actions-${task.taskId}`}
+            >
+              {/* Draft → Launch only (cannot resume a never-launched task).
+                  In-progress → Launch + Resume both visible (fresh restart
+                  vs. continue-where-we-left-off). Done handled above. */}
+              {isDraft ? (
+                <span data-testid={`task-card-launch-${task.taskId}`}>
+                  <TerminalLaunchButton
+                    task={task}
+                    variant="solid"
+                    resume={false}
+                  />
+                </span>
+              ) : (
+                isInProgress && (
+                  <>
+                    <span data-testid={`task-card-launch-${task.taskId}`}>
+                      <TerminalLaunchButton
+                        task={task}
+                        variant="solid"
+                        resume={false}
+                      />
+                    </span>
+                    <span data-testid={`task-card-resume-${task.taskId}`}>
+                      <TerminalLaunchButton
+                        task={task}
+                        variant="solid"
+                        resume={true}
+                      />
+                    </span>
+                  </>
+                )
+              )}
+            </div>
+          )}
         </div>
 
         {/* State dataset — kept for testid parity with section-02 tests. */}
