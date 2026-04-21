@@ -63,6 +63,38 @@ Execute the iterate build steps as defined in the sub-iterate spec:
 Run the standard iterate finalization steps:
 - **F0:** Fresh verification gate (run full test suite)
 - **F1:** Drift check (`artifact_sync.py`)
+- **F2:** Browser Verify (MANDATORY when frontend files changed).
+
+  Same gate semantics as `shipwright-build` Step 8. Reuses the shared detector.
+
+  1. Detect frontend changes since the iterate branch start:
+     ```bash
+     uv run {shared_root}/scripts/lib/detect_frontend_changes.py \
+       --cwd {project_root} --since "$(git merge-base HEAD {branch_name})"
+     ```
+     If `has_frontend_changes == false`, skip to F3.
+
+  2. Resolve dev server via the same fallback chain as build Step 8
+     (`profile.dev_server` → `shipwright_build_config.json#dev_url` → autodetect
+     from `package.json` → escalate).
+
+  3. Run:
+     ```bash
+     uv run {shared_root}/scripts/dev_server.py start --profile {profile} --cwd {project_root}
+     uv run {shared_root}/scripts/playwright_setup.py --cwd {project_root}
+     uv run {shared_root}/scripts/browser_verify.py --cwd {project_root}
+     ```
+
+  4. On JS errors: inline retry loop (this agent has no Agent tool, so no
+     subagent handoff). Max 3 attempts — each attempt: read the screenshot at
+     `{project_root}/e2e/screenshots/browser-verify.png`, inspect
+     `console_errors` and `dom_snippet` from the result JSON, apply a targeted
+     fix using Edit/Bash, re-run browser_verify. If still failing after 3
+     attempts, mark this sub-iterate as failed: write to `result.json`
+     (`status: "failed"`, `error: "browser-verify failed after 3 retries"`,
+     include `console_errors` and last screenshot path in the debug log) and
+     DO NOT commit. The campaign orchestrator aggregates — no AskUserQuestion
+     from inside the sub-iterate-runner.
 - **F3:** Decision log (`write_decision_log.py`)
 - **F4:** Changelog bullet (append to `[Unreleased]` in CHANGELOG.md)
 - **F5:** Compliance update

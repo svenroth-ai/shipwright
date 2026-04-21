@@ -236,17 +236,36 @@ Compare against these 5 dimensions:
 - No mockups or no UI → `design_fidelity: "skipped"`
 - Continue pipeline (do NOT hard-fail — design fidelity issues are non-blocking)
 
-### Step 8: Browser Verify (UI Projects Only)
+### Step 8: Browser Verify (MANDATORY when frontend files changed)
 
-**Skip if:** No UI, no `dev_server` config in profile, no frontend file changes.
+**Gate semantics:** Browser Verify is MANDATORY whenever this section's diff
+touches any frontend file. Missing `dev_server` config is a RESOLUTION problem,
+not a skip trigger.
 
+**1. Detect frontend changes:**
+```bash
+uv run {shared_root}/scripts/lib/detect_frontend_changes.py \
+  --cwd {project_root} --since "$(git merge-base HEAD {branch_name})"
+```
+Parse the JSON: if `has_frontend_changes == false`, skip this step. Otherwise continue.
+
+**2. Resolve dev server (fallback chain — stop on first hit):**
+- `profile.dev_server` if the profile defines one.
+- `shipwright_build_config.json#dev_url` if present (self-heal path).
+- Autodetect via `package.json` scripts (Vite → 5173, Next → 3000, Astro → 4321).
+- If all sources fail: escalate via AskUserQuestion with the list of changed
+  frontend files. **Do NOT skip silently.**
+
+**3. Run verification:**
 ```bash
 uv run {shared_root}/scripts/playwright_setup.py --cwd {project_root}
 uv run {shared_root}/scripts/dev_server.py start --profile {profile} --cwd {project_root}
-uv run {plugin_root}/scripts/lib/browser_verify.py --cwd {project_root}
+uv run {shared_root}/scripts/browser_verify.py --cwd {project_root}
 ```
 
-If JS errors: Read screenshot at `{project_root}/e2e/screenshots/browser-verify.png`, diagnose, fix (max 3 retries).
+If JS errors: read screenshot at `{project_root}/e2e/screenshots/browser-verify.png`,
+diagnose, fix (max 3 retries). Hand off to `browser-fixer` subagent after the
+first failed retry.
 
 ### Step 9: Refactor (Optional)
 

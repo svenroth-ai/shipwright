@@ -148,7 +148,7 @@ UI changes at any complexity level.
 2. Run health check:
    ```bash
    uv run {shared_root}/scripts/playwright_setup.py --cwd {project_root}
-   uv run {plugin_root}/scripts/lib/browser_verify.py --cwd {project_root}
+   uv run {shared_root}/scripts/browser_verify.py --cwd {project_root}
    ```
 3. If JS errors: read screenshot, diagnose, fix (max 3 retries)
 3b. If UI change: compare screenshot against designs/screens/{affected}.html

@@ -1,8 +1,8 @@
 """Browser verify — run the TypeScript browser-verify helper and parse results.
 
 Usage from SKILL.md:
-    uv run {plugin_root}/../../shared/scripts/playwright_setup.py --cwd {project_root}
-    uv run {plugin_root}/scripts/lib/browser_verify.py --cwd {project_root} [--url http://localhost:3000]
+    uv run {shared_root}/scripts/playwright_setup.py --cwd {project_root}
+    uv run {shared_root}/scripts/browser_verify.py --cwd {project_root} [--url http://localhost:3000]
 
 Returns JSON:
     {
