@@ -10,6 +10,12 @@
  * Controlled by the parent: default comes from `actions.defaults.autonomy`.
  *
  * Visual language matches new-pipeline-dialog.html (.segmented / .segmented-row).
+ *
+ * Iterate 3.7c-3 — the hint block is wrapped in a fixed-height slot
+ * (min-h-[50px]) so switching Guided↔Autonomous does not reflow the
+ * modal. Autonomous copy is the taller of the two (3 wrapped lines at
+ * 11px / 1.5 line-height ≈ 49.5 px in the default 540/580-px modal
+ * widths); Guided fits inside the same slot without growing it.
  */
 
 import { CheckCircle, Gauge } from "lucide-react";
@@ -45,7 +51,7 @@ export function AutonomyToggle({
 }: AutonomyToggleProps) {
   const hint = value === "autonomous" ? autonomousHint : guidedHint;
   return (
-    <div className="flex items-center gap-3" data-testid="autonomy-toggle">
+    <div className="flex items-start gap-3" data-testid="autonomy-toggle">
       <div
         className="inline-flex overflow-hidden rounded-[var(--radius-button,8px)] border-[1.5px] border-[var(--color-border,#e0dbd4)]"
         role="radiogroup"
@@ -66,8 +72,13 @@ export function AutonomyToggle({
           testId="autonomy-autonomous"
         />
       </div>
+      {/*
+        Fixed-height slot: 50 px holds the taller Autonomous copy (3 lines)
+        and leaves Guided's 2 lines top-aligned so the modal does not shift
+        vertically when the user toggles. Iterate 3.7c-3.
+      */}
       <div
-        className="flex-1 text-[11px] leading-[1.5] text-neutral-500"
+        className="flex-1 min-h-[50px] text-[11px] leading-[1.5] text-[var(--color-muted,#6b7280)]"
         data-testid="autonomy-hint"
       >
         {hint}
@@ -100,7 +111,7 @@ function SegmentButton({
       className={`inline-flex items-center gap-1.5 border-0 px-3 py-1.5 text-[12px] font-medium transition-colors first:border-r-[1.5px] first:border-[var(--color-border,#e0dbd4)] ${
         active
           ? "bg-[var(--color-primary,#6b5e56)] text-white"
-          : "bg-white text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800"
+          : "bg-white text-[var(--color-muted,#6b7280)] hover:bg-[var(--color-muted-bg,#ede8e1)] hover:text-[var(--color-text,#1a1a1a)]"
       }`}
     >
       {icon} {label}

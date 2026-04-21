@@ -7,20 +7,21 @@
  * the shape so the user knows what is coming.
  *
  * Mode drives the 4px left-stripe color:
- *   task      → var(--color-warning)
- *   pipeline  → var(--color-purple)
- *   iterate   → var(--color-success)
+ *   task      -> var(--color-warning)
+ *   pipeline  -> var(--color-purple)
+ *   iterate   -> var(--color-success)
  *
- * Copy button (top-right) writes the raw command text (no HTML/colour
- * spans) to the clipboard. Brief "Copied!" feedback is inline so we don't
- * need a toast library or mutate parent state.
- *
- * Phase B2 — iterate 3 remediation. Visual parity with
+ * Phase B2 - iterate 3 remediation. Visual parity with
  * webui/designs/screens/{new-task,new-pipeline,new-iterate}-dialog.html.
+ *
+ * Iterate 3.7c-3 - the in-panel Copy button was removed. The footer's
+ * Launch button already copies the command to the clipboard (plus moves
+ * the task to In Progress), so a second Copy control inside the preview
+ * was redundant and doubled the affordance. The onCopy helper + Copy/
+ * Check icon imports are intentionally gone.
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Copy, Check } from "lucide-react";
 
 export type CommandPreviewMode = "new-task" | "new-pipeline" | "new-iterate";
 
@@ -30,12 +31,12 @@ export interface CommandPreviewPanelProps {
   description: string;
   projectPath: string;
   sessionUuid: string;
-  /** "guided" | "autonomous" — only emitted (as `--autonomous`) when autonomous.
+  /** "guided" | "autonomous" - only emitted (as --autonomous) when autonomous.
    *  Pass undefined for task mode which has no autonomy flag. */
   autonomy?: "guided" | "autonomous";
-  /** Phase id (e.g. "build") — task-mode only; drives slash command. */
+  /** Phase id (e.g. "build") - task-mode only; drives slash command. */
   phaseId?: string;
-  /** Phase label (e.g. "Build") — task-mode only; drives `--name` prefix. */
+  /** Phase label (e.g. "Build") - task-mode only; drives --name prefix. */
   phaseLabel?: string;
   /** Plugin dirs to include as space-separated --plugin-dir flags. Optional. */
   pluginDirs?: string[];
@@ -47,8 +48,6 @@ export interface CommandPreviewPanelProps {
 function slashFor(mode: CommandPreviewMode, phaseId?: string): string {
   if (mode === "new-pipeline") return "/shipwright-run";
   if (mode === "new-iterate") return "/shipwright-iterate";
-  // new-task: phase-driven. Fall back to a generic slash when phase missing
-  // (keeps the preview readable while phases load).
   return phaseId ? `/shipwright-${phaseId}` : "/shipwright-build";
 }
 
@@ -58,14 +57,6 @@ function namePrefix(mode: CommandPreviewMode, phaseLabel?: string): string {
   return phaseLabel ?? "Task";
 }
 
-/**
- * Builds the shell command as a plain string. Mirrors the shape of the
- * real command produced by `core/launcher.ts` + `actions-substitute.ts`
- * without going through the network. Quotes are POSIX-style (single layer of
- * `"..."` + backslash-escape of embedded `"`) — the server uses per-shell
- * escape when the user actually Launches. Preview is intentionally shell-
- * agnostic so the user reads intent, not escaping.
- */
 function buildCommandText(opts: {
   mode: CommandPreviewMode;
   title: string;
@@ -85,19 +76,19 @@ function buildCommandText(opts: {
   const sessionUuid = opts.sessionUuid || "<session-uuid>";
   const pluginDirsFlag =
     opts.pluginDirs && opts.pluginDirs.length > 0
-      ? ` \\\n    --plugin-dir ${opts.pluginDirs.join(" --plugin-dir ")}`
+      ? ` \\n    --plugin-dir ${opts.pluginDirs.join(" --plugin-dir ")}`
       : "";
   const autonomyFlag =
-    opts.autonomy === "autonomous" ? ` \\\n    --autonomous` : "";
+    opts.autonomy === "autonomous" ? ` \\n    --autonomous` : "";
   const desc = opts.description.trim();
   const descArg = desc
-    ? ` \\\n    "${desc.replace(/"/g, '\\"')}"`
+    ? ` \\n    "${desc.replace(/"/g, '\\"')}"`
     : "";
 
   return (
-    `$ claude ${slash} \\\n` +
-    `    --project-root ${projectPath} \\\n` +
-    `    --session-id ${sessionUuid} \\\n` +
+    `$ claude ${slash} \\n` +
+    `    --project-root ${projectPath} \\n` +
+    `    --session-id ${sessionUuid} \\n` +
     `    --name ${quotedName}` +
     pluginDirsFlag +
     autonomyFlag +
@@ -105,7 +96,6 @@ function buildCommandText(opts: {
   );
 }
 
-// Per-mode 4px left-stripe colour.
 function stripeColorFor(mode: CommandPreviewMode): string {
   if (mode === "new-pipeline") return "var(--color-purple)";
   if (mode === "new-iterate") return "var(--color-success)";
@@ -124,7 +114,6 @@ export function CommandPreviewPanel({
   pluginDirs,
   debounceMs = 250,
 }: CommandPreviewPanelProps) {
-  // Debounce the text so rapid typing doesn't re-layout on every keystroke.
   const [debouncedInputs, setDebouncedInputs] = useState({
     title,
     description,
@@ -155,63 +144,16 @@ export function CommandPreviewPanel({
     [mode, debouncedInputs, projectPath, sessionUuid, pluginDirs],
   );
 
-  const [copied, setCopied] = useState(false);
-  useEffect(() => {
-    if (!copied) return;
-    const h = setTimeout(() => setCopied(false), 1800);
-    return () => clearTimeout(h);
-  }, [copied]);
-
-  const onCopy = async () => {
-    try {
-      // Strip the leading `$ ` prompt — the user wants the command, not the
-      // visual prompt marker.
-      const payload = commandText.replace(/^\$ /, "");
-      await navigator.clipboard.writeText(payload);
-      setCopied(true);
-    } catch {
-      // Silent — copy failures are an edge case on localhost HTTPS; the
-      // Launch path has a full error toast. Preview stays quiet.
-    }
-  };
-
   return (
     <div
       data-testid="command-preview-panel"
-      className="relative overflow-x-auto rounded-[var(--radius-button,8px)] px-[18px] py-[14px] pr-4 font-mono text-[12px] leading-[1.7]"
+      className="relative overflow-x-auto rounded-[var(--radius-button,8px)] px-[18px] py-[14px] font-mono text-[12px] leading-[1.7]"
       style={{
         background: "#1e1e1e",
         color: "#e6e6e6",
         borderLeft: `4px solid ${stripeColorFor(mode)}`,
       }}
     >
-      <button
-        type="button"
-        data-testid="command-preview-copy"
-        onClick={() => void onCopy()}
-        className="absolute right-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-[6px] border px-2.5 py-1 font-sans text-[11px] font-medium text-[#e6e6e6] transition-colors"
-        style={{
-          borderColor: copied
-            ? "rgba(5,150,105,0.5)"
-            : "rgba(255,255,255,0.16)",
-          background: copied
-            ? "rgba(5,150,105,0.35)"
-            : "rgba(255,255,255,0.06)",
-        }}
-        onMouseEnter={(e) => {
-          if (!copied)
-            (e.currentTarget as HTMLButtonElement).style.background =
-              "rgba(255,255,255,0.14)";
-        }}
-        onMouseLeave={(e) => {
-          if (!copied)
-            (e.currentTarget as HTMLButtonElement).style.background =
-              "rgba(255,255,255,0.06)";
-        }}
-      >
-        {copied ? <Check size={12} /> : <Copy size={12} />}
-        {copied ? "Copied!" : "Copy"}
-      </button>
       <pre className="whitespace-pre font-mono text-[12px] leading-[1.7] text-[#e6e6e6]">
         {commandText}
       </pre>
