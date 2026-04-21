@@ -747,19 +747,30 @@ When a phase detects missing prerequisite artifacts, it should attempt to derive
 
 | Missing Artifact | Derived From | Used By |
 |---|---|---|
-| `designs/visual-guidelines.md` | CSS `:root` variables in `designs/screens/*.html` | Build (Browser Verify), Test (Consistency) |
+| `designs/visual-guidelines.md` | CSS `:root` variables in `designs/screens/*.html` | Build (Browser Verify), Iterate (F2 Browser Verify), Test (Consistency) |
 | `designs/screen-routes.json` | Mockup filenames + router config (`src/router.tsx`) | Test (Design Fidelity), Build (Design Fidelity) |
 | `planning/claude-plan-e2e.md` | `screen-routes.json` + `architecture.md` | Test (E2E Spec Generation) |
-| `dev_url` in build config | `CLAUDE.md` (`PORT=`), `package.json` scripts (`--port`) | Test (Smoke, E2E), Build (Browser Verify) |
-| `playwright.config.ts` | Template + `dev_url` port substitution | Test (E2E), Build (Browser Verify) |
+| `dev_url` in build config | `CLAUDE.md` (`PORT=`), `package.json` scripts (`--port`) | Test (Smoke, E2E), Build (Browser Verify), Iterate (F2 Browser Verify — sub-iterate-runner) |
+| `playwright.config.ts` | Template + `dev_url` port substitution | Test (E2E), Build (Browser Verify), Iterate (F2 Browser Verify) |
 
 ### Which Phases Auto-Generate
 
 | Phase | Can Auto-Generate |
 |---|---|
 | **Build** (Step 4.5) | `visual-guidelines.md`, `dev_url` detection |
+| **Iterate** (sub-iterate-runner F2) | `dev_url` detection (shared fallback chain with Build Step 4.5) |
 | **Test** (Step B3) | `visual-guidelines.md`, `screen-routes.json`, `claude-plan-e2e.md`, `dev_url`, `playwright.config.ts` |
 | **Plan** (Step 8) | `claude-plan-e2e.md` (if UI project, default enabled) |
+
+### Browser Verify Gate Semantics (Build Step 8 / 4.5 and Iterate F2)
+
+Browser Verify is **mandatory** whenever the section/iterate diff touches any
+frontend file, regardless of whether the run is a formal section build or a
+remediation task. Missing `dev_server` in the profile is a resolution concern
+(fall back to `shipwright_build_config.json#dev_url` → `package.json` autodetect
+→ escalate), not a skip trigger. Frontend detection is performed by
+`shared/scripts/lib/detect_frontend_changes.py` and is the single source of
+truth across build and iterate.
 
 ### Scripts Supporting Self-Healing
 

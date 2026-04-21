@@ -7,8 +7,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
-from lib.browser_verify import run_browser_verify
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from browser_verify import run_browser_verify
 
 
 def test_missing_verify_script(tmp_path):
@@ -34,7 +34,7 @@ def test_parses_result_file(tmp_path):
     }
     result_file = tmp_path / "browser-verify-result.json"
 
-    with patch("lib.browser_verify.subprocess.run") as mock_run:
+    with patch("browser_verify.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(stdout="{}", stderr="", returncode=0)
         # Simulate the TypeScript helper writing the result file
         result_file.write_text(json.dumps(expected))
@@ -53,7 +53,7 @@ def test_handles_timeout(tmp_path):
     (e2e / "browser-verify.ts").write_text("// dummy")
 
     import subprocess
-    with patch("lib.browser_verify.subprocess.run", side_effect=subprocess.TimeoutExpired("cmd", 60)):
+    with patch("browser_verify.subprocess.run", side_effect=subprocess.TimeoutExpired("cmd", 60)):
         result = run_browser_verify(tmp_path)
 
     assert result["success"] is False
@@ -76,7 +76,7 @@ def test_parses_console_errors(tmp_path):
     }
     result_file = tmp_path / "browser-verify-result.json"
 
-    with patch("lib.browser_verify.subprocess.run") as mock_run:
+    with patch("browser_verify.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(stdout="{}", stderr="", returncode=1)
         result_file.write_text(json.dumps(result_data))
 
