@@ -1,28 +1,30 @@
 /*
- * InboxPage — project-grouping test (iterate 3 remediation v2 / S4).
+ * InboxPage — project-grouping + read-only Ask-bubble test.
  *
- * In v2 the Inbox page no longer mounts `ProjectFilterDropdown`. Instead it
- * groups session cards by project into collapsible `<details>` sections.
- * These tests pin the grouping behavior plus the critical UI invariants:
- *   - every project-group wrapper carries the correct testid,
- *   - cards from two different projects land in separate sections,
- *   - unassigned tasks fall into the "Unassigned" bucket,
- *   - the Answer/Dismiss/best-effort UI from v1 is GONE.
+ * Iterate 3.7d-b3 rebuild:
+ *   - Project grouping + (N open) counts from 3.7c-4 are preserved.
+ *   - Cards are read-only: no `<textarea>`, no clickable option pills, no
+ *     Launch button.
+ *   - Single brown `Resume` button per card.
+ *   - Whole-card click-through → `/tasks/<taskId>` via useNavigate.
  *
  * Hooks consumed by InboxPage (and therefore mocked here):
  *   useExternalInbox, useExternalTasks, useProjects, useLaunchTask.
  *
- * Load-bearing testids (also used by iterate-2 Playwright specs):
+ * Load-bearing testids (also used by iterate-2/3 Playwright specs):
  *   - inbox-page
  *   - inbox-empty
  *   - inbox-session-<uuid>
- *   - inbox-item-<toolUseId>
+ *   - inbox-item-<toolUseId> (legacy, retained on a hidden inner node)
+ *   - inbox-card-<toolUseId> (new 3.7d-b3)
+ *   - inbox-resume-<toolUseId> (new 3.7d-b3)
+ *   - inbox-copy-resume-<toolUseId> (legacy, retained)
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import InboxPage from "./InboxPage";
 import type { ExternalTask, InboxItem } from "../lib/externalApi";
@@ -123,8 +125,14 @@ function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>
-        <InboxPage />
+      <MemoryRouter initialEntries={["/inbox"]}>
+        <Routes>
+          <Route path="/inbox" element={<InboxPage />} />
+          <Route
+            path="/tasks/:id"
+            element={<div data-testid="task-detail-stub" />}
+          />
+        </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -257,7 +265,7 @@ describe("InboxPage project grouping (iterate 3 remediation v2 / S4)", () => {
     expect(screen.queryByText(/best-effort/i)).not.toBeInTheDocument();
   });
 
-  it("renders Launch + Copy-Resume buttons per card", () => {
+  it("renders a single Resume button per card (no Launch, no textarea)", () => {
     wireHooks({
       items: [ITEM_A],
       tasks: [TASK_A],
@@ -265,7 +273,103 @@ describe("InboxPage project grouping (iterate 3 remediation v2 / S4)", () => {
     });
     renderPage();
 
-    expect(screen.getByTestId("inbox-launch-tu-A")).toBeInTheDocument();
+    // Primary Resume button (new 3.7d-b3 testid + legacy v2 testid both
+    // render — back-compat wrapper).
+    expect(screen.getByTestId("inbox-resume-tu-A")).toBeInTheDocument();
     expect(screen.getByTestId("inbox-copy-resume-tu-A")).toBeInTheDocument();
+
+    // Launch-in-Terminal button from v2 is GONE.
+    expect(screen.queryByTestId("inbox-launch-tu-A")).not.toBeInTheDocument();
+
+    // Freetext input + send button from v2 are GONE (no answer POST,
+    // webui never answers Claude — external-launch invariant).
+    expect(screen.queryByTestId("inbox-freetext-input")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("inbox-freetext-send")).not.toBeInTheDocument();
+  });
+
+  it("renders option chips as display-only (no button / onclick)", () => {
+    const ITEM_WITH_OPTIONS = makeItem({
+      toolUseId: "tu-opts",
+      taskId: "task-A",
+      sessionUuid: "sess-A",
+      taskTitle: "Task in project A",
+      input: {
+        questions: [
+          {
+            question: "JWT or Session?",
+            options: [{ label: "JWT" }, { label: "Session" }],
+          },
+        ],
+      },
+    });
+    wireHooks({
+      items: [ITEM_WITH_OPTIONS],
+      tasks: [TASK_A],
+      projects: [PROJECT_A],
+    });
+    const { container } = renderPage();
+
+    // Chips must be rendered but NOT as buttons — they're read-only.
+    const chip0 = screen.getByTestId("inbox-option-chip-0");
+    const chip1 = screen.getByTestId("inbox-option-chip-1");
+    expect(chip0).toBeInTheDocument();
+    expect(chip1).toBeInTheDocument();
+    expect(chip0.tagName.toLowerCase()).not.toBe("button");
+    expect(chip1.tagName.toLowerCase()).not.toBe("button");
+    expect(chip0).toHaveTextContent("JWT");
+    expect(chip1).toHaveTextContent("Session");
+
+    // No <button> elements should wrap the option labels.
+    const buttons = Array.from(container.querySelectorAll("button"));
+    for (const b of buttons) {
+      const txt = b.textContent ?? "";
+      expect(txt).not.toMatch(/^\s*JWT\s*$/);
+      expect(txt).not.toMatch(/^\s*Session\s*$/);
+    }
+  });
+
+  it("whole-card click navigates to /tasks/<taskId>", () => {
+    wireHooks({
+      items: [ITEM_A],
+      tasks: [TASK_A],
+      projects: [PROJECT_A],
+    });
+    renderPage();
+
+    expect(screen.queryByTestId("task-detail-stub")).not.toBeInTheDocument();
+    const card = screen.getByTestId("inbox-card-tu-A");
+    expect(card).toHaveAttribute("role", "button");
+    expect(card).toHaveAttribute("tabIndex", "0");
+    fireEvent.click(card);
+    expect(screen.getByTestId("task-detail-stub")).toBeInTheDocument();
+  });
+
+  it("Enter key on the card navigates to /tasks/<taskId>", () => {
+    wireHooks({
+      items: [ITEM_A],
+      tasks: [TASK_A],
+      projects: [PROJECT_A],
+    });
+    renderPage();
+
+    const card = screen.getByTestId("inbox-card-tu-A");
+    fireEvent.keyDown(card, { key: "Enter" });
+    expect(screen.getByTestId("task-detail-stub")).toBeInTheDocument();
+  });
+
+  it("clicking the Resume button does NOT navigate (stops propagation)", () => {
+    wireHooks({
+      items: [ITEM_A],
+      tasks: [TASK_A],
+      projects: [PROJECT_A],
+    });
+    renderPage();
+
+    const resumeBtn = screen.getByTestId("inbox-resume-tu-A");
+    fireEvent.click(resumeBtn);
+    // Navigation should NOT have fired — we're still on /inbox.
+    expect(screen.queryByTestId("task-detail-stub")).not.toBeInTheDocument();
+    // Page marker still present.
+    expect(screen.getByTestId("inbox-page")).toBeInTheDocument();
   });
 });

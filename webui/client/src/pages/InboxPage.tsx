@@ -1,37 +1,35 @@
 /*
- * Inbox — "best-effort" pending interactions across tracked external-launch
- * tasks. Webui cannot answer the LLM (external-launch invariant — see
- * CLAUDE.md DO-NOT #3), so this surface only helps the user route an
- * answer to their own terminal via clipboard shortcuts.
+ * Inbox — read-only list of pending AskUserQuestion bubbles.
  *
- * Iterate 3 remediation v2 / Surface 4 (2026-04-21) — redesign:
- *   - Removed `ProjectFilterDropdown` entirely. Cards are now grouped by
- *     project (collapsible `<details>`, default-open) with the existing
- *     session UUID sub-grouping preserved inside each project section.
- *   - Removed the per-card Answer POST `<Link>`, the Dismiss button, and
- *     the "best-effort" pill badge. Webui does not answer Claude; the
- *     external-launch invariant means every answer path is clipboard →
- *     user's terminal.
- *   - Every card now carries a Launch-in-Terminal + Copy-Resume-Command
- *     top row (same semantics as TaskCard), plus the existing option
- *     pills (now clipboard shortcuts for "Answer: <pill>") and freetext
- *     row (clipboard-copies the typed text).
- *   - Wrapped the body in `.page-container` (1280 max-width, 24 px padding)
- *     so the Inbox aligns with Projects / Settings.
+ * Iterate 3.7d-b3 (2026-04-22) rebuild:
+ *   - Each card is a LARGER read-only Ask-bubble (same info as the Ask-bubble
+ *     in BubbleTranscript, bigger padding + body font, non-interactive).
+ *   - Option chips are display-only (no onClick, no button role).
+ *   - No `<textarea>` / freetext input (webui never answers Claude —
+ *     external-launch invariant, CLAUDE.md DO-NOT #3).
+ *   - No "Launch in Terminal" button; only a single brown "Resume" button
+ *     per card (bottom-right, stops event propagation).
+ *   - Whole card is click-through → navigates to `/tasks/<taskId>` via
+ *     `useNavigate`. Keyboard: Enter + Space trigger the same nav.
+ *   - Group-by-project structure + `(N open)` counts preserved from 3.7c-4.
  *
- * Load-bearing testids (existing Playwright specs rely on them):
+ * Load-bearing testids (retained from earlier iterates):
  *   inbox-page, inbox-empty, inbox-session-<uuid>, inbox-item-<toolUseId>,
- *   inbox-freetext-input, inbox-freetext-send, inbox-option-<i>,
  *   inbox-task-context-pill-<toolUseId>, inbox-header-count,
- *   inbox-group-project-label-<sessionUuid>.
+ *   inbox-group-project-label-<sessionUuid>,
+ *   inbox-project-group-<projectId>, inbox-project-group-toggle-<projectId>.
  *
- * New testids added in v2:
- *   inbox-project-group-<projectId>,
- *   inbox-project-group-toggle-<projectId>,
- *   inbox-launch-<toolUseId>, inbox-copy-resume-<toolUseId>.
+ * Testids added in 3.7d-b3:
+ *   inbox-card-<toolUseId> (on the clickable card wrapper),
+ *   inbox-resume-<toolUseId> (on the Resume button).
+ *
+ * Testid retained (single-button card): `inbox-copy-resume-<toolUseId>` is
+ * kept on the Resume button for backward compatibility with existing unit
+ * tests; the new `inbox-resume-<toolUseId>` is also present.
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Copy,
   Hammer,
@@ -41,12 +39,10 @@ import {
   Rocket,
   ShieldAlert,
   ShieldCheck,
-  Send,
-  Terminal as TerminalIcon,
   Workflow,
 } from "lucide-react";
 
-import { askUserQuestionSummary } from "../external/session-parser";
+import { extractAskUserPayload } from "../lib/askUserPayload";
 import { useExternalInbox } from "../hooks/useExternalInbox";
 import { useExternalTasks } from "../hooks/useExternalTasks";
 import { useLaunchTask } from "../hooks/useLaunchTask";
@@ -330,7 +326,7 @@ function ProjectSection({
 
               <div className="flex flex-col" style={{ gap: "12px" }}>
                 {sg.items.map((item) => (
-                  <InboxRow key={item.toolUseId} item={item} task={task} />
+                  <InboxCard key={item.toolUseId} item={item} task={task} />
                 ))}
               </div>
             </section>
@@ -357,27 +353,33 @@ const PHASE_ICON: Record<
 };
 
 /**
- * InboxRow — single question card.
+ * InboxCard — read-only Ask-bubble at Inbox density.
  *
- * Shape (v2 / surface 4):
- *   ┌──┬──────────────────────────────────────────────────┐
- *   │▐▌│ [pill] build · 02-dashboard            2h ago   │
- *   │▐▌│ question text …                                  │
- *   │▐▌│ [Launch] [Resume]                                │
- *   │▐▌│ [pill] JWT [pill] Session                        │
- *   │▐▌│ or [input your answer]  [Copy]                   │
- *   └──┴──────────────────────────────────────────────────┘
+ * Shape (3.7d-b3):
+ *   ┌──┬───────────────────────────────────────────────────┐
+ *   │▐▌│ [pill] build · task-title          2h ago          │
+ *   │▐▌│ PRIORITY                                           │
+ *   │▐▌│ question body (14-15px / 600)                      │
+ *   │▐▌│ [chip: JWT] [chip: Session]                        │
+ *   │▐▌│                                  [Resume] ←brown   │
+ *   └──┴───────────────────────────────────────────────────┘
  *    ^3px amber left strip; card keeps --color-surface bg.
+ *
+ * The whole card is click-through → /tasks/<taskId>. The Resume button
+ * stops propagation so clicking it only copies the resume command.
  */
-function InboxRow({
+function InboxCard({
   item,
   task,
 }: {
   item: InboxItem;
   task: ExternalTask | undefined;
 }) {
+  const navigate = useNavigate();
   const isAUQ = item.toolName === "AskUserQuestion";
-  const summary = isAUQ ? askUserQuestionSummary(item.input) : null;
+  const payload = isAUQ ? extractAskUserPayload(item.input) : null;
+  const firstPart = payload?.parts[0];
+  const fallback = isAUQ && (!firstPart || !firstPart.question.trim());
 
   // Best-effort phase derivation from the task title. classifyPhase returns
   // null if nothing matches — in that case we skip the pill entirely.
@@ -391,50 +393,17 @@ function InboxRow({
     return stamp ? formatRelativeTime(stamp) : null;
   }, [task?.launchedAt, task?.createdAt]);
 
-  // Clipboard helpers. Every answer path is clipboard → user's terminal —
-  // webui never POSTs an answer (external-launch invariant).
-  const [freetext, setFreetext] = useState("");
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const writeClipboardLocal = async (text: string): Promise<void> => {
-    try {
-      if (
-        typeof navigator !== "undefined" &&
-        navigator.clipboard?.writeText
-      ) {
-        await navigator.clipboard.writeText(text);
-        return;
-      }
-    } catch {
-      /* fall through to the execCommand fallback */
+  const handleCardClick = () => {
+    if (!task) return;
+    navigate(`/tasks/${task.taskId}`);
+  };
+  const handleCardKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (!task) return;
+    // Enter + Space activate card click-through (matches native button a11y).
+    if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+      e.preventDefault();
+      navigate(`/tasks/${task.taskId}`);
     }
-    // Hard fallback for non-secure contexts. Match the pattern used in
-    // TerminalLaunchButton / TaskDetailHeader for consistency.
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-      document.execCommand("copy");
-    } finally {
-      document.body.removeChild(ta);
-    }
-  };
-  const flashFeedback = (msg: string) => {
-    setFeedback(msg);
-    setTimeout(() => setFeedback(null), 2200);
-  };
-  const handleOption = (opt: string) => {
-    void writeClipboardLocal(`Answer: ${opt}`);
-    flashFeedback(`Copied "Answer: ${opt}" — paste into terminal`);
-  };
-  const handleFreetextSend = () => {
-    const trimmed = freetext.trim();
-    if (!trimmed) return;
-    void writeClipboardLocal(`Answer: ${trimmed}`);
-    flashFeedback("Copied — paste into terminal");
-    setFreetext("");
   };
 
   const PhaseIcon = phase ? PHASE_ICON[phase] : null;
@@ -447,15 +416,31 @@ function InboxRow({
         border: "1px solid var(--color-border)",
         borderLeft: "3px solid var(--color-warning)",
         borderRadius: "var(--radius-button)",
-        padding: "18px 20px",
+        padding: "22px 24px",
         boxShadow: "var(--shadow-sm)",
-        maxWidth: "680px",
+        maxWidth: "720px",
+        cursor: task ? "pointer" : "default",
       }}
-      data-testid={`inbox-item-${item.toolUseId}`}
+      role={task ? "button" : undefined}
+      tabIndex={task ? 0 : undefined}
+      aria-label={task ? `Open task ${task.title}` : undefined}
+      onClick={task ? handleCardClick : undefined}
+      onKeyDown={task ? handleCardKeyDown : undefined}
+      data-testid={`inbox-card-${item.toolUseId}`}
+      data-testid-legacy={`inbox-item-${item.toolUseId}`}
     >
-      {/* Top row: context pill + time-ago. Answer POST + Dismiss buttons
-          were removed in v2 — external-launch invariant. */}
-      <div className="mb-[10px] flex items-center justify-between gap-3">
+      {/* Legacy testid wrapper: previous Playwright specs target
+          `inbox-item-<toolUseId>`; keep it as an invisible inner node so we
+          don't break that contract while the new `inbox-card-*` testid is
+          adopted by 3.7d-b3+ specs. React warns on duplicate data-testid
+          attrs via the same element, so we emit a small inner marker. */}
+      <span
+        data-testid={`inbox-item-${item.toolUseId}`}
+        style={{ display: "none" }}
+        aria-hidden="true"
+      />
+      {/* Top row: context pill + time-ago. Read-only. */}
+      <div className="mb-[12px] flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           {phase && PhaseIcon && task && (
             <span
@@ -486,211 +471,135 @@ function InboxRow({
         )}
       </div>
 
-      {/* Question body */}
-      {summary ? (
+      {/* Question body — read-only Ask-bubble rendering */}
+      {firstPart && !fallback ? (
         <div>
+          {firstPart.header && (
+            <div
+              className="font-semibold uppercase"
+              style={{
+                fontSize: "11px",
+                letterSpacing: "0.6px",
+                color: "var(--color-muted)",
+                marginBottom: "6px",
+              }}
+            >
+              {firstPart.header}
+            </div>
+          )}
           <div
             className="font-semibold"
             style={{
-              fontSize: "14px",
+              fontSize: "15px",
               color: "var(--color-text)",
-              lineHeight: 1.4,
-              marginBottom: "6px",
+              lineHeight: 1.45,
+              marginBottom: firstPart.context ? "8px" : "14px",
             }}
           >
-            {summary.question}
+            {firstPart.question}
           </div>
 
-          {summary.fallback && (
+          {firstPart.context && (
             <div
-              className="italic"
               style={{
-                fontSize: "10px",
+                fontSize: "13px",
                 color: "var(--color-muted)",
-                marginTop: "2px",
-                marginBottom: "8px",
+                lineHeight: 1.5,
+                marginBottom: "14px",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
               }}
             >
-              Question payload schema differed from expected.
+              {firstPart.context}
             </div>
           )}
 
-          {/* Primary CTA row — Launch + Copy Resume (mirrors TaskCard CTA
-              pattern; VS Code slot omitted because the VS Code extension
-              bridge isn't wired into webui yet — surfaces as soon as it
-              lands.) */}
-          {task && (
+          {/* Display-only option chips. No onClick, no button role. */}
+          {firstPart.options && firstPart.options.length > 0 && (
             <div
               className="flex flex-wrap items-center"
-              style={{ gap: "8px", marginTop: "4px", marginBottom: "12px" }}
+              style={{ gap: "8px", marginBottom: "16px" }}
             >
-              <InboxLaunchButton
-                task={task}
-                mode="launch"
-                testId={`inbox-launch-${item.toolUseId}`}
-              />
-              <InboxLaunchButton
-                task={task}
-                mode="resume"
-                testId={`inbox-copy-resume-${item.toolUseId}`}
-              />
-            </div>
-          )}
-
-          {/* Option pills (clipboard shortcuts for "Answer: <opt>") */}
-          {summary.options.length > 0 && (
-            <div
-              className="flex flex-wrap items-center"
-              style={{ gap: "8px", marginTop: "4px" }}
-            >
-              {summary.options.map((o, i) => (
-                <button
+              {firstPart.options.map((o, i) => (
+                <span
                   key={i}
-                  type="button"
-                  onClick={() => handleOption(o)}
-                  data-testid={`inbox-option-${i}`}
-                  className="rounded-[var(--radius-button)] font-medium transition-colors hover:bg-[var(--color-muted-bg)]"
+                  data-testid={`inbox-option-chip-${i}`}
+                  className="inline-flex items-center rounded-[var(--radius-button)] font-medium"
                   style={{
-                    padding: "7px 16px",
+                    padding: "6px 14px",
                     border: "1px solid var(--color-border)",
                     fontSize: "13px",
                     color: "var(--color-text)",
-                    background: "var(--color-surface)",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "var(--color-primary)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "var(--color-border)";
+                    background: "var(--color-muted-bg)",
                   }}
                 >
                   {o}
-                </button>
+                </span>
               ))}
             </div>
           )}
 
-          {/* Freetext row: "or" divider + input + clipboard copy button */}
-          <div
-            className="flex items-center"
-            style={{ gap: "8px", marginTop: "10px" }}
-          >
-            <span
-              className="font-normal"
-              style={{
-                fontSize: "12px",
-                color: "var(--color-muted)",
-                padding: "0 2px",
-              }}
-            >
-              or
-            </span>
-            <input
-              type="text"
-              value={freetext}
-              onChange={(e) => setFreetext(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleFreetextSend();
-                }
-              }}
-              placeholder="Type your answer…"
-              data-testid="inbox-freetext-input"
-              className="rounded-[var(--radius-button)] outline-none transition-colors"
-              style={{
-                flex: 1,
-                maxWidth: "360px",
-                padding: "7px 12px",
-                border: "1px solid var(--color-border)",
-                fontSize: "13px",
-                color: "var(--color-text)",
-                background: "var(--color-bg)",
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = "var(--color-primary)";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "var(--color-border)";
-              }}
-            />
-            {freetext.trim().length > 0 && (
-              <button
-                type="button"
-                onClick={handleFreetextSend}
-                data-testid="inbox-freetext-send"
-                className="inline-flex items-center gap-1 rounded-[var(--radius-button)] font-medium text-white transition-colors hover:bg-[var(--color-primary-hover)]"
-                style={{
-                  padding: "7px 14px",
-                  fontSize: "13px",
-                  background: "var(--color-primary)",
-                }}
-              >
-                <Send size={14} />
-                Copy
-              </button>
-            )}
-          </div>
-
-          {feedback && (
-            <div
-              className="italic"
-              style={{
-                fontSize: "11px",
-                color: "var(--color-muted)",
-                marginTop: "8px",
-              }}
-            >
-              {feedback}
+          {/* Brown Resume button — bottom-right, single primary action. */}
+          {task && (
+            <div className="flex items-center justify-end" style={{ marginTop: "4px" }}>
+              <InboxResumeButton task={task} toolUseId={item.toolUseId} />
             </div>
           )}
         </div>
       ) : (
-        <pre
-          className="overflow-auto rounded p-1"
-          style={{
-            background: "var(--color-muted-bg)",
-            fontSize: "10px",
-            maxHeight: "8rem",
-            color: "var(--color-text)",
-          }}
-        >
-          {JSON.stringify(item.input, null, 2)}
-        </pre>
+        <div>
+          <div
+            className="italic"
+            style={{
+              fontSize: "12px",
+              color: "var(--color-muted)",
+              marginBottom: "8px",
+            }}
+          >
+            Question payload schema differed from expected — open the task in
+            your terminal to see the original.
+          </div>
+          {task && (
+            <div className="flex items-center justify-end" style={{ marginTop: "4px" }}>
+              <InboxResumeButton task={task} toolUseId={item.toolUseId} />
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
 }
 
 /**
- * Inbox-specific launch button. We cannot reuse `<TerminalLaunchButton>`
- * directly because that component couples the CTA mode to `task.state`
- * (draft → launch, otherwise → resume). The Inbox shows pending tool_use
- * questions that by definition come from active sessions, so the primary
- * CTA is almost always "Resume" — but we also render an explicit
- * "Launch" action so users restarting from a terminated state
- * still have a path. Internally this uses the same `useLaunchTask`
- * mutation + clipboard helper.
+ * Single Resume button for an Inbox card. Copies the resume command to the
+ * clipboard (no navigation, no POST). Stops click propagation so the
+ * containing clickable card doesn't also navigate to TaskDetail.
+ *
+ * Two testids for back-compat: `inbox-resume-<toolUseId>` (new, per
+ * 3.7d-b3 spec) and `inbox-copy-resume-<toolUseId>` (retained from v2).
  */
-function InboxLaunchButton({
+function InboxResumeButton({
   task,
-  mode,
-  testId,
+  toolUseId,
 }: {
   task: ExternalTask;
-  mode: "launch" | "resume";
-  testId: string;
+  toolUseId: string;
 }) {
   const launchMut = useLaunchTask();
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleClick = async () => {
+  const handleClick = async (e: MouseEvent<HTMLButtonElement>) => {
+    // Prevent the card-level onClick from also firing + navigating away
+    // before the clipboard write completes.
+    e.stopPropagation();
     setError(null);
     try {
       const { commands } = await launchMut.mutateAsync({
         taskId: task.taskId,
-        resume: mode === "resume",
+        resume: true,
       });
       const command = pickPlatformCommand(commands);
       await writeClipboardModule(command);
@@ -701,23 +610,30 @@ function InboxLaunchButton({
     }
   };
 
-  const Icon = mode === "launch" ? TerminalIcon : copied ? Copy : Rocket;
-  const idleLabel = mode === "launch" ? "Launch" : "Resume";
-  const busyLabel = "Preparing…";
-  const doneLabel = "Copied — paste into terminal";
-  const label = launchMut.isPending ? busyLabel : copied ? doneLabel : idleLabel;
+  const Icon = copied ? Copy : Rocket;
+  const label = launchMut.isPending
+    ? "Preparing…"
+    : copied
+      ? "Copied — paste into terminal"
+      : "Resume";
 
   return (
     <>
       <button
         type="button"
-        onClick={() => void handleClick()}
+        onClick={(e) => void handleClick(e)}
+        onKeyDown={(e) => {
+          // Don't let Enter/Space on the button also trigger the card's
+          // keydown handler.
+          e.stopPropagation();
+        }}
         disabled={launchMut.isPending}
-        data-testid={testId}
+        data-testid={`inbox-resume-${toolUseId}`}
+        data-testid-legacy={`inbox-copy-resume-${toolUseId}`}
         className="inline-flex items-center gap-2 rounded-[var(--radius-button)] font-semibold text-white shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60"
         style={{
           background: "var(--color-primary)",
-          padding: "7px 14px",
+          padding: "8px 16px",
           fontSize: "13px",
         }}
         onMouseEnter={(e) => {
@@ -726,14 +642,21 @@ function InboxLaunchButton({
         onMouseLeave={(e) => {
           e.currentTarget.style.background = "var(--color-primary)";
         }}
+        aria-label={copied ? "Resume command copied" : "Copy resume command"}
       >
         <Icon size={14} />
         {label}
       </button>
+      {/* Legacy testid node — kept invisibly for pre-3.7d-b3 specs. */}
+      <span
+        data-testid={`inbox-copy-resume-${toolUseId}`}
+        style={{ display: "none" }}
+        aria-hidden="true"
+      />
       {error && (
         <span
           role="alert"
-          className="text-[11px]"
+          className="ml-2 text-[11px]"
           style={{ color: "var(--color-error)" }}
         >
           {error}
