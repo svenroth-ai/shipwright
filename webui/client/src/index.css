@@ -94,3 +94,71 @@ body {
   color: var(--color-text);
   margin: 0;
 }
+
+/* Iterate 3 remediation v2 Phase 0 (2026-04-21):
+   Themed scrollbar — applied globally so that every scroll container
+   (TaskBoard columns, Inbox, Projects, Settings, TaskDetail panes,
+   modals) inherits the warm-beige palette instead of the default
+   white OS scrollbar. Thumb uses --color-border (warm beige), track
+   is transparent (inherits the container bg). Firefox equivalents
+   set at html/body and inherited. A utility class .scroll-themed is
+   additionally exposed as an explicit opt-in for future components
+   that want to override a localized rule.
+   Rationale for going global (vs utility-class):
+     - Less regression-risk: no touching of Surface 1..5 components
+       in Phase 0 (boundary rule).
+     - Palette already matches any muted-bg / column-bg surface.
+     - Mockups (10-kanban-board, 13-global-inbox, 15-settings,
+       task-detail-3pane) all use the same thumb/track colors. */
+html,
+body {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+/* Explicit opt-in utility — usable when a component wants the theme
+   inside a nested scroller whose ancestor overrode scrollbar rules. */
+.scroll-themed {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+.scroll-themed::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scroll-themed::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-themed::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+.scroll-themed::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+/* Iterate 3 remediation v2 Phase 0 — page-container utility.
+   Centers a page body to 1280px max-width with 24px horizontal
+   padding. Used by Inbox / Projects / Settings in the v2 surface
+   agents so layouts align to the same column without touching
+   TaskBoard (which is intentionally full-bleed). */
+.page-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
