@@ -3,18 +3,22 @@
  *
  * Replaces the flat event-card list from Sub-iterate 1. Each event maps
  * to a "bubble":
- *   - user → right-aligned, neutral grey.
- *   - assistant → left-aligned, subtle blue.
+ *   - user → right-aligned, warm-beige muted bg (VS Code Claude Code style).
+ *   - assistant → left-aligned, surface white with subtle border.
  *   - tool_use → left-aligned card under the assistant bubble (sibling
  *     to tool_result chronologically; correlation deferred to a future
  *     iterate per plan).
  *   - tool_result → left-aligned card with ANSI-stripped content.
  *   - AskUserQuestion → amber pending banner, flips green when a
  *     matching tool_result arrives later in the stream.
- *   - unknown / attachment → neutral chip with a details disclosure.
+ *   - attachment → chip card; consecutive attachments pack inline in
+ *     an AttachmentStrip (mockup FR-03.53).
+ *   - unknown → neutral details disclosure with warning styling.
  *
  * Auto-scroll = CSS `overflow-anchor: auto` on the scroll container plus
- * a `useAutoScroll` safety net (ADR-035).
+ * a `useAutoScroll` safety net (ADR-035). The hook re-keys on
+ * `content.length + visible.length + showSystem` so it fires on JSONL
+ * polling ticks, tail expansion (Load older), and system-toggle flips.
  *
  * Virtualization = `@tanstack/react-virtual`, engaged only when the
  * visible event list reaches `VIRTUALIZE_THRESHOLD`. Below that, plain
@@ -22,6 +26,17 @@
  *
  * "Load older" expands the visible tail in 200-event steps; the server
  * already returns the full content, so this is a client-side window only.
+ *
+ * Iterate 3.7c-2 UAT fixes (2026-04-21):
+ *   - system-toggle now uses functional setState so rapid clicks flip
+ *     reliably (FR-03.51 regression).
+ *   - auto-scroll dep keys on visible.length so virtualized mode pins
+ *     the viewport to the newest bubble after measurement (ADR-035).
+ *   - bubble tokens migrated off Tailwind neutral-* / blue-50 onto
+ *     CSS variables from index.css (warm-beige palette parity with the
+ *     task-detail-3pane mockup).
+ *   - attachment chips group into a flex-wrap strip instead of stacking
+ *     vertically in separate `msg-turn` rows.
  */
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -52,7 +67,7 @@ const SYSTEM_VISIBILITY_KEY = "webui.transcript.showSystem";
  * every transcript viewer in the app (single default — not per-task,
  * per plan § 3 section 01 + external review O16).
  */
-function useSystemVisibility(): [boolean, (next: boolean) => void] {
+function useSystemVisibility(): [boolean, (next: boolean | ((prev: boolean) => boolean)) => void] {
   const [visible, setVisibleState] = useState<boolean>(() => {
     try {
       return window.localStorage.getItem(SYSTEM_VISIBILITY_KEY) === "true";
@@ -72,13 +87,16 @@ function useSystemVisibility(): [boolean, (next: boolean) => void] {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  const setVisible = (next: boolean) => {
-    try {
-      window.localStorage.setItem(SYSTEM_VISIBILITY_KEY, next ? "true" : "false");
-    } catch {
-      // ignore quota/denied — in-memory flip still applies for this session.
-    }
-    setVisibleState(next);
+  const setVisible = (next: boolean | ((prev: boolean) => boolean)) => {
+    setVisibleState((prev) => {
+      const resolved = typeof next === "function" ? next(prev) : next;
+      try {
+        window.localStorage.setItem(SYSTEM_VISIBILITY_KEY, resolved ? "true" : "false");
+      } catch {
+        // ignore quota/denied — in-memory flip still applies for this session.
+      }
+      return resolved;
+    });
   };
 
   return [visible, setVisible];
@@ -119,36 +137,54 @@ export function BubbleTranscript({ content, initialTail = DEFAULT_TAIL }: Props)
   }, [filtered]);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const { isAtBottom, scrollToBottom } = useAutoScroll(containerRef, content);
+  // Re-key on a derived tuple so auto-scroll fires on
+  //   (a) new JSONL bytes (polling tick) → content.length grows,
+  //   (b) tail expansion via "Load older" → visible.length grows,
+  //   (c) system-toggle flip that changes the visible event count.
+  // Plain string concatenation keeps the dep serializable.
+  const scrollDepKey = `${content.length}:${visible.length}:${showSystem ? 1 : 0}`;
+  const { isAtBottom, scrollToBottom } = useAutoScroll(containerRef, scrollDepKey);
 
   const showVirtualized = visible.length >= VIRTUALIZE_THRESHOLD;
 
   if (parsed.events.length === 0) {
     return (
-      <div className="py-4 text-sm text-neutral-400" data-testid="transcript-empty">
+      <div
+        className="py-4 text-sm"
+        style={{ color: "var(--color-muted, #6b7280)" }}
+        data-testid="transcript-empty"
+      >
         No events yet — waiting for JSONL content.
       </div>
     );
   }
 
   return (
-    <div className="relative flex h-full flex-col" data-testid="bubble-transcript">
+    <div className="relative flex h-full min-h-0 flex-col" data-testid="bubble-transcript">
       <Toolbar
         total={filtered.length}
         visible={visible.length}
         canLoadOlder={filtered.length > tail}
         onLoadOlder={() => setTail((t) => t + TAIL_PAGE)}
         showSystem={showSystem}
-        onToggleSystem={() => setShowSystem(!showSystem)}
+        onToggleSystem={() => setShowSystem((prev) => !prev)}
       />
       <div
         ref={containerRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden"
-        style={{ overflowAnchor: "auto" }}
+        className="scroll-themed flex-1 overflow-y-auto overflow-x-hidden"
+        style={{
+          overflowAnchor: "auto",
+          scrollPaddingBottom: "40px",
+          background: "var(--color-bg, #f5f0eb)",
+        }}
         data-testid="transcript-scroll"
       >
         {showVirtualized ? (
-          <VirtualBubbles events={visible} resolved={resolvedToolUseIds} containerRef={containerRef} />
+          <VirtualBubbles
+            events={visible}
+            resolved={resolvedToolUseIds}
+            containerRef={containerRef}
+          />
         ) : (
           <PlainBubbles events={visible} resolved={resolvedToolUseIds} />
         )}
@@ -157,14 +193,26 @@ export function BubbleTranscript({ content, initialTail = DEFAULT_TAIL }: Props)
         <button
           type="button"
           onClick={scrollToBottom}
-          className="absolute bottom-3 right-3 rounded-full bg-neutral-900 px-3 py-1 text-xs text-white shadow-md hover:bg-neutral-700"
+          className="absolute bottom-3 right-3 rounded-full px-3 py-1 text-xs font-medium shadow-md transition-colors"
+          style={{
+            background: "var(--color-primary, #6b5e56)",
+            color: "#fff",
+            boxShadow: "var(--shadow-sm, 0 2px 8px rgba(0,0,0,0.06))",
+          }}
           data-testid="jump-to-latest"
         >
           ↓ Jump to latest
         </button>
       )}
       {parsed.malformedLines > 0 && (
-        <div className="mt-2 rounded border border-amber-300 bg-amber-50 p-1 text-xs text-amber-900">
+        <div
+          className="mx-3 mb-2 rounded p-1 text-xs"
+          style={{
+            border: "1px solid var(--color-warning, #D97706)",
+            background: "var(--color-warning-bg, #FEF3C7)",
+            color: "var(--color-warning-text, #92400E)",
+          }}
+        >
           {parsed.malformedLines} malformed line(s) (likely a torn read on the trailing partial line being written).
         </div>
       )}
@@ -189,8 +237,12 @@ function Toolbar({
 }) {
   return (
     <div
-      className="flex items-center justify-between gap-2 border-b bg-white px-2 py-1 text-xs text-neutral-500"
-      style={{ borderColor: "var(--color-border)" }}
+      className="flex items-center justify-between gap-2 px-3 py-1.5 text-xs"
+      style={{
+        borderBottom: "1px solid var(--color-border, #e0dbd4)",
+        background: "var(--color-surface, #ffffff)",
+        color: "var(--color-muted, #6b7280)",
+      }}
     >
       <span data-testid="transcript-event-count">
         Showing {visible} of {total} events
@@ -200,11 +252,13 @@ function Toolbar({
           type="button"
           onClick={onToggleSystem}
           aria-pressed={showSystem}
-          className="px-2 py-0.5 text-xs transition-colors"
+          className="px-2.5 py-0.5 text-[11px] font-medium transition-colors"
           style={{
-            border: "1px solid var(--color-border)",
-            borderRadius: "var(--radius-button)",
-            background: showSystem ? "var(--color-primary)" : "var(--color-surface)",
+            border: "1px solid var(--color-border, #e0dbd4)",
+            borderRadius: "12px",
+            background: showSystem
+              ? "var(--color-primary, #6b5e56)"
+              : "var(--color-surface, #ffffff)",
             color: showSystem ? "#fff" : "var(--color-muted, #6b7280)",
           }}
           data-testid="system-toggle"
@@ -215,11 +269,12 @@ function Toolbar({
           <button
             type="button"
             onClick={onLoadOlder}
-            className="px-2 py-0.5 hover:bg-neutral-50"
+            className="px-2.5 py-0.5 text-[11px] font-medium transition-colors"
             style={{
-              border: "1px solid var(--color-border)",
-              borderRadius: "var(--radius-button)",
-              background: "var(--color-surface)",
+              border: "1px solid var(--color-border, #e0dbd4)",
+              borderRadius: "12px",
+              background: "var(--color-surface, #ffffff)",
+              color: "var(--color-muted, #6b7280)",
             }}
             data-testid="load-older-btn"
           >
@@ -231,6 +286,53 @@ function Toolbar({
   );
 }
 
+type BubbleGroup =
+  | { kind: "single"; event: ParsedEvent; baseIndex: number }
+  | { kind: "attachments"; events: ParsedEvent[]; baseIndex: number };
+
+function groupConsecutiveAttachments(events: ParsedEvent[]): BubbleGroup[] {
+  const out: BubbleGroup[] = [];
+  let i = 0;
+  while (i < events.length) {
+    const e = events[i];
+    if (e.kind === "attachment") {
+      const start = i;
+      const bucket: ParsedEvent[] = [];
+      while (i < events.length && events[i].kind === "attachment") {
+        bucket.push(events[i]);
+        i += 1;
+      }
+      out.push({ kind: "attachments", events: bucket, baseIndex: start });
+    } else {
+      out.push({ kind: "single", event: e, baseIndex: i });
+      i += 1;
+    }
+  }
+  return out;
+}
+
+function AttachmentStrip({
+  events,
+  indexBase,
+}: {
+  events: ParsedEvent[];
+  indexBase: number;
+}) {
+  return (
+    <div
+      className="flex flex-wrap items-start justify-start"
+      style={{ gap: "8px" }}
+      data-testid="bubble-attachment-strip"
+    >
+      {events.map((e, i) => (
+        <div key={`${indexBase}-${i}`} data-testid="bubble-attachment">
+          {renderAttachmentCard(e)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PlainBubbles({
   events,
   resolved,
@@ -238,16 +340,38 @@ function PlainBubbles({
   events: ParsedEvent[];
   resolved: Set<string>;
 }) {
+  // Pack consecutive attachments into a single flex-wrap row so chips
+  // render side-by-side (mockup FR-03.53 visual grouping).
+  const groups = useMemo(() => groupConsecutiveAttachments(events), [events]);
+
   return (
-    <div className="flex flex-col gap-2 p-3" data-testid="bubble-list-plain">
-      {events.map((e, i) => (
-        <BubbleRow
-          key={`${i}-${e.uuid ?? i}`}
-          event={e}
-          previous={i > 0 ? events[i - 1] : null}
-          resolved={resolved}
-        />
-      ))}
+    <div
+      className="flex flex-col"
+      style={{ gap: "14px", padding: "20px 22px 80px" }}
+      data-testid="bubble-list-plain"
+    >
+      {groups.map((group, gi) => {
+        if (group.kind === "attachments") {
+          return (
+            <AttachmentStrip
+              key={`att-${gi}`}
+              events={group.events}
+              indexBase={group.baseIndex}
+            />
+          );
+        }
+        const e = group.event;
+        const i = group.baseIndex;
+        const previous = i > 0 ? events[i - 1] : null;
+        return (
+          <BubbleRow
+            key={`${i}-${e.uuid ?? i}`}
+            event={e}
+            previous={previous}
+            resolved={resolved}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -269,7 +393,11 @@ function VirtualBubbles({
   });
   return (
     <div
-      style={{ height: virtualizer.getTotalSize(), position: "relative", padding: "12px" }}
+      style={{
+        height: virtualizer.getTotalSize(),
+        position: "relative",
+        padding: "20px 22px 80px",
+      }}
       data-testid="bubble-list-virtual"
     >
       {virtualizer.getVirtualItems().map((vi) => {
@@ -286,7 +414,7 @@ function VirtualBubbles({
               left: 0,
               right: 0,
               transform: `translateY(${vi.start}px)`,
-              padding: "4px 0",
+              padding: "7px 0",
             }}
           >
             <BubbleRow event={event} previous={previous} resolved={resolved} />
@@ -308,8 +436,14 @@ function BubbleRow({
 }) {
   const turnSeparator = isTurnBoundary(previous, event);
   return (
-    <div className="flex flex-col gap-2">
-      {turnSeparator && <hr className="my-2 border-t border-neutral-200" data-testid="turn-separator" />}
+    <div className="flex flex-col" style={{ gap: "10px" }}>
+      {turnSeparator && (
+        <hr
+          className="my-2"
+          style={{ borderTop: "1px solid var(--color-border, #e0dbd4)" }}
+          data-testid="turn-separator"
+        />
+      )}
       {renderBubble(event, resolved)}
     </div>
   );
@@ -332,8 +466,16 @@ function renderBubble(event: ParsedEvent, resolved: Set<string>): ReactNode {
     const results = toolResults(event);
     if (results.length > 0) {
       return (
-        <div className="flex" data-testid="bubble-tool-result">
-          <div className="max-w-[90%] rounded-lg border border-neutral-200 bg-white p-2 shadow-sm">
+        <div className="flex justify-start" data-testid="bubble-tool-result">
+          <div
+            className="max-w-[90%] p-2"
+            style={{
+              background: "var(--color-surface, #ffffff)",
+              border: "1px solid var(--color-border, #e0dbd4)",
+              borderRadius: "var(--radius-button, 8px)",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+            }}
+          >
             <BubbleHeader role="tool_result" timestamp={event.timestamp} />
             {results.map((r) => (
               <ToolOutputBlock key={r.tool_use_id} text={r.content} isError={r.is_error} />
@@ -345,10 +487,21 @@ function renderBubble(event: ParsedEvent, resolved: Set<string>): ReactNode {
     const t = userText(event);
     return (
       <div className="flex justify-end" data-testid="bubble-user">
-        <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-neutral-200 px-3 py-2 text-sm text-neutral-900">
+        <div
+          className="max-w-[80%] px-3 py-2 text-sm"
+          style={{
+            background: "var(--color-muted-bg, #ede8e1)",
+            color: "var(--color-text, #1a1a1a)",
+            border: "1px solid var(--color-border, #e0dbd4)",
+            borderRadius: "14px",
+            borderTopRightRadius: "4px",
+          }}
+        >
           <BubbleHeader role="user" timestamp={event.timestamp} />
           <div className="whitespace-pre-wrap break-words">
-            {t || <em className="text-neutral-500">(empty user message)</em>}
+            {t || (
+              <em style={{ color: "var(--color-muted, #6b7280)" }}>(empty user message)</em>
+            )}
           </div>
         </div>
       </div>
@@ -359,9 +512,19 @@ function renderBubble(event: ParsedEvent, resolved: Set<string>): ReactNode {
     const text = assistantText(event);
     const tools = toolUses(event);
     return (
-      <div className="flex flex-col gap-1" data-testid="bubble-assistant">
+      <div className="flex flex-col gap-1.5" data-testid="bubble-assistant">
         <div className="flex justify-start">
-          <div className="max-w-[90%] rounded-2xl rounded-tl-sm bg-blue-50 px-3 py-2 text-sm text-neutral-900">
+          <div
+            className="max-w-[90%] px-3 py-2 text-sm"
+            style={{
+              background: "var(--color-surface, #ffffff)",
+              color: "var(--color-text, #1a1a1a)",
+              border: "1px solid var(--color-border, #e0dbd4)",
+              borderRadius: "14px",
+              borderTopLeftRadius: "4px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+            }}
+          >
             <BubbleHeader role="assistant" timestamp={event.timestamp} />
             {text && <MarkdownText text={text} />}
           </div>
@@ -376,82 +539,18 @@ function renderBubble(event: ParsedEvent, resolved: Set<string>): ReactNode {
   }
 
   if (event.kind === "attachment") {
-    const payload = event.attachment;
-    const filename = readStringField(payload, "filename") ?? readStringField(payload, "name");
-    const thumbnailUrl =
-      readStringField(payload, "thumbnailUrl") ?? readStringField(payload, "thumbnail_url");
-    if (filename) {
-      return (
-        <div className="flex justify-start" data-testid="bubble-attachment">
-          <div
-            className="flex max-w-[380px] items-center gap-2 px-2 py-1 text-xs"
-            style={{
-              background: "var(--color-surface)",
-              border: "1px solid var(--color-border)",
-              borderRadius: "var(--radius-button)",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-            }}
-          >
-            {thumbnailUrl ? (
-              <img
-                src={thumbnailUrl}
-                alt=""
-                className="h-9 w-9 flex-shrink-0 rounded object-cover"
-                style={{ borderRadius: "6px" }}
-              />
-            ) : (
-              <div
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center"
-                style={{
-                  borderRadius: "6px",
-                  background: "var(--color-background, #f5f0eb)",
-                  color: "var(--color-primary)",
-                  fontSize: "10px",
-                  fontWeight: 600,
-                  letterSpacing: "0.04em",
-                  textTransform: "uppercase",
-                }}
-              >
-                {extensionHint(filename)}
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <div
-                className="truncate font-medium"
-                style={{ color: "var(--color-text, #1a1a1a)" }}
-              >
-                {filename}
-              </div>
-              <div style={{ color: "var(--color-muted, #6b7280)", fontSize: "11px" }}>
-                attachment
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
     return (
       <div className="flex justify-start" data-testid="bubble-attachment">
-        <div
-          className="max-w-[60%] px-2 py-1 text-xs"
-          style={{
-            background: "var(--color-surface)",
-            border: "1px solid var(--color-border)",
-            borderRadius: "var(--radius-button)",
-            color: "var(--color-muted, #6b7280)",
-          }}
-        >
-          attachment
-        </div>
+        {renderAttachmentCard(event)}
       </div>
     );
   }
 
   if (event.kind === "system") {
     return (
-      <div className="flex justify-start" data-testid="bubble-system">
+      <div className="flex justify-center" data-testid="bubble-system">
         <span
-          className="inline-flex max-w-full items-center gap-1 truncate px-2 py-0.5 text-[11px]"
+          className="inline-flex max-w-[95%] items-center gap-1.5 truncate px-2.5 py-1 text-[11px]"
           style={{
             fontFamily: "var(--font-mono, ui-monospace, SFMono-Regular, monospace)",
             color: "var(--color-muted, #6b7280)",
@@ -471,9 +570,9 @@ function renderBubble(event: ParsedEvent, resolved: Set<string>): ReactNode {
 
   if (event.kind === "custom-title") {
     return (
-      <div className="flex justify-start" data-testid="bubble-custom-title">
+      <div className="flex justify-center" data-testid="bubble-custom-title">
         <span
-          className="inline-flex max-w-full items-center gap-1 truncate px-2 py-0.5 text-[11px]"
+          className="inline-flex max-w-full items-center gap-1 truncate px-2.5 py-1 text-[11px]"
           style={{
             fontFamily: "var(--font-mono, ui-monospace, SFMono-Regular, monospace)",
             color: "#1E40AF",
@@ -490,9 +589,9 @@ function renderBubble(event: ParsedEvent, resolved: Set<string>): ReactNode {
 
   if (event.kind === "agent-name") {
     return (
-      <div className="flex justify-start" data-testid="bubble-agent-name">
+      <div className="flex justify-center" data-testid="bubble-agent-name">
         <span
-          className="inline-flex max-w-full items-center gap-1 truncate px-2 py-0.5 text-[11px]"
+          className="inline-flex max-w-full items-center gap-1 truncate px-2.5 py-1 text-[11px]"
           style={{
             fontFamily: "var(--font-mono, ui-monospace, SFMono-Regular, monospace)",
             color: "var(--color-accent, #857568)",
@@ -512,9 +611,9 @@ function renderBubble(event: ParsedEvent, resolved: Set<string>): ReactNode {
 
   if (event.kind === "permission-mode") {
     return (
-      <div className="flex justify-start" data-testid="bubble-permission-mode">
+      <div className="flex justify-center" data-testid="bubble-permission-mode">
         <span
-          className="inline-flex max-w-full items-center gap-1 truncate px-2 py-0.5 text-[11px]"
+          className="inline-flex max-w-full items-center gap-1 truncate px-2.5 py-1 text-[11px]"
           style={{
             fontFamily: "var(--font-mono, ui-monospace, SFMono-Regular, monospace)",
             color: "#6B21A8",
@@ -533,7 +632,15 @@ function renderBubble(event: ParsedEvent, resolved: Set<string>): ReactNode {
   if (event.kind === "unknown") {
     return (
       <div className="flex justify-start" data-testid="bubble-unknown">
-        <details className="max-w-[80%] rounded border border-amber-300 bg-amber-50 p-2 text-xs">
+        <details
+          className="max-w-[80%] p-2 text-xs"
+          style={{
+            border: "1px solid var(--color-warning, #D97706)",
+            background: "var(--color-warning-bg, #FEF3C7)",
+            color: "var(--color-warning-text, #92400E)",
+            borderRadius: "var(--radius-button, 8px)",
+          }}
+        >
           <summary className="cursor-pointer">Unknown event: {event.originalType}</summary>
           <pre className="mt-1 overflow-x-auto text-[10px]">{JSON.stringify(event.raw, null, 2)}</pre>
         </details>
@@ -543,7 +650,13 @@ function renderBubble(event: ParsedEvent, resolved: Set<string>): ReactNode {
 
   return (
     <div
-      className="rounded border border-neutral-200 bg-white p-1 text-[10px] text-neutral-500"
+      className="p-1 text-[10px]"
+      style={{
+        border: "1px solid var(--color-border, #e0dbd4)",
+        background: "var(--color-surface, #ffffff)",
+        color: "var(--color-muted, #6b7280)",
+        borderRadius: "var(--radius-button, 8px)",
+      }}
       data-testid={`bubble-${event.kind}`}
     >
       {event.kind}
@@ -567,27 +680,42 @@ function ToolUseBubble({
     const isResolved = resolved.has(id);
     return (
       <div
-        className={`max-w-[90%] rounded-lg border-2 p-2 text-xs shadow-sm ${
-          isResolved
-            ? "border-green-400 bg-green-50 text-green-900"
-            : "border-amber-400 bg-amber-50 text-amber-900"
-        }`}
+        className="max-w-[90%] p-3 text-xs"
+        style={{
+          background: "var(--color-surface, #ffffff)",
+          border: "1px solid var(--color-border, #e0dbd4)",
+          borderLeft: `3px solid ${
+            isResolved
+              ? "var(--color-success, #059669)"
+              : "var(--color-warning, #D97706)"
+          }`,
+          borderRadius: "var(--radius-button, 8px)",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+          color: "var(--color-text, #1a1a1a)",
+        }}
         data-testid={isResolved ? "askuser-resolved" : "askuser-pending"}
         data-tool-use-id={id}
       >
-        <div className="text-[10px] font-semibold uppercase tracking-wide">
+        <div
+          className="text-[10px] font-semibold uppercase tracking-wide"
+          style={{
+            color: isResolved
+              ? "var(--color-success, #059669)"
+              : "var(--color-warning, #D97706)",
+          }}
+        >
           {isResolved ? "✓ Answered" : "→ Answer in your terminal"}
         </div>
-        <div className="mt-1 text-sm font-medium">{q.question}</div>
+        <div className="mt-1.5 text-sm font-medium">{q.question}</div>
         {q.options.length > 0 && (
-          <ul className="mt-1 list-disc pl-4">
+          <ul className="mt-1.5 list-disc pl-4">
             {q.options.map((o, i) => (
               <li key={i}>{o}</li>
             ))}
           </ul>
         )}
         {q.fallback && (
-          <div className="mt-1 italic">
+          <div className="mt-1 italic" style={{ color: "var(--color-muted, #6b7280)" }}>
             (Question payload schema differed from expected — open the task in your terminal to see the original.)
           </div>
         )}
@@ -596,12 +724,28 @@ function ToolUseBubble({
   }
   return (
     <div
-      className="max-w-[90%] rounded-lg border border-neutral-300 bg-white p-2 text-xs shadow-sm"
+      className="max-w-[90%] p-2 text-xs"
+      style={{
+        background: "var(--color-surface, #ffffff)",
+        border: "1px solid var(--color-border, #e0dbd4)",
+        borderRadius: "var(--radius-button, 8px)",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+      }}
       data-testid="bubble-tool-use"
       data-tool-use-id={id}
     >
-      <span className="font-semibold text-neutral-700">tool_use</span>{" "}
-      <span className="font-mono">{name}</span>
+      <span
+        className="font-semibold"
+        style={{ color: "var(--color-text, #1a1a1a)" }}
+      >
+        tool_use
+      </span>{" "}
+      <span
+        className="font-mono"
+        style={{ color: "var(--color-primary, #6b5e56)" }}
+      >
+        {name}
+      </span>
     </div>
   );
 }
@@ -615,13 +759,99 @@ function BubbleHeader({
 }) {
   const fmt = formatTimestamp(timestamp);
   return (
-    <div className="mb-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
+    <div
+      className="mb-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide"
+      style={{ color: "var(--color-muted, #6b7280)" }}
+    >
       <span>{role}</span>
       {fmt && (
-        <span className="text-[10px] font-normal normal-case text-neutral-400" title={fmt.iso}>
+        <span
+          className="text-[10px] font-normal normal-case"
+          style={{ color: "var(--color-muted, #6b7280)", opacity: 0.75 }}
+          title={fmt.iso}
+          data-testid="bubble-timestamp"
+        >
           {fmt.short}
         </span>
       )}
+    </div>
+  );
+}
+
+/**
+ * Standalone attachment card render — reusable between the single-event
+ * bubble flow and the AttachmentStrip that packs consecutive attachments
+ * inline (mockup FR-03.53).
+ */
+function renderAttachmentCard(event: ParsedEvent): ReactNode {
+  if (event.kind !== "attachment") return null;
+  const payload = event.attachment;
+  const filename = readStringField(payload, "filename") ?? readStringField(payload, "name");
+  const thumbnailUrl =
+    readStringField(payload, "thumbnailUrl") ?? readStringField(payload, "thumbnail_url");
+  if (filename) {
+    return (
+      <div
+        className="flex items-center gap-2 text-xs"
+        style={{
+          maxWidth: "320px",
+          background: "var(--color-surface, #ffffff)",
+          border: "1px solid var(--color-border, #e0dbd4)",
+          borderRadius: "var(--radius-button, 8px)",
+          padding: "8px 12px",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        }}
+      >
+        {thumbnailUrl ? (
+          <img
+            src={thumbnailUrl}
+            alt=""
+            className="flex-shrink-0 object-cover"
+            style={{ width: "36px", height: "36px", borderRadius: "6px" }}
+          />
+        ) : (
+          <div
+            className="flex flex-shrink-0 items-center justify-center"
+            style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "6px",
+              background: "var(--color-muted-bg, #ede8e1)",
+              color: "var(--color-primary, #6b5e56)",
+              fontSize: "10px",
+              fontWeight: 700,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+            }}
+          >
+            {extensionHint(filename)}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <div
+            className="truncate font-medium"
+            style={{ color: "var(--color-text, #1a1a1a)", fontSize: "12.5px" }}
+          >
+            {filename}
+          </div>
+          <div style={{ color: "var(--color-muted, #6b7280)", fontSize: "11px" }}>
+            attachment
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div
+      className="px-2 py-1 text-xs"
+      style={{
+        background: "var(--color-surface, #ffffff)",
+        border: "1px solid var(--color-border, #e0dbd4)",
+        borderRadius: "var(--radius-button, 8px)",
+        color: "var(--color-muted, #6b7280)",
+      }}
+    >
+      attachment
     </div>
   );
 }
