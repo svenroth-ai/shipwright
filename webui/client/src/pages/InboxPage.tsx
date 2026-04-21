@@ -1,48 +1,39 @@
 /*
  * Inbox — "best-effort" pending interactions across tracked external-launch
- * tasks. Round-3 plan integration explicitly labels the list as best-effort
- * because heuristic tool_use-without-tool_result correlation can false-
- * positive (long-running commands) and false-negative (plugin-owned
- * non-standard tool shapes). Users answer in their own chat client; webui
- * only surfaces the question here + offers dismiss.
+ * tasks. Webui cannot answer the LLM (external-launch invariant — see
+ * CLAUDE.md DO-NOT #3), so this surface only helps the user route an
+ * answer to their own terminal via clipboard shortcuts.
  *
- * Iterate 3 remediation Phase B4 (2026-04-20) — visual rebuild:
- *   - Header: 24px/700 title + inline muted "(N open)" + ghost "Mark all
- *     read" button right-aligned.
- *   - Filter: header dropdown (shared ProjectFilterDropdown from Phase A6)
- *     replaces the old chip bar. Grouping stays by session UUID (product
- *     decision #2), but each group header now carries the project name
- *     alongside the 8-char UUID, derived via
- *       tasksById.get(g.taskId)?.projectId → projects.find(p => p.id === pid)?.name
- *     with "Unassigned" fallback for the UNASSIGNED_PROJECT_ID sentinel.
- *   - Rows: task-context-pill (muted-bg rounded 12px with lucide phase
- *     icon + phase name + task title), right-aligned time-ago, primary
- *     `var(--color-primary)` warm-brown Answer CTA (not cool black).
- *   - Options: clickable pills (border + rounded-button, hover primary
- *     border). No answer-POST endpoint exists server-side yet, so the
- *     graceful-degradation path writes the option text to the clipboard
- *     and shows inline "Answer in your terminal" feedback. When the API
- *     lands, swap the clipboard call for a POST in one place.
- *   - Freetext row: "or" divider + `<input>` with send button revealed
- *     when the input has content. Same clipboard fallback path.
+ * Iterate 3 remediation v2 / Surface 4 (2026-04-21) — redesign:
+ *   - Removed `ProjectFilterDropdown` entirely. Cards are now grouped by
+ *     project (collapsible `<details>`, default-open) with the existing
+ *     session UUID sub-grouping preserved inside each project section.
+ *   - Removed the per-card Answer POST `<Link>`, the Dismiss button, and
+ *     the "best-effort" pill badge. Webui does not answer Claude; the
+ *     external-launch invariant means every answer path is clipboard →
+ *     user's terminal.
+ *   - Every card now carries a Launch-in-Terminal + Copy-Resume-Command
+ *     top row (same semantics as TaskCard), plus the existing option
+ *     pills (now clipboard shortcuts for "Answer: <pill>") and freetext
+ *     row (clipboard-copies the typed text).
+ *   - Wrapped the body in `.page-container` (1280 max-width, 24 px padding)
+ *     so the Inbox aligns with Projects / Settings.
  *
- * Load-bearing testids (iterate-2 + iterate-3 Playwright specs depend):
+ * Load-bearing testids (existing Playwright specs rely on them):
  *   inbox-page, inbox-empty, inbox-session-<uuid>, inbox-item-<toolUseId>,
- *   dismiss-<toolUseId>, answer-<toolUseId>.
+ *   inbox-freetext-input, inbox-freetext-send, inbox-option-<i>,
+ *   inbox-task-context-pill-<toolUseId>, inbox-header-count,
+ *   inbox-group-project-label-<sessionUuid>.
  *
- * New testids (Phase B4):
- *   inbox-header-count, inbox-mark-all-read,
- *   inbox-project-filter-dropdown (wraps the shared primitive),
- *   inbox-group-project-label-<sessionUuid>,
- *   inbox-task-context-pill-<toolUseId>,
- *   inbox-option-<optionIndex>,
- *   inbox-freetext-input, inbox-freetext-send.
+ * New testids added in v2:
+ *   inbox-project-group-<projectId>,
+ *   inbox-project-group-toggle-<projectId>,
+ *   inbox-launch-<toolUseId>, inbox-copy-resume-<toolUseId>.
  */
 
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import {
-  AlertTriangle,
+  Copy,
   Hammer,
   ListChecks,
   Palette,
@@ -51,19 +42,19 @@ import {
   ShieldAlert,
   ShieldCheck,
   Send,
+  Terminal as TerminalIcon,
   Workflow,
 } from "lucide-react";
 
-import { ProjectFilterDropdown } from "../components/external/ProjectFilterDropdown";
 import { askUserQuestionSummary } from "../external/session-parser";
-import { useDismissInboxItem, useExternalInbox } from "../hooks/useExternalInbox";
+import { useExternalInbox } from "../hooks/useExternalInbox";
 import { useExternalTasks } from "../hooks/useExternalTasks";
-import { useProjectFilter } from "../hooks/useProjectFilter";
+import { useLaunchTask } from "../hooks/useLaunchTask";
 import { useProjects } from "../hooks/useProjects";
 import { classifyPhase } from "../lib/classifyPhase";
 import { formatRelativeTime } from "../lib/formatTime";
 import { UNASSIGNED_PROJECT_ID } from "../lib/projectIds";
-import type { ExternalTask, InboxItem } from "../lib/externalApi";
+import type { CopyCommandForms, ExternalTask, InboxItem } from "../lib/externalApi";
 import type { Project } from "../types";
 
 // Known phase ids (mirrors PIPELINE_PHASES but we intentionally don't couple
@@ -86,8 +77,6 @@ export default function InboxPage() {
   const { data: items = [], isLoading } = useExternalInbox();
   const { data: tasks = [] } = useExternalTasks();
   const { data: projects = [] } = useProjects();
-  const { activeProjectId } = useProjectFilter();
-  const dismissMut = useDismissInboxItem();
 
   const tasksById = useMemo(() => {
     const m = new Map<string, ExternalTask>();
@@ -101,49 +90,39 @@ export default function InboxPage() {
     return m;
   }, [projects]);
 
-  const groups = useMemo(() => groupBySession(items), [items]);
+  const sessionGroups = useMemo(() => groupBySession(items), [items]);
 
-  // Filter groups by the shared active-project selection. Matches
-  // TaskBoard semantics: null = All Projects keeps every group, including
-  // orphans; a specific projectId drops groups whose task is from a
-  // different project OR whose task record is missing entirely.
-  const visibleGroups = useMemo<SessionGroup[]>(() => {
-    if (activeProjectId === null) return groups;
-    return groups.filter((g) => {
-      const task = tasksById.get(g.taskId);
-      return task?.projectId === activeProjectId;
-    });
-  }, [groups, tasksById, activeProjectId]);
+  // Bucket session groups by project. A session without a matching task (or
+  // an "unassigned" task) falls into the "Unassigned" project.
+  const projectGroups = useMemo<ProjectGroup[]>(() => {
+    const map = new Map<string, ProjectGroup>();
+    for (const sg of sessionGroups) {
+      const task = tasksById.get(sg.taskId);
+      const projectId =
+        task && task.projectId !== UNASSIGNED_PROJECT_ID
+          ? task.projectId
+          : UNASSIGNED_PROJECT_ID;
+      const projectName = resolveProjectName(task, projectsById);
+      const existing = map.get(projectId);
+      if (existing) {
+        existing.sessions.push(sg);
+        existing.totalItems += sg.items.length;
+      } else {
+        map.set(projectId, {
+          projectId,
+          projectName,
+          sessions: [sg],
+          totalItems: sg.items.length,
+        });
+      }
+    }
+    return Array.from(map.values());
+  }, [sessionGroups, tasksById, projectsById]);
 
   const openCount = useMemo(
-    () => visibleGroups.reduce((sum, g) => sum + g.items.length, 0),
-    [visibleGroups],
+    () => projectGroups.reduce((sum, pg) => sum + pg.totalItems, 0),
+    [projectGroups],
   );
-
-  // "Mark all read" stub: no batch-dismiss endpoint exists yet. When one
-  // lands, swap this for the mutation. For now: dismiss visible items in
-  // sequence. Disabled when there's nothing to dismiss.
-  const [markingAll, setMarkingAll] = useState(false);
-  const [markAllMsg, setMarkAllMsg] = useState<string | null>(null);
-  const handleMarkAllRead = async () => {
-    if (openCount === 0) {
-      setMarkAllMsg("Nothing to do yet");
-      setTimeout(() => setMarkAllMsg(null), 2000);
-      return;
-    }
-    setMarkingAll(true);
-    try {
-      for (const g of visibleGroups) {
-        for (const it of g.items) {
-          await dismissMut.mutateAsync(it.toolUseId).catch(() => {
-            /* best-effort: ignore single-item failures */
-          });
-        }
-      }
-    } finally {
-      setMarkingAll(false);
-    }
-  };
 
   return (
     <div
@@ -151,7 +130,7 @@ export default function InboxPage() {
       style={{ background: "var(--color-bg)" }}
       data-testid="inbox-page"
     >
-      {/* Header — 24px / 700 title + inline "(N open)" + Mark all read */}
+      {/* Header — 24px / 700 title + inline "(N open)" */}
       <header
         className="flex items-center justify-between"
         style={{
@@ -182,111 +161,37 @@ export default function InboxPage() {
             ({openCount} open)
           </span>
         </div>
-        <div className="flex items-center gap-3">
-          {markAllMsg && (
-            <span
-              className="text-[12px] italic"
-              style={{ color: "var(--color-muted)" }}
-            >
-              {markAllMsg}
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={handleMarkAllRead}
-            disabled={markingAll}
-            data-testid="inbox-mark-all-read"
-            className="rounded-[var(--radius-button)] px-3 py-[6px] text-[13px] font-medium transition-colors hover:bg-[var(--color-muted-bg)] disabled:opacity-50"
-            style={{ color: "var(--color-primary)" }}
-          >
-            {markingAll ? "Marking…" : "Mark all read"}
-          </button>
-        </div>
       </header>
 
-      {/* Filter row — shared dropdown, left-aligned */}
-      <div
-        className="flex items-center"
-        style={{
-          padding: "16px 32px 0",
-        }}
-        data-testid="inbox-project-filter-dropdown"
-      >
-        <ProjectFilterDropdown />
-      </div>
+      {/* Body — wrapped in .page-container so Inbox aligns with Projects */}
+      <div className="flex-1 overflow-y-auto" style={{ paddingBlock: "24px 40px" }}>
+        <div className="page-container">
+          {isLoading && (
+            <div className="text-sm" style={{ color: "var(--color-muted)" }}>
+              Loading…
+            </div>
+          )}
 
-      {/* Body */}
-      <div
-        className="flex-1 overflow-y-auto"
-        style={{ padding: "24px 32px 40px" }}
-      >
-        {isLoading && (
-          <div className="text-sm" style={{ color: "var(--color-muted)" }}>
-            Loading…
+          {!isLoading && projectGroups.length === 0 && (
+            <div
+              className="p-4 text-sm"
+              style={{
+                background: "var(--color-surface)",
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--radius-button)",
+                color: "var(--color-muted)",
+              }}
+              data-testid="inbox-empty"
+            >
+              No pending interactions.
+            </div>
+          )}
+
+          <div className="flex flex-col" style={{ gap: "24px" }}>
+            {projectGroups.map((pg) => (
+              <ProjectSection key={pg.projectId} group={pg} tasksById={tasksById} />
+            ))}
           </div>
-        )}
-
-        {!isLoading && visibleGroups.length === 0 && (
-          <div
-            className="p-4 text-sm"
-            style={{
-              background: "var(--color-surface)",
-              border: "1px solid var(--color-border)",
-              borderRadius: "var(--radius-button)",
-              color: "var(--color-muted)",
-            }}
-            data-testid="inbox-empty"
-          >
-            No pending interactions.
-          </div>
-        )}
-
-        <div className="flex flex-col" style={{ gap: "28px" }}>
-          {visibleGroups.map((g) => {
-            const task = tasksById.get(g.taskId);
-            const projectName = resolveProjectName(task, projectsById);
-            return (
-              <section
-                key={g.sessionUuid}
-                data-testid={`inbox-session-${g.sessionUuid}`}
-              >
-                {/* Group header — project name + first-8 UUID (mono) */}
-                <div
-                  className="mb-3 flex items-center gap-2"
-                  style={{ paddingLeft: "4px" }}
-                >
-                  <span
-                    className="text-[12px] font-semibold uppercase"
-                    style={{
-                      color: "var(--color-muted)",
-                      letterSpacing: "0.6px",
-                    }}
-                    data-testid={`inbox-group-project-label-${g.sessionUuid}`}
-                  >
-                    {projectName}
-                  </span>
-                  <span
-                    className="font-mono text-[10px]"
-                    style={{ color: "var(--color-muted)", opacity: 0.7 }}
-                  >
-                    {g.sessionUuid.slice(0, 8)}
-                  </span>
-                </div>
-
-                <div className="flex flex-col" style={{ gap: "12px" }}>
-                  {g.items.map((item) => (
-                    <InboxRow
-                      key={item.toolUseId}
-                      item={item}
-                      task={task}
-                      onDismiss={() => dismissMut.mutate(item.toolUseId)}
-                      dismissing={dismissMut.isPending}
-                    />
-                  ))}
-                </div>
-              </section>
-            );
-          })}
         </div>
       </div>
     </div>
@@ -298,6 +203,13 @@ interface SessionGroup {
   taskId: string;
   taskTitle: string;
   items: InboxItem[];
+}
+
+interface ProjectGroup {
+  projectId: string;
+  projectName: string;
+  sessions: SessionGroup[];
+  totalItems: number;
 }
 
 function groupBySession(items: InboxItem[]): SessionGroup[] {
@@ -327,6 +239,108 @@ function resolveProjectName(
   return projectsById.get(task.projectId)?.name ?? "Unassigned";
 }
 
+/**
+ * Collapsible project-group section — `<details open>` so the user sees
+ * everything by default but can collapse noisy projects. The summary row
+ * mirrors the header-style "UNASSIGNED · count" pattern used elsewhere in
+ * the app but adds a chevron affordance for the expand/collapse state.
+ */
+function ProjectSection({
+  group,
+  tasksById,
+}: {
+  group: ProjectGroup;
+  tasksById: Map<string, ExternalTask>;
+}) {
+  return (
+    <details
+      open
+      data-testid={`inbox-project-group-${group.projectId}`}
+      style={{
+        background: "transparent",
+        borderRadius: "var(--radius-card)",
+      }}
+    >
+      <summary
+        data-testid={`inbox-project-group-toggle-${group.projectId}`}
+        className="flex cursor-pointer select-none items-center gap-2 outline-none"
+        style={{
+          listStyle: "none",
+          padding: "6px 4px 10px",
+          color: "var(--color-muted)",
+        }}
+      >
+        <span
+          aria-hidden="true"
+          className="inline-block transition-transform"
+          style={{
+            fontSize: "10px",
+            lineHeight: 1,
+            color: "var(--color-muted)",
+          }}
+        >
+          ▾
+        </span>
+        <span
+          className="font-semibold uppercase"
+          style={{
+            fontSize: "12px",
+            letterSpacing: "0.6px",
+            color: "var(--color-text)",
+          }}
+        >
+          {group.projectName}
+        </span>
+        <span
+          style={{
+            fontSize: "11px",
+            color: "var(--color-muted)",
+            fontWeight: 500,
+          }}
+        >
+          ({group.totalItems} open)
+        </span>
+      </summary>
+
+      <div className="flex flex-col" style={{ gap: "16px", paddingLeft: "4px" }}>
+        {group.sessions.map((sg) => {
+          const task = tasksById.get(sg.taskId);
+          return (
+            <section
+              key={sg.sessionUuid}
+              data-testid={`inbox-session-${sg.sessionUuid}`}
+            >
+              {/* Session sub-header — mono UUID chip */}
+              <div
+                className="mb-2 flex items-center gap-2"
+                style={{ paddingLeft: "4px" }}
+              >
+                <span
+                  className="font-mono"
+                  style={{
+                    fontSize: "10px",
+                    color: "var(--color-muted)",
+                    opacity: 0.7,
+                  }}
+                  data-testid={`inbox-group-project-label-${sg.sessionUuid}`}
+                >
+                  session {sg.sessionUuid.slice(0, 8)}
+                </span>
+              </div>
+
+              <div className="flex flex-col" style={{ gap: "12px" }}>
+                {sg.items.map((item) => (
+                  <InboxRow key={item.toolUseId} item={item} task={task} />
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </details>
+  );
+}
+
 const PHASE_ICON: Record<
   string,
   React.ComponentType<{ size?: number; className?: string }>
@@ -343,33 +357,30 @@ const PHASE_ICON: Record<
 };
 
 /**
- * InboxRow — mockup-accurate question card.
+ * InboxRow — single question card.
  *
- *   ┌──┬────────────────────────────────────────────────┬────────┐
- *   │▐▌│ [pill] build · 02-dashboard          2h ago   │[Answer]│
- *   │▐▌│ question text …                                │[×]     │
- *   │▐▌│ [pill] option A  [pill] option B               │        │
- *   │▐▌│ ── or ── [input type your answer…]  [send →]   │        │
- *   └──┴────────────────────────────────────────────────┴────────┘
- *    ^3px amber left strip (border-left). NOT a full amber bg.
+ * Shape (v2 / surface 4):
+ *   ┌──┬──────────────────────────────────────────────────┐
+ *   │▐▌│ [pill] build · 02-dashboard            2h ago   │
+ *   │▐▌│ question text …                                  │
+ *   │▐▌│ [Launch] [Copy resume]                           │
+ *   │▐▌│ [pill] JWT [pill] Session                        │
+ *   │▐▌│ or [input your answer]  [Copy]                   │
+ *   └──┴──────────────────────────────────────────────────┘
+ *    ^3px amber left strip; card keeps --color-surface bg.
  */
 function InboxRow({
   item,
   task,
-  onDismiss,
-  dismissing,
 }: {
   item: InboxItem;
   task: ExternalTask | undefined;
-  onDismiss: () => void;
-  dismissing: boolean;
 }) {
   const isAUQ = item.toolName === "AskUserQuestion";
   const summary = isAUQ ? askUserQuestionSummary(item.input) : null;
 
   // Best-effort phase derivation from the task title. classifyPhase returns
-  // null if nothing matches — in that case we skip the pill entirely per
-  // spec.
+  // null if nothing matches — in that case we skip the pill entirely.
   const phase = useMemo<string | null>(() => {
     if (!task?.title) return null;
     return classifyPhase(task.title, KNOWN_PHASES as unknown as string[]);
@@ -380,29 +391,49 @@ function InboxRow({
     return stamp ? formatRelativeTime(stamp) : null;
   }, [task?.launchedAt, task?.createdAt]);
 
-  // Graceful degradation: no answer-POST API exists. Copy the option to the
-  // clipboard and surface inline feedback so the user knows to paste in
-  // their terminal.
+  // Clipboard helpers. Every answer path is clipboard → user's terminal —
+  // webui never POSTs an answer (external-launch invariant).
   const [freetext, setFreetext] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
-  const ackCopy = (text: string) => {
-    // navigator.clipboard may be missing in non-secure contexts; fall
-    // through silently — the feedback still explains the intent.
+  const writeClipboardLocal = async (text: string): Promise<void> => {
     try {
-      if (navigator?.clipboard?.writeText) {
-        void navigator.clipboard.writeText(text);
+      if (
+        typeof navigator !== "undefined" &&
+        navigator.clipboard?.writeText
+      ) {
+        await navigator.clipboard.writeText(text);
+        return;
       }
     } catch {
-      /* noop */
+      /* fall through to the execCommand fallback */
     }
-    setFeedback("Copied — answer in your terminal");
+    // Hard fallback for non-secure contexts. Match the pattern used in
+    // TerminalLaunchButton / TaskDetailHeader for consistency.
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand("copy");
+    } finally {
+      document.body.removeChild(ta);
+    }
+  };
+  const flashFeedback = (msg: string) => {
+    setFeedback(msg);
     setTimeout(() => setFeedback(null), 2200);
   };
-  const handleOption = (opt: string) => ackCopy(opt);
+  const handleOption = (opt: string) => {
+    void writeClipboardLocal(`Answer: ${opt}`);
+    flashFeedback(`Copied "Answer: ${opt}" — paste into terminal`);
+  };
   const handleFreetextSend = () => {
     const trimmed = freetext.trim();
     if (!trimmed) return;
-    ackCopy(trimmed);
+    void writeClipboardLocal(`Answer: ${trimmed}`);
+    flashFeedback("Copied — paste into terminal");
     setFreetext("");
   };
 
@@ -422,10 +453,11 @@ function InboxRow({
       }}
       data-testid={`inbox-item-${item.toolUseId}`}
     >
-      {/* Top row: context pill + time-ago + right-side actions */}
+      {/* Top row: context pill + time-ago. Answer POST + Dismiss buttons
+          were removed in v2 — external-launch invariant. */}
       <div className="mb-[10px] flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          {phase && PhaseIcon && task ? (
+          {phase && PhaseIcon && task && (
             <span
               className="inline-flex items-center gap-[5px] rounded-[12px] font-semibold uppercase"
               style={{
@@ -442,54 +474,16 @@ function InboxRow({
                 {phase} / {task.title}
               </span>
             </span>
-          ) : (
-            <span
-              className="inline-flex items-center gap-[5px] rounded-[12px] font-semibold uppercase"
-              style={{
-                background: "var(--color-muted-bg)",
-                color: "var(--color-muted)",
-                fontSize: "11px",
-                padding: "3px 10px",
-                letterSpacing: "0.02em",
-              }}
-            >
-              <AlertTriangle size={12} />
-              best-effort
-            </span>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {timeAgo && (
-            <span
-              className="text-[12px] font-normal"
-              style={{ color: "var(--color-muted)" }}
-            >
-              {timeAgo}
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={onDismiss}
-            disabled={dismissing}
-            className="rounded-[var(--radius-button)] px-3 py-1 text-[12px] font-medium transition-colors hover:bg-[var(--color-muted-bg)] disabled:opacity-50"
-            style={{
-              border: "1px solid var(--color-border)",
-              background: "var(--color-surface)",
-              color: "var(--color-text)",
-            }}
-            data-testid={`dismiss-${item.toolUseId}`}
+        {timeAgo && (
+          <span
+            className="shrink-0 text-[12px] font-normal"
+            style={{ color: "var(--color-muted)" }}
           >
-            Dismiss
-          </button>
-          <Link
-            to={`/tasks/${item.taskId}`}
-            className="inline-flex items-center rounded-[var(--radius-button)] px-3 py-1 text-[12px] font-medium text-white transition-colors hover:bg-[var(--color-primary-hover)]"
-            style={{ background: "var(--color-primary)" }}
-            data-testid={`answer-${item.toolUseId}`}
-          >
-            Answer
-          </Link>
-        </div>
+            {timeAgo}
+          </span>
+        )}
       </div>
 
       {/* Question body */}
@@ -521,11 +515,33 @@ function InboxRow({
             </div>
           )}
 
-          {/* Option pills */}
+          {/* Primary CTA row — Launch + Copy Resume (mirrors TaskCard CTA
+              pattern; VS Code slot omitted because the VS Code extension
+              bridge isn't wired into webui yet — surfaces as soon as it
+              lands.) */}
+          {task && (
+            <div
+              className="flex flex-wrap items-center"
+              style={{ gap: "8px", marginTop: "4px", marginBottom: "12px" }}
+            >
+              <InboxLaunchButton
+                task={task}
+                mode="launch"
+                testId={`inbox-launch-${item.toolUseId}`}
+              />
+              <InboxLaunchButton
+                task={task}
+                mode="resume"
+                testId={`inbox-copy-resume-${item.toolUseId}`}
+              />
+            </div>
+          )}
+
+          {/* Option pills (clipboard shortcuts for "Answer: <opt>") */}
           {summary.options.length > 0 && (
             <div
               className="flex flex-wrap items-center"
-              style={{ gap: "8px", marginTop: "14px" }}
+              style={{ gap: "8px", marginTop: "4px" }}
             >
               {summary.options.map((o, i) => (
                 <button
@@ -554,7 +570,7 @@ function InboxRow({
             </div>
           )}
 
-          {/* Freetext row: "or" divider + input + send */}
+          {/* Freetext row: "or" divider + input + clipboard copy button */}
           <div
             className="flex items-center"
             style={{ gap: "8px", marginTop: "10px" }}
@@ -611,7 +627,7 @@ function InboxRow({
                 }}
               >
                 <Send size={14} />
-                Send
+                Copy
               </button>
             )}
           </div>
@@ -644,4 +660,108 @@ function InboxRow({
       )}
     </div>
   );
+}
+
+/**
+ * Inbox-specific launch button. We cannot reuse `<TerminalLaunchButton>`
+ * directly because that component couples the CTA mode to `task.state`
+ * (draft → launch, otherwise → resume). The Inbox shows pending tool_use
+ * questions that by definition come from active sessions, so the primary
+ * CTA is almost always "Copy resume command" — but we also render an
+ * explicit "Launch" action so users restarting from a terminated state
+ * still have a path. Internally this uses the same `useLaunchTask`
+ * mutation + clipboard helper.
+ */
+function InboxLaunchButton({
+  task,
+  mode,
+  testId,
+}: {
+  task: ExternalTask;
+  mode: "launch" | "resume";
+  testId: string;
+}) {
+  const launchMut = useLaunchTask();
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleClick = async () => {
+    setError(null);
+    try {
+      const { commands } = await launchMut.mutateAsync({
+        taskId: task.taskId,
+        resume: mode === "resume",
+      });
+      const command = pickPlatformCommand(commands);
+      await writeClipboardModule(command);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const Icon = mode === "launch" ? TerminalIcon : copied ? Copy : Rocket;
+  const idleLabel = mode === "launch" ? "Launch in Terminal" : "Copy Resume Command";
+  const busyLabel = "Preparing…";
+  const doneLabel = "Copied — paste into terminal";
+  const label = launchMut.isPending ? busyLabel : copied ? doneLabel : idleLabel;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => void handleClick()}
+        disabled={launchMut.isPending}
+        data-testid={testId}
+        className="inline-flex items-center gap-2 rounded-[var(--radius-button)] font-semibold text-white shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+        style={{
+          background: "var(--color-primary)",
+          padding: "7px 14px",
+          fontSize: "13px",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "var(--color-primary-hover)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "var(--color-primary)";
+        }}
+      >
+        <Icon size={14} />
+        {label}
+      </button>
+      {error && (
+        <span
+          role="alert"
+          className="text-[11px]"
+          style={{ color: "var(--color-error)" }}
+        >
+          {error}
+        </span>
+      )}
+    </>
+  );
+}
+
+function pickPlatformCommand(commands: CopyCommandForms): string {
+  if (typeof navigator === "undefined") return commands.posix;
+  return /windows/i.test(navigator.userAgent) ? commands.powershell : commands.posix;
+}
+
+async function writeClipboardModule(text: string): Promise<void> {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand("copy");
+  } finally {
+    document.body.removeChild(ta);
+  }
 }

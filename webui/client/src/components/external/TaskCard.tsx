@@ -23,6 +23,15 @@
  * `testCounts` and `phase` fields don't exist on ExternalTask yet
  * (ADR-045 — deferred). Rendering is gracefully skipped when absent.
  *
+ * Iterate 3 remediation v2 — Surface 1 (2026-04-21):
+ *   - Whole-card click target now navigates to TaskDetail. The title text
+ *     is no longer its own <button>; title editing lives in the Rename menu
+ *     item (ADR-035). Keyboard support via Enter / Space on the role=button
+ *     wrapper + inner controls (menu, launch pill, start pill) suppress
+ *     their click propagation so they don't double-fire the navigate.
+ *   - `TerminalLaunchButton` is now rendered with `showLabel` so the hover
+ *     affordance reads as "Copy resume" / "Launch" instead of a bare icon.
+ *
  * Preserved testids:
  *   task-card-<id>, task-card-open-<id>, task-card-state-<id>,
  *   task-card-time-<id>, task-card-menu-<id>, task-card-close-<id>,
@@ -83,14 +92,26 @@ export function TaskCard({ task }: Props) {
   // per mockup without inventing new data.
   const commitMarker = task.sessionUuid.slice(0, 7);
 
+  const navigateToDetail = () => navigate(`/tasks/${task.taskId}`);
+
   return (
     <>
       <div
+        role="button"
+        tabIndex={0}
+        onClick={navigateToDetail}
+        onKeyDown={(ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            navigateToDetail();
+          }
+        }}
         className={
           "group relative cursor-pointer bg-[var(--color-surface)] " +
           "px-[14px] py-[12px] transition " +
           "shadow-[0_1px_3px_rgba(0,0,0,0.06)] " +
-          "hover:-translate-y-[1px] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)]"
+          "hover:-translate-y-[1px] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] " +
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
         }
         style={{ borderRadius: "10px" }}
         data-testid={`task-card-${task.taskId}`}
@@ -101,12 +122,13 @@ export function TaskCard({ task }: Props) {
             yet, so this renders only when a future field appears. Left
             intentionally absent for now to avoid inventing data. */}
 
-        {/* Top row: title + menu */}
+        {/* Top row: title + menu.
+            The title keeps a testid (`task-card-open-*`) for existing
+            specs, but is no longer a click-target — the whole card
+            navigates to TaskDetail (iterate 3.7c-1). */}
         <div className="mb-2 flex items-start gap-2">
-          <button
-            type="button"
-            onClick={() => navigate(`/tasks/${task.taskId}`)}
-            className="min-w-0 flex-1 text-left"
+          <div
+            className="min-w-0 flex-1"
             data-testid={`task-card-open-${task.taskId}`}
           >
             <div
@@ -120,13 +142,14 @@ export function TaskCard({ task }: Props) {
               <Icon className={iconClass(task.state)} size={14} />
               <span className="line-clamp-2">{task.title}</span>
             </div>
-          </button>
+          </div>
 
           <div className="flex shrink-0 items-center gap-0.5">
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
                 <button
                   type="button"
+                  onClick={(ev) => ev.stopPropagation()}
                   className="rounded p-1 text-[var(--color-muted)] opacity-0 transition-opacity hover:bg-[var(--color-muted-bg)] hover:text-[var(--color-text)] group-hover:opacity-100"
                   aria-label="Task actions"
                   data-testid={`task-card-menu-${task.taskId}`}
@@ -167,7 +190,9 @@ export function TaskCard({ task }: Props) {
           {/* Phase tag + test-count slots — hidden in B1; see ADR-045. */}
         </div>
 
-        {/* Footer: commit marker (left) · timestamp/action (right) */}
+        {/* Footer: commit marker (left) · timestamp/action (right).
+            Launch / Start pills stop propagation so clicking them copies
+            the command instead of navigating to detail. */}
         <div className="mt-2 flex items-center justify-between text-[11px] text-[var(--color-muted)]">
           <div className="flex items-center gap-1.5">
             {!isDraft && (
@@ -180,7 +205,11 @@ export function TaskCard({ task }: Props) {
             )}
             {isInProgress && (
               <span className="opacity-0 transition-opacity group-hover:opacity-100">
-                <TerminalLaunchButton task={task} variant="compact" />
+                <TerminalLaunchButton
+                  task={task}
+                  variant="compact"
+                  showLabel
+                />
               </span>
             )}
           </div>
@@ -195,7 +224,11 @@ export function TaskCard({ task }: Props) {
             )}
             {isDraft && (
               <span data-testid={`task-card-start-${task.taskId}`}>
-                <TerminalLaunchButton task={task} variant="compact" />
+                <TerminalLaunchButton
+                  task={task}
+                  variant="compact"
+                  showLabel
+                />
               </span>
             )}
           </div>

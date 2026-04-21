@@ -11,11 +11,18 @@
  *   - Primary bg = --color-primary, caret bg = --color-primary-hover
  *     (visually distinct caret per mockup .new-split-caret).
  *   - Dropdown items: 28×28 rounded icon tile (amber/purple/emerald per
- *     action id) + label (500) + description (muted) + kbd shortcut (mono
- *     badge). Icon palette is data-driven off the action id, not the
- *     `kind`, so the visual slot matches the design without widening the
- *     ActionDefinition type.
+ *     action id) + label (500) + kbd shortcut (mono badge). Icon palette
+ *     is data-driven off the action id, not the `kind`, so the visual slot
+ *     matches the design without widening the ActionDefinition type.
  *   - Tooltip stays on the caret only.
+ *
+ * Iterate 3 remediation v2 — Surface 1 (2026-04-21):
+ *   - Dropped the per-item description subtitle to tighten the menu width.
+ *     Previously the subtitles forced the dropdown to min-width 260px and
+ *     still wrapped on narrow viewports. Description text is preserved via
+ *     a native `title` attribute on the item so a hovering user still sees
+ *     the long form.
+ *   - min-width shrunk from 260px → 220px.
  *
  * Regression guard: NO `c` / `Shift+C` binding. Tests assert the absence.
  */
@@ -140,7 +147,7 @@ export function CreateMenuSplitButton({
           <DropdownMenu.Content
             align="end"
             sideOffset={6}
-            className="z-50 min-w-[260px] rounded-[var(--radius-button)] border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-[var(--shadow-card)]"
+            className="z-50 min-w-[220px] rounded-[var(--radius-button)] border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-[var(--shadow-card)]"
             data-testid="create-menu-dropdown"
           >
             {actions.map((a) => {
@@ -151,6 +158,7 @@ export function CreateMenuSplitButton({
                   key={a.id}
                   data-testid={`create-menu-item-${a.id}`}
                   onSelect={() => onSelect(a)}
+                  title={a.description}
                   className="flex cursor-pointer items-center gap-2.5 rounded-[6px] px-2.5 py-2 text-[13px] text-[var(--color-text)] outline-none focus:bg-[var(--color-muted-bg)] hover:bg-[var(--color-muted-bg)]"
                 >
                   <span
@@ -160,15 +168,8 @@ export function CreateMenuSplitButton({
                   >
                     <Icon size={14} />
                   </span>
-                  <span className="flex min-w-0 flex-col">
-                    <span className="text-[13px] font-medium leading-tight text-[var(--color-text)]">
-                      {a.label}
-                    </span>
-                    {a.description && (
-                      <span className="mt-0.5 text-[11px] leading-snug text-[var(--color-muted)]">
-                        {a.description}
-                      </span>
-                    )}
+                  <span className="flex-1 truncate text-[13px] font-medium leading-tight text-[var(--color-text)]">
+                    {a.label}
                   </span>
                   {v.kbd && (
                     <span className="ml-auto shrink-0 rounded-[3px] border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-[1px] font-mono text-[10px] text-[var(--color-muted)]">

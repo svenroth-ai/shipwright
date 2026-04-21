@@ -32,6 +32,12 @@ interface Props {
   platform?: "windows" | "posix";
   /** Resume vs. fresh-start. Defaults to true once the task has launched once. */
   resume?: boolean;
+  /**
+   * Compact-variant affordance (iterate 3.7c-1): show a short text label next
+   * to the icon so the control is self-describing on a kanban card. Ignored
+   * for `primary` (always labeled) and `inline` (link style).
+   */
+  showLabel?: boolean;
 }
 
 export function TerminalLaunchButton({
@@ -39,6 +45,7 @@ export function TerminalLaunchButton({
   variant = "primary",
   platform,
   resume,
+  showLabel = false,
 }: Props) {
   const navigate = useNavigate();
   const launchMut = useLaunchTask();
@@ -75,18 +82,29 @@ export function TerminalLaunchButton({
   }
 
   if (variant === "compact") {
+    const label = wantResume ? "Copy resume" : "Launch";
     return (
       <button
         type="button"
-        onClick={() => void copy()}
+        onClick={(ev) => {
+          // Don't let the click bubble to a parent card click-handler.
+          ev.stopPropagation();
+          void copy();
+        }}
         disabled={launchMut.isPending}
-        className="p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-50"
+        className={
+          "inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium " +
+          "text-[var(--color-muted)] transition-colors hover:bg-[var(--color-muted-bg)] hover:text-[var(--color-text)] disabled:opacity-50"
+        }
         style={{ borderRadius: "var(--radius-button)" }}
-        title={copied ? "Copied!" : "Copy launch command"}
-        aria-label="Copy launch command"
+        title={copied ? "Copied!" : `${label} command`}
+        aria-label={`${label} command`}
         data-testid="terminal-launch-compact"
       >
-        <TerminalIcon size={14} />
+        <TerminalIcon size={12} />
+        {showLabel && (
+          <span className="leading-none">{copied ? "Copied" : label}</span>
+        )}
       </button>
     );
   }
