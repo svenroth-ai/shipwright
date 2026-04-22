@@ -235,6 +235,10 @@ export default function TaskBoardPage() {
           + flex justify-between so title cluster (dropdown + view toggle) sits at
           the left content edge and the `+ New task` button sits at the right
           content edge, same geometry as `Projects` header. */}
+      {/* iterate 3.7j (Sven UAT 2026-04-22): merged header + filter row into
+          ONE surface strip with a single bottom border so the separation to
+          the beige columns body is unambiguous. Previously the two white
+          strips + double borders + small padding felt "zusammengewürgt". */}
       <div
         style={{
           background: "var(--color-surface)",
@@ -243,7 +247,7 @@ export default function TaskBoardPage() {
       >
         <header
           className="page-container flex items-center justify-between"
-          style={{ paddingTop: "20px", paddingBottom: "20px" }}
+          style={{ paddingTop: "20px", paddingBottom: "12px" }}
           data-testid="task-board-header"
         >
           <div className="flex items-center gap-3">
@@ -269,24 +273,7 @@ export default function TaskBoardPage() {
             />
           </div>
         </header>
-      </div>
-
-      {/* Filter row — iterate 3.7e-b1 (plan S1.4). Lives inside the same
-          .page-container as the header above so the "Status" label aligns
-          with the first column's left edge. Phase filter is intentionally
-          hidden — ADR-045 defers the task.phase projection. We render the
-          Phase group only when at least one task exposes a non-empty phase
-          field, which is never true today.
-          iterate 3.7h (Sven UAT): show filter on surface (white) w/ its own
-          border — previously sat on page-bg (beige) adjoining the columns
-          area directly, making the two feel "zusammengewürgt". The surface
-          strip cleanly separates header → filter → columns. Also now rendered
-          in List view (previously hidden there — Sven: "status kann man
-          nicht filtern"). */}
-      <div
-        className="border-b border-[var(--color-border)] bg-[var(--color-surface)]"
-      >
-          <div className="page-container flex flex-wrap items-center gap-2 py-5">
+        <div className="page-container flex flex-wrap items-center gap-2" style={{ paddingTop: "4px", paddingBottom: "16px" }}>
             <span
               className="min-w-[46px] text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-muted)]"
               data-testid="board-filter-status"
