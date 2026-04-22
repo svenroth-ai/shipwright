@@ -47,4 +47,24 @@ describe('ProjectWizard', () => {
     expect(screen.getByTestId('project-path-paste')).toBeInTheDocument();
     expect(screen.getByText('Paste')).toBeInTheDocument();
   });
+
+  // Iterate 3.7e-b3 — color picker appears on the confirmation step so a
+  // color can be set at create time. Navigate wizard to step 3 (index 3).
+  it('shows color picker on confirmation step', async () => {
+    renderWizard();
+    await userEvent.type(screen.getByPlaceholderText('My Awesome App'), 'Test');
+    const pathInput = screen.getByPlaceholderText(/Users|home|projects/);
+    await userEvent.type(pathInput, '/tmp/test');
+    // Step 1 → Step 2
+    await userEvent.click(screen.getByTestId('wizard-next'));
+    // Step 2 → Step 3
+    await userEvent.click(screen.getByTestId('wizard-next'));
+    // Step 3 → Step 4 (confirmation)
+    await userEvent.click(screen.getByTestId('wizard-next'));
+    expect(screen.getByTestId('wizard-color-section')).toBeInTheDocument();
+    expect(screen.getByTestId('project-color-picker')).toBeInTheDocument();
+    // Auto swatch is preset by default.
+    const autoSwatch = screen.getByTestId('wizard-color-swatch-auto');
+    expect(autoSwatch).toHaveAttribute('data-selected', 'true');
+  });
 });

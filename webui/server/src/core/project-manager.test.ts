@@ -46,6 +46,45 @@ describe("ProjectManager", () => {
     expect(new Date(updated.lastActive).getTime()).toBeGreaterThanOrEqual(new Date(p.lastActive).getTime());
   });
 
+  // Iterate 3.7e-b3 (2026-04-22) — partial settings patches must merge,
+  // not replace. Previously `{ ...existing, ...patch }` clobbered
+  // `settings` whole, so a color PATCH would nuke `phaseToStatusMapping`.
+  it("update deep-merges settings (partial patch keeps other keys)", () => {
+    const deps = mockDeps();
+    const pm = new ProjectManager("/tmp/projects.json", deps);
+    const p = pm.create({
+      name: "Test",
+      path: "/tmp/proj",
+      profile: "default",
+      status: "active",
+      settings: {
+        phaseToStatusMapping: { build: "in_progress" },
+        autonomy: "autonomous",
+      },
+    });
+    const updated = pm.update(p.id, { settings: { color: "#B8A590" } });
+    expect(updated.settings?.color).toBe("#B8A590");
+    // Pre-existing keys are preserved, not clobbered.
+    expect(updated.settings?.phaseToStatusMapping).toEqual({ build: "in_progress" });
+    expect(updated.settings?.autonomy).toBe("autonomous");
+  });
+
+  // Iterate 3.7e-b3 — patches without a settings field leave settings alone.
+  it("update without settings patch leaves existing settings intact", () => {
+    const deps = mockDeps();
+    const pm = new ProjectManager("/tmp/projects.json", deps);
+    const p = pm.create({
+      name: "Test",
+      path: "/tmp/proj",
+      profile: "default",
+      status: "active",
+      settings: { color: "#D99285" },
+    });
+    const updated = pm.update(p.id, { name: "Renamed" });
+    expect(updated.name).toBe("Renamed");
+    expect(updated.settings?.color).toBe("#D99285");
+  });
+
   it("delete removes from map and persists", () => {
     const deps = mockDeps();
     const pm = new ProjectManager("/tmp/projects.json", deps);

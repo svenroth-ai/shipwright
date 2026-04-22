@@ -242,9 +242,20 @@ export class ProjectManager {
   update(id: string, patch: Partial<Project>): Project {
     const existing = this.projects.get(id);
     if (!existing) throw new AppError("Project not found", 404);
+    // Iterate 3.7e-b3 (2026-04-22) — deep-merge `settings` so partial
+    // patches like `{ settings: { color } }` don't clobber other keys
+    // (phaseToStatusMapping, autonomy, envVars, claudePluginDirs).
+    // Previously `{ ...existing, ...patch }` replaced `settings` whole,
+    // which silently nuked unrelated config. ProjectSettingsDialog +
+    // useSavePhaseMapping + useUpdateAutonomy all rely on this merge.
+    const mergedSettings =
+      patch.settings !== undefined
+        ? { ...(existing.settings ?? {}), ...patch.settings }
+        : existing.settings;
     const updated: Project = {
       ...existing,
       ...patch,
+      settings: mergedSettings,
       id: existing.id,
       lastActive: new Date().toISOString(),
     };

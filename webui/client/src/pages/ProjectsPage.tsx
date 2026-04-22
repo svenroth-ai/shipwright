@@ -1,39 +1,69 @@
 /*
  * Projects — list all projects registered in the WebUI.
  *
- * Iterate 3 remediation v2 Phase 1 Surface 5 (2026-04-21) — layout
- * alignment pass. Per plan §"S5 — Projects page" + decision #4:
- *   - Wrap page body in `.page-container` (1280 max-width, centered,
- *     24px horizontal padding — utility defined in index.css Phase 0).
- *   - Match Inbox header style: full-bleed surface bar with bottom
- *     border, 20px/32px padding, 24px/700 title + inline muted count.
- *   - Single-column vertical list of cards (per mockup 14-projects.html)
- *     with 12px gap — cards grow to full container width.
- *   - Migrate all `gray-*` tailwind classes to warm-beige CSS tokens
- *     (constraint: no `gray-*`/`neutral-*` in touched files).
- *   - Content unchanged: same cards, same actions, same testids — this
- *     is a layout-only pass.
+ * Iterate 3.7e-b3 (2026-04-22) — Table rebuild + color picker + settings
+ * dialog + fix "Create creates nothing" error surfacing.
  *
- * Load-bearing testids (preserved):
- *   aria-label="Project settings" (gear button) — ProjectsPage.test.tsx.
+ * Columns (per plan §"S3 — Projects"):
+ *   Color     — 10 px circle; uses getProjectColor(id, settings.color)
+ *   Name      — click → opens the Settings dialog (replaces old "card click
+ *               → board" navigation; row is now a settings affordance)
+ *   Path      — monospace, truncated (max 400 px); full path in title="..."
+ *   Tasks     — count of tasks with task.projectId === project.id
+ *               (source: useExternalTasks with all-projects scope)
+ *   Actions   — gear icon (Settings dialog) + trash icon (delete w/ confirm)
+ *
+ * Load-bearing testids (preserved + new):
+ *   projects-page, projects-create-button, projects-empty
+ *   projects-header-count, projects-table, projects-row-<id>
+ *   projects-cell-<id>-{color,name,path,tasks,actions}
+ *   projects-settings-<id>, projects-delete-<id>
+ *   aria-label="Project settings" — ProjectsPage.test.tsx (gear button)
+ *
+ * Bug fix (Sven UAT 2026-04-22): previous "Create Project erstellt kein
+ * Project" reports were caused by the wizard swallowing the POST error —
+ * a 4xx/5xx response never surfaced in the UI, so the user clicked +
+ * nothing happened. Fix landed in ProjectWizard.tsx: the confirmation
+ * step now renders createProject.error via an inline red banner (role=
+ * alert) and keeps the dialog open on failure. Root cause: wizard only
+ * closed on `onSuccess`; useCreateProject error state was unrendered.
  */
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Plus, FolderOpen, ExternalLink, Settings as SettingsIcon, Trash2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Plus, FolderOpen, Settings as SettingsIcon, Trash2 } from 'lucide-react';
 import { useProjects } from '../hooks/useProjects';
 import { useDeleteProject } from '../hooks/useDeleteProject';
+import { useExternalTasks } from '../hooks/useExternalTasks';
 import { ProjectWizard } from '../components/wizard/ProjectWizard';
-import { formatRelativeTime } from '../lib/formatTime';
+import { ProjectSettingsDialog } from '../components/wizard/ProjectSettingsDialog';
+import { getProjectColor } from '../lib/projectColor';
+import type { Project } from '../types';
 
 export default function ProjectsPage() {
   const { data: projects = [], isLoading } = useProjects();
+  const { data: tasks = [] } = useExternalTasks({ projectId: null });
   const [showWizard, setShowWizard] = useState(false);
+  const [settingsFor, setSettingsFor] = useState<Project | null>(null);
   const deleteProject = useDeleteProject();
-  const navigate = useNavigate();
+
+  // Per-project task count. Memoized so re-renders don't rehash on every
+  // row. `Map<projectId, count>`. Synthesized "Unassigned" row intentionally
+  // gets whatever count falls out of the join.
+  const taskCountByProject = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const t of tasks) {
+      const pid = t.projectId ?? 'unassigned';
+      m.set(pid, (m.get(pid) ?? 0) + 1);
+    }
+    return m;
+  }, [tasks]);
 
   function handleDelete(e: React.MouseEvent, projectId: string, projectName: string) {
     e.stopPropagation();
-    if (confirm(`Remove "${projectName}" from the WebUI?\n\nProject files on disk will NOT be deleted.`)) {
+    if (
+      confirm(
+        `Remove "${projectName}" from the WebUI?\n\nProject files on disk will NOT be deleted.`,
+      )
+    ) {
       deleteProject.mutate(projectId);
     }
   }
@@ -44,13 +74,8 @@ export default function ProjectsPage() {
       style={{ background: 'var(--color-bg)' }}
       data-testid="projects-page"
     >
-      {/* Header — matches Inbox: full-bleed surface bar, bottom border,
-          24px/700 title + inline muted count, right-aligned primary CTA.
-          R1/R2 (iterate 3.7e-a Foundation, 2026-04-22): header content is
-          wrapped inside `.page-container` so the title aligns with the
-          cards in the body column (same 24 px L/R padding, same 1280 px
-          max-width). The full-bleed surface strip stays outside the
-          container — only the inner row uses the container. */}
+      {/* Header — full-bleed surface bar; inner row wrapped in .page-container
+          so the title aligns with the table body below (R1/R2 from 3.7e-a). */}
       <div
         style={{
           background: 'var(--color-surface)',
@@ -97,9 +122,7 @@ export default function ProjectsPage() {
         </header>
       </div>
 
-      {/* Body — scrollable, content centered to .page-container (1280).
-          Same 24 px L/R padding via `.page-container` → header title and
-          body cards share a pixel-perfect left edge (R1). */}
+      {/* Body — scrollable, content centered to .page-container (1280). */}
       <div className="flex-1 overflow-y-auto">
         <div
           className="page-container"
@@ -112,7 +135,7 @@ export default function ProjectsPage() {
                   key={i}
                   className="animate-pulse"
                   style={{
-                    height: '120px',
+                    height: '48px',
                     background: 'var(--color-muted-bg)',
                     borderRadius: 'var(--radius-card)',
                   }}
@@ -145,179 +168,257 @@ export default function ProjectsPage() {
               </button>
             </div>
           ) : (
-            <div className="flex flex-col" style={{ gap: '12px' }}>
-              {projects.map((project) => {
-                const statusColor =
-                  project.status === 'active'
-                    ? 'var(--color-success)'
-                    : project.status === 'error'
-                      ? 'var(--color-error)'
-                      : 'var(--color-muted)';
-                return (
-                  <div
-                    key={project.id}
-                    className="cursor-pointer transition-shadow"
+            <div
+              style={{
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-card)',
+                boxShadow: 'var(--shadow-sm)',
+                overflow: 'hidden',
+              }}
+            >
+              <table
+                data-testid="projects-table"
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: '13px',
+                  color: 'var(--color-text)',
+                }}
+              >
+                <thead>
+                  <tr
                     style={{
-                      background: 'var(--color-surface)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-card)',
-                      padding: '18px 22px',
-                      boxShadow: 'var(--shadow-sm)',
-                      display: 'flex',
-                      flexDirection: 'column',
+                      background: 'var(--color-muted-bg)',
+                      borderBottom: '1px solid var(--color-border)',
                     }}
-                    onClick={() => navigate(`/?project=${project.id}`)}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)';
-                      e.currentTarget.style.borderColor = 'var(--color-accent)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-                      e.currentTarget.style.borderColor = 'var(--color-border)';
-                    }}
-                    data-testid={`project-card-${project.id}`}
                   >
-                    {/* Top: name + status + profile pill */}
-                    <div className="flex items-start justify-between gap-2" style={{ marginBottom: '6px' }}>
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div
-                          className="shrink-0"
-                          style={{
-                            width: '10px',
-                            height: '10px',
-                            borderRadius: '9999px',
-                            background: statusColor,
-                          }}
-                          aria-hidden="true"
-                        />
-                        <h3
-                          className="font-semibold truncate"
-                          style={{ fontSize: '15px', color: 'var(--color-text)' }}
-                        >
-                          {project.name}
-                        </h3>
-                      </div>
-                      <span
-                        className="inline-flex items-center uppercase"
+                    <th style={thStyle('48px')} aria-label="Color" />
+                    <th style={thStyle('auto', 'left')}>Name</th>
+                    <th style={thStyle('auto', 'left')}>Path</th>
+                    <th style={thStyle('80px', 'right')}>Tasks</th>
+                    <th style={thStyle('120px', 'right')}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {projects.map((project, i) => {
+                    const color = getProjectColor(project.id, project.settings?.color);
+                    const taskCount = taskCountByProject.get(project.id) ?? 0;
+                    const isLast = i === projects.length - 1;
+                    return (
+                      <tr
+                        key={project.id}
+                        data-testid={`projects-row-${project.id}`}
                         style={{
-                          padding: '3px 10px',
-                          borderRadius: '20px',
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          background: 'var(--color-muted-bg)',
-                          color: 'var(--color-accent)',
-                          letterSpacing: '0.02em',
+                          borderBottom: isLast
+                            ? 'none'
+                            : '1px solid var(--color-border)',
+                          transition: 'background 120ms',
+                          cursor: project.synthesized ? 'default' : 'pointer',
+                        }}
+                        onClick={() => {
+                          if (!project.synthesized) setSettingsFor(project);
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background =
+                            'var(--color-muted-bg)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent';
                         }}
                       >
-                        {project.profile}
-                      </span>
-                    </div>
+                        {/* Color */}
+                        <td
+                          data-testid={`projects-cell-${project.id}-color`}
+                          style={tdStyle()}
+                        >
+                          <div
+                            aria-hidden="true"
+                            style={{
+                              width: '10px',
+                              height: '10px',
+                              borderRadius: '9999px',
+                              background: color.hsl,
+                              margin: '0 auto',
+                            }}
+                          />
+                        </td>
 
-                    {/* Path */}
-                    <p
-                      className="font-mono truncate"
-                      style={{
-                        fontSize: '12px',
-                        color: 'var(--color-muted)',
-                        marginBottom: '14px',
-                      }}
-                    >
-                      {project.path}
-                    </p>
+                        {/* Name */}
+                        <td
+                          data-testid={`projects-cell-${project.id}-name`}
+                          style={{ ...tdStyle(), fontWeight: 600 }}
+                        >
+                          <span
+                            style={{
+                              color: project.synthesized
+                                ? 'var(--color-muted)'
+                                : 'var(--color-text)',
+                            }}
+                          >
+                            {project.name}
+                          </span>
+                          {project.synthesized && (
+                            <span
+                              style={{
+                                marginLeft: '8px',
+                                fontSize: '11px',
+                                fontWeight: 500,
+                                color: 'var(--color-muted)',
+                              }}
+                            >
+                              (synthesized)
+                            </span>
+                          )}
+                        </td>
 
-                    {/* Bottom: last active + actions */}
-                    <div
-                      className="flex items-center justify-between"
-                      style={{
-                        paddingTop: '12px',
-                        borderTop: '1px solid var(--color-border)',
-                      }}
-                    >
-                      <span
-                        style={{ fontSize: '12px', color: 'var(--color-muted)' }}
-                      >
-                        Last active {formatRelativeTime(project.lastActive)}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1 rounded-[var(--radius-button)] transition-colors"
+                        {/* Path */}
+                        <td
+                          data-testid={`projects-cell-${project.id}-path`}
                           style={{
-                            padding: '6px 12px',
+                            ...tdStyle(),
+                            fontFamily:
+                              'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                             fontSize: '12px',
-                            fontWeight: 500,
-                            color: 'var(--color-primary)',
-                            background: 'transparent',
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/?project=${project.id}`);
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'var(--color-muted-bg)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'transparent';
-                          }}
-                        >
-                          <ExternalLink size={12} /> Open Board
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-[var(--radius-button)] transition-colors"
-                          style={{
-                            padding: '6px',
                             color: 'var(--color-muted)',
-                            background: 'transparent',
+                            maxWidth: '400px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
                           }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/settings?projectId=${project.id}&tab=project`);
-                          }}
-                          aria-label="Project settings"
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'var(--color-muted-bg)';
-                            e.currentTarget.style.color = 'var(--color-text)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'transparent';
-                            e.currentTarget.style.color = 'var(--color-muted)';
-                          }}
+                          title={project.path || '(synthesized)'}
                         >
-                          <SettingsIcon size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-[var(--radius-button)] transition-colors"
+                          {project.path || '—'}
+                        </td>
+
+                        {/* Tasks */}
+                        <td
+                          data-testid={`projects-cell-${project.id}-tasks`}
                           style={{
-                            padding: '6px',
-                            color: 'var(--color-muted)',
-                            background: 'transparent',
-                          }}
-                          onClick={(e) => handleDelete(e, project.id, project.name)}
-                          aria-label="Remove project"
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'var(--color-error-bg)';
-                            e.currentTarget.style.color = 'var(--color-error)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'transparent';
-                            e.currentTarget.style.color = 'var(--color-muted)';
+                            ...tdStyle(),
+                            textAlign: 'right',
+                            fontVariantNumeric: 'tabular-nums',
+                            color:
+                              taskCount > 0
+                                ? 'var(--color-text)'
+                                : 'var(--color-muted)',
                           }}
                         >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                          {taskCount}
+                        </td>
+
+                        {/* Actions */}
+                        <td
+                          data-testid={`projects-cell-${project.id}-actions`}
+                          style={{ ...tdStyle(), textAlign: 'right' }}
+                        >
+                          <div className="inline-flex items-center gap-1">
+                            {!project.synthesized && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSettingsFor(project);
+                                }}
+                                data-testid={`projects-settings-${project.id}`}
+                                aria-label="Project settings"
+                                className="rounded-[var(--radius-button)] transition-colors"
+                                style={{
+                                  padding: '6px',
+                                  color: 'var(--color-muted)',
+                                  background: 'transparent',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background =
+                                    'var(--color-muted-bg)';
+                                  e.currentTarget.style.color =
+                                    'var(--color-text)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background =
+                                    'transparent';
+                                  e.currentTarget.style.color =
+                                    'var(--color-muted)';
+                                }}
+                              >
+                                <SettingsIcon size={14} />
+                              </button>
+                            )}
+                            {!project.synthesized && (
+                              <button
+                                type="button"
+                                onClick={(e) =>
+                                  handleDelete(e, project.id, project.name)
+                                }
+                                data-testid={`projects-delete-${project.id}`}
+                                aria-label="Remove project"
+                                className="rounded-[var(--radius-button)] transition-colors"
+                                style={{
+                                  padding: '6px',
+                                  color: 'var(--color-muted)',
+                                  background: 'transparent',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background =
+                                    'var(--color-error-bg)';
+                                  e.currentTarget.style.color =
+                                    'var(--color-error)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background =
+                                    'transparent';
+                                  e.currentTarget.style.color =
+                                    'var(--color-muted)';
+                                }}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
       </div>
 
       <ProjectWizard open={showWizard} onOpenChange={setShowWizard} />
+      <ProjectSettingsDialog
+        project={settingsFor}
+        open={settingsFor !== null}
+        onOpenChange={(open) => {
+          if (!open) setSettingsFor(null);
+        }}
+      />
     </div>
   );
+}
+
+/** Shared <th> style — avoids Tailwind class thrash and keeps widths honest. */
+function thStyle(
+  width: string,
+  align: 'left' | 'right' = 'left',
+): React.CSSProperties {
+  return {
+    padding: '10px 16px',
+    textAlign: align,
+    fontSize: '11px',
+    fontWeight: 600,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+    color: 'var(--color-muted)',
+    width,
+  };
+}
+
+/** Shared <td> style — vertical rhythm + border-bottom come from <tr>. */
+function tdStyle(): React.CSSProperties {
+  return {
+    padding: '12px 16px',
+    verticalAlign: 'middle',
+  };
 }

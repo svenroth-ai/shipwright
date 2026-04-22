@@ -6,6 +6,7 @@ import { ProjectInfoStep } from './ProjectInfoStep';
 import { StackProfileStep } from './StackProfileStep';
 import { EnvVarsStep } from './EnvVarsStep';
 import { ConfirmationStep } from './ConfirmationStep';
+import { ProjectColorPicker } from './ProjectColorPicker';
 import { useCreateProject } from '../../hooks/useCreateProject';
 import { useSaveActionsStub } from '../../hooks/useProjectActions';
 import { useSettings } from '../../hooks/useSettings';
@@ -45,6 +46,8 @@ export function ProjectWizard({ open, onOpenChange }: ProjectWizardProps) {
   const [name, setName] = useState('');
   const [path, setPath] = useState('');
   const [profile, setProfile] = useState(settings?.defaultProfile ?? 'custom');
+  // Iterate 3.7e-b3 — project color. `null` === "Auto" (hash-derived).
+  const [color, setColor] = useState<string | null>(null);
   // Section 03 — workflow choice lives in the wizard's Confirmation step
   // behind a "Show advanced options" accordion. Default is "shipwright" so
   // the overwhelming majority never sees the toggle. "custom" writes an
@@ -64,7 +67,15 @@ export function ProjectWizard({ open, onOpenChange }: ProjectWizardProps) {
 
   function handleCreate() {
     createProject.mutate(
-      { name, path, profile },
+      {
+        name,
+        path,
+        profile,
+        // Iterate 3.7e-b3 — include `settings.color` in the POST body
+        // iff the user picked a preset. "Auto" (color === null) sends
+        // nothing so the server keeps `settings` minimal.
+        ...(color ? { settings: { color } } : {}),
+      },
       {
         onSuccess: async (created) => {
           // Section 03 — Custom branch writes the .webui/actions.json stub
@@ -94,8 +105,10 @@ export function ProjectWizard({ open, onOpenChange }: ProjectWizardProps) {
     setName('');
     setPath('');
     setProfile('custom');
+    setColor(null);
     setWorkflowChoice('shipwright');
     setShowAdvanced(false);
+    createProject.reset();
   }
 
   const canProceed = step === 0 ? name.trim() && path.trim() : true;
@@ -147,6 +160,41 @@ export function ProjectWizard({ open, onOpenChange }: ProjectWizardProps) {
             {step === 3 && (
               <>
                 <ConfirmationStep name={name} path={path} profile={profile} />
+
+                {/* Iterate 3.7e-b3 — error banner shown on create failure.
+                    Dialog stays open; user can tweak + retry. role="alert"
+                    so screen readers announce the failure immediately. */}
+                {createProject.error && (
+                  <div
+                    data-testid="wizard-create-error"
+                    role="alert"
+                    className="mt-4 rounded-[var(--radius-button)] border px-4 py-3 text-[13px]"
+                    style={{
+                      background: 'var(--color-error-bg)',
+                      borderColor: 'var(--color-error)',
+                      color: 'var(--color-error)',
+                    }}
+                  >
+                    <strong className="font-semibold">
+                      Couldn't create project:
+                    </strong>{' '}
+                    {createProject.error instanceof Error
+                      ? createProject.error.message
+                      : String(createProject.error)}
+                  </div>
+                )}
+
+                {/* Iterate 3.7e-b3 — color picker on the confirmation step
+                    so it's the last choice before Create. Avoids cluttering
+                    the identity / profile / env-var earlier steps. */}
+                <div className="mt-4" data-testid="wizard-color-section">
+                  <ProjectColorPicker
+                    value={color}
+                    onChange={setColor}
+                    testidPrefix="wizard-color-swatch"
+                  />
+                </div>
+
                 {/* Section 03 — Workflow plugin selection, behind an
                     accordion so the defaults-first path is frictionless (G2).
                     Hand-rolled Collapsible (no Radix) — see file header. */}
