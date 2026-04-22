@@ -10,7 +10,7 @@ export function MainLayout() {
       <SidebarNav inboxCount={inbox.length} />
       <main className="flex-1 min-w-0 flex flex-col overflow-hidden bg-[var(--color-background)]">
         <DiagnosticsBanner />
-        <div className="flex-1 min-h-0 overflow-auto">
+        <div className="flex-1 min-h-0 overflow-auto [scrollbar-gutter:stable]">
           <Outlet />
         </div>
       </main>
