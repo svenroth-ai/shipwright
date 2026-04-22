@@ -40,7 +40,7 @@ test.describe("Rename mid-polling", () => {
     await expect(page.getByTestId("task-title-display")).toHaveText(/polling-rename-old/);
 
     // Trigger the polling tick by waiting for active state.
-    await expect(page.getByTestId("task-state-badge")).toHaveText("active", { timeout: 5000 });
+    await expect(page.getByTestId("task-state-badge")).toHaveText("In progress", { timeout: 5000 });
 
     // Inject more events while we rename.
     appendFileSync(

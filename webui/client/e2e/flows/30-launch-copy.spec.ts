@@ -34,7 +34,7 @@ test.describe("TaskDetail Launch CTA", () => {
 
     await page.goto(`/tasks/${task.taskId}`);
     await expect(page.getByTestId("task-detail-page")).toBeVisible();
-    await expect(page.getByTestId("task-state-badge")).toHaveText("draft");
+    await expect(page.getByTestId("task-state-badge")).toHaveText("Draft");
 
     await page.evaluate(() => navigator.clipboard.writeText(""));
     await page.getByTestId("cta-launch-in-terminal").click();
@@ -49,7 +49,7 @@ test.describe("TaskDetail Launch CTA", () => {
     expect(clipboard).toContain("C:/tmp/e2e-launch");
 
     await expect(page.getByTestId("task-state-badge")).toHaveText(
-      "awaiting_external_start",
+      "Awaiting launch",
     );
   });
 });

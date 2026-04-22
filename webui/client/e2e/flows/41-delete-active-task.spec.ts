@@ -43,7 +43,7 @@ test.describe("Delete active task", () => {
     // Detail page polling kicks the state machine into "active". The
     // TaskBoard endpoint does NOT trigger transitions on its own.
     await page.goto(`/tasks/${task.taskId}`);
-    await expect(page.getByTestId("task-state-badge")).toHaveText("active", { timeout: 8000 });
+    await expect(page.getByTestId("task-state-badge")).toHaveText("In progress", { timeout: 8000 });
 
     await page.goto("/");
     const card = page.getByTestId(`task-card-${task.taskId}`);
