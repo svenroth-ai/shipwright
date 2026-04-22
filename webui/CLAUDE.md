@@ -23,17 +23,24 @@ webui/
     src/
       index.ts                  # Server entry (~170 LOC — minimal wiring only)
       config.ts                 # Env config
+      config/
+        default-actions.json    # Shipwright phase + action catalog (Iterate 3)
       core/
-        launcher.ts             # Copy-command generator (PS / cmd.exe / POSIX)
+        launcher.ts             # Copy-command generator (PS / cmd.exe / POSIX). Exports qPs/qCmd/qPosix for reuse.
         session-watcher.ts      # Filename-first JSONL discovery + byte-range reader
         session-parser.ts       # Typed events from raw JSONL + unknown-fallback
         inbox-derive.ts         # Pending tool_use extraction (best-effort)
-        sdk-sessions-store.ts   # Persistent task store (schema-versioned)
+        sdk-sessions-store.ts   # Persistent task store (schema-versioned v1/v2; projectId field)
         cli-compat.ts           # Claude CLI version gate (MIN_SUPPORTED_CLI)
         project-manager.ts      # Project metadata CRUD (still used)
         profile-loader.ts       # Stack profile loading (wizard)
+        project-actions-loader.ts  # Iterate 3: mtime-cached resolver for .webui/actions.json → default-actions.json fallback
+        actions-substitute.ts   # Iterate 3: placeholder substitution ({project.path}, {task.uuid}, …) w/ per-shell escape
+        preview-session-manager.ts # Iterate 3: Preview subprocess lifecycle (spawn shell:false, keyed by projectId, kill-on-shutdown)
+        path-guard.ts           # Iterate 3: shared path-traversal guard (realpath + path.relative, NOT startsWith) for tree + file routes
+        gitignore-cache.ts      # Iterate 3: mtime-keyed gitignore rule cache for FolderTree
       external/
-        routes.ts               # /api/external/{tasks,launch,transcript,inbox,...}
+        routes.ts               # /api/external/{tasks,launch,transcript,inbox,actions,preview,actions-stub,projects/:id/tree,projects/:id/file}
       middleware/
         error-handler.ts        # Centralized error response middleware
         logger.ts               # Request logging
@@ -67,9 +74,14 @@ webui/
           EditableTaskTitle.tsx      # In-place title edit on TaskDetail
           TaskCard.tsx               # TaskBoard card (state icon + menu + launch)
           ConfirmDeleteDialog.tsx    # Delete confirm for non-terminal states
-          LaunchRow.tsx              # Resume / Fork / Close (legacy bag of buttons)
           SessionMetadata.tsx        # State badge + UUID + cwd + timestamps
-          CopyCommandCard.tsx        # Three-shell-form fallback (post-Resume)
+          # Iterate 3 additions (LaunchRow + CopyCommandCard were removed — replaced by header-level state-dependent CTA):
+          FolderTree.tsx             # Lazy-expand gitignore-aware tree (left pane of TaskDetail)
+          SmartViewer/               # Right pane of TaskDetail — 5 renderers (Markdown/Code/Text/Image/Mermaid; mermaid lazy-imported, 609 KB chunk)
+          NewIssueModal.tsx          # Shared New-* modal body (Pipeline / Iterate / Task variants)
+          PreviewButton.tsx          # Dev-server spawn trigger; visibility-gated by profile.stack.frontend
+          CreateMenuSplitButton.tsx  # Sidebar "+ New ▾" split-button (Pipeline / Iterate / Task)
+          TaskDetailThreePane.tsx    # react-resizable-panels wrapper; persists widths + collapsed state in localStorage
         common/
           DiagnosticsBanner.tsx # Warns when CLI < MIN_SUPPORTED_CLI
         sidebar/                # Sidebar navigation
@@ -141,6 +153,16 @@ PORT=3847                     # Server port
 9. **Plugin dirs must be re-passed on every launch.** `--plugin-dir` does not reliably survive `--resume`.
 10. **MIN_SUPPORTED_CLI is pinned.** See `core/cli-compat.ts`. Anything older shows a banner via `/api/diagnostics`.
 
+### Preview-capability precedence (Iterate 3, plan § 2.1)
+
+Iterate 3 introduces a Preview dev-server spawn path (not Claude — see ADR-044). Three sources interact:
+
+1. **Profile `stack.frontend` presence** — the capability gate (is this project a frontend project at all?).
+2. **Profile `dev_server.command`** — the spawn target (which command actually starts the dev-server).
+3. **`.webui/actions.json` → `actions.preview.enabled`** — the policy override (user-level opt-out).
+
+`stack.frontend` AND `dev_server.command` must both be present for `<PreviewButton>` to render. `actions.preview.enabled = false` hides it regardless. Boot-time coherence check warns when `stack.frontend` is set but `dev_server.command` is missing (button would render, spawn would 500). The full diagram lives in [`webui/agent_docs/architecture.md`](agent_docs/architecture.md).
+
 ### DO-NOT regression guards (Iterate 2 / ADR-035)
 1. **DO NOT write into Claude's JSONL files under `~/.claude/projects/`.** Webui is a read-only polling observer of that directory. Title sync uses Claude's first-party `--name` CLI flag at launch time, not JSONL mutation or a sidecar file.
 2. **Auto-scroll pattern is CSS-first.** `overflow-anchor: auto` + `scroll-padding` on the scroll container is the primary path. `useAutoScroll` (ResizeObserver-light, ref-based, ~50 LOC) is the safety net for Chrome+polling cases. Do NOT reach for stale libraries like `react-scroll-to-bottom`. See ADR-035.
@@ -149,6 +171,10 @@ PORT=3847                     # Server port
 5. **DO NOT run `claude --resume <uuid>` as a webui-initiated side-effect command** while the user's session may be active in their terminal. SQLite lock + JSONL interleave risk (EBUSY on Windows). Title updates take effect on next user-initiated launch only.
 6. **Multi-writer state files** (`sdk-sessions.json`, any future sidecars) MUST use `proper-lockfile`, not just temp-file + rename. The PATCH /tasks/:id endpoint surfaces ELOCKED as 409 so the client can retry instead of silently overwriting.
 7. **TSC baseline:** server has 4 pre-existing errors (cross-package imports + missing `@types/proper-lockfile`). Policy is "no regression" — new code must compile clean; existing errors are tracked but not required to fix in this iterate.
+8. (Iterate 3 — ADR-044) **Schema v2 is write-on-touch.** `sdk-sessions.json` v1 rows load as `projectId: "unassigned"` in memory and rewrite to v2 on next mutation. DO NOT batch-rewrite on boot — ADR-038 explicitly rejected that path. The `schemaVersion` header field must load both v1 and v2 during the forward-compat window.
+9. (Iterate 3 — ADR-044) **Preview spawn uses `shell: false`.** User-controlled `dev_server.command` strings + `shell: true` would be command-injection. All Preview subprocess entrypoints flow through `core/preview-session-manager.ts`, which tokenizes the command and spawns with `shell: false`. DO NOT add a parallel spawn path.
+10. (Iterate 3 — ADR-044) **Path-guard is `realpath + path.relative`, NOT `startsWith`.** Symlinks, unicode, and Windows junction points defeat prefix checks. All tree + file routes share `core/path-guard.ts`; null-byte input is hard-rejected.
+11. (Iterate 3 — ADR-044) **DO NOT hardcode `shipwright-run` / `shipwright-iterate` / phase strings (`build`, `plan`, `design`, …) in components** — read from `/api/external/projects/:id/actions`. Violations re-introduce the configurability debt iterate 3 paid down and will cause custom `.webui/actions.json` installations to break silently. Meta-test `client/src/test/doc-sync.test.ts` keeps this file-map honest; grep your component for `shipwright-` literals before committing.
 
 ### Title integration (`--name`)
 

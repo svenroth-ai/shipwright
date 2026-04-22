@@ -15,10 +15,11 @@ test.describe('Board Navigation', () => {
     await expect(page.getByRole('link', { name: /settings/i })).toBeVisible();
   });
 
-  test('create-task form is visible', async ({ page }) => {
-    // Plan D'' Sub-iterate 2: TaskBoardPage replaces Kanban. Primary CTA
-    // is the "Create task" button inside the inline form.
+  test('create-task split-button is visible', async ({ page }) => {
+    // Iterate 3 section 03 — the inline form was replaced by the
+    // `+ New ▾` split-button + NewIssueModal. The primary sub-button
+    // is the discoverable entry point.
     await page.goto('/');
-    await expect(page.getByTestId('task-create-btn')).toBeVisible();
+    await expect(page.getByTestId('create-menu-primary')).toBeVisible();
   });
 });

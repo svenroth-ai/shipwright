@@ -39,6 +39,7 @@
 .markdown-body p:last-child { margin-bottom: 0; }
 
 :root {
+  /* Core palette (warm-beige theme — matches webui/designs/screens mockups). */
   --color-primary: #6b5e56;
   --color-background: #f5f0eb;
   --color-surface: #ffffff;
@@ -52,13 +53,156 @@
   --color-phase-deploy: #14b8a6;
   --font-family: 'Inter', sans-serif;
   --radius: 12px;
+  --radius-button: 8px;
   --color-border: #e0dbd4;
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.08);
-  --shadow-card-hover: 0 2px 6px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-card: 0 6px 30px rgba(0, 0, 0, 0.10);
+  --shadow-card-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+  /* Iterate 3 remediation (Phase A1 — 2026-04-20):
+     These tokens were previously referenced across 23 component files
+     via inline hex fallbacks (e.g. `var(--color-muted, #6b7280)`) but
+     never defined here. Adding them means central theming actually
+     works; the hex fallbacks become dead-code safety nets. */
+  --color-bg: #f5f0eb;              /* alias for --color-background */
+  --color-muted-bg: #ede8e1;
+  --color-muted: #6b7280;
+  --color-text: #1a1a1a;
+  --color-accent: #857568;
+  --color-primary-hover: #5a4f48;
+  --color-warning: #D97706;
+  --color-warning-bg: #FEF3C7;
+  --color-warning-text: #92400E;
+  --color-error: #DC2626;
+  --color-error-bg: #FEE2E2;
+  --color-info: #3B82F6;
+  --color-info-bg: #DBEAFE;
+  --color-success: #059669;
+  --color-success-bg: #D1FAE5;
+  --color-success-text: #065F46;
+  --color-purple: #8B5CF6;
+  --color-purple-bg: #F3E8FF;
+  --color-purple-text: #6B21A8;
+
+  /* iterate 3.7g (Sven UAT 2026-04-22): Resume-button tint.
+     Soft warm terracotta/clay — distinct from --color-primary (brown,
+     Terminal) and --color-warning (alert orange). Picked from the project
+     color-picker palette so it stays visually coherent with the warm-beige
+     tokens. */
+  --color-resume: #C08862;
+  --color-resume-hover: #A67352;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.28), 0 6px 18px rgba(0, 0, 0, 0.15);
+  --radius-card: 12px;               /* alias for --radius (card surfaces) */
 }
 
 body {
   font-family: var(--font-family);
   background: var(--color-background);
+  color: var(--color-text);
   margin: 0;
+}
+
+/* Iterate 3 remediation v2 Phase 0 (2026-04-21):
+   Themed scrollbar — applied globally so that every scroll container
+   (TaskBoard columns, Inbox, Projects, Settings, TaskDetail panes,
+   modals) inherits the warm-beige palette instead of the default
+   white OS scrollbar. Thumb uses --color-border (warm beige), track
+   is transparent (inherits the container bg). Firefox equivalents
+   set at html/body and inherited. A utility class .scroll-themed is
+   additionally exposed as an explicit opt-in for future components
+   that want to override a localized rule.
+   Rationale for going global (vs utility-class):
+     - Less regression-risk: no touching of Surface 1..5 components
+       in Phase 0 (boundary rule).
+     - Palette already matches any muted-bg / column-bg surface.
+     - Mockups (10-kanban-board, 13-global-inbox, 15-settings,
+       task-detail-3pane) all use the same thumb/track colors. */
+html,
+body {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+/* Explicit opt-in utility — usable when a component wants the theme
+   inside a nested scroller whose ancestor overrode scrollbar rules. */
+.scroll-themed {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+.scroll-themed::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scroll-themed::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-themed::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+.scroll-themed::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+/* Iterate 3 remediation v2 Phase 0 — page-container utility.
+   Centers a page body to 1280px max-width with 24px horizontal
+   padding. Used by Inbox / Projects / Settings in the v2 surface
+   agents so layouts align to the same column without touching
+   TaskBoard (which is intentionally full-bleed). */
+.page-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  /* iterate 3.7l (Sven UAT 2026-04-22): set L/R only. The shorthand
+     `padding: 0 24px` was overriding Tailwind `pt-*` / `pb-*` utilities
+     applied alongside .page-container (board-columns needed pt-10 for
+     breathing room; the shorthand was zeroing it to 0). */
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* Iterate 3.7e-a Foundation (R1/R2 — 2026-04-22):
+   Board-scoped container. Board needs the extra width (3 columns ×
+   360 px from b1 + 40 px gutters + 24 px gutter-to-sidebar = ~1200 px
+   baseline; the board naturally wants to grow on wider monitors).
+   Same 24 px L/R padding as .page-container so the first column of
+   the Board aligns with the first card/row on Inbox/Projects/Settings.
+   Both containers centered via `margin: 0 auto`. */
+.board-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  /* See .page-container note (iterate 3.7l): keep L/R only so Tailwind
+     pt/pb utilities aren't clobbered by the shorthand. */
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* Iterate 3.7e-a R7 — "comfortable" bubble card sizing.
+   The ask-bubble size from 3.7d-b2 (padding 22 × 24 px, body 15 px /
+   600 weight) is the visual reference for Inbox and Transcript. This
+   utility class exposes the same density so TaskCard / S1 surface can
+   opt in without bumping its baseline (column layout at 360 px wide
+   stays honest). Surface agents wire .comfortable-bubble onto their
+   top-level card wrapper and the body inherits 15 px / 600 weight.
+   No new tokens — pure CSS rule. */
+.comfortable-bubble {
+  padding: 22px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
 }

@@ -64,7 +64,7 @@ export function SidebarNav({ inboxCount }: SidebarNavProps) {
       </div>
 
       {/* Nav items */}
-      <nav className="flex-1 flex flex-col gap-1 py-2 px-3">
+      <nav className="flex flex-col gap-1 py-2 px-3">
         <SidebarNavItem
           icon={LayoutDashboard}
           label="Task Board"
@@ -91,6 +91,11 @@ export function SidebarNav({ inboxCount }: SidebarNavProps) {
           collapsed={collapsed}
         />
       </nav>
+
+      {/* Spacer — pushes Settings to the bottom. Phase B1 removed the
+          project list from the sidebar; the TaskBoard header dropdown is
+          now the single source of truth for project selection. */}
+      <div className="flex-1" />
 
       {/* Bottom: Settings */}
       <div className="border-t border-white/10 px-3 py-3">

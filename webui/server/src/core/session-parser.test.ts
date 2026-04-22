@@ -102,6 +102,84 @@ describe("session-parser — mutation corpus", () => {
   });
 });
 
+describe("session-parser — iterate-3 new variants (FR-03.50)", () => {
+  it("parses system event as kind='system' with content + subtype", () => {
+    const raw = {
+      type: "system",
+      sessionId: "s",
+      subtype: "local_command",
+      content: "<local-command-stdout>Status dialog dismissed</local-command-stdout>",
+      level: "info",
+    };
+    const r = parseSessionJsonl(JSON.stringify(raw) + "\n");
+    expect(r.events).toHaveLength(1);
+    const ev = r.events[0];
+    expect(ev.kind).toBe("system");
+    if (ev.kind === "system") {
+      expect(ev.text).toContain("Status dialog dismissed");
+      expect(ev.subtype).toBe("local_command");
+    }
+  });
+
+  it("parses custom-title event with customTitle field", () => {
+    const raw = {
+      type: "custom-title",
+      sessionId: "s",
+      customTitle: "shipwright-audit",
+    };
+    const r = parseSessionJsonl(JSON.stringify(raw) + "\n");
+    expect(r.events).toHaveLength(1);
+    const ev = r.events[0];
+    expect(ev.kind).toBe("custom-title");
+    if (ev.kind === "custom-title") {
+      expect(ev.title).toBe("shipwright-audit");
+    }
+  });
+
+  it("parses agent-name event with agentName field", () => {
+    const raw = {
+      type: "agent-name",
+      sessionId: "s",
+      agentName: "Webui Title Alpha",
+    };
+    const r = parseSessionJsonl(JSON.stringify(raw) + "\n");
+    expect(r.events).toHaveLength(1);
+    const ev = r.events[0];
+    expect(ev.kind).toBe("agent-name");
+    if (ev.kind === "agent-name") {
+      expect(ev.name).toBe("Webui Title Alpha");
+    }
+  });
+
+  it("parses permission-mode event with permissionMode field", () => {
+    const raw = {
+      type: "permission-mode",
+      sessionId: "s",
+      permissionMode: "acceptEdits",
+    };
+    const r = parseSessionJsonl(JSON.stringify(raw) + "\n");
+    expect(r.events).toHaveLength(1);
+    const ev = r.events[0];
+    expect(ev.kind).toBe("permission-mode");
+    if (ev.kind === "permission-mode") {
+      expect(ev.mode).toBe("acceptEdits");
+    }
+  });
+
+  it("still falls through an invented future type to kind='unknown' (regression guard)", () => {
+    const raw = {
+      type: "plugin-hook-v2",
+      sessionId: "s",
+      whatever: { foo: "bar" },
+    };
+    const r = parseSessionJsonl(JSON.stringify(raw) + "\n");
+    expect(r.events[0].kind).toBe("unknown");
+    if (r.events[0].kind === "unknown") {
+      expect(r.events[0].originalType).toBe("plugin-hook-v2");
+    }
+  });
+});
+
 describe("session-parser — tool use / result correlation", () => {
   it("extracts tool_use blocks from assistant content array", () => {
     const jsonl = JSON.stringify({

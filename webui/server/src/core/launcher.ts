@@ -169,24 +169,32 @@ function appendName(a: Argv, parts: string[], q: (v: string) => string): void {
 }
 
 // --- shell-specific escaping ---
+//
+// Iterate 3 section 03 — exported (previously module-private) so
+// `core/actions-substitute.ts` can call them per target shell before
+// substituting user-derived placeholders into command templates. The
+// shell-escape discipline is the security boundary for command-template
+// substitution (plan.md § 2.2); do not move this logic behind a different
+// abstraction without updating `actions-substitute.ts`.
 
-function qPs(v: string): string {
+export function qPs(v: string): string {
   // PS single-quoted: embedded `'` → `''`.
   return `'${v.replace(/'/g, "''")}'`;
 }
 
-function qCmd(v: string): string {
+export function qCmd(v: string): string {
   // cmd.exe double-quoted: embedded `"` → `\"`. We do NOT worry about
   // trailing-backslash-before-quote since real inputs (paths, UUIDs, dirs)
   // never end on `\`.
   return `"${v.replace(/"/g, '\\"')}"`;
 }
 
-function qPosix(v: string): string {
+export function qPosix(v: string): string {
   // POSIX single-quoted: `'` → `'\''`.
   return `'${v.replace(/'/g, "'\\''")}'`;
 }
 
-function toPosixPath(p: string): string {
+export function toPosixPath(p: string): string {
   return p.replace(/\\/g, "/");
 }
+

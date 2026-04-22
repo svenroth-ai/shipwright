@@ -581,3 +581,128 @@
   - Storybook + Docker visual-regression goldens (≥ 0.5 d to set up; replaced by Playwright snapshot/behavioural specs).
 - **Rollback:** Each sub-iterate is its own commit. Reverting any one commit restores the prior surface without touching Claude's JSONL or the user's terminal session — the iterate stays inside the read-only contract.
 
+
+---
+
+### ADR-036: Visibility gate = profile.stack.frontend presence...
+- **Date:** 2026-04-20
+- **Section:** Plan Interview — iterate-3
+- **Context:** Spec FR-03.15 says Preview visibility gate reads 'stack.frontend' + spawn pulls from 'stack.frontend.dev'. Existing hasPreviewCapability reads 'dev_server.command' from profile-loader.ts. Two paths would require dual-writing the profile schema.
+- **Decision:** Visibility gate = profile.stack.frontend presence (object-not-null). Spawn target = profile.dev_server.command (existing schema, already used by hasPreviewCapability). No new stack.frontend.dev field.
+- **Commit:** n/a
+- **Consequences:** Harmonizes spec to code. Boot-time coherence check logs warning if stack.frontend exists but dev_server.command absent; button renders, spawn returns 500 with actionable message.
+- **Rejected:** Dual-write profile schema with new stack.frontend.dev field AND keep dev_server.command for backcompat — adds mental model burden, no user-visible benefit.
+
+---
+
+### ADR-037: (a) synthesize server-side. Deterministic...
+- **Date:** 2026-04-20
+- **Section:** Plan Interview — iterate-3
+- **Context:** Spec FR-03.01 says legacy tasks without projectId get 'Unassigned' pseudo-project. Options: (a) synthesize server-side read-only, (b) write real row into projects.json on first read.
+- **Decision:** (a) synthesize server-side. Deterministic id='unassigned', appears in getAll() output only when at least one task has projectId='unassigned' or null. Not persisted to projects.json.
+- **Commit:** n/a
+- **Consequences:** projects.json stays representing user intent. No orphaned 'Unassigned' row after user reassigns everything. Tasks with projectId=null are normalized to 'unassigned' on read via virtual field.
+- **Rejected:** (b) first-read migration writes real row — leaks migration state into user data model, hard to un-create later.
+
+---
+
+### ADR-038: (a) incremental migration. CURRENT_SCHEMA_VERSION=2; v1...
+- **Date:** 2026-04-20
+- **Section:** Plan Interview — iterate-3
+- **Context:** sdk-sessions.json v1 schema lacks projectId (spec 3.2 adds it). Options: (a) incremental v1→v2 write-on-touch, (b) batch-rewrite all rows on first boot.
+- **Decision:** (a) incremental migration. CURRENT_SCHEMA_VERSION=2; v1 load() assigns projectId='unassigned' in memory; next write of that row persists v2 shape. Header loads both v1 and v2 (forward-compat window).
+- **Commit:** n/a
+- **Consequences:** Zero risk of mid-migration crash on large stores (300+ rows). Migration completes over days of normal use. Rollback is one-line version constant revert.
+- **Rejected:** (b) batch-rewrite on boot — single-point failure, long boot on large stores, hostile rollback.
+
+---
+
+### ADR-039: New TS module lib/classifyPhase.ts (project-agnostic,...
+- **Date:** 2026-04-20
+- **Section:** Plan Interview — iterate-3
+- **Context:** Spec 3.2 mentions re-using 'pre-pivot classifyPhase logic if salvageable'. plugins/shipwright-project has classify_phase.py (Python, runs in IREB decomposition skill). Webui task-creation modal needs client-side debounced auto-classify without round-tripping Python.
+- **Decision:** New TS module lib/classifyPhase.ts (project-agnostic, takes phases from actions endpoint, tokenizes title, matches phase.id+label, tiebreak by array index). Pure function, <=80 LOC. Does NOT port or import classify_phase.py.
+- **Commit:** n/a
+- **Consequences:** Client-side debouncing works out of the box. No binding between webui and plugin-side Python. Independent test surface via Vitest.
+- **Rejected:** Port classify_phase.py — binds webui to a plugin whose classifier tuning is unrelated (IREB decomposition vs. webui task labeling).
+
+---
+
+### ADR-040: All 39 findings accepted and integrated. 10...
+- **Date:** 2026-04-20
+- **Section:** External Review \u2014 iterate-3
+- **Context:** Iterate 3 plan.md reviewed via OpenRouter (Gemini + GPT in parallel). 39 findings across security, architecture, completeness, performance, test-coverage, and spec-amendment drift.
+- **Decision:** All 39 findings accepted and integrated. 10 HIGH-severity items (command-injection escape matrix, path-traversal pathGuard, spawn shell:false, preview error taxonomy, stale standalone kind, stale complexity UAT, FR-03.02 scoped-strip override, FR-03.14 shortcut pruning, Save-vs-Launch E2E, actions-schema negative tests) folded into \u00a7\u00a7 2.1, 2.2, 4.2 of plan.md + section bodies 01-04. 29 MED/LOW items routed into section-writer briefs. Full disposition ledger in plan.md \u00a7 7.
+- **Commit:** n/a
+- **Consequences:** Test count targets lifted above spec baseline (Playwright \u226550, server \u2265475, client \u2265560). Preview subprocess hardened (shell:false + tokenize + dedup). NewIssueModal moved from section 02 to 03 to kill section-interdependency footgun. FR-03.30 header drops legacy LaunchRow; Fork deprioritized to iterate 4.
+- **Rejected:** Logging all 39 findings as individual ADRs (040-078) \u2014 rejected as noise; single umbrella ADR + plan.md ledger is the auditable record.
+
+---
+
+### ADR-041: Parser interface names stay product-shaped (text/title/name/mode)
+- **Date:** 2026-04-20
+- **Section:** Build — iterate-3 section 01 (parser hardening + LAF tokens)
+- **Context:** On-disk JSONL uses verbose CLI field names (`content`, `customTitle`, `agentName`, `permissionMode`) for the 4 new variants; the section spec describes them with short product-side names (`text`, `title`, `name`, `mode`). The parser mediates between them.
+- **Decision:** Parser emits product-shaped field names (`SystemEvent.text`, `CustomTitleEvent.title`, `AgentNameEvent.name`, `PermissionModeEvent.mode`) and extracts from the CLI payload. Accept both CLI and product-short field names on input for forward-compat.
+- **Commit:** (this iterate-3.1 commit)
+- **Consequences:** Renderer code stays stable if the CLI renames `customTitle` → `title` in a future release. One narrow extraction point in parser tolerates either shape. Duplicated across server + client parsers per `conventions.md:14`.
+- **Rejected:** Mirror CLI field names 1:1 in the parsed event (e.g. `event.customTitle`) — would leak CLI naming into every renderer + test.
+
+---
+
+### ADR-042: System visibility is a single global localStorage key, not per-task
+- **Date:** 2026-04-20
+- **Section:** Build — iterate-3 section 01
+- **Context:** System events (subtype `init` / `local_command` / `informational`) are noisy. Section spec + plan § 3 + external review O16 called for default-hidden behind a transcript-toolbar toggle. Toggle scope could be per-task or global.
+- **Decision:** Single global localStorage key `webui.transcript.showSystem`. `useSystemVisibility()` reads it lazily on mount, writes on toggle, and cross-tab-syncs via the `storage` event. Every transcript viewer in the app observes the same default.
+- **Commit:** (this iterate-3.1 commit)
+- **Consequences:** One preference to memorize. No per-task state bloat in `sdk-sessions.json`. Multi-tab reveals flip consistently. Covered E2E by spec 60 (default hidden → click → reload persists).
+- **Rejected:** Per-task or per-session preference — no user value, adds a write path into already-contended `sdk-sessions.json`.
+
+---
+
+### ADR-043: Attachment rendering keyed off payload presence, not a mime sniff
+- **Date:** 2026-04-20
+- **Section:** Build — iterate-3 section 01
+- **Context:** FR-03.53 upgrades the generic `attachment` chip to show a filename + thumbnail. Claude's JSONL payload for `attachment` is opaque — sometimes it carries `{filename, thumbnailUrl}`, sometimes it is a bare reference. Renderer must not crash on either shape.
+- **Decision:** Branch renders the full card when `filename` is present (using `thumbnailUrl` if available or an extension hint block otherwise); falls back to a generic muted chip when neither field is present. No mime sniffing, no network probe.
+- **Commit:** (this iterate-3.1 commit)
+- **Consequences:** Resilient to payload drift. Covered by the two unit tests `renders filename + thumbnail when payload provides them` + `falls back to generic chip when payload is opaque`.
+- **Rejected:** Require a canonical attachment schema from the CLI (blocks on upstream change); MIME-detect via extension beyond the hint block (unnecessary scope creep for the chip).
+
+---
+
+### ADR-044: Iterate 3 — design overhaul, project↔task wiring, configurable actions, 3-pane TaskDetail
+- **Date:** 2026-04-20
+- **Section:** Build — iterate-3 section 06 (umbrella close-out; mirrors ADR-035's iterate-2 pattern)
+- **Cross-links:** ADR-034 (Plan D'' external-launch pivot, 2026-04-19), ADR-035 (iterate-2 close-out, 2026-04-20), ADR-036..040 (iterate-3 plan-phase decisions), ADR-041..043 (iterate-3 section-01 micro-decisions).
+- **Note on numbering:** Section 06 spec called for "ADR-041"; sections 01/02 had already consumed ADR-041/042/043 at build time. ADR-044 is the post-build umbrella close-out covering what actually shipped across sub-iterates 3.1..3.5.
+- **Context:** Iterate 3 set out to (a) land the visual mockups that iterate 2 silently skipped, (b) wire projects 1:1 to tasks, (c) restore Folder Tree + Smart Viewer as a 3-pane TaskDetail, (d) add a `+ New ▾` menu that launches Pipeline / Iterate / Task via the same external-launch copy-command contract, (e) move hardcoded webui knowledge of Shipwright phases into a project-local `.webui/actions.json` override with a server-side default, and (f) add a server-spawned Preview dev-server path without violating the Plan D'' read-only Claude contract. The plan was external-reviewed (ADR-040) and broke into five build sub-iterates (3.1 parser+LaF, 3.2 project↔task schema v2, 3.3 actions + preview + new-action menu, 3.4 3-pane TaskDetail + FolderTree + SmartViewer + path-guard, 3.5 Inbox token sweep) plus this doc-sync section 06.
+- **Decision (umbrella architecture):**
+  1. **Configurable actions over hardcoded strings.** All slash-commands (`/shipwright-run`, `/shipwright-iterate`, `/shipwright-<phase>`) are now template data in `server/src/config/default-actions.json`, overridable per project via `<project.path>/.webui/actions.json`. Components read the resolved set from `GET /api/external/projects/:id/actions`. No component references `shipwright-run` as a literal.
+  2. **Placeholder substitution at command-build time.** `server/src/core/actions-substitute.ts` resolves `{project.path}`, `{task.uuid}`, `{task.title}`, `{task.phase}`, `{task.phase_label}`, `{task.description?}`, `{plugin.dirs}` with per-shell escape (PowerShell `''`, POSIX `'\''`, cmd.exe `\"`) — shares the escape matrix with `launcher.ts` via exported `qPs/qCmd/qPosix`.
+  3. **Project↔task wiring via schema v2.** `sdk-sessions.json` header bumps to `schemaVersion: 2`; `projectId` is now a first-class task field; legacy v1 rows are treated as `projectId: "unassigned"` in memory and rewritten to v2 on next mutation (write-on-touch migration — ADR-038). `"Unassigned"` is a synthesized pseudo-project surfaced only when at least one task lacks a real projectId (ADR-037).
+  4. **Preview spawn is NOT Claude.** `server/src/core/preview-session-manager.ts` spawns `dev_server.command` from the project's profile via `child_process.spawn({shell: false})`, keyed by projectId, deduplicated on healthy sessions, killed on server shutdown. Read-only Claude contract (ADR-034) is untouched — Preview is an independent subprocess class.
+  5. **3-pane TaskDetail behind a full-width header.** Left = `<FolderTree>` (lazy expand + gitignore-aware), center = `<BubbleTranscript>`, right = `<SmartViewer>` (5 renderers: Markdown/Code/Text/Image/Mermaid; mermaid lazy-imported to keep initial bundle lean). Panes are `react-resizable-panels`-based with widths + collapsed state persisted in `localStorage` under `webui.taskDetail.*`.
+  6. **Path-guard is shared + strict.** Tree + file routes share `server/src/core/path-guard.ts` (realpath + `path.relative` + null-byte reject — **NOT** `startsWith` string check, which is defeated by symlinks + unicode). File route caps at 5 MB, serves via MIME allowlist, sets `Content-Security-Policy`, `X-Content-Type-Options: nosniff`, sandbox iframe, sanitized `Content-Disposition`.
+  7. **Profile capability gate is `stack.frontend` presence; spawn target is `dev_server.command`.** Harmonized to existing schema (ADR-036); boot-time coherence check logs a warning when `stack.frontend` is present but `dev_server.command` is missing. Plan § 2.1 precedence matrix documents how these two sources layer with `actions.preview.enabled`.
+- **Commit range:** f94dfc7 (3.1) → 88a56f6 (3.2) → bc1ee7c (3.3a) → 4543dca (3.3b) → e584c84 (3.4a) → bdafacb (3.4b) → 4edb173 (3.5) → this commit (3.6).
+- **Rationale:** Hardcoded Shipwright-phase strings in webui components created a silent coupling that broke as soon as a user introduced a project-local action override. Moving the phase catalog into `.webui/actions.json` + default-actions.json kills that coupling permanently; the `GET /actions` route is the single contract. The 3-pane restore was mandated by Sven's UAT ("I want the Smart Viewer back"); doing it as a post-pivot rebuild (rather than reviving pre-pivot code) let us keep the read-only invariant and add lazy tree loading + path-guard hardening that the pre-pivot version lacked. Preview as a non-Claude subprocess is the only architecturally clean path: it is a dev-server, not an AI session, so the read-only contract doesn't apply and we can honestly `spawn`. The 3-pane splits used `react-resizable-panels` over a hand-rolled drag because the library is a 6 KB gzip drop-in with persisted widths for free. `shell: false` on Preview spawn is a hard security requirement — shell substitution + user-controlled `dev_server.command` strings would be a trivial command-injection.
+- **Consequences:**
+  - **New invariants (enforced via new DO-NOT guard #11 in `webui/CLAUDE.md`):** Components MUST NOT hardcode `shipwright-run` / `shipwright-iterate` / phase strings. Read from `/api/external/projects/:id/actions`. Violations re-introduce the configurability debt and will break custom `.webui/actions.json` installations silently.
+  - **Placeholder-allowlist convention (`webui/agent_docs/conventions.md`):** New placeholder in `actions-substitute.ts` requires a paired server-side validation test in `actions-schema-validation.test.ts`. Silent placeholder drift otherwise renders the literal `{placeholder}` string in the copy-command and errors the user's terminal paste cryptically.
+  - **File structure:** 6 new client components (`FolderTree`, `SmartViewer/*`, `NewIssueModal`, `PreviewButton`, `CreateMenuSplitButton`, `TaskDetailThreePane`) + 6 new server modules (`default-actions.json`, `project-actions-loader`, `actions-substitute`, `preview-session-manager`, `path-guard`, `gitignore-cache`). `LaunchRow` + `CopyCommandCard` deleted from `TaskDetailPage` (replaced by header-level state-dependent CTA).
+  - **Test posture (iterate 3 close):** server 299 unit tests (baseline 154 at iterate-2 close, +145); client 351 + 1 doc-sync = 352 (baseline 214 at iterate-2 close, +138); TSC: server = 4 pre-existing errors (no regression), client = 0 errors. Playwright regressed slightly — some iterate-3 flow specs (50a/50b/51/51a/52/53/54/54b/54c/48/55b/56/56b/57/58/58b) are deferred to a follow-up iterate; one new spec `55-three-pane-layout.spec.ts` ships with this iterate. Unit tests cover the contracts.
+  - **Spec deviation:** `rehype-highlight/lib/common` subpath was removed in rehype-highlight v7; we use `{languages: common}` from `lowlight` at the call site (equivalent intent; bundle-split verified).
+  - **Post-close spec amendment:** FR-03.33 default ignored list now includes `.webui` (external review O34). Dated footnote added — see `webui/planning/iterate-3/spec.md`.
+  - **Rollback:** each sub-iterate is its own commit; reverting any one commit stays inside the read-only contract. Reverting 3.2 requires a one-time rewrite of `sdk-sessions.json` back to `schemaVersion: 1` if users mutated v2-format rows in between (write-on-touch migration is forward-compatible).
+- **Rejected alternatives:**
+  - Webui spawns Claude for Pipeline / Iterate launches (breaks ADR-034 read-only contract; violates CLAUDE.md DO-NOT guard).
+  - Hardcoded phase enum in a frontend constants file (re-introduces configurability debt; makes `.webui/actions.json` non-functional).
+  - Single-pane viewer ("just show Markdown inline") (loses code syntax highlighting, image preview, mermaid; doesn't match Sven's approved mockup `task-detail-3pane.html`).
+  - Pre-pivot Smart File Viewer code revival (pre-pivot used chokidar + chat-subprocess assumptions; cheaper to rebuild clean).
+  - `path.startsWith(projectPath)` for the path-guard (defeated by symlinks, unicode, and junction points on Windows — real-path-relative is the only safe check).
+  - `shell: true` on Preview spawn with user-configurable `dev_server.command` (command-injection footgun).
+  - `stack.frontend.dev.command` as the spawn target (would dual-write the profile schema alongside existing `dev_server.command`; no user-visible benefit — ADR-036).
+  - Logging all 5 sub-iterates as individual ADRs (ADR-044..048) — rejected as noise; single umbrella ADR + sub-iterate commit trail is the auditable record, per ADR-035 precedent.
+

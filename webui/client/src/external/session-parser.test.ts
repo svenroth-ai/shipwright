@@ -108,6 +108,59 @@ describe("askUserQuestionSummary — safe getter", () => {
   });
 });
 
+describe("parseSessionJsonl — iterate-3 new variants (FR-03.50)", () => {
+  it("parses system event as kind='system' with content + subtype", () => {
+    const raw = {
+      type: "system",
+      sessionId: "s",
+      subtype: "local_command",
+      content: "<local-command-stdout>ok</local-command-stdout>",
+    };
+    const r = parseSessionJsonl(JSON.stringify(raw) + "\n");
+    expect(r.events[0].kind).toBe("system");
+    if (r.events[0].kind === "system") {
+      expect(r.events[0].text).toContain("ok");
+      expect(r.events[0].subtype).toBe("local_command");
+    }
+  });
+
+  it("parses custom-title event with customTitle field", () => {
+    const raw = { type: "custom-title", sessionId: "s", customTitle: "Task Alpha" };
+    const r = parseSessionJsonl(JSON.stringify(raw) + "\n");
+    expect(r.events[0].kind).toBe("custom-title");
+    if (r.events[0].kind === "custom-title") {
+      expect(r.events[0].title).toBe("Task Alpha");
+    }
+  });
+
+  it("parses agent-name event with agentName field", () => {
+    const raw = { type: "agent-name", sessionId: "s", agentName: "Claude Sonnet 4.6" };
+    const r = parseSessionJsonl(JSON.stringify(raw) + "\n");
+    expect(r.events[0].kind).toBe("agent-name");
+    if (r.events[0].kind === "agent-name") {
+      expect(r.events[0].name).toBe("Claude Sonnet 4.6");
+    }
+  });
+
+  it("parses permission-mode event with permissionMode field", () => {
+    const raw = { type: "permission-mode", sessionId: "s", permissionMode: "acceptEdits" };
+    const r = parseSessionJsonl(JSON.stringify(raw) + "\n");
+    expect(r.events[0].kind).toBe("permission-mode");
+    if (r.events[0].kind === "permission-mode") {
+      expect(r.events[0].mode).toBe("acceptEdits");
+    }
+  });
+
+  it("still falls through invented future types to kind='unknown' (regression guard)", () => {
+    const raw = { type: "plugin-hook-v2", sessionId: "s", whatever: 1 };
+    const r = parseSessionJsonl(JSON.stringify(raw) + "\n");
+    expect(r.events[0].kind).toBe("unknown");
+    if (r.events[0].kind === "unknown") {
+      expect(r.events[0].originalType).toBe("plugin-hook-v2");
+    }
+  });
+});
+
 describe("toolResults — extraction", () => {
   it("returns empty array for non-array content", () => {
     expect(toolResults({ kind: "user", content: "string" })).toEqual([]);

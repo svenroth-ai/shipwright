@@ -41,4 +41,12 @@ export interface Project {
    * KanbanPage header. Present in API responses; not stored in projects.json.
    */
   hasPreview?: boolean;
+  /**
+   * Iterate 3 section 02 — true for the synthesized "Unassigned" pseudo-
+   * project (id = "unassigned"). ProjectManager.getAll() appends this row
+   * on the fly when any task references a non-real project. Never
+   * persisted to projects.json. Client renders muted + suppresses edit /
+   * delete affordances. ADR-037.
+   */
+  synthesized?: boolean;
 }
