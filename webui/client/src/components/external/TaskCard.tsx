@@ -231,6 +231,7 @@ export function TaskCard({ task }: Props) {
                   className="z-50 min-w-[160px] rounded-[var(--radius-button)] border border-[var(--color-border)] bg-[var(--color-surface)] p-1 text-sm shadow-[var(--shadow-card)]"
                 >
                   <DropdownMenu.Item
+                    onClick={(ev) => ev.stopPropagation()}
                     onSelect={() => closeMut.mutate(task.taskId)}
                     disabled={task.state === "done"}
                     className="cursor-pointer rounded px-2 py-1 text-[var(--color-text)] outline-none data-[highlighted]:bg-[var(--color-muted-bg)] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40"
@@ -239,6 +240,7 @@ export function TaskCard({ task }: Props) {
                     Close (mark done)
                   </DropdownMenu.Item>
                   <DropdownMenu.Item
+                    onClick={(ev) => ev.stopPropagation()}
                     onSelect={onDeleteClick}
                     className="cursor-pointer rounded px-2 py-1 text-[var(--color-error)] outline-none data-[highlighted]:bg-[var(--color-error-bg)]"
                     data-testid={`task-card-delete-${task.taskId}`}

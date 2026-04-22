@@ -14,13 +14,16 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("TaskDetail title rename + launch sync", () => {
+  test.use({ permissions: ["clipboard-read", "clipboard-write"] });
+
   test("rename in TaskDetail header survives reload + appears in launch command (--name)", async ({
     page,
     request,
+    context,
   }) => {
     // Seed a task via API so the test isolates from the create-form UI.
     const create = await request.post("/api/external/tasks", {
-      data: { title: "before-rename", cwd: "C:/tmp/rename-spec" },
+      data: { title: "before-rename", cwd: process.cwd() },
     });
     const { task } = (await create.json()) as { task: { taskId: string; title: string } };
     expect(task.title).toBe("before-rename");
@@ -45,23 +48,20 @@ test.describe("TaskDetail title rename + launch sync", () => {
     // Trigger a launch via the new header CTA (iterate 3 section 04 —
     // LaunchRow / CopyCommandCard deleted). The command is copied to
     // the clipboard; we assert --name carries the renamed title.
-    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await context.setExtraHTTPHeaders({
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     });
     await page.evaluate(() => navigator.clipboard.writeText(""));
-    // Task is now in awaiting_external_start (or later) after the
-    // reload-after-rename navigation — the CTA surfaces Resume, not
-    // Launch. Both call the same launch endpoint; the result payload
-    // embeds --name '<title>' either way.
-    const resumeVisible = await page
-      .getByTestId("cta-copy-resume-command")
-      .isVisible()
-      .catch(() => false);
-    const ctaTestId = resumeVisible ? "cta-copy-resume-command" : "cta-launch-in-terminal";
-    await page.getByTestId(ctaTestId).click();
-    await expect(page.getByTestId(ctaTestId)).toContainText(/Copied/i, { timeout: 5000 });
+    // After reload the task is back in draft — CTA is Launch. Click it,
+    // wait on the state transition (iterate 3.9c pattern — the "Copied"
+    // label is transient because the CTA unmounts after the click), then
+    // verify clipboard.
+    await page.getByTestId("cta-launch-in-terminal").click();
+    await expect(page.getByTestId("task-state-badge")).toHaveText(
+      "Awaiting launch",
+      { timeout: 5000 },
+    );
     const ps = await page.evaluate(() => navigator.clipboard.readText());
     expect(ps).toContain("--name 'after-rename'");
     expect(ps).not.toContain("--name 'before-rename'");
@@ -69,7 +69,7 @@ test.describe("TaskDetail title rename + launch sync", () => {
 
   test("rename via Escape cancels without writing", async ({ page, request }) => {
     const create = await request.post("/api/external/tasks", {
-      data: { title: "escape-cancel", cwd: "C:/tmp/rename-cancel" },
+      data: { title: "escape-cancel", cwd: process.cwd() },
     });
     const { task } = (await create.json()) as { task: { taskId: string } };
 

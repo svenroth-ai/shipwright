@@ -30,17 +30,18 @@ test.describe("TerminalLaunchButton — variant consistency", () => {
     // another spec while polling.
     const uniqueTitle = `variant-spec-${Date.now()}`;
     const create = await request.post("/api/external/tasks", {
-      data: { title: uniqueTitle, cwd: "C:/tmp/variant" },
+      data: { title: uniqueTitle, cwd: process.cwd() },
     });
     const { task } = (await create.json()) as { task: { taskId: string } };
 
-    // Compact variant — TaskBoard card. Navigate first so navigator
-    // is defined, then clear the clipboard before clicking.
+    // Backlog-card variant — TaskBoard. Iterate 3.7d renamed the compact
+    // button to a solid-green launch variant scoped by `task-card-launch-<id>`;
+    // the button itself carries `terminal-launch-solid-launch`.
     await page.goto("/");
     await page.evaluate(() => navigator.clipboard.writeText(""));
     const compact = page
-      .getByTestId(`task-card-${task.taskId}`)
-      .getByTestId("terminal-launch-compact");
+      .getByTestId(`task-card-launch-${task.taskId}`)
+      .getByTestId("terminal-launch-solid-launch");
     await expect(compact).toBeVisible({ timeout: 5000 });
     await compact.click();
 
@@ -58,32 +59,26 @@ test.describe("TerminalLaunchButton — variant consistency", () => {
 
     // Primary variant — TaskDetail header. Iterate 3 section 04 replaced
     // the old `terminal-launch-btn` with the state-dependent CTA. Post
-    // first-launch the task is in awaiting_external_start (or later), so
-    // the CTA surfaces as "Copy Resume Command".
+    // first-launch the task is in awaiting_external_start, so the CTA is
+    // `cta-terminal` (Terminal — re-copy resume command).
     await page.evaluate(() => navigator.clipboard.writeText(""));
     await page.goto(`/tasks/${task.taskId}`);
-    // Wait for one of the two CTA variants to land.
-    await page.waitForSelector(
-      '[data-testid="cta-copy-resume-command"], [data-testid="cta-launch-in-terminal"]',
-      { timeout: 5000 },
-    );
-    const primaryTestId = (await page
-      .getByTestId("cta-copy-resume-command")
-      .isVisible()
-      .catch(() => false))
-      ? "cta-copy-resume-command"
-      : "cta-launch-in-terminal";
-    const primary = page.getByTestId(primaryTestId);
+    const primary = page.getByTestId("cta-terminal");
+    await expect(primary).toBeVisible({ timeout: 5000 });
     await primary.click();
-    await expect(primary).toContainText(/Copied/i);
 
-    const primaryClip = await page.evaluate(() => navigator.clipboard.readText());
+    // Same pattern as iterate 3.9c: click triggers a mutation; poll clipboard
+    // for the expected command rather than waiting on transient button text.
+    let primaryClip = "";
+    await expect(async () => {
+      primaryClip = await page.evaluate(() => navigator.clipboard.readText());
+      expect(primaryClip).toContain(`--name '${uniqueTitle}'`);
+      expect(primaryClip).toContain("--resume");
+    }).toPass({ timeout: 5000 });
     // Primary = second launch on the same task; state has transitioned past
     // draft, so this is a resume command (--resume <uuid>, no --session-id).
     // The CLI rejects --session-id + --resume together (without --fork-session).
-    expect(primaryClip).toContain("--resume");
     expect(primaryClip).not.toContain("--session-id");
-    expect(primaryClip).toContain(`--name '${uniqueTitle}'`);
 
     // The two clipboards target the SAME session UUID — once via
     // --session-id (fresh), once via --resume (re-attach).
