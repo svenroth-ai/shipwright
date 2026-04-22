@@ -27,6 +27,7 @@ import {
   ChevronUp,
   Clipboard,
   Copy,
+  Folder,
   MoreVertical,
   Pencil,
   Rocket,
@@ -169,6 +170,10 @@ export function TaskDetailHeader({ task }: Props) {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
   const [uuidCopied, setUuidCopied] = useState(false);
+  // 3.7d-b2 — controls the ProjectChipMenu popover rendered off the
+  // "Move to project…" menu item. Opens the popover on the chip's legacy
+  // position (near the title) but without rendering the chip itself.
+  const [projectPickerOpen, setProjectPickerOpen] = useState(false);
   const copyResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const uuidResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef<EditableTaskTitleHandle | null>(null);
@@ -325,7 +330,18 @@ export function TaskDetailHeader({ task }: Props) {
           <span className="truncate">{projectName}</span>
         </nav>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        {/*
+         * 3.7d-b2 — title + state badge must share a single flex row with
+         * items-center (prior baseline alignment looked off because the
+         * badge has extra padding). ProjectChipMenu is no longer rendered
+         * here; the breadcrumb above already shows the project. Project
+         * change happens via the "Move to project…" 3-dots menu item that
+         * opens the controlled popover anchored below.
+         */}
+        <div
+          className="relative flex flex-wrap items-center gap-2.5"
+          data-testid="task-detail-title-row"
+        >
           <EditableTaskTitle ref={titleRef} task={task} />
           <span
             className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${badge.bg} ${badge.fg}`}
@@ -345,7 +361,14 @@ export function TaskDetailHeader({ task }: Props) {
             />
             {badge.label}
           </span>
-          <ProjectChipMenu task={task} />
+          {/* Headless ProjectChipMenu: renders no visible chip, only the
+           * popover when `projectPickerOpen` flips true. Popover anchors
+           * relative to this title row. */}
+          <ProjectChipMenu
+            task={task}
+            open={projectPickerOpen}
+            onOpenChange={setProjectPickerOpen}
+          />
         </div>
 
         <div
@@ -469,6 +492,23 @@ export function TaskDetailHeader({ task }: Props) {
                   className="text-[var(--color-muted,#6b7280)]"
                 />
                 {uuidCopied ? "Copied!" : "Copy session UUID"}
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                onSelect={() => {
+                  // Let the Radix DropdownMenu close naturally; wait for
+                  // its focus-scope to release BEFORE opening the Popover.
+                  // 80 ms empirically covers Radix's cleanup + the fresh
+                  // tick in which we can safely focus the new portal.
+                  window.setTimeout(() => setProjectPickerOpen(true), 80);
+                }}
+                className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[12px] text-[var(--color-text,#1a1a1a)] outline-none transition hover:bg-[var(--color-muted-bg,#ede8e1)]"
+                data-testid="task-detail-menu-move-project"
+              >
+                <Folder
+                  size={14}
+                  className="text-[var(--color-muted,#6b7280)]"
+                />
+                Move to project…
               </DropdownMenu.Item>
               <DropdownMenu.Separator className="my-1 h-px bg-[var(--color-border,#e0dbd4)]" />
               <DropdownMenu.Item

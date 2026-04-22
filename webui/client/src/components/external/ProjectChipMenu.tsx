@@ -3,13 +3,21 @@
  * synthesized Unassigned bucket (iterate 3 section 04, FR-03.03
  * follow-through).
  *
- * This is the ONLY UI path to move a task between projects. Click the
+ * This is the primary UI path to move a task between projects. Click the
  * chip → popover opens → select a project → `useReassignTask` mutation
  * fires with optimistic update. Clicking the currently-selected entry is
  * a no-op (we don't round-trip the server for a no-op).
+ *
+ * 3.7d-b2 — the chip is no longer rendered in the TaskDetail header
+ * (breadcrumb already shows the project name). Instead a "Move to
+ * project…" entry in the 3-dots menu programmatically opens this same
+ * popover via controlled `open` / `onOpenChange`. Pass `triggerless`
+ * when you want the popover-content only (no chip button), anchored
+ * around the parent. The default chip variant is still used in other
+ * surfaces (Inbox, elsewhere).
  */
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Check, ChevronDown, Folder } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
 
@@ -20,6 +28,19 @@ import { useReassignTask } from "../../hooks/useReassignTask";
 
 interface Props {
   task: ExternalTask;
+  /**
+   * Controlled open state. When provided together with `onOpenChange`,
+   * the component is fully controlled (used by TaskDetail 3-dots menu to
+   * open the project-picker from a menu item). Leaving both unset keeps
+   * the default uncontrolled chip behavior.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /**
+   * Custom trigger element. When set, replaces the default chip button
+   * (used rarely — the controlled-open path is usually sufficient).
+   */
+  trigger?: ReactNode;
 }
 
 interface OptionRow {
@@ -29,8 +50,17 @@ interface OptionRow {
   synthesized?: boolean;
 }
 
-export function ProjectChipMenu({ task }: Props) {
-  const [open, setOpen] = useState(false);
+export function ProjectChipMenu({ task, open: openProp, onOpenChange, trigger }: Props) {
+  const isControlled = openProp !== undefined && onOpenChange !== undefined;
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = isControlled ? openProp! : uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (isControlled) {
+      onOpenChange!(next);
+    } else {
+      setUncontrolledOpen(next);
+    }
+  };
   const projectsQ = useProjects();
   const reassign = useReassignTask();
 
@@ -69,8 +99,15 @@ export function ProjectChipMenu({ task }: Props) {
     setOpen(false);
   };
 
-  return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
+  // Triggerless controlled mode (e.g., opened from the TaskDetail 3-dots
+  // menu): render a tiny anchor element so Radix still has positioning
+  // context, but no visible trigger button.
+  const triggerNode =
+    trigger !== undefined ? (
+      <Popover.Trigger asChild>{trigger}</Popover.Trigger>
+    ) : isControlled ? (
+      <Popover.Anchor className="absolute right-2 top-full h-0 w-0" />
+    ) : (
       <Popover.Trigger asChild>
         <button
           type="button"
@@ -84,6 +121,11 @@ export function ProjectChipMenu({ task }: Props) {
           <ChevronDown size={11} className="text-[var(--color-accent,#857568)]" />
         </button>
       </Popover.Trigger>
+    );
+
+  return (
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      {triggerNode}
       <Popover.Portal>
         <Popover.Content
           align="start"

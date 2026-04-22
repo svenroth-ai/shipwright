@@ -41,6 +41,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { MessageSquare } from "lucide-react";
 
 import {
   askUserQuestionSummary,
@@ -54,6 +55,8 @@ import {
 import { useAutoScroll } from "../../hooks/useAutoScroll";
 import { MarkdownText } from "./MarkdownText";
 import { ToolOutputBlock } from "./ToolOutputBlock";
+import { TerminalLaunchButton } from "./TerminalLaunchButton";
+import type { ExternalTask } from "../../lib/externalApi";
 
 const DEFAULT_TAIL = 200;
 const TAIL_PAGE = 200;
@@ -106,14 +109,30 @@ interface Props {
   content: string;
   /** Override the initial tail size (test seam). */
   initialTail?: number;
+  /**
+   * Optional task used by the in-bubble Resume button on AskUserQuestion
+   * tool_use bubbles (3.7d-b2). When omitted, no Resume button renders —
+   * keeps unit tests that only stub `content` working unchanged.
+   */
+  task?: ExternalTask;
 }
 
-export function BubbleTranscript({ content, initialTail = DEFAULT_TAIL }: Props) {
+export function BubbleTranscript({ content, initialTail = DEFAULT_TAIL, task }: Props) {
   const parsed = useMemo(() => parseSessionJsonl(content), [content]);
   const [tail, setTail] = useState<number>(initialTail);
   const [showSystem, setShowSystem] = useSystemVisibility();
 
   const allEvents = parsed.events;
+  // Count system events up-front so the toolbar toggle can report "(N)"
+  // instead of being silently inert when the stream has no system bubbles
+  // (UAT 3.7d — Sven clicked the toggle on seeded tasks that had zero
+  // system events and concluded the button was broken; the toggle is
+  // actually working, there's just nothing to reveal). Also used by the
+  // toolbar to disable the button when N == 0.
+  const systemCount = useMemo(
+    () => allEvents.reduce((n, e) => (e.kind === "system" ? n + 1 : n), 0),
+    [allEvents],
+  );
   const filtered = useMemo(
     () => (showSystem ? allEvents : allEvents.filter((e) => e.kind !== "system")),
     [allEvents, showSystem],
@@ -148,13 +167,31 @@ export function BubbleTranscript({ content, initialTail = DEFAULT_TAIL }: Props)
   const showVirtualized = visible.length >= VIRTUALIZE_THRESHOLD;
 
   if (parsed.events.length === 0) {
+    // 3.7d-b2 — centered empty state with Lucide icon + heading + hint.
+    // The parent pane provides the flex container; we fill it and center.
     return (
       <div
-        className="py-4 text-sm"
-        style={{ color: "var(--color-muted, #6b7280)" }}
+        className="flex h-full min-h-[240px] w-full flex-col items-center justify-center gap-3 p-8 text-center"
         data-testid="transcript-empty"
       >
-        No events yet — waiting for JSONL content.
+        <MessageSquare
+          size={48}
+          aria-hidden="true"
+          style={{ color: "var(--color-muted, #6b7280)" }}
+        />
+        <div
+          className="text-[16px] font-semibold"
+          style={{ color: "var(--color-text, #1a1a1a)" }}
+          data-testid="transcript-empty-heading"
+        >
+          No events yet
+        </div>
+        <div
+          className="max-w-[320px] text-[13px]"
+          style={{ color: "var(--color-muted, #6b7280)" }}
+        >
+          Launch the task to start streaming the assistant transcript here.
+        </div>
       </div>
     );
   }
@@ -167,6 +204,7 @@ export function BubbleTranscript({ content, initialTail = DEFAULT_TAIL }: Props)
         canLoadOlder={filtered.length > tail}
         onLoadOlder={() => setTail((t) => t + TAIL_PAGE)}
         showSystem={showSystem}
+        systemCount={systemCount}
         onToggleSystem={() => setShowSystem((prev) => !prev)}
       />
       <div
@@ -184,9 +222,10 @@ export function BubbleTranscript({ content, initialTail = DEFAULT_TAIL }: Props)
             events={visible}
             resolved={resolvedToolUseIds}
             containerRef={containerRef}
+            task={task}
           />
         ) : (
-          <PlainBubbles events={visible} resolved={resolvedToolUseIds} />
+          <PlainBubbles events={visible} resolved={resolvedToolUseIds} task={task} />
         )}
       </div>
       {!isAtBottom && (
@@ -226,6 +265,7 @@ function Toolbar({
   canLoadOlder,
   onLoadOlder,
   showSystem,
+  systemCount,
   onToggleSystem,
 }: {
   total: number;
@@ -233,8 +273,18 @@ function Toolbar({
   canLoadOlder: boolean;
   onLoadOlder: () => void;
   showSystem: boolean;
+  /** Count of system events available to reveal (may be 0). */
+  systemCount: number;
   onToggleSystem: () => void;
 }) {
+  // 3.7d-b2 — if the stream has zero system events, disable the toggle and
+  // show a neutral label so it isn't mistaken for a broken button.
+  const hasSystem = systemCount > 0;
+  const toggleLabel = !hasSystem
+    ? "No system messages"
+    : showSystem
+    ? `Hide system messages (${systemCount})`
+    : `Show system messages (${systemCount})`;
   return (
     <div
       className="flex items-center justify-between gap-2 px-3 py-1.5 text-xs"
@@ -252,7 +302,8 @@ function Toolbar({
           type="button"
           onClick={onToggleSystem}
           aria-pressed={showSystem}
-          className="px-2.5 py-0.5 text-[11px] font-medium transition-colors"
+          disabled={!hasSystem}
+          className="px-2.5 py-0.5 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
           style={{
             border: "1px solid var(--color-border, #e0dbd4)",
             borderRadius: "12px",
@@ -262,8 +313,10 @@ function Toolbar({
             color: showSystem ? "#fff" : "var(--color-muted, #6b7280)",
           }}
           data-testid="system-toggle"
+          data-system-count={systemCount}
+          title={!hasSystem ? "This task has no system events" : undefined}
         >
-          {showSystem ? "Hide system messages" : "Show system messages"}
+          {toggleLabel}
         </button>
         {canLoadOlder && (
           <button
@@ -336,9 +389,11 @@ function AttachmentStrip({
 function PlainBubbles({
   events,
   resolved,
+  task,
 }: {
   events: ParsedEvent[];
   resolved: Set<string>;
+  task?: ExternalTask;
 }) {
   // Pack consecutive attachments into a single flex-wrap row so chips
   // render side-by-side (mockup FR-03.53 visual grouping).
@@ -369,6 +424,7 @@ function PlainBubbles({
             event={e}
             previous={previous}
             resolved={resolved}
+            task={task}
           />
         );
       })}
@@ -380,10 +436,12 @@ function VirtualBubbles({
   events,
   resolved,
   containerRef,
+  task,
 }: {
   events: ParsedEvent[];
   resolved: Set<string>;
   containerRef: React.RefObject<HTMLDivElement | null>;
+  task?: ExternalTask;
 }) {
   const virtualizer = useVirtualizer({
     count: events.length,
@@ -417,7 +475,7 @@ function VirtualBubbles({
               padding: "7px 0",
             }}
           >
-            <BubbleRow event={event} previous={previous} resolved={resolved} />
+            <BubbleRow event={event} previous={previous} resolved={resolved} task={task} />
           </div>
         );
       })}
@@ -429,10 +487,12 @@ function BubbleRow({
   event,
   previous,
   resolved,
+  task,
 }: {
   event: ParsedEvent;
   previous: ParsedEvent | null;
   resolved: Set<string>;
+  task?: ExternalTask;
 }) {
   const turnSeparator = isTurnBoundary(previous, event);
   return (
@@ -444,7 +504,7 @@ function BubbleRow({
           data-testid="turn-separator"
         />
       )}
-      {renderBubble(event, resolved)}
+      {renderBubble(event, resolved, task)}
     </div>
   );
 }
@@ -461,7 +521,7 @@ function isTurnBoundary(prev: ParsedEvent | null, current: ParsedEvent): boolean
   return false;
 }
 
-function renderBubble(event: ParsedEvent, resolved: Set<string>): ReactNode {
+function renderBubble(event: ParsedEvent, resolved: Set<string>, task?: ExternalTask): ReactNode {
   if (event.kind === "user") {
     const results = toolResults(event);
     if (results.length > 0) {
@@ -534,7 +594,13 @@ function renderBubble(event: ParsedEvent, resolved: Set<string>): ReactNode {
         </div>
         {tools.map((tu) => (
           <div className="flex justify-start" key={tu.id}>
-            <ToolUseBubble id={tu.id} name={tu.name} input={tu.input} resolved={resolved} />
+            <ToolUseBubble
+              id={tu.id}
+              name={tu.name}
+              input={tu.input}
+              resolved={resolved}
+              task={task}
+            />
           </div>
         ))}
       </div>
@@ -672,18 +738,25 @@ function ToolUseBubble({
   name,
   input,
   resolved,
+  task,
 }: {
   id: string;
   name: string;
   input: unknown;
   resolved: Set<string>;
+  task?: ExternalTask;
 }) {
   if (name === "AskUserQuestion") {
     const q = askUserQuestionSummary(input);
     const isResolved = resolved.has(id);
+    // 3.7d-b2 — ask-bubble polish:
+    //   - Options rendered as readable chips (13 px) instead of tiny bullets.
+    //   - Unresolved asks get a compact Resume button bottom-right so the
+    //     user can jump from bubble → terminal without scrolling up to the
+    //     header. Resolved asks don't need the button (answer is visible).
     return (
       <div
-        className="max-w-[90%] p-3 text-xs"
+        className="max-w-[90%] p-3 text-[13px]"
         style={{
           background: "var(--color-surface, #ffffff)",
           border: "1px solid var(--color-border, #e0dbd4)",
@@ -709,17 +782,53 @@ function ToolUseBubble({
         >
           {isResolved ? "✓ Answered" : "→ Answer in your terminal"}
         </div>
-        <div className="mt-1.5 text-sm font-medium">{q.question}</div>
+        <div className="mt-1.5 text-[14px] font-medium">{q.question}</div>
         {q.options.length > 0 && (
-          <ul className="mt-1.5 list-disc pl-4">
+          <ul
+            className="mt-2 flex flex-wrap gap-1.5 pl-0"
+            style={{ listStyle: "none" }}
+            data-testid="askuser-options"
+          >
             {q.options.map((o, i) => (
-              <li key={i}>{o}</li>
+              <li
+                key={i}
+                data-testid={`askuser-option-${i}`}
+                className="inline-flex items-center"
+                style={{
+                  background: "var(--color-muted-bg, #ede8e1)",
+                  border: "1px solid var(--color-border, #e0dbd4)",
+                  borderRadius: "999px",
+                  color: "var(--color-text, #1a1a1a)",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  lineHeight: 1.3,
+                  padding: "4px 10px",
+                }}
+              >
+                {o}
+              </li>
             ))}
           </ul>
         )}
         {q.fallback && (
-          <div className="mt-1 italic" style={{ color: "var(--color-muted, #6b7280)" }}>
+          <div
+            className="mt-1 italic text-[12px]"
+            style={{ color: "var(--color-muted, #6b7280)" }}
+          >
             (Question payload schema differed from expected — open the task in your terminal to see the original.)
+          </div>
+        )}
+        {!isResolved && task && (
+          <div
+            className="mt-2.5 flex justify-end"
+            data-testid="askuser-resume-row"
+          >
+            <TerminalLaunchButton
+              task={task}
+              variant="compact"
+              resume={true}
+              showLabel={true}
+            />
           </div>
         )}
       </div>

@@ -156,7 +156,7 @@ export default function TaskDetailPage() {
                 </span>
               </div>
               <div className="min-h-0 flex-1">
-                <BubbleTranscript content={transcript.content} />
+                <BubbleTranscript content={transcript.content} task={task} />
               </div>
             </section>
           }
