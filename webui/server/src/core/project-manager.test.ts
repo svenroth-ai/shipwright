@@ -46,6 +46,45 @@ describe("ProjectManager", () => {
     expect(new Date(updated.lastActive).getTime()).toBeGreaterThanOrEqual(new Date(p.lastActive).getTime());
   });
 
+  // Iterate 3.7e-b3 (2026-04-22) — partial settings patches must merge,
+  // not replace. Previously `{ ...existing, ...patch }` clobbered
+  // `settings` whole, so a color PATCH would nuke `phaseToStatusMapping`.
+  it("update deep-merges settings (partial patch keeps other keys)", () => {
+    const deps = mockDeps();
+    const pm = new ProjectManager("/tmp/projects.json", deps);
+    const p = pm.create({
+      name: "Test",
+      path: "/tmp/proj",
+      profile: "default",
+      status: "active",
+      settings: {
+        phaseToStatusMapping: { build: "in_progress" },
+        autonomy: "autonomous",
+      },
+    });
+    const updated = pm.update(p.id, { settings: { color: "#B8A590" } });
+    expect(updated.settings?.color).toBe("#B8A590");
+    // Pre-existing keys are preserved, not clobbered.
+    expect(updated.settings?.phaseToStatusMapping).toEqual({ build: "in_progress" });
+    expect(updated.settings?.autonomy).toBe("autonomous");
+  });
+
+  // Iterate 3.7e-b3 — patches without a settings field leave settings alone.
+  it("update without settings patch leaves existing settings intact", () => {
+    const deps = mockDeps();
+    const pm = new ProjectManager("/tmp/projects.json", deps);
+    const p = pm.create({
+      name: "Test",
+      path: "/tmp/proj",
+      profile: "default",
+      status: "active",
+      settings: { color: "#D99285" },
+    });
+    const updated = pm.update(p.id, { name: "Renamed" });
+    expect(updated.name).toBe("Renamed");
+    expect(updated.settings?.color).toBe("#D99285");
+  });
+
   it("delete removes from map and persists", () => {
     const deps = mockDeps();
     const pm = new ProjectManager("/tmp/projects.json", deps);
@@ -253,6 +292,102 @@ describe("ProjectManager", () => {
       (deps.readFileSync as any) = vi.fn(() => "{not json");
       const pm = new ProjectManager("/tmp/projects.json", deps);
       expect(pm.hasPreviewCapability("/tmp/proj")).toBe(false);
+    });
+  });
+
+  // ── Section 02 (iterate 3): synthesized "unassigned" pseudo-project ──
+  //
+  // ADR-037: getAll() appends a synthesized Unassigned entry iff any task
+  // references projectId="unassigned" OR points at a deleted project id.
+  // Not persisted to projects.json. Never emitted when no task needs it.
+  describe("synthesized 'unassigned' pseudo-project (section 02)", () => {
+    it("getAll-synthesizes-unassigned-when-task-references-it", () => {
+      const deps = mockDeps();
+      const pm = new ProjectManager("/tmp/projects.json", {
+        ...deps,
+        getTaskProjectIds: () => new Set(["unassigned"]),
+      });
+      pm.create({ name: "Real", path: "/tmp/real", profile: "default", status: "active" });
+      const all = pm.getAll();
+      // Real project + synthesized Unassigned row as the last entry.
+      expect(all).toHaveLength(2);
+      expect(all[all.length - 1].id).toBe("unassigned");
+      expect(all[all.length - 1].name).toBe("Unassigned");
+      expect((all[all.length - 1] as { synthesized?: boolean }).synthesized).toBe(true);
+    });
+
+    it("getAll-synthesizes-unassigned-for-deleted-references", () => {
+      // Task points at a projectId not present in projects.json. The
+      // synthesized row represents the orphan bucket.
+      const deps = mockDeps();
+      const pm = new ProjectManager("/tmp/projects.json", {
+        ...deps,
+        getTaskProjectIds: () => new Set(["p-deleted-long-ago"]),
+      });
+      pm.create({ name: "Real", path: "/tmp/real", profile: "default", status: "active" });
+      const all = pm.getAll();
+      expect(all.some((p) => p.id === "unassigned")).toBe(true);
+    });
+
+    it("getAll-omits-unassigned-when-no-references", () => {
+      const deps = mockDeps();
+      const pm = new ProjectManager("/tmp/projects.json", {
+        ...deps,
+        getTaskProjectIds: () => new Set<string>(),
+      });
+      const real = pm.create({ name: "Real", path: "/tmp/real", profile: "default", status: "active" });
+      const all = pm.getAll();
+      expect(all).toHaveLength(1);
+      expect(all[0].id).toBe(real.id);
+    });
+
+    it("getAll-omits-unassigned-when-all-task-ids-resolve", () => {
+      const deps = mockDeps();
+      const pm = new ProjectManager("/tmp/projects.json", {
+        ...deps,
+        // Tasks only reference the real project — no orphan bucket.
+        getTaskProjectIds: () => new Set(["will-set-below"]),
+      });
+      const real = pm.create({ name: "Real", path: "/tmp/real", profile: "default", status: "active" });
+      // Rewire the dep to point at the real id (done as a second call since
+      // create assigns the id). This mirrors production: sessionsStore.all()
+      // is queried at getAll() time, not at constructor time.
+      (pm as unknown as { deps: { getTaskProjectIds: () => Set<string> } }).deps.getTaskProjectIds = () => new Set([real.id]);
+      const all = pm.getAll();
+      expect(all).toHaveLength(1);
+      expect(all[0].id).toBe(real.id);
+    });
+
+    it("unassigned-not-persisted-to-projects-json", async () => {
+      const store: Record<string, string> = { "/tmp/projects.json": "[]" };
+      const deps: ProjectManagerDeps = {
+        readFile: vi.fn(async (path: string) => store[path] ?? ""),
+        writeFile: vi.fn(async (path: string, data: string) => { store[path] = data; }),
+        existsSync: vi.fn(() => true),
+        mkdirSync: vi.fn(),
+        readdirSync: vi.fn(() => []),
+        getTaskProjectIds: () => new Set(["unassigned"]),
+      };
+      const pm = new ProjectManager("/tmp/projects.json", deps);
+      pm.create({ name: "Real", path: "/tmp/real", profile: "default", status: "active" });
+      // Let fire-and-forget persist settle.
+      await new Promise((r) => setTimeout(r, 10));
+      // getAll() would synthesize the row, but projects.json must not contain it.
+      pm.getAll();
+      const onDisk = JSON.parse(store["/tmp/projects.json"]) as Array<{ id: string }>;
+      expect(onDisk.some((p) => p.id === "unassigned")).toBe(false);
+    });
+
+    it("getAll-synthesized-row-has-muted-color-token", () => {
+      const deps = mockDeps();
+      const pm = new ProjectManager("/tmp/projects.json", {
+        ...deps,
+        getTaskProjectIds: () => new Set(["unassigned"]),
+      });
+      pm.create({ name: "Real", path: "/tmp/real", profile: "default", status: "active" });
+      const synthesized = pm.getAll().find((p) => p.id === "unassigned");
+      expect(synthesized).toBeDefined();
+      expect(synthesized?.settings?.color).toMatch(/muted/);
     });
   });
 

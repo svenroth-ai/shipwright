@@ -98,7 +98,10 @@ function FencedCodeBlock({
   const [expanded, setExpanded] = useState(false);
   const visible = truncated && !expanded ? lines.slice(0, MAX_CODE_LINES).join("\n") : stripped;
   return (
-    <div className="my-2 overflow-hidden rounded border border-neutral-200">
+    <div
+      className="my-2 overflow-hidden"
+      style={{ border: "1px solid var(--color-border)", borderRadius: "var(--radius-button)" }}
+    >
       <pre className="overflow-x-auto bg-neutral-900 p-3 text-xs leading-snug text-neutral-100">
         <code className={className} data-testid="fenced-code">
           {visible}

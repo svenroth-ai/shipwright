@@ -150,4 +150,11 @@ export const handlers: HttpHandler[] = [
     const project = mockProjects.find((p) => p.id === params.id);
     return HttpResponse.json({ data: { ...project, ...body } });
   }),
+
+  // Iterate 3.7e-b3 — Projects page queries `/api/external/tasks` to
+  // derive the per-project task count column. Return an empty list so
+  // tests don't log MSW "intercepted unhandled request" warnings.
+  http.get('/api/external/tasks', () =>
+    HttpResponse.json({ data: [] }),
+  ),
 ];

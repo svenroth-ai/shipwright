@@ -11,7 +11,13 @@
  * `--name` flag (Claude CLI picker title). No mid-session sync.
  */
 
-import { useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { Pencil } from "lucide-react";
 
 import type { ExternalTask } from "../../lib/externalApi";
@@ -21,12 +27,26 @@ interface Props {
   task: ExternalTask;
 }
 
-export function EditableTaskTitle({ task }: Props) {
+export interface EditableTaskTitleHandle {
+  /** Imperatively enter edit mode (used by the header "Rename" menu item). */
+  startEdit: () => void;
+}
+
+export const EditableTaskTitle = forwardRef<EditableTaskTitleHandle, Props>(
+  function EditableTaskTitle({ task }, ref) {
   const renameMut = useRenameTask();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(task.title);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      startEdit: () => setEditing(true),
+    }),
+    [],
+  );
 
   useEffect(() => {
     if (!editing) setDraft(task.title);
@@ -92,7 +112,8 @@ export function EditableTaskTitle({ task }: Props) {
         onBlur={() => void commit()}
         disabled={renameMut.isPending}
         maxLength={200}
-        className="w-full rounded border border-blue-400 bg-white px-2 py-1 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+        className="w-full border border-blue-400 bg-white px-2 py-1 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+        style={{ borderRadius: "var(--radius-button)" }}
         data-testid="task-title-input-edit"
       />
       {error && (
@@ -102,4 +123,5 @@ export function EditableTaskTitle({ task }: Props) {
       )}
     </div>
   );
-}
+  },
+);

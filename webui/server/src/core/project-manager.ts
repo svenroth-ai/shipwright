@@ -10,6 +10,15 @@ function getProjectMode(_projectPath: string): undefined {
 }
 import { loadProfile, getProfilesDir, type ProfileConfig } from "./profile-loader.js";
 
+/**
+ * Section 02 (iterate 3) — reserved projectId for the synthesized
+ * "Unassigned" pseudo-project bucket (ADR-037). Kept in sync with
+ * client/src/lib/projectIds.ts and server/src/core/sdk-sessions-store.ts
+ * (intentional duplication per conventions.md — the client, the store,
+ * and the project-manager don't import each other's copies).
+ */
+export const UNASSIGNED_PROJECT_ID = "unassigned";
+
 export interface ProjectManagerDeps {
   readFile: (path: string, encoding: string) => Promise<string>;
   writeFile: (path: string, data: string) => Promise<void>;
@@ -32,6 +41,16 @@ export interface ProjectManagerDeps {
   statSync?: (path: string) => { mtimeMs: number };
   readFileSync?: (path: string, encoding: "utf-8" | "utf8") => string;
   loadProfile?: (profileName: string) => ProfileConfig | null;
+  /**
+   * Section 02 (iterate 3) — ADR-037. When provided, getAll() appends a
+   * synthesized "Unassigned" pseudo-project iff this set contains
+   * UNASSIGNED_PROJECT_ID OR any id not present in the persisted
+   * projects map. Wired in index.ts to
+   *   () => new Set(sessionsStore.list().map(t => t.projectId))
+   * so "is there an orphan bucket?" is computed fresh on every call.
+   * Omitted in unit tests that don't care about the synthesized row.
+   */
+  getTaskProjectIds?: () => Set<string>;
 }
 
 /**
@@ -170,11 +189,49 @@ export class ProjectManager {
   }
 
   getAll(): Project[] {
-    return Array.from(this.projects.values())
+    const real = Array.from(this.projects.values())
       .sort(
         (a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime()
       )
       .map((p) => this.withMode(p));
+
+    // Section 02 (iterate 3) — synthesize the Unassigned pseudo-project
+    // iff any task references it or an unknown id (ADR-037). Never
+    // persisted to projects.json — persist() filters !synthesized.
+    const taskProjectIds = this.deps.getTaskProjectIds?.();
+    if (taskProjectIds && taskProjectIds.size > 0) {
+      const realIds = new Set(real.map((p) => p.id));
+      let needsSynthesized = false;
+      for (const id of taskProjectIds) {
+        if (id === UNASSIGNED_PROJECT_ID || !realIds.has(id)) {
+          needsSynthesized = true;
+          break;
+        }
+      }
+      if (needsSynthesized) {
+        real.push(this.buildSynthesizedUnassigned());
+      }
+    }
+
+    return real;
+  }
+
+  private buildSynthesizedUnassigned(): Project {
+    // The synthesized row carries the `synthesized` flag so the client
+    // can render it muted and suppress edit / delete affordances. color
+    // uses a muted-token marker so the sidebar dot styles consistently
+    // without leaking a hard-coded hex into the project row.
+    return {
+      id: UNASSIGNED_PROJECT_ID,
+      name: "Unassigned",
+      path: "",
+      profile: "",
+      status: "active",
+      createdAt: "",
+      lastActive: "",
+      settings: { color: "var(--color-muted)" },
+      synthesized: true,
+    };
   }
 
   getById(id: string): Project | undefined {
@@ -185,9 +242,20 @@ export class ProjectManager {
   update(id: string, patch: Partial<Project>): Project {
     const existing = this.projects.get(id);
     if (!existing) throw new AppError("Project not found", 404);
+    // Iterate 3.7e-b3 (2026-04-22) — deep-merge `settings` so partial
+    // patches like `{ settings: { color } }` don't clobber other keys
+    // (phaseToStatusMapping, autonomy, envVars, claudePluginDirs).
+    // Previously `{ ...existing, ...patch }` replaced `settings` whole,
+    // which silently nuked unrelated config. ProjectSettingsDialog +
+    // useSavePhaseMapping + useUpdateAutonomy all rely on this merge.
+    const mergedSettings =
+      patch.settings !== undefined
+        ? { ...(existing.settings ?? {}), ...patch.settings }
+        : existing.settings;
     const updated: Project = {
       ...existing,
       ...patch,
+      settings: mergedSettings,
       id: existing.id,
       lastActive: new Date().toISOString(),
     };
@@ -285,7 +353,14 @@ export class ProjectManager {
   }
 
   private persist(): void {
-    const arr = Array.from(this.projects.values());
+    // Section 02 — defense-in-depth. The in-memory `projects` Map never
+    // holds the synthesized row (buildSynthesizedUnassigned only runs
+    // inside getAll()), so this filter is a no-op today. Kept as a guard
+    // against a future caller that does `projects.set("unassigned", ...)`
+    // without realising it's supposed to stay off disk.
+    const arr = Array.from(this.projects.values()).filter(
+      (p) => !(p as { synthesized?: boolean }).synthesized,
+    );
     const data = JSON.stringify(arr, null, 2);
     // Fire-and-forget: keeps create/update/delete/touchLastActive sync so
     // route handlers don't need to await file I/O. proper-lockfile

@@ -6,30 +6,66 @@ interface StepIndicatorProps {
   currentStep: number;
 }
 
+/**
+ * Step indicator — mockup-faithful rebuild (05-project-wizard.html).
+ *
+ * 10px circles with three visual states:
+ *   - pending    : border-only, transparent bg
+ *   - active     : filled primary + 3px glow ring (rgba(107,94,86,0.15))
+ *   - completed  : filled success + inset check icon
+ *
+ * Dots are joined by 20px / 2px horizontal connector lines:
+ *   - pending  span → --color-border
+ *   - completed span → --color-success
+ *
+ * Right of the dot row sits a compact label: "Step N of M — <name>".
+ */
 export function StepIndicator({ currentStep }: StepIndicatorProps) {
+  const total = STEPS.length;
   return (
-    <div className="flex items-center gap-2 mb-6">
-      {STEPS.map((label, i) => {
-        const isDone = i < currentStep;
-        const isActive = i === currentStep;
-        return (
-          <div key={i} className="flex items-center gap-2">
-            {i > 0 && <div className={`w-8 h-px ${isDone ? 'bg-[var(--color-primary)]' : 'bg-gray-200'}`} />}
-            <div className="flex items-center gap-2">
-              <div className={`w-7 h-7 rounded-full aspect-square flex items-center justify-center text-xs font-semibold shrink-0 ${
-                isDone ? 'bg-[var(--color-primary)] text-white' :
-                isActive ? 'border-2 border-[var(--color-primary)] text-[var(--color-primary)]' :
-                'border-2 border-gray-200 text-gray-400'
-              }`}>
-                {isDone ? <Check size={14} /> : i + 1}
+    <div
+      className="flex items-center gap-[14px] px-7 pt-5 pb-0"
+      data-testid="wizard-step-indicator"
+    >
+      <div className="flex items-center gap-2">
+        {STEPS.map((_, i) => {
+          const isDone = i < currentStep;
+          const isActive = i === currentStep;
+          return (
+            <div key={i} className="flex items-center gap-2">
+              {i > 0 && (
+                <div
+                  className={`w-5 h-[2px] rounded-[1px] transition-colors ${
+                    isDone
+                      ? 'bg-[var(--color-success)]'
+                      : 'bg-[var(--color-border)]'
+                  }`}
+                />
+              )}
+              <div
+                className={`w-[10px] h-[10px] rounded-full flex items-center justify-center transition-all shrink-0 ${
+                  isDone
+                    ? 'bg-[var(--color-success)] border-2 border-[var(--color-success)]'
+                    : isActive
+                      ? 'bg-[var(--color-primary)] border-2 border-[var(--color-primary)]'
+                      : 'bg-transparent border-2 border-[var(--color-border)]'
+                }`}
+                style={
+                  isActive
+                    ? { boxShadow: '0 0 0 4px rgba(107, 94, 86, 0.15)' }
+                    : undefined
+                }
+                aria-current={isActive ? 'step' : undefined}
+              >
+                {isDone && <Check size={8} className="text-white" strokeWidth={3} />}
               </div>
-              <span className={`text-xs font-medium ${isActive ? 'text-gray-900' : 'text-gray-400'}`}>
-                {label}
-              </span>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
+      <span className="text-[13px] font-medium text-[var(--color-muted)]">
+        Step {currentStep + 1} of {total} &mdash; {STEPS[currentStep]}
+      </span>
     </div>
   );
 }

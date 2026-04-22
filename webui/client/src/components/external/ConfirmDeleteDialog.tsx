@@ -27,7 +27,13 @@ export function ConfirmDeleteDialog({ open, onOpenChange, task, onConfirm }: Pro
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" />
         <Dialog.Content
-          className="fixed left-1/2 top-1/2 z-50 w-[440px] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-neutral-200 bg-white p-4 shadow-xl"
+          className="fixed left-1/2 top-1/2 z-50 w-[440px] -translate-x-1/2 -translate-y-1/2 p-4 shadow-xl"
+          style={{
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--radius)",
+            boxShadow: "var(--shadow-card-hover)",
+          }}
           data-testid="confirm-delete-dialog"
         >
           <Dialog.Title className="text-base font-semibold text-neutral-900">
@@ -43,7 +49,11 @@ export function ConfirmDeleteDialog({ open, onOpenChange, task, onConfirm }: Pro
             <Dialog.Close asChild>
               <button
                 type="button"
-                className="rounded border border-neutral-300 bg-white px-3 py-1 text-sm text-neutral-800 hover:bg-neutral-50"
+                className="bg-white px-3 py-1 text-sm text-neutral-800 hover:bg-neutral-50"
+                style={{
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "var(--radius-button)",
+                }}
                 data-testid="confirm-delete-cancel"
               >
                 Cancel
@@ -52,7 +62,8 @@ export function ConfirmDeleteDialog({ open, onOpenChange, task, onConfirm }: Pro
             <button
               type="button"
               onClick={onConfirm}
-              className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-500"
+              className="bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-500"
+              style={{ borderRadius: "var(--radius-button)" }}
               data-testid="confirm-delete-confirm"
             >
               Delete

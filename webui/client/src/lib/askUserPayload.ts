@@ -87,6 +87,16 @@ export function extractAskUserPayload(toolInput: unknown): AskUserPayload {
     return { parts };
   }
 
+  // Pre-flattened internal shape: { parts: [{ question, options: string[] | [{label}] }] }
+  if (Array.isArray(obj.parts)) {
+    const parts: InboxItemPart[] = [];
+    for (const entry of obj.parts) {
+      if (!entry || typeof entry !== 'object') continue;
+      parts.push(buildPart(entry as Record<string, unknown>));
+    }
+    return { parts };
+  }
+
   // Legacy flat schema: { question, context, options }
   if (typeof obj.question === 'string') {
     return { parts: [buildPart(obj)] };

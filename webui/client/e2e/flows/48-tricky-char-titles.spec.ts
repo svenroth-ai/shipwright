@@ -35,8 +35,12 @@ test.describe("Tricky-char titles — clipboard round-trip", () => {
     expect(task.title).toBe(trickyTitle);
 
     await page.goto(`/tasks/${task.taskId}`);
-    await page.getByTestId("terminal-launch-btn").click();
-    await expect(page.getByTestId("terminal-launch-btn")).toContainText(/Copied/i);
+    // Iterate 3 section 04 — header CTA replaces TerminalLaunchButton on
+    // TaskDetail. A fresh task renders the Launch variant of the CTA.
+    await page.getByTestId("cta-launch-in-terminal").click();
+    await expect(page.getByTestId("cta-launch-in-terminal")).toContainText(
+      /Copied/i,
+    );
 
     const clipboard = await page.evaluate(() => navigator.clipboard.readText());
 

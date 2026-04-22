@@ -31,12 +31,18 @@ test.describe("TerminalLaunchButton — clipboard --name shape", () => {
     const { task } = (await create.json()) as { task: { taskId: string } };
 
     await page.goto(`/tasks/${task.taskId}`);
-    await expect(page.getByTestId("terminal-launch-primary")).toBeVisible();
+    // Iterate 3 section 04 — the old primary `terminal-launch-btn`
+    // variant was replaced by the new header CTA which is
+    // state-dependent. A `draft` task surfaces `cta-launch-in-terminal`.
+    await expect(page.getByTestId("cta-launch-in-terminal")).toBeVisible();
 
-    await page.getByTestId("terminal-launch-btn").click();
+    await page.getByTestId("cta-launch-in-terminal").click();
 
     // The button's success state surfaces "Copied — paste into terminal".
-    await expect(page.getByTestId("terminal-launch-btn")).toContainText(/Copied/i, { timeout: 5000 });
+    await expect(page.getByTestId("cta-launch-in-terminal")).toContainText(
+      /Copied/i,
+      { timeout: 5000 },
+    );
 
     const clipboard = await page.evaluate(() => navigator.clipboard.readText());
     expect(clipboard).toContain("--session-id");

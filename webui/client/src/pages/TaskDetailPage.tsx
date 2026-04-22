@@ -1,111 +1,184 @@
 /*
- * Task Detail — LaunchRow + CopyCommandCard + SessionMetadata +
- * TranscriptViewer. Plan D'' variant-a TaskDetail.
+ * TaskDetailPage — thin composition shell for the 3-pane task detail
+ * surface (iterate 3 section 04, AD-03.06 + FR-03.30..36; visual rebuild
+ * in iterate 3.7b-3 / Phase B3).
  *
- * REPLACED: the previous chat-panel implementation (pre-iterate 14.x
- * chat engine, assistant-ui + ndjson-parser). That path is deleted in
- * Sub-iterate 3. This page is the single surface for an external-launch
- * task in the new architecture.
+ * Multi-file viewer: `selectedPaths` is the tab list (dedup order
+ * preserving). `activePath` is the currently-rendered file in the right
+ * pane. Clicking a folder-tree row adds the path to the array (if new)
+ * and activates it; closing a tab from the ViewerTabBar removes it, then
+ * falls back to the last-remaining path or `null` when the array empties.
+ *
+ * Transcript pane header: derives user-facing counts (events, tool uses,
+ * pending AskUserQuestion) from the parsed transcript — the debug
+ * status/fingerprint/size display moved behind the header's "Show
+ * session details" toggle.
+ *
+ * Regression guards:
+ *   - No chat composer (DO-NOT #3).
+ *   - No webui-initiated `claude --resume` (DO-NOT #5).
  */
 
-import { useCallback, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
 
-import type { CopyCommandForms } from "../lib/externalApi";
-import { useExternalTask, useCloseExternalTask } from "../hooks/useExternalTasks";
-import { useForkTask, useLaunchTask } from "../hooks/useLaunchTask";
+import { useExternalTask } from "../hooks/useExternalTasks";
 import { useTaskTranscript } from "../hooks/useTaskTranscript";
-
-import { LaunchRow } from "../components/external/LaunchRow";
-import { CopyCommandCard } from "../components/external/CopyCommandCard";
-import { SessionMetadata } from "../components/external/SessionMetadata";
 import { BubbleTranscript } from "../components/external/BubbleTranscript";
-import { TerminalLaunchButton } from "../components/external/TerminalLaunchButton";
-import { EditableTaskTitle } from "../components/external/EditableTaskTitle";
+import { TaskDetailHeader } from "../components/external/TaskDetailHeader";
+import { TaskDetailThreePane } from "../components/external/TaskDetailThreePane";
+import { FolderTree } from "../components/external/FolderTree";
+import { SmartViewer } from "../components/external/SmartViewer";
+import { ViewerTabBar } from "../components/external/SmartViewer/ViewerTabBar";
+import { parseSessionJsonl, toolUses } from "../external/session-parser";
 
 export default function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const { data: task, error } = useExternalTask(taskId);
-  const launchMut = useLaunchTask();
-  const forkMut = useForkTask();
-  const closeMut = useCloseExternalTask();
   const transcript = useTaskTranscript(taskId ?? null);
+  const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
+  const [activePath, setActivePath] = useState<string | null>(null);
 
-  const [commands, setCommands] = useState<CopyCommandForms | null>(null);
+  const handleSelect = useCallback((path: string) => {
+    setSelectedPaths((prev) => (prev.includes(path) ? prev : [...prev, path]));
+    setActivePath(path);
+  }, []);
 
-  const handleLaunch = useCallback(
-    async ({ resume }: { resume: boolean }) => {
-      if (!taskId) return;
-      const result = await launchMut.mutateAsync({ taskId, resume });
-      setCommands(result.commands);
-    },
-    [taskId, launchMut],
-  );
+  const handleCloseTab = useCallback((path: string) => {
+    setSelectedPaths((prev) => {
+      const next = prev.filter((p) => p !== path);
+      // If the closed tab was active, fall back to the last remaining tab
+      // (or null when the list empties).
+      setActivePath((prevActive) => {
+        if (prevActive !== path) return prevActive;
+        return next.length > 0 ? next[next.length - 1] : null;
+      });
+      return next;
+    });
+  }, []);
 
-  const handleFork = useCallback(async () => {
-    if (!taskId || !task) return;
-    const result = await forkMut.mutateAsync({ taskId, title: `${task.title} — fork` });
-    setCommands(result.commands);
-  }, [taskId, task, forkMut]);
-
-  const handleClose = useCallback(() => {
-    if (!taskId) return;
-    closeMut.mutate(taskId);
-  }, [taskId, closeMut]);
+  // Derived transcript stats, used by the center-pane header.
+  const transcriptStats = useMemo(() => {
+    if (!transcript.content) {
+      return { events: 0, toolUses: 0, pending: 0 };
+    }
+    const { events } = parseSessionJsonl(transcript.content);
+    let tools = 0;
+    for (const e of events) {
+      if (e.kind === "assistant") {
+        tools += toolUses(e).length;
+      }
+    }
+    const pending = task?.inbox?.pendingToolUseIds?.length ?? 0;
+    return { events: events.length, toolUses: tools, pending };
+  }, [transcript.content, task?.inbox?.pendingToolUseIds]);
 
   if (error) {
     return (
-      <div className="p-4 text-sm text-red-700" data-testid="task-detail-error">
+      <div
+        className="p-4 text-sm text-[var(--color-error,#DC2626)]"
+        data-testid="task-detail-error"
+      >
         Error loading task: {String(error)}
       </div>
     );
   }
   if (!task) {
     return (
-      <div className="p-4 text-sm text-neutral-500" data-testid="task-detail-loading">
+      <div
+        className="p-4 text-sm text-[var(--color-muted,#6b7280)]"
+        data-testid="task-detail-loading"
+      >
         Loading…
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4" data-testid="task-detail-page">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Link to="/" className="text-neutral-500 hover:text-neutral-900" aria-label="Back to board">
-            <ArrowLeft size={16} />
-          </Link>
-          <EditableTaskTitle task={task} />
-        </div>
-        <TerminalLaunchButton task={task} variant="primary" />
-      </header>
+    <div
+      className="flex h-full min-h-0 flex-col"
+      data-testid="task-detail-page"
+      style={{ background: "var(--color-bg, #f5f0eb)" }}
+    >
+      <TaskDetailHeader task={task} />
 
-      <LaunchRow
-        task={task}
-        launching={launchMut.isPending || forkMut.isPending}
-        onLaunch={(args) => void handleLaunch(args)}
-        onFork={() => void handleFork()}
-        onClose={handleClose}
-      />
-
-      {commands && <CopyCommandCard commands={commands} />}
-
-      <SessionMetadata task={task} />
-
-      <section className="flex min-h-[400px] flex-1 flex-col overflow-hidden rounded border border-neutral-200 bg-white">
-        <div className="flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-3 py-1 text-xs text-neutral-500">
-          <span>Transcript</span>
-          <span>
-            status: <span data-testid="transcript-status">{transcript.status}</span>
-            {transcript.fingerprint && ` · fp ${transcript.fingerprint}`}
-            {` · ${transcript.size} B`}
-          </span>
-        </div>
-        <div className="min-h-0 flex-1">
-          <BubbleTranscript content={transcript.content} />
-        </div>
-      </section>
+      <div className="min-h-0 flex-1">
+        <TaskDetailThreePane
+          left={
+            <FolderTree
+              projectId={task.projectId}
+              selectedPath={activePath}
+              onSelect={handleSelect}
+            />
+          }
+          center={
+            <section
+              className="flex h-full min-h-0 flex-col"
+              style={{ background: "var(--color-bg, #f5f0eb)" }}
+              data-testid="task-detail-transcript"
+            >
+              <div
+                className="flex min-h-[40px] items-center gap-3 border-b border-[var(--color-border,#e0dbd4)] px-4 py-2 text-[11px]"
+                style={{
+                  background: "var(--color-surface, #ffffff)",
+                  color: "var(--color-muted, #6b7280)",
+                }}
+                data-testid="task-detail-transcript-header"
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-[6px] w-[6px] rounded-full bg-[var(--color-info,#3B82F6)]"
+                  />
+                  <span data-testid="transcript-stat-events">
+                    {transcriptStats.events} events
+                  </span>
+                </span>
+                <span aria-hidden="true">·</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-[6px] w-[6px] rounded-full bg-[var(--color-purple,#8B5CF6)]"
+                  />
+                  <span data-testid="transcript-stat-tool-uses">
+                    {transcriptStats.toolUses} tool uses
+                  </span>
+                </span>
+                <span aria-hidden="true">·</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-[6px] w-[6px] rounded-full bg-[var(--color-warning,#D97706)]"
+                  />
+                  <span data-testid="transcript-stat-pending">
+                    {transcriptStats.pending} pending
+                  </span>
+                </span>
+              </div>
+              <div className="min-h-0 flex-1">
+                <BubbleTranscript content={transcript.content} task={task} />
+              </div>
+            </section>
+          }
+          right={
+            <aside
+              className="flex h-full min-h-0 flex-col border-l border-[var(--color-border,#e0dbd4)]"
+              style={{ background: "var(--color-surface, #ffffff)" }}
+              data-testid="task-detail-viewer"
+            >
+              <ViewerTabBar
+                paths={selectedPaths}
+                activePath={activePath}
+                onActivate={setActivePath}
+                onClose={handleCloseTab}
+              />
+              <div className="min-h-0 flex-1">
+                <SmartViewer projectId={task.projectId} path={activePath} />
+              </div>
+            </aside>
+          }
+        />
+      </div>
     </div>
   );
 }

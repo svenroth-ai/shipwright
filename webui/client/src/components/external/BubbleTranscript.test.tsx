@@ -9,11 +9,13 @@
  *     < 200 renders the plain list.
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { BubbleTranscript } from "./BubbleTranscript";
+
+const SYSTEM_VISIBILITY_KEY = "webui.transcript.showSystem";
 
 function jsonl(events: object[]): string {
   return events.map((e) => JSON.stringify(e)).join("\n") + "\n";
@@ -46,7 +48,13 @@ describe("BubbleTranscript — bubble layout fixtures", () => {
     ]);
     render(<BubbleTranscript content={content} />);
     const bubble = screen.getByTestId("bubble-assistant");
-    expect(bubble.textContent).toContain("assistant");
+    // R4 (iterate 3.7e-a): role label renders as "claude" (displayed as
+    // "CLAUDE" via CSS uppercase) instead of "assistant". The testid on
+    // the bubble wrapper is still `bubble-assistant` — renaming it would
+    // break ~5 other tests that assert on the wrapper. Only the visible
+    // role text flipped.
+    expect(bubble.textContent).toContain("claude");
+    expect(bubble.textContent).not.toContain("assistant");
     expect(bubble.querySelector("strong")?.textContent).toBe("world");
   });
 
@@ -189,6 +197,141 @@ describe("BubbleTranscript — virtualization toggle", () => {
     render(<BubbleTranscript content={jsonl(events)} />);
     expect(screen.getByTestId("bubble-list-virtual")).toBeInTheDocument();
     expect(screen.queryByTestId("bubble-list-plain")).toBeNull();
+  });
+});
+
+describe("BubbleTranscript — iterate-3 chip variants (FR-03.52)", () => {
+  it("renders custom-title as a muted one-line chip (no card border)", () => {
+    const content = jsonl([
+      { type: "custom-title", customTitle: "Implement user auth" },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    const chip = screen.getByTestId("bubble-custom-title");
+    expect(chip.textContent).toContain("Implement user auth");
+  });
+
+  it("renders agent-name as a muted one-line chip", () => {
+    const content = jsonl([
+      { type: "agent-name", agentName: "Claude Sonnet 4.6" },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    const chip = screen.getByTestId("bubble-agent-name");
+    expect(chip.textContent).toContain("Claude Sonnet 4.6");
+  });
+
+  it("renders permission-mode as a muted one-line chip", () => {
+    const content = jsonl([
+      { type: "permission-mode", permissionMode: "acceptEdits" },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    const chip = screen.getByTestId("bubble-permission-mode");
+    expect(chip.textContent).toContain("acceptEdits");
+  });
+
+  it("does NOT render these variants as unknown fallback", () => {
+    const content = jsonl([
+      { type: "custom-title", customTitle: "X" },
+      { type: "agent-name", agentName: "Y" },
+      { type: "permission-mode", permissionMode: "Z" },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    expect(screen.queryByTestId("bubble-unknown")).toBeNull();
+  });
+});
+
+describe("BubbleTranscript — system visibility toggle (FR-03.51)", () => {
+  beforeEach(() => {
+    window.localStorage.removeItem(SYSTEM_VISIBILITY_KEY);
+  });
+  afterEach(() => {
+    window.localStorage.removeItem(SYSTEM_VISIBILITY_KEY);
+  });
+
+  it("hides system events by default (localStorage key absent)", () => {
+    const content = jsonl([
+      { type: "system", subtype: "init", content: "cwd=/tmp" },
+      { type: "user", message: { content: "hello" } },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    expect(screen.queryByTestId("bubble-system")).toBeNull();
+    expect(screen.getByTestId("bubble-user")).toBeInTheDocument();
+  });
+
+  it("shows system events when localStorage key is 'true'", () => {
+    window.localStorage.setItem(SYSTEM_VISIBILITY_KEY, "true");
+    const content = jsonl([
+      { type: "system", subtype: "init", content: "cwd=/tmp" },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    expect(screen.getByTestId("bubble-system")).toBeInTheDocument();
+  });
+
+  it("hides when localStorage key is explicitly 'false'", () => {
+    window.localStorage.setItem(SYSTEM_VISIBILITY_KEY, "false");
+    const content = jsonl([
+      { type: "system", subtype: "init", content: "cwd=/tmp" },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    expect(screen.queryByTestId("bubble-system")).toBeNull();
+  });
+
+  it("toolbar toggle writes localStorage and re-renders to reveal system bubbles", async () => {
+    const content = jsonl([
+      { type: "system", subtype: "init", content: "cwd=/tmp" },
+      { type: "user", message: { content: "hello" } },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    expect(screen.queryByTestId("bubble-system")).toBeNull();
+
+    const toggle = screen.getByTestId("system-toggle");
+    await userEvent.click(toggle);
+
+    expect(window.localStorage.getItem(SYSTEM_VISIBILITY_KEY)).toBe("true");
+    expect(screen.getByTestId("bubble-system")).toBeInTheDocument();
+  });
+
+  it("toggle state round-trips across unmount/remount", async () => {
+    const content = jsonl([
+      { type: "system", subtype: "init", content: "cwd=/tmp" },
+    ]);
+    const first = render(<BubbleTranscript content={content} />);
+    await userEvent.click(screen.getByTestId("system-toggle"));
+    expect(screen.getByTestId("bubble-system")).toBeInTheDocument();
+    first.unmount();
+
+    // Fresh mount should read localStorage and still show system events.
+    render(<BubbleTranscript content={content} />);
+    expect(screen.getByTestId("bubble-system")).toBeInTheDocument();
+  });
+});
+
+describe("BubbleTranscript — attachment rendering (FR-03.53)", () => {
+  it("renders filename + thumbnail when attachment payload provides them", () => {
+    const content = jsonl([
+      {
+        type: "attachment",
+        attachment: {
+          filename: "login-mockup-final.png",
+          thumbnailUrl: "data:image/png;base64,AAAA",
+        },
+      },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    const bubble = screen.getByTestId("bubble-attachment");
+    expect(bubble.textContent).toContain("login-mockup-final.png");
+    const img = bubble.querySelector("img");
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute("src")).toBe("data:image/png;base64,AAAA");
+  });
+
+  it("falls back to generic chip when payload has no filename/thumbnail", () => {
+    const content = jsonl([
+      { type: "attachment", attachment: { someOtherField: 1 } },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    const bubble = screen.getByTestId("bubble-attachment");
+    expect(bubble.textContent).toMatch(/attachment/i);
+    expect(bubble.querySelector("img")).toBeNull();
   });
 });
 

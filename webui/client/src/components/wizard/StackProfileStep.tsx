@@ -11,21 +11,29 @@ interface StackProfileStepProps {
 export function StackProfileStep({ profile, onProfileChange }: StackProfileStepProps) {
   return (
     <div className="space-y-3">
-      <p className="text-sm text-gray-600 mb-3">Choose a stack profile for your project:</p>
-      {PROFILES.map((p) => (
-        <button
-          key={p.id}
-          className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
-            profile === p.id
-              ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5'
-              : 'border-[#e0dbd4] hover:border-gray-300'
-          }`}
-          onClick={() => onProfileChange(p.id)}
-        >
-          <div className="text-sm font-medium text-gray-900">{p.name}</div>
-          <div className="text-xs text-gray-500">{p.desc}</div>
-        </button>
-      ))}
+      <p className="text-sm text-[var(--color-muted)] mb-3">
+        Choose a stack profile for your project:
+      </p>
+      {PROFILES.map((p) => {
+        const isSelected = profile === p.id;
+        return (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => onProfileChange(p.id)}
+            className={`w-full text-left px-4 py-3.5 rounded-[var(--radius-button)] border-[1.5px] transition-colors ${
+              isSelected
+                ? 'border-[var(--color-primary)] bg-[#f9f6f3] shadow-[0_0_0_1px_var(--color-primary)]'
+                : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-accent)] hover:bg-[#faf8f6]'
+            }`}
+          >
+            <div className="text-sm font-semibold text-[var(--color-text)]">{p.name}</div>
+            <div className="text-[13px] text-[var(--color-muted)] mt-0.5 leading-snug">
+              {p.desc}
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }

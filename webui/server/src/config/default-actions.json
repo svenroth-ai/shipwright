@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "defaults": {
+    "autonomy": "guided"
+  },
+  "actions": [
+    {
+      "id": "new-task",
+      "label": "New task",
+      "kind": "external_launch",
+      "description": "Plain Claude invocation scoped to a Shipwright phase. Fire-and-forget — no pipeline state.",
+      "command_template": "claude /shipwright-{task.phase}{task.autonomy_flag?} \\\n    --project-root {project.path} \\\n    --session-id {task.uuid} \\\n    --name \"{task.phase_label}: {task.title}\" \\\n    {plugin.dirs}{task.description?}",
+      "modal_fields": ["title", "phase", "description"]
+    },
+    {
+      "id": "new-pipeline",
+      "label": "New pipeline",
+      "kind": "external_launch",
+      "description": "Full Shipwright pipeline — project → design → plan → build → test → deploy → changelog.",
+      "command_template": "claude /shipwright-run \\\n    --project-root {project.path} \\\n    --session-id {task.uuid} \\\n    --name \"Pipeline: {task.title}\" \\\n    {plugin.dirs}{task.autonomy_flag?}{task.description?}",
+      "modal_fields": ["title", "autonomy", "description"]
+    },
+    {
+      "id": "new-iterate",
+      "label": "New iterate",
+      "kind": "external_launch",
+      "description": "Run the complexity-adaptive iterate skill against an existing project.",
+      "command_template": "claude /shipwright-iterate \\\n    --project-root {project.path} \\\n    --session-id {task.uuid} \\\n    --name \"Iterate: {task.title}\" \\\n    {plugin.dirs}{task.autonomy_flag?}{task.description?}",
+      "modal_fields": ["title", "autonomy", "description"]
+    }
+  ],
+  "phases": [
+    { "id": "project",    "label": "Project",    "color": "#9ca3af" },
+    { "id": "design",     "label": "Design",     "color": "#A855F7" },
+    { "id": "plan",       "label": "Plan",       "color": "#3B82F6" },
+    { "id": "build",      "label": "Build",      "color": "#F59E0B" },
+    { "id": "test",       "label": "Test",       "color": "#059669" },
+    { "id": "deploy",     "label": "Deploy",     "color": "#14B8A6" },
+    { "id": "changelog",  "label": "Changelog",  "color": "#6366F1" },
+    { "id": "compliance", "label": "Compliance", "color": "#0EA5E9" },
+    { "id": "security",   "label": "Security",   "color": "#DC2626" }
+  ],
+  "preview": {
+    "enabled": "auto"
+  }
+}
