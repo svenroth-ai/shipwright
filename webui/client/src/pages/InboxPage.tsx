@@ -23,6 +23,11 @@
  *   inbox-card-<toolUseId> (on the clickable card wrapper),
  *   inbox-resume-<toolUseId> (on the Resume button).
  *
+ * Testids added in 3.7e-b4:
+ *   inbox-group-color-<projectId> (on the 8 px colored dot in each
+ *     project-group summary header; replaces the chevron/bullet that
+ *     used to sit in the same slot).
+ *
  * Testid retained (single-button card): `inbox-copy-resume-<toolUseId>` is
  * kept on the Resume button for backward compatibility with existing unit
  * tests; the new `inbox-resume-<toolUseId>` is also present.
@@ -50,6 +55,7 @@ import { useProjects } from "../hooks/useProjects";
 import { classifyPhase } from "../lib/classifyPhase";
 import { formatRelativeTime } from "../lib/formatTime";
 import { UNASSIGNED_PROJECT_ID } from "../lib/projectIds";
+import { getProjectColor } from "../lib/projectColor";
 import type { CopyCommandForms, ExternalTask, InboxItem } from "../lib/externalApi";
 import type { Project } from "../types";
 
@@ -99,6 +105,10 @@ export default function InboxPage() {
           ? task.projectId
           : UNASSIGNED_PROJECT_ID;
       const projectName = resolveProjectName(task, projectsById);
+      const project =
+        projectId === UNASSIGNED_PROJECT_ID
+          ? undefined
+          : projectsById.get(projectId);
       const existing = map.get(projectId);
       if (existing) {
         existing.sessions.push(sg);
@@ -107,6 +117,7 @@ export default function InboxPage() {
         map.set(projectId, {
           projectId,
           projectName,
+          project,
           sessions: [sg],
           totalItems: sg.items.length,
         });
@@ -211,6 +222,12 @@ interface SessionGroup {
 interface ProjectGroup {
   projectId: string;
   projectName: string;
+  /**
+   * Resolved Project object, so the group header can read
+   * `settings.color` for the color-chip override. Absent for the
+   * synthesized "Unassigned" bucket.
+   */
+  project?: Project;
   sessions: SessionGroup[];
   totalItems: number;
 }
@@ -255,6 +272,16 @@ function ProjectSection({
   group: ProjectGroup;
   tasksById: Map<string, ExternalTask>;
 }) {
+  // 3.7e-b4: project color chip. Unassigned bucket uses the muted token
+  // (no project → no deterministic color). Real projects use the shared
+  // `getProjectColor()` helper so the dot matches TaskBoard / Projects
+  // table. `customColor` comes from `project.settings.color` when set by
+  // the user via the Project-Settings dialog (iterate 14.8.2).
+  const isUnassigned = group.projectId === UNASSIGNED_PROJECT_ID;
+  const chipColor = isUnassigned
+    ? "var(--color-muted)"
+    : getProjectColor(group.projectId, group.project?.settings?.color).hsl;
+
   return (
     <details
       open
@@ -275,15 +302,15 @@ function ProjectSection({
       >
         <span
           aria-hidden="true"
-          className="inline-block transition-transform"
+          data-testid={`inbox-group-color-${group.projectId}`}
+          className="inline-block shrink-0"
           style={{
-            fontSize: "10px",
-            lineHeight: 1,
-            color: "var(--color-muted)",
+            width: "8px",
+            height: "8px",
+            borderRadius: "9999px",
+            background: chipColor,
           }}
-        >
-          ▾
-        </span>
+        />
         <span
           className="font-semibold uppercase"
           style={{
