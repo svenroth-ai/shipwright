@@ -98,11 +98,14 @@ export function TaskList({ tasks }: Props) {
   return (
     <div
       data-testid="task-list-view"
-      className="flex flex-1 flex-col overflow-y-auto px-6 py-4"
+      // iterate 3.7h (Sven UAT): drop the 1600-max inner container + outer
+      // px-6 padding. Outer .page-container in TaskBoardPage now owns the
+      // width + margins so the table aligns with the header + filter row.
+      className="flex flex-1 flex-col"
     >
       <div
         className={
-          "mx-auto w-full max-w-[1600px] overflow-hidden rounded-[var(--radius-card)] " +
+          "overflow-hidden rounded-[var(--radius-card)] " +
           "border border-[var(--color-border)] bg-[var(--color-surface)]"
         }
       >

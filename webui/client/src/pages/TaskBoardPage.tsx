@@ -85,15 +85,13 @@ function readStoredView(): TaskBoardView {
 export default function TaskBoardPage() {
   const queryClient = useQueryClient();
   const { activeProjectId } = useProjectFilter();
-  // iterate 3.7f (2026-04-22): pass `activeProjectId` into the query key so
-  // the TanStack cache is scoped per-filter. The previous code always
-  // called useExternalTasks() without args (one cache entry `[..., null]`)
-  // and filtered client-side, which left edge cases where a transient null
-  // state showed stale project-X rows until a refresh. Server-side filter
-  // guarantees a fresh fetch on every filter flip.
-  const { data: tasks = [], isLoading } = useExternalTasks({
-    projectId: activeProjectId,
-  });
+  // iterate 3.7h (2026-04-22): use the GLOBAL (projectId-less) cache entry —
+  // ProjectFilterDropdown also uses this so both consumers share it. Filter
+  // happens client-side below via `projectFiltered`. The per-filter query-key
+  // approach tried in 3.7f caused a cache-drift visual glitch when toggling
+  // "All projects" from a single project (columns briefly empty while the
+  // new key fetched). Single cache entry = zero drift.
+  const { data: tasks = [], isLoading } = useExternalTasks();
   const { data: projects = [] } = useProjects();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -142,10 +140,13 @@ export default function TaskBoardPage() {
   const actionsQuery = useProjectActions(resolvedProjectId);
   const actionsList: ActionDefinition[] = actionsQuery.data?.actions ?? [];
 
-  // iterate 3.7f: `tasks` is already server-filtered by projectId via the
-  // TanStack query arg. Keep the alias so downstream code (statusCounts,
-  // column buckets) doesn't need renaming.
-  const projectFiltered = tasks;
+  // iterate 3.7h: client-side project filter against the single global
+  // task list. ProjectFilterDropdown uses the same underlying cache entry,
+  // so switching filters is a pure React re-render with no fetch wait.
+  const projectFiltered = useMemo<ExternalTask[]>(() => {
+    if (activeProjectId === null) return tasks;
+    return tasks.filter((t) => t.projectId === activeProjectId);
+  }, [tasks, activeProjectId]);
 
   // Status filter — iterate 3.7e-b1 (plan S1.4). Multi-select chip set;
   // empty = "All" (no filter). Stored in local React state (no URL params).
@@ -276,12 +277,15 @@ export default function TaskBoardPage() {
           hidden — ADR-045 defers the task.phase projection. We render the
           Phase group only when at least one task exposes a non-empty phase
           field, which is never true today.
-          iterate 3.7g: padding bumped to py-4 (16 px) for better separation
-          between header above and columns below. */}
-      {!isLoading && view === "board" && (
-        <div
-          className="border-b border-[var(--color-border)] bg-[var(--color-bg)]"
-        >
+          iterate 3.7h (Sven UAT): show filter on surface (white) w/ its own
+          border — previously sat on page-bg (beige) adjoining the columns
+          area directly, making the two feel "zusammengewürgt". The surface
+          strip cleanly separates header → filter → columns. Also now rendered
+          in List view (previously hidden there — Sven: "status kann man
+          nicht filtern"). */}
+      <div
+        className="border-b border-[var(--color-border)] bg-[var(--color-surface)]"
+      >
           <div className="page-container flex flex-wrap items-center gap-2 py-4">
             <span
               className="min-w-[46px] text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-muted)]"
@@ -313,7 +317,6 @@ export default function TaskBoardPage() {
             )}
           </div>
         </div>
-      )}
 
       {/* Body — board (kanban) or list.
           R1 (iterate 3.7e-a Foundation): kanban body uses `.page-container`
@@ -325,7 +328,12 @@ export default function TaskBoardPage() {
       {isLoading ? (
         <div className="p-6 text-sm text-[var(--color-muted)]">Loading…</div>
       ) : view === "list" ? (
-        <TaskList tasks={filteredTasks} />
+        // iterate 3.7h (Sven UAT): wrap TaskList in .page-container so the
+        // table respects the same L/R gutters as the header + filter row.
+        // Previously the table bled full-width — Sven: "table zu breit".
+        <div className="page-container py-6">
+          <TaskList tasks={filteredTasks} />
+        </div>
       ) : (
         <div
           // iterate 3.7g (Sven UAT): `justify-between` distributes the 3
