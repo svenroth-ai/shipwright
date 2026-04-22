@@ -286,7 +286,7 @@ export default function TaskBoardPage() {
       <div
         className="border-b border-[var(--color-border)] bg-[var(--color-surface)]"
       >
-          <div className="page-container flex flex-wrap items-center gap-2 py-4">
+          <div className="page-container flex flex-wrap items-center gap-2 py-5">
             <span
               className="min-w-[46px] text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-muted)]"
               data-testid="board-filter-status"
@@ -330,8 +330,11 @@ export default function TaskBoardPage() {
       ) : view === "list" ? (
         // iterate 3.7h (Sven UAT): wrap TaskList in .page-container so the
         // table respects the same L/R gutters as the header + filter row.
-        // Previously the table bled full-width — Sven: "table zu breit".
-        <div className="page-container py-6">
+        // `w-full` forces the container to stretch to parent width; without
+        // it the page-container shrunk to the inner content width (was
+        // 889px instead of the expected 1280) because TaskList's child
+        // wrapper didn't force horizontal stretch.
+        <div className="page-container w-full py-8">
           <TaskList tasks={filteredTasks} />
         </div>
       ) : (
@@ -346,7 +349,7 @@ export default function TaskBoardPage() {
           // keep them fixed (360 px) so cards stay legible. Fallback gap-6
           // (24 px) for viewports narrow enough that justify-between
           // collapses.
-          className="page-container flex w-full flex-1 items-start justify-between gap-6 overflow-x-auto overflow-y-hidden py-6"
+          className="page-container flex w-full flex-1 items-start justify-between gap-6 overflow-x-auto overflow-y-hidden py-8"
           data-testid="task-board-columns"
           data-page-container="true"
         >
