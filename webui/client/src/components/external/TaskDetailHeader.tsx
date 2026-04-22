@@ -6,10 +6,13 @@
  *   - breadcrumb `Projects › <project.name>` above the title row
  *   - title + state badge (pulsing dot, color-coded to state) + project chip
  *   - sub-line: phase tag · Started {ago} · last event {ago} · {model}
- *   - state-dependent primary CTA:
- *       pending / draft / awaiting_external_start → "Launch"
- *       active / idle                             → "Resume"
+ *   - state-dependent primary CTA (iterate 3.7e-b2, R3 button variants):
+ *       draft / awaiting_external_start           → GREEN Launch
+ *                                                   (var(--color-success))
+ *       active / idle                             → BROWN Resume
+ *                                                   (var(--color-primary))
  *       done / launch_failed / jsonl_missing      → no CTA
+ *     Terminal icon is always left of the label on both buttons.
  *   - 3-dots menu: Rename · Copy session UUID · Close · Delete · debug toggle
  *
  * Regression guards:
@@ -26,11 +29,9 @@ import {
   ChevronRight,
   ChevronUp,
   Clipboard,
-  Copy,
   Folder,
   MoreVertical,
   Pencil,
-  Rocket,
   Terminal as TerminalIcon,
   Trash2,
   X,
@@ -413,13 +414,31 @@ export function TaskDetailHeader({ task }: Props) {
         className="flex items-center gap-2"
         data-testid="task-detail-actions"
       >
+        {/*
+         * Iterate 3.7e-b2 — Header primary CTA state-mapping (R3):
+         *   draft / awaiting_external_start → GREEN Launch (var(--color-success))
+         *   active / idle                   → BROWN Resume (var(--color-primary))
+         *   done / launch_failed / jsonl_missing → no button
+         * Terminal icon is ALWAYS left of the label (Foundation R3 guarantee),
+         * even in the transient "Copied" state — no Rocket/Copy swap anymore.
+         * Testids `cta-launch-in-terminal` + `cta-copy-resume-command` stay
+         * load-bearing (Playwright specs 30/36/36b/43/48/70-d/70-f + unit tests).
+         */}
         {cta === "launch" && (
           <button
             type="button"
             onClick={() => void handleLaunch()}
             disabled={launchMut.isPending}
-            className="inline-flex items-center gap-2 rounded-[var(--radius-button,8px)] bg-[var(--color-primary,#6b5e56)] px-4 py-1.5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-[var(--color-primary-hover,#5a4f48)] disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-[var(--radius-button,8px)] px-4 py-1.5 text-[13px] font-semibold text-white shadow-sm transition disabled:opacity-60"
+            style={{ background: "var(--color-success, #059669)" }}
+            onMouseEnter={(ev) => {
+              ev.currentTarget.style.background = "#047857";
+            }}
+            onMouseLeave={(ev) => {
+              ev.currentTarget.style.background = "var(--color-success, #059669)";
+            }}
             data-testid="cta-launch-in-terminal"
+            data-color="green"
             aria-label="Launch command — copy to clipboard"
           >
             <TerminalIcon size={14} />
@@ -437,13 +456,10 @@ export function TaskDetailHeader({ task }: Props) {
             disabled={launchMut.isPending}
             className="inline-flex items-center gap-2 rounded-[var(--radius-button,8px)] bg-[var(--color-primary,#6b5e56)] px-4 py-1.5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-[var(--color-primary-hover,#5a4f48)] disabled:opacity-60"
             data-testid="cta-copy-resume-command"
+            data-color="brown"
             aria-label="Resume command — copy to clipboard"
           >
-            {copiedLabel === "Resume command copied" ? (
-              <Copy size={14} />
-            ) : (
-              <Rocket size={14} />
-            )}
+            <TerminalIcon size={14} />
             {launchMut.isPending
               ? "Preparing…"
               : copiedLabel === "Resume command copied"
