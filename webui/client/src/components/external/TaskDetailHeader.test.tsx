@@ -104,14 +104,17 @@ describe("TaskDetailHeader — CTA state machine (O31)", () => {
     expect(screen.queryByTestId("cta-copy-resume-command")).toBeNull();
   });
 
-  it("awaiting_external_start → Launch CTA", () => {
+  it("awaiting_external_start → 'Terminal' CTA (iterate 3.7f — Sven UAT)", () => {
+    // Command already copied to clipboard; user should switch to terminal.
     renderHeader(makeTask({ state: "awaiting_external_start" }));
-    expect(screen.getByTestId("cta-launch-in-terminal")).toBeTruthy();
+    expect(screen.getByTestId("cta-terminal")).toBeTruthy();
+    expect(screen.queryByTestId("cta-launch-in-terminal")).toBeNull();
   });
 
-  it("active → 'Resume' CTA", () => {
+  it("active → 'Terminal' CTA (iterate 3.7f — Sven UAT)", () => {
     renderHeader(makeTask({ state: "active" }));
-    expect(screen.getByTestId("cta-copy-resume-command")).toBeTruthy();
+    expect(screen.getByTestId("cta-terminal")).toBeTruthy();
+    expect(screen.queryByTestId("cta-copy-resume-command")).toBeNull();
     expect(screen.queryByTestId("cta-launch-in-terminal")).toBeNull();
   });
 
@@ -180,7 +183,7 @@ describe("TaskDetailHeader — behavior", () => {
     expect(copied).toContain("claude");
   });
 
-  it("Resume CTA posts /launch with resume=true + writes to clipboard (never spawns)", async () => {
+  it("Terminal CTA (active) posts /launch with resume=true + writes to clipboard (never spawns)", async () => {
     const writeText = vi.fn(async (_text: string) => {});
     Object.defineProperty(navigator, "clipboard", {
     value: { writeText },
@@ -206,7 +209,7 @@ describe("TaskDetailHeader — behavior", () => {
     renderHeader(makeTask({ state: "active" }), fetchInner);
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId("cta-copy-resume-command"));
+      fireEvent.click(screen.getByTestId("cta-terminal"));
     });
     await waitFor(() => {
       expect(writeText).toHaveBeenCalled();
@@ -249,7 +252,8 @@ describe("TaskDetailHeader — behavior", () => {
   it("state transitions re-render CTA without remount", () => {
     const { rerender, qc } = renderHeader(makeTask({ state: "draft" }));
     expect(screen.getByTestId("cta-launch-in-terminal")).toBeTruthy();
-    // Simulate state transition via cache.
+    // Simulate state transition via cache. iterate 3.7f: active → Terminal
+    // (not Resume). Idle → Resume remains.
     const updated = makeTask({ state: "active" });
     qc.setQueryData(["external-task", updated.taskId], updated);
     rerender(
@@ -259,7 +263,8 @@ describe("TaskDetailHeader — behavior", () => {
         </QueryClientProvider>
       </MemoryRouter>,
     );
-    expect(screen.getByTestId("cta-copy-resume-command")).toBeTruthy();
+    expect(screen.getByTestId("cta-terminal")).toBeTruthy();
     expect(screen.queryByTestId("cta-launch-in-terminal")).toBeNull();
+    expect(screen.queryByTestId("cta-copy-resume-command")).toBeNull();
   });
 });

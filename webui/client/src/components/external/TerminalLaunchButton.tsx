@@ -72,6 +72,15 @@ interface Props {
    * variants.
    */
   size?: TerminalLaunchSize;
+  /**
+   * Solid-variant label override (iterate 3.7f). Defaults to "Launch" /
+   * "Resume" based on `wantResume`. Sven UAT 2026-04-22: `active` state wants
+   * "Terminal" (copy the same resume command but the label reflects that
+   * Claude is already running and we're just jumping into the terminal).
+   * `idle` keeps "Resume" (session exists but process ended → real resume).
+   * Inbox + Ask bubble use "Answer" with the same clipboard handler.
+   */
+  label?: string;
 }
 
 export function TerminalLaunchButton({
@@ -82,6 +91,7 @@ export function TerminalLaunchButton({
   showLabel = false,
   color = "brown",
   size = "md",
+  label,
 }: Props) {
   const navigate = useNavigate();
   const launchMut = useLaunchTask();
@@ -157,7 +167,7 @@ export function TerminalLaunchButton({
     //   size="xs"      → 12px / 500 weight / 4 × 10px padding (finer
     //                    TaskCard button per plan R3).
     // The Terminal icon is always rendered LEFT of the label.
-    const label = wantResume ? "Resume" : "Launch";
+    const effectiveLabel = label ?? (wantResume ? "Resume" : "Launch");
     const isGreen = color === "green";
     const isXs = size === "xs";
     const bgVar = isGreen ? "var(--color-success)" : "var(--color-primary)";
@@ -193,14 +203,15 @@ export function TerminalLaunchButton({
         onMouseLeave={(ev) => {
           ev.currentTarget.style.background = bgVar;
         }}
-        title={copied ? "Copied!" : `Copy ${label} command`}
-        aria-label={`${label} command`}
+        title={copied ? "Copied!" : `Copy ${effectiveLabel} command`}
+        aria-label={`${effectiveLabel} command`}
         data-testid={`terminal-launch-solid-${wantResume ? "resume" : "launch"}`}
         data-color={color}
         data-size={size}
+        data-label={effectiveLabel}
       >
         <TerminalIcon size={iconSize} />
-        <span className="leading-none">{copied ? "Copied" : label}</span>
+        <span className="leading-none">{copied ? "Copied" : effectiveLabel}</span>
       </button>
     );
   }

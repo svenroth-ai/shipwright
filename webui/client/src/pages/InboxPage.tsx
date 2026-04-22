@@ -44,6 +44,7 @@ import {
   Rocket,
   ShieldAlert,
   ShieldCheck,
+  Terminal,
   Workflow,
 } from "lucide-react";
 
@@ -644,12 +645,16 @@ function InboxResumeButton({
     }
   };
 
-  const Icon = copied ? Copy : Rocket;
+  // iterate 3.7f: Inbox CTA renamed "Resume" → "Answer" for consistency with
+  // the Ask-bubble button (same clipboard action: copies resume command so
+  // the user pastes + answers in their terminal). Terminal icon reflects the
+  // intent; Copy icon still flashes during the 1.5s "Copied" confirm.
+  const Icon = copied ? Copy : Terminal;
   const label = launchMut.isPending
     ? "Preparing…"
     : copied
       ? "Copied — paste into terminal"
-      : "Resume";
+      : "Answer";
 
   return (
     <>

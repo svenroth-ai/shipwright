@@ -120,11 +120,16 @@ const STATE_BADGE: Record<
   },
 };
 
-type CtaMode = "launch" | "resume" | "none";
+type CtaMode = "launch" | "resume" | "terminal" | "none";
 
 function ctaFor(state: ExternalTask["state"]): CtaMode {
-  if (state === "draft" || state === "awaiting_external_start") return "launch";
-  if (state === "active" || state === "idle") return "resume";
+  if (state === "draft") return "launch";
+  // iterate 3.7f (Sven UAT 2026-04-22): awaiting_external_start means "Launch
+  // command was copied to clipboard, user needs to paste it in a terminal".
+  // The next logical action is to switch to that terminal — label "Terminal"
+  // (same clipboard action as Resume; the copied command is the same).
+  if (state === "awaiting_external_start" || state === "active") return "terminal";
+  if (state === "idle") return "resume";
   return "none";
 }
 
@@ -465,6 +470,24 @@ export function TaskDetailHeader({ task }: Props) {
               : copiedLabel === "Resume command copied"
               ? "Copied — paste into terminal"
               : "Resume"}
+          </button>
+        )}
+        {cta === "terminal" && (
+          <button
+            type="button"
+            onClick={() => void handleResume()}
+            disabled={launchMut.isPending}
+            className="inline-flex items-center gap-2 rounded-[var(--radius-button,8px)] bg-[var(--color-primary,#6b5e56)] px-4 py-1.5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-[var(--color-primary-hover,#5a4f48)] disabled:opacity-60"
+            data-testid="cta-terminal"
+            data-color="brown"
+            aria-label="Terminal — copy resume command to clipboard"
+          >
+            <TerminalIcon size={14} />
+            {launchMut.isPending
+              ? "Preparing…"
+              : copiedLabel === "Resume command copied"
+              ? "Copied — paste into terminal"
+              : "Terminal"}
           </button>
         )}
 

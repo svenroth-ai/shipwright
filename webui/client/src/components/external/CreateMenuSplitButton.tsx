@@ -91,7 +91,7 @@ const ACTION_VISUALS: Record<string, ActionVisual> = {
     bg: "#D1FAE5", // emerald-100 ≈ --color-success-bg
     fg: "#065F46", // emerald-800 ≈ --color-success-text
     icon: RotateCw,
-    subtitle: "Lightweight change on a finished project.",
+    subtitle: "Change after the initial pipeline.",
   },
 };
 

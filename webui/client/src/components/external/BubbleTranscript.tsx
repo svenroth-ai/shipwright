@@ -1072,12 +1072,12 @@ function AnswerInTerminalButton({ task }: { task: ExternalTask }) {
           ev.currentTarget.style.background = "var(--color-primary, #6b5e56)";
         }}
         title={copied ? "Copied!" : "Copy resume command"}
-        aria-label="Answer in Terminal — copy resume command"
+        aria-label="Answer — copy resume command to clipboard"
         data-testid="askuser-answer-in-terminal"
       >
         <TerminalIcon size={13} />
         <span className="leading-none">
-          {copied ? "Copied" : "Answer in Terminal"}
+          {copied ? "Copied" : "Answer"}
         </span>
       </button>
       {error && (

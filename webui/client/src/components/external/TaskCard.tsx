@@ -111,10 +111,14 @@ export function TaskCard({ task }: Props) {
   // awaiting_external_start — both live in the "column-draft" bucket
   // visually. Launch is the only primary action for that set; Resume
   // only makes sense once a task has actually been launched.
-  const isBacklog =
-    task.state === "draft" || task.state === "awaiting_external_start";
+  // iterate 3.7f (Sven UAT 2026-04-22): only `draft` gets the green Launch
+  // button. `awaiting_external_start` + `active` get a brown Terminal button
+  // (command is already copied — next step is switching to a terminal). `idle`
+  // gets a brown Resume button (Claude process ended; explicit resume needed).
+  const isBacklog = task.state === "draft";
+  const isTerminalNeeded =
+    task.state === "awaiting_external_start" || task.state === "active";
   const isDone = task.state === "done";
-  const isInProgress = task.state === "active" || task.state === "idle";
 
   // Iterate 3.7e-b1 (plan S1.6): deterministic color derived from
   // project.settings.color (if set) or hashed projectId (fallback).
@@ -298,7 +302,19 @@ export function TaskCard({ task }: Props) {
                   />
                 </span>
               )}
-              {isInProgress && (
+              {isTerminalNeeded && (
+                <span data-testid={`task-card-terminal-${task.taskId}`}>
+                  <TerminalLaunchButton
+                    task={task}
+                    variant="solid"
+                    color="brown"
+                    size="xs"
+                    resume={true}
+                    label="Terminal"
+                  />
+                </span>
+              )}
+              {task.state === "idle" && (
                 <span data-testid={`task-card-resume-${task.taskId}`}>
                   <TerminalLaunchButton
                     task={task}

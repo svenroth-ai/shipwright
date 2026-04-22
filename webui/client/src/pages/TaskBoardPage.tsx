@@ -30,7 +30,7 @@
  *
  * Iterate 3.7e-b1 (2026-04-22):
  *   - Columns widened 320 → 360 px; gutter 32 → 40 px (plan S1.1).
- *   - New filter row above the columns inside .board-container — Status
+ *   - New filter row above the columns inside .page-container — Status
  *     chips (multi-select; all selected = no filter). Phase filter is
  *     hidden entirely while ADR-045 is deferred (task.phase not populated).
  *
@@ -42,7 +42,7 @@
  *   view-toggle-root, view-toggle-board, view-toggle-list,
  *   task-list-view, task-list-row-<id>.
  * Iterate 3.7d-b1: the kanban columns container also carries
- *   `data-board-container="true"` as a style hook (no new testid needed —
+ *   `data-page-container="true"` as a style hook (no new testid needed —
  *   the existing `task-board-columns` testid remains the board root).
  * Iterate 3.7e-b1:
  *   board-filter-status, board-filter-status-<value>.
@@ -84,9 +84,17 @@ function readStoredView(): TaskBoardView {
 
 export default function TaskBoardPage() {
   const queryClient = useQueryClient();
-  const { data: tasks = [], isLoading } = useExternalTasks();
-  const { data: projects = [] } = useProjects();
   const { activeProjectId } = useProjectFilter();
+  // iterate 3.7f (2026-04-22): pass `activeProjectId` into the query key so
+  // the TanStack cache is scoped per-filter. The previous code always
+  // called useExternalTasks() without args (one cache entry `[..., null]`)
+  // and filtered client-side, which left edge cases where a transient null
+  // state showed stale project-X rows until a refresh. Server-side filter
+  // guarantees a fresh fetch on every filter flip.
+  const { data: tasks = [], isLoading } = useExternalTasks({
+    projectId: activeProjectId,
+  });
+  const { data: projects = [] } = useProjects();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // View state — URL wins on mount, falls back to localStorage.
@@ -134,10 +142,10 @@ export default function TaskBoardPage() {
   const actionsQuery = useProjectActions(resolvedProjectId);
   const actionsList: ActionDefinition[] = actionsQuery.data?.actions ?? [];
 
-  const projectFiltered = useMemo<ExternalTask[]>(() => {
-    if (activeProjectId === null) return tasks;
-    return tasks.filter((t) => t.projectId === activeProjectId);
-  }, [tasks, activeProjectId]);
+  // iterate 3.7f: `tasks` is already server-filtered by projectId via the
+  // TanStack query arg. Keep the alias so downstream code (statusCounts,
+  // column buckets) doesn't need renaming.
+  const projectFiltered = tasks;
 
   // Status filter — iterate 3.7e-b1 (plan S1.4). Multi-select chip set;
   // empty = "All" (no filter). Stored in local React state (no URL params).
@@ -223,7 +231,7 @@ export default function TaskBoardPage() {
     >
       {/* Header — project selector (IS the title) + view toggle + right-side actions.
           R1/R2 (iterate 3.7e-a Foundation, 2026-04-22): header row wrapped in the
-          .board-container (1600 max-width, 24 px L/R padding) so the title region
+          .page-container (1600 max-width, 24 px L/R padding) so the title region
           left-aligns with the first column below, and the right-side action cluster
           right-aligns with the last column. Full-bleed surface + bottom-border stays
           outside the container, providing the visual sidebar-to-edge separator. */}
@@ -231,7 +239,7 @@ export default function TaskBoardPage() {
         className="border-b border-[var(--color-border)] bg-[var(--color-surface)]"
       >
         <header
-          className="board-container flex flex-wrap items-center gap-3 py-3"
+          className="page-container flex flex-wrap items-center gap-3 py-4"
           data-testid="task-board-header"
         >
           <ProjectFilterDropdown />
@@ -258,7 +266,7 @@ export default function TaskBoardPage() {
       </div>
 
       {/* Filter row — iterate 3.7e-b1 (plan S1.4). Lives inside the same
-          .board-container as the header above so the "Status" label aligns
+          .page-container as the header above so the "Status" label aligns
           with the first column's left edge. Phase filter is intentionally
           hidden — ADR-045 defers the task.phase projection. We render the
           Phase group only when at least one task exposes a non-empty phase
@@ -267,7 +275,7 @@ export default function TaskBoardPage() {
         <div
           className="border-b border-[var(--color-border)] bg-[var(--color-bg)]"
         >
-          <div className="board-container flex flex-wrap items-center gap-2 py-[10px]">
+          <div className="page-container flex flex-wrap items-center gap-2 py-3">
             <span
               className="min-w-[46px] text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-muted)]"
               data-testid="board-filter-status"
@@ -301,7 +309,7 @@ export default function TaskBoardPage() {
       )}
 
       {/* Body — board (kanban) or list.
-          R1 (iterate 3.7e-a Foundation): kanban body uses `.board-container`
+          R1 (iterate 3.7e-a Foundation): kanban body uses `.page-container`
           too — same 1600 max-width + 24 px L/R padding as the header above,
           so the header's first element and the first column share the same
           pixel offset from the sidebar. List view keeps its own internal
@@ -314,14 +322,14 @@ export default function TaskBoardPage() {
       ) : (
         <div
           // iterate 3.7e-b1: `w-full` forces the kanban body to stretch to
-          // the full `.board-container` width (1600 px max-width). Without
+          // the full `.page-container` width (1600 px max-width). Without
           // it, the flex-row would shrink to fit its 3 × 360 px children,
           // which breaks plan R7: the first column no longer sat at the
           // container's left edge (below the `All projects` dropdown) and
           // the last column didn't align with the `+ New task` button.
-          className="board-container flex w-full flex-1 items-start gap-10 overflow-x-auto overflow-y-hidden py-5"
+          className="page-container flex w-full flex-1 items-start gap-10 overflow-x-auto overflow-y-hidden py-6"
           data-testid="task-board-columns"
-          data-board-container="true"
+          data-page-container="true"
         >
           <Column
             title="Backlog"
