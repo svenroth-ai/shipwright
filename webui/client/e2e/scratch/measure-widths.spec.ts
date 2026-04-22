@@ -20,14 +20,20 @@ test('measure Projects + List view widths', async ({ page }) => {
   await page.waitForLoadState('networkidle').catch(() => {});
   await page.waitForTimeout(500);
 
-  const boardFilter = await page.locator('[data-testid="task-board-header"]').boundingBox();
+  const boardHeader = await page.locator('[data-testid="task-board-header"]').boundingBox();
+  const boardFilter = await page.locator('[data-testid="board-filter-status"]').boundingBox();
   const boardColumns = await page.locator('[data-testid="task-board-columns"]').boundingBox();
   const boardBacklog = await page.locator('[data-testid="column-draft"]').boundingBox();
-  const boardDone = await page.locator('[data-testid="column-done"]').boundingBox();
-  console.log('Board header:', boardFilter);
+  console.log('Board header:', boardHeader);
+  console.log('Board filter label:', boardFilter);
   console.log('Board columns container:', boardColumns);
   console.log('Board backlog col:', boardBacklog);
-  console.log('Board done col:', boardDone);
+  const filterBottom = boardFilter ? boardFilter.y + boardFilter.height : 0;
+  const colsTop = boardColumns ? boardColumns.y : 0;
+  const backlogTop = boardBacklog ? boardBacklog.y : 0;
+  console.log(`filter-chip-bottom=${filterBottom}, cols-container-top=${colsTop}, backlog-col-top=${backlogTop}`);
+  console.log(`gap filter→cols-container: ${colsTop - filterBottom}px`);
+  console.log(`gap filter→backlog-col: ${backlogTop - filterBottom}px`);
 
   // List view
   await page.goto('http://localhost:5173/?view=list');

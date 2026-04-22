@@ -168,7 +168,12 @@ body {
 .page-container {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 24px;
+  /* iterate 3.7l (Sven UAT 2026-04-22): set L/R only. The shorthand
+     `padding: 0 24px` was overriding Tailwind `pt-*` / `pb-*` utilities
+     applied alongside .page-container (board-columns needed pt-10 for
+     breathing room; the shorthand was zeroing it to 0). */
+  padding-left: 24px;
+  padding-right: 24px;
 }
 
 /* Iterate 3.7e-a Foundation (R1/R2 — 2026-04-22):
@@ -181,7 +186,10 @@ body {
 .board-container {
   max-width: 1600px;
   margin: 0 auto;
-  padding: 0 24px;
+  /* See .page-container note (iterate 3.7l): keep L/R only so Tailwind
+     pt/pb utilities aren't clobbered by the shorthand. */
+  padding-left: 24px;
+  padding-right: 24px;
 }
 
 /* Iterate 3.7e-a R7 — "comfortable" bubble card sizing.
