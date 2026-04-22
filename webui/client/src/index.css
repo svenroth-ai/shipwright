@@ -83,6 +83,14 @@
   --color-purple-bg: #F3E8FF;
   --color-purple-text: #6B21A8;
 
+  /* iterate 3.7g (Sven UAT 2026-04-22): Resume-button tint.
+     Soft warm terracotta/clay — distinct from --color-primary (brown,
+     Terminal) and --color-warning (alert orange). Picked from the project
+     color-picker palette so it stays visually coherent with the warm-beige
+     tokens. */
+  --color-resume: #C08862;
+  --color-resume-hover: #A67352;
+
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
   --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.28), 0 6px 18px rgba(0, 0, 0, 0.15);
   --radius-card: 12px;               /* alias for --radius (card surfaces) */

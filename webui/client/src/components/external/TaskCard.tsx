@@ -158,7 +158,10 @@ export function TaskCard({ task }: Props) {
         }}
         className={
           "group relative shrink-0 cursor-pointer overflow-hidden bg-[var(--color-surface)] " +
-          "pl-[17px] pr-[14px] py-[12px] transition " +
+          // iterate 3.7g (Sven UAT): "Cards ein bisschen weiter auseinander
+          // horizontal" — bump horizontal padding 17/14 → 20/18 (+3/+4) for
+          // more breathing room; vertical stays 12.
+          "pl-[20px] pr-[18px] py-[12px] transition " +
           "shadow-[0_1px_3px_rgba(0,0,0,0.06)] " +
           "hover:-translate-y-[1px] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] " +
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
@@ -319,7 +322,7 @@ export function TaskCard({ task }: Props) {
                   <TerminalLaunchButton
                     task={task}
                     variant="solid"
-                    color="brown"
+                    color="orange"
                     size="xs"
                     resume={true}
                   />

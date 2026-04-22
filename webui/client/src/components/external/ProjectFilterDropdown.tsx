@@ -42,6 +42,7 @@ import { useProjects } from "../../hooks/useProjects";
 import { useProjectFilter } from "../../hooks/useProjectFilter";
 import { useExternalTasks } from "../../hooks/useExternalTasks";
 import { UNASSIGNED_PROJECT_ID } from "../../lib/projectIds";
+import { getProjectColor } from "../../lib/projectColor";
 import type { Project } from "../../types";
 
 export interface ProjectFilterDropdownProps {
@@ -68,9 +69,17 @@ export function ProjectFilterDropdown({ className }: ProjectFilterDropdownProps)
 
   const triggerLabel = active?.name ?? "All projects";
   const triggerCount = active ? (countByProject.get(active.id) ?? 0) : tasks.length;
-  const triggerDotColor = active?.synthesized
-    ? undefined
-    : (active?.settings?.color ?? "var(--color-muted)");
+  // iterate 3.7g (Sven UAT): use the deterministic projectColor helper so the
+  // dropdown dot matches every other project-color surface (TaskCard strip,
+  // Inbox group header, Projects table). Previously this fell back to
+  // --color-muted when `settings.color` was unset, which diverged from the
+  // hash-derived color used elsewhere. Active "All Projects" (null) gets the
+  // muted tint as a neutral marker.
+  const triggerDotColor = active
+    ? active.synthesized
+      ? undefined
+      : getProjectColor(active.id, active.settings?.color).hsl
+    : "var(--color-muted)";
 
   return (
     <DropdownMenu.Root>
@@ -137,7 +146,11 @@ export function ProjectFilterDropdown({ className }: ProjectFilterDropdownProps)
               active={activeProjectId === p.id}
               onSelect={() => setActiveProjectId(p.id)}
               count={countByProject.get(p.id) ?? 0}
-              color={p.synthesized ? undefined : p.settings?.color}
+              color={
+                p.synthesized
+                  ? undefined
+                  : getProjectColor(p.id, p.settings?.color).hsl
+              }
               synthesized={p.synthesized}
               testId={`project-filter-dropdown-item-${p.id === UNASSIGNED_PROJECT_ID ? "unassigned" : p.id}`}
             />

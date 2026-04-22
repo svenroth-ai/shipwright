@@ -459,9 +459,9 @@ export function TaskDetailHeader({ task }: Props) {
             type="button"
             onClick={() => void handleResume()}
             disabled={launchMut.isPending}
-            className="inline-flex items-center gap-2 rounded-[var(--radius-button,8px)] bg-[var(--color-primary,#6b5e56)] px-4 py-1.5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-[var(--color-primary-hover,#5a4f48)] disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-[var(--radius-button,8px)] bg-[var(--color-resume,#C08862)] px-4 py-1.5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-[var(--color-resume-hover,#A67352)] disabled:opacity-60"
             data-testid="cta-copy-resume-command"
-            data-color="brown"
+            data-color="orange"
             aria-label="Resume command — copy to clipboard"
           >
             <TerminalIcon size={14} />

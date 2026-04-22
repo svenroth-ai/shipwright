@@ -43,7 +43,7 @@ import type { CopyCommandForms, ExternalTask } from "../../lib/externalApi";
 import { useLaunchTask } from "../../hooks/useLaunchTask";
 
 export type TerminalLaunchVariant = "primary" | "compact" | "inline" | "solid";
-export type TerminalLaunchColor = "brown" | "green";
+export type TerminalLaunchColor = "brown" | "green" | "orange";
 export type TerminalLaunchSize = "md" | "xs";
 
 interface Props {
@@ -169,10 +169,25 @@ export function TerminalLaunchButton({
     // The Terminal icon is always rendered LEFT of the label.
     const effectiveLabel = label ?? (wantResume ? "Resume" : "Launch");
     const isGreen = color === "green";
+    const isOrange = color === "orange";
     const isXs = size === "xs";
-    const bgVar = isGreen ? "var(--color-success)" : "var(--color-primary)";
-    const hoverBg = isGreen ? "#047857" : "var(--color-primary-hover)";
-    const ringVar = isGreen ? "var(--color-success)" : "var(--color-primary)";
+    // iterate 3.7g: orange = Resume (fine warm terracotta, not alert), green
+    // = Launch (Backlog-only), brown = Terminal (default).
+    const bgVar = isGreen
+      ? "var(--color-success)"
+      : isOrange
+        ? "var(--color-resume)"
+        : "var(--color-primary)";
+    const hoverBg = isGreen
+      ? "#047857"
+      : isOrange
+        ? "var(--color-resume-hover)"
+        : "var(--color-primary-hover)";
+    const ringVar = isGreen
+      ? "var(--color-success)"
+      : isOrange
+        ? "var(--color-resume)"
+        : "var(--color-primary)";
     const iconSize = isXs ? 14 : 13;
     return (
       <button

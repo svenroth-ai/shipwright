@@ -229,39 +229,44 @@ export default function TaskBoardPage() {
       className="flex h-full flex-col bg-[var(--color-bg)]"
       data-testid="task-board-page"
     >
-      {/* Header — project selector (IS the title) + view toggle + right-side actions.
-          R1/R2 (iterate 3.7e-a Foundation, 2026-04-22): header row wrapped in the
-          .page-container (1600 max-width, 24 px L/R padding) so the title region
-          left-aligns with the first column below, and the right-side action cluster
-          right-aligns with the last column. Full-bleed surface + bottom-border stays
-          outside the container, providing the visual sidebar-to-edge separator. */}
+      {/* Header — full-bleed surface strip matching ProjectsPage (iterate 3.7g,
+          Sven UAT 2026-04-22). Inner .page-container has 20px top/bottom padding
+          + flex justify-between so title cluster (dropdown + view toggle) sits at
+          the left content edge and the `+ New task` button sits at the right
+          content edge, same geometry as `Projects` header. */}
       <div
-        className="border-b border-[var(--color-border)] bg-[var(--color-surface)]"
+        style={{
+          background: "var(--color-surface)",
+          borderBottom: "1px solid var(--color-border)",
+        }}
       >
         <header
-          className="page-container flex flex-wrap items-center gap-3 py-4"
+          className="page-container flex items-center justify-between"
+          style={{ paddingTop: "20px", paddingBottom: "20px" }}
           data-testid="task-board-header"
         >
-          <ProjectFilterDropdown />
-
-          <div className="h-6 w-px bg-[var(--color-border)]" aria-hidden="true" />
-
-          <ViewToggle value={view} onChange={setView} />
-
-          <div className="flex-1" />
-
-          <PreviewButton
-            projectId={resolvedProjectId}
-            enabled={Boolean(actionsQuery.data?.preview.enabled)}
-            readyTimeoutSeconds={
-              actionsQuery.data?.preview.ready_timeout_seconds ?? null
-            }
-          />
-          <CreateMenuSplitButton
-            actions={actionsList}
-            onSelect={openModal}
-            isLoading={actionsQuery.isLoading}
-          />
+          <div className="flex items-center gap-3">
+            <ProjectFilterDropdown />
+            <div
+              className="h-6 w-px bg-[var(--color-border)]"
+              aria-hidden="true"
+            />
+            <ViewToggle value={view} onChange={setView} />
+          </div>
+          <div className="flex items-center gap-2">
+            <PreviewButton
+              projectId={resolvedProjectId}
+              enabled={Boolean(actionsQuery.data?.preview.enabled)}
+              readyTimeoutSeconds={
+                actionsQuery.data?.preview.ready_timeout_seconds ?? null
+              }
+            />
+            <CreateMenuSplitButton
+              actions={actionsList}
+              onSelect={openModal}
+              isLoading={actionsQuery.isLoading}
+            />
+          </div>
         </header>
       </div>
 
@@ -270,12 +275,14 @@ export default function TaskBoardPage() {
           with the first column's left edge. Phase filter is intentionally
           hidden — ADR-045 defers the task.phase projection. We render the
           Phase group only when at least one task exposes a non-empty phase
-          field, which is never true today. */}
+          field, which is never true today.
+          iterate 3.7g: padding bumped to py-4 (16 px) for better separation
+          between header above and columns below. */}
       {!isLoading && view === "board" && (
         <div
           className="border-b border-[var(--color-border)] bg-[var(--color-bg)]"
         >
-          <div className="page-container flex flex-wrap items-center gap-2 py-3">
+          <div className="page-container flex flex-wrap items-center gap-2 py-4">
             <span
               className="min-w-[46px] text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-muted)]"
               data-testid="board-filter-status"
@@ -321,13 +328,17 @@ export default function TaskBoardPage() {
         <TaskList tasks={filteredTasks} />
       ) : (
         <div
-          // iterate 3.7e-b1: `w-full` forces the kanban body to stretch to
-          // the full `.page-container` width (1600 px max-width). Without
-          // it, the flex-row would shrink to fit its 3 × 360 px children,
-          // which breaks plan R7: the first column no longer sat at the
-          // container's left edge (below the `All projects` dropdown) and
-          // the last column didn't align with the `+ New task` button.
-          className="page-container flex w-full flex-1 items-start gap-10 overflow-x-auto overflow-y-hidden py-6"
+          // iterate 3.7g (Sven UAT): `justify-between` distributes the 3
+          // fixed-width columns across the container — first column sits at
+          // the container's left edge, last at the right edge, middle
+          // centered between them. At narrower viewports the implicit gap
+          // shrinks; at wider viewports it grows so the columns stay
+          // pinned to the content-container edges (matches header+filter
+          // alignment). `min-w-0` on columns would let them shrink — we
+          // keep them fixed (360 px) so cards stay legible. Fallback gap-6
+          // (24 px) for viewports narrow enough that justify-between
+          // collapses.
+          className="page-container flex w-full flex-1 items-start justify-between gap-6 overflow-x-auto overflow-y-hidden py-6"
           data-testid="task-board-columns"
           data-page-container="true"
         >
