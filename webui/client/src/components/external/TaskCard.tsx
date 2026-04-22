@@ -40,6 +40,24 @@
  *     "everything the user needs is visible" intent.
  *   - Commit marker moved inline with the timestamp on the left.
  *
+ * Iterate 3.7e-b1 (2026-04-22):
+ *   - Action buttons now use the Foundation `size="xs"` variant (12 px
+ *     text, 500 weight, 4×10 px padding, icon 14 px) — finer TaskCard
+ *     buttons per plan R3.
+ *   - Backlog cards (draft / awaiting_external_start) render a GREEN
+ *     `<TerminalLaunchButton color="green">` Launch button — the only
+ *     primary action on that column. No Resume on backlog cards (nothing
+ *     to resume yet).
+ *   - In Progress cards (active / idle) now render ONLY Resume (brown).
+ *     The Launch-twin that was visible in 3.7d-b1 is removed: once a task
+ *     has been launched, the intent is to continue, not fresh-restart.
+ *   - Done cards keep no primary action.
+ *   - 3 px project-color left-edge strip sourced from
+ *     `getProjectColor(task.projectId, project?.settings?.color)` — gives
+ *     multi-project boards a visual anchor per plan S1.6. Synthesized
+ *     "Unassigned" projects still render a strip (hash-derived muted
+ *     color) so the layout stays consistent.
+ *
  * Preserved testids:
  *   task-card-<id>, task-card-open-<id>, task-card-state-<id>,
  *   task-card-time-<id>, task-card-menu-<id>, task-card-close-<id>,
@@ -49,6 +67,8 @@
  *   terminal-launch-solid-launch, terminal-launch-solid-resume
  *   (the last two are the TerminalLaunchButton's own testids in `solid`
  *   variant — not card-scoped but stable per button instance).
+ * Iterate 3.7e-b1:
+ *   task-card-project-strip-<id>.
  */
 
 import { useState } from "react";
@@ -66,6 +86,8 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 
 import type { ExternalTask, ExternalTaskState } from "../../lib/externalApi";
 import { useCloseExternalTask, useDeleteExternalTask } from "../../hooks/useExternalTasks";
+import { useProjects } from "../../hooks/useProjects";
+import { getProjectColor } from "../../lib/projectColor";
 import { TerminalLaunchButton } from "./TerminalLaunchButton";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 
@@ -79,17 +101,28 @@ export function TaskCard({ task }: Props) {
   const navigate = useNavigate();
   const closeMut = useCloseExternalTask();
   const deleteMut = useDeleteExternalTask();
+  const { data: projects = [] } = useProjects();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const Icon = stateIcon(task.state);
   const stamp = lastActivity(task);
   const cwdBase = basename(task.cwd);
-  const isDraft = task.state === "draft";
+  // Iterate 3.7e-b1 (plan S1.2): Backlog cards are draft OR
+  // awaiting_external_start — both live in the "column-draft" bucket
+  // visually. Launch is the only primary action for that set; Resume
+  // only makes sense once a task has actually been launched.
+  const isBacklog =
+    task.state === "draft" || task.state === "awaiting_external_start";
   const isDone = task.state === "done";
-  const isInProgress =
-    task.state === "active" ||
-    task.state === "idle" ||
-    task.state === "awaiting_external_start";
+  const isInProgress = task.state === "active" || task.state === "idle";
+
+  // Iterate 3.7e-b1 (plan S1.6): deterministic color derived from
+  // project.settings.color (if set) or hashed projectId (fallback).
+  const project = projects.find((p) => p.id === task.projectId);
+  const projectColor = getProjectColor(
+    task.projectId,
+    project?.settings?.color,
+  );
 
   const onDeleteClick = () => {
     if (NONTERMINAL_STATES.includes(task.state)) {
@@ -120,8 +153,8 @@ export function TaskCard({ task }: Props) {
           }
         }}
         className={
-          "group relative cursor-pointer bg-[var(--color-surface)] " +
-          "px-[14px] py-[12px] transition " +
+          "group relative shrink-0 cursor-pointer overflow-hidden bg-[var(--color-surface)] " +
+          "pl-[17px] pr-[14px] py-[12px] transition " +
           "shadow-[0_1px_3px_rgba(0,0,0,0.06)] " +
           "hover:-translate-y-[1px] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] " +
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
@@ -129,8 +162,22 @@ export function TaskCard({ task }: Props) {
         style={{ borderRadius: "10px" }}
         data-testid={`task-card-${task.taskId}`}
         data-task-state={task.state}
+        data-project-id={task.projectId}
         title={`UUID ${task.sessionUuid.slice(0, 8)} · cwd ${cwdBase}`}
       >
+        {/* Project-color left-edge strip (iterate 3.7e-b1 / plan S1.6).
+            3 px wide, full card height, deterministic color from
+            `getProjectColor(projectId, project.settings.color)`. Absolute-
+            positioned inside the `overflow-hidden` card so it hugs the
+            rounded corners without clipping the content padding. */}
+        <span
+          aria-hidden="true"
+          data-testid={`task-card-project-strip-${task.taskId}`}
+          data-project-color={projectColor.hsl}
+          className="pointer-events-none absolute left-0 top-0 h-full w-[3px]"
+          style={{ background: projectColor.hslStripe }}
+        />
+
         {/* Kind stripe (4×18px top-right) — no `kind` field on the model
             yet, so this renders only when a future field appears. Left
             intentionally absent for now to avoid inventing data. */}
@@ -219,7 +266,7 @@ export function TaskCard({ task }: Props) {
                 {stamp.short}
               </span>
             )}
-            {!isDraft && (
+            {!isBacklog && (
               <span
                 className="font-mono text-[11px] opacity-75"
                 data-testid={`task-card-commit-${task.taskId}`}
@@ -233,36 +280,34 @@ export function TaskCard({ task }: Props) {
               className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2"
               data-testid={`task-card-actions-${task.taskId}`}
             >
-              {/* Draft → Launch only (cannot resume a never-launched task).
-                  In-progress → Launch + Resume both visible (fresh restart
-                  vs. continue-where-we-left-off). Done handled above. */}
-              {isDraft ? (
+              {/* Iterate 3.7e-b1 action matrix:
+                    Backlog (draft / awaiting_external_start)
+                      → GREEN Launch only (no Resume — nothing to resume).
+                    In Progress (active / idle)
+                      → BROWN Resume only (Launch removed — once launched,
+                        the intent is to continue).
+                    Done → no action (handled by outer `!isDone`). */}
+              {isBacklog && (
                 <span data-testid={`task-card-launch-${task.taskId}`}>
                   <TerminalLaunchButton
                     task={task}
                     variant="solid"
+                    color="green"
+                    size="xs"
                     resume={false}
                   />
                 </span>
-              ) : (
-                isInProgress && (
-                  <>
-                    <span data-testid={`task-card-launch-${task.taskId}`}>
-                      <TerminalLaunchButton
-                        task={task}
-                        variant="solid"
-                        resume={false}
-                      />
-                    </span>
-                    <span data-testid={`task-card-resume-${task.taskId}`}>
-                      <TerminalLaunchButton
-                        task={task}
-                        variant="solid"
-                        resume={true}
-                      />
-                    </span>
-                  </>
-                )
+              )}
+              {isInProgress && (
+                <span data-testid={`task-card-resume-${task.taskId}`}>
+                  <TerminalLaunchButton
+                    task={task}
+                    variant="solid"
+                    color="brown"
+                    size="xs"
+                    resume={true}
+                  />
+                </span>
               )}
             </div>
           )}

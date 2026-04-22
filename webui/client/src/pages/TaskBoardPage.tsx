@@ -28,6 +28,12 @@
  *   - Column gutter bumped 20 → 32px so the 3-column layout breathes.
  *   - List view rebuilt as a proper <table> (moved into TaskList.tsx).
  *
+ * Iterate 3.7e-b1 (2026-04-22):
+ *   - Columns widened 320 → 360 px; gutter 32 → 40 px (plan S1.1).
+ *   - New filter row above the columns inside .board-container — Status
+ *     chips (multi-select; all selected = no filter). Phase filter is
+ *     hidden entirely while ADR-045 is deferred (task.phase not populated).
+ *
  * Preserved testids:
  *   task-board-page, task-board-header, task-board-columns,
  *   column-draft, column-in-progress, column-done,
@@ -38,6 +44,8 @@
  * Iterate 3.7d-b1: the kanban columns container also carries
  *   `data-board-container="true"` as a style hook (no new testid needed —
  *   the existing `task-board-columns` testid remains the board root).
+ * Iterate 3.7e-b1:
+ *   board-filter-status, board-filter-status-<value>.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -47,6 +55,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type {
   ActionDefinition,
   ExternalTask,
+  ExternalTaskState,
 } from "../lib/externalApi";
 import { useExternalTasks } from "../hooks/useExternalTasks";
 import { useProjects } from "../hooks/useProjects";
@@ -125,10 +134,51 @@ export default function TaskBoardPage() {
   const actionsQuery = useProjectActions(resolvedProjectId);
   const actionsList: ActionDefinition[] = actionsQuery.data?.actions ?? [];
 
-  const filteredTasks = useMemo<ExternalTask[]>(() => {
+  const projectFiltered = useMemo<ExternalTask[]>(() => {
     if (activeProjectId === null) return tasks;
     return tasks.filter((t) => t.projectId === activeProjectId);
   }, [tasks, activeProjectId]);
+
+  // Status filter — iterate 3.7e-b1 (plan S1.4). Multi-select chip set;
+  // empty = "All" (no filter). Stored in local React state (no URL params).
+  const [statusFilter, setStatusFilter] = useState<Set<ExternalTaskState>>(
+    () => new Set(),
+  );
+  const toggleStatus = useCallback((s: ExternalTaskState) => {
+    setStatusFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(s)) next.delete(s);
+      else next.add(s);
+      return next;
+    });
+  }, []);
+  const clearStatusFilter = useCallback(() => {
+    setStatusFilter(new Set());
+  }, []);
+
+  const filteredTasks = useMemo<ExternalTask[]>(() => {
+    if (statusFilter.size === 0) return projectFiltered;
+    return projectFiltered.filter((t) => statusFilter.has(t.state));
+  }, [projectFiltered, statusFilter]);
+
+  // Per-state counts — computed on the project-filtered set (not the
+  // status-filtered one) so the counts stay stable as the user clicks
+  // chips. Matches GitHub/Linear filter-bar affordance.
+  const statusCounts = useMemo<Record<ExternalTaskState, number>>(() => {
+    const seed: Record<ExternalTaskState, number> = {
+      draft: 0,
+      awaiting_external_start: 0,
+      active: 0,
+      idle: 0,
+      done: 0,
+      launch_failed: 0,
+      jsonl_missing: 0,
+    };
+    for (const t of projectFiltered) {
+      if (t.state in seed) seed[t.state] += 1;
+    }
+    return seed;
+  }, [projectFiltered]);
 
   const columns = useMemo(() => groupByState(filteredTasks), [filteredTasks]);
 
@@ -207,19 +257,69 @@ export default function TaskBoardPage() {
         </header>
       </div>
 
+      {/* Filter row — iterate 3.7e-b1 (plan S1.4). Lives inside the same
+          .board-container as the header above so the "Status" label aligns
+          with the first column's left edge. Phase filter is intentionally
+          hidden — ADR-045 defers the task.phase projection. We render the
+          Phase group only when at least one task exposes a non-empty phase
+          field, which is never true today. */}
+      {!isLoading && view === "board" && (
+        <div
+          className="border-b border-[var(--color-border)] bg-[var(--color-bg)]"
+        >
+          <div className="board-container flex flex-wrap items-center gap-2 py-[10px]">
+            <span
+              className="min-w-[46px] text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-muted)]"
+              data-testid="board-filter-status"
+            >
+              Status
+            </span>
+            {STATUS_FILTER_OPTIONS.map((opt) => (
+              <StatusChip
+                key={opt.value}
+                label={opt.label}
+                value={opt.value}
+                count={statusCounts[opt.value]}
+                active={statusFilter.has(opt.value)}
+                onClick={toggleStatus}
+                tone={opt.tone}
+              />
+            ))}
+            {statusFilter.size > 0 && (
+              <button
+                type="button"
+                onClick={clearStatusFilter}
+                className="ml-1 rounded-[6px] px-2 py-[3px] text-[11px] text-[var(--color-muted)] transition-colors hover:bg-[rgba(220,38,38,0.06)] hover:text-[var(--color-error)]"
+                title="Reset status filter"
+                data-testid="board-filter-status-reset"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Body — board (kanban) or list.
           R1 (iterate 3.7e-a Foundation): kanban body uses `.board-container`
           too — same 1600 max-width + 24 px L/R padding as the header above,
           so the header's first element and the first column share the same
           pixel offset from the sidebar. List view keeps its own internal
-          layout (handled in TaskList). */}
+          layout (handled in TaskList).
+          Iterate 3.7e-b1: gap-8 → gap-10 (32 → 40 px gutter). */}
       {isLoading ? (
         <div className="p-6 text-sm text-[var(--color-muted)]">Loading…</div>
       ) : view === "list" ? (
         <TaskList tasks={filteredTasks} />
       ) : (
         <div
-          className="board-container flex flex-1 items-start gap-8 overflow-x-auto overflow-y-hidden py-5"
+          // iterate 3.7e-b1: `w-full` forces the kanban body to stretch to
+          // the full `.board-container` width (1600 px max-width). Without
+          // it, the flex-row would shrink to fit its 3 × 360 px children,
+          // which breaks plan R7: the first column no longer sat at the
+          // container's left edge (below the `All projects` dropdown) and
+          // the last column didn't align with the `+ New task` button.
+          className="board-container flex w-full flex-1 items-start gap-10 overflow-x-auto overflow-y-hidden py-5"
           data-testid="task-board-columns"
           data-board-container="true"
         >
@@ -324,7 +424,7 @@ function Column({ title, testId, items, tone }: ColumnProps) {
   const s = COLUMN_STYLES[tone];
   return (
     <div
-      className="flex max-h-full w-[320px] min-w-[320px] shrink-0 flex-col overflow-hidden rounded-[var(--radius-card)]"
+      className="flex max-h-full w-[360px] min-w-[360px] shrink-0 flex-col overflow-hidden rounded-[var(--radius-card)]"
       style={{ background: s.bg }}
       data-testid={testId}
     >
@@ -359,5 +459,88 @@ function Column({ title, testId, items, tone }: ColumnProps) {
         ))}
       </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Status filter chips — iterate 3.7e-b1 (plan S1.4).
+// ---------------------------------------------------------------------------
+
+/** Muted / warning / error-tone accents on the Failed chips match the
+ *  mockup filter row (lines 958–966 of kanban-with-projects.html). */
+type ChipTone = "neutral" | "warning" | "success" | "error";
+
+interface StatusFilterOption {
+  value: ExternalTaskState;
+  label: string;
+  tone: ChipTone;
+}
+
+/** Order locked to the 7 valid ExternalTaskState values; labels lowercased
+ *  to match our existing StatePill vocabulary. */
+const STATUS_FILTER_OPTIONS: StatusFilterOption[] = [
+  { value: "draft", label: "draft", tone: "neutral" },
+  { value: "awaiting_external_start", label: "awaiting", tone: "warning" },
+  { value: "active", label: "active", tone: "warning" },
+  { value: "idle", label: "idle", tone: "neutral" },
+  { value: "done", label: "done", tone: "success" },
+  { value: "launch_failed", label: "launch-failed", tone: "error" },
+  { value: "jsonl_missing", label: "jsonl-missing", tone: "error" },
+];
+
+interface StatusChipProps {
+  label: string;
+  value: ExternalTaskState;
+  count: number;
+  active: boolean;
+  tone: ChipTone;
+  onClick: (value: ExternalTaskState) => void;
+}
+
+/** Thin chip following `.chip` from the mockup (lines 401–427). Active +
+ *  hover share the `--color-primary` accent; inactive uses a neutral
+ *  token-only tint. `tone` colors the border + count slot for error /
+ *  warning-flavored rows so Failed stands out. */
+function StatusChip({
+  label,
+  value,
+  count,
+  active,
+  tone,
+  onClick,
+}: StatusChipProps) {
+  const toneStyle =
+    tone === "error"
+      ? { color: "var(--color-error)", borderColor: "rgba(220,38,38,0.25)" }
+      : tone === "warning"
+        ? { color: "var(--color-warning-text)", borderColor: "var(--color-border)" }
+        : tone === "success"
+          ? { color: "var(--color-success-text)", borderColor: "var(--color-border)" }
+          : { color: "var(--color-muted)", borderColor: "var(--color-border)" };
+  const activeStyle = active
+    ? {
+        background: "var(--color-primary)",
+        color: "#fff",
+        borderColor: "var(--color-primary)",
+      }
+    : {};
+  return (
+    <button
+      type="button"
+      onClick={() => onClick(value)}
+      data-testid={`board-filter-status-${value}`}
+      data-active={active || undefined}
+      aria-pressed={active}
+      className="inline-flex items-center gap-[5px] rounded-[12px] border bg-transparent px-[10px] py-[3px] text-[11.5px] font-medium transition-colors hover:bg-[var(--color-muted-bg)]"
+      style={{ ...toneStyle, ...activeStyle }}
+    >
+      <span>{label}</span>
+      <span
+        className="font-mono text-[10px]"
+        style={{ opacity: active ? 1 : 0.8 }}
+      >
+        {count}
+      </span>
+    </button>
   );
 }

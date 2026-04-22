@@ -24,6 +24,15 @@
  *     shortcut still works globally (hooked up in TaskBoardPage).
  *   - Subtitle text is purely descriptive — NOT wired to any shortcut.
  *
+ * Iterate 3.7e-b1 (2026-04-22):
+ *   - Dropdown tightened to a hard min/max width of 280 px. Subtitles now
+ *     wrap onto 2 lines (`white-space: normal; line-height: 1.3`) instead
+ *     of truncating — the subtitle copy is the semantic distinguisher
+ *     between "new task / pipeline / iterate" and shouldn't be hidden.
+ *   - Shortcut kbd badges removed from the dropdown per plan — the global
+ *     `i`-shortcut for New Iterate still works, it just isn't advertised
+ *     in the menu noise anymore.
+ *
  * Regression guard: NO `c` / `Shift+C` binding. Tests assert the absence.
  */
 
@@ -52,7 +61,6 @@ interface ActionVisual {
   bg: string;
   fg: string;
   icon: React.ComponentType<{ size?: number }>;
-  kbd: string;
   subtitle: string;
 }
 
@@ -71,21 +79,18 @@ const ACTION_VISUALS: Record<string, ActionVisual> = {
     bg: "#FEF3C7", // amber-100
     fg: "#92400E", // amber-800 ≈ --color-warning-text
     icon: CheckSquare,
-    kbd: "\u2318 \u21E7 T", // ⌘ ⇧ T
     subtitle: "Quick ad-hoc session — no pipeline, no copy-command.",
   },
   "new-pipeline": {
     bg: "#F3E8FF", // purple-100 ≈ --color-purple-bg
     fg: "#6B21A8", // purple-800 ≈ --color-purple-text
     icon: Workflow,
-    kbd: "\u2318 \u21E7 P",
     subtitle: "Full SDLC from brief to deploy.",
   },
   "new-iterate": {
     bg: "#D1FAE5", // emerald-100 ≈ --color-success-bg
     fg: "#065F46", // emerald-800 ≈ --color-success-text
     icon: RotateCw,
-    kbd: "\u2318 \u21E7 I",
     subtitle: "Lightweight change on a finished project.",
   },
 };
@@ -94,7 +99,6 @@ const DEFAULT_VISUAL: ActionVisual = {
   bg: "var(--color-muted-bg)",
   fg: "var(--color-muted)",
   icon: Plus,
-  kbd: "",
   subtitle: "",
 };
 
@@ -140,7 +144,11 @@ export function CreateMenuSplitButton({
           <DropdownMenu.Content
             align="end"
             sideOffset={6}
-            className="z-50 min-w-[280px] rounded-[var(--radius-button)] border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-[var(--shadow-card)]"
+            // Iterate 3.7e-b1: min + max pinned to 280 px so subtitles
+            // wrap onto two lines instead of expanding the menu. Mockup
+            // reference: 10-kanban-board.html new-dropdown (~280 px).
+            className="z-50 rounded-[var(--radius-button)] border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-[var(--shadow-card)]"
+            style={{ minWidth: "280px", maxWidth: "280px" }}
             data-testid="create-menu-dropdown"
           >
             {actions.map((a) => {
@@ -155,36 +163,32 @@ export function CreateMenuSplitButton({
                   key={a.id}
                   data-testid={`create-menu-item-${a.id}`}
                   onSelect={() => onSelect(a)}
-                  className="flex cursor-pointer items-center gap-2.5 rounded-[6px] px-2.5 py-2 text-[13px] text-[var(--color-text)] outline-none focus:bg-[var(--color-muted-bg)] hover:bg-[var(--color-muted-bg)]"
+                  className="flex cursor-pointer items-start gap-2.5 rounded-[6px] px-2.5 py-2 text-[13px] text-[var(--color-text)] outline-none focus:bg-[var(--color-muted-bg)] hover:bg-[var(--color-muted-bg)]"
                 >
                   <span
                     aria-hidden="true"
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px]"
+                    className="mt-[1px] flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px]"
                     style={{ background: v.bg, color: v.fg }}
                   >
                     <Icon size={14} />
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span
-                      className="truncate text-[13px] font-medium leading-tight text-[var(--color-text)]"
+                      className="text-[13px] font-medium leading-tight text-[var(--color-text)]"
                       data-testid={`create-menu-item-label-${a.id}`}
                     >
                       {a.label}
                     </span>
                     {subtitle && (
                       <span
-                        className="truncate text-[11px] leading-[1.35] text-[var(--color-muted)]"
+                        className="mt-[2px] text-[11px] text-[var(--color-muted)]"
+                        style={{ whiteSpace: "normal", lineHeight: 1.3 }}
                         data-testid={`create-menu-item-subtitle-${a.id}`}
                       >
                         {subtitle}
                       </span>
                     )}
                   </span>
-                  {v.kbd && (
-                    <span className="ml-auto shrink-0 self-start rounded-[3px] border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-[1px] font-mono text-[10px] text-[var(--color-muted)]">
-                      {v.kbd}
-                    </span>
-                  )}
                 </DropdownMenu.Item>
               );
             })}
