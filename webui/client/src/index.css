@@ -162,3 +162,31 @@ body {
   margin: 0 auto;
   padding: 0 24px;
 }
+
+/* Iterate 3.7e-a Foundation (R1/R2 — 2026-04-22):
+   Board-scoped container. Board needs the extra width (3 columns ×
+   360 px from b1 + 40 px gutters + 24 px gutter-to-sidebar = ~1200 px
+   baseline; the board naturally wants to grow on wider monitors).
+   Same 24 px L/R padding as .page-container so the first column of
+   the Board aligns with the first card/row on Inbox/Projects/Settings.
+   Both containers centered via `margin: 0 auto`. */
+.board-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Iterate 3.7e-a R7 — "comfortable" bubble card sizing.
+   The ask-bubble size from 3.7d-b2 (padding 22 × 24 px, body 15 px /
+   600 weight) is the visual reference for Inbox and Transcript. This
+   utility class exposes the same density so TaskCard / S1 surface can
+   opt in without bumping its baseline (column layout at 360 px wide
+   stays honest). Surface agents wire .comfortable-bubble onto their
+   top-level card wrapper and the body inherits 15 px / 600 weight.
+   No new tokens — pure CSS rule. */
+.comfortable-bubble {
+  padding: 22px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+}

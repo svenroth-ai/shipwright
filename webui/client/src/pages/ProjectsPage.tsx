@@ -45,53 +45,66 @@ export default function ProjectsPage() {
       data-testid="projects-page"
     >
       {/* Header — matches Inbox: full-bleed surface bar, bottom border,
-          24px/700 title + inline muted count, right-aligned primary CTA */}
-      <header
-        className="flex items-center justify-between"
+          24px/700 title + inline muted count, right-aligned primary CTA.
+          R1/R2 (iterate 3.7e-a Foundation, 2026-04-22): header content is
+          wrapped inside `.page-container` so the title aligns with the
+          cards in the body column (same 24 px L/R padding, same 1280 px
+          max-width). The full-bleed surface strip stays outside the
+          container — only the inner row uses the container. */}
+      <div
         style={{
           background: 'var(--color-surface)',
           borderBottom: '1px solid var(--color-border)',
-          padding: '20px 32px',
         }}
       >
-        <div className="flex items-baseline gap-[10px]">
-          <h1
-            className="font-bold"
-            style={{
-              fontSize: '24px',
-              color: 'var(--color-text)',
-              letterSpacing: '-0.01em',
-            }}
-          >
-            Projects
-          </h1>
-          {projects.length > 0 && (
-            <span
-              className="font-medium"
-              style={{
-                fontSize: '14px',
-                color: 'var(--color-muted)',
-              }}
-              data-testid="projects-header-count"
-            >
-              ({projects.length} total)
-            </span>
-          )}
-        </div>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 rounded-[var(--radius-button)] px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[var(--color-primary-hover)]"
-          style={{ background: 'var(--color-primary)' }}
-          onClick={() => setShowWizard(true)}
-          data-testid="projects-create-button"
+        <header
+          className="page-container flex items-center justify-between"
+          style={{ paddingTop: '20px', paddingBottom: '20px' }}
         >
-          <Plus size={16} /> Create Project
-        </button>
-      </header>
+          <div className="flex items-baseline gap-[10px]">
+            <h1
+              className="font-bold"
+              style={{
+                fontSize: '24px',
+                color: 'var(--color-text)',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              Projects
+            </h1>
+            {projects.length > 0 && (
+              <span
+                className="font-medium"
+                style={{
+                  fontSize: '14px',
+                  color: 'var(--color-muted)',
+                }}
+                data-testid="projects-header-count"
+              >
+                ({projects.length} total)
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius-button)] px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[var(--color-primary-hover)]"
+            style={{ background: 'var(--color-primary)' }}
+            onClick={() => setShowWizard(true)}
+            data-testid="projects-create-button"
+          >
+            <Plus size={16} /> Create Project
+          </button>
+        </header>
+      </div>
 
-      {/* Body — scrollable, content centered to .page-container (1280). */}
+      {/* Body — scrollable, content centered to .page-container (1280).
+          Same 24 px L/R padding via `.page-container` → header title and
+          body cards share a pixel-perfect left edge (R1). */}
       <div className="flex-1 overflow-y-auto">
-        <div className="page-container" style={{ padding: '24px' }}>
+        <div
+          className="page-container"
+          style={{ paddingTop: '24px', paddingBottom: '24px' }}
+        >
           {isLoading ? (
             <div className="flex flex-col" style={{ gap: '12px' }}>
               {[1, 2, 3, 4].map((i) => (

@@ -48,7 +48,13 @@ describe("BubbleTranscript — bubble layout fixtures", () => {
     ]);
     render(<BubbleTranscript content={content} />);
     const bubble = screen.getByTestId("bubble-assistant");
-    expect(bubble.textContent).toContain("assistant");
+    // R4 (iterate 3.7e-a): role label renders as "claude" (displayed as
+    // "CLAUDE" via CSS uppercase) instead of "assistant". The testid on
+    // the bubble wrapper is still `bubble-assistant` — renaming it would
+    // break ~5 other tests that assert on the wrapper. Only the visible
+    // role text flipped.
+    expect(bubble.textContent).toContain("claude");
+    expect(bubble.textContent).not.toContain("assistant");
     expect(bubble.querySelector("strong")?.textContent).toBe("world");
   });
 

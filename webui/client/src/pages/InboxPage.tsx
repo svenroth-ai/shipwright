@@ -126,38 +126,45 @@ export default function InboxPage() {
       style={{ background: "var(--color-bg)" }}
       data-testid="inbox-page"
     >
-      {/* Header — 24px / 700 title + inline "(N open)" */}
-      <header
-        className="flex items-center justify-between"
+      {/* Header — 24px / 700 title + inline "(N open)".
+          R1/R2 (iterate 3.7e-a Foundation, 2026-04-22): header content wrapped
+          inside `.page-container` so the title left-edge aligns with the first
+          group header and card below (same 24 px L/R padding, 1280 max-width).
+          The full-bleed surface strip stays outside the container. */}
+      <div
         style={{
           background: "var(--color-surface)",
           borderBottom: "1px solid var(--color-border)",
-          padding: "20px 32px",
         }}
       >
-        <div className="flex items-baseline gap-[10px]">
-          <h1
-            className="font-bold"
-            style={{
-              fontSize: "24px",
-              color: "var(--color-text)",
-              letterSpacing: "-0.01em",
-            }}
-          >
-            Inbox
-          </h1>
-          <span
-            className="font-medium"
-            style={{
-              fontSize: "14px",
-              color: "var(--color-muted)",
-            }}
-            data-testid="inbox-header-count"
-          >
-            ({openCount} open)
-          </span>
-        </div>
-      </header>
+        <header
+          className="page-container flex items-center justify-between"
+          style={{ paddingTop: "20px", paddingBottom: "20px" }}
+        >
+          <div className="flex items-baseline gap-[10px]">
+            <h1
+              className="font-bold"
+              style={{
+                fontSize: "24px",
+                color: "var(--color-text)",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              Inbox
+            </h1>
+            <span
+              className="font-medium"
+              style={{
+                fontSize: "14px",
+                color: "var(--color-muted)",
+              }}
+              data-testid="inbox-header-count"
+            >
+              ({openCount} open)
+            </span>
+          </div>
+        </header>
+      </div>
 
       {/* Body — wrapped in .page-container so Inbox aligns with Projects */}
       <div className="flex-1 overflow-y-auto" style={{ paddingBlock: "24px 40px" }}>

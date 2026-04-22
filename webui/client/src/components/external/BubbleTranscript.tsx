@@ -39,9 +39,9 @@
  *     vertically in separate `msg-turn` rows.
  */
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Terminal as TerminalIcon } from "lucide-react";
 
 import {
   askUserQuestionSummary,
@@ -53,10 +53,10 @@ import {
   type ParsedEvent,
 } from "../../external/session-parser";
 import { useAutoScroll } from "../../hooks/useAutoScroll";
+import { useLaunchTask } from "../../hooks/useLaunchTask";
 import { MarkdownText } from "./MarkdownText";
 import { ToolOutputBlock } from "./ToolOutputBlock";
-import { TerminalLaunchButton } from "./TerminalLaunchButton";
-import type { ExternalTask } from "../../lib/externalApi";
+import type { CopyCommandForms, ExternalTask } from "../../lib/externalApi";
 
 const DEFAULT_TAIL = 200;
 const TAIL_PAGE = 200;
@@ -555,9 +555,14 @@ function renderBubble(event: ParsedEvent, resolved: Set<string>, task?: External
             // gives readable contrast without inventing a new token.
             background: "var(--color-border, #e0dbd4)",
             color: "var(--color-text, #1a1a1a)",
-            border: "1px solid var(--color-accent, #857568)",
+            // R5 (iterate 3.7e-a): no border. Subtle shadow matching the
+            // assistant bubble below (see `boxShadow: 0 1px 3px rgba(0,0,0,0.04)`
+            // on the assistant branch). Gives both bubbles consistent
+            // visual weight without the heavy accent border from 3.7d-a.
+            border: "none",
             borderRadius: "14px",
             borderTopRightRadius: "4px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
           }}
         >
           <BubbleHeader role="user" timestamp={event.timestamp} />
@@ -588,7 +593,13 @@ function renderBubble(event: ParsedEvent, resolved: Set<string>, task?: External
               boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
             }}
           >
-            <BubbleHeader role="assistant" timestamp={event.timestamp} />
+            {/* R4 (iterate 3.7e-a): role label reads "CLAUDE" instead of
+                "ASSISTANT". The uppercase CSS styling is unchanged. The
+                `data-testid="bubble-assistant"` on the outer wrapper is
+                load-bearing — renaming to `bubble-claude` would break
+                ~5 existing tests. The internal `role=` prop is the only
+                user-visible string that flips. */}
+            <BubbleHeader role="claude" timestamp={event.timestamp} />
             {text && <MarkdownText text={text} />}
           </div>
         </div>
@@ -823,12 +834,14 @@ function ToolUseBubble({
             className="mt-2.5 flex justify-end"
             data-testid="askuser-resume-row"
           >
-            <TerminalLaunchButton
-              task={task}
-              variant="compact"
-              resume={true}
-              showLabel={true}
-            />
+            {/* R6 (iterate 3.7e-a): label reads "Answer in Terminal" (was
+                "Resume" in 3.7d-b2). Brown solid with Terminal icon LEFT
+                of the label, consistent with R3. Click still copies the
+                resume command to the clipboard — no behavior change, only
+                the label + rendering switches from the compact variant
+                to an inline button. The testid stays `askuser-resume-row`
+                on the wrapper for back-compat. */}
+            <AnswerInTerminalButton task={task} />
           </div>
         )}
       </div>
@@ -987,4 +1000,120 @@ function formatTimestamp(iso: string | undefined): { short: string; iso: string 
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
   return { short: `${hh}:${mm}`, iso };
+}
+
+/**
+ * R6 (iterate 3.7e-a) — compact brown-solid button rendered inside the
+ * ask-bubble. Label: "Answer in Terminal". Icon: Lucide Terminal, LEFT of
+ * label. Click copies the resume command to the clipboard (same path the
+ * old compact-variant button used). Does NOT navigate — the user
+ * interprets the button as "paste this into your already-open terminal".
+ *
+ * Retained testid: `askuser-resume-row` lives on the parent wrapper; the
+ * button itself gets `askuser-answer-in-terminal` as a distinct testid so
+ * b2 Playwright specs can scope the label assertion.
+ */
+function AnswerInTerminalButton({ task }: { task: ExternalTask }) {
+  const launchMut = useLaunchTask();
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const platform: "windows" | "posix" = useMemo(() => {
+    if (typeof navigator === "undefined") return "posix";
+    return /windows/i.test(navigator.userAgent) ? "windows" : "posix";
+  }, []);
+
+  const handleClick = useCallback(
+    async (ev: MouseEvent<HTMLButtonElement>) => {
+      // Don't let the click bubble to any ancestor click-handler (ask-bubble
+      // parent may add one in a later iterate).
+      ev.stopPropagation();
+      setError(null);
+      try {
+        const result = await launchMut.mutateAsync({
+          taskId: task.taskId,
+          resume: true,
+        });
+        const command = pickBubbleCommand(result.commands, platform);
+        await writeBubbleClipboard(command);
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1500);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      }
+    },
+    [launchMut, task.taskId, platform],
+  );
+
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={(ev) => void handleClick(ev)}
+        disabled={launchMut.isPending}
+        className={
+          "inline-flex items-center justify-center gap-1.5 " +
+          "font-semibold text-white transition-colors " +
+          "disabled:cursor-not-allowed disabled:opacity-60 " +
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+        }
+        style={{
+          borderRadius: "var(--radius-button, 8px)",
+          background: "var(--color-primary, #6b5e56)",
+          padding: "5px 12px",
+          fontSize: "12px",
+          fontWeight: 600,
+        }}
+        onMouseEnter={(ev) => {
+          ev.currentTarget.style.background =
+            "var(--color-primary-hover, #5a4f48)";
+        }}
+        onMouseLeave={(ev) => {
+          ev.currentTarget.style.background = "var(--color-primary, #6b5e56)";
+        }}
+        title={copied ? "Copied!" : "Copy resume command"}
+        aria-label="Answer in Terminal — copy resume command"
+        data-testid="askuser-answer-in-terminal"
+      >
+        <TerminalIcon size={13} />
+        <span className="leading-none">
+          {copied ? "Copied" : "Answer in Terminal"}
+        </span>
+      </button>
+      {error && (
+        <span
+          role="alert"
+          className="text-[11px]"
+          style={{ color: "var(--color-error, #DC2626)" }}
+        >
+          {error}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function pickBubbleCommand(
+  commands: CopyCommandForms,
+  platform: "windows" | "posix",
+): string {
+  return platform === "windows" ? commands.powershell : commands.posix;
+}
+
+async function writeBubbleClipboard(text: string): Promise<void> {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand("copy");
+  } finally {
+    document.body.removeChild(ta);
+  }
 }

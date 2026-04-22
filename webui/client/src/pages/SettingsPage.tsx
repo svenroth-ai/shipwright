@@ -27,37 +27,43 @@ export default function SettingsPage() {
       style={{ background: "var(--color-bg)" }}
       data-testid="settings-page"
     >
-      {/* Header — mirrors InboxPage header for consistency across pages. */}
-      <header
-        className="flex items-center justify-between"
+      {/* Header — mirrors InboxPage header for consistency across pages.
+          R1/R2 (iterate 3.7e-a Foundation, 2026-04-22): header content wrapped
+          inside `.page-container` so the title left-edge aligns with the
+          settings cards in the body (same 24 px L/R padding, 1280 max-width). */}
+      <div
         style={{
           background: "var(--color-surface)",
           borderBottom: "1px solid var(--color-border)",
-          padding: "20px 32px",
         }}
       >
-        <div className="flex flex-col gap-[2px]">
-          <h1
-            className="font-bold"
-            style={{
-              fontSize: "24px",
-              color: "var(--color-text)",
-              letterSpacing: "-0.01em",
-            }}
-          >
-            Settings
-          </h1>
-          <p
-            className="font-medium"
-            style={{
-              fontSize: "13px",
-              color: "var(--color-muted)",
-            }}
-          >
-            Configure preferences in your own Claude client.
-          </p>
-        </div>
-      </header>
+        <header
+          className="page-container flex items-center justify-between"
+          style={{ paddingTop: "20px", paddingBottom: "20px" }}
+        >
+          <div className="flex flex-col gap-[2px]">
+            <h1
+              className="font-bold"
+              style={{
+                fontSize: "24px",
+                color: "var(--color-text)",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              Settings
+            </h1>
+            <p
+              className="font-medium"
+              style={{
+                fontSize: "13px",
+                color: "var(--color-muted)",
+              }}
+            >
+              Configure preferences in your own Claude client.
+            </p>
+          </div>
+        </header>
+      </div>
 
       {/* Body — .page-container centers to 1280px and applies 24px
           horizontal padding. Top padding gives a little breathing room

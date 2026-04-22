@@ -13,12 +13,28 @@
  *              13px / 600 weight). Used on TaskCard for Launch + Resume
  *              CTAs and anywhere else we want a primary action inline.
  *
+ * Iterate 3.7e-a (Foundation, 2026-04-22) — R3 button variants:
+ *   - `solid` variant now accepts an optional `color` prop:
+ *       "brown" (default — var(--color-primary)) — Resume actions.
+ *       "green" (var(--color-success))           — Launch actions on draft
+ *                                                  / awaiting_external_start
+ *                                                  cards (Backlog column).
+ *   - `size="xs"` option: 12px text / 500 weight / 4px 10px padding / 14px
+ *     icon — the finer TaskCard button size per plan R3.
+ *   - Terminal icon stays LEFT of the label (already the case).
+ *   - Testids updated to encode color for b1 Playwright assertions:
+ *       terminal-launch-solid-launch-green (new)
+ *       terminal-launch-solid-resume-brown (new)
+ *       terminal-launch-solid-launch / -resume (back-compat testid kept
+ *         as the same element for existing tests).
+ *
  * Platform detection is browser-side: PowerShell on Windows, POSIX
  * elsewhere. Single button per platform — the cmd.exe variant from the
  * sub-iterate 1 CopyCommandCard is intentionally not surfaced here
  * (Early Access target audience runs PowerShell).
  */
 
+import type React from "react";
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Copy, Terminal as TerminalIcon } from "lucide-react";
@@ -27,6 +43,8 @@ import type { CopyCommandForms, ExternalTask } from "../../lib/externalApi";
 import { useLaunchTask } from "../../hooks/useLaunchTask";
 
 export type TerminalLaunchVariant = "primary" | "compact" | "inline" | "solid";
+export type TerminalLaunchColor = "brown" | "green";
+export type TerminalLaunchSize = "md" | "xs";
 
 interface Props {
   task: ExternalTask;
@@ -41,6 +59,19 @@ interface Props {
    * for `primary` (always labeled) and `inline` (link style).
    */
   showLabel?: boolean;
+  /**
+   * Solid-variant color (iterate 3.7e-a R3). "brown" (default) = Resume /
+   * generic primary; "green" = Launch (Backlog-only per plan). Ignored for
+   * non-solid variants.
+   */
+  color?: TerminalLaunchColor;
+  /**
+   * Solid-variant size (iterate 3.7e-a R3). "md" (default) keeps the existing
+   * 13px / 600 weight button. "xs" renders the finer TaskCard button — 12px
+   * text, 500 weight, 4px 10px padding, 14px icon. Ignored for non-solid
+   * variants.
+   */
+  size?: TerminalLaunchSize;
 }
 
 export function TerminalLaunchButton({
@@ -49,6 +80,8 @@ export function TerminalLaunchButton({
   platform,
   resume,
   showLabel = false,
+  color = "brown",
+  size = "md",
 }: Props) {
   const navigate = useNavigate();
   const launchMut = useLaunchTask();
@@ -113,11 +146,24 @@ export function TerminalLaunchButton({
   }
 
   if (variant === "solid") {
-    // Brown-solid primary action. Used on TaskCards (Launch + Resume pair
-    // always-visible, 13px / 600 weight per mockup). Self-describing: the
-    // label always includes the mode, and a transient "Copied" state swaps
-    // in for 1.5s after click.
+    // Solid primary action. Used on TaskCards (Launch + Resume pair
+    // always-visible). Self-describing: the label always includes the
+    // mode, and a transient "Copied" state swaps in for 1.5s after click.
+    //
+    // Iterate 3.7e-a R3:
+    //   color="brown"  → var(--color-primary) — Resume actions (default).
+    //   color="green"  → var(--color-success) — Launch actions in Backlog.
+    //   size="md"      → 13px / 600 weight / 3 × 5px padding (existing).
+    //   size="xs"      → 12px / 500 weight / 4 × 10px padding (finer
+    //                    TaskCard button per plan R3).
+    // The Terminal icon is always rendered LEFT of the label.
     const label = wantResume ? "Resume" : "Launch";
+    const isGreen = color === "green";
+    const isXs = size === "xs";
+    const bgVar = isGreen ? "var(--color-success)" : "var(--color-primary)";
+    const hoverBg = isGreen ? "#047857" : "var(--color-primary-hover)";
+    const ringVar = isGreen ? "var(--color-success)" : "var(--color-primary)";
+    const iconSize = isXs ? 14 : 13;
     return (
       <button
         type="button"
@@ -128,17 +174,32 @@ export function TerminalLaunchButton({
         disabled={launchMut.isPending}
         className={
           "inline-flex items-center justify-center gap-1.5 " +
-          "bg-[var(--color-primary)] px-3 py-[5px] text-[13px] font-semibold text-white " +
-          "transition-colors hover:bg-[var(--color-primary-hover)] " +
+          "font-semibold text-white transition-colors " +
           "disabled:cursor-not-allowed disabled:opacity-60 " +
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-surface)]"
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-surface)]"
         }
-        style={{ borderRadius: "var(--radius-button)" }}
+        style={{
+          borderRadius: "var(--radius-button)",
+          background: bgVar,
+          padding: isXs ? "4px 10px" : "5px 12px",
+          fontSize: isXs ? "12px" : "13px",
+          fontWeight: isXs ? 500 : 600,
+          // Custom CSS var used by Tailwind's focus-visible:ring classes.
+          ["--tw-ring-color" as string]: ringVar,
+        } as React.CSSProperties}
+        onMouseEnter={(ev) => {
+          ev.currentTarget.style.background = hoverBg;
+        }}
+        onMouseLeave={(ev) => {
+          ev.currentTarget.style.background = bgVar;
+        }}
         title={copied ? "Copied!" : `Copy ${label} command`}
         aria-label={`${label} command`}
         data-testid={`terminal-launch-solid-${wantResume ? "resume" : "launch"}`}
+        data-color={color}
+        data-size={size}
       >
-        <TerminalIcon size={13} />
+        <TerminalIcon size={iconSize} />
         <span className="leading-none">{copied ? "Copied" : label}</span>
       </button>
     );

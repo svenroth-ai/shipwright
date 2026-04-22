@@ -171,46 +171,55 @@ export default function TaskBoardPage() {
       className="flex h-full flex-col bg-[var(--color-bg)]"
       data-testid="task-board-page"
     >
-      {/* Header — project selector (IS the title) + view toggle + right-side actions */}
-      <header
-        className="flex flex-wrap items-center gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3"
-        data-testid="task-board-header"
+      {/* Header — project selector (IS the title) + view toggle + right-side actions.
+          R1/R2 (iterate 3.7e-a Foundation, 2026-04-22): header row wrapped in the
+          .board-container (1600 max-width, 24 px L/R padding) so the title region
+          left-aligns with the first column below, and the right-side action cluster
+          right-aligns with the last column. Full-bleed surface + bottom-border stays
+          outside the container, providing the visual sidebar-to-edge separator. */}
+      <div
+        className="border-b border-[var(--color-border)] bg-[var(--color-surface)]"
       >
-        <ProjectFilterDropdown />
+        <header
+          className="board-container flex flex-wrap items-center gap-3 py-3"
+          data-testid="task-board-header"
+        >
+          <ProjectFilterDropdown />
 
-        <div className="h-6 w-px bg-[var(--color-border)]" aria-hidden="true" />
+          <div className="h-6 w-px bg-[var(--color-border)]" aria-hidden="true" />
 
-        <ViewToggle value={view} onChange={setView} />
+          <ViewToggle value={view} onChange={setView} />
 
-        <div className="flex-1" />
+          <div className="flex-1" />
 
-        <PreviewButton
-          projectId={resolvedProjectId}
-          enabled={Boolean(actionsQuery.data?.preview.enabled)}
-          readyTimeoutSeconds={
-            actionsQuery.data?.preview.ready_timeout_seconds ?? null
-          }
-        />
-        <CreateMenuSplitButton
-          actions={actionsList}
-          onSelect={openModal}
-          isLoading={actionsQuery.isLoading}
-        />
-      </header>
+          <PreviewButton
+            projectId={resolvedProjectId}
+            enabled={Boolean(actionsQuery.data?.preview.enabled)}
+            readyTimeoutSeconds={
+              actionsQuery.data?.preview.ready_timeout_seconds ?? null
+            }
+          />
+          <CreateMenuSplitButton
+            actions={actionsList}
+            onSelect={openModal}
+            isLoading={actionsQuery.isLoading}
+          />
+        </header>
+      </div>
 
       {/* Body — board (kanban) or list.
-          The kanban body is wrapped in a 1600px max-width container so
-          ultra-wide monitors get symmetric whitespace on both sides while
-          staying full-bleed at ≤1600px. `.page-container` is intentionally
-          NOT reused (it caps at 1280px — too narrow for 3 × 320px
-          columns + 2 × 32px gutters = 1024px bare minimum + gutters). */}
+          R1 (iterate 3.7e-a Foundation): kanban body uses `.board-container`
+          too — same 1600 max-width + 24 px L/R padding as the header above,
+          so the header's first element and the first column share the same
+          pixel offset from the sidebar. List view keeps its own internal
+          layout (handled in TaskList). */}
       {isLoading ? (
         <div className="p-6 text-sm text-[var(--color-muted)]">Loading…</div>
       ) : view === "list" ? (
         <TaskList tasks={filteredTasks} />
       ) : (
         <div
-          className="mx-auto flex w-full max-w-[1600px] flex-1 items-start gap-8 overflow-x-auto overflow-y-hidden px-7 py-5"
+          className="board-container flex flex-1 items-start gap-8 overflow-x-auto overflow-y-hidden py-5"
           data-testid="task-board-columns"
           data-board-container="true"
         >
