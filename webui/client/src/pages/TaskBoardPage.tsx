@@ -321,7 +321,7 @@ export default function TaskBoardPage() {
         // it the page-container shrunk to the inner content width (was
         // 889px instead of the expected 1280) because TaskList's child
         // wrapper didn't force horizontal stretch.
-        <div className="page-container w-full py-8">
+        <div className="page-container w-full pt-10 pb-8">
           <TaskList tasks={filteredTasks} />
         </div>
       ) : (
@@ -336,7 +336,7 @@ export default function TaskBoardPage() {
           // keep them fixed (360 px) so cards stay legible. Fallback gap-6
           // (24 px) for viewports narrow enough that justify-between
           // collapses.
-          className="page-container flex w-full flex-1 items-start justify-between gap-6 overflow-x-auto overflow-y-hidden py-8"
+          className="page-container flex w-full flex-1 items-start justify-between gap-6 overflow-x-auto overflow-y-hidden pt-10 pb-8"
           data-testid="task-board-columns"
           data-page-container="true"
         >
