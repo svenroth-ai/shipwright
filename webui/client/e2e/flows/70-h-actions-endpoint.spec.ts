@@ -92,10 +92,20 @@ test.describe("Flow H — actions endpoint contract", () => {
     const phaseSelect = page.getByTestId("new-issue-phase-select");
     await expect(phaseSelect).toBeVisible();
 
-    // Count options and compare to server phases[].
-    const renderedValues = await phaseSelect.evaluate((el: HTMLSelectElement) =>
-      Array.from(el.options).map((o) => o.value),
-    );
+    // iterate 3.8a: phase picker is a Radix DropdownMenu, not a native
+    // <select>. Open the menu and count items by their per-phase testid
+    // (new-issue-phase-option-<id>) instead of Array.from(el.options).
+    await phaseSelect.click();
+    await expect(page.getByTestId("new-issue-phase-menu")).toBeVisible();
+
+    const renderedValues = await page
+      .locator('[data-testid^="new-issue-phase-option-"]')
+      .evaluateAll((els) =>
+        els.map((el) => {
+          const testid = el.getAttribute("data-testid") ?? "";
+          return testid.replace(/^new-issue-phase-option-/, "");
+        }),
+      );
     const expectedValues = body.phases.map((p) => p.id);
     expect(renderedValues.sort()).toEqual(expectedValues.sort());
   });
