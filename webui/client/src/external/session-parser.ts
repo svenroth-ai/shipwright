@@ -457,6 +457,30 @@ function detectSlashCommand(content: unknown): string | null {
 }
 
 /**
+ * Unwrap user-message content into a single text string for fingerprint
+ * detection. Claude JSONL emits user content in two shapes:
+ *   (a) Plain string — e.g. slash-command invocations, typed messages.
+ *   (b) Array of blocks `[{type: "text", text: "..."}, ...]` — e.g.
+ *       skill-loader injections from Claude Code's CLI.
+ *
+ * Returns the string directly for (a), or the concatenated text from
+ * all text blocks for (b). Returns null when no readable text can be
+ * recovered (tool_result-only content, non-string / non-array shapes).
+ */
+function normalizeUserTextContent(content: unknown): string | null {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return null;
+  const parts: string[] = [];
+  for (const block of content) {
+    if (!block || typeof block !== "object") continue;
+    const b = block as { type?: unknown; text?: unknown };
+    if (b.type === "text" && typeof b.text === "string") parts.push(b.text);
+  }
+  if (parts.length === 0) return null;
+  return parts.join("\n");
+}
+
+/**
  * 2026-04-23 — iterate-20260423-chat-followups AC-3 (parser fingerprint)
  * extended by iterate-20260423-chat-livetest-2 AC-A / ADR-056 (capture
  * the body so `<SkillCard>` can markdown-render it on expand).
@@ -484,9 +508,15 @@ function detectSlashCommand(content: unknown): string | null {
 export function extractSkillBody(
   content: unknown,
 ): { skillName: string; body: string } | null {
-  if (typeof content !== "string") return null;
-  if (content.length < 100) return null;
-  const normalized = content.replace(/\r\n/g, "\n");
+  // 2026-04-23 — post-ship bug fix. Real Claude JSONL emits user-role
+  // content as an array `[{type: "text", text: "..."}]` for skill-loader
+  // injections (while slash-commands stay string). Earlier tests used
+  // string-content and missed this asymmetry. Unwrap single text block
+  // before running the fingerprint.
+  const text = normalizeUserTextContent(content);
+  if (text == null) return null;
+  if (text.length < 100) return null;
+  const normalized = text.replace(/\r\n/g, "\n");
   if (!normalized.startsWith("Base directory for this skill:")) return null;
 
   // Scan forward past the preamble (first blank line) for the first

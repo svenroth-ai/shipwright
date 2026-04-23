@@ -546,11 +546,35 @@ describe("extractSkillBody — helper (ADR-056 AC-A)", () => {
     expect(extractSkillBody(mid)).toBeNull();
   });
 
-  it("returns null for non-string content", () => {
+  it("returns null for non-string / non-array / empty content", () => {
     expect(extractSkillBody(null)).toBeNull();
     expect(extractSkillBody(42)).toBeNull();
     expect(extractSkillBody({ foo: "bar" })).toBeNull();
     expect(extractSkillBody([])).toBeNull();
+  });
+
+  it("unwraps array-of-blocks content (realistic Claude JSONL shape)", () => {
+    // Real skill-loader events come as `[{type:"text", text:"..."}]` —
+    // not as a plain string. Post-ship fix discovered during live-test
+    // of ADR-056: extractSkillBody must handle both shapes, or SkillCard
+    // never fires in production.
+    const blockText = skillSample;
+    const r = extractSkillBody([{ type: "text", text: blockText }]);
+    expect(r).not.toBeNull();
+    expect(r!.skillName).toBe("Shipwright Compliance Skill");
+    expect(r!.body.startsWith("# Shipwright Compliance Skill")).toBe(true);
+  });
+
+  it("concatenates multiple text blocks when content is a multi-block array", () => {
+    // Defensive: if the CLI ever emits the skill body across multiple
+    // text blocks, concat them before matching. Single-block real shape
+    // is the common case; multi-block is a forward-compat guard.
+    const r = extractSkillBody([
+      { type: "text", text: "Base directory for this skill: /p\n\n" },
+      { type: "text", text: "# Skill\n\nPadding text long enough to exceed the 100-char length guard minimum for the skill fingerprint." },
+    ]);
+    expect(r).not.toBeNull();
+    expect(r!.skillName).toBe("Skill");
   });
 
   it("skips ## sub-headings before the H1 and finds the real title (H1-only guard)", () => {
