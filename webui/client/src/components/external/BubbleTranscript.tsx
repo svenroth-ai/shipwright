@@ -46,6 +46,9 @@ import { MessageSquare, Terminal as TerminalIcon } from "lucide-react";
 import {
   askUserQuestionSummary,
   assistantText,
+  fileSnapshotBasenames,
+  hasVisibleBubbleContent,
+  isThinkingOnly,
   parseSessionJsonl,
   toolResults,
   toolUses,
@@ -54,7 +57,10 @@ import {
 } from "../../external/session-parser";
 import { useAutoScroll } from "../../hooks/useAutoScroll";
 import { useLaunchTask } from "../../hooks/useLaunchTask";
+import { AttachmentCard } from "./AttachmentCard";
 import { MarkdownText } from "./MarkdownText";
+import { SlashCommandChip } from "./SlashCommandChip";
+import { ToolCard } from "./ToolCard";
 import { ToolOutputBlock } from "./ToolOutputBlock";
 import type { CopyCommandForms, ExternalTask } from "../../lib/externalApi";
 
@@ -214,6 +220,13 @@ export function BubbleTranscript({ content, initialTail = DEFAULT_TAIL, task }: 
           overflowAnchor: "auto",
           scrollPaddingBottom: "40px",
           background: "var(--color-bg, #f5f0eb)",
+          // 2026-04-23 — AC-6: root font-size 13px (matches mockup
+          // `body { font-size: 13px }`). Nested elements like code/pre,
+          // chips, tool-card titles/body set their own sizes explicitly
+          // so the cascade doesn't leak unintended sizing. Line-height
+          // 1.6 matches mockup .msg-content.
+          fontSize: "13px",
+          lineHeight: 1.6,
         }}
         data-testid="transcript-scroll"
       >
@@ -579,30 +592,58 @@ function renderBubble(event: ParsedEvent, resolved: Set<string>, task?: External
   if (event.kind === "assistant") {
     const text = assistantText(event);
     const tools = toolUses(event);
+    // 2026-04-23 — AC-5: suppress empty assistant bubbles for COMPLETED
+    // turns (caller passes the completed event through this path). An
+    // empty bubble = no visible text AND no tool_use blocks. Tool cards
+    // render as siblings outside the bubble, so a tool-only assistant
+    // turn still shows its tools without the empty speech bubble above.
+    // During active streaming, assistant events still arrive with empty
+    // content initially; that path is handled by useStreamingChat which
+    // injects a "typing" indicator upstream — we don't need to render
+    // an empty bubble here.
+    const bubbleHasContent = hasVisibleBubbleContent(event);
+    const thinkingOnly = isThinkingOnly(event);
     return (
       <div className="flex flex-col gap-1.5" data-testid="bubble-assistant">
-        <div className="flex justify-start">
-          <div
-            className="max-w-[90%] px-3 py-2 text-sm"
-            style={{
-              background: "var(--color-surface, #ffffff)",
-              color: "var(--color-text, #1a1a1a)",
-              border: "1px solid var(--color-border, #e0dbd4)",
-              borderRadius: "14px",
-              borderTopLeftRadius: "4px",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-            }}
-          >
-            {/* R4 (iterate 3.7e-a): role label reads "CLAUDE" instead of
-                "ASSISTANT". The uppercase CSS styling is unchanged. The
-                `data-testid="bubble-assistant"` on the outer wrapper is
-                load-bearing — renaming to `bubble-claude` would break
-                ~5 existing tests. The internal `role=` prop is the only
-                user-visible string that flips. */}
-            <BubbleHeader role="claude" timestamp={event.timestamp} />
-            {text && <MarkdownText text={text} />}
+        {bubbleHasContent && (
+          <div className="flex justify-start">
+            <div
+              className="max-w-[90%] px-3 py-2 text-sm"
+              style={{
+                background: "var(--color-surface, #ffffff)",
+                color: "var(--color-text, #1a1a1a)",
+                border: "1px solid var(--color-border, #e0dbd4)",
+                borderRadius: "14px",
+                borderTopLeftRadius: "4px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+              }}
+            >
+              {/* R4 (iterate 3.7e-a): role label reads "CLAUDE" instead of
+                  "ASSISTANT". The uppercase CSS styling is unchanged. The
+                  `data-testid="bubble-assistant"` on the outer wrapper is
+                  load-bearing — renaming to `bubble-claude` would break
+                  ~5 existing tests. The internal `role=` prop is the only
+                  user-visible string that flips. */}
+              <BubbleHeader role="claude" timestamp={event.timestamp} />
+              {text && <MarkdownText text={text} />}
+            </div>
           </div>
-        </div>
+        )}
+        {!bubbleHasContent && thinkingOnly && (
+          <div className="flex justify-start" data-testid="thinking-card">
+            <div
+              className="max-w-[90%] px-3 py-2 text-[12px] italic"
+              style={{
+                color: "var(--color-muted, #6b7280)",
+                background: "rgba(107,114,128,0.05)",
+                border: "1px dashed var(--color-border, #e0dbd4)",
+                borderRadius: "var(--radius-button, 8px)",
+              }}
+            >
+              Thinking…
+            </div>
+          </div>
+        )}
         {tools.map((tu) => (
           <div className="flex justify-start" key={tu.id}>
             <ToolUseBubble
@@ -614,6 +655,24 @@ function renderBubble(event: ParsedEvent, resolved: Set<string>, task?: External
             />
           </div>
         ))}
+      </div>
+    );
+  }
+
+  // 2026-04-23 — AC-3: slash-command invocation → centered grey chip.
+  if (event.kind === "slash-command") {
+    return <SlashCommandChip commandName={event.commandName} />;
+  }
+
+  // 2026-04-23 — AC-4: file-history-snapshot renders as AttachmentCard
+  // with basename + `+N more` suffix when multiple files are tracked.
+  if (event.kind === "file-history-snapshot") {
+    const names = fileSnapshotBasenames(event);
+    if (names.length === 0) return null; // silent suppression (no speculative "no files" chip)
+    const [first, ...rest] = names;
+    return (
+      <div className="flex justify-start" data-testid="bubble-file-snapshot">
+        <AttachmentCard basename={first} extraCount={rest.length} />
       </div>
     );
   }
@@ -847,30 +906,17 @@ function ToolUseBubble({
       </div>
     );
   }
+  // 2026-04-23 — AC-1/AC-2: render non-AskUser tool_use blocks as a
+  // ToolCard (collapsed by default, click to expand input). The outer
+  // flex wrapper keeps data-testid="bubble-tool-use" + data-tool-use-id
+  // for back-compat with existing tests.
   return (
     <div
-      className="max-w-[90%] p-2 text-xs"
-      style={{
-        background: "var(--color-surface, #ffffff)",
-        border: "1px solid var(--color-border, #e0dbd4)",
-        borderRadius: "var(--radius-button, 8px)",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-      }}
+      className="max-w-[90%] w-full"
       data-testid="bubble-tool-use"
       data-tool-use-id={id}
     >
-      <span
-        className="font-semibold"
-        style={{ color: "var(--color-text, #1a1a1a)" }}
-      >
-        tool_use
-      </span>{" "}
-      <span
-        className="font-mono"
-        style={{ color: "var(--color-primary, #6b5e56)" }}
-      >
-        {name}
-      </span>
+      <ToolCard id={id} name={name} input={input} />
     </div>
   );
 }
@@ -907,90 +953,47 @@ function BubbleHeader({
  * Standalone attachment card render — reusable between the single-event
  * bubble flow and the AttachmentStrip that packs consecutive attachments
  * inline (mockup FR-03.53).
+ *
+ * 2026-04-23 — AC-4: only render if we actually have a filename.
+ * `attachment` events in the wild sometimes carry Claude Code internal
+ * payloads like `deferred_tools_delta` / `skill_listing` with NO
+ * filename field — rendering those as an `attachment` card produced the
+ * mysterious "attachment" chips the user reported. When no filename is
+ * resolvable, return null (silent suppression) so the transcript isn't
+ * polluted with meaningless chips.
  */
 function renderAttachmentCard(event: ParsedEvent): ReactNode {
   if (event.kind !== "attachment") return null;
   const payload = event.attachment;
   const filename = readStringField(payload, "filename") ?? readStringField(payload, "name");
-  const thumbnailUrl =
-    readStringField(payload, "thumbnailUrl") ?? readStringField(payload, "thumbnail_url");
-  if (filename) {
-    return (
-      <div
-        className="flex items-center gap-2 text-xs"
-        style={{
-          maxWidth: "320px",
-          background: "var(--color-surface, #ffffff)",
-          border: "1px solid var(--color-border, #e0dbd4)",
-          borderRadius: "var(--radius-button, 8px)",
-          padding: "8px 12px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-        }}
-      >
-        {thumbnailUrl ? (
-          <img
-            src={thumbnailUrl}
-            alt=""
-            className="flex-shrink-0 object-cover"
-            style={{ width: "36px", height: "36px", borderRadius: "6px" }}
-          />
-        ) : (
-          <div
-            className="flex flex-shrink-0 items-center justify-center"
-            style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "6px",
-              background: "var(--color-muted-bg, #ede8e1)",
-              color: "var(--color-primary, #6b5e56)",
-              fontSize: "10px",
-              fontWeight: 700,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-            }}
-          >
-            {extensionHint(filename)}
-          </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <div
-            className="truncate font-medium"
-            style={{ color: "var(--color-text, #1a1a1a)", fontSize: "12.5px" }}
-          >
-            {filename}
-          </div>
-          <div style={{ color: "var(--color-muted, #6b7280)", fontSize: "11px" }}>
-            attachment
-          </div>
-        </div>
-      </div>
-    );
+  if (!filename) {
+    // 2026-04-23 — AC-4: attachment events without filename are silently
+    // suppressed (typically Claude Code internals like deferred_tools_delta
+    // or skill_listing that the CLI files under `type: "attachment"`).
+    // Dev-mode warn so schema drift surfaces in the next iterate rather
+    // than in a future user bug report. Guarded by import.meta.env so
+    // production builds stay quiet.
+    if (import.meta.env?.DEV && payload && typeof payload === "object") {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[BubbleTranscript] Dropping attachment event with no filename/name field. Keys:",
+        Object.keys(payload as Record<string, unknown>),
+      );
+    }
+    return null;
   }
-  return (
-    <div
-      className="px-2 py-1 text-xs"
-      style={{
-        background: "var(--color-surface, #ffffff)",
-        border: "1px solid var(--color-border, #e0dbd4)",
-        borderRadius: "var(--radius-button, 8px)",
-        color: "var(--color-muted, #6b7280)",
-      }}
-    >
-      attachment
-    </div>
-  );
+  return <AttachmentCard basename={basenameOf(filename)} />;
+}
+
+function basenameOf(p: string): string {
+  const idx = Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\"));
+  return idx >= 0 ? p.slice(idx + 1) : p;
 }
 
 function readStringField(value: unknown, key: string): string | undefined {
   if (!value || typeof value !== "object") return undefined;
   const v = (value as Record<string, unknown>)[key];
   return typeof v === "string" && v.length > 0 ? v : undefined;
-}
-
-function extensionHint(filename: string): string {
-  const dot = filename.lastIndexOf(".");
-  if (dot === -1 || dot === filename.length - 1) return "FILE";
-  return filename.slice(dot + 1, dot + 4).toUpperCase();
 }
 
 function formatTimestamp(iso: string | undefined): { short: string; iso: string } | null {
