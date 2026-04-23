@@ -129,6 +129,7 @@ const ALLOWED_PLACEHOLDERS = new Set([
   "task.phase_label",
   "task.autonomy_flag?",
   "plugin.dirs",
+  "cd.prefix",
 ]);
 
 function pickEscaper(shellForm: ShellForm): (v: string) => string {
@@ -193,6 +194,50 @@ function substituteOne(
       return dirs
         .map((d) => `--plugin-dir ${q(transformPath(shellForm, d))}`)
         .join(" ");
+    }
+    case "cd.prefix": {
+      // 2026-04-23 — iterate-20260423-launch-cwd-prefix.
+      //
+      // `--add-dir <path>` only grants Claude tool-access to that
+      // directory; it does NOT change the shell's working directory.
+      // When the user pastes the copy command in a terminal parked in
+      // $HOME, the skill runs with `pwd === $HOME`, fails to find
+      // shipwright_run_config.json, and exits immediately. The cd.prefix
+      // placeholder expands to a shell-specific `cd` command + separator
+      // so the slash command runs with the project as cwd regardless of
+      // where the terminal happened to be.
+      //
+      // Form per shell:
+      //   PowerShell — `Set-Location <escaped> -ErrorAction Stop; `
+      //                (PS5 lacks `&&`; `-ErrorAction Stop` upgrades the
+      //                otherwise non-terminating `Set-Location` error to a
+      //                terminating one so the user sees the actual cd
+      //                failure rather than a confusing missing-config
+      //                error from the skill)
+      //   cmd.exe    — `cd /d <escaped> && ` (`/d` flag is required to
+      //                also change drive letter on Windows)
+      //   POSIX      — `cd <escaped> && ` (standard short-circuit)
+      //
+      // Empty project.path → empty string. The pasted command degrades
+      // to current behavior (runs in whatever cwd the terminal had);
+      // surfacing the empty-path case as a UI/server error is out of
+      // scope for this iterate.
+      //
+      // Security: the same `qPs/qCmd/qPosix` escapers used for
+      // `{project.path}` are reused here. The `qCmd` trailing-backslash
+      // assumption (launcher.ts:185-189) still applies — directory-picker
+      // paths cannot end on `\` in practice, so the assumption holds.
+      // `cd.prefix` is the first place a server-trusted path gets
+      // injected at the START of the command line, which widens the blast
+      // radius if that assumption ever breaks.
+      const p = ctx.project.path;
+      if (!p) return "";
+      const escaped = q(transformPath(shellForm, p));
+      if (shellForm === "powershell") {
+        return `Set-Location ${escaped} -ErrorAction Stop; `;
+      }
+      if (shellForm === "cmd") return `cd /d ${escaped} && `;
+      return `cd ${escaped} && `;
     }
     default:
       // This branch is unreachable when callers pre-validate via

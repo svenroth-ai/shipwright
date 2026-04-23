@@ -350,3 +350,121 @@ describe("actions-substitute — single-line output (2026-04-23)", () => {
     }
   });
 });
+
+// ── 2026-04-23 — iterate-20260423-launch-cwd-prefix ──
+//
+// `--add-dir` only grants Claude tool-access to the project root; it does
+// NOT change the shell's working directory. When the user pastes the copy
+// command in a terminal that happens to be parked in $HOME, the skill
+// runs with `pwd === $HOME`, fails to find `shipwright_run_config.json`,
+// and exits immediately. The fix: a new `{cd.prefix}` placeholder that
+// expands to a shell-specific `cd` command + separator, so the slash
+// command runs with the project as cwd regardless of where the terminal
+// happened to be.
+describe("actions-substitute — {cd.prefix} placeholder (2026-04-23)", () => {
+  it("expands to PowerShell Set-Location with single-quote escaping + -ErrorAction Stop", () => {
+    // -ErrorAction Stop upgrades Set-Location's non-terminating error to
+    // terminating so a wrong path surfaces as a clean cd failure rather
+    // than a confusing missing-config error from the skill.
+    const ctx = baseCtx();
+    ctx.project.path = "/home/sven/my app";
+    const out = substitutePlaceholders("{cd.prefix}claude --version", ctx, "powershell");
+    expect(out).toBe(
+      `Set-Location '/home/sven/my app' -ErrorAction Stop; claude --version`,
+    );
+  });
+
+  it("expands to cmd.exe `cd /d` with double-quote escaping", () => {
+    const ctx = baseCtx();
+    ctx.project.path = "/home/sven/my app";
+    const out = substitutePlaceholders("{cd.prefix}claude --version", ctx, "cmd");
+    expect(out).toBe(`cd /d "/home/sven/my app" && claude --version`);
+  });
+
+  it("expands to POSIX `cd && ` with single-quote escaping", () => {
+    const ctx = baseCtx();
+    ctx.project.path = "/home/sven/my app";
+    const out = substitutePlaceholders("{cd.prefix}claude --version", ctx, "posix");
+    expect(out).toBe(`cd '/home/sven/my app' && claude --version`);
+  });
+
+  it("converts Windows backslashes to forward slashes for POSIX form (matches {project.path})", () => {
+    const ctx = baseCtx();
+    ctx.project.path = "C:\\dev\\app";
+    const out = substitutePlaceholders("{cd.prefix}claude", ctx, "posix");
+    expect(out).toBe(`cd 'C:/dev/app' && claude`);
+  });
+
+  it("preserves Windows backslashes for PowerShell + cmd forms", () => {
+    const ctx = baseCtx();
+    ctx.project.path = "C:\\dev\\app";
+    expect(substitutePlaceholders("{cd.prefix}claude", ctx, "powershell")).toBe(
+      `Set-Location 'C:\\dev\\app' -ErrorAction Stop; claude`,
+    );
+    expect(substitutePlaceholders("{cd.prefix}claude", ctx, "cmd")).toBe(
+      `cd /d "C:\\dev\\app" && claude`,
+    );
+  });
+
+  it("escapes embedded single quotes (PowerShell + POSIX) and double quotes (cmd) in path", () => {
+    const ctx = baseCtx();
+    ctx.project.path = "/home/sven/o'malley/app";
+    expect(substitutePlaceholders("{cd.prefix}claude", ctx, "powershell")).toBe(
+      `Set-Location '/home/sven/o''malley/app' -ErrorAction Stop; claude`,
+    );
+    expect(substitutePlaceholders("{cd.prefix}claude", ctx, "posix")).toBe(
+      `cd '/home/sven/o'\\''malley/app' && claude`,
+    );
+  });
+
+  it("expands to empty string when project.path is empty (graceful fallback)", () => {
+    const ctx = baseCtx();
+    ctx.project.path = "";
+    for (const shell of SHELL_FORMS) {
+      const out = substitutePlaceholders("{cd.prefix}claude --version", ctx, shell);
+      expect(out).toBe("claude --version");
+    }
+  });
+
+  it("survives line-continuation flattening (cd prefix is one logical token)", () => {
+    // The post-processing flattener collapses ` \\\n    ` to a single
+    // space. The cd prefix must not be split or dangling-backslashed by
+    // that pass.
+    const ctx = baseCtx();
+    ctx.project.path = "/home/sven/app";
+    const template =
+      "{cd.prefix}claude /shipwright-{task.phase} \\\n    --add-dir {project.path}";
+    const out = substitutePlaceholders(template, ctx, "posix");
+    expect(out).toBe(
+      `cd '/home/sven/app' && claude /shipwright-build --add-dir '/home/sven/app'`,
+    );
+  });
+
+  it("appears at the start of the output (precedes the slash command in real templates)", () => {
+    // Live shape from default-actions.json after the fix is applied.
+    const ctx = baseCtx();
+    const template = `{cd.prefix}claude /shipwright-{task.phase} --add-dir {project.path}`;
+    for (const shell of SHELL_FORMS) {
+      const out = substitutePlaceholders(template, ctx, shell);
+      // First non-whitespace token must be the cd-style command, not `claude`.
+      expect(out.startsWith("claude")).toBe(false);
+      expect(out).toContain("claude /shipwright-build");
+    }
+  });
+
+  it("is rejected when used outside the allowlist as `cd.foo`", () => {
+    const ctx = baseCtx();
+    expect(() =>
+      substitutePlaceholders("{cd.foo}claude", ctx, "posix"),
+    ).toThrow(InvalidPlaceholderError);
+  });
+
+  it("validateTemplate accepts a template containing {cd.prefix}", () => {
+    const result = validateTemplate(
+      "{cd.prefix}claude /shipwright-{task.phase} --add-dir {project.path}",
+      "new-task",
+      ["build"],
+    );
+    expect(result).toBeNull();
+  });
+});

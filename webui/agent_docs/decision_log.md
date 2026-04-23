@@ -754,3 +754,15 @@
 - **Rationale:** --add-dir is documented in 'claude --help' as 'Additional directories to allow tool access to', semantically equivalent to the --project-root intent. Matches what the legacy buildCopyCommands emitted, so behavior is restored to pre-ADR-046.
 - **Consequences:** Pasted commands now parse cleanly in Claude CLI; the skill receives the full arg list. A regression guard test in project-actions-loader.test.ts asserts the bundled default uses --add-dir and explicitly rejects --project-root, so a future template edit can't reintroduce the drift.
 - **Rejected:** Adding --project-root as an alias in Claude CLI itself — not our repo. Keeping --project-root but filtering server-side — would still differ from the visible preview/copy command. Teaching each skill to parse both — unnecessary indirection.
+
+---
+
+### ADR-049: ADR-049: {cd.prefix} placeholder for shell-aware cwd injection
+- **Date:** 2026-04-23
+- **Section:** Iterate — bug: launch-cwd-prefix
+- **Context:** Post-v0.2.0 launch chain (ADR-046/047/048) shipped --add-dir, but --add-dir only grants Claude tool-access, not cwd. When the user pastes the copied command in a terminal parked in HOME, the skill sees pwd=HOME and fails to find shipwright_run_config.json. Three workarounds rejected: env-var (touches every skill), --cwd CLI flag (does not exist on Claude CLI), shell-spawning (architectural rule: webui never spawns Claude).
+- **Decision:** New {cd.prefix} placeholder in actions-substitute. Templates opt in by prepending it. Per-shell expansion: PowerShell uses Set-Location <escaped> -ErrorAction Stop; (PS5 lacks &&), cmd.exe uses cd /d <escaped> && (the /d flag changes drive too), POSIX uses cd <escaped> && . Path is escaped via the same qPs/qCmd/qPosix escapers used for {project.path}.
+- **Commit:** PENDING
+- **Rationale:** Opt-in placeholder cleanly separates substitution mechanics from policy. Always-prepend would have broken {project.path}-only template fragments used in unit tests and would have produced unwanted behavior for any non-claude template. Shell-aware expansion via the existing escaper inherits the proven security boundary.
+- **Consequences:** Bundled templates updated (3 in default-actions.json). Regression guard ensures they cannot drift back. User-installed .webui/actions.json files keep the cwd bug until manually edited — acceptable since custom templates imply the user knows what they want. Empty project.path → empty cd.prefix output (graceful degrade). actions-substitute.ts grows from 317 to ~360 LOC; cohesion preferred over split.
+- **Rejected:** Always-prepend (breaks fragment substitution and non-claude templates). New env var like SHIPWRIGHT_PROJECT_ROOT (would require updating every skill in the marketplace). Pre-fight startup warning when a user template lacks {cd.prefix} (too noisy; user discovers it on first paste).

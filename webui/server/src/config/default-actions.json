@@ -9,7 +9,7 @@
       "label": "New task",
       "kind": "external_launch",
       "description": "Plain Claude invocation scoped to a Shipwright phase. Fire-and-forget — no pipeline state.",
-      "command_template": "claude /shipwright-{task.phase}{task.autonomy_flag?} \\\n    --add-dir {project.path} \\\n    --session-id {task.uuid} \\\n    --name \"{task.phase_label}: {task.title}\" \\\n    {plugin.dirs}{task.description?}",
+      "command_template": "{cd.prefix}claude /shipwright-{task.phase}{task.autonomy_flag?} \\\n    --add-dir {project.path} \\\n    --session-id {task.uuid} \\\n    --name \"{task.phase_label}: {task.title}\" \\\n    {plugin.dirs}{task.description?}",
       "modal_fields": ["title", "phase", "description"]
     },
     {
@@ -17,7 +17,7 @@
       "label": "New pipeline",
       "kind": "external_launch",
       "description": "Full Shipwright pipeline — project → design → plan → build → test → deploy → changelog.",
-      "command_template": "claude /shipwright-run \\\n    --add-dir {project.path} \\\n    --session-id {task.uuid} \\\n    --name \"Pipeline: {task.title}\" \\\n    {plugin.dirs}{task.autonomy_flag?}{task.description?}",
+      "command_template": "{cd.prefix}claude /shipwright-run \\\n    --add-dir {project.path} \\\n    --session-id {task.uuid} \\\n    --name \"Pipeline: {task.title}\" \\\n    {plugin.dirs}{task.autonomy_flag?}{task.description?}",
       "modal_fields": ["title", "autonomy", "description"]
     },
     {
@@ -25,7 +25,7 @@
       "label": "New iterate",
       "kind": "external_launch",
       "description": "Run the complexity-adaptive iterate skill against an existing project.",
-      "command_template": "claude /shipwright-iterate \\\n    --add-dir {project.path} \\\n    --session-id {task.uuid} \\\n    --name \"Iterate: {task.title}\" \\\n    {plugin.dirs}{task.autonomy_flag?}{task.description?}",
+      "command_template": "{cd.prefix}claude /shipwright-iterate \\\n    --add-dir {project.path} \\\n    --session-id {task.uuid} \\\n    --name \"Iterate: {task.title}\" \\\n    {plugin.dirs}{task.autonomy_flag?}{task.description?}",
       "modal_fields": ["title", "autonomy", "description"]
     }
   ],
