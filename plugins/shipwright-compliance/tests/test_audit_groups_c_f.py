@@ -74,6 +74,10 @@ def test_group_c_surfaces_check_failures(monkeypatch, tmp_path):
     assert c2.status == "fail"
     assert "orphan FR-05.02" in c2.detail
     assert c2.suggested_iterate_cmd  # non-empty, contains copy-pasteable hint
+    # Suggestion must reference the check_id and the audit report path so
+    # /shipwright-iterate has a pointer back to the findings.
+    assert "C2" in c2.suggested_iterate_cmd
+    assert "compliance/audit-report.md" in c2.suggested_iterate_cmd
 
 
 def test_group_c_isolates_check_crashes(monkeypatch, tmp_path):
