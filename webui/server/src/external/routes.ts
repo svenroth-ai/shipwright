@@ -200,7 +200,70 @@ export function createExternalRoutes(args: {
       if (validation) return c.json(validation, 400);
       projectId = candidate;
     }
-    const task = store.create({ title, cwd, pluginDirs, projectId });
+
+    // 2026-04-23 — iterate-20260423-chat-livetest-2 AC-B. Phase persisted
+    // on CREATION when the project's actions catalog validates the id.
+    // Server derives phaseLabel from the catalog entry — client-sent
+    // label is intentionally dropped (external review GPT #2 — avoids
+    // label drift when the UI caches stale actions.json).
+    //
+    // Reject (not silently drop) when phase is supplied without a
+    // resolvable project — the client has no way to discover which
+    // phases are valid without a catalog, so sending phase there is a
+    // bug (code-review blocker #2 / Gemini #2 — never lose user input
+    // silently). Callers who don't know the project must omit phase.
+    let phase: string | undefined;
+    let phaseLabel: string | undefined;
+    const rawPhase =
+      typeof body.phase === "string" && body.phase.trim()
+        ? body.phase.trim()
+        : undefined;
+    if (rawPhase) {
+      if (!projectId) {
+        return c.json(
+          {
+            error: "phase_requires_project",
+            detail:
+              "Phase cannot be validated without a projectId — " +
+              "unassigned tasks have no actions catalog.",
+          },
+          400,
+        );
+      }
+      const project = getProjectById?.(projectId);
+      if (!project) {
+        return c.json(
+          {
+            error: "phase_requires_project",
+            detail: `Phase cannot be validated — project '${projectId}' has no resolvable catalog.`,
+          },
+          400,
+        );
+      }
+      const loaded = loadActionsForProject(project.path || "");
+      const match = loaded.actions.phases.find((p) => p.id === rawPhase);
+      if (!match) {
+        return c.json(
+          {
+            error: "invalid_phase",
+            detail: `Phase '${rawPhase}' is not in this project's actions catalog.`,
+            allowed: loaded.actions.phases.map((p) => p.id),
+          },
+          400,
+        );
+      }
+      phase = match.id;
+      phaseLabel = match.label;
+    }
+
+    const task = store.create({
+      title,
+      cwd,
+      pluginDirs,
+      projectId,
+      phase,
+      phaseLabel,
+    });
     await store.persist();
     return c.json({ task });
   });

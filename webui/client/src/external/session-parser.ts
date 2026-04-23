@@ -59,18 +59,27 @@ export interface SlashCommandEvent extends BaseEvent {
 }
 
 /**
- * 2026-04-23 — iterate-20260423-chat-followups AC-3.
+ * 2026-04-23 — iterate-20260423-chat-followups AC-3 (ADR-055, refined by
+ * iterate-20260423-chat-livetest-2 AC-A / ADR-056).
+ *
  * Claude Code injects the full skill manual as a user-role event when a
  * skill is loaded. The content always starts with `Base directory for this
  * skill: <absolute path>` followed by a blank line and a `# <Skill Title>`
  * heading. Parser detects this fingerprint (length-guarded, CRLF-normalized,
  * heading scanned after the preamble) and emits this kind so the renderer
- * can collapse it to a compact chip instead of a full-page manual bubble.
+ * can collapse it to a compact card with the Markdown body folded behind
+ * a chevron (see `<SkillCard>`).
+ *
+ * `body` is OPTIONAL for forward-compat — legacy events parsed before
+ * AC-A shipped won't have it; the renderer handles missing bodies by
+ * hiding the expand chevron.
  */
 export interface SkillBodyEvent extends BaseEvent {
   kind: "skill-body";
   /** Title extracted from the first `# <heading>` line after the preamble. */
   skillName: string;
+  /** Markdown body from the H1 heading onward (optional — legacy events). */
+  body?: string;
 }
 
 export interface AssistantEvent extends BaseEvent {
@@ -192,12 +201,18 @@ function parseOne(raw: Record<string, unknown>): ParsedEvent {
       if (slash) {
         return { ...base, kind: "slash-command", commandName: slash };
       }
-      // 2026-04-23 — iterate-20260423-chat-followups AC-3: skill-loader
-      // fingerprint. Length-guarded + CRLF-normalized + heading-after-
-      // preamble. Mutually exclusive with slash-command (different shapes).
-      const skillName = detectSkillBody(content);
-      if (skillName) {
-        return { ...base, kind: "skill-body", skillName };
+      // 2026-04-23 — iterate-20260423-chat-followups AC-3 / ADR-056 AC-A:
+      // skill-loader fingerprint. Length-guarded + CRLF-normalized +
+      // heading-after-preamble. Body captured so `<SkillCard>` can
+      // Markdown-render it on expand. Mutually exclusive with slash-command.
+      const skill = extractSkillBody(content);
+      if (skill) {
+        return {
+          ...base,
+          kind: "skill-body",
+          skillName: skill.skillName,
+          body: skill.body,
+        };
       }
       return { ...base, kind: "user", content };
     }
@@ -442,7 +457,9 @@ function detectSlashCommand(content: unknown): string | null {
 }
 
 /**
- * 2026-04-23 — iterate-20260423-chat-followups AC-3 skill-body detector.
+ * 2026-04-23 — iterate-20260423-chat-followups AC-3 (parser fingerprint)
+ * extended by iterate-20260423-chat-livetest-2 AC-A / ADR-056 (capture
+ * the body so `<SkillCard>` can markdown-render it on expand).
  *
  * Claude Code's skill-loader injects the full skill manual as a user-role
  * message. Shape: `Base directory for this skill: <absolute path>` line,
@@ -457,12 +474,16 @@ function detectSlashCommand(content: unknown): string | null {
  *   - must start with the literal fingerprint (case-sensitive)
  *   - the first `# <heading>` line ANYWHERE after the first blank line is
  *     the skill name; leading/trailing whitespace stripped.
+ *   - `body` = content from the H1 line onward (keeps the heading IN the
+ *     body so Markdown rendering treats it as the doc title).
  *
- * Returns extracted skill name on match, null otherwise. Mixed content
+ * Returns `{skillName, body}` on match, null otherwise. Mixed content
  * (user message that happens to contain the phrase mid-body) does not
  * match because startsWith is anchored.
  */
-function detectSkillBody(content: unknown): string | null {
+export function extractSkillBody(
+  content: unknown,
+): { skillName: string; body: string } | null {
   if (typeof content !== "string") return null;
   if (content.length < 100) return null;
   const normalized = content.replace(/\r\n/g, "\n");
@@ -471,10 +492,10 @@ function detectSkillBody(content: unknown): string | null {
   // Scan forward past the preamble (first blank line) for the first
   // top-level `# <heading>` (H1 only — `## Sub-heading` before the H1
   // would be a false positive). Allow leading whitespace on the heading.
-  // Strip the leading `#` and surrounding whitespace from the name.
   const lines = normalized.split("\n");
   let pastPreamble = false;
-  for (const rawLine of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
     if (!pastPreamble) {
       if (rawLine.trim() === "") pastPreamble = true;
       continue;
@@ -482,8 +503,13 @@ function detectSkillBody(content: unknown): string | null {
     const trimmed = rawLine.trim();
     // H1 = `#` followed by whitespace (not `##`, `###`, etc.).
     if (!/^#\s+/.test(trimmed)) continue;
-    const name = trimmed.replace(/^#\s+/, "").trim();
-    if (name.length > 0) return name;
+    const skillName = trimmed.replace(/^#\s+/, "").trim();
+    if (skillName.length === 0) continue;
+    // Body = from this H1 line onward (use the raw line, not trimmed,
+    // so leading whitespace on subsequent lines is preserved for code
+    // blocks etc.). `.slice(i)` keeps the H1 as the body's first line.
+    const body = lines.slice(i).join("\n").trim();
+    return { skillName, body };
   }
   return null;
 }

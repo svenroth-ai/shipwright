@@ -88,6 +88,7 @@ import type { ExternalTask, ExternalTaskState } from "../../lib/externalApi";
 import { useCloseExternalTask, useDeleteExternalTask } from "../../hooks/useExternalTasks";
 import { useProjects } from "../../hooks/useProjects";
 import { getProjectColor } from "../../lib/projectColor";
+import { getPhaseStyle } from "../../lib/phaseStyle";
 import { TerminalLaunchButton } from "./TerminalLaunchButton";
 import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 
@@ -253,10 +254,23 @@ export function TaskCard({ task }: Props) {
           </div>
         </div>
 
-        {/* Meta row — state pill + (future: phase tag / test-count) */}
+        {/* Meta row — state pill + phase badge (ADR-056 chat-livetest-2 AC-B). */}
         <div className="flex flex-wrap items-center gap-1.5">
           <StatePill state={task.state} />
-          {/* Phase tag + test-count slots — hidden in B1; see ADR-045. */}
+          {task.phaseLabel && task.phase && (
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${getPhaseStyle(task.phase).cls}`}
+              data-testid={`task-card-phase-${task.taskId}`}
+              data-phase={task.phase}
+              title={`Phase: ${task.phaseLabel}`}
+            >
+              <span
+                className={`inline-block h-1.5 w-1.5 rounded-full ${getPhaseStyle(task.phase).dot}`}
+                aria-hidden="true"
+              />
+              {task.phaseLabel}
+            </span>
+          )}
         </div>
 
         {/* Footer: timestamp + commit marker LEFT, action buttons RIGHT.

@@ -244,6 +244,15 @@ export class SdkSessionsStore {
      * task-creation form on TaskBoardPage) pass it explicitly.
      */
     projectId?: string;
+    /**
+     * 2026-04-23 — iterate-20260423-chat-livetest-2 AC-B. Phase is
+     * validated by the route against the project's actions catalog
+     * BEFORE reaching this method; the label is derived server-side
+     * from the matched catalog entry. Both fields are optional so the
+     * legacy inline create flow + unassigned tasks still work.
+     */
+    phase?: string;
+    phaseLabel?: string;
   }): ExternalTask {
     const task: ExternalTask = {
       taskId: randomUUID(),
@@ -265,6 +274,8 @@ export class SdkSessionsStore {
         lastProcessedByteOffset: 0,
       },
     };
+    if (args.phase) task.phase = args.phase;
+    if (args.phaseLabel) task.phaseLabel = args.phaseLabel;
     this.sessions.set(task.taskId, task);
     return task;
   }
