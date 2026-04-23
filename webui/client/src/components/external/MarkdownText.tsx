@@ -17,6 +17,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 
+import { MermaidRenderer } from "./SmartViewer/MermaidRenderer";
+
 const MAX_CODE_LINES = 200;
 const MAX_LINE_LENGTH = 2000;
 
@@ -53,6 +55,16 @@ export function MarkdownText({ text }: Props) {
               );
             }
             const text = childrenToString(children);
+            // 2026-04-23 — iterate-20260423-mermaid-in-markdown (FR-03.02).
+            // `rehype-highlight` stamps `language-<name>` on the <code>
+            // element for every fenced block. `language-mermaid` short-circuits
+            // the syntax-highlighted fence and renders the diagram via the
+            // lazy MermaidRenderer (same chunk the .mmd/.mermaid SmartViewer
+            // path already uses — users who never open a mermaid document
+            // still don't pay the ~609 KB mermaid cost).
+            if (/\blanguage-mermaid\b/.test(className!)) {
+              return <MermaidRenderer text={text} />;
+            }
             return (
               <FencedCodeBlock className={className} {...rest}>
                 {text}

@@ -70,6 +70,34 @@ describe("MarkdownText", () => {
     expect(screen.getByTestId("show-more-code").textContent).toMatch(/Show less/);
   });
 
+  // ── 2026-04-23 — iterate-20260423-mermaid-in-markdown ──
+  //
+  // FR-03.02 AC "Mermaid code blocks (```mermaid) render as SVG diagrams"
+  // was unchecked — the SmartViewer only rendered mermaid for `.mmd` /
+  // `.mermaid` file extensions, not for mermaid-fences inside `.md` files.
+  // Shipwright's own compliance-docs + spec files use mermaid in markdown,
+  // so users saw raw code instead of diagrams.
+  describe("mermaid code fence rendering (FR-03.02)", () => {
+    it("routes ```mermaid fence to MermaidRenderer instead of FencedCodeBlock", () => {
+      const md = "```mermaid\ngraph TD\nA-->B\n```";
+      render(<MarkdownText text={md} />);
+      expect(screen.queryByTestId("smart-viewer-mermaid")).toBeInTheDocument();
+      expect(screen.queryByTestId("fenced-code")).not.toBeInTheDocument();
+    });
+
+    it("non-mermaid fences still render via FencedCodeBlock (regression guard)", () => {
+      const md = "```js\nconst x = 1;\n```";
+      render(<MarkdownText text={md} />);
+      expect(screen.queryByTestId("fenced-code")).toBeInTheDocument();
+      expect(screen.queryByTestId("smart-viewer-mermaid")).not.toBeInTheDocument();
+    });
+
+    it("inline `mermaid` text in a paragraph is NOT treated as a diagram", () => {
+      render(<MarkdownText text={"This talks about mermaid but is not a fence."} />);
+      expect(screen.queryByTestId("smart-viewer-mermaid")).not.toBeInTheDocument();
+    });
+  });
+
   it("inserts zero-width spaces into lines longer than 2000 chars", () => {
     const longLine = "x".repeat(5000);
     render(<MarkdownText text={longLine} />);

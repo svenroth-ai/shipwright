@@ -766,3 +766,15 @@
 - **Rationale:** Opt-in placeholder cleanly separates substitution mechanics from policy. Always-prepend would have broken {project.path}-only template fragments used in unit tests and would have produced unwanted behavior for any non-claude template. Shell-aware expansion via the existing escaper inherits the proven security boundary.
 - **Consequences:** Bundled templates updated (3 in default-actions.json). Regression guard ensures they cannot drift back. User-installed .webui/actions.json files keep the cwd bug until manually edited — acceptable since custom templates imply the user knows what they want. Empty project.path → empty cd.prefix output (graceful degrade). actions-substitute.ts grows from 317 to ~360 LOC; cohesion preferred over split.
 - **Rejected:** Always-prepend (breaks fragment substitution and non-claude templates). New env var like SHIPWRIGHT_PROJECT_ROOT (would require updating every skill in the marketplace). Pre-fight startup warning when a user template lacks {cd.prefix} (too noisy; user discovers it on first paste).
+
+---
+
+### ADR-050: ADR-050: Route language-mermaid fences in markdown to MermaidRenderer
+- **Date:** 2026-04-23
+- **Section:** Iterate — bug: mermaid-in-markdown
+- **Context:** FR-03.02 AC 'Mermaid code blocks (```mermaid) render as SVG diagrams' shipped unchecked in iterate 3. SmartViewer only routed .mmd/.mermaid file extensions to MermaidRenderer; fenced blocks inside .md files fell through to FencedCodeBlock, showing raw code instead of diagrams. Shipwright's own compliance docs + spec files use mermaid in markdown heavily.
+- **Decision:** MarkdownText.tsx code() override now checks className for `\blanguage-mermaid\b` BEFORE delegating to FencedCodeBlock. Matching fences render via the existing lazy-loaded MermaidRenderer component. Non-mermaid fences unchanged.
+- **Commit:** PENDING
+- **Rationale:** Using rehype-highlight's language-className as the detection key avoids parsing the fence manually and matches how every other language is already classified. The className-based routing runs before FencedCodeBlock mounts so mermaid diagrams never render as code for a flash.
+- **Consequences:** Mermaid diagrams now render in BOTH the SmartViewer (via MarkdownRenderer→MarkdownText) AND in chat bubbles (via BubbleTranscript→MarkdownText). Users who never open a mermaid document still don't pay the ~609 KB mermaid chunk cost (lazy import). FR-03.02 AC now checked.
+- **Rejected:** Parsing raw markdown for triple-backtick-mermaid fences (reimplementation of remark's fence detection). Prop-gated renderer (renderMermaid?: boolean) — deferred because lazy import already gates the cost.
