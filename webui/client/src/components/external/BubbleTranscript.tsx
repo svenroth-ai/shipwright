@@ -63,7 +63,7 @@ import { MarkdownText } from "./MarkdownText";
 import { SkillCard } from "./SkillCard";
 import { SlashCommandChip } from "./SlashCommandChip";
 import { ToolCard } from "./ToolCard";
-import { TodoWriteCard } from "./TodoWriteCard";
+import { TaskListAggregateCard, TodoWriteCard } from "./TaskListCard";
 import { ToolOutputBlock } from "./ToolOutputBlock";
 import type { CopyCommandForms, ExternalTask } from "../../lib/externalApi";
 
@@ -211,6 +211,23 @@ export function BubbleTranscript({ content, initialTail = DEFAULT_TAIL, task }: 
     return set;
   }, [visible]);
 
+  // 2026-04-23 — ADR-057 task-list-unified. Chronological list of ALL
+  // tool_uses across the full filtered scope. Used by TaskListAggregateCard
+  // to derive the task-list state AT EACH TaskCreate/TaskUpdate event
+  // (walking events up to and including the target tool_use_id). Same
+  // bubble shape, fresh state per call — matches VS Code Claude Code
+  // extension's rendering of incremental task operations.
+  const allToolUses = useMemo(() => {
+    const out: { id: string; name: string; input: unknown }[] = [];
+    for (const e of filtered) {
+      if (e.kind !== "assistant") continue;
+      for (const tu of toolUses(e)) {
+        out.push({ id: tu.id, name: tu.name, input: tu.input });
+      }
+    }
+    return out;
+  }, [filtered]);
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   // Re-key on a derived tuple so auto-scroll fires on
   //   (a) new JSONL bytes (polling tick) → content.length grows,
@@ -286,6 +303,7 @@ export function BubbleTranscript({ content, initialTail = DEFAULT_TAIL, task }: 
             resolved={resolvedToolUseIds}
             toolResultsById={toolResultsById}
             visibleToolUseIds={visibleToolUseIds}
+            allToolUses={allToolUses}
             containerRef={containerRef}
             task={task}
           />
@@ -295,6 +313,7 @@ export function BubbleTranscript({ content, initialTail = DEFAULT_TAIL, task }: 
             resolved={resolvedToolUseIds}
             toolResultsById={toolResultsById}
             visibleToolUseIds={visibleToolUseIds}
+            allToolUses={allToolUses}
             task={task}
           />
         )}
@@ -488,12 +507,14 @@ function PlainBubbles({
   resolved,
   toolResultsById,
   visibleToolUseIds,
+  allToolUses,
   task,
 }: {
   events: ParsedEvent[];
   resolved: Set<string>;
   toolResultsById: Map<string, { content: string; is_error: boolean }>;
   visibleToolUseIds: Set<string>;
+  allToolUses: { id: string; name: string; input: unknown }[];
   task?: ExternalTask;
 }) {
   // Pack consecutive attachments into a single flex-wrap row so chips
@@ -527,6 +548,7 @@ function PlainBubbles({
             resolved={resolved}
             toolResultsById={toolResultsById}
             visibleToolUseIds={visibleToolUseIds}
+            allToolUses={allToolUses}
             task={task}
           />
         );
@@ -540,6 +562,7 @@ function VirtualBubbles({
   resolved,
   toolResultsById,
   visibleToolUseIds,
+  allToolUses,
   containerRef,
   task,
 }: {
@@ -547,6 +570,7 @@ function VirtualBubbles({
   resolved: Set<string>;
   toolResultsById: Map<string, { content: string; is_error: boolean }>;
   visibleToolUseIds: Set<string>;
+  allToolUses: { id: string; name: string; input: unknown }[];
   containerRef: React.RefObject<HTMLDivElement | null>;
   task?: ExternalTask;
 }) {
@@ -588,6 +612,7 @@ function VirtualBubbles({
               resolved={resolved}
               toolResultsById={toolResultsById}
               visibleToolUseIds={visibleToolUseIds}
+              allToolUses={allToolUses}
               task={task}
             />
           </div>
@@ -603,6 +628,7 @@ function BubbleRow({
   resolved,
   toolResultsById,
   visibleToolUseIds,
+  allToolUses,
   task,
 }: {
   event: ParsedEvent;
@@ -610,10 +636,11 @@ function BubbleRow({
   resolved: Set<string>;
   toolResultsById: Map<string, { content: string; is_error: boolean }>;
   visibleToolUseIds: Set<string>;
+  allToolUses: { id: string; name: string; input: unknown }[];
   task?: ExternalTask;
 }) {
   const turnSeparator = isTurnBoundary(previous, event);
-  const bubble = renderBubble(event, resolved, toolResultsById, visibleToolUseIds, task);
+  const bubble = renderBubble(event, resolved, toolResultsById, visibleToolUseIds, allToolUses, task);
   // 2026-04-23 — AC-1: renderBubble may now return null for tool_result-
   // only user events whose ids are all folded into ToolCards. Skip the
   // wrapper entirely so we don't leave an empty flex row — AND skip the
@@ -651,6 +678,7 @@ function renderBubble(
   resolved: Set<string>,
   toolResultsById: Map<string, { content: string; is_error: boolean }>,
   visibleToolUseIds: Set<string>,
+  allToolUses: { id: string; name: string; input: unknown }[],
   task?: ExternalTask,
 ): ReactNode {
   if (event.kind === "user") {
@@ -781,6 +809,7 @@ function renderBubble(
               input={tu.input}
               resolved={resolved}
               toolResultsById={toolResultsById}
+              allToolUses={allToolUses}
               task={task}
             />
           </div>
@@ -946,6 +975,7 @@ function ToolUseBubble({
   input,
   resolved,
   toolResultsById,
+  allToolUses,
   task,
 }: {
   id: string;
@@ -953,6 +983,7 @@ function ToolUseBubble({
   input: unknown;
   resolved: Set<string>;
   toolResultsById: Map<string, { content: string; is_error: boolean }>;
+  allToolUses: { id: string; name: string; input: unknown }[];
   task?: ExternalTask;
 }) {
   if (name === "AskUserQuestion") {
@@ -1056,11 +1087,13 @@ function ToolUseBubble({
   // bubble is suppressed upstream (see renderBubble user branch).
   const result = toolResultsById.get(id);
 
-  // 2026-04-23 — ADR-056 AC-D: TodoWrite tool_use gets a specialized
-  // renderer (checklist + progress). TodoWriteCard falls back to generic
-  // ToolCard internally when the stream is complete AND input shape
-  // is decisively invalid — so dispatch here is safe even for partial
-  // streaming payloads.
+  // 2026-04-23 — ADR-056 AC-D + ADR-057 task-list-unified:
+  //   - TodoWrite: specialized renderer reads input.todos directly.
+  //   - TaskCreate / TaskUpdate: aggregated renderer walks the full
+  //     filtered scope up to THIS event's tool_use_id, derives the
+  //     snapshot task-list state, and renders the same VS Code-style
+  //     card. Per-event snapshots so history stays visible.
+  //   - Anything else: generic ToolCard.
   if (name === "TodoWrite") {
     return (
       <div
@@ -1068,7 +1101,22 @@ function ToolUseBubble({
         data-testid="bubble-tool-use"
         data-tool-use-id={id}
       >
-        <TodoWriteCard id={id} name={name} input={input} result={result} />
+        <TodoWriteCard id={id} input={input} result={result} />
+      </div>
+    );
+  }
+  if (name === "TaskCreate" || name === "TaskUpdate") {
+    return (
+      <div
+        className="max-w-[90%] w-full"
+        data-testid="bubble-tool-use"
+        data-tool-use-id={id}
+      >
+        <TaskListAggregateCard
+          id={id}
+          allToolUses={allToolUses}
+          streamComplete={result != null}
+        />
       </div>
     );
   }

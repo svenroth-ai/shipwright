@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { BubbleTranscript } from "./BubbleTranscript";
@@ -612,12 +612,102 @@ describe("BubbleTranscript — ADR-056 AC-D TodoWrite dispatch", () => {
       },
     ]);
     render(<BubbleTranscript content={content} />);
-    // Specialized card present, generic ToolCard NOT used.
+    // ADR-057: TodoWriteCard now uses the shared TaskListCardShell; outer
+    // testid is still `todo-write-card` for back-compat but inner items
+    // use the `task-list-card-*` prefix.
     expect(screen.getByTestId("todo-write-card")).toBeInTheDocument();
     expect(screen.queryByTestId("tool-card")).toBeNull();
-    // Progress + items rendered as expected
-    expect(screen.getByTestId("todo-write-card-progress").textContent).toBe("1/3");
-    expect(screen.getAllByTestId("todo-write-card-item")).toHaveLength(3);
+    expect(screen.getByTestId("task-list-card-progress").textContent).toBe("1/3");
+    expect(screen.getAllByTestId("task-list-card-item")).toHaveLength(3);
+  });
+
+  it("renders TaskCreate tool_use as TaskListCard with aggregated state (ADR-057)", () => {
+    const content = jsonl([
+      {
+        type: "assistant",
+        message: {
+          content: [
+            {
+              type: "tool_use",
+              id: "tu_create_1",
+              name: "TaskCreate",
+              input: { subject: "First task", activeForm: "Doing first" },
+            },
+          ],
+        },
+      },
+      {
+        type: "assistant",
+        message: {
+          content: [
+            {
+              type: "tool_use",
+              id: "tu_create_2",
+              name: "TaskCreate",
+              input: { subject: "Second task", activeForm: "Doing second" },
+            },
+          ],
+        },
+      },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    // Two separate TaskListCard cards — one snapshot per TaskCreate.
+    const cards = screen.getAllByTestId("task-list-card");
+    expect(cards).toHaveLength(2);
+    // First card: 1 task pending.
+    expect(within(cards[0]).getByTestId("task-list-card-progress").textContent).toBe("0/1");
+    // Second card: 2 tasks pending (cumulative).
+    expect(within(cards[1]).getByTestId("task-list-card-progress").textContent).toBe("0/2");
+  });
+
+  it("renders TaskUpdate with accumulated status flips at each event (ADR-057)", () => {
+    const content = jsonl([
+      {
+        type: "assistant",
+        message: {
+          content: [
+            { type: "tool_use", id: "tu1", name: "TaskCreate", input: { subject: "First" } },
+            { type: "tool_use", id: "tu2", name: "TaskCreate", input: { subject: "Second" } },
+          ],
+        },
+      },
+      {
+        type: "assistant",
+        message: {
+          content: [
+            {
+              type: "tool_use",
+              id: "tu3",
+              name: "TaskUpdate",
+              input: { taskId: "1", status: "in_progress" },
+            },
+          ],
+        },
+      },
+      {
+        type: "assistant",
+        message: {
+          content: [
+            {
+              type: "tool_use",
+              id: "tu4",
+              name: "TaskUpdate",
+              input: { taskId: "1", status: "completed" },
+            },
+          ],
+        },
+      },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    const cards = screen.getAllByTestId("task-list-card");
+    // 4 task-related tool_uses → 4 snapshot cards.
+    expect(cards).toHaveLength(4);
+    // Last card reflects task 1 completed + task 2 pending.
+    const lastCard = cards[cards.length - 1];
+    expect(within(lastCard).getByTestId("task-list-card-progress").textContent).toBe("1/2");
+    const rows = within(lastCard).getAllByTestId("task-list-card-item");
+    expect(rows[0].dataset.status).toBe("completed");
+    expect(rows[1].dataset.status).toBe("pending");
   });
 
   it("still routes non-TodoWrite tool_use through the generic ToolCard (regression)", () => {
