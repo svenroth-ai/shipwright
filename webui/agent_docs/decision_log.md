@@ -790,3 +790,15 @@
 - **Rationale:** Single source of truth for cd prefix formatting eliminates duplication drift. Exporting the helper allows future surfaces (e.g. terminal spawn commands, launcher v2) to reuse the same escaping discipline without re-implementing it.
 - **Consequences:** Resume and Fork commands now cd into project root before invoking claude. Empty cwd still degrades gracefully to no-prefix output. Smoke tests updated to use process.cwd() since Set-Location -ErrorAction Stop rejects non-existent paths. 10 new tests (+5 buildCopyCommands surface, +5 buildCdPrefix helper). Existing actions-substitute.ts cd.prefix case shrinks to a 1-line delegation.
 - **Rejected:** Migrating Resume path to substitutePlaceholders with a dedicated resume action template (Path B from scoping discussion) — larger architecture change out of scope for a bug-fix iterate. Leaving Resume on cd-free legacy (status quo) — user explicitly requested parity across all surfaces.
+
+---
+
+### ADR-052: ADR-052: Move MermaidRenderer memo to DOM dataset for StrictMode resilience
+- **Date:** 2026-04-23
+- **Section:** Iterate — bug: mermaid-flicker-fix
+- **Context:** Mermaid diagrams flickered visibly on mount after ADR-050 shipped mermaid-in-markdown. Root cause: React.StrictMode (active in main.tsx) double-invokes effects (mount -> cleanup -> mount), and MermaidRenderer's useEffect cleanup cleared both the container DOM and a useRef content-hash memo. Every second StrictMode mount re-rendered from scratch, producing loading-spinner->blank->loading-spinner->SVG.
+- **Decision:** Stamp the content-hash on the container DOM itself via dataset.mermaidHash. The DOM node persists across StrictMode cleanup/setup (same containerRef.current across both mounts), so the second mount short-circuits once the first mount's async commit lands. Cleanup now only flips the disposed flag - no DOM wipe, no ref reset.
+- **Commit:** PENDING
+- **Rationale:** DOM-level memo is the only memo that survives React.StrictMode's double-invoke pattern in dev. useRef resets are not observable to the dev vs. prod render cycle, so useRef-based memos always miss on the second mount.
+- **Consequences:** No flicker on first mount. Identical-text re-renders preserve the exact same <svg> DOM node (asserted by new regression test). Text-change re-renders still work because the effect body checks dataset.mermaidHash against the new hash. Client suite 389/389 (+2 tests). A tempting StrictMode-sim unit test was dropped - vi.mock ordering interacted oddly with React StrictMode + dynamic import and hit the real mermaid code path; the data-attr + rerender tests prove the contract instead.
+- **Rejected:** Keeping useRef + skipping cleanup container-clear only (half-fix; ref still resets). useMemo on MarkdownText components prop (larger change, does not address the root cause). Disabling StrictMode in main.tsx (removes dev-mode protection for other bugs).

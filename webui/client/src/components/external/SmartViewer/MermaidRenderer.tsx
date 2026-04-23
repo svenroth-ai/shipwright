@@ -1,12 +1,23 @@
 /*
- * MermaidRenderer — lazy-imports mermaid, content-hash memoizes the
- * render output, and disposes the previous render's DOM subtree on
- * re-render (plan § 7 O28 — naive re-init leaks element nodes + event
- * listeners).
+ * MermaidRenderer — lazy-imports mermaid, content-hash memoizes via a
+ * DOM-level data-attribute (so memo survives React.StrictMode's
+ * double-mount pattern), and replaces the SVG in-place on re-render.
  *
  * Lazy import: mermaid is ~1.5 MB. We `import("mermaid")` inside an
  * effect so Vite code-splits it into its own chunk. TaskDetail's entry
- * chunk stays small; users only pay for mermaid if they open a `.mmd`.
+ * chunk stays small; users only pay for mermaid if they open a mermaid
+ * document (either a `.mmd` / `.mermaid` file via SmartViewer, or a
+ * `\`\`\`mermaid` fence in any markdown rendered via MarkdownText).
+ *
+ * 2026-04-23 — iterate-20260423-mermaid-flicker-fix.
+ * The previous implementation tracked the content-hash memo in a useRef
+ * and cleared BOTH the container DOM and the ref in the effect cleanup.
+ * React.StrictMode double-invokes effects in dev (mount → cleanup →
+ * mount), so every first render went through a full re-render cycle:
+ * loading → blank → loading → SVG. The fix stamps the hash onto the
+ * container's `dataset.mermaidHash` — the same DOM node survives the
+ * cleanup, so the second mount short-circuits once the first mount's
+ * async commit lands. Cleanup now only flips the `disposed` flag.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -33,31 +44,35 @@ function hashSource(input: string): string {
 
 export function MermaidRenderer({ text, contentHash }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const lastHashRef = useRef<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     let disposed = false;
     const hash = contentHash ?? hashSource(text);
-
-    // Memo: same content-hash as last render → keep the existing SVG;
-    // mermaid is expensive and identical input produces identical output.
-    if (lastHashRef.current === hash && containerRef.current?.querySelector("svg")) {
-      setLoading(false);
-      return;
-    }
-
     const el = containerRef.current;
     if (!el) return;
 
-    // DISPOSE before re-init. mermaid stamps <style> blocks into <head>
-    // and leaves orphan <svg> nodes behind on naive replace — detach
-    // everything the previous render inserted into our container, then
-    // let GC claim it.
-    while (el.firstChild) el.removeChild(el.firstChild);
-    setError(null);
-    setLoading(true);
+    // DOM-level memo: if the container already holds a committed SVG
+    // whose hash matches, nothing to do. This is the StrictMode
+    // short-circuit — the second mount sees the first mount's committed
+    // DOM and skips re-rendering.
+    const existing = el.querySelector("svg");
+    if (existing && el.dataset.mermaidHash === hash) {
+      if (loading) setLoading(false);
+      if (error) setError(null);
+      return () => {
+        disposed = true;
+      };
+    }
+
+    // Fresh content (or first-ever render). Do NOT pre-clear the
+    // container — innerHTML-assignment at the end replaces any prior
+    // SVG in a single atomic swap, which avoids a visible "blank" frame
+    // between the previous SVG and the new one. On the first render
+    // the container is already empty so there's nothing to clear.
+    if (!loading) setLoading(true);
+    if (error) setError(null);
 
     const renderId = `mermaid-${hash}-${Date.now().toString(36)}`;
     void import("mermaid")
@@ -69,7 +84,7 @@ export function MermaidRenderer({ text, contentHash }: Props) {
           const { svg } = await mermaid.render(renderId, text);
           if (disposed || !containerRef.current) return;
           containerRef.current.innerHTML = svg;
-          lastHashRef.current = hash;
+          containerRef.current.dataset.mermaidHash = hash;
           setLoading(false);
         } catch (err) {
           if (disposed) return;
@@ -83,16 +98,18 @@ export function MermaidRenderer({ text, contentHash }: Props) {
         setLoading(false);
       });
 
-    // Cleanup — component unmounting or text changing. Clears subtree
-    // so mermaid's orphan nodes don't survive past us.
+    // Minimal cleanup — only cancel the pending async. Crucially, do
+    // NOT wipe the container or the dataset.mermaidHash: doing so would
+    // force the StrictMode twin mount to re-render from scratch,
+    // which is exactly the flicker this iterate fixes.
     return () => {
       disposed = true;
-      const cur = containerRef.current;
-      if (cur) {
-        while (cur.firstChild) cur.removeChild(cur.firstChild);
-      }
-      lastHashRef.current = null;
     };
+    // `loading` and `error` are intentionally NOT in the dep array —
+    // they're internal state this effect manages, not inputs. Including
+    // them would cause the effect to re-fire on every state flip and
+    // re-trigger a mermaid render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, contentHash]);
 
   return (
