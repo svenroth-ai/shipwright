@@ -129,8 +129,11 @@ npm run typecheck             # tsc --noEmit
 
 ### Key Environment Variables
 ```
-PORT=3847                     # Server port
+PORT=3847                     # Hono server port (override via env)
+VITE_PORT=5173                # Vite dev server port (override via env)
 ```
+
+Default is a single dev-server stack. For parallel worktrees set both vars explicitly — see `docs/guide.md` chapter 8.5 "Parallel Development with Worktrees". The Vite proxy reads `PORT` at startup so `/api` routes to the matching Hono instance.
 
 ### Conventions
 - TypeScript strict mode everywhere.
@@ -192,5 +195,11 @@ taskkill //F //PID <pid>
 cd webui/server && npm run dev
 ```
 
-`npm run dev:fresh` (the dev-restart.js helper) has a known Windows bug and
-is not recommended until fixed.
+If `npm run dev` fails with `EADDRINUSE`, another worktree's dev server may be
+running on the same port. Either kill it via `npm run dev:fresh` (same kill
+scope applies — with `PORT`/`VITE_PORT` overrides it kills those) or override
+`PORT` / `VITE_PORT` for this worktree.
+
+`npm run dev:fresh` (the dev-restart.js helper) now reads `PORT` and
+`VITE_PORT` from the environment, so kill scope is worktree-local when both
+are overridden.

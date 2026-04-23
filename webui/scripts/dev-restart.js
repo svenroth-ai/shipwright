@@ -3,8 +3,18 @@
  * Dev-server restart helper.
  *
  * Kills every stale `tsx watch`, `vite`, or node process that owns webui
- * ports (3847 = Hono server, 5173 = vite default, 5177 = vite alt) and then
- * respawns `npm run dev`. Cross-platform (Windows / macOS / Linux).
+ * ports (Hono server, vite current, vite alt) and then respawns
+ * `npm run dev`. Cross-platform (Windows / macOS / Linux).
+ *
+ * Port discovery:
+ *   - PORT env       -> Hono   (default 3847)
+ *   - VITE_PORT env  -> Vite   (default 5173)
+ *   - Vite alt port  -> 5177   (fixed, legacy cleanup only)
+ *
+ * Parallel-worktree scenario: set PORT + VITE_PORT to non-default values in
+ * the secondary worktree so the two dev-server stacks do not collide. Kill
+ * scope is restricted to finite positive integers to prevent malformed env
+ * values (empty, negative, NaN) from terminating unrelated processes.
  *
  * Motivation: on long-running dev sessions, tsx watch on Windows + chokidar
  * can miss file-change events after git merges, leaving the server running
@@ -21,7 +31,12 @@
 const { execSync, spawn } = require('node:child_process');
 const path = require('node:path');
 
-const WEBUI_PORTS = [3847, 5173, 5177];
+const HONO_PORT = parseInt(process.env.PORT || '3847', 10);
+const VITE_PORT = parseInt(process.env.VITE_PORT || '5173', 10);
+const VITE_ALT_PORT = 5177;
+const WEBUI_PORTS = [HONO_PORT, VITE_PORT, VITE_ALT_PORT].filter(
+  (p) => Number.isFinite(p) && p > 0,
+);
 const isWin = process.platform === 'win32';
 
 function log(msg) {
