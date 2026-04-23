@@ -94,14 +94,19 @@
   font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
 }
 
-/* Fenced code — restore full-block background on the <pre>, drop the
- * inline-code background when <code> is inside <pre>. overflow-x keeps
- * long lines from blowing out bubble width. */
+/* Fenced code — anthracite block (dark grey) with light text so syntax
+ * highlighting reads cleanly. User live-test feedback 2026-04-23:
+ * warm-beige was too low-contrast for code. Matches the Tailwind
+ * bg-neutral-900 that FencedCodeBlock (in MarkdownText) sets on the
+ * inner <pre>; declaring it here too keeps SmartViewer + chat
+ * consistent even if cascade order differs. overflow-x keeps long
+ * lines from blowing out bubble width. */
 .markdown-body pre {
   padding: 16px;
   overflow-x: auto;
   line-height: 1.45;
-  background-color: var(--color-muted-bg, #ede8e1);
+  background-color: #1f2937;
+  color: #e5e7eb;
   border-radius: 6px;
   margin-top: 0;
   margin-bottom: 14px;
@@ -110,6 +115,7 @@
 .markdown-body pre code {
   padding: 0;
   background: transparent;
+  color: inherit;
   font-size: 100%;
   border-radius: 0;
 }
