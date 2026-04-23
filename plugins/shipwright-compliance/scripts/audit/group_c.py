@@ -56,8 +56,11 @@ def run(
         finding = check_result_to_finding(
             result, group="C", check_id=check_id,
             source=SOURCE_PREVENTIVE_RERUN,
-            suggested_iterate_cmd="/shipwright-iterate --type change "
-                                  "\"reconcile plan/spec drift flagged by Group C\"",
+            suggested_iterate_cmd=(
+                f"/shipwright-iterate --type change "
+                f"\"reconcile {check_id} ({human_name}) "
+                f"— see compliance/audit-report.md\""
+            ),
         )
         finding.name = human_name
         findings.append(finding)
