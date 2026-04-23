@@ -18,6 +18,7 @@ import { extractAskUserPayload } from "../lib/askUserPayload";
 export type ParsedEvent =
   | UserEvent
   | SlashCommandEvent
+  | SkillBodyEvent
   | AssistantEvent
   | AttachmentEvent
   | QueueOpEvent
@@ -55,6 +56,21 @@ export interface SlashCommandEvent extends BaseEvent {
   kind: "slash-command";
   /** The command name, e.g. `/shipwright-compliance:compliance`. */
   commandName: string;
+}
+
+/**
+ * 2026-04-23 — iterate-20260423-chat-followups AC-3.
+ * Claude Code injects the full skill manual as a user-role event when a
+ * skill is loaded. The content always starts with `Base directory for this
+ * skill: <absolute path>` followed by a blank line and a `# <Skill Title>`
+ * heading. Parser detects this fingerprint (length-guarded, CRLF-normalized,
+ * heading scanned after the preamble) and emits this kind so the renderer
+ * can collapse it to a compact chip instead of a full-page manual bubble.
+ */
+export interface SkillBodyEvent extends BaseEvent {
+  kind: "skill-body";
+  /** Title extracted from the first `# <heading>` line after the preamble. */
+  skillName: string;
 }
 
 export interface AssistantEvent extends BaseEvent {
@@ -175,6 +191,13 @@ function parseOne(raw: Record<string, unknown>): ParsedEvent {
       const slash = detectSlashCommand(content);
       if (slash) {
         return { ...base, kind: "slash-command", commandName: slash };
+      }
+      // 2026-04-23 — iterate-20260423-chat-followups AC-3: skill-loader
+      // fingerprint. Length-guarded + CRLF-normalized + heading-after-
+      // preamble. Mutually exclusive with slash-command (different shapes).
+      const skillName = detectSkillBody(content);
+      if (skillName) {
+        return { ...base, kind: "skill-body", skillName };
       }
       return { ...base, kind: "user", content };
     }
@@ -419,6 +442,53 @@ function detectSlashCommand(content: unknown): string | null {
 }
 
 /**
+ * 2026-04-23 — iterate-20260423-chat-followups AC-3 skill-body detector.
+ *
+ * Claude Code's skill-loader injects the full skill manual as a user-role
+ * message. Shape: `Base directory for this skill: <absolute path>` line,
+ * blank line, then the manual starting with `# <Skill Title>`. Some
+ * manuals include a short preamble blurb before the H1 heading.
+ *
+ * Detection is conservative:
+ *   - content must be a string (arrays fall through)
+ *   - length >= 100 chars (short messages like "Base directory for this
+ *     skill: /x\n\n# Hi" stay user — real manuals run thousands of chars)
+ *   - CRLF line endings normalized to LF before match
+ *   - must start with the literal fingerprint (case-sensitive)
+ *   - the first `# <heading>` line ANYWHERE after the first blank line is
+ *     the skill name; leading/trailing whitespace stripped.
+ *
+ * Returns extracted skill name on match, null otherwise. Mixed content
+ * (user message that happens to contain the phrase mid-body) does not
+ * match because startsWith is anchored.
+ */
+function detectSkillBody(content: unknown): string | null {
+  if (typeof content !== "string") return null;
+  if (content.length < 100) return null;
+  const normalized = content.replace(/\r\n/g, "\n");
+  if (!normalized.startsWith("Base directory for this skill:")) return null;
+
+  // Scan forward past the preamble (first blank line) for the first
+  // top-level `# <heading>` (H1 only — `## Sub-heading` before the H1
+  // would be a false positive). Allow leading whitespace on the heading.
+  // Strip the leading `#` and surrounding whitespace from the name.
+  const lines = normalized.split("\n");
+  let pastPreamble = false;
+  for (const rawLine of lines) {
+    if (!pastPreamble) {
+      if (rawLine.trim() === "") pastPreamble = true;
+      continue;
+    }
+    const trimmed = rawLine.trim();
+    // H1 = `#` followed by whitespace (not `##`, `###`, etc.).
+    if (!/^#\s+/.test(trimmed)) continue;
+    const name = trimmed.replace(/^#\s+/, "").trim();
+    if (name.length > 0) return name;
+  }
+  return null;
+}
+
+/**
  * Extract basename filenames from a `file-history-snapshot` event. Walks
  * `snapshot.trackedFileBackups` keys, returns an array of basenames
  * (path segments stripped — avoids leaking full user filesystem paths
@@ -441,6 +511,26 @@ export function fileSnapshotBasenames(e: FileSnapshotEvent): string[] {
 function basenameOf(p: string): string {
   const idx = Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\"));
   return idx >= 0 ? p.slice(idx + 1) : p;
+}
+
+/**
+ * 2026-04-23 — iterate-20260423-chat-followups AC-1.
+ * True iff the user event's content is an array of ONLY tool_result
+ * blocks (no text, no other block types). Used by the renderer to
+ * decide whether the separate tool_result bubble can be suppressed
+ * once the output is folded into the matching ToolCard. Mixed content
+ * (tool_result + text) returns false so the bubble continues to render
+ * and no data is silently dropped.
+ */
+export function isOnlyToolResults(e: UserEvent): boolean {
+  const c = e.content;
+  if (!Array.isArray(c) || c.length === 0) return false;
+  for (const block of c) {
+    if (!block || typeof block !== "object") return false;
+    const b = block as { type?: unknown };
+    if (b.type !== "tool_result") return false;
+  }
+  return true;
 }
 
 /**

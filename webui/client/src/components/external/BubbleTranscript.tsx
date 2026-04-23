@@ -48,6 +48,7 @@ import {
   assistantText,
   fileSnapshotBasenames,
   hasVisibleBubbleContent,
+  isOnlyToolResults,
   isThinkingOnly,
   parseSessionJsonl,
   toolResults,
@@ -59,6 +60,7 @@ import { useAutoScroll } from "../../hooks/useAutoScroll";
 import { useLaunchTask } from "../../hooks/useLaunchTask";
 import { AttachmentCard } from "./AttachmentCard";
 import { MarkdownText } from "./MarkdownText";
+import { SkillChip } from "./SkillChip";
 import { SlashCommandChip } from "./SlashCommandChip";
 import { ToolCard } from "./ToolCard";
 import { ToolOutputBlock } from "./ToolOutputBlock";
@@ -139,10 +141,18 @@ export function BubbleTranscript({ content, initialTail = DEFAULT_TAIL, task }: 
     () => allEvents.reduce((n, e) => (e.kind === "system" ? n + 1 : n), 0),
     [allEvents],
   );
-  const filtered = useMemo(
-    () => (showSystem ? allEvents : allEvents.filter((e) => e.kind !== "system")),
-    [allEvents, showSystem],
-  );
+  // 2026-04-23 — iterate-20260423-chat-followups AC-4: file-history-snapshot
+  // is redundant with the Edit/Write ToolCards and clutters the transcript.
+  // Filter at the data-array level (pre-virtualizer) rather than returning
+  // null in renderBubble — a null-return risks zero-height rows for the
+  // virtualizer per Gemini's external-review finding.
+  const filtered = useMemo(() => {
+    return allEvents.filter((e) => {
+      if (e.kind === "file-history-snapshot") return false;
+      if (!showSystem && e.kind === "system") return false;
+      return true;
+    });
+  }, [allEvents, showSystem]);
   const visible = useMemo(
     () => (filtered.length > tail ? filtered.slice(-tail) : filtered),
     [filtered, tail],
@@ -160,6 +170,45 @@ export function BubbleTranscript({ content, initialTail = DEFAULT_TAIL, task }: 
     }
     return set;
   }, [filtered]);
+
+  // 2026-04-23 — iterate-20260423-chat-followups AC-1. Map every
+  // tool_result in the FULL filtered scope (NOT the narrower `visible`
+  // slice — per Gemini external-review, scoping to the visible window
+  // would drop the output whenever the tool_use stays rendered but the
+  // tool_result scrolls out of the tail). Duplicate-id handling:
+  // last-write-wins, with one refinement — a successful (non-error)
+  // result overwrites a prior error result so retries surface the good
+  // outcome instead of the stale failure. Still O(n) over filtered.
+  const toolResultsById = useMemo(() => {
+    const map = new Map<string, { content: string; is_error: boolean }>();
+    for (const e of filtered) {
+      if (e.kind !== "user") continue;
+      for (const r of toolResults(e)) {
+        const prior = map.get(r.tool_use_id);
+        // Replace unless doing so would downgrade a prior success to an
+        // error (retries must surface the successful outcome, not the
+        // stale failure).
+        const wouldDowngrade = prior && !prior.is_error && r.is_error;
+        if (!wouldDowngrade) {
+          map.set(r.tool_use_id, { content: r.content, is_error: r.is_error });
+        }
+      }
+    }
+    return map;
+  }, [filtered]);
+
+  // ids of every tool_use block whose parent assistant event sits in the
+  // currently VISIBLE tail slice. Used exclusively as the suppression
+  // predicate for the tool_result bubble — orphans (matching tool_use
+  // scrolled out) still render their bubble so data is never dropped.
+  const visibleToolUseIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of visible) {
+      if (e.kind !== "assistant") continue;
+      for (const tu of toolUses(e)) set.add(tu.id);
+    }
+    return set;
+  }, [visible]);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   // Re-key on a derived tuple so auto-scroll fires on
@@ -234,11 +283,19 @@ export function BubbleTranscript({ content, initialTail = DEFAULT_TAIL, task }: 
           <VirtualBubbles
             events={visible}
             resolved={resolvedToolUseIds}
+            toolResultsById={toolResultsById}
+            visibleToolUseIds={visibleToolUseIds}
             containerRef={containerRef}
             task={task}
           />
         ) : (
-          <PlainBubbles events={visible} resolved={resolvedToolUseIds} task={task} />
+          <PlainBubbles
+            events={visible}
+            resolved={resolvedToolUseIds}
+            toolResultsById={toolResultsById}
+            visibleToolUseIds={visibleToolUseIds}
+            task={task}
+          />
         )}
       </div>
       {!isAtBottom && (
@@ -402,10 +459,14 @@ function AttachmentStrip({
 function PlainBubbles({
   events,
   resolved,
+  toolResultsById,
+  visibleToolUseIds,
   task,
 }: {
   events: ParsedEvent[];
   resolved: Set<string>;
+  toolResultsById: Map<string, { content: string; is_error: boolean }>;
+  visibleToolUseIds: Set<string>;
   task?: ExternalTask;
 }) {
   // Pack consecutive attachments into a single flex-wrap row so chips
@@ -437,6 +498,8 @@ function PlainBubbles({
             event={e}
             previous={previous}
             resolved={resolved}
+            toolResultsById={toolResultsById}
+            visibleToolUseIds={visibleToolUseIds}
             task={task}
           />
         );
@@ -448,11 +511,15 @@ function PlainBubbles({
 function VirtualBubbles({
   events,
   resolved,
+  toolResultsById,
+  visibleToolUseIds,
   containerRef,
   task,
 }: {
   events: ParsedEvent[];
   resolved: Set<string>;
+  toolResultsById: Map<string, { content: string; is_error: boolean }>;
+  visibleToolUseIds: Set<string>;
   containerRef: React.RefObject<HTMLDivElement | null>;
   task?: ExternalTask;
 }) {
@@ -488,7 +555,14 @@ function VirtualBubbles({
               padding: "7px 0",
             }}
           >
-            <BubbleRow event={event} previous={previous} resolved={resolved} task={task} />
+            <BubbleRow
+              event={event}
+              previous={previous}
+              resolved={resolved}
+              toolResultsById={toolResultsById}
+              visibleToolUseIds={visibleToolUseIds}
+              task={task}
+            />
           </div>
         );
       })}
@@ -500,14 +574,25 @@ function BubbleRow({
   event,
   previous,
   resolved,
+  toolResultsById,
+  visibleToolUseIds,
   task,
 }: {
   event: ParsedEvent;
   previous: ParsedEvent | null;
   resolved: Set<string>;
+  toolResultsById: Map<string, { content: string; is_error: boolean }>;
+  visibleToolUseIds: Set<string>;
   task?: ExternalTask;
 }) {
   const turnSeparator = isTurnBoundary(previous, event);
+  const bubble = renderBubble(event, resolved, toolResultsById, visibleToolUseIds, task);
+  // 2026-04-23 — AC-1: renderBubble may now return null for tool_result-
+  // only user events whose ids are all folded into ToolCards. Skip the
+  // wrapper entirely so we don't leave an empty flex row — AND skip the
+  // turn separator too, since a separator without a bubble beneath it
+  // is an orphan visual artefact.
+  if (bubble == null) return null;
   return (
     <div className="flex flex-col" style={{ gap: "10px" }}>
       {turnSeparator && (
@@ -517,7 +602,7 @@ function BubbleRow({
           data-testid="turn-separator"
         />
       )}
-      {renderBubble(event, resolved, task)}
+      {bubble}
     </div>
   );
 }
@@ -534,10 +619,27 @@ function isTurnBoundary(prev: ParsedEvent | null, current: ParsedEvent): boolean
   return false;
 }
 
-function renderBubble(event: ParsedEvent, resolved: Set<string>, task?: ExternalTask): ReactNode {
+function renderBubble(
+  event: ParsedEvent,
+  resolved: Set<string>,
+  toolResultsById: Map<string, { content: string; is_error: boolean }>,
+  visibleToolUseIds: Set<string>,
+  task?: ExternalTask,
+): ReactNode {
   if (event.kind === "user") {
     const results = toolResults(event);
     if (results.length > 0) {
+      // 2026-04-23 — iterate-20260423-chat-followups AC-1 suppression.
+      // All three must hold to suppress: (1) event content is strictly an
+      // array of tool_result blocks (no text, no mix); (2) every block's
+      // tool_use_id has a matching tool_use in the visible window so a
+      // ToolCard will display the output. Orphans and mixed-content
+      // events continue to render the existing bubble so data is never
+      // silently dropped.
+      const isOnly = isOnlyToolResults(event);
+      const allFolded =
+        isOnly && results.every((r) => visibleToolUseIds.has(r.tool_use_id));
+      if (allFolded) return null;
       return (
         <div className="flex justify-start" data-testid="bubble-tool-result">
           <div
@@ -651,6 +753,7 @@ function renderBubble(event: ParsedEvent, resolved: Set<string>, task?: External
               name={tu.name}
               input={tu.input}
               resolved={resolved}
+              toolResultsById={toolResultsById}
               task={task}
             />
           </div>
@@ -662,6 +765,14 @@ function renderBubble(event: ParsedEvent, resolved: Set<string>, task?: External
   // 2026-04-23 — AC-3: slash-command invocation → centered grey chip.
   if (event.kind === "slash-command") {
     return <SlashCommandChip commandName={event.commandName} />;
+  }
+
+  // 2026-04-23 — iterate-20260423-chat-followups AC-3: skill-loader body
+  // collapses to a centered chip. The full manual text is intentionally
+  // dropped from the visible transcript — it's injected context, not
+  // user-authored content.
+  if (event.kind === "skill-body") {
+    return <SkillChip skillName={event.skillName} />;
   }
 
   // 2026-04-23 — AC-4: file-history-snapshot renders as AttachmentCard
@@ -808,12 +919,14 @@ function ToolUseBubble({
   name,
   input,
   resolved,
+  toolResultsById,
   task,
 }: {
   id: string;
   name: string;
   input: unknown;
   resolved: Set<string>;
+  toolResultsById: Map<string, { content: string; is_error: boolean }>;
   task?: ExternalTask;
 }) {
   if (name === "AskUserQuestion") {
@@ -910,13 +1023,19 @@ function ToolUseBubble({
   // ToolCard (collapsed by default, click to expand input). The outer
   // flex wrapper keeps data-testid="bubble-tool-use" + data-tool-use-id
   // for back-compat with existing tests.
+  //
+  // 2026-04-23 — iterate-20260423-chat-followups AC-1: when a matching
+  // tool_result exists in `toolResultsById`, pass it to the card so the
+  // expanded body shows input AND output. The separate tool_result
+  // bubble is suppressed upstream (see renderBubble user branch).
+  const result = toolResultsById.get(id);
   return (
     <div
       className="max-w-[90%] w-full"
       data-testid="bubble-tool-use"
       data-tool-use-id={id}
     >
-      <ToolCard id={id} name={name} input={input} />
+      <ToolCard id={id} name={name} input={input} result={result} />
     </div>
   );
 }
