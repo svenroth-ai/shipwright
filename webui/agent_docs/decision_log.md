@@ -706,3 +706,15 @@
   - `stack.frontend.dev.command` as the spawn target (would dual-write the profile schema alongside existing `dev_server.command`; no user-visible benefit — ADR-036).
   - Logging all 5 sub-iterates as individual ADRs (ADR-044..048) — rejected as noise; single umbrella ADR + sub-iterate commit trail is the auditable record, per ADR-035 precedent.
 
+
+---
+
+### ADR-045: Adopt phase exposed via New Task (one-shot, server-gated)
+- **Date:** 2026-04-23
+- **Section:** Iterate — feature: adopt-phase
+- **Context:** Brownfield onboarding (/shipwright-adopt, iterate 12) had no WebUI entry point. Users had to run the skill manually.
+- **Decision:** Add adopt phase to default-actions.json (color #64748B slate-500, distinct from project's #9ca3af); expose server-derived adopted:boolean on Project via ProjectManager.withMode (existsSync check on shipwright_run_config.json); NewIssueModal filters the adopt option from the phase dropdown when selectedProject.adopted === true.
+- **Commit:** pending
+- **Rationale:** Phase-in-New-Task matches user preference (no separate dropdown entry for a one-time action). Mirrors existing hasPreview derivation pattern. Adds a single field to /api/projects response shape (additive, non-breaking).
+- **Consequences:** One-shot nature enforced at UI layer — once adopted, the option disappears automatically on next fetch. Legacy API clients without the adopted field render Adopt (safe default; skill preflight is the final guard). Command template {task.phase} routes it to /shipwright-adopt without any component-side string literals.
+- **Rejected:** Separate 'New Adopt' top-level dropdown entry (dauerhafter Eintrag für One-Shot-Feature ist Overkill, Nutzer wollte das explizit nicht). Client-side filesystem check (keine FS-Rechte im Browser).

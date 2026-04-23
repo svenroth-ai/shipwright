@@ -231,7 +231,9 @@ describe("project-actions-loader — loadBundledDefault (pure)", () => {
   it("parses the shipped default-actions.json without throwing", () => {
     const d = loadBundledDefault();
     expect(d.defaults.autonomy).toBe("guided");
-    expect(d.phases.length).toBe(9);
+    // 2026-04-23 — `adopt` phase added; bundle now ships 10 phases (was 9).
+    expect(d.phases.length).toBe(10);
     expect(d.actions.length).toBe(3);
+    expect(d.phases.some((p) => p.id === "adopt")).toBe(true);
   });
 });

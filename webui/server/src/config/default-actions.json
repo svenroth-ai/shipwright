@@ -30,6 +30,7 @@
     }
   ],
   "phases": [
+    { "id": "adopt",      "label": "Adopt",      "color": "#64748B" },
     { "id": "project",    "label": "Project",    "color": "#9ca3af" },
     { "id": "design",     "label": "Design",     "color": "#A855F7" },
     { "id": "plan",       "label": "Plan",       "color": "#3B82F6" },

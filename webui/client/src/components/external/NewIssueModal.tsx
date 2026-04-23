@@ -175,10 +175,21 @@ export function NewIssueModal({
   const [autonomy, setAutonomy] = useState<AutonomyValue>(
     projectActions?.defaults.autonomy ?? "guided",
   );
-  const phases: PhaseDefinition[] = useMemo(
-    () => projectActions?.phases ?? [],
-    [projectActions],
-  );
+  // `adopt` is a one-shot phase (brownfield onboarding). Once a project
+  // has a shipwright_run_config.json the server reports `adopted: true`;
+  // we hide the option so users can't re-trigger it. Legacy API shapes
+  // that omit the field render as "not adopted" — the skill's own
+  // pre-flight check will still refuse re-adoption, so the UI stays
+  // recoverable.
+  const phases: PhaseDefinition[] = useMemo(() => {
+    const all = projectActions?.phases ?? [];
+    const targetId = scopedProject?.id ?? selectedProjectId ?? realProjects[0]?.id;
+    const target = realProjects.find((p) => p.id === targetId);
+    if (target?.adopted === true) {
+      return all.filter((p) => p.id !== "adopt");
+    }
+    return all;
+  }, [projectActions, scopedProject, selectedProjectId, realProjects]);
   const [phaseId, setPhaseId] = useState<string>(phases[0]?.id ?? "");
   const [phaseOverridden, setPhaseOverridden] = useState(false);
   const [detectedTrigger, setDetectedTrigger] = useState<string | null>(null);
