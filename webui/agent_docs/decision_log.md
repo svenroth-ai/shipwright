@@ -730,3 +730,15 @@
 - **Rationale:** substitutePlaceholders + command_template + loadActionsForProject were already built for the preview + dry-run paths in iterate 3.3b. Migrating the launch route to the same pipeline eliminates the client/server divergence rather than maintaining two parallel command builders. Back-compat path handles Resume/Fork and 'unassigned' tasks without special-casing.
 - **Consequences:** Copy command now matches the preview. Phase badge on TaskDetail reflects the user's explicit choice, not a title-regex guess. ExternalTask gains 5 optional fields (actionId/phase/phaseLabel/description/autonomy) — additive, forward-compatible with v2 stored rows. Existing Resume/Fork flows still work via the legacy fallback.
 - **Rejected:** Alternative 1: extend buildCopyCommands to accept phase/description — would duplicate the per-shell escape discipline that substitutePlaceholders already owns (the security boundary per plan § 2.2). Alternative 2: send the rendered preview command from client to server and persist verbatim — bypasses server-side phase validation and the allowedPhaseIds check.
+
+---
+
+### ADR-047: substitutePlaceholders flattens POSIX line-continuations for cross-shell safety
+- **Date:** 2026-04-23
+- **Section:** Iterate — bug: shell-line-continuations
+- **Context:** ADR-046 (iterate-20260423-launch-command-wiring) migrated /launch to substitutePlaceholders. The command_template carries `\<newline>    ` continuations (POSIX) for readability. All three shell forms inherited them — PowerShell + cmd.exe do NOT honour backslash continuations, so when the user pasted the command only the first line executed. User reported: 'only /shipwright-compliance arrives, Claude does not know the session.'
+- **Decision:** substitutePlaceholders post-processes substituted output: replace every `[ \t]*\<CR?>\n[ \t]*` sequence with a single space, then trim trailing whitespace. Output is always a single line regardless of shell form. The template still renders multi-line in the source (readability) and in the CommandPreviewPanel (its own separate renderer).
+- **Commit:** pending
+- **Rationale:** Option A (flatten) chosen over Option B (per-shell continuation character — backtick for PS, caret for cmd, backslash for POSIX) because a single long line works reliably in every shell and avoids per-platform guess work; modern terminals handle lines of arbitrary length.
+- **Consequences:** Copy commands now paste and run correctly in PowerShell / cmd / bash. Four pre-existing test assertions that checked for the continuation-prefix literal were updated to match the new single-line contract. The optional-suffix renderers (task.description?, task.autonomy_flag?) still emit the `\<newline>    ` prefix — it just gets flattened at the end.
+- **Rejected:** B: shell-specific continuations — fragile because PowerShell+cmd have additional parsing quirks (line-terminator sensitivity, escaping). C: rewriting the template without continuations — breaks preview readability + would require changing default-actions.json + any user-authored .webui/actions.json.

@@ -223,13 +223,27 @@ export function substitutePlaceholders(
 
   // Regex matches `{anything-up-to-closing-brace}` with no nesting. The
   // `?` is part of the placeholder key for optional tokens.
-  return template.replace(/\{([^}]+)\}/g, (_match, rawKey: string) => {
+  const substituted = template.replace(/\{([^}]+)\}/g, (_match, rawKey: string) => {
     const key = rawKey.trim();
     if (!ALLOWED_PLACEHOLDERS.has(key)) {
       throw new InvalidPlaceholderError(key, ctx.actionId, template);
     }
     return substituteOne(key, ctx, shellForm);
   });
+
+  // 2026-04-23 — iterate-20260423-shell-line-continuations.
+  //
+  // The bundled command_template AND the optional-suffix renderers emit
+  // POSIX `\<newline>    ` continuations for readability. Those are ONLY
+  // valid in POSIX shells — PowerShell and cmd.exe treat the backslash as
+  // a literal token, drop everything after the newline, and the user ends
+  // up pasting just `claude /shipwright-<phase>` with a stray `\`. The
+  // safest cross-shell form is a single line (every shell parses a long
+  // one-line command identically). We therefore collapse every
+  // `<ws>\<newline><ws>` sequence to a single space AFTER substitution.
+  // Trailing whitespace is trimmed so an empty optional suffix at the
+  // end of the template doesn't leave a dangling blank.
+  return substituted.replace(/[ \t]*\\\r?\n[ \t]*/g, " ").replace(/[ \t]+$/, "");
 }
 
 /**

@@ -123,11 +123,14 @@ describe("actions-substitute — positive placeholders across shells", () => {
       .toBe("beforeafter");
   });
 
-  it("task.description? non-empty produces continuation prefix + escaped value", () => {
+  it("task.description? non-empty produces space-prefixed escaped value", () => {
+    // 2026-04-23 — post-processing in substitutePlaceholders now flattens
+    // the continuation-prefix `\<newline>    ` to a single space so the
+    // output is cross-shell safe (PowerShell + cmd don't honour `\`).
     const ctx = baseCtx();
     ctx.task.description = "Please fix the bug";
     const out = substitutePlaceholders("{task.description?}", ctx, "posix");
-    expect(out).toBe(` \\\n    'Please fix the bug'`);
+    expect(out).toBe(` 'Please fix the bug'`);
   });
 
   it("task.description? rejects embedded newlines", () => {
@@ -154,10 +157,12 @@ describe("actions-substitute — positive placeholders across shells", () => {
   });
 
   it("task.autonomy_flag? renders --autonomous with prefix when autonomous", () => {
+    // 2026-04-23 — post-processing flattens the continuation-prefix
+    // `\<newline>    ` to a single space.
     const ctx = baseCtx();
     ctx.task.autonomy = "autonomous";
     expect(substitutePlaceholders("{task.autonomy_flag?}", ctx, "posix")).toBe(
-      ` \\\n    --autonomous`,
+      ` --autonomous`,
     );
   });
 
@@ -231,18 +236,24 @@ describe("actions-substitute — substituteAllForms", () => {
     // even when the surrounding template uses a different quote style.
     expect(out.posix).toContain(`--name "'Build': 'Write docs'"`);
     expect(out.posix).toContain("--plugin-dir '/home/sven/plugin'");
-    expect(out.posix).toMatch(/\\\n    'Write docs'$/);
+    // 2026-04-23 — output is flattened to a single line (post-processing).
+    // Description trailer is now space-separated, not on a continuation.
+    expect(out.posix).toMatch(/'Write docs'$/);
+    expect(out.posix.split("\n")).toHaveLength(1);
     expect(out.powershell).toContain("claude /shipwright-build");
     expect(out.cmd).toContain("claude /shipwright-build");
   });
 
-  it("autonomous flag lands on its own continuation line", () => {
+  it("autonomous flag appears space-separated (flattened), not on a continuation line", () => {
+    // 2026-04-23 — was `\<newline>    --autonomous`, now a single space
+    // delimiter so PowerShell + cmd.exe parse the command correctly.
     const template =
       "claude /shipwright-run \\\n    --project-root {project.path} \\\n    --session-id {task.uuid}{task.autonomy_flag?}";
     const ctx = baseCtx();
     ctx.task.autonomy = "autonomous";
     const out = substituteAllForms(template, ctx);
-    expect(out.posix).toMatch(/--session-id 00000000-.* \\\n    --autonomous$/);
+    expect(out.posix).toMatch(/--session-id 00000000-.* --autonomous$/);
+    expect(out.posix.split("\n")).toHaveLength(1);
   });
 });
 
@@ -265,5 +276,75 @@ describe("actions-substitute — validateTemplate dry-run", () => {
     expect(result).toBeInstanceOf(InvalidPlaceholderError);
     expect(result?.placeholder).toBe("project.paht");
     expect(result?.actionId).toBe("bogus-action");
+  });
+});
+
+// ── 2026-04-23 — iterate-20260423-shell-line-continuations ──
+//
+// The bundled default-actions.json command_template ships with `\\\n    `
+// POSIX-style line continuations for readability. Those MUST NOT appear in
+// the final copy command — PowerShell and cmd.exe do not honour backslash
+// continuation, so the user pastes the first line only and all flags
+// after it are silently dropped. (ADR-046 regression from iterate
+// 20260423-launch-command-wiring.) The renderer now collapses any
+// `<space> \\\n<spaces>` sequence into a single space before returning.
+describe("actions-substitute — single-line output (2026-04-23)", () => {
+  const MULTILINE = `claude /shipwright-{task.phase}{task.autonomy_flag?} \\
+    --project-root {project.path} \\
+    --session-id {task.uuid} \\
+    --name "{task.phase_label}: {task.title}" \\
+    {plugin.dirs}{task.description?}`;
+
+  function assertSingleLine(output: string): void {
+    expect(output).not.toContain("\\\n");
+    expect(output).not.toContain("\\ \n");
+    expect(output.split("\n")).toHaveLength(1);
+  }
+
+  it("flattens multi-line template to one line in powershell", () => {
+    const ctx = baseCtx({ description: "fix login" });
+    const out = substitutePlaceholders(MULTILINE, ctx, "powershell");
+    assertSingleLine(out);
+    // All key tokens must still be present.
+    expect(out).toContain("/shipwright-build");
+    expect(out).toContain("--project-root");
+    expect(out).toContain("--session-id");
+    expect(out).toContain("--name");
+    expect(out).toContain("fix login");
+  });
+
+  it("flattens multi-line template to one line in cmd", () => {
+    const ctx = baseCtx({ description: "fix login" });
+    const out = substitutePlaceholders(MULTILINE, ctx, "cmd");
+    assertSingleLine(out);
+    expect(out).toContain("/shipwright-build");
+  });
+
+  it("flattens multi-line template to one line in posix", () => {
+    const ctx = baseCtx({ description: "fix login" });
+    const out = substitutePlaceholders(MULTILINE, ctx, "posix");
+    assertSingleLine(out);
+    expect(out).toContain("/shipwright-build");
+  });
+
+  it("collapses the empty-plugin-dirs gap without leaving a dangling continuation", () => {
+    // `{plugin.dirs}` expands to "" when pluginDirs is empty. Without
+    // flattening, the prior ` \\\n    ` from the preceding `--name` line
+    // leaked a `\\ \\\n    ` artefact into the output.
+    const ctx = baseCtx({ description: "desc" });
+    for (const shell of SHELL_FORMS) {
+      const out = substitutePlaceholders(MULTILINE, ctx, shell);
+      expect(out).not.toMatch(/\\\s*\\/); // no double-backslash artifacts
+      expect(out).not.toContain("  \\"); // no orphan continuation-backslash
+    }
+  });
+
+  it("collapses when description is absent (optional suffix empty)", () => {
+    const ctx = baseCtx(); // no description
+    for (const shell of SHELL_FORMS) {
+      const out = substitutePlaceholders(MULTILINE, ctx, shell);
+      expect(out).not.toContain("\\\n");
+      expect(out.split("\n")).toHaveLength(1);
+    }
   });
 });
