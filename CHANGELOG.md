@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-04-23
+
+Chat-rendering overhaul + TaskList / Skill / phase polish. Ten iterates (ADR-050 → ADR-057) bundled under one release, all aligning `BubbleTranscript` + `session-parser` with the `bubble-states.html` mockup and closing user-visible gaps surfaced through four successive live-test rounds on the same compliance-audit session. Summary of user-visible wins: Mermaid diagrams render in both SmartViewer + chat, collapsed `<ToolCard>` + folded `tool_result` output in the same card, skill-loader body as a collapsible `<SkillCard>`, phase badge on kanban cards + TaskDetail header (now persisted at task creation), GitHub-style markdown in chat + SmartViewer, VS Code-style unified `<TaskListCard>` that renders TodoWrite + TaskCreate + TaskUpdate with per-event snapshot semantics, and a slew of auto-scroll / file-snapshot / copy-command fixes.
+
 ### Fixed
 - **Iterate skillcard-and-code-bg (2026-04-23, post-ADR-056 hotfix)** — `extractSkillBody()` only accepted string content, but real Claude JSONL emits user-role skill-loader injections as array-of-blocks `[{type:"text", text:"..."}]` — unit tests used string content and missed the asymmetry, so SkillCard never fired in production. Same bug existed in ADR-055's SkillChip. Fix: new `normalizeUserTextContent()` helper unwraps single / multi text-block arrays into a string before the fingerprint check. Also: `.markdown-body pre` bg changed from warm-beige `var(--color-muted-bg)` to anthracite `#1f2937` + light text `#e5e7eb` per user live-test — matches the Tailwind `bg-neutral-900` that FencedCodeBlock sets on the inner `<pre>` so SmartViewer + chat render consistently dark code blocks. (commit 3d38e7e)
 
