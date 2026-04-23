@@ -85,8 +85,17 @@ function buildCommandText(opts: {
     ? ` \\n    "${desc.replace(/"/g, '\\"')}"`
     : "";
 
+  // 2026-04-23 — iterate-20260423-launch-cwd-prefix. The pasted command
+  // sets cwd via a `cd … && claude …` prefix so the skill runs with the
+  // project as working directory regardless of where the terminal was
+  // parked. POSIX flavor shown here for legibility; the real server
+  // output is shell-aware (Set-Location for PS, `cd /d` for cmd). The
+  // path is quoted so the preview reads correctly when project paths
+  // contain spaces.
+  const cdPrefix = `cd "${projectPath}" && `;
+
   return (
-    `$ claude ${slash} \\n` +
+    `$ ${cdPrefix}claude ${slash} \\n` +
     `    --add-dir ${projectPath} \\n` +
     `    --session-id ${sessionUuid} \\n` +
     `    --name ${quotedName}` +

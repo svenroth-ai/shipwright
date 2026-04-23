@@ -254,4 +254,21 @@ describe("project-actions-loader — loadBundledDefault (pure)", () => {
       );
     }
   });
+
+  // 2026-04-23 — iterate-20260423-launch-cwd-prefix. Regression guard:
+  // every bundled command template MUST start with `{cd.prefix}` so the
+  // pasted command sets the shell's cwd to the project root before
+  // invoking `claude`. Without this, `--add-dir` only grants tool access
+  // and the skill runs with `pwd === $HOME`, immediately failing to find
+  // shipwright_run_config.json.
+  it("command_templates start with {cd.prefix}", () => {
+    const d = loadBundledDefault();
+    for (const action of d.actions) {
+      const tpl = action.command_template ?? "";
+      expect(
+        tpl.trimStart().startsWith("{cd.prefix}"),
+        `action ${action.id} must start with {cd.prefix} (got: ${tpl.slice(0, 40)}…)`,
+      ).toBe(true);
+    }
+  });
 });
