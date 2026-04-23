@@ -43,6 +43,13 @@ export function useAutoScroll(
   // Initialized to false so the first mount auto-scrolls to the end.
   const userDetached = useRef(false);
   const didInitialScroll = useRef(false);
+  // 2026-04-23 — iterate-20260423-chat-followups AC-2: track scrollHeight
+  // from the previous ResizeObserver callback so we can answer "was the
+  // user at bottom of the PREVIOUS content?" inside the callback — not
+  // "is the user at bottom NOW", which is always false after growth.
+  // Initialized to 0 and reset on dep change so session swaps don't
+  // inherit the previous session's height budget.
+  const prevScrollHeight = useRef(0);
 
   // Attach scroll listener once per container. Track whether the user has
   // manually scrolled up — if so, pause auto-scroll until they come back.
@@ -85,18 +92,43 @@ export function useAutoScroll(
   }, [dep, containerRef]);
 
   // Safety net for virtualization: ResizeObserver on the inner content
-  // re-pins when measurement bumps scrollHeight while the user is at
-  // the bottom.
+  // re-pins when measurement bumps scrollHeight WHILE the user was at
+  // the bottom of the previous height. The "pre-growth" check fixes the
+  // expand-a-tool-card-mid-transcript regression reported in ADR-054
+  // live-test (chat-followups AC-2) — we only follow growth that
+  // continues a stream the user was already tailing, not ad-hoc
+  // expansions of historical content.
   useEffect(() => {
     const el = containerRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
     const inner = el.firstElementChild;
     if (!inner) return;
+    // Seed prev-height from current layout at observer-attach time so the
+    // first callback fire has a valid baseline. Without this the first
+    // callback would compute a nonsensical distance against prev=0.
+    prevScrollHeight.current = el.scrollHeight;
     const ro = new ResizeObserver(() => {
-      if (userDetached.current) return;
       const node = containerRef.current;
       if (!node) return;
-      node.scrollTop = node.scrollHeight;
+      const prev = prevScrollHeight.current;
+      const now = node.scrollHeight;
+      try {
+        // Skip when user has explicitly scrolled away.
+        if (userDetached.current) return;
+        // Only re-pin on GROWTH (not shrink/no-op).
+        if (now <= prev) return;
+        // Was the user at the bottom of the PREVIOUS content? Use a
+        // negative-tolerant check (prev may equal scrollTop+clientHeight,
+        // or fall short if we just scrolled past it in a prior callback).
+        const distanceFromPrevBottom = prev - (node.scrollTop + node.clientHeight);
+        if (distanceFromPrevBottom > NEAR_BOTTOM_THRESHOLD_PX) return;
+        node.scrollTop = now;
+      } finally {
+        // Always refresh the baseline — covers growth, shrink, and
+        // no-op transitions. A stale baseline would misclassify the
+        // next callback.
+        prevScrollHeight.current = now;
+      }
     });
     ro.observe(inner);
     return () => ro.disconnect();

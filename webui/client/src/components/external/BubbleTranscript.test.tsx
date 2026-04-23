@@ -355,3 +355,308 @@ describe("BubbleTranscript — empty state", () => {
     expect(screen.getByTestId("transcript-empty")).toBeInTheDocument();
   });
 });
+
+// 2026-04-23 — iterate-20260423-chat-followups AC-1: fold tool_result into
+// the matching ToolCard. The separate tool_result bubble is suppressed
+// when every tool_use_id has a visible parent tool_use. Orphans and
+// mixed-content events still render the existing bubble so data is
+// never silently dropped.
+describe("BubbleTranscript — AC-1 tool_result folding into ToolCard", () => {
+  it("suppresses the separate tool_result bubble when every id has a visible tool_use", () => {
+    const content = jsonl([
+      {
+        type: "assistant",
+        message: {
+          content: [
+            { type: "tool_use", id: "tu_bash_1", name: "Bash", input: { command: "ls" } },
+          ],
+        },
+      },
+      {
+        type: "user",
+        message: {
+          content: [{ type: "tool_result", tool_use_id: "tu_bash_1", content: "file1\nfile2" }],
+        },
+      },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    // Tool_use card renders, tool_result-only bubble is gone.
+    expect(screen.getByTestId("bubble-tool-use")).toBeInTheDocument();
+    expect(screen.queryByTestId("bubble-tool-result")).toBeNull();
+  });
+
+  it("still renders the bubble when content has MIXED text + tool_result (never drop data)", () => {
+    const content = jsonl([
+      {
+        type: "assistant",
+        message: {
+          content: [
+            { type: "tool_use", id: "tu_bash_2", name: "Bash", input: {} },
+          ],
+        },
+      },
+      {
+        type: "user",
+        message: {
+          content: [
+            { type: "text", text: "Context note from Claude's user message" },
+            { type: "tool_result", tool_use_id: "tu_bash_2", content: "ok" },
+          ],
+        },
+      },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    // Mixed content → bubble still visible so the text isn't lost.
+    expect(screen.getByTestId("bubble-tool-result")).toBeInTheDocument();
+  });
+
+  it("still renders the bubble when the matching tool_use is not in the visible window (orphan)", () => {
+    // tool_use "tu_old" is outside the initial tail of 2; the tool_result
+    // arrives later so its parent is scrolled out → no ToolCard renders
+    // → DON'T suppress, the user needs to see the output somewhere.
+    const content = jsonl([
+      {
+        type: "assistant",
+        message: {
+          content: [
+            { type: "tool_use", id: "tu_old", name: "Bash", input: {} },
+          ],
+        },
+      },
+      { type: "user", message: { content: "distraction 1" } },
+      { type: "user", message: { content: "distraction 2" } },
+      {
+        type: "user",
+        message: {
+          content: [{ type: "tool_result", tool_use_id: "tu_old", content: "orphan out" }],
+        },
+      },
+    ]);
+    render(<BubbleTranscript content={content} initialTail={2} />);
+    // Only the two most recent events visible. Neither includes the
+    // tool_use block, so the tool_result can't fold — the bubble must
+    // render to expose the output.
+    expect(screen.queryByTestId("bubble-tool-use")).toBeNull();
+    const bubble = screen.getByTestId("bubble-tool-result");
+    // Lock in the fold-from-full-scope contract: even though the tool_use
+    // is outside the window, the orphan tool_result content (`orphan out`)
+    // is still visible in the tool_result bubble, so data is never lost.
+    expect(bubble.textContent).toContain("orphan out");
+  });
+
+  it("prefers non-error result when duplicate tool_result_ids stream in (error-then-success)", async () => {
+    // tool_use arrives once; tool_result arrives twice (first as error,
+    // then as success on retry). The ToolCard must surface the successful
+    // outcome, not the stale failure.
+    const content = jsonl([
+      {
+        type: "assistant",
+        message: {
+          content: [{ type: "tool_use", id: "tu_retry", name: "Bash", input: {} }],
+        },
+      },
+      {
+        type: "user",
+        message: {
+          content: [
+            {
+              type: "tool_result",
+              tool_use_id: "tu_retry",
+              content: "transient failure",
+              is_error: true,
+            },
+          ],
+        },
+      },
+      {
+        type: "user",
+        message: {
+          content: [
+            {
+              type: "tool_result",
+              tool_use_id: "tu_retry",
+              content: "final success",
+              is_error: false,
+            },
+          ],
+        },
+      },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    await userEvent.click(screen.getByTestId("tool-card-header"));
+    const output = screen.getByTestId("tool-card-output");
+    // Non-error result wins over the earlier error.
+    expect(output.textContent).toContain("final success");
+    expect(output.textContent).not.toContain("transient failure");
+    // And the output is NOT rendered with error styling.
+    const errBlock = output.querySelector('[data-is-error="true"]');
+    expect(errBlock).toBeNull();
+  });
+
+  it("keeps last-write-wins for two non-error results (streaming delta)", async () => {
+    const content = jsonl([
+      {
+        type: "assistant",
+        message: {
+          content: [{ type: "tool_use", id: "tu_stream", name: "Bash", input: {} }],
+        },
+      },
+      {
+        type: "user",
+        message: {
+          content: [
+            { type: "tool_result", tool_use_id: "tu_stream", content: "partial" },
+          ],
+        },
+      },
+      {
+        type: "user",
+        message: {
+          content: [
+            { type: "tool_result", tool_use_id: "tu_stream", content: "complete" },
+          ],
+        },
+      },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    await userEvent.click(screen.getByTestId("tool-card-header"));
+    const output = screen.getByTestId("tool-card-output");
+    expect(output.textContent).toContain("complete");
+    expect(output.textContent).not.toContain("partial");
+  });
+
+  it("reflects the full-filtered (not windowed) scope when fold targets span the tail boundary", () => {
+    // Window = 2; total events = 5. The tool_use + its tool_result both
+    // sit inside the visible window (positions 3 + 4 of 5), BUT the first
+    // event (unrelated assistant text) is outside. This checks that the
+    // toolResultsById map build uses the full filtered scope rather than
+    // the narrower visible slice — if it narrowed, this case would still
+    // fold correctly, but a sibling regression (tool_use in window,
+    // tool_result OLDER than the window) would break. We cover that
+    // shape directly in the 'orphan' test above; this is the
+    // corresponding fold-INSIDE-window smoke.
+    const content = jsonl([
+      { type: "assistant", message: { content: [{ type: "text", text: "scroll-out" }] } },
+      { type: "assistant", message: { content: [{ type: "text", text: "scroll-out 2" }] } },
+      { type: "assistant", message: { content: [{ type: "text", text: "scroll-out 3" }] } },
+      {
+        type: "assistant",
+        message: {
+          content: [{ type: "tool_use", id: "tu_inside", name: "Bash", input: {} }],
+        },
+      },
+      {
+        type: "user",
+        message: {
+          content: [{ type: "tool_result", tool_use_id: "tu_inside", content: "inside output" }],
+        },
+      },
+    ]);
+    render(<BubbleTranscript content={content} initialTail={2} />);
+    // Visible = last 2 events (tool_use + tool_result). The tool_result
+    // bubble is suppressed (fold success); the ToolCard carries the
+    // output when expanded.
+    expect(screen.queryByTestId("bubble-tool-result")).toBeNull();
+    expect(screen.getByTestId("bubble-tool-use")).toBeInTheDocument();
+  });
+
+  it("passes the tool_result content into the ToolCard output (expand shows it)", async () => {
+    const content = jsonl([
+      {
+        type: "assistant",
+        message: {
+          content: [
+            { type: "tool_use", id: "tu_read_1", name: "Read", input: { file_path: "/a" } },
+          ],
+        },
+      },
+      {
+        type: "user",
+        message: {
+          content: [{ type: "tool_result", tool_use_id: "tu_read_1", content: "contents of a" }],
+        },
+      },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    // Expand the tool card to reveal the folded output.
+    await userEvent.click(screen.getByTestId("tool-card-header"));
+    const output = screen.getByTestId("tool-card-output");
+    expect(output.textContent).toContain("contents of a");
+  });
+});
+
+// 2026-04-23 — iterate-20260423-chat-followups AC-3: skill-loader body
+// parses as `skill-body` kind (see session-parser.test.ts) and renders
+// through SkillChip — not as a user bubble with raw manual text.
+describe("BubbleTranscript — AC-3 skill-body renders as SkillChip", () => {
+  it("collapses a skill-loader user event into a SkillChip with extracted name", () => {
+    const skillBody =
+      "Base directory for this skill: /some/plugins/cache/path\n" +
+      "\n" +
+      "# Example Skill\n" +
+      "\n" +
+      "A long manual body that comfortably exceeds the 100-char length guard, " +
+      "so the parser's skill-body fingerprint matches and the renderer swaps " +
+      "the raw user bubble for a compact chip that says 'Skill: Example Skill'.";
+    const content = jsonl([
+      { type: "user", message: { role: "user", content: skillBody } },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    const chip = screen.getByTestId("skill-chip");
+    expect(chip.textContent).toContain("Skill:");
+    expect(chip.textContent).toContain("Example Skill");
+    // No plain user bubble rendered for this event.
+    expect(screen.queryByTestId("bubble-user")).toBeNull();
+  });
+
+  it("keeps legit user messages containing the phrase as a normal user bubble", () => {
+    const content = jsonl([
+      {
+        type: "user",
+        message: {
+          role: "user",
+          content: "hey, what is this Base directory for this skill: thing?",
+        },
+      },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    expect(screen.getByTestId("bubble-user")).toBeInTheDocument();
+    expect(screen.queryByTestId("skill-chip")).toBeNull();
+  });
+});
+
+// 2026-04-23 — iterate-20260423-chat-followups AC-4: file-history-snapshot
+// events are redundant with Edit/Write ToolCards. Filter them OUT of the
+// rendered list (pre-virtualizer) — not a renderBubble null-return, which
+// Gemini's external review flagged as a virtualization layout risk.
+describe("BubbleTranscript — AC-4 file-history-snapshot filtering", () => {
+  it("drops file-history-snapshot events from the rendered transcript", () => {
+    const content = jsonl([
+      { type: "user", message: { content: "before" } },
+      {
+        type: "file-history-snapshot",
+        snapshot: { trackedFileBackups: { "/a.py": "v1", "/b.py": "v2" } },
+      },
+      { type: "user", message: { content: "after" } },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    // No snapshot bubble in the DOM at all.
+    expect(screen.queryByTestId("bubble-file-snapshot")).toBeNull();
+    // Toolbar count reflects the filter (2 user events, not 3).
+    expect(screen.getByTestId("transcript-event-count").textContent).toMatch(/2 of 2/);
+  });
+
+  it("still renders user + assistant events around dropped snapshots", () => {
+    const content = jsonl([
+      { type: "user", message: { content: "A" } },
+      { type: "file-history-snapshot", snapshot: { trackedFileBackups: { "/x": "v" } } },
+      { type: "assistant", message: { content: [{ type: "text", text: "B" }] } },
+      { type: "file-history-snapshot", snapshot: { trackedFileBackups: { "/y": "v" } } },
+      { type: "user", message: { content: "C" } },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    expect(screen.queryAllByTestId("bubble-file-snapshot")).toHaveLength(0);
+    expect(screen.queryAllByTestId("bubble-user")).toHaveLength(2);
+    expect(screen.queryByTestId("bubble-assistant")).toBeInTheDocument();
+  });
+});

@@ -385,6 +385,102 @@ describe("hasVisibleBubbleContent — AC-5 empty-assistant detection", () => {
   });
 });
 
+// ── 2026-04-23 — iterate-20260423-chat-followups AC-3 ──
+
+describe("parseSessionJsonl — skill-body detection (chat-followups AC-3)", () => {
+  const skillBodySample =
+    "Base directory for this skill: C:\\Users\\sven\\.claude\\plugins\\cache\\shipwright\\shipwright-compliance\\0.3.0\\skills\\compliance\n" +
+    "\n" +
+    "# Shipwright Compliance Skill\n" +
+    "\n" +
+    "Detective cross-artifact audit for consistency drift.\n" +
+    "\n" +
+    "## Status\n" +
+    "Green.\n" +
+    "...(a very long manual body with many more sections to pad past the 100-char minimum length guard)...";
+
+  it("reclassifies a user event whose content matches the skill fingerprint as skill-body", () => {
+    const line = JSON.stringify({
+      type: "user",
+      message: { role: "user", content: skillBodySample },
+    });
+    const r = parseSessionJsonl(line);
+    expect(r.events).toHaveLength(1);
+    expect(r.events[0].kind).toBe("skill-body");
+    if (r.events[0].kind === "skill-body") {
+      expect(r.events[0].skillName).toBe("Shipwright Compliance Skill");
+    }
+  });
+
+  it("falls through to plain user when fingerprint present but no heading after the preamble", () => {
+    const content =
+      "Base directory for this skill: /some/path\n\nthis is a long user message that just happens to mention the fingerprint but has no markdown heading after it at all, padding past the 100-char minimum...";
+    const line = JSON.stringify({ type: "user", message: { role: "user", content } });
+    const r = parseSessionJsonl(line);
+    expect(r.events[0].kind).toBe("user");
+  });
+
+  it("leaves plain user content containing the literal phrase mid-message as user kind", () => {
+    const content =
+      "Hey, I was reading that Base directory for this skill: text and wanted to check something — how do we handle this case?";
+    const line = JSON.stringify({ type: "user", message: { role: "user", content } });
+    const r = parseSessionJsonl(line);
+    expect(r.events[0].kind).toBe("user");
+  });
+
+  it("normalizes CRLF line endings before fingerprint detection", () => {
+    const crlfContent = skillBodySample.replace(/\n/g, "\r\n");
+    const line = JSON.stringify({
+      type: "user",
+      message: { role: "user", content: crlfContent },
+    });
+    const r = parseSessionJsonl(line);
+    expect(r.events[0].kind).toBe("skill-body");
+    if (r.events[0].kind === "skill-body") {
+      expect(r.events[0].skillName).toBe("Shipwright Compliance Skill");
+    }
+  });
+
+  it("strips leading whitespace and trailing punctuation from extracted skill name", () => {
+    const content =
+      "Base directory for this skill: /path\n\n   # My Skill Name  \n\n" +
+      "Lorem ipsum dolor sit amet padding text so the content exceeds the length guard minimum.";
+    const line = JSON.stringify({
+      type: "user",
+      message: { role: "user", content },
+    });
+    const r = parseSessionJsonl(line);
+    expect(r.events[0].kind).toBe("skill-body");
+    if (r.events[0].kind === "skill-body") {
+      expect(r.events[0].skillName).toBe("My Skill Name");
+    }
+  });
+
+  it("short-circuits messages shorter than the length guard (100 chars)", () => {
+    // A paranoid-short message that starts with the fingerprint but has no
+    // plausible body. Should stay user so we don't misclassify.
+    const content = "Base directory for this skill: /x\n\n# Hi";
+    const line = JSON.stringify({ type: "user", message: { role: "user", content } });
+    const r = parseSessionJsonl(line);
+    expect(r.events[0].kind).toBe("user");
+  });
+
+  it("emits skill-body with skillName when the heading is not the FIRST line after preamble (scans forward)", () => {
+    // Real skill manuals may include a preamble blurb before the H1.
+    const content =
+      "Base directory for this skill: /skills/x\n\n" +
+      "> Auto-generated preamble line.\n\n" +
+      "# Example Skill\n\n" +
+      "Body text long enough to exceed the 100-char length guard pads out the remainder of this sample.";
+    const line = JSON.stringify({ type: "user", message: { role: "user", content } });
+    const r = parseSessionJsonl(line);
+    expect(r.events[0].kind).toBe("skill-body");
+    if (r.events[0].kind === "skill-body") {
+      expect(r.events[0].skillName).toBe("Example Skill");
+    }
+  });
+});
+
 describe("isThinkingOnly — AC-5 thinking-card classifier", () => {
   it("returns true when content is only thinking blocks", () => {
     const e: AssistantEvent = {

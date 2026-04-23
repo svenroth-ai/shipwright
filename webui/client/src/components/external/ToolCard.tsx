@@ -23,10 +23,21 @@
 import { useState } from "react";
 import { ChevronRight, Wrench } from "lucide-react";
 
+import { ToolOutputBlock } from "./ToolOutputBlock";
+
 interface Props {
   id: string;
   name: string;
   input: unknown;
+  /**
+   * 2026-04-23 — iterate-20260423-chat-followups AC-1.
+   * Tool output folded into the same card via `tool_use_id` correlation.
+   * When absent, the expanded card shows only the input (old behavior).
+   * When present, the expanded card shows input AND output, eliminating
+   * the separate tool_result bubble that used to render next to its
+   * tool_use.
+   */
+  result?: { content: string; is_error: boolean };
 }
 
 function formatInput(input: unknown): string {
@@ -39,10 +50,11 @@ function formatInput(input: unknown): string {
   }
 }
 
-export function ToolCard({ id, name, input }: Props) {
+export function ToolCard({ id, name, input, result }: Props) {
   const [expanded, setExpanded] = useState(false);
   const body = formatInput(input);
-  const hasBody = body.trim().length > 0;
+  const hasInput = body.trim().length > 0;
+  const hasOutput = result != null;
 
   return (
     <div
@@ -94,7 +106,7 @@ export function ToolCard({ id, name, input }: Props) {
           aria-hidden="true"
         />
       </button>
-      {expanded && hasBody && (
+      {expanded && hasInput && (
         <div
           className="px-3.5 py-2.5"
           style={{
@@ -112,6 +124,18 @@ export function ToolCard({ id, name, input }: Props) {
           >
             {body}
           </pre>
+        </div>
+      )}
+      {expanded && hasOutput && (
+        <div
+          className="px-3.5 py-2.5"
+          style={{
+            borderTop: "1px solid var(--color-border, #e0dbd4)",
+            background: "#fafaf8",
+          }}
+          data-testid="tool-card-output"
+        >
+          <ToolOutputBlock text={result.content} isError={result.is_error} />
         </div>
       )}
     </div>
