@@ -568,4 +568,162 @@ describe("actions/preview/stub routes", () => {
       expect(r.status).toBe(400);
     });
   });
+
+  // ── 2026-04-23 — iterate-20260423-chat-livetest-2 AC-B ──
+  // POST /tasks now persists phase on CREATION (not just on /launch per
+  // ADR-046). Server derives phaseLabel from the validated actions catalog
+  // (don't trust client-supplied label per external-review finding #2).
+  describe("POST /tasks — phase persistence on creation (AC-B)", () => {
+    it("persists phase + derived phaseLabel when body.phase matches the project's catalog", async () => {
+      const r = await app.request("/api/external/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Audit drift",
+          cwd: projectPath,
+          projectId: PROJECT_ID,
+          phase: "compliance",
+        }),
+      });
+      expect(r.status).toBe(200);
+      const body = (await r.json()) as {
+        task: {
+          taskId: string;
+          phase?: string;
+          phaseLabel?: string;
+        };
+      };
+      expect(body.task.phase).toBe("compliance");
+      // Derived from default-actions.json catalog entry, not from body.
+      expect(body.task.phaseLabel).toBe("Compliance");
+    });
+
+    it("ignores client-supplied phaseLabel and re-derives from catalog (prevents label drift)", async () => {
+      const r = await app.request("/api/external/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Drifted label test",
+          cwd: projectPath,
+          projectId: PROJECT_ID,
+          phase: "build",
+          phaseLabel: "WRONG_LABEL_FROM_CLIENT",
+        }),
+      });
+      expect(r.status).toBe(200);
+      const body = (await r.json()) as {
+        task: { phase?: string; phaseLabel?: string };
+      };
+      expect(body.task.phase).toBe("build");
+      // Server authoritatively derives from the catalog — client label dropped.
+      expect(body.task.phaseLabel).toBe("Build");
+      expect(body.task.phaseLabel).not.toBe("WRONG_LABEL_FROM_CLIENT");
+    });
+
+    it("returns 400 invalid_phase with allowed[] when phase is not in the catalog", async () => {
+      const r = await app.request("/api/external/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Bad phase test",
+          cwd: projectPath,
+          projectId: PROJECT_ID,
+          phase: "not-a-real-phase",
+        }),
+      });
+      expect(r.status).toBe(400);
+      const body = (await r.json()) as {
+        error: string;
+        detail?: string;
+        allowed?: string[];
+      };
+      expect(body.error).toBe("invalid_phase");
+      expect(body.detail).toContain("not-a-real-phase");
+      expect(Array.isArray(body.allowed)).toBe(true);
+      expect(body.allowed!.length).toBeGreaterThan(5);
+      expect(body.allowed).toContain("compliance");
+    });
+
+    it("creates task with phase=null when body.phase is omitted (back-compat)", async () => {
+      const r = await app.request("/api/external/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Legacy create",
+          cwd: projectPath,
+          projectId: PROJECT_ID,
+        }),
+      });
+      expect(r.status).toBe(200);
+      const body = (await r.json()) as {
+        task: { phase?: string; phaseLabel?: string };
+      };
+      expect(body.task.phase).toBeUndefined();
+      expect(body.task.phaseLabel).toBeUndefined();
+    });
+
+    it("persists phase + phaseLabel through GET /tasks list (end-to-end serializer trace)", async () => {
+      // GPT review #1 HIGH — verify phase survives store → persist →
+      // JSON serialization → list response. Create then list.
+      await app.request("/api/external/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Round-trip test",
+          cwd: projectPath,
+          projectId: PROJECT_ID,
+          phase: "design",
+        }),
+      });
+      const list = await app.request("/api/external/tasks");
+      expect(list.status).toBe(200);
+      const body = (await list.json()) as {
+        tasks: Array<{
+          title: string;
+          phase?: string;
+          phaseLabel?: string;
+        }>;
+      };
+      const row = body.tasks.find((t) => t.title === "Round-trip test");
+      expect(row).toBeDefined();
+      expect(row!.phase).toBe("design");
+      expect(row!.phaseLabel).toBe("Design");
+    });
+
+    it("rejects with 400 phase_requires_project when phase is sent without projectId", async () => {
+      // Code-review blocker #2 / Gemini #2: never silently drop user input.
+      // Unassigned projects have no catalog to validate against — if the
+      // client sends phase anyway, it's a bug; surface it rather than
+      // persisting silently. Callers without a project must omit phase.
+      const r = await app.request("/api/external/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Unassigned task",
+          cwd: projectPath,
+          phase: "compliance",
+        }),
+      });
+      expect(r.status).toBe(400);
+      const body = (await r.json()) as { error: string; detail: string };
+      expect(body.error).toBe("phase_requires_project");
+    });
+
+    it("still accepts creation without phase (back-compat) for unassigned projects", async () => {
+      const r = await app.request("/api/external/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Unassigned task no phase",
+          cwd: projectPath,
+        }),
+      });
+      expect(r.status).toBe(200);
+      const body = (await r.json()) as {
+        task: { phase?: string; projectId: string };
+      };
+      expect(body.task.projectId).toBe("unassigned");
+      expect(body.task.phase).toBeUndefined();
+    });
+  });
 });

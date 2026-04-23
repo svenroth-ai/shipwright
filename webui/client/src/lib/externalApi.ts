@@ -132,6 +132,13 @@ export async function createTask(args: {
   pluginDirs?: string[];
   /** Iterate 3 section 02 — optional; server defaults to "unassigned". */
   projectId?: string;
+  /**
+   * 2026-04-23 — iterate-20260423-chat-livetest-2 AC-B. Phase id only;
+   * server derives phaseLabel from the project's actions catalog.
+   * Omit when the user picks "Save to Backlog" with no selected phase
+   * or when the project has no actions catalog (unassigned).
+   */
+  phase?: string;
 }): Promise<ExternalTask> {
   const json = await httpJson<{ task: ExternalTask }>(`${EXTERNAL_API}/tasks`, {
     method: "POST",

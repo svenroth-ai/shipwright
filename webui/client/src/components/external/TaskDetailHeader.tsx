@@ -51,6 +51,7 @@ import { useLaunchTask } from "../../hooks/useLaunchTask";
 import { useProjects } from "../../hooks/useProjects";
 import { useTaskTranscript } from "../../hooks/useTaskTranscript";
 import { formatRelativeTime } from "../../lib/formatTime";
+import { getPhaseStyle } from "../../lib/phaseStyle";
 import {
   EditableTaskTitle,
   type EditableTaskTitleHandle,
@@ -210,33 +211,29 @@ export function TaskDetailHeader({ task }: Props) {
    * `task.phase` + `task.phaseLabel` pair can look up its colors; the
    * `label` in the rendered chip always uses `phaseLabel` verbatim.
    */
+  // 2026-04-23 — iterate-20260423-chat-livetest-2 AC-B. Extracted the color
+  // map into `lib/phaseStyle.ts` so TaskCard reuses the same palette —
+  // keeps the kanban dot + chip styling consistent with the header badge.
   const phase = useMemo(() => {
-    const styles: Record<string, { cls: string; dot: string }> = {
-      project: { cls: "bg-[var(--color-muted-bg,#ede8e1)] text-[var(--color-muted,#6b7280)]", dot: "bg-[#9ca3af]" },
-      design: { cls: "bg-[#F3E8FF] text-[#6B21A8]", dot: "bg-[#A855F7]" },
-      plan: { cls: "bg-[#DBEAFE] text-[#1E40AF]", dot: "bg-[#3B82F6]" },
-      build: { cls: "bg-[#FEF3C7] text-[#92400E]", dot: "bg-[#F59E0B]" },
-      test: { cls: "bg-[#D1FAE5] text-[#065F46]", dot: "bg-[#059669]" },
-      deploy: { cls: "bg-[#CCFBF1] text-[#115E59]", dot: "bg-[#14B8A6]" },
-      changelog: { cls: "bg-[#E0E7FF] text-[#3730A3]", dot: "bg-[#6366F1]" },
-      compliance: { cls: "bg-[#E0F2FE] text-[#075985]", dot: "bg-[#0EA5E9]" },
-      security: { cls: "bg-[#FEE2E2] text-[#991B1B]", dot: "bg-[#DC2626]" },
-      adopt: { cls: "bg-[#E2E8F0] text-[#334155]", dot: "bg-[#64748B]" },
-      iterate: { cls: "bg-[var(--color-muted-bg,#ede8e1)] text-[var(--color-muted,#6b7280)]", dot: "bg-[var(--color-accent,#857568)]" },
-    };
-
     if (task.phaseLabel && task.phase) {
-      const style = styles[task.phase.toLowerCase()] ?? styles.build;
+      const style = getPhaseStyle(task.phase);
       return { label: task.phaseLabel, cls: style.cls, dot: style.dot };
     }
-
     const title = (task.title ?? "").toLowerCase();
-    if (/plan/.test(title)) return { label: "Plan", ...styles.plan };
-    if (/build|implement|fix/.test(title)) return { label: "Build", ...styles.build };
-    if (/design|ui|mockup/.test(title)) return { label: "Design", ...styles.design };
-    if (/test|qa|e2e/.test(title)) return { label: "Test", ...styles.test };
-    if (/iterate/.test(title)) return { label: "Iterate", ...styles.iterate };
-    return null;
+    const fallbackId =
+      /plan/.test(title) ? "plan"
+      : /build|implement|fix/.test(title) ? "build"
+      : /design|ui|mockup/.test(title) ? "design"
+      : /test|qa|e2e/.test(title) ? "test"
+      : /iterate/.test(title) ? "iterate"
+      : null;
+    if (!fallbackId) return null;
+    const style = getPhaseStyle(fallbackId);
+    return {
+      label: fallbackId.charAt(0).toUpperCase() + fallbackId.slice(1),
+      cls: style.cls,
+      dot: style.dot,
+    };
   }, [task.phase, task.phaseLabel, task.title]);
 
   // Compute "last event" from transcript ticks (polling). When transcript is

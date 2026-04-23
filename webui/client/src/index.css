@@ -1,42 +1,158 @@
 @import "tailwindcss";
 @import "highlight.js/styles/github-dark.css";
 
-/* Markdown body — minimal vertical rhythm so assistant text doesn't
- * blow out the transcript bubble. Headings stay subtle. */
+/* Markdown body — GitHub-style rendering conventions (iterate-20260423-chat-livetest-2
+ * AC-C). Adapted from github-markdown-light.css tokens, re-skinned onto
+ * our warm-beige palette via CSS variables. Applied to both chat
+ * MarkdownText and SmartViewer MarkdownRenderer (single source so the
+ * two surfaces don't drift). Imports are centralized here in index.css
+ * to keep style ordering deterministic (external review GPT #5). */
+
+.markdown-body {
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+/* Headings — border-bottom on H1/H2 mimics GitHub's visual separator.
+ * `overflow-wrap: break-word` prevents long heading text from blowing
+ * out a chat bubble. */
 .markdown-body h1,
 .markdown-body h2,
-.markdown-body h3 {
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
   font-weight: 600;
-  margin: 0.4em 0 0.2em;
+  line-height: 1.25;
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
+  overflow-wrap: break-word;
 }
-.markdown-body h1 { font-size: 1.1em; }
-.markdown-body h2 { font-size: 1.05em; }
-.markdown-body h3 { font-size: 1em; }
+.markdown-body h1 {
+  font-size: 1.5em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--color-border, #e0dbd4);
+}
+.markdown-body h2 {
+  font-size: 1.25em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--color-border, #e0dbd4);
+}
+.markdown-body h3 { font-size: 1.1em; }
+.markdown-body h4 { font-size: 1em; }
+.markdown-body h5 { font-size: 0.9em; }
+.markdown-body h6 { font-size: 0.85em; color: var(--color-muted, #6b7280); }
+
+/* First heading / paragraph starts flush (no accumulated top margin when
+ * the markdown is the first child of its bubble / pane). */
+.markdown-body > *:first-child { margin-top: 0; }
+.markdown-body > *:last-child { margin-bottom: 0; }
+
+.markdown-body p {
+  margin-top: 0;
+  margin-bottom: 14px;
+}
+
+/* Lists — generous left-pad matches GitHub's 2em convention. Dense on
+ * nested lists so three-deep doesn't look orphaned. */
 .markdown-body ul,
 .markdown-body ol {
-  margin: 0.3em 0;
-  padding-left: 1.2em;
+  margin-top: 0;
+  margin-bottom: 14px;
+  padding-left: 2em;
 }
-.markdown-body li { margin: 0.15em 0; }
-.markdown-body table {
-  border-collapse: collapse;
-  margin: 0.5em 0;
-  font-size: 0.9em;
+.markdown-body ul ul,
+.markdown-body ul ol,
+.markdown-body ol ul,
+.markdown-body ol ol {
+  margin-top: 0;
+  margin-bottom: 0;
 }
-.markdown-body th,
-.markdown-body td {
-  border: 1px solid #d4d4d8;
-  padding: 0.25em 0.5em;
-}
-.markdown-body th { background: #f4f4f5; }
+.markdown-body li { margin-top: 0.25em; }
+.markdown-body li > p { margin-top: 14px; }
+
+/* Blockquote — solid left border, muted text. */
 .markdown-body blockquote {
-  border-left: 3px solid #d4d4d8;
-  padding-left: 0.6em;
-  color: #525252;
-  margin: 0.4em 0;
+  margin: 0 0 14px 0;
+  padding: 0 1em;
+  color: var(--color-muted, #6b7280);
+  border-left: 0.25em solid var(--color-border, #e0dbd4);
 }
-.markdown-body p:first-child { margin-top: 0; }
-.markdown-body p:last-child { margin-bottom: 0; }
+.markdown-body blockquote > :first-child { margin-top: 0; }
+.markdown-body blockquote > :last-child { margin-bottom: 0; }
+
+/* Inline code — GitHub's subtle grey highlight. Explicit background
+ * overrides the neutral-100 inline class MarkdownText sets on `code`
+ * (Tailwind wins by default order, so this declaration needs to match
+ * at MINIMUM the same specificity; scoped under .markdown-body wins). */
+.markdown-body code {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  background-color: rgba(175, 184, 193, 0.2);
+  border-radius: 6px;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+}
+
+/* Fenced code — restore full-block background on the <pre>, drop the
+ * inline-code background when <code> is inside <pre>. overflow-x keeps
+ * long lines from blowing out bubble width. */
+.markdown-body pre {
+  padding: 16px;
+  overflow-x: auto;
+  line-height: 1.45;
+  background-color: var(--color-muted-bg, #ede8e1);
+  border-radius: 6px;
+  margin-top: 0;
+  margin-bottom: 14px;
+  max-width: 100%;
+}
+.markdown-body pre code {
+  padding: 0;
+  background: transparent;
+  font-size: 100%;
+  border-radius: 0;
+}
+
+/* Tables — header background, cell padding, outer border, horizontal
+ * scroll when wider than the bubble. */
+.markdown-body table {
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  margin-top: 0;
+  margin-bottom: 14px;
+}
+.markdown-body table th,
+.markdown-body table td {
+  padding: 6px 13px;
+  border: 1px solid var(--color-border, #e0dbd4);
+}
+.markdown-body table th {
+  font-weight: 600;
+  background-color: var(--color-muted-bg, #ede8e1);
+}
+.markdown-body table tr:nth-child(2n) {
+  background-color: rgba(175, 184, 193, 0.08);
+}
+
+/* Horizontal rule — prominent separator. */
+.markdown-body hr {
+  height: 0;
+  margin: 24px 0;
+  border: 0;
+  border-top: 2px solid var(--color-border, #e0dbd4);
+}
+
+/* Images — constrain to bubble/pane width. */
+.markdown-body img { max-width: 100%; height: auto; }
+
+/* Links — styling handled via the <a> component override in MarkdownText.
+ * react-markdown already neutralizes javascript:/data: URLs by default
+ * (no rehype-raw in the pipeline, so anchor href passes through the
+ * default sanitizer). */
 
 :root {
   /* Core palette (warm-beige theme — matches webui/designs/screens mockups). */

@@ -13,6 +13,7 @@ import { describe, it, expect } from "vitest";
 import {
   askUserQuestionSummary,
   assistantText,
+  extractSkillBody,
   fileSnapshotBasenames,
   hasVisibleBubbleContent,
   isThinkingOnly,
@@ -477,6 +478,112 @@ describe("parseSessionJsonl — skill-body detection (chat-followups AC-3)", () 
     expect(r.events[0].kind).toBe("skill-body");
     if (r.events[0].kind === "skill-body") {
       expect(r.events[0].skillName).toBe("Example Skill");
+    }
+  });
+});
+
+// ── 2026-04-23 — iterate-20260423-chat-livetest-2 AC-A / ADR-056 ──
+
+describe("extractSkillBody — helper (ADR-056 AC-A)", () => {
+  const skillSample =
+    "Base directory for this skill: C:\\skills\\compliance\n" +
+    "\n" +
+    "# Shipwright Compliance Skill\n" +
+    "\n" +
+    "Detective cross-artifact audit for consistency drift.\n" +
+    "\n" +
+    "## Status\n" +
+    "Green.\n" +
+    "...(body continues, padding past 100 chars for length guard)...";
+
+  it("returns skillName + body for a valid fingerprint", () => {
+    const r = extractSkillBody(skillSample);
+    expect(r).not.toBeNull();
+    expect(r!.skillName).toBe("Shipwright Compliance Skill");
+    // Body starts at the H1 line and keeps all subsequent content.
+    expect(r!.body.startsWith("# Shipwright Compliance Skill")).toBe(true);
+    expect(r!.body).toContain("## Status");
+    expect(r!.body).toContain("Green.");
+    // Preamble is NOT in the body (only from H1 onward).
+    expect(r!.body).not.toContain("Base directory for this skill:");
+  });
+
+  it("preserves Markdown markers in the body (code blocks, tables)", () => {
+    const content =
+      "Base directory for this skill: /p\n" +
+      "\n" +
+      "# Skill With Code\n" +
+      "\n" +
+      "```js\n" +
+      "const x = 1;\n" +
+      "```\n" +
+      "\n" +
+      "Padding text to exceed the 100-char length guard minimum...";
+    const r = extractSkillBody(content);
+    expect(r).not.toBeNull();
+    expect(r!.body).toContain("```js");
+    expect(r!.body).toContain("const x = 1;");
+  });
+
+  it("normalizes CRLF line endings before fingerprint detection", () => {
+    const crlf = skillSample.replace(/\n/g, "\r\n");
+    const r = extractSkillBody(crlf);
+    expect(r).not.toBeNull();
+    expect(r!.skillName).toBe("Shipwright Compliance Skill");
+    // body is LF-normalized (we split on \n after the CRLF→LF conversion)
+    expect(r!.body).not.toContain("\r");
+  });
+
+  it("returns null for length < 100 (guards against false positives)", () => {
+    const tooShort = "Base directory for this skill: /x\n\n# Hi";
+    expect(extractSkillBody(tooShort)).toBeNull();
+  });
+
+  it("returns null when content doesn't start with fingerprint (mid-message mention)", () => {
+    const mid =
+      "Hey, I was reading that Base directory for this skill: text" +
+      " and wanted to check something mid-message with enough padding to exceed the length guard.";
+    expect(extractSkillBody(mid)).toBeNull();
+  });
+
+  it("returns null for non-string content", () => {
+    expect(extractSkillBody(null)).toBeNull();
+    expect(extractSkillBody(42)).toBeNull();
+    expect(extractSkillBody({ foo: "bar" })).toBeNull();
+    expect(extractSkillBody([])).toBeNull();
+  });
+
+  it("skips ## sub-headings before the H1 and finds the real title (H1-only guard)", () => {
+    const content =
+      "Base directory for this skill: /x\n\n" +
+      "## Not the title\n\n" +
+      "# Real Skill Title\n\n" +
+      "Body padding text to exceed the 100-char length guard minimum for the extractor.";
+    const r = extractSkillBody(content);
+    expect(r).not.toBeNull();
+    expect(r!.skillName).toBe("Real Skill Title");
+  });
+});
+
+describe("parseOne — skill-body kind populates body (ADR-056 AC-A)", () => {
+  it("emits SkillBodyEvent with body captured from the H1 onward", () => {
+    const content =
+      "Base directory for this skill: /path\n" +
+      "\n" +
+      "# Example Skill\n" +
+      "\n" +
+      "Manual body long enough to exceed the fingerprint length guard — this keeps " +
+      "the test from tripping the 100-char minimum guard accidentally.";
+    const line = JSON.stringify({
+      type: "user",
+      message: { role: "user", content },
+    });
+    const r = parseSessionJsonl(line);
+    expect(r.events[0].kind).toBe("skill-body");
+    if (r.events[0].kind === "skill-body") {
+      expect(r.events[0].skillName).toBe("Example Skill");
+      expect(r.events[0].body).toBeDefined();
+      expect(r.events[0].body!.startsWith("# Example Skill")).toBe(true);
     }
   });
 });

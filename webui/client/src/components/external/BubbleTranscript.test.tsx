@@ -585,11 +585,105 @@ describe("BubbleTranscript — AC-1 tool_result folding into ToolCard", () => {
   });
 });
 
-// 2026-04-23 — iterate-20260423-chat-followups AC-3: skill-loader body
-// parses as `skill-body` kind (see session-parser.test.ts) and renders
-// through SkillChip — not as a user bubble with raw manual text.
-describe("BubbleTranscript — AC-3 skill-body renders as SkillChip", () => {
-  it("collapses a skill-loader user event into a SkillChip with extracted name", () => {
+// 2026-04-23 — ADR-056 AC-D: TodoWrite tool_use dispatches to the
+// specialized TodoWriteCard renderer; non-TodoWrite tools still render
+// through the generic ToolCard path (regression guard).
+describe("BubbleTranscript — ADR-056 AC-D TodoWrite dispatch", () => {
+  it("renders TodoWrite tool_use as TodoWriteCard (not generic ToolCard)", () => {
+    const content = jsonl([
+      {
+        type: "assistant",
+        message: {
+          content: [
+            {
+              type: "tool_use",
+              id: "tu_todos",
+              name: "TodoWrite",
+              input: {
+                todos: [
+                  { content: "Task one", status: "completed" },
+                  { content: "Task two", status: "in_progress", activeForm: "Working on two" },
+                  { content: "Task three", status: "pending" },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    // Specialized card present, generic ToolCard NOT used.
+    expect(screen.getByTestId("todo-write-card")).toBeInTheDocument();
+    expect(screen.queryByTestId("tool-card")).toBeNull();
+    // Progress + items rendered as expected
+    expect(screen.getByTestId("todo-write-card-progress").textContent).toBe("1/3");
+    expect(screen.getAllByTestId("todo-write-card-item")).toHaveLength(3);
+  });
+
+  it("still routes non-TodoWrite tool_use through the generic ToolCard (regression)", () => {
+    const content = jsonl([
+      {
+        type: "assistant",
+        message: {
+          content: [
+            { type: "tool_use", id: "tu_bash", name: "Bash", input: { command: "ls" } },
+          ],
+        },
+      },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    expect(screen.getByTestId("tool-card")).toBeInTheDocument();
+    expect(screen.queryByTestId("todo-write-card")).toBeNull();
+  });
+});
+
+// 2026-04-23 — ADR-056 AC-A + external-review #8: verify transcript-level
+// key stability. Inserting an event ABOVE an expanded SkillCard must NOT
+// collapse it — this exercises the stableEventKey helper.
+describe("BubbleTranscript — ADR-056 AC-A expansion stability across inserts", () => {
+  it("preserves SkillCard expanded state when a new event arrives at the top", async () => {
+    const skillBody =
+      "Base directory for this skill: /some/plugins/cache/path\n" +
+      "\n" +
+      "# Example Skill\n" +
+      "\n" +
+      "Manual body long enough to clear the 100-char fingerprint length guard " +
+      "so the parser reclassifies this content as skill-body.";
+    const skillLine = {
+      type: "user",
+      uuid: "event-uuid-skill-0001",
+      timestamp: "2026-04-23T10:00:00.000Z",
+      message: { role: "user", content: skillBody },
+    };
+    const initial = jsonl([skillLine]);
+    const { rerender } = render(<BubbleTranscript content={initial} />);
+
+    // User expands the SkillCard.
+    await userEvent.click(screen.getByTestId("skill-card-header"));
+    expect(screen.getByTestId("skill-card-body")).toBeInTheDocument();
+
+    // New event arrives at the top of the transcript (lowest position).
+    // If the key was array-index prefixed, this would shift the SkillCard's
+    // key and collapse it. With the stableEventKey helper the SkillCard's
+    // key is still `event-uuid-skill-0001` so React keeps the instance.
+    const newTop = {
+      type: "user",
+      uuid: "event-uuid-newtop-0002",
+      timestamp: "2026-04-23T09:00:00.000Z",
+      message: { role: "user", content: "a prepended user message" },
+    };
+    rerender(<BubbleTranscript content={jsonl([newTop, skillLine])} />);
+
+    // The SkillCard body is STILL rendered — expansion state survived.
+    expect(screen.getByTestId("skill-card-body")).toBeInTheDocument();
+  });
+});
+
+// 2026-04-23 — ADR-056 AC-A: skill-loader body renders as SkillCard
+// (collapsed-by-default, expandable with Markdown body). Replaces the
+// ADR-055 SkillChip which was too aggressive at hiding the manual.
+describe("BubbleTranscript — ADR-056 AC-A skill-body renders as SkillCard", () => {
+  it("collapses a skill-loader user event into a SkillCard with extracted name", () => {
     const skillBody =
       "Base directory for this skill: /some/plugins/cache/path\n" +
       "\n" +
@@ -597,14 +691,14 @@ describe("BubbleTranscript — AC-3 skill-body renders as SkillChip", () => {
       "\n" +
       "A long manual body that comfortably exceeds the 100-char length guard, " +
       "so the parser's skill-body fingerprint matches and the renderer swaps " +
-      "the raw user bubble for a compact chip that says 'Skill: Example Skill'.";
+      "the raw user bubble for a compact card that says 'Skill: Example Skill'.";
     const content = jsonl([
       { type: "user", message: { role: "user", content: skillBody } },
     ]);
     render(<BubbleTranscript content={content} />);
-    const chip = screen.getByTestId("skill-chip");
-    expect(chip.textContent).toContain("Skill:");
-    expect(chip.textContent).toContain("Example Skill");
+    const card = screen.getByTestId("skill-card");
+    expect(card.textContent).toContain("Skill");
+    expect(card.textContent).toContain("Example Skill");
     // No plain user bubble rendered for this event.
     expect(screen.queryByTestId("bubble-user")).toBeNull();
   });
@@ -621,7 +715,7 @@ describe("BubbleTranscript — AC-3 skill-body renders as SkillChip", () => {
     ]);
     render(<BubbleTranscript content={content} />);
     expect(screen.getByTestId("bubble-user")).toBeInTheDocument();
-    expect(screen.queryByTestId("skill-chip")).toBeNull();
+    expect(screen.queryByTestId("skill-card")).toBeNull();
   });
 });
 

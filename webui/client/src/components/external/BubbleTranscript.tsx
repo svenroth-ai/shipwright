@@ -60,9 +60,10 @@ import { useAutoScroll } from "../../hooks/useAutoScroll";
 import { useLaunchTask } from "../../hooks/useLaunchTask";
 import { AttachmentCard } from "./AttachmentCard";
 import { MarkdownText } from "./MarkdownText";
-import { SkillChip } from "./SkillChip";
+import { SkillCard } from "./SkillCard";
 import { SlashCommandChip } from "./SlashCommandChip";
 import { ToolCard } from "./ToolCard";
+import { TodoWriteCard } from "./TodoWriteCard";
 import { ToolOutputBlock } from "./ToolOutputBlock";
 import type { CopyCommandForms, ExternalTask } from "../../lib/externalApi";
 
@@ -413,6 +414,32 @@ type BubbleGroup =
   | { kind: "single"; event: ParsedEvent; baseIndex: number }
   | { kind: "attachments"; events: ParsedEvent[]; baseIndex: number };
 
+/**
+ * 2026-04-23 — ADR-056 AC-A + external-review GPT #8 (key stability).
+ *
+ * React preserves a component instance across re-renders when its key is
+ * stable. SkillCard + ToolCard rely on this to keep their expanded/
+ * collapsed state intact during 1 Hz poll ticks + "Load older" tail
+ * growth. The old key shape `${i}-${uuid}` baked the array index into
+ * the key prefix, so inserting any event above an expanded card shifted
+ * every downstream key and collapsed the cards.
+ *
+ * Priority order for key source (all stable across array position):
+ *   1. `event.uuid` — Claude always emits it for parsed events. First pick.
+ *   2. `${kind}-${timestamp}` — stable across reads of the same JSONL
+ *      when the event has a timestamp but no uuid (rare — some
+ *      parser-synthesized events).
+ *   3. `${kind}-i-${position}` — last resort for uuid-less,
+ *      timestamp-less events (e.g. `unknown` stubs from malformed
+ *      lines). This falls back to the old behavior for those edge
+ *      cases; the main render path will use (1) or (2).
+ */
+function stableEventKey(event: ParsedEvent, position: number): string {
+  if (event.uuid) return event.uuid;
+  if (event.timestamp) return `${event.kind}-${event.timestamp}`;
+  return `${event.kind}-i-${position}`;
+}
+
 function groupConsecutiveAttachments(events: ParsedEvent[]): BubbleGroup[] {
   const out: BubbleGroup[] = [];
   let i = 0;
@@ -494,7 +521,7 @@ function PlainBubbles({
         const previous = i > 0 ? events[i - 1] : null;
         return (
           <BubbleRow
-            key={`${i}-${e.uuid ?? i}`}
+            key={stableEventKey(e, i)}
             event={e}
             previous={previous}
             resolved={resolved}
@@ -767,12 +794,11 @@ function renderBubble(
     return <SlashCommandChip commandName={event.commandName} />;
   }
 
-  // 2026-04-23 — iterate-20260423-chat-followups AC-3: skill-loader body
-  // collapses to a centered chip. The full manual text is intentionally
-  // dropped from the visible transcript — it's injected context, not
-  // user-authored content.
+  // 2026-04-23 — ADR-055 chat-followups AC-3 + ADR-056 chat-livetest-2
+  // AC-A: skill-loader body renders as a collapsed-by-default card with
+  // chevron; click expands to show the Markdown-rendered manual.
   if (event.kind === "skill-body") {
-    return <SkillChip skillName={event.skillName} />;
+    return <SkillCard skillName={event.skillName} body={event.body} />;
   }
 
   // 2026-04-23 — AC-4: file-history-snapshot renders as AttachmentCard
@@ -1029,6 +1055,24 @@ function ToolUseBubble({
   // expanded body shows input AND output. The separate tool_result
   // bubble is suppressed upstream (see renderBubble user branch).
   const result = toolResultsById.get(id);
+
+  // 2026-04-23 — ADR-056 AC-D: TodoWrite tool_use gets a specialized
+  // renderer (checklist + progress). TodoWriteCard falls back to generic
+  // ToolCard internally when the stream is complete AND input shape
+  // is decisively invalid — so dispatch here is safe even for partial
+  // streaming payloads.
+  if (name === "TodoWrite") {
+    return (
+      <div
+        className="max-w-[90%] w-full"
+        data-testid="bubble-tool-use"
+        data-tool-use-id={id}
+      >
+        <TodoWriteCard id={id} name={name} input={input} result={result} />
+      </div>
+    );
+  }
+
   return (
     <div
       className="max-w-[90%] w-full"

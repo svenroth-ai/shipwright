@@ -248,12 +248,26 @@ export function NewIssueModal({
       setSubmitting(true);
       setError(null);
       try {
-        const task = await createTask({
+        // 2026-04-23 — iterate-20260423-chat-livetest-2 AC-B. Pass the
+        // selected phase on CREATE (not just on /launch) so Save-to-Backlog
+        // tasks get the badge too. Server validates against the catalog
+        // and derives phaseLabel — we send id only.
+        const createPayload: {
+          title: string;
+          cwd: string;
+          pluginDirs: string[];
+          projectId: string;
+          phase?: string;
+        } = {
           title: title.trim(),
           cwd: selectedProject.path,
           pluginDirs: [],
           projectId: selectedProject.id,
-        });
+        };
+        if (mode === "new-task" && currentPhase) {
+          createPayload.phase = currentPhase.id;
+        }
+        const task = await createTask(createPayload);
 
         if (submitAction === "save") {
           onTaskCreated?.();
