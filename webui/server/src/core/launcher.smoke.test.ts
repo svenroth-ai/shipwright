@@ -72,7 +72,9 @@ describe("launcher smoke — generated PS command actually parses + runs", () =>
     "tricky-char title (single quote, $, backtick, semicolon, &) parses cleanly",
     async () => {
       const trickyTitle = `Test's $tring \`with semicolons; & pipes |`;
-      const cwd = "C:/Users/SvenRoth/dinovo GmbH/AI Backup - Documents/03 Development/shipwright";
+      // 2026-04-23 — Set-Location -ErrorAction Stop requires a real dir.
+      // process.cwd() is guaranteed present at test runtime.
+      const cwd = process.cwd();
       const cmd = buildCopyCommands({
         sessionUuid: SAMPLE_UUID,
         cwd,
@@ -86,7 +88,10 @@ describe("launcher smoke — generated PS command actually parses + runs", () =>
       expect(stdout).toContain(SAMPLE_UUID);
       expect(stdout).toContain(`--name`);
       expect(stdout).toContain(trickyTitle);
-      expect(stdout).toContain(cwd);
+      // Assertion: --add-dir appears in claude's parsed args. We don't assert
+      // cwd verbatim because PowerShell path-normalizes (e.g. C:\ ↔ C:/) and
+      // the Set-Location prefix consumes the cwd value too.
+      expect(stdout).toContain("--add-dir");
     },
     20_000,
   );
@@ -95,7 +100,11 @@ describe("launcher smoke — generated PS command actually parses + runs", () =>
     "Unicode title (umlauts, emoji, CJK) survives the round-trip",
     async () => {
       const t = "Test ä ö ü 日本語 🚀";
-      const cwd = "C:/tmp";
+      // 2026-04-23 — cwd must actually exist now that the rendered
+      // command starts with `Set-Location <cwd> -ErrorAction Stop; `
+      // (iterate-20260423-resume-cwd-prefix). `process.cwd()` is
+      // guaranteed to be a real directory at test time.
+      const cwd = process.cwd();
       const cmd = buildCopyCommands({ sessionUuid: SAMPLE_UUID, cwd, title: t });
       const { exit, stderr } = await runInPowerShell(cmd.powershell);
       expect(stderr).toBe("");
@@ -112,7 +121,7 @@ describe("launcher smoke — generated PS command actually parses + runs", () =>
     async () => {
       const cmd = buildCopyCommands({
         sessionUuid: SAMPLE_UUID,
-        cwd: "C:/tmp",
+        cwd: process.cwd(),
         title: "",
       });
       expect(cmd.powershell).not.toContain("--name");

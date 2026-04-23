@@ -38,7 +38,7 @@
  *   `--plugin-dir <escaped>` pairs.
  */
 
-import { qPs, qCmd, qPosix, toPosixPath } from "./launcher.js";
+import { qPs, qCmd, qPosix, toPosixPath, buildCdPrefix } from "./launcher.js";
 
 export type ShellForm = "powershell" | "cmd" | "posix";
 
@@ -230,14 +230,13 @@ function substituteOne(
       // `cd.prefix` is the first place a server-trusted path gets
       // injected at the START of the command line, which widens the blast
       // radius if that assumption ever breaks.
-      const p = ctx.project.path;
-      if (!p) return "";
-      const escaped = q(transformPath(shellForm, p));
-      if (shellForm === "powershell") {
-        return `Set-Location ${escaped} -ErrorAction Stop; `;
-      }
-      if (shellForm === "cmd") return `cd /d ${escaped} && `;
-      return `cd ${escaped} && `;
+      //
+      // 2026-04-23 — iterate-20260423-resume-cwd-prefix extracted the
+      // shell-specific formatting into `buildCdPrefix` in launcher.ts so
+      // the legacy `buildCopyCommands` (Resume / Fork) path emits
+      // byte-identical prefixes. `buildCdPrefix` already handles empty
+      // cwd and the POSIX `toPosixPath` transform internally.
+      return buildCdPrefix(shellForm, ctx.project.path);
     }
     default:
       // This branch is unreachable when callers pre-validate via
