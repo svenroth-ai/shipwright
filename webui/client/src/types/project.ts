@@ -42,6 +42,15 @@ export interface Project {
    */
   hasPreview?: boolean;
   /**
+   * 2026-04-23 — server-derived, true iff `<path>/shipwright_run_config.json`
+   * exists. Drives visibility of the one-shot `adopt` phase in NewIssueModal:
+   * once a project is adopted, the Adopt option disappears because
+   * `/shipwright-adopt` refuses to run a second time. Synthesized and
+   * adopt-less projects come back as `false`. Present in API responses;
+   * not stored in projects.json.
+   */
+  adopted?: boolean;
+  /**
    * Iterate 3 section 02 — true for the synthesized "Unassigned" pseudo-
    * project (id = "unassigned"). ProjectManager.getAll() appends this row
    * on the fly when any task references a non-real project. Never

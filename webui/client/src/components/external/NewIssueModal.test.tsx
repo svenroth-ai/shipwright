@@ -39,31 +39,40 @@ const SAMPLE_ACTIONS: ResolvedProjectActions = {
   diagnostics: [],
 };
 
+interface RenderModalOpts {
+  /** Optional override for seeded projects[] in the React Query cache. */
+  projectsOverride?: Array<Record<string, unknown>>;
+}
+
 function renderModal(
-  overrides: Partial<React.ComponentProps<typeof NewIssueModal>> = {},
+  overrides: Partial<React.ComponentProps<typeof NewIssueModal>> & RenderModalOpts = {},
 ) {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
+  const { projectsOverride, ...props_ } = overrides;
   // Mock useProjects list via the fetch layer — but useProjects queries
   // `/projects`. Seed the query cache directly so we skip the network.
-  qc.setQueryData(["projects"], [
-    {
-      id: "proj-1",
-      name: "demo",
-      path: "/tmp/demo",
-      profile: "supabase-nextjs",
-      status: "active",
-      createdAt: "2026-04-01",
-      lastActive: "2026-04-20",
-    },
-  ]);
+  qc.setQueryData(
+    ["projects"],
+    projectsOverride ?? [
+      {
+        id: "proj-1",
+        name: "demo",
+        path: "/tmp/demo",
+        profile: "supabase-nextjs",
+        status: "active",
+        createdAt: "2026-04-01",
+        lastActive: "2026-04-20",
+      },
+    ],
+  );
   const props = {
     open: true,
     onOpenChange: vi.fn(),
     action: TASK_ACTION,
     projectActions: SAMPLE_ACTIONS,
-    ...overrides,
+    ...props_,
   };
   return render(
     <MemoryRouter>
@@ -153,5 +162,69 @@ describe("NewIssueModal", () => {
 
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
     expect(write).not.toHaveBeenCalled();
+  });
+
+  // 2026-04-23 — Adopt phase gate. `/shipwright-adopt` is one-shot; once
+  // a project is adopted (shipwright_run_config.json exists) the phase
+  // option disappears so users can't re-trigger it. We assert on the
+  // trigger's visible label (which reflects phases[0] via the reset
+  // effect) because Radix DropdownMenu.Content only mounts under a real
+  // pointer event; JSDOM + fireEvent.click doesn't open it. The existing
+  // Playwright spec `70-h-actions-endpoint.spec.ts` exercises the open
+  // menu path.
+  describe("adopt phase gating (2026-04-23)", () => {
+    const ACTIONS_WITH_ADOPT: ResolvedProjectActions = {
+      ...SAMPLE_ACTIONS,
+      phases: [
+        { id: "adopt", label: "Adopt", color: "#64748B" },
+        { id: "build", label: "Build", color: "#F59E0B" },
+        { id: "design", label: "Design", color: "#A855F7" },
+      ],
+    };
+
+    const baseProject = {
+      id: "proj-1",
+      name: "demo",
+      path: "/tmp/demo",
+      profile: "supabase-nextjs",
+      status: "active",
+      createdAt: "2026-04-01",
+      lastActive: "2026-04-20",
+    };
+
+    it("hides the Adopt phase when selected project is already adopted", () => {
+      renderModal({
+        projectActions: ACTIONS_WITH_ADOPT,
+        projectsOverride: [{ ...baseProject, adopted: true }],
+      });
+      // Trigger shows the first visible phase. Adopt was first in the
+      // source list; with the gate active it's filtered out, so the
+      // trigger reflects "Build" (next phase in the array).
+      const trigger = screen.getByTestId("new-issue-phase-select");
+      expect(trigger.textContent).toContain("Build");
+      expect(trigger.textContent).not.toContain("Adopt");
+    });
+
+    it("shows the Adopt phase when selected project is NOT adopted", () => {
+      renderModal({
+        projectActions: ACTIONS_WITH_ADOPT,
+        projectsOverride: [{ ...baseProject, adopted: false }],
+      });
+      const trigger = screen.getByTestId("new-issue-phase-select");
+      expect(trigger.textContent).toContain("Adopt");
+    });
+
+    it("treats missing adopted field as not-adopted (legacy API shape)", () => {
+      // A server that hasn't been upgraded yet may omit the field. Showing
+      // Adopt in that ambiguous case is safer than hiding it — the skill's
+      // own pre-flight check will refuse to run if run_config is already
+      // present, so false positives are recoverable.
+      renderModal({
+        projectActions: ACTIONS_WITH_ADOPT,
+        projectsOverride: [baseProject], // no `adopted` field
+      });
+      const trigger = screen.getByTestId("new-issue-phase-select");
+      expect(trigger.textContent).toContain("Adopt");
+    });
   });
 });

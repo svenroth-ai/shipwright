@@ -126,7 +126,19 @@ export class ProjectManager {
       ...project,
       mode: getProjectMode(project.path),
       hasPreview: this.hasPreviewCapability(project.path),
+      adopted: this.isAdopted(project.path),
     };
+  }
+
+  /**
+   * 2026-04-23 — true iff `<projectPath>/shipwright_run_config.json`
+   * exists. Drives the WebUI's visibility gate for the one-shot `adopt`
+   * phase (NewIssueModal filters that option when adopted=true). Cheap
+   * `existsSync` probe; no file read, no cache needed.
+   */
+  isAdopted(projectPath: string): boolean {
+    if (!projectPath) return false;
+    return this.deps.existsSync(`${projectPath}/shipwright_run_config.json`);
   }
 
   /**

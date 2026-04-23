@@ -157,7 +157,9 @@ describe("actions/preview/stub routes", () => {
       "new-pipeline",
       "new-iterate",
     ]);
-    expect(body.phases.length).toBe(9);
+    // 2026-04-23 — `adopt` phase added to default-actions.json.
+    expect(body.phases.length).toBe(10);
+    expect(body.phases.some((p: { id: string }) => p.id === "adopt")).toBe(true);
     expect(body.defaults.autonomy).toBe("guided");
     expect(body.preview.enabled).toBe(true);
     expect(body.preview.command).toBe("npm run dev");

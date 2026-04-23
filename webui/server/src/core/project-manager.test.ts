@@ -411,4 +411,70 @@ describe("ProjectManager", () => {
     const reloaded = pm.getById(p.id);
     expect(reloaded?.hasPreview).toBe(true);
   });
+
+  // 2026-04-23 — `adopted` flag: true iff shipwright_run_config.json
+  // exists at the project path. Drives WebUI visibility of the one-shot
+  // `adopt` phase in NewIssueModal.
+  describe("adopted flag (2026-04-23)", () => {
+    function depsAdoptionState(runConfigExists: boolean): ProjectManagerDeps {
+      const runCfgPath = "/tmp/proj/shipwright_run_config.json";
+      const projectPath = "/tmp/proj";
+      return {
+        readFile: vi.fn(async () => "[]"),
+        writeFile: vi.fn(async () => {}),
+        existsSync: vi.fn((p: string) => {
+          if (p === runCfgPath) return runConfigExists;
+          if (p === projectPath) return true;
+          return true;
+        }),
+        mkdirSync: vi.fn(),
+        readdirSync: vi.fn(() => []),
+      };
+    }
+
+    it("withMode sets adopted=true when shipwright_run_config.json exists", () => {
+      const deps = depsAdoptionState(true);
+      const pm = new ProjectManager("/tmp/projects.json", deps);
+      const p = pm.create({ name: "Test", path: "/tmp/proj", profile: "default", status: "active" });
+      expect(p.adopted).toBe(true);
+    });
+
+    it("withMode sets adopted=false when shipwright_run_config.json is missing", () => {
+      const deps = depsAdoptionState(false);
+      const pm = new ProjectManager("/tmp/projects.json", deps);
+      const p = pm.create({ name: "Test", path: "/tmp/proj", profile: "default", status: "active" });
+      expect(p.adopted).toBe(false);
+    });
+
+    it("getById also returns adopted flag", () => {
+      const deps = depsAdoptionState(true);
+      const pm = new ProjectManager("/tmp/projects.json", deps);
+      const p = pm.create({ name: "Test", path: "/tmp/proj", profile: "default", status: "active" });
+      const reloaded = pm.getById(p.id);
+      expect(reloaded?.adopted).toBe(true);
+    });
+
+    it("getAll includes adopted flag on every real row", () => {
+      const deps = depsAdoptionState(false);
+      const pm = new ProjectManager("/tmp/projects.json", deps);
+      pm.create({ name: "Test", path: "/tmp/proj", profile: "default", status: "active" });
+      const all = pm.getAll();
+      expect(all).toHaveLength(1);
+      expect(all[0].adopted).toBe(false);
+    });
+
+    it("synthesized 'Unassigned' row does NOT carry adopted=true", () => {
+      // The synthesized orphan bucket has no path on disk, so adopted must
+      // not be truthy — the Adopt phase never applies to it.
+      const deps = depsAdoptionState(true);
+      const pm = new ProjectManager("/tmp/projects.json", {
+        ...deps,
+        getTaskProjectIds: () => new Set(["unassigned"]),
+      });
+      pm.create({ name: "Real", path: "/tmp/proj", profile: "default", status: "active" });
+      const synthesized = pm.getAll().find((p) => p.id === "unassigned");
+      expect(synthesized).toBeDefined();
+      expect(synthesized?.adopted).not.toBe(true);
+    });
+  });
 });
