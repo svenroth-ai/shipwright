@@ -238,6 +238,22 @@ def _write_gitleaks_allowlist(excludes: tuple[str, ...]) -> str:
     return path
 
 
+def _utf8_subprocess_env() -> dict[str, str]:
+    """Env for scanner subprocesses with UTF-8 IO forced.
+
+    Semgrep is a Python tool; on Windows its internal sys.stdout/stderr
+    default to cp1252 and crash when scanning files with Unicode control
+    chars (e.g. \\u202a LEFT-TO-RIGHT EMBEDDING). PYTHONIOENCODING=utf-8
+    and PYTHONUTF8=1 fix that. Trivy and Gitleaks are Go binaries so these
+    vars are no-ops there, but passing a single consistent env keeps the
+    subprocess contract simple.
+    """
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUTF8"] = "1"
+    return env
+
+
 def _run_tool(
     cmd: list[str],
     tool_name: str,
@@ -259,6 +275,9 @@ def _run_tool(
             cmd,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=_utf8_subprocess_env(),
             timeout=_TIMEOUT,
         )
 

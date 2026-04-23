@@ -21,6 +21,7 @@ from oss_backend import (
     _run_semgrep,
     _run_trivy,
     _run_gitleaks,
+    _utf8_subprocess_env,
 )
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -360,3 +361,68 @@ class TestResolveExcludes:
         result = _resolve_excludes()
         for name in _DEFAULT_EXCLUDES:
             assert name in result
+
+
+# ---------------------------------------------------------------------------
+# UTF-8 subprocess env — unblocks Semgrep SAST on Windows (cp1252 default)
+# ---------------------------------------------------------------------------
+
+class TestUtf8SubprocessEnv:
+    """Scanners must run with PYTHONIOENCODING=utf-8 + PYTHONUTF8=1 so
+    Semgrep does not crash on source files containing Unicode control chars
+    (e.g. \\u202a LEFT-TO-RIGHT EMBEDDING)."""
+
+    def test_env_forces_utf8_io(self, monkeypatch):
+        monkeypatch.setenv("PYTHONIOENCODING", "cp1252")  # simulate Windows default
+        env = _utf8_subprocess_env()
+        assert env["PYTHONIOENCODING"] == "utf-8"
+        assert env["PYTHONUTF8"] == "1"
+
+    def test_env_preserves_existing_vars(self, monkeypatch):
+        monkeypatch.setenv("MY_UNRELATED_VAR", "keep-me")
+        env = _utf8_subprocess_env()
+        assert env.get("MY_UNRELATED_VAR") == "keep-me"
+
+    def test_env_preserves_path(self):
+        env = _utf8_subprocess_env()
+        # PATH must survive — otherwise the subprocess cannot find semgrep/trivy/gitleaks
+        assert "PATH" in env or "Path" in env
+
+    @patch("subprocess.run")
+    def test_semgrep_subprocess_receives_utf8_env(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=0, stdout="{}", stderr="")
+        _run_semgrep("/tmp/test")
+        env = mock_run.call_args.kwargs.get("env")
+        assert env is not None, "subprocess.run must receive explicit env"
+        assert env.get("PYTHONIOENCODING") == "utf-8"
+        assert env.get("PYTHONUTF8") == "1"
+
+    @patch("subprocess.run")
+    def test_trivy_subprocess_receives_utf8_env(self, mock_run):
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout='{"Results":[]}', stderr=""
+        )
+        _run_trivy("/tmp/test")
+        env = mock_run.call_args.kwargs.get("env")
+        assert env is not None
+        assert env.get("PYTHONIOENCODING") == "utf-8"
+
+    @patch("subprocess.run")
+    def test_gitleaks_subprocess_receives_utf8_env(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=0, stdout="[]", stderr="")
+        _run_gitleaks("/tmp/test")
+        env = mock_run.call_args.kwargs.get("env")
+        assert env is not None
+        assert env.get("PYTHONIOENCODING") == "utf-8"
+
+    @patch("subprocess.run")
+    def test_subprocess_decodes_utf8_not_locale_default(self, mock_run):
+        """Even if the tool emits UTF-8 containing non-cp1252 bytes, our
+        subprocess.run must decode as UTF-8 so we don't crash parsing it."""
+        mock_run.return_value = MagicMock(returncode=0, stdout="{}", stderr="")
+        _run_semgrep("/tmp/test")
+        kwargs = mock_run.call_args.kwargs
+        assert kwargs.get("encoding") == "utf-8"
+        # errors='replace' is a belt-and-suspenders safety net for malformed
+        # bytes — rare, but prevents UnicodeDecodeError from bubbling up.
+        assert kwargs.get("errors") == "replace"
