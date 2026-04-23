@@ -87,7 +87,7 @@ function buildCommandText(opts: {
 
   return (
     `$ claude ${slash} \\n` +
-    `    --project-root ${projectPath} \\n` +
+    `    --add-dir ${projectPath} \\n` +
     `    --session-id ${sessionUuid} \\n` +
     `    --name ${quotedName}` +
     pluginDirsFlag +

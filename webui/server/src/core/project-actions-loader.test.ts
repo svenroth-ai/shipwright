@@ -236,4 +236,22 @@ describe("project-actions-loader — loadBundledDefault (pure)", () => {
     expect(d.actions.length).toBe(3);
     expect(d.phases.some((p) => p.id === "adopt")).toBe(true);
   });
+
+  // 2026-04-23 — iterate-20260423-cli-flag-fix. Regression guard: the
+  // bundled command templates MUST use `--add-dir` (a real Claude CLI flag,
+  // verified via `claude --help`) rather than `--project-root` (which does
+  // not exist and causes `error: unknown option '--project-root'` when the
+  // user pastes the copied command).
+  it("command_templates use --add-dir, not --project-root", () => {
+    const d = loadBundledDefault();
+    for (const action of d.actions) {
+      const tpl = action.command_template ?? "";
+      expect(tpl, `action ${action.id} must not use --project-root`).not.toContain(
+        "--project-root",
+      );
+      expect(tpl, `action ${action.id} must use --add-dir`).toContain(
+        "--add-dir",
+      );
+    }
+  });
 });
