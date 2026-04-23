@@ -71,9 +71,8 @@ export function TaskListCardShell({
     <div
       className="max-w-[90%] w-full overflow-hidden"
       style={{
-        background: "#1f2937",
-        color: "#e5e7eb",
-        border: "1px solid #374151",
+        background: "var(--color-surface, #ffffff)",
+        border: "1px solid var(--color-border, #e0dbd4)",
         borderRadius: "var(--radius-button, 8px)",
         boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
       }}
@@ -85,7 +84,8 @@ export function TaskListCardShell({
         className="flex items-center gap-2.5 px-3.5 py-2"
         style={{
           minHeight: 36,
-          borderBottom: total > 0 ? "1px solid #374151" : "none",
+          borderBottom:
+            total > 0 ? "1px solid var(--color-border, #e0dbd4)" : "none",
         }}
       >
         <span
@@ -100,14 +100,14 @@ export function TaskListCardShell({
         />
         <span
           className="flex-1 min-w-0 text-[13px] truncate"
-          style={{ color: "#f3f4f6", fontWeight: 600 }}
+          style={{ color: "var(--color-text, #1a1a1a)", fontWeight: 600 }}
           data-testid="task-list-card-title"
         >
           {headerLabel}
         </span>
         <span
           className="shrink-0 text-[11px] tabular-nums"
-          style={{ color: "#9ca3af", fontWeight: 500 }}
+          style={{ color: "var(--color-muted, #6b7280)", fontWeight: 500 }}
           data-testid="task-list-card-progress"
         >
           {isLoading ? "…" : `${completed}/${total}`}
@@ -159,7 +159,7 @@ function TaskRow({ task }: { task: TaskListItem }) {
       {!isKnown && (
         <span
           className="shrink-0 text-[10px] italic"
-          style={{ color: "#6b7280" }}
+          style={{ color: "var(--color-muted, #6b7280)" }}
           data-testid="task-list-card-unknown-status"
         >
           (unknown: {task.status})
@@ -180,8 +180,8 @@ function statusStyle(status: TaskStatus): {
     case "completed":
       return {
         Icon: Check,
-        iconColor: "#6b7280",
-        textColor: "#6b7280",
+        iconColor: "var(--color-muted, #6b7280)",
+        textColor: "var(--color-muted, #6b7280)",
         strike: true,
         weight: 400,
       };
@@ -189,7 +189,7 @@ function statusStyle(status: TaskStatus): {
       return {
         Icon: Asterisk,
         iconColor: "#10b981",
-        textColor: "#f3f4f6",
+        textColor: "var(--color-text, #1a1a1a)",
         strike: false,
         weight: 500,
       };
@@ -197,8 +197,8 @@ function statusStyle(status: TaskStatus): {
     default:
       return {
         Icon: Square,
-        iconColor: "#6b7280",
-        textColor: "#d1d5db",
+        iconColor: "var(--color-muted, #6b7280)",
+        textColor: "var(--color-text, #1a1a1a)",
         strike: false,
         weight: 400,
       };
