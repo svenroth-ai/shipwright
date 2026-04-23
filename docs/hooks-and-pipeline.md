@@ -849,20 +849,40 @@ C5 is **skipped** for:
 
 ### Helper Scripts
 
-Iterate 12.0 introduces two write helpers so every Canon caller goes
-through a deterministic, lock-serialised write path:
+Shipwright writes iterate-finalization artifacts through deterministic,
+lock-serialised tools so every Canon caller lands in a consistent shape:
 
-- **`shared/scripts/tools/append_changelog_entry.py`** — atomic
-  Keep-a-Changelog writer with dedupe and cross-platform file-lock
-  (`CHANGELOG.md.lock`).
+- **`shared/scripts/tools/append_iterate_entry.py`** (file-per-iterate
+  refactor) — writes one `agent_docs/iterates/<run_id>.json` entry atomically,
+  runs legacy-array → dir migration on first touch under a state-machine
+  sentinel, applies 50-entry retention, quarantines invalid or duplicate
+  legacy rows. Holds `shipwright_run_config.json.lock` for the full
+  transaction so same-worktree concurrent finalize calls serialize.
+- **`shared/scripts/tools/write_changelog_drop.py`** — writes one
+  `CHANGELOG-unreleased.d/<category>/<run_id>_NNN.md` bullet per F4 call.
+  Exclusive-create via `O_EXCL` so concurrent calls can't collide on the
+  same counter. Replaces the legacy `append_changelog_entry.py` for the
+  iterate-F4 path.
+- **`shared/scripts/tools/aggregate_changelog.py`** — release-time
+  aggregator. Reads the drop directory, renders a Keep-a-Changelog
+  versioned section, inserts it at the structural point in `CHANGELOG.md`
+  (above the first existing `## [version]` heading, not above the title),
+  deletes only the drop files that were actually included in the snapshot.
+  Warns loudly if legacy `## [Unreleased]` bullets remain so the operator
+  notices split-brain state.
+- **`shared/scripts/tools/append_changelog_entry.py`** — still present for
+  non-iterate flows that need the legacy `[Unreleased]` append path. Will
+  be deprecated once all callers migrate.
 - **`shared/scripts/tools/append_phase_history.py`** — atomic
   read-modify-write on `shipwright_run_config.json::phase_history[<phase>]`,
-  with 50-entry retention per phase and file-lock
-  (`shipwright_run_config.json.lock`).
+  with 50-entry retention per phase. Handles generic pipeline phases —
+  `iterate` no longer flows through this file since F5c was swapped to
+  `append_iterate_entry.py`.
 
-Both helpers use `shared/scripts/lib/file_lock.py`, which wraps
+All helpers use `shared/scripts/lib/file_lock.py`, which wraps
 `fcntl.flock` on POSIX and `msvcrt.locking` on Windows with a hard
-5-second timeout (no silent retry).
+timeout (5-second default, 10 seconds for iterate append to cover the
+migration path).
 
 ### `phase_history` Schema
 
@@ -880,9 +900,10 @@ A new top-level field in `shipwright_run_config.json` parallel to
 ```
 
 - Retention: last 50 entries per phase.
-- `iterate` keeps writing to `iterate_history` (richer schema —
-  branch, spec path, tests_passed); it is NOT mirrored into
-  `phase_history`.
+- `iterate` writes to `agent_docs/iterates/<run_id>.json` (file-per-iterate
+  refactor — richer schema: branch, spec path, tests_passed, adr). The
+  legacy `iterate_history` key is left empty on new projects for
+  backward-compat with external readers. Not mirrored into `phase_history`.
 - Phase modules fill `phase_history` starting in iterate 12.1.
 
 #### Why two histories

@@ -794,7 +794,7 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 1. Runs a setup script that detects the last version tag and collects all commits since then. If there are no unreleased changes, it stops early.
 2. Parses each commit message into type and scope using Conventional Commits conventions. Types map to changelog sections: `feat` becomes "Added", `fix` becomes "Fixed", `refactor` becomes "Changed", and so on.
 3. Determines the version bump: any `BREAKING CHANGE` triggers a major bump, any `feat` triggers a minor bump, and everything else triggers a patch bump. If no previous tag exists, it suggests `v0.1.0`.
-4. Generates the changelog entry and prepends it to `CHANGELOG.md` (creating the file if needed).
+4. Aggregates the `CHANGELOG-unreleased.d/<category>/` drop files that iterate F4 has been writing since the last release, renders a Keep-a-Changelog versioned section, and inserts it at the structural point in `CHANGELOG.md` (above the first existing `## [version]` heading — NOT blindly at the top, which would corrupt the `# Changelog` title). If `CHANGELOG.md` carries legacy `## [Unreleased]` bullets from pre-refactor iterates, the aggregator emits a loud stderr WARNING so the operator can fold them in manually or accept split-brain.
 5. In guided mode, shows you the entry for review with options to accept, edit, or cancel. In autonomous mode, it proceeds without prompting.
 6. Commits the changelog, creates an annotated git tag, and pushes both to origin.
 7. If you are on a feature branch, it creates a GitHub PR with the changelog as the body. In autonomous mode, the PR is merged immediately; in guided mode, it stays open for your review.
@@ -1260,11 +1260,11 @@ Every iterate run -- regardless of complexity -- ends with the same mandatory fi
 2. **Architecture update** -- update `architecture.md` if structural changes were made
 3. **ADR** -- record the decision in `decision_log.md`
 4. **Reflection** -- capture learnings (patterns, gotchas, corrections) in `conventions.md` and/or Claude Code Memory
-5. **CHANGELOG** -- add entry to `[Unreleased]` section
+5. **CHANGELOG drop** -- write a drop file per bullet under `CHANGELOG-unreleased.d/<category>/<run_id>_NNN.md` via `write_changelog_drop.py`. Aggregated into `CHANGELOG.md` at release time by `/shipwright-changelog`. Replaces the legacy `[Unreleased]`-append pattern; eliminates the merge hotspot that blocked parallel iterates.
 6. **Test results JSON** -- write structured test results to `shipwright_test_results.json`
 7. **Update compliance** -- regenerate traceability and reports (pre-commit)
 8. **Update build dashboard** -- refresh `build_dashboard.md` (pre-commit)
-9. **Update iterate_history** -- append to `shipwright_run_config.json` (last 50 entries retained; commit hash intentionally omitted — look it up in `shipwright_events.jsonl` by `run_id`)
+9. **Record iterate entry** -- `append_iterate_entry.py` writes `agent_docs/iterates/<run_id>.json` (last 50 entries retained; commit hash intentionally omitted — look it up in `shipwright_events.jsonl` by `run_id`). On first contact with a legacy `iterate_history` array, the tool migrates all valid rows under the same transaction lock; invalid / duplicate rows land in `agent_docs/iterates/_quarantine/` and the count surfaces in the handoff + verifier output.
 10. **Conventional commit** -- single atomic commit with explicit `git add` list (never `-A`), `Run-ID` trailer and FR references
 11. **Record event** -- append `work_completed` to `shipwright_events.jsonl` with the real commit hash (the only step that legitimately runs post-commit, and it writes only to a gitignored file)
 12. **Merge, push & verify** -- merge branch to main, push, verify event was recorded, regenerate session handoff
