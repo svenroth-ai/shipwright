@@ -263,9 +263,27 @@ export function NewIssueModal({
         }
 
         // Launch path — server transitions state first, then clipboard.
-        const body: { description?: string; autonomy?: AutonomyValue } = {};
+        // 2026-04-23 — pass the full action context (actionId + phase +
+        // phaseLabel + description + autonomy) so the server runs
+        // substitutePlaceholders against the matching command_template
+        // and persists the phase on the task for the TaskDetail badge.
+        const body: {
+          description?: string;
+          autonomy?: AutonomyValue;
+          actionId?: "new-task" | "new-pipeline" | "new-iterate";
+          phase?: string;
+          phaseLabel?: string;
+        } = {
+          actionId: mode,
+        };
         if (description.trim()) body.description = description.trim();
+        // Pipeline + Iterate send autonomy; Task mode does not.
         if (mode !== "new-task") body.autonomy = autonomy;
+        // Task mode sends the picked phase; Pipeline/Iterate have no phase.
+        if (mode === "new-task" && currentPhase) {
+          body.phase = currentPhase.id;
+          body.phaseLabel = currentPhase.label;
+        }
         const { commands } = await launchExternalTask(task.taskId, body);
         onTaskCreated?.();
 

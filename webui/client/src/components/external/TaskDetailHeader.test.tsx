@@ -268,3 +268,49 @@ describe("TaskDetailHeader — behavior", () => {
     expect(screen.queryByTestId("cta-copy-resume-command")).toBeNull();
   });
 });
+
+// ── 2026-04-23 — iterate-20260423-launch-command-wiring ──
+//
+// Phase badge must prefer the server-persisted `task.phase` /
+// `task.phaseLabel` over the title-regex fallback. The title-regex path
+// produces wrong badges for tasks whose title doesn't echo the chosen
+// phase (e.g. phase="compliance" + title="audit drift" → regex matches
+// "audit" → nothing → badge shows nothing; phase="test" + title="Testing
+// the test phase" → regex matches "test" → accidental correct match).
+describe("TaskDetailHeader — phase badge source (2026-04-23)", () => {
+  it("uses task.phaseLabel when present, not the title regex", () => {
+    renderHeader(
+      makeTask({
+        title: "audit drift report", // title alone would not yield a phase
+        phase: "compliance",
+        phaseLabel: "Compliance",
+      }),
+    );
+    // The badge label is rendered as visible text.
+    expect(screen.getByText("Compliance")).toBeTruthy();
+  });
+
+  it("prefers task.phase over a misleading title regex match", () => {
+    // Title says "test" but user picked compliance — honor the user.
+    renderHeader(
+      makeTask({
+        title: "Testing the compliance workflow",
+        phase: "compliance",
+        phaseLabel: "Compliance",
+      }),
+    );
+    expect(screen.getByText("Compliance")).toBeTruthy();
+    expect(screen.queryByText("Test")).toBeNull();
+  });
+
+  it("falls back to title regex only when task.phase is missing", () => {
+    renderHeader(
+      makeTask({
+        title: "Plan the rollout",
+        // no phase on task
+      }),
+    );
+    // Regex still catches "plan" → renders "Plan" badge as before.
+    expect(screen.getByText("Plan")).toBeTruthy();
+  });
+});
