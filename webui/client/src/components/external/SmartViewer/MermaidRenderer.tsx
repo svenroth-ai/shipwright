@@ -20,7 +20,7 @@
  * async commit lands. Cleanup now only flips the `disposed` flag.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 interface Props {
@@ -42,7 +42,7 @@ function hashSource(input: string): string {
   return (hash >>> 0).toString(16);
 }
 
-export function MermaidRenderer({ text, contentHash }: Props) {
+function MermaidRendererImpl({ text, contentHash }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -141,3 +141,11 @@ export function MermaidRenderer({ text, contentHash }: Props) {
     </div>
   );
 }
+
+// 2026-04-23 — iterate-20260423-mermaid-render-loop-fix.
+// Defensive React.memo. If the parent (MarkdownText inside a poll-driven
+// TaskDetailPage) ever re-renders with an identical `text` prop,
+// MermaidRenderer skips its body entirely. Together with the hoisted
+// components object in MarkdownText, this breaks the permanent-flicker
+// loop caused by the 1-Hz transcript polling cadence.
+export const MermaidRenderer = memo(MermaidRendererImpl);
