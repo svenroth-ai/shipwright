@@ -23,7 +23,7 @@
  */
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   ChevronRight,
@@ -167,6 +167,7 @@ interface Props {
 export function TaskDetailHeader({ task }: Props) {
   const launchMut = useLaunchTask();
   const closeMut = useCloseExternalTask();
+  const navigate = useNavigate();
   const deleteMut = useDeleteExternalTask();
   const projectsQ = useProjects();
   const transcript = useTaskTranscript(task.taskId);
@@ -279,11 +280,13 @@ export function TaskDetailHeader({ task }: Props) {
       task.state === "launch_failed" ||
       task.state === "jsonl_missing"
     ) {
-      deleteMut.mutate(task.taskId);
+      deleteMut.mutate(task.taskId, {
+        onSuccess: () => navigate("/"),
+      });
       return;
     }
     setConfirmDeleteOpen(true);
-  }, [deleteMut, task.state, task.taskId]);
+  }, [deleteMut, navigate, task.state, task.taskId]);
 
   const handleRename = useCallback(() => {
     titleRef.current?.startEdit();
@@ -616,7 +619,9 @@ export function TaskDetailHeader({ task }: Props) {
         task={task}
         onConfirm={() => {
           setConfirmDeleteOpen(false);
-          deleteMut.mutate(task.taskId);
+          deleteMut.mutate(task.taskId, {
+            onSuccess: () => navigate("/"),
+          });
         }}
       />
     </header>

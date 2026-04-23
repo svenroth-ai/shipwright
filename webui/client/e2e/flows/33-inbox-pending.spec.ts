@@ -1,7 +1,11 @@
 /*
  * Spec 33 — Inbox pending. Seed a JSONL with a pending AskUserQuestion
- * tool_use; assert it surfaces on /inbox with best-effort label + dismiss
- * button. Appending a matching tool_result clears it.
+ * tool_use; assert it surfaces on /inbox as a visible inbox card. Appending
+ * a matching tool_result clears it.
+ *
+ * Iterate 3.9b update: `inbox-item-<toolUseId>` is the legacy-compat hidden
+ * span (aria-hidden); the visible card wrapper is `inbox-card-<toolUseId>`.
+ * Best-effort badge was removed during iterate 3.7d — assertion dropped.
  */
 
 import { test, expect } from "@playwright/test";
@@ -49,12 +53,7 @@ test.describe("Inbox pending", () => {
     // sdk-sessions store the response can take several seconds. Allow
     // 15 s for the item to appear / disappear so the assertion isn't
     // timing-coupled to test fixture accumulation.
-    await expect(page.getByTestId(`inbox-item-${toolUseId}`)).toBeVisible({ timeout: 25_000 });
-    // Best-effort badge must be present — scope to inside the inbox item card
-    // so the page header's "(best-effort detection)" prose doesn't collide.
-    await expect(
-      page.getByTestId(`inbox-item-${toolUseId}`).getByText("best-effort"),
-    ).toBeVisible();
+    await expect(page.getByTestId(`inbox-card-${toolUseId}`)).toBeVisible({ timeout: 25_000 });
 
     // Append matching tool_result → inbox clears.
     const match =
@@ -65,6 +64,6 @@ test.describe("Inbox pending", () => {
       }) + "\n";
     appendFileSync(jsonlPath, match, "utf-8");
 
-    await expect(page.getByTestId(`inbox-item-${toolUseId}`)).toBeHidden({ timeout: 25_000 });
+    await expect(page.getByTestId(`inbox-card-${toolUseId}`)).toHaveCount(0, { timeout: 25_000 });
   });
 });

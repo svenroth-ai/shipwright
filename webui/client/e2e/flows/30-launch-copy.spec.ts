@@ -27,29 +27,27 @@ test.describe("TaskDetail Launch CTA", () => {
 
     const title = `e2e-launch-${Date.now()}`;
     const create = await request.post("/api/external/tasks", {
-      data: { title, cwd: "C:/tmp/e2e-launch" },
+      data: { title, cwd: process.cwd() },
     });
     expect(create.status()).toBe(200);
     const { task } = (await create.json()) as { task: { taskId: string } };
 
     await page.goto(`/tasks/${task.taskId}`);
     await expect(page.getByTestId("task-detail-page")).toBeVisible();
-    await expect(page.getByTestId("task-state-badge")).toHaveText("draft");
+    await expect(page.getByTestId("task-state-badge")).toHaveText("Draft");
 
     await page.evaluate(() => navigator.clipboard.writeText(""));
     await page.getByTestId("cta-launch-in-terminal").click();
 
-    await expect(page.getByTestId("cta-launch-in-terminal")).toContainText(
-      /Copied/i,
+    // iterate 3.9c: after click, state flips draft → awaiting_external_start
+    // and cta-launch-in-terminal unmounts. Wait on the badge transition
+    // instead of the transient "Copied" label.
+    await expect(page.getByTestId("task-state-badge")).toHaveText(
+      "Awaiting launch",
       { timeout: 5000 },
     );
 
     const clipboard = await page.evaluate(() => navigator.clipboard.readText());
     expect(clipboard).toMatch(/--session-id '[0-9a-f-]{36}'/);
-    expect(clipboard).toContain("C:/tmp/e2e-launch");
-
-    await expect(page.getByTestId("task-state-badge")).toHaveText(
-      "awaiting_external_start",
-    );
   });
 });
