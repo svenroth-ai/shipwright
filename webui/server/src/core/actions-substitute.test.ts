@@ -222,14 +222,16 @@ describe("actions-substitute — negative cases", () => {
 
 describe("actions-substitute — substituteAllForms", () => {
   it("returns three parallel shell forms for the Shipwright new-task template", () => {
+    // 2026-04-23 — `--project-root` is NOT a Claude CLI flag; replaced with
+    // `--add-dir` (the standard flag for additional-directory scoping).
     const template =
-      "claude /shipwright-{task.phase}{task.autonomy_flag?} \\\n    --project-root {project.path} \\\n    --session-id {task.uuid} \\\n    --name \"{task.phase_label}: {task.title}\" \\\n    {plugin.dirs}{task.description?}";
+      "claude /shipwright-{task.phase}{task.autonomy_flag?} \\\n    --add-dir {project.path} \\\n    --session-id {task.uuid} \\\n    --name \"{task.phase_label}: {task.title}\" \\\n    {plugin.dirs}{task.description?}";
     const ctx = baseCtx();
     ctx.task.description = "Write docs";
     ctx.pluginDirs = ["/home/sven/plugin"];
     const out = substituteAllForms(template, ctx);
     expect(out.posix).toContain("claude /shipwright-build");
-    expect(out.posix).toContain("--project-root '/home/sven/app'");
+    expect(out.posix).toContain("--add-dir '/home/sven/app'");
     // phase_label + title are user-editable, so they emerge POSIX-escaped
     // (single-quoted) inside the surrounding literal double-quotes from the
     // template. This is the security contract — escaping never relaxes
@@ -248,7 +250,7 @@ describe("actions-substitute — substituteAllForms", () => {
     // 2026-04-23 — was `\<newline>    --autonomous`, now a single space
     // delimiter so PowerShell + cmd.exe parse the command correctly.
     const template =
-      "claude /shipwright-run \\\n    --project-root {project.path} \\\n    --session-id {task.uuid}{task.autonomy_flag?}";
+      "claude /shipwright-run \\\n    --add-dir {project.path} \\\n    --session-id {task.uuid}{task.autonomy_flag?}";
     const ctx = baseCtx();
     ctx.task.autonomy = "autonomous";
     const out = substituteAllForms(template, ctx);
@@ -290,7 +292,7 @@ describe("actions-substitute — validateTemplate dry-run", () => {
 // `<space> \\\n<spaces>` sequence into a single space before returning.
 describe("actions-substitute — single-line output (2026-04-23)", () => {
   const MULTILINE = `claude /shipwright-{task.phase}{task.autonomy_flag?} \\
-    --project-root {project.path} \\
+    --add-dir {project.path} \\
     --session-id {task.uuid} \\
     --name "{task.phase_label}: {task.title}" \\
     {plugin.dirs}{task.description?}`;
@@ -307,7 +309,7 @@ describe("actions-substitute — single-line output (2026-04-23)", () => {
     assertSingleLine(out);
     // All key tokens must still be present.
     expect(out).toContain("/shipwright-build");
-    expect(out).toContain("--project-root");
+    expect(out).toContain("--add-dir");
     expect(out).toContain("--session-id");
     expect(out).toContain("--name");
     expect(out).toContain("fix login");

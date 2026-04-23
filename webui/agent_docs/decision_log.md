@@ -742,3 +742,15 @@
 - **Rationale:** Option A (flatten) chosen over Option B (per-shell continuation character — backtick for PS, caret for cmd, backslash for POSIX) because a single long line works reliably in every shell and avoids per-platform guess work; modern terminals handle lines of arbitrary length.
 - **Consequences:** Copy commands now paste and run correctly in PowerShell / cmd / bash. Four pre-existing test assertions that checked for the continuation-prefix literal were updated to match the new single-line contract. The optional-suffix renderers (task.description?, task.autonomy_flag?) still emit the `\<newline>    ` prefix — it just gets flattened at the end.
 - **Rejected:** B: shell-specific continuations — fragile because PowerShell+cmd have additional parsing quirks (line-terminator sensitivity, escaping). C: rewriting the template without continuations — breaks preview readability + would require changing default-actions.json + any user-authored .webui/actions.json.
+
+---
+
+### ADR-048: Command template uses --add-dir (the real Claude CLI flag), not --project-root
+- **Date:** 2026-04-23
+- **Section:** Iterate — bug: cli-flag-fix
+- **Context:** The bundled default-actions.json command_template shipped with --project-root, which is NOT a Claude CLI flag (verified via 'claude --help' — real flag is --add-dir). Before ADR-046, the legacy buildCopyCommands emitted --add-dir correctly, so the template drift was invisible. ADR-046 migrated to substitutePlaceholders and the template started being emitted verbatim — user pasted, Claude CLI errored 'unknown option --project-root', skill never invoked.
+- **Decision:** All 3 command_templates in default-actions.json (new-task, new-pipeline, new-iterate) swap --project-root → --add-dir. CommandPreviewPanel.buildCommandText also swaps to keep preview in sync with the real copy.
+- **Commit:** pending
+- **Rationale:** --add-dir is documented in 'claude --help' as 'Additional directories to allow tool access to', semantically equivalent to the --project-root intent. Matches what the legacy buildCopyCommands emitted, so behavior is restored to pre-ADR-046.
+- **Consequences:** Pasted commands now parse cleanly in Claude CLI; the skill receives the full arg list. A regression guard test in project-actions-loader.test.ts asserts the bundled default uses --add-dir and explicitly rejects --project-root, so a future template edit can't reintroduce the drift.
+- **Rejected:** Adding --project-root as an alias in Claude CLI itself — not our repo. Keeping --project-root but filtering server-side — would still differ from the visible preview/copy command. Teaching each skill to parse both — unnecessary indirection.
