@@ -202,16 +202,24 @@ Parse the JSON output:
 
 **Always create a feature branch before making changes.**
 
-The setup script (Step D) returns `branch_name` in its JSON output. Use it directly:
+The setup script (Step D) returns `branch_name` in its JSON output. The create path must anchor the new branch on the project's default branch (not whatever HEAD happens to be — ad-hoc `/shipwright-build --from <section>` can be invoked from any branch). The resume path is unchanged:
 
 ```bash
-git checkout -b {branch_name}
+if git show-ref --quiet refs/heads/{branch_name}; then
+  # Resume path — unchanged
+  git checkout {branch_name}
+else
+  # Create path — anchor on default branch for deterministic base
+  DEFAULT_BRANCH=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@' || echo main)
+  git checkout "$DEFAULT_BRANCH"
+  git checkout -b {branch_name}
+fi
 ```
 
 Branch naming pattern: `build/{project-slug}-{session-id}` (e.g., `build/my-app-20260411-120000`).
 Fallback without run config: `build/{session-id}`. Fallback without session-id: `build/{section-name}`.
 
-If branch already exists (resume): `git checkout {branch_name}`
+For parallel build runs on different sections, the same worktree conventions from `/shipwright-iterate` B1a apply (branch from default, `.worktrees/<slug>` inside repo, disjoint file scopes). The pipeline default (sequential builds) is not affected.
 
 ### F. Load Config
 
