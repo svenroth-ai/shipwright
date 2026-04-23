@@ -84,16 +84,51 @@ When `/shipwright-security` runs with the OSS backend:
 
 ### CLI Commands Used
 
+Each scanner is invoked with a default exclusion list (see below):
+
 ```bash
-# Semgrep (SAST)
-semgrep scan --json --config auto {target_dir}
+# Semgrep (SAST) — --exclude repeated per directory name
+semgrep scan --json --config auto --exclude .venv --exclude node_modules ... {target_dir}
 
-# Trivy (SCA)
-trivy fs --format json --scanners vuln {target_dir}
+# Trivy (SCA) — --skip-dirs repeated per directory name
+trivy fs --format json --scanners vuln --skip-dirs .venv --skip-dirs node_modules ... {target_dir}
 
-# Gitleaks (Secrets)
-gitleaks detect --report-format json -s {target_dir} --report-path -
+# Gitleaks (Secrets) — reads a temp TOML config with [allowlist] paths
+gitleaks detect --report-format json -s {target_dir} --report-path - --config {generated_toml}
 ```
+
+## Default Exclusions
+
+Third-party trees, build artifacts, and caches are always skipped. Without
+this, Semgrep times out on `node_modules`/`.venv` and produces noise about
+code that isn't yours.
+
+Always-excluded folder names (matched as path segments at any depth):
+
+```
+.venv          node_modules   .git           .pytest_cache
+dist           build          .next          __pycache__
+.cache
+```
+
+### Extending the Defaults
+
+Add project-specific folders via `SHIPWRIGHT_SCAN_EXCLUDES` — comma-separated
+list of simple folder names:
+
+```bash
+export SHIPWRIGHT_SCAN_EXCLUDES=vendor,generated,.terraform
+```
+
+**The env var extends, never replaces.** The defaults above are always active;
+your entries are appended. This is deliberate — an environment-controlled
+full replacement would let a CI-config edit weaken the scan by excluding real
+source directories.
+
+**Validation:** entries must be simple folder names (`[A-Za-z0-9_.-]+`).
+Glob wildcards (`*`, `**`), path separators (`/`, `\`), and parent traversal
+(`.`, `..`) are rejected with a stderr warning and dropped. Use per-project
+`.gitleaksignore` / Semgrep rule exclusions for finer-grained patterns.
 
 ## Backend Selection
 

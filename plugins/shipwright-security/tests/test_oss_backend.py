@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -13,7 +14,14 @@ import pytest
 PLUGIN_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
 
-from oss_backend import OSSBackend, _run_semgrep, _run_trivy, _run_gitleaks
+from oss_backend import (
+    OSSBackend,
+    _DEFAULT_EXCLUDES,
+    _resolve_excludes,
+    _run_semgrep,
+    _run_trivy,
+    _run_gitleaks,
+)
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -184,3 +192,171 @@ class TestOSSBackendScan:
 
         assert len(findings) == 3
         assert all(f["source"] == "trivy" for f in findings)
+
+
+# ---------------------------------------------------------------------------
+# Default exclusions — verify scanner commands skip third-party / build dirs
+# ---------------------------------------------------------------------------
+
+class TestScannerExclusions:
+    """Each scanner command must carry the default exclusion flags.
+
+    Prevents Semgrep/Trivy/Gitleaks from scanning .venv, node_modules, etc.
+    — they timed out and produced noise before this fix.
+    """
+
+    def test_default_excludes_covers_known_noise_dirs(self):
+        for name in (
+            ".venv",
+            "node_modules",
+            ".git",
+            ".pytest_cache",
+            "dist",
+            "build",
+            ".next",
+            "__pycache__",
+            ".cache",
+        ):
+            assert name in _DEFAULT_EXCLUDES
+
+    @patch("subprocess.run")
+    def test_semgrep_cmd_passes_each_default_as_exclude(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=0, stdout="{}", stderr="")
+        _run_semgrep("/tmp/test")
+        cmd = mock_run.call_args[0][0]
+        for name in _DEFAULT_EXCLUDES:
+            assert name in cmd, f"semgrep cmd missing exclude for {name!r}: {cmd}"
+        # --exclude flag must appear exactly once per default
+        assert cmd.count("--exclude") == len(_DEFAULT_EXCLUDES)
+        # Target still last arg
+        assert cmd[-1] == "/tmp/test"
+
+    @patch("subprocess.run")
+    def test_trivy_cmd_passes_each_default_as_skip_dirs(self, mock_run):
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout='{"Results":[]}', stderr=""
+        )
+        _run_trivy("/tmp/test")
+        cmd = mock_run.call_args[0][0]
+        for name in _DEFAULT_EXCLUDES:
+            assert name in cmd, f"trivy cmd missing skip-dirs for {name!r}: {cmd}"
+        assert cmd.count("--skip-dirs") == len(_DEFAULT_EXCLUDES)
+        assert cmd[-1] == "/tmp/test"
+
+    def test_gitleaks_cmd_passes_generated_allowlist_config(self):
+        """Config must exist AND contain each default at the moment gitleaks runs.
+
+        Read the config inside the subprocess mock — the real _run_gitleaks
+        unlinks the temp file in a finally block once the subprocess returns.
+        """
+        captured = {}
+
+        def capture(cmd, **_kwargs):
+            captured["cmd"] = cmd
+            flag = "--config" if "--config" in cmd else "-c"
+            assert flag in cmd, f"gitleaks cmd missing --config/-c: {cmd}"
+            config_path = cmd[cmd.index(flag) + 1]
+            captured["content"] = Path(config_path).read_text(encoding="utf-8")
+            return MagicMock(returncode=0, stdout="[]", stderr="")
+
+        with patch("subprocess.run", side_effect=capture):
+            _run_gitleaks("/tmp/test")
+
+        # Each default must appear as a path-segment regex in a TOML literal
+        # single-quoted string so gitleaks' Go regex engine sees the intended
+        # pattern unmodified (not double-escaped by TOML basic-string rules).
+        for name in _DEFAULT_EXCLUDES:
+            expected = f"'(^|/){re.escape(name)}(/|$)'"
+            assert expected in captured["content"], (
+                f"gitleaks config missing literal pattern {expected!r} for "
+                f"{name!r}:\n{captured['content']}"
+            )
+
+    def test_gitleaks_cleans_up_temp_config(self):
+        """Temp config file must be removed after gitleaks returns."""
+        captured_path = {}
+
+        def capture(cmd, **_kwargs):
+            flag = "--config" if "--config" in cmd else "-c"
+            captured_path["path"] = cmd[cmd.index(flag) + 1]
+            return MagicMock(returncode=0, stdout="[]", stderr="")
+
+        with patch("subprocess.run", side_effect=capture):
+            _run_gitleaks("/tmp/test")
+
+        assert not Path(captured_path["path"]).exists(), (
+            "gitleaks temp config leaked"
+        )
+
+
+# ---------------------------------------------------------------------------
+# _resolve_excludes — env-var extension + validation
+# ---------------------------------------------------------------------------
+
+class TestResolveExcludes:
+    """SHIPWRIGHT_SCAN_EXCLUDES extends defaults; never replaces them."""
+
+    def test_no_env_returns_only_defaults(self, monkeypatch):
+        monkeypatch.delenv("SHIPWRIGHT_SCAN_EXCLUDES", raising=False)
+        assert _resolve_excludes() == _DEFAULT_EXCLUDES
+
+    def test_empty_env_returns_only_defaults(self, monkeypatch):
+        monkeypatch.setenv("SHIPWRIGHT_SCAN_EXCLUDES", "")
+        assert _resolve_excludes() == _DEFAULT_EXCLUDES
+
+    def test_whitespace_only_env_returns_only_defaults(self, monkeypatch):
+        monkeypatch.setenv("SHIPWRIGHT_SCAN_EXCLUDES", "   ,  ,")
+        assert _resolve_excludes() == _DEFAULT_EXCLUDES
+
+    def test_valid_names_extend_defaults(self, monkeypatch):
+        monkeypatch.setenv("SHIPWRIGHT_SCAN_EXCLUDES", "vendor,generated")
+        result = _resolve_excludes()
+        # Defaults preserved
+        for name in _DEFAULT_EXCLUDES:
+            assert name in result
+        # Additions appended
+        assert "vendor" in result
+        assert "generated" in result
+
+    def test_valid_names_are_trimmed(self, monkeypatch):
+        monkeypatch.setenv("SHIPWRIGHT_SCAN_EXCLUDES", "  vendor  ,generated  ")
+        result = _resolve_excludes()
+        assert "vendor" in result
+        assert "generated" in result
+
+    def test_duplicate_of_default_is_not_added_twice(self, monkeypatch):
+        monkeypatch.setenv("SHIPWRIGHT_SCAN_EXCLUDES", "node_modules,vendor")
+        result = _resolve_excludes()
+        assert result.count("node_modules") == 1
+        assert "vendor" in result
+
+    def test_rejects_glob_wildcards(self, monkeypatch):
+        monkeypatch.setenv("SHIPWRIGHT_SCAN_EXCLUDES", "vendor,**/*,*.py,a*b")
+        result = _resolve_excludes()
+        assert "vendor" in result
+        assert "**/*" not in result
+        assert "*.py" not in result
+        assert "a*b" not in result
+
+    def test_rejects_path_separators(self, monkeypatch):
+        monkeypatch.setenv("SHIPWRIGHT_SCAN_EXCLUDES", "vendor,a/b,/etc,a\\b")
+        result = _resolve_excludes()
+        assert "vendor" in result
+        assert "a/b" not in result
+        assert "/etc" not in result
+        assert "a\\b" not in result
+
+    def test_rejects_parent_traversal(self, monkeypatch):
+        monkeypatch.setenv("SHIPWRIGHT_SCAN_EXCLUDES", "vendor,..,../etc,.")
+        result = _resolve_excludes()
+        assert "vendor" in result
+        assert ".." not in result
+        assert "../etc" not in result
+        assert "." not in result  # single dot is meaningless / dangerous too
+
+    def test_env_var_cannot_shrink_defaults(self, monkeypatch):
+        """Env var extends; it cannot remove defaults even if user tries tricks."""
+        monkeypatch.setenv("SHIPWRIGHT_SCAN_EXCLUDES", "")
+        result = _resolve_excludes()
+        for name in _DEFAULT_EXCLUDES:
+            assert name in result
