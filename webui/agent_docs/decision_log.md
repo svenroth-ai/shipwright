@@ -802,3 +802,15 @@
 - **Rationale:** DOM-level memo is the only memo that survives React.StrictMode's double-invoke pattern in dev. useRef resets are not observable to the dev vs. prod render cycle, so useRef-based memos always miss on the second mount.
 - **Consequences:** No flicker on first mount. Identical-text re-renders preserve the exact same <svg> DOM node (asserted by new regression test). Text-change re-renders still work because the effect body checks dataset.mermaidHash against the new hash. Client suite 389/389 (+2 tests). A tempting StrictMode-sim unit test was dropped - vi.mock ordering interacted oddly with React StrictMode + dynamic import and hit the real mermaid code path; the data-attr + rerender tests prove the contract instead.
 - **Rejected:** Keeping useRef + skipping cleanup container-clear only (half-fix; ref still resets). useMemo on MarkdownText components prop (larger change, does not address the root cause). Disabling StrictMode in main.tsx (removes dev-mode protection for other bugs).
+
+---
+
+### ADR-053: ADR-053: Hoist ReactMarkdown config to module scope + memo MermaidRenderer
+- **Date:** 2026-04-23
+- **Section:** Iterate — bug: mermaid-render-loop-fix
+- **Context:** User-reported permanent Mermaid flicker after ADR-052 shipped (DOM dataset memo). Flicker was so continuous the user could not even expand the element in devtools. ADR-052 addressed React.StrictMode double-mount but missed the real driver: TaskDetailPage polls transcript at 1 Hz, re-renders cascade to MarkdownText which passed inline (new-identity-every-render) components/remarkPlugins/rehypePlugins to ReactMarkdown. ReactMarkdown treats new config identity as new render path and remounts the subtree including MermaidRenderer — DOM wiped, memo lost, flicker restarts every second.
+- **Decision:** Hoist REMARK_PLUGINS / REHYPE_PLUGINS / REACT_MARKDOWN_COMPONENTS to module scope (stable across all mounts). Memoize capLineLengths output via useMemo on text. Wrap MermaidRenderer in React.memo as defensive second layer so even if reconciler remounts, identical-text props skip the body.
+- **Commit:** PENDING
+- **Rationale:** Module scope beats useMemo([]) because the callbacks close over no component state — there is no value in per-instance memoization. React.memo on MermaidRenderer is cheap defensive insurance against future parent instability.
+- **Consequences:** Render loop broken at the ReactMarkdown config layer. MermaidRenderer instance + DOM div persist across the 1 Hz transcript-polling re-renders. Module-scope constants actually produce FEWER allocations than inline creation. 389/389 client tests still green; typecheck baseline unchanged. User live-verify required — memoization identity stability is hard to unit-test with react-markdown.
+- **Rejected:** useMemo with empty deps inside MarkdownText (equivalent behaviour, extra complexity). Disabling useTaskTranscript polling (would regress other UX). Debouncing renders (fights React rather than cooperating).
