@@ -17,6 +17,7 @@ import { extractAskUserPayload } from "../lib/askUserPayload";
 
 export type ParsedEvent =
   | UserEvent
+  | SlashCommandEvent
   | AssistantEvent
   | AttachmentEvent
   | QueueOpEvent
@@ -39,6 +40,21 @@ export interface UserEvent extends BaseEvent {
   kind: "user";
   /** Raw message content as produced by the CLI. Could be string or block array. */
   content: unknown;
+}
+
+/**
+ * 2026-04-23 — iterate-20260423-chat-rendering-polish.
+ * User-type events whose content is EXCLUSIVELY a Claude Code slash-command
+ * invocation (e.g. `<command-message>shipwright-compliance:compliance</command-message>`
+ * followed by `<command-name>/shipwright-compliance:compliance</command-name>`)
+ * are parsed to this kind instead of `user` so the renderer can show a
+ * centered command-chip instead of a raw user-bubble containing XML tags.
+ * Mixed content (user text plus command tags) falls back to `user`.
+ */
+export interface SlashCommandEvent extends BaseEvent {
+  kind: "slash-command";
+  /** The command name, e.g. `/shipwright-compliance:compliance`. */
+  commandName: string;
 }
 
 export interface AssistantEvent extends BaseEvent {
@@ -151,12 +167,17 @@ function parseOne(raw: Record<string, unknown>): ParsedEvent {
   };
   const type = typeof raw.type === "string" ? raw.type : "";
   switch (type) {
-    case "user":
-      return {
-        ...base,
-        kind: "user",
-        content: (raw.message as { content?: unknown } | undefined)?.content ?? raw.message,
-      };
+    case "user": {
+      const content = (raw.message as { content?: unknown } | undefined)?.content ?? raw.message;
+      // 2026-04-23 — strict slash-command detection. Only reclassify if the
+      // content is a string that matches BOTH tags back-to-back with only
+      // whitespace around them — mixed user text falls through to `user`.
+      const slash = detectSlashCommand(content);
+      if (slash) {
+        return { ...base, kind: "slash-command", commandName: slash };
+      }
+      return { ...base, kind: "user", content };
+    }
     case "assistant":
       return {
         ...base,
@@ -356,4 +377,117 @@ function collectTextBlocks(blocks: unknown[]): string {
     }
   }
   return parts.join("\n");
+}
+
+// ── 2026-04-23 — iterate-20260423-chat-rendering-polish helpers ──
+
+/**
+ * Strict slash-command detector. Returns the command name (without the
+ * leading `/`) when `content` is EXCLUSIVELY a Claude Code slash-command
+ * invocation — paired `<command-message>NAME</command-message>` +
+ * `<command-name>/NAME</command-name>` tags with only whitespace allowed
+ * around and between them. Returns null for mixed content.
+ *
+ * Required shape (whitespace-permissive):
+ *   <command-message>NAME</command-message>\s*<command-name>/NAME</command-name>
+ *
+ * Mixed-content guard prevents swallowing a normal user message that
+ * happens to contain `<command-message>` as literal text.
+ */
+function detectSlashCommand(content: unknown): string | null {
+  if (typeof content !== "string") return null;
+  // Length cap — a legitimate slash command name is ~50 chars tops.
+  // Anything over ~200 is almost certainly user prose that happened
+  // to contain command-tag shapes.
+  if (content.length > 200) return null;
+  const trimmed = content.trim();
+  if (!trimmed.startsWith("<command-message>") || !trimmed.endsWith("</command-name>")) {
+    return null;
+  }
+  // `[^<\n]+` (no newlines inside tags) narrows the match so a real
+  // user message whose text contains a newline + balanced tag strings
+  // can't match. Length-bounded further by the 200-char guard above.
+  const pattern =
+    /^<command-message>([^<\n]+)<\/command-message>\s*<command-name>\/([^<\n]+)<\/command-name>$/;
+  const match = trimmed.match(pattern);
+  if (!match) return null;
+  const [, inner, named] = match;
+  // Names must match (Claude Code always emits them paired). If they
+  // differ, the content is hand-crafted and should render as plain user.
+  if (inner.trim() !== named.trim()) return null;
+  return `/${named.trim()}`;
+}
+
+/**
+ * Extract basename filenames from a `file-history-snapshot` event. Walks
+ * `snapshot.trackedFileBackups` keys, returns an array of basenames
+ * (path segments stripped — avoids leaking full user filesystem paths
+ * into the UI). Empty array when no files are tracked.
+ */
+export function fileSnapshotBasenames(e: FileSnapshotEvent): string[] {
+  const s = e.snapshot;
+  if (!s || typeof s !== "object") return [];
+  const backups = (s as { trackedFileBackups?: unknown }).trackedFileBackups;
+  if (!backups || typeof backups !== "object") return [];
+  const out: string[] = [];
+  for (const key of Object.keys(backups)) {
+    const basename = basenameOf(key);
+    if (basename) out.push(basename);
+  }
+  return out;
+}
+
+/** Cross-platform basename: strips everything before the last `/` or `\`. */
+function basenameOf(p: string): string {
+  const idx = Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\"));
+  return idx >= 0 ? p.slice(idx + 1) : p;
+}
+
+/**
+ * AC-5 — detect whether an assistant event has non-empty TEXT content
+ * that deserves its own bubble shell (border + CLAUDE header + body).
+ * Tool-use blocks render as sibling ToolCards OUTSIDE the bubble; they
+ * do NOT cause the bubble shell to appear. Consequently a tool-only
+ * assistant turn renders tool cards with no speech bubble above —
+ * which is the fix for the user-reported "empty Claude message with
+ * just an avatar" defect.
+ *
+ * True when: at least one text block contains non-whitespace text, or
+ * (legacy) the content is a non-empty string. False for thinking-only,
+ * tool-only, or empty-string/whitespace-only turns.
+ */
+export function hasVisibleBubbleContent(e: AssistantEvent): boolean {
+  const content = e.content;
+  if (typeof content === "string") return content.trim().length > 0;
+  if (!Array.isArray(content)) return false;
+  for (const block of content) {
+    if (!block || typeof block !== "object") continue;
+    const b = block as { type?: unknown; text?: unknown };
+    if (b.type === "text" && typeof b.text === "string" && b.text.trim().length > 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * AC-5 — true iff the assistant event contains ONLY thinking blocks
+ * (no text, no tool_use, no other block types with visible output).
+ * Used to render a thinking-card instead of suppressing the bubble.
+ */
+export function isThinkingOnly(e: AssistantEvent): boolean {
+  const content = e.content;
+  if (!Array.isArray(content) || content.length === 0) return false;
+  let sawThinking = false;
+  for (const block of content) {
+    if (!block || typeof block !== "object") continue;
+    const b = block as { type?: unknown };
+    if (b.type === "thinking") {
+      sawThinking = true;
+      continue;
+    }
+    // Any non-thinking block disqualifies the "thinking-only" classification.
+    return false;
+  }
+  return sawThinking;
 }

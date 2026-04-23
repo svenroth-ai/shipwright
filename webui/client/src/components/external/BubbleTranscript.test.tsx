@@ -59,6 +59,10 @@ describe("BubbleTranscript — bubble layout fixtures", () => {
   });
 
   it("renders tool_use Bash as a sibling card under the assistant bubble", () => {
+    // 2026-04-23 — iterate-20260423-chat-rendering-polish AC-1/AC-2:
+    // tool_use now renders as ToolCard (collapsed by default) instead
+    // of the simple "tool_use {name}" text chip. The card's title shows
+    // the tool name; body is collapsed so no "tool_use" prose literal.
     const content = jsonl([
       {
         type: "assistant",
@@ -72,9 +76,12 @@ describe("BubbleTranscript — bubble layout fixtures", () => {
     ]);
     render(<BubbleTranscript content={content} />);
     const tu = screen.getByTestId("bubble-tool-use");
-    expect(tu.textContent).toContain("tool_use");
-    expect(tu.textContent).toContain("Bash");
     expect(tu.dataset.toolUseId).toBe("tu_bash_1");
+    // Tool name visible in the card title.
+    const title = tu.querySelector('[data-testid="tool-card-title"]');
+    expect(title?.textContent).toBe("Bash");
+    // Card starts collapsed — body not in DOM.
+    expect(tu.querySelector('[data-testid="tool-card-body"]')).toBeNull();
   });
 
   it("renders tool_result as a left card with ANSI-stripped content", () => {
@@ -306,7 +313,11 @@ describe("BubbleTranscript — system visibility toggle (FR-03.51)", () => {
 });
 
 describe("BubbleTranscript — attachment rendering (FR-03.53)", () => {
-  it("renders filename + thumbnail when attachment payload provides them", () => {
+  it("renders filename via AttachmentCard when attachment payload provides one", () => {
+    // 2026-04-23 — iterate-20260423-chat-rendering-polish AC-4: the inline
+    // thumbnail <img> was replaced with a lucide mime-icon. We assert on
+    // the basename being visible via AttachmentCard's testid and on the
+    // outer bubble wrapper still carrying its data-testid for back-compat.
     const content = jsonl([
       {
         type: "attachment",
@@ -318,20 +329,23 @@ describe("BubbleTranscript — attachment rendering (FR-03.53)", () => {
     ]);
     render(<BubbleTranscript content={content} />);
     const bubble = screen.getByTestId("bubble-attachment");
-    expect(bubble.textContent).toContain("login-mockup-final.png");
-    const img = bubble.querySelector("img");
-    expect(img).not.toBeNull();
-    expect(img?.getAttribute("src")).toBe("data:image/png;base64,AAAA");
+    const card = bubble.querySelector('[data-testid="attachment-card"]');
+    expect(card).not.toBeNull();
+    const basename = bubble.querySelector('[data-testid="attachment-basename"]');
+    expect(basename?.textContent).toBe("login-mockup-final.png");
   });
 
-  it("falls back to generic chip when payload has no filename/thumbnail", () => {
+  it("suppresses attachment events with no filename (deferred_tools_delta / skill_listing noise)", () => {
+    // 2026-04-23 — AC-4: Claude Code emits `attachment` events with
+    // internal payloads (deferred_tools_delta, skill_listing, etc.) that
+    // have no filename. These previously showed as a bare "attachment"
+    // chip — now they render nothing, so the transcript stays clean.
     const content = jsonl([
       { type: "attachment", attachment: { someOtherField: 1 } },
     ]);
     render(<BubbleTranscript content={content} />);
-    const bubble = screen.getByTestId("bubble-attachment");
-    expect(bubble.textContent).toMatch(/attachment/i);
-    expect(bubble.querySelector("img")).toBeNull();
+    const bubble = screen.queryByTestId("attachment-card");
+    expect(bubble).toBeNull();
   });
 });
 
