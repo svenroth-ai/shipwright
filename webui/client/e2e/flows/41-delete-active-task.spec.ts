@@ -85,4 +85,23 @@ test.describe("Delete active task", () => {
     await expect(page.getByTestId("confirm-delete-dialog")).toHaveCount(0);
     await expect(page.getByTestId(`task-card-${task.taskId}`)).toHaveCount(0, { timeout: 5000 });
   });
+
+  test("delete from TaskDetail redirects back to the board", async ({ page, request }) => {
+    const create = await request.post("/api/external/tasks", {
+      data: { title: "detail-delete-spec", cwd: process.cwd() },
+    });
+    const { task } = (await create.json()) as { task: { taskId: string } };
+
+    await page.goto(`/tasks/${task.taskId}`);
+    await expect(page.getByTestId("task-detail-page")).toBeVisible();
+    // Draft state skips the confirm dialog per handleDelete in TaskDetailHeader.
+    await page.getByTestId("task-detail-menu-trigger").click();
+    await page.getByTestId("task-detail-menu-delete").click();
+
+    // After onSuccess, navigate("/") fires — land back on the board.
+    await expect(page).toHaveURL(/\/$/, { timeout: 5000 });
+    await expect(page.getByTestId("task-board-page")).toBeVisible();
+    // Deleted task is no longer on the board.
+    await expect(page.getByTestId(`task-card-${task.taskId}`)).toHaveCount(0);
+  });
 });
