@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Iterate mermaid-in-markdown (2026-04-23)** — FR-03.02 AC "Mermaid code blocks (`` ```mermaid ``) render as SVG diagrams" shipped unchecked in iterate 3. The SmartViewer only routed `.mmd` / `.mermaid` file extensions to `MermaidRenderer`; fenced blocks inside `.md` files fell through to `FencedCodeBlock` and showed raw code instead of diagrams. Shipwright's own compliance docs (`traceability-matrix.md`, `architecture.md`) + user spec files rely on mermaid-in-markdown, so the bug was very visible in the most common viewer-flow. **Fix:** `MarkdownText.tsx` `code()` override now tests `className` for `\blanguage-mermaid\b` BEFORE delegating to `FencedCodeBlock`. Matching fences render via the existing lazy-loaded `MermaidRenderer` component (~609 KB mermaid chunk only loads on first mermaid encounter, same as the `.mmd` path). Mermaid diagrams now render in both the SmartViewer (`SmartViewer/MarkdownRenderer` → `MarkdownText`) AND in chat bubbles (`BubbleTranscript` → `MarkdownText`) — users who never open a mermaid document still don't pay the chunk cost. Non-mermaid fences unchanged. **Test coverage:** 3 new tests (positive route, regression guard for non-mermaid `js` fence, over-eager-match guard for inline "mermaid" word in prose). **Test totals:** webui/client 387 (+3), webui/server 333 (unchanged). tsc baselines unchanged. (ADR-050)
+
 ## [0.2.1] - 2026-04-23
 
 Post-v0.2.0 patch bundle. Five bug fixes across two concerns: the
