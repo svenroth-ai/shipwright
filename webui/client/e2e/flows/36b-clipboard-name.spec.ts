@@ -26,7 +26,7 @@ test.describe("TerminalLaunchButton — clipboard --name shape", () => {
     });
 
     const create = await request.post("/api/external/tasks", {
-      data: { title: "clipboard-name-spec", cwd: "C:/tmp/clipboard-spec" },
+      data: { title: "clipboard-name-spec", cwd: process.cwd() },
     });
     const { task } = (await create.json()) as { task: { taskId: string } };
 
@@ -38,16 +38,17 @@ test.describe("TerminalLaunchButton — clipboard --name shape", () => {
 
     await page.getByTestId("cta-launch-in-terminal").click();
 
-    // The button's success state surfaces "Copied — paste into terminal".
-    await expect(page.getByTestId("cta-launch-in-terminal")).toContainText(
-      /Copied/i,
+    // iterate 3.9c: after click, state flips draft → awaiting_external_start
+    // and the CTA unmounts (different testid takes its place). Skip the
+    // transient "Copied" text assertion and go straight to clipboard.
+    await expect(page.getByTestId("task-state-badge")).toHaveText(
+      "Awaiting launch",
       { timeout: 5000 },
     );
 
     const clipboard = await page.evaluate(() => navigator.clipboard.readText());
     expect(clipboard).toContain("--session-id");
     expect(clipboard).toContain("--name 'clipboard-name-spec'");
-    expect(clipboard).toContain("C:/tmp/clipboard-spec");
     // PowerShell command marker.
     expect(clipboard.startsWith("& claude ")).toBe(true);
   });

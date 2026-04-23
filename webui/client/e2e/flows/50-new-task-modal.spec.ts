@@ -39,7 +39,9 @@ test.describe("NewIssueModal — Save to Backlog", () => {
     await page.getByTestId("create-menu-primary").click();
 
     // Modal is visible and the footer hint reads exactly "Esc to cancel".
-    const modal = page.getByTestId(/new-issue-modal-/);
+    // iterate 3.9d: prefer the specific root testid over the regex, which
+    // now matches multiple elements (new-issue-modal-new-task, -close, -form).
+    const modal = page.getByTestId("new-issue-modal-new-task");
     await expect(modal).toBeVisible();
     await expect(page.getByTestId("new-issue-footer-hint")).toHaveText(
       /^\s*Esc\s*to cancel\s*$/,

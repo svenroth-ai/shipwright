@@ -29,7 +29,7 @@ test.describe("Tricky-char titles — clipboard round-trip", () => {
 
     const trickyTitle = `Test's $weird \`title; & 日本語 ä 🚀`;
     const create = await request.post("/api/external/tasks", {
-      data: { title: trickyTitle, cwd: "C:/tmp/tricky" },
+      data: { title: trickyTitle, cwd: process.cwd() },
     });
     const { task } = (await create.json()) as { task: { taskId: string; title: string } };
     expect(task.title).toBe(trickyTitle);
@@ -38,8 +38,12 @@ test.describe("Tricky-char titles — clipboard round-trip", () => {
     // Iterate 3 section 04 — header CTA replaces TerminalLaunchButton on
     // TaskDetail. A fresh task renders the Launch variant of the CTA.
     await page.getByTestId("cta-launch-in-terminal").click();
-    await expect(page.getByTestId("cta-launch-in-terminal")).toContainText(
-      /Copied/i,
+    // iterate 3.9c: after click, state flips draft → awaiting_external_start
+    // and cta-launch-in-terminal unmounts. Wait on the badge transition
+    // instead of the transient "Copied" label.
+    await expect(page.getByTestId("task-state-badge")).toHaveText(
+      "Awaiting launch",
+      { timeout: 5000 },
     );
 
     const clipboard = await page.evaluate(() => navigator.clipboard.readText());

@@ -43,7 +43,7 @@ test.describe("Delete active task", () => {
     // Detail page polling kicks the state machine into "active". The
     // TaskBoard endpoint does NOT trigger transitions on its own.
     await page.goto(`/tasks/${task.taskId}`);
-    await expect(page.getByTestId("task-state-badge")).toHaveText("active", { timeout: 8000 });
+    await expect(page.getByTestId("task-state-badge")).toHaveText("In progress", { timeout: 8000 });
 
     await page.goto("/");
     const card = page.getByTestId(`task-card-${task.taskId}`);
@@ -84,5 +84,24 @@ test.describe("Delete active task", () => {
     // No dialog for draft; card vanishes directly.
     await expect(page.getByTestId("confirm-delete-dialog")).toHaveCount(0);
     await expect(page.getByTestId(`task-card-${task.taskId}`)).toHaveCount(0, { timeout: 5000 });
+  });
+
+  test("delete from TaskDetail redirects back to the board", async ({ page, request }) => {
+    const create = await request.post("/api/external/tasks", {
+      data: { title: "detail-delete-spec", cwd: process.cwd() },
+    });
+    const { task } = (await create.json()) as { task: { taskId: string } };
+
+    await page.goto(`/tasks/${task.taskId}`);
+    await expect(page.getByTestId("task-detail-page")).toBeVisible();
+    // Draft state skips the confirm dialog per handleDelete in TaskDetailHeader.
+    await page.getByTestId("task-detail-menu-trigger").click();
+    await page.getByTestId("task-detail-menu-delete").click();
+
+    // After onSuccess, navigate("/") fires — land back on the board.
+    await expect(page).toHaveURL(/\/$/, { timeout: 5000 });
+    await expect(page.getByTestId("task-board-page")).toBeVisible();
+    // Deleted task is no longer on the board.
+    await expect(page.getByTestId(`task-card-${task.taskId}`)).toHaveCount(0);
   });
 });

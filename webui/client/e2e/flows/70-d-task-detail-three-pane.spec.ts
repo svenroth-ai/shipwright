@@ -73,9 +73,11 @@ test.describe("Flow D — TaskDetail 3-pane", () => {
     await page.goto(`/tasks/${taskId}`);
     await expect(page.getByTestId("task-detail-header")).toBeVisible();
 
-    const chip = page.getByTestId("project-chip-trigger");
-    await expect(chip).toBeVisible();
-    await chip.click();
+    // iterate 3.7d-b2: TaskDetail no longer renders the chip button — the
+    // ProjectChipMenu is controlled and opened via the 3-dots "Move to
+    // project…" menu item. Drive the menu path instead.
+    await page.getByTestId("task-detail-menu-trigger").click();
+    await page.getByTestId("task-detail-menu-move-project").click();
     const popover = page.getByTestId("project-chip-popover");
     await expect(popover).toBeVisible();
 
