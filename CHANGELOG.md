@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-04-23
+
 ### Added
 - **Iterate adopt-phase (2026-04-23)** — exposes `/shipwright-adopt` via the existing New Task phase dropdown, closing the last gap between the 12 Shipwright SDLC skills and the WebUI. **Change 1 (config):** `adopt` added as a 10th phase in `webui/server/src/config/default-actions.json` with color `#64748B` (slate-500 — visibly distinct from `project`'s `#9ca3af` so the one-shot nature reads at a glance). Command template `claude /shipwright-{task.phase}` routes it to `/shipwright-adopt` without any component-side string literals — honors the ADR-044 rule against hardcoded skill names. **Change 2 (server):** `ProjectManager.withMode()` now derives a server-side `adopted: boolean` by `existsSync('<path>/shipwright_run_config.json')` — no file read, no cache needed (cheap probe). `Project.adopted` added to the shared TS type as optional so legacy API clients stay forward-compatible. **Change 3 (client):** `NewIssueModal` filters `adopt` out of the phase dropdown when the currently-selected project reports `adopted === true`. A missing `adopted` field renders as not-adopted (safe default; the skill's own pre-flight check refuses re-adoption if run_config already exists, so false positives are recoverable). **One-shot enforcement is now UI-level, not just skill-level** — users can't pick Adopt on a project that's already onboarded, because the option disappears automatically on next `/api/projects` fetch. **Test coverage:** 5 new server tests in `project-manager.test.ts` (adopted=true when run_config exists, false when missing, visible on create+getById+getAll, synthesized "Unassigned" row does NOT carry adopted=true), 3 new client tests in `NewIssueModal.test.tsx` asserting on the phase trigger's visible label (Radix DropdownMenu.Content doesn't open under JSDOM+fireEvent, so the menu-open path is covered by the existing Playwright spec `70-h-actions-endpoint.spec.ts` which already scans `[data-testid^="new-issue-phase-option-"]`). Two fixture tests (`project-actions-loader.test.ts`, `actions-routes.test.ts`) updated from `phases.length === 9 → 10`. **Test totals after adopt-phase:** webui/client 381 (+3 from the 378 baseline after the 14.0–14.8 counter reset), webui/server 308 (+4 from baseline). Pre-existing tsc baselines unchanged (server 4, client 0). Spec: new FR-03.31 in `webui/planning/03-features/spec.md`. (ADR-045)
 
@@ -348,6 +350,9 @@ pipeline built on Claude Code, from project description to deployed application.
 - Kanban board scroll overflow handling
 - Task creation ENOENT and project directory initialization
 
+[Unreleased]: https://github.com/svenroth-ai/shipwright/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/svenroth-ai/shipwright/releases/tag/v0.2.0
+[0.1.3]: https://github.com/svenroth-ai/shipwright/releases/tag/v0.1.3
 [0.1.2]: https://github.com/svenroth-ai/shipwright/releases/tag/v0.1.2
 [0.1.1]: https://github.com/svenroth-ai/shipwright/releases/tag/v0.1.1
 [0.1.0]: https://github.com/svenroth-ai/shipwright/releases/tag/v0.1.0
