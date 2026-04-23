@@ -718,3 +718,15 @@
 - **Rationale:** Phase-in-New-Task matches user preference (no separate dropdown entry for a one-time action). Mirrors existing hasPreview derivation pattern. Adds a single field to /api/projects response shape (additive, non-breaking).
 - **Consequences:** One-shot nature enforced at UI layer — once adopted, the option disappears automatically on next fetch. Legacy API clients without the adopted field render Adopt (safe default; skill preflight is the final guard). Command template {task.phase} routes it to /shipwright-adopt without any component-side string literals.
 - **Rejected:** Separate 'New Adopt' top-level dropdown entry (dauerhafter Eintrag für One-Shot-Feature ist Overkill, Nutzer wollte das explizit nicht). Client-side filesystem check (keine FS-Rechte im Browser).
+
+---
+
+### ADR-046: Launch route routes through substitutePlaceholders with full action context
+- **Date:** 2026-04-23
+- **Section:** Iterate — bug: launch-command-wiring
+- **Context:** Task launch copied a legacy command shape (--session-id + --add-dir + --name + --plugin-dir) while CommandPreviewPanel rendered the correct slash command. Phase/description/autonomy were void'd in the route with comment 'reserved for future wiring'. Phase wasn't persisted on ExternalTask so TaskDetail fell back to title-regex for the badge (often wrong).
+- **Decision:** POST /api/external/tasks/:id/launch now accepts actionId + phase + phaseLabel + description + autonomy. When actionId is present and project resolves via getProjectById, the route loads the project's actions catalog and runs substitutePlaceholders against the matching command_template for all three shell forms. Fields are persisted on the task so TaskDetailHeader can render the correct phase badge. When actionId is missing or the project is unresolvable (e.g. 'unassigned'), the legacy buildCopyCommands path is preserved.
+- **Commit:** pending
+- **Rationale:** substitutePlaceholders + command_template + loadActionsForProject were already built for the preview + dry-run paths in iterate 3.3b. Migrating the launch route to the same pipeline eliminates the client/server divergence rather than maintaining two parallel command builders. Back-compat path handles Resume/Fork and 'unassigned' tasks without special-casing.
+- **Consequences:** Copy command now matches the preview. Phase badge on TaskDetail reflects the user's explicit choice, not a title-regex guess. ExternalTask gains 5 optional fields (actionId/phase/phaseLabel/description/autonomy) — additive, forward-compatible with v2 stored rows. Existing Resume/Fork flows still work via the legacy fallback.
+- **Rejected:** Alternative 1: extend buildCopyCommands to accept phase/description — would duplicate the per-shell escape discipline that substitutePlaceholders already owns (the security boundary per plan § 2.2). Alternative 2: send the rendered preview command from client to server and persist verbatim — bypasses server-side phase validation and the allowedPhaseIds check.

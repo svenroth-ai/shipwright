@@ -127,6 +127,7 @@ describe("actions/preview/stub routes", () => {
         watcher,
         getProjectById: (id) =>
           id === PROJECT_ID ? defaultProject() : undefined,
+        getKnownProjectIds: () => new Set([PROJECT_ID]),
         previewManager: previewMgr,
         loadProfile: () => fakeProfile(),
       }),
@@ -417,5 +418,154 @@ describe("actions/preview/stub routes", () => {
       },
     );
     expect(r.status).toBe(200);
+  });
+
+  // ── 2026-04-23 — iterate-20260423-launch-command-wiring ──
+  //
+  // The launch route must build the COMPLETE shipwright-slash command
+  // via substitutePlaceholders when the NewIssueModal hands in an
+  // actionId + phase, not the legacy --session-id/--name stub.
+  describe("launch command passthrough (2026-04-23)", () => {
+    async function createTask(title = "t1", cwd = "C:/tmp", projectId = PROJECT_ID) {
+      const r = await app.request("/api/external/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, cwd, projectId }),
+      });
+      return (await r.json()) as { task: { taskId: string } };
+    }
+
+    it("substitutes {task.phase} into the slash command when actionId+phase present", async () => {
+      const { task } = await createTask("Testing the test phase");
+      const r = await app.request(`/api/external/tasks/${task.taskId}/launch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          actionId: "new-task",
+          phase: "test",
+          phaseLabel: "Test",
+          description: "run vitest suite",
+          autonomy: "autonomous",
+        }),
+      });
+      expect(r.status).toBe(200);
+      const body = (await r.json()) as {
+        commands: { powershell: string; cmd: string; posix: string };
+      };
+      // Slash command routed correctly — proves {task.phase} substituted.
+      expect(body.commands.posix).toContain("/shipwright-test");
+      expect(body.commands.powershell).toContain("/shipwright-test");
+      expect(body.commands.cmd).toContain("/shipwright-test");
+      // Must NOT contain the default/build fallback.
+      expect(body.commands.posix).not.toContain("/shipwright-build");
+    });
+
+    it("substitutes {task.description?} into the command when provided", async () => {
+      const { task } = await createTask();
+      const r = await app.request(`/api/external/tasks/${task.taskId}/launch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          actionId: "new-task",
+          phase: "build",
+          phaseLabel: "Build",
+          description: "fix-the-login-redirect",
+        }),
+      });
+      expect(r.status).toBe(200);
+      const body = (await r.json()) as {
+        commands: { posix: string };
+      };
+      expect(body.commands.posix).toContain("fix-the-login-redirect");
+    });
+
+    it("emits --autonomous when autonomy=autonomous and actionId is pipeline/iterate", async () => {
+      const { task } = await createTask();
+      const r = await app.request(`/api/external/tasks/${task.taskId}/launch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          actionId: "new-pipeline",
+          autonomy: "autonomous",
+        }),
+      });
+      expect(r.status).toBe(200);
+      const body = (await r.json()) as { commands: { posix: string } };
+      expect(body.commands.posix).toContain("--autonomous");
+    });
+
+    it("omits --autonomous when autonomy=guided", async () => {
+      const { task } = await createTask();
+      const r = await app.request(`/api/external/tasks/${task.taskId}/launch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          actionId: "new-pipeline",
+          autonomy: "guided",
+        }),
+      });
+      expect(r.status).toBe(200);
+      const body = (await r.json()) as { commands: { posix: string } };
+      expect(body.commands.posix).not.toContain("--autonomous");
+    });
+
+    it("persists phase/phaseLabel/description/autonomy/actionId onto the task", async () => {
+      const { task } = await createTask();
+      await app.request(`/api/external/tasks/${task.taskId}/launch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          actionId: "new-task",
+          phase: "compliance",
+          phaseLabel: "Compliance",
+          description: "audit drift",
+          autonomy: "autonomous",
+        }),
+      });
+      const get = await app.request(`/api/external/tasks/${task.taskId}`);
+      expect(get.status).toBe(200);
+      const body = (await get.json()) as {
+        task: {
+          phase?: string;
+          phaseLabel?: string;
+          description?: string;
+          autonomy?: string;
+          actionId?: string;
+        };
+      };
+      expect(body.task.phase).toBe("compliance");
+      expect(body.task.phaseLabel).toBe("Compliance");
+      expect(body.task.description).toBe("audit drift");
+      expect(body.task.autonomy).toBe("autonomous");
+      expect(body.task.actionId).toBe("new-task");
+    });
+
+    it("falls back to legacy shape when actionId is missing (back-compat)", async () => {
+      const { task } = await createTask();
+      const r = await app.request(`/api/external/tasks/${task.taskId}/launch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      expect(r.status).toBe(200);
+      const body = (await r.json()) as { commands: { posix: string } };
+      // Legacy shape: --session-id is always present; no slash command.
+      expect(body.commands.posix).toContain("--session-id");
+      expect(body.commands.posix).not.toContain("/shipwright-");
+    });
+
+    it("rejects unknown phase (InvalidPhase bubbles as 400)", async () => {
+      const { task } = await createTask();
+      const r = await app.request(`/api/external/tasks/${task.taskId}/launch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          actionId: "new-task",
+          phase: "not-a-real-phase",
+          phaseLabel: "Fake",
+        }),
+      });
+      expect(r.status).toBe(400);
+    });
   });
 });

@@ -29,8 +29,10 @@ import { pathGuard, realPathGuard } from "../core/path-guard.js";
 import { loadIgnore } from "../core/gitignore-cache.js";
 import {
   buildExternalLaunchCommand,
-  InvalidPlaceholderError,
+  substitutePlaceholders,
   UnknownPhaseError,
+  InvalidDescriptionError,
+  InvalidPlaceholderError,
   type SubstitutionContext,
 } from "../core/actions-substitute.js";
 import { loadActionsForProject } from "../core/project-actions-loader.js";
@@ -249,35 +251,124 @@ export function createExternalRoutes(args: {
       );
     }
 
-    // Description + autonomy flow through buildCopyCommands as the
-    // `title` already did. For iterate 3.3b we keep the existing three-
-    // form output intact (launch still emits --session-id / --name /
-    // --plugin-dir via the legacy path). Future iterate can switch this
-    // to buildExternalLaunchCommand once the NewIssueModal can carry the
-    // full SubstitutionContext. Today, description / autonomy on the
-    // body are forwarded as metadata for the ExternalTask record so the
-    // Task Detail surface can render them, but do not mutate the copy-
-    // command shape (to keep spec 30/36 green).
+    // 2026-04-23 — iterate-20260423-launch-command-wiring.
+    //
+    // When NewIssueModal passes the full action context (actionId + phase
+    // + phaseLabel + description + autonomy), we resolve the project's
+    // actions catalog and run substitutePlaceholders against the matching
+    // action's `command_template`. That yields a command string containing
+    // the slash command, --project-root, --autonomous, and the description
+    // trailer. Without actionId we fall back to the pre-iterate legacy
+    // shape (--session-id + --add-dir + --name + --plugin-dir) — that
+    // preserves existing Resume/Fork call sites and spec 30/36.
     const description =
       typeof body.description === "string" ? body.description : undefined;
     const autonomy =
       body.autonomy === "autonomous" || body.autonomy === "guided"
         ? (body.autonomy as "autonomous" | "guided")
         : undefined;
-    void description; // reserved for future NewIssueModal → launch wiring
-    void autonomy;
+    const actionId =
+      body.actionId === "new-task" ||
+      body.actionId === "new-pipeline" ||
+      body.actionId === "new-iterate"
+        ? (body.actionId as "new-task" | "new-pipeline" | "new-iterate")
+        : undefined;
+    const phase =
+      typeof body.phase === "string" && body.phase.trim()
+        ? body.phase.trim()
+        : undefined;
+    const phaseLabel =
+      typeof body.phaseLabel === "string" && body.phaseLabel.trim()
+        ? body.phaseLabel.trim()
+        : undefined;
 
-    const commands = buildCopyCommands({
-      sessionUuid: task.sessionUuid,
-      cwd: task.cwd,
-      resume,
-      pluginDirs: task.pluginDirs,
-      title: task.title,
-    });
-    const updated = store.patch(task.taskId, {
+    let commands;
+    const taskUpdate: Partial<ExternalTask> = {
       state: "awaiting_external_start",
       launchedAt: new Date().toISOString(),
-    });
+    };
+
+    if (actionId && !resume) {
+      const project = getProjectById?.(task.projectId);
+      // If the project is resolvable, run the proper substitution path.
+      // Unassigned / deleted-project references fall back to legacy.
+      if (project) {
+        const loaded = loadActionsForProject(project.path || "");
+        const action = loaded.actions.actions.find((a) => a.id === actionId);
+        if (!action || !action.command_template) {
+          return c.json(
+            { error: "unknown_action_id", actionId },
+            400,
+          );
+        }
+        const allowedPhaseIds = new Set(
+          loaded.actions.phases.map((p) => p.id),
+        );
+        const ctx: SubstitutionContext = {
+          project: { id: project.id, path: project.path || "" },
+          task: {
+            uuid: task.sessionUuid,
+            title: task.title,
+            description,
+            phase: phase ?? "",
+            phase_label: phaseLabel ?? "",
+            autonomy,
+          },
+          pluginDirs: task.pluginDirs,
+          allowedPhaseIds,
+          actionId,
+        };
+        try {
+          commands = {
+            powershell: substitutePlaceholders(
+              action.command_template,
+              ctx,
+              "powershell",
+            ),
+            cmd: substitutePlaceholders(action.command_template, ctx, "cmd"),
+            posix: substitutePlaceholders(
+              action.command_template,
+              ctx,
+              "posix",
+            ),
+          };
+        } catch (err) {
+          if (
+            err instanceof UnknownPhaseError ||
+            err instanceof InvalidDescriptionError ||
+            err instanceof InvalidPlaceholderError
+          ) {
+            return c.json(
+              {
+                error: "command_substitution_failed",
+                detail: err.message,
+              },
+              400,
+            );
+          }
+          throw err;
+        }
+        // Persist the action context so TaskDetail can render a faithful
+        // phase badge without guessing from the title.
+        taskUpdate.actionId = actionId;
+        if (phase) taskUpdate.phase = phase;
+        if (phaseLabel) taskUpdate.phaseLabel = phaseLabel;
+        if (description) taskUpdate.description = description;
+        if (autonomy) taskUpdate.autonomy = autonomy;
+      }
+    }
+
+    // Legacy fallback: no actionId, unresolvable project, or resume flag.
+    if (!commands) {
+      commands = buildCopyCommands({
+        sessionUuid: task.sessionUuid,
+        cwd: task.cwd,
+        resume,
+        pluginDirs: task.pluginDirs,
+        title: task.title,
+      });
+    }
+    const updated = store.patch(task.taskId, taskUpdate);
     await store.persist();
     return c.json({ task: updated, commands });
   });

@@ -37,6 +37,17 @@ export interface ExternalTask {
    * pseudo-project bucket.
    */
   projectId: string;
+  /**
+   * 2026-04-23 — persisted by the server on successful /launch when
+   * NewIssueModal passes the action context. Optional for legacy tasks.
+   * TaskDetailHeader prefers `phaseLabel` over the title-regex fallback
+   * so the badge reflects the user's explicit choice.
+   */
+  actionId?: "new-task" | "new-pipeline" | "new-iterate";
+  phase?: string;
+  phaseLabel?: string;
+  description?: string;
+  autonomy?: "guided" | "autonomous";
   state: ExternalTaskState;
   createdAt: string;
   launchedAt?: string;
@@ -137,6 +148,10 @@ export async function launchTask(
     /** Section 03 (iterate 3) — forwarded as metadata when present. */
     description?: string;
     autonomy?: "guided" | "autonomous";
+    /** 2026-04-23 — action context so server can run full substitution. */
+    actionId?: "new-task" | "new-pipeline" | "new-iterate";
+    phase?: string;
+    phaseLabel?: string;
   } = {},
 ): Promise<{ task: ExternalTask; commands: CopyCommandForms }> {
   return await httpJson<{ task: ExternalTask; commands: CopyCommandForms }>(
@@ -153,10 +168,23 @@ export async function launchTask(
  * Section 03 (iterate 3) — typed alias for the extended launch body. Callers
  * from NewIssueModal use this signature so TS catches accidental `resume`
  * duplication.
+ *
+ * 2026-04-23 — iterate-20260423-launch-command-wiring. Extended to carry
+ * `actionId`, `phase`, and `phaseLabel` so the server can run
+ * substitutePlaceholders against the matching action's command_template
+ * and persist the phase context on the task. Omitting these fields keeps
+ * the legacy three-form shape (backwards compatible with Resume/Fork
+ * callers).
  */
 export async function launchExternalTask(
   taskId: string,
-  args: { description?: string; autonomy?: "guided" | "autonomous" } = {},
+  args: {
+    description?: string;
+    autonomy?: "guided" | "autonomous";
+    actionId?: "new-task" | "new-pipeline" | "new-iterate";
+    phase?: string;
+    phaseLabel?: string;
+  } = {},
 ): Promise<{ task: ExternalTask; commands: CopyCommandForms }> {
   return await launchTask(taskId, args);
 }

@@ -93,6 +93,20 @@ export interface ExternalTask {
    * v1 rows on disk are backfilled with UNASSIGNED_PROJECT_ID at load time.
    */
   projectId: string;
+  /**
+   * 2026-04-23 — captured at /launch time when NewIssueModal passes the
+   * full action context. All five fields are optional so legacy rows
+   * (pre-launch-wiring, back-compat test path, or manual API callers
+   * that skip the new payload) keep loading cleanly. The launch route
+   * persists them AFTER successful substitutePlaceholders — if the
+   * substitution throws (unknown phase, invalid description newline),
+   * nothing is persisted.
+   */
+  actionId?: "new-task" | "new-pipeline" | "new-iterate";
+  phase?: string;
+  phaseLabel?: string;
+  description?: string;
+  autonomy?: "guided" | "autonomous";
   createdAt: string;
   launchedAt?: string;
   firstJsonlObservedAt?: string;
