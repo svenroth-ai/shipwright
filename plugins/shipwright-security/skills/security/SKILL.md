@@ -100,10 +100,15 @@ backend = get_backend()
 findings = backend.scan(target_dir)
 ```
 
-Each tool runs its CLI command:
-- Semgrep: `semgrep scan --json --config auto {target}`
-- Trivy: `trivy fs --format json --scanners vuln {target}`
-- Gitleaks: `gitleaks detect --report-format json -s {target} --report-path -`
+Each tool runs with default path exclusions (`.venv`, `node_modules`, `.git`,
+`.pytest_cache`, `dist`, `build`, `.next`, `__pycache__`, `.cache`) to avoid
+timeouts and third-party noise. Extend via `SHIPWRIGHT_SCAN_EXCLUDES` — see
+`references/oss-scanners.md` for the full exclusion contract and validation
+rules.
+
+- Semgrep: `semgrep scan --json --config auto --exclude <each-default> {target}`
+- Trivy: `trivy fs --format json --scanners vuln --skip-dirs <each-default> {target}`
+- Gitleaks: `gitleaks detect --report-format json -s {target} --report-path - --config <temp-toml-with-allowlist>`
 
 **For Aikido backend:**
 
