@@ -7,16 +7,35 @@ unchanged — the 18 pre-existing tests in
 without modification. The pre-12.0 script survives as a thin wrapper
 that re-exports these symbols so any downstream caller importing
 ``tools.verify_iterate_finalization`` keeps working.
+
+Dual-mode reads
+---------------
+Since the iterate_history file-per-iterate refactor, every read of the
+iterate entry store goes through ``lib.iterate_entry.read_iterate_entries``
+(merged legacy-array + per-file directory). Partial migrations no longer
+hide entries; a brand-new project with only ``agent_docs/iterates/``
+files and no legacy array is fully supported.
 """
 
 from __future__ import annotations
 
 import json
 import re
+import sys
 import time
 from pathlib import Path
 
-from .common import CheckResult, Severity
+_SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
+
+from lib.iterate_entry import (  # noqa: E402
+    MIGRATION_QUARANTINED_COUNT_KEY,
+    find_entry_by_run_id,
+    read_iterate_entries,
+)
+
+from .common import CheckResult, Severity  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -24,22 +43,19 @@ from .common import CheckResult, Severity
 # ---------------------------------------------------------------------------
 
 def check_iterate_history_has_run_id(project_root: Path, run_id: str) -> CheckResult:
-    """F5c check — the iterate run appended itself to iterate_history."""
+    """F5c check — the iterate run appended itself to the entry store.
+
+    Reads from the merged legacy array + ``agent_docs/iterates/`` directory.
+    Passes if either source contains the run_id.
+    """
     name = "iterate_history has run_id"
-    cfg = project_root / "shipwright_run_config.json"
-    if not cfg.exists():
-        return CheckResult(name, False, f"missing {cfg.name}")
-    try:
-        data = json.loads(cfg.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
-        return CheckResult(name, False, f"malformed {cfg.name}: {e}")
-    history = data.get("iterate_history", [])
-    if any(entry.get("run_id") == run_id for entry in history):
+    entries = read_iterate_entries(project_root)
+    if any(entry.get("run_id") == run_id for entry in entries):
         return CheckResult(name, True, f"run_id={run_id} present")
     return CheckResult(
         name,
         False,
-        f"run_id={run_id} not in iterate_history ({len(history)} entries)",
+        f"run_id={run_id} not in iterate history ({len(entries)} entries)",
     )
 
 
@@ -56,22 +72,16 @@ def check_events_has_commit(project_root: Path, commit_hash: str) -> CheckResult
 
 
 def check_adr_in_iterate_history(project_root: Path, run_id: str) -> CheckResult:
-    """F3 + F5c consistency — ``iterate_history[run_id].adr`` points at an
-    ADR that actually exists in ``decision_log.md``."""
+    """F3 + F5c consistency — the entry for ``run_id`` carries an ``adr`` field
+    that points at an ADR actually present in ``decision_log.md``.
+
+    Entry lookup goes through the merged reader so new-format projects
+    without any legacy array still resolve cleanly.
+    """
     name = "ADR recorded + present"
-    cfg = project_root / "shipwright_run_config.json"
-    if not cfg.exists():
-        return CheckResult(name, False, f"missing {cfg.name}")
-    try:
-        data = json.loads(cfg.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return CheckResult(name, False, f"malformed {cfg.name}")
-    entry = next(
-        (e for e in data.get("iterate_history", []) if e.get("run_id") == run_id),
-        None,
-    )
+    entry = find_entry_by_run_id(project_root, run_id)
     if not entry:
-        return CheckResult(name, False, f"run_id={run_id} not in iterate_history")
+        return CheckResult(name, False, f"run_id={run_id} not in iterate history")
     adr_id = entry.get("adr")
     if not adr_id:
         return CheckResult(name, False, f"iterate_history[{run_id}].adr missing")
@@ -196,20 +206,33 @@ def check_compliance_reflects_run_id(
             severity=Severity.WARNING.value,
         )
     content = dashboard.read_text(encoding="utf-8", errors="ignore")
-    cfg = project_root / "shipwright_run_config.json"
-    if cfg.exists():
-        try:
-            data = json.loads(cfg.read_text(encoding="utf-8"))
-            iterate_count = len(data.get("iterate_history", []))
-            if str(iterate_count) in content or run_id in content:
-                return CheckResult(name, True, f"compliance reflects iterate count/run_id")
-        except (json.JSONDecodeError, OSError):
-            pass
+    iterate_count = len(read_iterate_entries(project_root))
+    if str(iterate_count) in content or run_id in content:
+        return CheckResult(name, True, "compliance reflects iterate count/run_id")
     return CheckResult(
         name, False,
         f"compliance/dashboard.md may be stale (run_id={run_id} not found)",
         severity=Severity.WARNING.value,
     )
+
+
+def _freshness_mtime_reference(project_root: Path, run_id: str) -> float | None:
+    """Pick a freshness reference mtime for a given run_id.
+
+    Prefer the per-iterate entry file (added by the file-per-iterate
+    refactor) because it's created at finalize time and doesn't churn with
+    unrelated config mutations. Fall back to ``shipwright_run_config.json``
+    for legacy projects that still carry the array.
+    """
+    from lib.iterate_entry import entry_file_for
+
+    entry_path = entry_file_for(project_root, run_id)
+    if entry_path.exists():
+        return entry_path.stat().st_mtime
+    cfg = project_root / "shipwright_run_config.json"
+    if cfg.exists():
+        return cfg.stat().st_mtime
+    return None
 
 
 def check_architecture_reviewed(
@@ -218,22 +241,11 @@ def check_architecture_reviewed(
 ) -> CheckResult:
     """Non-canon warning: architecture.md may need update after structural changes."""
     name = "architecture.md reviewed"
-    cfg = project_root / "shipwright_run_config.json"
-    if not cfg.exists():
-        return CheckResult(name, None, "no run_config", severity=Severity.SKIPPED.value)
-    try:
-        data = json.loads(cfg.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return CheckResult(name, None, "malformed run_config", severity=Severity.SKIPPED.value)
-
-    entry = next(
-        (e for e in reversed(data.get("iterate_history", [])) if e.get("run_id") == run_id),
-        None,
-    )
+    entry = find_entry_by_run_id(project_root, run_id)
     if not entry:
         return CheckResult(name, None, "run_id not in history", severity=Severity.SKIPPED.value)
 
-    intent = entry.get("intent", "")
+    intent = entry.get("intent", entry.get("type", ""))
     if intent in ("bug", "fix"):
         return CheckResult(name, True, f"intent={intent}, architecture update unlikely")
 
@@ -244,14 +256,15 @@ def check_architecture_reviewed(
             severity=Severity.WARNING.value,
         )
 
-    arch_mtime = arch.stat().st_mtime
-    cfg_mtime = cfg.stat().st_mtime
-    if arch_mtime >= cfg_mtime:
+    reference_mtime = _freshness_mtime_reference(project_root, run_id)
+    if reference_mtime is None:
+        return CheckResult(name, None, "no iterate entry file or run_config", severity=Severity.SKIPPED.value)
+    if arch.stat().st_mtime >= reference_mtime:
         return CheckResult(name, True, "architecture.md is fresh")
 
     return CheckResult(
         name, False,
-        f"architecture.md may need update (intent={intent}, arch older than run_config)",
+        f"architecture.md may need update (intent={intent}, arch older than iterate entry)",
         severity=Severity.WARNING.value,
     )
 
@@ -262,22 +275,11 @@ def check_conventions_reviewed(
 ) -> CheckResult:
     """Non-canon warning: conventions.md may need update after feature iterates."""
     name = "conventions.md reviewed"
-    cfg = project_root / "shipwright_run_config.json"
-    if not cfg.exists():
-        return CheckResult(name, None, "no run_config", severity=Severity.SKIPPED.value)
-    try:
-        data = json.loads(cfg.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return CheckResult(name, None, "malformed run_config", severity=Severity.SKIPPED.value)
-
-    entry = next(
-        (e for e in reversed(data.get("iterate_history", [])) if e.get("run_id") == run_id),
-        None,
-    )
+    entry = find_entry_by_run_id(project_root, run_id)
     if not entry:
         return CheckResult(name, None, "run_id not in history", severity=Severity.SKIPPED.value)
 
-    intent = entry.get("intent", "")
+    intent = entry.get("intent", entry.get("type", ""))
     if intent in ("bug", "fix"):
         return CheckResult(name, True, f"intent={intent}, conventions update unlikely")
 
@@ -288,14 +290,42 @@ def check_conventions_reviewed(
             severity=Severity.WARNING.value,
         )
 
-    conv_mtime = conv.stat().st_mtime
-    cfg_mtime = cfg.stat().st_mtime
-    if conv_mtime >= cfg_mtime:
+    reference_mtime = _freshness_mtime_reference(project_root, run_id)
+    if reference_mtime is None:
+        return CheckResult(name, None, "no iterate entry file or run_config", severity=Severity.SKIPPED.value)
+    if conv.stat().st_mtime >= reference_mtime:
         return CheckResult(name, True, "conventions.md is fresh")
 
     return CheckResult(
         name, False,
-        f"conventions.md may need update (intent={intent}, conventions older than run_config)",
+        f"conventions.md may need update (intent={intent}, conventions older than iterate entry)",
+        severity=Severity.WARNING.value,
+    )
+
+
+def check_migration_quarantine_empty(project_root: Path) -> CheckResult:
+    """Advisory warn — flag if iterate_history migration quarantined any entries.
+
+    Loud signal on the operator's console so quarantined losses don't go
+    unnoticed. Does not fail the check so follow-on work can proceed.
+    """
+    name = "iterate migration quarantine empty"
+    cfg = project_root / "shipwright_run_config.json"
+    if not cfg.exists():
+        return CheckResult(name, None, "no run_config", severity=Severity.SKIPPED.value)
+    try:
+        data = json.loads(cfg.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return CheckResult(name, None, "malformed run_config", severity=Severity.SKIPPED.value)
+
+    count = data.get(MIGRATION_QUARANTINED_COUNT_KEY, 0)
+    if not isinstance(count, int) or count == 0:
+        return CheckResult(name, True, "no quarantined legacy entries")
+
+    report = data.get("_iterate_migration_quarantine_report", "<no report path>")
+    return CheckResult(
+        name, False,
+        f"{count} legacy iterate entries quarantined during migration — see {report}",
         severity=Severity.WARNING.value,
     )
 
@@ -331,4 +361,5 @@ def run_cross_artifact_checks(
         check_compliance_reflects_run_id(project_root, run_id),
         check_architecture_reviewed(project_root, run_id),
         check_conventions_reviewed(project_root, run_id),
+        check_migration_quarantine_empty(project_root),
     ]

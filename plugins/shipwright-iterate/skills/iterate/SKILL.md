@@ -790,10 +790,34 @@ Apply the reflection protocol (`references/reflection.md`):
 5. **Cross-project insights** → save Claude Code feedback/project Memory
 6. If no learnings: skip — do not force entries
 
-### F4: Update CHANGELOG.md
+### F4: Record changelog entry (drop-directory)
 
-Add to `[Unreleased]` section: `feat` → Added, `fix` → Fixed, `refactor` → Changed.
-Stage CHANGELOG.md for inclusion in commit.
+Write one bullet per acceptance-criteria-level change via the drop tool:
+
+```bash
+uv run {shared_root}/scripts/tools/write_changelog_drop.py \
+  --project-root "{project_root}" \
+  --run-id "{run_id}" \
+  --category "{Added|Changed|Deprecated|Removed|Fixed|Security}" \
+  --bullet "Short description of the change (no leading '- ')"
+```
+
+Category mapping: `feat` → **Added**, `fix` → **Fixed**, `refactor` →
+**Changed**. Multiple F4 calls per iterate are supported — each produces
+its own `<run_id>_<NNN>.md` file under
+`CHANGELOG-unreleased.d/<category>/`, so two feat bullets in the same
+run don't overwrite each other.
+
+Files produced here are aggregated into `CHANGELOG.md` at release time
+by `/shipwright-changelog` via `aggregate_changelog.py`. Do NOT append
+directly to `CHANGELOG.md [Unreleased]` — the split-brain between drop
+files and legacy inline bullets is flagged by a release-time WARN but
+can still obscure an operator-level merge decision.
+
+Stage the generated drop files for inclusion in commit:
+```bash
+git add CHANGELOG-unreleased.d/
+```
 
 ### F5: Write Test Results JSON
 
@@ -839,26 +863,46 @@ automatically as a fallback when the session ends.
 > **Note:** F7 (event recording with commit SHA) still runs separately
 > after F6 because it needs the commit hash that F6 produces.
 
-### F5c: Update iterate_history
+### F5c: Record iterate entry (file-per-iterate)
 
-Append entry to `shipwright_run_config.json` → `iterate_history` array:
-```json
-{
-  "run_id": "{run_id}",
-  "date": "{YYYY-MM-DD}",
-  "type": "{feature|change|bug}",
-  "complexity": "{trivial|small|medium}",
-  "branch": "iterate/{short-description}",
-  "spec": "{path to iterate spec or null}",
-  "tests_passed": true
-}
+Run **one script** that writes the entry file, handles legacy-array
+migration (if this project still carries an `iterate_history` array in
+`shipwright_run_config.json`), enforces retention, and records any
+quarantined legacy rows for operator review:
+
+```bash
+uv run {shared_root}/scripts/tools/append_iterate_entry.py \
+  --project-root "{project_root}" \
+  --run-id "{run_id}" \
+  --entry-json '{
+    "type": "{feature|change|bug}",
+    "complexity": "{trivial|small|medium|large}",
+    "branch": "iterate/{short-description}",
+    "spec": "{path to iterate spec or null}",
+    "tests_passed": true,
+    "adr": "{ADR-NNN or null}"
+  }'
 ```
 
-Retention: keep last 50 entries. Older entries preserved in `shipwright_events.jsonl`.
+Writes: `agent_docs/iterates/<run_id>.json` (atomic, under file lock
+covering the full append transaction). `run_id` and `date` are added by
+the tool itself (canonical ISO-8601 UTC `...Z` form) — do NOT set them
+in `--entry-json`.
+
+On first call against a project with a legacy `iterate_history` array,
+the tool migrates every row into its own file; invalid or duplicate
+legacy rows land in `agent_docs/iterates/_quarantine/` and the count is
+recorded on run config as `_iterate_migration_quarantined_count` so the
+handoff + verifiers surface it.
+
+Retention: keep the 50 most recent entry files per project (sorted by
+ISO date, run_id tiebreaker). Older entries preserved in
+`shipwright_events.jsonl`.
 
 Note: the commit hash is intentionally NOT stored here. Look it up in
-`shipwright_events.jsonl` by `run_id` (F7 records the real commit hash there).
-This omission is what lets F5c run pre-commit in a single atomic F6.
+`shipwright_events.jsonl` by `run_id` (F7 records the real commit hash
+there). This omission is what lets F5c run pre-commit in a single
+atomic F6.
 
 ### F6: Commit (Conventional Commits)
 
@@ -876,9 +920,10 @@ git add <source files edited in build>
 git add <test files added/modified in build>
 
 # Finalization artifacts (always)
-git add CHANGELOG.md
+git add {project_root}/CHANGELOG-unreleased.d/       # F4 drop files (one or more)
 git add {project_root}/agent_docs/decision_log.md
 git add {project_root}/agent_docs/build_dashboard.md
+git add {project_root}/agent_docs/iterates/          # F5c entry + any migration quarantine
 git add {project_root}/shipwright_test_results.json
 git add {project_root}/shipwright_run_config.json
 

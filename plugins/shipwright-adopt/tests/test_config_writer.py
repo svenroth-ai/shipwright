@@ -36,6 +36,25 @@ def test_writes_all_configs_in_order(tmp_path: Path) -> None:
     assert run_config["phase_history"]["test"][0]["outcome"] == "adopted-skipped"
     assert run_config["phase_history"]["build"][0]["outcome"] == "adopted"
 
+    # Iterate-history file-per-iterate refactor: fresh adopted projects
+    # start with the new store + a migration-state stamp that tells the
+    # append tool no first-touch migration is needed.
+    assert run_config["iterate_history"] == []
+    assert run_config["_iterate_migration_state"] == "complete"
+    assert run_config["_iterate_migration_quarantined_count"] == 0
+
+    iterates_dir = tmp_path / "agent_docs" / "iterates"
+    assert iterates_dir.is_dir()
+    assert (iterates_dir / ".gitkeep").exists()
+    assert (iterates_dir / "_quarantine" / ".gitkeep").exists()
+    assert (iterates_dir / "_meta" / ".gitkeep").exists()
+
+    # CHANGELOG-unreleased.d/ carries one .gitkeep per Keep-a-Changelog
+    # category so a fresh clone tracks the structure without a first drop.
+    for category in ("Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"):
+        gitkeep = tmp_path / "CHANGELOG-unreleased.d" / category / ".gitkeep"
+        assert gitkeep.exists(), f"missing .gitkeep in {category}"
+
     project_config = json.loads((tmp_path / "shipwright_project_config.json").read_text())
     assert project_config["splits"][0]["name"] == "01-adopted"
     assert project_config["requirements"]["fr_count"] == 7

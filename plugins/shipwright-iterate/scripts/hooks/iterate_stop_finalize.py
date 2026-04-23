@@ -22,18 +22,23 @@ sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 
 def _get_latest_run_id(project_root: Path) -> str | None:
-    """Read the latest run_id from iterate_history."""
-    cfg = project_root / "shipwright_run_config.json"
-    if not cfg.exists():
-        return None
+    """Return the most recent iterate run_id, or None if no history exists.
+
+    Reads from the merged legacy-array + file-per-iterate store via
+    ``lib.iterate_entry.last_iterate_entry``. Falling back silently when
+    the store is missing (fresh project, pre-adopt repo) is intentional —
+    this function feeds a freshness gate and must never crash.
+    """
     try:
-        data = json.loads(cfg.read_text(encoding="utf-8"))
-        history = data.get("iterate_history", [])
-        if history:
-            return history[-1].get("run_id")
-    except (json.JSONDecodeError, OSError):
-        pass
-    return None
+        from lib.iterate_entry import last_iterate_entry
+
+        entry = last_iterate_entry(project_root)
+    except Exception:
+        return None
+    if not entry:
+        return None
+    run_id = entry.get("run_id")
+    return run_id if isinstance(run_id, str) else None
 
 
 def _dashboard_reflects_run_id(project_root: Path, run_id: str) -> bool:
