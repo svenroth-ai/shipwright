@@ -1,19 +1,23 @@
 import { describe, it, expect } from "vitest";
 
-import { buildCopyCommands, copyLauncher } from "./launcher.js";
+import { buildCopyCommands, copyLauncher, buildCdPrefix } from "./launcher.js";
 
 const SAMPLE_UUID = "00000000-1111-2222-3333-444444444444";
 const WINDOWS_PATH_WITH_SPACE = String.raw`C:\Users\SvenRoth\dinovo GmbH\AI Backup - Documents\03 Development\shipwright`;
 
 describe("launcher.buildCopyCommands", () => {
   it("emits three shell forms with session-id + cwd", () => {
+    // 2026-04-23 — iterate-20260423-resume-cwd-prefix. Each shell form
+    // now starts with a `cd`-style prefix so the pasted command sets
+    // cwd to <cwd> before invoking claude. The claude invocation still
+    // appears — just preceded by the prefix.
     const c = buildCopyCommands({ sessionUuid: SAMPLE_UUID, cwd: WINDOWS_PATH_WITH_SPACE });
     expect(c.powershell).toContain(`--session-id '${SAMPLE_UUID}'`);
     expect(c.cmd).toContain(`--session-id "${SAMPLE_UUID}"`);
     expect(c.posix).toContain(`--session-id '${SAMPLE_UUID}'`);
-    expect(c.powershell).toMatch(/^& claude /);
-    expect(c.cmd.startsWith("claude ")).toBe(true);
-    expect(c.posix.startsWith("claude ")).toBe(true);
+    expect(c.powershell).toContain("& claude ");
+    expect(c.cmd).toContain("claude ");
+    expect(c.posix).toContain("claude ");
   });
 
   it("preserves embedded spaces in PowerShell single-quoted args", () => {
@@ -225,6 +229,113 @@ describe("launcher.buildCopyCommands — --name title flag", () => {
       title: 'Test "quoted" thing',
     });
     expect(c.cmd).toContain(`--name "Test \\"quoted\\" thing"`);
+  });
+});
+
+// ── 2026-04-23 — iterate-20260423-resume-cwd-prefix ──
+//
+// ADR-049 added {cd.prefix} to substitutePlaceholders so the Launch copy
+// command sets cwd before invoking claude. The Resume / Fork paths go
+// through buildCopyCommands (legacy) which had no cd prefix, so users
+// pasting a Resume link in a HOME terminal hit the same missing-cwd bug
+// the cd prefix was meant to fix. This iterate extends the cd prefix to
+// the legacy launcher so Resume + Fork + any other buildCopyCommands
+// caller emits identical shell-aware prefixes.
+describe("launcher.buildCopyCommands — cd prefix (2026-04-23)", () => {
+  it("plain Launch starts with Set-Location / cd /d / cd per shell", () => {
+    const c = buildCopyCommands({ sessionUuid: SAMPLE_UUID, cwd: WINDOWS_PATH_WITH_SPACE });
+    expect(c.powershell.startsWith(`Set-Location '${WINDOWS_PATH_WITH_SPACE}' -ErrorAction Stop; `)).toBe(true);
+    expect(c.cmd.startsWith(`cd /d "${WINDOWS_PATH_WITH_SPACE}" && `)).toBe(true);
+    // POSIX converts backslashes to forward slashes.
+    const posixCwd = WINDOWS_PATH_WITH_SPACE.replace(/\\/g, "/");
+    expect(c.posix.startsWith(`cd '${posixCwd}' && `)).toBe(true);
+  });
+
+  it("Resume command carries the same cd prefix", () => {
+    // Covers the original user-reported bug: a Resume link pasted in HOME
+    // terminal was running claude with pwd=HOME before this fix.
+    const c = buildCopyCommands({
+      sessionUuid: SAMPLE_UUID,
+      cwd: WINDOWS_PATH_WITH_SPACE,
+      resume: true,
+    });
+    expect(c.powershell.startsWith("Set-Location ")).toBe(true);
+    expect(c.cmd.startsWith("cd /d ")).toBe(true);
+    expect(c.posix.startsWith("cd ")).toBe(true);
+    // Resume semantics preserved — claude sees --resume <uuid>.
+    expect(c.powershell).toContain(`--resume '${SAMPLE_UUID}'`);
+    expect(c.cmd).toContain(`--resume "${SAMPLE_UUID}"`);
+    expect(c.posix).toContain(`--resume '${SAMPLE_UUID}'`);
+  });
+
+  it("Fork command carries the same cd prefix", () => {
+    const parent = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+    const c = buildCopyCommands({
+      sessionUuid: SAMPLE_UUID,
+      cwd: WINDOWS_PATH_WITH_SPACE,
+      fork: true,
+      parentSessionUuid: parent,
+    });
+    expect(c.powershell.startsWith("Set-Location ")).toBe(true);
+    expect(c.cmd.startsWith("cd /d ")).toBe(true);
+    expect(c.posix.startsWith("cd ")).toBe(true);
+    expect(c.powershell).toContain("--fork-session");
+  });
+
+  it("empty cwd emits no cd prefix (graceful degrade, identical to {cd.prefix})", () => {
+    const c = buildCopyCommands({ sessionUuid: SAMPLE_UUID, cwd: "" });
+    expect(c.powershell.startsWith("& claude ")).toBe(true);
+    expect(c.cmd.startsWith("claude ")).toBe(true);
+    expect(c.posix.startsWith("claude ")).toBe(true);
+  });
+
+  it("escapes embedded single quotes in cd prefix path (PS + POSIX)", () => {
+    const c = buildCopyCommands({
+      sessionUuid: SAMPLE_UUID,
+      cwd: "/home/sven/o'malley/app",
+    });
+    // PS: ' → ''
+    expect(c.powershell.startsWith("Set-Location '/home/sven/o''malley/app' -ErrorAction Stop; ")).toBe(true);
+    // POSIX: ' → '\''
+    expect(c.posix.startsWith("cd '/home/sven/o'\\''malley/app' && ")).toBe(true);
+  });
+});
+
+describe("launcher.buildCdPrefix — exported shared helper (2026-04-23)", () => {
+  it("returns the PowerShell form with Set-Location + -ErrorAction Stop", () => {
+    expect(buildCdPrefix("powershell", "/home/sven/app")).toBe(
+      "Set-Location '/home/sven/app' -ErrorAction Stop; ",
+    );
+  });
+
+  it("returns the cmd.exe form with cd /d + &&", () => {
+    expect(buildCdPrefix("cmd", "/home/sven/app")).toBe(
+      `cd /d "/home/sven/app" && `,
+    );
+  });
+
+  it("returns the POSIX form with cd + &&", () => {
+    expect(buildCdPrefix("posix", "/home/sven/app")).toBe(
+      "cd '/home/sven/app' && ",
+    );
+  });
+
+  it("converts Windows backslashes to forward slashes only for POSIX", () => {
+    expect(buildCdPrefix("posix", "C:\\dev\\app")).toBe(
+      "cd 'C:/dev/app' && ",
+    );
+    expect(buildCdPrefix("powershell", "C:\\dev\\app")).toBe(
+      "Set-Location 'C:\\dev\\app' -ErrorAction Stop; ",
+    );
+    expect(buildCdPrefix("cmd", "C:\\dev\\app")).toBe(
+      `cd /d "C:\\dev\\app" && `,
+    );
+  });
+
+  it("returns empty string on empty cwd (graceful degrade)", () => {
+    expect(buildCdPrefix("powershell", "")).toBe("");
+    expect(buildCdPrefix("cmd", "")).toBe("");
+    expect(buildCdPrefix("posix", "")).toBe("");
   });
 });
 

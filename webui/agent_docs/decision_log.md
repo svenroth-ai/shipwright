@@ -778,3 +778,15 @@
 - **Rationale:** Using rehype-highlight's language-className as the detection key avoids parsing the fence manually and matches how every other language is already classified. The className-based routing runs before FencedCodeBlock mounts so mermaid diagrams never render as code for a flash.
 - **Consequences:** Mermaid diagrams now render in BOTH the SmartViewer (via MarkdownRenderer→MarkdownText) AND in chat bubbles (via BubbleTranscript→MarkdownText). Users who never open a mermaid document still don't pay the ~609 KB mermaid chunk cost (lazy import). FR-03.02 AC now checked.
 - **Rejected:** Parsing raw markdown for triple-backtick-mermaid fences (reimplementation of remark's fence detection). Prop-gated renderer (renderMermaid?: boolean) — deferred because lazy import already gates the cost.
+
+---
+
+### ADR-051: ADR-051: Extend cd-prefix to legacy buildCopyCommands (Resume/Fork)
+- **Date:** 2026-04-23
+- **Section:** Iterate — bug: resume-cwd-prefix
+- **Context:** ADR-049 added cd prefix only to the {cd.prefix} placeholder used by the new substitutePlaceholders Launch path. Resume and Fork still routed through legacy buildCopyCommands in launcher.ts (ADR-046 preserved legacy for backward compat with spec 30/36). Result: Resume copy-links pasted in a HOME terminal re-hit the same missing-cwd bug cd prefix was built to fix.
+- **Decision:** Extract shell-specific cd prefix formatting into exported buildCdPrefix(shellForm, cwd) helper in launcher.ts. substitutePlaceholders delegates. renderPowershell/renderCmd/renderPosix prepend helper output. All copy-command surfaces (Launch, Resume, Fork, plugin-dir forms) now emit identical cd prefixes per shell.
+- **Commit:** PENDING
+- **Rationale:** Single source of truth for cd prefix formatting eliminates duplication drift. Exporting the helper allows future surfaces (e.g. terminal spawn commands, launcher v2) to reuse the same escaping discipline without re-implementing it.
+- **Consequences:** Resume and Fork commands now cd into project root before invoking claude. Empty cwd still degrades gracefully to no-prefix output. Smoke tests updated to use process.cwd() since Set-Location -ErrorAction Stop rejects non-existent paths. 10 new tests (+5 buildCopyCommands surface, +5 buildCdPrefix helper). Existing actions-substitute.ts cd.prefix case shrinks to a 1-line delegation.
+- **Rejected:** Migrating Resume path to substitutePlaceholders with a dedicated resume action template (Path B from scoping discussion) — larger architecture change out of scope for a bug-fix iterate. Leaving Resume on cd-free legacy (status quo) — user explicitly requested parity across all surfaces.

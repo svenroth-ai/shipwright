@@ -58,6 +58,44 @@ export function buildCopyCommands(args: LaunchArgs): CopyCommandForms {
   };
 }
 
+/**
+ * 2026-04-23 — iterate-20260423-resume-cwd-prefix.
+ *
+ * Shared shell-specific cd-prefix helper, used by both the legacy
+ * `buildCopyCommands` path (Resume / Fork / plain Launch fallback) and
+ * the `substitutePlaceholders` `{cd.prefix}` placeholder in
+ * actions-substitute.ts. Both surfaces emit identical output so a user
+ * pasting a Resume link and a user pasting a Launch link both set cwd
+ * the same way before invoking claude.
+ *
+ * Per-shell expansion:
+ *   PowerShell → `Set-Location <escaped> -ErrorAction Stop; ` (PS5 lacks
+ *                `&&`; `-ErrorAction Stop` upgrades the otherwise
+ *                non-terminating Set-Location error to a terminating one
+ *                so a wrong path surfaces as a clean cd failure rather
+ *                than a confusing missing-config error from the skill).
+ *   cmd.exe    → `cd /d <escaped> && ` (`/d` also changes drive letter).
+ *   POSIX      → `cd <escaped> && ` (standard short-circuit).
+ *
+ * Empty cwd → empty string. The pasted command degrades to current
+ * behaviour (runs in whatever cwd the terminal had) instead of producing
+ * a syntactically broken prefix.
+ *
+ * Security: uses the same `qPs/qCmd/qPosix` escapers as the rest of the
+ * module. Trailing-backslash-before-quote caveat from `qCmd` (line 185)
+ * still applies — directory-picker paths can't end on `\` in practice.
+ */
+export function buildCdPrefix(shellForm: "powershell" | "cmd" | "posix", cwd: string): string {
+  if (!cwd) return "";
+  if (shellForm === "powershell") {
+    return `Set-Location ${qPs(cwd)} -ErrorAction Stop; `;
+  }
+  if (shellForm === "cmd") {
+    return `cd /d ${qCmd(cwd)} && `;
+  }
+  return `cd ${qPosix(toPosixPath(cwd))} && `;
+}
+
 export const copyLauncher: LaunchAdapter = (args) => ({
   commands: buildCopyCommands(args),
   launcherUsed: "copy",
@@ -110,7 +148,7 @@ function renderPowershell(a: Argv): string {
   for (const d of a.pluginDirs) {
     parts.push("--plugin-dir", qPs(d));
   }
-  return "& " + parts.join(" ");
+  return buildCdPrefix("powershell", a.cwd) + "& " + parts.join(" ");
 }
 
 function renderCmd(a: Argv): string {
@@ -122,7 +160,7 @@ function renderCmd(a: Argv): string {
   for (const d of a.pluginDirs) {
     parts.push("--plugin-dir", qCmd(d));
   }
-  return parts.join(" ");
+  return buildCdPrefix("cmd", a.cwd) + parts.join(" ");
 }
 
 function renderPosix(a: Argv): string {
@@ -136,7 +174,8 @@ function renderPosix(a: Argv): string {
   for (const d of plugins) {
     parts.push("--plugin-dir", qPosix(d));
   }
-  return parts.join(" ");
+  // Prefix uses raw cwd; buildCdPrefix does its own toPosixPath conversion.
+  return buildCdPrefix("posix", a.cwd) + parts.join(" ");
 }
 
 /**
