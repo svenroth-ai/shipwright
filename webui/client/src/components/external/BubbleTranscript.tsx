@@ -524,7 +524,7 @@ function PlainBubbles({
   return (
     <div
       className="flex flex-col"
-      style={{ gap: "14px", padding: "20px 22px 80px" }}
+      style={{ gap: "14px", padding: "20px 40px 80px" }}
       data-testid="bubble-list-plain"
     >
       {groups.map((group, gi) => {
@@ -585,7 +585,7 @@ function VirtualBubbles({
       style={{
         height: virtualizer.getTotalSize(),
         position: "relative",
-        padding: "20px 22px 80px",
+        padding: "20px 40px 80px",
       }}
       data-testid="bubble-list-virtual"
     >
