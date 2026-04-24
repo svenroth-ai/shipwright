@@ -55,6 +55,7 @@ def test_write_run_config_creates_valid_json(tmp_path):
     assert config_path.name == "shipwright_run_config.json"
 
     data = json.loads(config_path.read_text(encoding="utf-8"))
+    assert data["contractVersion"] == 1
     assert data["status"] == "pending"
     assert data["current_step"] == "project"
     assert data["profile"] == "supabase-nextjs"

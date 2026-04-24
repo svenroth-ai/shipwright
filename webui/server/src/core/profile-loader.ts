@@ -1,6 +1,10 @@
 import { readFileSync, statSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  checkContractVersion,
+  PROFILE_SCHEMA_VERSION,
+} from "./contract-version.js";
 
 /**
  * Cached profile JSON loader.
@@ -113,7 +117,40 @@ export function loadProfile(
   }
 }
 
+let profileSchemaVersionChecked = false;
+
 /** Test helper — drops the in-memory cache so tests can seed fresh state. */
 export function clearProfileCache(): void {
   cache.clear();
+  profileSchemaVersionChecked = false;
+}
+
+/**
+ * Read `<profilesDir>/PROFILE_SCHEMA_VERSION` once and compare against
+ * the library's known max. Idempotent — subsequent calls are no-ops
+ * unless `clearProfileCache` is invoked (tests). No-op when the marker
+ * file is absent (older bundles / upstream monorepos without the
+ * marker). Call this at server startup or on first load — it is not
+ * required for correctness, only for drift visibility.
+ */
+export function verifyProfileSchemaVersion(profilesDir: string): void {
+  if (profileSchemaVersionChecked) return;
+  profileSchemaVersionChecked = true;
+
+  const markerPath = join(profilesDir, "PROFILE_SCHEMA_VERSION");
+  let raw: string;
+  try {
+    raw = readFileSync(markerPath, "utf-8").trim();
+  } catch {
+    // Marker absent — nothing to verify, no warning needed.
+    return;
+  }
+  const declared = Number.parseInt(raw, 10);
+  checkContractVersion({
+    artefact: "PROFILE_SCHEMA_VERSION",
+    path: markerPath,
+    declared: Number.isFinite(declared) ? declared : raw,
+    knownMax: PROFILE_SCHEMA_VERSION,
+    fieldName: "PROFILE_SCHEMA_VERSION",
+  });
 }
