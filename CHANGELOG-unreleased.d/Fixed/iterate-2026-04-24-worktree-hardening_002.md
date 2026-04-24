@@ -1,1 +1,0 @@
-WebUI — Hono server exits loud on port-bind failures (`EADDRINUSE`, `EACCES`, `EADDRNOTAVAIL`) via a deterministic operator message, matching Vite's `strictPort` behaviour for parallel-worktree safety.

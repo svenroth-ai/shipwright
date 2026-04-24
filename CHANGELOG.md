@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-04-24
+
+### Added
+
+- `shared/scripts/tools/list_iterate_branches.py` — read-only git-based classifier for `iterate/*` branches. Emits JSON (schema v1) with per-branch metadata (status, reason_code, confidence, locked_in_worktree, would_be_status) plus backward-compat `active`/`stale`/`locked` arrays. Handles detached HEAD, unborn repo, `main`/`master` ambiguity, origin/HEAD cascade, worktree-locked branches, orphan/unrelated-history branches, and a global-deadline-aware timeout policy. Documented limitation: squash-merged branches cannot be reliably detected locally (stay `active` until manual `git branch -D`).
+- Concurrency regression tests (slow-marked) for `shipwright_run_config.json` writers — proves iterate F5c and phase-history appends serialize via `file_lock` across real subprocesses.
+- Vite config invariants tripwire (`shared/tests/test_vite_config_invariants.py`) — guards pitfall #6 by forbidding a literal-pinned `server.hmr.port` and asserting `strictPort: true` + env-driven `VITE_PORT`.
+- `slow` pytest marker + default exclusion (`-m 'not slow'`) so subprocess-heavy concurrency tests stay out of the fast commit loop; opt in via `uv run pytest -m slow`.
+
+### Changed
+
+- `/shipwright-iterate` B1 — replaces the prose `git merge-base --is-ancestor` filter instruction with a call to the new `list_iterate_branches.py` helper. Operators now see active/stale/locked buckets deterministically instead of relying on Claude to interpret the filter manually at runtime. docs/guide.md Pitfall #7 updated to reference the helper and document the squash-merge limitation.
+- README.md — surface the parallel-worktree workflow in the Command Center setup section with a link to guide.md §8.5.
+- Docs (webui/CLAUDE.md + guide.md §8.5) — honest language for kill scope ("limited to the configured ports" instead of "worktree-local") and explicit note that Hono + Vite both fail loud on port collisions.
+
+### Fixed
+
+- WebUI — dev-restart kill scope is now strictly the two configured ports (removed hardcoded `VITE_ALT_PORT=5177` that broke the worktree-local contract).
+- WebUI — Hono server exits loud on port-bind failures (`EADDRINUSE`, `EACCES`, `EADDRNOTAVAIL`) via a deterministic operator message, matching Vite's `strictPort` behaviour for parallel-worktree safety.
+
 ## [0.3.1] - 2026-04-24
 
 WebUI live-test improvements — five UAT polish fixes from a TaskDetail live-test session, all bundled into a single iterate (`iterate-20260424-webui-status-padding-pills`, ADR-058 + 2 follow-up hotfixes). Stuck "Awaiting launch" state now recovers on re-launch; chat bubbles inset 22→40px from the column edges; the four session-info pill kinds (`system` + `custom-title` + `agent-name` + `permission-mode`) are filtered atomically by the existing "Show system messages" toggle; `last-prompt` events are dropped entirely (pure noise); `TaskListCard` width matches `ToolCard` so TodoWrite/TaskCreate/TaskUpdate bubbles fill the chat column the same way.
