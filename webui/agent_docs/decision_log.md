@@ -862,3 +862,15 @@
 - **Rationale:** User prefers per-event (historical) over single live-updating bubble: 'So eine Card kommt aber immer wieder wenn ein Task geschlossen ist'. Each TaskCreate + TaskUpdate snapshot preserves timeline. Claude's implicit taskId convention (sequential 1,2,3 based on TaskCreate order) verified against real JSONL.
 - **Consequences:** Client 481->488 tests (+7). Users see per-event task-list snapshots for TaskCreate/TaskUpdate just like TodoWrite. Visual style matches VS Code Claude Code extension. Old TodoWriteCard.tsx + test deleted (replaced). Aggregation uses chronological walk — O(n) per render, deterministic.
 - **Rejected:** Alt A: single live-update aggregate card at first-TaskCreate position (less historical visibility). Alt B: per-event compact chips (TaskCreate 'New task: X', TaskUpdate 'Task 1 → completed') — less information-dense, doesn't show full list at once.
+
+---
+
+### ADR-058: WebUI three-fix bundle: stuck Awaiting-launch state, chat padding, system pills
+- **Date:** 2026-04-24
+- **Section:** Iterate — bug bundle: status-fix + chat-padding + system-pill-filter
+- **Context:** Live-test feedback on TaskDetail: (1) status badge stays on 'Awaiting launch' after re-launch even though terminal is running, (2) chat bubbles flush to chat-column edges, (3) Title/Agent/Permission-mode pills cluttered chat by bypassing the system-message toggle.
+- **Decision:** (1) Add awaiting_external_start to the transcript-poll auto-recover branch (alongside jsonl_missing) so re-launch tasks transition active when JSONL is fresh. (2) Bump BubbleTranscript lateral padding 22px→40px on both PlainBubbles and VirtualBubbles. (3) Introduce SYSTEM_KINDS set covering system + custom-title + agent-name + permission-mode; both filter and toolbar count consult it.
+- **Commit:** 89e55bf43b9c471ae8bdc6e610bc6d3a5346eafb
+- **Rationale:** Minimal targeted fixes per Sven's spec. Status-machine fix preserves the (rarely useful) special case where a brand-new task gets its initial transition logged via firstJsonlObservedAt — only the recovery branch is widened. Padding chosen to match comfortable reading inset without making the bubbles narrower than the existing max-width caps. Pill-filter route picks Option A from the analysis (default-hide behind toggle) over Option B (renderer removal) so the data is still inspectable.
+- **Consequences:** (1) Re-launches now self-recover within one polling tick. firstJsonlObservedAt remains the gate for the very first transition. (2) Chat reads as visibly inset; no other layout knobs affected. (3) Show-system-messages toggle now reveals all four pill kinds atomically; default chat is cleaner. iterate-3 chip-variant tests opt-in via the toggle.
+- **Rejected:** Option B for pills (renderer removal): rejected because it loses debug-affordance with no real benefit. Status-fix variant 'don't reset to awaiting_external_start in POST /launch when firstJsonlObservedAt is set': rejected because the 'fresh launch' semantic of POST /launch is load-bearing and changing it risks Resume/Fork regressions.
