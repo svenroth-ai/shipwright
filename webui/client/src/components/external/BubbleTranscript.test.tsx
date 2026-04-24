@@ -208,6 +208,15 @@ describe("BubbleTranscript — virtualization toggle", () => {
 });
 
 describe("BubbleTranscript — iterate-3 chip variants (FR-03.52)", () => {
+  // These chips are now treated as system-message noise and hidden by
+  // default; the tests below opt-in via the system-visibility toggle.
+  beforeEach(() => {
+    window.localStorage.setItem(SYSTEM_VISIBILITY_KEY, "true");
+  });
+  afterEach(() => {
+    window.localStorage.removeItem(SYSTEM_VISIBILITY_KEY);
+  });
+
   it("renders custom-title as a muted one-line chip (no card border)", () => {
     const content = jsonl([
       { type: "custom-title", customTitle: "Implement user auth" },
@@ -308,6 +317,48 @@ describe("BubbleTranscript — system visibility toggle (FR-03.51)", () => {
 
     // Fresh mount should read localStorage and still show system events.
     render(<BubbleTranscript content={content} />);
+    expect(screen.getByTestId("bubble-system")).toBeInTheDocument();
+  });
+
+  it("hides custom-title / agent-name / permission-mode pills by default", () => {
+    const content = jsonl([
+      { type: "custom-title", customTitle: "Hidden by default" },
+      { type: "agent-name", agentName: "Claude" },
+      { type: "permission-mode", permissionMode: "auto" },
+      { type: "user", message: { content: "visible" } },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    expect(screen.queryByTestId("bubble-custom-title")).toBeNull();
+    expect(screen.queryByTestId("bubble-agent-name")).toBeNull();
+    expect(screen.queryByTestId("bubble-permission-mode")).toBeNull();
+    expect(screen.getByTestId("bubble-user")).toBeInTheDocument();
+  });
+
+  it("counts custom-title / agent-name / permission-mode in the toolbar systemCount", () => {
+    const content = jsonl([
+      { type: "system", subtype: "init", content: "cwd=/tmp" },
+      { type: "custom-title", customTitle: "X" },
+      { type: "agent-name", agentName: "Y" },
+      { type: "permission-mode", permissionMode: "Z" },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    const toggle = screen.getByTestId("system-toggle");
+    expect(toggle.getAttribute("data-system-count")).toBe("4");
+    expect(toggle.textContent).toContain("(4)");
+  });
+
+  it("toggling system visibility reveals all four pill kinds together", async () => {
+    const content = jsonl([
+      { type: "custom-title", customTitle: "T" },
+      { type: "agent-name", agentName: "A" },
+      { type: "permission-mode", permissionMode: "M" },
+      { type: "system", subtype: "init", content: "S" },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    await userEvent.click(screen.getByTestId("system-toggle"));
+    expect(screen.getByTestId("bubble-custom-title")).toBeInTheDocument();
+    expect(screen.getByTestId("bubble-agent-name")).toBeInTheDocument();
+    expect(screen.getByTestId("bubble-permission-mode")).toBeInTheDocument();
     expect(screen.getByTestId("bubble-system")).toBeInTheDocument();
   });
 });
