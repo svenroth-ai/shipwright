@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-04-24
+
+**Breaking change:** the Shipwright Command Center WebUI has been
+extracted into its own repository. See
+<https://github.com/svenroth-ai/shipwright-webui>. All historical
+`(webui)`-scoped entries below this release remain in this changelog
+for reference; new WebUI changes go to the new repo's CHANGELOG.md.
+
+### Changed
+
+- `webui/` removed from the monorepo. Phase-1 prep work (profile-loader
+  cascade + contract versioning) landed in v0.3.2 and shipped with the
+  extraction at `genesis-from-shipwright-v0.3.2` in the new repo.
+- `scripts/install.sh` no longer runs `npm install` in `webui/{server,client}`.
+  The script now prints a pointer to the new repo with the exact clone +
+  `make install` / `make dev-server` / `make dev-client` commands.
+- `.github/workflows/ci.yml` — `webui-client-checks` and
+  `webui-server-checks` jobs removed (they now live in the
+  shipwright-webui repo's CI).
+- `.github/dependabot.yml` — `/webui/client` and `/webui/server` npm
+  blocks removed (scanning moved with the repo).
+- `.github/ISSUE_TEMPLATE/bug_report.yml` — `webui` dropdown option
+  removed (bugs go to the new repo's tracker).
+- `CLAUDE.md` + `README.md` + `docs/guide.md` (chapters 8.5 and 11) —
+  point at the new repo instead of documenting the WebUI internally.
+
+### Removed
+
+- `webui/` directory (client, server, scripts, agent_docs, planning,
+  project-docs, designs, compliance) — moved to
+  <https://github.com/svenroth-ai/shipwright-webui>.
+- `shared/tests/test_vite_config_invariants.py` — the tripwire guarded
+  a file that no longer lives in this repo; the invariant was added in
+  v0.3.2 and travels with the WebUI.
+- `.gitignore` entries for `webui/client/e2e/screenshots/`,
+  `webui/client/e2e/scratch/`, and `webui/designs/visual-comparison/`.
+
+### Migration
+
+If you have a local checkout with `webui/` still present as untracked
+state (gitignored config files, node_modules), you can safely
+`rm -rf webui/` after merging — the directory is no longer referenced
+by anything in this repo.
+
+The file contract between Shipwright plugins and the WebUI is unchanged:
+plugins write `shipwright_run_config.json` + `shipwright_*_config.json`,
+the WebUI reads `.profile` and existsSync. Both sides stamp
+`contractVersion` / `schemaVersion` so drift becomes visible in the
+WebUI log without failing reads. See `plugins/shipwright-project/scripts/write_run_config.py`
+and the new repo's `server/src/core/contract-version.ts`.
+
 ## [0.3.2] - 2026-04-24
 
 ### Added

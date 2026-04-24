@@ -52,56 +52,6 @@ jobs:
             uv run pytest integration-tests/ -v || true
           fi
 
-  webui-client-checks:
-    name: WebUI client (lint + type + test)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: webui/client
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: webui/client/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Type check
-        run: npx tsc --noEmit
-
-      - name: Lint
-        run: npx oxlint . || true
-        continue-on-error: true
-
-      - name: Run tests
-        run: npm test -- --run
-
-  webui-server-checks:
-    name: WebUI server (lint + type + test)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: webui/server
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: webui/server/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Type check
-        run: npx tsc --noEmit
-
-      - name: Run tests
-        run: npm test -- --run || true
+  # WebUI client + server checks moved to
+  # https://github.com/svenroth-ai/shipwright-webui/blob/main/.github/workflows/ci.yml
+  # when the WebUI was extracted into its own repo (v0.4.0, 2026-04-24).

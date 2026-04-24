@@ -83,21 +83,17 @@ cd "$REPO_ROOT" && uv sync --quiet
 echo "  Done."
 echo ""
 
-# ── Install WebUI dependencies ──
+# ── Command Center WebUI (separate repo since v0.4.0) ──
 
-echo "Installing WebUI dependencies..."
-if [ -d "$REPO_ROOT/webui" ]; then
-    if command -v npm &>/dev/null; then
-        cd "$REPO_ROOT/webui/server" && npm install --silent 2>/dev/null
-        cd "$REPO_ROOT/webui/client" && npm install --silent 2>/dev/null
-        echo "  Done."
-    else
-        echo "  [!!] npm not found — WebUI dependencies not installed."
-        echo "       Install Node.js 18+ to use the Command Center WebUI."
-    fi
-else
-    echo "  WebUI directory not found — skipping."
-fi
+echo "Command Center WebUI:"
+echo "  The WebUI lives in its own repository since v0.4.0:"
+echo "    https://github.com/svenroth-ai/shipwright-webui"
+echo ""
+echo "  To install it alongside Shipwright:"
+echo "    git clone https://github.com/svenroth-ai/shipwright-webui.git ~/shipwright-webui"
+echo "    cd ~/shipwright-webui && make install"
+echo "    make dev-server   # Terminal 1 (Hono :3847)"
+echo "    make dev-client   # Terminal 2 (Vite :5173)"
 echo ""
 
 # ── Create shell alias ──
@@ -161,6 +157,6 @@ echo " Then run:           shipwright"
 echo " Then type:          /shipwright-run"
 echo ""
 echo " WebUI (Command Center):"
-echo "   cd webui && npm run dev"
-echo "   Open http://localhost:5173"
+echo "   Lives at https://github.com/svenroth-ai/shipwright-webui"
+echo "   See above for standalone install commands."
 echo "========================================"
