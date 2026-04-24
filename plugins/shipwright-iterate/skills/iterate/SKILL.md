@@ -85,15 +85,24 @@ For initial builds, use: /shipwright-run
 
 Before starting fresh, check if a previous iterate run was interrupted:
 
-1. Check for existing `iterate/*` branches:
+1. Enumerate + classify existing `iterate/*` branches via the
+   dedicated helper (read-only; exits 1 only on hard git failures):
    ```bash
-   git branch --list "iterate/*"
+   uv run {shared_root}/scripts/tools/list_iterate_branches.py --project-root . --main "$DEFAULT_BRANCH"
    ```
-   **Filter stale branches:** exclude any branch already merged into the default
-   branch (`git merge-base --is-ancestor <branch> <default>` returns 0) AND
-   without a matching `agent_docs/session_handoff.md`. Stale branches are cleanup
-   candidates, not in-progress runs — print a one-line hint:
+   The JSON output (schema v1) has per-branch metadata plus
+   backward-compat arrays `active` / `stale` / `locked`. Use the
+   `active` list for the resume-candidate menu. For every branch in
+   `stale`, print a one-line housekeeping hint:
    `stale iterate branch iterate/X found; run "git branch -D iterate/X" to remove`.
+   For every branch in `locked`, print:
+   `iterate/X locked in worktree <path>; continue there or kill the other worktree first`.
+
+   Known limitations (surfaced in the helper output `errors[]`):
+   - Squash-merged branches stay in `active` until manual `git branch -D`;
+     the helper cannot reliably detect them locally.
+   - Both `main` AND `master` present without `--main` → `main: null`
+     + ambiguity error. Pass `--main <name>` explicitly.
 2. Check if `agent_docs/session_handoff.md` exists and references an iterate run_id
 3. Check current git branch — if already on an `iterate/` branch
 4. **Worktree self-exclusion:** if running inside a secondary worktree
@@ -197,7 +206,7 @@ These rules apply to the **Parallel** option in B1 and to any manual worktree-ba
 - **One PR per iterate, one changelog entry per iterate.** Conventional-Commit sort is merge-order-independent. Rebase per PR is expected when multiple are open against the default branch.
 - **WARNING — race on adopted target projects:** on any project with `shipwright_run_config.json`, parallel iterates produce a merge conflict in `iterate_history[]`. Use this workflow today only if manual conflict resolution is acceptable. Structural fix tracked as `iterate-history-file-per-iterate` (must land before `/shipwright-adopt` on the shipwright monorepo itself).
 - **WARNING — CHANGELOG.md `[Unreleased]` is a merge hotspot today.** F4 appends to `[Unreleased]` for every iterate. Two parallel iterates conflict on merge — the second PR must rebase and resolve the bullet merge manually. Structural fix bundled with the iterate_history refactor as a `CHANGELOG-unreleased.d/` drop pattern.
-- **Cleanup:** `git worktree remove .worktrees/<slug>` removes the worktree but **not** the branch. After PR merge: also `git branch -D iterate/<slug>`.
+- **Cleanup:** `git worktree remove .worktrees/<slug>` removes the worktree but **not** the branch. After PR merge: also `git branch -D iterate/<slug>`. Use the helper (`uv run {shared_root}/scripts/tools/list_iterate_branches.py`) to see which branches are in `locked` (active in another worktree) vs `stale` (safe to delete).
 
 See also: `docs/guide.md` chapter "Parallel Development with Worktrees" for the full walkthrough.
 
