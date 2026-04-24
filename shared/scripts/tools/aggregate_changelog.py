@@ -163,21 +163,43 @@ def _render_versioned_section(
 def _find_structural_insertion_line(lines: list[str]) -> int:
     """Return the line index where a new ``## [version]`` section should go.
 
+    Keep-a-Changelog convention: ``## [Unreleased]`` stays at the top; new
+    released versions go BELOW it in descending chronological order.
+
     Preference order:
-      1. Immediately above the first existing ``## [version]`` heading.
-      2. If ``## [Unreleased]`` is present but no prior version, above
-         ``[Unreleased]``. This keeps the new release block above the
-         legacy unreleased bullets (if any survive).
+      1. Immediately above the first existing ``## [vX.Y.Z]`` (versioned)
+         heading — ``## [Unreleased]`` is skipped so it stays on top
+         of the file as the spec dictates.
+      2. If ``## [Unreleased]`` exists but no prior versioned section does,
+         place the new section directly AFTER the [Unreleased] block
+         (next blank after the last [Unreleased] bullet).
       3. Otherwise, after the standard Keep-a-Changelog header block —
-         which we approximate as the line right after the first paragraph
-         of non-heading text following the ``# Changelog`` title.
+         the line right after the first blank-line paragraph that follows
+         the ``# Changelog`` title.
       4. End of file if none of the above match.
     """
-    # 1 + 2: first "## [" line.
-    first_section_pattern = re.compile(r"^##\s+\[")
+    # ``## [ANYTHING-OTHER-THAN-Unreleased])``
+    version_pattern = re.compile(r"^##\s+\[(?!Unreleased\])")
+    unreleased_pattern = re.compile(r"^##\s+\[Unreleased\]")
+    any_section_pattern = re.compile(r"^##\s+\[")
+
+    # 1: first versioned (non-Unreleased) heading.
     for i, line in enumerate(lines):
-        if first_section_pattern.match(line):
+        if version_pattern.match(line):
             return i
+
+    # 2: only [Unreleased] exists — place after its block ends.
+    for i, line in enumerate(lines):
+        if unreleased_pattern.match(line):
+            j = len(lines)
+            for k in range(i + 1, len(lines)):
+                if any_section_pattern.match(lines[k]):
+                    j = k
+                    break
+            # Back up over trailing blank lines so we don't stack blanks.
+            while j - 1 > i and lines[j - 1].strip() == "":
+                j -= 1
+            return j
 
     # 3: after header paragraph. Find first blank line after line 0.
     for i in range(1, len(lines)):

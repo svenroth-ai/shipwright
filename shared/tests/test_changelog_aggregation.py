@@ -121,12 +121,32 @@ class TestStructuralInsert:
         first_line = new.splitlines()[0]
         assert first_line == "# Changelog"
 
-    def test_inserts_above_unreleased_when_no_prior_version(self):
+    def test_inserts_below_unreleased_when_no_prior_version(self):
+        """Keep-a-Changelog convention: [Unreleased] stays on top; new
+        versioned releases go BELOW it in descending chronological order."""
         text = STANDARD_HEADER + "## [Unreleased]\n\n- some legacy bullet\n"
         new = _insert_section(text, "## [0.3.0] - 2026-04-23\n\n### Added\n- x\n")
-        rel_idx = new.index("## [0.3.0]")
         unr_idx = new.index("## [Unreleased]")
-        assert rel_idx < unr_idx
+        rel_idx = new.index("## [0.3.0]")
+        assert unr_idx < rel_idx
+        # The legacy bullet must survive untouched above the new section.
+        assert "some legacy bullet" in new
+        assert new.index("some legacy bullet") < rel_idx
+
+    def test_inserts_below_unreleased_but_above_prior_version(self):
+        """Mixed case: both [Unreleased] and a prior versioned section exist.
+        The new version goes above the prior versioned one, and [Unreleased]
+        stays on top."""
+        text = (
+            STANDARD_HEADER
+            + "## [Unreleased]\n\n- pending work\n\n"
+            + "## [0.2.0] - 2026-04-01\n\n- old release\n"
+        )
+        new = _insert_section(text, "## [0.3.0] - 2026-04-23\n\n### Added\n- x\n")
+        unr_idx = new.index("## [Unreleased]")
+        rel_idx = new.index("## [0.3.0]")
+        old_idx = new.index("## [0.2.0]")
+        assert unr_idx < rel_idx < old_idx
 
     def test_inserts_after_header_when_no_existing_version(self):
         text = STANDARD_HEADER
