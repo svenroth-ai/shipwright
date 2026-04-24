@@ -1,0 +1,1 @@
+**Iterate webui-status-padding-pills hotfix #2 (2026-04-24)** — `TaskListCard` (TodoWrite/TaskCreate/TaskUpdate bubbles) had `max-w-[90%]` which made it narrower than `ToolCard` next to it in the same chat column. Dropped the cap so both card types share the same width. (ADR-058 follow-up)
