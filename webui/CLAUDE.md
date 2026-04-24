@@ -195,11 +195,22 @@ taskkill //F //PID <pid>
 cd webui/server && npm run dev
 ```
 
-If `npm run dev` fails with `EADDRINUSE`, another worktree's dev server may be
-running on the same port. Either kill it via `npm run dev:fresh` (same kill
-scope applies — with `PORT`/`VITE_PORT` overrides it kills those) or override
-`PORT` / `VITE_PORT` for this worktree.
+If `npm run dev` fails with `EADDRINUSE`, another worktree's dev server may
+be running on the same port. Since v0.3.2 the Hono server exits with a
+deterministic operator message:
 
-`npm run dev:fresh` (the dev-restart.js helper) now reads `PORT` and
-`VITE_PORT` from the environment, so kill scope is worktree-local when both
-are overridden.
+```
+FATAL: Port 3847 is in use. Override via PORT=<other> or stop the
+existing process (e.g. "npm run dev:fresh" or netstat/taskkill).
+```
+
+`EACCES` and `EADDRNOTAVAIL` get analogous loud messages. Vite already
+fails loud via `strictPort: true` in `client/vite.config.ts` — so both
+halves of the stack now refuse to silently half-start.
+
+`npm run dev:fresh` (the dev-restart.js helper) reads `PORT` and
+`VITE_PORT` from the environment. Kill scope is limited to the two
+configured ports — it never reaches beyond them. The historic
+`VITE_ALT_PORT=5177` hardcode was removed in v0.3.2 because it broke the
+per-worktree contract; if you happen to run Vite on 5177, set
+`VITE_PORT=5177` explicitly.

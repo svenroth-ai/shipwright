@@ -1341,7 +1341,7 @@ Open a new Claude Code session (or editor window) inside `.worktrees/$SLUG` and 
 
 ### Dev-server workflow
 
-By default the Shipwright WebUI dev server binds fixed ports: Hono `3847`, Vite `5173`, Vite alt `5177`. Only one instance can run. For parallel worktrees with two dev-server stacks:
+By default the Shipwright WebUI dev server binds fixed ports: Hono `3847`, Vite `5173`. Only one instance per port can run. For parallel worktrees with two dev-server stacks:
 
 ```bash
 # Main worktree (defaults):
@@ -1353,7 +1353,7 @@ PORT=3848 (cd webui/server && npm run dev)                   # Hono 3848
 PORT=3848 VITE_PORT=5174 (cd webui/client && npm run dev)    # Vite 5174, proxies /api → 3848
 ```
 
-The `PORT` env var controls Hono only; `VITE_PORT` controls Vite only. The Vite proxy dynamically reads `process.env.PORT` so it routes to the right Hono instance. `strictPort: true` ensures Vite fails loud if the port is taken, rather than silently falling back to `port+1` and breaking the restart helper.
+The `PORT` env var controls Hono only; `VITE_PORT` controls Vite only. The Vite proxy dynamically reads `process.env.PORT` so it routes to the right Hono instance. Both halves now fail loud on port collisions: Vite via `strictPort: true` in `client/vite.config.ts`, and Hono via a bind-error handler that surfaces `EADDRINUSE` / `EACCES` / `EADDRNOTAVAIL` with a deterministic operator message and a non-zero exit (since v0.3.2). There is no probe-before-bind — a probe would be TOCTOU-racy on Windows where ephemeral ports recycle fast.
 
 If only one dev server is acceptable, leave the parallel worktree running tests and build only (`npm run test`, `npm run build`, `npm run typecheck`) — no dev-server required for most iterate work.
 
@@ -1366,6 +1366,7 @@ If only one dev server is acceptable, leave the parallel worktree running tests 
 5. **Editor / VSCode.** Open the worktree as a separate workspace window, not as a subfolder of the main repo workspace. File-watcher noise and project-wide search behave poorly on nested worktrees.
 6. **Hot-module-reload (HMR).** Vite's HMR uses the same port as the dev server by default; two instances with different `VITE_PORT` values each get their own HMR port automatically. Do **not** pin `server.hmr.port` explicitly — that would force both instances onto one HMR port and create the exact collision this chapter aims to avoid.
 7. **Stale iterate branches.** `/shipwright-iterate` B1 detection filters branches already merged into the default branch (via `git merge-base --is-ancestor`). If B1 still prompts on a branch you thought was gone, delete it: `git branch -D iterate/<stale-slug>`.
+8. **Marketplace plugin cache is shared across worktrees.** Claude Code executes `~/.claude/plugins/cache/shipwright/` at runtime, which is a single directory shared between every worktree of this repo. Plugin-side edits (`plugins/*`, `shared/scripts/*`, any `SKILL.md`) in one worktree do **not** reach the other until `bash scripts/update-marketplace.sh` runs from main. When iterating on plugin internals in parallel, run the sync after each commit that touches plugin-side files — not only at release time. See the repo-root `CLAUDE.md` "When editing plugin-side files" section.
 
 ### Cleanup
 

@@ -23,6 +23,7 @@ import { readFile, writeFile } from "fs/promises";
 import * as lockfile from "proper-lockfile";
 
 import { getConfig } from "./config.js";
+import { formatBindError } from "./lib/bind-errors.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { requestLogger } from "./middleware/logger.js";
 import { ProjectManager } from "./core/project-manager.js";
@@ -338,8 +339,24 @@ if (isMainModule) {
         }
       });
 
-      serve({ fetch: app.fetch, port: config.port }, (info) => {
-        console.log(`Shipwright Command Center listening on http://localhost:${info.port}`);
+      // `@hono/node-server`'s `serve` returns the underlying Node
+      // `http.Server`. Attach an `error` listener so bind failures
+      // (EADDRINUSE from a parallel worktree, EACCES on a privileged
+      // port, etc.) produce a deterministic operator-facing line and
+      // a non-zero exit instead of a silent half-startup. No probe
+      // before bind — that would be TOCTOU-racy on Windows.
+      const server = serve(
+        { fetch: app.fetch, port: config.port },
+        (info) => {
+          console.log(
+            `Shipwright Command Center listening on http://localhost:${info.port}`,
+          );
+        },
+      );
+      server.on("error", (err: unknown) => {
+        const { message, exitCode } = formatBindError(err, config.port);
+        console.error(`FATAL: ${message}`);
+        process.exit(exitCode);
       });
     } catch (err) {
       console.error("FATAL: Server startup failed:", err);

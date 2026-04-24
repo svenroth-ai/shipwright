@@ -1,0 +1,1 @@
+Docs (webui/CLAUDE.md + guide.md §8.5) — honest language for kill scope ("limited to the configured ports" instead of "worktree-local") and explicit note that Hono + Vite both fail loud on port collisions.
