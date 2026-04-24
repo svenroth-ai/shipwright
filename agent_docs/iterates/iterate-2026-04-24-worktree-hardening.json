@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-04-24-worktree-hardening",
+  "date": "2026-04-24T12:21:04.604157Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/worktree-hardening",
+  "tests_passed": true,
+  "adr": null,
+  "spec": null
+}
