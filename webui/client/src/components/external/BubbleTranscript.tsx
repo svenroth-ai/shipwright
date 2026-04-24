@@ -74,6 +74,19 @@ const FALLBACK_ROW_PX = 96;
 const SYSTEM_VISIBILITY_KEY = "webui.transcript.showSystem";
 
 /**
+ * Event kinds treated as "system messages" for the toolbar toggle.
+ * The original `system` kind plus three Claude-emitted metadata pills
+ * (custom-title, agent-name, permission-mode) which are session-info
+ * noise that doesn't belong in the conversation flow by default.
+ */
+const SYSTEM_KINDS: ReadonlySet<ParsedEvent["kind"]> = new Set([
+  "system",
+  "custom-title",
+  "agent-name",
+  "permission-mode",
+]);
+
+/**
  * Global toggle state for "system" event visibility. Persists to
  * localStorage so the preference survives reloads and applies across
  * every transcript viewer in the app (single default — not per-task,
@@ -139,7 +152,7 @@ export function BubbleTranscript({ content, initialTail = DEFAULT_TAIL, task }: 
   // actually working, there's just nothing to reveal). Also used by the
   // toolbar to disable the button when N == 0.
   const systemCount = useMemo(
-    () => allEvents.reduce((n, e) => (e.kind === "system" ? n + 1 : n), 0),
+    () => allEvents.reduce((n, e) => (SYSTEM_KINDS.has(e.kind) ? n + 1 : n), 0),
     [allEvents],
   );
   // 2026-04-23 — iterate-20260423-chat-followups AC-4: file-history-snapshot
@@ -150,7 +163,7 @@ export function BubbleTranscript({ content, initialTail = DEFAULT_TAIL, task }: 
   const filtered = useMemo(() => {
     return allEvents.filter((e) => {
       if (e.kind === "file-history-snapshot") return false;
-      if (!showSystem && e.kind === "system") return false;
+      if (!showSystem && SYSTEM_KINDS.has(e.kind)) return false;
       return true;
     });
   }, [allEvents, showSystem]);
