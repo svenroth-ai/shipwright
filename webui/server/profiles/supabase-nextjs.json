@@ -1,0 +1,253 @@
+{
+  "name": "supabase-nextjs",
+  "description": "Full-stack Next.js with Supabase backend, optimized for Jelastic deployment",
+  "version": "1.0.0",
+
+  "stack": {
+    "runtime": {
+      "node": "22.x",
+      "typescript": "^5.9.3"
+    },
+    "frontend": {
+      "next": "^16.2.0",
+      "react": "^19.2.4",
+      "react-dom": "^19.2.4",
+      "tailwindcss": "^4.2.0",
+      "zustand": "^5.0.12"
+    },
+    "backend": {
+      "supabase-js": "@supabase/supabase-js@^2.99.3",
+      "supabase-cli": "^2.82.0"
+    },
+    "auth": {
+      "provider": "supabase-auth",
+      "methods": ["email", "oauth"],
+      "notes": "Supabase Auth with Email + OAuth. Token refresh strategy is project-specific (decision_log)."
+    },
+    "storage": "supabase-storage",
+    "realtime": "supabase-realtime"
+  },
+
+  "design_system": {
+    "name": "untitled-ui",
+    "type": "react",
+    "docs_url": "https://www.untitledui.com/react/components",
+    "mockup_approach": "html-inline-css",
+    "_comment": "Design system for shipwright-design mockups. Implementation uses component_library below."
+  },
+
+  "ui": {
+    "component_library": "shadcn/ui",
+    "shadcn_cli": "^4.0.0",
+    "forms": {
+      "react-hook-form": "^7.71.2",
+      "zod": "^4.3.6"
+    },
+    "patterns": {
+      "auth_flow": "Login/Signup page with social OAuth buttons (shadcn/ui)",
+      "dashboard": "Sidebar navigation + header + content area",
+      "settings": "Tab-based settings page",
+      "lists": "Data tables with sorting, filtering, pagination (shadcn/ui)",
+      "forms": "Multi-step forms with validation (react-hook-form + zod)",
+      "empty_states": "Illustrated empty state with CTA",
+      "error_pages": "404/500 with navigation back"
+    }
+  },
+
+  "dev_server": {
+    "command": "npm run dev",
+    "port": 3000,
+    "ready_timeout_seconds": 60,
+    "ready_path": "/"
+  },
+
+  "testing": {
+    "unit": {
+      "framework": "vitest",
+      "version": "^4.1.0"
+    },
+    "e2e": {
+      "framework": "@playwright/test",
+      "version": "^1.58.2"
+    },
+    "integration": {
+      "framework": "vitest",
+      "config": "vitest.integration.config.ts",
+      "command": "npx vitest run --config vitest.integration.config.ts",
+      "dir": "tests/integration/",
+      "helpers_template": "integration-helpers-supabase.ts.template",
+      "vitest_config_template": "vitest.integration.config.ts.template",
+      "cleanup_strategy": "cascade-delete-test-user",
+      "db_strategy": { "local": "supabase start", "ci": "supabase start", "dev": "supabase start" },
+      "env_file": ".env.test",
+      "url_safety_check": "localhost_only",
+      "requires_env": ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
+      "test_users": {
+        "admin": { "env_email": "TEST_ADMIN_EMAIL", "env_password": "TEST_ADMIN_PASSWORD" },
+        "member": { "env_email": "TEST_MEMBER_EMAIL", "env_password": "TEST_MEMBER_PASSWORD" }
+      },
+      "timeout_ms": 30000,
+      "sequential": true,
+      "autofix": {
+        "max_retries": 3,
+        "strategy": "structured-debugging",
+        "fast_fail_patterns": ["ECONNREFUSED", "ETIMEDOUT", "connect ENOENT"],
+        "fast_fail_threshold": 0.5
+      }
+    },
+    "db_tests": {
+      "framework": "pgtap",
+      "command": "supabase test db",
+      "dir": "supabase/tests/database/",
+      "setup_script": "supabase/tests/database/000-setup-tests-hooks.sql",
+      "helpers": "supabase-test-helpers"
+    },
+    "security": {
+      "provider": "auto",
+      "scope": ["sast", "sca", "secret-detection"],
+      "_comment": "provider: 'auto' detects Aikido or OSS tools. Set 'oss' or 'aikido' to force a backend."
+    }
+  },
+
+  "linting": {
+    "eslint": "^10.0.3",
+    "eslint_config": "flat",
+    "prettier": "^3.8.1"
+  },
+
+  "error_tracking": {
+    "provider": "sentry",
+    "package": "@sentry/nextjs@^10.45.0",
+    "tier": "free"
+  },
+
+  "deploy": {
+    "target": "jelastic",
+    "environments": {
+      "dev": {
+        "auto_deploy": true,
+        "branches": ["develop", "feature/*"]
+      },
+      "prod": {
+        "auto_deploy": false,
+        "branches": ["main"],
+        "requires_confirmation": true,
+        "snapshot_before_deploy": true
+      }
+    },
+    "next_config": {
+      "output": "standalone"
+    },
+    "notes": "No ISR on Jelastic — use SSR or client-side fetch. Optional Cloudflare CDN for caching + image optimization."
+  },
+
+  "ci": {
+    "provider": "github-actions",
+    "pipeline": {
+      "on_push": ["develop", "feature/*"],
+      "on_pr": ["main"],
+      "jobs": ["lint", "type-check", "unit-tests", "integration-tests"],
+      "on_pr_jobs": ["aikido-scan"]
+    }
+  },
+
+  "folder_structure": {
+    "src/app/": "Next.js App Router pages",
+    "src/components/": "React components",
+    "src/lib/": "Utility functions",
+    "src/hooks/": "Custom React hooks",
+    "supabase/migrations/": "SQL forward migrations (managed by shipwright-build)",
+    "supabase/migrations/_rollback/": "SQL rollback migrations (not executed by supabase db push)",
+    "supabase/functions/": "Edge Functions",
+    "tests/": "Vitest unit tests",
+    "tests/integration/": "Vitest integration tests (real DB, no mocks, localhost only)",
+    "supabase/tests/database/": "pgTAP database tests (RLS, constraints, DB functions)",
+    "e2e/": "Playwright E2E tests",
+    "public/": "Static assets"
+  },
+
+  "env_files": {
+    ".env.local": "Local development (not committed)",
+    ".env.test": "Integration test environment — localhost Supabase only (not committed)",
+    ".env.example": "Template with all required vars (committed)",
+    "jelastic_dashboard": "DEV/PROD secrets (SUPABASE_URL, SUPABASE_KEY, etc.)"
+  },
+
+  "required_env_vars": {
+    "build": [
+      {"name": "NEXT_PUBLIC_SUPABASE_URL", "description": "Supabase project URL"},
+      {"name": "NEXT_PUBLIC_SUPABASE_ANON_KEY", "description": "Supabase anonymous key"},
+      {"name": "SUPABASE_SERVICE_ROLE_KEY", "description": "Supabase service role key (admin operations: webhooks, role upgrades)"},
+      {"name": "TEST_ADMIN_EMAIL", "description": "Test admin user email for integration tests", "optional": true},
+      {"name": "TEST_ADMIN_PASSWORD", "description": "Test admin user password for integration tests", "optional": true},
+      {"name": "TEST_MEMBER_EMAIL", "description": "Test member user email for integration tests", "optional": true},
+      {"name": "TEST_MEMBER_PASSWORD", "description": "Test member user password for integration tests", "optional": true}
+    ],
+    "deploy": [
+      {"name": "JELASTIC_TOKEN", "description": "Infomaniak Jelastic API token"},
+      {"name": "SUPABASE_ACCESS_TOKEN", "description": "Supabase CLI access token (for migrations)", "optional": true}
+    ],
+    "plugin": [
+      {"name": "OPENROUTER_API_KEY", "description": "OpenRouter API key for external plan review", "optional": true},
+      {"name": "GEMINI_API_KEY", "description": "Google Gemini API key (alternative to OpenRouter)", "optional": true},
+      {"name": "OPENAI_API_KEY", "description": "OpenAI API key (alternative to OpenRouter)", "optional": true},
+      {"name": "AIKIDO_CLIENT_ID", "description": "Aikido Security API client ID", "optional": true},
+      {"name": "AIKIDO_CLIENT_SECRET", "description": "Aikido Security API client secret", "optional": true}
+    ]
+  },
+
+  "architecture_rules": [
+    "Feature modules must not import from other feature modules",
+    "All Supabase calls go through lib/supabase/ — no direct client usage in components",
+    "All API calls go through lib/api/ — no fetch() in components",
+    "Server Components by default — 'use client' only when needed",
+    "No business logic in API routes — use Edge Functions",
+    "All database changes via migrations in supabase/migrations/"
+  ],
+
+  "rules": ["tests", "integration-tests", "api", "migrations", "components", "config"],
+
+  "package_manager": "npm",
+
+  "migrations": {
+    "dev": "supabase db push (automatic)",
+    "prod": "supabase db push --dry-run first, user confirms, then apply",
+    "rollback": "down.sql generated in supabase/migrations/_rollback/ (best-effort, never in migrations/ directly)",
+    "destructive_protection": true,
+    "destructive_patterns": ["DROP TABLE", "DROP COLUMN", "ALTER TYPE"],
+    "dir": "supabase/migrations/",
+    "preflight_cmd": "npx supabase status",
+    "apply_cmd": "npx supabase db push --linked",
+    "dry_run_cmd": "npx supabase db push --linked --dry-run",
+    "list_cmd": "npx supabase migration list",
+    "safe_nonprod_only": true,
+    "supports_idempotent_apply": true,
+    "supports_locking": true,
+    "supports_dry_run": true,
+    "apply_scope": "linked",
+    "rollback_strategy": "manual",
+    "post_apply_manual_steps": [
+      {
+        "trigger_tag": "supabase_auth_hook",
+        "trigger_description": "Auth Hook function created (e.g., custom_access_token_hook)",
+        "action": "Dashboard → Authentication → Hooks → Enable and select function",
+        "note": "Cannot be done via CLI or migration",
+        "blocks_tests_for": ["auth", "session", "token"]
+      },
+      {
+        "trigger_tag": "supabase_webhook",
+        "trigger_description": "Database Webhook / Edge Function created",
+        "action": "Dashboard → Database → Webhooks → Configure",
+        "note": "Edge Function must be deployed first",
+        "blocks_tests_for": ["webhook", "edge-function"]
+      },
+      {
+        "trigger_tag": "supabase_realtime",
+        "trigger_description": "Realtime publication added for a table",
+        "action": "Dashboard → Database → Replication → Enable table",
+        "note": "Required for real-time subscriptions to work",
+        "blocks_tests_for": ["realtime", "subscription"]
+      }
+    ]
+  }
+}
