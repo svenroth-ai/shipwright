@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-04-24
+
+WebUI live-test improvements — five UAT polish fixes from a TaskDetail live-test session, all bundled into a single iterate (`iterate-20260424-webui-status-padding-pills`, ADR-058 + 2 follow-up hotfixes). Stuck "Awaiting launch" state now recovers on re-launch; chat bubbles inset 22→40px from the column edges; the four session-info pill kinds (`system` + `custom-title` + `agent-name` + `permission-mode`) are filtered atomically by the existing "Show system messages" toggle; `last-prompt` events are dropped entirely (pure noise); `TaskListCard` width matches `ToolCard` so TodoWrite/TaskCreate/TaskUpdate bubbles fill the chat column the same way.
+
+### Fixed
+
+- **Iterate webui-status-padding-pills (2026-04-24)** — three live-test follow-ups to TaskDetail bundled as one iterate. **(1) status-stuck-on-Awaiting-launch:** transcript-poll state machine only auto-recovered from `jsonl_missing` and the first-time `!firstJsonlObservedAt` flip; a re-launch on a task whose JSONL already existed left the badge stuck on "Awaiting launch" forever because POST /launch unconditionally resets state to `awaiting_external_start`. Added `awaiting_external_start` to the auto-recover branch so re-launches transition back to `active` on the next polling tick. Regression test covers the full re-launch cycle. **(2) chat-bubble-padding:** widened lateral inset of `BubbleTranscript` PlainBubbles + VirtualBubbles from 22px to 40px — bubbles were sitting almost flush against the chat column edges. **(3) system-pill-filter:** `custom-title` / `agent-name` / `permission-mode` event kinds bypassed the "Show system messages" toggle and stacked between user messages as session-info noise. New `SYSTEM_KINDS` set covers all four kinds (`system` + the three pills); both the filter predicate and the toolbar count now consult it, so the toggle reveals/hides them atomically. iterate-3 chip-variant tests opt-in via the toggle; new tests pin the default-hide behavior + combined count. **Test totals:** webui/server 350 → 351 (+1), webui/client 488 → 491 (+3). TSC baselines unchanged. (ADR-058)
+- **Iterate webui-status-padding-pills hotfix (2026-04-24)** — `last-prompt` events were falling through the renderer's catch-all and appearing as a tiny generic pill between chat bubbles. The same content is already shown in the visible user bubble; the pill is pure noise. Dropped at the data-array filter alongside `file-history-snapshot` (not toggle-gated — no debug value in surfacing it). Regression test asserts the bubble stays gone even with "Show system messages" enabled. (ADR-058 follow-up)
+- **Iterate webui-status-padding-pills hotfix #2 (2026-04-24)** — `TaskListCard` (TodoWrite/TaskCreate/TaskUpdate bubbles) had `max-w-[90%]` which made it narrower than `ToolCard` next to it in the same chat column. Dropped the cap so both card types share the same width. (ADR-058 follow-up)
+
 ## [0.3.0] - 2026-04-24
 
 ### Added
