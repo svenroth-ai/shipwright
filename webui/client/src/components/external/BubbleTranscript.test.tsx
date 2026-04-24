@@ -347,6 +347,24 @@ describe("BubbleTranscript — system visibility toggle (FR-03.51)", () => {
     expect(toggle.textContent).toContain("(4)");
   });
 
+  it("drops last-prompt events entirely (data-array filter, not toggle-gated)", () => {
+    const content = jsonl([
+      { type: "last-prompt", prompt: "internal context not for the chat" },
+      { type: "user", message: { content: "real user message" } },
+    ]);
+    render(<BubbleTranscript content={content} />);
+    expect(screen.queryByTestId("bubble-unknown")).toBeNull();
+    expect(screen.getByTestId("bubble-user")).toBeInTheDocument();
+    // Even with system visibility on, last-prompt stays hidden.
+    window.localStorage.setItem(SYSTEM_VISIBILITY_KEY, "true");
+    const second = jsonl([
+      { type: "last-prompt", prompt: "still hidden" },
+      { type: "user", message: { content: "msg" } },
+    ]);
+    const { container } = render(<BubbleTranscript content={second} />);
+    expect(within(container).queryByTestId("bubble-unknown")).toBeNull();
+  });
+
   it("toggling system visibility reveals all four pill kinds together", async () => {
     const content = jsonl([
       { type: "custom-title", customTitle: "T" },

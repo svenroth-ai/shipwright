@@ -163,6 +163,10 @@ export function BubbleTranscript({ content, initialTail = DEFAULT_TAIL, task }: 
   const filtered = useMemo(() => {
     return allEvents.filter((e) => {
       if (e.kind === "file-history-snapshot") return false;
+      // last-prompt is internal context Claude uses — the same content
+      // already appears in the user bubble, so the small generic-fallback
+      // pill it produces is pure noise.
+      if (e.kind === "last-prompt") return false;
       if (!showSystem && SYSTEM_KINDS.has(e.kind)) return false;
       return true;
     });
