@@ -69,7 +69,7 @@ export function TaskListCardShell({
 
   return (
     <div
-      className="max-w-[90%] w-full overflow-hidden"
+      className="w-full overflow-hidden"
       style={{
         background: "var(--color-surface, #ffffff)",
         border: "1px solid var(--color-border, #e0dbd4)",
