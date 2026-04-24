@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-04-24-test-and-doc-gaps",
+  "date": "2026-04-24T12:32:03.769901Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/test-and-doc-gaps",
+  "tests_passed": true,
+  "adr": null,
+  "spec": null
+}

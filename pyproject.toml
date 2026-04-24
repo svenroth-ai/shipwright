@@ -23,10 +23,11 @@ dev = [
 testpaths = ["integration-tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
-addopts = "-v --tb=short"
+addopts = "-v --tb=short -m 'not slow'"
 pythonpath = ["."]
 markers = [
     "integration: marks tests as integration tests",
+    "slow: marks tests that spawn subprocesses or perform long I/O (excluded from the default run; use `pytest -m slow`)",
 ]
 
 [tool.setuptools.packages.find]
