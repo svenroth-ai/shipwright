@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   mkdtempSync,
   writeFileSync,
@@ -13,7 +13,9 @@ import {
   clearProfileCache,
   getProfilesDir,
   findServerRoot,
+  verifyProfileSchemaVersion,
 } from "./profile-loader.js";
+import { _resetWarnMemo } from "./contract-version.js";
 
 describe("profile-loader", () => {
   let dir: string;
@@ -193,5 +195,59 @@ describe("findServerRoot marker walk", () => {
     } finally {
       rmSync(isolated, { recursive: true, force: true });
     }
+  });
+});
+
+describe("verifyProfileSchemaVersion", () => {
+  let tmp: string;
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    clearProfileCache(); // also resets the one-shot check flag
+    _resetWarnMemo();
+    tmp = mkdtempSync(join(tmpdir(), "sw-profile-ver-"));
+    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    rmSync(tmp, { recursive: true, force: true });
+    warnSpy.mockRestore();
+  });
+
+  it("is silent when marker file is absent", () => {
+    verifyProfileSchemaVersion(tmp);
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it("is silent when marker contains known-max integer", () => {
+    writeFileSync(join(tmp, "PROFILE_SCHEMA_VERSION"), "1\n");
+    verifyProfileSchemaVersion(tmp);
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it("warns when marker declares a version ahead of the library", () => {
+    writeFileSync(join(tmp, "PROFILE_SCHEMA_VERSION"), "99\n");
+    verifyProfileSchemaVersion(tmp);
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    const payload = JSON.parse(warnSpy.mock.calls[0][0] as string);
+    expect(payload.event).toBe("contract_version_ahead");
+    expect(payload.artefact).toBe("PROFILE_SCHEMA_VERSION");
+    expect(payload.declared).toBe(99);
+  });
+
+  it("warns once only (idempotent) until clearProfileCache", () => {
+    writeFileSync(join(tmp, "PROFILE_SCHEMA_VERSION"), "99\n");
+    verifyProfileSchemaVersion(tmp);
+    verifyProfileSchemaVersion(tmp);
+    verifyProfileSchemaVersion(tmp);
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("warns on non-integer marker content (malformed)", () => {
+    writeFileSync(join(tmp, "PROFILE_SCHEMA_VERSION"), "not-a-version\n");
+    verifyProfileSchemaVersion(tmp);
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    const payload = JSON.parse(warnSpy.mock.calls[0][0] as string);
+    expect(payload.event).toBe("contract_version_malformed");
   });
 });
