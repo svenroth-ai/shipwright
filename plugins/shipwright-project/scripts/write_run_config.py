@@ -42,6 +42,7 @@ def write_run_config(project_root: Path, profile: str) -> Path:
         raise FileExistsError(f"shipwright_run_config.json already exists at {config_path}")
     now = datetime.now(timezone.utc).isoformat()
     config = {
+        "contractVersion": 1,
         "pipeline": ["project", "design", "plan", "build", "test", "changelog", "deploy", "compliance"],
         "status": "pending",
         "current_step": "project",

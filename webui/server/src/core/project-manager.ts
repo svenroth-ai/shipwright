@@ -9,6 +9,10 @@ function getProjectMode(_projectPath: string): undefined {
   return undefined;
 }
 import { loadProfile, getProfilesDir, type ProfileConfig } from "./profile-loader.js";
+import {
+  checkContractVersion,
+  RUN_CONFIG_CONTRACT_VERSION,
+} from "./contract-version.js";
 
 /**
  * Section 02 (iterate 3) — reserved projectId for the synthesized
@@ -177,7 +181,16 @@ export class ProjectManager {
     try {
       const readFileSync = this.deps.readFileSync ?? fs.readFileSync;
       const content = readFileSync(runCfgPath, "utf-8") as string;
-      const config = JSON.parse(content) as { profile?: unknown };
+      const config = JSON.parse(content) as {
+        profile?: unknown;
+        contractVersion?: unknown;
+      };
+      checkContractVersion({
+        artefact: "shipwright_run_config.json",
+        path: runCfgPath,
+        declared: config.contractVersion,
+        knownMax: RUN_CONFIG_CONTRACT_VERSION,
+      });
       if (typeof config.profile === "string") profileName = config.profile;
     } catch {
       return false;

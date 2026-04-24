@@ -27,6 +27,10 @@ import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import {
+  checkContractVersion,
+  ACTIONS_SCHEMA_VERSION,
+} from "./contract-version.js";
 
 export interface ActionDefinition {
   id: string;
@@ -172,6 +176,13 @@ export function loadActionsForProject(
   try {
     const raw = read(userPath, "utf-8");
     const parsed = JSON.parse(raw) as ResolvedActions;
+    checkContractVersion({
+      artefact: ".webui/actions.json",
+      path: userPath,
+      declared: parsed.schemaVersion,
+      knownMax: ACTIONS_SCHEMA_VERSION,
+      fieldName: "schemaVersion",
+    });
     const entry: CacheEntry = {
       data: parsed,
       mtimeMs,
