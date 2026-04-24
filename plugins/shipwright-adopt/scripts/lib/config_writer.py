@@ -164,13 +164,53 @@ def write_run_config(
             "plugin_version": plugin_version,
         },
         "phase_history": phase_history,
+        # iterate_history lives in agent_docs/iterates/*.json (file-per-iterate
+        # refactor). The empty array below is kept for backward-compat with
+        # any external reader that still does config.get("iterate_history", []);
+        # the migration flag below tells new tooling the file-per-iterate store
+        # is the canonical source so no first-touch migration ever runs on this
+        # freshly-adopted project.
         "iterate_history": [],
+        "_iterate_migration_state": "complete",
+        "_iterate_migration_ts": now,
+        "_iterate_migration_quarantined_count": 0,
         "created_at": now,
         "updated_at": now,
     }
     path = project_root / "shipwright_run_config.json"
     _write_json(path, config)
+
+    # Initialize the file-per-iterate directories with .gitkeep so a fresh
+    # clone carries the structure even if no iterate has finalized yet. The
+    # reader ignores .gitkeep by name and by non-.json extension.
+    _init_iterate_store_dirs(project_root)
+    _init_changelog_drop_dirs(project_root)
+
     return path
+
+
+def _init_iterate_store_dirs(project_root: Path) -> None:
+    """Create agent_docs/iterates/ with quarantine + meta subdirs."""
+    base = project_root / "agent_docs" / "iterates"
+    for sub in (base, base / "_quarantine", base / "_meta"):
+        sub.mkdir(parents=True, exist_ok=True)
+        gitkeep = sub / ".gitkeep"
+        if not gitkeep.exists():
+            gitkeep.write_text("", encoding="utf-8")
+
+
+def _init_changelog_drop_dirs(project_root: Path) -> None:
+    """Create CHANGELOG-unreleased.d/<category>/ with .gitkeep per category.
+
+    Must stay in sync with ALLOWED_CATEGORIES in write_changelog_drop.py.
+    """
+    base = project_root / "CHANGELOG-unreleased.d"
+    for category in ("Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"):
+        cat_dir = base / category
+        cat_dir.mkdir(parents=True, exist_ok=True)
+        gitkeep = cat_dir / ".gitkeep"
+        if not gitkeep.exists():
+            gitkeep.write_text("", encoding="utf-8")
 
 
 def write_all(

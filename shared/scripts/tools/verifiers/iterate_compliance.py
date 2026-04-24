@@ -47,16 +47,27 @@ _SMALL_COMPLEXITIES: frozenset[str] = frozenset({"small", "tiny", "trivial"})
 
 
 def _latest_iterate_entry(project_root: Path, run_id: str) -> dict[str, Any] | None:
-    data = read_run_config(project_root)
-    if not data:
+    """Return the entry for ``run_id``, or the most recent entry as fallback.
+
+    Uses the merged legacy-array + file-per-iterate reader so the W2/W3
+    compliance checks see the same history as every other verifier.
+    Returns ``None`` when the project has no iterate history at all.
+    """
+    import sys
+    from pathlib import Path as _Path
+
+    _scripts_root = _Path(__file__).resolve().parents[2]
+    if str(_scripts_root) not in sys.path:
+        sys.path.insert(0, str(_scripts_root))
+    from lib.iterate_entry import read_iterate_entries
+
+    entries = read_iterate_entries(project_root)
+    if not entries:
         return None
-    history = data.get("iterate_history")
-    if not isinstance(history, list):
-        return None
-    for entry in reversed(history):
+    for entry in reversed(entries):
         if entry.get("run_id") == run_id:
             return entry
-    return history[-1] if history else None
+    return entries[-1]
 
 
 def check_w2_external_review_marker(

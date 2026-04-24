@@ -141,26 +141,28 @@ _GIT_RECENT_COMMITS = 10
 # ---------------------------------------------------------------------------
 
 def _read_iterate_entry(project_root: Path, run_id: str) -> dict[str, Any] | None:
-    """Return the ``iterate_history`` entry for ``run_id`` or None."""
-    cfg = project_root / "shipwright_run_config.json"
-    if not cfg.exists():
+    """Return the iterate entry for ``run_id`` or ``None``.
+
+    Reads from the merged legacy-array + per-file directory store via
+    ``lib.iterate_entry.read_iterate_entries``. Falls back to the most
+    recent entry when ``run_id`` is not present — mid-flow finalize may
+    reach this verifier before the entry itself is written.
+    """
+    # Deferred import so the module stays safe to import without the
+    # sibling ``lib/`` path on sys.path (pytest adds it via conftest).
+    import sys
+    _scripts_root = Path(__file__).resolve().parents[2]
+    if str(_scripts_root) not in sys.path:
+        sys.path.insert(0, str(_scripts_root))
+    from lib.iterate_entry import read_iterate_entries
+
+    entries = read_iterate_entries(project_root)
+    if not entries:
         return None
-    try:
-        data = json.loads(cfg.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return None
-    history = data.get("iterate_history")
-    if not isinstance(history, list):
-        return None
-    for entry in history:
-        if isinstance(entry, dict) and entry.get("run_id") == run_id:
+    for entry in entries:
+        if entry.get("run_id") == run_id:
             return entry
-    # Fall back to the most recent entry — iterate_history is append-only
-    # so the tail is usually the run in question when run_id wasn't
-    # written yet (partial finalize mid-flow).
-    if history and isinstance(history[-1], dict):
-        return history[-1]
-    return None
+    return entries[-1]  # tail fallback for mid-flow finalize
 
 
 def _iterate_complexity(project_root: Path, run_id: str) -> str | None:
@@ -247,8 +249,7 @@ def check_s2_iterate_spec(project_root: Path, run_id: str) -> dict[str, Any]:
     if complexity is None:
         return make_finding(
             "S2", STATUS_SKIP,
-            f"iterate_history has no entry for run_id={run_id} — "
-            "complexity unknown",
+            f"no iterate entry for run_id={run_id} — complexity unknown",
             name=S2_NAME,
         )
     if not _is_medium_or_larger(complexity):
@@ -296,7 +297,7 @@ def check_s3_iterate_miniplan(project_root: Path, run_id: str) -> dict[str, Any]
     if complexity is None:
         return make_finding(
             "S3", STATUS_SKIP,
-            f"iterate_history has no entry for run_id={run_id}",
+            f"no iterate entry for run_id={run_id}",
             name=S3_NAME, provenance="unverified_marker",
         )
     if not _is_medium_or_larger(complexity):
