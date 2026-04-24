@@ -175,7 +175,6 @@ cd ~/shipwright
 
 - Prerequisite checks (Claude Code, Python 3.11+, uv, git, Node.js)
 - `uv sync` for Python dependencies
-- `npm install` in `webui/server` and `webui/client` for the Command Center
 - A `shipwright` shell alias that loads all plugins with a single command
 - `scripts/verify-setup.sh` to confirm the install
 
@@ -183,25 +182,20 @@ Once done, type `shipwright` in any terminal and go.
 
 #### Start the Command Center
 
-The Command Center runs as two processes. Open two terminals:
+Since **v0.4.0** the Command Center WebUI lives in its own repo:
+[shipwright-webui](https://github.com/svenroth-ai/shipwright-webui).
+Clone it separately and follow its README:
 
 ```bash
-# Terminal 1 -- Hono backend (port 3847)
-cd webui/server && npm run dev
-
-# Terminal 2 -- Vite client
-cd webui/client && npm run dev
+git clone https://github.com/svenroth-ai/shipwright-webui.git ~/shipwright-webui
+cd ~/shipwright-webui && make install
+make dev-server    # Terminal 1 — Hono :3847
+make dev-client    # Terminal 2 — Vite :5173
 ```
 
-Then open the Vite URL printed in Terminal 2 in your browser.
-
-#### Optional: Auto-start the Command Center on Windows
-
-```powershell
-powershell -ExecutionPolicy Bypass -File webui\scripts\install-windows.ps1
-```
-
-Creates a startup shortcut so the Command Center backend runs in the background on login. Uninstall with `-Uninstall`.
+Autostart on Windows, port overrides for parallel worktrees, and the
+`SHIPWRIGHT_PROFILES_DIR` / `SHIPWRIGHT_MONOREPO_PATH` profile cascade
+are documented in the new repo's README + CLAUDE.md.
 
 ### Installation Option B: Marketplace (VSCode Extension)
 
@@ -1332,30 +1326,21 @@ cd ".worktrees/$SLUG"
 [ -f ../../.env.local ]          && cp ../../.env.local .env.local
 [ -f ../../.env ]                && cp ../../.env .env
 [ -f package.json ]              && npm install
-[ -f webui/client/package.json ] && (cd webui/client && npm install)
-[ -f webui/server/package.json ] && (cd webui/server && npm install)
 [ -f pyproject.toml ]            && uv sync
 ```
 
 Open a new Claude Code session (or editor window) inside `.worktrees/$SLUG` and run `/shipwright-iterate` fresh. B1 will detect the original iterate branch, but since you are now on `iterate/$SLUG` inside the worktree, the Resume/Parallel prompt resolves cleanly (self-exclusion via `git rev-parse --show-toplevel`).
 
-### Dev-server workflow
+### Dev-server workflow (Command Center)
 
-By default the Shipwright WebUI dev server binds fixed ports: Hono `3847`, Vite `5173`. Only one instance per port can run. For parallel worktrees with two dev-server stacks:
-
-```bash
-# Main worktree (defaults):
-cd webui/server && npm run dev          # Hono 3847
-cd webui/client && npm run dev          # Vite 5173 (proxies /api → 3847)
-
-# Parallel worktree (overrides):
-PORT=3848 (cd webui/server && npm run dev)                   # Hono 3848
-PORT=3848 VITE_PORT=5174 (cd webui/client && npm run dev)    # Vite 5174, proxies /api → 3848
-```
-
-The `PORT` env var controls Hono only; `VITE_PORT` controls Vite only. The Vite proxy dynamically reads `process.env.PORT` so it routes to the right Hono instance. Both halves now fail loud on port collisions: Vite via `strictPort: true` in `client/vite.config.ts`, and Hono via a bind-error handler that surfaces `EADDRINUSE` / `EACCES` / `EADDRNOTAVAIL` with a deterministic operator message and a non-zero exit (since v0.3.2). There is no probe-before-bind — a probe would be TOCTOU-racy on Windows where ephemeral ports recycle fast.
-
-If only one dev server is acceptable, leave the parallel worktree running tests and build only (`npm run test`, `npm run build`, `npm run typecheck`) — no dev-server required for most iterate work.
+Since **v0.4.0** the Command Center WebUI lives in its own repo:
+[shipwright-webui](https://github.com/svenroth-ai/shipwright-webui).
+Parallel-worktree `PORT` / `VITE_PORT` overrides, the `strictPort` and
+Hono bind-error-handler mechanics, and the `dev:fresh` helper are now
+documented there (see the new repo's `CLAUDE.md` "Dev-server
+troubleshooting" section). Nothing in this guide depends on the WebUI
+being present — iterate work is driven entirely from your Claude
+terminal + the plugins in this repo.
 
 ### Pitfalls
 
@@ -1690,84 +1675,41 @@ Or read `CHANGELOG.md` in the repository root for release notes.
 
 ## 11. Command Center (WebUI)
 
-The Shipwright Command Center is a local web application for managing multiple Shipwright projects in parallel. It provides a visual Kanban board, task management, real-time progress tracking, and an inbox for Claude's questions.
+Since **v0.4.0 (2026-04-24)** the Shipwright Command Center WebUI lives
+in its own repository:
+**[shipwright-webui](https://github.com/svenroth-ai/shipwright-webui)**.
 
-### Quick Start (Development)
+The WebUI is an optional local web application that observes your
+running Claude sessions via their JSONL transcripts. It spawns no Claude
+process itself — you launch Claude in your own terminal (or VS Code),
+and the WebUI renders a live Kanban board, chat transcript, inbox, and
+diagnostics for every registered project.
+
+### Quick pointer
 
 ```bash
-cd webui/server && npm install
-cd ../client && npm install
-cd .. && npm run dev    # Starts server (port 3847) + client (port 5173)
+git clone https://github.com/svenroth-ai/shipwright-webui.git ~/shipwright-webui
+cd ~/shipwright-webui
+make install       # npm install in server/ + client/
+make dev-server    # Terminal 1 — Hono :3847
+make dev-client    # Terminal 2 — Vite :5173
 ```
 
-Open **http://localhost:5173** in your browser.
+For full install instructions, parallel-worktree port configuration,
+Windows autostart, the profile-cascade (`SHIPWRIGHT_PROFILES_DIR` /
+`SHIPWRIGHT_MONOREPO_PATH`), and the architecture deep-dive, see the new
+repo's `README.md` and `CLAUDE.md`.
 
-### Installation (Windows Auto-Start)
+### Contract between the repos
 
-To have the server start automatically on Windows login (no console window):
-
-```powershell
-.\webui\scripts\install-windows.ps1
-```
-
-This creates a Windows Startup shortcut that launches the server in the background. The server log is written to `~/.shipwright-webui/server.log`. To uninstall:
-
-```powershell
-.\webui\scripts\install-windows.ps1 -Uninstall
-```
-
-### Creating a Project
-
-1. Click **Create Project** (top-right on Projects page, or in the sidebar)
-2. Enter project name and directory path (use Browse to select)
-3. Choose stack profile (Next.js + Supabase or Custom)
-4. Review and confirm
-
-### Creating a Task
-
-1. Click **New Task** (top-right on Task Board) or press **Ctrl+N** / **Cmd+N**
-2. Enter a task title and optional description
-3. Select a project (if not already filtered)
-4. Check/uncheck "Start immediately" — when checked, Claude CLI starts right away
-5. Click **Create Task**
-
-The task appears in the **Backlog** column. If "Start immediately" was checked, it moves to **In Progress** as Claude works on it. Backlog tasks show a **Start** button to launch them manually.
-
-### Task Board
-
-The Kanban board has four columns: **Backlog**, **In Progress**, **In Review**, and **Done**. Tasks move between columns automatically based on their pipeline phase. The phase-to-column mapping is configurable in Settings.
-
-- **Project dropdown** (top-left) filters tasks by project or shows all
-- **Phase / Priority filters** narrow visible tasks
-- **Board / List** toggle switches between Kanban and table view
-- Cards show: title, phase tag, priority, time-ago, and intent/complexity badges
-
-### Inbox
-
-When Claude needs your input during a task, the question appears in the **Inbox**. Answer by selecting an option or typing a response. The answer is delivered to Claude's running process via stdin.
-
-### Settings
-
-Four tabs:
-
-| Tab | Purpose |
-|-----|---------|
-| **Global** | Max concurrent tasks, default autonomy (Guided/Autonomous), heartbeat interval |
-| **Phase Mapping** | Configure which pipeline phases map to which Kanban columns |
-| **Project** | Per-project settings: autonomy override (Inherit/Guided/Autonomous), environment variables (key-value pairs passed to Claude CLI), profile, status, path |
-| **About** | Version info, environment details |
-
-### Architecture
-
-- **Backend**: Hono (Node.js) on port 3847 — REST API + SSE for real-time updates
-- **Frontend**: React 19 + Vite + TailwindCSS 4 + Radix UI
-- **No database**: Event log (JSONL) + JSON files only
-- **No auth**: Single-user local application
-
-Data is stored in:
-- `~/.shipwright-webui/` — project registry, process PIDs, global settings
-- `{projectDir}/shipwright_events.jsonl` — task events
-- `{projectDir}/.shipwright-webui/` — chat history, inbox items
+- WebUI reads (never writes): `<project>/shipwright_run_config.json`
+  (only `.profile` field for the Preview gate) and
+  `<project>/shipwright_*_config.json` (existsSync only, for adoption
+  state).
+- WebUI writes (only): `<project>/.webui/actions.json` (an empty stub on
+  demand; user-editable afterwards).
+- Both sides stamp `contractVersion` / `schemaVersion` so silent drift
+  surfaces in the WebUI log without failing reads.
 
 ---
 

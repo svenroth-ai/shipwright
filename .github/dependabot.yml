@@ -147,28 +147,9 @@ updates:
       prefix: "chore(deps)"
       include: "scope"
 
-  # ------------------------------------------------------------------
-  # npm — WebUI
-  # ------------------------------------------------------------------
-  - package-ecosystem: "npm"
-    directory: "/webui/client"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 0
-    labels: ["dependencies", "javascript", "webui"]
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
-
-  - package-ecosystem: "npm"
-    directory: "/webui/server"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 0
-    labels: ["dependencies", "javascript", "webui"]
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
+  # npm — WebUI dependency scanning moved with the repo:
+  # https://github.com/svenroth-ai/shipwright-webui/blob/main/.github/dependabot.yml
+  # (WebUI extracted at v0.4.0, 2026-04-24.)
 
   # ------------------------------------------------------------------
   # GitHub Actions

@@ -138,7 +138,7 @@ Profiles define the entire stack: versions, folder structure, deploy target, tes
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (Pro or Max) — VSCode Extension or CLI
 - Python 3.11+ via [uv](https://docs.astral.sh/uv/)
 - Git
-- Node.js 18+ *(optional — needed for the Command Center WebUI)*
+- Node.js 20+ *(optional — needed for the Command Center WebUI, which now lives at [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui))*
 
 ### Install (recommended)
 
@@ -152,7 +152,6 @@ cd ~/shipwright
 
 - Checks prerequisites (Claude Code, Python 3.11+, uv, git, Node.js)
 - Installs Python dependencies via `uv sync`
-- Installs Command Center WebUI dependencies in `webui/server` and `webui/client`
 - Creates a `shipwright` shell alias that loads all plugins
 - Runs `scripts/verify-setup.sh` to confirm the install
 
@@ -160,27 +159,20 @@ Afterwards, type `shipwright` in any terminal and go.
 
 ### Start the Command Center
 
-The Command Center is two processes: a Hono backend (port 3847) and a Vite dev client. Open two terminals:
+Since **v0.4.0** the Command Center WebUI lives in its own repository:
+**[shipwright-webui](https://github.com/svenroth-ai/shipwright-webui)**.
 
 ```bash
-# Terminal 1 — backend
-cd webui/server && npm run dev
-
-# Terminal 2 — frontend
-cd webui/client && npm run dev
+git clone https://github.com/svenroth-ai/shipwright-webui.git ~/shipwright-webui
+cd ~/shipwright-webui && make install
+make dev-server    # Terminal 1 — Hono backend on :3847
+make dev-client    # Terminal 2 — Vite frontend on :5173
 ```
 
-Then open the Vite URL printed in Terminal 2 in your browser.
-
-Running multiple Shipwright iterates in parallel git worktrees? Set `PORT` and `VITE_PORT` per worktree so the two stacks don't collide — see [docs/guide.md §8.5 "Parallel Development with Worktrees"](docs/guide.md#85-parallel-development-with-worktrees). Both halves of the dev server now fail loud on port collisions since v0.3.2 (Vite via `strictPort`, Hono via a bind-error handler).
-
-### Optional: Auto-start the Command Center on Windows
-
-```powershell
-powershell -ExecutionPolicy Bypass -File webui\scripts\install-windows.ps1
-```
-
-Creates a startup shortcut so the Command Center backend runs in the background on login. Uninstall with `-Uninstall`.
+The WebUI observes your running Claude sessions via their JSONL
+transcripts — it spawns no Claude process itself. Full install + autostart
+instructions, parallel-worktree tips, and the profile-resolution cascade
+are documented in the new repo's README and CLAUDE.md.
 
 ### Install via Marketplace (VSCode Extension alternative)
 
@@ -209,7 +201,7 @@ If you prefer the Claude Code plugin marketplace instead of a shell alias, add t
 }
 ```
 
-Then clone the repo and run `uv sync` plus `npm install` in `webui/server` and `webui/client` manually.
+Then clone the repo and run `uv sync`. For the Command Center WebUI, see [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui).
 
 For the full setup guide (troubleshooting, deployment targets, external LLM review, platform notes), see **[docs/guide.md](docs/guide.md)**.
 
@@ -231,9 +223,7 @@ shipwright/
 │   ├── shipwright-iterate/           # Daily iteration (complexity-adaptive)
 │   ├── shipwright-preview/           # Local browser preview
 │   └── shipwright-adopt/             # Brownfield onboarding (analyze existing repos)
-├── webui/                            # Shipwright Command Center (Hono + React 19)
-│   ├── server/                       # Hono backend (port 3847)
-│   └── client/                       # React 19 / Vite 6 frontend
+# Command Center WebUI: github.com/svenroth-ai/shipwright-webui (extracted at v0.4.0)
 ├── shared/                           # Shared across plugins
 │   ├── profiles/                     # Stack profile definitions (JSON)
 │   ├── templates/                    # CLAUDE.md, agent_docs, CI/CD, rules templates
@@ -281,7 +271,7 @@ plugins/shipwright-{name}/
 Other references:
 
 - [docs/hooks-and-pipeline.md](docs/hooks-and-pipeline.md) — hooks registry, context loading matrix, between-phase actions
-- [webui/CLAUDE.md](webui/CLAUDE.md) — Command Center deep-dive (architecture, routes, internals)
+- [shipwright-webui/CLAUDE.md](https://github.com/svenroth-ai/shipwright-webui/blob/main/CLAUDE.md) — Command Center deep-dive (architecture, routes, internals)
 - [CONTRIBUTING.md](CONTRIBUTING.md) — contribution workflow and security model
 - [SECURITY.md](SECURITY.md) — vulnerability disclosure
 
