@@ -1,0 +1,1 @@
+Vite config invariants tripwire (`shared/tests/test_vite_config_invariants.py`) — guards pitfall #6 by forbidding a literal-pinned `server.hmr.port` and asserting `strictPort: true` + env-driven `VITE_PORT`.
