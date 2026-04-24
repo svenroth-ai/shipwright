@@ -172,6 +172,8 @@ cd webui/client && npm run dev
 
 Then open the Vite URL printed in Terminal 2 in your browser.
 
+Running multiple Shipwright iterates in parallel git worktrees? Set `PORT` and `VITE_PORT` per worktree so the two stacks don't collide — see [docs/guide.md §8.5 "Parallel Development with Worktrees"](docs/guide.md#85-parallel-development-with-worktrees). Both halves of the dev server now fail loud on port collisions since v0.3.2 (Vite via `strictPort`, Hono via a bind-error handler).
+
 ### Optional: Auto-start the Command Center on Windows
 
 ```powershell
