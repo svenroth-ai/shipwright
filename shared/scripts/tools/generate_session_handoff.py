@@ -19,6 +19,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from lib.config import read_all_configs, read_events
+from lib.iterate_entry import (
+    MIGRATION_QUARANTINE_REPORT_KEY,
+    MIGRATION_QUARANTINED_COUNT_KEY,
+    last_iterate_entry,
+)
 from lib.state import get_checkpoint
 
 
@@ -216,14 +221,12 @@ def generate_handoff(
         "",
     ]
 
-    # Iterate 11.3 — render "## Last Iterate" from run_config.iterate_history
-    # when present. This is the section most users actually want after a
-    # finalized iterate run; the legacy build checkpoint block below is kept
-    # for full-pipeline recovery flows.
-    run_cfg = configs.get("run") or {}
-    iterate_history = run_cfg.get("iterate_history") or []
-    if iterate_history:
-        last = iterate_history[-1]
+    # Iterate 11.3 + file-per-iterate refactor — render "## Last Iterate"
+    # from the merged iterate entry store (legacy array + per-file dir).
+    # ``last_iterate_entry`` returns ``None`` on a fresh project, which
+    # suppresses the whole block rather than rendering placeholders.
+    last = last_iterate_entry(Path(project_root))
+    if last:
         lines += [
             "## Last Iterate",
             "",
@@ -237,8 +240,10 @@ def generate_handoff(
             lines.append(f"- **Complexity**: {last['complexity']}")
         if last.get("branch"):
             lines.append(f"- **Branch**: {last['branch']}")
-        if last.get("adr_id"):
-            lines.append(f"- **ADR**: {last['adr_id']}")
+        # Support both modern "adr" and legacy "adr_id" field names.
+        adr_value = last.get("adr") or last.get("adr_id")
+        if adr_value:
+            lines.append(f"- **ADR**: {adr_value}")
         if last.get("description"):
             lines.append(f"- **Description**: {last['description']}")
         if "tests_passed" in last:
@@ -246,6 +251,21 @@ def generate_handoff(
         if last.get("spec"):
             lines.append(f"- **Spec**: {last['spec']}")
         lines.append("")
+
+    # Migration-quarantine visibility: loud warning so quarantined losses
+    # don't go unnoticed between finalize and next session.
+    run_cfg = configs.get("run") or {}
+    quarantined = run_cfg.get(MIGRATION_QUARANTINED_COUNT_KEY, 0)
+    if isinstance(quarantined, int) and quarantined > 0:
+        report_path = run_cfg.get(MIGRATION_QUARANTINE_REPORT_KEY, "<unknown>")
+        lines += [
+            "## ⚠ Iterate-History Migration Quarantine",
+            "",
+            f"{quarantined} legacy iterate entr{'y' if quarantined == 1 else 'ies'} "
+            f"could not be migrated automatically.",
+            f"See: `{report_path}`",
+            "",
+        ]
 
     # Iterate 14.15: surface in-progress iterate state so B1 Resume has
     # reliable evidence for mandatory phase replay (External Review,

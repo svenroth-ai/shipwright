@@ -134,16 +134,38 @@ Accept or enter custom version:
 
 ## Step 4: Generate Changelog Entry
 
-See [changelog-format.md](references/changelog-format.md) for output format.
+Since the file-per-iterate refactor, iterate F4 writes one Markdown file
+per bullet under `CHANGELOG-unreleased.d/<category>/`. Release time
+reads those drop files, renders a versioned Keep-a-Changelog section,
+inserts it at the structural point in `CHANGELOG.md` (above the first
+existing `## [version]` heading, NOT blindly at the top — that would
+corrupt the `# Changelog` title), and deletes only the drop files that
+were actually aggregated.
 
 ```bash
-uv run {plugin_root}/scripts/lib/changelog.py generate \
+uv run {shared_root}/scripts/tools/aggregate_changelog.py \
+  --project-root "{project_root}" \
   --version "{version}" \
-  --commits-json "{commits_json_path}" \
-  --changelog-path "CHANGELOG.md"
+  [--release-date "{YYYY-MM-DD}"] \
+  [--dry-run]
 ```
 
-This prepends the new entry to CHANGELOG.md (or creates it if missing).
+Use `--dry-run` first to preview the rendered section without modifying
+disk. When the aggregator encounters legacy bullets under
+`## [Unreleased]` (e.g. from pre-refactor iterates that wrote directly
+to `CHANGELOG.md`), it prints a **loud stderr WARNING** with the count.
+Those bullets are NOT migrated automatically — the operator chooses
+whether to fold them into the new version manually or accept the
+split-brain.
+
+Fallback for non-iterate commits: if this release includes bullets that
+weren't produced through iterate F4 (rare — e.g. a cherry-pick from an
+unrelated branch), write them with `append_changelog_entry.py` BEFORE
+running the aggregator; they land in the legacy `[Unreleased]` block
+and surface as a warning at aggregation time.
+
+See [changelog-format.md](references/changelog-format.md) for output
+format details.
 
 ---
 
