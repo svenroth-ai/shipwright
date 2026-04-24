@@ -3,18 +3,23 @@
  * Dev-server restart helper.
  *
  * Kills every stale `tsx watch`, `vite`, or node process that owns webui
- * ports (Hono server, vite current, vite alt) and then respawns
- * `npm run dev`. Cross-platform (Windows / macOS / Linux).
+ * ports (Hono server + Vite) and then respawns `npm run dev`.
+ * Cross-platform (Windows / macOS / Linux).
  *
  * Port discovery:
  *   - PORT env       -> Hono   (default 3847)
  *   - VITE_PORT env  -> Vite   (default 5173)
- *   - Vite alt port  -> 5177   (fixed, legacy cleanup only)
+ *
+ * Kill scope is EXACTLY the two configured ports. Prior versions of this
+ * script carried a hardcoded VITE_ALT_PORT=5177 entry for "legacy cleanup"
+ * — removed in v0.3.2 because it broke the worktree-local contract: with
+ * PORT/VITE_PORT overrides in two worktrees, the 5177 hardcode could still
+ * terminate an unrelated process on that port.
  *
  * Parallel-worktree scenario: set PORT + VITE_PORT to non-default values in
- * the secondary worktree so the two dev-server stacks do not collide. Kill
- * scope is restricted to finite positive integers to prevent malformed env
- * values (empty, negative, NaN) from terminating unrelated processes.
+ * the secondary worktree so the two dev-server stacks do not collide. The
+ * `computeKillTargets` helper filters malformed env (empty, negative, NaN)
+ * back to defaults and dedups when PORT === VITE_PORT.
  *
  * Motivation: on long-running dev sessions, tsx watch on Windows + chokidar
  * can miss file-change events after git merges, leaving the server running
@@ -30,13 +35,9 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { execSync, spawn } = require('node:child_process');
 const path = require('node:path');
+const { computeKillTargets } = require('./kill-targets');
 
-const HONO_PORT = parseInt(process.env.PORT || '3847', 10);
-const VITE_PORT = parseInt(process.env.VITE_PORT || '5173', 10);
-const VITE_ALT_PORT = 5177;
-const WEBUI_PORTS = [HONO_PORT, VITE_PORT, VITE_ALT_PORT].filter(
-  (p) => Number.isFinite(p) && p > 0,
-);
+const WEBUI_PORTS = computeKillTargets(process.env, process.platform);
 const isWin = process.platform === 'win32';
 
 function log(msg) {
