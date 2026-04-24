@@ -89,10 +89,19 @@ Before starting fresh, check if a previous iterate run was interrupted:
    ```bash
    git branch --list "iterate/*"
    ```
+   **Filter stale branches:** exclude any branch already merged into the default
+   branch (`git merge-base --is-ancestor <branch> <default>` returns 0) AND
+   without a matching `agent_docs/session_handoff.md`. Stale branches are cleanup
+   candidates, not in-progress runs — print a one-line hint:
+   `stale iterate branch iterate/X found; run "git branch -D iterate/X" to remove`.
 2. Check if `agent_docs/session_handoff.md` exists and references an iterate run_id
 3. Check current git branch — if already on an `iterate/` branch
+4. **Worktree self-exclusion:** if running inside a secondary worktree
+   (`git rev-parse --show-toplevel` differs from the main repo path), exclude the
+   current branch from the candidate list — otherwise B1 would always offer
+   "Parallel" on the current branch, creating an infinite loop.
 
-**If an in-progress run is detected:**
+**If an in-progress run is detected (any of 1–3 matches after filtering):**
 
 ```
 ================================================================================
@@ -104,9 +113,17 @@ Phase:      {last phase from handoff, or "unknown"}
 Files:      {modified files count from git status}
 
 Options:
-  1. Resume — continue from where we left off
-  2. Abandon — discard and start fresh (branch will be deleted)
+  1. Resume   — continue from where we left off
+  2. Abandon  — discard and start fresh (branch will be deleted)
   3. Complete — skip to finalization (F1-F11)
+  4. Parallel — start different work alongside the current run
+                (new worktree, current run stays untouched)
+
+Decision guide:
+  - Continue the same topic?           → Resume
+  - Completely different topic now?    → Parallel
+  - Discard current and start over?    → Abandon
+  - Finalize the current run?          → Complete
 ================================================================================
 ```
 
@@ -136,8 +153,53 @@ Options:
   current handoff generator does not write one).
 - **Abandon:** Delete the iterate branch (`git branch -D iterate/{name}`), remove `agent_docs/session_handoff.md`, proceed with fresh run from Step B2.
 - **Complete:** Read handoff for context, skip to Finalization (F1-F11) to commit, record event, and merge what's already been built. **Same replay check applies** — run External Review / Self-Review first if markers are missing, before F1.
+- **Parallel:** Leave the detected run completely untouched. Exit this session with status `parallel_setup` (not `abandoned` or `failed` — no work is lost). Print the worktree setup commands below and stop. The new iterate is started in a **new Claude Code session inside the worktree**, not in this session.
+
+  ```bash
+  # Resolve default branch dynamically (do NOT hardcode `main`):
+  DEFAULT_BRANCH=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@' || echo main)
+
+  # Precondition checks — refuse if worktree/branch already exists:
+  git worktree list | grep -q ".worktrees/<slug>" && { echo "Worktree already exists"; exit 1; }
+  git branch --list iterate/<slug> | grep -q . && { echo "Branch already exists — pick a different slug or clean up first"; exit 1; }
+
+  # Create worktree inside repo (so .gitignore applies):
+  git worktree add .worktrees/<slug> -b iterate/<slug> "$DEFAULT_BRANCH"
+  cd .worktrees/<slug>
+
+  # Re-hydrate dependencies + env — worktrees copy neither node_modules nor .env files.
+  # Emit ONLY the lines whose precondition matches the target project's shape:
+  [ -f ../../.env.local ]          && cp ../../.env.local .env.local
+  [ -f ../../.env ]                && cp ../../.env .env
+  [ -f package.json ]              && npm install
+  [ -f webui/package.json ]        && (cd webui && npm install)
+  [ -f webui/client/package.json ] && (cd webui/client && npm install)
+  [ -f webui/server/package.json ] && (cd webui/server && npm install)
+  [ -f client/package.json ]       && (cd client && npm install)
+  [ -f pyproject.toml ]            && uv sync
+
+  # Then: open a new Claude Code session in .worktrees/<slug> and run /shipwright-iterate fresh.
+  ```
+
+  **Skill guidance:** probe file existence before emitting each install line — print only what applies to the target project's shape. A Python-only project should not see `npm install`, a repo without `webui/` should not see the webui lines.
 
 **If no in-progress run detected:** Continue to B2 normally.
+
+### B1a. Parallel Iterate Conventions
+
+These rules apply to the **Parallel** option in B1 and to any manual worktree-based parallel iterate work. They keep PRs independent and avoid merge conflicts.
+
+- **Branch base:** always the project's default branch (resolved via `git symbolic-ref refs/remotes/origin/HEAD`, fallback `main`). **Never** branch from another `iterate/*` — chains iterates and muddles the PR/changelog.
+- **Worktree path:** `.worktrees/<slug>` **inside the repo** (hidden folder, `.gitignore`'d). Verify with `git check-ignore .worktrees/`.
+- **Worktree init:** git-worktrees do NOT carry `node_modules` or `.env*`. The Parallel setup snippet above copies env files and runs the project's install commands — adapt for the project shape.
+- **Disjoint file scopes:** if two iterates touch the same file, serialize rather than parallelize. Overlap = manual merge conflicts.
+- **Dev server:** default is one at a time. Parallel worktrees require explicit port overrides (e.g. `PORT` for Hono + `VITE_PORT` for Vite in the Shipwright webui). Use intentionally, not as a default.
+- **One PR per iterate, one changelog entry per iterate.** Conventional-Commit sort is merge-order-independent. Rebase per PR is expected when multiple are open against the default branch.
+- **WARNING — race on adopted target projects:** on any project with `shipwright_run_config.json`, parallel iterates produce a merge conflict in `iterate_history[]`. Use this workflow today only if manual conflict resolution is acceptable. Structural fix tracked as `iterate-history-file-per-iterate` (must land before `/shipwright-adopt` on the shipwright monorepo itself).
+- **WARNING — CHANGELOG.md `[Unreleased]` is a merge hotspot today.** F4 appends to `[Unreleased]` for every iterate. Two parallel iterates conflict on merge — the second PR must rebase and resolve the bullet merge manually. Structural fix bundled with the iterate_history refactor as a `CHANGELOG-unreleased.d/` drop pattern.
+- **Cleanup:** `git worktree remove .worktrees/<slug>` removes the worktree but **not** the branch. After PR merge: also `git branch -D iterate/<slug>`.
+
+See also: `docs/guide.md` chapter "Parallel Development with Worktrees" for the full walkthrough.
 
 ### B2. Load Project Context (MANDATORY)
 
@@ -421,7 +483,7 @@ See `references/iteration-planning.md` for invocation.
 See `references/design-and-testing.md` for 2-tier protocol.
 
 ### Step 6: Build (TDD — Red-Green-Refactor)
-1. Create feature branch: `iterate/{short-description}`
+1. Create feature branch `iterate/{short-description}` **branched from the project's default branch** (resolved via `git symbolic-ref refs/remotes/origin/HEAD`, fallback `main`). Never from another `iterate/*` branch — chains iterates and muddles the PR/changelog. See B1a for parallel-iterate conventions.
 2. **RED — Write failing tests first**, at minimum one test per Acceptance Criteria:
    - Tests assert on **outcomes, not internal state**
    - At least one **happy-path AND one error-path** test per AC
@@ -539,7 +601,7 @@ If yes → escalate to Mid-Flight Escalation (Section 7).
 See `references/iteration-planning.md`.
 
 ### Step 5: Fix
-1. Create feature branch: `iterate/fix-{short-description}`
+1. Create feature branch `iterate/fix-{short-description}` **branched from the project's default branch** (resolved via `git symbolic-ref refs/remotes/origin/HEAD`, fallback `main`). Never from another `iterate/*` branch — chains iterates and muddles the PR/changelog. See B1a for parallel-iterate conventions.
 2. **Fix the root cause** — targeted change, minimal scope. Do not fix symptoms.
 3. Run reproducing test to verify it passes
 4. Run related tests to verify no regressions

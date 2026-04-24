@@ -190,6 +190,15 @@ gh pr create \
   --base main
 ```
 
+> **Parallel Iterate Handling**
+>
+> - Multiple open PRs against the same default branch: rebase per PR is expected — no skill-logic change required.
+> - `gh pr merge --merge` vs `--squash`: the default stays `--merge`; `--squash` is optional for parallel-iterate PRs when linear history matters.
+> - Tag creation is single-writer (only the release-iterate tags a version) — no concurrency change needed.
+> - Conventional-Commit sort is deterministic: merge order does not affect changelog ordering.
+> - **`CHANGELOG.md [Unreleased]` is a merge hotspot.** Every iterate F4 appends to `[Unreleased]`. Two parallel iterates conflict on merge — the second PR rebases and resolves the bullet merge manually. Structural fix tracked as a `CHANGELOG-unreleased.d/` drop pattern bundled with the iterate_history file-per-iterate refactor.
+> - Full parallel-iterate conventions live in `/shipwright-iterate` B1a.
+
 **Autonomous mode:** After creating the PR, merge it immediately:
 ```bash
 gh pr merge --merge --delete-branch
