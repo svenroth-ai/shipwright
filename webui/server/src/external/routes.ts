@@ -570,7 +570,14 @@ export function createExternalRoutes(args: {
     if (!task.firstJsonlObservedAt) {
       nextState = "active";
       patch.firstJsonlObservedAt = new Date().toISOString();
-    } else if (task.state === "jsonl_missing") {
+    } else if (
+      task.state === "jsonl_missing" ||
+      task.state === "awaiting_external_start"
+    ) {
+      // awaiting_external_start: re-launch / resume case where JSONL already
+      // exists from a prior session. Without this branch, the badge stays
+      // stuck on "Awaiting launch" forever after a re-click of Launch on a
+      // task whose firstJsonlObservedAt is already set.
       nextState = "active";
     } else if (task.state === "active" && now - mtime > ACTIVE_IDLE_THRESHOLD_MS) {
       nextState = "idle";

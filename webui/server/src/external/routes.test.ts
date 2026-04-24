@@ -135,6 +135,47 @@ describe("poc-external routes — integration", () => {
     expect(body.chunk.content).toContain("hi");
   });
 
+  it("GET /transcript flips awaiting_external_start back to active on re-launch with existing JSONL", async () => {
+    // Reproduces the "stuck on Awaiting launch" bug: when a user clicks
+    // Launch on a task whose JSONL already exists (re-launch / resume after
+    // server restart), POST /launch resets state to awaiting_external_start
+    // but firstJsonlObservedAt is already set, so the transcript poll's
+    // transition logic must still flip back to active.
+    const create = await app.request("/api/external/tasks", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "t", cwd: "/tmp" }),
+    });
+    const { task } = await create.json() as {
+      task: { taskId: string; sessionUuid: string };
+    };
+
+    const encodedDir = path.join(projectsDir, "enc-relaunch");
+    mkdirSync(encodedDir, { recursive: true });
+    const jsonl =
+      JSON.stringify({ type: "user", sessionId: task.sessionUuid, message: { content: "first" } }) + "\n";
+    writeFileSync(path.join(encodedDir, `${task.sessionUuid}.jsonl`), jsonl, "utf-8");
+
+    // First poll — establishes firstJsonlObservedAt + flips to active.
+    const first = await app.request(`/api/external/tasks/${task.taskId}/transcript`);
+    expect(((await first.json()) as { task: { state: string } }).task.state).toBe("active");
+
+    // Simulate re-launch: POST /launch unconditionally sets awaiting_external_start.
+    const relaunch = await app.request(`/api/external/tasks/${task.taskId}/launch`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resume: true }),
+    });
+    expect(((await relaunch.json()) as { task: { state: string } }).task.state).toBe("awaiting_external_start");
+
+    // Next transcript poll — JSONL still exists and is fresh.
+    // Bug: state used to stay stuck on awaiting_external_start because the
+    // transition branches at routes.ts:570-579 only handled !firstJsonlObservedAt
+    // and jsonl_missing, not awaiting_external_start.
+    const second = await app.request(`/api/external/tasks/${task.taskId}/transcript`);
+    const body = await second.json() as { status: string; task: { state: string } };
+    expect(body.status).toBe("ok");
+    expect(body.task.state).toBe("active");
+  });
+
   it("PATCH /tasks/:id renames the task + persists", async () => {
     const create = await app.request("/api/external/tasks", {
       method: "POST",
