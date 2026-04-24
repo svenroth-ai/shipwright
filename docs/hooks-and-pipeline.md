@@ -427,6 +427,13 @@ promoted, even if their id hypothetically coincides with a gate id.
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W2/W3 iterate workflow + I1-I4 infrastructure + T1/T2 traceability + Q1 ADR substance + S2 iterate-spec for medium+ + S3 miniplan Tier-2 + S4 FR-preservation Tier-2 + S5 FR-coherence Tier-2 + S9 README-freshness Tier-2 + S10 CLAUDE.md-sync Tier-2) — runs **after** finalize so F5a/F5b/F7/F11 evidence is on disk |
 | Stop | — | `write_terminal_marker.py` | Writes `.shipwright/runs/<loop_id>/<unit_id>/DONE` (no-op without loop env vars) |
 
+**B1 parallel-iterate detection (2026-04-23):** `/shipwright-iterate` reads git metadata at startup to decide whether to offer the Parallel option:
+(1) `git branch --list "iterate/*"` for candidate branches,
+(2) `git symbolic-ref refs/remotes/origin/HEAD` for the project's default branch,
+(3) `git merge-base --is-ancestor` to filter already-merged stale branches (surface as cleanup hint, not in-progress run),
+(4) `git rev-parse --show-toplevel` + worktree-path check to exclude the current branch when running inside a secondary worktree (prevents infinite Parallel-prompt loop).
+No new hook is registered; detection runs as part of B1. Corresponding conventions live in SKILL.md B1a. `/shipwright-build` Step E picked up the same default-branch anchor via conditional `git show-ref --quiet` bifurcation (Resume path unchanged).
+
 ### shipwright-changelog
 
 | Event | Matcher | Script | What It Does |

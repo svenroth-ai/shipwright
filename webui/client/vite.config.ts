@@ -11,9 +11,10 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: parseInt(process.env.VITE_PORT || '5173', 10),
+    strictPort: true,
     proxy: {
-      '/api': 'http://localhost:3847',
+      '/api': `http://localhost:${process.env.PORT || '3847'}`,
     },
   },
 });
