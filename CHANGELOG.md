@@ -7,7 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.5.0] - 2026-04-25
+
 ### Added
+
+- **Multi-session run orchestrator (F1-F6).** Replaces the single-session
+  pipeline runner with a coordinator that survives Claude Code session
+  boundaries. Master skill rewritten to a spec-and-stop dispatcher; each
+  phase runs in its own external Claude CLI session and Stop hooks plan
+  the next. Includes v2 `shipwright_run_config.json` schema with
+  `phase_tasks[]`, phase-task lifecycle subcommands with CAS + ownership,
+  phase-session hook infrastructure wired live in all 9 plugins, Step 0
+  phase-session context-recovery preamble in 8 phase skills, integration
+  tests, ADR-001, and docs.
+
+- **External LLM code-review mode** (`external_review.py --mode code`)
+  auditing a code diff against its spec/section context. Wired as opt-in
+  Step 6c in shipwright-build (default off, gated on
+  `external_code_review.enabled: true`) and as default-on Branch A/B/C
+  cascade in shipwright-iterate medium+ runs. New
+  `shared/prompts/code_reviewer/{system,user}` prompts focused on real
+  defects vs style. `mark-review-state.py --review-type code` writes a
+  distinct `external_code_review_state.json` marker to keep plan/iterate
+  and code-review gates independent.
 
 - **Multi-service dev-server support.** Stack profiles can now declare a
   `services: [...]` array (each: `{name, command, port, host?, scheme?,
@@ -21,22 +43,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--services-json '<inline>'` lets adopt pass an inline services array
   when no profile matches. Closes the `--skip-crawl` workaround for split
   frontend+backend repos.
+
 - **`shared/profiles/vite-hono.json`** — first-class profile for split
   Vite+React frontend + Hono backend (Node + tsx). Derived from
   shipwright-webui's shape (Hono :3847 with `/api/diagnostics` health,
   Vite :5173 with frontend depends_on backend). Demonstrates the new
   `services: [...]` schema in a real profile.
+
 - **Multi-service detector** in `shipwright-adopt` — detects split
   frontend/backend layouts (`client/server`, `frontend/backend`,
   `web/api`) with framework-signal requirement and Vite-proxy
   high-confidence promotion. Surfaces `stack.multi_service: {detected,
   confidence, services, evidence}` in the adopt snapshot.
+
 - **`shipwright-adopt` Step B.5 hierarchy** (SKILL.md): three-branch
   resolution order — matched profile (any non-generic) wins; else
   multi-service detector with high-confidence auto / medium-confidence
   interactive / non-interactive fallback to single-service; else legacy
   single-service. Autonomous adopt never spawns extra services on a
   guess.
+
 - **`stack_detector` signature merge** (AC12): when a project has no
   root `package.json` (or root has empty deps + devDeps) AND the
   multi-service detector fires, per-service package.json deps are merged
@@ -45,18 +71,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Consolidated external LLM review machinery** (CLI + checks + lib +
+  iterate prompts + config slices) from `plugins/shipwright-plan/` into
+  `shared/`. Plan-mode prompts stay plugin-local; iterate-mode loads from
+  `shared/prompts/iterate_reviewer/`. New env-var overrides
+  `SHIPWRIGHT_REVIEW_MODEL_GEMINI` / `_CHATGPT` / `_OPENROUTER_GEMINI` /
+  `_OPENROUTER_CHATGPT` (whitespace-defensive, whitelist-validated).
+
 - `dev_server.py` JSON output is additive: top-level `pid`/`url`/
   `running`/`ready`/`started_by_us` continue to reflect the primary
   service for legacy callers; new top-level `services: [...]` is added.
   Multi-service `cmd_status` returns `pid`/`url=None` when the primary
   is not alive (avoids advertising a URL that points to nothing).
+
 - Port-probe function renamed `_is_port_in_use` → `_is_port_in_use_for_host`
   (the legacy name remains as a dual-stack convenience wrapper).
+
 - `cmd_start` no longer treats "port in use without a state file" as
   "already running" — it returns an error and never claims ownership of
   unowned processes (Round-1 review BLOCKER fix). Stale state pointing
   to a different service set with live PIDs is rejected with a clear
   error rather than silently overwritten.
+
+### Fixed
+
+- Post-merge banner + security-default polish for multi-session run
+  orchestrator (commit 11a51db).
+
+- Code-review follow-ups for F4-F6 internal + external review wiring
+  (commit 6f1025e).
+
+### Documentation
+
+- Documented `--mode code` external code-review mode in `docs/guide.md`:
+  Chapter 4.5 (Step 6c opt-in), Chapter 6 (renamed "External LLM Review",
+  three-mode table, diff-exposure caveat), Chapter 8 (medium+ cascade
+  phase row), Chapter 9 (review layer 3), Appendix B (CLI reference for
+  `external_review.py` + `mark-review-state.py`).
+
+### Testing
+
+- Hook-chain integration test (SessionStart → UserPromptSubmit → Stop)
+  for multi-session pipeline.
+
+### Maintenance
+
+- Untrack `agent_docs/iterates/*.json` (gitignore mismatch).
 
 ## [0.4.0] - 2026-04-24
 
