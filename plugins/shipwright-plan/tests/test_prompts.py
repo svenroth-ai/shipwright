@@ -1,13 +1,11 @@
-"""Tests for prompt loading."""
+"""Tests for plan-local prompt loading.
 
-from lib.prompts import load_prompt, load_review_prompts, load_section_prompt
+Plan-local prompts: section_writer (only).
+External-review prompts (plan_reviewer, iterate_reviewer) load from shared and
+are exercised in shared/tests/test_external_review_prompts.py.
+"""
 
-
-def test_load_review_prompts(plugin_root):
-    system, user = load_review_prompts(plugin_root)
-    assert "architect" in system.lower() or "review" in system.lower()
-    assert "{PLAN}" in user
-    assert "{SPEC}" in user
+from lib.prompts import load_prompt, load_section_prompt
 
 
 def test_load_section_prompt(plugin_root):

@@ -1,13 +1,26 @@
-"""Tests for mark-review-state.py script."""
+"""Tests for shared/scripts/checks/mark-review-state.py."""
 
 import json
 import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 SCRIPT = str(
-    Path(__file__).resolve().parent.parent / "scripts" / "checks" / "mark-review-state.py"
+    Path(__file__).resolve().parents[1]
+    / "scripts"
+    / "checks"
+    / "mark-review-state.py"
 )
+
+
+@pytest.fixture
+def tmp_planning(tmp_path):
+    """Create a planning directory for marker writes."""
+    planning = tmp_path / "planning"
+    planning.mkdir()
+    return planning
 
 
 def run_mark(args: list[str]) -> tuple[int, dict]:

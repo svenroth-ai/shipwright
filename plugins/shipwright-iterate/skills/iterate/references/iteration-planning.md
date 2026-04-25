@@ -107,23 +107,26 @@ runs — the self-review outcome lands in the iterate ADR.
 
 Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
 
-1. Compute `external_review_status` via the plan plugin's helper (reuses the
-   same detector so behavior is identical):
+1. Compute `external_review_status` via the shared helper (same detector
+   used by /shipwright-plan, behavior is identical):
    ```bash
-   uv run {plan_plugin_root}/scripts/checks/check-external-review-keys.py
+   uv run {shared_root}/scripts/checks/check-external-review-keys.py
    ```
    Parse the JSON output. One of: `available`, `missing_keys`, `user_disabled`.
 
 2. **Branch A — `available`:** run external review as today.
    ```bash
-   uv run {plan_plugin_root}/scripts/llm_clients/review.py \
+   uv run {shared_root}/scripts/tools/external_review.py \
      --mode iterate \
      --spec-file "{iterate_spec_path}" \
      --plan-file "{miniplan_path}" \
      --plugin-root "{plan_plugin_root}"
    ```
-   Present findings, integrate into the mini-plan, log decisions to the
-   iterate ADR. Then write the marker (step 5 below).
+   (`--plugin-root` is the plan plugin root — used only for plan-mode prompt
+   lookup. For iterate-mode it is not consulted, but the argument remains
+   required for CLI shape compatibility.) Present findings, integrate into
+   the mini-plan, log decisions to the iterate ADR. Then write the marker
+   (step 5 below).
 
 3. **Branch B — `missing_keys`:** STOP and ask the user verbatim:
 
@@ -150,7 +153,7 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
 5. **Write the marker** (all branches) so downstream phases and compliance
    can see the decision:
    ```bash
-   uv run {plan_plugin_root}/scripts/checks/mark-review-state.py \
+   uv run {shared_root}/scripts/checks/mark-review-state.py \
      --planning-dir "{iterate_planning_dir}" \
      --status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
      --provider "{openrouter | null}" \
