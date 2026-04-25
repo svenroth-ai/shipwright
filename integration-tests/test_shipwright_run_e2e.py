@@ -30,10 +30,20 @@ CHANGELOG_PLUGIN = REPO_ROOT / "plugins" / "shipwright-changelog"
 
 
 def run_script(script_path: str, args: list[str], cwd: str = None) -> dict:
+    # Inherit parent env minus scanner-availability signals so the
+    # autouse fixture in conftest.py actually reaches subprocesses too.
+    # (Without this the subprocess re-evaluates _check_security_available
+    # against the real PATH and silently enables the security phase when
+    # semgrep is installed, which makes pipeline-shape assertions
+    # non-deterministic per host.)
+    env = os.environ.copy()
+    env.pop("AIKIDO_CLIENT_ID", None)
+    env.pop("SHIPWRIGHT_SCANNER_BACKEND", None)
+    env["SHIPWRIGHT_TEST_DISABLE_OSS_SCANNERS"] = "1"
     result = subprocess.run(
         [sys.executable, script_path] + args,
         capture_output=True, text=True, encoding="utf-8",
-        cwd=cwd,
+        cwd=cwd, env=env,
     )
     return json.loads(result.stdout)
 

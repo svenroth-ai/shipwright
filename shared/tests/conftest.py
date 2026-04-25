@@ -1,6 +1,7 @@
 """Shared test fixtures."""
 
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -8,6 +9,31 @@ import pytest
 
 # Add shared scripts to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+
+
+_OSS_SCANNERS = ("semgrep", "trivy", "gitleaks")
+
+
+@pytest.fixture(autouse=True)
+def _isolate_scanner_environment(monkeypatch):
+    """Make orchestrator._check_security_available() deterministic per host.
+
+    Mirrors the autouse fixture in plugins/shipwright-run/tests/conftest.py
+    and integration-tests/conftest.py — clears AIKIDO/SHIPWRIGHT_SCANNER_BACKEND,
+    sets SHIPWRIGHT_TEST_DISABLE_OSS_SCANNERS=1 (covers subprocess invocations),
+    and patches shutil.which to hide the OSS scanners from in-process callers.
+    """
+    monkeypatch.delenv("AIKIDO_CLIENT_ID", raising=False)
+    monkeypatch.delenv("SHIPWRIGHT_SCANNER_BACKEND", raising=False)
+    monkeypatch.setenv("SHIPWRIGHT_TEST_DISABLE_OSS_SCANNERS", "1")
+    real_which = shutil.which
+
+    def _which_no_oss(cmd, *args, **kwargs):
+        if cmd in _OSS_SCANNERS:
+            return None
+        return real_which(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(shutil, "which", _which_no_oss)
 
 
 @pytest.fixture

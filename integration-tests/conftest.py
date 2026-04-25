@@ -1,6 +1,7 @@
 """Shared fixtures for integration tests."""
 
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -19,6 +20,44 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 # Make shared tools importable
 if str(SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SHARED_SCRIPTS))
+
+
+# ---------------------------------------------------------------------------
+# Scanner-availability isolation (autouse)
+# ---------------------------------------------------------------------------
+#
+# orchestrator._check_security_available() returns True when any of
+# (semgrep, trivy, gitleaks) is on PATH, OR when AIKIDO_CLIENT_ID /
+# SHIPWRIGHT_SCANNER_BACKEND is set. CI workstations often have semgrep
+# installed, which would silently insert the security phase into pipelines
+# our integration tests walk — making the assertion order phase-by-phase
+# non-deterministic per host.
+#
+# This autouse fixture mirrors the one in plugins/shipwright-run/tests/conftest.py:
+# clear all three signals at the start of every integration test so the
+# default state is "no security backend". Tests that need security to be
+# active opt in explicitly.
+
+_OSS_SCANNERS = ("semgrep", "trivy", "gitleaks")
+
+
+@pytest.fixture(autouse=True)
+def _isolate_scanner_environment(monkeypatch):
+    monkeypatch.delenv("AIKIDO_CLIENT_ID", raising=False)
+    monkeypatch.delenv("SHIPWRIGHT_SCANNER_BACKEND", raising=False)
+    # Test-only kill-switch reaching subprocess invocations of orchestrator.py.
+    # In-process callers of _check_security_available() are isolated by the
+    # shutil.which monkeypatch below; the env var covers the subprocess case.
+    monkeypatch.setenv("SHIPWRIGHT_TEST_DISABLE_OSS_SCANNERS", "1")
+
+    real_which = shutil.which
+
+    def _which_no_oss(cmd, *args, **kwargs):
+        if cmd in _OSS_SCANNERS:
+            return None
+        return real_which(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(shutil, "which", _which_no_oss)
 
 
 def run_shared_script(subdir: str, script_name: str, args: list[str]) -> str:

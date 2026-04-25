@@ -79,6 +79,24 @@ def test_in_progress_banner_lists_pending(v2_project, capsys):
     assert "PIPELINE FAILED" not in err
 
 
+def test_in_progress_banner_renders_paste_able_launch_command(v2_project, capsys):
+    """Banner must include the actual claude --session-id launch command for
+    each awaiting_launch task — not just a 'check the WebUI' hand-wave."""
+    cfg = _read_cfg(v2_project)
+    project_task = cfg["phase_tasks"][0]
+    assert project_task["status"] == "awaiting_launch"
+    expected_uuid = project_task["sessionUuid"]
+
+    master_stop_check.run(v2_project)
+    err = capsys.readouterr().err
+
+    assert "claude --session-id" in err, "missing launch command for awaiting task"
+    assert expected_uuid in err, "launch command must use the pre-bound sessionUuid"
+    assert "/shipwright-project" in err, "launch command must include slashCommand"
+    # Run-prefix shorthand from the banner naming convention
+    assert "Run-" in err
+
+
 def test_complete_banner(v2_project, capsys):
     cfg = _read_cfg(v2_project)
     cfg["phase_tasks"][0]["status"] = "done"
@@ -92,6 +110,7 @@ def test_complete_banner(v2_project, capsys):
 
 def test_failed_banner_includes_errors(v2_project, capsys):
     cfg = _read_cfg(v2_project)
+    failed_ptk = cfg["phase_tasks"][0]["phaseTaskId"]
     cfg["phase_tasks"][0]["status"] = "failed"
     cfg["phase_tasks"][0]["errors"] = ["spec generation crashed"]
     cfg["status"] = "failed"
@@ -101,7 +120,12 @@ def test_failed_banner_includes_errors(v2_project, capsys):
     err = capsys.readouterr().err
     assert "PIPELINE FAILED" in err
     assert "spec generation crashed" in err
+    # Banner must render the FULL recover-phase-task command, including the
+    # actual phaseTaskId — not just an instruction to "use orchestrator.py".
     assert "recover-phase-task" in err
+    assert f"--phase-task-id {failed_ptk}" in err
+    assert "uv run" in err
+    assert "--force-status awaiting_launch" in err
 
 
 def test_does_not_mutate_state(v2_project):

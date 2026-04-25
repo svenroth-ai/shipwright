@@ -260,24 +260,41 @@ def test_skipped_status_returns_structural_successor():
 # ---- runConditions freeze helper ----
 
 
-def test_freeze_run_conditions_security_off_when_no_aikido():
-    rc = freeze_run_conditions(aikido_client_id=None)
+def test_freeze_run_conditions_security_off_when_no_scanner_no_aikido():
+    rc = freeze_run_conditions(scanner_available=False, aikido_client_id=None)
     assert rc["securityEnabled"] is False
     assert rc["aikidoClientIdPresent"] is False
     assert rc["splitMode"] is None
 
 
-def test_freeze_run_conditions_security_off_when_empty_string():
-    rc = freeze_run_conditions(aikido_client_id="   ")
+def test_freeze_run_conditions_security_off_when_empty_aikido_no_oss():
+    rc = freeze_run_conditions(scanner_available=False, aikido_client_id="   ")
     assert rc["securityEnabled"] is False
     assert rc["aikidoClientIdPresent"] is False
 
 
-def test_freeze_run_conditions_security_on_when_aikido_set():
-    rc = freeze_run_conditions(aikido_client_id="ak_live_xxxx")
+def test_freeze_run_conditions_security_on_via_oss_default():
+    """Default path: OSS scanner on PATH, no AIKIDO. securityEnabled=True,
+    aikidoClientIdPresent=False (so the WebUI/CLI can disambiguate)."""
+    rc = freeze_run_conditions(scanner_available=True, aikido_client_id=None)
+    assert rc["securityEnabled"] is True
+    assert rc["aikidoClientIdPresent"] is False
+
+
+def test_freeze_run_conditions_security_on_via_aikido():
+    """AIKIDO cloud backend. securityEnabled=True AND aikidoClientIdPresent=True."""
+    rc = freeze_run_conditions(scanner_available=True, aikido_client_id="ak_live_xxxx")
     assert rc["securityEnabled"] is True
     assert rc["aikidoClientIdPresent"] is True
     assert rc["splitMode"] is None  # set later by freeze-splits at design-stop
+
+
+def test_freeze_run_conditions_aikido_present_but_scanner_unavailable_is_off():
+    """Defensive: aikido id is set but caller decided no scanner — security off.
+    Authority is `scanner_available`, not the AIKIDO id."""
+    rc = freeze_run_conditions(scanner_available=False, aikido_client_id="ak_live_xxxx")
+    assert rc["securityEnabled"] is False
+    assert rc["aikidoClientIdPresent"] is True
 
 
 # ---- Title and slash command sanity ----
