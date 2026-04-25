@@ -83,8 +83,26 @@ summary, nested projects. Pure read-only.
 ### Step B.5 — Playwright Route-Discovery (Layer 1.5, optional)
 
 **Gate**: only run if `snapshot.stack.primary_language` is a web-capable
-language (`typescript`, `javascript`, `python`, `ruby`, `php`), a
-`dev`-command was detected, and `--skip-crawl` was not passed.
+language (`typescript`, `javascript`, `python`, `ruby`, `php`),
+`--skip-crawl` was not passed, AND **at least one** of:
+
+- `snapshot.commands.dev` is non-null (root `package.json` has a `dev`
+  script — the legacy single-package signal), OR
+- `snapshot.profile.matched != "generic"` (a stack profile matched, so
+  Branch 1 of the Service-Resolution hierarchy below is authoritative
+  for service start), OR
+- `snapshot.stack.multi_service.detected == true` (multi-service layout
+  detected — e.g. monorepo with `client/package.json` + `server/package.json`
+  but no root `package.json`; Branch 2 of the hierarchy applies).
+
+Why three signals: in the multi-service model (introduced 2026-04-25,
+`dev_server.py` v0.5.0) the root `package.json` is no longer the
+primary signal for `dev`. `analyze_codebase.py::_commands_from_pkg`
+only reads `<root>/package.json`, so monorepos legitimately yield
+`commands.dev = null`. A profile-match or multi-service detection is
+sufficient to enter the Service-Resolution hierarchy below — closing
+the gate on `commands.dev` alone would make the crawl unreachable for
+exactly the projects that have the richest service metadata.
 
 **Service-resolution hierarchy** (introduced 2026-04-25 with multi-
 service `dev_server.py` v0.5.0). Choose ONE of three branches:
