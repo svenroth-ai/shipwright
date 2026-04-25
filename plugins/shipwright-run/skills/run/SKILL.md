@@ -33,8 +33,9 @@ Usage:
   /shipwright-run                        (interactive)
   /shipwright-run @requirements.md
 
-Pipeline: Project → Design → Plan → Build → Test → Changelog → Deploy
-          (Security inserted after Test when AIKIDO_CLIENT_ID is set)
+Pipeline: Project → Design → Plan → Build → Test → Security → Changelog → Deploy
+          Security runs by default when an OSS scanner (semgrep, trivy, gitleaks)
+          is on PATH or AIKIDO_CLIENT_ID is set; skipped when no backend exists.
 
 Each phase runs in its own external Claude CLI session.
 This master session writes the pipeline spec, prints the first
@@ -271,9 +272,12 @@ Failed phase tasks:
   - {phase}{/splitId} (ptk={short}) errors:
     - {error_line}
 
-Recover with:
-  uv run {plugin_root}/scripts/lib/orchestrator.py recover-phase-task \
-    --phase-task-id {phaseTaskId} [--force-status awaiting_launch|skipped]
+To recover, paste this in your terminal:
+
+  uv run "{plugin_root}/scripts/lib/orchestrator.py" recover-phase-task --phase-task-id {phaseTaskId}
+
+(add `--force-status awaiting_launch` for re-launch, or `--force-status skipped` to
+move on without that phase's output.)
 
 Then re-invoke /shipwright-run to print a fresh launch card for the recovered phase
 (or paste the WebUI's launch-card command if the WebUI Kanban is in use).
@@ -289,9 +293,9 @@ SHIPWRIGHT-RUN: COMPLETION BLOCKED — {runId}
 Deploy completed, but other phase tasks are non-terminal:
   - {phase}{/splitId} (ptk={short}) status={status}
 
-Resolve via:
-  uv run {plugin_root}/scripts/lib/orchestrator.py recover-phase-task \
-    --phase-task-id {ptk} --force-status skipped
+To resolve, paste this in your terminal (one command per non-terminal task):
+
+  uv run "{plugin_root}/scripts/lib/orchestrator.py" recover-phase-task --phase-task-id {ptk} --force-status skipped
 
 After all tasks are terminal, the next complete-phase-task call will
 flip run.status to "complete".
@@ -332,9 +336,8 @@ Next phase ready to launch:
 Stale (likely crashed) phase tasks:
   - {phase}{/splitId} (ptk={short}) claimed at {claimAttemptedAt}
 
-  Recover with:
-    uv run {plugin_root}/scripts/lib/orchestrator.py recover-phase-task \
-      --phase-task-id {phaseTaskId}
+  To recover, paste this in your terminal:
+    uv run "{plugin_root}/scripts/lib/orchestrator.py" recover-phase-task --phase-task-id {phaseTaskId}
 
   Then re-launch the relevant phase.
 ================================================================================

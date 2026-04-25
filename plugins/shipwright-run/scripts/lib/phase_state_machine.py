@@ -169,16 +169,31 @@ def _spec(phase: Phase, *, split_id: Optional[str], prereqs: list[str]) -> NextP
     }
 
 
-def freeze_run_conditions(*, aikido_client_id: Optional[str]) -> RunConditions:
+def freeze_run_conditions(
+    *,
+    scanner_available: bool,
+    aikido_client_id: Optional[str] = None,
+) -> RunConditions:
     """Compute the frozen run_conditions block from the current environment.
 
     Helper called at run creation by orchestrator.create_config. splitMode stays
     None until design completes — the design-stop hook calls freeze-splits which
-    sets it. aikidoClientIdPresent mirrors the cause for diagnostic clarity.
+    sets it.
+
+    `scanner_available` is the authoritative input — orchestrator's
+    `_check_security_available()` evaluates it across all backends (explicit
+    SHIPWRIGHT_SCANNER_BACKEND, AIKIDO cloud, OSS tools on PATH:
+    semgrep/trivy/gitleaks). Default is OSS — the security phase is planned
+    whenever any of those tools is reachable.
+
+    `aikido_client_id` is kept as a separate input purely for the diagnostic
+    `aikidoClientIdPresent` flag (helpful when a user wonders whether AIKIDO
+    or an OSS fallback is driving their pipeline). It does NOT gate
+    `securityEnabled` on its own anymore.
     """
     has_aikido = bool((aikido_client_id or "").strip())
     return {
-        "securityEnabled": has_aikido,
+        "securityEnabled": bool(scanner_available),
         "splitMode": None,
         "aikidoClientIdPresent": has_aikido,
     }

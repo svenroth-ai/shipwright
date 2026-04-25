@@ -68,13 +68,24 @@ CONDITIONAL_STEPS = {
 
 
 def _check_security_available() -> bool:
-    """Return True if any security scanner backend is configured."""
+    """Return True if any security scanner backend is configured.
+
+    Default: OSS tools (semgrep, trivy, gitleaks) are auto-detected on PATH.
+    AIKIDO_CLIENT_ID or explicit SHIPWRIGHT_SCANNER_BACKEND=<name> override
+    the OSS detection. SHIPWRIGHT_TEST_DISABLE_OSS_SCANNERS=1 is a test-only
+    kill-switch so subprocess-based integration tests can produce a
+    deterministic 7-phase pipeline regardless of what the dev/CI host has
+    installed.
+    """
     # Explicit backend selection
     if os.environ.get("SHIPWRIGHT_SCANNER_BACKEND"):
         return True
     # Aikido (cloud)
     if os.environ.get("AIKIDO_CLIENT_ID"):
         return True
+    # Test-only override
+    if os.environ.get("SHIPWRIGHT_TEST_DISABLE_OSS_SCANNERS"):
+        return False
     # OSS tools (local)
     return any(shutil.which(t) for t in ("semgrep", "trivy", "gitleaks"))
 
@@ -260,9 +271,16 @@ def create_config(
     if existing.get("standalone") and existing.get("completed_steps"):
         prior_completed = [s for s in existing["completed_steps"] if s in pipeline]
 
-    # Freeze runConditions at creation — Plan v3 §State Machine
+    # Freeze runConditions at creation. `securityEnabled` reflects the actual
+    # scanner-availability decision (OSS by default — semgrep/trivy/gitleaks on
+    # PATH or AIKIDO_CLIENT_ID set). `aikidoClientIdPresent` is kept as a
+    # diagnostic flag separately so the WebUI/CLI can disambiguate "OSS
+    # fallback" from "AIKIDO cloud" without re-deriving.
     aikido_id = os.environ.get("AIKIDO_CLIENT_ID")
-    run_conditions = freeze_run_conditions(aikido_client_id=aikido_id)
+    run_conditions = freeze_run_conditions(
+        scanner_available=_check_security_available(),
+        aikido_client_id=aikido_id,
+    )
 
     # Initial phase_tasks[] — only the project task is materialized at run start.
     # Subsequent tasks are appended by complete-phase-task → plan_next_phase
