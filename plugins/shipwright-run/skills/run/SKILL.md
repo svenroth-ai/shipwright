@@ -275,7 +275,8 @@ Recover with:
   uv run {plugin_root}/scripts/lib/orchestrator.py recover-phase-task \
     --phase-task-id {phaseTaskId} [--force-status awaiting_launch|skipped]
 
-Then re-launch the relevant phase from the launch card in the WebUI.
+Then re-invoke /shipwright-run to print a fresh launch card for the recovered phase
+(or paste the WebUI's launch-card command if the WebUI Kanban is in use).
 ================================================================================
 ```
 
