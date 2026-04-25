@@ -635,6 +635,7 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 - Design fidelity results are tracked in `design-fidelity-report.json` -- this artifact feeds into the test phase for regression detection
 - Optionally refactors for cleanliness without changing behavior
 - Runs a two-tier code review: a quick self-review checklist (always), plus a full subagent-based review for large diffs, high-risk sections, or security-sensitive files
+- Optionally cascades an external LLM code review (Step 6c) when `external_code_review.enabled: true` is set in `shipwright_build_config.json`. Default off. Reuses the diff from the internal subagent and writes its outcome to `external_code_review_state.json`. See `External LLM Review` in Chapter 6 for the diff-exposure caveat.
 - Applies accepted review fixes, re-runs tests to confirm no regressions
 - Commits with Conventional Commits format (e.g., `feat(auth): implement magic link authentication`)
 - Logs decisions, updates the build dashboard, and checks context pressure -- if the context window is getting full, it saves progress and stops cleanly so you can resume in a fresh session
@@ -991,9 +992,19 @@ JELASTIC_TOKEN=your-jelastic-api-token
 
 The profile configures two deployment environments: **DEV** (auto-deploy on push to `develop` or `feature/*` branches) and **PROD** (manual deploy from `main`, requires confirmation and pre-deploy snapshot).
 
-### External Plan Review
+### External LLM Review
 
-Shipwright can send your implementation plan to external LLMs for an independent second opinion. Three options:
+Shipwright can send artifacts to external LLMs (Gemini + OpenAI in parallel) for an independent second opinion. The same CLI -- `shared/scripts/tools/external_review.py` -- runs three review modes; which one fires depends on the phase that triggers it.
+
+| Mode | Trigger | Reviews | Marker file |
+|---|---|---|---|
+| `--mode plan` | `/shipwright-plan` Step 5 | full implementation plan vs project spec | `external_review_state.json` |
+| `--mode iterate` | `/shipwright-iterate` medium+ pre-build | mini-plan vs iterate spec | `external_review_state.json` |
+| `--mode code` | `/shipwright-build` Step 6c (opt-in) and `/shipwright-iterate` medium+ post-build cascade | code diff vs section/iterate spec | `external_code_review_state.json` |
+
+Plan and iterate modes share the same marker file; code mode writes a distinct one so the two gates stay independent.
+
+**Provider configuration (same for all three modes):**
 
 **Option A -- OpenRouter (recommended):** One key covers both review models (Gemini and OpenAI routed through OpenRouter).
 
@@ -1008,7 +1019,21 @@ GEMINI_API_KEY=your-gemini-key
 OPENAI_API_KEY=sk-your-key
 ```
 
-**Option C -- Self-review fallback:** Leave keys unset. `/shipwright-plan` and medium+ `/shipwright-iterate` will prompt you at Step 5 and, if you choose to skip, run a mandatory self-review ("2x denken") pass covering architectural soundness, section boundaries, TDD coverage, risk hotspots, and unstated assumptions. The opt-out decision is logged in the decision log and `external_review_state.json`, so audits still see it. Silent skipping is no longer possible.
+**Option C -- Self-review fallback:** Leave keys unset. `/shipwright-plan` and medium+ `/shipwright-iterate` will prompt you at Step 5 and, if you choose to skip, run a mandatory self-review ("2x denken") pass. The opt-out decision is logged in the decision log and `external_review_state.json`, so audits still see it. Silent skipping is no longer possible.
+
+**Code-review-mode opt-in (per phase):**
+
+- `/shipwright-build` -- default **off**. Enable per project or per section in `shipwright_build_config.json`:
+  ```json
+  { "external_code_review": { "enabled": true } }
+  ```
+- `/shipwright-iterate` -- default **on** for medium+ runs that already triggered the internal `code-reviewer` subagent (no new threshold). Same Branch A/B/C interactive opt-out flow as the mini-plan review. To opt out at the project level: `shipwright_iterate_config.json` -> `external_code_review.enabled: false`. This flag is independent of `external_review.feedback_iterations` -- you can disable plan/iterate-mode reviews while keeping the code-review cascade on, and vice versa.
+
+**Diff exposure warning:** Code-review mode transmits the staged diff to whichever LLM provider is configured. Diffs can contain secrets, customer data, or code under restrictive license/NDA terms more often than markdown plans do. If those risks apply to your project, leave the cascade off (build) or set `external_code_review.enabled: false` (iterate). The diff is read from `/tmp/shipwright-review-diff.txt` -- the same file the internal subagent uses.
+
+**Empty-diff short-circuit:** Code mode skips the API call entirely if the diff file is empty or whitespace-only. The marker records `status: skipped_user_opt_out` with `reason: "empty_diff"`.
+
+**Model overrides:** All three modes honor `SHIPWRIGHT_REVIEW_MODEL_<KEY>` env vars (`GEMINI`, `CHATGPT`, `OPENROUTER_GEMINI`, `OPENROUTER_CHATGPT`) for one-off A/B testing of different model versions without editing config.
 
 ### Security Scanning
 
@@ -1169,7 +1194,7 @@ The result is one of four levels:
 |------------|----------|-----------|
 | **Trivial** | 1 FR, 1-2 files, no risk flags | spec update → build → self-review → unit test (`--related`) → finalize |
 | **Small** | 1-2 FRs, 3-5 files, or risk flags present | + confirmation question, design text (if UI), mini-plan (features), conditional full review |
-| **Medium** | 2-4 FRs, 5-10 files, or cross-split | + scoping interview (2-3 Qs), iterate spec file, mini-plan with work breakdown, user approval gate, external LLM review, full code review, full test suite, E2E update |
+| **Medium** | 2-4 FRs, 5-10 files, or cross-split | + scoping interview (2-3 Qs), iterate spec file, mini-plan with work breakdown, user approval gate, external LLM review (mini-plan), full code review, **external LLM code-review cascade** (default on, Branch A/B/C opt-out), full test suite, E2E update |
 | **Large** | 4+ FRs, 10+ files, cross-split + risk flags | **Escape hatch** -- recommends switching to the full pipeline |
 
 Users can override complexity (`--complexity medium`) and adjust phases before execution ("skip design", "make it small"). However, safety floors enforced by risk flags cannot be bypassed without explicit acknowledgment.
@@ -1422,10 +1447,11 @@ Tests must pass before every commit. The constitution rule "fix the code, not th
 
 ### Code Review
 
-Every section goes through a two-stage review:
+Every section goes through up to three review layers:
 
 1. **Self-review checklist** -- The building agent checks spec compliance, error handling, security, test quality, and naming before committing.
-2. **Subagent code review** -- A dedicated code-reviewer subagent examines the diff against the spec and flags issues.
+2. **Subagent code review** -- A dedicated code-reviewer subagent examines the diff against the spec and flags issues. Triggers on diffs > 100 lines, security-sensitive files, or medium+ complexity iterates.
+3. **External LLM code review (cascade)** -- Optional second-opinion gate that sends the same diff to Gemini + OpenAI in parallel against the section/iterate spec. Build: opt-in via `shipwright_build_config.json` -> `external_code_review.enabled: true`, default off. Iterate: default-on for medium+ runs that already triggered layer 2, with Branch A/B/C interactive opt-out (same flow as the mini-plan review). See `External LLM Review` in Chapter 6 for provider setup and the diff-exposure caveat.
 
 ### Migration Safety
 
@@ -1742,5 +1768,7 @@ These are invoked automatically by the pipeline but can also run standalone for 
 | `append_changelog_entry.py` | Atomic Keep-a-Changelog writer for canon step C5. Dedupes by entry body and holds `CHANGELOG.md.lock` via `file_lock.py` (cross-platform, 5 s timeout). | `--project-root <path>` · `--category Added\|Changed\|Fixed\|Deprecated\|Removed\|Security` · `--entry "..."` |
 | `append_phase_history.py` | Atomic read-modify-write on `shipwright_run_config.json::phase_history[<phase>]`. 50-entry retention per phase, file-lock serialised. | `--project-root <path>` · `--phase <phase>` · `--entry-json '{...}'` · `--run-id <id>` |
 | `generate_session_handoff.py` | Session-handoff writer. The `--canon-marker` flag lets phase finalization steps tag the handoff so the PostStop hook does not clobber it. | `--canon-marker` (emit YAML frontmatter with `canon_generated: true` + `run_id`) · `--phase <phase>` · `--reason "..."` · `--project-root <path>`. Requires `SHIPWRIGHT_RUN_ID` env var when `--canon-marker` is set (degrades safely with a stderr warning otherwise). |
+| `external_review.py` | External LLM review CLI. Runs Gemini + OpenAI in parallel via OpenRouter (or direct API keys) and emits a unified `{success, provider, reviews}` JSON envelope. Three modes share the same dispatch surface. | `--mode plan\|iterate\|code` · `--plan-file <path>` (plan/iterate) OR `--diff-file <path>` (code) · `--spec-file <path>` · `--plugin-root <path>` · env: `OPENROUTER_API_KEY` or `GEMINI_API_KEY` + `OPENAI_API_KEY` · model overrides via `SHIPWRIGHT_REVIEW_MODEL_<KEY>` |
+| `mark-review-state.py` | Writes the marker file that downstream phases and compliance read to confirm a review-step branch (A/B/C) ran to completion. Two filenames: `external_review_state.json` for plan/iterate, `external_code_review_state.json` for the code-review cascade. | `--planning-dir <path>` · `--status completed\|skipped_user_opt_out\|skipped_config_disabled` · `--review-type plan\|iterate\|code` (omitted = plan/iterate marker) · `--provider openrouter\|gemini\|openai` · `--findings-count N` · `--reason "..."` · `--self-review-fallback-ran` |
 
 The per-phase verifier modules under `shared/scripts/tools/verifiers/` (`project_checks.py`, `design_checks.py`, `plan_checks.py`, `build_checks.py`, `test_checks.py`, `changelog_checks.py`, `deploy_checks.py`, `iterate_checks.py`, `runtime_checks.py`) share generic C1–C5 helpers and F1/F2/F3 ADR integrity checks from `common.py`. The full Canon Coverage matrix is in [docs/hooks-and-pipeline.md](hooks-and-pipeline.md#canon-coverage--iterate-12-final-state).
