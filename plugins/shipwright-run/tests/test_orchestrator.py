@@ -85,21 +85,29 @@ def test_update_step_failed(tmp_project):
     assert config["current_step"] == "build"
 
 
-def test_build_pipeline_without_aikido(monkeypatch):
+def test_build_pipeline_never_includes_security_post_decouple(monkeypatch):
+    """Iterate sec-report-and-orchestrator-decouple removed security from
+    the orchestrator phase list. build_pipeline() returns PIPELINE_STEPS
+    verbatim regardless of scanner-env state.
+    """
     monkeypatch.delenv("AIKIDO_CLIENT_ID", raising=False)
+    monkeypatch.delenv("SHIPWRIGHT_SCANNER_BACKEND", raising=False)
     pipeline = build_pipeline()
     assert "security" not in pipeline
     assert pipeline == PIPELINE_STEPS
 
 
-def test_build_pipeline_with_aikido(monkeypatch):
+def test_build_pipeline_aikido_env_does_not_inject_security(monkeypatch):
+    """AIKIDO_CLIENT_ID set must NOT cause security to be planned —
+    the orchestrator no longer auto-runs security."""
     monkeypatch.setenv("AIKIDO_CLIENT_ID", "test-id")
     pipeline = build_pipeline()
-    assert "security" in pipeline
-    assert pipeline.index("security") == pipeline.index("test") + 1
+    assert "security" not in pipeline
+    assert pipeline == PIPELINE_STEPS
 
 
-def test_create_config_with_security(tmp_project, monkeypatch):
+def test_create_config_pipeline_omits_security(tmp_project, monkeypatch):
+    """Fresh runs produce a config whose pipeline never includes security."""
     monkeypatch.setenv("AIKIDO_CLIENT_ID", "test-id")
     config = create_config(
         scope="full_app",
@@ -108,8 +116,134 @@ def test_create_config_with_security(tmp_project, monkeypatch):
         deploy_target="jelastic-dev",
         project_root=tmp_project,
     )
-    assert "security" in config["pipeline"]
-    assert config["pipeline"].index("security") == config["pipeline"].index("test") + 1
+    assert "security" not in config["pipeline"]
+
+
+def test_create_config_run_conditions_securityenabled_always_false(tmp_project, monkeypatch):
+    """Schema requires the field; post-decouple value is always False."""
+    monkeypatch.setenv("AIKIDO_CLIENT_ID", "ak_live_xxx")
+    config = create_config(
+        scope="full_app",
+        profile="supabase-nextjs",
+        autonomy="guided",
+        deploy_target="jelastic-dev",
+        project_root=tmp_project,
+    )
+    rc = config["runConditions"]
+    assert rc["securityEnabled"] is False
+    # aikidoClientIdPresent stays as a diagnostic
+    assert rc["aikidoClientIdPresent"] is True
+
+
+def test_legacy_pipeline_with_security_is_migrated_out(tmp_project):
+    """Running load_run_config on a config that has 'security' in pipeline
+    drops it (same _LEGACY_PIPELINE_ENTRIES pattern as compliance removal).
+    """
+    import json
+    from orchestrator import load_run_config, CONFIG_NAME
+
+    legacy = {
+        "schemaVersion": 2,
+        "scope": "full_app",
+        "pipeline": ["project", "design", "plan", "build", "test", "security", "changelog", "deploy"],
+        "phase_tasks": [],
+        "completed_phase_task_ids": [],
+        "splits_frozen": [],
+        "runConditions": {
+            "securityEnabled": True,
+            "splitMode": None,
+            "aikidoClientIdPresent": False,
+        },
+        "status": "in_progress",
+        "completed_steps": [],
+        "current_step": "project",
+        "created_at": "2026-04-01T00:00:00+00:00",
+    }
+    (tmp_project / CONFIG_NAME).write_text(json.dumps(legacy), encoding="utf-8")
+
+    loaded = load_run_config(tmp_project)
+    assert "security" not in loaded["pipeline"]
+    # All other phases preserved
+    assert loaded["pipeline"] == ["project", "design", "plan", "build", "test", "changelog", "deploy"]
+
+
+def test_migrate_in_flight_security_phase_tasks_skips_backlog_and_awaiting_launch(tmp_project):
+    """Active migration: non-terminal security phase_tasks (backlog /
+    awaiting_launch) are auto-skipped with a structured reason."""
+    import json
+    from orchestrator import load_run_config, CONFIG_NAME
+
+    legacy = {
+        "schemaVersion": 2,
+        "scope": "full_app",
+        "pipeline": ["project", "test", "security", "changelog"],  # legacy: includes security
+        "phase_tasks": [
+            {"phaseTaskId": "ptk-aaa", "phase": "test", "status": "done"},
+            {"phaseTaskId": "ptk-sec1", "phase": "security", "status": "backlog"},
+            {"phaseTaskId": "ptk-sec2", "phase": "security", "status": "awaiting_launch"},
+        ],
+        "completed_phase_task_ids": ["ptk-aaa"],
+        "splits_frozen": [],
+        "runConditions": {
+            "securityEnabled": True,
+            "splitMode": None,
+            "aikidoClientIdPresent": False,
+        },
+        "status": "in_progress",
+        "completed_steps": [],
+        "current_step": "security",
+        "created_at": "2026-04-01T00:00:00+00:00",
+    }
+    (tmp_project / CONFIG_NAME).write_text(json.dumps(legacy), encoding="utf-8")
+
+    loaded = load_run_config(tmp_project)
+
+    # Both non-terminal security phase_tasks become skipped
+    sec_tasks = [t for t in loaded["phase_tasks"] if t["phase"] == "security"]
+    assert len(sec_tasks) == 2
+    assert all(t["status"] == "skipped" for t in sec_tasks)
+    assert all(t.get("result", {}).get("skipped_by") == "security-decouple-migration" for t in sec_tasks)
+
+    # Skipped phase_tasks join completed_phase_task_ids
+    completed_ids = set(loaded["completed_phase_task_ids"])
+    assert "ptk-sec1" in completed_ids
+    assert "ptk-sec2" in completed_ids
+
+
+def test_migrate_in_flight_security_leaves_in_progress_alone(tmp_project):
+    """Active migration is conservative: in_progress security phase_task is
+    left untouched (CAS-safe — user has an active session). The user must
+    manually recover via recover-phase-task per the migration notice.
+    """
+    import json
+    from orchestrator import load_run_config, CONFIG_NAME
+
+    legacy = {
+        "schemaVersion": 2,
+        "scope": "full_app",
+        "pipeline": ["project", "test", "security", "changelog"],
+        "phase_tasks": [
+            {"phaseTaskId": "ptk-sec1", "phase": "security", "status": "in_progress",
+             "claimedBySessionUuid": "active-uuid", "version": 1},
+        ],
+        "completed_phase_task_ids": [],
+        "splits_frozen": [],
+        "runConditions": {
+            "securityEnabled": True,
+            "splitMode": None,
+            "aikidoClientIdPresent": False,
+        },
+        "status": "in_progress",
+        "completed_steps": [],
+        "current_step": "security",
+        "created_at": "2026-04-01T00:00:00+00:00",
+    }
+    (tmp_project / CONFIG_NAME).write_text(json.dumps(legacy), encoding="utf-8")
+
+    loaded = load_run_config(tmp_project)
+    sec_task = loaded["phase_tasks"][0]
+    assert sec_task["status"] == "in_progress"  # NOT skipped
+    assert sec_task.get("claimedBySessionUuid") == "active-uuid"
 
 
 def test_compliance_runs_on_step_complete(tmp_project, mocker):

@@ -228,21 +228,28 @@ For accepted findings → run security-fixer subagent → re-run tests.
 
 ## Step 6: Generate Report
 
-**For Aikido backend:**
+**For OSS backend (standalone or pipeline):**
+
+Run the wrapper. It handles scan + redaction + report + history archiving + best-effort `.gitignore`:
+
+```bash
+uv run {plugin_root}/scripts/tools/run_scan_and_report.py --project-root {project_root} --repo {repo}
+```
+
+Output:
+- `{project_root}/securityreports/latest.md` — human-readable Markdown report
+- `{project_root}/securityreports/latest.json` — machine-readable sidecar (`schema_version: 1`, `scan_id`, full normalized findings)
+- `{project_root}/securityreports/history/scan-YYYYMMDD-HHMMSS-{6hex}.{md,json}` — archived (last 20 pairs retained)
+- `{project_root}/.gitignore` — `/securityreports/` appended if file exists and entry missing
+
+The wrapper redacts secret evidence by default (Gitleaks `match`/`secret`/`commit`/`author`/`email` fields; high-entropy strings in `description` / `remediation_hint`). Use `--full-evidence` to retain raw values for explicit local debugging — refused when `CI` env is set.
+
+After the wrapper exits, read `{project_root}/securityreports/latest.json` for the structured scan summary (total_findings, by_severity, by_source, risk_level).
+
+**For Aikido backend (path preserved, untouched by v0.3 restructuring):**
 ```bash
 uv run --project {plugin_root} {plugin_root}/scripts/lib/aikido_client.py report --repo {repo}
 ```
-
-**For OSS backend:**
-Generate the report from the normalized findings returned by `backend.scan()`.
-
-Write a Markdown report to the project root.
-
-**Report contents:**
-- Summary: total findings, severity breakdown
-- Remediation status: fixed / declined / deferred / open
-- Detailed findings table
-- Timestamp
 
 ---
 
@@ -269,6 +276,39 @@ Write results to `shipwright_security_config.json` in the project root:
 ```
 
 This config is consumed by `/shipwright-compliance` for traceability.
+
+---
+
+## Step 8: Iterate Handoff (OSS standalone mode only)
+
+After Step 6 completes for the OSS backend in standalone mode, offer the user a one-question handoff into `/shipwright-iterate` so they can work through fixes.
+
+**Skip Step 8 entirely if any of:**
+- `total_findings == 0` in `securityreports/latest.json`
+- `os.environ.get("CI")` is set (any truthy value)
+- `os.environ.get("SHIPWRIGHT_NON_INTERACTIVE")` is set
+- `sys.stdin.isatty()` returns False
+- Pipeline mode is active (`shipwright_project_config.json` exists in project root) — the remediation loop in Steps 2-5 already handled it
+
+**Pre-flight check:** verify `shipwright_run_config.json` exists in `project_root`.
+- If missing → print: `"To fix these findings, open /shipwright-iterate in a Shipwright-managed project and point it at securityreports/latest.md"`, then exit 0.
+- If present → proceed.
+
+**Ask the user via AskUserQuestion:**
+
+> Scan complete: {total_findings} findings ({by_severity summary}).
+> Start an iterate to work through fixes?
+>
+> - **YES** — start `/shipwright-iterate` (the report path is passed as context)
+> - **NO** — done, just the report
+
+**On YES:** invoke the `/shipwright-iterate` skill with this generic brief (no scanner prose interpolated, no prompt-injection surface):
+
+> Review and fix security findings from the most recent scan.
+> Report: `securityreports/latest.md` (machine-readable sidecar: `securityreports/latest.json`).
+> Work through findings with the user — pick what to fix, what to suppress, what to defer. Favor small iterate scopes (one rule-family or one fix category per iterate) to keep review tight.
+
+**Failure handling:** if the `/shipwright-iterate` invocation raises or exits non-zero, print the same brief verbatim to the terminal, log the error to stderr, and exit 0. The report (`securityreports/latest.*`) remains written regardless of handoff success.
 
 ---
 

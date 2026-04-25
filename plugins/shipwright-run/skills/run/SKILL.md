@@ -33,9 +33,11 @@ Usage:
   /shipwright-run                        (interactive)
   /shipwright-run @requirements.md
 
-Pipeline: Project → Design → Plan → Build → Test → Security → Changelog → Deploy
-          Security runs by default when an OSS scanner (semgrep, trivy, gitleaks)
-          is on PATH or AIKIDO_CLIENT_ID is set; skipped when no backend exists.
+Pipeline: Project → Design → Plan → Build → Test → Changelog → Deploy
+
+Security scanning is no longer part of the orchestrator pipeline.
+Run /shipwright-security manually after build/test, or activate the
+.github/workflows/security.yml triggers when ready (see CI integration docs).
 
 Each phase runs in its own external Claude CLI session.
 This master session writes the pipeline spec, prints the first
@@ -142,7 +144,7 @@ uv run {plugin_root}/scripts/lib/orchestrator.py write-config \
 
 This writes `shipwright_run_config.json` at `schemaVersion: 2`. The orchestrator:
 
-- Generates `runId` and freezes `runConditions` (e.g. `securityEnabled` from `AIKIDO_CLIENT_ID`).
+- Generates `runId` and freezes `runConditions`. Post-decouple, `securityEnabled` is always `false` (security is no longer an orchestrator phase). `aikidoClientIdPresent` is set from `AIKIDO_CLIENT_ID` for diagnostic purposes only — it does not gate any phase.
 - Initializes `phase_tasks[]` with the first task: `{phase: "project", status: "awaiting_launch", sessionUuid: <pre-bound uuid4>, prerequisites: []}`.
 - Subsequent phase tasks are appended by phase Stop hooks via `complete-phase-task` → `plan-next-phase`. **The master never plans phases directly.**
 
@@ -198,7 +200,7 @@ render the launch card for the user to paste into a fresh terminal.
 - `sessionUuid` → `phase_tasks[0].sessionUuid` (pre-bound uuid4).
 - `slashCommand` → `phase_tasks[0].slashCommand` (`/shipwright-project` for run init).
 - `projectRoot` → `$(pwd)` (the cwd you passed to `write-config`).
-- `pipelineLength` → `len(config.pipeline)` (7 baseline, 8 with security).
+- `pipelineLength` → `len(config.pipeline)` (always 7 post-decouple — security is no longer an orchestrator phase).
 - `nameSuffix` → `splitId ? f"{phase} / {splitId}" : phase` (here just `"project"`).
 
 **Render the banner:**

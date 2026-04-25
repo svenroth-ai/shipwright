@@ -127,11 +127,17 @@ def next_phase_task(
         return _spec("test", split_id=None, prereqs=prereq)
 
     if phase == "test":
-        if run_conditions["securityEnabled"]:
-            return _spec("security", split_id=None, prereqs=prereq)
+        # Iterate `sec-report-and-orchestrator-decouple` (2026): security is
+        # no longer an orchestrator phase. test → changelog unconditionally.
+        # The `securityEnabled` field stays in RunConditions for schema
+        # compatibility with shipwright-webui but does not gate routing.
         return _spec("changelog", split_id=None, prereqs=prereq)
 
     if phase == "security":
+        # Legacy-grace path: phase_tasks already serialized with
+        # ``phase: "security"`` (from runs that started before this iterate
+        # shipped) must still advance to changelog when terminal. New runs
+        # never produce a security phase_task.
         return _spec("changelog", split_id=None, prereqs=prereq)
 
     if phase == "changelog":
@@ -171,29 +177,29 @@ def _spec(phase: Phase, *, split_id: Optional[str], prereqs: list[str]) -> NextP
 
 def freeze_run_conditions(
     *,
-    scanner_available: bool,
     aikido_client_id: Optional[str] = None,
 ) -> RunConditions:
     """Compute the frozen run_conditions block from the current environment.
 
     Helper called at run creation by orchestrator.create_config. splitMode stays
-    None until design completes — the design-stop hook calls freeze-splits which
-    sets it.
+    None until design completes — the design-stop hook calls freeze-splits
+    which sets it.
 
-    `scanner_available` is the authoritative input — orchestrator's
-    `_check_security_available()` evaluates it across all backends (explicit
-    SHIPWRIGHT_SCANNER_BACKEND, AIKIDO cloud, OSS tools on PATH:
-    semgrep/trivy/gitleaks). Default is OSS — the security phase is planned
-    whenever any of those tools is reachable.
+    Iterate `sec-report-and-orchestrator-decouple` (2026): security is no
+    longer an orchestrator phase. ``securityEnabled`` is therefore hardcoded
+    to ``False``. The field is preserved (rather than removed) because the
+    v2 schema (``shared/schemas/run_config.v2.schema.json``) marks it as
+    required with ``additionalProperties: false`` — shipwright-webui consumes
+    that contract.
 
-    `aikido_client_id` is kept as a separate input purely for the diagnostic
-    `aikidoClientIdPresent` flag (helpful when a user wonders whether AIKIDO
-    or an OSS fallback is driving their pipeline). It does NOT gate
-    `securityEnabled` on its own anymore.
+    ``aikido_client_id`` is kept as a diagnostic input. It populates
+    ``aikidoClientIdPresent`` so WebUI / CLI surfaces can disambiguate "user
+    has Aikido configured" from "no scanner backend at all", but it does NOT
+    gate any pipeline phase.
     """
     has_aikido = bool((aikido_client_id or "").strip())
     return {
-        "securityEnabled": bool(scanner_available),
+        "securityEnabled": False,
         "splitMode": None,
         "aikidoClientIdPresent": has_aikido,
     }
