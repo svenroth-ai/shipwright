@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-04-26
+
+### Added
+
+- **shipwright-security v0.3 — report persistence + iterate handoff + orchestrator decouple (Iterate 1).** OSS scan reports now land in `securityreports/` (gitignored): atomic `latest.{md,json}` plus second-granularity history under `history/`, paired pruning at 20 retained pairs, `schema_version: 1` and `scan_id` correlation, default-on allowlist redaction with free-text masking (`--full-evidence` opt-in, refused under `CI=true`). New `run_scan_and_report.py` wrapper orchestrates scan → redact → write → archive → prune → best-effort `.gitignore`. Aikido path preserved (untested in v0.3 — see guide note). After OSS scan in standalone mode, a single Y/N `AskUserQuestion` offers to launch `/shipwright-iterate` with a generic brief; failure path falls back to printing the brief verbatim. Security is no longer a pipeline phase: orchestrator drops `security` from `_LEGACY_PIPELINE_ENTRIES`, `freeze_run_conditions()` always returns `securityEnabled: false`, in-flight `backlog`/`awaiting_launch` security phase_tasks auto-skip on upgrade (`in_progress` left untouched, CAS-safe with manual recover instructions in the migration notice). Schema impact zero — v2 `runConditions` shape unchanged for shipwright-webui.
+- **shipwright-security v0.3 — SARIF translator + dormant CI hardening (Iterate 2).** New pure SARIF 2.1.0 translator (`scripts/lib/sarif_writer.py`) with explicit severity → level mapping (`critical|high → error`, `medium → warning`, `low|info → note`, else `none`), stable `ruleId={source}/{rule}`, sha256 `partialFingerprints["shipwright/v1"]` for cross-scan dedup in the GitHub Security tab, and CVSS-like `severity_score` carried through as `properties.security-severity`. `scan.py` gains `--sarif-dir PATH` (always emits one `.sarif` per known scanner, even on clean scans, so `upload-sarif` can't fail on an empty directory) and `--input-from-cache PATH` (CI runs scanners once, follow-up step translates SARIF from the cached `findings.json`). `.github/workflows/security.yml` is wired but stays DORMANT — only `workflow_dispatch` active; `pull_request` and `schedule` triggers remain commented for manual activation at Phase B / Go-Live. Workflow gains `security-events: write` + `actions: read` permissions (the latter required by `upload-sarif@v3` once an explicit `permissions:` block is set), fork-PR guards (`head.repo.full_name == github.repository`) on both upload-sarif and PR-comment steps, and `category: shipwright-security` on uploads. New `references/ci-integration.md` documents activation steps, fork-PR degradation, the `actions: read` footgun, and local↔CI parity. `tests/test_workflow_shape.py` regex-snapshots the dormant invariants. `docs/guide.md` §4.7 carries the v0.3 honesty note that the Aikido backend was preserved but not re-verified end-to-end.
+
+### Fixed
+
+- shipwright-adopt: Step B.5 crawl gate now admits matched profile and multi-service detection, not just root `commands.dev` — fixes Playwright route-discovery being skipped on monorepos with no root `package.json`.
+
 ## [v0.5.0] - 2026-04-25
 
 ### Added
