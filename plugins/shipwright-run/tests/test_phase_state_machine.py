@@ -159,17 +159,11 @@ def test_build_split_less_done_to_test():
     assert spec["splitId"] is None
 
 
-def test_test_done_security_enabled_to_security():
-    spec = next_phase_task(
-        run_conditions=_rc(security=True),
-        splits_frozen=[],
-        completed=_completed("test"),
-    )
-    assert spec is not None
-    assert spec["phase"] == "security"
-
-
-def test_test_done_security_disabled_to_changelog():
+def test_test_done_always_to_changelog():
+    """Post-decouple (sec-report-and-orchestrator-decouple): test → changelog
+    unconditionally. The securityEnabled field stays in RunConditions for
+    schema compatibility with shipwright-webui but no longer gates routing.
+    """
     spec = next_phase_task(
         run_conditions=_rc(security=False),
         splits_frozen=[],
@@ -179,7 +173,26 @@ def test_test_done_security_disabled_to_changelog():
     assert spec["phase"] == "changelog"
 
 
-def test_security_done_to_changelog():
+def test_test_done_to_changelog_even_when_securityenabled_true_legacy_value():
+    """Legacy run-configs may have ``securityEnabled: true`` baked in. Post-
+    decouple the state machine must NOT route to security based on that flag —
+    test always advances to changelog.
+    """
+    spec = next_phase_task(
+        run_conditions=_rc(security=True),  # legacy field value, ignored now
+        splits_frozen=[],
+        completed=_completed("test"),
+    )
+    assert spec is not None
+    assert spec["phase"] == "changelog"
+
+
+def test_security_done_to_changelog_legacy_grace_path():
+    """Legacy phase_tasks already serialized with ``phase: "security"`` (e.g.
+    from runs that started before this iterate shipped) must still advance
+    to changelog when their status becomes terminal. The branch is dead for
+    new runs but kept as legacy-grace.
+    """
     spec = next_phase_task(
         run_conditions=_rc(security=True),
         splits_frozen=[],
@@ -257,51 +270,52 @@ def test_skipped_status_returns_structural_successor():
     assert spec["phase"] == "changelog"
 
 
-# ---- runConditions freeze helper ----
+# ---- runConditions freeze helper (post-decouple signature) ----
+#
+# Iterate `sec-report-and-orchestrator-decouple` removed `scanner_available`
+# from the parameter list. `securityEnabled` is hardcoded to False because
+# security is no longer a pipeline phase. `aikidoClientIdPresent` is kept as
+# a diagnostic so WebUI consumers can tell whether the user has Aikido
+# configured (informational only — does not gate anything).
 
 
-def test_freeze_run_conditions_security_off_when_no_scanner_no_aikido():
-    rc = freeze_run_conditions(scanner_available=False, aikido_client_id=None)
+def test_freeze_run_conditions_default_returns_security_off():
+    rc = freeze_run_conditions()
     assert rc["securityEnabled"] is False
     assert rc["aikidoClientIdPresent"] is False
     assert rc["splitMode"] is None
 
 
-def test_freeze_run_conditions_security_off_when_empty_aikido_no_oss():
-    rc = freeze_run_conditions(scanner_available=False, aikido_client_id="   ")
-    assert rc["securityEnabled"] is False
-    assert rc["aikidoClientIdPresent"] is False
-
-
-def test_freeze_run_conditions_security_on_via_oss_default():
-    """Default path: OSS scanner on PATH, no AIKIDO. securityEnabled=True,
-    aikidoClientIdPresent=False (so the WebUI/CLI can disambiguate)."""
-    rc = freeze_run_conditions(scanner_available=True, aikido_client_id=None)
-    assert rc["securityEnabled"] is True
-    assert rc["aikidoClientIdPresent"] is False
-
-
-def test_freeze_run_conditions_security_on_via_aikido():
-    """AIKIDO cloud backend. securityEnabled=True AND aikidoClientIdPresent=True."""
-    rc = freeze_run_conditions(scanner_available=True, aikido_client_id="ak_live_xxxx")
-    assert rc["securityEnabled"] is True
+def test_freeze_run_conditions_aikido_id_sets_diagnostic_flag():
+    rc = freeze_run_conditions(aikido_client_id="ak_live_xxxx")
+    # Diagnostic: user has Aikido configured. Does NOT enable any pipeline phase.
     assert rc["aikidoClientIdPresent"] is True
-    assert rc["splitMode"] is None  # set later by freeze-splits at design-stop
-
-
-def test_freeze_run_conditions_aikido_present_but_scanner_unavailable_is_off():
-    """Defensive: aikido id is set but caller decided no scanner — security off.
-    Authority is `scanner_available`, not the AIKIDO id."""
-    rc = freeze_run_conditions(scanner_available=False, aikido_client_id="ak_live_xxxx")
+    # Security still off — the orchestrator no longer auto-runs security.
     assert rc["securityEnabled"] is False
-    assert rc["aikidoClientIdPresent"] is True
+
+
+def test_freeze_run_conditions_whitespace_aikido_id_treated_as_absent():
+    rc = freeze_run_conditions(aikido_client_id="   ")
+    assert rc["aikidoClientIdPresent"] is False
+    assert rc["securityEnabled"] is False
+
+
+def test_freeze_run_conditions_empty_aikido_id_treated_as_absent():
+    rc = freeze_run_conditions(aikido_client_id="")
+    assert rc["aikidoClientIdPresent"] is False
 
 
 # ---- Title and slash command sanity ----
 
 
 def test_slash_commands_match_plugin_names():
-    """All eight phases have a /shipwright-<phase> slash command."""
+    """Each phase planned by the orchestrator has a /shipwright-<phase> slash command.
+
+    Post-decouple (sec-report-and-orchestrator-decouple), security is no longer
+    on the planned-successor chain. The test→changelog transition is exercised
+    here; the legacy-grace security→changelog path is covered by
+    `test_security_done_to_changelog_legacy_grace_path` separately.
+    """
     # 'project' is the initial state, no predecessor
     assert initial_phase_spec()["slashCommand"] == "/shipwright-project"
 
@@ -310,13 +324,12 @@ def test_slash_commands_match_plugin_names():
         "plan": ("design", None, []),  # split_mode=none branch
         "build": ("plan", None, []),
         "test": ("build", None, []),
-        "security": ("test", None, []),
-        "changelog": ("security", None, []),
+        "changelog": ("test", None, []),  # was ("security", ...) pre-decouple
         "deploy": ("changelog", None, []),
     }
     for phase, (pred_phase, pred_split, splits) in successors.items():
         spec = next_phase_task(
-            run_conditions=_rc(security=(phase == "security")),
+            run_conditions=_rc(),
             splits_frozen=splits,
             completed=_completed(pred_phase, split_id=pred_split),
         )

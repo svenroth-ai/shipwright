@@ -323,12 +323,46 @@ def generate_pr_report(findings: list[dict[str, Any]], repo_name: str = "unknown
 # CLI
 # ---------------------------------------------------------------------------
 
+# Schema version for the machine-readable JSON sidecar emitted via
+# --json-output. Bump if you change top-level fields. Existing top-level
+# fields stay stable; new fields may be added.
+JSON_SIDECAR_SCHEMA_VERSION = 1
+
+
+def build_json_sidecar(
+    findings: list[dict[str, Any]], repo_name: str = "unknown",
+) -> dict[str, Any]:
+    """Compose the machine-readable sidecar payload.
+
+    Mirrors the data presented in generate_standard_report so an
+    automated consumer (CI, /shipwright-iterate handoff) can read this
+    file instead of parsing the markdown.
+    """
+    by_severity = Counter(f.get("severity", "unknown") for f in findings)
+    breakdown = scanner_breakdown(findings)
+    by_source = {src: int(cnt.get("total", 0)) for src, cnt in breakdown.items()}
+    return {
+        "schema_version": JSON_SIDECAR_SCHEMA_VERSION,
+        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "repo": repo_name,
+        "risk_level": calculate_risk_level(findings),
+        "total_findings": len(findings),
+        "by_severity": dict(by_severity),
+        "by_source": by_source,
+        "findings": list(findings),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate security report")
     parser.add_argument("--project-root", default=".", help="Project root directory")
     parser.add_argument("--input", help="Input JSON file (e.g. findings.json from scan.py)")
     parser.add_argument("--prompt-risks", help="Additional JSON file with prompt-injection findings")
     parser.add_argument("--output", help="Output file path")
+    parser.add_argument(
+        "--json-output",
+        help="Optional machine-readable sidecar path (e.g. securityreports/latest.json)",
+    )
     parser.add_argument("--repo", default="unknown", help="Repository name for report title")
     parser.add_argument(
         "--pr-mode",
@@ -372,12 +406,23 @@ def main() -> int:
 
     risk_level = calculate_risk_level(findings)
 
+    # Optional machine-readable sidecar (independent of --output / --format).
+    if args.json_output:
+        sidecar = build_json_sidecar(findings, args.repo)
+        sidecar_path = Path(args.json_output)
+        sidecar_path.parent.mkdir(parents=True, exist_ok=True)
+        sidecar_path.write_text(
+            json.dumps(sidecar, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
     if args.format == "json":
         result = structured_success(data={
             "command": "generate_report",
             "findings_count": len(findings),
             "risk_level": risk_level,
             "report_markdown": report,
+            "json_sidecar_path": args.json_output,
         })
         print(json.dumps(result, ensure_ascii=False))
         return 0
@@ -388,6 +433,7 @@ def main() -> int:
         result = structured_success(data={
             "command": "generate_report",
             "output_path": args.output,
+            "json_sidecar_path": args.json_output,
             "findings_count": len(findings),
             "risk_level": risk_level,
         })
@@ -395,6 +441,7 @@ def main() -> int:
         result = structured_success(data={
             "command": "generate_report",
             "report_markdown": report,
+            "json_sidecar_path": args.json_output,
             "findings_count": len(findings),
             "risk_level": risk_level,
         })

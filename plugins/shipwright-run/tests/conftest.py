@@ -16,18 +16,20 @@ _OSS_SCANNERS = ("semgrep", "trivy", "gitleaks")
 def _isolate_scanner_environment(monkeypatch):
     """Make scanner availability deterministic for the test suite.
 
-    Production behaviour: orchestrator._check_security_available() returns
-    True if SHIPWRIGHT_SCANNER_BACKEND is set, OR AIKIDO_CLIENT_ID is set, OR
-    any of (semgrep, trivy, gitleaks) is on PATH. The dev/CI host can have
-    any of those installed (semgrep is common), which makes the security
-    phase appear or disappear from `pipeline` non-deterministically across
-    workstations.
+    Iterate sec-report-and-orchestrator-decouple (2026): security is no
+    longer an orchestrator phase, so `_check_security_available()` no longer
+    exists and `freeze_run_conditions()` always returns
+    `securityEnabled: False`. This fixture is therefore a **no-op safety
+    net** for the orchestrator path — kept in place because:
 
-    This autouse fixture clears all three signals at the start of every test
-    so the default state is "no security backend". Tests that need security
-    to be active opt in explicitly via monkeypatch.setenv("AIKIDO_CLIENT_ID",
-    ...) or by patching shutil.which to return a path for one of the OSS
-    tools.
+    1. The fixture also clears AIKIDO_CLIENT_ID, which is still referenced
+       (as a diagnostic in `aikidoClientIdPresent`) — without clearing,
+       host env can leak into test assertions.
+    2. Future scanner-related env vars added by other plugins benefit from
+       the existing isolation contract.
+
+    Tests that need to assert AIKIDO_CLIENT_ID-dependent behaviour opt in
+    explicitly via `monkeypatch.setenv("AIKIDO_CLIENT_ID", ...)`.
     """
     monkeypatch.delenv("AIKIDO_CLIENT_ID", raising=False)
     monkeypatch.delenv("SHIPWRIGHT_SCANNER_BACKEND", raising=False)
