@@ -100,3 +100,118 @@ def test_mark_rejects_missing_planning_dir(tmp_path):
     assert rc == 2
     assert payload["success"] is False
     assert payload["error"] == "planning_dir_not_found"
+
+
+# ---- --review-type variants (code | plan | iterate, default) --------------
+#
+# code  → writes external_code_review_state.json (new marker for the
+#         code-review cascade in build/iterate medium+ runs)
+# plan  → writes external_review_state.json (existing behavior, explicit)
+# iterate → writes external_review_state.json (existing behavior, explicit)
+# omitted → writes external_review_state.json (backward-compat default)
+
+
+def test_mark_review_type_code_writes_distinct_marker(tmp_planning):
+    """--review-type code → external_code_review_state.json (NOT external_review_state.json)."""
+    rc, payload = run_mark([
+        "--planning-dir", str(tmp_planning),
+        "--status", "completed",
+        "--provider", "openrouter",
+        "--review-type", "code",
+        "--findings-count", "3",
+    ])
+    assert rc == 0
+    assert payload["success"] is True
+
+    code_marker = tmp_planning / "external_code_review_state.json"
+    plan_marker = tmp_planning / "external_review_state.json"
+    assert code_marker.exists(), "code review marker file must be written"
+    assert not plan_marker.exists(), \
+        "plan/iterate marker must NOT be touched when --review-type code"
+
+    state = json.loads(code_marker.read_text(encoding="utf-8"))
+    assert state["status"] == "completed"
+    assert state["provider"] == "openrouter"
+    assert state["findings_count"] == 3
+    # Marker payload uses 'review_mode' (NOT 'review_type') to disambiguate
+    # from the build dashboard's separate review_type taxonomy.
+    assert state["review_mode"] == "code"
+    assert "review_type" not in state, \
+        "marker must NOT include review_type — that name is reserved for build-side taxonomy"
+
+
+def test_mark_review_type_omitted_writes_null_review_mode(tmp_planning):
+    """No --review-type → marker payload review_mode is null (not 'plan' default)."""
+    rc, _ = run_mark([
+        "--planning-dir", str(tmp_planning),
+        "--status", "completed",
+    ])
+    assert rc == 0
+    state = json.loads(
+        (tmp_planning / "external_review_state.json").read_text(encoding="utf-8")
+    )
+    # Explicit None rather than defaulting to "plan" — avoids mis-attributing
+    # legacy iterate-flow callers that don't pass --review-type.
+    assert state["review_mode"] is None
+
+
+def test_mark_review_type_plan_keeps_existing_marker(tmp_planning):
+    """Explicit --review-type plan → still writes external_review_state.json."""
+    rc, _ = run_mark([
+        "--planning-dir", str(tmp_planning),
+        "--status", "completed",
+        "--review-type", "plan",
+    ])
+    assert rc == 0
+    assert (tmp_planning / "external_review_state.json").exists()
+    assert not (tmp_planning / "external_code_review_state.json").exists()
+
+
+def test_mark_review_type_iterate_keeps_existing_marker(tmp_planning):
+    """Explicit --review-type iterate → still writes external_review_state.json."""
+    rc, _ = run_mark([
+        "--planning-dir", str(tmp_planning),
+        "--status", "completed",
+        "--review-type", "iterate",
+    ])
+    assert rc == 0
+    assert (tmp_planning / "external_review_state.json").exists()
+    assert not (tmp_planning / "external_code_review_state.json").exists()
+
+
+def test_mark_review_type_omitted_keeps_existing_marker(tmp_planning):
+    """No --review-type → backward-compat: writes external_review_state.json."""
+    rc, _ = run_mark([
+        "--planning-dir", str(tmp_planning),
+        "--status", "completed",
+    ])
+    assert rc == 0
+    assert (tmp_planning / "external_review_state.json").exists()
+    assert not (tmp_planning / "external_code_review_state.json").exists()
+
+
+def test_mark_review_type_invalid_value_rejected(tmp_planning):
+    """Argparse must reject unknown --review-type values (non-zero exit)."""
+    rc, _ = run_mark([
+        "--planning-dir", str(tmp_planning),
+        "--status", "completed",
+        "--review-type", "bogus",
+    ])
+    assert rc != 0
+
+
+def test_mark_review_type_code_skipped_user_opt_out(tmp_planning):
+    """code marker honors skipped_user_opt_out semantics like the plan/iterate marker."""
+    rc, _ = run_mark([
+        "--planning-dir", str(tmp_planning),
+        "--status", "skipped_user_opt_out",
+        "--review-type", "code",
+        "--reason", "operator declined external code review",
+    ])
+    assert rc == 0
+    state = json.loads(
+        (tmp_planning / "external_code_review_state.json").read_text(encoding="utf-8")
+    )
+    assert state["status"] == "skipped_user_opt_out"
+    assert state["reason"] == "operator declined external code review"
+    assert state["self_review_fallback_ran"] is True

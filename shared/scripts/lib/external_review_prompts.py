@@ -1,12 +1,15 @@
 """External review prompt loading (shared).
 
-Loads the iterate_reviewer prompts from ``shared/prompts/iterate_reviewer/``.
-Plan-mode prompts (``plan_reviewer/``) intentionally remain in the plan plugin —
-they're plan-specific.
+Three review modes share this module:
 
-Single source: no fallback to plugin-local paths. If the iterate_reviewer
-directory is missing, ``load_iterate_review_prompts`` returns ``("", "")``
-(graceful degradation) instead of silently falling through to a stale copy.
+- ``load_iterate_review_prompts`` reads ``shared/prompts/iterate_reviewer/``
+- ``load_code_review_prompts`` reads ``shared/prompts/code_reviewer/``
+- ``load_plan_review_prompts`` reads ``<plugin_root>/prompts/plan_reviewer/``
+  (plan-mode prompts intentionally stay plugin-local — they're plan-specific)
+
+Single source per shared mode: no fallback to plugin-local paths. If the
+directory is missing, the function returns ``("", "")`` (graceful
+degradation). The CLI applies inline default prompts in that case.
 """
 
 from __future__ import annotations
@@ -57,4 +60,24 @@ def load_plan_review_prompts(plugin_root: Path | str) -> tuple[str, str]:
     return (
         _load(root, "plan_reviewer", "system"),
         _load(root, "plan_reviewer", "user"),
+    )
+
+
+def load_code_review_prompts(
+    prompts_root: Path | str | None = None,
+) -> tuple[str, str]:
+    """Load (system, user) prompts for code-review-mode external review.
+
+    Reads exclusively from ``<prompts_root>/code_reviewer/{system,user}``.
+    Defaults to ``shared/prompts/`` when ``prompts_root`` is None.
+
+    The user prompt template uses ``{DIFF}`` (not ``{PLAN}``) and ``{SPEC}``
+    placeholders — both are substituted by the CLI before the provider call.
+
+    Returns ``("", "")`` if the directory or files don't exist.
+    """
+    root = Path(prompts_root) if prompts_root is not None else _DEFAULT_PROMPTS_ROOT
+    return (
+        _load(root, "code_reviewer", "system"),
+        _load(root, "code_reviewer", "user"),
     )
