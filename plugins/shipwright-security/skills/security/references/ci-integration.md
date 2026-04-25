@@ -75,6 +75,26 @@ SARIF specifics:
 - **Severity score** — `severity_score` (0.0-10.0) is exposed as
   `properties.security-severity`, driving the GitHub badge.
 
+## Permissions footgun — `actions: read`
+
+The workflow declares an explicit `permissions:` block. Once you do that,
+GitHub silently sets every *unlisted* permission to **none** for the run.
+`upload-sarif@v3` needs `actions: read` to attach the SARIF to the workflow
+run; without it the SARIF validates and parses fine but the final API push
+fails with `Resource not accessible by integration`. The current block
+includes:
+
+```yaml
+permissions:
+  contents: read
+  actions: read           # required by upload-sarif@v3
+  pull-requests: write    # PR comment
+  security-events: write  # SARIF upload
+```
+
+If you ever extend the workflow with another action that hits a new GitHub
+API surface, double-check whether it needs an additional permission slot.
+
 ## Fork-PR degradation
 
 PRs from forks run with a read-only `GITHUB_TOKEN`: neither
