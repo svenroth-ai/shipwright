@@ -94,6 +94,110 @@ The code-reviewer subagent from `shipwright-build` is reused. Provide:
 
 ---
 
+## External Code-Review Cascade (medium+, default on)
+
+After the in-process `code-reviewer` subagent finishes (when it fired —
+see "When to Spawn" above), cascade an external LLM review of the same
+diff against the iterate spec. This is a second-opinion gate that mirrors
+the existing mini-plan-review Branch A/B/C interactive opt-out flow.
+
+### Trigger Rule
+
+Cascade fires **iff the internal `code-reviewer` subagent fired in this
+run** — same gate as the trigger above. No new threshold:
+
+- Diff > 100 lines, OR
+- security-sensitive files touched, OR
+- complexity = medium+
+
+For trivial/small iterates the cascade does NOT run, even if API keys are
+present. Self-review is the only review for those.
+
+For build (per-section opt-in, default off) see
+`{build_plugin_root}/skills/build/SKILL.md` Step 6c.
+
+### Operator Warning — Diff Exposure
+
+Enabling the external code-review cascade transmits the staged diff to
+a third-party LLM provider (OpenRouter, Gemini direct, or OpenAI direct,
+depending on which keys are configured). Diffs are higher-risk than
+plans because they may contain secrets, customer data, or code under
+restrictive license terms accidentally checked into the patch. If those
+risks apply to your project, set
+`shipwright_iterate_config.json` → `external_code_review.enabled: false`
+to opt out at the project level (one-time switch — falls into Branch C
+"user_disabled" below).
+
+### Branch A — `available` (keys present, not user-disabled)
+
+```bash
+git diff HEAD > /tmp/shipwright-review-diff.txt
+
+uv run {shared_root}/scripts/tools/external_review.py \
+  --mode code \
+  --diff-file /tmp/shipwright-review-diff.txt \
+  --spec-file "{iterate_spec_path}" \
+  --plugin-root "{plan_plugin_root}"
+```
+
+Parse `reviews.gemini.feedback` + `reviews.openai.feedback`. Merge any
+high/medium-severity findings into the iterate ADR's
+`External-Code-Review-Findings` table. Address before commit (apply fix,
+rerun tests) — same disposition pattern as the mini-plan-review block:
+each finding marked `accepted-and-fixed` or `rejected-with-reason`.
+
+If the CLI returns `skipped: "empty_diff"` (which happens when the diff
+file is empty or whitespace-only), the cascade is recorded as
+`skipped_user_opt_out` with reason `empty_diff` and the run continues.
+
+### Branch B — `missing_keys`
+
+STOP and ask the user verbatim:
+
+> External LLM code-review is the recommended cascade for this medium+
+> shared-infra change, but no `OPENROUTER_API_KEY` (or
+> `GEMINI_API_KEY` / `OPENAI_API_KEY`) was found in `.env.local`.
+>
+> **Option 1 (recommended):** Add a key to `.env.local` and say "ready" —
+> I'll re-check and run the cascade.
+> **Option 2:** Skip external code-review. The internal subagent already
+> ran and its findings stand. Mark this run as opted-out in the iterate
+> ADR.
+>
+> Which option?
+
+- Option 1 → re-check via `check-external-review-keys.py`, then Branch A.
+- Option 2 → log opt-out (with user's reason) in the iterate ADR. No
+  further work — the internal subagent review remains the cascade gate.
+
+### Branch C — `user_disabled`
+
+`shipwright_iterate_config.json` → `external_code_review.enabled: false`.
+Print a notice and skip the cascade. The internal subagent review remains.
+
+The cascade has its own opt-out flag — it is intentionally NOT controlled by
+the plan/iterate-mode `external_review.feedback_iterations: 0` knob. Users
+can disable plan/iterate external review while keeping the code-review
+cascade on, and vice versa.
+
+### Write the cascade marker (all branches)
+
+```bash
+uv run {shared_root}/scripts/checks/mark-review-state.py \
+  --planning-dir "{iterate_planning_dir}" \
+  --review-type code \
+  --status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
+  --provider "{openrouter | null}" \
+  --findings-count {N} \
+  --reason "{optional reason — e.g. 'empty_diff', 'user opted out: offline'}"
+```
+
+This writes `external_code_review_state.json` — distinct from the
+plan/iterate-step `external_review_state.json`. The two markers
+represent independent gates and never collide.
+
+---
+
 ## Session Handoff Protocol
 
 ### Trigger

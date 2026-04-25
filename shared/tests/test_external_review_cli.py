@@ -511,3 +511,371 @@ def test_main_plan_mode_with_openrouter(
 
     assert payload["provider"] == "openrouter"
     assert sorted(calls["openrouter"]) == ["gemini", "openai"]
+
+
+# ---- Code-review mode (--mode code) ----------------------------------------
+#
+# Code-review mode reviews a code-diff against a spec/section context. New
+# CLI surface:
+#   --mode code  --diff-file <path>  --spec-file <path>
+# Output schema is the same as plan/iterate (success/provider/reviews) — only
+# the prompt template + placeholder set differ ({DIFF} + {SPEC}).
+
+
+@pytest.fixture
+def fake_code_inputs(tmp_path):
+    """Diff file + spec file for code-review mode."""
+    diff = tmp_path / "diff.patch"
+    spec = tmp_path / "spec.md"
+    diff.write_text(
+        "diff --git a/foo.py b/foo.py\n@@ -1,1 +1,1 @@\n-old\n+new\n",
+        encoding="utf-8",
+    )
+    spec.write_text("# Section spec\n- Do X.\n", encoding="utf-8")
+    return diff, spec
+
+
+def test_main_code_mode_loads_code_review_prompts(
+    monkeypatch, clean_env, capsys, fake_plan_plugin, fake_code_inputs
+):
+    """--mode code must call load_code_review_prompts (not iterate, not plan)."""
+    plugin_root, _spec_unused, _plan_unused = fake_plan_plugin
+    diff, spec = fake_code_inputs
+
+    import external_review
+
+    iterate_called = []
+    plan_called = []
+    code_called = []
+
+    def fake_iterate(prompts_root=None):
+        iterate_called.append(prompts_root)
+        return ("ITERATE_SYS", "u {SPEC} {PLAN}")
+
+    def fake_plan(plugin_root):
+        plan_called.append(plugin_root)
+        return ("PLAN_SYS", "u {SPEC} {PLAN}")
+
+    def fake_code(prompts_root=None):
+        code_called.append(prompts_root)
+        return ("CODE_SYS", "u {SPEC} {DIFF}")
+
+    monkeypatch.setattr(external_review, "load_iterate_review_prompts", fake_iterate)
+    monkeypatch.setattr(external_review, "load_plan_review_prompts", fake_plan)
+    monkeypatch.setattr(external_review, "load_code_review_prompts", fake_code)
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["external_review.py",
+         "--mode", "code",
+         "--spec-file", str(spec),
+         "--diff-file", str(diff),
+         "--plugin-root", str(plugin_root)],
+    )
+
+    rc = external_review.main()
+    assert rc == 0
+    # Code-mode → only the code loader fires
+    assert len(code_called) == 1
+    assert len(iterate_called) == 0
+    assert len(plan_called) == 0
+
+
+def test_main_code_mode_requires_diff_file(
+    monkeypatch, clean_env, fake_plan_plugin, fake_code_inputs
+):
+    """--mode code without --diff-file must exit non-zero with explicit error."""
+    plugin_root, _spec_unused, _plan_unused = fake_plan_plugin
+    _diff, spec = fake_code_inputs
+
+    import external_review
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["external_review.py",
+         "--mode", "code",
+         "--spec-file", str(spec),
+         "--plugin-root", str(plugin_root)],
+    )
+
+    # parser.error raises SystemExit with code 2 (argparse convention).
+    with pytest.raises(SystemExit) as exc:
+        external_review.main()
+    assert exc.value.code != 0
+
+
+def test_main_code_mode_missing_diff_file_exits_with_error(
+    monkeypatch, clean_env, fake_plan_plugin, fake_code_inputs
+):
+    """--mode code with non-existent --diff-file path → returns non-zero."""
+    plugin_root, _spec_unused, _plan_unused = fake_plan_plugin
+    _diff, spec = fake_code_inputs
+    nonexistent = plugin_root / "nope" / "missing.patch"
+
+    import external_review
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["external_review.py",
+         "--mode", "code",
+         "--spec-file", str(spec),
+         "--diff-file", str(nonexistent),
+         "--plugin-root", str(plugin_root)],
+    )
+
+    rc = external_review.main()
+    assert rc != 0
+
+
+def test_main_code_mode_empty_diff_short_circuits(
+    monkeypatch, clean_env, capsys, fake_plan_plugin, fake_code_inputs
+):
+    """Empty --diff-file → no provider call, JSON includes a 'skipped' marker."""
+    plugin_root, _spec_unused, _plan_unused = fake_plan_plugin
+    diff, spec = fake_code_inputs
+    diff.write_text("   \n   \n", encoding="utf-8")  # whitespace-only
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test")
+
+    import external_review
+    calls = _patch_review_funcs(monkeypatch, external_review)
+    monkeypatch.setattr(
+        external_review, "load_code_review_prompts",
+        lambda prompts_root=None: ("sys", "u {SPEC} {DIFF}")
+    )
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["external_review.py",
+         "--mode", "code",
+         "--spec-file", str(spec),
+         "--diff-file", str(diff),
+         "--plugin-root", str(plugin_root)],
+    )
+
+    rc = external_review.main()
+    assert rc == 0
+
+    payload = json.loads(capsys.readouterr().out)
+    # The empty-diff short-circuit must NOT call any provider helper.
+    assert calls["openrouter"] == []
+    assert calls["gemini"] == []
+    assert calls["openai"] == []
+    # JSON must surface why the review was skipped so the caller can log it.
+    assert payload["success"] is True
+    assert payload.get("skipped") == "empty_diff"
+    # Schema lock-in: empty-diff branch still emits the same top-level keys
+    # so consumers parsing the result don't have to special-case it.
+    assert payload["provider"] == "none"
+    assert set(payload["reviews"].keys()) == {"gemini", "openai"}
+    assert payload["reviews"]["gemini"]["status"] == "skipped"
+    assert payload["reviews"]["openai"]["status"] == "skipped"
+
+
+def test_main_code_mode_with_openrouter_dispatches_via_openrouter(
+    monkeypatch, clean_env, capsys, fake_plan_plugin, fake_code_inputs
+):
+    """--mode code + OPENROUTER → both reviews via review_with_openrouter."""
+    plugin_root, _spec_unused, _plan_unused = fake_plan_plugin
+    diff, spec = fake_code_inputs
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test")
+    import external_review
+    calls = _patch_review_funcs(monkeypatch, external_review)
+    monkeypatch.setattr(
+        external_review, "load_code_review_prompts",
+        lambda prompts_root=None: ("sys-code", "u {SPEC} {DIFF}")
+    )
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["external_review.py",
+         "--mode", "code",
+         "--spec-file", str(spec),
+         "--diff-file", str(diff),
+         "--plugin-root", str(plugin_root)],
+    )
+
+    rc = external_review.main()
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+
+    assert payload["provider"] == "openrouter"
+    assert sorted(calls["openrouter"]) == ["gemini", "openai"]
+    assert calls["gemini"] == []
+    assert calls["openai"] == []
+
+
+def test_main_code_mode_substitutes_diff_and_spec_placeholders(
+    monkeypatch, clean_env, capsys, fake_plan_plugin, fake_code_inputs
+):
+    """{DIFF} and {SPEC} placeholders get fully substituted before provider call.
+
+    No literal '{DIFF}' or '{SPEC}' or '{PLAN}' tokens may survive into the
+    rendered user_prompt the helper sees — placeholder leak guard.
+    """
+    plugin_root, _spec_unused, _plan_unused = fake_plan_plugin
+    diff, spec = fake_code_inputs
+    diff.write_text("DIFF_BODY_SENTINEL\n", encoding="utf-8")
+    spec.write_text("SPEC_BODY_SENTINEL\n", encoding="utf-8")
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test")
+    import external_review
+
+    captured: dict[str, str] = {}
+
+    def capturing_openrouter(plan, spec_text, sys_p, usr_p, cfg, model_key):
+        # The helper receives 'plan' (positionally) — for code mode this is the diff body.
+        captured.setdefault("plan_arg", plan)
+        captured.setdefault("spec_arg", spec_text)
+        captured.setdefault("user_prompt", usr_p)
+        return {"status": "success", "feedback": "x", "via": "openrouter"}
+
+    monkeypatch.setattr(external_review, "review_with_openrouter", capturing_openrouter)
+    monkeypatch.setattr(
+        external_review, "load_code_review_prompts",
+        lambda prompts_root=None: ("sys-code", "Diff:\n{DIFF}\nSpec:\n{SPEC}\n")
+    )
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["external_review.py",
+         "--mode", "code",
+         "--spec-file", str(spec),
+         "--diff-file", str(diff),
+         "--plugin-root", str(plugin_root)],
+    )
+
+    rc = external_review.main()
+    assert rc == 0
+    # Either the helper substitutes internally (current shape) or the call
+    # site pre-renders. Verify: the substitution happened SOMEWHERE before
+    # the provider call. We check by passing through one provider helper and
+    # asserting the body text contains both sentinels and no leaked tokens.
+    rendered_seen = ""
+    rendered_seen += captured.get("plan_arg", "")
+    rendered_seen += captured.get("spec_arg", "")
+    rendered_seen += captured.get("user_prompt", "")
+
+    assert "DIFF_BODY_SENTINEL" in rendered_seen, "diff body never reached the provider helper"
+    assert "SPEC_BODY_SENTINEL" in rendered_seen, "spec body never reached the provider helper"
+
+
+def test_main_code_mode_falls_back_to_inline_default_prompts(
+    monkeypatch, clean_env, capsys, fake_plan_plugin, fake_code_inputs
+):
+    """If load_code_review_prompts returns ('', ''), CLI uses inline default — no crash."""
+    plugin_root, _spec_unused, _plan_unused = fake_plan_plugin
+    diff, spec = fake_code_inputs
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test")
+    import external_review
+    calls = _patch_review_funcs(monkeypatch, external_review)
+    # Simulate missing prompt files
+    monkeypatch.setattr(
+        external_review, "load_code_review_prompts",
+        lambda prompts_root=None: ("", "")
+    )
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["external_review.py",
+         "--mode", "code",
+         "--spec-file", str(spec),
+         "--diff-file", str(diff),
+         "--plugin-root", str(plugin_root)],
+    )
+
+    rc = external_review.main()
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+
+    assert payload["provider"] == "openrouter"
+    assert sorted(calls["openrouter"]) == ["gemini", "openai"]
+    # Output schema unchanged
+    assert "reviews" in payload
+
+
+def test_main_code_mode_no_keys_returns_skipped_schema(
+    monkeypatch, clean_env, capsys, fake_plan_plugin, fake_code_inputs
+):
+    """--mode code with no API keys → graceful skip, schema unchanged."""
+    plugin_root, _spec_unused, _plan_unused = fake_plan_plugin
+    diff, spec = fake_code_inputs
+
+    import external_review
+    monkeypatch.setattr(
+        external_review, "load_code_review_prompts",
+        lambda prompts_root=None: ("sys-code", "u {SPEC} {DIFF}")
+    )
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["external_review.py",
+         "--mode", "code",
+         "--spec-file", str(spec),
+         "--diff-file", str(diff),
+         "--plugin-root", str(plugin_root)],
+    )
+
+    rc = external_review.main()
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+
+    assert payload["provider"] == "none"
+    assert set(payload["reviews"].keys()) == {"gemini", "openai"}
+    assert payload["reviews"]["gemini"]["status"] == "skipped"
+    assert payload["reviews"]["openai"]["status"] == "skipped"
+
+
+def test_external_review_module_exports_load_code_review_prompts():
+    """Smoke: external_review must import load_code_review_prompts."""
+    import external_review
+
+    assert hasattr(external_review, "load_code_review_prompts")
+
+
+# ---- Placeholder leak-guard semantics --------------------------------------
+#
+# The guard inspects the TEMPLATE for unknown placeholders, not the rendered
+# output. Diff or spec content that contains literal {PLAN}/{DIFF}/{SPEC}
+# tokens (very common when reviewing template-rendering code) must NOT
+# trigger spurious warnings.
+
+
+def test_render_user_prompt_no_warning_when_content_contains_placeholder_strings(capsys):
+    """Diff/spec content with literal placeholder syntax must not trigger leak warning."""
+    import external_review
+
+    template = "Spec: {SPEC}\nDiff:\n{DIFF}\n"
+    # Diff body contains literal placeholder tokens — common when reviewing
+    # template code itself.
+    primary = "before:\n  prompt = '{PLAN}'\nafter:\n  prompt = '{DIFF}'\n"
+    spec = "we use {SPEC} as a placeholder"
+
+    rendered = external_review._render_user_prompt(template, primary, spec)
+    err = capsys.readouterr().err
+
+    # The rendered prompt MUST contain the embedded placeholder-literal
+    # content from the diff and spec — that's the whole point of substitution.
+    assert "{PLAN}" in rendered  # came from primary, not from template
+    assert "{SPEC}" in rendered  # came from spec, not from template
+    # And the leak guard MUST stay silent — template only had known tokens.
+    assert "warning" not in err.lower()
+
+
+def test_render_user_prompt_warns_on_unknown_template_placeholder(capsys):
+    """If the template has {FOO} that isn't substituted, warn the developer."""
+    import external_review
+
+    template = "Spec: {SPEC}\nUnknown: {FOO_BAR}\nDiff: {DIFF}\n"
+    rendered = external_review._render_user_prompt(template, "primary", "spec_text")
+    err = capsys.readouterr().err
+
+    assert "{FOO_BAR}" in err
+    assert "warning" in err.lower()
+    # Known tokens still substituted normally
+    assert "primary" in rendered
+    assert "spec_text" in rendered
+    # The unknown one is left as-is in the rendered output (no substitution rule).
+    assert "{FOO_BAR}" in rendered

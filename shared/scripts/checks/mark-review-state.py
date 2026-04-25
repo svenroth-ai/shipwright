@@ -1,16 +1,48 @@
 #!/usr/bin/env python3
 """Write external_review_state.json marker for review-step completion.
 
-Shared across plugins (plan Step 5, iterate medium+ external review). The
-marker confirms a review-step branch (Branch A/B/C) ran to completion and how
-review was handled. Downstream consumers (compliance evidence collection,
-plan resume gate, iterate finalization) read this marker to verify the gate
-passed.
+Shared across plugins (plan Step 5, iterate medium+ external review, and the
+build/iterate code-review cascade). The marker confirms a review-step branch
+(Branch A/B/C) ran to completion and how review was handled. Downstream
+consumers (compliance evidence collection, plan resume gate, iterate
+finalization) read this marker to verify the gate passed.
+
+Two marker filenames, selected by ``--review-type``:
+
+- ``--review-type plan|iterate`` (or omitted) →
+  ``external_review_state.json`` — used by the plan/iterate Branch A/B/C flow.
+- ``--review-type code`` →
+  ``external_code_review_state.json`` — used by the build/iterate code-review
+  cascade. The plan/iterate marker is intentionally NOT touched for
+  code-review runs so the two gates stay independent.
+
+The marker payload includes a ``review_mode`` field that records which mode
+this marker was written for (one of ``plan``, ``iterate``, ``code``, or
+``null`` when omitted). The field is named ``review_mode`` (NOT
+``review_type``) to disambiguate from the existing ``review_type`` taxonomy
+in the build-side dashboard (``self-review`` / ``full-review`` /
+``external-review``). The two share no semantic overlap and are tracked
+independently.
+
+Status values cover three branches plus two pragmatic re-uses for
+code-review-mode runs:
+
+- ``completed`` — review ran to completion (success or partial-success).
+- ``skipped_user_opt_out`` — operator chose to skip. Code-review-mode also
+  reuses this for the empty-diff short-circuit (with reason ``"empty_diff"``)
+  because the cascade has nothing to review and the existing status taxonomy
+  is closed by the verifier suite.
+- ``skipped_config_disabled`` — user disabled review in config. Code-review-
+  mode also reuses this when no API keys are present (the build/iterate
+  cascade collapses Branch B "missing_keys" + Branch C "user_disabled" into
+  this single status — code-review is non-interactive and missing keys are
+  treated as effective disable).
 
 Usage:
     uv run shared/scripts/checks/mark-review-state.py \\
         --planning-dir <path> \\
         --status {completed|skipped_user_opt_out|skipped_config_disabled} \\
+        [--review-type plan|iterate|code] \\
         [--provider openrouter|gemini|openai] \\
         [--reason "user opted out: offline demo"] \\
         [--findings-count 5] \\
@@ -24,6 +56,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REVIEW_STATE_FILE = "external_review_state.json"
+CODE_REVIEW_STATE_FILE = "external_code_review_state.json"
 
 ALLOWED_STATUSES = {
     "completed",
@@ -31,11 +64,24 @@ ALLOWED_STATUSES = {
     "skipped_config_disabled",
 }
 
+ALLOWED_REVIEW_TYPES = ("plan", "iterate", "code")
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Write external review state marker")
     parser.add_argument("--planning-dir", required=True)
     parser.add_argument("--status", required=True)
+    parser.add_argument(
+        "--review-type",
+        choices=ALLOWED_REVIEW_TYPES,
+        default=None,
+        help=(
+            "Which review gate this marker covers. 'plan' or 'iterate' "
+            "(default when omitted) writes external_review_state.json. "
+            "'code' writes external_code_review_state.json for the "
+            "build/iterate code-review cascade."
+        ),
+    )
     parser.add_argument("--provider", default=None)
     parser.add_argument("--reason", default=None)
     parser.add_argument("--findings-count", type=int, default=0)
@@ -67,9 +113,11 @@ def main() -> int:
         "self_review_fallback_ran": args.self_review_fallback_ran
             or args.status in {"skipped_user_opt_out", "skipped_config_disabled"},
         "reason": args.reason,
+        "review_mode": args.review_type,
     }
 
-    out_path = planning_dir / REVIEW_STATE_FILE
+    filename = CODE_REVIEW_STATE_FILE if args.review_type == "code" else REVIEW_STATE_FILE
+    out_path = planning_dir / filename
     out_path.write_text(json.dumps(marker, indent=2) + "\n", encoding="utf-8")
 
     print(json.dumps({"success": True, "marker_path": str(out_path), "state": marker}))

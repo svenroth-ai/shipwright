@@ -1,0 +1,23 @@
+Review this code change against its specification.
+
+## Specification / Section Context
+
+{SPEC}
+
+## Code Diff
+
+```diff
+{DIFF}
+```
+
+---
+
+Please review focusing on:
+1. Does the diff implement what the spec requires? Any AC missing or partially done?
+2. Concrete correctness bugs in the changed code?
+3. Security issues introduced by the change (auth, injection, secrets, untrusted input)?
+4. Do the tests actually validate behavior, or would they pass even if the implementation was wrong?
+5. Could this break existing callers that aren't shown in the diff?
+6. Specific edge cases or input states the change doesn't handle?
+
+Report concrete defects with file:line references from the diff. Skip style and naming nits.
