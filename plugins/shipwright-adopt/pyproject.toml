@@ -1,6 +1,6 @@
 [project]
 name = "shipwright-adopt"
-version = "0.1.0"
+version = "0.2.0"
 description = "Claude Code plugin for onboarding existing repositories into the Shipwright SDLC"
 requires-python = ">=3.11"
 readme = "../../README.md"
