@@ -17,6 +17,7 @@ import os
 import shutil
 import subprocess
 import sys
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
@@ -29,7 +30,16 @@ sys.path.insert(0, str(_SHARED_SCRIPTS))
 if _LOCAL_LIB not in sys.path:
     sys.path.insert(0, _LOCAL_LIB)
 
+from phase_state_machine import (  # noqa: E402
+    freeze_run_conditions,
+    initial_phase_spec,
+)
+
 CONFIG_NAME = "shipwright_run_config.json"
+
+# Multi-session pipeline schema version. F2+ phase-lifecycle subcommands
+# (claim-phase-task, complete-phase-task, etc.) hard-fail on anything else.
+SCHEMA_VERSION = 2
 
 # Compliance plugin location (sibling plugin)
 _THIS_PLUGIN = Path(__file__).parent.parent.parent
@@ -179,6 +189,52 @@ def save_run_config(project_root: Path, config: dict[str, Any]) -> None:
     path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
 
 
+def is_v2_config(config: dict[str, Any]) -> bool:
+    """Return True if config carries the multi-session schema (v2)."""
+    return config.get("schemaVersion") == SCHEMA_VERSION
+
+
+def _new_run_id() -> str:
+    """Stable run id: 'run-' + first 8 hex chars of a uuid4."""
+    return "run-" + uuid.uuid4().hex[:8]
+
+
+def _new_phase_task_id() -> str:
+    return "ptk-" + uuid.uuid4().hex[:8]
+
+
+def _build_initial_phase_task(now_iso: str) -> dict[str, Any]:
+    """Construct the initial phase_tasks[] entry for the project phase.
+
+    Pre-binds a sessionUuid so the WebUI/launch-card can render the user's
+    paste-able command immediately. The Plan v3 launchCommandHint is
+    populated by the launch-card renderer (WebUI or master skill banner) —
+    we store the slashCommand here as the authoritative source.
+    """
+    spec = initial_phase_spec()
+    return {
+        "phaseTaskId": _new_phase_task_id(),
+        "phase": spec["phase"],
+        "splitId": spec["splitId"],
+        "sessionUuid": str(uuid.uuid4()),
+        "version": 1,
+        "status": "awaiting_launch",
+        "title": "project",
+        "description": "Decompose requirements into splits + specs",
+        "slashCommand": spec["slashCommand"],
+        "prerequisites": spec["prerequisites"],
+        "claimedBySessionUuid": None,
+        "claimAttemptedAt": None,
+        "executionCount": 0,
+        "createdAt": now_iso,
+        "awaitingLaunchAt": now_iso,
+        "startedAt": None,
+        "completedAt": None,
+        "result": None,
+        "errors": [],
+    }
+
+
 def create_config(
     scope: str,
     profile: Optional[str],
@@ -186,25 +242,55 @@ def create_config(
     deploy_target: str,
     project_root: Path,
 ) -> dict[str, Any]:
-    """Create initial orchestrator config.
+    """Create initial orchestrator config (v2 multi-session schema).
 
     If a standalone config exists (from prior /shipwright-project or similar),
     merges its completed_steps so already-finished phases are not repeated.
+    Backwards-compat note: standalone configs use the legacy v1 fields
+    (current_step / completed_steps); we still merge those, but the new
+    config we write is always v2 (schemaVersion: 2 + phase_tasks[]).
     """
     pipeline = build_pipeline()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    run_id = _new_run_id()
 
-    # Merge: carry over completed_steps from standalone invocations
+    # Merge: carry over completed_steps from standalone invocations (legacy v1 shape)
     existing = load_run_config(project_root)
     prior_completed: list[str] = []
     if existing.get("standalone") and existing.get("completed_steps"):
-        # Only keep steps that exist in the new pipeline
         prior_completed = [s for s in existing["completed_steps"] if s in pipeline]
 
-    # Determine starting step (first uncompleted pipeline step)
+    # Freeze runConditions at creation — Plan v3 §State Machine
+    aikido_id = os.environ.get("AIKIDO_CLIENT_ID")
+    run_conditions = freeze_run_conditions(aikido_client_id=aikido_id)
+
+    # Initial phase_tasks[] — only the project task is materialized at run start.
+    # Subsequent tasks are appended by complete-phase-task → plan_next_phase
+    # in F2. If standalone-merge already completed 'project', we still emit the
+    # initial entry but with status=skipped to keep the audit trail clean.
+    initial_task = _build_initial_phase_task(now_iso)
+    if "project" in prior_completed:
+        initial_task["status"] = "skipped"
+        initial_task["completedAt"] = now_iso
+
+    # Determine v1-compat starting step (first uncompleted pipeline step).
+    # Kept parallel to phase_tasks[] until F2 wires the phase-lifecycle
+    # subcommands (claim/complete/recover) — until then, update_step() and
+    # get_next_step() still rely on current_step/completed_steps.
     remaining = [s for s in pipeline if s not in prior_completed]
     current_step = remaining[0] if remaining else None
 
-    config = {
+    config: dict[str, Any] = {
+        # --- v2 multi-session fields ---
+        "schemaVersion": SCHEMA_VERSION,
+        "runId": run_id,
+        "runConditions": run_conditions,
+        "splits_frozen": [],
+        "completed_phase_task_ids": (
+            [initial_task["phaseTaskId"]] if initial_task["status"] == "skipped" else []
+        ),
+        "phase_tasks": [initial_task],
+        # --- v1 compat (kept until F2 hard-cut) ---
         "scope": scope,
         "profile": profile,
         "autonomy": autonomy,
@@ -213,7 +299,7 @@ def create_config(
         "status": "in_progress" if current_step else "complete",
         "current_step": current_step,
         "completed_steps": prior_completed,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_iso,
         # Iterate 12.0 (ADR-027): per-phase audit trail parallel to
         # iterate_history. Populated by tools/append_phase_history.py from
         # 12.1+ phase canon wiring. Empty on fresh creation.
