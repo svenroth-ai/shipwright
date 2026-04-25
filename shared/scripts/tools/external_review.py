@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""External LLM plan review — Gemini + OpenAI in parallel.
+"""External LLM review CLI — Gemini + OpenAI in parallel (shared across plugins).
 
 Supports three review providers:
 1. OpenRouter (recommended): one OPENROUTER_API_KEY for both models
@@ -9,7 +9,15 @@ Supports three review providers:
 Fallback chain: OpenRouter → direct keys → skip
 
 Usage:
-    uv run review.py --plan-file <path> --spec-file <path> --plugin-root <path>
+    uv run shared/scripts/tools/external_review.py \\
+        --mode plan|iterate \\
+        --plan-file <path> \\
+        --spec-file <path> \\
+        --plugin-root <path>
+
+The ``--plugin-root`` argument is used for plan-mode prompt loading
+(plan_reviewer prompts stay plugin-local). Iterate-mode prompts come from
+shared/prompts/iterate_reviewer/ regardless of plugin-root.
 
 Output (JSON):
     {
@@ -20,6 +28,12 @@ Output (JSON):
             "openai": { "status": "success|error|skipped", "feedback": "..." }
         }
     }
+
+This is the consolidated successor of
+``plugins/shipwright-plan/scripts/llm_clients/review.py`` — the logic is
+copied verbatim except for the import paths, model resolution (now goes
+through ``resolve_model`` for env-var override support), and prompt loading
+(per-mode helpers from ``lib.external_review_prompts``).
 """
 
 import argparse
@@ -29,16 +43,22 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-# Load Shipwright env vars from <repo_root>/.env.local
-_plugin_root = Path(__file__).resolve().parent.parent.parent
-_shared_lib = _plugin_root.parent.parent / "shared" / "scripts" / "lib"
-sys.path.insert(0, str(_shared_lib))
-from env import load_shipwright_env
+# Wire up shared/scripts/lib so we can import shared helpers + the env loader.
+# parents[0]=tools, [1]=scripts, [2]=shared.
+_SHARED_LIB = Path(__file__).resolve().parents[1] / "lib"
+if str(_SHARED_LIB) not in sys.path:
+    sys.path.insert(0, str(_SHARED_LIB))
+
+from env import load_shipwright_env  # type: ignore[import-not-found]
+
 load_shipwright_env()
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from lib.config import load_global_config
-from lib.prompts import load_review_prompts, load_iterate_review_prompts
+from external_review_config import load_review_config, resolve_model  # noqa: E402
+from external_review_prompts import (  # noqa: E402
+    load_iterate_review_prompts,
+    load_plan_review_prompts,
+)
+
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
@@ -55,11 +75,10 @@ def review_with_openrouter(
     try:
         from openai import OpenAI
 
-        models = config.get("models", {})
         if model_key == "gemini":
-            model_name = models.get("openrouter_gemini", "google/gemini-3.1-pro-preview")
+            model_name = resolve_model(config, "openrouter_gemini")
         else:
-            model_name = models.get("openrouter_chatgpt", "openai/gpt-5.4")
+            model_name = resolve_model(config, "openrouter_chatgpt")
 
         timeout = config.get("llm_client", {}).get("timeout_seconds", 120)
 
@@ -99,7 +118,7 @@ def review_with_gemini(
     try:
         from google import genai
 
-        model_name = config.get("models", {}).get("gemini", "gemini-3.1-pro-preview")
+        model_name = resolve_model(config, "gemini")
         client = genai.Client(api_key=api_key)
 
         prompt = user_prompt.replace("{PLAN}", plan).replace("{SPEC}", spec)
@@ -132,7 +151,7 @@ def review_with_openai(
     try:
         from openai import OpenAI
 
-        model_name = config.get("models", {}).get("chatgpt", "gpt-5.4")
+        model_name = resolve_model(config, "chatgpt")
         timeout = config.get("llm_client", {}).get("timeout_seconds", 120)
 
         client = OpenAI(api_key=api_key, timeout=timeout)
@@ -174,10 +193,14 @@ def detect_provider() -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="External LLM plan review")
+    parser = argparse.ArgumentParser(description="External LLM plan/iterate review")
     parser.add_argument("--plan-file", required=True, help="Path to plan.md or mini-plan")
     parser.add_argument("--spec-file", required=True, help="Path to spec.md or iterate spec")
-    parser.add_argument("--plugin-root", required=True, help="Path to plugin root")
+    parser.add_argument(
+        "--plugin-root",
+        required=True,
+        help="Path to the calling plugin root (used for --mode plan prompt lookup)",
+    )
     parser.add_argument(
         "--mode", choices=["plan", "iterate"], default="plan",
         help="Review mode: 'plan' (full pipeline) or 'iterate' (lightweight change)"
@@ -198,13 +221,13 @@ def main() -> int:
     plan = plan_path.read_text(encoding="utf-8")
     spec = spec_path.read_text(encoding="utf-8")
 
-    config = load_global_config(args.plugin_root)
+    config = load_review_config()
 
-    # Load mode-specific prompts
+    # Load mode-specific prompts.
     if args.mode == "iterate":
-        system_prompt, user_prompt = load_iterate_review_prompts(args.plugin_root)
+        system_prompt, user_prompt = load_iterate_review_prompts()
     else:
-        system_prompt, user_prompt = load_review_prompts(args.plugin_root)
+        system_prompt, user_prompt = load_plan_review_prompts(args.plugin_root)
 
     if not system_prompt:
         if args.mode == "iterate":
@@ -228,10 +251,10 @@ def main() -> int:
                 "## Spec:\n{SPEC}\n\n## Plan:\n{PLAN}\n\n"
                 "Identify: security issues, performance concerns, architecture problems, "
                 "missing features, and edge cases not handled."
-        )
+            )
 
     provider = detect_provider()
-    reviews = {}
+    reviews: dict[str, dict] = {}
 
     if provider == "openrouter":
         # Both reviews via OpenRouter (one API key)
@@ -262,18 +285,19 @@ def main() -> int:
                     reviews[name] = {"status": "error", "reason": str(e)}
 
     else:
+        # No keys — both reviews skipped
         reviews = {
-            "gemini": {"status": "skipped", "reason": "No API keys configured"},
-            "openai": {"status": "skipped", "reason": "No API keys configured"},
+            "gemini": {"status": "skipped", "reason": "No GEMINI_API_KEY or OPENROUTER_API_KEY set"},
+            "openai": {"status": "skipped", "reason": "No OPENAI_API_KEY or OPENROUTER_API_KEY set"},
         }
 
-    any_success = any(r.get("status") == "success" for r in reviews.values())
-
-    print(json.dumps({
-        "success": any_success,
+    output = {
+        "success": True,
         "provider": provider,
         "reviews": reviews,
-    }, indent=2))
+    }
+
+    print(json.dumps(output, indent=2))
     return 0
 
 

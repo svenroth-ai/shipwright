@@ -23,13 +23,18 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from lib.config import (
-    load_global_config,
-    is_external_review_enabled,
-    is_e2e_enabled,
-    get_external_review_status,
-)
+# Wire up shared/scripts/lib for the external-review helpers (extracted from this plugin).
+# parents[0]=checks, [1]=scripts, [2]=shipwright-plan, [3]=plugins, [4]=repo_root.
+_SHARED_LIB = Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"
+if str(_SHARED_LIB) not in sys.path:
+    sys.path.insert(0, str(_SHARED_LIB))
+
+from lib.config import load_global_config, is_e2e_enabled
 from lib.sections import parse_section_manifest, get_missing_sections
+from external_review_config import (  # noqa: E402
+    get_external_review_status,
+    load_review_config,
+)
 
 
 SESSION_STATE_FILE = "shipwright_plan_session.json"
@@ -141,9 +146,12 @@ def main() -> int:
 
     state = detect_state(planning_dir)
 
-    # Load config for capabilities
+    # Load configs:
+    # - plan-local config for capabilities (e2e_test_plan, vertex_ai, context)
+    # - shared review config for external-review status (models, llm_client, external_review)
     global_config = load_global_config(args.plugin_root)
-    review_status = get_external_review_status(global_config)
+    review_config = load_review_config()
+    review_status = get_external_review_status(review_config)
 
     result = {
         "success": True,

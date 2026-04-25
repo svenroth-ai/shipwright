@@ -3,7 +3,7 @@
 Implements W5 — ``planning/external_review_state.json`` exists with a
 ``status=completed`` OR a ``skipped_*`` status carrying a non-empty
 ``reason`` (no-keys-marker variant). Matches the marker written by
-``plugins/shipwright-plan/scripts/checks/mark-review-state.py``.
+``shared/scripts/checks/mark-review-state.py``.
 """
 
 from __future__ import annotations

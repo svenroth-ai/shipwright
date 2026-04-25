@@ -277,11 +277,16 @@ Read `external_review_status` from the session report (printed in First Actions 
 External review keys are present and `feedback_iterations > 0`. Run the full external review:
 
 ```bash
-uv run --project {plugin_root} {plugin_root}/scripts/llm_clients/review.py \
+uv run --project {plugin_root} {shared_root}/scripts/tools/external_review.py \
+  --mode plan \
   --plan-file "{planning_dir}/plan.md" \
   --spec-file "{spec_file}" \
   --plugin-root "{plugin_root}"
 ```
+
+(`{shared_root}` resolves to the monorepo's `shared/` directory — typically
+`{plugin_root}/../../shared`. The CLI consolidated into `shared/` in v0.5.x;
+plan-mode prompts still load from `{plugin_root}/prompts/plan_reviewer/`.)
 
 This runs Gemini and OpenAI reviews **in parallel** via ThreadPoolExecutor (OpenRouter when set, direct APIs otherwise).
 
@@ -318,7 +323,7 @@ Do NOT proceed until the user explicitly chooses.
 
 - **User picks Option 1:** wait for their "ready" confirmation, then re-check:
   ```bash
-  uv run --project {plugin_root} {plugin_root}/scripts/checks/check-external-review-keys.py
+  uv run --project {plugin_root} {shared_root}/scripts/checks/check-external-review-keys.py
   ```
   If `available: true`, fall into Branch A (run `review.py`, integrate, log, then Step 5b).
   If still `false`, ask the user again (they may have edited the wrong file or forgotten to save).
@@ -365,7 +370,7 @@ Then go to **Step 5b**.
 After exactly one branch completes, write the marker file so Step 6 can advance:
 
 ```bash
-uv run --project {plugin_root} {plugin_root}/scripts/checks/mark-review-state.py \
+uv run --project {plugin_root} {shared_root}/scripts/checks/mark-review-state.py \
   --planning-dir "{planning_dir}" \
   --status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
   --provider "{openrouter | gemini | openai | null}" \
