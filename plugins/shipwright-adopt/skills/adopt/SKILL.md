@@ -86,24 +86,78 @@ summary, nested projects. Pure read-only.
 language (`typescript`, `javascript`, `python`, `ruby`, `php`), a
 `dev`-command was detected, and `--skip-crawl` was not passed.
 
-Use the existing Shipwright infrastructure:
+**Service-resolution hierarchy** (introduced 2026-04-25 with multi-
+service `dev_server.py` v0.5.0). Choose ONE of three branches:
+
+**Branch 1 — matched profile (any non-generic).** If
+`snapshot.profile.matched != "generic"`, the matched profile is
+authoritative. It knows what to start (single-service via `dev_server`
+block, or multi-service via `services: [...]` array). Run:
+
+```bash
+uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py start \
+  --cwd <cwd> --profile <matched>
+```
+
+The detector's `multi_service` signal is informational here; the
+profile's intent wins.
+
+**Branch 2 — generic match + multi-service detected.** If
+`snapshot.profile.matched == "generic"` AND
+`snapshot.stack.multi_service.detected == true`, build a transient
+services array from the detector's output and pass it inline:
+
+- `confidence: high` → proceed without prompting.
+- `confidence: medium` + interactive run → ask via `AskUserQuestion`:
+  *"Detected multi-service layout: <names>. Run all of them for the
+  crawl?"* Default Yes. On Yes → inline path. On No → fall through to
+  Branch 3.
+- `confidence: medium` + non-interactive run (autonomous adopt,
+  `--non-interactive`, missing `AskUserQuestion`) → fall through to
+  Branch 3 silently. **Autonomous adopt never spawns extra services on
+  a guess.**
+
+```bash
+SERVICES_JSON='[
+  {"name":"<name>","command":"<dev_command>","port":<port>,
+   "host":"localhost","scheme":"http","ready_path":"/"},
+  ...
+]'
+uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py start \
+  --cwd <cwd> --services-json "$SERVICES_JSON"
+```
+
+**Branch 3 — single-service / fallback.** Same as Branch 1 with
+whatever profile matched (`generic` if nothing else):
+
+```bash
+uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py start \
+  --cwd <cwd> --profile <matched-or-generic>
+```
+
+After the dev server is up, run the crawl + stop sequence common to
+all branches:
 
 ```bash
 uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/playwright_setup.py \
   --cwd <cwd> --profile <matched>
-uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py start \
-  --cwd <cwd> --profile <matched>
+# (start command from one of the three branches above)
 uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/route_crawler.py \
-  --cwd <cwd> --base-url http://localhost:<port> \
+  --cwd <cwd> --base-url <primary_url_from_dev_server_start_output> \
   --max-depth 3 --max-pages 50 \
   --output <cwd>/.shipwright/adopt/routes.json \
   --screenshots <cwd>/.shipwright/adopt/screenshots/
 uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py stop --cwd <cwd>
 ```
 
-If the dev-server fails to become healthy within 60s, OR the crawl
-produces zero routes, **skip** and fall back to AST-based `features[]`
-from the snapshot. Document the skip reason in the eventual handoff.
+The `--base-url` is read from the `url` field in `dev_server.py
+start`'s JSON output (top-level — points to the primary service in
+multi-service mode).
+
+If the dev-server fails to become healthy within its profile's
+`ready_timeout_seconds`, OR the crawl produces zero routes, **skip**
+and fall back to AST-based `features[]` from the snapshot. Document
+the skip reason in the eventual handoff.
 
 ### Step B.8 — Semantic Enrichment (Layer 2, inline)
 

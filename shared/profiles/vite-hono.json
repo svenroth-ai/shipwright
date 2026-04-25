@@ -1,0 +1,78 @@
+{
+  "name": "vite-hono",
+  "description": "Split Vite+React frontend with Hono backend (npm/tsx). Two services managed in parallel by dev_server.py.",
+  "version": "1.0.0",
+
+  "stack": {
+    "runtime": {
+      "node": "20.x",
+      "typescript": "^5.6.0"
+    },
+    "frontend": {
+      "vite": "^6.0.0",
+      "react": "^19.0.0",
+      "react-dom": "^19.0.0"
+    },
+    "backend": {
+      "hono": "^4.7.0",
+      "@hono/node-server": "^1.14.0",
+      "tsx": "^4.19.0"
+    }
+  },
+
+  "services": [
+    {
+      "name": "backend",
+      "command": "npm --prefix server run dev",
+      "host": "localhost",
+      "scheme": "http",
+      "port": 3847,
+      "ready_path": "/api/diagnostics",
+      "ready_timeout_seconds": 60
+    },
+    {
+      "name": "frontend",
+      "command": "npm --prefix client run dev",
+      "host": "localhost",
+      "scheme": "http",
+      "port": 5173,
+      "ready_path": "/",
+      "ready_timeout_seconds": 60,
+      "depends_on": ["backend"],
+      "primary": true
+    }
+  ],
+
+  "testing": {
+    "unit": {
+      "framework": "vitest",
+      "version": "^3.0.0"
+    },
+    "e2e": {
+      "framework": "@playwright/test",
+      "version": "^1.59.1"
+    }
+  },
+
+  "linting": {
+    "eslint": "^9.0.0"
+  },
+
+  "package_manager": "npm",
+  "rules": ["tests", "components", "config"],
+
+  "folder_structure": {
+    "client/": "Vite frontend (React + TypeScript)",
+    "server/": "Hono backend (Node + TypeScript)",
+    "client/src/": "Frontend source",
+    "server/src/": "Backend source",
+    "e2e/": "Playwright E2E tests (created by /shipwright-adopt or /shipwright-iterate)"
+  },
+
+  "env_files": {
+    ".env.local": "Local development overrides (PORT, VITE_PORT, etc.) — not committed",
+    ".env.example": "Template (committed)"
+  },
+
+  "notes": "This profile assumes Node 20.x + npm 10+. Service commands use `npm --prefix <dir> run dev`; the `--prefix` flag MUST come before the subcommand for unambiguous parsing on modern npm. Frontend `depends_on: backend` ensures the Vite proxy target is up before the SPA shell is considered ready. Frontend is `primary: true` so dev_server.py's top-level `pid`/`url` reflect the browser-facing URL."
+}

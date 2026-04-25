@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Multi-service dev-server support.** Stack profiles can now declare a
+  `services: [...]` array (each: `{name, command, port, host?, scheme?,
+  ready_path?, ready_timeout_seconds?, depends_on?, primary?}`).
+  `shared/scripts/dev_server.py` starts every declared service in
+  topological order, waits per-service for liveness + port-open + optional
+  HTTP `ready_path` (2xx/3xx, IPv4+IPv6 dual-probe), and atomically writes
+  v2 state only after every service is healthy. Partial failure rolls back
+  in reverse start order. Legacy single-service `dev_server: {...}` profiles
+  continue to work via internal normalization. New CLI fallback flag
+  `--services-json '<inline>'` lets adopt pass an inline services array
+  when no profile matches. Closes the `--skip-crawl` workaround for split
+  frontend+backend repos.
+- **`shared/profiles/vite-hono.json`** — first-class profile for split
+  Vite+React frontend + Hono backend (Node + tsx). Derived from
+  shipwright-webui's shape (Hono :3847 with `/api/diagnostics` health,
+  Vite :5173 with frontend depends_on backend). Demonstrates the new
+  `services: [...]` schema in a real profile.
+- **Multi-service detector** in `shipwright-adopt` — detects split
+  frontend/backend layouts (`client/server`, `frontend/backend`,
+  `web/api`) with framework-signal requirement and Vite-proxy
+  high-confidence promotion. Surfaces `stack.multi_service: {detected,
+  confidence, services, evidence}` in the adopt snapshot.
+- **`shipwright-adopt` Step B.5 hierarchy** (SKILL.md): three-branch
+  resolution order — matched profile (any non-generic) wins; else
+  multi-service detector with high-confidence auto / medium-confidence
+  interactive / non-interactive fallback to single-service; else legacy
+  single-service. Autonomous adopt never spawns extra services on a
+  guess.
+- **`stack_detector` signature merge** (AC12): when a project has no
+  root `package.json` (or root has empty deps + devDeps) AND the
+  multi-service detector fires, per-service package.json deps are merged
+  into the matcher signature so Jaccard scoring can pick a multi-service
+  profile (e.g. vite-hono).
+
+### Changed
+
+- `dev_server.py` JSON output is additive: top-level `pid`/`url`/
+  `running`/`ready`/`started_by_us` continue to reflect the primary
+  service for legacy callers; new top-level `services: [...]` is added.
+  Multi-service `cmd_status` returns `pid`/`url=None` when the primary
+  is not alive (avoids advertising a URL that points to nothing).
+- Port-probe function renamed `_is_port_in_use` → `_is_port_in_use_for_host`
+  (the legacy name remains as a dual-stack convenience wrapper).
+- `cmd_start` no longer treats "port in use without a state file" as
+  "already running" — it returns an error and never claims ownership of
+  unowned processes (Round-1 review BLOCKER fix). Stale state pointing
+  to a different service set with live PIDs is rejected with a clear
+  error rather than silently overwritten.
+
 ## [0.4.0] - 2026-04-24
 
 **Breaking change:** the Shipwright Command Center WebUI has been

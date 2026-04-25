@@ -2,7 +2,7 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "shipwright",
   "description": "Shipwright SDLC — AI-powered software delivery lifecycle framework",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "owner": {
     "name": "svenroth.ai",
     "url": "https://github.com/svenroth-ai"
@@ -107,7 +107,7 @@
     {
       "name": "shipwright-adopt",
       "description": "Onboard an existing (brownfield) repository into the Shipwright SDLC — analyze stack + routes + conventions, generate CLAUDE.md + agent_docs + configs + E2E baseline",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "source": "./plugins/shipwright-adopt",
       "category": "development",
       "tags": ["adoption", "onboarding", "brownfield", "legacy", "documentation"]
