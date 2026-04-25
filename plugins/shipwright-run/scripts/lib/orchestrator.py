@@ -673,6 +673,60 @@ def main() -> int:
     p = subparsers.add_parser("get-build-progress")
     p.add_argument("--project-root", default=".")
 
+    # ----- F2 phase-task lifecycle subcommands ---------------------------
+    # All return JSON on stdout. Exit codes:
+    #   0 = ok
+    #   1 = generic error (not_found, invalid args)
+    #   2 = fail-closed (block) — used by phase_session_start.py / phase_user_prompt_validate.py
+
+    p = subparsers.add_parser("get-phase-task")
+    p.add_argument("--project-root", default=".")
+    p.add_argument("--phase-task-id", required=True)
+
+    p = subparsers.add_parser("find-phase-task-by-session-uuid")
+    p.add_argument("--project-root", default=".")
+    p.add_argument("--session-uuid", required=True)
+
+    p = subparsers.add_parser("validate-prerequisites")
+    p.add_argument("--project-root", default=".")
+    p.add_argument("--phase-task-id", required=True)
+
+    p = subparsers.add_parser("claim-phase-task")
+    p.add_argument("--project-root", default=".")
+    p.add_argument("--phase-task-id", required=True)
+    p.add_argument("--session-uuid", required=True)
+    p.add_argument("--expected-phase", required=True)
+
+    p = subparsers.add_parser("complete-phase-task")
+    p.add_argument("--project-root", default=".")
+    p.add_argument("--phase-task-id", required=True)
+    p.add_argument("--session-uuid", required=True)
+    p.add_argument("--version", type=int, required=True,
+                   help="Expected version (CAS check vs current task.version)")
+    p.add_argument("--result-json", required=True,
+                   help="Path to a JSON file containing the result payload")
+
+    p = subparsers.add_parser("mark-phase-failed")
+    p.add_argument("--project-root", default=".")
+    p.add_argument("--phase-task-id", required=True)
+    p.add_argument("--session-uuid", required=True)
+    p.add_argument("--version", type=int, required=True)
+    p.add_argument("--error", required=True)
+
+    p = subparsers.add_parser("recover-phase-task")
+    p.add_argument("--project-root", default=".")
+    p.add_argument("--phase-task-id", required=True)
+    p.add_argument("--force-status", default="awaiting_launch",
+                   choices=["awaiting_launch", "failed", "skipped"])
+
+    p = subparsers.add_parser("freeze-splits")
+    p.add_argument("--project-root", default=".")
+
+    p = subparsers.add_parser("plan-next-phase")
+    p.add_argument("--project-root", default=".")
+    p.add_argument("--phase-task-id", required=True,
+                   help="phaseTaskId of the COMPLETED predecessor task")
+
     args = parser.parse_args()
     project_root = Path(args.project_root).resolve()
 
@@ -695,7 +749,113 @@ def main() -> int:
         result = get_build_progress(project_root)
         print(json.dumps(result, indent=2))
 
+    # ----- F2 lifecycle subcommand dispatch ------------------------------
+    elif args.command in {
+        "get-phase-task", "find-phase-task-by-session-uuid",
+        "validate-prerequisites", "claim-phase-task", "complete-phase-task",
+        "mark-phase-failed", "recover-phase-task", "freeze-splits",
+        "plan-next-phase",
+    }:
+        return _dispatch_lifecycle(args, project_root)
+
     return 0
+
+
+def _dispatch_lifecycle(args: argparse.Namespace, project_root: Path) -> int:
+    """Run an F2 phase-lifecycle subcommand. Returns process exit code.
+
+    Exit code map:
+        0 -> result["ok"] is True
+        2 -> fail-closed reasons (wrong_skill, duplicate_claim,
+             phase_already_terminal, prereqs_unmet, stale_version,
+             stale_session) — used by hooks for SessionStart/UserPromptSubmit blocks
+        1 -> generic error (not_found, invalid args, etc.)
+    """
+    from phase_task_lifecycle import (  # noqa: WPS433 (lazy import keeps F1 base import surface clean)
+        claim_phase_task,
+        complete_phase_task,
+        find_phase_task_by_session_uuid,
+        freeze_splits,
+        get_phase_task,
+        mark_phase_failed,
+        plan_next_phase,
+        recover_phase_task,
+        validate_prerequisites,
+    )
+
+    fail_closed_reasons = frozenset({
+        "wrong_skill", "duplicate_claim", "phase_already_terminal",
+        "prereqs_unmet", "stale_version", "stale_session",
+        "invalid_status", "invalid_status_for_completion",
+    })
+
+    cmd = args.command
+    result: dict[str, Any]
+    if cmd == "get-phase-task":
+        result = get_phase_task(project_root, args.phase_task_id)
+    elif cmd == "find-phase-task-by-session-uuid":
+        found = find_phase_task_by_session_uuid(project_root, args.session_uuid)
+        result = {"ok": True, "phase_task": found} if found else {"ok": False, "reason": "not_found"}
+    elif cmd == "validate-prerequisites":
+        result = validate_prerequisites(project_root, args.phase_task_id)
+    elif cmd == "claim-phase-task":
+        result = claim_phase_task(
+            project_root,
+            phase_task_id=args.phase_task_id,
+            session_uuid=args.session_uuid,
+            expected_phase=args.expected_phase,
+        )
+    elif cmd == "complete-phase-task":
+        result_path = Path(args.result_json)
+        if not result_path.exists():
+            print(json.dumps({"ok": False, "reason": "result_json_not_found",
+                              "path": str(result_path)}), file=sys.stderr)
+            return 1
+        try:
+            payload = json.loads(result_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            print(json.dumps({"ok": False, "reason": "result_json_parse_error",
+                              "error": str(exc)}), file=sys.stderr)
+            return 1
+        result = complete_phase_task(
+            project_root,
+            phase_task_id=args.phase_task_id,
+            session_uuid=args.session_uuid,
+            expected_version=args.version,
+            result=payload,
+        )
+    elif cmd == "mark-phase-failed":
+        result = mark_phase_failed(
+            project_root,
+            phase_task_id=args.phase_task_id,
+            session_uuid=args.session_uuid,
+            expected_version=args.version,
+            error=args.error,
+        )
+    elif cmd == "recover-phase-task":
+        result = recover_phase_task(
+            project_root,
+            phase_task_id=args.phase_task_id,
+            force_status=args.force_status,
+        )
+    elif cmd == "freeze-splits":
+        result = freeze_splits(project_root)
+    elif cmd == "plan-next-phase":
+        result = plan_next_phase(
+            project_root, completed_phase_task_id=args.phase_task_id,
+        )
+    else:
+        # Unreachable — argparse already validates choices
+        print(json.dumps({"ok": False, "reason": "unknown_command", "command": cmd}),
+              file=sys.stderr)
+        return 1
+
+    print(json.dumps(result, indent=2))
+    if result.get("ok"):
+        return 0
+    if result.get("reason") in fail_closed_reasons:
+        return 2
+    return 1
 
 
 if __name__ == "__main__":
