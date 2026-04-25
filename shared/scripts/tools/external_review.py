@@ -8,21 +8,35 @@ Supports three review providers:
 
 Fallback chain: OpenRouter → direct keys → skip
 
-Usage:
+Usage (plan / iterate modes):
     uv run shared/scripts/tools/external_review.py \\
         --mode plan|iterate \\
         --plan-file <path> \\
         --spec-file <path> \\
         --plugin-root <path>
 
+Usage (code-review mode):
+    uv run shared/scripts/tools/external_review.py \\
+        --mode code \\
+        --diff-file <path> \\
+        --spec-file <path> \\
+        --plugin-root <path>
+
 The ``--plugin-root`` argument is used for plan-mode prompt loading
 (plan_reviewer prompts stay plugin-local). Iterate-mode prompts come from
-shared/prompts/iterate_reviewer/ regardless of plugin-root.
+shared/prompts/iterate_reviewer/, code-mode prompts from
+shared/prompts/code_reviewer/, regardless of plugin-root.
+
+Mode → primary-input mapping:
+- ``plan``    → ``--plan-file`` (full implementation plan vs project spec)
+- ``iterate`` → ``--plan-file`` (mini-plan vs iterate spec)
+- ``code``    → ``--diff-file`` (code diff vs section/iterate spec)
 
 Output (JSON):
     {
         "success": true/false,
         "provider": "openrouter" | "direct" | "none",
+        "skipped": "empty_diff",  // optional, code-mode only
         "reviews": {
             "gemini": { "status": "success|error|skipped", "feedback": "..." },
             "openai": { "status": "success|error|skipped", "feedback": "..." }
@@ -39,6 +53,7 @@ through ``resolve_model`` for env-var override support), and prompt loading
 import argparse
 import json
 import os
+import re
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -55,12 +70,44 @@ load_shipwright_env()
 
 from external_review_config import load_review_config, resolve_model  # noqa: E402
 from external_review_prompts import (  # noqa: E402
+    load_code_review_prompts,
     load_iterate_review_prompts,
     load_plan_review_prompts,
 )
 
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
+
+_KNOWN_PLACEHOLDERS = ("{PLAN}", "{DIFF}", "{SPEC}")
+_PLACEHOLDER_RE = re.compile(r"\{[A-Z][A-Z_]*\}")
+
+
+def _render_user_prompt(user_prompt: str, primary: str, spec: str) -> str:
+    """Substitute placeholders into the user prompt template.
+
+    Both ``{PLAN}`` and ``{DIFF}`` are replaced with ``primary`` — whichever
+    token the active mode's template uses wins, the other is a no-op.
+    Plan/iterate templates use ``{PLAN}``; code-mode templates use ``{DIFF}``.
+
+    Emits a stderr warning if the template contains an unknown placeholder
+    (catches developer error when adding a new mode without updating this
+    helper). The check inspects the template, NOT the rendered output, so
+    diff/spec content that happens to contain literal ``{PLAN}/{DIFF}/{SPEC}``
+    strings does not produce false positives.
+    """
+    for token in _PLACEHOLDER_RE.findall(user_prompt):
+        if token not in _KNOWN_PLACEHOLDERS:
+            print(
+                f"warning: external_review prompt template contains unknown placeholder {token}",
+                file=sys.stderr,
+            )
+    return (
+        user_prompt
+        .replace("{PLAN}", primary)
+        .replace("{DIFF}", primary)
+        .replace("{SPEC}", spec)
+    )
 
 
 def review_with_openrouter(
@@ -88,7 +135,7 @@ def review_with_openrouter(
             timeout=timeout,
         )
 
-        prompt = user_prompt.replace("{PLAN}", plan).replace("{SPEC}", spec)
+        prompt = _render_user_prompt(user_prompt, plan, spec)
 
         response = client.chat.completions.create(
             model=model_name,
@@ -121,7 +168,7 @@ def review_with_gemini(
         model_name = resolve_model(config, "gemini")
         client = genai.Client(api_key=api_key)
 
-        prompt = user_prompt.replace("{PLAN}", plan).replace("{SPEC}", spec)
+        prompt = _render_user_prompt(user_prompt, plan, spec)
 
         response = client.models.generate_content(
             model=model_name,
@@ -156,7 +203,7 @@ def review_with_openai(
 
         client = OpenAI(api_key=api_key, timeout=timeout)
 
-        prompt = user_prompt.replace("{PLAN}", plan).replace("{SPEC}", spec)
+        prompt = _render_user_prompt(user_prompt, plan, spec)
 
         response = client.chat.completions.create(
             model=model_name,
@@ -193,39 +240,95 @@ def detect_provider() -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="External LLM plan/iterate review")
-    parser.add_argument("--plan-file", required=True, help="Path to plan.md or mini-plan")
-    parser.add_argument("--spec-file", required=True, help="Path to spec.md or iterate spec")
+    parser = argparse.ArgumentParser(
+        description="External LLM plan / iterate / code review",
+    )
+    # Plan & iterate modes use --plan-file. Code mode uses --diff-file. Both
+    # are non-required at parse time so a single CLI shape can serve all
+    # three modes; mode-specific validation happens after parse.
+    parser.add_argument(
+        "--plan-file",
+        required=False,
+        help="Path to plan.md or mini-plan (required for --mode plan|iterate)",
+    )
+    parser.add_argument(
+        "--diff-file",
+        required=False,
+        help="Path to a code diff (required for --mode code)",
+    )
+    parser.add_argument(
+        "--spec-file",
+        required=True,
+        help="Path to spec.md, iterate spec, or section context",
+    )
     parser.add_argument(
         "--plugin-root",
         required=True,
         help="Path to the calling plugin root (used for --mode plan prompt lookup)",
     )
     parser.add_argument(
-        "--mode", choices=["plan", "iterate"], default="plan",
-        help="Review mode: 'plan' (full pipeline) or 'iterate' (lightweight change)"
+        "--mode",
+        choices=["plan", "iterate", "code"],
+        default="plan",
+        help=(
+            "Review mode: 'plan' (full pipeline plan vs project spec), "
+            "'iterate' (lightweight mini-plan vs iterate spec), "
+            "or 'code' (code diff vs section/iterate spec)."
+        ),
     )
     args = parser.parse_args()
 
-    plan_path = Path(args.plan_file)
+    # Mode-specific argument validation.
+    if args.mode == "code":
+        if not args.diff_file:
+            parser.error("--diff-file is required for --mode code")
+        primary_path = Path(args.diff_file)
+        primary_label = "Diff"
+    else:
+        if not args.plan_file:
+            parser.error("--plan-file is required for --mode plan|iterate")
+        primary_path = Path(args.plan_file)
+        primary_label = "Plan"
+
     spec_path = Path(args.spec_file)
 
-    if not plan_path.exists():
-        print(json.dumps({"success": False, "error": f"Plan not found: {plan_path}"}, indent=2))
+    if not primary_path.exists():
+        print(
+            json.dumps(
+                {"success": False, "error": f"{primary_label} not found: {primary_path}"},
+                indent=2,
+            )
+        )
         return 1
 
     if not spec_path.exists():
         print(json.dumps({"success": False, "error": f"Spec not found: {spec_path}"}, indent=2))
         return 1
 
-    plan = plan_path.read_text(encoding="utf-8")
+    primary_text = primary_path.read_text(encoding="utf-8")
     spec = spec_path.read_text(encoding="utf-8")
+
+    # Code-mode short-circuit: empty diff → no provider call. The LLM cannot
+    # review what isn't there, and many providers reject empty inputs.
+    if args.mode == "code" and not primary_text.strip():
+        print(json.dumps({
+            "success": True,
+            "skipped": "empty_diff",
+            "provider": "none",
+            "reviews": {
+                "gemini": {"status": "skipped", "reason": "empty diff"},
+                "openai": {"status": "skipped", "reason": "empty diff"},
+            },
+        }, indent=2))
+        return 0
 
     config = load_review_config()
 
     # Load mode-specific prompts.
     if args.mode == "iterate":
         system_prompt, user_prompt = load_iterate_review_prompts()
+    elif args.mode == "code":
+        system_prompt, user_prompt = load_code_review_prompts()
     else:
         system_prompt, user_prompt = load_plan_review_prompts(args.plugin_root)
 
@@ -234,6 +337,12 @@ def main() -> int:
             system_prompt = (
                 "You are a senior software architect reviewing an implementation approach "
                 "for a single change to an existing application."
+            )
+        elif args.mode == "code":
+            system_prompt = (
+                "You are a senior software engineer auditing a code change against its "
+                "specification. Focus on real defects (correctness, security, regressions, "
+                "spec gaps, edge cases). Skip style and naming nits."
             )
         else:
             system_prompt = "You are a senior software architect reviewing an implementation plan."
@@ -244,6 +353,14 @@ def main() -> int:
                 "## Change Specification:\n{SPEC}\n\n## Implementation Approach:\n{PLAN}\n\n"
                 "Focus on: approach soundness, risks to existing functionality, "
                 "missing dependencies, edge cases, and security concerns."
+            )
+        elif args.mode == "code":
+            user_prompt = (
+                "Review this code change against its specification.\n\n"
+                "## Specification:\n{SPEC}\n\n## Code Diff:\n```diff\n{DIFF}\n```\n\n"
+                "Identify concrete defects: spec gaps, correctness bugs, security issues, "
+                "test quality, regressions, and unhandled edge cases. "
+                "Skip style and naming nits."
             )
         else:
             user_prompt = (
@@ -260,8 +377,8 @@ def main() -> int:
         # Both reviews via OpenRouter (one API key)
         with ThreadPoolExecutor(max_workers=2) as executor:
             futures = {
-                executor.submit(review_with_openrouter, plan, spec, system_prompt, user_prompt, config, "gemini"): "gemini",
-                executor.submit(review_with_openrouter, plan, spec, system_prompt, user_prompt, config, "openai"): "openai",
+                executor.submit(review_with_openrouter, primary_text, spec, system_prompt, user_prompt, config, "gemini"): "gemini",
+                executor.submit(review_with_openrouter, primary_text, spec, system_prompt, user_prompt, config, "openai"): "openai",
             }
             for future in as_completed(futures):
                 name = futures[future]
@@ -274,8 +391,8 @@ def main() -> int:
         # Direct API keys (original behavior)
         with ThreadPoolExecutor(max_workers=2) as executor:
             futures = {
-                executor.submit(review_with_gemini, plan, spec, system_prompt, user_prompt, config): "gemini",
-                executor.submit(review_with_openai, plan, spec, system_prompt, user_prompt, config): "openai",
+                executor.submit(review_with_gemini, primary_text, spec, system_prompt, user_prompt, config): "gemini",
+                executor.submit(review_with_openai, primary_text, spec, system_prompt, user_prompt, config): "openai",
             }
             for future in as_completed(futures):
                 name = futures[future]
