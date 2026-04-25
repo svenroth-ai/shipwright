@@ -218,3 +218,163 @@ class TestMainE2E:
              patch("scan.get_backend", side_effect=raise_rt, create=True):
             rc = scan.main()
         assert rc == 2
+
+
+# ---------------------------------------------------------------------------
+# --sarif-dir + --input-from-cache (Iterate 2: sec-ci-activation)
+# ---------------------------------------------------------------------------
+
+class TestSarifDir:
+
+    def test_writes_default_sarif_files_on_clean_scan(self, tmp_path):
+        class FakeBackend:
+            capabilities = {"sast", "sca", "secrets"}
+
+            def scan(self, target, scan_types=None):
+                return []
+
+        sarif_dir = tmp_path / "sarif"
+        argv = [
+            "scan.py",
+            "--path", str(tmp_path),
+            "--sarif-dir", str(sarif_dir),
+        ]
+
+        with patch.object(sys, "argv", argv), \
+             patch("scan.get_backend", return_value=FakeBackend(), create=True):
+            rc = scan.main()
+
+        assert rc == 0
+        # All three default scanner sources must have a SARIF file even on empty scans
+        for source in ("semgrep", "trivy", "gitleaks"):
+            sarif_file = sarif_dir / f"{source}.sarif"
+            assert sarif_file.exists(), f"missing SARIF file for {source}"
+            doc = json.loads(sarif_file.read_text(encoding="utf-8"))
+            assert doc["version"] == "2.1.0"
+            assert doc["runs"][0]["tool"]["driver"]["name"] == source
+            assert doc["runs"][0]["results"] == []
+
+    def test_groups_findings_by_source(self, tmp_path):
+        findings = [
+            {"id": "s1", "severity": "high", "type": "sast", "rule": "r1", "source": "semgrep",
+             "affected_file": "a.py", "affected_line": 1, "description": "d"},
+            {"id": "t1", "severity": "critical", "type": "sca", "rule": "CVE-1", "source": "trivy",
+             "affected_file": "req.txt", "description": "d"},
+            {"id": "s2", "severity": "medium", "type": "sast", "rule": "r2", "source": "semgrep",
+             "affected_file": "b.py", "affected_line": 2, "description": "d"},
+        ]
+
+        class FakeBackend:
+            capabilities = {"sast", "sca"}
+
+            def scan(self, target, scan_types=None):
+                return findings
+
+        sarif_dir = tmp_path / "sarif"
+        argv = [
+            "scan.py",
+            "--path", str(tmp_path),
+            "--sarif-dir", str(sarif_dir),
+        ]
+        with patch.object(sys, "argv", argv), \
+             patch("scan.get_backend", return_value=FakeBackend(), create=True):
+            rc = scan.main()
+
+        assert rc == 0
+        semgrep_doc = json.loads((sarif_dir / "semgrep.sarif").read_text(encoding="utf-8"))
+        trivy_doc = json.loads((sarif_dir / "trivy.sarif").read_text(encoding="utf-8"))
+        gitleaks_doc = json.loads((sarif_dir / "gitleaks.sarif").read_text(encoding="utf-8"))
+        assert len(semgrep_doc["runs"][0]["results"]) == 2
+        assert len(trivy_doc["runs"][0]["results"]) == 1
+        assert gitleaks_doc["runs"][0]["results"] == []  # placeholder still emitted
+
+
+class TestInputFromCache:
+
+    def test_skips_scanner_when_cache_exists(self, tmp_path):
+        cache = tmp_path / "findings.json"
+        cache.write_text(
+            json.dumps({
+                "scanner": "oss",
+                "findings": [
+                    {"id": "f1", "severity": "high", "type": "sast", "rule": "r1",
+                     "source": "semgrep", "affected_file": "a.py", "affected_line": 1,
+                     "description": "d"},
+                ],
+            }),
+            encoding="utf-8",
+        )
+
+        argv = [
+            "scan.py",
+            "--path", str(tmp_path),
+            "--input-from-cache", str(cache),
+            "--output", str(tmp_path / "out.json"),
+        ]
+
+        # If get_backend is invoked at all the test fails — cache must short-circuit
+        with patch.object(sys, "argv", argv), \
+             patch("scan.get_backend", side_effect=AssertionError("must not invoke backend"),
+                   create=True):
+            rc = scan.main()
+
+        assert rc == 0
+        out = json.loads((tmp_path / "out.json").read_text(encoding="utf-8"))
+        assert out["total_findings"] == 1
+        assert out["findings"][0]["id"] == "f1"
+
+    def test_falls_back_to_scan_when_cache_missing(self, tmp_path):
+        # cache path provided but file does NOT exist → scanner runs normally
+        class FakeBackend:
+            capabilities = {"sast"}
+
+            def scan(self, target, scan_types=None):
+                return [{"id": "live", "severity": "low", "type": "sast", "rule": "r",
+                         "source": "semgrep", "affected_file": "x.py", "affected_line": 1,
+                         "description": "d"}]
+
+        argv = [
+            "scan.py",
+            "--path", str(tmp_path),
+            "--input-from-cache", str(tmp_path / "missing.json"),
+            "--output", str(tmp_path / "out.json"),
+        ]
+        with patch.object(sys, "argv", argv), \
+             patch("scan.get_backend", return_value=FakeBackend(), create=True):
+            rc = scan.main()
+        assert rc == 0
+        out = json.loads((tmp_path / "out.json").read_text(encoding="utf-8"))
+        assert out["findings"][0]["id"] == "live"
+
+    def test_combined_cache_plus_sarif(self, tmp_path):
+        # CI's expected pattern: read findings.json from disk, write SARIF, no scan.
+        cache = tmp_path / "findings.json"
+        cache.write_text(
+            json.dumps({
+                "scanner": "oss",
+                "findings": [
+                    {"id": "f1", "severity": "critical", "type": "sca", "rule": "CVE-1",
+                     "source": "trivy", "affected_file": "r.txt", "description": "d"},
+                ],
+            }),
+            encoding="utf-8",
+        )
+
+        sarif_dir = tmp_path / "sarif"
+        argv = [
+            "scan.py",
+            "--path", str(tmp_path),
+            "--input-from-cache", str(cache),
+            "--sarif-dir", str(sarif_dir),
+        ]
+        with patch.object(sys, "argv", argv), \
+             patch("scan.get_backend", side_effect=AssertionError("must not scan"),
+                   create=True):
+            rc = scan.main()
+
+        assert rc == 0
+        trivy_doc = json.loads((sarif_dir / "trivy.sarif").read_text(encoding="utf-8"))
+        assert len(trivy_doc["runs"][0]["results"]) == 1
+        # placeholders still emitted for the other scanners
+        assert (sarif_dir / "semgrep.sarif").exists()
+        assert (sarif_dir / "gitleaks.sarif").exists()
