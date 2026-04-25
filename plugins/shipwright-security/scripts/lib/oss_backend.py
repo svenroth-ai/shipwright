@@ -127,6 +127,7 @@ _DEFAULT_EXCLUDES: tuple[str, ...] = (
     ".next",
     "__pycache__",
     ".cache",
+    "securityreports",
 )
 
 # Env-var additions must be simple folder names: letters, digits, underscore,

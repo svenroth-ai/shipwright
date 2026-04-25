@@ -16,12 +16,13 @@ _OSS_SCANNERS = ("semgrep", "trivy", "gitleaks")
 
 @pytest.fixture(autouse=True)
 def _isolate_scanner_environment(monkeypatch):
-    """Make orchestrator._check_security_available() deterministic per host.
+    """No-op safety net for the orchestrator path.
 
-    Mirrors the autouse fixture in plugins/shipwright-run/tests/conftest.py
-    and integration-tests/conftest.py — clears AIKIDO/SHIPWRIGHT_SCANNER_BACKEND,
-    sets SHIPWRIGHT_TEST_DISABLE_OSS_SCANNERS=1 (covers subprocess invocations),
-    and patches shutil.which to hide the OSS scanners from in-process callers.
+    Iterate sec-report-and-orchestrator-decouple (2026) removed
+    `_check_security_available()`. The env-clearing here is now defensive:
+    ensures AIKIDO_CLIENT_ID and any future scanner-related env vars don't
+    leak from the host into shared-test assertions. Mirror of fixtures in
+    plugins/shipwright-run/tests/conftest.py + integration-tests/conftest.py.
     """
     monkeypatch.delenv("AIKIDO_CLIENT_ID", raising=False)
     monkeypatch.delenv("SHIPWRIGHT_SCANNER_BACKEND", raising=False)

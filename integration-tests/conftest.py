@@ -33,10 +33,12 @@ if str(SHARED_SCRIPTS) not in sys.path:
 # our integration tests walk — making the assertion order phase-by-phase
 # non-deterministic per host.
 #
-# This autouse fixture mirrors the one in plugins/shipwright-run/tests/conftest.py:
-# clear all three signals at the start of every integration test so the
-# default state is "no security backend". Tests that need security to be
-# active opt in explicitly.
+# Iterate sec-report-and-orchestrator-decouple (2026): security is no longer
+# an orchestrator phase, so this fixture is a **no-op safety net** for the
+# orchestrator path. Kept in place because:
+#   1. AIKIDO_CLIENT_ID still informs `aikidoClientIdPresent` (diagnostic);
+#      clearing it prevents host env leaking into test assertions.
+#   2. Future scanner-related env vars benefit from the existing contract.
 
 _OSS_SCANNERS = ("semgrep", "trivy", "gitleaks")
 
