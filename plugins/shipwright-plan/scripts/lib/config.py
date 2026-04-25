@@ -1,19 +1,17 @@
 """Configuration management for /shipwright-plan.
 
 Two config types:
-1. Global config: {plugin_root}/config.json (plugin defaults)
+1. Global config: {plugin_root}/config.json (plugin defaults — context, e2e_test_plan, vertex_ai)
 2. Session config: {planning_dir}/shipwright_plan_config.json (per-session overrides)
+
+External-review config (models, external_review, llm_client) lives in
+shared/config/external_review.json and is read via
+``lib.external_review_config.load_review_config`` in shared/scripts/lib.
 """
 
 import json
-import os
-import sys
 from pathlib import Path
 from typing import Any
-
-# Ensure shared lib is importable (use scripts/lib directly to avoid namespace collision)
-_shared_lib = Path(__file__).resolve().parents[4] / "shared" / "scripts" / "lib"
-sys.path.insert(0, str(_shared_lib))
 
 GLOBAL_CONFIG_NAME = "config.json"
 SESSION_CONFIG_NAME = "shipwright_plan_config.json"
@@ -62,47 +60,6 @@ def _deep_merge(base: dict, override: dict) -> dict:
         else:
             result[key] = value
     return result
-
-
-def is_external_review_enabled(config: dict[str, Any]) -> bool:
-    """Check if external review is enabled and API keys are available."""
-    from env import load_shipwright_env
-    load_shipwright_env()  # idempotent — ensures .env.local is loaded
-
-    ext = config.get("external_review", {})
-    if ext.get("feedback_iterations", 1) == 0:
-        return False
-
-    has_openrouter = bool(os.environ.get("OPENROUTER_API_KEY"))
-    has_gemini = bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
-    has_openai = bool(os.environ.get("OPENAI_API_KEY"))
-
-    return has_openrouter or has_gemini or has_openai
-
-
-def get_external_review_status(config: dict[str, Any]) -> str:
-    """Return the three-way review status for the planning session.
-
-    - "user_disabled": feedback_iterations == 0 (explicit opt-out in config).
-    - "available":    keys present AND feedback_iterations > 0 — review will run.
-    - "missing_keys": feedback_iterations > 0 but no API key in env.
-
-    The skill uses this to branch Step 5 (run review / prompt user / self-review).
-    """
-    from env import load_shipwright_env
-    load_shipwright_env()  # idempotent
-
-    ext = config.get("external_review", {})
-    if ext.get("feedback_iterations", 1) == 0:
-        return "user_disabled"
-
-    has_openrouter = bool(os.environ.get("OPENROUTER_API_KEY"))
-    has_gemini = bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
-    has_openai = bool(os.environ.get("OPENAI_API_KEY"))
-
-    if has_openrouter or has_gemini or has_openai:
-        return "available"
-    return "missing_keys"
 
 
 def is_e2e_enabled(config: dict[str, Any]) -> bool:

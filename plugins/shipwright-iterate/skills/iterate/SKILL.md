@@ -15,11 +15,12 @@ Detects intent (feature, change, bug), assesses complexity, runs the right amoun
 > 2. Via UserPromptSubmit hook context (automatic — `suggest_iterate.py` detects code-change intent
 >    and injects "[Shipwright] Detected: ..." context into the prompt)
 
-> **Dependencies:** `shipwright-plan` v0.3.0+ — iterate reuses
-> `{plan_plugin_root}/scripts/llm_clients/review.py` for external LLM review
-> and `{plan_plugin_root}/scripts/checks/check-external-review-keys.py` +
-> `mark-review-state.py` for the interactive review gate introduced in plan
-> v0.3.0 (Step 5 Branch A/B/C). Medium+ iterate runs mirror the plan flow.
+> **External review machinery (shared, since v0.5.x):** medium+ iterate runs
+> use `{shared_root}/scripts/tools/external_review.py --mode iterate` for the
+> external LLM review and `{shared_root}/scripts/checks/check-external-review-keys.py`
+> + `mark-review-state.py` for the interactive review gate (Branch A/B/C
+> mirroring the plan flow). `{shared_root}` resolves to the monorepo's
+> `shared/` directory.
 
 ---
 

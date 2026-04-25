@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
-"""Write external_review_state.json marker for Step 5 completion.
+"""Write external_review_state.json marker for review-step completion.
+
+Shared across plugins (plan Step 5, iterate medium+ external review). The
+marker confirms a review-step branch (Branch A/B/C) ran to completion and how
+review was handled. Downstream consumers (compliance evidence collection,
+plan resume gate, iterate finalization) read this marker to verify the gate
+passed.
 
 Usage:
-    uv run mark-review-state.py \
-        --planning-dir <path> \
-        --status {completed|skipped_user_opt_out|skipped_config_disabled} \
-        [--provider openrouter|gemini|openai] \
-        [--reason "user opted out: offline demo"] \
-        [--findings-count 5] \
+    uv run shared/scripts/checks/mark-review-state.py \\
+        --planning-dir <path> \\
+        --status {completed|skipped_user_opt_out|skipped_config_disabled} \\
+        [--provider openrouter|gemini|openai] \\
+        [--reason "user opted out: offline demo"] \\
+        [--findings-count 5] \\
         [--self-review-fallback-ran]
-
-The skill invokes this after running (or explicitly skipping) external review.
-Downstream steps (Section Splitting, compliance evidence collection) read the
-marker to confirm Step 5 was completed and see how review was handled.
 """
 
 import argparse

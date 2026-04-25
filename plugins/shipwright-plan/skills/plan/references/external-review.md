@@ -15,22 +15,31 @@ mandatory self-review pass. Silent-skip is not an option.
   project's `.env.local` at the repo root.
 - **Alternative:** `GEMINI_API_KEY` (or `GOOGLE_API_KEY` / Vertex AI ADC) and
   `OPENAI_API_KEY` as direct provider keys.
-- `external_review.feedback_iterations > 0` in `config.json` (default: `1`).
-  Set to `0` only for explicit opt-out — the skill will then run the
-  mandatory self-review fallback.
+- `external_review.feedback_iterations > 0` in
+  `shared/config/external_review.json` (default: `1`). Set to `0` only for
+  explicit opt-out — the skill will then run the mandatory self-review
+  fallback. Per-environment model overrides via env vars
+  `SHIPWRIGHT_REVIEW_MODEL_GEMINI` / `_CHATGPT` / `_OPENROUTER_GEMINI` /
+  `_OPENROUTER_CHATGPT`.
 
 ## Script
 
 ```bash
-uv run --project {plugin_root} {plugin_root}/scripts/llm_clients/review.py \
+uv run --project {plugin_root} {shared_root}/scripts/tools/external_review.py \
+  --mode plan \
   --plan-file "{planning_dir}/plan.md" \
   --spec-file "{spec_file}" \
   --plugin-root "{plugin_root}"
 ```
 
+`{shared_root}` is the monorepo's `shared/` directory (typically
+`{plugin_root}/../../shared`). The CLI moved into `shared/` in v0.5.x to
+serve plan, iterate, and any future SDLC plugin uniformly.
+
 ## How It Works
 
 1. Loads system + user prompts from `{plugin_root}/prompts/plan_reviewer/`
+   (plan-mode prompts stay plugin-local — they're plan-specific)
 2. Sends plan + spec to Gemini and OpenAI **in parallel** (ThreadPoolExecutor)
 3. Collects feedback from both
 4. Returns structured JSON with findings
