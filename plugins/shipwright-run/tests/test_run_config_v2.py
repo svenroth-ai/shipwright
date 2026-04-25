@@ -76,10 +76,14 @@ def test_create_config_freezes_run_conditions(tmp_project):
     assert rc["splitMode"] is None  # set later by freeze-splits
 
 
-def test_create_config_freezes_security_when_aikido_set(tmp_project):
+def test_create_config_aikido_id_sets_diagnostic_flag(tmp_project):
+    """Iterate sec-report-and-orchestrator-decouple: securityEnabled is
+    hardcoded False post-decouple. The aikidoClientIdPresent diagnostic
+    still tracks AIKIDO_CLIENT_ID for WebUI display purposes.
+    """
     with mock.patch.dict("os.environ", {"AIKIDO_CLIENT_ID": "ak_test_xxx"}, clear=False):
         cfg = create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
-    assert cfg["runConditions"]["securityEnabled"] is True
+    assert cfg["runConditions"]["securityEnabled"] is False
     assert cfg["runConditions"]["aikidoClientIdPresent"] is True
 
 

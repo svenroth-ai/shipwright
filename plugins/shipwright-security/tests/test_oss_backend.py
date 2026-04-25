@@ -217,6 +217,9 @@ class TestScannerExclusions:
             ".next",
             "__pycache__",
             ".cache",
+            # securityreports added in iterate sec-report-and-orchestrator-decouple
+            # so successive scans don't recurse into their own output.
+            "securityreports",
         ):
             assert name in _DEFAULT_EXCLUDES
 
