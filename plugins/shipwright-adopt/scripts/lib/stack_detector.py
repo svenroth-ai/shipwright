@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 
-# Frontend frameworks (matched against npm deps)
+# Frontend frameworks / build tools (matched against npm deps)
 _FRONTEND_HINTS = {
     "next": "Next.js",
     "react": "React",
@@ -24,6 +24,7 @@ _FRONTEND_HINTS = {
     "nuxt": "Nuxt",
     "astro": "Astro",
     "solid-js": "SolidJS",
+    "vite": "Vite",
 }
 
 # Backend / server frameworks
@@ -31,9 +32,11 @@ _BACKEND_HINTS_JS = {
     "express": "Express",
     "fastify": "Fastify",
     "hono": "Hono",
+    "@hono/node-server": "Hono Node Server",
     "koa": "Koa",
     "@nestjs/core": "NestJS",
     "next": "Next.js (API routes)",
+    "tsx": "tsx (TypeScript runner)",
 }
 _BACKEND_HINTS_PY = {
     "fastapi": "FastAPI",
@@ -141,7 +144,14 @@ def _extract_pyproject_deps(content: str) -> dict[str, str]:
 
 
 def detect_stack(project_root: Path, excludes: set[str] | None = None) -> dict[str, Any]:
-    """Detect stack signature from manifest files. Returns a JSON-serializable dict."""
+    """Detect stack signature from manifest files. Returns a JSON-serializable dict.
+
+    AC12 (iterate-20260425 multi-service): when the multi_service detector
+    fires AND the project root has no package.json (or root pkg.json has
+    empty deps + devDeps), per-service package.jsons are read and merged
+    into the signature so the Jaccard matcher can pick a multi-service
+    profile (e.g. vite-hono).
+    """
     excludes = excludes or set()
     signatures: list[str] = []
     runtime: dict[str, str] = {}
@@ -150,6 +160,7 @@ def detect_stack(project_root: Path, excludes: set[str] | None = None) -> dict[s
     database: dict[str, str] = {}
     auth: dict[str, str] = {}
     primary_language = "unknown"
+    root_has_real_deps = False  # Set during root pkg.json parsing
 
     # Skip files under excluded paths
     def _is_excluded(p: Path) -> bool:
@@ -164,6 +175,8 @@ def detect_stack(project_root: Path, excludes: set[str] | None = None) -> dict[s
         if engines.get("node"):
             runtime["node"] = engines["node"]
         deps = {**data.get("dependencies", {}), **data.get("devDependencies", {})}
+        if deps:
+            root_has_real_deps = True
         if "typescript" in deps:
             runtime["typescript"] = deps["typescript"]
             primary_language = "typescript"
@@ -241,7 +254,49 @@ def detect_stack(project_root: Path, excludes: set[str] | None = None) -> dict[s
         if data.get("compilerOptions", {}).get("strict") is True:
             signatures.append("has-tsconfig-strict")
 
-    return {
+    # AC12 — multi-service signature merge
+    # Always probe for multi-service layout; record signal if detected.
+    # Only merge sub-package.json deps when root has no real deps (avoids
+    # distorting Jaccard scoring on workspace monorepos with rich roots).
+    multi_service: dict[str, Any] | None = None
+    try:
+        from multi_service_detector import detect_multi_service_layout  # type: ignore
+    except ImportError:
+        try:
+            from .multi_service_detector import detect_multi_service_layout  # type: ignore
+        except ImportError:
+            detect_multi_service_layout = None  # type: ignore
+
+    if detect_multi_service_layout is not None:
+        multi_service = detect_multi_service_layout(project_root)
+        if multi_service.get("detected") or multi_service.get("services"):
+            signatures.append("has-multi-service-layout")
+        if multi_service.get("detected") and not root_has_real_deps:
+            for svc in multi_service.get("services", []):
+                svc_root = project_root / svc.get("root", "")
+                svc_pkg = _read_json(svc_root / "package.json") or {}
+                svc_deps = {
+                    **svc_pkg.get("dependencies", {}),
+                    **svc_pkg.get("devDependencies", {}),
+                }
+                if not svc_deps:
+                    continue
+                # Promote primary_language if still unknown
+                if "typescript" in svc_deps and not runtime.get("typescript"):
+                    runtime["typescript"] = svc_deps["typescript"]
+                if primary_language == "unknown":
+                    primary_language = "typescript" if "typescript" in svc_deps else "javascript"
+                # Merge into category blocks WITHOUT overwriting root values
+                for k, v in _match_hints(svc_deps, _FRONTEND_HINTS).items():
+                    frontend.setdefault(k, v)
+                for k, v in _match_hints(svc_deps, _BACKEND_HINTS_JS).items():
+                    backend.setdefault(k, v)
+                for k, v in _match_hints(svc_deps, _DB_HINTS_JS).items():
+                    database.setdefault(k, v)
+                for k, v in _match_hints(svc_deps, _AUTH_HINTS_JS).items():
+                    auth.setdefault(k, v)
+
+    result = {
         "primary_language": primary_language,
         "runtime": runtime,
         "frontend": frontend,
@@ -250,3 +305,6 @@ def detect_stack(project_root: Path, excludes: set[str] | None = None) -> dict[s
         "auth": auth,
         "signals": signatures,
     }
+    if multi_service is not None:
+        result["multi_service"] = multi_service
+    return result

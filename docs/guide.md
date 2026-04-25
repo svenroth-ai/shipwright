@@ -1097,6 +1097,8 @@ When using skills individually, provide the input artifact (spec file, section f
 
 **Local Preview.** `/shipwright-preview` starts the development server and shows the URL (e.g., `http://localhost:3000`). Available after at least one build split is complete. The preview uses the `dev_server` configuration from the stack profile -- new stack profiles must define `dev_server.command`, `dev_server.port`, and `dev_server.ready_path` in their profile JSON.
 
+**Multi-service profiles (v0.5.0+).** Stack profiles can declare a `services: [...]` array instead of `dev_server: {...}` to manage projects with split frontend + backend (Vite+Hono, Next.js+separate API, Rails+Vue, …). Each entry: `{name, command, port, host?, scheme?, ready_path?, ready_timeout_seconds?, depends_on?, primary?}`. Topo order is enforced via `depends_on`; partial-failure rollback kills every started service in reverse. The `primary` flag (or first-declared) determines which service's URL appears as top-level `url` in the dev_server JSON output. See `shared/profiles/vite-hono.json` for a working example. Legacy single-service `dev_server: {...}` profiles continue to work via internal normalization. For projects without a matching profile, `/shipwright-adopt` can also pass an inline `--services-json '<array>'` to `dev_server.py`, derived from the multi-service detector's snapshot output.
+
 ### 7.4 Session Recovery and Handoff
 
 Claude Code has a finite context window. During long builds, Shipwright monitors context pressure and, when the window is filling up, automatically generates a **session handoff** document (`agent_docs/session_handoff.md`) containing the current phase, split, section, completed work, and next steps.

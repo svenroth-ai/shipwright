@@ -49,9 +49,9 @@ e2e-results.json
 shipwright_*_config.json
 shipwright_events.jsonl
 shipwright_events.jsonl.lock
-agent_docs/session_handoff.md
-agent_docs/build_dashboard.md
-agent_docs/current_sprint.md
+agent_docs/
+planning/
+.shipwright/
 .shipwright_toolcall_count
 compliance/
 
