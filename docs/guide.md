@@ -757,6 +757,10 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 
 **Standalone usage:** Yes -- the phase runs when any scanner backend is available. With OSS tools installed, it works without any cloud account. With Aikido, the standalone commands (`issues`, `summary`, `report`, `repos`) work against any connected repository.
 
+> **Aikido backend -- not re-verified in v0.3:** The v0.3 restructuring (report persistence, iterate handoff, orchestrator decouple) was built and verified against the OSS backend only. The Aikido path in SKILL.md Step 6 is preserved and should continue to function via `aikido_client.py report`, but has not been re-run end-to-end against the new flow. If you use Aikido, please report any regressions in GitHub issues.
+
+**CI integration:** `.github/workflows/security.yml` is shipped DORMANT -- only `workflow_dispatch` is active out of the box. The workflow is fully wired (SARIF upload to GitHub Security tab, PR-comment, fork-PR guards, weekly cron) but the auto-triggers are commented out so consumers activate them deliberately at Phase B / Go-Live. See `plugins/shipwright-security/skills/security/references/ci-integration.md` for activation steps and behavior details.
+
 ---
 
 ### 4.8 Release Management -- /shipwright-changelog

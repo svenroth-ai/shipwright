@@ -87,6 +87,21 @@ except ImportError as _e:
         raise RuntimeError(f"scanner_backend unavailable: {_BACKEND_IMPORT_ERROR}")
 
 
+try:
+    from sarif_writer import to_sarif  # type: ignore
+    _SARIF_IMPORT_ERROR: str | None = None
+except ImportError as _e:
+    _SARIF_IMPORT_ERROR = str(_e)
+
+    def to_sarif(findings, source):  # type: ignore[misc]
+        raise RuntimeError(f"sarif_writer unavailable: {_SARIF_IMPORT_ERROR}")
+
+
+# Scanners with a known SARIF capability — emit one .sarif file per source
+# even on clean scans so `upload-sarif` doesn't fail on an empty directory.
+_SARIF_DEFAULT_SOURCES = ("semgrep", "trivy", "gitleaks")
+
+
 SCAN_TYPE_ALIASES = {
     "secret-detection": "secrets",
     "secret_detection": "secrets",
@@ -153,6 +168,32 @@ def count_above_threshold(findings: list[dict[str, Any]], fail_on: set[str]) -> 
     return sum(1 for f in findings if f.get("severity", "").lower() in fail_on)
 
 
+def _write_sarif_outputs(findings: list[dict[str, Any]], sarif_dir: Path) -> None:
+    """Write one SARIF 2.1.0 file per scanner source.
+
+    Always writes a placeholder for every source in `_SARIF_DEFAULT_SOURCES`
+    (semgrep, trivy, gitleaks) — even on clean scans — so that
+    `github/codeql-action/upload-sarif@v3` doesn't fail on an empty directory.
+    Additional sources discovered in `findings` get their own file too.
+    """
+    sarif_dir.mkdir(parents=True, exist_ok=True)
+
+    by_source: dict[str, list[dict[str, Any]]] = {s: [] for s in _SARIF_DEFAULT_SOURCES}
+    for f in findings:
+        if not isinstance(f, dict):
+            continue
+        src = (f.get("source") or "unknown").strip().lower() or "unknown"
+        by_source.setdefault(src, []).append(f)
+
+    for source, group in by_source.items():
+        doc = to_sarif(group, source=source)
+        out_path = sarif_dir / f"{source}.sarif"
+        out_path.write_text(
+            json.dumps(doc, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Run the OSS security scanner (Semgrep / Trivy / Gitleaks)",
@@ -186,6 +227,18 @@ def main() -> int:
         default="oss",
         choices=["oss", "aikido"],
         help="Scanner backend to use (default: oss)",
+    )
+    parser.add_argument(
+        "--sarif-dir",
+        help="Directory to write per-source SARIF 2.1.0 files (one .sarif per scanner). "
+             "Always emits a placeholder file for known scanners on clean scans so "
+             "GitHub Actions upload-sarif doesn't fail on an empty directory.",
+    )
+    parser.add_argument(
+        "--input-from-cache",
+        help="Path to a previously-written findings.json. When provided AND the "
+             "file exists, skip scanning entirely and reuse those findings. "
+             "Used by CI to avoid double-scanning between report and SARIF steps.",
     )
     args = parser.parse_args()
 
@@ -221,44 +274,88 @@ def main() -> int:
         )
         return 2
 
-    try:
-        backend = get_backend(args.backend)
-    except RuntimeError as e:
-        print(
-            json.dumps(
-                structured_error(
-                    what_failed=str(e),
-                    what_was_attempted=f"initialize '{args.backend}' scanner backend",
-                    error_category="business",
-                    is_retryable=False,
-                    alternatives=[
-                        "Install Semgrep: pip install semgrep",
-                        "Install Trivy: https://github.com/aquasecurity/trivy/releases",
-                        "Install Gitleaks: https://github.com/gitleaks/gitleaks/releases",
-                    ],
-                )
-            ),
-            file=sys.stderr,
-        )
-        return 2
+    cache_path: Path | None = None
+    if args.input_from_cache:
+        cache_path = Path(args.input_from_cache).resolve()
 
-    try:
-        findings = backend.scan(str(target), scan_types=scan_types)
-    except Exception as e:  # noqa: BLE001 — scanner errors are varied
-        print(
-            json.dumps(
-                structured_error(
-                    what_failed=f"Scanner raised an exception: {e}",
-                    what_was_attempted=f"run {args.backend} backend scan",
-                    error_category="transient",
-                    is_retryable=True,
-                )
-            ),
-            file=sys.stderr,
-        )
-        return 2
+    backend_name = args.backend
+    backend_capabilities: set[str] | None = None
 
-    config = build_config(findings, repo=args.repo, scanner=args.backend)
+    if cache_path and cache_path.exists():
+        try:
+            cached = json.loads(cache_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as e:
+            print(
+                json.dumps(
+                    structured_error(
+                        what_failed=f"Failed to load --input-from-cache: {e}",
+                        what_was_attempted=f"read findings cache at {cache_path}",
+                        error_category="validation",
+                        is_retryable=False,
+                    )
+                ),
+                file=sys.stderr,
+            )
+            return 2
+        findings = cached.get("findings", []) if isinstance(cached, dict) else []
+        backend_name = (cached.get("scanner") if isinstance(cached, dict) else None) or backend_name
+    else:
+        try:
+            backend = get_backend(args.backend)
+        except RuntimeError as e:
+            print(
+                json.dumps(
+                    structured_error(
+                        what_failed=str(e),
+                        what_was_attempted=f"initialize '{args.backend}' scanner backend",
+                        error_category="business",
+                        is_retryable=False,
+                        alternatives=[
+                            "Install Semgrep: pip install semgrep",
+                            "Install Trivy: https://github.com/aquasecurity/trivy/releases",
+                            "Install Gitleaks: https://github.com/gitleaks/gitleaks/releases",
+                        ],
+                    )
+                ),
+                file=sys.stderr,
+            )
+            return 2
+
+        try:
+            findings = backend.scan(str(target), scan_types=scan_types)
+        except Exception as e:  # noqa: BLE001 — scanner errors are varied
+            print(
+                json.dumps(
+                    structured_error(
+                        what_failed=f"Scanner raised an exception: {e}",
+                        what_was_attempted=f"run {args.backend} backend scan",
+                        error_category="transient",
+                        is_retryable=True,
+                    )
+                ),
+                file=sys.stderr,
+            )
+            return 2
+
+        backend_capabilities = getattr(backend, "capabilities", None)
+
+    config = build_config(findings, repo=args.repo, scanner=backend_name)
+
+    if args.sarif_dir:
+        try:
+            _write_sarif_outputs(findings, Path(args.sarif_dir).resolve())
+        except Exception as e:  # noqa: BLE001 — best-effort, never abort scan
+            print(
+                json.dumps(
+                    structured_error(
+                        what_failed=f"SARIF write failed: {e}",
+                        what_was_attempted=f"write SARIF files to {args.sarif_dir}",
+                        error_category="transient",
+                        is_retryable=True,
+                    )
+                ),
+                file=sys.stderr,
+            )
 
     if args.output:
         output_path = Path(args.output).resolve()
@@ -273,8 +370,10 @@ def main() -> int:
                 "output_path": str(output_path),
                 "findings_count": len(findings),
                 "by_severity": config["by_severity"],
-                "backend": args.backend,
-                "scan_types": scan_types or sorted(backend.capabilities),
+                "backend": backend_name,
+                "scan_types": scan_types or (
+                    sorted(backend_capabilities) if backend_capabilities else None
+                ),
             }
         )
     else:
@@ -283,7 +382,7 @@ def main() -> int:
                 "command": "scan",
                 "findings_count": len(findings),
                 "by_severity": config["by_severity"],
-                "backend": args.backend,
+                "backend": backend_name,
                 "config": config,
             }
         )
