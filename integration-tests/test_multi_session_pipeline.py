@@ -15,12 +15,17 @@ correct final state.
 Scenarios covered:
     1. Happy-path full pipeline: write-config → claim/complete each phase
        → final phase flips run.status to "complete".
-    2. Failed phase: complete-phase-task with ok=false sets run.status=failed
-       and plans no successor.
-    3. Recovery: recover-phase-task bumps version, releases claim, and the
-       original session's complete-phase-task is rejected as stale.
-    4. Splits freeze: design phase with multi-split design config writes
+    2. Failed phase: complete-phase-task with ok=false routes internally to
+       mark-phase-failed, sets run.status=failed, plans no successor.
+    3. Direct mark-phase-failed CLI invocation: same end state, exercises
+       the explicit failure subcommand surface.
+    4. Recovery: recover-phase-task bumps version, releases claim, and the
+       original session's complete-phase-task is rejected as stale (exit 2).
+    5. Splits freeze: design phase with multi-split design config writes
        splits_frozen and the next phase task is plan/<first split>.
+       Empty splits → splitMode=none path.
+    6. Schema v1 hard-fail: legacy single-session config is rejected with
+       a deterministic exit code (1 = not_found, generic error).
 
 Each test is self-contained and uses a tmp_path scratch project root.
 """
@@ -224,6 +229,35 @@ class TestFailedPhaseHaltsPipeline:
         # No design task planned.
         assert all(t["phase"] != "design" for t in cfg_after["phase_tasks"])
 
+    def test_mark_phase_failed_cli_directly(self, tmp_path):
+        """Direct mark-phase-failed CLI: same end state as ok=false routing."""
+        project = tmp_path / "fail-direct"
+        project.mkdir()
+        config = _write_config(project)
+        first = config["phase_tasks"][0]
+
+        _claim(
+            project,
+            phase_task_id=first["phaseTaskId"],
+            session_uuid=first["sessionUuid"],
+            expected_phase="project",
+        )
+        version = _read_config(project)["phase_tasks"][0]["version"]
+
+        res = _run_cli([
+            "mark-phase-failed",
+            "--phase-task-id", first["phaseTaskId"],
+            "--session-uuid", first["sessionUuid"],
+            "--version", str(version),
+            "--error", "spec interview crashed",
+        ], project, check=False)
+        assert res.returncode == 0, f"mark-phase-failed exited non-zero: {res.stderr}"
+
+        cfg_after = _read_config(project)
+        assert cfg_after["status"] == "failed"
+        assert cfg_after["phase_tasks"][0]["status"] == "failed"
+        assert all(t["phase"] != "design" for t in cfg_after["phase_tasks"])
+
 
 class TestRecoverPhaseTask:
     """recover-phase-task releases the claim and invalidates stale completers."""
@@ -381,9 +415,14 @@ class TestSchemaV1HardFail:
             "--session-uuid", "any-uuid",
             "--expected-phase", "project",
         ], project, check=False)
-        # v1 → hard fail. We accept exits 1 or 2 (depends on lifecycle internals)
-        # but the run config must remain v1 (untouched).
-        assert res.returncode != 0
+        # v1 hard-fail surfaces as not_found (no phase_tasks[]) which is a
+        # generic error, not a fail-closed reason → exit 1 (deterministic).
+        # Schema-v1 detection in load_run_config is a future improvement;
+        # the user-visible behaviour today is "lifecycle subcommand can't
+        # find anything in v1 layout, fails clean".
+        assert res.returncode == 1, \
+            f"expected exit 1 for v1 not_found, got rc={res.returncode}\n" \
+            f"stdout={res.stdout}\nstderr={res.stderr}"
         unchanged = _read_config(project)
         assert "schemaVersion" not in unchanged
         assert "phase_tasks" not in unchanged

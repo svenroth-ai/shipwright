@@ -109,6 +109,7 @@ in `phase_tasks[]`:
       "slashCommand": "/shipwright-project",
       "prerequisites": [],
       "claimedBySessionUuid": null,
+      "claimAttemptedAt": null,
       "executionCount": 0,
       "result": {"ok": true},
       "errors": []
@@ -116,7 +117,8 @@ in `phase_tasks[]`:
   ],
   "status": "in_progress | complete | failed | needs_validation",
   "current_step": "...",            // legacy v1-compat field, advisory only
-  "completed_steps": [...]          // legacy v1-compat field, advisory only
+  "completed_steps": [...],         // legacy v1-compat field, advisory only
+  "pipeline": [...]                 // legacy v1-compat field, drives banner counts
 }
 ```
 
@@ -142,9 +144,11 @@ entries.
 | `("project", null)`                 | always                                    | `("design", null)`                 |
 | `("design", null)`                  | `splitMode == "per_split"` (≥1 split)     | `("plan", splits[0])`              |
 | `("design", null)`                  | `splitMode == "none"`                     | `("plan", null)`                   |
-| `("plan", split[i])` / `null`       | always                                    | `("build", same_splitId)`          |
+| `("plan", split[i])`                | always                                    | `("build", split[i])`              |
+| `("plan", null)`                    | always                                    | `("build", null)`                  |
 | `("build", split[i])`               | `i+1 < len(splits)`                       | `("plan", split[i+1])`             |
-| `("build", split[last])` / `null`   | last split / split-less                   | `("test", null)`                   |
+| `("build", split[i])`               | `i+1 == len(splits)` (last split)         | `("test", null)`                   |
+| `("build", null)`                   | always (split-less)                       | `("test", null)`                   |
 | `("test", null)`                    | `runConditions.securityEnabled == true`   | `("security", null)`               |
 | `("test", null)`                    | `runConditions.securityEnabled == false`  | `("changelog", null)`              |
 | `("security", null)`                | always                                    | `("changelog", null)`              |
