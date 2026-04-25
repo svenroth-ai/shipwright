@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shipwright.local/schemas/run_config.v2.schema.json",
+  "title": "Shipwright Run Config (schemaVersion 2)",
+  "description": "Authoritative shape of shipwright_run_config.json for the multi-session pipeline orchestrator. Vertragsschicht for the shipwright-webui repo (schema v3 of sdk-sessions.json mirrors phase_tasks[]).",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "runId",
+    "scope",
+    "autonomy",
+    "deploy_target",
+    "pipeline",
+    "runConditions",
+    "splits_frozen",
+    "status",
+    "completed_phase_task_ids",
+    "phase_tasks",
+    "created_at"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schemaVersion": {
+      "const": 2,
+      "description": "Hard cut: orchestrator phase-lifecycle subcommands reject anything other than 2."
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "^run-[0-9a-f]{8}$",
+      "description": "Stable run identifier. 'run-' + first 8 hex chars of a uuid4."
+    },
+    "scope": { "enum": ["full_app", "extension"] },
+    "profile": { "type": ["string", "null"] },
+    "autonomy": { "enum": ["guided", "autonomous"] },
+    "deploy_target": { "type": "string" },
+    "pipeline": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Phase" },
+      "minItems": 1
+    },
+    "runConditions": {
+      "type": "object",
+      "required": ["securityEnabled", "splitMode", "aikidoClientIdPresent"],
+      "additionalProperties": false,
+      "properties": {
+        "securityEnabled": {
+          "type": "boolean",
+          "description": "Frozen at run creation from AIKIDO_CLIENT_ID env. Mid-run env changes do not affect this."
+        },
+        "splitMode": {
+          "enum": ["none", "per_split", null],
+          "description": "Frozen at design-stop. null until then."
+        },
+        "aikidoClientIdPresent": {
+          "type": "boolean",
+          "description": "Diagnostic mirror of securityEnabled cause."
+        }
+      }
+    },
+    "splits_frozen": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Frozen at design-stop. Empty list means single-pass build (splitMode=none) or design has not yet completed."
+    },
+    "status": {
+      "enum": ["in_progress", "complete", "failed", "needs_validation"]
+    },
+    "completed_phase_task_ids": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/PhaseTaskId" }
+    },
+    "phase_tasks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/PhaseTask" }
+    },
+    "phase_history": {
+      "type": "object",
+      "description": "Iterate 12.0 (ADR-027) per-phase audit trail. Unchanged from v1."
+    },
+    "iterate_history": {
+      "type": "array",
+      "description": "Legacy field; new entries live under agent_docs/iterates/."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "validation_issues": { "type": "array" },
+    "validation_notes": { "type": "array" },
+    "last_compliance_update": { "type": "object" }
+  },
+  "$defs": {
+    "Phase": {
+      "enum": [
+        "project",
+        "design",
+        "plan",
+        "build",
+        "test",
+        "security",
+        "changelog",
+        "deploy"
+      ]
+    },
+    "PhaseTaskId": {
+      "type": "string",
+      "pattern": "^ptk-[0-9a-f]{4,}$"
+    },
+    "PhaseTaskStatus": {
+      "enum": [
+        "backlog",
+        "awaiting_launch",
+        "in_progress",
+        "done",
+        "failed",
+        "skipped"
+      ]
+    },
+    "PhaseTask": {
+      "type": "object",
+      "required": [
+        "phaseTaskId",
+        "phase",
+        "splitId",
+        "sessionUuid",
+        "version",
+        "status",
+        "title",
+        "slashCommand",
+        "prerequisites",
+        "executionCount",
+        "createdAt"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "phaseTaskId": { "$ref": "#/$defs/PhaseTaskId" },
+        "phase": { "$ref": "#/$defs/Phase" },
+        "splitId": { "type": ["string", "null"] },
+        "sessionUuid": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Pre-bound at planning time. Used by phase_session_start.py for sessionUuid-match discovery."
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Bumped by recover-phase-task. Used in CAS by complete-phase-task and mark-phase-failed."
+        },
+        "status": { "$ref": "#/$defs/PhaseTaskStatus" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "slashCommand": {
+          "type": "string",
+          "pattern": "^/shipwright-(project|design|plan|build|test|security|changelog|deploy)$"
+        },
+        "launchCommandHint": {
+          "type": "string",
+          "description": "Display-only hint. Authoritative launch command may differ (WebUI generates its own)."
+        },
+        "prerequisites": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PhaseTaskId" }
+        },
+        "claimedBySessionUuid": {
+          "type": ["string", "null"],
+          "description": "Set by claim-phase-task. Cleared by recover-phase-task."
+        },
+        "claimAttemptedAt": { "type": ["string", "null"] },
+        "executionCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Monotonic. Incremented by recover-phase-task."
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "awaitingLaunchAt": { "type": ["string", "null"] },
+        "startedAt": { "type": ["string", "null"] },
+        "completedAt": { "type": ["string", "null"] },
+        "result": {
+          "type": ["object", "null"],
+          "description": "Populated on terminal status. Includes ok flag and artifacts list."
+        },
+        "errors": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "allOf": [
+        {
+          "description": "Plan-state and build-state phase tasks may have splitId; everyone else must have null.",
+          "if": {
+            "properties": { "phase": { "enum": ["plan", "build"] } }
+          },
+          "then": {},
+          "else": {
+            "properties": { "splitId": { "type": "null" } }
+          }
+        }
+      ]
+    }
+  }
+}
