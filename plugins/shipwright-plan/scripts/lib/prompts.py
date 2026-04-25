@@ -1,6 +1,11 @@
 """Prompt template loading for /shipwright-plan.
 
-Loads system/user prompts from the prompts/ directory for external LLM review.
+Loads section-writer prompts from the plugin's prompts/ directory.
+
+External-review prompts (plan_reviewer, iterate_reviewer) live in
+``shared/scripts/lib/external_review_prompts.py`` and load from
+``{plugin_root}/prompts/plan_reviewer/`` (plan-mode) or
+``shared/prompts/iterate_reviewer/`` (iterate-mode).
 """
 
 from pathlib import Path
@@ -11,7 +16,7 @@ def load_prompt(plugin_root: str | Path, prompt_dir: str, prompt_name: str) -> s
 
     Args:
         plugin_root: Path to plugin root
-        prompt_dir: Subdirectory in prompts/ (e.g., "plan_reviewer")
+        prompt_dir: Subdirectory in prompts/ (e.g., "section_writer")
         prompt_name: File name (e.g., "system" or "user")
 
     Returns:
@@ -24,30 +29,6 @@ def load_prompt(plugin_root: str | Path, prompt_dir: str, prompt_name: str) -> s
     if not path.exists():
         return ""
     return path.read_text(encoding="utf-8")
-
-
-def load_review_prompts(plugin_root: str | Path) -> tuple[str, str]:
-    """Load system and user prompts for plan review.
-
-    Returns:
-        Tuple of (system_prompt, user_prompt_template)
-    """
-    system = load_prompt(plugin_root, "plan_reviewer", "system")
-    user = load_prompt(plugin_root, "plan_reviewer", "user")
-    return system, user
-
-
-def load_iterate_review_prompts(plugin_root: str | Path) -> tuple[str, str]:
-    """Load system and user prompts for iterate review.
-
-    Falls back to sensible defaults if prompt files don't exist.
-
-    Returns:
-        Tuple of (system_prompt, user_prompt_template)
-    """
-    system = load_prompt(plugin_root, "iterate_reviewer", "system")
-    user = load_prompt(plugin_root, "iterate_reviewer", "user")
-    return system, user
 
 
 def load_section_prompt(plugin_root: str | Path) -> str:

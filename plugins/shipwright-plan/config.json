@@ -8,27 +8,9 @@
     "location": null,
     "_comment": "Required for Vertex AI: set project and location. Falls back to gcloud config (project) and GOOGLE_CLOUD_LOCATION env var."
   },
-  "external_review": {
-    "alert_if_missing": true,
-    "feedback_iterations": 1,
-    "_comment_alert": "alert_if_missing: reserved (review is now interactive in Step 5 Branch B — never silently skipped)",
-    "_comment_iterations": "feedback_iterations: default 1 = external review is the default path. 0 = explicit opt-out; the skill then runs a mandatory self-review ('2x denken') fallback instead. If > 0 and no API key is set, the skill interactively prompts the user."
-  },
-  "models": {
-    "gemini": "gemini-3.1-pro-preview",
-    "chatgpt": "gpt-5.4",
-    "openrouter_gemini": "google/gemini-3.1-pro-preview",
-    "openrouter_chatgpt": "openai/gpt-5.4",
-    "_comment": "Models for external review. OpenRouter models used when OPENROUTER_API_KEY is set (recommended). Direct models used with GEMINI_API_KEY/OPENAI_API_KEY."
-  },
-  "llm_client": {
-    "timeout_seconds": 120,
-    "max_retries": 3,
-    "retry_codes": [429, 500, 503],
-    "_comment": "Timeout and retry settings for external LLM calls"
-  },
   "e2e_test_plan": {
     "enabled": true,
     "_comment": "Generate Playwright E2E test plan as claude-plan-e2e.md (Shipwright enhancement)"
-  }
+  },
+  "_review_config_moved": "External review settings (models, llm_client, external_review) live in shared/config/external_review.json — read via lib.external_review_config.load_review_config(). Override models per-environment with SHIPWRIGHT_REVIEW_MODEL_GEMINI / _CHATGPT / _OPENROUTER_GEMINI / _OPENROUTER_CHATGPT."
 }

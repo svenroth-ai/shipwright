@@ -1,4 +1,4 @@
-"""Tests for check-external-review-keys.py helper."""
+"""Tests for shared/scripts/checks/check-external-review-keys.py."""
 
 import json
 import os
@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 SCRIPT = str(
-    Path(__file__).resolve().parent.parent
+    Path(__file__).resolve().parents[1]
     / "scripts"
     / "checks"
     / "check-external-review-keys.py"
@@ -45,6 +45,8 @@ def test_check_reports_missing_when_no_keys(tmp_path):
     assert out["available"] is False
     assert out["status"] == "missing_keys"
     assert out["providers"]["openrouter"] is False
+    assert out["providers"]["gemini"] is False
+    assert out["providers"]["openai"] is False
 
 
 def test_check_reports_available_with_openrouter(tmp_path):
@@ -52,3 +54,17 @@ def test_check_reports_available_with_openrouter(tmp_path):
     assert out["available"] is True
     assert out["status"] == "available"
     assert out["providers"]["openrouter"] is True
+
+
+def test_check_reports_available_with_gemini_direct(tmp_path):
+    out = run_check({**_CLEAN, "GEMINI_API_KEY": "AI-test-123"}, cwd=str(tmp_path))
+    assert out["available"] is True
+    assert out["status"] == "available"
+    assert out["providers"]["gemini"] is True
+
+
+def test_check_reports_available_with_openai_direct(tmp_path):
+    out = run_check({**_CLEAN, "OPENAI_API_KEY": "sk-openai-test-123"}, cwd=str(tmp_path))
+    assert out["available"] is True
+    assert out["status"] == "available"
+    assert out["providers"]["openai"] is True
