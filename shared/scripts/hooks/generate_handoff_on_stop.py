@@ -158,6 +158,35 @@ def _run_phase_completion(project_root: Path, step: str) -> None:
         pass
 
 
+def _phase_task_handoff_path(project_root: Path, session_id: str) -> Path | None:
+    """Return the namespaced handoff path if this session owns a v2 phase_task,
+    else None (caller falls back to the generic session_handoff.md).
+
+    F3a multi-session pipeline. Match SHIPWRIGHT_SESSION_ID against
+    phase_tasks[].sessionUuid in v2 run config. No match (e.g. master
+    session, standalone, v1 config) -> None.
+    """
+    if not session_id or session_id == "unknown":
+        return None
+    run_cfg = project_root / "shipwright_run_config.json"
+    if not run_cfg.exists():
+        return None
+    try:
+        config = json.loads(run_cfg.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+    if config.get("schemaVersion") != 2:
+        return None
+    run_id = config.get("runId")
+    for t in config.get("phase_tasks", []):
+        if t.get("sessionUuid") == session_id and run_id:
+            return (
+                project_root / "agent_docs" / "runs"
+                / run_id / t.get("phaseTaskId", "unknown") / "handoff.md"
+            )
+    return None
+
+
 def main() -> int:
     # Consume stdin (hook protocol)
     try:
@@ -215,6 +244,13 @@ def main() -> int:
         session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
         content = generate_handoff(project_root, session_id, reason="session end")
 
+        # F3a multi-session pipeline: if this session is claimed by a
+        # phase_task in a v2 run config, namespace the handoff under
+        # agent_docs/runs/<runId>/<phaseTaskId>/handoff.md instead of
+        # clobbering the generic session_handoff.md (which the master
+        # session owns).
+        phase_namespaced = _phase_task_handoff_path(project_root, session_id)
+
         loop_id = os.environ.get("SHIPWRIGHT_LOOP_ID")
         loop_unit = os.environ.get("SHIPWRIGHT_LOOP_UNIT_ID")
         if loop_id and loop_unit:
@@ -223,6 +259,10 @@ def main() -> int:
             namespaced_path = namespaced_dir / f"{loop_unit}.md"
             namespaced_path.write_text(content, encoding="utf-8")
             handoff_path = namespaced_path
+        elif phase_namespaced is not None:
+            phase_namespaced.parent.mkdir(parents=True, exist_ok=True)
+            phase_namespaced.write_text(content, encoding="utf-8")
+            handoff_path = phase_namespaced
         else:
             agent_docs.mkdir(exist_ok=True)
             handoff_path.write_text(content, encoding="utf-8")
