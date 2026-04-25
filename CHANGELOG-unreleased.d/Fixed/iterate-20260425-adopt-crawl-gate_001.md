@@ -1,1 +1,0 @@
-shipwright-adopt: Step B.5 crawl gate now admits matched profile and multi-service detection, not just root `commands.dev` — fixes Playwright route-discovery being skipped on monorepos with no root `package.json`.
