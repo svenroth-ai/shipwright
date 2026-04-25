@@ -101,6 +101,19 @@ class TestPermissions:
             re.MULTILINE,
         ), "pull-requests: write permission missing (needed for PR comments)"
 
+    def test_actions_read_present(self, workflow_text):
+        # Once an explicit `permissions:` block is set, GitHub defaults all
+        # unlisted permissions to NONE. upload-sarif@v3 needs actions:read
+        # to attach the SARIF to the workflow run; without it the SARIF
+        # validates and parses but the final API push fails with
+        # "Resource not accessible by integration". Verified empirically on
+        # run https://github.com/svenroth-ai/shipwright/actions/runs/24942627768
+        assert re.search(
+            r"^\s*actions:\s*read\b",
+            workflow_text,
+            re.MULTILINE,
+        ), "actions: read permission missing (required by upload-sarif@v3 with explicit permissions block)"
+
 
 # ---------------------------------------------------------------------------
 # SARIF upload + fork-PR guards

@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: read
+  actions: read          # required by github/codeql-action/upload-sarif@v3 to attach SARIF to the run
   pull-requests: write   # to post PR comments
   security-events: write # required by github/codeql-action/upload-sarif@v3
 
