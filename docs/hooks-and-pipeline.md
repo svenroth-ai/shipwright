@@ -72,6 +72,155 @@ After build completes: shows split summary table. After test completes: shows te
 
 ---
 
+## Multi-Session Pipeline Lifecycle (v2)
+
+> **Schema v2 (2026-04-25, ADR-001).** `/shipwright-run` is no longer a
+> single-session pipeline driver — it is a *coordinator*. Each phase
+> (`project`, `design`, `plan`, `build`, `test`, `security`, `changelog`,
+> `deploy`) runs in its own external Claude CLI session. The master writes
+> the spec, prints a launch card, and ends. Phase Stop hooks plan the next
+> phase via `complete-phase-task` → `plan_next_phase`.
+
+### Run-Config Schema v2
+
+Every `shipwright_run_config.json` written by `orchestrator.py write-config`
+since 2026-04-25 carries `"schemaVersion": 2`. The authoritative state lives
+in `phase_tasks[]`:
+
+```json
+{
+  "schemaVersion": 2,
+  "runId": "run-a1b2c3d4",
+  "runConditions": {
+    "securityEnabled": false,
+    "splitMode": "per_split" | "none" | null,
+    "aikidoClientIdPresent": false
+  },
+  "splits_frozen": ["01-core", "02-ui-shell"],
+  "completed_phase_task_ids": ["ptk-9f8e"],
+  "phase_tasks": [
+    {
+      "phaseTaskId": "ptk-9f8e",
+      "phase": "project",
+      "splitId": null,
+      "sessionUuid": "<pre-bound uuid4>",
+      "version": 1,
+      "status": "awaiting_launch | in_progress | done | failed | skipped",
+      "slashCommand": "/shipwright-project",
+      "prerequisites": [],
+      "claimedBySessionUuid": null,
+      "executionCount": 0,
+      "result": {"ok": true},
+      "errors": []
+    }
+  ],
+  "status": "in_progress | complete | failed | needs_validation",
+  "current_step": "...",            // legacy v1-compat field, advisory only
+  "completed_steps": [...]          // legacy v1-compat field, advisory only
+}
+```
+
+**`runConditions` is frozen at run creation.** Mid-run env changes
+(`AIKIDO_CLIENT_ID`) do not retroactively change pipeline shape.
+**`splits_frozen` is set when the design phase completes** via
+`freeze-splits`. Splits are immutable after that point.
+
+v1 configs (no `schemaVersion`) are **hard-fail** rejected by phase-lifecycle
+subcommands — the user must rename and re-run `/shipwright-run`. Standalone
+phase invocations (no run config at all) keep working.
+
+### State Machine
+
+`plugins/shipwright-run/scripts/lib/phase_state_machine.py` is the pure
+single-source-of-truth for "given a completed phase, what is next". 14
+transitions; the orchestrator wraps it and materialises new `phase_tasks[]`
+entries.
+
+| Predecessor (phase, splitId)        | Condition                                 | Next (phase, splitId)              |
+|-------------------------------------|-------------------------------------------|------------------------------------|
+| _none_ (run init)                   | always                                    | `("project", null)`                |
+| `("project", null)`                 | always                                    | `("design", null)`                 |
+| `("design", null)`                  | `splitMode == "per_split"` (≥1 split)     | `("plan", splits[0])`              |
+| `("design", null)`                  | `splitMode == "none"`                     | `("plan", null)`                   |
+| `("plan", split[i])` / `null`       | always                                    | `("build", same_splitId)`          |
+| `("build", split[i])`               | `i+1 < len(splits)`                       | `("plan", split[i+1])`             |
+| `("build", split[last])` / `null`   | last split / split-less                   | `("test", null)`                   |
+| `("test", null)`                    | `runConditions.securityEnabled == true`   | `("security", null)`               |
+| `("test", null)`                    | `runConditions.securityEnabled == false`  | `("changelog", null)`              |
+| `("security", null)`                | always                                    | `("changelog", null)`              |
+| `("changelog", null)`               | always                                    | `("deploy", null)`                 |
+| `("deploy", null)`                  | always                                    | `None` (pipeline-terminal)         |
+
+**Run-completion invariant:** `run.status = complete` requires (1) deploy
+task is `done` AND (2) all other `phase_tasks[]` are terminal (`done` or
+`skipped`). When (1) holds but (2) doesn't, `run.status =
+"needs_validation"` plus a `pipeline_completion_blocked` event. **Failure
+is terminal:** any `failed` task immediately flips `run.status = failed`.
+
+### Phase-Session Lifecycle
+
+```
+USER: paste 'claude --session-id <uuid> --add-dir <root> --name <...> /<phase>'
+   |
+   v
+SessionStart hooks (in order):
+   1. capture_session_id.py        (sets SHIPWRIGHT_SESSION_ID, ROOT)
+   2. phase_session_start.py       (Discovery via sessionUuid match;
+                                    on match: claim-phase-task CAS,
+                                    write sessionstart-validation.json,
+                                    optionally write .block-pending sentinel,
+                                    emit SHIPWRIGHT-PIPELINE-CONTEXT additionalContext)
+   |
+   v
+UserPromptSubmit hook (per prompt; first prompt only matters):
+   - phase_user_prompt_validate.py (reads .block-pending sentinel,
+                                    if present → decision:"block" + delete marker;
+                                    else → no-op)
+   |
+   v
+Skill-Run:
+   - Step 0 (NEW): If PIPELINE-CONTEXT block present in context, parse
+     phaseTaskId and run get_phase_context.py → read prior artifacts.
+     Otherwise standalone-mode and skip.
+   - Step 1+ as normal.
+   |
+   v
+Stop hooks (in order — critical):
+   1. phase_session_stop.py        (Discovery via sessionUuid;
+                                    if design phase: freeze-splits first;
+                                    complete-phase-task OR mark-phase-failed
+                                    based on result.ok;
+                                    plan_next_phase auto-runs from
+                                    complete-phase-task)
+   2. generate_handoff_on_stop.py  (writes phase-specific handoff under
+                                    agent_docs/runs/<runId>/<ptk>/handoff.md)
+   3. audit_phase_quality_on_stop.py (existing — unchanged)
+```
+
+**Standalone path** (no run config or no `sessionUuid` match): both
+phase-session hooks are no-ops. Skills see no `SHIPWRIGHT-PIPELINE-CONTEXT`,
+skip Step 0, run as before.
+
+### Crash Recovery
+
+A phase session that crashes (terminal kill, OS crash, `kill -9`) leaves its
+`phase_tasks[i].status` at `in_progress` with `claimedBySessionUuid` set.
+Pipeline is wedged: `phase_session_start.py` fail-closes any new launch.
+
+**Escape hatch:**
+
+```bash
+uv run plugins/shipwright-run/scripts/lib/orchestrator.py recover-phase-task \
+  --phase-task-id ptk-9f8e \
+  [--force-status awaiting_launch|failed|skipped]
+```
+
+Bumps `version`, clears `claimedBySessionUuid`, increments `executionCount`.
+The crashed session's later `complete-phase-task` is rejected with exit 2
+(stale_version), so it cannot corrupt state after recovery.
+
+---
+
 ## hooks.json Format
 
 > **Breaking change (April 2025):** Claude Code now requires the new hooks format.
@@ -106,6 +255,14 @@ Tool names use short form: `Bash`, `Write`, `Edit`, `Read`, `Glob`, `Grep`.
 ---
 
 ## Hooks Registry
+
+> **Note (v2, 2026-04-25).** All 8 phase plugins (`project`, `design`,
+> `plan`, `build`, `test`, `security`, `changelog`, `deploy`) additionally
+> wire the **shared phase-session hooks**: `phase_session_start.py` after
+> `capture_session_id.py` on `SessionStart`, `phase_user_prompt_validate.py`
+> on `UserPromptSubmit`, and `phase_session_stop.py` first on `Stop`. The
+> per-plugin tables below show the unique hooks; see § Shared Phase-Session
+> Hooks (v2) for the multi-session trio that every phase plugin inherits.
 
 ### Shared Hook: capture_session_id.py
 
@@ -361,12 +518,50 @@ Other FAILs remain audit-only forever (or until an explicit
 follow-up adds them to the allowlist). Tier-2 findings are never
 promoted, even if their id hypothetically coincides with a gate id.
 
+### Shared Phase-Session Hooks (v2)
+
+Wired into **every** phase plugin (`project`, `design`, `plan`, `build`,
+`test`, `security`, `changelog`, `deploy`) to make multi-session pipelines
+work. See §Multi-Session Pipeline Lifecycle (v2) for the end-to-end flow.
+
+**`shared/scripts/hooks/phase_session_start.py` — SessionStart, after capture_session_id.**
+Discovers whether the launching session is part of an active run by matching
+`SHIPWRIGHT_SESSION_ID` against `phase_tasks[].sessionUuid`. On match it
+performs a CAS claim (`awaiting_launch → in_progress`), writes
+`.shipwright/runs/<runId>/<phaseTaskId>/sessionstart-validation.json`
+(persistent diagnostic) and, on validation failure, also writes
+`.block-pending` (single-use sentinel for the UserPromptSubmit hook). On
+success it emits a `SHIPWRIGHT-PIPELINE-CONTEXT` block via
+`hookSpecificOutput.additionalContext` carrying `phaseTaskId`. **No match →
+no-op.** Standalone phase invocations are unaffected.
+
+**`shared/scripts/hooks/phase_user_prompt_validate.py` — UserPromptSubmit.**
+Reads `.block-pending` if present, returns `decision: "block"` plus exit 2
+to abort wrong-skill / duplicate-claim / failed-prereq launches before the
+LLM ever runs. After the first read it deletes the marker so follow-up
+prompts in the same session pass through. SessionStart cannot block on its
+own (verified via F0 spike) — this hook closes the gap.
+
+**`shared/scripts/hooks/phase_session_stop.py` — Stop, before audit/handoff.**
+Re-discovers `phaseTaskId` via the `sessionUuid` match, parses `result.ok`
+from the phase's local config (`shipwright_<phase>_config.json`). For the
+design phase it calls `freeze-splits` first. Then calls **either**
+`complete-phase-task` (ok) or `mark-phase-failed` (not-ok) on the
+orchestrator. `complete-phase-task` automatically materialises the next
+phase task via the state machine.
+
+**Tools used by Step 0 of every phase skill:**
+`shared/scripts/tools/get_phase_context.py --phase-task-id <id>` returns
+prerequisite paths, prior phase artifacts, and `runConditions` for the
+phase to load explicitly.
+
 ### shipwright-run
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
-| Stop | — | `generate-handoff.py` | Writes `agent_docs/session_handoff.md` for resume |
+| Stop | — | `generate_handoff_on_stop.py` (shared) | Writes `agent_docs/session_handoff.md` for resume |
+| Stop | — | `master_stop_check.py` | **Observational** v2 master Stop hook. Prints pipeline status (in_progress / complete / failed) to stderr based on `phase_tasks[]` and `run.status`. **Never** mutates state — final-status responsibility lives in `complete-phase-task` of the last phase. |
 
 ### shipwright-project
 

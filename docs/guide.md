@@ -430,7 +430,7 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 
 ### 4.1 Orchestration -- /shipwright-run
 
-**Purpose.** The orchestrator is your single entry point. It takes a project description (or an existing project) and drives it through the entire pipeline -- from requirements through deployment -- managing state, transitions, and context pressure along the way.
+**Purpose.** The orchestrator is your single entry point. It takes a project description, infers settings, writes the pipeline spec to `shipwright_run_config.json`, prints a launch card for the first phase, and ends. Each phase then runs in its **own external Claude CLI session** — phase Stop hooks plan the next phase via the orchestrator state machine, so the pipeline progresses without the master session being open. (Multi-session lifecycle, schema v2 — see [Multi-Session Pipeline Lifecycle](hooks-and-pipeline.md#multi-session-pipeline-lifecycle-v2).)
 
 **Command and Arguments**
 
@@ -450,22 +450,21 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 
 **What it produces**
 
-- `shipwright_run_config.json` -- pipeline state (scope, profile, autonomy, current step, completed steps)
-- Orchestration of all downstream phases and their artifacts
-- Completion summary with deploy URL, test results, and PR link
+- `shipwright_run_config.json` (schema v2) — `runId`, frozen `runConditions`, `splits_frozen[]`, and the authoritative `phase_tasks[]` array (one entry per phase, each with a pre-bound `sessionUuid` and a `status` of `awaiting_launch | in_progress | done | failed | skipped`).
+- A launch-card banner with the exact `claude --session-id <uuid> --add-dir <path> --name '...' '/shipwright-<phase>'` command to paste into a new terminal.
+- Orchestration is delegated: phase Stop hooks (`phase_session_stop.py`) call `complete-phase-task`, which materialises the next `phase_tasks[]` entry. The final phase's Stop hook flips `run.status = "complete"`.
 
 **How it works**
 
-- Detects your input (file, inline text, or interactive chat) and asks 1-3 clarifying questions if the description is vague
-- Infers settings automatically: scope (new project vs. extension), technology profile (e.g., `supabase-nextjs`), and autonomy level (guided or autonomous)
-- Presents inferred settings for your confirmation before starting
-- Writes `shipwright_run_config.json` and dispatches to each phase in sequence: Project, Design, Plan, Build (looping per split), Test, Changelog, Deploy
-- Between phases, validates artifacts, updates the delivery dashboard, and checks for context pressure
-- In guided mode, asks you before each major transition; in autonomous mode, continues without prompting (except for production deploys)
+- Detects your input (file, inline text, or interactive chat) and asks 1-3 clarifying questions if the description is vague.
+- Infers settings automatically: scope (new project vs. extension), technology profile (e.g., `supabase-nextjs`), and autonomy level (guided or autonomous).
+- Presents inferred settings for your confirmation before starting.
+- Writes `shipwright_run_config.json` with `phase_tasks[0]` for the project phase, installs the `suggest_iterate.py` post-pipeline router, prints the launch card, and ends the master session.
+- Each phase session you launch externally runs SessionStart → UserPromptSubmit → Stop hooks that handle ownership claim, validation, and next-phase planning. Within a phase session, `guided` vs `autonomous` autonomy controls whether destructive actions ask for confirmation.
 
-**Standalone usage.** `/shipwright-run` is inherently standalone -- it is the top-level command. You typically only use individual phase commands when you want to re-run or debug a specific step.
+**Standalone usage.** `/shipwright-run` is the top-level coordinator. Individual phase commands (`/shipwright-project`, `/shipwright-build`, …) still run standalone if no `phase_tasks[]` match — useful for re-running or debugging a single phase without an active pipeline.
 
-**Resume support.** If the pipeline is interrupted (context limit, error, or manual stop), re-invoking `/shipwright-run` reads `shipwright_run_config.json` and resumes from the last incomplete step. No work is lost.
+**Resume support.** If the pipeline is interrupted, re-invoking `/shipwright-run` on the existing `shipwright_run_config.json` reads `phase_tasks[]`, identifies the next `awaiting_launch` task, and prints its launch card. Stale `in_progress` tasks (likely from crashed sessions) are surfaced with a `recover-phase-task` hint. The master never mutates state during resume — it only points you at what to launch next.
 
 ---
 
@@ -1719,7 +1718,7 @@ repo's `README.md` and `CLAUDE.md`.
 
 | Command | Arguments | Flags | Purpose |
 |---------|-----------|-------|---------|
-| `/shipwright-run` | `"description"` or `@requirements.md` | -- | Orchestrate the full pipeline. Infers stack profile, detects scope (Full App / Extension), dispatches to downstream skills in sequence. |
+| `/shipwright-run` | `"description"` or `@requirements.md` | -- | Coordinate a multi-session pipeline. Writes `shipwright_run_config.json` (schema v2) with `phase_tasks[]`, prints a launch card for the first phase, and ends. Each phase runs in its own external Claude CLI session; phase Stop hooks plan the next phase. Re-invoke on an existing config to print a resume launch card. |
 | `/shipwright-iterate` | `"description"` | `--type feature\|change\|bug`, `--complexity trivial\|small\|medium\|large`, `--review`, `--pause`, `--campaign <slug>`, `--autonomous` | Complexity-adaptive SDLC for ongoing changes. Auto-detects intent and complexity, scales phases from quick fix to structured mini-pipeline with planning, review, and testing. Campaign mode (`--campaign`) groups related sub-iterates; `--autonomous` runs them sequentially via subagents without manual gates. |
 | `/shipwright-project` | `"description"` or `@requirements.md` | -- | Decompose requirements into splits and IREB-aligned specs. Generates `CLAUDE.md`, `agent_docs/`, and project config. Interviews you about requirements. |
 | `/shipwright-design` | -- | -- | Generate HTML mockups from specs. Produces screens with review viewer, feedback loop, and spec backflow. Runs after project, before plan. |
