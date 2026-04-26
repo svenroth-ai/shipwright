@@ -1633,9 +1633,10 @@ Read these in order. Stop as soon as you have the answer you need — most revie
 | 4 | `agent_docs/architecture.md` | System overview, stack table, data flow, security model | ~5 min |
 | 5 | `agent_docs/decision_log.md` | Architecture Decision Records — why each non-obvious choice was made | scan-based |
 | 6 | `agent_docs/session_handoff.md` | Most recent state: last commit, last test status, last completed phase | ~1 min |
-| 7 | `shipwright_*_config.json` | Pipeline state — which phase ran when, completed sections, iterate history | scan-based |
+| 7 | `shipwright_*_config.json` | Pipeline state machine: current step, completed steps, project metadata. Several files (run, project, plan, build, test, deploy, security, sync) — grep the one whose name matches your question | scan-based |
+| 8 | `shipwright_events.jsonl` | Append-only event log — single source of truth for what happened, when. Compliance reports and the activity dashboard derive from this | scan-based |
 
-Files 1–4 are the primer. Files 5–7 are reference material — you grep them for a specific question, you do not read them cover to cover.
+Files 1–4 are the primer. Files 5–8 are reference material — you grep them for a specific question, you do not read them cover to cover.
 
 #### Single-Source-of-Truth Map
 
@@ -1650,7 +1651,9 @@ When you have a specific question, go directly to the file that owns the answer.
 | What test status right now? | `shipwright_test_results.json` | Last test run, pass/fail counts per layer |
 | What requirement maps to which file? | `shipwright_sync_config.json` (if present) | FR ↔ file mapping |
 | What requirements does this project even have? | `planning/*/spec.md` | IREB-aligned FR/NFR specs |
-| Where in the pipeline are we? | `shipwright_run_config.json` (`status`, `current_phase`) | Pipeline state machine |
+| Where in the pipeline are we? | `shipwright_run_config.json` (`status`, `current_step`) + `phase_history` for "which step ran when" | Pipeline state machine; `current_step` is the live cursor, `phase_history` is the trail |
+| What sections has build completed? | `shipwright_build_config.json` (`completed_sections`) | Per-section build state lives here, not in run config |
+| What iterates have run? | `agent_docs/iterates/*.json` (one file per iterate) — fall back to legacy `iterate_history` array in `shipwright_run_config.json` for older projects | Iterate 12 split the array into per-file entries; the run-config array is migration-only |
 | What was the most recent decision? | `agent_docs/decision_log.md` (latest ADR) | Forward-only append |
 | Did anyone override a hook? | `agent_docs/compliance_overrides.log` | Audit trail of soft-block overrides |
 

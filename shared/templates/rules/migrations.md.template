@@ -39,15 +39,22 @@ alter table public.profiles
   add column theme text not null default 'system'
     check (theme in ('light', 'dark', 'system'));
 
+-- Schema-shape assertions are safe: they don't depend on row content
+-- and return a concrete boolean even on empty tables.
 -- VERIFY: select count(*) = 2 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name in ('notification_email', 'theme')
--- VERIFY: select bool_and(notification_email is not null and theme is not null) from public.profiles
+-- VERIFY: select coalesce(bool_and(theme in ('light','dark','system')), true) from public.profiles
 ```
 
-Rules:
+Rules — **read every one before writing your first VERIFY**:
+
 - One SQL statement per `-- VERIFY:` line. Multiple lines per file are allowed and run in order.
 - The statement must be **read-only**: SELECT, EXPLAIN, function calls that do not mutate. The verifier does not enforce this — `psql` does — but a mutating VERIFY would defeat the point.
-- Prefer assertions that produce `true` or a concrete count over open-ended dumps. The verifier treats stdout `f` / `false` / `0` / empty as failure.
+- **Always return a non-null, non-zero, non-`false` value when the migration succeeded.** The verifier treats stdout `f` / `false` / `0` / empty as failure. NULL becomes empty stdout via psql's `-At` flag, which the verifier reads as failure too.
+- **Footgun: `count(*)` returns `0` legitimately on empty tables.** Do NOT write `-- VERIFY: select count(*) from public.profiles` — wrap it: `-- VERIFY: select count(*) > 0 from public.profiles` (only if a row is expected to exist) or `-- VERIFY: select count(*) = N from information_schema...` for schema-shape assertions.
+- **Footgun: `bool_and(...)` returns NULL on empty tables.** Wrap it: `-- VERIFY: select coalesce(bool_and(<predicate>), true) from <table>`. The `coalesce(..., true)` makes the assertion vacuously true when the table is empty, which matches the intent of "all rows satisfy the predicate".
+- Prefer schema-shape assertions (against `information_schema.*`, `pg_catalog.*`) over content assertions when possible — they don't depend on whether rows exist yet.
 - The marker is case-sensitive: `-- VERIFY:` exactly. Leading whitespace is allowed; trailing whitespace is trimmed.
+- **Limitation: the parser is line-oriented, not SQL-aware.** A `-- VERIFY:` literal inside a string (`insert into audit values ('-- VERIFY: foo')`) or inside a `/* ... */` block comment WILL be picked up as if it were a real verification. This is rare in generated migrations but possible — avoid embedding the literal `-- VERIFY:` anywhere except at the start of its own line.
 - Backwards-compat: migrations without any `-- VERIFY:` line are recorded as `skipped=True, all_passed=True` so legacy migrations and authors who explicitly opted out never break a deploy.
 
 ## Two-Phase Destructive Changes
@@ -59,7 +66,7 @@ Never combine an additive change (`ADD COLUMN`, `CREATE TABLE`, RLS-policy add) 
 
 Why: an additive-and-destructive migration cannot be safely rolled back. The `down.sql` would have to recreate the dropped column with no data — which is silently lossy. Splitting the change makes both phases independently reversible and gives downstream consumers (mobile apps, third-party integrations, cached query plans) a window to migrate.
 
-This is a **soft rule**: hooks may warn but do not block. The discipline lives in this template and in the deploy SKILL's pre-apply review prompt. If a destructive change must ship in the same migration as an additive one, document the reason in the migration's `-- WHY:` block AND in `agent_docs/decision_log.md` as an ADR.
+**Enforcement reality (be honest with yourself):** there is no automated hook that scans staged `up.sql` for ADD+DROP co-occurrence today — adding one is a deferred follow-up. The constitution lists this under ASK FIRST so the agent must self-audit and stop to ask the user before bundling. If a destructive change must ship in the same migration as an additive one, document the reason in the migration's `-- WHY:` block AND in `agent_docs/decision_log.md` as an ADR.
 
 ## Example: up.sql / down.sql pair
 

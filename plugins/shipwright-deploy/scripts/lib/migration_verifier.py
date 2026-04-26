@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -41,7 +42,28 @@ from pathlib import Path
 # and arbitrary SQL after the marker. Each verify block is one line.
 VERIFY_PATTERN = re.compile(r"^[ \t]*--\s*VERIFY:\s*(.+?)\s*$", re.MULTILINE)
 
-VERIFY_TIMEOUT_SECONDS = 30
+DEFAULT_VERIFY_TIMEOUT_SECONDS = 30
+
+
+def _resolve_timeout(cli_timeout: int | None) -> int:
+    """Resolve the verify timeout from CLI flag, env var, or default.
+
+    Precedence (highest first):
+      1. ``--timeout`` CLI flag
+      2. ``SHIPWRIGHT_VERIFY_TIMEOUT_SECONDS`` env var
+      3. DEFAULT_VERIFY_TIMEOUT_SECONDS (30s)
+    """
+    if cli_timeout is not None and cli_timeout > 0:
+        return cli_timeout
+    env = os.environ.get("SHIPWRIGHT_VERIFY_TIMEOUT_SECONDS", "").strip()
+    if env:
+        try:
+            value = int(env)
+            if value > 0:
+                return value
+        except ValueError:
+            pass
+    return DEFAULT_VERIFY_TIMEOUT_SECONDS
 
 
 def parse_verify_blocks(sql_text: str) -> list[str]:
@@ -58,6 +80,7 @@ def run_verification(
     verify_sql: str,
     db_url: str | None = None,
     dry_run: bool = False,
+    timeout_seconds: int | None = None,
 ) -> dict:
     """Run a single VERIFY SQL via psql and report the outcome.
 
@@ -85,19 +108,20 @@ def run_verification(
         cmd.append(db_url)
     cmd.extend(["-At", "-c", verify_sql])
 
+    timeout = _resolve_timeout(timeout_seconds)
     try:
         proc = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
-            timeout=VERIFY_TIMEOUT_SECONDS,
+            timeout=timeout,
         )
     except subprocess.TimeoutExpired:
         return {
             "verified": False,
             "sql": verify_sql,
             "stdout": "",
-            "stderr": f"Verification timed out (>{VERIFY_TIMEOUT_SECONDS}s)",
+            "stderr": f"Verification timed out (>{timeout}s)",
             "returncode": -1,
         }
     except FileNotFoundError:
@@ -149,6 +173,7 @@ def verify_migration_file(
     migration_path: Path,
     db_url: str | None = None,
     dry_run: bool = False,
+    timeout_seconds: int | None = None,
 ) -> dict:
     """Verify all `-- VERIFY:` blocks in a single migration file.
 
@@ -159,9 +184,35 @@ def verify_migration_file(
           "results": [run_verification result, ...],
           "all_passed": bool,
           "skipped": bool,   # True when no VERIFY blocks present
+          "error": str,      # only on read failures (missing file, encoding)
         }
+
+    Missing files / encoding errors are reported as a structured failure
+    (all_passed=False, skipped=False, error=<msg>) rather than raising —
+    the deploy SKILL parses the JSON and must always get parseable output,
+    not a Python traceback.
     """
-    sql_text = migration_path.read_text(encoding="utf-8")
+    try:
+        sql_text = migration_path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return {
+            "file": str(migration_path),
+            "verify_count": 0,
+            "results": [],
+            "all_passed": False,
+            "skipped": False,
+            "error": f"Migration file not found: {migration_path}",
+        }
+    except (UnicodeDecodeError, OSError) as exc:
+        return {
+            "file": str(migration_path),
+            "verify_count": 0,
+            "results": [],
+            "all_passed": False,
+            "skipped": False,
+            "error": f"Could not read migration: {exc}",
+        }
+
     blocks = parse_verify_blocks(sql_text)
 
     if not blocks:
@@ -173,7 +224,10 @@ def verify_migration_file(
             "skipped": True,
         }
 
-    results = [run_verification(b, db_url=db_url, dry_run=dry_run) for b in blocks]
+    results = [
+        run_verification(b, db_url=db_url, dry_run=dry_run, timeout_seconds=timeout_seconds)
+        for b in blocks
+    ]
     return {
         "file": str(migration_path),
         "verify_count": len(blocks),
@@ -197,12 +251,23 @@ def main(argv: list[str] | None = None) -> int:
         "--db-url",
         default=None,
         help="DB connection URL passed to psql (e.g. postgres://...). "
-        "If omitted, psql uses its default connection (PGHOST/PGUSER/etc.).",
+        "If omitted, psql uses its default connection (PGHOST/PGUSER/etc.). "
+        "WARNING: argv values are visible in process listings (`ps`); for PROD, "
+        "prefer PG* env vars or ~/.pgpass and omit --db-url so the password never "
+        "appears on the command line.",
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Parse + report without invoking psql. Useful for CI sanity checks.",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=None,
+        help=f"Timeout in seconds per VERIFY query. Default {DEFAULT_VERIFY_TIMEOUT_SECONDS}; "
+        "overridable via SHIPWRIGHT_VERIFY_TIMEOUT_SECONDS env var. Bump if a "
+        "VERIFY does a large-table assertion on PROD.",
     )
     parser.add_argument(
         "--output",
@@ -212,7 +277,9 @@ def main(argv: list[str] | None = None) -> int:
 
     paths = [Path(p) for p in args.migration]
     reports = [
-        verify_migration_file(p, db_url=args.db_url, dry_run=args.dry_run)
+        verify_migration_file(
+            p, db_url=args.db_url, dry_run=args.dry_run, timeout_seconds=args.timeout
+        )
         for p in paths
     ]
 

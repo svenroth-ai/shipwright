@@ -34,6 +34,8 @@ export default function DevBanner({ label = 'DEV' }: DevBannerProps) {
         position: 'fixed',
         top: '8px',
         left: '8px',
+        // INT_MAX - 1; intentionally one below DevErrorOverlay (INT_MAX) so an
+        // error overlay always paints on top of the banner. Do not "fix" this.
         zIndex: 2147483646,
         background: '#f59e0b',
         color: '#1e1e1e',

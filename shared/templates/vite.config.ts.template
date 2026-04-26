@@ -20,8 +20,10 @@ export default defineConfig(({ mode }) => ({
     // Add dev-only Vite plugins here — they will be tree-shaken out of prod builds.
     ...(mode === 'development'
       ? [
-          // Example slot — uncomment + install your preferred dev plugin:
-          // import('vite-plugin-inspect').then(m => m.default()),
+          // Example slot — uncomment AND `npm i -D vite-plugin-inspect` first.
+          // The async-import pattern works because Vite accepts Promise<Plugin>
+          // entries; without the install step uncommenting it crashes config load.
+          // import('vite-plugin-inspect').then((m) => m.default()),
         ]
       : []),
   ],
@@ -30,6 +32,10 @@ export default defineConfig(({ mode }) => ({
     port: 5173,
     // Wildcard allowedHosts so local tunnels (ngrok, cloudflared) work without config edits.
     // Vite 5+: pass `true` to allow any host.
+    //
+    // WARNING: `host: true` binds 0.0.0.0, which exposes the dev server on your
+    // local network (anyone on the same Wi-Fi can connect). Acceptable in trusted
+    // networks; switch to `'localhost'` for laptop-only / coffee-shop scenarios.
     host: true,
   },
   build: {
