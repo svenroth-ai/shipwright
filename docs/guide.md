@@ -67,20 +67,20 @@ User Description
   SHIPWRIGHT-TEST .......... Unit --> Integration (real DB) --> pgTAP --> Smoke --> E2E --> Visual
       |
       v
-  SHIPWRIGHT-SECURITY ...... Scan (OSS/Aikido) --> Classify --> Remediation Loop
-      |
-      v
-  SHIPWRIGHT-DEPLOY ........ Jelastic (Infomaniak) --> Smoke Test --> Rollback on Failure
-      |
-      v
   SHIPWRIGHT-CHANGELOG ..... Parse Commits --> Changelog --> Version Tag --> PR
       |
       v
-  SHIPWRIGHT-COMPLIANCE .... Traceability Matrix --> Test Evidence --> SBOM
+  SHIPWRIGHT-DEPLOY ........ Jelastic (Infomaniak) --> Smoke Test --> Rollback on Failure
 
   After initial build, ongoing changes use /shipwright-iterate:
   SHIPWRIGHT-ITERATE ....... Classify Intent --> Assess Complexity --> Adaptive Pipeline
+
+  Out-of-band (not part of the orchestrator pipeline):
+  /shipwright-security ..... OSS (Semgrep/Trivy/Gitleaks) | Aikido | CI workflow — run manually after test
+  /shipwright-compliance ... Auto-background doc update after every phase + on-demand detective audit
 ```
+
+The orchestrator runs **7 phases** (project → design → plan → build → test → changelog → deploy). Security and compliance are **separate skills, not pipeline phases** — security is invoked manually after test (or scheduled via `.github/workflows/security.yml`), and compliance fires as a non-blocking auto-background side-effect after every completed phase plus an on-demand `/shipwright-compliance` detective audit.
 
 Each phase is a standalone Claude Code plugin. `/shipwright-run` orchestrates the full pipeline for the initial build, `/shipwright-iterate` drives daily changes afterwards, and every single skill can be invoked on its own. Pick the entry point that matches your moment: the terminal or VS Code Extension directly for single-project flow, or the Command Center WebUI when you're tracking multiple projects at once and want one board that says where everything stands.
 
@@ -331,7 +331,7 @@ If you installed via shell alias, start with `shipwright` and then type the comm
 
 ### What to Expect
 
-Your first run kicks off with a short confirmation of stack, scope, and autonomy. Then Shipwright asks 5-10 requirements questions and generates interactive HTML mockups you review in the browser. After that, planning, build, test, security scan, and changelog run largely unattended -- guided mode pauses at each phase transition so you stay in control, autonomous mode runs straight through. Deployment to DEV is automatic if configured; production always needs explicit confirmation.
+Your first run kicks off with a short confirmation of stack, scope, and autonomy. Then Shipwright asks 5-10 requirements questions and generates interactive HTML mockups you review in the browser. After that, planning, build, test, changelog, and deploy run largely unattended -- guided mode pauses at each phase transition so you stay in control, autonomous mode runs straight through. Deployment to DEV is automatic if configured; production always needs explicit confirmation. Security scanning is **out-of-band** — invoke `/shipwright-security` manually after test (or activate the GitHub Actions workflow); it's not part of the orchestrator pipeline.
 
 Estimated time for a small app: 15-30 minutes. See Chapter 4 for the full phase-by-phase breakdown.
 
@@ -399,12 +399,23 @@ If those are true, `/shipwright-adopt` is the right entry point. `/shipwright-pr
 
 # Monorepo with a nested sub-project (e.g. webui/)
 /shipwright-adopt --exclude-path webui
+# Adopt nested sub-project too (instead of excluding it)
+/shipwright-adopt --include-nested
 
 # Skip Playwright crawl (no dev-server, auth wall, or deliberate opt-out)
 /shipwright-adopt --skip-crawl
+# Or: crawl from a custom URL with auth + tighter limits
+/shipwright-adopt --crawl-base-url http://localhost:5173 --crawl-auth-token "$TOKEN" \
+                  --crawl-max-depth 2 --crawl-max-pages 25
+
+# Skip historical event backfill or sync-config generation
+/shipwright-adopt --no-backfill-events --no-sync
+
+# Override the default planning split name (default: 01-adopted)
+/shipwright-adopt --planning-split 01-legacy-monolith
 ```
 
-See Appendix B for all flags.
+See Appendix B for the full reference of all 13 flags with arguments and types.
 
 ### Nested sub-projects
 
@@ -422,7 +433,7 @@ Do **not** run `/shipwright-project`, `/shipwright-plan`, or `/shipwright-build`
 
 ## 4. The Pipeline: Phase by Phase
 
-Shipwright's pipeline consists of 10 phases, each handling a distinct step in the software delivery lifecycle. The phases run in sequence when you invoke the full pipeline via `/shipwright-run`, but every phase can also run as a standalone command. This chapter covers the first five phases: Orchestration, Project Decomposition, UI Design, Planning, and Implementation.
+Shipwright's orchestrator pipeline consists of **7 phases** (project, design, plan, build, test, changelog, deploy), each handling a distinct step in the software delivery lifecycle. The phases run in sequence when you invoke the full pipeline via `/shipwright-run`, but every phase can also run as a standalone command. Two additional skills — `/shipwright-security` (Section 4.7) and `/shipwright-compliance` (Section 4.10) — are documented in this chapter for completeness but **run out-of-band**, not as orchestrator phases: security is manual or CI-triggered; compliance fires as an auto-background side-effect after every completed phase plus an on-demand audit.
 
 **Phase finalization canon.** Every decision-taking phase runs a five-step finalization sequence at the end of its work — the **Minimum Phase Completion Canon** (C1–C5): record a `phase_completed` event, update the build dashboard, regenerate `session_handoff.md` with a canon marker, write an ADR (where applicable), and append a CHANGELOG bullet (where applicable). The unified verifier `verify_phase.py` enforces these cross-artifact invariants and runs automatically through `phase_validators.py` between phases. See [Chapter 9 — Pipeline Verifier and Phase Completion Canon](#pipeline-verifier-and-phase-completion-canon) for the full mechanics and skip criteria per phase.
 
@@ -707,14 +718,16 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 
 ### 4.7 Security Scanning -- /shipwright-security
 
-**Purpose:** Scans your project for security vulnerabilities -- static analysis (SAST), dependency vulnerabilities (SCA), and leaked secrets. Supports two scanner backends: **OSS** (local CLI tools) and **Aikido** (cloud SaaS). In pipeline mode, findings are automatically routed to a subagent for remediation.
+> **Out-of-band skill — not part of `PIPELINE_STEPS`.** Security was decoupled from the orchestrator in iterate `sec-report-and-orchestrator-decouple` (2026-04). Run `/shipwright-security` manually after `/shipwright-test`, or activate `.github/workflows/security.yml` triggers for CI-driven scans. The orchestrator no longer auto-inserts a security phase.
+
+**Purpose:** Scans your project for security vulnerabilities -- static analysis (SAST), dependency vulnerabilities (SCA), and leaked secrets. Supports two scanner backends: **OSS** (local CLI tools, default) and **Aikido** (cloud SaaS, legacy). When invoked manually or via CI, findings are automatically routed to a subagent for remediation.
 
 **Scanner Backends:**
 
-| Backend | Tools | Runs where | Cost |
-|---------|-------|-----------|------|
-| **OSS** (default) | Semgrep + Trivy + Gitleaks | Local (CLI binaries) | Free |
-| **Aikido** | Aikido Security API | Cloud (SaaS) | Commercial |
+| Backend | Tools | Runs where | Status |
+|---------|-------|-----------|--------|
+| **OSS** (default) | Semgrep + Trivy + Gitleaks | Local (CLI binaries) | Actively maintained |
+| **Aikido** (optional) | Aikido Security API | Cloud (SaaS) | Legacy — see note below |
 
 **Command & Arguments:**
 
@@ -736,7 +749,7 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 - An Aikido Security account with API credentials (`AIKIDO_CLIENT_ID` and `AIKIDO_CLIENT_SECRET` in your environment)
 - Your GitHub repository connected in Aikido's dashboard
 
-**Backend selection:** Auto-detected. Aikido is preferred when credentials are set; otherwise OSS tools are used. Override with `SHIPWRIGHT_SCANNER_BACKEND=oss|aikido` or the profile's `testing.security.provider` field.
+**Backend selection:** Auto-detected. **OSS is the default and actively maintained path.** Aikido is selected if `AIKIDO_CLIENT_ID` is set, but its API path has not been re-verified end-to-end since the v0.3 restructure (see note below). Override with `SHIPWRIGHT_SCANNER_BACKEND=oss|aikido` or the profile's `testing.security.provider` field.
 
 **What it produces:**
 
@@ -755,9 +768,9 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 6. Needs-review findings are presented to you with options to fix, decline, or defer.
 7. Generates a Markdown report summarizing all findings and their remediation status (fixed, declined, deferred, open).
 
-**Standalone usage:** Yes -- the phase runs when any scanner backend is available. With OSS tools installed, it works without any cloud account. With Aikido, the standalone commands (`issues`, `summary`, `report`, `repos`) work against any connected repository.
+**Usage:** Always standalone (security is no longer a pipeline phase — see banner above). Runs when any scanner backend is available. With OSS tools installed, it works without any cloud account. With Aikido, the standalone commands (`issues`, `summary`, `report`, `repos`) work against any connected repository.
 
-> **Aikido backend -- not re-verified in v0.3:** The v0.3 restructuring (report persistence, iterate handoff, orchestrator decouple) was built and verified against the OSS backend only. The Aikido path in SKILL.md Step 6 is preserved and should continue to function via `aikido_client.py report`, but has not been re-run end-to-end against the new flow. If you use Aikido, please report any regressions in GitHub issues.
+> **Aikido backend -- legacy / not re-verified in v0.3:** The v0.3 restructuring (report persistence, iterate handoff, orchestrator decouple) was built and verified against the OSS backend only. The Aikido path in SKILL.md Step 6 is preserved and should continue to function via `aikido_client.py report`, but has not been re-run end-to-end against the new flow. New deployments are encouraged to use the OSS backend; if you use Aikido, please report any regressions in GitHub issues.
 
 **CI integration:** `.github/workflows/security.yml` is shipped DORMANT -- only `workflow_dispatch` is active out of the box. The workflow is fully wired (SARIF upload to GitHub Security tab, PR-comment, fork-PR guards, weekly cron) but the auto-triggers are commented out so consumers activate them deliberately at Phase B / Go-Live. See `plugins/shipwright-security/skills/security/references/ci-integration.md` for activation steps and behavior details.
 
@@ -845,9 +858,11 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 
 ### 4.10 Compliance -- /shipwright-compliance
 
-**Purpose (plan v7 Option Z, 2026-04-19 — expanded):** `/shipwright-compliance` now has two surfaces:
+> **Out-of-band skill — not a pipeline phase.** Compliance was removed from `PIPELINE_STEPS` in plan v7 Option Z (2026-04-19). Instead, it has two surfaces (1) below — both run **outside** the orchestrator state machine.
 
-1. **Auto-background compliance-doc generation** (side effect of every phase completion). The orchestrator calls `update_compliance.py --phase <name>` after each pipeline phase; no user interaction. Produces the same five reports (dashboard, RTM, test-evidence, change-history, SBOM) described below.
+**Purpose (plan v7 Option Z, 2026-04-19 — expanded):** `/shipwright-compliance` has two surfaces:
+
+1. **Auto-background compliance-doc generation** (non-blocking side-effect after every phase completion). The orchestrator calls `update_compliance.py --phase <name>` after each pipeline phase as a fire-and-forget subprocess; no user interaction, no blocking. Produces the same five reports (dashboard, RTM, test-evidence, change-history, SBOM) described below.
 2. **On-demand detective audit** (new). `/shipwright-compliance` invoked by a user runs `run_audit.py` — a cross-artifact consistency scan that catches drift the preventive Canon gate and reactive Phase-Quality Stop hook don't see (config ↔ event coherence, content rot in compliance docs, reverse-direction git-log scans, scope-to-doc heuristics, FR-vs-event evidence checks).
 
 Together with preventive Canon and reactive Phase-Quality, it's a three-layer quality net — see `docs/hooks-and-pipeline.md → shipwright-compliance` for the table.
@@ -861,15 +876,17 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 /shipwright-compliance --format json            # JSON output only
 ```
 
-**What the detective audit checks** (7 groups, ~22 checks; wired incrementally per plan v7):
+**What the detective audit checks** (7 groups planned; **only C and F are currently wired** per plan v7 Step 6 — Steps 4/5/7/8 will add the remaining groups incrementally):
 
-- **A** Artifact presence + path integrity — `npm run`, `uv run`, `make` commands in READMEs resolve; markdown links resolve; config path fields point to real files.
-- **B** Config ↔ config ↔ event-log coherence — `project_config.splits[]` matches `planning/NN-*/`; build section test files exist; commits on main have matching `work_completed` events.
-- **C** Planning internal coherence (preventive re-run) — every spec FR appears in a plan section, plan section IDs valid, section manifest ↔ files.
-- **D** Implementation evidence — every FR has at least one `work_completed` event, every built section has `test_count > 0`.
-- **E** Compliance-doc content staleness — regenerate each doc in memory, strip volatile `Generated:` header, byte-compare against disk. Strictly deeper than Phase-Quality's mtime checks.
-- **F** ADR structural integrity (preventive re-run) — unique sequential IDs, valid status enum, supersession refs exist.
-- **G** Agent-docs freshness vs. git activity — conventional-commit scope ↔ architecture.md substring match (with stoplist/alias map), ADR-ID references in commit bodies vs. decision_log.
+- **A** *(planned, not implemented)* Artifact presence + path integrity — `npm run`, `uv run`, `make` commands in READMEs resolve; markdown links resolve; config path fields point to real files.
+- **B** *(planned, not implemented)* Config ↔ config ↔ event-log coherence — `project_config.splits[]` matches `planning/NN-*/`; build section test files exist; commits on main have matching `work_completed` events.
+- **C** ✅ **shipped** — Planning internal coherence (preventive re-run): every spec FR appears in a plan section, plan section IDs valid, section manifest ↔ files.
+- **D** *(planned, not implemented)* Implementation evidence — every FR has at least one `work_completed` event, every built section has `test_count > 0`.
+- **E** *(planned, not implemented)* Compliance-doc content staleness — regenerate each doc in memory, strip volatile `Generated:` header, byte-compare against disk. Strictly deeper than Phase-Quality's mtime checks.
+- **F** ✅ **shipped** — ADR structural integrity (preventive re-run): unique sequential IDs, valid status enum, supersession refs exist.
+- **G** *(planned, not implemented)* Agent-docs freshness vs. git activity — conventional-commit scope ↔ architecture.md substring match (with stoplist/alias map), ADR-ID references in commit bodies vs. decision_log.
+
+> **Status today:** Invoking `/shipwright-compliance --only A` (or B, D, E, G) reports `groups_skipped=[<letter>]` with reason `not-implemented` cleanly — no fabricated passes. Groups C and F run on every audit by default.
 
 **What it needs (detective audit):**
 - `shipwright_events.jsonl` — primary event source.
@@ -905,6 +922,15 @@ A **stack profile** is a JSON file that defines everything about your technology
 
 When you run `/shipwright-run`, Shipwright infers the correct profile from your project description (or asks you to confirm). Every downstream skill -- project decomposition, planning, build, test, deploy -- reads the profile to make consistent decisions without you repeating configuration.
 
+Two profiles ship out-of-the-box:
+
+| Profile | Layout | When to use |
+|---------|--------|-------------|
+| `supabase-nextjs` (default) | Single-service Next.js + Supabase | Standard SaaS: Next.js full-stack with Supabase as backend |
+| `vite-hono` | Multi-service: Vite (frontend) + Hono (backend) | Split frontend/backend with a separate API server (or any project that wants the Vite dev-experience) |
+
+The `vite-hono` profile uses the multi-service `services: [...]` declaration documented in Section 7.3 (topo-ordered start, `depends_on` between services, partial-failure rollback). Legacy single-service profiles continue to use `dev_server: {...}`.
+
 ### The supabase-nextjs Profile
 
 The default profile ships a modern full-stack setup:
@@ -921,7 +947,7 @@ The default profile ships a modern full-stack setup:
 | Design System | Untitled UI (for mockups) | -- |
 | Unit Testing | Vitest | ^4.1.0 |
 | E2E Testing | Playwright | ^1.58.2 |
-| Security Scanning | OSS (Semgrep, Trivy, Gitleaks) or Aikido | Local CLI or Cloud API |
+| Security Scanning | OSS (Semgrep, Trivy, Gitleaks) — Aikido optional/legacy | Local CLI; Aikido via Cloud API |
 | Linting | ESLint (flat config), Prettier | ^10.0.3, ^3.8.1 |
 | Error Tracking | Sentry | ^10.45.0 (free tier) |
 | CI | GitHub Actions | On push + PR |
@@ -965,8 +991,8 @@ The profile enforces these conventions across all pipeline phases:
 | `OPENROUTER_API_KEY` | OpenRouter key for external plan review | Plugin (optional) |
 | `GEMINI_API_KEY` | Google Gemini key (alternative to OpenRouter) | Plugin (optional) |
 | `OPENAI_API_KEY` | OpenAI key (alternative to OpenRouter) | Plugin (optional) |
-| `AIKIDO_CLIENT_ID` | Aikido Security API client ID | Plugin (optional) |
-| `AIKIDO_CLIENT_SECRET` | Aikido Security API client secret | Plugin (optional) |
+| `AIKIDO_CLIENT_ID` | Aikido Security API client ID | Plugin (optional, legacy — OSS preferred) |
+| `AIKIDO_CLIENT_SECRET` | Aikido Security API client secret | Plugin (optional, legacy — OSS preferred) |
 
 ### Generated-App DX (Vite-based profiles)
 
@@ -1051,9 +1077,9 @@ OPENAI_API_KEY=sk-your-key
 
 ### Security Scanning
 
-The security phase supports two backends. Choose one (or both):
+`/shipwright-security` runs **out-of-band** (not as a pipeline phase — see Section 4.7). It supports two backends:
 
-**Option A -- OSS Backend (local, free):** Install one or more CLI tools on your machine:
+**Option A -- OSS Backend (recommended; local, free, actively maintained):** Install one or more CLI tools on your machine:
 
 - **Semgrep** (SAST): `pip install semgrep` or `brew install semgrep`
 - **Trivy** (SCA): `brew install trivy` or download from [GitHub releases](https://github.com/aquasecurity/trivy/releases)
@@ -1061,16 +1087,16 @@ The security phase supports two backends. Choose one (or both):
 
 Each tool is optional -- install at least one to enable the OSS backend. Semgrep and Trivy auto-update their rules/vulnerability databases on every scan.
 
-**Option B -- Aikido Backend (cloud SaaS):** Add your API credentials:
+**Option B -- Aikido Backend (optional, legacy — see Section 4.7 note):** Add your API credentials:
 
 ```
 AIKIDO_CLIENT_ID=your-client-id
 AIKIDO_CLIENT_SECRET=your-client-secret
 ```
 
-**Backend selection** is automatic: Aikido is used when credentials are set, otherwise OSS tools are detected. Override with `SHIPWRIGHT_SCANNER_BACKEND=oss|aikido` in your environment.
+**Backend selection** is automatic: **OSS is the default and actively maintained path.** Aikido is selected if `AIKIDO_CLIENT_*` is set but its API path has not been re-verified end-to-end since v0.3. Override with `SHIPWRIGHT_SCANNER_BACKEND=oss|aikido` in your environment.
 
-The security phase (`/shipwright-security`) is conditional -- it only runs when at least one backend is available.
+`/shipwright-security` only runs when at least one backend is available; if neither is configured it prints setup instructions and stops.
 
 ### Validating Your Setup
 
@@ -1129,9 +1155,12 @@ Every skill works standalone -- you do not always need the full pipeline:
 | `/shipwright-test --design-fidelity` | Run design fidelity check only (code-level mockup vs implementation) |
 | `/shipwright-deploy` | Just deploy to Jelastic |
 | `/shipwright-changelog` | Just generate changelog and create a PR |
-| `/shipwright-compliance` | Detective cross-artifact audit (flags: `--fix` regenerate stale compliance docs, `--only A,B,E` restrict to groups, `--format md\|json\|both`) |
+| `/shipwright-security` | Run security scan (out-of-band — not a pipeline phase). OSS backend by default; Aikido optional. |
+| `/shipwright-compliance` | Detective cross-artifact audit (flags: `--fix` regenerate stale compliance docs, `--only C,F` restrict to groups, `--format md\|json\|both`). Out-of-band — also fires as auto-background side-effect after every pipeline phase. |
 
 When using skills individually, provide the input artifact (spec file, section file) as an argument. The skill reads what it needs from the project's config files.
+
+> **Note.** `/shipwright-security` and `/shipwright-compliance` are **not** part of the orchestrator pipeline (`PIPELINE_STEPS`). Security runs purely on demand or via CI. Compliance has two surfaces: a non-blocking auto-background doc update after every completed phase **and** an on-demand detective audit you trigger explicitly. See Sections 4.7 and 4.10 for the full mechanics.
 
 **Local Preview.** `/shipwright-preview` starts the development server and shows the URL (e.g., `http://localhost:3000`). Available after at least one build split is complete. The preview uses the `dev_server` configuration from the stack profile -- new stack profiles must define `dev_server.command`, `dev_server.port`, and `dev_server.ready_path` in their profile JSON.
 
@@ -1435,17 +1464,37 @@ Shipwright enforces quality through **mechanical enforcement** -- hooks that blo
 
 ### The Hooks System
 
-Hooks are Python and shell scripts that fire on specific Claude Code events. The build phase has the most hooks:
+Hooks are Python and shell scripts that fire on specific Claude Code events. They split into three groups: **safety guards** (block dangerous actions), **state hooks** (track session/phase lifecycle), and **drift detectors** (warn on inconsistency).
+
+**Safety guards (PreToolUse / PostToolUse):**
 
 | Hook | Trigger | What It Prevents |
 |------|---------|-----------------|
-| `validate_command.sh` | Before any Bash command | Blocks `git push --force` to main, `rm -rf /`, `DROP DATABASE` |
-| `check_secrets.sh` | After Write/Edit | Detects API keys (`sk-...`, `AKIA...`, `ghp_...`), PEM keys, passwords, connection strings |
-| `check_destructive_migration.sh` | After Write/Edit on .sql | Warns on `DROP TABLE`, `DROP COLUMN`, `TRUNCATE` without a matching `down.sql` |
-| `check_file_size.sh` | After Write/Edit | Warns when source files exceed 300 lines |
-| `track_tool_calls.py` | After Write/Edit | Counts tool calls for context pressure detection |
-| `check_drift.py` | Session start | Detects uncommitted changes from prior sessions |
-| `check_documentation.py` | Session end | Verifies decision log and handoff documents are current |
+| `validate_command.sh` | PreToolUse Bash | Blocks `git push --force` to main, `rm -rf /`, `DROP DATABASE` |
+| `check_secrets.sh` | PostToolUse Write/Edit | Detects API keys (`sk-...`, `AKIA...`, `ghp_...`), PEM keys, passwords, connection strings |
+| `check_destructive_migration.sh` | PostToolUse Write/Edit on .sql | Warns on `DROP TABLE`, `DROP COLUMN`, `TRUNCATE` without a matching `down.sql` |
+| `check_file_size.sh` | PostToolUse Write/Edit | Warns when source files exceed 300 lines |
+
+**Multi-session lifecycle (orchestrator-driven phases):**
+
+| Hook | Trigger | What It Does |
+|------|---------|-----------------|
+| `phase_session_start.py` | SessionStart | Multi-session ownership claim for the current phase |
+| `phase_user_prompt_validate.py` | UserPromptSubmit | Validates the prompt belongs to the active phase |
+| `phase_session_stop.py` | Stop | Plans the next phase via `complete-phase-task` and prints its launch card |
+| `capture_session_id.py` | SessionStart | Records the Claude session ID for cross-session correlation |
+
+**Drift, audit & handoff:**
+
+| Hook | Trigger | What It Does |
+|------|---------|-----------------|
+| `check_drift.py` | SessionStart | CLAUDE.md vs filesystem drift (Structure block, package.json scripts) |
+| `check_artifact_drift.py` | SessionStart | Cross-artifact drift detection (configs, planning, agent_docs) |
+| `track_tool_calls.py` | PostToolUse | Counts tool calls for context-pressure detection |
+| `audit_phase_quality_on_stop.py` | Stop | Runs the 36-check Phase-Quality audit (see Section 9 below) |
+| `generate_handoff_on_stop.py` | Stop | Writes `agent_docs/session_handoff.md` |
+| `suggest_iterate.py` | UserPromptSubmit | Multilingual phase router — auto-suggests `/shipwright-iterate` for post-test code changes |
+| `write_terminal_marker.py` | SessionStart | Writes a terminal marker the WebUI Command Center watches |
 
 Hooks use **exit code 2 (soft-block)**: you can say "Continue anyway," but the override is logged to `agent_docs/compliance_overrides.log` and flagged at the next checkpoint.
 
@@ -1711,7 +1760,7 @@ The price is that you read 2–3 files to onboard instead of 1. The benefit is t
 | External review prompt appears every run | No API keys set for OpenRouter, Gemini, or OpenAI | Silent skip was removed in plan v0.3.0 — the skill now prompts in Step 5 Branch B. Fix: add `OPENROUTER_API_KEY=...` to `.env.local` at the repo root. To permanently opt out, set `external_review.feedback_iterations: 0` in `shipwright_plan_config.json` and the skill will fall straight into the self-review fallback without asking. |
 | Git operations fail (PR creation, changelog) | GitHub CLI not authenticated | Run `gh auth login` and follow the prompts. |
 | Deploy fails with auth error | Jelastic token expired or invalid | Generate a new token in the Infomaniak Jelastic Dashboard under Settings > Access Tokens. |
-| Security phase skipped | No scanner backend available | Install OSS tools (semgrep, trivy, gitleaks) or add Aikido credentials (`AIKIDO_CLIENT_ID`, `AIKIDO_CLIENT_SECRET`) to `.env.local`. |
+| `/shipwright-security` reports "no backend available" | No scanner installed | Install OSS tools (semgrep, trivy, gitleaks — recommended). Aikido credentials (`AIKIDO_CLIENT_ID`, `AIKIDO_CLIENT_SECRET`) work as a legacy fallback. |
 | Build hangs after multiple fix attempts | Agent stuck in a debugging loop | The constitution limits retries to 3 attempts, then escalates. If it still loops, type "stop" and review the error manually. |
 | Invalid JSON in `shipwright_events.jsonl` | Interrupted write or manual editing | Run `uv run shared/scripts/tools/validate_event_log.py --project-root .` -- the reader skips corrupt lines automatically, but the validator will identify them. |
 | Commit exists but no event recorded | Agent crashed after commit but before event recording | Run `validate_event_log.py` -- it checks git history against events and reports unmatched commits. |
@@ -1842,10 +1891,10 @@ in the WebUI repo.
 | `/shipwright-plan` | `@spec.md` | -- | Create implementation plan for one split. Researches stack, interviews for clarification, generates section files. Optionally sends plan to external LLMs (Gemini + OpenAI) for review. |
 | `/shipwright-build` | `@section.md` | `--autonomous`, `--from <section>` | Implement one section using TDD. Writes failing test, implements code, runs code review subagent, creates Conventional Commit on feature branch. With `--autonomous`, loops through all pending sections via subagents without manual gates. |
 | `/shipwright-test` | -- | `--fix` | Run test suite: unit tests (Vitest), integration tests (real DB), pgTAP (RLS), smoke test (HTTP), E2E (Playwright). The `--fix` flag enables auto-repair of failing tests. |
-| `/shipwright-security` | -- | -- | Run security scan (OSS or Aikido backend). Classifies findings, runs remediation loop with security-fixer subagent, generates report. Runs when any scanner backend is available. |
+| `/shipwright-security` | -- | -- | **Out-of-band** — not part of `PIPELINE_STEPS`. Run security scan (OSS backend by default; Aikido optional/legacy). Classifies findings, runs remediation loop with security-fixer subagent, generates report. Runs when any scanner backend is available. |
 | `/shipwright-changelog` | -- | -- | Parse Conventional Commits from git history, generate Keep-a-Changelog entries, suggest semver bump, create version tag, and open a pull request. |
 | `/shipwright-deploy` | -- | `--env prod` | Deploy to Jelastic (Infomaniak). DEV deploys automatically; PROD requires `--env prod` flag and explicit confirmation. Runs smoke test after deploy, rolls back on failure. |
-| `/shipwright-compliance` | -- | `--phase {name}` | Generate compliance reports: dashboard, RTM, test evidence, change history, and SBOM. The `--phase` flag updates reports incrementally for a specific phase. |
+| `/shipwright-compliance` | -- | `--fix`, `--only <groups>`, `--format md\|json\|both` | **Out-of-band** — detective cross-artifact audit (Groups C + F shipped; A/B/D/E/G planned). Also fires as auto-background subprocess after every completed pipeline phase via `update_compliance.py --phase <name>` (no manual flag needed). |
 | `/shipwright-adopt` | -- | `--dry-run`, `--profile <name>`, `--scope full_app\|library\|cli`, `--include-nested`, `--exclude-path <p>`, `--skip-crawl`, `--crawl-base-url <url>`, `--crawl-auth-token <tok>`, `--crawl-max-depth <n>`, `--crawl-max-pages <n>`, `--no-backfill-events`, `--no-sync`, `--planning-split <name>` | Onboard an existing (brownfield) repo into Shipwright. Analyzes stack + routes + conventions + git history, writes CLAUDE.md + agent_docs + configs + compliance reports + an E2E baseline. Not a pipeline phase — runs once per repo. |
 
 ### Verifier and Canon Helper Scripts
