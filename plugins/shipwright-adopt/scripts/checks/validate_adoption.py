@@ -132,7 +132,49 @@ def _validate_review(project_root: Path) -> list[str]:
     return []
 
 
-def validate(project_root: Path) -> list[str]:
+def _count_adrs(decision_log: Path) -> int:
+    if not decision_log.is_file():
+        return 0
+    body = decision_log.read_text(encoding="utf-8", errors="ignore")
+    return len(re.findall(r"^##\s+ADR-\d+", body, re.MULTILINE))
+
+
+def _read_snapshot_commits_total(project_root: Path) -> int | None:
+    snap = project_root / ".shipwright" / "adopt" / "snapshot.json"
+    if not snap.is_file():
+        return None
+    try:
+        data = json.loads(snap.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+    git = data.get("git") or {}
+    val = git.get("commits_total")
+    if isinstance(val, int):
+        return val
+    return None
+
+
+def _soft_check_decision_log_density(project_root: Path) -> list[str]:
+    """Warn (not error) when the decision_log feels suspiciously thin for the
+    repo's git history. A 200-commit repo with 1 ADR is plausible to flag
+    as "did Layer-2 enrichment skip the retroactive ADRs?" """
+    warnings: list[str] = []
+    commits = _read_snapshot_commits_total(project_root)
+    if commits is None or commits <= 50:
+        return warnings  # not enough signal to flag
+    adrs = _count_adrs(project_root / "agent_docs" / "decision_log.md")
+    if adrs < 3:
+        warnings.append(
+            f"agent_docs/decision_log.md has {adrs} ADR(s) but the repo has "
+            f"{commits} commits — historical data may be missing. Re-run "
+            "Layer-2 enrichment or seed retroactive ADRs from "
+            "git.major_refactor_commits[]."
+        )
+    return warnings
+
+
+def validate(project_root: Path) -> dict:
+    """Run hard + soft validation. Returns `{errors: [...], warnings: [...]}`."""
     errors: list[str] = []
     errors.extend(_validate_configs(project_root))
     errors.extend(_validate_agent_docs(project_root))
@@ -140,7 +182,11 @@ def validate(project_root: Path) -> list[str]:
     errors.extend(_validate_events(project_root))
     errors.extend(_validate_hook(project_root))
     errors.extend(_validate_review(project_root))
-    return errors
+
+    warnings: list[str] = []
+    warnings.extend(_soft_check_decision_log_density(project_root))
+
+    return {"errors": errors, "warnings": warnings}
 
 
 def main() -> int:
@@ -148,11 +194,13 @@ def main() -> int:
     parser.add_argument("--project-root", required=True, type=Path)
     args = parser.parse_args()
     project_root = args.project_root.resolve()
-    errors = validate(project_root)
+    result = validate(project_root)
+    errors = result["errors"]
+    warnings = result["warnings"]
     if errors:
-        print(json.dumps({"ok": False, "errors": errors}, indent=2))
+        print(json.dumps({"ok": False, "errors": errors, "warnings": warnings}, indent=2))
         return 1
-    print(json.dumps({"ok": True, "errors": []}, indent=2))
+    print(json.dumps({"ok": True, "errors": [], "warnings": warnings}, indent=2))
     return 0
 
 
