@@ -50,8 +50,8 @@ def _seed_basic_project(root: Path) -> None:
             "splits": [{"name": "01-auth", "status": "complete"}],
         })
     )
-    (root / "planning" / "01-auth").mkdir(parents=True)
-    (root / "planning" / "01-auth" / "spec.md").write_text("# spec\n")
+    (root / ".shipwright" / "planning" / "01-auth").mkdir(parents=True)
+    (root / ".shipwright" / "planning" / "01-auth" / "spec.md").write_text("# spec\n")
 
 
 def _seed_canon_artifacts(root: Path, *, run_id: str = "project-20260414-x") -> None:

@@ -4,7 +4,7 @@
 Runs after all artifacts are written. Verifies:
   - 5 required config JSONs exist + valid JSON (sync_config optional)
   - agent_docs/{architecture, conventions, decision_log, build_dashboard}.md exist
-  - planning/*/spec.md exists and has >= 1 FR-NN.MM reference
+  - .shipwright/planning/*/spec.md exists and has >= 1 FR-NN.MM reference
   - shipwright_events.jsonl has exactly 1 "adopted" event
   - .claude/settings.json has the UserPromptSubmit hook
   - .shipwright/adopt/review.md exists (skip-reason is acceptable)
@@ -61,12 +61,12 @@ def _validate_agent_docs(project_root: Path) -> list[str]:
 
 def _validate_spec(project_root: Path) -> list[str]:
     errors: list[str] = []
-    planning = project_root / "planning"
+    planning = project_root / ".shipwright" / "planning"
     if not planning.is_dir():
-        return ["missing: planning/ directory"]
+        return ["missing: .shipwright/planning/ directory"]
     specs = list(planning.rglob("spec.md"))
     if not specs:
-        return ["missing: planning/<split>/spec.md (no spec found)"]
+        return ["missing: .shipwright/planning/<split>/spec.md (no spec found)"]
     spec = specs[0]
     content = spec.read_text(encoding="utf-8", errors="ignore")
     if not re.search(r"\bFR-\d+\.\d+\b", content):

@@ -25,7 +25,7 @@ def tmp_project(tmp_path):
 @pytest.fixture
 def sample_section(tmp_path):
     """Create a sample section file."""
-    sections = tmp_path / "my-project" / "planning" / "sections"
+    sections = tmp_path / "my-project" / ".shipwright" / "planning" / "sections"
     sections.mkdir(parents=True)
     section = sections / "01-auth.md"
     section.write_text("# Section: 01-auth\n\n## Overview\nImplement auth.\n")

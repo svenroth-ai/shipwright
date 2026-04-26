@@ -34,7 +34,7 @@ def write_project_config(
         "status": "complete",
         "scope": scope,
         "profile": profile,
-        "planning_dir": "planning",
+        "planning_dir": ".shipwright/planning",
         "splits": [{"name": split_name, "status": "adopted"}],
         "requirements": {
             "source": "inferred-from-codebase",

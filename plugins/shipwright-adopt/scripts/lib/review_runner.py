@@ -98,7 +98,7 @@ def run_review(
         if p.exists():
             parts.append(f"## {rel}\n\n{p.read_text(encoding='utf-8')}\n")
     # Add first split spec
-    planning = project_root / "planning"
+    planning = project_root / ".shipwright" / "planning"
     if planning.is_dir():
         for spec in planning.rglob("spec.md"):
             parts.append(f"## {spec.relative_to(project_root).as_posix()}\n\n{spec.read_text(encoding='utf-8')}\n")

@@ -74,7 +74,7 @@ def test_ast_features_survive_when_crawl_finds_only_frontend(tmp_path: Path) -> 
         write_sync=False, backfill_events=False,
     )
 
-    spec_text = (tmp_path / "planning" / "01-adopted" / "spec.md").read_text(encoding="utf-8")
+    spec_text = (tmp_path / ".shipwright" / "planning" / "01-adopted" / "spec.md").read_text(encoding="utf-8")
     # All 3 AST routes are surfaced via their URL/label (no enrichment label provided)
     assert "/api/diagnostics" in spec_text
     assert "/api/sessions" in spec_text
@@ -108,7 +108,7 @@ def test_overlapping_routes_keep_both_origins(tmp_path: Path) -> None:
         scope_override=None, profile_override=None,
         write_sync=False, backfill_events=False,
     )
-    spec_text = (tmp_path / "planning" / "01-adopted" / "spec.md").read_text(encoding="utf-8")
+    spec_text = (tmp_path / ".shipwright" / "planning" / "01-adopted" / "spec.md").read_text(encoding="utf-8")
     # Exactly one row for /dashboard (no duplicate)
     assert spec_text.count("/dashboard") <= 3, (
         "expected /dashboard to appear at most a few times (one FR row + section), "
@@ -134,6 +134,6 @@ def test_no_routes_falls_back_to_ast_only(tmp_path: Path) -> None:
         scope_override=None, profile_override=None,
         write_sync=False, backfill_events=False,
     )
-    spec_text = (tmp_path / "planning" / "01-adopted" / "spec.md").read_text(encoding="utf-8")
+    spec_text = (tmp_path / ".shipwright" / "planning" / "01-adopted" / "spec.md").read_text(encoding="utf-8")
     assert "/login" in spec_text
     assert "/dashboard" in spec_text

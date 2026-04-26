@@ -89,7 +89,7 @@ def test_setup_empty_file(tmp_path):
 
 def test_setup_chat_mode(tmp_path):
     plugin_root = str(Path(__file__).resolve().parent.parent)
-    planning = tmp_path / "my-project" / "planning"
+    planning = tmp_path / "my-project" / ".shipwright" / "planning"
 
     output = run_setup([
         "--planning-dir", str(planning),
@@ -107,7 +107,7 @@ def test_setup_chat_mode(tmp_path):
 
 def test_setup_inline_mode(tmp_path):
     plugin_root = str(Path(__file__).resolve().parent.parent)
-    planning = tmp_path / "time-tracker" / "planning"
+    planning = tmp_path / "time-tracker" / ".shipwright" / "planning"
 
     output = run_setup([
         "--planning-dir", str(planning),
@@ -123,7 +123,7 @@ def test_setup_inline_mode(tmp_path):
 
 def test_setup_chat_mode_resume(tmp_path):
     plugin_root = str(Path(__file__).resolve().parent.parent)
-    planning = tmp_path / "project" / "planning"
+    planning = tmp_path / "project" / ".shipwright" / "planning"
 
     # First run
     run_setup([
@@ -157,7 +157,7 @@ def test_setup_no_file_no_dir():
 
 def test_setup_force_overwrites(tmp_path):
     plugin_root = str(Path(__file__).resolve().parent.parent)
-    planning = tmp_path / "project" / "planning"
+    planning = tmp_path / "project" / ".shipwright" / "planning"
 
     # First run
     run_setup([

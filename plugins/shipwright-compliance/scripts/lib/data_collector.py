@@ -760,8 +760,8 @@ _FR_TABLE_RE = re.compile(
 
 
 def collect_requirements(project_root: Path) -> list[RequirementInfo]:
-    """Parse functional requirements from planning/*/spec.md files."""
-    planning_dir = project_root / "planning"
+    """Parse functional requirements from .shipwright/planning/*/spec.md files."""
+    planning_dir = project_root / ".shipwright" / "planning"
     if not planning_dir.exists():
         return []
 
@@ -775,7 +775,7 @@ def collect_requirements(project_root: Path) -> list[RequirementInfo]:
             continue
 
         split_name = split_dir.name
-        rel_spec = f"planning/{split_name}/spec.md"
+        rel_spec = f".shipwright/planning/{split_name}/spec.md"
         content = spec_path.read_text(encoding="utf-8")
 
         for line in content.splitlines():
@@ -820,13 +820,13 @@ def _map_requirements_to_sections(
 # ---------------------------------------------------------------------------
 
 def collect_external_review_states(project_root: Path) -> list[ExternalReviewState]:
-    """Scan planning/*/external_review_state.json for audit evidence.
+    """Scan .shipwright/planning/*/external_review_state.json for audit evidence.
 
     The marker file is written by shipwright-plan v0.3.0+ Step 5 (and by
     shipwright-iterate v0.4.0+ medium+ complexity runs). Splits without the
     marker are reported with status="missing" so compliance can flag them.
     """
-    planning_dir = project_root / "planning"
+    planning_dir = project_root / ".shipwright" / "planning"
     if not planning_dir.exists():
         return []
 

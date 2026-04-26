@@ -125,7 +125,7 @@ def test_full_pipeline_e2e_via_subprocess(tmp_path: Path) -> None:
     assert (tmp_path / "shipwright_run_config.json").exists()
     assert (tmp_path / "shipwright_events.jsonl").exists()
     assert (tmp_path / ".claude" / "settings.json").exists()
-    assert (tmp_path / "planning" / "01-adopted" / "spec.md").exists()
+    assert (tmp_path / ".shipwright" / "planning" / "01-adopted" / "spec.md").exists()
 
     # Tier-5 visual docs were produced (fixture has client/components + tailwind)
     assert (tmp_path / "agent_docs" / "design_tokens.md").exists()
@@ -143,7 +143,7 @@ def test_full_pipeline_e2e_via_subprocess(tmp_path: Path) -> None:
     assert payload["gitignore_report"]["total"] > 0
 
     # Tier-4 additive merge: spec contains BOTH /dashboard (crawl) AND /api/* (AST)
-    spec = (tmp_path / "planning" / "01-adopted" / "spec.md").read_text(encoding="utf-8")
+    spec = (tmp_path / ".shipwright" / "planning" / "01-adopted" / "spec.md").read_text(encoding="utf-8")
     assert "/api/diagnostics" in spec
     assert "/api/sessions" in spec
     assert "Dashboard" in spec  # crawl entries surface their title

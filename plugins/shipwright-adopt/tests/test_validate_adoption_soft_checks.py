@@ -30,8 +30,8 @@ def _make_minimum_valid(root: Path, *, decision_log_body: str | None = None) -> 
     (root / "agent_docs" / "build_dashboard.md").write_text("# dash\n", encoding="utf-8")
     body = decision_log_body if decision_log_body is not None else "# log\n\n## ADR-0001: x\n"
     (root / "agent_docs" / "decision_log.md").write_text(body, encoding="utf-8")
-    (root / "planning" / "01-adopted").mkdir(parents=True, exist_ok=True)
-    (root / "planning" / "01-adopted" / "spec.md").write_text(
+    (root / ".shipwright" / "planning" / "01-adopted").mkdir(parents=True, exist_ok=True)
+    (root / ".shipwright" / "planning" / "01-adopted" / "spec.md").write_text(
         "# spec\n\nFR-01.01 placeholder.\n", encoding="utf-8",
     )
     (root / "shipwright_events.jsonl").write_text(

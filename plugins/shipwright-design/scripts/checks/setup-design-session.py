@@ -30,7 +30,7 @@ from lib.screen_registry import scan_designs_dir
 
 def find_specs(project_root: Path) -> list[str]:
     """Find all spec.md files from shipwright-project output."""
-    planning = project_root / "planning"
+    planning = project_root / ".shipwright" / "planning"
     specs = []
 
     if not planning.is_dir():

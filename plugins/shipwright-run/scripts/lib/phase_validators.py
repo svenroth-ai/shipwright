@@ -110,7 +110,7 @@ def _validate_project(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
     missing_specs = []
     for sp in splits:
         name = sp.get("name", "")
-        spec_path = project_root / "planning" / name / "spec.md"
+        spec_path = project_root / ".shipwright" / "planning" / name / "spec.md"
         if not spec_path.exists():
             missing_specs.append(name)
 
@@ -144,7 +144,7 @@ def _validate_design(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
     missing_mockups = []
     for sp in splits:
         name = sp.get("name", "")
-        mockup_dir = project_root / "planning" / name / "mockups"
+        mockup_dir = project_root / ".shipwright" / "planning" / name / "mockups"
         if not mockup_dir.exists() or not list(mockup_dir.glob("*.html")):
             missing_mockups.append(name)
 
@@ -185,7 +185,7 @@ def _validate_plan(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
     missing_files = []
     for sec in sections:
         name = sec.get("name", "")
-        section_path = project_root / "planning" / current_split / "sections" / f"{name}.md"
+        section_path = project_root / ".shipwright" / "planning" / current_split / "sections" / f"{name}.md"
         if not section_path.exists():
             missing_files.append(name)
 

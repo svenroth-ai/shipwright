@@ -26,8 +26,8 @@ def run_script(script_name: str, args: list[str]) -> dict:
 def test_full_flow(tmp_path):
     """Test setup → create dirs flow."""
     # 1. Create requirements
-    planning = tmp_path / "planning"
-    planning.mkdir()
+    planning = tmp_path / ".shipwright" / "planning"
+    planning.mkdir(parents=True)
     req = planning / "requirements.md"
     req.write_text("# Test\n\nBuild something.\n")
 

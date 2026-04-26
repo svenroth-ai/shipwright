@@ -75,7 +75,7 @@ def plan_standard_writes(
         ProposedWrite("agent_docs/conventions.md", "create", "linter/formatter/rules"),
         ProposedWrite("agent_docs/decision_log.md", "create", "ADR-0001 + retroactive ADRs"),
         ProposedWrite("agent_docs/build_dashboard.md", "create", "adoption snapshot"),
-        ProposedWrite(f"planning/{split_name}/spec.md", "create", "IREB spec from inferred features"),
+        ProposedWrite(f".shipwright/planning/{split_name}/spec.md", "create", "IREB spec from inferred features"),
         ProposedWrite("compliance/sbom.md", "create", "via shipwright-compliance"),
         ProposedWrite("compliance/change-history.md", "create", "via shipwright-compliance"),
         ProposedWrite("compliance/traceability-matrix.md", "create", "RTM skeleton"),

@@ -24,8 +24,8 @@ def run_script(script_name: str, args: list[str]) -> dict:
 @pytest.mark.integration
 def test_full_planning_flow(tmp_path):
     """Test setup → check sections flow."""
-    planning = tmp_path / "planning"
-    planning.mkdir()
+    planning = tmp_path / ".shipwright" / "planning"
+    planning.mkdir(parents=True)
     (planning / "sections").mkdir()
 
     spec = planning / "spec.md"

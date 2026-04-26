@@ -16,7 +16,7 @@ def test_standard_writes_lists_all_expected(tmp_path: Path) -> None:
     paths = [w.path for w in report.writes]
     assert "CLAUDE.md" in paths
     assert "agent_docs/architecture.md" in paths
-    assert "planning/01-adopted/spec.md" in paths
+    assert ".shipwright/planning/01-adopted/spec.md" in paths
     assert "shipwright_run_config.json" in paths
     assert "shipwright_sync_config.json" in paths
     assert "e2e/flows/adopted-baseline.spec.ts" in paths
