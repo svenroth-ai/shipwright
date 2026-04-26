@@ -14,8 +14,35 @@ from conftest import (
     BUILD_PLUGIN,
     PLAN_PLUGIN,
     PROJECT_PLUGIN,
+    SHARED_SCRIPTS,
     run_script,
 )
+
+
+def _assert_no_legacy_artifact_dirs(project_root: Path) -> None:
+    """Layer 3 negative-assertion (mirror of test_core_trilogy_flow):
+    fail if any in_progress/migrated artifact appeared at its legacy
+    top-level location.
+
+    Loaded by file-spec to avoid sys.modules poisoning the `lib` namespace
+    for plugin tests that import a different `lib` package.
+    """
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "_artifact_migrations_layer3",
+        SHARED_SCRIPTS / "lib" / "artifact_migrations.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    for migration in module.ARTIFACT_MIGRATIONS:
+        if migration["status"] not in ("in_progress", "migrated"):
+            continue
+        legacy = project_root / migration["legacy_dirname"]
+        assert not legacy.exists(), (
+            f"Migration drift: artifact `{migration['name']}` produced legacy "
+            f"directory {legacy} (status: {migration['status']}). Canonical: "
+            f"{project_root / migration['canonical']}"
+        )
 
 
 def _write_review_marker(planning_dir: Path, status: str = "completed") -> None:
@@ -40,7 +67,7 @@ class TestProjectStateRecovery:
 
     def test_resume_after_interview(self, trilogy_project):
         """Resume detects interview exists → skip to step 2."""
-        planning = trilogy_project / "planning"
+        planning = trilogy_project / ".shipwright" / "planning"
         req = planning / "requirements.md"
 
         # First run
@@ -60,7 +87,7 @@ class TestProjectStateRecovery:
 
     def test_resume_after_manifest(self, trilogy_project):
         """Resume detects manifest → skip to step 4."""
-        planning = trilogy_project / "planning"
+        planning = trilogy_project / ".shipwright" / "planning"
         req = planning / "requirements.md"
 
         run_script(PROJECT_PLUGIN, "checks", "setup-session.py", [
@@ -79,7 +106,7 @@ class TestProjectStateRecovery:
 
     def test_resume_after_dirs(self, trilogy_project):
         """Resume detects directories → skip to step 6."""
-        planning = trilogy_project / "planning"
+        planning = trilogy_project / ".shipwright" / "planning"
         req = planning / "requirements.md"
 
         run_script(PROJECT_PLUGIN, "checks", "setup-session.py", [
@@ -99,7 +126,7 @@ class TestProjectStateRecovery:
 
     def test_resume_after_specs(self, trilogy_project):
         """Resume detects all specs → skip to step 7 (scaffolding)."""
-        planning = trilogy_project / "planning"
+        planning = trilogy_project / ".shipwright" / "planning"
         req = planning / "requirements.md"
 
         run_script(PROJECT_PLUGIN, "checks", "setup-session.py", [
@@ -120,7 +147,7 @@ class TestProjectStateRecovery:
 
     def test_force_overwrite(self, trilogy_project):
         """--force resets session to new."""
-        planning = trilogy_project / "planning"
+        planning = trilogy_project / ".shipwright" / "planning"
         req = planning / "requirements.md"
 
         # Create established session
@@ -141,7 +168,7 @@ class TestPlanStateRecovery:
 
     def test_resume_after_interview(self, trilogy_project):
         """Resume detects plan interview → skip to step 3."""
-        planning = trilogy_project / "planning"
+        planning = trilogy_project / ".shipwright" / "planning"
         self._setup_spec(planning)
 
         spec = planning / "01-auth" / "spec.md"
@@ -160,7 +187,7 @@ class TestPlanStateRecovery:
 
     def test_resume_after_plan(self, trilogy_project):
         """Resume detects plan.md + review marker with manifest → skip to step 6."""
-        planning = trilogy_project / "planning"
+        planning = trilogy_project / ".shipwright" / "planning"
         self._setup_spec(planning)
 
         spec = planning / "01-auth" / "spec.md"
@@ -183,7 +210,7 @@ class TestPlanStateRecovery:
 
     def test_resume_after_partial_sections(self, trilogy_project):
         """Resume detects partial sections → step 6."""
-        planning = trilogy_project / "planning"
+        planning = trilogy_project / ".shipwright" / "planning"
         self._setup_spec(planning)
 
         spec = planning / "01-auth" / "spec.md"
@@ -210,7 +237,7 @@ class TestPlanStateRecovery:
 
     def test_resume_all_sections_done(self, trilogy_project):
         """All sections written → step 8 (E2E/completion)."""
-        planning = trilogy_project / "planning"
+        planning = trilogy_project / ".shipwright" / "planning"
         self._setup_spec(planning)
 
         spec = planning / "01-auth" / "spec.md"
@@ -247,7 +274,7 @@ class TestCrossPluginConfig:
 
     def test_project_config_readable_by_build(self, trilogy_project):
         """shipwright_project_config.json is valid JSON for downstream."""
-        planning = trilogy_project / "planning"
+        planning = trilogy_project / ".shipwright" / "planning"
 
         # Create project config via project plugin
         (planning / "requirements.md").exists()  # already exists from fixture
@@ -280,6 +307,9 @@ class TestCrossPluginConfig:
         assert isinstance(config["splits"], list)
         assert config["splits"][0]["name"] == "01-auth"
         assert config["splits"][0]["status"] == "not_started"
+
+        # Layer-3 drift safety net.
+        _assert_no_legacy_artifact_dirs(trilogy_project)
 
     def test_build_config_tracks_progress(self, trilogy_project):
         """Build config tracks section completion across multiple calls."""

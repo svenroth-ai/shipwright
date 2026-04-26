@@ -55,8 +55,8 @@ class TestFullPipelineE2E:
         """Complete pipeline from inference to changelog."""
         project = tmp_path / "todo-app"
         project.mkdir()
-        planning = project / "planning"
-        planning.mkdir()
+        planning = project / ".shipwright" / "planning"
+        planning.mkdir(parents=True)
 
         # Init git
         subprocess.run(["git", "init", "-b", "main"], cwd=str(project),

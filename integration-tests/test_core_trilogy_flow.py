@@ -25,6 +25,35 @@ from conftest import (
 from tools.write_decision_log import append_decision
 
 
+def _assert_no_legacy_artifact_dirs(project_root: Path) -> None:
+    """Layer 3 negative-assertion: any in_progress/migrated artifact must
+    not appear at its legacy top-level path after the trilogy has run.
+
+    Imported lazily so the shared-`lib` import does not poison sys.modules
+    for tests that import a different plugin's `lib` package later (the
+    compliance plugin also has a top-level `lib` namespace).
+
+    Catches scripts that silently fall back to the legacy directory shape,
+    even when the per-script unit tests pass against mocked paths.
+    """
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "_artifact_migrations_layer3",
+        SHARED_SCRIPTS / "lib" / "artifact_migrations.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    for migration in module.ARTIFACT_MIGRATIONS:
+        if migration["status"] not in ("in_progress", "migrated"):
+            continue
+        legacy = project_root / migration["legacy_dirname"]
+        assert not legacy.exists(), (
+            f"Migration drift: artifact `{migration['name']}` produced legacy "
+            f"directory {legacy} (status: {migration['status']}). Canonical: "
+            f"{project_root / migration['canonical']}"
+        )
+
+
 class TestCoreTrilogyFlow:
     """End-to-end test of the trilogy script flow."""
 
@@ -32,7 +61,7 @@ class TestCoreTrilogyFlow:
 
     def test_01_project_setup(self, trilogy_project):
         """shipwright-project setup creates session state."""
-        req = trilogy_project / "planning" / "requirements.md"
+        req = trilogy_project / ".shipwright" / "planning" / "requirements.md"
 
         result = run_script(PROJECT_PLUGIN, "checks", "setup-session.py", [
             "--file", str(req),
@@ -46,12 +75,12 @@ class TestCoreTrilogyFlow:
         assert result["resume_from_step"] == 1
 
         # Verify session state file was created
-        state_file = trilogy_project / "planning" / "shipwright_project_session.json"
+        state_file = trilogy_project / ".shipwright" / "planning" / "shipwright_project_session.json"
         assert state_file.exists()
 
     def test_02_project_chat_mode(self, tmp_path):
         """shipwright-project also works in chat mode (no file)."""
-        planning = tmp_path / "chat-project" / "planning"
+        planning = tmp_path / "chat-project" / ".shipwright" / "planning"
 
         result = run_script(PROJECT_PLUGIN, "checks", "setup-session.py", [
             "--planning-dir", str(planning),
@@ -67,7 +96,7 @@ class TestCoreTrilogyFlow:
 
     def test_03_project_simulate_interview_and_manifest(self, trilogy_project):
         """Simulate interview + manifest creation (normally done by SKILL.md)."""
-        planning = trilogy_project / "planning"
+        planning = trilogy_project / ".shipwright" / "planning"
 
         # Setup first
         req = planning / "requirements.md"
@@ -114,7 +143,7 @@ class TestCoreTrilogyFlow:
 
     def test_04_project_write_specs_and_config(self, trilogy_project):
         """Write specs + project config (simulates SKILL.md Steps 6-7)."""
-        planning = trilogy_project / "planning"
+        planning = trilogy_project / ".shipwright" / "planning"
 
         # Setup + simulate prior steps
         req = planning / "requirements.md"
@@ -169,7 +198,7 @@ class TestCoreTrilogyFlow:
 
     def test_05_plan_setup(self, trilogy_project):
         """shipwright-plan setup works with spec from project phase."""
-        planning = trilogy_project / "planning"
+        planning = trilogy_project / ".shipwright" / "planning"
         self._setup_project_phase(trilogy_project)
 
         spec = planning / "01-auth" / "spec.md"
@@ -187,7 +216,7 @@ class TestCoreTrilogyFlow:
 
     def test_06_plan_simulate_full_flow(self, trilogy_project):
         """Simulate plan writing + section splitting."""
-        planning = trilogy_project / "planning"
+        planning = trilogy_project / ".shipwright" / "planning"
         self._setup_project_phase(trilogy_project)
 
         auth_dir = planning / "01-auth"
@@ -222,7 +251,7 @@ class TestCoreTrilogyFlow:
 
     def test_07_build_setup(self, trilogy_project):
         """shipwright-build setup works with section from plan phase."""
-        planning = trilogy_project / "planning"
+        planning = trilogy_project / ".shipwright" / "planning"
         self._setup_project_phase(trilogy_project)
         self._setup_plan_phase(trilogy_project)
 
@@ -289,7 +318,7 @@ class TestCoreTrilogyFlow:
 
     def test_09_full_trilogy_artifacts(self, trilogy_project):
         """Verify all artifacts exist after complete trilogy flow."""
-        planning = trilogy_project / "planning"
+        planning = trilogy_project / ".shipwright" / "planning"
         self._setup_project_phase(trilogy_project)
         self._setup_plan_phase(trilogy_project)
 
@@ -332,15 +361,18 @@ class TestCoreTrilogyFlow:
         assert (trilogy_project / "shipwright_build_config.json").exists()
         assert (trilogy_project / "agent_docs" / "decision_log.md").exists()
 
+        # Layer-3 drift safety net: nothing landed at a legacy top-level path.
+        _assert_no_legacy_artifact_dirs(trilogy_project)
+
     # ── Helpers ──
 
     def _setup_project_phase(self, project: Path):
         """Simulate completed project phase."""
-        planning = project / "planning"
+        planning = project / ".shipwright" / "planning"
         req = planning / "requirements.md"
 
         if not req.exists():
-            planning.mkdir(exist_ok=True)
+            planning.mkdir(parents=True, exist_ok=True)
             req.write_text("# Test Project\n\nBuild something.\n")
 
         run_script(PROJECT_PLUGIN, "checks", "setup-session.py", [
@@ -369,7 +401,7 @@ class TestCoreTrilogyFlow:
 
     def _setup_plan_phase(self, project: Path):
         """Simulate completed plan phase for 01-auth."""
-        auth_dir = project / "planning" / "01-auth"
+        auth_dir = project / ".shipwright" / "planning" / "01-auth"
 
         run_script(PLAN_PLUGIN, "checks", "setup-planning-session.py", [
             "--file", str(auth_dir / "spec.md"),

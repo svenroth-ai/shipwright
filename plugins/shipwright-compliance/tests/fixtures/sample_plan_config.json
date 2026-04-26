@@ -1,10 +1,10 @@
 {
-  "spec_file": "planning/splits/01-auth/spec.md",
-  "planning_dir": "planning/splits/01-auth",
+  "spec_file": ".shipwright/planning/splits/01-auth/spec.md",
+  "planning_dir": ".shipwright/planning/splits/01-auth",
   "status": "complete",
   "sections": [
-    {"name": "01-login", "path": "planning/splits/01-auth/sections/01-login.md"},
-    {"name": "02-rbac", "path": "planning/splits/01-auth/sections/02-rbac.md"},
-    {"name": "03-profile", "path": "planning/splits/01-auth/sections/03-profile.md"}
+    {"name": "01-login", "path": ".shipwright/planning/splits/01-auth/sections/01-login.md"},
+    {"name": "02-rbac", "path": ".shipwright/planning/splits/01-auth/sections/02-rbac.md"},
+    {"name": "03-profile", "path": ".shipwright/planning/splits/01-auth/sections/03-profile.md"}
   ]
 }

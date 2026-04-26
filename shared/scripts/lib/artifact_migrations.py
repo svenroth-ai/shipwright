@@ -92,22 +92,15 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/scripts/lib/drift_parsers.py",
         "shared/scripts/lib/iterate_entry.py",
         "shared/scripts/lib/external_review_config.py",
-        # shared/templates and shared/prompts still hold "planning/" path strings;
-        # migrated in Sub-Iterate E (templates) and D (prose).
-        "shared/templates/**",
-        "shared/prompts/**",
-        "shared/schemas/**",
         # Sub-Iterate D (prose) migrated all plugin .md files.
         # Remaining: plugin.json keywords (descriptive word "planning",
-        # not a path) and the compliance fixture sample_plan_config.json
-        # (Sub-Iterate E target).
+        # not a path).
         "plugins/**/.claude-plugin/plugin.json",
-        "plugins/shipwright-compliance/tests/fixtures/*.json",
         # pyproject.toml keywords ("planning" as descriptive metadata, not a path)
         "**/pyproject.toml",
-        # Sub-Iterate E shrinks integration-tests, docs, marketplace metadata.
-        "integration-tests/**",
-        "docs/**",
+        # .gitignore retains the legacy entry under a `# legacy` comment
+        # (Gemini #2 — Sub-Iterate F flips status to migrated; Layer-5
+        # gitignore_canon test asserts the legacy entry stays present).
         ".gitignore",
         ".claude-plugin/**",
         # Previous-iteration plan reference (memo)

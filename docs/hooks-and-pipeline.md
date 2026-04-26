@@ -305,7 +305,7 @@ as the third SessionStart hook in **every** plugin (12 hooks.json
 files), after `capture_session_id.py` and `phase_session_start.py`.
 
 **What it does:** scans the resolved `SHIPWRIGHT_PROJECT_ROOT` for
-any *legacy* top-level artifact directory (e.g. `planning/`) whose
+any *legacy* top-level artifact directory (e.g. `planning/`) whose <!-- artifact-path-canon: legacy -->
 canonical home has been relocated under `.shipwright/` (e.g.
 `.shipwright/planning/`). The list of active migrations and their
 canonical-vs-legacy paths lives in
@@ -423,10 +423,10 @@ evidence (plan § 4.5).
 | ID | Phase | Default on Missing | Tier | Evidence Source |
 |---|---|---|---|---|
 | W1 | build | SKIP (never FAIL — R8) | 2 | `shipwright_events.jsonl`: `test_run` timestamp ≤ latest `work_completed` |
-| W2 | iterate | FAIL | 1 | `planning/iterate/{run_id}-external-review.json` OR `external_review_state.json` newer than spec |
+| W2 | iterate | FAIL | 1 | `.shipwright/planning/iterate/{run_id}-external-review.json` OR `external_review_state.json` newer than spec |
 | W3 | iterate | FAIL | 1 | `work_completed` event (source=iterate) + `compliance/test-evidence.md` mtime <24h |
 | W4 | test | FAIL | 1 | `shipwright_test_results.json.coverage.total` ≥ `shipwright_test_config.json.coverage.min` (default 70) |
-| W5 | plan | FAIL | 1 | `planning/external_review_state.json` status=`completed` OR `skipped_*` with non-empty reason |
+| W5 | plan | FAIL | 1 | `.shipwright/planning/external_review_state.json` status=`completed` OR `skipped_*` with non-empty reason |
 | W6 | changelog | FAIL | 1 | Wrapper around `changelog_checks.check_git_tag_exists` |
 | W7 | deploy | FAIL | 1 | `shipwright_deploy_config.json.smoke_test_status` OR `test_results.smoke.status` OR latest `test_run` event layer `smoke.status == "pass"` |
 | Sec1 | security | FAIL | 1 | `compliance/security-scan-report.md` mtime ≥ latest `phase_started[security]` |
@@ -449,7 +449,7 @@ evidence (plan § 4.5).
 
 | ID | Phase(s) | Default on Missing | Tier | Evidence Source |
 |---|---|---|---|---|
-| T1 | project, iterate | FAIL | 1 | Every FR from `planning/*/spec.md` (via `drift_parsers.collect_requirements_from_planning`) appears in `compliance/traceability-matrix.md`. |
+| T1 | project, iterate | FAIL | 1 | Every FR from `.shipwright/planning/*/spec.md` (via `drift_parsers.collect_requirements_from_planning`) appears in `compliance/traceability-matrix.md`. |
 | T2 | project, iterate | WARN (never FAIL — R12) | 2 | No FR id referenced in RTM missing from every spec. Tier-2 — FR renames produce legitimate FPs. |
 
 **Quality category (PR 3):** `shared/scripts/tools/verifiers/quality_checks.py`
@@ -457,17 +457,17 @@ evidence (plan § 4.5).
 | ID | Phase(s) | Default on Missing | Tier | Evidence Source |
 |---|---|---|---|---|
 | Q1 | project, plan, build, iterate | WARN (never FAIL — R13) | 2 | Latest ADR in `agent_docs/decision_log.md` has Context ≥50, Decision ≥30, Consequences ≥30 chars. Uses `lib/adr_parser.py` (handles both bullet-form and section-form). |
-| Q2 | build | FAIL | 1 | Every section in `shipwright_plan_snapshot.json` (falls back to `planning/sections/*.md` / `planning/<split>/sections/*.md`) has status ∈ {complete, completed, done} in `shipwright_build_config.json.sections`. SKIP when no plan material. |
+| Q2 | build | FAIL | 1 | Every section in `shipwright_plan_snapshot.json` (falls back to `.shipwright/planning/sections/*.md` / `.shipwright/planning/<split>/sections/*.md`) has status ∈ {complete, completed, done} in `shipwright_build_config.json.sections`. SKIP when no plan material. |
 
 **Spec category (PR 4):** `shared/scripts/tools/verifiers/spec_checks.py`
 
 | ID | Phase(s) | Default on Missing | Tier | Evidence Source |
 |---|---|---|---|---|
 | S1 | project | FAIL | 1 | `agent_docs/spec.md` exists, non-empty, ≥1 `## FR-...` heading (via `lib/spec_parser.count_fr_headings`). |
-| S2 | iterate (medium+) | FAIL | 1 | `planning/iterate/<*run_id*>.md` present when `iterate_history[run_id].complexity` ∈ {medium, large}. SKIPs for trivial/small (R15). |
-| S3 | iterate (medium+) | WARN (never FAIL — R17) | 2 | `planning/iterate/<*run_id*>-miniplan.md` present when complexity ≥ medium. SKIPs below medium. |
+| S2 | iterate (medium+) | FAIL | 1 | `.shipwright/planning/iterate/<*run_id*>.md` present when `iterate_history[run_id].complexity` ∈ {medium, large}. SKIPs for trivial/small (R15). |
+| S3 | iterate (medium+) | WARN (never FAIL — R17) | 2 | `.shipwright/planning/iterate/<*run_id*>-miniplan.md` present when complexity ≥ medium. SKIPs below medium. |
 | S4 | iterate | WARN (never FAIL — R16) | 2 | Git-diff of `agent_docs/spec.md` over last 10 commits: removed FR ids must retain `status: deprecated`. SKIPs without git history. |
-| S5 | project, iterate | WARN (never FAIL) | 2 | Every FR heading across `agent_docs/spec.md`, `planning/*/spec.md`, and `planning/iterate/*.md` has Description + Acceptance sections (via `lib/spec_parser.compute_fr_coherence`). |
+| S5 | project, iterate | WARN (never FAIL) | 2 | Every FR heading across `agent_docs/spec.md`, `.shipwright/planning/*/spec.md`, and `.shipwright/planning/iterate/*.md` has Description + Acceptance sections (via `lib/spec_parser.compute_fr_coherence`). |
 | S6 | project | FAIL | 1 | `CLAUDE.md` exists at project root, non-empty. |
 | S7 | project | WARN (never FAIL) | 2 | `CLAUDE.md` has a `## Structure` fenced code block (via `lib/drift_parsers.extract_structure_block`). |
 | S8 | project | FAIL | 1 | `README.md` exists, non-empty. |
@@ -657,7 +657,7 @@ phase to load explicitly.
 | PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_file_size.sh` | Warns if file exceeds size limit |
 | PostToolUse | — (catch-all) | `track_tool_calls.py` | Increments tool call counter for context pressure detection |
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W1 TDD-order Tier-2 + I1-I4 infrastructure freshness + Q1/Q2 quality) |
-| Stop | — | `generate-handoff.py` | Session handoff (namespaced to `planning/handoffs/<loop_id>/` when `SHIPWRIGHT_LOOP_ID` set) |
+| Stop | — | `generate-handoff.py` | Session handoff (namespaced to `.shipwright/planning/handoffs/<loop_id>/` when `SHIPWRIGHT_LOOP_ID` set) |
 | Stop | — | `check_documentation.py` | Verifies documentation artifacts are up to date |
 | Stop | — | `write_terminal_marker.py` | Writes `.shipwright/runs/<loop_id>/<unit_id>/DONE` (no-op without loop env vars) |
 
@@ -742,7 +742,7 @@ Non-pipeline skill — onboards a **brownfield** repo into the Shipwright SDLC. 
 
 Reads: `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `composer.json`, `Gemfile`, `tsconfig.json`, `.eslintrc*`, `.prettierrc*`, `.editorconfig`, `README.md`, `.github/workflows/`, git log, plus route/page files for AST feature inference; optionally the running dev-server via Playwright BFS crawl.
 
-Writes: `CLAUDE.md`, `agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `planning/<split>/spec.md`, all six `shipwright_*_config.json` (run-config LAST), `shipwright_events.jsonl` (one `adopted` event + optional backfill), `.claude/settings.json` (merges the `suggest_iterate` UserPromptSubmit hook), `e2e/flows/adopted-baseline.spec.ts` when a Playwright crawl succeeded, `.shipwright/adopt/{snapshot,enrichment,routes}.json`, `.shipwright/adopt/review.md`, and seeds the five `compliance/*.md` via the existing compliance generators.
+Writes: `CLAUDE.md`, `agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `.shipwright/planning/<split>/spec.md`, all six `shipwright_*_config.json` (run-config LAST), `shipwright_events.jsonl` (one `adopted` event + optional backfill), `.claude/settings.json` (merges the `suggest_iterate` UserPromptSubmit hook), `e2e/flows/adopted-baseline.spec.ts` when a Playwright crawl succeeded, `.shipwright/adopt/{snapshot,enrichment,routes}.json`, `.shipwright/adopt/review.md`, and seeds the five `compliance/*.md` via the existing compliance generators.
 
 Phase-Quality integration: registered as phase `adopt` in `PLUGIN_TO_PHASE`, `C4_PHASES`, and `_WORKFLOW_PHASE_DISPATCH`. The verifier module `shared/scripts/tools/verifiers/adopt_compliance.py` runs A1–A8 canon checks on every Stop hook after adoption completes. A4, A5, A8 are Tier-2 (heuristic, non-blocking); A1–A3, A6, A7 are Tier-1 ERROR on FAIL.
 
@@ -826,7 +826,7 @@ test-runner subagent
   → runs unit tests (vitest)
   → runs smoke test (HTTP health check)
   → Step 3.5: checks e2e/ for .spec.ts files
-    → if missing: reads planning/*/claude-plan-e2e.md
+    → if missing: reads .shipwright/planning/*/claude-plan-e2e.md
     → generates e2e/flows/*.spec.ts + e2e/pages/*.page.ts
   → runs Playwright E2E (against dev server)
   → writes shipwright_test_results.json to project root
@@ -1008,7 +1008,7 @@ When a phase detects missing prerequisite artifacts, it should attempt to derive
 |---|---|---|
 | `designs/visual-guidelines.md` | CSS `:root` variables in `designs/screens/*.html` | Build (Browser Verify), Iterate (F2 Browser Verify), Test (Consistency) |
 | `designs/screen-routes.json` | Mockup filenames + router config (`src/router.tsx`) | Test (Design Fidelity), Build (Design Fidelity) |
-| `planning/claude-plan-e2e.md` | `screen-routes.json` + `architecture.md` | Test (E2E Spec Generation) |
+| `.shipwright/planning/claude-plan-e2e.md` | `screen-routes.json` + `architecture.md` | Test (E2E Spec Generation) |
 | `dev_url` in build config | `CLAUDE.md` (`PORT=`), `package.json` scripts (`--port`) | Test (Smoke, E2E), Build (Browser Verify), Iterate (F2 Browser Verify — sub-iterate-runner) |
 | `playwright.config.ts` | Template + `dev_url` port substitution | Test (E2E), Build (Browser Verify), Iterate (F2 Browser Verify) |
 

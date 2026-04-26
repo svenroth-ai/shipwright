@@ -106,8 +106,8 @@ def trilogy_project(tmp_path, mini_requirements):
     # Create project structure
     project = tmp_path / "todo-app"
     project.mkdir()
-    planning = project / "planning"
-    planning.mkdir()
+    planning = project / ".shipwright" / "planning"
+    planning.mkdir(parents=True)
 
     # Copy requirements into planning dir
     req = planning / "requirements.md"

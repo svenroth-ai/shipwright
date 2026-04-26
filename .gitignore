@@ -47,6 +47,9 @@ e2e-results.json
 
 # Shipwright runtime artifacts (generated in target projects, not in this repo)
 shipwright_*_config.json
+# Exception: the template under shared/templates/ MUST be tracked — it's the
+# canonical version copied into every adopted/new project.
+!shared/templates/shipwright_*_config.json
 shipwright_events.jsonl
 shipwright_events.jsonl.lock
 agent_docs/

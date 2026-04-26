@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "description": "File-to-artifact mapping for drift detection. Used by /shipwright-sync --check.",
+  "mappings": [
+    {
+      "pattern": "src/components/layout/*",
+      "artifacts": [".shipwright/planning/01-foundation/sections/05-base-layout.md"],
+      "frs": ["FR-01.08", "FR-01.09"],
+      "category": "navigation"
+    },
+    {
+      "pattern": "src/components/admin/*",
+      "artifacts": [".shipwright/planning/01-foundation/sections/06-admin-layout.md"],
+      "frs": ["FR-01.10"],
+      "category": "admin-navigation"
+    },
+    {
+      "pattern": "src/app/globals.css",
+      "artifacts": [".shipwright/planning/01-foundation/sections/01-project-setup.md"],
+      "frs": ["FR-01.11"],
+      "category": "design-system"
+    },
+    {
+      "pattern": "src/app/(public)/*",
+      "artifacts": [".shipwright/planning/01-foundation/spec.md"],
+      "frs": ["FR-01.09"],
+      "category": "public-pages"
+    },
+    {
+      "pattern": "src/components/ui/*",
+      "artifacts": [".shipwright/planning/01-foundation/sections/07-shared-components.md"],
+      "frs": ["FR-01.14"],
+      "category": "ui-components"
+    },
+    {
+      "pattern": "supabase/migrations/*",
+      "artifacts": ["agent_docs/architecture.md"],
+      "frs": [],
+      "category": "database"
+    },
+    {
+      "pattern": "src/middleware.ts",
+      "artifacts": [".shipwright/planning/01-foundation/spec.md"],
+      "frs": ["FR-01.07", "FR-01.12"],
+      "category": "auth-routing"
+    }
+  ]
+}

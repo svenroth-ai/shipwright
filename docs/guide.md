@@ -381,7 +381,7 @@ If those are true, `/shipwright-adopt` is the right entry point. `/shipwright-pr
 1. **Layer 1 — deterministic analysis.** Scans manifests, tsconfig/eslint/prettier, folder layout, test frameworks, CI, and git log. Produces `.shipwright/adopt/snapshot.json`.
 2. **Layer 1.5 — Playwright route crawl (if web app).** Starts the dev-server, crawls the running app BFS-style, captures route + h1 + CTAs + screenshots into `.shipwright/adopt/routes.json`. Falls back to AST-based route inference if no dev-server is available.
 3. **Layer 2 — Claude Code semantic enrichment.** Inline with the skill, Claude reads the snapshot + sample files + screenshots and writes `enrichment.json` with a product description, FR labels, architecture prose, conventions prose, and retroactive ADR drafts.
-4. **Artifact generation.** Writes `CLAUDE.md`, `agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `planning/01-adopted/spec.md`, the six `shipwright_*_config.json` files, `shipwright_events.jsonl`, and `e2e/flows/adopted-baseline.spec.ts` (regression guard from the crawl).
+4. **Artifact generation.** Writes `CLAUDE.md`, `agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `.shipwright/planning/01-adopted/spec.md`, the six `shipwright_*_config.json` files, `shipwright_events.jsonl`, and `e2e/flows/adopted-baseline.spec.ts` (regression guard from the crawl).
 5. **Compliance seeding.** Generates `compliance/{sbom,change-history,traceability-matrix,test-evidence,dashboard}.md` via the existing compliance infrastructure.
 6. **Layer 3 — external LLM review.** Runs `llm_review.py` over the generated artifacts to flag hallucinations or contradictions (skipped gracefully if no API key is set).
 7. **Validation + commit.** Runs `validate_adoption.py`, then a single Conventional Commit `chore(shipwright): adopt repository into Shipwright SDLC`.
@@ -490,11 +490,11 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 
 **What it produces**
 
-- `planning/` directory with numbered split subdirectories (`01-auth/`, `02-dashboard/`, etc.)
+- `.shipwright/planning/` directory with numbered split subdirectories (`01-auth/`, `02-dashboard/`, etc.)
 - `spec.md` inside each split directory -- an IREB-style specification with functional requirements, non-functional requirements, and scope boundaries
-- `planning/project-manifest.md` -- execution order, dependencies between splits, and overview
-- `planning/requirements.md` -- consolidated requirements (generated for inline/chat modes)
-- `planning/shipwright_project_interview.md` -- full interview transcript
+- `.shipwright/planning/project-manifest.md` -- execution order, dependencies between splits, and overview
+- `.shipwright/planning/requirements.md` -- consolidated requirements (generated for inline/chat modes)
+- `.shipwright/planning/shipwright_project_interview.md` -- full interview transcript
 - `CLAUDE.md` and `agent_docs/` (architecture, conventions, decision log, sprint, handoff) for new projects
 - `.claude/rules/*.md` -- path-specific rules derived from the technology profile
 
@@ -509,6 +509,10 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 - Logs all project-level decisions (auth strategy, third-party services, naming conventions) to `agent_docs/decision_log.md`
 
 **Standalone usage.** Yes. Run `/shipwright-project` independently whenever you want to decompose requirements without running the full pipeline. The output feeds directly into `/shipwright-plan`.
+
+**Where the planning artifacts live.** Since v0.6.0 the planning directory is `.shipwright/planning/` — under the hidden project-state folder, alongside `securityreports/`, `adopt/`, `runs/`, and `tmp/`. This keeps the project root visually clean: the only Shipwright-owned top-level directories are `agent_docs/`, `compliance/`, `designs/`, `e2e/`, plus the always-hidden `.shipwright/`.
+
+If a session start finds a legacy top-level `planning/` directory, the drift detector writes `.shipwright/stale-folders.md` with a `git mv planning .shipwright/planning` remediation hint and exits non-zero so you see it. Run `uv run shared/scripts/tools/migrate_artifact_dir.py --artifact planning` (added in Sub-Iterate F) to do the move automatically. <!-- artifact-path-canon: legacy -->
 
 ---
 
@@ -532,7 +536,7 @@ Shipwright's pipeline consists of 10 phases, each handling a distinct step in th
 | `@feedback.md` | Process a feedback file exported from the review viewer |
 | `--upload` | Integrate existing designs from `designs/uploads/` |
 
-**What it needs.** Completed specs from `/shipwright-project`: `shipwright_project_config.json`, `planning/project-manifest.md`, and `planning/*/spec.md`. Optionally, existing designs or brand guidelines in `designs/uploads/`.
+**What it needs.** Completed specs from `/shipwright-project`: `shipwright_project_config.json`, `.shipwright/planning/project-manifest.md`, and `.shipwright/planning/*/spec.md`. Optionally, existing designs or brand guidelines in `designs/uploads/`.
 
 **What it produces**
 
@@ -864,7 +868,7 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 **What the detective audit checks** (7 groups, ~22 checks; wired incrementally per plan v7):
 
 - **A** Artifact presence + path integrity — `npm run`, `uv run`, `make` commands in READMEs resolve; markdown links resolve; config path fields point to real files.
-- **B** Config ↔ config ↔ event-log coherence — `project_config.splits[]` matches `planning/NN-*/`; build section test files exist; commits on main have matching `work_completed` events.
+- **B** Config ↔ config ↔ event-log coherence — `project_config.splits[]` matches `.shipwright/planning/NN-*/`; build section test files exist; commits on main have matching `work_completed` events.
 - **C** Planning internal coherence (preventive re-run) — every spec FR appears in a plan section, plan section IDs valid, section manifest ↔ files.
 - **D** Implementation evidence — every FR has at least one `work_completed` event, every built section has `test_count > 0`.
 - **E** Compliance-doc content staleness — regenerate each doc in memory, strip volatile `Generated:` header, byte-compare against disk. Strictly deeper than Phase-Quality's mtime checks.
@@ -873,7 +877,7 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 
 **What it needs (detective audit):**
 - `shipwright_events.jsonl` — primary event source.
-- `planning/*/spec.md` and `planning/*/plan.md` — FR definitions + section manifests.
+- `.shipwright/planning/*/spec.md` and `.shipwright/planning/*/plan.md` — FR definitions + section manifests.
 - `agent_docs/decision_log.md` — ADRs.
 - `compliance/` docs (for Group E staleness comparison).
 - A git repo (Group B7 reverse-direction scan, Group G git-log activity).
@@ -1650,7 +1654,7 @@ When you have a specific question, go directly to the file that owns the answer.
 | What did the last iterate do? | `shipwright_events.jsonl` (most recent `work_completed`) + `agent_docs/build_dashboard.md` | Event log is canonical; dashboard is a rendered view |
 | What test status right now? | `shipwright_test_results.json` | Last test run, pass/fail counts per layer |
 | What requirement maps to which file? | `shipwright_sync_config.json` (if present) | FR ↔ file mapping |
-| What requirements does this project even have? | `planning/*/spec.md` | IREB-aligned FR/NFR specs |
+| What requirements does this project even have? | `.shipwright/planning/*/spec.md` | IREB-aligned FR/NFR specs |
 | Where in the pipeline are we? | `shipwright_run_config.json` (`status`, `current_step`) + `phase_history` for "which step ran when" | Pipeline state machine; `current_step` is the live cursor, `phase_history` is the trail |
 | What sections has build completed? | `shipwright_build_config.json` (`completed_sections`) | Per-section build state lives here, not in run config |
 | What iterates have run? | `agent_docs/iterates/*.json` (one file per iterate) — fall back to legacy `iterate_history` array in `shipwright_run_config.json` for older projects | Iterate 12 split the array into per-file entries; the run-config array is migration-only |

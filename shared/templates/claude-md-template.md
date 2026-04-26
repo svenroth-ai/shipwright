@@ -36,7 +36,7 @@ For any code changes after the initial build (features, bug fixes, refactoring, 
 - @agent_docs/session_handoff.md — when resuming after a pause or /clear
 
 **Other references:**
-- @planning/ — specs and section files
+- @.shipwright/planning/ — specs and section files
 
 **Pipeline state** (machine-generated, do not edit manually):
 - @shipwright_run_config.json — pipeline state (scope, profile, autonomy, current/completed steps)
