@@ -32,6 +32,7 @@
 ## ASK FIRST (require user confirmation)
 
 - Destructive database operations (`DROP TABLE`, `DROP COLUMN`, `TRUNCATE`, `DELETE FROM` without WHERE)
+- Combining additive + destructive changes in the SAME migration file (Two-Phase rule, see `shared/templates/rules/migrations.md.template`) — split into two migrations unless the user has an explicit reason to bundle, recorded as an ADR
 - PROD deployments (always confirm + backup, regardless of autonomy level)
 - Rollback decisions
 - Skipping test layers (must provide valid skip reason)

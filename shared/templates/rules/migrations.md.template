@@ -20,6 +20,46 @@ globs: "**/migrations/**,**/*.sql"
 - **Failure:** If `apply_cmd` fails, stop immediately. Do not run tests. Do not attempt further schema changes. The database may be in a partial state. Ask user for intervention.
 - **Manual steps:** If `post_apply_manual_steps` triggers match, inform user and note which test areas are blocked until the manual step is completed.
 - **Concurrency:** Migration creation and application is a serialized critical section — only one agent may create/apply migrations per workspace at a time.
+- **Post-apply verification:** Every up.sql should include one or more `-- VERIFY:` comments (see "Verification Block" below). `shipwright-deploy` runs them via `migration_verifier.py` after `apply_cmd`. A failed verification triggers the rollback path. Migrations without a VERIFY block are accepted (skipped, not failed) for backwards-compatibility, but new migrations should always include one.
+
+## Verification Block
+
+Every newly written `up.sql` should carry one or more `-- VERIFY:` comments — single-line read-only SQL statements that prove the migration achieved its intended post-state. After `apply_cmd` succeeds, `shipwright-deploy/scripts/lib/migration_verifier.py` parses these comments and runs each via `psql`. The verifier reports:
+
+- `verified=True` when psql exits 0 AND stdout is non-empty AND stdout is not in `{f, false, 0}`.
+- `verified=False` otherwise. Any failure flips `all_passed=False` for the file, which the deploy SKILL uses to enter the existing rollback path.
+
+A VERIFY block is the minimum honest evidence that the migration did what it claims:
+
+```sql
+-- supabase/migrations/20260426_add_user_preferences.sql
+-- WHY: Users need per-account notification + theme settings (FR-01.05)
+alter table public.profiles
+  add column notification_email boolean not null default true,
+  add column theme text not null default 'system'
+    check (theme in ('light', 'dark', 'system'));
+
+-- VERIFY: select count(*) = 2 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name in ('notification_email', 'theme')
+-- VERIFY: select bool_and(notification_email is not null and theme is not null) from public.profiles
+```
+
+Rules:
+- One SQL statement per `-- VERIFY:` line. Multiple lines per file are allowed and run in order.
+- The statement must be **read-only**: SELECT, EXPLAIN, function calls that do not mutate. The verifier does not enforce this — `psql` does — but a mutating VERIFY would defeat the point.
+- Prefer assertions that produce `true` or a concrete count over open-ended dumps. The verifier treats stdout `f` / `false` / `0` / empty as failure.
+- The marker is case-sensitive: `-- VERIFY:` exactly. Leading whitespace is allowed; trailing whitespace is trimmed.
+- Backwards-compat: migrations without any `-- VERIFY:` line are recorded as `skipped=True, all_passed=True` so legacy migrations and authors who explicitly opted out never break a deploy.
+
+## Two-Phase Destructive Changes
+
+Never combine an additive change (`ADD COLUMN`, `CREATE TABLE`, RLS-policy add) with a destructive one (`DROP COLUMN`, `DROP TABLE`, `DROP POLICY`) in the **same** migration. Split into two migrations:
+
+1. **Phase 1 — additive.** Add the new column / table / policy. Backfill data via `update` if the new column should be populated. Mark the OLD column / table / policy as deprecated in a SQL comment (e.g. `comment on column public.profiles.legacy_theme is 'DEPRECATED 2026-04-26 — drop in next migration after 14 days of green deploys'`). Ship Phase 1 and let it run in production for at least one full deploy cycle.
+2. **Phase 2 — destructive.** A separate, later migration that drops the deprecated column / table / policy. Only ship this after Phase 1 has been verified in production AND every consumer has been updated to read the new shape.
+
+Why: an additive-and-destructive migration cannot be safely rolled back. The `down.sql` would have to recreate the dropped column with no data — which is silently lossy. Splitting the change makes both phases independently reversible and gives downstream consumers (mobile apps, third-party integrations, cached query plans) a window to migrate.
+
+This is a **soft rule**: hooks may warn but do not block. The discipline lives in this template and in the deploy SKILL's pre-apply review prompt. If a destructive change must ship in the same migration as an additive one, document the reason in the migration's `-- WHY:` block AND in `agent_docs/decision_log.md` as an ADR.
 
 ## Example: up.sql / down.sql pair
 

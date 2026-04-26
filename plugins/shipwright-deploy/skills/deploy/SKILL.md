@@ -193,6 +193,24 @@ Present dry-run output to user (note: dry-run output format varies by stack — 
 
 **Destructive changes** (detected by shipwright-build hooks): always warn and require confirmation regardless of target.
 
+### Post-Apply Verification
+
+After `apply_cmd` succeeds, run the migration verifier against the migrations that were just applied. The verifier parses `-- VERIFY:` comments from each migration and runs them via `psql`. A failed verification triggers the same rollback path as a smoke-test failure (see Step 5 → "Smoke Test Failed → Rollback").
+
+```bash
+uv run {plugin_root}/scripts/lib/migration_verifier.py \
+  --migration {applied_migration_path_1} \
+  [--migration {applied_migration_path_N}] \
+  --db-url "{prod_db_url_or_pooled_url}" \
+  --output .shipwright/deploy/migration-verify.json
+```
+
+Read the JSON output. Branch on `all_passed`:
+- **`true`** — proceed to "Post-Migration Manual Steps".
+- **`false`** — present the failing report (per-file, per-VERIFY-statement) to the user via AskUserQuestion: rollback now (recommended), or override and continue (requires explicit acknowledgment that the verifier is reporting a real schema mismatch). On rollback, fall through to Step 5's clone-restore path immediately.
+
+**Backwards-compat:** migrations without any `-- VERIFY:` comment are reported as `skipped=True, all_passed=True` and do not cause a rollback. New migrations should always include at least one `-- VERIFY:` block — see `shared/templates/rules/migrations.md.template` for the convention and examples.
+
 ### Post-Migration Manual Steps
 
 Check `migrations.post_apply_manual_steps` from the stack profile. For each entry where `trigger_tag` matches a migration just applied, inform user via AskUserQuestion with the action and note. Wait for confirmation before proceeding.
