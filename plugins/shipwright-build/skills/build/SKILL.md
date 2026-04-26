@@ -411,6 +411,26 @@ See [implementation-loop.md](references/implementation-loop.md) for guidance.
 - See [migration-safety.md](references/migration-safety.md) for guidelines
 - The PostToolUse hook will warn on destructive operations automatically
 
+**Vite DX scaffold** (if profile uses Vite — check `profile.stack.frontend.vite`):
+
+When generating or modifying `vite.config.ts`, start from
+`{shared_root}/templates/vite.config.ts.template`. It gates dev-only
+plugins on `mode === 'development'` so they never ship to prod, and
+provides a slot for additional dev-only Vite plugins.
+
+App entry (`client/src/main.tsx` or equivalent) should mount two
+dev-only React components from `{shared_root}/templates/`:
+- `dev-error-overlay.tsx.template` — modal for runtime errors +
+  unhandled-promise rejections during development. Self-contained, no
+  external deps.
+- `dev-banner.tsx.template` — small fixed-position pill so dev tabs
+  cannot be confused with prod tabs.
+
+Both render `null` in production via `import.meta.env.DEV`, so copying
+them into prod builds is harmless. Brownfield projects with an existing
+`vite.config.ts` are handled by `/shipwright-adopt` (offer-only, no
+auto-overwrite).
+
 **Apply migrations immediately** (if migration files were created):
 
 Read `migrations` config from the stack profile (via `shipwright_run_config.json` → `profile` → `shared/profiles/{profile}.json`).

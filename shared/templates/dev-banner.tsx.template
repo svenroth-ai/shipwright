@@ -1,0 +1,55 @@
+/**
+ * DevBanner — small fixed-position pill that says "DEV" so the developer
+ * never confuses a dev-mode tab with a prod tab.
+ *
+ * Replit-pattern adopt (Sub-Iterate A): renders nothing in production
+ * (gated on `import.meta.env.DEV`).
+ *
+ * Usage (in your app entry, e.g. client/src/main.tsx):
+ *
+ *     import DevBanner from './DevBanner';
+ *     // ...
+ *     createRoot(rootEl).render(
+ *       <>
+ *         <App />
+ *         <DevBanner />
+ *       </>
+ *     );
+ *
+ * Customize the label by passing a `label` prop (e.g. "DEV — local",
+ * "DEV — staging") to disambiguate multi-environment workflows.
+ */
+
+type DevBannerProps = {
+  label?: string;
+};
+
+export default function DevBanner({ label = 'DEV' }: DevBannerProps) {
+  if (!import.meta.env.DEV) return null;
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'fixed',
+        top: '8px',
+        left: '8px',
+        zIndex: 2147483646,
+        background: '#f59e0b',
+        color: '#1e1e1e',
+        fontFamily:
+          'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        fontSize: '11px',
+        fontWeight: 700,
+        letterSpacing: '0.04em',
+        padding: '3px 8px',
+        borderRadius: '999px',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.25)',
+        pointerEvents: 'none',
+        userSelect: 'none',
+      }}
+    >
+      {label}
+    </div>
+  );
+}
