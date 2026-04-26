@@ -129,9 +129,15 @@ def run_crawl(
         env["SHIPWRIGHT_CRAWL_AUTH_TOKEN"] = auth_token
 
     npx = resolve_executable("npx")
+    # `playwright test <path>` treats the path argument as a REGEX. On Windows
+    # `relative_to` returns backslashes (`e2e\_shipwright-adopt-crawler.spec.ts`),
+    # which Playwright then interprets as `e2e<escape>...` and fails with
+    # "No tests found." Always use forward slashes — Playwright accepts them on
+    # both platforms and they don't trip the regex parser.
+    spec_arg = spec_path.relative_to(run_cwd).as_posix()
     try:
         result = subprocess.run(
-            [npx, "playwright", "test", str(spec_path.relative_to(run_cwd))],
+            [npx, "playwright", "test", spec_arg],
             cwd=str(run_cwd),
             env=env,
             capture_output=True,
