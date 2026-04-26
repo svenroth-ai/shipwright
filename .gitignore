@@ -53,7 +53,11 @@ shipwright_*_config.json
 shipwright_events.jsonl
 shipwright_events.jsonl.lock
 agent_docs/
+# Canonical planning home is .shipwright/planning/.
 planning/
+# legacy path - do not remove. Sub-Iterate F (2026-04-27).
+# Kept as a safety net against re-tracked legacy files.
+# See docs/migrations/.shipwright-relocation.md.
 .shipwright/
 .shipwright_toolcall_count
 compliance/

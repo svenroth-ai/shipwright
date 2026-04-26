@@ -50,8 +50,9 @@ ARTIFACT_MIGRATIONS: list[dict] = [
         # ``os.path.join(...)``, the ``/`` operator (Path division),
         # f-string segments, or argparse defaults.
         "ast_check_string": "planning",
-        "status": "in_progress",
+        "status": "migrated",
         "started": "2026-04-26",
+        "completed": "2026-04-27",
     },
 ]
 
