@@ -53,12 +53,20 @@ def _scan_component_file(path: Path) -> list[str]:
     return sorted(n for n in names if n[:1].isupper())
 
 
+_PROP_NAME_RE = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)\??\s*:")
+
+
 def _count_props(file_body: str, component_name: str) -> int:
     """Count props on the matching `<component>Props` interface OR inline type.
 
-    Heuristic: looks for `interface FooProps { ... }`, `type FooProps = { ... }`,
-    or — last resort — destructured props in the function signature like
-    `function Foo({ a, b, c }: ...)`. Returns 0 when no match.
+    Tried in order:
+    1. `interface FooProps { ... }` / `type FooProps = { ... }`
+    2. Inline object type: `function Foo(props: { a: T1; b?: T2 })`
+    3. Destructured props: `function Foo({ a, b, c }: ...)`
+
+    All forms count `ident:` occurrences in the captured body so that the
+    common semicolon-delimited inline form `{a: string; b: number}` no
+    longer collapses to a single comma-split chunk.
     """
     iface_re = re.compile(
         rf"(?:interface|type)\s+{re.escape(component_name)}Props\s*[=]?\s*\{{([^}}]*)\}}",
@@ -66,18 +74,28 @@ def _count_props(file_body: str, component_name: str) -> int:
     )
     m = iface_re.search(file_body)
     if m:
-        # Each prop is "name: type" or "name?: type" on its own line / separated by ;
-        body = m.group(1)
-        # Split by `;` or newline; keep only entries that look like `ident:`
-        prop_lines = re.findall(r"\b([A-Za-z_][A-Za-z0-9_]*)\??\s*:", body)
-        return len(prop_lines)
-    # Fallback: destructured props in function signature
-    sig_re = re.compile(
+        return len(_PROP_NAME_RE.findall(m.group(1)))
+
+    # Inline object-type annotation on the prop parameter:
+    # `function Foo(props: { title: string; body?: string })` — common in
+    # quick prototyping / shadcn-ish styles. Count semicolon-delimited keys.
+    inline_re = re.compile(
+        rf"(?:function|const)\s+{re.escape(component_name)}\b[^{{(]*"
+        rf"\([^){{}}]*?:\s*\{{([^}}]*)\}}",
+        re.DOTALL,
+    )
+    s = inline_re.search(file_body)
+    if s:
+        return len(_PROP_NAME_RE.findall(s.group(1)))
+
+    # Destructured props: `function Foo({ a, b, c }: ...)`
+    destruct_re = re.compile(
         rf"(?:function|const)\s+{re.escape(component_name)}\b[^{{]*\{{([^}}]*)\}}\s*[:)]",
     )
-    s = sig_re.search(file_body)
-    if s:
-        return len([p for p in s.group(1).split(",") if p.strip()])
+    d = destruct_re.search(file_body)
+    if d:
+        return len([p for p in d.group(1).split(",") if p.strip()])
+
     return 0
 
 
