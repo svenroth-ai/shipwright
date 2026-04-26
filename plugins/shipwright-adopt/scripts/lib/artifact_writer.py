@@ -2,13 +2,29 @@
 
 Slot-filling uses shared/templates/ exactly as shipwright-project does —
 zero structural divergence from greenfield-generated docs.
+
+Pre-existing user files (CLAUDE.md, agent_docs/decision_log.md, etc.) are
+NEVER silently overwritten — see `preserve_existing.py` for the policy.
 """
 
 from __future__ import annotations
 
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+# Importable both via package-relative path (when called from generate_adoption_artifacts.py
+# which adds scripts/lib to sys.path) and via direct test imports (`from lib.preserve_existing
+# import ...`). Add the parent's parent (scripts/) so `lib.preserve_existing` resolves.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from lib.preserve_existing import (  # noqa: E402
+    SUGGESTED_CLAUDE_REL,
+    is_loadbearing_claude_md,
+    merge_decision_log,
+    preserve_if_exists,
+    record_preservation_action,
+)
 
 
 def _utc_today() -> str:
@@ -344,12 +360,40 @@ def write_claude_md(
     commands: dict[str, str | None],
     product_description: str,
 ) -> Path:
+    """Write CLAUDE.md with load-bearing-content protection.
+
+    If an existing CLAUDE.md is larger than the load-bearing threshold
+    (~1 KB), it's preserved untouched and the adopt-generated content
+    is written to `.shipwright/adopt/CLAUDE.md.adopt-suggested` instead.
+    Smaller existing files are backed up to `.preserved` and then
+    overwritten. The returned path is the file that actually received
+    the new content (either the real CLAUDE.md or the suggested side-file).
+    """
     content = _render_claude_md(
         project_name=project_name, profile=profile, stack=stack,
         commands=commands, product_description=product_description,
     )
     path = project_root / "CLAUDE.md"
+    backup = preserve_if_exists(project_root, "CLAUDE.md")
+    if path.exists() and is_loadbearing_claude_md(path):
+        suggested = project_root / SUGGESTED_CLAUDE_REL
+        suggested.parent.mkdir(parents=True, exist_ok=True)
+        suggested.write_text(content, encoding="utf-8")
+        record_preservation_action(
+            project_root,
+            file="CLAUDE.md",
+            action="skipped_loadbearing",
+            backup_path=backup,
+            note=f"existing CLAUDE.md > {is_loadbearing_claude_md.__defaults__[0] if is_loadbearing_claude_md.__defaults__ else 1024} bytes; adopt suggestion at {SUGGESTED_CLAUDE_REL}",
+        )
+        return suggested
     path.write_text(content, encoding="utf-8")
+    record_preservation_action(
+        project_root,
+        file="CLAUDE.md",
+        action=("overwritten_with_backup" if backup else "written_fresh"),
+        backup_path=backup,
+    )
     return path
 
 
@@ -373,37 +417,92 @@ def write_agent_docs(
     commit_sha: str | None,
     retroactive_adrs: list[dict[str, Any]],
 ) -> list[Path]:
+    """Write the four agent_docs artifacts with preservation guardrails.
+
+    architecture.md / conventions.md / build_dashboard.md are backed up to
+    `.preserved` before being overwritten. decision_log.md uses
+    `merge_decision_log` so any existing user ADRs survive verbatim.
+    """
     agent_docs = project_root / "agent_docs"
     agent_docs.mkdir(parents=True, exist_ok=True)
     paths: list[Path] = []
+
+    # architecture.md — backup + overwrite
     arch = agent_docs / "architecture.md"
+    arch_backup = preserve_if_exists(project_root, "agent_docs/architecture.md")
     arch.write_text(_render_architecture_md(
         project_name=project_name, stack=stack, layers=layers,
         architecture_diagram=architecture_diagram,
         data_flow_description=data_flow_description, profile_name=profile,
     ), encoding="utf-8")
+    record_preservation_action(
+        project_root,
+        file="agent_docs/architecture.md",
+        action=("overwritten_with_backup" if arch_backup else "written_fresh"),
+        backup_path=arch_backup,
+    )
     paths.append(arch)
+
+    # conventions.md — backup + overwrite
     conv = agent_docs / "conventions.md"
+    conv_backup = preserve_if_exists(project_root, "agent_docs/conventions.md")
     conv.write_text(_render_conventions_md(
         project_name=project_name, conventions=conventions,
         conventions_prose=conventions_prose,
     ), encoding="utf-8")
+    record_preservation_action(
+        project_root,
+        file="agent_docs/conventions.md",
+        action=("overwritten_with_backup" if conv_backup else "written_fresh"),
+        backup_path=conv_backup,
+    )
     paths.append(conv)
+
+    # decision_log.md — backup + merge (preserves historical ADRs verbatim)
     dec = agent_docs / "decision_log.md"
-    dec.write_text(_render_decision_log(
+    new_log = _render_decision_log(
         project_name=project_name, profile=profile, scope=scope,
         commit_sha=commit_sha, features_count=features_count,
         retroactive_adrs=retroactive_adrs,
-    ), encoding="utf-8")
+    )
+    dec_backup = preserve_if_exists(project_root, "agent_docs/decision_log.md")
+    if dec.exists():
+        merged_content, info = merge_decision_log(new_log, dec)
+        dec.write_text(merged_content, encoding="utf-8")
+        record_preservation_action(
+            project_root,
+            file="agent_docs/decision_log.md",
+            action=info["action"],
+            backup_path=dec_backup,
+            note=f"existing_adrs={info['existing_adrs']}",
+        )
+    else:
+        dec.write_text(new_log, encoding="utf-8")
+        record_preservation_action(
+            project_root,
+            file="agent_docs/decision_log.md",
+            action="written_fresh",
+            backup_path=None,
+        )
     paths.append(dec)
+
+    # build_dashboard.md — backup + overwrite (transient state, regenerated each run)
     dash = agent_docs / "build_dashboard.md"
+    dash_backup = preserve_if_exists(project_root, "agent_docs/build_dashboard.md")
     dash.write_text(_render_build_dashboard(
         project_name=project_name, profile=profile, scope=scope,
         features_count=features_count, commits_total=commits_total,
         contributors_total=contributors_total, nested_excluded=nested_excluded,
         loc_by_layer=loc_by_layer,
     ), encoding="utf-8")
+    record_preservation_action(
+        project_root,
+        file="agent_docs/build_dashboard.md",
+        action=("overwritten_with_backup" if dash_backup else "written_fresh"),
+        backup_path=dash_backup,
+    )
     paths.append(dash)
+
     return paths
 
 
