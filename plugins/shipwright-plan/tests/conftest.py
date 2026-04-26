@@ -17,8 +17,8 @@ def plugin_root():
 @pytest.fixture
 def tmp_planning(tmp_path):
     """Create a temporary planning directory with sections subdir."""
-    planning = tmp_path / "planning"
-    planning.mkdir()
+    planning = tmp_path / ".shipwright" / "planning"
+    planning.mkdir(parents=True)
     (planning / "sections").mkdir()
     return planning
 
@@ -26,8 +26,8 @@ def tmp_planning(tmp_path):
 @pytest.fixture
 def sample_spec(tmp_path):
     """Create a sample spec file."""
-    spec = tmp_path / "planning" / "spec.md"
-    spec.parent.mkdir(exist_ok=True)
+    spec = tmp_path / ".shipwright" / "planning" / "spec.md"
+    spec.parent.mkdir(parents=True, exist_ok=True)
     spec.write_text("# Auth Spec\n\nImplement authentication with Supabase.\n", encoding="utf-8")
     return spec
 

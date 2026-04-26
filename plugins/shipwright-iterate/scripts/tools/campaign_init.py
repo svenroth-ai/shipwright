@@ -2,7 +2,7 @@
 """Initialize an iterate campaign from a structured plan.
 
 Creates the campaign directory structure:
-  planning/iterate/campaigns/<slug>/
+  .shipwright/planning/iterate/campaigns/<slug>/
     campaign.md
     sub-iterates/<id>-<slug>.md
     status.json
@@ -31,7 +31,7 @@ def init_campaign(
     sub_iterates: list[dict],
     branch_strategy: str = "stacked",
 ) -> dict:
-    campaign_dir = project_root / "planning" / "iterate" / "campaigns" / campaign_slug
+    campaign_dir = project_root / ".shipwright" / "planning" / "iterate" / "campaigns" / campaign_slug
     sub_dir = campaign_dir / "sub-iterates"
     sub_dir.mkdir(parents=True, exist_ok=True)
 

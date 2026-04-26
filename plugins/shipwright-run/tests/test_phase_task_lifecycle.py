@@ -190,7 +190,7 @@ def test_complete_happy_creates_next_phase_task(v2_project):
     sid, ver = _claim(v2_project, tid, "project")
     res = complete_phase_task(
         v2_project, phase_task_id=tid, session_uuid=sid, expected_version=ver,
-        result={"ok": True, "artifacts": ["planning/requirements.md"]},
+        result={"ok": True, "artifacts": [".shipwright/planning/requirements.md"]},
     )
     assert res["ok"] is True
     assert res["phase_task"]["status"] == "done"

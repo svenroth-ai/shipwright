@@ -12,16 +12,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 @pytest.fixture
 def tmp_planning(tmp_path):
     """Create a temporary planning directory."""
-    planning = tmp_path / "planning"
-    planning.mkdir()
+    planning = tmp_path / ".shipwright" / "planning"
+    planning.mkdir(parents=True)
     return planning
 
 
 @pytest.fixture
 def sample_requirements(tmp_path):
     """Create a sample requirements markdown file."""
-    req_file = tmp_path / "planning" / "requirements.md"
-    req_file.parent.mkdir(exist_ok=True)
+    req_file = tmp_path / ".shipwright" / "planning" / "requirements.md"
+    req_file.parent.mkdir(parents=True, exist_ok=True)
     req_file.write_text(
         "# My Project\n\nBuild a SaaS time tracking app with Supabase and Next.js.\n",
         encoding="utf-8",

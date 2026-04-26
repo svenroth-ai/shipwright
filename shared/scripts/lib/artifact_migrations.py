@@ -94,9 +94,7 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/templates/**",
         "shared/prompts/**",
         "shared/schemas/**",
-        # Sub-Iterate C (plugins Python) shrinks plugins/**/*.py;
-        # Sub-Iterate D (prose) shrinks plugins/**/*.md.
-        "plugins/**/*.py",
+        # Sub-Iterate D (prose) will shrink plugins/**/*.md.
         "plugins/**/*.md",
         "plugins/**/*.json",
         # pyproject.toml keywords ("planning" as descriptive metadata, not a path)

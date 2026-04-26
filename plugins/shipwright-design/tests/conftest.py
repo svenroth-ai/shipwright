@@ -29,7 +29,7 @@ def tmp_project(tmp_path):
     }), encoding="utf-8")
 
     # Create planning with spec
-    planning = project / "planning"
+    planning = project / ".shipwright" / "planning"
     (planning / "01-auth").mkdir(parents=True)
     (planning / "01-auth" / "spec.md").write_text(
         "# Authentication\n\n"

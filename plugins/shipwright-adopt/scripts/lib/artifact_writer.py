@@ -1,4 +1,4 @@
-"""Write CLAUDE.md, agent_docs/*, planning/<split>/spec.md for adopted projects.
+"""Write CLAUDE.md, agent_docs/*, .shipwright/planning/<split>/spec.md for adopted projects.
 
 Slot-filling uses shared/templates/ exactly as shipwright-project does —
 zero structural divergence from greenfield-generated docs.
@@ -198,7 +198,7 @@ def _render_decision_log(
 
 ### Context
 
-This repository existed with {features_count} detected feature(s) and substantive git history before /shipwright-adopt ran. The goal is to bring it under the Shipwright SDLC (CLAUDE.md + agent_docs + planning/ + compliance/ + configs) without disrupting the existing codebase.
+This repository existed with {features_count} detected feature(s) and substantive git history before /shipwright-adopt ran. The goal is to bring it under the Shipwright SDLC (CLAUDE.md + agent_docs + .shipwright/planning/ + compliance/ + configs) without disrupting the existing codebase.
 
 ### Decision
 
@@ -516,7 +516,7 @@ def write_spec(
     qr_items: list[str],
     constraints: list[str],
 ) -> Path:
-    split_dir = project_root / "planning" / split_name
+    split_dir = project_root / ".shipwright" / "planning" / split_name
     split_dir.mkdir(parents=True, exist_ok=True)
     spec = split_dir / "spec.md"
     spec.write_text(_render_spec_md(

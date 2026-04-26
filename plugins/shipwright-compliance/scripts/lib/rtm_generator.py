@@ -68,7 +68,7 @@ def _requirements_coverage(data: ComplianceData) -> list[str]:
         if req.sections:
             section_links = []
             for sec_name in req.sections:
-                sec_link = f"[{sec_name}](../planning/{req.split}/sections/{sec_name}.md)"
+                sec_link = f"[{sec_name}](../.shipwright/planning/{req.split}/sections/{sec_name}.md)"
                 section_links.append(sec_link)
             sections_cell = ", ".join(section_links)
 
@@ -120,14 +120,14 @@ def _requirements_coverage(data: ComplianceData) -> list[str]:
 def _collect_e2e_coverage_by_split(project_root: Path) -> dict[str, dict]:
     """Count E2E flows and specs per split.
 
-    Reads planning/*/claude-plan-e2e.md for planned flows and
+    Reads .shipwright/planning/*/claude-plan-e2e.md for planned flows and
     e2e/flows/*.spec.ts for existing specs.
     Returns: {"01-foundation": {"flows": 10, "specs": 7}, ...}
     """
     result: dict[str, dict] = {}
 
     # Count planned flows from E2E plan files
-    planning_dir = project_root / "planning"
+    planning_dir = project_root / ".shipwright" / "planning"
     if planning_dir.exists():
         for plan_file in planning_dir.glob("*/claude-plan-e2e.md"):
             split_name = plan_file.parent.name
@@ -183,7 +183,7 @@ def _section_traceability(data: ComplianceData) -> list[str]:
         status = _section_status(sec)
 
         # Link to section plan
-        section_link = f"[{sec.name}](../planning/{sec.split}/sections/{sec.name}.md)"
+        section_link = f"[{sec.name}](../.shipwright/planning/{sec.split}/sections/{sec.name}.md)"
 
         # Linked requirements
         reqs = req_by_section.get(sec.name, [])

@@ -49,7 +49,7 @@ def test_majority_gitignored_flag(tmp_path: Path) -> None:
         "agent_docs/conventions.md",
         "shipwright_run_config.json",
         "shipwright_project_config.json",
-        "planning/01-adopted/spec.md",
+        ".shipwright/planning/01-adopted/spec.md",
     ])
     assert result["total"] == 7
     assert len(result["gitignored"]) >= 4  # 6/7 actually

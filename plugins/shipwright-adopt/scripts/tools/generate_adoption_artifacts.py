@@ -4,7 +4,7 @@
 This is the deterministic artifact-production step. It:
   1. Reads .shipwright/adopt/snapshot.json (Layer-1)
   2. Reads .shipwright/adopt/enrichment.json (Layer-2, if present)
-  3. Writes CLAUDE.md + agent_docs/* + planning/<split>/spec.md
+  3. Writes CLAUDE.md + agent_docs/* + .shipwright/planning/<split>/spec.md
   4. Writes all 6 shipwright_*_config.json in safe order
   5. Seeds shipwright_events.jsonl (adopted + optional backfill)
   6. Installs .claude/settings.json UserPromptSubmit hook

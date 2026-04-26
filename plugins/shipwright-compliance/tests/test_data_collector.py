@@ -191,7 +191,7 @@ class TestCollectDependencies:
 
 class TestCollectExternalReviewStates:
     def _seed_split(self, root: Path, split: str, marker: dict | None) -> None:
-        split_dir = root / "planning" / split
+        split_dir = root / ".shipwright" / "planning" / split
         split_dir.mkdir(parents=True, exist_ok=True)
         if marker is not None:
             (split_dir / "external_review_state.json").write_text(json.dumps(marker))
@@ -252,7 +252,7 @@ class TestCollectExternalReviewStates:
 
     def test_corrupt_marker_reported_as_missing(self, tmp_path: Path):
         root = tmp_path / "proj"
-        split_dir = root / "planning" / "01-auth"
+        split_dir = root / ".shipwright" / "planning" / "01-auth"
         split_dir.mkdir(parents=True)
         (split_dir / "external_review_state.json").write_text("{not valid json")
         states = collect_external_review_states(root)

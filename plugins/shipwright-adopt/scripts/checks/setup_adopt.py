@@ -85,13 +85,14 @@ def _detect_existing_artifacts(project_root: Path) -> list[str]:
     Adopt will preserve+overwrite them. Continue?" before proceeding.
     Pre-existing files don't block adopt — preservation is automatic
     (see `lib/preserve_existing.py`) — but the user should know what's
-    about to happen. spec.md files under planning/ are also surfaced.
+    about to happen. spec.md files under .shipwright/planning/ are also
+    surfaced.
     """
     found: list[str] = []
     for rel in _EXISTING_ARTIFACT_CANDIDATES:
         if (project_root / rel).is_file():
             found.append(rel)
-    planning = project_root / "planning"
+    planning = project_root / ".shipwright" / "planning"
     if planning.is_dir():
         for spec in sorted(planning.rglob("spec.md")):
             try:
