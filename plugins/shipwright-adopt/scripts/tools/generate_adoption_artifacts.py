@@ -112,9 +112,14 @@ def generate(
     from event_seeder import seed_adopted_event, seed_backfill_events  # type: ignore
     from hook_installer import install_suggest_iterate_hook  # type: ignore
     from e2e_baseline_generator import write_baseline_spec  # type: ignore
+    from enrichment_schema import (  # type: ignore
+        EnrichmentValidationError,
+        validate_enrichment_file,
+    )
+    from enrichment_fallback import build_fallback_enrichment  # type: ignore
+    from gitignore_check import check_paths_against_gitignore  # type: ignore
 
     snapshot = _read_json(snapshot_path)
-    enrichment = _read_json(enrichment_path)
     routes = []
     if routes_path.exists():
         try:
@@ -124,6 +129,24 @@ def generate(
         except json.JSONDecodeError:
             routes = []
 
+    # Enrichment loading (4.4): when present, validate strictly. When
+    # missing, use a deterministic fallback that's clearly labeled — no
+    # silent degradation to "snapshot+routes only" with hallucinated TBDs.
+    enrichment_meta: dict[str, Any] = {}
+    if enrichment_path.exists():
+        try:
+            enrichment = validate_enrichment_file(enrichment_path)
+            enrichment_meta = {"source": "validated", "path": str(enrichment_path)}
+        except EnrichmentValidationError as e:
+            # Fail loud — don't pretend Layer-2 succeeded when it didn't.
+            raise SystemExit(
+                f"ERROR: enrichment.json at {enrichment_path} failed schema validation: {e}\n"
+                f"  Re-run Layer-2 enrichment OR delete the file to use the fallback.\n"
+            ) from e
+    else:
+        enrichment = build_fallback_enrichment(snapshot, routes)
+        enrichment_meta = {"source": "fallback"}
+
     project_name = project_root.name
     profile = profile_override or snapshot.get("profile", {}).get("matched", "generic")
     scope = scope_override or "full_app"
@@ -131,41 +154,69 @@ def generate(
     commands = snapshot.get("commands", {})
     stack = snapshot.get("stack", {})
 
-    # Features: prefer Playwright routes (enriched) over AST
-    features = snapshot.get("features", [])
-    ast_features_map = {f.get("route", ""): f for f in features}
+    # Features: ADDITIVE union of AST + crawl (4.2). The previous code
+    # silently dropped AST features whenever routes existed — meaning a
+    # 20-route Hono backend got reduced to whatever the Vite SPA crawl
+    # found (often 5 frontend pages). Now: union by route key, both
+    # origins recorded, no duplicates.
+    ast_features = snapshot.get("features", []) or []
+    crawl_routes = routes or []
 
     merged_features: list[dict[str, Any]] = []
-    if routes:
-        for i, route in enumerate(routes, start=1):
-            fr_id = f"FR-01.{i:02d}"
-            url = route.get("url", "")
-            ast_match = ast_features_map.get(url, {})
-            enrichment_match = next(
-                (e for e in enrichment.get("features", []) if e.get("route") == url or e.get("url") == url),
-                {},
-            )
-            merged_features.append({
-                "fr_id": fr_id,
-                "route": url,
-                "url": url,
-                "source_file": ast_match.get("source_file") or route.get("source_file", "—"),
-                "label": enrichment_match.get("label") or route.get("title") or url,
-                "description": enrichment_match.get("description") or "TBD — refine via /shipwright-iterate",
-                "acceptance_draft": enrichment_match.get("acceptance_draft") or "TBD",
-            })
-    else:
-        for i, f in enumerate(features, start=1):
-            f = dict(f)
-            f["fr_id"] = f.get("fr_id") or f"FR-01.{i:02d}"
-            enrichment_match = next(
-                (e for e in enrichment.get("features", []) if e.get("route") == f.get("route")),
-                {},
-            )
-            f["label"] = enrichment_match.get("label") or f.get("route", "?")
-            f["description"] = enrichment_match.get("description") or "TBD — refine via /shipwright-iterate"
-            f["acceptance_draft"] = enrichment_match.get("acceptance_draft") or "TBD"
-            merged_features.append(f)
+    seen_routes: set[str] = set()
+
+    def _enrichment_match(route_key: str) -> dict[str, Any]:
+        for e in enrichment.get("features", []):
+            if e.get("route") == route_key or e.get("url") == route_key:
+                return e
+        return {}
+
+    # Crawl routes first — they typically have richer metadata (titles,
+    # screenshots) that adopt's downstream consumers (E2E generator,
+    # design extraction) rely on.
+    for route in crawl_routes:
+        url = route.get("url", "")
+        if not url or url in seen_routes:
+            continue
+        seen_routes.add(url)
+        ast_match = next((f for f in ast_features if f.get("route") == url), {})
+        enrich = _enrichment_match(url)
+        origin = "ast+crawl" if ast_match else "crawl"
+        merged_features.append({
+            "route": url,
+            "url": url,
+            "source_file": ast_match.get("source_file") or route.get("source_file", "—"),
+            "label": enrich.get("label") or route.get("title") or url,
+            "description": enrich.get("description") or "TBD — refine via /shipwright-iterate",
+            "acceptance_draft": enrich.get("acceptance_draft") or "TBD",
+            "origin": origin,
+        })
+
+    # AST features that crawl didn't see (typically backend API routes
+    # not reachable from the SPA's link graph). Without this loop the
+    # adopt spec.md missed every API FR.
+    for ast_f in ast_features:
+        route_key = ast_f.get("route", "")
+        if not route_key or route_key in seen_routes:
+            continue
+        seen_routes.add(route_key)
+        enrich = _enrichment_match(route_key)
+        merged_features.append({
+            "route": route_key,
+            "url": route_key,
+            "source_file": ast_f.get("source_file", "—"),
+            "label": enrich.get("label") or route_key,
+            "description": enrich.get("description") or "TBD — refine via /shipwright-iterate",
+            "acceptance_draft": enrich.get("acceptance_draft") or "TBD",
+            "framework": ast_f.get("framework"),
+            "method": ast_f.get("method"),
+            "origin": "ast",
+        })
+
+    # Assign FR IDs after the union is known — preserves the 1..N sequence
+    # the spec template expects.
+    for i, feat in enumerate(merged_features, start=1):
+        feat["fr_id"] = f"FR-01.{i:02d}"
 
     product_description = _pick(
         enrichment, "product_description",
@@ -263,6 +314,20 @@ def generate(
         results["e2e_baseline_generated"] = True
     else:
         results["e2e_baseline_generated"] = False
+
+    # 4.1 — Gitignore awareness. After all writes, check which output paths
+    # would be excluded by the project's .gitignore. The SKILL.md handoff
+    # surfaces this so the user doesn't discover it only at git status.
+    rel_outputs = []
+    for written in results["written"]:
+        try:
+            rel = str(Path(written).resolve().relative_to(project_root))
+            rel_outputs.append(rel.replace("\\", "/"))
+        except ValueError:
+            continue  # outside project root — shouldn't happen but safe to skip
+    gitignore_report = check_paths_against_gitignore(project_root, rel_outputs)
+    results["gitignore_report"] = gitignore_report
+    results["enrichment"] = enrichment_meta
 
     return results
 
