@@ -13,6 +13,13 @@ const OUT_JSON = process.env.SHIPWRIGHT_CRAWL_OUT || '.shipwright/adopt/routes.j
 const SCREENSHOTS_DIR = process.env.SHIPWRIGHT_CRAWL_SCREENSHOTS || '.shipwright/adopt/screenshots';
 const AUTH_TOKEN = process.env.SHIPWRIGHT_CRAWL_AUTH_TOKEN || '';
 
+// Default 'load' (not 'networkidle') because polling-heavy SPAs never reach
+// network-idle, which silently consumed the 180s test timeout after just a
+// page or two. Override per-project via SHIPWRIGHT_CRAWL_WAIT_STRATEGY.
+type WaitStrategy = 'load' | 'networkidle' | 'domcontentloaded';
+const WAIT_STRATEGY = (process.env.SHIPWRIGHT_CRAWL_WAIT_STRATEGY || 'load') as WaitStrategy;
+const WAIT_TIMEOUT = WAIT_STRATEGY === 'networkidle' ? 10_000 : 3_000;
+
 interface RouteEntry {
   url: string;
   title: string;
@@ -85,7 +92,8 @@ test('shipwright-adopt route crawler', async ({ page, context }) => {
     try {
       const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15_000 });
       if (!response || !response.ok()) continue;
-      await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => { /* ignore */ });
+      await page.waitForLoadState(WAIT_STRATEGY, { timeout: WAIT_TIMEOUT }).catch(() => { /* ignore */ });
+      await page.waitForTimeout(500);  // small settle for hydration / late renders
 
       const screenshotPath = path.join(SCREENSHOTS_DIR, `${safeFilename(canonical)}.png`);
       const entry = await extractMeta(page, canonical, depth, screenshotPath);
