@@ -269,6 +269,8 @@ plugins/shipwright-{name}/
 
 **→ [docs/guide.md](docs/guide.md) is the canonical guide.** It covers every phase, the constitution, quality gates, profiles, troubleshooting, and the full command reference.
 
+Inheriting a Shipwright-generated repository or reviewing one without going through the pipeline yourself? Start with **[Reading a Shipwright Project from Outside](docs/guide.md#reading-a-shipwright-project-from-outside)** in the guide — explains where each kind of fact lives so you do not have to read every file to find one answer.
+
 Other references:
 
 - [docs/hooks-and-pipeline.md](docs/hooks-and-pipeline.md) — hooks registry, context loading matrix, between-phase actions
