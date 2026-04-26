@@ -1706,41 +1706,36 @@ Or read `CHANGELOG.md` in the repository root for release notes.
 
 ## 11. Command Center (WebUI)
 
-Since **v0.4.0 (2026-04-24)** the Shipwright Command Center WebUI lives
-in its own repository:
+Running more than one Shipwright project at once? The **Shipwright
+Command Center** is an optional local web application that gives you
+**one Kanban board across every project**, a live transcript per task,
+and a global inbox for every "Claude needs permission to..." prompt —
+so you stop hunting between VS Code windows to see where
+everything stands.
+
+It spawns no Claude itself — you launch Claude in your own terminal or
+the VS Code Extension, and the Command Center watches the resulting
+session transcript live. Fire and forget: the dashboard updates while
+you keep coding.
+
+The Command Center lives in its own repo:
 **[shipwright-webui](https://github.com/svenroth-ai/shipwright-webui)**.
 
-The WebUI is an optional local web application that observes your
-running Claude sessions via their JSONL transcripts. It spawns no Claude
-process itself — you launch Claude in your own terminal (or VS Code),
-and the WebUI renders a live Kanban board, chat transcript, inbox, and
-diagnostics for every registered project.
-
-### Quick pointer
+### Quick start
 
 ```bash
 git clone https://github.com/svenroth-ai/shipwright-webui.git ~/shipwright-webui
 cd ~/shipwright-webui
 make install       # npm install in server/ + client/
-make dev-server    # Terminal 1 — Hono :3847
-make dev-client    # Terminal 2 — Vite :5173
+make dev-server    # Terminal 1 — backend on :3847
+make dev-client    # Terminal 2 — frontend on :5173
 ```
 
-For full install instructions, parallel-worktree port configuration,
-Windows autostart, the profile-cascade (`SHIPWRIGHT_PROFILES_DIR` /
-`SHIPWRIGHT_MONOREPO_PATH`), and the architecture deep-dive, see the new
-repo's `README.md` and `CLAUDE.md`.
-
-### Contract between the repos
-
-- WebUI reads (never writes): `<project>/shipwright_run_config.json`
-  (only `.profile` field for the Preview gate) and
-  `<project>/shipwright_*_config.json` (existsSync only, for adoption
-  state).
-- WebUI writes (only): `<project>/.webui/actions.json` (an empty stub on
-  demand; user-editable afterwards).
-- Both sides stamp `contractVersion` / `schemaVersion` so silent drift
-  surfaces in the WebUI log without failing reads.
+Then open <http://localhost:5173>. The full user guide — installation,
+daily workflow, recommended terminal setup, custom actions for your
+own slash skills, Windows autostart — lives at
+**[docs/guide.md](https://github.com/svenroth-ai/shipwright-webui/blob/main/docs/guide.md)**
+in the WebUI repo.
 
 ---
 
