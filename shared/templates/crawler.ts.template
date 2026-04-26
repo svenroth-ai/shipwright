@@ -29,6 +29,10 @@ interface RouteEntry {
   forms: { action: string; fields: string[] }[];
   depth: number;
   screenshot: string;
+  // Present when page.screenshot threw (ENOENT, EPERM, path-with-spaces, etc.).
+  // Absent on success. Replaces the previous silent .catch(() => {}) — routes.json
+  // no longer claims a screenshot exists when it doesn't.
+  screenshot_error?: string;
 }
 
 function sameOrigin(url: string, base: URL): boolean {
@@ -58,8 +62,16 @@ async function extractMeta(page: Page, url: string, depth: number, screenshotPat
     ).catch(() => []);
     forms.push({ action, fields: inputs.slice(0, 20) });
   }
-  await page.screenshot({ path: screenshotPath, fullPage: false }).catch(() => { /* ignore */ });
-  return {
+  let screenshotError: string | undefined;
+  try {
+    await page.screenshot({ path: screenshotPath, fullPage: false });
+  } catch (e) {
+    screenshotError = e instanceof Error ? e.message : String(e);
+    // Surface to stderr so the Python wrapper can log it. Don't fail the
+    // whole route extraction — best-effort crawl semantics are preserved.
+    console.error(`[crawler] screenshot failed for ${url}: ${screenshotError}`);
+  }
+  const entry: RouteEntry = {
     url, title, h1,
     h2: h2.slice(0, 5),
     buttons: [...new Set(buttons.map((t) => t.trim()).filter(Boolean))].slice(0, 10),
@@ -67,6 +79,8 @@ async function extractMeta(page: Page, url: string, depth: number, screenshotPat
     depth,
     screenshot: path.relative(process.cwd(), screenshotPath).replace(/\\/g, '/'),
   };
+  if (screenshotError) entry.screenshot_error = screenshotError;
+  return entry;
 }
 
 test('shipwright-adopt route crawler', async ({ page, context }) => {
@@ -83,40 +97,51 @@ test('shipwright-adopt route crawler', async ({ page, context }) => {
   const visited = new Set<string>();
   const results: RouteEntry[] = [];
 
-  while (queue.length && results.length < MAX_PAGES) {
-    const { url, depth } = queue.shift()!;
-    const canonical = new URL(url, base).pathname + (new URL(url, base).search || '');
-    if (visited.has(canonical)) continue;
-    visited.add(canonical);
+  // try/finally protects against test.setTimeout (180s) firing mid-loop:
+  // Playwright rejects the test promise but finally still runs, flushing
+  // whatever results we've already collected. The previous "writeFileSync
+  // at the end only" pattern lost everything on timeout.
+  try {
+    while (queue.length && results.length < MAX_PAGES) {
+      const { url, depth } = queue.shift()!;
+      const canonical = new URL(url, base).pathname + (new URL(url, base).search || '');
+      if (visited.has(canonical)) continue;
+      visited.add(canonical);
 
-    try {
-      const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15_000 });
-      if (!response || !response.ok()) continue;
-      await page.waitForLoadState(WAIT_STRATEGY, { timeout: WAIT_TIMEOUT }).catch(() => { /* ignore */ });
-      await page.waitForTimeout(500);  // small settle for hydration / late renders
+      try {
+        const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15_000 });
+        if (!response || !response.ok()) continue;
+        await page.waitForLoadState(WAIT_STRATEGY, { timeout: WAIT_TIMEOUT }).catch(() => { /* ignore */ });
+        await page.waitForTimeout(500);  // small settle for hydration / late renders
 
-      const screenshotPath = path.join(SCREENSHOTS_DIR, `${safeFilename(canonical)}.png`);
-      const entry = await extractMeta(page, canonical, depth, screenshotPath);
-      results.push(entry);
+        const screenshotPath = path.join(SCREENSHOTS_DIR, `${safeFilename(canonical)}.png`);
+        const entry = await extractMeta(page, canonical, depth, screenshotPath);
+        results.push(entry);
 
-      if (depth < MAX_DEPTH) {
-        const links = await page.locator('a[href]').evaluateAll((els) =>
-          (els as HTMLAnchorElement[]).map((a) => a.href).filter(Boolean)
-        ).catch(() => []);
-        for (const link of links) {
-          if (!sameOrigin(link, base)) continue;
-          if (link.startsWith('mailto:') || link.startsWith('tel:') || link.startsWith('javascript:')) continue;
-          const pathOnly = new URL(link, base).pathname;
-          if (visited.has(pathOnly)) continue;
-          queue.push({ url: link, depth: depth + 1 });
+        if (depth < MAX_DEPTH) {
+          const links = await page.locator('a[href]').evaluateAll((els) =>
+            (els as HTMLAnchorElement[]).map((a) => a.href).filter(Boolean)
+          ).catch(() => []);
+          for (const link of links) {
+            if (!sameOrigin(link, base)) continue;
+            if (link.startsWith('mailto:') || link.startsWith('tel:') || link.startsWith('javascript:')) continue;
+            const pathOnly = new URL(link, base).pathname;
+            if (visited.has(pathOnly)) continue;
+            queue.push({ url: link, depth: depth + 1 });
+          }
         }
+      } catch (_e) {
+        // Swallow errors and move on — best-effort crawl
+        continue;
       }
-    } catch (_e) {
-      // Swallow errors and move on — best-effort crawl
-      continue;
+    }
+  } finally {
+    try {
+      fs.writeFileSync(OUT_JSON, JSON.stringify(results, null, 2), 'utf-8');
+    } catch (e) {
+      console.error(`[crawler] failed to write ${OUT_JSON}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
-  fs.writeFileSync(OUT_JSON, JSON.stringify(results, null, 2), 'utf-8');
   expect(results.length).toBeGreaterThanOrEqual(0);  // always passes; crawl is advisory
 });
