@@ -361,7 +361,7 @@ def main() -> int:
     parser.add_argument("--output", help="Output file path")
     parser.add_argument(
         "--json-output",
-        help="Optional machine-readable sidecar path (e.g. securityreports/latest.json)",
+        help="Optional machine-readable sidecar path (e.g. .shipwright/securityreports/latest.json)",
     )
     parser.add_argument("--repo", default="unknown", help="Repository name for report title")
     parser.add_argument(

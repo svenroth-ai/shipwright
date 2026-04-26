@@ -217,8 +217,13 @@ class TestScannerExclusions:
             ".next",
             "__pycache__",
             ".cache",
-            # securityreports added in iterate sec-report-and-orchestrator-decouple
-            # so successive scans don't recurse into their own output.
+            # .shipwright is the canonical hidden dir for shipwright artifacts
+            # (security reports + future siblings) added in iterate
+            # shipwright-dir-relocation. Successive scans must not recurse
+            # into their own output.
+            ".shipwright",
+            # securityreports kept one release cycle as a legacy entry —
+            # projects mid-migration may still have the old folder around.
             "securityreports",
         ):
             assert name in _DEFAULT_EXCLUDES

@@ -128,7 +128,7 @@ in destination:
 
 | Local | CI |
 |-------|----|
-| `securityreports/latest.{md,json}` (gitignored, 20 retained) | `findings.json` + `report.md` artifact (30-day retention) |
+| `.shipwright/securityreports/latest.{md,json}` (gitignored, 20 retained) | `findings.json` + `report.md` artifact (30-day retention) |
 | Iterate-handoff dialog | PR comment |
 | n/a | SARIF to GitHub Security tab |
 

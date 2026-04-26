@@ -2,8 +2,9 @@
 """Local-interactive OSS scanner wrapper.
 
 Runs the OSS backend, redacts findings, persists a human Markdown report
-plus a machine-readable JSON sidecar to ``securityreports/`` (with second-
-granularity history retention), and best-effort updates ``.gitignore``.
+plus a machine-readable JSON sidecar to ``.shipwright/securityreports/``
+(with second-granularity history retention), and best-effort updates
+``.gitignore``.
 
 For Aikido backend, this wrapper short-circuits with a pointer to
 ``aikido_client.py report`` — Aikido has its own report path, untouched
@@ -83,11 +84,13 @@ def _fix_windows_encoding() -> None:
 # Constants
 # ---------------------------------------------------------------------------
 
-REPORTS_DIRNAME = "securityreports"
+REPORTS_DIR = ".shipwright/securityreports"  # relative to project_root
+LEGACY_REPORTS_DIRNAME = "securityreports"   # pre-iterate-3 location, only used for upgrade notice
 HISTORY_DIRNAME = "history"
 LATEST_MD = "latest.md"
 LATEST_JSON = "latest.json"
-GITIGNORE_ENTRY = "/securityreports/"
+GITIGNORE_ENTRY = "/.shipwright/"            # ignore the whole hidden dir, future-proof
+LEGACY_GITIGNORE_ENTRIES = {"/securityreports/", "securityreports/"}  # accepted as "present" during migration
 RETAIN_PAIRS = 20
 
 # Strict filename pattern for archived scans. User-added or malformed files
@@ -143,11 +146,13 @@ def _ensure_gitignore_entry(project_root: Path) -> str:
         return "skipped"
 
     existing = gi.read_text(encoding="utf-8")
-    # Match exact entry (with or without leading slash) on its own line
+    # Match exact entry on its own line. Accept the new `/.shipwright/`
+    # canonical form AND the legacy `/securityreports/` (kept idempotent
+    # for projects mid-migration so we don't double-write).
+    accepted = {GITIGNORE_ENTRY} | LEGACY_GITIGNORE_ENTRIES
     lines = existing.splitlines()
     for line in lines:
-        stripped = line.strip()
-        if stripped in {"/securityreports/", "securityreports/"}:
+        if line.strip() in accepted:
             return "present"
 
     # Need to append. Ensure file ends with a newline before adding our entry,
@@ -180,6 +185,27 @@ def _list_archived_scans(history_dir: Path) -> list[tuple[str, list[Path]]]:
     # Newest stem first (lexicographic sort works because YYYYMMDD-HHMMSS stems
     # are monotonic).
     return sorted(by_stem.items(), key=lambda kv: kv[0], reverse=True)
+
+
+def _emit_legacy_dir_notice(project_root: Path) -> bool:
+    """Print a one-time stderr notice if the project has a stale legacy
+    ``securityreports/`` directory but no new ``.shipwright/securityreports/``.
+
+    Best-effort, never raises, never blocks the scan. Returns True if the
+    notice was emitted (used by tests).
+    """
+    legacy = project_root / LEGACY_REPORTS_DIRNAME
+    new = project_root / REPORTS_DIR
+    if legacy.is_dir() and not new.exists():
+        print(
+            f"[shipwright-security] notice: report directory moved to "
+            f"`{REPORTS_DIR}/`. Old folder at `{LEGACY_REPORTS_DIRNAME}/` is "
+            f"stale and safe to delete (or `git mv {LEGACY_REPORTS_DIRNAME} "
+            f".shipwright/`).",
+            file=sys.stderr,
+        )
+        return True
+    return False
 
 
 def _prune_history(history_dir: Path, retain: int = RETAIN_PAIRS) -> int:
@@ -237,6 +263,10 @@ def run(*, project_root: Path, repo: str = "unknown", full_evidence: bool = Fals
         )
         return 0
 
+    # One-time stderr notice if a legacy securityreports/ directory exists.
+    # Emitted before the scan so users see it even if the scan errors.
+    _emit_legacy_dir_notice(project_root)
+
     target = str(project_root)
     raw_findings = backend.scan(target)
 
@@ -250,7 +280,7 @@ def run(*, project_root: Path, repo: str = "unknown", full_evidence: bool = Fals
     json_payload = _build_json_with_scan_id(findings, repo, scan_id)
     json_text = json.dumps(json_payload, ensure_ascii=False, indent=2) + "\n"
 
-    reports_dir = project_root / REPORTS_DIRNAME
+    reports_dir = project_root / REPORTS_DIR
     history_dir = reports_dir / HISTORY_DIRNAME
     history_dir.mkdir(parents=True, exist_ok=True)
 

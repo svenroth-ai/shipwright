@@ -2,13 +2,15 @@
 
 Covers the unit-level contract:
   - Aikido backend short-circuits cleanly
-  - Reports land at securityreports/latest.{md,json}
+  - Reports land at .shipwright/securityreports/latest.{md,json}
   - History gets archived as scan-{ts}-{uuid}.{md,json}
   - Pairs (md+json) are pruned together; strict filename pattern; manual
     files in history/ are left alone
-  - .gitignore best-effort: appended only when missing; never overwritten
+  - .gitignore best-effort: appended only when missing; never overwritten;
+    legacy `/securityreports/` recognised as already-present (no double-write)
   - scan_id is consistent between md (HTML comment) and json (field)
   - --full-evidence retains raw secret values; default-on redaction strips them
+  - One-time stderr notice when a legacy securityreports/ dir exists
 """
 from __future__ import annotations
 
@@ -17,7 +19,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -86,7 +88,7 @@ class TestBackendShortCircuit:
         assert rc == 0
         backend.scan.assert_not_called()
         # No reports written
-        assert not (tmp_path / "securityreports").exists()
+        assert not (tmp_path / ".shipwright" / "securityreports").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -100,8 +102,8 @@ class TestHappyPath:
         rc = run_scan_and_report.run(project_root=tmp_path, repo="test/repo", full_evidence=False)
         assert rc == 0
 
-        latest_md = tmp_path / "securityreports" / "latest.md"
-        latest_json = tmp_path / "securityreports" / "latest.json"
+        latest_md = tmp_path / ".shipwright" / "securityreports" / "latest.md"
+        latest_json = tmp_path / ".shipwright" / "securityreports" / "latest.json"
         assert latest_md.exists()
         assert latest_json.exists()
 
@@ -109,7 +111,7 @@ class TestHappyPath:
         rc = run_scan_and_report.run(project_root=tmp_path, repo="test/repo", full_evidence=False)
         assert rc == 0
 
-        history = tmp_path / "securityreports" / "history"
+        history = tmp_path / ".shipwright" / "securityreports" / "history"
         archived = sorted(p.name for p in history.iterdir())
         assert len(archived) == 2  # one md + one json
 
@@ -119,8 +121,8 @@ class TestHappyPath:
     def test_scan_id_matches_between_md_and_json(self, stub_oss_backend, tmp_path: Path):
         run_scan_and_report.run(project_root=tmp_path, repo="test/repo", full_evidence=False)
 
-        latest_json_text = (tmp_path / "securityreports" / "latest.json").read_text(encoding="utf-8")
-        latest_md_text = (tmp_path / "securityreports" / "latest.md").read_text(encoding="utf-8")
+        latest_json_text = (tmp_path / ".shipwright" / "securityreports" / "latest.json").read_text(encoding="utf-8")
+        latest_md_text = (tmp_path / ".shipwright" / "securityreports" / "latest.md").read_text(encoding="utf-8")
 
         json_payload = json.loads(latest_json_text)
         scan_id = json_payload["scan_id"]
@@ -133,7 +135,7 @@ class TestHappyPath:
     def test_redaction_default_strips_raw_secret_fields(self, stub_oss_backend, tmp_path: Path):
         run_scan_and_report.run(project_root=tmp_path, repo="test/repo", full_evidence=False)
 
-        payload = json.loads((tmp_path / "securityreports" / "latest.json").read_text(encoding="utf-8"))
+        payload = json.loads((tmp_path / ".shipwright" / "securityreports" / "latest.json").read_text(encoding="utf-8"))
         for finding in payload["findings"]:
             assert "match" not in finding
             assert "secret" not in finding
@@ -144,7 +146,7 @@ class TestHappyPath:
     def test_full_evidence_retains_raw_secret_fields(self, stub_oss_backend, tmp_path: Path):
         run_scan_and_report.run(project_root=tmp_path, repo="test/repo", full_evidence=True)
 
-        payload = json.loads((tmp_path / "securityreports" / "latest.json").read_text(encoding="utf-8"))
+        payload = json.loads((tmp_path / ".shipwright" / "securityreports" / "latest.json").read_text(encoding="utf-8"))
         gitleaks_finding = next(f for f in payload["findings"] if f["source"] == "gitleaks")
         assert gitleaks_finding["match"] == "sk-live-1234567890abcdef"
 
@@ -153,16 +155,16 @@ class TestHappyPath:
         rc = run_scan_and_report.run(project_root=tmp_path, repo="test/repo", full_evidence=True)
         # Refuses with non-zero exit OR forces redaction; either way the
         # raw secret must NOT appear in the output.
-        assert rc != 0 or not (tmp_path / "securityreports" / "latest.json").exists() or (
+        assert rc != 0 or not (tmp_path / ".shipwright" / "securityreports" / "latest.json").exists() or (
             "sk-live-1234567890abcdef"
-            not in (tmp_path / "securityreports" / "latest.json").read_text(encoding="utf-8")
+            not in (tmp_path / ".shipwright" / "securityreports" / "latest.json").read_text(encoding="utf-8")
         )
 
     def test_atomic_write_no_tmp_files_left_behind(self, stub_oss_backend, tmp_path: Path):
         run_scan_and_report.run(project_root=tmp_path, repo="test/repo", full_evidence=False)
         # tmp/staging files must be cleaned up
-        leftovers = list((tmp_path / "securityreports").glob("*.tmp"))
-        leftovers += list((tmp_path / "securityreports").glob("*.partial"))
+        leftovers = list((tmp_path / ".shipwright" / "securityreports").glob("*.tmp"))
+        leftovers += list((tmp_path / ".shipwright" / "securityreports").glob("*.partial"))
         assert leftovers == []
 
 
@@ -175,7 +177,7 @@ class TestRetention:
 
     def test_keeps_at_most_20_pairs_after_many_runs(self, stub_oss_backend, tmp_path: Path):
         # Pre-populate 25 pairs in history/
-        history = tmp_path / "securityreports" / "history"
+        history = tmp_path / ".shipwright" / "securityreports" / "history"
         history.mkdir(parents=True)
         from datetime import datetime, timedelta
         base = datetime(2026, 1, 1, 12, 0, 0)
@@ -197,7 +199,7 @@ class TestRetention:
     def test_prune_deletes_pairs_atomically_md_and_json_together(
         self, stub_oss_backend, tmp_path: Path,
     ):
-        history = tmp_path / "securityreports" / "history"
+        history = tmp_path / ".shipwright" / "securityreports" / "history"
         history.mkdir(parents=True)
         # Populate 22 pairs, prune to 20 → 2 pairs deleted
         from datetime import datetime, timedelta
@@ -218,7 +220,7 @@ class TestRetention:
     def test_prune_ignores_files_that_dont_match_strict_pattern(
         self, stub_oss_backend, tmp_path: Path,
     ):
-        history = tmp_path / "securityreports" / "history"
+        history = tmp_path / ".shipwright" / "securityreports" / "history"
         history.mkdir(parents=True)
         # User-added or out-of-pattern files: must not be deleted
         (history / "user-notes.md").write_text("notes", encoding="utf-8")
@@ -239,7 +241,7 @@ class TestRetention:
 
 class TestGitignoreBestEffort:
 
-    def test_appends_entry_when_gitignore_exists_without_it(
+    def test_appends_shipwright_entry_when_gitignore_exists_without_it(
         self, stub_oss_backend, tmp_path: Path,
     ):
         gi = tmp_path / ".gitignore"
@@ -247,20 +249,36 @@ class TestGitignoreBestEffort:
 
         run_scan_and_report.run(project_root=tmp_path, repo="x", full_evidence=False)
         content = gi.read_text(encoding="utf-8")
-        assert "/securityreports/" in content
+        # New canonical entry added
+        assert "/.shipwright/" in content
         # Existing entries preserved
         assert "node_modules/" in content
         assert ".venv/" in content
 
-    def test_does_not_duplicate_when_entry_already_present(
+    def test_does_not_duplicate_when_shipwright_entry_already_present(
         self, stub_oss_backend, tmp_path: Path,
     ):
+        gi = tmp_path / ".gitignore"
+        gi.write_text("node_modules/\n/.shipwright/\n", encoding="utf-8")
+
+        run_scan_and_report.run(project_root=tmp_path, repo="x", full_evidence=False)
+        content = gi.read_text(encoding="utf-8")
+        assert content.count("/.shipwright/") == 1
+
+    def test_does_not_double_write_when_legacy_entry_present(
+        self, stub_oss_backend, tmp_path: Path,
+    ):
+        # Migration-friendly: a project still on the legacy /securityreports/
+        # entry counts as "present" — we don't auto-append /.shipwright/. The
+        # user can clean up the legacy entry on their own schedule.
         gi = tmp_path / ".gitignore"
         gi.write_text("node_modules/\n/securityreports/\n", encoding="utf-8")
 
         run_scan_and_report.run(project_root=tmp_path, repo="x", full_evidence=False)
         content = gi.read_text(encoding="utf-8")
         assert content.count("/securityreports/") == 1
+        # And we did NOT auto-add the new entry over the top
+        assert "/.shipwright/" not in content
 
     def test_does_not_create_gitignore_when_absent(
         self, stub_oss_backend, tmp_path: Path,
@@ -281,5 +299,58 @@ class TestGitignoreBestEffort:
         run_scan_and_report.run(project_root=tmp_path, repo="x", full_evidence=False)
         content = gi.read_text(encoding="utf-8")
         # Entry on its own line — no merge with the previous line
-        assert "node_modules//securityreports/" not in content
-        assert "/securityreports/" in content
+        assert "node_modules//.shipwright/" not in content
+        assert "/.shipwright/" in content
+
+
+# ---------------------------------------------------------------------------
+# Legacy-directory upgrade notice (one-shot stderr message)
+# ---------------------------------------------------------------------------
+
+
+class TestLegacyDirNotice:
+
+    def test_notice_fires_when_only_legacy_dir_exists(
+        self, stub_oss_backend, tmp_path: Path, capsys,
+    ):
+        # Stale legacy folder from a pre-iterate-3 run, no new dir yet
+        legacy = tmp_path / "securityreports"
+        legacy.mkdir()
+        (legacy / "latest.md").write_text("stale", encoding="utf-8")
+
+        run_scan_and_report.run(project_root=tmp_path, repo="x", full_evidence=False)
+        err = capsys.readouterr().err
+        assert "report directory moved" in err
+        assert ".shipwright/securityreports" in err
+        # And we wrote to the new location regardless
+        assert (tmp_path / ".shipwright" / "securityreports" / "latest.md").exists()
+
+    def test_notice_silent_when_no_legacy_dir(
+        self, stub_oss_backend, tmp_path: Path, capsys,
+    ):
+        # Greenfield: no legacy folder at all
+        run_scan_and_report.run(project_root=tmp_path, repo="x", full_evidence=False)
+        err = capsys.readouterr().err
+        assert "report directory moved" not in err
+
+    def test_notice_silent_when_new_dir_already_populated(
+        self, stub_oss_backend, tmp_path: Path, capsys,
+    ):
+        # User has already migrated (.shipwright/securityreports/ exists);
+        # legacy folder still around but the notice should NOT fire — they're
+        # already on the new path.
+        (tmp_path / "securityreports").mkdir()
+        (tmp_path / ".shipwright" / "securityreports").mkdir(parents=True)
+
+        run_scan_and_report.run(project_root=tmp_path, repo="x", full_evidence=False)
+        err = capsys.readouterr().err
+        assert "report directory moved" not in err
+
+    def test_notice_helper_returns_true_on_emit(self, tmp_path: Path):
+        (tmp_path / "securityreports").mkdir()
+        emitted = run_scan_and_report._emit_legacy_dir_notice(tmp_path)
+        assert emitted is True
+
+    def test_notice_helper_returns_false_when_no_legacy(self, tmp_path: Path):
+        emitted = run_scan_and_report._emit_legacy_dir_notice(tmp_path)
+        assert emitted is False

@@ -127,7 +127,8 @@ _DEFAULT_EXCLUDES: tuple[str, ...] = (
     ".next",
     "__pycache__",
     ".cache",
-    "securityreports",
+    ".shipwright",     # canonical hidden dir for shipwright artifacts
+    "securityreports", # legacy pre-iterate-3 location, kept one cycle for migrating projects
 )
 
 # Env-var additions must be simple folder names: letters, digits, underscore,
