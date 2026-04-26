@@ -1605,6 +1605,85 @@ The `/shipwright-compliance` skill generates audit-ready documentation from the 
 
 Compliance is updated incrementally after each pipeline phase, so reports reflect current state at any point during the build.
 
+### Reading a Shipwright Project from Outside
+
+If you inherited a Shipwright-generated repository (or are reviewing one without going through the pipeline yourself), this is the orientation guide. It explains **where each kind of fact lives** so you do not have to read every file to find one answer.
+
+The framework deliberately does not aggregate this information into a single `PROJECT.md` per repo. An aggregate file becomes a view over other files and drifts the moment any of them changes. Instead, learn the structure once, then read source-of-truth files directly. The same approach is why a Replit-style `replit.md` is not generated: views drift, conventions do not.
+
+#### Reading Order
+
+Read these in order. Stop as soon as you have the answer you need — most reviews never need to go past step 3.
+
+| # | File | What you learn | Time |
+|---|------|----------------|------|
+| 1 | `README.md` | What this project is, how to install, how to run | ~1 min |
+| 2 | `CLAUDE.md` | Stack, build/test/deploy commands, structure, key files, gotchas | ~3 min |
+| 3 | `agent_docs/conventions.md` | Code patterns, naming, git workflow, component examples | ~5 min |
+| 4 | `agent_docs/architecture.md` | System overview, stack table, data flow, security model | ~5 min |
+| 5 | `agent_docs/decision_log.md` | Architecture Decision Records — why each non-obvious choice was made | scan-based |
+| 6 | `agent_docs/session_handoff.md` | Most recent state: last commit, last test status, last completed phase | ~1 min |
+| 7 | `shipwright_*_config.json` | Pipeline state — which phase ran when, completed sections, iterate history | scan-based |
+
+Files 1–4 are the primer. Files 5–7 are reference material — you grep them for a specific question, you do not read them cover to cover.
+
+#### Single-Source-of-Truth Map
+
+When you have a specific question, go directly to the file that owns the answer. Do not infer from `CLAUDE.md` if the canonical answer lives elsewhere — `CLAUDE.md` is a summary and may be a step behind on details.
+
+| Question | Authoritative File | Why |
+|----------|-------------------|-----|
+| What stack / framework? | `shipwright_run_config.json` (`profile`) + `agent_docs/architecture.md` (Stack table) | Profile is normative; architecture.md expands it |
+| What conventions / code style? | `agent_docs/conventions.md` | Single source — never duplicated |
+| Why was X chosen over Y? | `agent_docs/decision_log.md` | ADR format with rejected alternatives |
+| What did the last iterate do? | `shipwright_events.jsonl` (most recent `work_completed`) + `agent_docs/build_dashboard.md` | Event log is canonical; dashboard is a rendered view |
+| What test status right now? | `shipwright_test_results.json` | Last test run, pass/fail counts per layer |
+| What requirement maps to which file? | `shipwright_sync_config.json` (if present) | FR ↔ file mapping |
+| What requirements does this project even have? | `planning/*/spec.md` | IREB-aligned FR/NFR specs |
+| Where in the pipeline are we? | `shipwright_run_config.json` (`status`, `current_phase`) | Pipeline state machine |
+| What was the most recent decision? | `agent_docs/decision_log.md` (latest ADR) | Forward-only append |
+| Did anyone override a hook? | `agent_docs/compliance_overrides.log` | Audit trail of soft-block overrides |
+
+#### Quickstart Pattern
+
+Every Shipwright project follows the same three-command shape, regardless of stack. The actual commands come from `CLAUDE.md` (the `## HOW` section). The pattern:
+
+```bash
+# Setup — install dependencies
+<package-manager> install        # e.g. npm install, uv sync, bun install
+
+# Run — start the dev server (a Shipwright project has one canonical dev command)
+<dev-command>                    # e.g. npm run dev, uv run dev, etc.
+
+# Test — at minimum the unit tests; CLAUDE.md lists optional integration / E2E commands
+<test-command>                   # e.g. npm test, uv run pytest, etc.
+```
+
+If `CLAUDE.md` does not show one of these, that path is not used in the project — there is no second-guessing.
+
+#### When to Reach for Which Skill
+
+Once oriented, common follow-up actions:
+
+| You want to... | Skill | Notes |
+|----------------|-------|-------|
+| Make any code change (feature / fix / refactor) | `/shipwright-iterate "<description>"` | Adaptive complexity; runs the right amount of process |
+| See the running app in a browser | `/shipwright-preview` | Starts the dev server, returns the URL |
+| Run tests on demand | `/shipwright-test` | Auto-detects unit/integration/E2E from profile |
+| Check that artifacts are still in sync | `/shipwright-compliance` | Cross-artifact detective audit (7 check groups) |
+| Tag a release | `/shipwright-changelog` | Aggregates `[Unreleased]` entries, bumps semver, opens PR |
+| Deploy to DEV/PROD | `/shipwright-deploy` | DEV auto, PROD manual (per design principle) |
+
+Avoid editing files directly when the skill exists — the skill keeps `agent_docs/`, `shipwright_events.jsonl`, and compliance reports in sync. Hand-edits silently produce drift that `/shipwright-compliance` will flag later.
+
+#### Why No Aggregated Project Summary File
+
+Frameworks like Replit ship a single `replit.md` that aggregates setup, API, deployment, troubleshooting into one file. It looks hand-off-friendly on day one. Six iterates later, half of it is wrong — the aggregate is a view over files that have moved on, and nothing forced it to update.
+
+Shipwright takes the opposite approach: each file owns one concern. `CLAUDE.md` is the entry point and stays lean (~200 lines). Detail lives in `agent_docs/`. Pipeline state lives in `shipwright_*_config.json`. Compliance evidence lives in `shipwright_events.jsonl`. There is no synthesized "everything" file because there is no way to keep one in sync without paying drift in tokens or operator attention every iterate.
+
+The price is that you read 2–3 files to onboard instead of 1. The benefit is that what you read is current.
+
 ---
 
 ## 11. Troubleshooting
