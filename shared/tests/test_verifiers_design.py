@@ -30,12 +30,12 @@ def seed_canon_design(
     ]
 
     # Planning FRs — spec.md tables the FR parser consumes
-    (root / "planning" / "01-auth").mkdir(parents=True)
-    (root / "planning" / "01-auth" / "spec.md").write_text(
+    (root / ".shipwright" / "planning" / "01-auth").mkdir(parents=True)
+    (root / ".shipwright" / "planning" / "01-auth" / "spec.md").write_text(
         "| FR-01.01 | User can log in | Must |\n"
     )
-    (root / "planning" / "02-dashboard").mkdir()
-    (root / "planning" / "02-dashboard" / "spec.md").write_text(
+    (root / ".shipwright" / "planning" / "02-dashboard").mkdir()
+    (root / ".shipwright" / "planning" / "02-dashboard" / "spec.md").write_text(
         "| FR-02.01 | Show metrics | Must |\n"
     )
 
@@ -164,7 +164,7 @@ def test_fr_coverage_passes_when_every_fr_linked(tmp_path):
 def test_fr_coverage_fails_on_orphan_fr(tmp_path):
     seed_canon_design(tmp_path)
     # Add a new FR to the spec but don't link it to any screen
-    (tmp_path / "planning" / "02-dashboard" / "spec.md").write_text(
+    (tmp_path / ".shipwright" / "planning" / "02-dashboard" / "spec.md").write_text(
         "| FR-02.01 | Show metrics | Must |\n"
         "| FR-02.02 | Export PDF | Should |\n"
     )
@@ -174,7 +174,7 @@ def test_fr_coverage_fails_on_orphan_fr(tmp_path):
 
 
 def test_fr_coverage_skips_when_no_planning_frs(tmp_path):
-    # No planning/ dir → no FRs → trivially satisfied
+    # No .shipwright/planning/ dir → no FRs → trivially satisfied
     (tmp_path / "designs").mkdir()
     (tmp_path / "designs" / "design-manifest.md").write_text("## Screens\n")
     r = check_design_fr_coverage(tmp_path)

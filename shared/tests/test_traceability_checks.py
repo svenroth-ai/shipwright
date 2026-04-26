@@ -26,7 +26,7 @@ from tools.verifiers import traceability_checks as tc  # noqa: E402
 
 
 def _write_spec(proj: Path, split: str, rows: list[tuple[str, str, str]]) -> None:
-    split_dir = proj / "planning" / split
+    split_dir = proj / ".shipwright" / "planning" / split
     split_dir.mkdir(parents=True, exist_ok=True)
     lines = [
         f"# {split} spec",
@@ -73,8 +73,8 @@ def test_t1_skips_without_planning_tree(proj: Path):
 
 
 def test_t1_skips_when_spec_has_no_frs(proj: Path):
-    (proj / "planning" / "01-core").mkdir(parents=True)
-    (proj / "planning" / "01-core" / "spec.md").write_text(
+    (proj / ".shipwright" / "planning" / "01-core").mkdir(parents=True)
+    (proj / ".shipwright" / "planning" / "01-core" / "spec.md").write_text(
         "# spec\n\nNo FRs here.\n", encoding="utf-8",
     )
     f = tc.check_t1_all_spec_frs_mapped(proj)

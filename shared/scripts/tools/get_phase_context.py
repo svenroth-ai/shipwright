@@ -74,7 +74,7 @@ CONFIG_NAME = "shipwright_run_config.json"
 # its predecessors typically produce. Intentionally minimal — F5 will tune
 # per-skill based on what each Skill actually needs to read.
 PHASE_OWN_ARTIFACTS: dict[str, list[str]] = {
-    "project": ["planning/requirements.md"],
+    "project": [".shipwright/planning/requirements.md"],
     "design": ["designs/", "shipwright_design_config.json"],
     "plan": ["agent_docs/sections/", "shipwright_plan_config.json"],
     "build": ["shipwright_build_config.json"],
@@ -86,8 +86,8 @@ PHASE_OWN_ARTIFACTS: dict[str, list[str]] = {
 
 # What predecessor artifacts this phase typically reads.
 PHASE_PREREQ_ARTIFACTS: dict[str, list[str]] = {
-    "design": ["planning/requirements.md", "shipwright_project_config.json"],
-    "plan": ["planning/requirements.md", "shipwright_design_config.json",
+    "design": [".shipwright/planning/requirements.md", "shipwright_project_config.json"],
+    "plan": [".shipwright/planning/requirements.md", "shipwright_design_config.json",
              "designs/"],
     "build": ["agent_docs/sections/", "shipwright_plan_config.json"],
     "test": ["shipwright_build_config.json"],

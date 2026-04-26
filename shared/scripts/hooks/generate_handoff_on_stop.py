@@ -254,7 +254,7 @@ def main() -> int:
         loop_id = os.environ.get("SHIPWRIGHT_LOOP_ID")
         loop_unit = os.environ.get("SHIPWRIGHT_LOOP_UNIT_ID")
         if loop_id and loop_unit:
-            namespaced_dir = project_root / "planning" / "handoffs" / loop_id
+            namespaced_dir = project_root / ".shipwright" / "planning" / "handoffs" / loop_id
             namespaced_dir.mkdir(parents=True, exist_ok=True)
             namespaced_path = namespaced_dir / f"{loop_unit}.md"
             namespaced_path.write_text(content, encoding="utf-8")

@@ -14,6 +14,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
+
+# Canonical home of the planning artifact set, relative to project_root.
+# Mirrors PLANNING_DIR in shared/scripts/lib/artifact_migrations.py.
+PLANNING_DIRNAME = ".shipwright/planning"
+
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[2]
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
@@ -68,15 +73,15 @@ def check_a1_configs_present(project_root: Path) -> dict[str, Any]:
 
 
 def check_a2_spec_has_frs(project_root: Path) -> dict[str, Any]:
-    """A2 (Tier-1): planning/*/spec.md contains >= 1 FR-NN.MM."""
-    name = "A2 planning/<split>/spec.md has >= 1 FR"
-    planning = project_root / "planning"
+    """A2 (Tier-1): .shipwright/planning/*/spec.md contains >= 1 FR-NN.MM."""
+    name = "A2 .shipwright/planning/<split>/spec.md has >= 1 FR"
+    planning = project_root / PLANNING_DIRNAME
     if not planning.is_dir():
-        return make_finding("A2", STATUS_FAIL, "missing planning/ directory",
+        return make_finding("A2", STATUS_FAIL, "missing .shipwright/planning/ directory",
                             name=name, provenance="adopt_spec_check")
     specs = list(planning.rglob("spec.md"))
     if not specs:
-        return make_finding("A2", STATUS_FAIL, "no planning/<split>/spec.md found",
+        return make_finding("A2", STATUS_FAIL, "no .shipwright/planning/<split>/spec.md found",
                             name=name, provenance="adopt_spec_check")
     for spec in specs:
         content = spec.read_text(encoding="utf-8", errors="ignore")
@@ -88,7 +93,7 @@ def check_a2_spec_has_frs(project_root: Path) -> dict[str, Any]:
             )
     return make_finding(
         "A2", STATUS_FAIL,
-        "planning/*/spec.md: no FR-NN.MM reference in any spec",
+        ".shipwright/planning/*/spec.md: no FR-NN.MM reference in any spec",
         name=name,
         remediation="Manually add FRs or re-run /shipwright-adopt with more features",
         provenance="adopt_spec_check",

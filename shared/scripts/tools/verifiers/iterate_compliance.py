@@ -16,6 +16,11 @@ import time
 from pathlib import Path
 from typing import Any
 
+
+# Canonical home of the planning artifact set, relative to project_root.
+# Mirrors PLANNING_DIR in shared/scripts/lib/artifact_migrations.py.
+PLANNING_DIRNAME = ".shipwright/planning"
+
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[2]
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
@@ -34,8 +39,8 @@ W3_NAME = "W3 F5a/F5b work_completed + test-evidence"
 
 W2_REMEDIATION = (
     "Run external review for this iterate (SKILL.md F10), then "
-    "write planning/iterate/{run_id}-external-review.json OR update "
-    "planning/iterate/external_review_state.json."
+    "write .shipwright/planning/iterate/{run_id}-external-review.json OR update "
+    ".shipwright/planning/iterate/external_review_state.json."
 )
 W3_REMEDIATION = (
     "Call record_event --type work_completed --source iterate and "
@@ -90,11 +95,11 @@ def check_w2_external_review_marker(
                 name=W2_NAME,
             )
 
-    planning_dir = project_root / "planning" / "iterate"
+    planning_dir = project_root / PLANNING_DIRNAME / "iterate"
     if not planning_dir.is_dir():
         return make_finding(
             "W2", STATUS_SKIP,
-            "planning/iterate/ missing — nothing to verify yet",
+            ".shipwright/planning/iterate/ missing — nothing to verify yet",
             name=W2_NAME,
             provenance="unverified_marker",
         )

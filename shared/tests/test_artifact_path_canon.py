@@ -178,19 +178,36 @@ class _AstFinder(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_BinOp(self, node: ast.BinOp) -> None:
-        # Path division: <expr> / "planning"  or  "planning" / <expr>
+        # Path division: <expr> / "planning"  or  "planning" / <expr>.
+        # Skip the canonical migrated form: <expr> / ".shipwright" / "planning"
+        # (the legacy-target string is the right operand BUT the LHS is
+        # itself a `<expr> / ".shipwright"` chain).
         if isinstance(node.op, ast.Div):
-            if self._is_target(node.left) or self._is_target(node.right):
+            if self._is_target(node.right):
+                if self._is_post_shipwright_chain(node.left):
+                    pass  # canonical form, not a violation
+                else:
+                    self.findings.append((node.lineno, "Path '/' operator"))
+            elif self._is_target(node.left):
                 self.findings.append((node.lineno, "Path '/' operator"))
         self.generic_visit(node)
 
+    def _is_post_shipwright_chain(self, node: ast.AST) -> bool:
+        """True if *node* is ``<expr> / ".shipwright"`` (any depth on left)."""
+        if not isinstance(node, ast.BinOp) or not isinstance(node.op, ast.Div):
+            return False
+        if isinstance(node.right, ast.Constant) and node.right.value == ".shipwright":
+            return True
+        return False
+
     def visit_JoinedStr(self, node: ast.JoinedStr) -> None:
-        # f-strings — look for a "planning" literal segment
+        # f-strings — match only if the target appears as the FIRST segment
+        # (legacy path root), not as an inner segment of an already-migrated
+        # path like ``.shipwright/planning/...``.
         for v in node.values:
             if isinstance(v, ast.Constant) and isinstance(v.value, str):
-                # match "planning" as its own segment, or surrounded by /
                 segments = re.split(r"[/\\]", v.value)
-                if self.target in segments:
+                if segments and segments[0] == self.target:
                     self.findings.append((node.lineno, "f-string path segment"))
                     break
         self.generic_visit(node)

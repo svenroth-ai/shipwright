@@ -47,8 +47,8 @@ def seed_canon_project(
 
     # Planning dirs matching splits
     for s in splits:
-        (root / "planning" / s).mkdir(parents=True)
-        (root / "planning" / s / "spec.md").write_text("# spec\n")
+        (root / ".shipwright" / "planning" / s).mkdir(parents=True)
+        (root / ".shipwright" / "planning" / s / "spec.md").write_text("# spec\n")
 
     if not write_canon_artifacts:
         return
@@ -124,8 +124,8 @@ def test_manifest_splits_match_dirs_passes_when_aligned(tmp_path):
     (tmp_path / "shipwright_project_config.json").write_text(
         json.dumps({"splits": [{"name": "01-auth"}, {"name": "02-dashboard"}]})
     )
-    (tmp_path / "planning" / "01-auth").mkdir(parents=True)
-    (tmp_path / "planning" / "02-dashboard").mkdir()
+    (tmp_path / ".shipwright" / "planning" / "01-auth").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "planning" / "02-dashboard").mkdir()
     r = check_manifest_splits_match_dirs(tmp_path)
     assert r.ok is True
 
@@ -134,7 +134,7 @@ def test_manifest_splits_match_dirs_warns_on_missing_dir(tmp_path):
     (tmp_path / "shipwright_project_config.json").write_text(
         json.dumps({"splits": [{"name": "01-auth"}, {"name": "02-dashboard"}]})
     )
-    (tmp_path / "planning" / "01-auth").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "planning" / "01-auth").mkdir(parents=True)
     r = check_manifest_splits_match_dirs(tmp_path)
     assert r.ok is False
     assert r.severity == Severity.WARNING.value
@@ -145,21 +145,21 @@ def test_manifest_splits_match_dirs_warns_on_extra_dir(tmp_path):
     (tmp_path / "shipwright_project_config.json").write_text(
         json.dumps({"splits": [{"name": "01-auth"}]})
     )
-    (tmp_path / "planning" / "01-auth").mkdir(parents=True)
-    (tmp_path / "planning" / "99-rogue").mkdir()
+    (tmp_path / ".shipwright" / "planning" / "01-auth").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "planning" / "99-rogue").mkdir()
     r = check_manifest_splits_match_dirs(tmp_path)
     assert r.ok is False
     assert "99-rogue" in r.detail
 
 
 def test_manifest_splits_match_dirs_ignores_iterate_subdir(tmp_path):
-    """planning/iterate/ is where iterate specs live and should not
+    """.shipwright/planning/iterate/ is where iterate specs live and should not
     count as an 'extra' split."""
     (tmp_path / "shipwright_project_config.json").write_text(
         json.dumps({"splits": [{"name": "01-auth"}]})
     )
-    (tmp_path / "planning" / "01-auth").mkdir(parents=True)
-    (tmp_path / "planning" / "iterate").mkdir()
+    (tmp_path / ".shipwright" / "planning" / "01-auth").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "planning" / "iterate").mkdir()
     r = check_manifest_splits_match_dirs(tmp_path)
     assert r.ok is True
 

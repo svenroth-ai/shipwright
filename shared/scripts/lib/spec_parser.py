@@ -1,7 +1,7 @@
 """Spec parser for the Phase-Quality spec category (PR 4 — S1-S10).
 
 Pure parsers for Shipwright spec documents (``agent_docs/spec.md`` plus
-per-split ``planning/<split>/spec.md``). Used by
+per-split ``.shipwright/planning/<split>/spec.md``). Used by
 ``tools/verifiers/spec_checks.py`` so every S* check operates on the
 same normalised view of an FR.
 
@@ -235,14 +235,19 @@ class FRCoherenceReport:
                     or self.missing_both)
 
 
+# Canonical home of the planning artifact set, relative to project_root.
+# Mirrors PLANNING_DIR in shared/scripts/lib/artifact_migrations.py.
+_PLANNING_DIRNAME = ".shipwright/planning"
+
+
 def _iter_spec_files(project_root: Path) -> Iterable[Path]:
     """Yield every spec file we care about for coherence checks.
 
     Includes:
 
     - ``agent_docs/spec.md`` (project-level canonical spec).
-    - ``planning/<split>/spec.md`` (split specs from plan phase).
-    - ``planning/iterate/*.md`` (iterate-spec files produced per-run).
+    - ``.shipwright/planning/<split>/spec.md`` (split specs from plan phase).
+    - ``.shipwright/planning/iterate/*.md`` (iterate-spec files produced per-run).
 
     Files are yielded in stable (sorted) order so callers get
     deterministic reports.
@@ -251,7 +256,7 @@ def _iter_spec_files(project_root: Path) -> Iterable[Path]:
     if top.exists():
         yield top
 
-    planning = project_root / "planning"
+    planning = project_root / _PLANNING_DIRNAME
     if not planning.is_dir():
         return
 

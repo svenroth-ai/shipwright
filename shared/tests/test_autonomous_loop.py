@@ -358,7 +358,7 @@ class TestFinalize:
 
     def test_aggregates_handoffs(self, state_dir, tmp_path, capsys):
         os.chdir(tmp_path)
-        handoff_dir = tmp_path / "planning" / "handoffs" / "test-loop"
+        handoff_dir = tmp_path / ".shipwright" / "planning" / "handoffs" / "test-loop"
         handoff_dir.mkdir(parents=True)
         (handoff_dir / "01-auth.md").write_text("Auth handoff content")
         (handoff_dir / "02-api.md").write_text("API handoff content")

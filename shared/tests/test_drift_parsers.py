@@ -179,7 +179,7 @@ def test_parse_fr_table_extracts_rows():
         "| FR-01.01 | User can log in | Must |\n"
         "| FR-01.02 | User can log out | Should |\n"
     )
-    frs = parse_fr_table(md, split="01-auth", spec_path="planning/01-auth/spec.md")
+    frs = parse_fr_table(md, split="01-auth", spec_path=".shipwright/planning/01-auth/spec.md")
     assert len(frs) == 2
     assert frs[0].id == "FR-01.01"
     assert frs[0].priority == "Must"
@@ -188,7 +188,7 @@ def test_parse_fr_table_extracts_rows():
 
 
 def test_collect_requirements_from_planning_walks_splits(tmp_path):
-    planning = tmp_path / "planning"
+    planning = tmp_path / ".shipwright" / "planning"
     (planning / "01-auth").mkdir(parents=True)
     (planning / "01-auth" / "spec.md").write_text(
         "| FR-01.01 | login | Must |\n"

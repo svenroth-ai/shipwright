@@ -4,7 +4,7 @@ Plan mapping (§ 3):
 
 - **S1** (Tier-1, FAIL): ``agent_docs/spec.md`` exists, non-empty, has
   ≥1 FR heading.
-- **S2** (Tier-1, FAIL): for iterate medium+, ``planning/iterate/<run_id>.md``
+- **S2** (Tier-1, FAIL): for iterate medium+, ``.shipwright/planning/iterate/<run_id>.md``
   (or a similarly named spec file) exists. SKIP when complexity=small.
 - **S3** (Tier-2, WARN): for iterate medium+, a mini-plan file exists. SKIP
   when complexity=small. Heuristic — WARN only.
@@ -35,6 +35,11 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any
+
+
+# Canonical home of the planning artifact set, relative to project_root.
+# Mirrors PLANNING_DIR in shared/scripts/lib/artifact_migrations.py.
+PLANNING_DIRNAME = ".shipwright/planning"
 
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[2]
 if str(_SHARED_SCRIPTS) not in sys.path:
@@ -77,11 +82,11 @@ S1_REMEDIATION = (
     "(see shared/templates/spec.md)."
 )
 S2_REMEDIATION = (
-    "Create planning/iterate/<run_id>.md during the iterate F3 step. "
+    "Create .shipwright/planning/iterate/<run_id>.md during the iterate F3 step. "
     "Medium+ complexity iterates require a per-run spec."
 )
 S3_REMEDIATION = (
-    "Create planning/iterate/<run_id>-miniplan.md during the iterate "
+    "Create .shipwright/planning/iterate/<run_id>-miniplan.md during the iterate "
     "Plan step. Heuristic — WARN only."
 )
 S4_REMEDIATION = (
@@ -228,7 +233,7 @@ def check_s1_top_level_spec(project_root: Path) -> dict[str, Any]:
 
 def _iter_spec_candidates(project_root: Path, run_id: str) -> list[Path]:
     """Return plausible iterate-spec paths for ``run_id``."""
-    base = project_root / "planning" / "iterate"
+    base = project_root / PLANNING_DIRNAME / "iterate"
     if not base.is_dir():
         return []
     # Any file whose stem contains run_id (date-desc or explicit run_id)
@@ -264,7 +269,7 @@ def check_s2_iterate_spec(project_root: Path, run_id: str) -> dict[str, Any]:
     if not hits:
         return make_finding(
             "S2", STATUS_FAIL,
-            f"no planning/iterate/*.md file contains run_id={run_id} "
+            f"no .shipwright/planning/iterate/*.md file contains run_id={run_id} "
             f"(complexity={complexity})",
             name=S2_NAME, remediation=S2_REMEDIATION,
         )
@@ -281,7 +286,7 @@ def check_s2_iterate_spec(project_root: Path, run_id: str) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 def _iter_miniplan_candidates(project_root: Path, run_id: str) -> list[Path]:
-    base = project_root / "planning" / "iterate"
+    base = project_root / PLANNING_DIRNAME / "iterate"
     if not base.is_dir():
         return []
     return [
@@ -311,7 +316,7 @@ def check_s3_iterate_miniplan(project_root: Path, run_id: str) -> dict[str, Any]
     if not hits:
         return make_finding(
             "S3", STATUS_WARN,
-            f"no planning/iterate/*-miniplan.md for run_id={run_id} "
+            f"no .shipwright/planning/iterate/*-miniplan.md for run_id={run_id} "
             f"(complexity={complexity})",
             name=S3_NAME, remediation=S3_REMEDIATION,
             provenance="unverified_marker",
@@ -368,7 +373,7 @@ def check_s4_fr_preservation(project_root: Path) -> dict[str, Any]:
     rc, log_out, _ = _run_git(
         project_root,
         "log", "-n", "10", "--pretty=format:%H", "--",
-        "agent_docs/spec.md", "planning",
+        "agent_docs/spec.md", PLANNING_DIRNAME,
     )
     if rc != 0 or not log_out.strip():
         return make_finding(

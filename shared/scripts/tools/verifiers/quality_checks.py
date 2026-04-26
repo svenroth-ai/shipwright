@@ -21,6 +21,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
+
+# Canonical home of the planning artifact set, relative to project_root.
+# Mirrors PLANNING_DIR in shared/scripts/lib/artifact_migrations.py.
+PLANNING_DIRNAME = ".shipwright/planning"
+
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[2]
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
@@ -128,8 +133,8 @@ def _read_plan_section_names(project_root: Path) -> list[str] | None:
     Resolution order:
     1. ``shipwright_plan_snapshot.json`` — authoritative snapshot written
        at build-start (plan § 3 + R14).
-    2. ``planning/sections/*.md`` — monolithic plan layout.
-    3. ``planning/<split>/sections/*.md`` — split-based plan layout.
+    2. ``.shipwright/planning/sections/*.md`` — monolithic plan layout.
+    3. ``.shipwright/planning/<split>/sections/*.md`` — split-based plan layout.
 
     Returns a de-duplicated, sorted list of section file stems. A result
     of ``None`` means "no plan material found yet" and downstream logic
@@ -148,7 +153,7 @@ def _read_plan_section_names(project_root: Path) -> list[str] | None:
                 if names:
                     return sorted(set(names))
 
-    planning = project_root / "planning"
+    planning = project_root / PLANNING_DIRNAME
     if not planning.is_dir():
         return None
 
@@ -191,7 +196,7 @@ def check_q2_plan_subset_of_build(project_root: Path) -> dict[str, Any]:
     if plan_sections is None:
         return make_finding(
             "Q2", STATUS_SKIP,
-            "no plan snapshot and no planning/ tree — "
+            "no plan snapshot and no .shipwright/planning/ tree — "
             "plan phase has not produced sections yet",
             name=Q2_NAME,
         )

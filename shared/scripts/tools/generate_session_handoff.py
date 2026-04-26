@@ -65,7 +65,7 @@ def _current_iterate_progress(project_root: Path, git_info: dict) -> list[str]:
     if not branch.startswith("iterate/"):
         return []
 
-    iterate_dir = project_root / "planning" / "iterate"
+    iterate_dir = project_root / ".shipwright" / "planning" / "iterate"
     short = branch.removeprefix("iterate/").split("/")[-1].lower()
 
     spec_path: Path | None = None

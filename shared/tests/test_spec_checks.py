@@ -237,7 +237,7 @@ def test_s2_passes_when_spec_exists(proj: Path):
     _write_iterate_history(proj, [
         {"run_id": "r1", "complexity": "medium"},
     ])
-    iter_dir = proj / "planning" / "iterate"
+    iter_dir = proj / ".shipwright" / "planning" / "iterate"
     iter_dir.mkdir(parents=True)
     (iter_dir / "2026-04-18-r1.md").write_text("body", encoding="utf-8")
     f = sc.check_s2_iterate_spec(proj, run_id="r1")
@@ -249,7 +249,7 @@ def test_s2_ignores_miniplan_file(proj: Path):
     _write_iterate_history(proj, [
         {"run_id": "r1", "complexity": "medium"},
     ])
-    iter_dir = proj / "planning" / "iterate"
+    iter_dir = proj / ".shipwright" / "planning" / "iterate"
     iter_dir.mkdir(parents=True)
     (iter_dir / "2026-04-18-r1-miniplan.md").write_text("x", encoding="utf-8")
     assert sc.check_s2_iterate_spec(proj, run_id="r1")["status"] == pq.STATUS_FAIL
@@ -275,7 +275,7 @@ def test_s3_warns_on_medium_without_miniplan(proj: Path):
 
 def test_s3_passes_with_miniplan(proj: Path):
     _write_iterate_history(proj, [{"run_id": "r1", "complexity": "medium"}])
-    iter_dir = proj / "planning" / "iterate"
+    iter_dir = proj / ".shipwright" / "planning" / "iterate"
     iter_dir.mkdir(parents=True)
     (iter_dir / "2026-04-18-r1-miniplan.md").write_text("plan", encoding="utf-8")
     assert sc.check_s3_iterate_miniplan(proj, "r1")["status"] == pq.STATUS_PASS

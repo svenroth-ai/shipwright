@@ -3,7 +3,7 @@
 Implements T1 and T2 — the Spec ↔ RTM mapping invariants that catch
 "requirement drifted past the matrix" bugs.
 
-- **T1** (Tier-1, FAIL): every FR declared in a ``planning/*/spec.md`` is
+- **T1** (Tier-1, FAIL): every FR declared in a ``.shipwright/planning/*/spec.md`` is
   present in ``compliance/traceability-matrix.md``. Catches the exact
   gap that the plan names in § 1 ("FR-7 in spec.md, not in RTM").
 - **T2** (Tier-2, WARN): no RTM rows reference FR ids that don't exist
@@ -46,7 +46,7 @@ T1_REMEDIATION = (
 )
 T2_REMEDIATION = (
     "Either remove the orphan RTM rows (FR was deleted) or re-add the "
-    "FR to planning/<split>/spec.md. Tier-2 heuristic — WARN only."
+    "FR to .shipwright/planning/<split>/spec.md. Tier-2 heuristic — WARN only."
 )
 
 # Matches a row reference like "| FR-03.14 | ..." or the id embedded in a
@@ -70,15 +70,15 @@ def check_t1_all_spec_frs_mapped(project_root: Path) -> dict[str, Any]:
     """T1 — every FR from planning specs is present in the RTM.
 
     SKIP semantics:
-    - No planning/ directory → SKIP (project hasn't reached plan phase).
-    - planning/ present but no FR rows → SKIP (empty spec).
+    - No .shipwright/planning/ directory → SKIP (project hasn't reached plan phase).
+    - .shipwright/planning/ present but no FR rows → SKIP (empty spec).
     - RTM missing → FAIL (spec exists, RTM must follow).
     """
     requirements = collect_requirements_from_planning(project_root)
     if not requirements:
         return make_finding(
             "T1", STATUS_SKIP,
-            "no FRs found under planning/*/spec.md — nothing to map",
+            "no FRs found under .shipwright/planning/*/spec.md — nothing to map",
             name=T1_NAME,
         )
 

@@ -20,7 +20,7 @@ Phase-own checks:
   table of ``designs/design-manifest.md`` must point at an existing
   ``.html`` file. ERROR.
 - ``check_design_fr_coverage`` — every FR in every
-  ``planning/<split>/spec.md`` must appear in the ``Linked FRs`` column
+  ``.shipwright/planning/<split>/spec.md`` must appear in the ``Linked FRs`` column
   of at least one screen row. ERROR. Adapted from the shipwright-check
   plan Group C1 preventive FR↔UI mapping check.
 
@@ -152,7 +152,7 @@ def check_design_manifest_screens_exist(project_root: Path) -> CheckResult:
 
 
 def check_design_fr_coverage(project_root: Path) -> CheckResult:
-    """Every FR declared in ``planning/<split>/spec.md`` must appear in
+    """Every FR declared in ``.shipwright/planning/<split>/spec.md`` must appear in
     the ``Linked FRs`` column of at least one screen row.
 
     Adapted from the shipwright-check plan Group C1 preventive check:
