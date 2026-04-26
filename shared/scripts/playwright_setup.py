@@ -3,6 +3,13 @@
 
 Usage:
     uv run playwright_setup.py --cwd /path/to/project [--profile supabase-nextjs]
+    uv run playwright_setup.py --cwd /path --multi-service-json '{...}'
+
+For multi-service repos (e.g. shipwright-webui's `client/` + `server/` with
+no root `package.json`), pass `--multi-service-json` carrying the
+detector's output. Setup pivots into the primary frontend service dir so
+`npm install -D @playwright/test` finds a real `package.json` and the
+generated `playwright.config.ts` lives next to it.
 
 Actions (all idempotent):
 1. Creates e2e/ directory if absent
@@ -12,7 +19,8 @@ Actions (all idempotent):
 5. Installs Chromium browser if not installed
 
 Output (JSON):
-    {"success": true, "config_path": "...", "browsers": ["chromium"], "actions": [...]}
+    {"success": true, "config_path": "...", "browsers": ["chromium"], "actions": [...],
+     "setup_dir": "..."}
 """
 
 import argparse
@@ -22,6 +30,12 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
+
+# Local helper. shared/tests/conftest.py adds shared/scripts/ to sys.path
+# for tests; CLI invocation works because we add it ourselves below.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from lib.cmd_resolver import resolve_executable  # noqa: E402
 
 
 def _find_shared_dir() -> Path:
@@ -42,20 +56,49 @@ def _has_package(cwd: Path, package: str) -> bool:
         return False
 
 
-def setup(cwd: Path, profile: str | None = None) -> dict:
+def _resolve_setup_dir(cwd: Path, multi_service: dict[str, Any] | None) -> Path:
+    """Return the directory where Playwright should be installed.
+
+    For multi-service repos, the frontend service is the right home for
+    Playwright (its `package.json` exists; its dev URL is what we crawl).
+    For single-service repos, return cwd unchanged.
+    """
+    if not multi_service or not multi_service.get("detected"):
+        return cwd
+    services = multi_service.get("services", []) or []
+    primary = next((s for s in services if s.get("primary")), None)
+    if primary is None:
+        primary = next((s for s in services if (s.get("name") or "").lower() in ("frontend", "client", "web")), None)
+    if primary is None and services:
+        primary = services[0]
+    root = primary.get("root") if primary else None
+    if not root:
+        return cwd
+    return cwd / root
+
+
+def setup(
+    cwd: Path,
+    profile: str | None = None,
+    multi_service: dict[str, Any] | None = None,
+) -> dict:
     """Run idempotent Playwright setup."""
     shared_dir = _find_shared_dir()
     templates_dir = shared_dir / "templates"
     actions: list[str] = []
 
-    # 1. Create e2e/ directory
-    e2e_dir = cwd / "e2e"
+    setup_dir = _resolve_setup_dir(cwd, multi_service)
+    if setup_dir != cwd:
+        actions.append(f"Multi-service detected — pivoting Playwright setup into {setup_dir.relative_to(cwd).as_posix()}/")
+
+    # 1. Create e2e/ directory in setup_dir
+    e2e_dir = setup_dir / "e2e"
     if not e2e_dir.exists():
         e2e_dir.mkdir(parents=True)
         actions.append("Created e2e/ directory")
 
     # 2. Copy playwright.config.ts (with port substitution from build config)
-    config_path = cwd / "playwright.config.ts"
+    config_path = setup_dir / "playwright.config.ts"
     template_config = templates_dir / "playwright.config.ts.template"
     if not config_path.exists() and template_config.exists():
         content = template_config.read_text(encoding="utf-8")
@@ -80,24 +123,26 @@ def setup(cwd: Path, profile: str | None = None) -> dict:
         actions.append("Created e2e/browser-verify.ts from template")
 
     # 4. Install @playwright/test if not in devDependencies
-    if not _has_package(cwd, "@playwright/test"):
+    npm = resolve_executable("npm")
+    npx = resolve_executable("npx")
+    if not _has_package(setup_dir, "@playwright/test"):
         try:
             subprocess.run(
-                ["npm", "install", "-D", "@playwright/test"],
-                cwd=str(cwd),
+                [npm, "install", "-D", "@playwright/test"],
+                cwd=str(setup_dir),
                 capture_output=True,
                 timeout=120,
             )
             actions.append("Installed @playwright/test")
         except (subprocess.TimeoutExpired, OSError) as e:
-            return {"success": False, "error": f"Failed to install @playwright/test: {e}"}
+            return {"success": False, "error": f"Failed to install @playwright/test: {e}", "setup_dir": str(setup_dir)}
 
     # 5. Install tsx for running browser-verify.ts
-    if not _has_package(cwd, "tsx"):
+    if not _has_package(setup_dir, "tsx"):
         try:
             subprocess.run(
-                ["npm", "install", "-D", "tsx"],
-                cwd=str(cwd),
+                [npm, "install", "-D", "tsx"],
+                cwd=str(setup_dir),
                 capture_output=True,
                 timeout=120,
             )
@@ -108,8 +153,8 @@ def setup(cwd: Path, profile: str | None = None) -> dict:
     # 6. Install Chromium browser
     try:
         result = subprocess.run(
-            ["npx", "playwright", "install", "chromium"],
-            cwd=str(cwd),
+            [npx, "playwright", "install", "chromium"],
+            cwd=str(setup_dir),
             capture_output=True,
             text=True,
             timeout=300,
@@ -117,7 +162,7 @@ def setup(cwd: Path, profile: str | None = None) -> dict:
         if result.returncode == 0:
             actions.append("Installed Chromium browser")
     except (subprocess.TimeoutExpired, OSError) as e:
-        return {"success": False, "error": f"Failed to install Chromium: {e}"}
+        return {"success": False, "error": f"Failed to install Chromium: {e}", "setup_dir": str(setup_dir)}
 
     if not actions:
         actions.append("Everything already set up")
@@ -126,6 +171,7 @@ def setup(cwd: Path, profile: str | None = None) -> dict:
         "success": True,
         "config_path": str(config_path),
         "e2e_dir": str(e2e_dir),
+        "setup_dir": str(setup_dir),
         "browsers": ["chromium"],
         "actions": actions,
     }
@@ -135,6 +181,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Idempotent Playwright setup")
     parser.add_argument("--cwd", required=True, help="Target project directory")
     parser.add_argument("--profile", help="Stack profile name")
+    parser.add_argument(
+        "--multi-service-json",
+        help="Multi-service detector output as inline JSON (object with `detected` + `services`)",
+    )
     args = parser.parse_args()
 
     cwd = Path(args.cwd).resolve()
@@ -142,7 +192,15 @@ def main() -> int:
         print(json.dumps({"error": f"Directory not found: {cwd}"}, indent=2))
         return 1
 
-    result = setup(cwd, args.profile)
+    multi_service = None
+    if args.multi_service_json:
+        try:
+            multi_service = json.loads(args.multi_service_json)
+        except json.JSONDecodeError as e:
+            print(json.dumps({"success": False, "error": f"invalid --multi-service-json: {e}"}, indent=2))
+            return 2
+
+    result = setup(cwd, args.profile, multi_service=multi_service)
     print(json.dumps(result, indent=2))
     return 0 if result.get("success") else 1
 

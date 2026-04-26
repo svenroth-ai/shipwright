@@ -154,23 +154,53 @@ uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py start \
 ```
 
 After the dev server is up, run the crawl + stop sequence common to
-all branches:
+all branches.
+
+**Multi-service awareness.** If
+`snapshot.stack.multi_service.detected == true`, both `playwright_setup`
+and `route_crawler` need to pivot into the primary frontend service dir
+(e.g. `client/`) — that's where `package.json` and (typically)
+`playwright.config.ts` live. Without the pivot:
+- `playwright_setup` reads `<cwd>/package.json`, finds none, and `npm install -D @playwright/test` fails at the root.
+- `route_crawler` installs the spec at `<cwd>/e2e/`, but `client/playwright.config.ts` defines `testDir: './e2e'` relative to `client/` — Playwright finds no config and falls back to defaults.
 
 ```bash
+# Compute MULTI_SERVICE_JSON when snapshot.stack.multi_service.detected:
+MULTI_SERVICE_JSON='{"detected":true,"services":[<services-array-from-snapshot>]}'
+# CONFIG_DIR = primary frontend service root (the entry with primary:true,
+# else the entry named "frontend"/"client"/"web", else services[0]).
+
 uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/playwright_setup.py \
-  --cwd <cwd> --profile <matched>
+  --cwd <cwd> --profile <matched> \
+  [--multi-service-json "$MULTI_SERVICE_JSON"]   # only when multi-service detected
+
 # (start command from one of the three branches above)
+
 uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/route_crawler.py \
   --cwd <cwd> --base-url <primary_url_from_dev_server_start_output> \
   --max-depth 3 --max-pages 50 \
   --output <cwd>/.shipwright/adopt/routes.json \
-  --screenshots <cwd>/.shipwright/adopt/screenshots/
+  --screenshots <cwd>/.shipwright/adopt/screenshots/ \
+  [--config-dir <cwd>/<primary-frontend-root>]   # only when multi-service detected
+
 uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py stop --cwd <cwd>
 ```
 
 The `--base-url` is read from the `url` field in `dev_server.py
 start`'s JSON output (top-level — points to the primary service in
 multi-service mode).
+
+**Avoiding port collisions.** Profiles with port placeholders (e.g.
+`vite-hono.json` uses `${PORT:-3847}` / `${VITE_PORT:-5173}`) let adopt
+override the bind ports via env, so the crawl never collides with a
+user dev server already on the defaults. When running adopt against a
+project that uses such a profile, set non-default ports in the
+subprocess env BEFORE `dev_server.py start`:
+
+```bash
+PORT=3848 VITE_PORT=5174 uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py start \
+  --cwd <cwd> --profile <matched>
+```
 
 If the dev-server fails to become healthy within its profile's
 `ready_timeout_seconds`, OR the crawl produces zero routes, **skip**
