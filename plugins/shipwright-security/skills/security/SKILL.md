@@ -237,14 +237,16 @@ uv run {plugin_root}/scripts/tools/run_scan_and_report.py --project-root {projec
 ```
 
 Output:
-- `{project_root}/securityreports/latest.md` — human-readable Markdown report
-- `{project_root}/securityreports/latest.json` — machine-readable sidecar (`schema_version: 1`, `scan_id`, full normalized findings)
-- `{project_root}/securityreports/history/scan-YYYYMMDD-HHMMSS-{6hex}.{md,json}` — archived (last 20 pairs retained)
-- `{project_root}/.gitignore` — `/securityreports/` appended if file exists and entry missing
+- `{project_root}/.shipwright/securityreports/latest.md` — human-readable Markdown report
+- `{project_root}/.shipwright/securityreports/latest.json` — machine-readable sidecar (`schema_version: 1`, `scan_id`, full normalized findings)
+- `{project_root}/.shipwright/securityreports/history/scan-YYYYMMDD-HHMMSS-{6hex}.{md,json}` — archived (last 20 pairs retained)
+- `{project_root}/.gitignore` — `/.shipwright/` appended if file exists and entry missing (legacy `/securityreports/` recognised as already-present so we don't double-write during migration)
 
 The wrapper redacts secret evidence by default (Gitleaks `match`/`secret`/`commit`/`author`/`email` fields; high-entropy strings in `description` / `remediation_hint`). Use `--full-evidence` to retain raw values for explicit local debugging — refused when `CI` env is set.
 
-After the wrapper exits, read `{project_root}/securityreports/latest.json` for the structured scan summary (total_findings, by_severity, by_source, risk_level).
+After the wrapper exits, read `{project_root}/.shipwright/securityreports/latest.json` for the structured scan summary (total_findings, by_severity, by_source, risk_level).
+
+**Migration note:** projects from before this iterate may have a `securityreports/` directory at project root. The wrapper detects it and emits a one-time stderr notice on the first run pointing at the new location; the old folder is gitignored, stale, and safe to delete (or `git mv securityreports .shipwright/` if you want to preserve archived scans).
 
 **For Aikido backend (path preserved, untouched by v0.3 restructuring):**
 ```bash
@@ -284,14 +286,14 @@ This config is consumed by `/shipwright-compliance` for traceability.
 After Step 6 completes for the OSS backend in standalone mode, offer the user a one-question handoff into `/shipwright-iterate` so they can work through fixes.
 
 **Skip Step 8 entirely if any of:**
-- `total_findings == 0` in `securityreports/latest.json`
+- `total_findings == 0` in `.shipwright/securityreports/latest.json`
 - `os.environ.get("CI")` is set (any truthy value)
 - `os.environ.get("SHIPWRIGHT_NON_INTERACTIVE")` is set
 - `sys.stdin.isatty()` returns False
 - Pipeline mode is active (`shipwright_project_config.json` exists in project root) — the remediation loop in Steps 2-5 already handled it
 
 **Pre-flight check:** verify `shipwright_run_config.json` exists in `project_root`.
-- If missing → print: `"To fix these findings, open /shipwright-iterate in a Shipwright-managed project and point it at securityreports/latest.md"`, then exit 0.
+- If missing → print: `"To fix these findings, open /shipwright-iterate in a Shipwright-managed project and point it at .shipwright/securityreports/latest.md"`, then exit 0.
 - If present → proceed.
 
 **Ask the user via AskUserQuestion:**
@@ -305,10 +307,10 @@ After Step 6 completes for the OSS backend in standalone mode, offer the user a 
 **On YES:** invoke the `/shipwright-iterate` skill with this generic brief (no scanner prose interpolated, no prompt-injection surface):
 
 > Review and fix security findings from the most recent scan.
-> Report: `securityreports/latest.md` (machine-readable sidecar: `securityreports/latest.json`).
+> Report: `.shipwright/securityreports/latest.md` (machine-readable sidecar: `.shipwright/securityreports/latest.json`).
 > Work through findings with the user — pick what to fix, what to suppress, what to defer. Favor small iterate scopes (one rule-family or one fix category per iterate) to keep review tight.
 
-**Failure handling:** if the `/shipwright-iterate` invocation raises or exits non-zero, print the same brief verbatim to the terminal, log the error to stderr, and exit 0. The report (`securityreports/latest.*`) remains written regardless of handoff success.
+**Failure handling:** if the `/shipwright-iterate` invocation raises or exits non-zero, print the same brief verbatim to the terminal, log the error to stderr, and exit 0. The report (`.shipwright/securityreports/latest.*`) remains written regardless of handoff success.
 
 ---
 

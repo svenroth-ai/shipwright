@@ -55,9 +55,6 @@ planning/
 .shipwright_toolcall_count
 compliance/
 
-# shipwright-security report artifacts (local + retention; never committed)
-/securityreports/
-
 # UV
 .uv/
 
