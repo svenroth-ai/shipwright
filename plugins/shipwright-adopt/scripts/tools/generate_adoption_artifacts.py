@@ -118,6 +118,7 @@ def generate(
     )
     from enrichment_fallback import build_fallback_enrichment  # type: ignore
     from gitignore_check import check_paths_against_gitignore  # type: ignore
+    from visual_docs_generator import generate_visual_docs  # type: ignore
 
     snapshot = _read_json(snapshot_path)
     routes = []
@@ -314,6 +315,29 @@ def generate(
         results["e2e_baseline_generated"] = True
     else:
         results["e2e_baseline_generated"] = False
+
+    # Tier 5 — Visual frontend documentation. Opt-in via signal: any
+    # frontend hint in the snapshot (multi-service frontend service, or
+    # frontend.* in stack). Backend-only profiles get wrote_docs=false
+    # without writing anything to agent_docs/visual/.
+    multi = (snapshot.get("stack") or {}).get("multi_service") or {}
+    fe_root: Path = project_root
+    if multi.get("detected"):
+        for svc in multi.get("services") or []:
+            name = (svc.get("name") or "").lower()
+            if name in ("frontend", "client", "web") and svc.get("root"):
+                fe_root = project_root / svc["root"]
+                break
+    visual_result = generate_visual_docs(project_root, frontend_root=fe_root)
+    results["visual_docs"] = {
+        "wrote_docs": visual_result["wrote_docs"],
+        "component_count": visual_result["component_count"],
+        "screenshots_persisted": visual_result["screenshots_persisted"],
+        "frontend_root": str(fe_root),
+    }
+    if visual_result["wrote_docs"]:
+        results["written"].append(str(visual_result["design_tokens"]))
+        results["written"].append(str(visual_result["guideline"]))
 
     # 4.1 — Gitignore awareness. After all writes, check which output paths
     # would be excluded by the project's .gitignore. The SKILL.md handoff

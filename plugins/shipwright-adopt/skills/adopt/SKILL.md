@@ -333,6 +333,26 @@ Writes — **in order**:
 6. `.claude/settings.json` with the `suggest_iterate` UserPromptSubmit
    hook (idempotent merge).
 7. `e2e/flows/adopted-baseline.spec.ts` if routes.json exists.
+8. `agent_docs/design_tokens.md` + `agent_docs/guideline.md` +
+   `agent_docs/visual/screenshots/*.png` — **visual frontend
+   documentation (Tier 5)**. Opt-in: only written when the project has
+   a frontend signal (multi-service frontend, components under
+   src/components/src/ui/src/app, tailwind.config.*, or `:root` CSS
+   variables). Backend-only profiles produce `wrote_docs: false` in
+   `results.visual_docs` and write nothing under `agent_docs/visual/`.
+
+   - **design_tokens.md** lists Tailwind colors / spacing / typography
+     (parsed from `tailwind.config.{ts,js,mjs,cjs}` via regex — no Node
+     runtime in adopt) plus `:root { --var: ... }` CSS variables from
+     `src/**/*.css`. Configs that build their theme dynamically yield
+     empty maps; the operator can fill via `/shipwright-iterate`.
+   - **guideline.md** is a single-page design-system summary: top color
+     swatches, typography scale, a components table (name, path, props
+     count, usage count) sorted by usages descending, and a link block
+     for the persisted screenshots.
+   - **visual/screenshots/** carries copies of `.shipwright/adopt/screenshots/`
+     (the gitignored crawl workdir) so the docs reference a stable,
+     committed location. Re-running adopt refreshes them.
 
 **Vite DX templates (offer-only, NEVER auto-applied).** If
 `package.json` lists `vite` as a dependency (any Vite-based stack), the
