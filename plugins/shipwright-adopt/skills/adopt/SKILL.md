@@ -58,11 +58,28 @@ uv run ${CLAUDE_PLUGIN_ROOT}/scripts/checks/setup_adopt.py \
   [--exclude-path <p>]...
 ```
 
-The script emits JSON with `ok`, `hard_stops`, `warnings`, and
-`nested_projects`. If `ok=false`, **halt and show the reason** — no
-further steps. If `nested_projects` is non-empty, **ask the user** via
-`AskUserQuestion` for each one: include / exclude / adopt separately.
-Default recommendation: `Exclude`.
+The script emits JSON with `ok`, `hard_stops`, `warnings`,
+`nested_projects`, and `existing_artifacts`. If `ok=false`, **halt and
+show the reason** — no further steps. If `nested_projects` is non-empty,
+**ask the user** via `AskUserQuestion` for each one: include / exclude /
+adopt separately. Default recommendation: `Exclude`.
+
+If `existing_artifacts` is non-empty, **show the list** to the user and
+**ask** via `AskUserQuestion`:
+
+> "Found N existing artifacts that adopt would touch:
+>   • CLAUDE.md
+>   • agent_docs/decision_log.md (will be auto-merged with new ADRs)
+>   • agent_docs/architecture.md (will be backed up + overwritten)
+>   • ...
+>
+> Adopt automatically backs each one up to .shipwright/adopt/backups/
+> before any write. Load-bearing CLAUDE.md (>1 KB) is preserved untouched
+> and adopt's suggested content is written to .shipwright/adopt/CLAUDE.md.adopt-suggested.
+> Continue?"
+
+Default recommendation: `Continue` (preservation is on by default; the
+user can review every change via the `.preserved` files afterward).
 
 ### Step B — Codebase Analysis (Layer 1)
 
@@ -336,6 +353,17 @@ contradictions, **AskUserQuestion**: `fix (re-run enrichment)` /
 uv run ${CLAUDE_PLUGIN_ROOT}/scripts/checks/validate_adoption.py \
   --project-root <cwd>
 ```
+
+The output now carries `errors` AND `warnings`. Hard-stop on
+`errors[]`. **Surface `warnings[]`** in the handoff (currently includes
+the "few ADRs for repo size" plausibility check) — they're informational,
+not blocking.
+
+If `.shipwright/adopt/preservation_log.json` exists, also surface a
+"Preserved files" section in the handoff: count of files preserved, list
+of `.preserved` backup paths, and a special call-out if any
+`action: skipped_loadbearing` entry is present (the user must review
+`.shipwright/adopt/CLAUDE.md.adopt-suggested` and merge manually).
 
 2. If validation passes, create a single Conventional Commit:
 

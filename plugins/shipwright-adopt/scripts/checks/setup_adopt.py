@@ -57,6 +57,45 @@ def _working_tree_dirty(root: Path) -> bool:
         return False
 
 
+_EXISTING_ARTIFACT_CANDIDATES: tuple[str, ...] = (
+    "CLAUDE.md",
+    "agent_docs/architecture.md",
+    "agent_docs/conventions.md",
+    "agent_docs/decision_log.md",
+    "agent_docs/build_dashboard.md",
+    "shipwright_events.jsonl",
+    "shipwright_sync_config.json",
+    "shipwright_project_config.json",
+    "shipwright_plan_config.json",
+    "shipwright_build_config.json",
+    "shipwright_compliance_config.json",
+)
+
+
+def _detect_existing_artifacts(project_root: Path) -> list[str]:
+    """Return the relative paths of artifacts that adopt would touch.
+
+    Used by the SKILL.md flow to confirm "Found N existing artifacts.
+    Adopt will preserve+overwrite them. Continue?" before proceeding.
+    Pre-existing files don't block adopt — preservation is automatic
+    (see `lib/preserve_existing.py`) — but the user should know what's
+    about to happen. spec.md files under planning/ are also surfaced.
+    """
+    found: list[str] = []
+    for rel in _EXISTING_ARTIFACT_CANDIDATES:
+        if (project_root / rel).is_file():
+            found.append(rel)
+    planning = project_root / "planning"
+    if planning.is_dir():
+        for spec in sorted(planning.rglob("spec.md")):
+            try:
+                rel = spec.relative_to(project_root).as_posix()
+            except ValueError:
+                continue
+            found.append(rel)
+    return found
+
+
 def run_preflight(project_root: Path, excludes: list[str]) -> dict:
     """Return a preflight report. Non-zero exit on hard-stop."""
     report: dict = {
@@ -65,6 +104,7 @@ def run_preflight(project_root: Path, excludes: list[str]) -> dict:
         "hard_stops": [],
         "warnings": [],
         "nested_projects": [],
+        "existing_artifacts": [],
     }
 
     if not _is_git_repo(project_root):
@@ -92,6 +132,10 @@ def run_preflight(project_root: Path, excludes: list[str]) -> dict:
             "Working tree is dirty. Adopt will create a single adoption commit; "
             "staged/unstaged changes would be mixed in. Consider `git stash` first."
         )
+
+    # Existing artifacts — informational; adopt preserves them, but the
+    # SKILL.md flow asks the user before proceeding when this list is non-empty.
+    report["existing_artifacts"] = _detect_existing_artifacts(project_root)
 
     # Nested projects detection
     try:
