@@ -1044,18 +1044,34 @@ def test_warning_emitted_only_once_per_invocation(tmp_path, capsys):
 # AC11 — vite-hono profile loading
 # ---------------------------------------------------------------------------
 
-def test_profile_loader_reads_vite_hono_services_block():
-    """Confirm shipped vite-hono.json profile has 2 services with expected shape."""
+def test_profile_loader_reads_vite_hono_services_block(monkeypatch, tmp_path):
+    """Confirm shipped vite-hono.json profile has 2 services with expected shape.
+
+    Ports use `${PORT:-3847}` / `${VITE_PORT:-5173}` placeholders so adopt can
+    override the bind ports via env without editing the profile. The raw JSON
+    holds the placeholder strings; `_normalize_service_entry` resolves them to
+    ints (using defaults when the env var is unset).
+    """
     repo = REPO  # shipwright repo root
     profile_path = repo / "profiles" / "vite-hono.json"
     if not profile_path.exists():
         # Ship-side path
         profile_path = repo.parent / "shared" / "profiles" / "vite-hono.json"
     profile = json.loads(profile_path.read_text(encoding="utf-8"))
-    services = profile["services"]
-    assert len(services) == 2
-    names = {s["name"] for s in services}
-    assert names == {"backend", "frontend"}
+    raw_services = profile["services"]
+    assert len(raw_services) == 2
+    raw_names = {s["name"] for s in raw_services}
+    assert raw_names == {"backend", "frontend"}
+    raw_backend = next(s for s in raw_services if s["name"] == "backend")
+    raw_frontend = next(s for s in raw_services if s["name"] == "frontend")
+    # Raw form: placeholders are present in the JSON file
+    assert raw_backend["port"] == "${PORT:-3847}"
+    assert raw_frontend["port"] == "${VITE_PORT:-5173}"
+
+    # Resolved form: with env unset, placeholders fall back to int defaults
+    monkeypatch.delenv("PORT", raising=False)
+    monkeypatch.delenv("VITE_PORT", raising=False)
+    services, _ = dev_server._get_services_for_test(profile_data=profile, cwd=tmp_path)
     backend = next(s for s in services if s["name"] == "backend")
     frontend = next(s for s in services if s["name"] == "frontend")
     assert backend["port"] == 3847
@@ -1066,13 +1082,34 @@ def test_profile_loader_reads_vite_hono_services_block():
     assert frontend["ready_path"] == "/"
 
 
-def test_vite_hono_topo_order_is_backend_then_frontend():
+def test_vite_hono_topo_order_is_backend_then_frontend(monkeypatch, tmp_path):
     repo = REPO
     profile_path = repo / "profiles" / "vite-hono.json"
     if not profile_path.exists():
         profile_path = repo.parent / "shared" / "profiles" / "vite-hono.json"
     profile = json.loads(profile_path.read_text(encoding="utf-8"))
-    layers = dev_server._topo_sort(profile["services"])
+    monkeypatch.delenv("PORT", raising=False)
+    monkeypatch.delenv("VITE_PORT", raising=False)
+    services, _ = dev_server._get_services_for_test(profile_data=profile, cwd=tmp_path)
+    layers = dev_server._topo_sort(services)
     assert len(layers) == 2
     assert [s["name"] for s in layers[0]] == ["backend"]
     assert [s["name"] for s in layers[1]] == ["frontend"]
+
+
+def test_vite_hono_port_placeholder_overridden_by_env(monkeypatch, tmp_path):
+    """Adopt-style usage: PORT/VITE_PORT env vars override profile defaults
+    so the crawl never collides with a user dev server already on the
+    defaults (3847 / 5173)."""
+    repo = REPO
+    profile_path = repo / "profiles" / "vite-hono.json"
+    if not profile_path.exists():
+        profile_path = repo.parent / "shared" / "profiles" / "vite-hono.json"
+    profile = json.loads(profile_path.read_text(encoding="utf-8"))
+    monkeypatch.setenv("PORT", "3848")
+    monkeypatch.setenv("VITE_PORT", "5174")
+    services, _ = dev_server._get_services_for_test(profile_data=profile, cwd=tmp_path)
+    backend = next(s for s in services if s["name"] == "backend")
+    frontend = next(s for s in services if s["name"] == "frontend")
+    assert backend["port"] == 3848
+    assert frontend["port"] == 5174

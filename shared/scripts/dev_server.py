@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shlex
 import socket
 import subprocess
@@ -37,6 +38,12 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+
+# Local helper. Importable because shared/tests/conftest.py adds
+# shared/scripts/ to sys.path; CLI invocation works because uv resolves
+# the lib/ subpackage relative to this script's parent.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from lib.cmd_resolver import resolve_executable  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -67,6 +74,30 @@ PROFILE_DEV_SERVERS: dict[str, dict] = {
         "ready_path": "/",
     },
 }
+
+
+# Matches ${VAR} or ${VAR:-default}. Var name follows shell convention
+# (uppercase + underscore + digits, leading non-digit).
+_PLACEHOLDER_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-([^}]*))?\}")
+
+
+def _expand_env(value: Any) -> Any:
+    """Expand ${VAR} / ${VAR:-default} placeholders in a string.
+
+    Non-string values pass through unchanged. Used so profiles can declare
+    e.g. `"port": "${PORT:-3847}"` and have adopt override via env without
+    ever editing the profile file (avoids hard-coded port collisions when
+    a user dev server is already on the default port).
+    """
+    if not isinstance(value, str):
+        return value
+
+    def _sub(m: re.Match) -> str:
+        var_name = m.group(1)
+        default = m.group(2) if m.group(2) is not None else ""
+        return os.environ.get(var_name, default)
+
+    return _PLACEHOLDER_RE.sub(_sub, value)
 
 
 # ---------------------------------------------------------------------------
@@ -114,16 +145,28 @@ def _normalize_legacy_dev_server(block: dict) -> dict:
 def _normalize_service_entry(entry: dict, default_primary: bool = False) -> dict:
     """Apply defaults to a `services[]` entry.
 
-    Type coercion is intentionally minimal — `_validate_services` raises
-    clear per-field errors before any dangerous coercion runs.
+    Expands ${VAR}/${VAR:-default} placeholders in `command`, `ready_path`,
+    and string `port`. After expansion, a string `port` is coerced to int
+    (so a profile may declare `"port": "${PORT:-3847}"`); a non-numeric
+    expansion is left as-is and produces a clear `_validate_services`
+    error rather than crashing here.
     """
+    raw_port = entry.get("port")
+    expanded_port: Any = raw_port
+    if isinstance(raw_port, str):
+        substituted = _expand_env(raw_port)
+        try:
+            expanded_port = int(substituted)
+        except (TypeError, ValueError):
+            expanded_port = substituted  # _validate_services will reject
+
     return {
         "name": entry.get("name"),
-        "command": entry.get("command"),
+        "command": _expand_env(entry.get("command")),
         "host": entry.get("host", "localhost"),
         "scheme": entry.get("scheme", "http"),
-        "port": entry.get("port"),
-        "ready_path": entry.get("ready_path"),
+        "port": expanded_port,
+        "ready_path": _expand_env(entry.get("ready_path")),
         "ready_timeout_seconds": entry.get("ready_timeout_seconds", 60),
         "depends_on": entry.get("depends_on") or [],
         "primary": bool(entry.get("primary", default_primary)),
@@ -522,6 +565,10 @@ def _start_one(service: dict, cwd: Path) -> tuple[Any, dict]:
     # POSIX-quoted commands; subprocess handles platform-specific argv
     # encoding.
     cmd_parts = shlex.split(service["command"], posix=True)
+    if cmd_parts:
+        # Resolve npm/npx/etc. to their .cmd shim on Windows. shell stays
+        # False — never trust profile-supplied command strings to a shell.
+        cmd_parts[0] = resolve_executable(cmd_parts[0])
     creation_flags = 0
     if os.name == "nt":
         creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP

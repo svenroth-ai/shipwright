@@ -26,7 +26,7 @@
       "command": "npm --prefix server run dev",
       "host": "localhost",
       "scheme": "http",
-      "port": 3847,
+      "port": "${PORT:-3847}",
       "ready_path": "/api/diagnostics",
       "ready_timeout_seconds": 60
     },
@@ -35,7 +35,7 @@
       "command": "npm --prefix client run dev",
       "host": "localhost",
       "scheme": "http",
-      "port": 5173,
+      "port": "${VITE_PORT:-5173}",
       "ready_path": "/",
       "ready_timeout_seconds": 60,
       "depends_on": ["backend"],
@@ -74,5 +74,5 @@
     ".env.example": "Template (committed)"
   },
 
-  "notes": "This profile assumes Node 20.x + npm 10+. Service commands use `npm --prefix <dir> run dev`; the `--prefix` flag MUST come before the subcommand for unambiguous parsing on modern npm. Frontend `depends_on: backend` ensures the Vite proxy target is up before the SPA shell is considered ready. Frontend is `primary: true` so dev_server.py's top-level `pid`/`url` reflect the browser-facing URL."
+  "notes": "This profile assumes Node 20.x + npm 10+. Service commands use `npm --prefix <dir> run dev`; the `--prefix` flag MUST come before the subcommand for unambiguous parsing on modern npm. Frontend `depends_on: backend` ensures the Vite proxy target is up before the SPA shell is considered ready. Frontend is `primary: true` so dev_server.py's top-level `pid`/`url` reflect the browser-facing URL. Ports use `${PORT:-3847}` / `${VITE_PORT:-5173}` placeholders so /shipwright-adopt can override them via env (avoids collisions when a user dev server is already on the defaults — e.g. running adopt from inside the webui)."
 }
