@@ -320,6 +320,22 @@ Writes — **in order**:
    hook (idempotent merge).
 7. `e2e/flows/adopted-baseline.spec.ts` if routes.json exists.
 
+**Vite DX templates (offer-only, NEVER auto-applied).** If
+`package.json` lists `vite` as a dependency (any Vite-based stack), the
+adoption handoff includes a one-line opt-in note pointing to:
+
+- `shared/templates/vite.config.ts.template` — mode-gated dev plugin
+  slot, allowedHosts wildcard, sensible defaults. Useful only if the
+  user wants to start over from a clean baseline.
+- `shared/templates/dev-error-overlay.tsx.template` +
+  `dev-banner.tsx.template` — drop-in dev-mode React components for
+  runtime-error modals and a visible dev-mode pill. Both are
+  `import.meta.env.DEV`-gated so they no-op in prod.
+
+**Existing `vite.config.ts` is NEVER overwritten.** The handoff lists
+the templates so the user can copy/adapt them at their own pace; adopt
+itself touches no Vite files.
+
 ### Step F — Compliance Seeding
 
 Run:

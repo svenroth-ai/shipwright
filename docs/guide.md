@@ -968,6 +968,16 @@ The profile enforces these conventions across all pipeline phases:
 | `AIKIDO_CLIENT_ID` | Aikido Security API client ID | Plugin (optional) |
 | `AIKIDO_CLIENT_SECRET` | Aikido Security API client secret | Plugin (optional) |
 
+### Generated-App DX (Vite-based profiles)
+
+Vite-based profiles (e.g. `vite-hono`) get three drop-in templates from `shared/templates/` baked into newly built projects:
+
+- `vite.config.ts.template` — `defineConfig(({ mode }) => …)` form with a mode-gated slot for dev-only Vite plugins, sensible defaults (sourcemaps, `host: true` for tunnels), and `minify` switched off in dev so the runtime-error overlay shows usable stacks.
+- `dev-error-overlay.tsx.template` — React component that listens for `window.error` + `unhandledrejection` and renders a modal in dev mode with the error and stack. Renders `null` in production via `import.meta.env.DEV`.
+- `dev-banner.tsx.template` — small fixed-position pill so a dev tab cannot be confused with a prod tab. Customizable label (`<DevBanner label="DEV — staging" />`).
+
+`/shipwright-build` writes these into newly generated apps automatically. `/shipwright-adopt` lists them as opt-in offers in the adoption handoff but never overwrites an existing `vite.config.ts`. Both components are self-contained — no extra npm dependency beyond React itself.
+
 ---
 
 ## 6. Configuration

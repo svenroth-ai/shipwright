@@ -1,0 +1,40 @@
+/**
+ * Vite config — Shipwright starting-point template.
+ *
+ * Replit-pattern adopt (Sub-Iterate A): generated Vite-based apps include
+ * a runtime-error overlay + dev-mode banner out of the box. The overlay
+ * and banner are React components (NOT Vite plugins); see
+ * shared/templates/dev-error-overlay.tsx.template and dev-banner.tsx.template.
+ * Mount them in your app entry inside an `import.meta.env.DEV` guard.
+ *
+ * If you need additional Vite plugins that should run only during dev
+ * (e.g. inspector, dependency cartographer, devtools), gate them on the
+ * `mode` arg below — production builds must not ship dev-only inspectors.
+ */
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig(({ mode }) => ({
+  plugins: [
+    react(),
+    // Add dev-only Vite plugins here — they will be tree-shaken out of prod builds.
+    ...(mode === 'development'
+      ? [
+          // Example slot — uncomment + install your preferred dev plugin:
+          // import('vite-plugin-inspect').then(m => m.default()),
+        ]
+      : []),
+  ],
+  server: {
+    // Port is overridden by env (VITE_PORT) when running under shipwright dev_server.py.
+    port: 5173,
+    // Wildcard allowedHosts so local tunnels (ngrok, cloudflared) work without config edits.
+    // Vite 5+: pass `true` to allow any host.
+    host: true,
+  },
+  build: {
+    sourcemap: true,
+    // Strip console + debugger in prod; keep in dev for the overlay to display useful stacks.
+    minify: mode === 'production' ? 'esbuild' : false,
+  },
+}));
