@@ -35,7 +35,7 @@ def test_setup_and_track_section(tmp_path):
     project = tmp_path / "project"
     project.mkdir()
     (project / "agent_docs").mkdir()
-    sections = project / ".shipwright" / ".shipwright" / "planning" / "sections"
+    sections = project / ".shipwright" / "planning" / "sections"
     sections.mkdir(parents=True)
 
     section = sections / "01-auth.md"

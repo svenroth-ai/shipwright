@@ -16,7 +16,7 @@ Consolidated protocol for: Repo Scout, Mini-Plan, Escape Hatch, External LLM Rev
 
 ### Thorough Scout (medium estimate)
 All of Quick Scout, plus:
-1. Read affected spec sections (`planning/*/spec.md`)
+1. Read affected spec sections (`.shipwright/planning/*/spec.md`)
 2. Scan FR neighborhood — what else is nearby?
 3. Check if change crosses split boundaries
 4. Identify shared components/utilities affected
@@ -33,7 +33,7 @@ All of Quick Scout, plus:
 
 ## Iterate Spec (medium+ only)
 
-**Location:** `planning/iterate/{date}-{short-description}.md`
+**Location:** `.shipwright/planning/iterate/{date}-{short-description}.md`
 
 Create BEFORE mini-plan. Status lifecycle:
 - `draft` → created now
@@ -61,7 +61,7 @@ Template: See SKILL.md Path A Step 1 (inline template).
 
 ### Persistence
 - **Small:** Inline in session only (no file)
-- **Medium+:** Save as `planning/iterate/{date}-{desc}-miniplan.md`
+- **Medium+:** Save as `.shipwright/planning/iterate/{date}-{desc}-miniplan.md`
   - Include `run_id` in header
   - This file is passed to `review.py --plan-file`
 
@@ -75,7 +75,7 @@ Template: See SKILL.md Path A Step 1 (inline template).
 Print the scope assessment with two options (see SKILL.md Section 8).
 
 ### Option 1: Semi-automatic pipeline transition
-1. Write handoff file: `planning/iterate/{run_id}-handoff.json`
+1. Write handoff file: `.shipwright/planning/iterate/{run_id}-handoff.json`
    - Schema: run_id, source, target, scope_description, affected_frs, risk_flags, repo_scout_findings, iterate_spec_path, reason
 2. If iterate spec exists, update status to `superseded`
 3. Print: "Handing off to /shipwright-project --extend --from-iterate {path}"
@@ -161,7 +161,7 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
      --reason "{optional reason}"
    ```
    Iterate writes the marker under its run-scoped planning dir
-   (`planning/iterate/{run_id}-review-state.json` is the recommended
+   (`.shipwright/planning/iterate/{run_id}-review-state.json` is the recommended
    location — pass that path as `--planning-dir`).
 
 ### Handling results (Branch A)

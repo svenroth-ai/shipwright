@@ -325,7 +325,7 @@ uv run ${CLAUDE_PLUGIN_ROOT}/scripts/tools/generate_adoption_artifacts.py \
 Writes — **in order**:
 1. `CLAUDE.md`
 2. `agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`
-3. `planning/<split>/spec.md`
+3. `.shipwright/planning/<split>/spec.md`
 4. The five required configs, then `shipwright_sync_config.json` (unless
    `--no-sync`), and **`shipwright_run_config.json` LAST**.
 5. `shipwright_events.jsonl` with one `adopted` event + optional
@@ -386,7 +386,7 @@ a `**GITIGNORED OUTPUTS**` block in the handoff and ask the user via
 `AskUserQuestion`:
 
 > "N of M adopt-generated artifacts are excluded by .gitignore (e.g.
-> agent_docs/, planning/, shipwright_*_config.json). They will not be
+> agent_docs/, .shipwright/planning/, shipwright_*_config.json). They will not be
 > committed unless you adjust .gitignore. Continue without changes,
 > stop and review .gitignore, or proceed and adjust manually after?"
 
@@ -456,7 +456,7 @@ ADOPTION COMPLETE
 ================================================================================
 Profile:       <matched>
 Scope:         <full_app|library|cli>
-Features:      <N> FR(s) in planning/<split>/spec.md
+Features:      <N> FR(s) in .shipwright/planning/<split>/spec.md
 Crawl:         <enabled|skipped: <reason>>
 Review:        <completed|skipped: <reason>>
 Commit:        <sha>

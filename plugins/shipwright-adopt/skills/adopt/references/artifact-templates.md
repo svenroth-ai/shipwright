@@ -63,7 +63,7 @@ No Mermaid in V1 (V2 follow-up epic rolls out Mermaid + arc42 together).
 | LOC by layer | `snapshot.folders.loc_by_layer` |
 | Pipeline status table | Static, derived from `completed_steps` |
 
-## planning/&lt;split&gt;/spec.md
+## .shipwright/planning/&lt;split&gt;/spec.md
 
 | Slot | Source |
 |---|---|

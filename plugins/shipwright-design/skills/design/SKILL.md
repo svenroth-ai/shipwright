@@ -68,7 +68,7 @@ Determine if running within the pipeline or standalone:
    - Skip pipeline state updates (no `orchestrator.py update-step` calls)
    - Skip upstream completion checks
    - Still produce all artifacts (mockup HTML files, design-manifest.md)
-   - If no `shipwright_project_config.json` exists, work with whatever specs are available in `planning/`. If none exist, ask user to describe what screens they need.
+   - If no `shipwright_project_config.json` exists, work with whatever specs are available in `.shipwright/planning/`. If none exist, ask user to describe what screens they need.
    - Print: `"Running in standalone mode — pipeline state will not be updated."`
 4. If `status == "in_progress"` AND `current_step != "design"`:
    - Warn: `"Pipeline is in progress at step {current_step}. Running /shipwright-design out of sequence may cause issues."`
@@ -131,8 +131,8 @@ continue with Step 1 below as normal.
 
 Read these files:
 - `shipwright_project_config.json` → profile name, scope
-- `planning/project-manifest.md` → split overview
-- `planning/*/spec.md` → all split specs (Functional Requirements)
+- `.shipwright/planning/project-manifest.md` → split overview
+- `.shipwright/planning/*/spec.md` → all split specs (Functional Requirements)
 
 Extract from each spec:
 - All FRs (Functional Requirements) with their IDs

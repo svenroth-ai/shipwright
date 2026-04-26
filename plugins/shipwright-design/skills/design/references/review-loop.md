@@ -32,8 +32,8 @@ AskUserQuestion:
    | `designs/visual-guidelines.md` | Final color values, token changes |
    | `designs/design-manifest.md` | Final screen titles, statuses |
    | `designs/index.html` | Regenerate screens array |
-   | `planning/*/spec.md` Section 7 (UI Requirements) | Add screen references per FR: "FR-01.09 → screens/03-dashboard.html" |
-   | `planning/*/spec.md` Section 5 (Functional Requirements) | Add `[UI: Screen #NN]` cross-reference tags to FRs that have mockups |
+   | `.shipwright/planning/*/spec.md` Section 7 (UI Requirements) | Add screen references per FR: "FR-01.09 → screens/03-dashboard.html" |
+   | `.shipwright/planning/*/spec.md` Section 5 (Functional Requirements) | Add `[UI: Screen #NN]` cross-reference tags to FRs that have mockups |
    | `agent_docs/decision_log.md` | All final design decisions (DR-NNN format, see below) |
    | `shipwright_project_config.json` | Set `design_phase: "complete"` |
 

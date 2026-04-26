@@ -149,7 +149,7 @@ uv run {shared_root}/scripts/smoke_test.py \
 **Skip if:** Profile has no UI, or `e2e/` already contains `.spec.ts` files.
 
 1. **Check for existing specs:** Search `e2e/` for `*.spec.ts` files. If found → skip.
-2. **Find E2E plans:** Search `planning/*/claude-plan-e2e.md`. If none found → skip.
+2. **Find E2E plans:** Search `.shipwright/planning/*/claude-plan-e2e.md`. If none found → skip.
 3. **Generate specs:** For each E2E plan:
    - Read the plan (user flows, page objects, test data)
    - Create `e2e/flows/NN-flow-name.spec.ts` for each flow group

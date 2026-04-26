@@ -75,6 +75,9 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/tests/test_gitignore_canon.py",
         "shared/tests/test_constants_match_manifest.py",
         "shared/tests/test_path_canon_windows.py",
+        # Layer 2 setup-contract test — intentionally asserts that the legacy
+        # path is NOT created. Must reference legacy by name to do so.
+        "shared/tests/test_setup_writes_canonical.py",
         # Plan files (this migration's own design docs)
         "C:/Users/SvenRoth/.claude/plans/iterate-shipwright-relocation-*.md",
         "C:/Users/SvenRoth/.claude/plans/ich-bin-am-berarbeiten-glittery-sun.md",
@@ -94,9 +97,12 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/templates/**",
         "shared/prompts/**",
         "shared/schemas/**",
-        # Sub-Iterate D (prose) will shrink plugins/**/*.md.
-        "plugins/**/*.md",
-        "plugins/**/*.json",
+        # Sub-Iterate D (prose) migrated all plugin .md files.
+        # Remaining: plugin.json keywords (descriptive word "planning",
+        # not a path) and the compliance fixture sample_plan_config.json
+        # (Sub-Iterate E target).
+        "plugins/**/.claude-plugin/plugin.json",
+        "plugins/shipwright-compliance/tests/fixtures/*.json",
         # pyproject.toml keywords ("planning" as descriptive metadata, not a path)
         "**/pyproject.toml",
         # Sub-Iterate E shrinks integration-tests, docs, marketplace metadata.

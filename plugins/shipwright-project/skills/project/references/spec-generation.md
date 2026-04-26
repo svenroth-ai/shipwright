@@ -170,7 +170,7 @@ For a hypothetical split "01-auth" of a SaaS Time Tracking project:
 ```markdown
 # Authentication & Authorization
 
-> Split 01 of 03 | Source: planning/requirements.md
+> Split 01 of 03 | Source: .shipwright/planning/requirements.md
 
 ## 1. Purpose & Scope
 
@@ -258,7 +258,7 @@ application. Users can sign up, log in, and access features based on their role.
 
 ## 7. References
 
-- Requirements: `planning/requirements.md`
-- Interview: `planning/shipwright_project_interview.md`
+- Requirements: `.shipwright/planning/requirements.md`
+- Interview: `.shipwright/planning/shipwright_project_interview.md`
 - Related splits: `02-data-model/spec.md`, `03-frontend/spec.md`
 ```

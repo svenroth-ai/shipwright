@@ -108,7 +108,7 @@ This follows the constitution rule: **never silently skip a test layer due to mi
    - Generate `designs/screen-routes.json` mapping each mockup to its route
    - Commit: `chore(test): auto-generate screen-routes.json from mockups + router`
 
-**4. `planning/claude-plan-e2e.md` missing but `designs/screen-routes.json` exists?**
+**4. `.shipwright/planning/claude-plan-e2e.md` missing but `designs/screen-routes.json` exists?**
    - Generate a minimal E2E test plan with one flow per major screen/route
    - Include page object model suggestions and test data structure
    - Commit: `chore(test): auto-generate E2E test plan from screen routes`
@@ -315,9 +315,9 @@ If any `.spec.ts` file found → skip with note: "E2E specs already exist."
 
 2. **Find E2E test plans:**
 ```bash
-find planning/ -name "claude-plan-e2e.md" -type f 2>/dev/null
+find .shipwright/planning/ -name "claude-plan-e2e.md" -type f 2>/dev/null
 ```
-If no plans found → skip with note: "No E2E test plans found in planning/."
+If no plans found → skip with note: "No E2E test plans found in .shipwright/planning/."
 
 3. **Generate specs from plans:**
 For each `claude-plan-e2e.md` found:

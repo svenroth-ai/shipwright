@@ -258,7 +258,7 @@ See [interview-protocol.md](references/interview-protocol.md) for detailed guida
   - `agent_docs/conventions.md` — coding standards, naming, patterns
   - `agent_docs/decision_log.md` — ALL past architectural decisions (read completely)
   - `shipwright_sync_config.json` — existing file-to-FR mappings (if exists)
-  - ALL `planning/*/spec.md` — existing specs across all splits (read completely)
+  - ALL `.shipwright/planning/*/spec.md` — existing specs across all splits (read completely)
   - Run: `git log --oneline -20` — recent project history
 
 **Interview depth by scope and input mode:**

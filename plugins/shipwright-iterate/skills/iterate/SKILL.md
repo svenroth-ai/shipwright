@@ -147,10 +147,10 @@ Decision guide:
   that earlier phases actually ran — the generic Stop hook that writes the
   handoff does not persist phase-progress markers. Verify explicitly:
 
-  1. **External LLM Review (medium+ only).** Check `planning/iterate/` for a
+  1. **External LLM Review (medium+ only).** Check `.shipwright/planning/iterate/` for a
      completion marker. Acceptable evidence: either
-     `planning/iterate/{run_id}-external-review.json`, OR
-     `planning/iterate/external_review_state.json` with a `timestamp` newer
+     `.shipwright/planning/iterate/{run_id}-external-review.json`, OR
+     `.shipwright/planning/iterate/external_review_state.json` with a `timestamp` newer
      than the iterate spec's mtime. If neither exists and complexity is
      medium+ with `feedback_iterations > 0`, run Step 4 (External LLM Review)
      FIRST, then continue. Trivial/small iterates skip this check.
@@ -220,7 +220,7 @@ See also: `docs/guide.md` chapter "Parallel Development with Worktrees" for the 
 3. `agent_docs/decision_log.md` — ALL architectural decisions (read the complete file)
 4. `agent_docs/architecture.md` — app structure, component tree, data flow
 5. `shipwright_sync_config.json` — file-to-FR mappings (if exists)
-6. `planning/*/spec.md` — ALL spec files across all splits (read completely)
+6. `.shipwright/planning/*/spec.md` — ALL spec files across all splits (read completely)
 7. `shipwright_test_results.json` — last test run status, degraded conditions
 8. `shipwright_events.jsonl` — ALL events — complete project history (work_completed, deployments, etc.)
 9. Run: `git log --oneline -20` — recent commits (prevents duplicate work)
@@ -399,7 +399,7 @@ Note: "touches_db" (ordinary query/model edits without schema changes) is NOT a 
 4. `agent_docs/decision_log.md` — ALL architectural decisions (read completely)
 5. `agent_docs/architecture.md` — app structure, component tree, data flow
 6. `shipwright_sync_config.json` — file-to-FR mappings (if exists)
-7. `planning/*/spec.md` — ALL spec files across all splits (read completely)
+7. `.shipwright/planning/*/spec.md` — ALL spec files across all splits (read completely)
 8. `git log --oneline -20` — recent commits (prevents duplicate work)
 9. `shipwright_test_results.json` — last test run status, degraded conditions
 10. `shipwright_events.jsonl` — ALL events — complete project history (work_completed, deployments, etc.)
@@ -408,7 +408,7 @@ Note: "touches_db" (ordinary query/model edits without schema changes) is NOT a 
 
 Read only when the change touches their domain:
 
-- `planning/*/sections/*.md` — only the section files for affected areas
+- `.shipwright/planning/*/sections/*.md` — only the section files for affected areas
 - `designs/visual-guidelines.md` — only for UI changes
 - `designs/screens/*.html` — only for UI changes requiring mockup reference
 - `designs/chrome-definition.md` — only for UI changes needing chrome context
@@ -427,7 +427,7 @@ Where `{build_plugin_root}` = path to `plugins/shipwright-build` (resolve from `
 Follow the Phase Matrix (Section 6) to determine which steps run.
 
 ### Step 1: Iterate Spec (medium+ only)
-Create `planning/iterate/{date}-{short-description}.md` using this template:
+Create `.shipwright/planning/iterate/{date}-{short-description}.md` using this template:
 
 ```markdown
 # Iterate Spec: {short-description}
@@ -466,7 +466,7 @@ Create `planning/iterate/{date}-{short-description}.md` using this template:
 ### Step 3: Mini-Plan (small: inline, medium: persisted)
 See `references/iteration-planning.md` for protocol.
 - Small: inline in session
-- Medium+: save as `planning/iterate/{date}-{desc}-miniplan.md`
+- Medium+: save as `.shipwright/planning/iterate/{date}-{desc}-miniplan.md`
 
 ### Step 3b: User Approval Gate (medium+)
 
@@ -642,11 +642,11 @@ uv run {plugin_root}/scripts/tools/campaign_init.py \
   --sub-iterates '{json_array}' \
   --branch-strategy stacked
 ```
-4. Review generated `planning/iterate/campaigns/{slug}/campaign.md` with user
+4. Review generated `.shipwright/planning/iterate/campaigns/{slug}/campaign.md` with user
 
 ### Autonomous Campaign Loop
 
-**Pre-requisite:** `planning/iterate/campaigns/{slug}/status.json` must exist.
+**Pre-requisite:** `.shipwright/planning/iterate/campaigns/{slug}/status.json` must exist.
 
 1. **Export env vars:**
 ```bash
@@ -657,7 +657,7 @@ export SHIPWRIGHT_LOOP_ID=""  # set after init
 2. **Generate units file and initialize loop:**
 ```bash
 uv run {plugin_root}/scripts/tools/campaign_progress.py list-units \
-  --campaign-dir "planning/iterate/campaigns/{slug}" > /tmp/campaign_units.json
+  --campaign-dir ".shipwright/planning/iterate/campaigns/{slug}" > /tmp/campaign_units.json
 
 uv run {shared_root}/scripts/lib/autonomous_loop.py init \
   --state .shipwright/loop_state.json \
@@ -690,7 +690,7 @@ Extract `loop_id` from stdout. Then: `export SHIPWRIGHT_LOOP_ID="{loop_id}"`.
 
 3g. Update campaign status.json:
     uv run {plugin_root}/scripts/tools/campaign_progress.py update-status \
-      --campaign-dir "planning/iterate/campaigns/{slug}" \
+      --campaign-dir ".shipwright/planning/iterate/campaigns/{slug}" \
       --sub-iterate-id {id} --status complete --commit {commit} --branch {branch}
 
 3h. Continue loop
@@ -719,7 +719,7 @@ Large is a "soft boundary" — force-continue supported with mandatory review + 
 |---|---|---|---|---|
 | Repo Scout | quick | quick | thorough | → escape hatch |
 | Interview | skip | 1 confirmation Q | FEATURE: 2-3 Q, CHANGE: 1-2 Q | → escape hatch |
-| Iterate Spec | skip | skip | own file in `planning/iterate/` | — |
+| Iterate Spec | skip | skip | own file in `.shipwright/planning/iterate/` | — |
 | Spec Update (existing FRs) | always (BUG: only if spec wrong) | always (BUG: only if spec wrong) | always (BUG: only if spec wrong) | — |
 | Mini-Plan | skip | FEATURE only | yes + alternative (all types) | — |
 | User Approval | skip | skip | before build | — |
@@ -779,11 +779,11 @@ See `references/iteration-planning.md` for full protocol including handoff file 
 
 | Artifact | Owns | Do NOT duplicate here |
 |---|---|---|
-| **Iterate spec** (`planning/iterate/`) | Intent, ACs, scope, out-of-scope | Rationale (→ ADR), structure (→ architecture) |
+| **Iterate spec** (`.shipwright/planning/iterate/`) | Intent, ACs, scope, out-of-scope | Rationale (→ ADR), structure (→ architecture) |
 | **spec.md** (existing FRs) | Normative FR changes | Why (→ ADR), approach (→ mini-plan) |
 | **ADR** (`decision_log.md`) | Rationale, alternatives, consequences | Full ACs (→ spec), structure (→ architecture) |
 | **architecture.md** | Current structural state | Decisions (→ ADR), requirements (→ spec) |
-| **Mini-plan** (`planning/iterate/`) | Approach, files, test strategy | Requirements (→ spec), decisions (→ ADR) |
+| **Mini-plan** (`.shipwright/planning/iterate/`) | Approach, files, test strategy | Requirements (→ spec), decisions (→ ADR) |
 
 ---
 
@@ -1002,8 +1002,8 @@ git add {project_root}/shipwright_run_config.json
 # Conditional finalization artifacts
 git add {project_root}/agent_docs/conventions.md       # if F3a wrote learnings
 git add {project_root}/agent_docs/architecture.md      # if F2 flagged structural impact
-git add {project_root}/planning/**/spec.md             # if F1 flagged drift
-git add {project_root}/planning/iterate/*.md           # if medium+ (iterate spec / mini-plan)
+git add {project_root}/.shipwright/planning/**/spec.md             # if F1 flagged drift
+git add {project_root}/.shipwright/planning/iterate/*.md           # if medium+ (iterate spec / mini-plan)
 
 # Compliance artifacts (if the project tracks compliance/)
 git add {project_root}/compliance/

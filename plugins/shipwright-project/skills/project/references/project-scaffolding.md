@@ -65,7 +65,7 @@ Write `shipwright_project_config.json` to the project root:
   "status": "complete",
   "scope": "full_app",
   "profile": "supabase-nextjs",
-  "planning_dir": "planning",
+  "planning_dir": ".shipwright/planning",
   "splits": [
     {"name": "01-auth", "status": "not_started"},
     {"name": "02-dashboard", "status": "not_started"}
