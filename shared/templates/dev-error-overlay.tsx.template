@@ -20,8 +20,17 @@
  *
  * Errors are still re-logged to the console so devtools breakpoints and
  * source-map traces continue to work — the overlay is purely UI on top.
+ *
+ * Requires the automatic JSX runtime (`tsconfig.json` → `"jsx": "react-jsx"`,
+ * which is the default with `@vitejs/plugin-react`). Projects pinned to the
+ * classic runtime (`"jsx": "react"`) need to add `import React from 'react'`.
  */
 import { useEffect, useState } from 'react';
+
+// Captured errors are appended unbounded; cap at MAX_CAPTURED to prevent
+// memory growth in noisy apps. The overlay only ever displays the latest one
+// anyway, so older entries serve only as scrollback inside this session.
+const MAX_CAPTURED = 50;
 
 type CapturedError = {
   message: string;
@@ -48,7 +57,7 @@ export default function DevErrorOverlay() {
       };
       // Re-log so devtools still see it (overlay does not swallow).
       console.error('[DevErrorOverlay] window error:', event.error ?? event.message);
-      setErrors((prev) => [...prev, captured]);
+      setErrors((prev) => [...prev.slice(-(MAX_CAPTURED - 1)), captured]);
       setHidden(false);
     };
 
@@ -66,7 +75,7 @@ export default function DevErrorOverlay() {
         at: Date.now(),
       };
       console.error('[DevErrorOverlay] unhandled rejection:', reason);
-      setErrors((prev) => [...prev, captured]);
+      setErrors((prev) => [...prev.slice(-(MAX_CAPTURED - 1)), captured]);
       setHidden(false);
     };
 

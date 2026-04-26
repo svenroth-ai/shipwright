@@ -250,3 +250,98 @@ def test_migration_verifier_cli_returns_nonzero_on_failure(tmp_migration, capsys
     assert rc == 1, "CLI must exit non-zero when verification fails"
     parsed = json.loads(capsys.readouterr().out)
     assert parsed["all_passed"] is False
+
+
+# ---------------------------------------------------------------------------
+# 6. Follow-up findings — missing-file, --timeout, multi-row clarity
+# ---------------------------------------------------------------------------
+
+
+def test_migration_verifier_handles_missing_file_as_structured_error(tmp_path, capsys):
+    """A non-existent --migration must produce parseable JSON output with
+    error+all_passed=False, NOT a Python traceback. The deploy SKILL parses
+    JSON to decide rollback vs. proceed; an unhandled FileNotFoundError
+    would crash that flow."""
+    missing = tmp_path / "nope.sql"  # never created
+    with patch.object(sys, "argv", ["mv", "--migration", str(missing)]):
+        rc = mv.main()
+
+    assert rc == 1
+    parsed = json.loads(capsys.readouterr().out)
+    assert parsed["all_passed"] is False
+    assert parsed["migrations_failed"] == 1
+    assert parsed["reports"][0]["all_passed"] is False
+    assert parsed["reports"][0]["skipped"] is False
+    assert "not found" in parsed["reports"][0]["error"].lower()
+
+
+def test_migration_verifier_timeout_flag_overrides_default(tmp_migration):
+    """--timeout flag (and SHIPWRIGHT_VERIFY_TIMEOUT_SECONDS env var) must
+    override the 30s default. Verified via the resolved value used in the
+    subprocess call."""
+    migration = tmp_migration(
+        "20260426_slow.sql",
+        "alter table foo add column bar text;\n-- VERIFY: select 1\n",
+    )
+    captured_timeouts: list[int] = []
+
+    def fake_run_capture_timeout(cmd, capture_output, text, timeout):
+        captured_timeouts.append(timeout)
+
+        class R:
+            returncode = 0
+            stdout = "1\n"
+            stderr = ""
+
+        return R()
+
+    with (
+        patch.object(mv.subprocess, "run", side_effect=fake_run_capture_timeout),
+        patch.object(sys, "argv", ["mv", "--migration", str(migration), "--timeout", "120"]),
+    ):
+        mv.main()
+
+    assert captured_timeouts == [120], f"expected timeout=120 propagated, got {captured_timeouts}"
+
+
+def test_migration_verifier_timeout_env_var_resolution(monkeypatch):
+    """SHIPWRIGHT_VERIFY_TIMEOUT_SECONDS env var is honored by
+    _resolve_timeout when no CLI flag is given. Invalid env values fall
+    back to default."""
+    monkeypatch.setenv("SHIPWRIGHT_VERIFY_TIMEOUT_SECONDS", "90")
+    assert mv._resolve_timeout(None) == 90
+
+    monkeypatch.setenv("SHIPWRIGHT_VERIFY_TIMEOUT_SECONDS", "not-a-number")
+    assert mv._resolve_timeout(None) == mv.DEFAULT_VERIFY_TIMEOUT_SECONDS
+
+    monkeypatch.delenv("SHIPWRIGHT_VERIFY_TIMEOUT_SECONDS", raising=False)
+    assert mv._resolve_timeout(None) == mv.DEFAULT_VERIFY_TIMEOUT_SECONDS
+
+    # CLI flag wins over env
+    monkeypatch.setenv("SHIPWRIGHT_VERIFY_TIMEOUT_SECONDS", "90")
+    assert mv._resolve_timeout(15) == 15
+
+
+def test_migration_verifier_multi_row_stdout_is_truthy(tmp_migration):
+    """Multi-row VERIFY output is treated as truthy — the contract is
+    'any non-empty output that isn't literally false counts as evidence'.
+    Document this in test form so the behavior cannot drift silently."""
+    migration = tmp_migration(
+        "20260426_multi.sql",
+        "alter table foo add column bar text;\n-- VERIFY: select unnest(array[1, 2, 3])\n",
+    )
+
+    def fake_run_multi(cmd, capture_output, text, timeout):
+        class R:
+            returncode = 0
+            stdout = "1\n2\n3\n"
+            stderr = ""
+
+        return R()
+
+    with patch.object(mv.subprocess, "run", side_effect=fake_run_multi):
+        report = mv.verify_migration_file(migration, db_url="postgres://stub")
+
+    assert report["all_passed"] is True
+    assert report["results"][0]["verified"] is True
+    assert "1\n2\n3" in report["results"][0]["stdout"]
