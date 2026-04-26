@@ -174,6 +174,13 @@ SessionStart hooks (in order):
                                     write sessionstart-validation.json,
                                     optionally write .block-pending sentinel,
                                     emit SHIPWRIGHT-PIPELINE-CONTEXT additionalContext)
+   3. check_artifact_drift.py      (scans project_root for legacy artifact
+                                    dirs from active migrations in
+                                    shared/scripts/lib/artifact_migrations.py;
+                                    in_progress → warn-only stderr +
+                                    .shipwright/stale-folders.md, exit 0;
+                                    migrated → structured JSON to stdout +
+                                    exit 1 (hard-gate))
    |
    v
 UserPromptSubmit hook (per prompt; first prompt only matters):
@@ -290,6 +297,52 @@ Claude's Bash tool. Idempotent: never duplicates the export line.
 
 This single hook replaced 8 per-plugin duplicates that used to live
 under `plugins/*/scripts/hooks/capture-session-id.py` (iterate 14.9).
+
+### Shared Hook: check_artifact_drift.py
+
+**Script:** `shared/scripts/hooks/check_artifact_drift.py` — wired
+as the third SessionStart hook in **every** plugin (12 hooks.json
+files), after `capture_session_id.py` and `phase_session_start.py`.
+
+**What it does:** scans the resolved `SHIPWRIGHT_PROJECT_ROOT` for
+any *legacy* top-level artifact directory (e.g. `planning/`) whose
+canonical home has been relocated under `.shipwright/` (e.g.
+`.shipwright/planning/`). The list of active migrations and their
+canonical-vs-legacy paths lives in
+`shared/scripts/lib/artifact_migrations.py` (`ARTIFACT_MIGRATIONS`).
+
+**Behavior per migration status:**
+- `pending` → not scanned (no-op).
+- `in_progress` → **warn-only**. Findings produce a stderr notice and
+  a markdown report at `.shipwright/stale-folders.md`. Hook exits 0
+  so we don't break our own migration sub-iterates.
+- `migrated` → **hard-gate**. Findings produce structured JSON on
+  stdout (`{"success": false, "error": "stale_artifact_dirs", ...}`)
+  and exit code 1. The AI orchestrator parses this and stops the
+  session with a clear `git mv …` remediation list.
+
+**Self-healing:** when no findings exist on a subsequent run, the
+report file is *deleted* (`unlink(missing_ok=True)`) instead of
+overwritten — the absence of `.shipwright/stale-folders.md` is the
+canonical "no drift" signal.
+
+**Streaming + fail-open:** scan stops after 50 sample files per
+legacy directory (no full `rglob`+`stat` pass). Any `OSError` during
+scan reports the directory as drifted rather than crashing. Any
+exception in the hook itself is caught at the top level — drift
+detection can never brick a session start.
+
+**Manifest extension:** to gate a new artifact migration, append a
+dict to `ARTIFACT_MIGRATIONS` with `{name, canonical, legacy_dirname,
+old_path_patterns, ast_check_string, status}`. Status starts at
+`pending`, flips to `in_progress` when the rewrite kicks off, and
+finally to `migrated` after the cleanup sub-iterate. The companion
+test-suite (`shared/tests/test_artifact_path_canon.py` and the four
+sister tests) automatically covers the new entry.
+
+**Reference:** `docs/migrations/artifact-migration-reference.md`
+(written in Sub-Iterate G of the planning relocation) holds the full
+playbook for proposing and executing a new migration.
 
 ### Shared Hook: audit_phase_quality_on_stop.py
 

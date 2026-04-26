@@ -9,6 +9,10 @@
         {
           "type": "command",
           "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_drift.py"
+        },
+        {
+          "type": "command",
+          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_artifact_drift.py"
         }
       ]
     }
