@@ -320,14 +320,30 @@ def generate(
     # frontend hint in the snapshot (multi-service frontend service, or
     # frontend.* in stack). Backend-only profiles get wrote_docs=false
     # without writing anything to agent_docs/visual/.
+    #
+    # Frontend-root resolution priority (matches multi-service spec):
+    #   1. `primary: true` service with a `root` field
+    #   2. Service named frontend / client / web
+    #   3. project_root (single-service or no signal)
     multi = (snapshot.get("stack") or {}).get("multi_service") or {}
     fe_root: Path = project_root
     if multi.get("detected"):
-        for svc in multi.get("services") or []:
-            name = (svc.get("name") or "").lower()
-            if name in ("frontend", "client", "web") and svc.get("root"):
-                fe_root = project_root / svc["root"]
-                break
+        services = multi.get("services") or []
+        primary = next(
+            (s for s in services if s.get("primary") and s.get("root")),
+            None,
+        )
+        if primary is None:
+            primary = next(
+                (
+                    s for s in services
+                    if (s.get("name") or "").lower() in ("frontend", "client", "web")
+                    and s.get("root")
+                ),
+                None,
+            )
+        if primary is not None and primary.get("root"):
+            fe_root = project_root / primary["root"]
     visual_result = generate_visual_docs(project_root, frontend_root=fe_root)
     results["visual_docs"] = {
         "wrote_docs": visual_result["wrote_docs"],

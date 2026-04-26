@@ -25,4 +25,5 @@ addopts = "-v --tb=short"
 pythonpath = ["."]
 markers = [
     "integration: marks tests as integration tests",
+    "slow: marks tests that spawn real subprocesses or perform long I/O (excluded from the default run; use `pytest -m slow`)",
 ]
