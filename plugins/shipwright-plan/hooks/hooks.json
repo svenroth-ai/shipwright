@@ -9,6 +9,10 @@
         {
           "type": "command",
           "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/phase_session_start.py"
+        },
+        {
+          "type": "command",
+          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_artifact_drift.py"
         }
       ]
     }
