@@ -63,6 +63,12 @@ _EXISTING_ARTIFACT_CANDIDATES: tuple[str, ...] = (
     "agent_docs/conventions.md",
     "agent_docs/decision_log.md",
     "agent_docs/build_dashboard.md",
+    # Tier-5 visual docs (sub-iterate E + F): adopt regenerates these from
+    # source on each run, but the operator may have hand-edited them. Surface
+    # them here so the SKILL.md prompt acknowledges they'll be touched, and
+    # so `visual_docs_generator` can back them up.
+    "agent_docs/design_tokens.md",
+    "agent_docs/guideline.md",
     "shipwright_events.jsonl",
     "shipwright_sync_config.json",
     "shipwright_project_config.json",

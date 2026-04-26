@@ -127,42 +127,63 @@ def setup(
     npx = resolve_executable("npx")
     if not _has_package(setup_dir, "@playwright/test"):
         try:
-            subprocess.run(
+            r = subprocess.run(
                 [npm, "install", "-D", "@playwright/test"],
                 cwd=str(setup_dir),
                 capture_output=True,
+                text=True,
                 timeout=120,
             )
-            actions.append("Installed @playwright/test")
         except (subprocess.TimeoutExpired, OSError) as e:
-            return {"success": False, "error": f"Failed to install @playwright/test: {e}", "setup_dir": str(setup_dir)}
+            return {"success": False, "error": f"Failed to spawn npm install: {e}", "setup_dir": str(setup_dir)}
+        if r.returncode != 0:
+            # Surface stderr tail so the operator can act — previously this was
+            # silently swallowed and "Installed @playwright/test" was appended.
+            tail = (r.stderr or r.stdout or "")[-600:]
+            return {
+                "success": False,
+                "error": f"npm install -D @playwright/test failed (rc={r.returncode}): {tail}",
+                "setup_dir": str(setup_dir),
+            }
+        actions.append("Installed @playwright/test")
 
-    # 5. Install tsx for running browser-verify.ts
+    # 5. Install tsx for running browser-verify.ts (non-critical — log on failure
+    # but don't fail the whole setup).
     if not _has_package(setup_dir, "tsx"):
         try:
-            subprocess.run(
+            r = subprocess.run(
                 [npm, "install", "-D", "tsx"],
                 cwd=str(setup_dir),
                 capture_output=True,
+                text=True,
                 timeout=120,
             )
-            actions.append("Installed tsx")
+            if r.returncode == 0:
+                actions.append("Installed tsx")
+            else:
+                actions.append(f"WARN: tsx install failed (rc={r.returncode}); continuing")
         except (subprocess.TimeoutExpired, OSError):
-            pass  # Non-critical
+            actions.append("WARN: tsx install raised; continuing")
 
     # 6. Install Chromium browser
     try:
-        result = subprocess.run(
+        r = subprocess.run(
             [npx, "playwright", "install", "chromium"],
             cwd=str(setup_dir),
             capture_output=True,
             text=True,
             timeout=300,
         )
-        if result.returncode == 0:
-            actions.append("Installed Chromium browser")
     except (subprocess.TimeoutExpired, OSError) as e:
-        return {"success": False, "error": f"Failed to install Chromium: {e}", "setup_dir": str(setup_dir)}
+        return {"success": False, "error": f"Failed to spawn `npx playwright install`: {e}", "setup_dir": str(setup_dir)}
+    if r.returncode != 0:
+        tail = (r.stderr or r.stdout or "")[-600:]
+        return {
+            "success": False,
+            "error": f"`npx playwright install chromium` failed (rc={r.returncode}): {tail}",
+            "setup_dir": str(setup_dir),
+        }
+    actions.append("Installed Chromium browser")
 
     if not actions:
         actions.append("Everything already set up")
