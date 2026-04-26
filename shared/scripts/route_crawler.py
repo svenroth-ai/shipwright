@@ -34,6 +34,33 @@ from lib.cmd_resolver import resolve_executable  # noqa: E402
 _DEFAULT_CRAWL_TIMEOUT = 240  # seconds
 
 
+def _read_playwright_error_context(run_cwd: Path, max_chars: int = 1500) -> str:
+    """Surface the most recent Playwright error-context.md tail.
+
+    Playwright writes test failures to `<run_cwd>/test-results/<spec>-<test>/error-context.md`
+    and not to stderr (subprocess.stderr was empty in the original
+    no_output diagnostic). On failure, glob test-results/ for the
+    most-recently-modified error-context.md and return its tail.
+
+    Returns "" if test-results/ doesn't exist or no error-context.md is
+    present — the caller treats absent context as "no extra info" rather
+    than as an error.
+    """
+    test_results = run_cwd / "test-results"
+    if not test_results.is_dir():
+        return ""
+    candidates = list(test_results.glob("**/error-context.md"))
+    if not candidates:
+        return ""
+    # Most recently modified wins (Playwright leaves multiple dirs across runs).
+    latest = max(candidates, key=lambda p: p.stat().st_mtime)
+    try:
+        body = latest.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return ""
+    return body[-max_chars:] if len(body) > max_chars else body
+
+
 def _find_template() -> Path | None:
     here = Path(__file__).resolve()
     for ancestor in [here, *here.parents]:
@@ -128,6 +155,7 @@ def run_crawl(
             "routes": 0,
             "output": str(output),
             "stderr": result.stderr[-800:] if hasattr(result, "stderr") else "",
+            "error_context": _read_playwright_error_context(run_cwd),
         }
     try:
         data = json.loads(output.read_text(encoding="utf-8"))
@@ -137,6 +165,7 @@ def run_crawl(
             "routes": 0,
             "output": str(output),
             "error": str(e),
+            "error_context": _read_playwright_error_context(run_cwd),
         }
 
     return {
