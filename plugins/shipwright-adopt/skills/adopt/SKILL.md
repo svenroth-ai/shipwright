@@ -276,6 +276,20 @@ Write a **strict JSON object** to `.shipwright/adopt/enrichment.json`:
   `webui/agent_docs/architecture.md` — plain ASCII box-drawing characters
   (`┌`, `─`, `│`, `└`), no Mermaid. Size: roughly 40–60 lines.
 
+**Validation + fallback** (4.4). `generate_adoption_artifacts.py` validates
+`enrichment.json` against a strict schema before consuming it. If the file
+exists but is malformed (missing required keys, wrong types, missing
+`route` on a feature, missing `decision`/`consequences` on an ADR), Step E
+fails loud with a clear error — adopt does NOT silently fall back to
+"snapshot+routes only" when Layer-2 was attempted.
+
+If `enrichment.json` does not exist at all, a deterministic minimal
+fallback is generated from the snapshot + routes. Every text field is
+clearly labeled as a placeholder ("TBD — Layer-2 enrichment skipped..."),
+the file carries `_fallback: true`, and the SKILL.md handoff surfaces a
+loud "Layer-2 was skipped" notice. No invented prose, no plausible-sounding
+lies.
+
 ### Step C — Interview (AskUserQuestion, only when Layer 1 is unsure)
 
 Ask **one question per turn** and only when the answer cannot be
@@ -319,6 +333,26 @@ Writes — **in order**:
 6. `.claude/settings.json` with the `suggest_iterate` UserPromptSubmit
    hook (idempotent merge).
 7. `e2e/flows/adopted-baseline.spec.ts` if routes.json exists.
+
+**Features merge (4.2)**. Layer-1 AST features and Layer-1.5 crawl routes
+are unioned by route key — neither side is silently dropped when the
+other is non-empty. Each merged feature carries an `origin` of
+`ast | crawl | ast+crawl`. spec.md therefore lists both API FRs (from
+AST scan of route handlers) and UI FRs (from the crawl), giving a
+complete picture for downstream consumers.
+
+**Gitignore awareness (4.1)**. After all writes, the tool runs
+`git check-ignore` against every output path. The result lands in
+`results.gitignore_report` as `{total, gitignored: [...], majority_gitignored: bool}`.
+
+If `majority_gitignored` is true (≥50% of artifacts excluded), surface
+a `**GITIGNORED OUTPUTS**` block in the handoff and ask the user via
+`AskUserQuestion`:
+
+> "N of M adopt-generated artifacts are excluded by .gitignore (e.g.
+> agent_docs/, planning/, shipwright_*_config.json). They will not be
+> committed unless you adjust .gitignore. Continue without changes,
+> stop and review .gitignore, or proceed and adjust manually after?"
 
 ### Step F — Compliance Seeding
 
