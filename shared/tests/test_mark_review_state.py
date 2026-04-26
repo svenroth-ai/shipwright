@@ -18,8 +18,8 @@ SCRIPT = str(
 @pytest.fixture
 def tmp_planning(tmp_path):
     """Create a planning directory for marker writes."""
-    planning = tmp_path / "planning"
-    planning.mkdir()
+    planning = tmp_path / ".shipwright" / "planning"
+    planning.mkdir(parents=True)
     return planning
 
 

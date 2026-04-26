@@ -97,13 +97,17 @@ def build_paths_from_entries(
 # "undocumented" findings. Two categories:
 #  - Build/test/IDE artifacts: node_modules, .venv, dist, etc.
 #  - Shipwright runtime artifacts of target projects: agent_docs, designs,
-#    planning, compliance. These are state, not architecture; CLAUDE.md in
-#    a target project should NOT be forced to enumerate them.
+#    planning, compliance, plus the ``.shipwright/`` umbrella. These are
+#    state, not architecture; CLAUDE.md in a target project should NOT be
+#    forced to enumerate them. ``planning`` stays here for backwards-compat
+#    with projects that haven't run the migration yet.
 HIDDEN_DIR_DEFAULTS: frozenset[str] = frozenset({
     "node_modules", "__pycache__", "dist", "build", ".venv", ".git",
     ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox", ".idea", ".vscode",
     "vendor", "e2e-results", "playwright-report", "test-results",
-    "agent_docs", "designs", "planning", "compliance",
+    "agent_docs", "designs", "compliance",
+    ".shipwright",  # canonical umbrella for post-migration artifacts
+    "planning",  # artifact-path-canon: legacy (pre-migration tolerance)
 })
 
 
@@ -280,7 +284,7 @@ def read_package_scripts(package_json_path: str | os.PathLike[str]) -> dict[str,
 
 
 # ---------------------------------------------------------------------------
-# FR table parser (from planning/*/spec.md)
+# FR table parser (from .shipwright/planning/*/spec.md)
 # ---------------------------------------------------------------------------
 
 _FR_TABLE_RE = re.compile(
@@ -294,7 +298,7 @@ class FunctionalRequirement:
     text: str
     priority: str    # "Must" | "Should" | "May"
     split: str       # split directory name, e.g. "02-dashboard"
-    spec_path: str   # POSIX-style relative path, e.g. "planning/02-dashboard/spec.md"
+    spec_path: str   # POSIX-style relative path, e.g. ".shipwright/planning/02-dashboard/spec.md"
 
 
 def parse_fr_table(content: str, split: str, spec_path: str) -> list[FunctionalRequirement]:
@@ -319,17 +323,23 @@ def parse_fr_table(content: str, split: str, spec_path: str) -> list[FunctionalR
     return out
 
 
+# Canonical home of the planning artifact set, relative to project_root.
+# Mirrors PLANNING_DIR in shared/scripts/lib/artifact_migrations.py — kept
+# local here so callers don't need to import the manifest at runtime.
+PLANNING_DIRNAME = ".shipwright/planning"
+
+
 def collect_requirements_from_planning(
     project_root: str | os.PathLike[str],
 ) -> list[FunctionalRequirement]:
-    """Walk ``<project_root>/planning/<split>/spec.md`` and collect FRs.
+    """Walk ``<project_root>/.shipwright/planning/<split>/spec.md`` and collect FRs.
 
     Mirrors ``plugins/shipwright-compliance/.../data_collector.collect_requirements``
     so iterate 12.2 plan_checks can verify FR coherence without importing
     across plugin boundaries. Read-only; never writes.
     """
     root = Path(project_root)
-    planning_dir = root / "planning"
+    planning_dir = root / PLANNING_DIRNAME
     if not planning_dir.exists():
         return []
 
@@ -341,7 +351,7 @@ def collect_requirements_from_planning(
         if not spec_path.exists():
             continue
         split_name = split_dir.name
-        rel_spec = f"planning/{split_name}/spec.md"
+        rel_spec = f"{PLANNING_DIRNAME}/{split_name}/spec.md"
         try:
             content = spec_path.read_text(encoding="utf-8")
         except OSError:

@@ -45,7 +45,7 @@ def _canonical_entry(slug: str = "feat-x", complexity: str = "medium") -> dict:
         "type": "feature",
         "complexity": complexity,
         "branch": f"iterate/{slug}",
-        "spec": "planning/iterate/foo.md",
+        "spec": ".shipwright/planning/iterate/foo.md",
         "tests_passed": True,
         "adr": "ADR-055",
     }

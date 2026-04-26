@@ -131,8 +131,8 @@ def test_w2_skips_small_complexity(proj: Path):
 
 def test_w2_fails_when_marker_missing(proj: Path):
     _write_run_config(proj)
-    (proj / "planning" / "iterate").mkdir(parents=True)
-    (proj / "planning" / "iterate" / "2026-04-18-feat.md").write_text("spec", encoding="utf-8")
+    (proj / ".shipwright" / "planning" / "iterate").mkdir(parents=True)
+    (proj / ".shipwright" / "planning" / "iterate" / "2026-04-18-feat.md").write_text("spec", encoding="utf-8")
     f = iterate_compliance.check_w2_external_review_marker(proj, "run-1")
     assert f["status"] == pq.STATUS_FAIL
     assert f.get("remediation")
@@ -140,7 +140,7 @@ def test_w2_fails_when_marker_missing(proj: Path):
 
 def test_w2_passes_with_per_run_marker(proj: Path):
     _write_run_config(proj)
-    d = proj / "planning" / "iterate"
+    d = proj / ".shipwright" / "planning" / "iterate"
     d.mkdir(parents=True)
     (d / "run-1-external-review.json").write_text("{}", encoding="utf-8")
     f = iterate_compliance.check_w2_external_review_marker(proj, "run-1")
@@ -151,7 +151,7 @@ def test_w2_passes_with_per_run_marker(proj: Path):
 
 def test_w2_passes_with_skipped_state_and_reason(proj: Path):
     _write_run_config(proj)
-    d = proj / "planning" / "iterate"
+    d = proj / ".shipwright" / "planning" / "iterate"
     d.mkdir(parents=True)
     (d / "external_review_state.json").write_text(
         json.dumps({"status": "skipped_user_opt_out", "reason": "offline demo"}),
@@ -254,8 +254,8 @@ def test_w5_fails_when_marker_missing(proj: Path):
 
 
 def test_w5_passes_with_completed_status(proj: Path):
-    (proj / "planning").mkdir()
-    (proj / "planning" / "external_review_state.json").write_text(
+    (proj / ".shipwright" / "planning").mkdir(parents=True)
+    (proj / ".shipwright" / "planning" / "external_review_state.json").write_text(
         json.dumps({"status": "completed", "provider": "openrouter"}),
         encoding="utf-8",
     )
@@ -265,8 +265,8 @@ def test_w5_passes_with_completed_status(proj: Path):
 
 
 def test_w5_fails_on_skipped_without_reason(proj: Path):
-    (proj / "planning").mkdir()
-    (proj / "planning" / "external_review_state.json").write_text(
+    (proj / ".shipwright" / "planning").mkdir(parents=True)
+    (proj / ".shipwright" / "planning" / "external_review_state.json").write_text(
         json.dumps({"status": "skipped_user_opt_out", "reason": ""}),
         encoding="utf-8",
     )
@@ -275,8 +275,8 @@ def test_w5_fails_on_skipped_without_reason(proj: Path):
 
 
 def test_w5_passes_on_skipped_with_reason(proj: Path):
-    (proj / "planning").mkdir()
-    (proj / "planning" / "external_review_state.json").write_text(
+    (proj / ".shipwright" / "planning").mkdir(parents=True)
+    (proj / ".shipwright" / "planning" / "external_review_state.json").write_text(
         json.dumps({
             "status": "skipped_config_disabled",
             "reason": "offline demo; feature flag off",

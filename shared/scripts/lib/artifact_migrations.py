@@ -34,13 +34,17 @@ ARTIFACT_MIGRATIONS: list[dict] = [
         "canonical": ".shipwright/planning",
         "legacy_dirname": "planning",
         # Text-mode regex patterns the lint forbids (POSIX + Windows).
-        # Negative lookbehind avoids matching identifiers like ``replanning``
-        # or paths like ``foo/planning`` (substrings, not bare path roots).
+        # Negative lookbehinds keep us from matching:
+        #   - identifiers like ``replanning`` (word-char before)
+        #   - sub-paths like ``foo/planning`` or ``.shipwright/planning`` (path-char before)
+        #   - Path-division contexts like ``... / "planning"`` (space-quote pattern)
         "old_path_patterns": [
             r"(?<![\w/.\\])planning/",
             r"(?<![\w/.\\])planning\\",
-            r"(?<![\w/.\\])\"planning\"",
-            r"(?<![\w/.\\])'planning'",
+            # ``"planning"`` as a sole string literal — but NOT when preceded by
+            # `` / `` (Path-division) which is the canonical post-migration shape.
+            r'(?<![\w/.\\])(?<!/ )"planning"',
+            r"(?<![\w/.\\])(?<!/ )'planning'",
         ],
         # AST-mode trigger string. Used inside ``Path(...)``,
         # ``os.path.join(...)``, the ``/`` operator (Path division),
@@ -80,24 +84,24 @@ ALLOWLIST: dict[str, list[str]] = {
         "docs/migrations/**",
         # Pre-migration touchpoint inventory — every glob currently using
         # legacy paths.  These narrow as Sub-Iterates B-E migrate them.
+        # Sub-Iterate B (shared/) — narrowed: drift_parsers.py + iterate_entry.py
+        # + external_review_config.py kept (legacy descriptive references).
         "shared/scripts/lib/drift_parsers.py",
-        "shared/scripts/lib/spec_parser.py",
-        "shared/scripts/lib/autonomous_loop.py",
         "shared/scripts/lib/iterate_entry.py",
         "shared/scripts/lib/external_review_config.py",
-        "shared/scripts/tools/**",
-        "shared/scripts/checks/**",
-        "shared/scripts/hooks/**",
+        # shared/templates and shared/prompts still hold "planning/" path strings;
+        # migrated in Sub-Iterate E (templates) and D (prose).
         "shared/templates/**",
-        "shared/tests/**",
-        "shared/config/**",
         "shared/prompts/**",
         "shared/schemas/**",
+        # Sub-Iterate C (plugins Python) shrinks plugins/**/*.py;
+        # Sub-Iterate D (prose) shrinks plugins/**/*.md.
         "plugins/**/*.py",
         "plugins/**/*.md",
         "plugins/**/*.json",
         # pyproject.toml keywords ("planning" as descriptive metadata, not a path)
         "**/pyproject.toml",
+        # Sub-Iterate E shrinks integration-tests, docs, marketplace metadata.
         "integration-tests/**",
         "docs/**",
         ".gitignore",

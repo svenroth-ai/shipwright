@@ -219,9 +219,9 @@ def test_q2_passes_when_all_planned_sections_complete(proj: Path):
 
 
 def test_q2_derives_plan_from_planning_tree_when_no_snapshot(proj: Path):
-    (proj / "planning" / "sections").mkdir(parents=True)
-    (proj / "planning" / "sections" / "01-auth.md").write_text("x", encoding="utf-8")
-    (proj / "planning" / "sections" / "02-dashboard.md").write_text("x", encoding="utf-8")
+    (proj / ".shipwright" / "planning" / "sections").mkdir(parents=True)
+    (proj / ".shipwright" / "planning" / "sections" / "01-auth.md").write_text("x", encoding="utf-8")
+    (proj / ".shipwright" / "planning" / "sections" / "02-dashboard.md").write_text("x", encoding="utf-8")
     _write_build_config(proj, [
         {"name": "01-auth", "status": "complete"},
         {"name": "02-dashboard", "status": "complete"},
@@ -232,8 +232,8 @@ def test_q2_derives_plan_from_planning_tree_when_no_snapshot(proj: Path):
 
 def test_q2_handles_split_planning_layout(proj: Path):
     for split in ("01-core", "02-ui"):
-        (proj / "planning" / split / "sections").mkdir(parents=True)
-        (proj / "planning" / split / "sections" / f"{split}-a.md").write_text(
+        (proj / ".shipwright" / "planning" / split / "sections").mkdir(parents=True)
+        (proj / ".shipwright" / "planning" / split / "sections" / f"{split}-a.md").write_text(
             "x", encoding="utf-8",
         )
     _write_build_config(proj, [

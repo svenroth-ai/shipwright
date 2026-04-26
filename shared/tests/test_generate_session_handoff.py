@@ -185,7 +185,7 @@ def _write_iterate_spec(
     project_root, *, run_id: str, complexity: str, branch_tail: str
 ) -> None:
     """Create a minimal iterate spec file matching a branch tail."""
-    iterate_dir = project_root / "planning" / "iterate"
+    iterate_dir = project_root / ".shipwright" / "planning" / "iterate"
     iterate_dir.mkdir(parents=True, exist_ok=True)
     spec = iterate_dir / f"2026-04-17-{branch_tail}.md"
     spec.write_text(
@@ -239,7 +239,7 @@ def test_current_iterate_progress_fresh_marker_clears_replay(tmp_project):
         complexity="medium",
         branch_tail="bar",
     )
-    marker = tmp_project / "planning" / "iterate" / "iterate-2026-04-17-bar-external-review.json"
+    marker = tmp_project / ".shipwright" / "planning" / "iterate" / "iterate-2026-04-17-bar-external-review.json"
     marker.write_text(
         json.dumps({
             "status": "completed",
@@ -266,7 +266,7 @@ def test_current_iterate_progress_stale_shared_marker_is_replay_trigger(tmp_proj
         complexity="medium",
         branch_tail="baz",
     )
-    marker = tmp_project / "planning" / "iterate" / "external_review_state.json"
+    marker = tmp_project / ".shipwright" / "planning" / "iterate" / "external_review_state.json"
     # Marker written 2 days before the spec file was created
     stale_ts = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
     marker.write_text(
@@ -279,7 +279,7 @@ def test_current_iterate_progress_stale_shared_marker_is_replay_trigger(tmp_proj
     )
     # Force the marker's filesystem mtime older than the spec
     import os
-    spec_path = tmp_project / "planning" / "iterate" / "2026-04-17-baz.md"
+    spec_path = tmp_project / ".shipwright" / "planning" / "iterate" / "2026-04-17-baz.md"
     now = datetime.now(timezone.utc).timestamp()
     os.utime(marker, (now - 2 * 86400, now - 2 * 86400))
     os.utime(spec_path, (now, now))

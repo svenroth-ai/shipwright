@@ -26,7 +26,7 @@ def seed_canon_plan(
 ) -> None:
     """Seed a minimally-valid plan project for a single split.
 
-    Creates ``planning/<split>/``:
+    Creates ``.shipwright/planning/<split>/``:
       - spec.md with the given FR rows
       - plan.md with a ``SECTION_MANIFEST`` listing the given sections
       - sections/*.md files whose bodies mention every declared FR
@@ -34,7 +34,7 @@ def seed_canon_plan(
     sections = sections or ["01-model", "02-routes", "03-ui"]
     frs = frs or ["FR-01.01", "FR-01.02"]
 
-    split_dir = root / "planning" / split
+    split_dir = root / ".shipwright" / "planning" / split
     split_dir.mkdir(parents=True)
 
     spec_rows = "\n".join(f"| {fr} | {fr} description | Must |" for fr in frs)
@@ -123,7 +123,7 @@ def test_section_files_match_manifest_passes_on_happy_path(tmp_path):
 
 def test_section_files_match_manifest_fails_on_missing_file(tmp_path):
     seed_canon_plan(tmp_path, sections=["01-model", "02-routes"])
-    (tmp_path / "planning" / "01-auth" / "sections" / "02-routes.md").unlink()
+    (tmp_path / ".shipwright" / "planning" / "01-auth" / "sections" / "02-routes.md").unlink()
     r = check_section_files_match_manifest(tmp_path)
     assert r.ok is False
     assert "02-routes" in r.detail
@@ -131,7 +131,7 @@ def test_section_files_match_manifest_fails_on_missing_file(tmp_path):
 
 def test_section_files_match_manifest_fails_on_extra_file(tmp_path):
     seed_canon_plan(tmp_path, sections=["01-model"])
-    (tmp_path / "planning" / "01-auth" / "sections" / "99-rogue.md").write_text("# rogue\n")
+    (tmp_path / ".shipwright" / "planning" / "01-auth" / "sections" / "99-rogue.md").write_text("# rogue\n")
     r = check_section_files_match_manifest(tmp_path)
     assert r.ok is False
     assert "99-rogue" in r.detail
@@ -143,10 +143,10 @@ def test_section_files_match_manifest_passes_when_no_splits(tmp_path):
 
 
 def test_section_files_match_manifest_ignores_iterate_dir(tmp_path):
-    """planning/iterate/ is not a plan split."""
+    """.shipwright/planning/iterate/ is not a plan split."""
     seed_canon_plan(tmp_path)
-    (tmp_path / "planning" / "iterate").mkdir()
-    (tmp_path / "planning" / "iterate" / "plan.md").write_text("# iterate plan\n")
+    (tmp_path / ".shipwright" / "planning" / "iterate").mkdir()
+    (tmp_path / ".shipwright" / "planning" / "iterate" / "plan.md").write_text("# iterate plan\n")
     r = check_section_files_match_manifest(tmp_path)
     assert r.ok is True
 
@@ -164,7 +164,7 @@ def test_fr_orphans_passes_when_all_frs_declared(tmp_path):
 def test_fr_orphans_detects_mentioned_but_undeclared_fr(tmp_path):
     seed_canon_plan(tmp_path)
     # Add a bogus FR reference in a section body
-    section = tmp_path / "planning" / "01-auth" / "sections" / "01-model.md"
+    section = tmp_path / ".shipwright" / "planning" / "01-auth" / "sections" / "01-model.md"
     section.write_text(section.read_text() + "\nImplements: FR-99.99\n")
     r = check_fr_orphans_in_plan(tmp_path)
     assert r.ok is False
@@ -173,7 +173,7 @@ def test_fr_orphans_detects_mentioned_but_undeclared_fr(tmp_path):
 
 def test_fr_orphans_detects_bogus_fr_in_plan_body(tmp_path):
     seed_canon_plan(tmp_path)
-    plan_file = tmp_path / "planning" / "01-auth" / "plan.md"
+    plan_file = tmp_path / ".shipwright" / "planning" / "01-auth" / "plan.md"
     plan_file.write_text(plan_file.read_text() + "\nReferences FR-42.42\n")
     r = check_fr_orphans_in_plan(tmp_path)
     assert r.ok is False
@@ -204,7 +204,7 @@ def test_section_id_validity_detects_gap(tmp_path):
 def test_section_id_validity_detects_bad_format(tmp_path):
     # Valid SECTION_MANIFEST-style names — seed manually because
     # seed_canon_plan's file creation would blow up on "foo" missing a prefix.
-    split_dir = tmp_path / "planning" / "01-auth"
+    split_dir = tmp_path / ".shipwright" / "planning" / "01-auth"
     split_dir.mkdir(parents=True)
     (split_dir / "spec.md").write_text("| FR-01.01 | x | Must |\n")
     (split_dir / "plan.md").write_text(
@@ -220,7 +220,7 @@ def test_section_id_validity_detects_bad_format(tmp_path):
 
 
 def test_section_id_validity_detects_duplicates(tmp_path):
-    split_dir = tmp_path / "planning" / "01-auth"
+    split_dir = tmp_path / ".shipwright" / "planning" / "01-auth"
     split_dir.mkdir(parents=True)
     (split_dir / "spec.md").write_text("| FR-01.01 | x | Must |\n")
     (split_dir / "plan.md").write_text(

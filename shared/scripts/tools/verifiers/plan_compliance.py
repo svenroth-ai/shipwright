@@ -1,6 +1,6 @@
 """Plan-phase workflow compliance checks (Phase-Quality PR 2).
 
-Implements W5 — ``planning/external_review_state.json`` exists with a
+Implements W5 — ``.shipwright/planning/external_review_state.json`` exists with a
 ``status=completed`` OR a ``skipped_*`` status carrying a non-empty
 ``reason`` (no-keys-marker variant). Matches the marker written by
 ``shared/scripts/checks/mark-review-state.py``.
@@ -12,6 +12,11 @@ import json
 import sys
 from pathlib import Path
 from typing import Any
+
+
+# Canonical home of the planning artifact set, relative to project_root.
+# Mirrors PLANNING_DIR in shared/scripts/lib/artifact_migrations.py.
+PLANNING_DIRNAME = ".shipwright/planning"
 
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[2]
 if str(_SHARED_SCRIPTS) not in sys.path:
@@ -33,10 +38,10 @@ W5_REMEDIATION = (
 
 def _find_review_state(project_root: Path) -> Path | None:
     candidates = [
-        project_root / "planning" / "external_review_state.json",
+        project_root / PLANNING_DIRNAME / "external_review_state.json",
         project_root / "external_review_state.json",
     ]
-    planning = project_root / "planning"
+    planning = project_root / PLANNING_DIRNAME
     if planning.is_dir():
         for sub in planning.iterdir():
             if sub.is_dir():
@@ -52,7 +57,7 @@ def check_w5_external_review_marker(project_root: Path) -> dict[str, Any]:
     if marker is None:
         return make_finding(
             "W5", STATUS_FAIL,
-            "no external_review_state.json under planning/",
+            "no external_review_state.json under .shipwright/planning/",
             name=W5_NAME,
             remediation=W5_REMEDIATION,
         )

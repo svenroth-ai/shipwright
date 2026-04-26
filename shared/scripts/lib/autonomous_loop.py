@@ -336,7 +336,7 @@ def cmd_record(args: argparse.Namespace) -> int:
                 )
                 unit["result_path"] = str(runs_dir / "result.json")
 
-                handoff_dir = Path("planning/handoffs") / state["loop_id"]
+                handoff_dir = Path(".shipwright/planning/handoffs") / state["loop_id"]
                 handoff_path = handoff_dir / f"{unit['id']}.md"
                 if handoff_path.exists():
                     unit["handoff_path"] = str(handoff_path)
@@ -361,7 +361,7 @@ def cmd_finalize(args: argparse.Namespace) -> int:
     escalated = [u for u in state["units"] if u["status"] == "escalated"]
     pending = [u for u in state["units"] if u["status"] == "pending"]
 
-    handoff_dir = Path("planning/handoffs") / state["loop_id"]
+    handoff_dir = Path(".shipwright/planning/handoffs") / state["loop_id"]
     aggregated_parts = []
     if handoff_dir.exists():
         for md_file in sorted(handoff_dir.glob("*.md")):

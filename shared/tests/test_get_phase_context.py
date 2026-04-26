@@ -118,7 +118,7 @@ def test_pipeline_mode_resolves_prerequisites(v2_project):
     pred = out["prerequisites"][0]
     assert pred["phaseTaskId"] == project_task["phaseTaskId"]
     assert pred["status"] == "done"
-    assert "planning/requirements.md" in pred["artifacts"]
+    assert ".shipwright/planning/requirements.md" in pred["artifacts"]
     # design-phase artifact suggestions include project artifacts as prereqs
     assert any("requirements" in p for p in out["skill_artifacts_to_read"])
 

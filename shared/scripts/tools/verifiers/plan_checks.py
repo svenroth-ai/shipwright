@@ -53,6 +53,11 @@ from .common import (
 
 # Add shared/scripts to path for lib imports.
 import sys
+
+# Canonical home of the planning artifact set, relative to project_root.
+# Mirrors PLANNING_DIR in shared/scripts/lib/artifact_migrations.py.
+PLANNING_DIRNAME = ".shipwright/planning"
+
 _SHARED_SCRIPTS = Path(__file__).resolve().parent.parent.parent
 if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
@@ -94,9 +99,9 @@ def _parse_section_manifest(plan_path: Path) -> list[str]:
 
 
 def _find_planning_split_dirs(project_root: Path) -> list[Path]:
-    """Return every ``planning/<split>/`` directory that contains a
+    """Return every ``.shipwright/planning/<split>/`` directory that contains a
     ``plan.md``. These are the canonical plan roots to iterate over."""
-    planning = project_root / "planning"
+    planning = project_root / PLANNING_DIRNAME
     if not planning.is_dir():
         return []
     out: list[Path] = []
@@ -133,9 +138,9 @@ def check_plan_config_status_complete(project_root: Path) -> CheckResult:
 
 
 def check_section_files_match_manifest(project_root: Path) -> CheckResult:
-    """For every ``planning/<split>/`` that has a ``plan.md``, the
+    """For every ``.shipwright/planning/<split>/`` that has a ``plan.md``, the
     section names declared in ``SECTION_MANIFEST`` must match the
-    ``.md`` files present in ``planning/<split>/sections/``.
+    ``.md`` files present in ``.shipwright/planning/<split>/sections/``.
 
     Wraps the same logic as
     ``plugins/shipwright-plan/scripts/checks/check-sections.py`` so the
@@ -144,7 +149,7 @@ def check_section_files_match_manifest(project_root: Path) -> CheckResult:
     name = "section files match SECTION_MANIFEST"
     splits = _find_planning_split_dirs(project_root)
     if not splits:
-        return CheckResult(name, True, "no plan.md under planning/ — nothing to verify")
+        return CheckResult(name, True, "no plan.md under .shipwright/planning/ — nothing to verify")
 
     drift: list[str] = []
     total_declared = 0
@@ -181,7 +186,7 @@ def check_fr_orphans_in_plan(project_root: Path) -> CheckResult:
     name = "plan FR references exist in spec.md"
     splits = _find_planning_split_dirs(project_root)
     if not splits:
-        return CheckResult(name, True, "no plan.md under planning/ — nothing to verify")
+        return CheckResult(name, True, "no plan.md under .shipwright/planning/ — nothing to verify")
 
     all_frs = collect_requirements_from_planning(project_root)
     frs_by_split: dict[str, set[str]] = {}
@@ -231,7 +236,7 @@ def check_section_id_validity(project_root: Path) -> CheckResult:
     name = "section ids unique + sequential + well-formed"
     splits = _find_planning_split_dirs(project_root)
     if not splits:
-        return CheckResult(name, True, "no plan.md under planning/ — nothing to verify")
+        return CheckResult(name, True, "no plan.md under .shipwright/planning/ — nothing to verify")
 
     drift: list[str] = []
     for split in splits:

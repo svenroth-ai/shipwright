@@ -40,6 +40,11 @@ from .common import (
 )
 
 
+
+# Canonical home of the planning artifact set, relative to project_root.
+# Mirrors PLANNING_DIR in shared/scripts/lib/artifact_migrations.py.
+PLANNING_DIRNAME = ".shipwright/planning"
+
 # ---------------------------------------------------------------------------
 # Phase-own checks
 # ---------------------------------------------------------------------------
@@ -67,7 +72,7 @@ def check_project_config_status_complete(project_root: Path) -> CheckResult:
 
 def check_manifest_splits_match_dirs(project_root: Path) -> CheckResult:
     """Every split in ``shipwright_project_config.json::splits`` should
-    have a matching ``planning/<name>/`` directory on disk, and vice
+    have a matching ``.shipwright/planning/<name>/`` directory on disk, and vice
     versa. Drift here means the spec generation / directory creation
     got out of sync. WARNING severity — the mismatch is cosmetic until
     a downstream plugin tries to read a missing spec.md.
@@ -87,16 +92,16 @@ def check_manifest_splits_match_dirs(project_root: Path) -> CheckResult:
     splits = data.get("splits") or []
     declared = {s.get("name") for s in splits if isinstance(s, dict) and s.get("name")}
 
-    planning_dir = project_root / "planning"
+    planning_dir = project_root / PLANNING_DIRNAME
     if not planning_dir.is_dir():
         if declared:
             return CheckResult(
                 name,
                 False,
-                f"planning/ missing but config declares {len(declared)} split(s)",
+                f".shipwright/planning/ missing but config declares {len(declared)} split(s)",
                 severity=Severity.WARNING.value,
             )
-        return CheckResult(name, True, "no splits declared, no planning/ dir — consistent")
+        return CheckResult(name, True, "no splits declared, no .shipwright/planning/ dir — consistent")
 
     present = {
         p.name for p in planning_dir.iterdir()
@@ -114,16 +119,16 @@ def check_manifest_splits_match_dirs(project_root: Path) -> CheckResult:
     if missing:
         return CheckResult(
             name, False,
-            f"declared splits without planning/<name>/ dir: {missing}",
+            f"declared splits without .shipwright/planning/<name>/ dir: {missing}",
             severity=Severity.WARNING.value,
         )
     if extra:
         return CheckResult(
             name, False,
-            f"planning/ dirs without declared split: {extra}",
+            f".shipwright/planning/ dirs without declared split: {extra}",
             severity=Severity.WARNING.value,
         )
-    return CheckResult(name, True, f"{len(declared)} split(s) match planning/ layout")
+    return CheckResult(name, True, f"{len(declared)} split(s) match .shipwright/planning/ layout")
 
 
 # ---------------------------------------------------------------------------

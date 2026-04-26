@@ -30,7 +30,7 @@ def _valid_entry(**overrides) -> dict:
         "type": "feature",
         "complexity": "medium",
         "branch": "iterate/parallel-worktree",
-        "spec": "planning/iterate/foo.md",
+        "spec": ".shipwright/planning/iterate/foo.md",
         "tests_passed": True,
         "adr": "ADR-055",
     }
