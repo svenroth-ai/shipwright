@@ -159,20 +159,21 @@ Afterwards, type `shipwright` in any terminal and go.
 
 ### Start the Command Center
 
-Since **v0.4.0** the Command Center WebUI lives in its own repository:
+The Command Center lives in its own repository:
 **[shipwright-webui](https://github.com/svenroth-ai/shipwright-webui)**.
 
 ```bash
 git clone https://github.com/svenroth-ai/shipwright-webui.git ~/shipwright-webui
 cd ~/shipwright-webui && make install
-make dev-server    # Terminal 1 — Hono backend on :3847
-make dev-client    # Terminal 2 — Vite frontend on :5173
+make dev-server    # Terminal 1 — backend on :3847
+make dev-client    # Terminal 2 — frontend on :5173
 ```
 
-The WebUI observes your running Claude sessions via their JSONL
-transcripts — it spawns no Claude process itself. Full install + autostart
-instructions, parallel-worktree tips, and the profile-resolution cascade
-are documented in the new repo's README and CLAUDE.md.
+The Command Center observes your running Claude sessions via their JSONL
+transcripts — it spawns no Claude process itself. Full install,
+parallel-worktree tips, Windows autostart, and custom actions for your
+own slash skills are documented in the WebUI repo's
+**[docs/guide.md](https://github.com/svenroth-ai/shipwright-webui/blob/main/docs/guide.md)**.
 
 ### Install via Marketplace (VSCode Extension alternative)
 
@@ -223,7 +224,7 @@ shipwright/
 │   ├── shipwright-iterate/           # Daily iteration (complexity-adaptive)
 │   ├── shipwright-preview/           # Local browser preview
 │   └── shipwright-adopt/             # Brownfield onboarding (analyze existing repos)
-# Command Center WebUI: github.com/svenroth-ai/shipwright-webui (extracted at v0.4.0)
+# Command Center WebUI: github.com/svenroth-ai/shipwright-webui (separate repo)
 ├── shared/                           # Shared across plugins
 │   ├── profiles/                     # Stack profile definitions (JSON)
 │   ├── templates/                    # CLAUDE.md, agent_docs, CI/CD, rules templates
@@ -271,7 +272,7 @@ plugins/shipwright-{name}/
 Other references:
 
 - [docs/hooks-and-pipeline.md](docs/hooks-and-pipeline.md) — hooks registry, context loading matrix, between-phase actions
-- [shipwright-webui/CLAUDE.md](https://github.com/svenroth-ai/shipwright-webui/blob/main/CLAUDE.md) — Command Center deep-dive (architecture, routes, internals)
+- [shipwright-webui/docs/guide.md](https://github.com/svenroth-ai/shipwright-webui/blob/main/docs/guide.md) — Command Center user guide (install, daily workflow, custom actions, autostart)
 - [CONTRIBUTING.md](CONTRIBUTING.md) — contribution workflow and security model
 - [SECURITY.md](SECURITY.md) — vulnerability disclosure
 
