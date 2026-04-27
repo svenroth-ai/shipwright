@@ -20,13 +20,15 @@ flowchart TD
     SPLIT_CHECK -->|No| PLAN_LOOP
     SPLIT_CHECK -->|Yes| TEST[Test]
 
-    TEST --> SECURITY{AIKIDO_CLIENT_ID set?}
-    SECURITY -->|Yes| SEC_SCAN[Security Scan]
-    SECURITY -->|No| CHANGELOG
-    SEC_SCAN --> CHANGELOG[Changelog]
-
+    TEST --> CHANGELOG[Changelog]
     CHANGELOG --> DEPLOY[Deploy]
     DEPLOY --> DONE([Complete])
+
+    %% Out-of-band skills (NOT part of the orchestrator pipeline since
+    %% iterate `sec-report-and-orchestrator-decouple`, 2026-04):
+    %%   - /shipwright-security  → manual after test, or .github/workflows/security.yml
+    %%   - /shipwright-compliance → on-demand detective audit (run_audit.py)
+    %% Both are documented below; neither is auto-inserted by the state machine.
 
     %% Side-effects (dashed) — auto-background compliance doc update
     %% (plan v7 Option Z: compliance is no longer a pipeline phase; it
@@ -47,7 +49,10 @@ flowchart TD
 
 ```python
 PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "deploy"]
-CONDITIONAL_STEPS = {"security": {"env_var": "AIKIDO_CLIENT_ID", "after": "test"}}
+
+# Both "compliance" and "security" were previously in PIPELINE_STEPS or
+# CONDITIONAL_STEPS but have been removed. Old configs are migrated on load.
+_LEGACY_PIPELINE_ENTRIES: frozenset[str] = frozenset({"compliance", "security"})
 ```
 
 > **Plan v7 (Option Z) — 2026-04-19.** `"compliance"` was removed from
@@ -60,14 +65,22 @@ CONDITIONAL_STEPS = {"security": {"env_var": "AIKIDO_CLIENT_ID", "after": "test"
 > `pipeline`, preserved in `completed_steps` as a historical marker,
 > logged as a `pipeline_migration` event).
 
+> **Iterate `sec-report-and-orchestrator-decouple` — 2026-04.** Security was
+> also removed from the orchestrator. The previous `CONDITIONAL_STEPS` /
+> `AIKIDO_CLIENT_ID`-gated insertion mechanism is gone. `/shipwright-security`
+> is now a standalone skill — run it manually after `test` or activate
+> `.github/workflows/security.yml` triggers. `runConditions.securityEnabled`
+> is preserved in schema v2 for diagnostic purposes only and is always
+> `false` post-decouple — it does not gate any phase.
+
 **Dashboard display order:** `shared/scripts/tools/update_build_dashboard.py`
 ```python
-PIPELINE_PHASES = ["project", "design", "plan", "build", "test", "changelog", "deploy", "compliance"]
+PIPELINE_PHASES = ["project", "design", "plan", "build", "test", "changelog", "deploy"]
 ```
-Note: the dashboard still renders a "compliance" column for historical
-context (iterate + standalone runs still populate compliance docs as a
-side effect); it is not a pipeline phase.
-Dashboard uses `PIPELINE_PHASES` as canonical order, merging dynamic steps (e.g., "security") from `run_config["pipeline"]`.
+Dashboard uses `PIPELINE_PHASES` as canonical order. The previous
+"compliance" column was retired alongside the v7 decouple — compliance
+docs are still populated as an auto-background side effect, but the
+dashboard no longer renders a phase column for them.
 After build completes: shows split summary table. After test completes: shows test layer results (unit/integration/pgtap/smoke/e2e/design_fidelity).
 
 ---
@@ -76,10 +89,11 @@ After build completes: shows split summary table. After test completes: shows te
 
 > **Schema v2 (2026-04-25, ADR-001).** `/shipwright-run` is no longer a
 > single-session pipeline driver — it is a *coordinator*. Each phase
-> (`project`, `design`, `plan`, `build`, `test`, `security`, `changelog`,
-> `deploy`) runs in its own external Claude CLI session. The master writes
-> the spec, prints a launch card, and ends. Phase Stop hooks plan the next
-> phase via `complete-phase-task` → `plan_next_phase`.
+> (`project`, `design`, `plan`, `build`, `test`, `changelog`, `deploy` —
+> 7 phases since the security decouple) runs in its own external Claude
+> CLI session. The master writes the spec, prints a launch card, and
+> ends. Phase Stop hooks plan the next phase via `complete-phase-task`
+> → `plan_next_phase`.
 
 ### Run-Config Schema v2
 
@@ -92,9 +106,9 @@ in `phase_tasks[]`:
   "schemaVersion": 2,
   "runId": "run-a1b2c3d4",
   "runConditions": {
-    "securityEnabled": false,
+    "securityEnabled": false,             // always false post-decouple — diagnostic only, does not gate any phase
     "splitMode": "per_split" | "none" | null,
-    "aikidoClientIdPresent": false
+    "aikidoClientIdPresent": false        // diagnostic only, does not gate any phase
   },
   "splits_frozen": ["01-core", "02-ui-shell"],
   "completed_phase_task_ids": ["ptk-9f8e"],
@@ -134,9 +148,8 @@ phase invocations (no run config at all) keep working.
 ### State Machine
 
 `plugins/shipwright-run/scripts/lib/phase_state_machine.py` is the pure
-single-source-of-truth for "given a completed phase, what is next". 14
-transitions; the orchestrator wraps it and materialises new `phase_tasks[]`
-entries.
+single-source-of-truth for "given a completed phase, what is next". The
+orchestrator wraps it and materialises new `phase_tasks[]` entries.
 
 | Predecessor (phase, splitId)        | Condition                                 | Next (phase, splitId)              |
 |-------------------------------------|-------------------------------------------|------------------------------------|
@@ -149,11 +162,11 @@ entries.
 | `("build", split[i])`               | `i+1 < len(splits)`                       | `("plan", split[i+1])`             |
 | `("build", split[i])`               | `i+1 == len(splits)` (last split)         | `("test", null)`                   |
 | `("build", null)`                   | always (split-less)                       | `("test", null)`                   |
-| `("test", null)`                    | `runConditions.securityEnabled == true`   | `("security", null)`               |
-| `("test", null)`                    | `runConditions.securityEnabled == false`  | `("changelog", null)`              |
-| `("security", null)`                | always                                    | `("changelog", null)`              |
+| `("test", null)`                    | always                                    | `("changelog", null)`              |
 | `("changelog", null)`               | always                                    | `("deploy", null)`                 |
 | `("deploy", null)`                  | always                                    | `None` (pipeline-terminal)         |
+
+> The previous security-conditional branch (`("test", null) → ("security", null) → ("changelog", null)` gated by `runConditions.securityEnabled`) was removed in iterate `sec-report-and-orchestrator-decouple`. Security is now an out-of-band skill — invoke `/shipwright-security` manually after test, or activate `.github/workflows/security.yml`. The state machine no longer plans a security phase task.
 
 **Run-completion invariant:** `run.status = complete` requires (1) deploy
 task is `done` AND (2) all other `phase_tasks[]` are terminal (`done` or
@@ -267,13 +280,16 @@ Tool names use short form: `Bash`, `Write`, `Edit`, `Read`, `Glob`, `Grep`.
 
 ## Hooks Registry
 
-> **Note (v2, 2026-04-25).** All 8 phase plugins (`project`, `design`,
-> `plan`, `build`, `test`, `security`, `changelog`, `deploy`) additionally
-> wire the **shared phase-session hooks**: `phase_session_start.py` after
-> `capture_session_id.py` on `SessionStart`, `phase_user_prompt_validate.py`
-> on `UserPromptSubmit`, and `phase_session_stop.py` first on `Stop`. The
-> per-plugin tables below show the unique hooks; see § Shared Phase-Session
-> Hooks (v2) for the multi-session trio that every phase plugin inherits.
+> **Note (v2, 2026-04-25; updated post-decouple).** The 7 orchestrator
+> phase plugins (`project`, `design`, `plan`, `build`, `test`,
+> `changelog`, `deploy`) wire the **shared phase-session hooks**:
+> `phase_session_start.py` after `capture_session_id.py` on
+> `SessionStart`, `phase_user_prompt_validate.py` on `UserPromptSubmit`,
+> and `phase_session_stop.py` first on `Stop`. The standalone `security`
+> and `compliance` plugins also load these hooks for their own session
+> lifecycle but are not orchestrator phases. The per-plugin tables below
+> show the unique hooks; see § Shared Phase-Session Hooks (v2) for the
+> multi-session trio that every phase plugin inherits.
 
 ### Shared Hook: capture_session_id.py
 
@@ -429,8 +445,8 @@ evidence (plan § 4.5).
 | W5 | plan | FAIL | 1 | `.shipwright/planning/external_review_state.json` status=`completed` OR `skipped_*` with non-empty reason |
 | W6 | changelog | FAIL | 1 | Wrapper around `changelog_checks.check_git_tag_exists` |
 | W7 | deploy | FAIL | 1 | `shipwright_deploy_config.json.smoke_test_status` OR `test_results.smoke.status` OR latest `test_run` event layer `smoke.status == "pass"` |
-| Sec1 | security | FAIL | 1 | `compliance/security-scan-report.md` mtime ≥ latest `phase_started[security]` |
-| Sec2 | security | FAIL | 1 | No pipe-table row containing both `CRITICAL` and `UNRESOLVED`/`OPEN`/`FAIL` — or active override line in `compliance/compliance_overrides.log` |
+| Sec1 | security (out-of-band) | FAIL | 1 | `compliance/security-scan-report.md` mtime ≥ latest `phase_started[security]`. Audits the standalone `/shipwright-security` skill — runs from the security skill's Stop hook, not as a pipeline gate. |
+| Sec2 | security (out-of-band) | FAIL | 1 | No pipe-table row containing both `CRITICAL` and `UNRESOLVED`/`OPEN`/`FAIL` — or active override line in `compliance/compliance_overrides.log`. Audits the standalone security skill, not a pipeline phase. |
 | Cmp1 | compliance | WARN | 2 | `compliance/dashboard.md` mentions every `run_config.completed_steps` phase (Tier-2, redundant with C2) |
 | Cmp2 | compliance | FAIL | 1 | `traceability-matrix.md` coverage ≥ `shipwright_compliance_config.json.enforcement.rtm_coverage_min` (default 80%) |
 | D1 | design | FAIL | 1 | ≥1 artifact: `designs/mockups/*.html` OR `agent_docs/screens.md` OR `agent_docs/user-flow.md` |
@@ -491,10 +507,13 @@ Aggregate rewrites serialise through
 multiple sessions don't lost-update the summaries.
 
 **Hook order per plugin (plan § 5.1):**
-- 9 plugins (project, design, plan, build, test, security, deploy,
+- 9 plugins total (project, design, plan, build, test, security, deploy,
   changelog, compliance): `audit_phase_quality_on_stop` runs
   **before** `generate_handoff_on_stop` so the finding JSON lands
-  before handoff summarises session state.
+  before handoff summarises session state. Of these, 7 are pipeline
+  phases (project/design/plan/build/test/changelog/deploy); security
+  and compliance are out-of-band skills that still run the audit hook
+  on their own Stop events.
 - `iterate` Sonderfall: `iterate_stop_finalize` →
   `audit_phase_quality_on_stop` → `write_terminal_marker`. Audit runs
   **after** finalize so F5a/F5b/F7/F11 evidence is on disk when C1-C5
@@ -577,9 +596,11 @@ promoted, even if their id hypothetically coincides with a gate id.
 
 ### Shared Phase-Session Hooks (v2)
 
-Wired into **every** phase plugin (`project`, `design`, `plan`, `build`,
-`test`, `security`, `changelog`, `deploy`) to make multi-session pipelines
-work. See §Multi-Session Pipeline Lifecycle (v2) for the end-to-end flow.
+Wired into **every** orchestrator phase plugin (`project`, `design`, `plan`, `build`,
+`test`, `changelog`, `deploy` — 7 phases) to make multi-session pipelines
+work. The standalone `security` and `compliance` plugins also load these
+hooks but are not orchestrator phases since the v7/decouple iterates.
+See §Multi-Session Pipeline Lifecycle (v2) for the end-to-end flow.
 
 **`shared/scripts/hooks/phase_session_start.py` — SessionStart, after capture_session_id.**
 Discovers whether the launching session is part of an active run by matching
@@ -703,6 +724,8 @@ No new hook is registered; detection runs as part of B1. Corresponding conventio
 
 ### shipwright-security
 
+> **Out-of-band skill — not part of `PIPELINE_STEPS`.** Removed from the orchestrator in iterate `sec-report-and-orchestrator-decouple` (2026-04). The skill plugin still exists and ships the hooks below, but it is invoked manually after `/shipwright-test` or via `.github/workflows/security.yml`. The previous `CONDITIONAL_STEPS` / `AIKIDO_CLIENT_ID` auto-insertion gate was deleted.
+
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
@@ -732,7 +755,7 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | PreToolUse | `{"tools": ["Bash"]}` | `check_rtm_coverage.py` | Soft-blocks if RTM coverage < 80% threshold |
-| PreToolUse | `{"tools": ["Bash"]}` | `check_security_scan.py` | Checks security scan completion status |
+| PreToolUse | `{"tools": ["Bash"]}` | `check_security_scan.py` | Checks status of the most recent manual `/shipwright-security` scan (security is no longer auto-inserted; this hook now covers manual scans only) |
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + Cmp1 dashboard-per-phase Tier-2, Cmp2 RTM coverage) |
 | Stop | — | `generate-handoff.py` | Session handoff |
 
