@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-04-27
+
+### Changed
+
+- **[designs folder move]** `designs/` relocated to `.shipwright/designs/` across all Shipwright plugins. shipwright-design now writes mockups, manifest, visual guidelines, screen routes, chrome definition, and design handoff under the canonical hidden-state path. shipwright-build, shipwright-iterate, shipwright-plan, shipwright-test, and the shared verifiers (`design_checks`, `design_compliance`, `get_phase_context`) read from canonical only — hard cutover, no Grace fallback. The drift detector hard-gates SessionStart on legacy `designs/` for any project that hasn't migrated yet (exits 1 with structured JSON + `.shipwright/stale-folders.md`). User-facing migration doc at `docs/migrations/.shipwright-designs-relocation.md` documents the automated `migrate_artifact_dir.py --artifact designs` path plus a manual `git rm --cached` flow for tracked legacy files. Reference doc `docs/migrations/artifact-migration-reference.md` updated with 7 new lessons (8-14) and a side-by-side touchpoint table comparing planning + designs scopes. Second artifact migration validating the hard-cutover + drift-detector pattern from v0.7.0; framework-internal touchpoints: ~17 production hits in 8 Python files, ~115 prose hits in 17 plugin .md files, plus templates + docs + agents + new edge-case tests (`test_artifact_drift_edge_cases.py`).
+
+### Fixed
+
+- **[designs folder move]** Latent path-resolution bug in `plugins/shipwright-plan/scripts/checks/generate-batch-tasks.py` surfaced and fixed. The script computed `project_root = planning_dir.parent` (correct pre-planning-migration when `planning_dir` was at the project root). After v0.7.0 moved planning to `.shipwright/planning/<split>`, `.parent` resolved to `.shipwright/planning` instead of the project root — silently breaking the mockup-hint injection in section-writer prompts. Sub-Iterate C of the designs migration corrected the traversal to `.parent.parent.parent`; the Pre-G hotfix added defensive shape validation (`parts[-2]/[-3]` against `planning`/`.shipwright`) so a future caller passing a non-canonical path skips the hint generation cleanly instead of producing wrong-project-root output.
+
 ## [v0.7.0] - 2026-04-27
 
 ### Added
