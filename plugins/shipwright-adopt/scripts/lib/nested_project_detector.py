@@ -59,8 +59,8 @@ def detect_nested_projects(project_root: Path, max_depth: int = 2) -> list[dict[
             if (child / "shipwright_run_config.json").exists():
                 markers.append("shipwright_run_config.json")
                 reasons.append("separate-shipwright-project")
-            if (child / "CLAUDE.md").exists() and (child / "agent_docs").is_dir():
-                markers.append("CLAUDE.md+agent_docs/")
+            if (child / "CLAUDE.md").exists() and (child / ".shipwright" / "agent_docs").is_dir():
+                markers.append("CLAUDE.md+.shipwright/agent_docs/")
                 reasons.append("has-own-shipwright-artifacts")
             # package.json / pyproject.toml in a subdir suggests a workspace,
             # but only flag if there's ALSO something else (to avoid noise

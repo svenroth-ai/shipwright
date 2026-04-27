@@ -15,6 +15,16 @@ from pathlib import Path
 from lib.artifact_writer import write_agent_docs, write_claude_md
 
 
+def _agent_docs_root(tmp: Path) -> Path:
+    p = tmp / ".shipwright" / "agent_docs"
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+def _backup_path(tmp: Path, rel: str) -> Path:
+    return tmp / ".shipwright" / "adopt" / "backups" / ".shipwright" / "agent_docs" / rel
+
+
 _BIG_CLAUDE = "# My App\n\n" + ("This is load-bearing prose. " * 200)
 _RICH_DECISION_LOG = (
     "# Decision Log — original\n\n"
@@ -89,8 +99,7 @@ def test_write_claude_md_no_backup_when_absent(tmp_path: Path) -> None:
 def test_write_agent_docs_preserves_existing_decision_log_with_merge(tmp_path: Path) -> None:
     """Existing rich decision_log.md must be merged, not overwritten.
     All historical ADRs preserved verbatim."""
-    agent_docs = tmp_path / "agent_docs"
-    agent_docs.mkdir()
+    agent_docs = _agent_docs_root(tmp_path)
     (agent_docs / "decision_log.md").write_text(_RICH_DECISION_LOG, encoding="utf-8")
 
     write_agent_docs(
@@ -114,7 +123,7 @@ def test_write_agent_docs_preserves_existing_decision_log_with_merge(tmp_path: P
     # New adoption ADR also present
     assert "Adopt this repository" in merged
     # Backup of original written
-    backup = tmp_path / ".shipwright" / "adopt" / "backups" / "agent_docs" / "decision_log.md.preserved"
+    backup = _backup_path(tmp_path, "decision_log.md.preserved")
     assert backup.exists()
     assert backup.read_text(encoding="utf-8") == _RICH_DECISION_LOG
 
@@ -122,8 +131,7 @@ def test_write_agent_docs_preserves_existing_decision_log_with_merge(tmp_path: P
 def test_write_agent_docs_preserves_then_overwrites_other_docs(tmp_path: Path) -> None:
     """architecture.md / conventions.md are backed up but overwritten —
     less load-bearing, easy to recover from .preserved."""
-    agent_docs = tmp_path / "agent_docs"
-    agent_docs.mkdir()
+    agent_docs = _agent_docs_root(tmp_path)
     (agent_docs / "architecture.md").write_text("OLD ARCH", encoding="utf-8")
     (agent_docs / "conventions.md").write_text("OLD CONV", encoding="utf-8")
     write_agent_docs(
@@ -146,8 +154,8 @@ def test_write_agent_docs_preserves_then_overwrites_other_docs(tmp_path: Path) -
     assert "OLD CONV" not in conv_body
     assert "presentation" in arch_body  # new content present
     # Backups
-    arch_backup = tmp_path / ".shipwright" / "adopt" / "backups" / "agent_docs" / "architecture.md.preserved"
-    conv_backup = tmp_path / ".shipwright" / "adopt" / "backups" / "agent_docs" / "conventions.md.preserved"
+    arch_backup = _backup_path(tmp_path, "architecture.md.preserved")
+    conv_backup = _backup_path(tmp_path, "conventions.md.preserved")
     assert arch_backup.read_text(encoding="utf-8") == "OLD ARCH"
     assert conv_backup.read_text(encoding="utf-8") == "OLD CONV"
 
@@ -156,8 +164,7 @@ def test_write_agent_docs_preservation_log_records_actions(tmp_path: Path) -> No
     """A machine-readable summary lands in
     `.shipwright/adopt/preservation_log.json` so the handoff and validator
     can surface what happened."""
-    agent_docs = tmp_path / "agent_docs"
-    agent_docs.mkdir()
+    agent_docs = _agent_docs_root(tmp_path)
     (agent_docs / "decision_log.md").write_text(_RICH_DECISION_LOG, encoding="utf-8")
     (tmp_path / "CLAUDE.md").write_text(_BIG_CLAUDE, encoding="utf-8")
 
@@ -183,4 +190,4 @@ def test_write_agent_docs_preservation_log_records_actions(tmp_path: Path) -> No
     log = json.loads(log_path.read_text(encoding="utf-8"))
     by_file = {e["file"]: e for e in log["entries"]}
     assert by_file["CLAUDE.md"]["action"] == "skipped_loadbearing"
-    assert by_file["agent_docs/decision_log.md"]["action"] == "merged"
+    assert by_file[".shipwright/agent_docs/decision_log.md"]["action"] == "merged"

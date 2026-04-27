@@ -59,10 +59,10 @@ def _seed_canon_artifacts(root: Path, *, run_id: str = "project-20260414-x") -> 
     (root / "shipwright_events.jsonl").write_text(
         json.dumps({"type": "phase_completed", "phase": "project"}) + "\n"
     )
-    (root / "agent_docs").mkdir(exist_ok=True)
-    (root / "agent_docs" / "build_dashboard.md").write_text("- project: complete\n")
-    (root / "agent_docs" / "session_handoff.md").write_text("fresh")
-    (root / "agent_docs" / "decision_log.md").write_text(
+    (root / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (root / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text("- project: complete\n")
+    (root / ".shipwright" / "agent_docs" / "session_handoff.md").write_text("fresh")
+    (root / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-027: Project decomposition\n- **Status:** accepted\n"
     )
     (root / "CHANGELOG.md").write_text(

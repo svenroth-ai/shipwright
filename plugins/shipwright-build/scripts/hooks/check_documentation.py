@@ -24,15 +24,15 @@ def main() -> int:
 
     warnings = []
 
-    agent_docs = project_root / "agent_docs"
+    agent_docs = project_root / ".shipwright" / "agent_docs"
     if agent_docs.is_dir():
         decision_log = agent_docs / "decision_log.md"
         if not decision_log.exists():
-            warnings.append("agent_docs/decision_log.md not found")
+            warnings.append(".shipwright/agent_docs/decision_log.md not found")
 
         handoff = agent_docs / "session_handoff.md"
         if not handoff.exists():
-            warnings.append("agent_docs/session_handoff.md not found — consider generating before ending session")
+            warnings.append(".shipwright/agent_docs/session_handoff.md not found — consider generating before ending session")
 
     if warnings:
         print(json.dumps({

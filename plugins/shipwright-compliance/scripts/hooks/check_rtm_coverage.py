@@ -9,7 +9,7 @@ Exit codes:
   2 = soft-block (user can say "Continue anyway", gets logged)
 
 The user can override by saying "Continue anyway". If they do, Claude should
-log the override to agent_docs/compliance_overrides.log.
+log the override to .shipwright/agent_docs/compliance_overrides.log.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ def _hook_block(reason: str, details: dict[str, Any]) -> dict[str, Any]:
             "additionalContext": (
                 f"BLOCKED: {reason}\n\n"
                 "The user may say 'Continue anyway' to override this check. "
-                "If they do, log the override to agent_docs/compliance_overrides.log "
+                "If they do, log the override to .shipwright/agent_docs/compliance_overrides.log "
                 "with timestamp, hook name 'check_rtm_coverage', and reason.\n\n"
                 "Note: Coverage gap will be flagged again at next compliance checkpoint."
             ),

@@ -12,7 +12,7 @@ The scenario that triggered this test in the v0.3.2 verification:
 Invariants this test asserts:
 1. Migration runs EXACTLY once (``_iterate_migration_state == "complete"``
    with ``_iterate_migration_quarantined_count == 0`` for clean data).
-2. All legacy rows land in ``agent_docs/iterates/``.
+2. All legacy rows land in ``.shipwright/agent_docs/iterates/``.
 3. All new entries land as distinct files (no run_id collision, no
    ``O_EXCL`` clobber).
 4. ``shipwright_run_config.json`` is valid JSON at the end (no torn

@@ -43,13 +43,13 @@ def test_preserve_if_exists_returns_none_when_absent(tmp_path: Path) -> None:
 
 
 def test_preserve_if_exists_handles_nested_path(tmp_path: Path) -> None:
-    nested = tmp_path / "agent_docs" / "decision_log.md"
+    nested = tmp_path / ".shipwright" / "agent_docs" / "decision_log.md"
     nested.parent.mkdir(parents=True)
     nested.write_text("# log", encoding="utf-8")
-    backup = preserve_if_exists(tmp_path, "agent_docs/decision_log.md")
+    backup = preserve_if_exists(tmp_path, ".shipwright/agent_docs/decision_log.md")
     assert backup is not None
     # Path inside backups should mirror the source layout
-    assert backup.as_posix().endswith("agent_docs/decision_log.md.preserved")
+    assert backup.as_posix().endswith(".shipwright/agent_docs/decision_log.md.preserved")
 
 
 def test_preserve_overwrites_stale_backup(tmp_path: Path) -> None:

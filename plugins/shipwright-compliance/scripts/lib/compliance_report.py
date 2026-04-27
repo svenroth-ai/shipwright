@@ -44,7 +44,7 @@ def generate(data: ComplianceData) -> str:
         "| Traceability Matrix | [traceability-matrix.md](./traceability-matrix.md) | Requirements → Work Events → Tests |",
         "| Test Evidence | [test-evidence.md](./test-evidence.md) | Test progression timeline |",
         "| Commit Change Log | [change-history.md](./change-history.md) | Conventional Commits by type |",
-        "| Decision Log | [decision_log.md](../agent_docs/decision_log.md) | Architecture decisions (ADRs) |",
+        "| Decision Log | [decision_log.md](../.shipwright/agent_docs/decision_log.md) | Architecture decisions (ADRs) |",
         "| SBOM | [sbom.md](./sbom.md) | Open-source dependencies + licenses |",
     ]
     # Event log

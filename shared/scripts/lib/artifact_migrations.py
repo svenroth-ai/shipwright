@@ -216,52 +216,28 @@ ALLOWLIST: dict[str, list[str]] = {
         # references; D removes these allowlist entries.
         "README.md",
         "CLAUDE.md",
-        # Pre-migration touchpoint inventory — production-code with hits.
-        # Sub-Iterates B + C narrow these aggressively; bleibt initial weit.
+        # Sub-Iterate B (shared/) — narrowed: lokale Konstanten in spec_parser /
+        # generate_handoff_on_stop / verifiers/common kept (Layer-6 manifest
+        # binds `LEGACY_AGENT_DOCS_DIRNAME = "agent_docs"`). Files no longer
+        # constructing legacy paths are removed from the allowlist.
         "shared/scripts/hooks/generate_handoff_on_stop.py",
-        "shared/scripts/hooks/capture_session_id.py",
         "shared/scripts/hooks/check_secrets.sh",
         "shared/scripts/hooks/check_file_size.sh",
-        "shared/scripts/lib/state.py",
         "shared/scripts/lib/spec_parser.py",
-        "shared/scripts/lib/phase_quality.py",
-        "shared/scripts/lib/iterate_entry.py",
-        "shared/scripts/lib/errors.py",
-        "shared/scripts/lib/adr_parser.py",
         "shared/scripts/lib/external_review_config.py",
-        "shared/scripts/tools/write_decision_log.py",
-        "shared/scripts/tools/get_phase_context.py",
-        "shared/scripts/tools/generate_session_handoff.py",
-        "shared/scripts/tools/append_iterate_entry.py",
-        "shared/scripts/tools/finalize_iterate.py",
-        "shared/scripts/tools/update_build_dashboard.py",
-        "shared/scripts/tools/verifiers/build_checks.py",
-        "shared/scripts/tools/verifiers/adopt_compliance.py",
-        "shared/scripts/tools/verifiers/spec_checks.py",
-        "shared/scripts/tools/verifiers/quality_checks.py",
-        "shared/scripts/tools/verifiers/iterate_checks.py",
-        "shared/scripts/tools/verifiers/design_compliance.py",
         "shared/scripts/tools/verifiers/common.py",
-        "plugins/shipwright-build/scripts/hooks/check_documentation.py",
-        "plugins/shipwright-iterate/scripts/hooks/iterate_stop_finalize.py",
-        "plugins/shipwright-project/scripts/checks/write-project-config.py",
-        "plugins/shipwright-run/scripts/lib/inference.py",
-        "plugins/shipwright-compliance/scripts/lib/override_logger.py",
-        "plugins/shipwright-compliance/scripts/lib/compliance_report.py",
-        "plugins/shipwright-compliance/scripts/lib/data_collector.py",
-        "plugins/shipwright-compliance/scripts/hooks/check_security_scan.py",
-        "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py",
+        "shared/scripts/tools/verifiers/design_compliance.py",
+        # Sub-Iterate C (plugins/) — narrowed: lokale Konstanten in
+        # artifact_writer.py + visual_docs_generator.py + config_writer.py JSON-flag
+        # remain in allowlist. All other plugin scripts migrated.
         "plugins/shipwright-adopt/scripts/lib/artifact_writer.py",
         "plugins/shipwright-adopt/scripts/lib/visual_docs_generator.py",
         "plugins/shipwright-adopt/scripts/lib/config_writer.py",
-        "plugins/shipwright-adopt/scripts/lib/dry_run_reporter.py",
-        "plugins/shipwright-adopt/scripts/lib/nested_project_detector.py",
-        "plugins/shipwright-adopt/scripts/lib/gitignore_check.py",
-        "plugins/shipwright-adopt/scripts/lib/review_runner.py",
-        "plugins/shipwright-adopt/scripts/checks/setup_adopt.py",
-        "plugins/shipwright-adopt/scripts/checks/validate_adoption.py",
-        "plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py",
-        # Tests — narrowed in B + C as files migrate.
+        # Tests — narrowed in B + C as files migrate. Tests using helper-construct
+        # `tmp / ".shipwright" / "agent_docs"` are post-shipwright canonical and
+        # don't need to be in allowlist (AST treats them as canonical-form).
+        # Tests that still reference legacy literals (preservation_log keys,
+        # backup-path mirroring) remain covered by per-file globs.
         "shared/tests/**",
         "shared/scripts/tests/**",
         "plugins/shipwright-adopt/tests/**",

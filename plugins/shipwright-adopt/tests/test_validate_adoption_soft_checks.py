@@ -24,12 +24,12 @@ def _make_minimum_valid(root: Path, *, decision_log_body: str | None = None) -> 
         "shipwright_compliance_config.json",
     ):
         (root / name).write_text("{}", encoding="utf-8")
-    (root / "agent_docs").mkdir(exist_ok=True)
-    (root / "agent_docs" / "architecture.md").write_text("# arch\n", encoding="utf-8")
-    (root / "agent_docs" / "conventions.md").write_text("# conv\n", encoding="utf-8")
-    (root / "agent_docs" / "build_dashboard.md").write_text("# dash\n", encoding="utf-8")
+    (root / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (root / ".shipwright" / "agent_docs" / "architecture.md").write_text("# arch\n", encoding="utf-8")
+    (root / ".shipwright" / "agent_docs" / "conventions.md").write_text("# conv\n", encoding="utf-8")
+    (root / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text("# dash\n", encoding="utf-8")
     body = decision_log_body if decision_log_body is not None else "# log\n\n## ADR-0001: x\n"
-    (root / "agent_docs" / "decision_log.md").write_text(body, encoding="utf-8")
+    (root / ".shipwright" / "agent_docs" / "decision_log.md").write_text(body, encoding="utf-8")
     (root / ".shipwright" / "planning" / "01-adopted").mkdir(parents=True, exist_ok=True)
     (root / ".shipwright" / "planning" / "01-adopted" / "spec.md").write_text(
         "# spec\n\nFR-01.01 placeholder.\n", encoding="utf-8",

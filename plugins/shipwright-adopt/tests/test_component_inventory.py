@@ -3,7 +3,7 @@
 Adopt currently produces no visual frontend documentation at all. This
 helper enumerates components under conventional locations
 (src/components/**, src/ui/**, src/app/**) so the generated
-agent_docs/guideline.md can list them with prop and usage counts.
+.shipwright/agent_docs/guideline.md can list them with prop and usage counts.
 """
 
 from __future__ import annotations

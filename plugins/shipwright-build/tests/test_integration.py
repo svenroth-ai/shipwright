@@ -34,7 +34,7 @@ def test_setup_and_track_section(tmp_path):
     # Create project structure
     project = tmp_path / "project"
     project.mkdir()
-    (project / "agent_docs").mkdir()
+    (project / ".shipwright" / "agent_docs").mkdir(parents=True)
     sections = project / ".shipwright" / "planning" / "sections"
     sections.mkdir(parents=True)
 
@@ -101,8 +101,8 @@ def test_setup_and_track_section(tmp_path):
 
     # 5. Verify artifacts
     assert (project / "shipwright_build_config.json").exists()
-    assert (project / "agent_docs" / "decision_log.md").exists()
-    assert (project / "agent_docs" / "session_handoff.md").exists()
+    assert (project / ".shipwright" / "agent_docs" / "decision_log.md").exists()
+    assert (project / ".shipwright" / "agent_docs" / "session_handoff.md").exists()
 
     # Verify config content
     config = json.loads((project / "shipwright_build_config.json").read_text(encoding="utf-8"))

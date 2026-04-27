@@ -4,7 +4,7 @@
 This is the deterministic artifact-production step. It:
   1. Reads .shipwright/adopt/snapshot.json (Layer-1)
   2. Reads .shipwright/adopt/enrichment.json (Layer-2, if present)
-  3. Writes CLAUDE.md + agent_docs/* + .shipwright/planning/<split>/spec.md
+  3. Writes CLAUDE.md + .shipwright/agent_docs/* + .shipwright/planning/<split>/spec.md
   4. Writes all 6 shipwright_*_config.json in safe order
   5. Seeds shipwright_events.jsonl (adopted + optional backfill)
   6. Installs .claude/settings.json UserPromptSubmit hook
@@ -319,7 +319,7 @@ def generate(
     # Tier 5 — Visual frontend documentation. Opt-in via signal: any
     # frontend hint in the snapshot (multi-service frontend service, or
     # frontend.* in stack). Backend-only profiles get wrote_docs=false
-    # without writing anything to agent_docs/visual/.
+    # without writing anything to .shipwright/agent_docs/visual/.
     #
     # Frontend-root resolution priority (matches multi-service spec):
     #   1. `primary: true` service with a `root` field

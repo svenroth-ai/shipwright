@@ -3,7 +3,7 @@
 
 Runs after all artifacts are written. Verifies:
   - 5 required config JSONs exist + valid JSON (sync_config optional)
-  - agent_docs/{architecture, conventions, decision_log, build_dashboard}.md exist
+  - .shipwright/agent_docs/{architecture, conventions, decision_log, build_dashboard}.md exist
   - .shipwright/planning/*/spec.md exists and has >= 1 FR-NN.MM reference
   - shipwright_events.jsonl has exactly 1 "adopted" event
   - .claude/settings.json has the UserPromptSubmit hook
@@ -30,10 +30,10 @@ REQUIRED_CONFIGS = [
 ]
 
 REQUIRED_AGENT_DOCS = [
-    "agent_docs/architecture.md",
-    "agent_docs/conventions.md",
-    "agent_docs/decision_log.md",
-    "agent_docs/build_dashboard.md",
+    ".shipwright/agent_docs/architecture.md",
+    ".shipwright/agent_docs/conventions.md",
+    ".shipwright/agent_docs/decision_log.md",
+    ".shipwright/agent_docs/build_dashboard.md",
 ]
 
 
@@ -162,10 +162,10 @@ def _soft_check_decision_log_density(project_root: Path) -> list[str]:
     commits = _read_snapshot_commits_total(project_root)
     if commits is None or commits <= 50:
         return warnings  # not enough signal to flag
-    adrs = _count_adrs(project_root / "agent_docs" / "decision_log.md")
+    adrs = _count_adrs(project_root / ".shipwright" / "agent_docs" / "decision_log.md")
     if adrs < 3:
         warnings.append(
-            f"agent_docs/decision_log.md has {adrs} ADR(s) but the repo has "
+            f".shipwright/agent_docs/decision_log.md has {adrs} ADR(s) but the repo has "
             f"{commits} commits — historical data may be missing. Re-run "
             "Layer-2 enrichment or seed retroactive ADRs from "
             "git.major_refactor_commits[]."

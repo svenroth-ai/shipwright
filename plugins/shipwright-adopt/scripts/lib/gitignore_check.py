@@ -2,7 +2,7 @@
 
 Used by /shipwright-adopt to surface a "GITIGNORED OUTPUTS" block in the
 handoff: if a substantial fraction of adopt-generated artifacts (e.g.
-agent_docs/, .shipwright/planning/, shipwright_*_config.json) are gitignored, the
+.shipwright/agent_docs/, .shipwright/planning/, shipwright_*_config.json) are gitignored, the
 user discovers it only at `git status` after Adopt finishes — too late
 for the adoption commit. We catch it during Step E and prompt the user.
 

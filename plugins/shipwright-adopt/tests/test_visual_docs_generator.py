@@ -1,8 +1,8 @@
 """End-to-end test for visual_docs_generator (Tier 5).
 
 Given a fixture repo with components + tailwind config + crawl screenshots,
-generate agent_docs/{design_tokens.md, guideline.md} and persist
-screenshots into agent_docs/visual/screenshots/.
+generate .shipwright/agent_docs/{design_tokens.md, guideline.md} and persist
+screenshots into .shipwright/agent_docs/visual/screenshots/.
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ def _setup_fixture(tmp_path: Path) -> None:
 def test_generate_writes_design_tokens_md(tmp_path: Path) -> None:
     _setup_fixture(tmp_path)
     result = generate_visual_docs(tmp_path)
-    tokens_path = tmp_path / "agent_docs" / "design_tokens.md"
+    tokens_path = tmp_path / ".shipwright" / "agent_docs" / "design_tokens.md"
     assert tokens_path.exists()
     body = tokens_path.read_text(encoding="utf-8")
     assert "primary" in body and "#0066cc" in body
@@ -57,7 +57,7 @@ def test_generate_writes_design_tokens_md(tmp_path: Path) -> None:
 def test_generate_writes_guideline_md_with_components_section(tmp_path: Path) -> None:
     _setup_fixture(tmp_path)
     result = generate_visual_docs(tmp_path)
-    guideline_path = tmp_path / "agent_docs" / "guideline.md"
+    guideline_path = tmp_path / ".shipwright" / "agent_docs" / "guideline.md"
     assert guideline_path.exists()
     body = guideline_path.read_text(encoding="utf-8")
     assert "Button" in body
@@ -70,7 +70,7 @@ def test_generate_writes_guideline_md_with_components_section(tmp_path: Path) ->
 def test_generate_persists_crawl_screenshots(tmp_path: Path) -> None:
     _setup_fixture(tmp_path)
     result = generate_visual_docs(tmp_path)
-    persist_dir = tmp_path / "agent_docs" / "visual" / "screenshots"
+    persist_dir = tmp_path / ".shipwright" / "agent_docs" / "visual" / "screenshots"
     assert persist_dir.is_dir()
     persisted = sorted(p.name for p in persist_dir.iterdir())
     assert "_root.png" in persisted
@@ -103,7 +103,7 @@ def test_generate_with_explicit_frontend_root(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     result = generate_visual_docs(tmp_path, frontend_root=tmp_path / "client")
-    body = (tmp_path / "agent_docs" / "guideline.md").read_text(encoding="utf-8")
+    body = (tmp_path / ".shipwright" / "agent_docs" / "guideline.md").read_text(encoding="utf-8")
     assert "Header" in body
-    tokens = (tmp_path / "agent_docs" / "design_tokens.md").read_text(encoding="utf-8")
+    tokens = (tmp_path / ".shipwright" / "agent_docs" / "design_tokens.md").read_text(encoding="utf-8")
     assert "brand" in tokens

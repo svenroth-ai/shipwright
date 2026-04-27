@@ -93,7 +93,7 @@ def run_review(
 
     # Build review content: concat of generated docs
     parts: list[str] = []
-    for rel in ("CLAUDE.md", "agent_docs/architecture.md", "agent_docs/conventions.md"):
+    for rel in ("CLAUDE.md", ".shipwright/agent_docs/architecture.md", ".shipwright/agent_docs/conventions.md"):
         p = project_root / rel
         if p.exists():
             parts.append(f"## {rel}\n\n{p.read_text(encoding='utf-8')}\n")

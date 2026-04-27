@@ -92,7 +92,7 @@ def test_infer_iterate_flag_deprecated(existing_project):
         project_root=str(existing_project),
         iterate=True,
     )
-    # Existing project with CLAUDE.md + agent_docs → extension, not iterate
+    # Existing project with CLAUDE.md + .shipwright/agent_docs → extension, not iterate
     assert result["scope"] == "extension"
 
 

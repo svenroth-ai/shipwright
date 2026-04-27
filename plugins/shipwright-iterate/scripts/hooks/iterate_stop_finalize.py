@@ -43,7 +43,7 @@ def _get_latest_run_id(project_root: Path) -> str | None:
 
 def _dashboard_reflects_run_id(project_root: Path, run_id: str) -> bool:
     """Check if build_dashboard.md already contains the current run_id."""
-    dashboard = project_root / "agent_docs" / "build_dashboard.md"
+    dashboard = project_root / ".shipwright" / "agent_docs" / "build_dashboard.md"
     if not dashboard.exists():
         return False
     try:

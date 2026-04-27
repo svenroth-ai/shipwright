@@ -311,3 +311,80 @@ def test_no_legacy_designs_path_construction_in_plugin_source(plugin: str) -> No
         f"Plugin {plugin}: legacy designs path-construction pattern still "
         f"present in {len(offenders)} file(s): {offenders}"
     )
+
+
+# ---------------------------------------------------------------------------
+# shipwright-adopt — write_agent_docs writes under .shipwright/agent_docs
+# ---------------------------------------------------------------------------
+
+
+def test_adopt_write_agent_docs_writes_under_dot_shipwright(tmp_path: Path) -> None:
+    """End-to-end contract: invoke write_agent_docs and verify it writes
+    only under .shipwright/agent_docs/ — no legacy top-level dir, no double
+    prefix carry-over (.shipwright/.shipwright or agent_docs/agent_docs).
+    """
+    _add_plugin_to_path("shipwright-adopt")
+    try:
+        from artifact_writer import write_agent_docs  # type: ignore
+    except (ImportError, ModuleNotFoundError) as exc:
+        pytest.skip(f"cross-plugin sys.path pollution: {exc}")
+
+    paths = write_agent_docs(
+        tmp_path,
+        project_name="canon-test", profile="vite-hono", scope="full_app",
+        stack={"runtime": {}, "frontend": {}, "backend": {}, "database": {}, "auth": {}},
+        layers=[], loc_by_layer={},
+        architecture_diagram="```\n(diag)\n```",
+        data_flow_description="flow",
+        conventions={"linter": "eslint", "formatter": "prettier"},
+        conventions_prose="conventions prose",
+        features_count=0, commits_total=0, contributors_total=0,
+        nested_excluded=[], commit_sha=None, retroactive_adrs=[],
+    )
+
+    canonical = tmp_path / ".shipwright" / "agent_docs"
+    assert canonical.is_dir(), (
+        f"Canonical `.shipwright/agent_docs/` was NOT created under {tmp_path}."
+    )
+    for fname in ("architecture.md", "conventions.md", "decision_log.md", "build_dashboard.md"):
+        assert (canonical / fname).is_file(), f"missing canonical {fname}"
+    # Legacy must NOT exist.
+    assert not (tmp_path / "agent_docs").exists(), (
+        "Legacy top-level `agent_docs/` directory was created"
+    )
+    # No double-prefix carry-over.
+    assert not (tmp_path / ".shipwright" / ".shipwright").exists(), (
+        "Double `.shipwright/.shipwright/` prefix detected — C carry-over bug"
+    )
+    assert not (canonical / "agent_docs").exists(), (
+        "Double `agent_docs/agent_docs/` suffix detected — path-construction bug"
+    )
+    # Returned paths are all under canonical.
+    for p in paths:
+        assert canonical in p.parents, (
+            f"write_agent_docs returned a path outside `.shipwright/agent_docs/`: {p}"
+        )
+
+
+@pytest.mark.parametrize("plugin", [
+    "shipwright-adopt", "shipwright-build", "shipwright-iterate",
+    "shipwright-compliance", "shipwright-project", "shipwright-run",
+])
+def test_no_legacy_agent_docs_path_construction_in_plugin_source(plugin: str) -> None:
+    """Sub-Iterate C contract for agent_docs migration: the pattern
+    ``project_root / "agent_docs"`` must not appear in this plugin's source.
+    Mirrors the planning + designs equivalents above.
+    """
+    plug_dir = _REPO / "plugins" / plugin / "scripts"
+    if not plug_dir.is_dir():
+        pytest.skip(f"plugin {plugin} has no scripts/ directory")
+    forbidden = 'project_root / "agent_docs"'
+    offenders: list[str] = []
+    for py in plug_dir.rglob("*.py"):
+        text = py.read_text(encoding="utf-8")
+        if forbidden in text:
+            offenders.append(str(py.relative_to(_REPO)))
+    assert not offenders, (
+        f"Plugin {plugin}: legacy agent_docs path-construction pattern still "
+        f"present in {len(offenders)} file(s): {offenders}"
+    )

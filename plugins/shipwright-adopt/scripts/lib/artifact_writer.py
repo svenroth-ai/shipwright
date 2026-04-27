@@ -1,9 +1,9 @@
-"""Write CLAUDE.md, agent_docs/*, .shipwright/planning/<split>/spec.md for adopted projects.
+"""Write CLAUDE.md, .shipwright/agent_docs/*, .shipwright/planning/<split>/spec.md for adopted projects.
 
 Slot-filling uses shared/templates/ exactly as shipwright-project does —
 zero structural divergence from greenfield-generated docs.
 
-Pre-existing user files (CLAUDE.md, agent_docs/decision_log.md, etc.) are
+Pre-existing user files (CLAUDE.md, .shipwright/agent_docs/decision_log.md, etc.) are
 NEVER silently overwritten — see `preserve_existing.py` for the policy.
 """
 
@@ -13,6 +13,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+AGENT_DOCS_DIR = ".shipwright/agent_docs"
+LEGACY_AGENT_DOCS_DIRNAME = "agent_docs"
 
 # Importable both via package-relative path (when called from generate_adoption_artifacts.py
 # which adds scripts/lib to sys.path) and via direct test imports (`from lib.preserve_existing
@@ -87,7 +90,7 @@ def _render_claude_md(
 This project was adopted into Shipwright on {_utc_today()}. Prior code history is preserved.
 Use `/shipwright-iterate` for all future changes. Do NOT use `/shipwright-project`, `/shipwright-plan`, or `/shipwright-build` directly on this repo.
 
-See `agent_docs/decision_log.md` ADR-0001 for the adoption decision.
+See `{AGENT_DOCS_DIR}/decision_log.md` ADR-0001 for the adoption decision.
 """
 
 
@@ -198,7 +201,7 @@ def _render_decision_log(
 
 ### Context
 
-This repository existed with {features_count} detected feature(s) and substantive git history before /shipwright-adopt ran. The goal is to bring it under the Shipwright SDLC (CLAUDE.md + agent_docs + .shipwright/planning/ + compliance/ + configs) without disrupting the existing codebase.
+This repository existed with {features_count} detected feature(s) and substantive git history before /shipwright-adopt ran. The goal is to bring it under the Shipwright SDLC (CLAUDE.md + .shipwright/agent_docs + .shipwright/planning/ + compliance/ + configs) without disrupting the existing codebase.
 
 ### Decision
 
@@ -423,13 +426,14 @@ def write_agent_docs(
     `.preserved` before being overwritten. decision_log.md uses
     `merge_decision_log` so any existing user ADRs survive verbatim.
     """
-    agent_docs = project_root / "agent_docs"
+    agent_docs = project_root / AGENT_DOCS_DIR
     agent_docs.mkdir(parents=True, exist_ok=True)
     paths: list[Path] = []
 
     # architecture.md — backup + overwrite
+    arch_rel = f"{AGENT_DOCS_DIR}/architecture.md"
     arch = agent_docs / "architecture.md"
-    arch_backup = preserve_if_exists(project_root, "agent_docs/architecture.md")
+    arch_backup = preserve_if_exists(project_root, arch_rel)
     arch.write_text(_render_architecture_md(
         project_name=project_name, stack=stack, layers=layers,
         architecture_diagram=architecture_diagram,
@@ -437,41 +441,43 @@ def write_agent_docs(
     ), encoding="utf-8")
     record_preservation_action(
         project_root,
-        file="agent_docs/architecture.md",
+        file=arch_rel,
         action=("overwritten_with_backup" if arch_backup else "written_fresh"),
         backup_path=arch_backup,
     )
     paths.append(arch)
 
     # conventions.md — backup + overwrite
+    conv_rel = f"{AGENT_DOCS_DIR}/conventions.md"
     conv = agent_docs / "conventions.md"
-    conv_backup = preserve_if_exists(project_root, "agent_docs/conventions.md")
+    conv_backup = preserve_if_exists(project_root, conv_rel)
     conv.write_text(_render_conventions_md(
         project_name=project_name, conventions=conventions,
         conventions_prose=conventions_prose,
     ), encoding="utf-8")
     record_preservation_action(
         project_root,
-        file="agent_docs/conventions.md",
+        file=conv_rel,
         action=("overwritten_with_backup" if conv_backup else "written_fresh"),
         backup_path=conv_backup,
     )
     paths.append(conv)
 
     # decision_log.md — backup + merge (preserves historical ADRs verbatim)
+    dec_rel = f"{AGENT_DOCS_DIR}/decision_log.md"
     dec = agent_docs / "decision_log.md"
     new_log = _render_decision_log(
         project_name=project_name, profile=profile, scope=scope,
         commit_sha=commit_sha, features_count=features_count,
         retroactive_adrs=retroactive_adrs,
     )
-    dec_backup = preserve_if_exists(project_root, "agent_docs/decision_log.md")
+    dec_backup = preserve_if_exists(project_root, dec_rel)
     if dec.exists():
         merged_content, info = merge_decision_log(new_log, dec)
         dec.write_text(merged_content, encoding="utf-8")
         record_preservation_action(
             project_root,
-            file="agent_docs/decision_log.md",
+            file=dec_rel,
             action=info["action"],
             backup_path=dec_backup,
             note=f"existing_adrs={info['existing_adrs']}",
@@ -480,15 +486,16 @@ def write_agent_docs(
         dec.write_text(new_log, encoding="utf-8")
         record_preservation_action(
             project_root,
-            file="agent_docs/decision_log.md",
+            file=dec_rel,
             action="written_fresh",
             backup_path=None,
         )
     paths.append(dec)
 
     # build_dashboard.md — backup + overwrite (transient state, regenerated each run)
+    dash_rel = f"{AGENT_DOCS_DIR}/build_dashboard.md"
     dash = agent_docs / "build_dashboard.md"
-    dash_backup = preserve_if_exists(project_root, "agent_docs/build_dashboard.md")
+    dash_backup = preserve_if_exists(project_root, dash_rel)
     dash.write_text(_render_build_dashboard(
         project_name=project_name, profile=profile, scope=scope,
         features_count=features_count, commits_total=commits_total,
@@ -497,7 +504,7 @@ def write_agent_docs(
     ), encoding="utf-8")
     record_preservation_action(
         project_root,
-        file="agent_docs/build_dashboard.md",
+        file=dash_rel,
         action=("overwritten_with_backup" if dash_backup else "written_fresh"),
         backup_path=dash_backup,
     )

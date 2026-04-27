@@ -35,9 +35,9 @@ def project_root(tmp_path: Path) -> Path:
         dest_name = config_name.replace("sample_", "shipwright_")
         shutil.copy(src, root / dest_name)
 
-    # Create agent_docs with decision log
-    agent_docs = root / "agent_docs"
-    agent_docs.mkdir()
+    # Create .shipwright/agent_docs with decision log
+    agent_docs = root / ".shipwright" / "agent_docs"
+    agent_docs.mkdir(parents=True)
     shutil.copy(FIXTURES_DIR / "sample_decision_log.md", agent_docs / "decision_log.md")
 
     # Copy package.json

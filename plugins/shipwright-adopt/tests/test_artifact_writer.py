@@ -43,10 +43,10 @@ def test_write_agent_docs(tmp_path: Path) -> None:
     assert "conventions.md" in names
     assert "decision_log.md" in names
     assert "build_dashboard.md" in names
-    dec = (tmp_path / "agent_docs" / "decision_log.md").read_text(encoding="utf-8")
+    dec = (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").read_text(encoding="utf-8")
     assert "ADR-0001" in dec
     assert "Adopt" in dec
-    dash = (tmp_path / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
+    dash = (tmp_path / ".shipwright" / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
     assert "42" in dash  # commits_total
     assert "webui" in dash
 

@@ -18,7 +18,7 @@ def tmp_project(tmp_path):
     """Create a temporary project directory."""
     project = tmp_path / "my-project"
     project.mkdir()
-    (project / "agent_docs").mkdir()
+    (project / ".shipwright" / "agent_docs").mkdir(parents=True)
     return project
 
 

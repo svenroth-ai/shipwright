@@ -71,10 +71,10 @@ def plan_standard_writes(
     """Produce the canonical list of proposed writes for a standard adopt run."""
     writes: list[ProposedWrite] = [
         ProposedWrite("CLAUDE.md", "create", "project overview"),
-        ProposedWrite("agent_docs/architecture.md", "create", "stack + layers + ASCII diagram"),
-        ProposedWrite("agent_docs/conventions.md", "create", "linter/formatter/rules"),
-        ProposedWrite("agent_docs/decision_log.md", "create", "ADR-0001 + retroactive ADRs"),
-        ProposedWrite("agent_docs/build_dashboard.md", "create", "adoption snapshot"),
+        ProposedWrite(".shipwright/agent_docs/architecture.md", "create", "stack + layers + ASCII diagram"),
+        ProposedWrite(".shipwright/agent_docs/conventions.md", "create", "linter/formatter/rules"),
+        ProposedWrite(".shipwright/agent_docs/decision_log.md", "create", "ADR-0001 + retroactive ADRs"),
+        ProposedWrite(".shipwright/agent_docs/build_dashboard.md", "create", "adoption snapshot"),
         ProposedWrite(f".shipwright/planning/{split_name}/spec.md", "create", "IREB spec from inferred features"),
         ProposedWrite("compliance/sbom.md", "create", "via shipwright-compliance"),
         ProposedWrite("compliance/change-history.md", "create", "via shipwright-compliance"),
@@ -100,7 +100,7 @@ def plan_standard_writes(
     writes.append(ProposedWrite(".shipwright/adopt/review.md", "create", "Layer-3 llm_review output or skip-reason"))
     commit_message = """chore(shipwright): adopt repository into Shipwright SDLC
 
-Adopted via /shipwright-adopt. See agent_docs/decision_log.md ADR-0001."""
+Adopted via /shipwright-adopt. See .shipwright/agent_docs/decision_log.md ADR-0001."""
     return DryRunReport(
         writes=writes,
         excluded_paths=nested_excluded,

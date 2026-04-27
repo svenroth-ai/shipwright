@@ -393,12 +393,12 @@ _ADR_COMPACT_FIELD_RE = re.compile(
 
 
 def collect_decision_log(project_root: Path) -> list[DecisionEntry]:
-    """Parse agent_docs/decision_log.md into structured entries.
+    """Parse .shipwright/agent_docs/decision_log.md into structured entries.
 
     Supports both the old verbose format (## ADR-NNN | ...) and the
     compact format (### ADR-NNN: Title with bullet-point fields).
     """
-    log_path = project_root / "agent_docs" / "decision_log.md"
+    log_path = project_root / ".shipwright" / "agent_docs" / "decision_log.md"
     if not log_path.exists():
         return []
 

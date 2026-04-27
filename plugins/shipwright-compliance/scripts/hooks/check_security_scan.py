@@ -26,7 +26,7 @@ def _hook_block(reason: str, details: dict[str, Any]) -> dict[str, Any]:
             "additionalContext": (
                 f"BLOCKED: {reason}\n\n"
                 "The user may say 'Continue anyway' to override this check. "
-                "If they do, log the override to agent_docs/compliance_overrides.log "
+                "If they do, log the override to .shipwright/agent_docs/compliance_overrides.log "
                 "with timestamp, hook name 'check_security_scan', and reason.\n\n"
                 "Note: Security findings will be flagged again before production deploy."
             ),

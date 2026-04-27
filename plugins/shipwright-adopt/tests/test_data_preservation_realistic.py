@@ -97,11 +97,11 @@ def test_realistic_claude_and_decision_log_preserved_e2e(tmp_path: Path) -> None
 
     # Plant the at-risk files before adopt runs
     (tmp_path / "CLAUDE.md").write_text(big_claude, encoding="utf-8")
-    (tmp_path / "agent_docs").mkdir()
-    (tmp_path / "agent_docs" / "decision_log.md").write_text(rich_log, encoding="utf-8")
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").write_text(rich_log, encoding="utf-8")
 
     claude_size = (tmp_path / "CLAUDE.md").stat().st_size
-    log_size = (tmp_path / "agent_docs" / "decision_log.md").stat().st_size
+    log_size = (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").stat().st_size
     # Sanity: we built realistic-shape content. The user trigger scenario was
     # 137 KB — our synthetic 58 ADRs land closer to 20 KB. The shape (number of
     # ADRs + multi-section structure) is what matters for the preservation test.
@@ -126,7 +126,7 @@ def test_realistic_claude_and_decision_log_preserved_e2e(tmp_path: Path) -> None
     assert suggested.exists()
 
     # decision_log was MERGED — every original ADR must still be findable verbatim
-    final_log = (tmp_path / "agent_docs" / "decision_log.md").read_text(encoding="utf-8")
+    final_log = (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").read_text(encoding="utf-8")
     for i in (1, 7, 23, 42, 58):
         assert f"ADR-{i:04d}: Decision number {i}" in final_log, (
             f"original ADR-{i:04d} lost from merged decision_log"
@@ -136,7 +136,7 @@ def test_realistic_claude_and_decision_log_preserved_e2e(tmp_path: Path) -> None
 
     # Backups must contain the originals
     claude_backup = tmp_path / ".shipwright" / "adopt" / "backups" / "CLAUDE.md.preserved"
-    log_backup = tmp_path / ".shipwright" / "adopt" / "backups" / "agent_docs" / "decision_log.md.preserved"
+    log_backup = tmp_path / ".shipwright" / "adopt" / "backups" / ".shipwright" / "agent_docs" / "decision_log.md.preserved"
     assert claude_backup.read_text(encoding="utf-8") == big_claude
     assert log_backup.read_text(encoding="utf-8") == rich_log
 
@@ -146,6 +146,6 @@ def test_realistic_claude_and_decision_log_preserved_e2e(tmp_path: Path) -> None
     )
     by_file = {e["file"]: e for e in plog["entries"]}
     assert by_file["CLAUDE.md"]["action"] == "skipped_loadbearing"
-    assert by_file["agent_docs/decision_log.md"]["action"] == "merged"
+    assert by_file[".shipwright/agent_docs/decision_log.md"]["action"] == "merged"
     # Note records the original ADR count
-    assert "58" in by_file["agent_docs/decision_log.md"].get("note", "")
+    assert "58" in by_file[".shipwright/agent_docs/decision_log.md"].get("note", "")

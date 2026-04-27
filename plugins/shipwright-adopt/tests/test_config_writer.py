@@ -43,7 +43,7 @@ def test_writes_all_configs_in_order(tmp_path: Path) -> None:
     assert run_config["_iterate_migration_state"] == "complete"
     assert run_config["_iterate_migration_quarantined_count"] == 0
 
-    iterates_dir = tmp_path / "agent_docs" / "iterates"
+    iterates_dir = tmp_path / ".shipwright" / "agent_docs" / "iterates"
     assert iterates_dir.is_dir()
     assert (iterates_dir / ".gitkeep").exists()
     assert (iterates_dir / "_quarantine" / ".gitkeep").exists()

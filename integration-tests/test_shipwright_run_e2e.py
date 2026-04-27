@@ -279,7 +279,7 @@ class TestIterateMode:
     """Verify iterate mode detection and extension scope inference."""
 
     def test_existing_project_infers_extension(self, tmp_path):
-        """Existing project with CLAUDE.md + agent_docs → extension scope.
+        """Existing project with CLAUDE.md + .shipwright/agent_docs → extension scope.
 
         The --iterate flag is deprecated since /shipwright-iterate has its
         own skill entry point. inference.py only distinguishes full_app

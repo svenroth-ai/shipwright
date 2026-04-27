@@ -86,7 +86,7 @@ def test_update_section_state_existing(tmp_path):
 
 
 def test_write_decision_log(tmp_path):
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True)
 
     n1 = append_decision(
         tmp_path,
@@ -110,7 +110,7 @@ def test_write_decision_log(tmp_path):
     assert n1 == 1
     assert n2 == 2
 
-    log = (tmp_path / "agent_docs" / "decision_log.md").read_text(encoding="utf-8")
+    log = (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").read_text(encoding="utf-8")
     assert "ADR-001" in log
     assert "ADR-002" in log
     assert "Use Zustand" in log
@@ -118,7 +118,7 @@ def test_write_decision_log(tmp_path):
 
 
 def test_write_decision_log_creates_dir(tmp_path):
-    """agent_docs/ doesn't exist yet — should be created."""
+    """.shipwright/agent_docs/ doesn't exist yet — should be created."""
     n = append_decision(
         tmp_path,
         section_ref="Build — 01-test",
@@ -129,7 +129,7 @@ def test_write_decision_log_creates_dir(tmp_path):
     )
 
     assert n == 1
-    assert (tmp_path / "agent_docs" / "decision_log.md").exists()
+    assert (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").exists()
 
 
 # Session handoff tests live in shared/tests/test_generate_session_handoff.py

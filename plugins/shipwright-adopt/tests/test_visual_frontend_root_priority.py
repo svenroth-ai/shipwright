@@ -83,7 +83,7 @@ def test_primary_true_wins_over_name_heuristic(tmp_path: Path) -> None:
     )
     assert result["visual_docs"]["wrote_docs"] is True
     assert result["visual_docs"]["frontend_root"].endswith("app")
-    tokens = (tmp_path / "agent_docs" / "design_tokens.md").read_text(encoding="utf-8")
+    tokens = (tmp_path / ".shipwright" / "agent_docs" / "design_tokens.md").read_text(encoding="utf-8")
     assert "primary_app" in tokens
     assert "wrong_client" not in tokens
 
@@ -114,5 +114,5 @@ def test_name_heuristic_wins_when_no_primary_flagged(tmp_path: Path) -> None:
         scope_override=None, profile_override=None,
         write_sync=False, backfill_events=False,
     )
-    tokens = (tmp_path / "agent_docs" / "design_tokens.md").read_text(encoding="utf-8")
+    tokens = (tmp_path / ".shipwright" / "agent_docs" / "design_tokens.md").read_text(encoding="utf-8")
     assert "ok_client" in tokens

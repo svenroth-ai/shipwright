@@ -60,8 +60,8 @@ def tmp_project(tmp_path):
 
 @pytest.fixture
 def existing_project(tmp_project):
-    """Project with CLAUDE.md and agent_docs (Extension scope)."""
+    """Project with CLAUDE.md and .shipwright/agent_docs (Extension scope)."""
     (tmp_project / "CLAUDE.md").write_text("# My Project\n")
-    (tmp_project / "agent_docs").mkdir()
-    (tmp_project / "agent_docs" / "architecture.md").write_text("# Arch\n")
+    (tmp_project / ".shipwright" / "agent_docs").mkdir(parents=True)
+    (tmp_project / ".shipwright" / "agent_docs" / "architecture.md").write_text("# Arch\n")
     return tmp_project

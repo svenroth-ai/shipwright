@@ -164,7 +164,7 @@ def write_run_config(
             "plugin_version": plugin_version,
         },
         "phase_history": phase_history,
-        # iterate_history lives in agent_docs/iterates/*.json (file-per-iterate
+        # iterate_history lives in .shipwright/agent_docs/iterates/*.json (file-per-iterate
         # refactor). The empty array below is kept for backward-compat with
         # any external reader that still does config.get("iterate_history", []);
         # the migration flag below tells new tooling the file-per-iterate store
@@ -190,8 +190,8 @@ def write_run_config(
 
 
 def _init_iterate_store_dirs(project_root: Path) -> None:
-    """Create agent_docs/iterates/ with quarantine + meta subdirs."""
-    base = project_root / "agent_docs" / "iterates"
+    """Create .shipwright/agent_docs/iterates/ with quarantine + meta subdirs."""
+    base = project_root / ".shipwright" / "agent_docs" / "iterates"
     for sub in (base, base / "_quarantine", base / "_meta"):
         sub.mkdir(parents=True, exist_ok=True)
         gitkeep = sub / ".gitkeep"
