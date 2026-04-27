@@ -53,6 +53,8 @@ shipwright_*_config.json
 shipwright_events.jsonl
 shipwright_events.jsonl.lock
 agent_docs/
+# Canonical designs home is .shipwright/designs/.
+designs/
 # Canonical planning home is .shipwright/planning/.
 planning/
 # legacy path - do not remove. Sub-Iterate F (2026-04-27).

@@ -54,6 +54,20 @@ ARTIFACT_MIGRATIONS: list[dict] = [
         "started": "2026-04-26",
         "completed": "2026-04-27",
     },
+    {
+        "name": "designs",
+        "canonical": ".shipwright/designs",
+        "legacy_dirname": "designs",
+        "old_path_patterns": [
+            r"(?<![\w/.\\])designs/",
+            r"(?<![\w/.\\])designs\\",
+            r'(?<![\w/.\\])(?<!/ )"designs"',
+            r"(?<![\w/.\\])(?<!/ )'designs'",
+        ],
+        "ast_check_string": "designs",
+        "status": "in_progress",
+        "started": "2026-04-27",
+    },
 ]
 
 # Files exempt from the lint, per migration. Entries may be exact paths
@@ -112,6 +126,71 @@ ALLOWLIST: dict[str, list[str]] = {
         ".claude-plugin/**",
         # Previous-iteration plan reference (memo)
         "**/project_paths_refactor_evaluated.md",
+    ],
+    "designs": [
+        # Migration framework itself — references both paths by design
+        "shared/scripts/lib/artifact_migrations.py",
+        "shared/scripts/lib/stale_artifact_detector.py",
+        "shared/scripts/hooks/check_artifact_drift.py",
+        "shared/scripts/lib/drift_parsers.py",  # HIDDEN_DIR_DEFAULTS line 108
+        "shared/tests/test_artifact_path_canon.py",
+        "shared/tests/test_stale_artifact_detector.py",
+        "shared/tests/test_gitignore_canon.py",
+        "shared/tests/test_constants_match_manifest.py",
+        "shared/tests/test_path_canon_windows.py",
+        # Layer-2 setup-contract test references both paths by design
+        "shared/tests/test_setup_writes_canonical.py",
+        # Migration tooling (CLI + helpers) takes artifact name as argument
+        "shared/scripts/tools/migrate_artifact_dir.py",
+        "shared/scripts/tools/print_next_migration_prompt.py",
+        "shared/tests/test_migrate_artifact_dir.py",
+        "shared/tests/test_print_next_migration_prompt.py",
+        # Plan files (this migration's own design docs)
+        "C:/Users/SvenRoth/.claude/plans/iterate-shipwright-relocation-designs-*.md",
+        # Historical changelog & migration docs (must not be rewritten)
+        "CHANGELOG.md",
+        "CHANGELOG-unreleased.d/**",
+        "docs/migrations/**",
+        # Production code touched in B-C — narrows as those sub-iterates land
+        "plugins/shipwright-design/scripts/checks/setup-design-session.py",
+        "plugins/shipwright-design/scripts/lib/screen_registry.py",
+        "plugins/shipwright-plan/scripts/checks/generate-batch-tasks.py",
+        "plugins/shipwright-test/scripts/lib/design_fidelity_check.py",
+        "plugins/shipwright-test/scripts/lib/ui_consistency_check.py",
+        "shared/scripts/tools/get_phase_context.py",
+        "shared/scripts/tools/verifiers/design_checks.py",
+        "shared/scripts/tools/verifiers/design_compliance.py",
+        # Tests touched in B-C — narrows as those sub-iterates land
+        "plugins/shipwright-design/tests/**",
+        "plugins/shipwright-test/tests/test_design_fidelity_check.py",
+        "shared/tests/test_verifiers_design.py",
+        "shared/tests/test_workflow_checks.py",
+        # Plugin prose touched in D — narrows as D lands
+        "plugins/shipwright-design/skills/**/*.md",
+        "plugins/shipwright-build/skills/build/SKILL.md",
+        "plugins/shipwright-iterate/skills/iterate/SKILL.md",
+        "plugins/shipwright-iterate/skills/iterate/references/design-and-testing.md",
+        "plugins/shipwright-plan/skills/plan/SKILL.md",
+        "plugins/shipwright-test/skills/test/SKILL.md",
+        "plugins/shipwright-test/skills/test/references/test-layers.md",
+        # Plugin agents + project references — surfaced by Layer-1 lint
+        # in Sub-Iterate A (Explore-discovery missed these). Migrated in D.
+        "plugins/shipwright-build/agents/section-builder.md",
+        "plugins/shipwright-plan/agents/section-writer.md",
+        "plugins/shipwright-test/agents/test-runner.md",
+        "plugins/shipwright-project/skills/project/references/spec-generation.md",
+        # Templates + docs touched in E — narrows as E lands
+        "shared/templates/agent-docs/conventions.md.template",
+        "docs/guide.md",
+        "docs/hooks-and-pipeline.md",
+        # Plugin metadata: descriptive keyword "designs", not a path. Permanent.
+        "plugins/**/.claude-plugin/plugin.json",
+        "**/pyproject.toml",
+        # .gitignore retains legacy entry with "# legacy path" comment.
+        # Sub-Iterate F flips status to migrated; Layer-5 gitignore_canon
+        # asserts the legacy entry stays present.
+        ".gitignore",
+        ".claude-plugin/**",
     ],
 }
 
