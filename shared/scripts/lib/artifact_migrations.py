@@ -65,8 +65,9 @@ ARTIFACT_MIGRATIONS: list[dict] = [
             r"(?<![\w/.\\])(?<!/ )'designs'",
         ],
         "ast_check_string": "designs",
-        "status": "in_progress",
+        "status": "migrated",
         "started": "2026-04-27",
+        "completed": "2026-04-27",
     },
 ]
 

@@ -13,6 +13,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PROJECT_PLUGIN = REPO_ROOT / "plugins" / "shipwright-project"
 PLAN_PLUGIN = REPO_ROOT / "plugins" / "shipwright-plan"
 BUILD_PLUGIN = REPO_ROOT / "plugins" / "shipwright-build"
+DESIGN_PLUGIN = REPO_ROOT / "plugins" / "shipwright-design"
 SHARED_SCRIPTS = REPO_ROOT / "shared" / "scripts"
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"

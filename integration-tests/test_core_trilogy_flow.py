@@ -364,6 +364,49 @@ class TestCoreTrilogyFlow:
         # Layer-3 drift safety net: nothing landed at a legacy top-level path.
         _assert_no_legacy_artifact_dirs(trilogy_project)
 
+    def test_10_design_setup_re_run_idempotency(self, trilogy_project):
+        """Running setup-design-session.py twice against the same project
+        must NOT cause drift. Per Sub-Iterate F idempotency contract
+        (External-Review GPT-8): canonical-only structure, no legacy
+        leakage on second invocation, drift detector exits clean.
+        """
+        from conftest import DESIGN_PLUGIN  # imported here so other test files can omit it
+
+        # First run.
+        result_a = run_script(DESIGN_PLUGIN, "checks", "setup-design-session.py", [
+            "--project-root", str(trilogy_project),
+            "--plugin-root", str(DESIGN_PLUGIN),
+        ])
+        assert result_a["success"] is True
+
+        # Second run (same project, no cleanup between).
+        result_b = run_script(DESIGN_PLUGIN, "checks", "setup-design-session.py", [
+            "--project-root", str(trilogy_project),
+            "--plugin-root", str(DESIGN_PLUGIN),
+        ])
+        assert result_b["success"] is True
+
+        # Canonical structure intact, no legacy leakage.
+        assert (trilogy_project / ".shipwright" / "designs" / "screens").is_dir()
+        assert not (trilogy_project / "designs").exists(), (  # artifact-path-canon: legacy
+            "Re-run produced legacy designs directory - idempotency violation"
+        )
+        _assert_no_legacy_artifact_dirs(trilogy_project)
+
+        # Drift detector must NOT exit non-zero on the idempotent re-run.
+        drift_result = subprocess.run(
+            [sys.executable, str(SHARED_SCRIPTS / "hooks" / "check_artifact_drift.py")],
+            cwd=str(trilogy_project),
+            env={"SHIPWRIGHT_PROJECT_ROOT": str(trilogy_project), "PATH": ""},
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        assert drift_result.returncode == 0, (
+            f"Drift after idempotent re-run: stdout={drift_result.stdout} "
+            f"stderr={drift_result.stderr}"
+        )
+
     # ── Helpers ──
 
     def _setup_project_phase(self, project: Path):
