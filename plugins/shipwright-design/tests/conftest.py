@@ -48,7 +48,7 @@ def tmp_project(tmp_path):
 @pytest.fixture
 def tmp_project_with_designs(tmp_project):
     """Project with existing designs."""
-    designs = tmp_project / "designs"
+    designs = tmp_project / ".shipwright" / "designs"
     (designs / "screens").mkdir(parents=True)
     (designs / "flows").mkdir()
     (designs / "uploads").mkdir()

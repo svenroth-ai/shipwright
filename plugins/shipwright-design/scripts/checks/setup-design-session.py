@@ -62,7 +62,7 @@ def load_profile_design_system(plugin_root: Path, profile_name: str) -> dict:
 
 def detect_mode(project_root: Path) -> str:
     """Detect design session mode."""
-    designs = project_root / "designs"
+    designs = project_root / ".shipwright" / "designs"
 
     if not designs.is_dir():
         return "new"
@@ -93,8 +93,8 @@ def main() -> int:
     specs = find_specs(project_root)
     mode = detect_mode(project_root)
 
-    # Ensure designs directory structure
-    designs_dir = project_root / "designs"
+    # Ensure designs directory structure under canonical .shipwright/.
+    designs_dir = project_root / ".shipwright" / "designs"
     (designs_dir / "screens").mkdir(parents=True, exist_ok=True)
     (designs_dir / "flows").mkdir(parents=True, exist_ok=True)
     (designs_dir / "uploads").mkdir(parents=True, exist_ok=True)

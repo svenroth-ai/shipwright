@@ -161,6 +161,54 @@ def test_design_setup_session_reads_canonical_planning() -> None:
     )
 
 
+def test_design_setup_session_writes_canonical_designs(tmp_path: Path) -> None:
+    """End-to-end contract: invoke setup-design-session.py and verify it writes
+    only under .shipwright/designs/ — no legacy top-level dir, no double prefix.
+
+    Per Sub-Iterate C plan Step 8 (designs migration): hardens against the
+    `.shipwright/.shipwright/` and `designs/designs/` carry-over bug pattern
+    surfaced in planning Sub-Iterate C->D.
+    """
+    import subprocess
+
+    project = tmp_path / "design-contract"
+    project.mkdir()
+
+    plugin_root = _REPO / "plugins" / "shipwright-design"
+    script = plugin_root / "scripts" / "checks" / "setup-design-session.py"
+
+    result = subprocess.run(
+        [
+            sys.executable, str(script),
+            "--project-root", str(project),
+            "--plugin-root", str(plugin_root),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    assert result.returncode == 0, (
+        f"setup-design-session.py failed (rc={result.returncode}): "
+        f"stderr={result.stderr}\nstdout={result.stdout}"
+    )
+
+    # Canonical structure exists.
+    assert (project / ".shipwright" / "designs" / "screens").is_dir()
+    assert (project / ".shipwright" / "designs" / "flows").is_dir()
+    assert (project / ".shipwright" / "designs" / "uploads").is_dir()
+    # Legacy must NOT exist.
+    assert not (project / "designs").exists(), (
+        "Legacy top-level `designs/` directory was created"
+    )
+    # No double prefix carry-over bugs.
+    assert not (project / ".shipwright" / ".shipwright").exists(), (
+        "Double `.shipwright/.shipwright/` prefix detected — C carry-over bug"
+    )
+    assert not (project / ".shipwright" / "designs" / "designs").exists(), (
+        "Double `designs/designs/` suffix detected — path-construction bug"
+    )
+
+
 # ---------------------------------------------------------------------------
 # shipwright-compliance — data_collector.collect_requirements
 # ---------------------------------------------------------------------------
@@ -239,4 +287,27 @@ def test_no_legacy_path_construction_in_plugin_source(plugin: str) -> None:
     assert not offenders, (
         f"Plugin {plugin}: legacy path-construction pattern still present in "
         f"{len(offenders)} file(s): {offenders}"
+    )
+
+
+@pytest.mark.parametrize("plugin", [
+    "shipwright-design", "shipwright-plan", "shipwright-test",
+])
+def test_no_legacy_designs_path_construction_in_plugin_source(plugin: str) -> None:
+    """Sub-Iterate C contract for designs migration: the pattern
+    ``project_root / "designs"`` must not appear in this plugin's source.
+    Mirrors the planning equivalent above.
+    """
+    plug_dir = _REPO / "plugins" / plugin / "scripts"
+    if not plug_dir.is_dir():
+        pytest.skip(f"plugin {plugin} has no scripts/ directory")
+    forbidden = 'project_root / "designs"'
+    offenders: list[str] = []
+    for py in plug_dir.rglob("*.py"):
+        text = py.read_text(encoding="utf-8")
+        if forbidden in text:
+            offenders.append(str(py.relative_to(_REPO)))
+    assert not offenders, (
+        f"Plugin {plugin}: legacy designs path-construction pattern still "
+        f"present in {len(offenders)} file(s): {offenders}"
     )

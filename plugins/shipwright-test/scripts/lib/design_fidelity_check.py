@@ -5,7 +5,7 @@ Usage:
     uv run design_fidelity_check.py --cwd <project_root>
     uv run design_fidelity_check.py --cwd <project_root> --screen 01-login.html --screen 02-register.html
 
-Reads designs/screen-routes.json for mockup-to-route mapping.
+Reads .shipwright/designs/screen-routes.json for mockup-to-route mapping.
 For each screen, extracts structural information from both mockup HTML and
 implementation TSX, then runs automated checks.  The agent uses this output
 to decide which screens need deeper manual review.
@@ -256,11 +256,11 @@ def run_design_fidelity_check(
         screens: Optional list of mockup filenames to check. When None, all
                  screens from screen-routes.json are checked.
     """
-    routes_path = project_root / "designs" / "screen-routes.json"
+    routes_path = project_root / ".shipwright" / "designs" / "screen-routes.json"
     if not routes_path.exists():
         return {
             "passed": 0, "total": 0, "skipped": True,
-            "skip_reason": "No designs/screen-routes.json found",
+            "skip_reason": "No .shipwright/designs/screen-routes.json found",
             "screens": [],
             "summary": {"total": 0, "auto_pass": 0, "needs_agent_review": 0},
         }
@@ -310,7 +310,7 @@ def run_design_fidelity_check(
         route = entry.get("route", "/")
 
         # Find mockup HTML
-        mockup_path = project_root / "designs" / mockup_file
+        mockup_path = project_root / ".shipwright" / "designs" / mockup_file
         if not mockup_path.exists():
             results.append({
                 "mockup": mockup_file, "route": route,

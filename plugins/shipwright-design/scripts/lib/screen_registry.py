@@ -2,7 +2,8 @@
 """Screen registry for shipwright-design.
 
 Tracks generated screens, user flows, and uploaded assets.
-Reads/writes designs/design-manifest.md.
+Reads/writes ``.shipwright/designs/design-manifest.md`` (caller passes
+the canonical directory; this module is parameter-driven).
 
 Usage:
     uv run screen_registry.py list --designs-dir <path>
@@ -29,7 +30,7 @@ class ScreenEntry:
 
 
 def scan_designs_dir(designs_dir: Path) -> dict:
-    """Scan designs/ directory and return inventory."""
+    """Scan a designs directory (canonical: ``.shipwright/designs``) and return inventory."""
     result = {"screens": [], "flows": [], "uploads": []}
 
     screens_dir = designs_dir / "screens"

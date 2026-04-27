@@ -3,7 +3,7 @@
 
 Usage:
     uv run ui_consistency_check.py --cwd <project_root>
-    uv run ui_consistency_check.py --cwd <project_root> --guidelines designs/visual-guidelines.md
+    uv run ui_consistency_check.py --cwd <project_root> --guidelines .shipwright/designs/visual-guidelines.md
     uv run ui_consistency_check.py --cwd <project_root> --category heading --category spacing
     uv run ui_consistency_check.py --cwd <project_root> --files src/app/courses/page.tsx src/app/admin/page.tsx
 

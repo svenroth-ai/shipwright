@@ -49,15 +49,17 @@ def main() -> int:
         }, indent=2))
         return 0
 
-    # Check if designs/screens/ exists (from /shipwright-design phase)
-    project_root = planning_dir.parent
-    designs_dir = project_root / "designs" / "screens"
+    # Check if .shipwright/designs/screens/ exists (from /shipwright-design phase).
+    # planning_dir is `<project>/.shipwright/planning/<split>` post-migration, so
+    # project root is three parents up.
+    project_root = planning_dir.parent.parent.parent
+    designs_dir = project_root / ".shipwright" / "designs" / "screens"
     has_mockups = designs_dir.is_dir()
     mockup_files = sorted(f.name for f in designs_dir.glob("*.html")) if has_mockups else []
     mockup_hint = ""
     if mockup_files:
         mockup_hint = (
-            f"\n\nDesign mockups exist at designs/screens/: {', '.join(mockup_files)}.\n"
+            f"\n\nDesign mockups exist at .shipwright/designs/screens/: {', '.join(mockup_files)}.\n"
             "If this section involves UI (pages, layouts, components), add a "
             "`## Design Reference` block before `## Implementation Steps` listing "
             "the relevant mockup(s). Match by name/content. Skip for non-UI sections."

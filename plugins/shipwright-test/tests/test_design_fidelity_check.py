@@ -76,7 +76,7 @@ export default function LoginPage() {
 @pytest.fixture
 def project_with_routes(tmp_path):
     """Create a minimal project with screen-routes.json, mockup, and implementation."""
-    designs = tmp_path / "designs"
+    designs = tmp_path / ".shipwright" / "designs"
     screens = designs / "screens"
     screens.mkdir(parents=True)
 
@@ -104,7 +104,7 @@ def project_with_routes(tmp_path):
 @pytest.fixture
 def project_with_nested_routes(tmp_path):
     """Create a project with nested screen-routes.json format."""
-    designs = tmp_path / "designs"
+    designs = tmp_path / ".shipwright" / "designs"
     screens_dir = designs / "screens"
     screens_dir.mkdir(parents=True)
 
@@ -309,11 +309,11 @@ class TestRunDesignFidelityCheck:
     def test_no_routes_file_skipped(self, tmp_path):
         result = run_design_fidelity_check(tmp_path)
         assert result["skipped"] is True
-        assert "No designs/screen-routes.json" in result["skip_reason"]
+        assert "No .shipwright/designs/screen-routes.json" in result["skip_reason"]
 
     def test_empty_routes_skipped(self, tmp_path):
-        designs = tmp_path / "designs"
-        designs.mkdir()
+        designs = tmp_path / ".shipwright" / "designs"
+        designs.mkdir(parents=True)
         (designs / "screen-routes.json").write_text("{}", encoding="utf-8")
         result = run_design_fidelity_check(tmp_path)
         assert result["skipped"] is True
@@ -339,8 +339,8 @@ class TestRunDesignFidelityCheck:
 
     def test_missing_mockup_file(self, tmp_path):
         """Mockup referenced in screen-routes.json but file doesn't exist."""
-        designs = tmp_path / "designs"
-        designs.mkdir()
+        designs = tmp_path / ".shipwright" / "designs"
+        designs.mkdir(parents=True)
         (designs / "screen-routes.json").write_text(
             json.dumps({"missing.html": "/missing"}), encoding="utf-8"
         )
@@ -349,8 +349,8 @@ class TestRunDesignFidelityCheck:
 
     def test_missing_implementation(self, tmp_path):
         """Mockup exists but no implementation file found."""
-        designs = tmp_path / "designs"
-        designs.mkdir()
+        designs = tmp_path / ".shipwright" / "designs"
+        designs.mkdir(parents=True)
         (designs / "screen-routes.json").write_text(
             json.dumps({"test.html": "/nowhere"}), encoding="utf-8"
         )

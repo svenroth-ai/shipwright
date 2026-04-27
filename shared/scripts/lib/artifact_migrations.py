@@ -151,19 +151,9 @@ ALLOWLIST: dict[str, list[str]] = {
         "CHANGELOG.md",
         "CHANGELOG-unreleased.d/**",
         "docs/migrations/**",
-        # Production code touched in C — narrows as that sub-iterate lands.
-        # Sub-Iterate B (this commit) migrated: get_phase_context.py,
-        # design_checks.py, design_compliance.py — removed from allowlist.
-        "plugins/shipwright-design/scripts/checks/setup-design-session.py",
-        "plugins/shipwright-design/scripts/lib/screen_registry.py",
-        "plugins/shipwright-plan/scripts/checks/generate-batch-tasks.py",
-        "plugins/shipwright-test/scripts/lib/design_fidelity_check.py",
-        "plugins/shipwright-test/scripts/lib/ui_consistency_check.py",
-        # Tests touched in C — narrows as that sub-iterate lands.
-        # Sub-Iterate B (this commit) migrated: test_verifiers_design.py,
-        # test_workflow_checks.py — removed from allowlist.
-        "plugins/shipwright-design/tests/**",
-        "plugins/shipwright-test/tests/test_design_fidelity_check.py",
+        # Production code + tests for plugins migrated through Sub-Iterate C.
+        # Earlier sub-iterates removed entries already migrated.
+        # Remaining narrows as Sub-Iterate D (prose) lands.
         # Plugin prose touched in D — narrows as D lands
         "plugins/shipwright-design/skills/**/*.md",
         "plugins/shipwright-build/skills/build/SKILL.md",

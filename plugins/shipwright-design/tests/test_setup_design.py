@@ -35,9 +35,11 @@ def test_setup_creates_dirs(tmp_project, plugin_root):
         "--plugin-root", str(plugin_root),
     ])
 
-    assert (tmp_project / "designs" / "screens").is_dir()
-    assert (tmp_project / "designs" / "flows").is_dir()
-    assert (tmp_project / "designs" / "uploads").is_dir()
+    assert (tmp_project / ".shipwright" / "designs" / "screens").is_dir()
+    assert (tmp_project / ".shipwright" / "designs" / "flows").is_dir()
+    assert (tmp_project / ".shipwright" / "designs" / "uploads").is_dir()
+    # Canonical only - intentional negative-assertion against legacy.  # artifact-path-canon: legacy
+    assert not (tmp_project / "designs").exists()  # artifact-path-canon: legacy
 
 
 def test_setup_iterate_mode(tmp_project_with_designs, plugin_root):
@@ -51,7 +53,7 @@ def test_setup_iterate_mode(tmp_project_with_designs, plugin_root):
 
 
 def test_setup_upload_mode(tmp_project, plugin_root):
-    uploads = tmp_project / "designs" / "uploads"
+    uploads = tmp_project / ".shipwright" / "designs" / "uploads"
     uploads.mkdir(parents=True)
     (uploads / "mockup.png").write_text("fake")
 
