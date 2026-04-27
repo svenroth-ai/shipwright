@@ -317,26 +317,29 @@ of artifact size.
 
 ---
 
-## 4. Touchpoint Table (template, with the planning numbers as example)
+## 4. Touchpoint Table (template, with the planning + designs numbers as examples)
 
-Fill this in during the Explore phase. Use the planning numbers as a
-sanity check -- if your artifact has fewer touchpoints, B-E will be
-faster; if more, expect proportional growth.
+Fill this in during the Explore phase. Use the prior migration numbers
+as a sanity check -- if your artifact has fewer touchpoints, B-E will
+be faster; if more, expect proportional growth. Two reference data sets
+now (planning + designs) so you can sanity-check magnitude.
 
-| Category | Planning hits | Critical share | Reality check |
+| Category | planning hits | designs hits | Reality check |
 |---|---|---|---|
-| Python `.py` PATH_LITERAL | ~231 in 55 files | 11 plugins + shared + integration-tests | Matched |
-| SKILL.md / agents.md / references.md prose | ~120 | shipwright-plan + iterate + project | ~2/3 were `{planning_dir}` template (false positives). True prose targets: ~40 |
-| `shared/templates/shipwright_sync_config.json` | 6 hardcoded paths | high (template copied into every project) | Found .gitignore bug -- template was ignored |
-| `shared/templates/claude-md-template.md` | 1 (`@planning/`) | high (lands in every CLAUDE.md) | Single-line replace |
-| `docs/guide.md` | 5 PATH_REFs + 1 new explanation paragraph | high | E expanded to add convention paragraph |
-| `docs/hooks-and-pipeline.md` | 9 PATH_REFs | high | Mostly verifier evidence-source descriptions |
-| `.gitignore` | 1 line edit | medium | Inline-comment trap: gitignore does NOT support trailing comments. Always put comment on a separate line. |
-| `plugin.json` / `marketplace.json` keywords | 4 hits | NONE (descriptive word "planning", not a path) | Skip; allowlist permanently |
-| Test fixture `sample_plan_config.json` | 4 path entries | medium | Easy rewrite |
-| CI workflows | 0 | -- | None for planning |
-| Shell scripts | 0 | -- | None for planning |
-| `hooks.json` | 0 | -- | Hooks call shared scripts; pathless |
+| Python `.py` PATH_LITERAL | ~231 in 55 files | ~17 in 8 files | designs scope is much smaller — concentrated in shipwright-{design,plan,test} + shared/verifiers |
+| SKILL.md / agents.md / references.md prose | ~120 (~2/3 false-positive `{planning_dir}` template) | ~115 in 17 files (zero template-vars, all real PATH-REFs) | designs prose was *cleaner* than planning despite similar volume — disambiguate up front |
+| `shared/templates/shipwright_sync_config.json` | 6 hardcoded paths | 0 | not all templates touch every artifact |
+| `shared/templates/claude-md-template.md` | 1 (`@planning/`) | 0 | claude-md-template did NOT mention designs |
+| `shared/templates/agent-docs/conventions.md.template` | 0 | 1 | designs surfaced this template Sub-Iterate E. Re-grep `shared/templates/**` per migration |
+| `docs/guide.md` | 5 PATH_REFs + new convention para | ~10 PATH_REFs + paragraph update | both scopes similar |
+| `docs/hooks-and-pipeline.md` | 9 PATH_REFs | 3 PATH_REFs | designs has fewer because it's a single phase, not a section/manifest concept |
+| `.gitignore` | 1 line edit | 1 line edit | Inline-comment trap recurs every migration. Comment on separate line from pattern, within `[idx-1, idx+2]` window |
+| Plugin agents/* + project references/* | NOT searched in planning | 4 files / 10 hits | NEW lesson 8 — always include these in Explore prompts |
+| `plugin.json` / `marketplace.json` keywords | 4 hits | descriptive (no path) | permanent allowlist |
+| Test fixture `sample_*_config.json` | 4 path entries | 0 | not all artifacts have config templates |
+| CI workflows | 0 | 0 | -- |
+| Shell scripts | 0 | 0 | -- |
+| `hooks.json` | 0 | 0 | hooks call generic shared scripts; pathless |
 
 ---
 
@@ -522,6 +525,59 @@ Honest list from the planning migration. Treat as advice, not gospel.
    Stick to ASCII (`--` instead of `—`) in any script that prints
    to stdout.
 
+### Additional lessons from the `designs` migration (2026-04-27)
+
+8. **Always grep `plugins/*/agents/*.md` AND `skills/project/references/*.md`,
+   not just `skills/*/SKILL.md`.** Explore-Agent #2 missed 4 files
+   here (10 hits total). Layer-1 caught them in Sub-Iterate A but it
+   would've been faster to find them upfront. Update the agent prompt
+   in § 2 to explicitly enumerate `agents/`, `skills/<name>/references/`,
+   AND `skills/<name>/SKILL.md`.
+
+9. **Bulk Edit replace_all beats Edit-pro-Hit on files with 10+ hits.**
+   Designs SKILL.md had ~65 hits — doing them sequentially would've
+   been error-prone. Pattern that worked: Pre-Grep + Disambiguation
+   audit + 10 unambiguous `replace_all` patterns + Post-Grep verify.
+   For files with < 5 hits, inline still wins.
+
+10. **Latent bugs from previous migration's path-shape change can
+    surface during the next.** generate-batch-tasks.py used
+    `planning_dir.parent` (correct pre-planning-migration, broken
+    after — `.parent` resolved to `.shipwright/planning` instead of
+    project root). The bug was silent because `designs/` didn't exist
+    in test fixtures. Found while migrating designs. **Lesson**:
+    when migrating an artifact, also re-validate any `_dir.parent`
+    or `_dir.parent.parent` chains in code that touches DIFFERENT
+    artifacts which were previously migrated.
+
+11. **Add defensive shape validation when climbing parents.**
+    Hardcoded `.parent.parent.parent` is brittle if a future caller
+    passes a non-canonical path. Pattern: check `path.parts[-N]` against
+    the expected segment names (e.g. `.shipwright`, `planning`) before
+    climbing. Skip-with-fallback rather than crash.
+
+12. **Layer-2 setup-contract test must explicitly assert no
+    `.shipwright/.shipwright/` and no `<artifact>/<artifact>/`
+    double-prefixes.** The carry-over bug pattern from planning
+    Sub-Iterate C->D doesn't reproduce automatically; it only
+    surfaces if you assert against it. Add to every new artifact's
+    Layer-2 contract test.
+
+13. **External code review can flag "valid concerns" that are
+    actually structurally enforced elsewhere.** OpenAI's review of
+    designs F flagged "canonical reads not asserted in both-dirs
+    test" as MED — but Layer-1 lint already prevents legacy reads
+    in code, and Layer-2 prevents legacy writes. The structural
+    invariant covers the case. Note these in the review-trace as
+    "verified addressed" rather than implementing redundant tests.
+
+14. **Configure inline `# artifact-path-canon: legacy` markers
+    on the SAME line as the offending literal, not the line
+    above.** The Layer-1 lint's text-regex mode is per-line; markers
+    on adjacent lines do not propagate. Tested in F when adding the
+    drift_parsers marker and in the Pre-G hotfix's defensive
+    `parts[-2] == "planning"` check.
+
 ---
 
 ## 11. Reference Commits
@@ -540,7 +596,44 @@ For grep / blame / re-orientation:
   Layer-3 negative-assertion.
 - `864420c` -- Sub-Iterate F: hard cutover (status flip), migration
   CLI, next-migration prompt, user-facing migration doc.
-- *(this commit)* -- Sub-Iterate G: reference doc + pattern memory.
+- *(planning Sub-Iterate G)* -- reference doc + pattern memory (this file's first version).
+
+### designs migration (2026-04-27)
+
+Second artifact migration validating the pattern. ~17 production touchpoints
++ ~115 prose touchpoints across 7 sub-iterates B-F + Pre-G hotfix + G:
+
+- `643cfd3` -- Sub-Iterate A: manifest activation (`pending` -> `in_progress`),
+  ALLOWLIST seed, .gitignore legacy entry. Layer-1 surfaced 4 plugin
+  agents/references files Explore-discovery had missed (ground truth for
+  pattern-memory § 2 "always grep agents/* in addition to skills/*").
+- `19c9567` -- Sub-Iterate B: shared/ Python migration (3 verifiers +
+  get_phase_context + 2 shared tests + Layer-6 candidate constant
+  `DESIGNS_DIR` in design_checks.py).
+- `14f81ea` -- Sub-Iterate C: plugins/ Python migration (5 plugin scripts
+  + 4 plugin test files) + Layer-2 setup-contract additions:
+  `test_design_setup_session_writes_canonical_designs` and
+  `test_no_legacy_designs_path_construction_in_plugin_source`.
+  **Bonus**: latent bug fix in generate-batch-tasks.py (planning_dir.parent
+  was correct pre-planning-migration, broken post-migration; corrected
+  to .parent.parent.parent + later hardened with shape validation).
+- `d38f4fb` -- Sub-Iterate D: plugin prose migration (17 .md files,
+  ~115 edits via bulk Edit replace_all on 10 unambiguous patterns,
+  not Edit-pro-Hit which the planning lessons warned against).
+- `0f04c3e` -- Sub-Iterate E: templates + docs + Layer-3 already
+  iterates manifest so designs is auto-covered + 2 NEW edge case
+  tests in `shared/tests/test_artifact_drift_edge_cases.py`
+  (both-dirs-present + canonical-only self-heal + generated-output
+  content scan, addressing External-Review GPT-9 + GPT-10).
+- `d415308` -- Sub-Iterate F: hard cutover. Status flip, .gitignore
+  retention comment in window, drift_parsers.py:108 line split with
+  per-artifact `# artifact-path-canon: legacy` markers, user-facing
+  `docs/migrations/.shipwright-designs-relocation.md` (with `git rm
+  --cached` guidance per External-Review GPT-7), idempotency test
+  `test_10_design_setup_re_run_idempotency` per External-Review GPT-8.
+- `012c610` -- Pre-G hotfix: defensive shape validation on planning_dir
+  in generate-batch-tasks.py per External-Review HIGH finding (OpenAI).
+- *(this commit)* -- Sub-Iterate G: reference doc + pattern memory updates.
 
 ---
 
