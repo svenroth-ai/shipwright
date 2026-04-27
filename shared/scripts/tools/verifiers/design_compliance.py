@@ -7,7 +7,7 @@ heuristic, text-only flows are valid).
 Plan § 3 deliberately allows text-only flows for D1, so the artifact
 gate is satisfied by any of:
 
-- ``designs/mockups/*.html`` (or ``designs/*.html``)
+- ``.shipwright/designs/mockups/*.html`` (or ``.shipwright/designs/*.html``)
 - ``agent_docs/screens.md``
 - ``agent_docs/user-flow.md``
 """
@@ -45,8 +45,8 @@ D2_REMEDIATION = (
 
 def _html_mockups_exist(project_root: Path) -> list[Path]:
     roots = [
-        project_root / "designs" / "mockups",
-        project_root / "designs",
+        project_root / ".shipwright" / "designs" / "mockups",
+        project_root / ".shipwright" / "designs",
     ]
     out: list[Path] = []
     for root in roots:

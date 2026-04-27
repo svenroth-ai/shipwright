@@ -40,12 +40,12 @@ def seed_canon_design(
     )
 
     # Design manifest with the Screens table
-    (root / "designs").mkdir()
-    (root / "designs" / "screens").mkdir()
+    (root / ".shipwright" / "designs").mkdir()
+    (root / ".shipwright" / "designs" / "screens").mkdir()
     rows = []
     for idx, (fname, frs) in enumerate(screens, start=1):
-        (root / "designs" / fname).parent.mkdir(parents=True, exist_ok=True)
-        (root / "designs" / fname).write_text("<html>mock</html>")
+        (root / ".shipwright" / "designs" / fname).parent.mkdir(parents=True, exist_ok=True)
+        (root / ".shipwright" / "designs" / fname).write_text("<html>mock</html>")
         fr_cell = ", ".join(frs) if frs else "none"
         # filename stem becomes the display name
         rows.append(f"| {idx:02d} | {Path(fname).stem} | {fname} | complete | {fr_cell} |")
@@ -56,7 +56,7 @@ def seed_canon_design(
         "|---|--------|------|--------|-----------|\n"
         + "\n".join(rows) + "\n"
     )
-    (root / "designs" / "design-manifest.md").write_text(manifest_body)
+    (root / ".shipwright" / "designs" / "design-manifest.md").write_text(manifest_body)
 
     if not write_canon_artifacts:
         return
@@ -141,7 +141,7 @@ def test_manifest_screens_exist_passes_on_happy_path(tmp_path):
 
 def test_manifest_screens_exist_fails_on_missing_html(tmp_path):
     seed_canon_design(tmp_path)
-    (tmp_path / "designs" / "screens" / "01-login.html").unlink()
+    (tmp_path / ".shipwright" / "designs" / "screens" / "01-login.html").unlink()
     r = check_design_manifest_screens_exist(tmp_path)
     assert r.ok is False
 
@@ -175,8 +175,8 @@ def test_fr_coverage_fails_on_orphan_fr(tmp_path):
 
 def test_fr_coverage_skips_when_no_planning_frs(tmp_path):
     # No .shipwright/planning/ dir → no FRs → trivially satisfied
-    (tmp_path / "designs").mkdir()
-    (tmp_path / "designs" / "design-manifest.md").write_text("## Screens\n")
+    (tmp_path / ".shipwright" / "designs").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "designs" / "design-manifest.md").write_text("## Screens\n")
     r = check_design_fr_coverage(tmp_path)
     assert r.ok is True
 

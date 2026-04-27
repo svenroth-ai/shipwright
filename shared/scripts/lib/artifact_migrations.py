@@ -151,20 +151,19 @@ ALLOWLIST: dict[str, list[str]] = {
         "CHANGELOG.md",
         "CHANGELOG-unreleased.d/**",
         "docs/migrations/**",
-        # Production code touched in B-C — narrows as those sub-iterates land
+        # Production code touched in C — narrows as that sub-iterate lands.
+        # Sub-Iterate B (this commit) migrated: get_phase_context.py,
+        # design_checks.py, design_compliance.py — removed from allowlist.
         "plugins/shipwright-design/scripts/checks/setup-design-session.py",
         "plugins/shipwright-design/scripts/lib/screen_registry.py",
         "plugins/shipwright-plan/scripts/checks/generate-batch-tasks.py",
         "plugins/shipwright-test/scripts/lib/design_fidelity_check.py",
         "plugins/shipwright-test/scripts/lib/ui_consistency_check.py",
-        "shared/scripts/tools/get_phase_context.py",
-        "shared/scripts/tools/verifiers/design_checks.py",
-        "shared/scripts/tools/verifiers/design_compliance.py",
-        # Tests touched in B-C — narrows as those sub-iterates land
+        # Tests touched in C — narrows as that sub-iterate lands.
+        # Sub-Iterate B (this commit) migrated: test_verifiers_design.py,
+        # test_workflow_checks.py — removed from allowlist.
         "plugins/shipwright-design/tests/**",
         "plugins/shipwright-test/tests/test_design_fidelity_check.py",
-        "shared/tests/test_verifiers_design.py",
-        "shared/tests/test_workflow_checks.py",
         # Plugin prose touched in D — narrows as D lands
         "plugins/shipwright-design/skills/**/*.md",
         "plugins/shipwright-build/skills/build/SKILL.md",

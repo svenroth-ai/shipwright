@@ -17,8 +17,8 @@ Canon coverage:
 Phase-own checks:
 
 - ``check_design_manifest_screens_exist`` — every row in the Screens
-  table of ``designs/design-manifest.md`` must point at an existing
-  ``.html`` file. ERROR.
+  table of ``.shipwright/designs/design-manifest.md`` must point at an
+  existing ``.html`` file. ERROR.
 - ``check_design_fr_coverage`` — every FR in every
   ``.shipwright/planning/<split>/spec.md`` must appear in the ``Linked FRs`` column
   of at least one screen row. ERROR. Adapted from the shipwright-check
@@ -53,6 +53,12 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 from lib.drift_parsers import collect_requirements_from_planning  # noqa: E402
+
+# Canonical design artifact directory under .shipwright/. Module-local
+# constant per Sub-Iterate B of the designs relocation; the legacy
+# top-level path is referenced only by the drift detector / migration
+# framework, not by this verifier.
+DESIGNS_DIR = ".shipwright/designs"
 
 
 # ---------------------------------------------------------------------------
@@ -114,13 +120,13 @@ def _parse_screens_table(manifest_body: str) -> list[tuple[str, list[str]]]:
 # ---------------------------------------------------------------------------
 
 def check_design_manifest_screens_exist(project_root: Path) -> CheckResult:
-    """Every row in the ``## Screens`` table of ``designs/design-manifest.md``
+    """Every row in the ``## Screens`` table of ``.shipwright/designs/design-manifest.md``
     must point at an existing HTML file on disk. ERROR — downstream test
     fidelity checks will explode if mockups vanished or were renamed."""
     name = "design_manifest screens exist on disk"
-    manifest = project_root / "designs" / "design-manifest.md"
+    manifest = project_root / DESIGNS_DIR / "design-manifest.md"
     if not manifest.exists():
-        return CheckResult(name, False, "designs/design-manifest.md missing")
+        return CheckResult(name, False, f"{DESIGNS_DIR}/design-manifest.md missing")
     try:
         body = manifest.read_text(encoding="utf-8", errors="ignore")
     except OSError as exc:
@@ -136,8 +142,8 @@ def check_design_manifest_screens_exist(project_root: Path) -> CheckResult:
 
     missing: list[str] = []
     for screen_file, _ in rows:
-        # Manifest paths are relative to `designs/`.
-        full = project_root / "designs" / screen_file
+        # Manifest paths are relative to the canonical designs directory.
+        full = project_root / DESIGNS_DIR / screen_file
         if not full.exists():
             missing.append(screen_file)
 
@@ -166,9 +172,9 @@ def check_design_fr_coverage(project_root: Path) -> CheckResult:
     if not frs:
         return CheckResult(name, True, "no planning FRs — coverage trivially satisfied")
 
-    manifest = project_root / "designs" / "design-manifest.md"
+    manifest = project_root / DESIGNS_DIR / "design-manifest.md"
     if not manifest.exists():
-        return CheckResult(name, False, "designs/design-manifest.md missing")
+        return CheckResult(name, False, f"{DESIGNS_DIR}/design-manifest.md missing")
     try:
         body = manifest.read_text(encoding="utf-8", errors="ignore")
     except OSError as exc:

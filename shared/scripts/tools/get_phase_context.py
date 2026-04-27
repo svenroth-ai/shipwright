@@ -75,7 +75,7 @@ CONFIG_NAME = "shipwright_run_config.json"
 # per-skill based on what each Skill actually needs to read.
 PHASE_OWN_ARTIFACTS: dict[str, list[str]] = {
     "project": [".shipwright/planning/requirements.md"],
-    "design": ["designs/", "shipwright_design_config.json"],
+    "design": [".shipwright/designs/", "shipwright_design_config.json"],
     "plan": ["agent_docs/sections/", "shipwright_plan_config.json"],
     "build": ["shipwright_build_config.json"],
     "test": ["shipwright_test_results.json"],
@@ -88,7 +88,7 @@ PHASE_OWN_ARTIFACTS: dict[str, list[str]] = {
 PHASE_PREREQ_ARTIFACTS: dict[str, list[str]] = {
     "design": [".shipwright/planning/requirements.md", "shipwright_project_config.json"],
     "plan": [".shipwright/planning/requirements.md", "shipwright_design_config.json",
-             "designs/"],
+             ".shipwright/designs/"],
     "build": ["agent_docs/sections/", "shipwright_plan_config.json"],
     "test": ["shipwright_build_config.json"],
     "security": ["shipwright_test_results.json"],

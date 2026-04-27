@@ -492,8 +492,8 @@ def test_d1_fails_without_artifacts(proj: Path):
 
 
 def test_d1_passes_with_html_mockup(proj: Path):
-    (proj / "designs" / "mockups").mkdir(parents=True)
-    (proj / "designs" / "mockups" / "01-login.html").write_text("<html/>", encoding="utf-8")
+    (proj / ".shipwright" / "designs" / "mockups").mkdir(parents=True)
+    (proj / ".shipwright" / "designs" / "mockups" / "01-login.html").write_text("<html/>", encoding="utf-8")
     f = design_compliance.check_d1_design_artifact(proj)
     assert f["status"] == pq.STATUS_PASS
 
