@@ -79,6 +79,12 @@ ALLOWLIST: dict[str, list[str]] = {
         # Layer 2 setup-contract test — intentionally asserts that the legacy
         # path is NOT created. Must reference legacy by name to do so.
         "shared/tests/test_setup_writes_canonical.py",
+        # Sub-Iterate F deliverables — migration CLI + chain helper +
+        # their tests reference "planning" as the artifact name.
+        "shared/scripts/tools/migrate_artifact_dir.py",
+        "shared/scripts/tools/print_next_migration_prompt.py",
+        "shared/tests/test_migrate_artifact_dir.py",
+        "shared/tests/test_print_next_migration_prompt.py",
         # Plan files (this migration's own design docs)
         "C:/Users/SvenRoth/.claude/plans/iterate-shipwright-relocation-*.md",
         "C:/Users/SvenRoth/.claude/plans/ich-bin-am-berarbeiten-glittery-sun.md",
