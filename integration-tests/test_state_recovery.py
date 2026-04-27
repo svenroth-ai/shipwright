@@ -21,8 +21,11 @@ from conftest import (
 
 def _assert_no_legacy_artifact_dirs(project_root: Path) -> None:
     """Layer 3 negative-assertion (mirror of test_core_trilogy_flow):
-    fail if any in_progress/migrated artifact appeared at its legacy
-    top-level location.
+    fail if any `migrated` artifact appeared at its legacy top-level location.
+
+    `in_progress` is intentionally warn-only during the migration window —
+    plugin code migrates incrementally across Sub-Iterates B-E, so legacy
+    paths are expected until F flips status to `migrated`.
 
     Loaded by file-spec to avoid sys.modules poisoning the `lib` namespace
     for plugin tests that import a different `lib` package.
@@ -35,7 +38,7 @@ def _assert_no_legacy_artifact_dirs(project_root: Path) -> None:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     for migration in module.ARTIFACT_MIGRATIONS:
-        if migration["status"] not in ("in_progress", "migrated"):
+        if migration["status"] != "migrated":
             continue
         legacy = project_root / migration["legacy_dirname"]
         assert not legacy.exists(), (
