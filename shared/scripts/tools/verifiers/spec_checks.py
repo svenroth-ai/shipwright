@@ -2,7 +2,7 @@
 
 Plan mapping (§ 3):
 
-- **S1** (Tier-1, FAIL): ``agent_docs/spec.md`` exists, non-empty, has
+- **S1** (Tier-1, FAIL): ``.shipwright/agent_docs/spec.md`` exists, non-empty, has
   ≥1 FR heading.
 - **S2** (Tier-1, FAIL): for iterate medium+, ``.shipwright/planning/iterate/<run_id>.md``
   (or a similarly named spec file) exists. SKIP when complexity=small.
@@ -66,7 +66,7 @@ from lib.spec_parser import (  # noqa: E402
 # Names + remediations
 # ---------------------------------------------------------------------------
 
-S1_NAME  = "S1 agent_docs/spec.md exists with ≥1 FR heading"
+S1_NAME  = "S1 .shipwright/agent_docs/spec.md exists with ≥1 FR heading"
 S2_NAME  = "S2 iterate spec file exists for medium+ complexity"
 S3_NAME  = "S3 iterate mini-plan file exists for medium+ complexity"
 S4_NAME  = "S4 removed FRs retain status=deprecated"
@@ -78,7 +78,7 @@ S9_NAME  = "S9 README.md touched recently on UI-facing iterate features"
 S10_NAME = "S10 CLAUDE.md touched when new top-level directories appear"
 
 S1_REMEDIATION = (
-    "Create agent_docs/spec.md with at least one `## FR-...` heading "
+    "Create .shipwright/agent_docs/spec.md with at least one `## FR-...` heading "
     "(see shared/templates/spec.md)."
 )
 S2_REMEDIATION = (
@@ -204,25 +204,25 @@ def check_s1_top_level_spec(project_root: Path) -> dict[str, Any]:
     if content is None:
         return make_finding(
             "S1", STATUS_FAIL,
-            "agent_docs/spec.md missing",
+            ".shipwright/agent_docs/spec.md missing",
             name=S1_NAME, remediation=S1_REMEDIATION,
         )
     if not content.strip():
         return make_finding(
             "S1", STATUS_FAIL,
-            "agent_docs/spec.md empty",
+            ".shipwright/agent_docs/spec.md empty",
             name=S1_NAME, remediation=S1_REMEDIATION,
         )
     n = count_fr_headings(content)
     if n < 1:
         return make_finding(
             "S1", STATUS_FAIL,
-            "agent_docs/spec.md has no FR headings",
+            ".shipwright/agent_docs/spec.md has no FR headings",
             name=S1_NAME, remediation=S1_REMEDIATION,
         )
     return make_finding(
         "S1", STATUS_PASS,
-        f"agent_docs/spec.md has {n} FR heading(s)",
+        f".shipwright/agent_docs/spec.md has {n} FR heading(s)",
         name=S1_NAME,
     )
 
@@ -373,7 +373,7 @@ def check_s4_fr_preservation(project_root: Path) -> dict[str, Any]:
     rc, log_out, _ = _run_git(
         project_root,
         "log", "-n", "10", "--pretty=format:%H", "--",
-        "agent_docs/spec.md", PLANNING_DIRNAME,
+        ".shipwright/agent_docs/spec.md", PLANNING_DIRNAME,
     )
     if rc != 0 or not log_out.strip():
         return make_finding(
@@ -393,7 +393,7 @@ def check_s4_fr_preservation(project_root: Path) -> dict[str, Any]:
     rc, diff_out, _ = _run_git(
         project_root,
         "diff", baseline, "HEAD",
-        "--", "agent_docs/spec.md",
+        "--", ".shipwright/agent_docs/spec.md",
     )
     if rc != 0:
         return make_finding(

@@ -44,12 +44,12 @@ def detect_scope(project_root: Optional[Path] = None, **kwargs) -> tuple[str, li
 
     if project_root:
         has_claude_md = (project_root / "CLAUDE.md").exists()
-        has_agent_docs = (project_root / "agent_docs").is_dir()
+        has_agent_docs = (project_root / ".shipwright" / "agent_docs").is_dir()
 
         if has_claude_md:
             signals.append("file: CLAUDE.md exists")
         if has_agent_docs:
-            signals.append("file: agent_docs/ exists")
+            signals.append("file: .shipwright/agent_docs/ exists")
 
         if has_claude_md and has_agent_docs:
             return "extension", signals

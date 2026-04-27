@@ -103,9 +103,9 @@ def check_a2_spec_has_frs(project_root: Path) -> dict[str, Any]:
 def check_a3_adoption_adr(project_root: Path) -> dict[str, Any]:
     """A3 (Tier-1): decision_log.md has ADR-0001 with 'Adopt' in the title."""
     name = "A3 decision_log.md has adoption ADR-0001"
-    log = project_root / "agent_docs" / "decision_log.md"
+    log = project_root / ".shipwright" / "agent_docs" / "decision_log.md"
     if not log.exists():
-        return make_finding("A3", STATUS_FAIL, "missing agent_docs/decision_log.md",
+        return make_finding("A3", STATUS_FAIL, "missing .shipwright/agent_docs/decision_log.md",
                             name=name, provenance="adopt_adr_check")
     content = log.read_text(encoding="utf-8", errors="ignore")
     if re.search(r"ADR-0001[^\n]*[Aa]dopt", content):
@@ -123,7 +123,7 @@ def check_a3_adoption_adr(project_root: Path) -> dict[str, Any]:
 def check_a4_backfill_quality(project_root: Path) -> dict[str, Any]:
     """A4 (Tier-2): if retroactive ADRs exist, they should have Context > 50 chars."""
     name = "A4 ADR backfill quality (Tier-2)"
-    log = project_root / "agent_docs" / "decision_log.md"
+    log = project_root / ".shipwright" / "agent_docs" / "decision_log.md"
     if not log.exists():
         return make_finding("A4", STATUS_SKIP, "no decision_log.md — nothing to assess",
                             name=name, provenance="adopt_adr_check")

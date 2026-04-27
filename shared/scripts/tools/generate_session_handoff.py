@@ -6,7 +6,7 @@ human-readable handoff document for session recovery.
 Usage (from target project root):
     uv run <SHIPWRIGHT_PLUGIN_ROOT>/../../shared/scripts/tools/generate_session_handoff.py
 
-Writes to: agent_docs/session_handoff.md
+Writes to: .shipwright/agent_docs/session_handoff.md
 """
 
 import json
@@ -183,7 +183,7 @@ def generate_handoff(
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     # Read decision log if it exists
-    decision_log = project_root / "agent_docs" / "decision_log.md"
+    decision_log = project_root / ".shipwright" / "agent_docs" / "decision_log.md"
     recent_decisions = ""
     if decision_log.exists():
         content = decision_log.read_text(encoding="utf-8")
@@ -424,9 +424,9 @@ def main() -> None:
         canon_frontmatter=canon_frontmatter,
     )
 
-    # Ensure agent_docs/ exists
-    agent_docs = project_root / "agent_docs"
-    agent_docs.mkdir(exist_ok=True)
+    # Ensure .shipwright/agent_docs/ exists
+    agent_docs = project_root / ".shipwright" / "agent_docs"
+    agent_docs.mkdir(parents=True, exist_ok=True)
 
     handoff_path = agent_docs / "session_handoff.md"
     handoff_path.write_text(content, encoding="utf-8")

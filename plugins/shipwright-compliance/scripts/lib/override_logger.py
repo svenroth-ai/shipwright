@@ -1,6 +1,6 @@
 """Log compliance overrides when user says "Continue anyway".
 
-Writes to {project_root}/agent_docs/compliance_overrides.log.
+Writes to {project_root}/.shipwright/agent_docs/compliance_overrides.log.
 The compliance plugin reads this file during report generation
 to document which enforcement checks were overridden.
 
@@ -33,7 +33,7 @@ def log_override(
     Returns:
         Path to the log file.
     """
-    log_dir = Path(project_root) / "agent_docs"
+    log_dir = Path(project_root) / ".shipwright" / "agent_docs"
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / "compliance_overrides.log"
 
@@ -52,7 +52,7 @@ def read_overrides(project_root: str | Path) -> list[str]:
 
     Returns list of raw log lines. Empty list if no overrides logged.
     """
-    log_path = Path(project_root) / "agent_docs" / "compliance_overrides.log"
+    log_path = Path(project_root) / ".shipwright" / "agent_docs" / "compliance_overrides.log"
     if not log_path.exists():
         return []
     return log_path.read_text(encoding="utf-8").strip().splitlines()

@@ -160,7 +160,7 @@ def hook_block(
     """Build a soft-block hook output (exit code 2) with override support.
 
     Used by compliance enforcement hooks. The user can say "Continue anyway"
-    and the override gets logged to agent_docs/compliance_overrides.log.
+    and the override gets logged to .shipwright/agent_docs/compliance_overrides.log.
 
     Args:
         hook_event: The hook event name (e.g. "PreToolUse").

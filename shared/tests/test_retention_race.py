@@ -52,7 +52,7 @@ def _canonical_entry(slug: str, date: str) -> dict:
 def _seed_at_cap(tmp_path: Path) -> None:
     """Create a project already at the retention cap so the next append
     triggers retention."""
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     d = iterates_dir(tmp_path)
     d.mkdir(parents=True)
 
@@ -182,7 +182,7 @@ class TestLockSerialization:
         thread A starts a migration, thread B blocks until A completes.
         We measure B's wait time and assert it is >= the simulated migration
         duration."""
-        (tmp_path / "agent_docs").mkdir()
+        (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
         # Seed a legacy project so the first append will run a migration.
         legacy = [
             _canonical_entry(f"old{i}", date=f"2026-04-0{i}T10:00:00Z")

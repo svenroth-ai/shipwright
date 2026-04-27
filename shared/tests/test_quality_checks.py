@@ -31,8 +31,8 @@ from tools.verifiers import quality_checks as qc  # noqa: E402
 
 
 def _write_decision_log(proj: Path, content: str) -> None:
-    (proj / "agent_docs").mkdir(exist_ok=True)
-    (proj / "agent_docs" / "decision_log.md").write_text(content, encoding="utf-8")
+    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (proj / ".shipwright" / "agent_docs" / "decision_log.md").write_text(content, encoding="utf-8")
 
 
 def _bullet_adr(adr_id: str, *, context: str, decision: str, consequences: str) -> str:
@@ -56,7 +56,7 @@ def _section_adr(adr_id: str, *, context: str, decision: str, consequences: str)
 
 @pytest.fixture
 def proj(tmp_path: Path) -> Path:
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     return tmp_path
 
 

@@ -114,4 +114,4 @@ def get_checkpoint(project_root: str | Path) -> dict[str, Any]:
 
 def has_handoff(project_root: str | Path) -> bool:
     """Check if a session handoff file exists."""
-    return (Path(project_root) / "agent_docs" / "session_handoff.md").exists()
+    return (Path(project_root) / ".shipwright" / "agent_docs" / "session_handoff.md").exists()

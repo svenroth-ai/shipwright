@@ -52,7 +52,7 @@ def _seed_legacy_project(
     tmp_path: Path, legacy_entries: list[dict], scope: str = "full_app"
 ) -> Path:
     """Create a target project with a legacy iterate_history array but no dir."""
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     config = {"scope": scope, "iterate_history": legacy_entries}
     (tmp_path / RUN_CONFIG_NAME).write_text(json.dumps(config), encoding="utf-8")
     return tmp_path
@@ -60,7 +60,7 @@ def _seed_legacy_project(
 
 def _seed_migrated_project(tmp_path: Path) -> Path:
     """Create a target project that has already completed migration."""
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     d = iterates_dir(tmp_path)
     d.mkdir(parents=True)
     config = {
@@ -177,7 +177,7 @@ class TestMigration:
     def test_migration_preserves_unknown_top_level_config_fields(self, tmp_path):
         """Don't lose custom fields like adr_prefix or profile overrides."""
         legacy = [_canonical_entry(slug="a")]
-        (tmp_path / "agent_docs").mkdir()
+        (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
         config = {
             "scope": "full_app",
             "iterate_history": legacy,
@@ -273,7 +273,7 @@ class TestMigration:
     ):
         """A project that never had iterate_history (e.g. freshly adopted
         with the new artifact_writer) goes straight to append."""
-        (tmp_path / "agent_docs").mkdir()
+        (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
         config = {"scope": "full_app", MIGRATION_STATE_KEY: "complete"}
         (tmp_path / RUN_CONFIG_NAME).write_text(json.dumps(config), encoding="utf-8")
 
@@ -286,7 +286,7 @@ class TestMigration:
         some test scenarios lack a run_config entirely. The tool must still
         create the entry file because the dir-per-iterate storage is
         independent of the config."""
-        (tmp_path / "agent_docs").mkdir()
+        (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
         result = append_iterate_entry(tmp_path, _canonical_entry(slug="first"))
         assert (tmp_path / result["entry_path"]).exists()
 

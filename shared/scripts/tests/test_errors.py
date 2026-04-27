@@ -130,7 +130,7 @@ class TestHookBlock:
             hook_event="PreToolUse",
             reason="RTM coverage 62% < 80% threshold",
             details={"coverage": 0.62, "threshold": 0.80, "missing": ["REQ-007"]},
-            override_instruction="Log override to agent_docs/compliance_overrides.log",
+            override_instruction="Log override to .shipwright/agent_docs/compliance_overrides.log",
             resume_note="Coverage gap will be flagged again at next compliance checkpoint.",
         )
         output = result["hookSpecificOutput"]

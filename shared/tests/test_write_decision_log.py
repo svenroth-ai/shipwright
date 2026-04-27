@@ -35,7 +35,7 @@ def test_append_decision_creates_file(tmp_project):
     )
     assert number == 1
 
-    log_path = tmp_project / "agent_docs" / "decision_log.md"
+    log_path = tmp_project / ".shipwright" / "agent_docs" / "decision_log.md"
     assert log_path.exists()
 
     content = log_path.read_text()
@@ -59,7 +59,7 @@ def test_compact_format_structure(tmp_project):
         title="Zustand for State Management",
         rationale="Simpler API, smaller bundle",
     )
-    content = (tmp_project / "agent_docs" / "decision_log.md").read_text()
+    content = (tmp_project / ".shipwright" / "agent_docs" / "decision_log.md").read_text()
     assert "### ADR-001: Zustand for State Management" in content
     assert "- **Date:**" in content
     assert "02-api" in content
@@ -82,7 +82,7 @@ def test_title_auto_generated_from_decision(tmp_project):
         decision="Use magic link authentication",
         consequences="X",
     )
-    content = (tmp_project / "agent_docs" / "decision_log.md").read_text()
+    content = (tmp_project / ".shipwright" / "agent_docs" / "decision_log.md").read_text()
     assert "### ADR-001: Use magic link authentication" in content
 
 
@@ -96,7 +96,7 @@ def test_title_truncated_for_long_decisions(tmp_project):
         decision=long_decision,
         consequences="X",
     )
-    content = (tmp_project / "agent_docs" / "decision_log.md").read_text()
+    content = (tmp_project / ".shipwright" / "agent_docs" / "decision_log.md").read_text()
     # Title should be truncated with ...
     # Find the ADR header line
     adr_line = [l for l in content.splitlines() if l.startswith("### ADR-")][0]
@@ -115,7 +115,7 @@ def test_append_decision_sequential_numbering(tmp_project):
         )
         assert number == i + 1
 
-    content = (tmp_project / "agent_docs" / "decision_log.md").read_text()
+    content = (tmp_project / ".shipwright" / "agent_docs" / "decision_log.md").read_text()
     assert "### ADR-001:" in content
     assert "### ADR-002:" in content
     assert "### ADR-003:" in content
@@ -139,7 +139,7 @@ def test_append_decision_does_not_overwrite(tmp_project):
         consequences="X2",
     )
 
-    content = (tmp_project / "agent_docs" / "decision_log.md").read_text()
+    content = (tmp_project / ".shipwright" / "agent_docs" / "decision_log.md").read_text()
     assert "First" in content
     assert "Second" in content
     assert "### ADR-001:" in content
@@ -184,6 +184,6 @@ def test_optional_fields_omitted_when_empty(tmp_project):
         consequences="X",
         # No rejected, no rationale
     )
-    content = (tmp_project / "agent_docs" / "decision_log.md").read_text()
+    content = (tmp_project / ".shipwright" / "agent_docs" / "decision_log.md").read_text()
     assert "**Rejected:**" not in content
     assert "**Rationale:**" not in content

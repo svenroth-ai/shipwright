@@ -13,7 +13,7 @@ Dual-mode reads
 Since the iterate_history file-per-iterate refactor, every read of the
 iterate entry store goes through ``lib.iterate_entry.read_iterate_entries``
 (merged legacy-array + per-file directory). Partial migrations no longer
-hide entries; a brand-new project with only ``agent_docs/iterates/``
+hide entries; a brand-new project with only ``.shipwright/agent_docs/iterates/``
 files and no legacy array is fully supported.
 """
 
@@ -45,7 +45,7 @@ from .common import CheckResult, Severity  # noqa: E402
 def check_iterate_history_has_run_id(project_root: Path, run_id: str) -> CheckResult:
     """F5c check — the iterate run appended itself to the entry store.
 
-    Reads from the merged legacy array + ``agent_docs/iterates/`` directory.
+    Reads from the merged legacy array + ``.shipwright/agent_docs/iterates/`` directory.
     Passes if either source contains the run_id.
     """
     name = "iterate_history has run_id"
@@ -86,7 +86,7 @@ def check_adr_in_iterate_history(project_root: Path, run_id: str) -> CheckResult
     if not adr_id:
         return CheckResult(name, False, f"iterate_history[{run_id}].adr missing")
 
-    log = project_root / "agent_docs" / "decision_log.md"
+    log = project_root / ".shipwright" / "agent_docs" / "decision_log.md"
     if not log.exists():
         return CheckResult(name, False, f"missing {log.name}")
     log_content = log.read_text(encoding="utf-8", errors="ignore")
@@ -141,7 +141,7 @@ def check_session_handoff_fresh(
     Warning-level because handoff is advisory, not load-bearing.
     """
     name = "session_handoff.md fresh"
-    handoff = project_root / "agent_docs" / "session_handoff.md"
+    handoff = project_root / ".shipwright" / "agent_docs" / "session_handoff.md"
     if not handoff.exists():
         return CheckResult(
             name,
@@ -173,7 +173,7 @@ def check_build_dashboard_has_run_id(
     Was defined in the Canon spec but never implemented until iterate 14.8.
     """
     name = "build_dashboard has run_id"
-    dashboard = project_root / "agent_docs" / "build_dashboard.md"
+    dashboard = project_root / ".shipwright" / "agent_docs" / "build_dashboard.md"
     if not dashboard.exists():
         return CheckResult(
             name, False, "build_dashboard.md missing",
@@ -249,7 +249,7 @@ def check_architecture_reviewed(
     if intent in ("bug", "fix"):
         return CheckResult(name, True, f"intent={intent}, architecture update unlikely")
 
-    arch = project_root / "agent_docs" / "architecture.md"
+    arch = project_root / ".shipwright" / "agent_docs" / "architecture.md"
     if not arch.exists():
         return CheckResult(
             name, False, "architecture.md missing",
@@ -283,7 +283,7 @@ def check_conventions_reviewed(
     if intent in ("bug", "fix"):
         return CheckResult(name, True, f"intent={intent}, conventions update unlikely")
 
-    conv = project_root / "agent_docs" / "conventions.md"
+    conv = project_root / ".shipwright" / "agent_docs" / "conventions.md"
     if not conv.exists():
         return CheckResult(
             name, False, "conventions.md missing",

@@ -155,7 +155,7 @@ class TestFullPipelineE2E:
         assert result["section_name"] == "01-models"
 
         # Simulate build artifacts
-        (project / "agent_docs").mkdir(exist_ok=True)
+        (project / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
         run_script(
             str(BUILD_PLUGIN / "scripts" / "tools" / "update_section_state.py"),
             ["--section", "01-models", "--status", "complete",
@@ -288,7 +288,7 @@ class TestIterateMode:
         project = tmp_path / "existing-app"
         project.mkdir()
         (project / "CLAUDE.md").write_text("# Existing App\n")
-        (project / "agent_docs").mkdir()
+        (project / ".shipwright" / "agent_docs").mkdir(parents=True)
 
         result = run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "inference.py"),
@@ -303,7 +303,7 @@ class TestIterateMode:
         project = tmp_path / "existing-app"
         project.mkdir()
         (project / "CLAUDE.md").write_text("# Existing App\n")
-        (project / "agent_docs").mkdir()
+        (project / ".shipwright" / "agent_docs").mkdir(parents=True)
 
         result = run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "inference.py"),
@@ -321,7 +321,7 @@ class TestIterateMode:
         project = tmp_path / "existing-app"
         project.mkdir()
         (project / "CLAUDE.md").write_text("# Existing App\n")
-        (project / "agent_docs").mkdir()
+        (project / ".shipwright" / "agent_docs").mkdir(parents=True)
 
         result = run_script(
             str(RUN_PLUGIN / "scripts" / "lib" / "inference.py"),

@@ -84,7 +84,7 @@ def _build_repo(tmp_path: Path, *, legacy_array: list[dict] | None = None) -> Pa
     _git(repo, "config", "user.email", "integration@test")
     _git(repo, "config", "user.name", "Integration Test")
 
-    (repo / "agent_docs").mkdir()
+    (repo / ".shipwright" / "agent_docs").mkdir(parents=True)
     config: dict = {"scope": "full_app"}
     if legacy_array is not None:
         config["iterate_history"] = legacy_array

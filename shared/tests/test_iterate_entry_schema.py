@@ -433,7 +433,7 @@ def test_find_entry_by_run_id_resolves_from_either_source(tmp_path):
 
 def test_entry_file_for_stays_under_iterates_dir(tmp_path):
     """Even for pathologically crafted run_ids, the derived path must stay
-    within agent_docs/iterates/."""
+    within .shipwright/agent_docs/iterates/."""
     malicious = "iterate-../../../etc/passwd"
     path = entry_file_for(tmp_path, malicious)
     # Resolved path must still be inside the iterates directory.

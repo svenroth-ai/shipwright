@@ -96,11 +96,12 @@ def build_paths_from_entries(
 # Hidden/ignored directory names that should never surface as
 # "undocumented" findings. Two categories:
 #  - Build/test/IDE artifacts: node_modules, .venv, dist, etc.
-#  - Shipwright runtime artifacts of target projects: agent_docs, designs,
-#    planning, compliance, plus the ``.shipwright/`` umbrella. These are
-#    state, not architecture; CLAUDE.md in a target project should NOT be
-#    forced to enumerate them. ``planning`` stays here for backwards-compat
-#    with projects that haven't run the migration yet.
+#  - Shipwright runtime artifacts of target projects: .shipwright/agent_docs,
+#    .shipwright/designs, .shipwright/planning, compliance, plus the
+#    ``.shipwright/`` umbrella. These are state, not architecture; CLAUDE.md
+#    in a target project should NOT be forced to enumerate them. The legacy
+#    top-level dirnames (``planning``, ``designs``, ``agent_docs``) stay here
+#    for backwards-compat with projects that haven't run the migration yet.
 HIDDEN_DIR_DEFAULTS: frozenset[str] = frozenset({
     "node_modules", "__pycache__", "dist", "build", ".venv", ".git",
     ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox", ".idea", ".vscode",
@@ -362,7 +363,7 @@ def collect_requirements_from_planning(
 
 
 # ---------------------------------------------------------------------------
-# ADR header parser (from agent_docs/decision_log.md)
+# ADR header parser (from .shipwright/agent_docs/decision_log.md)
 # ---------------------------------------------------------------------------
 
 # Old verbose format: "## ADR-001 | date | section | Commit <hash>"

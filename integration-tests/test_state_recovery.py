@@ -316,7 +316,7 @@ class TestCrossPluginConfig:
 
     def test_build_config_tracks_progress(self, trilogy_project):
         """Build config tracks section completion across multiple calls."""
-        (trilogy_project / "agent_docs").mkdir(exist_ok=True)
+        (trilogy_project / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
 
         # Complete first section
         run_script(BUILD_PLUGIN, "tools", "update_section_state.py", [

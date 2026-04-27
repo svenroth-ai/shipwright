@@ -59,7 +59,7 @@ CAPTURE_SCRIPT = str(_SCRIPTS / "hooks" / "capture_session_id.py")
 
 @pytest.fixture
 def proj(tmp_path: Path) -> Path:
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     return tmp_path
 
 
@@ -70,8 +70,8 @@ def _write_run_config(proj: Path, data: dict) -> None:
 
 
 def _write_summary(proj: Path, text: str) -> None:
-    (proj / "agent_docs").mkdir(exist_ok=True)
-    (proj / "agent_docs" / "skill-compliance-findings.md").write_text(
+    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (proj / ".shipwright" / "agent_docs" / "skill-compliance-findings.md").write_text(
         text, encoding="utf-8",
     )
 
@@ -290,7 +290,7 @@ def test_build_injection_returns_empty_when_mode_audit_only(tmp_path, monkeypatc
 def test_build_injection_reads_summary_by_default(tmp_path, monkeypatch):
     """Default mode is inject-on; no env needed."""
     monkeypatch.delenv("SHIPWRIGHT_PHASE_QUALITY_MODE", raising=False)
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     _write_summary(tmp_path, (
         "## build — run-1\n"
         "- audited_at: 2026-04-19\n"
@@ -319,7 +319,7 @@ def test_build_injection_no_summary_file(tmp_path, monkeypatch):
 def test_capture_session_injects_by_default(tmp_path, monkeypatch):
     """Post-epic default: injection ON, Claude sees Tier-1 FAILs at SessionStart."""
     monkeypatch.chdir(tmp_path)
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     (tmp_path / "shipwright_run_config.json").write_text("{}", encoding="utf-8")
     _write_summary(tmp_path, (
         "## build — run-1\n"
@@ -344,7 +344,7 @@ def test_capture_session_injects_by_default(tmp_path, monkeypatch):
 def test_capture_session_does_not_inject_when_audit_only(tmp_path, monkeypatch):
     """audit_only is the documented opt-out lever for a silent session."""
     monkeypatch.chdir(tmp_path)
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     _write_summary(tmp_path, (
         "## build — run-1\n- open FAILs:\n  - **W6** no tag\n"
     ))
@@ -393,8 +393,8 @@ def test_critical_gate_constants_frozen():
 
 
 def _write_injection_summary(project_root: Path) -> None:
-    (project_root / "agent_docs").mkdir(exist_ok=True)
-    (project_root / "agent_docs" / "skill-compliance-findings.md").write_text(
+    (project_root / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (project_root / ".shipwright" / "agent_docs" / "skill-compliance-findings.md").write_text(
         "## build — run-1\n"
         "- audited_at: 2026-04-19\n"
         "- source: orchestrator\n"

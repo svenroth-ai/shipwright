@@ -16,7 +16,7 @@ def project(tmp_path):
         json.dumps({"status": "complete", "iterate_history": []}),
         encoding="utf-8",
     )
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     (tmp_path / "compliance").mkdir()
     (tmp_path / "shipwright_events.jsonl").write_text("", encoding="utf-8")
     return tmp_path
@@ -32,7 +32,7 @@ def test_run_writes_dashboard(project, monkeypatch):
 
     result = run(project, run_id="test-001")
     assert result["steps"]["dashboard"].get("written")
-    assert (project / "agent_docs" / "build_dashboard.md").exists()
+    assert (project / ".shipwright" / "agent_docs" / "build_dashboard.md").exists()
 
 
 def test_run_writes_handoff(project, monkeypatch):
@@ -45,7 +45,7 @@ def test_run_writes_handoff(project, monkeypatch):
 
     result = run(project, run_id="test-002")
     assert result["steps"]["handoff"].get("written")
-    handoff = project / "agent_docs" / "session_handoff.md"
+    handoff = project / ".shipwright" / "agent_docs" / "session_handoff.md"
     assert handoff.exists()
     content = handoff.read_text(encoding="utf-8")
     assert "test-002" in content
@@ -87,10 +87,10 @@ def test_run_is_idempotent(project, monkeypatch):
     from tools.finalize_iterate import run
 
     result1 = run(project, run_id="test-005")
-    dashboard1 = (project / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
+    dashboard1 = (project / ".shipwright" / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
 
     result2 = run(project, run_id="test-005")
-    dashboard2 = (project / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
+    dashboard2 = (project / ".shipwright" / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
 
     assert dashboard1 == dashboard2
     assert result1["steps"]["dashboard"].get("written")
@@ -100,7 +100,7 @@ def test_run_is_idempotent(project, monkeypatch):
 def test_run_graceful_without_compliance_dir(tmp_path, monkeypatch):
     """No compliance/ dir should not crash."""
     (tmp_path / "shipwright_run_config.json").write_text("{}", encoding="utf-8")
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
 

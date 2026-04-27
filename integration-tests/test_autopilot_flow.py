@@ -44,7 +44,7 @@ def autopilot_project(tmp_path):
     """Project with 3 sections ready for autopilot build."""
     project = tmp_path / "my-app"
     project.mkdir()
-    (project / "agent_docs").mkdir()
+    (project / ".shipwright" / "agent_docs").mkdir(parents=True)
 
     # Run config: pipeline at build step
     run_config = {
@@ -98,7 +98,7 @@ class TestAutopilotFlow:
         ])
         assert result["success"] is True
 
-        dashboard = (autopilot_project / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
+        dashboard = (autopilot_project / ".shipwright" / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
         assert "0/3" in dashboard
         assert "01-models" in dashboard
 
@@ -130,7 +130,7 @@ class TestAutopilotFlow:
         assert progress["next_section"] == "02-routes"
 
         # Verify dashboard content
-        dashboard = (autopilot_project / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
+        dashboard = (autopilot_project / ".shipwright" / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
         assert "1/3" in dashboard
 
     def test_context_pressure_triggers_checkpoint(self, autopilot_project):
@@ -204,7 +204,7 @@ class TestAutopilotFlow:
         assert progress["next_section"] is None
 
         # Final dashboard
-        dashboard = (autopilot_project / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
+        dashboard = (autopilot_project / ".shipwright" / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
         assert "3/3" in dashboard
         assert "/shipwright-test" in dashboard
 
@@ -232,7 +232,7 @@ class TestAutopilotFlow:
             "--session-id", "test-session",
         ])
 
-        dashboard = (autopilot_project / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
+        dashboard = (autopilot_project / ".shipwright" / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
         assert "Resume Info" in dashboard
         assert "/shipwright-run" in dashboard
 

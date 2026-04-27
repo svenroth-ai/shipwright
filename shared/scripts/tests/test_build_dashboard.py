@@ -13,7 +13,7 @@ from tools.update_build_dashboard import generate_dashboard, format_status, STEP
 
 @pytest.fixture
 def tmp_project(tmp_path):
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     return tmp_path
 
 

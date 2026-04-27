@@ -91,13 +91,13 @@ def seed_canon_build(
     (root / "shipwright_events.jsonl").write_text("\n".join(events_lines) + "\n")
 
     # C2: build_dashboard mentions "build"
-    (root / "agent_docs").mkdir(exist_ok=True)
-    (root / "agent_docs" / "build_dashboard.md").write_text(
+    (root / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (root / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text(
         "# Dashboard\n\n## Phases\n\n- build: in progress\n"
     )
 
     # C3: fresh handoff
-    (root / "agent_docs" / "session_handoff.md").write_text("fresh")
+    (root / ".shipwright" / "agent_docs" / "session_handoff.md").write_text("fresh")
 
     # C4: ADR per section via **Section:** bullet — unique IDs
     adr_body = "# Decision Log\n\n"
@@ -111,7 +111,7 @@ def seed_canon_build(
             f"- **Section:** {sec['name']}\n\n"
         )
         adr_counter += 1
-    (root / "agent_docs" / "decision_log.md").write_text(adr_body)
+    (root / ".shipwright" / "agent_docs" / "decision_log.md").write_text(adr_body)
 
     # C5: CHANGELOG [Unreleased] bullet per section
     bullets = "\n".join(
@@ -277,7 +277,7 @@ def test_c4_per_section_passes_when_every_section_has_adr_reference(tmp_path):
 
 def test_c4_per_section_fails_on_missing_reference(tmp_path):
     seed_canon_build(tmp_path)
-    (tmp_path / "agent_docs" / "decision_log.md").write_text(
+    (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-100: Build 01-model decision\n"
         "- **Status:** accepted\n"
         "- **Section:** 01-model\n"

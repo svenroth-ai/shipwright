@@ -7,7 +7,7 @@ conflict on that array.
 
 This module introduces the file-per-iterate storage pattern:
 
-    agent_docs/
+    .shipwright/agent_docs/
       iterates/
         iterate-2026-04-23-feat-x.json   # one entry per file
         iterate-2026-04-23-feat-y.json
@@ -90,7 +90,7 @@ def sanitize_run_id_for_filename(run_id: str) -> str:
 
     Replaces path separators, control characters, and dots with ``-`` so
     legacy or malformed data cannot traverse outside
-    ``agent_docs/iterates/``. Validation is a separate defense; this
+    ``.shipwright/agent_docs/iterates/``. Validation is a separate defense; this
     function must produce safe output even for inputs that ``validate_iterate_entry``
     would reject.
     """
@@ -209,7 +209,7 @@ def now_utc_iso() -> str:
 
 
 def iterates_dir(project_root: Path) -> Path:
-    return project_root / "agent_docs" / ITERATES_DIRNAME
+    return project_root / ".shipwright" / "agent_docs" / ITERATES_DIRNAME
 
 
 def quarantine_dir(project_root: Path) -> Path:
@@ -270,7 +270,7 @@ def _read_legacy_array(project_root: Path) -> list[dict[str, Any]]:
 
 
 def _read_iterates_dir(project_root: Path) -> list[dict[str, Any]]:
-    """Read all canonical iterate entry files under ``agent_docs/iterates/``.
+    """Read all canonical iterate entry files under ``.shipwright/agent_docs/iterates/``.
 
     Corrupt or oversized files are skipped with a diagnostic on stderr so
     one bad file cannot wedge the whole reader. The caller can detect the

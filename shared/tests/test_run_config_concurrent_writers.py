@@ -129,6 +129,7 @@ def test_iterate_and_phase_appends_are_serialized(tmp_path: Path) -> None:
     # Iterate entry landed as a file, not in the legacy array.
     entry_path = (
         project_root
+        / ".shipwright"
         / "agent_docs"
         / "iterates"
         / "iterate-2026-04-24-concurrent-writer.json"
@@ -177,7 +178,7 @@ def test_many_iterate_writers_dont_corrupt_config(tmp_path: Path) -> None:
         )
 
     # All four entry files landed distinctly.
-    entry_dir = project_root / "agent_docs" / "iterates"
+    entry_dir = project_root / ".shipwright" / "agent_docs" / "iterates"
     files = sorted(p.name for p in entry_dir.iterdir() if p.name.endswith(".json"))
     assert files == [f"iterate-2026-04-24-{s}.json" for s in slugs], (
         f"unexpected entry files: {files}"

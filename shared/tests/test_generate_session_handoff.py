@@ -132,7 +132,7 @@ def test_cli_canon_marker_requires_run_id_env(tmp_project, monkeypatch, capsys):
 
     captured = capsys.readouterr()
     assert "SHIPWRIGHT_RUN_ID is unset" in captured.err
-    handoff = tmp_project / "agent_docs" / "session_handoff.md"
+    handoff = tmp_project / ".shipwright" / "agent_docs" / "session_handoff.md"
     assert handoff.exists()
     # Safe-degrade: NO frontmatter written
     assert not handoff.read_text(encoding="utf-8").startswith("---\n")
@@ -156,7 +156,7 @@ def test_cli_canon_marker_writes_frontmatter_when_run_id_set(tmp_project, monkey
         from tools.generate_session_handoff import main as handoff_main
         handoff_main()
 
-    content = (tmp_project / "agent_docs" / "session_handoff.md").read_text(encoding="utf-8")
+    content = (tmp_project / ".shipwright" / "agent_docs" / "session_handoff.md").read_text(encoding="utf-8")
     assert content.startswith("---\n")
     assert 'run_id: "project-20260414-test"' in content
     assert 'phase: "project"' in content
@@ -164,7 +164,7 @@ def test_cli_canon_marker_writes_frontmatter_when_run_id_set(tmp_project, monkey
 
 def test_generate_handoff_with_decision_log(project_with_configs):
     # Create a decision log
-    log_path = project_with_configs / "agent_docs" / "decision_log.md"
+    log_path = project_with_configs / ".shipwright" / "agent_docs" / "decision_log.md"
     log_path.write_text(
         "# Decision Log\n\n## ADR-001 | 2026-03-20 | Auth | Commit abc\n\n### Decision\nUse JWT\n",
         encoding="utf-8",

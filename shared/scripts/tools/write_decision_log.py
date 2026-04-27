@@ -1,4 +1,4 @@
-"""Append a decision entry to agent_docs/decision_log.md.
+"""Append a decision entry to .shipwright/agent_docs/decision_log.md.
 
 Auto-numbers entries sequentially and auto-dates with today's date.
 Never overwrites existing entries — always appends.
@@ -139,10 +139,10 @@ def _append_architecture_update(
     Returns the target filename if updated, None otherwise.
     """
     if impact_type in ("component", "data-flow"):
-        target = project_root / "agent_docs" / "architecture.md"
+        target = project_root / ".shipwright" / "agent_docs" / "architecture.md"
         section_header = "## Architecture Updates"
     elif impact_type == "convention":
-        target = project_root / "agent_docs" / "conventions.md"
+        target = project_root / ".shipwright" / "agent_docs" / "conventions.md"
         section_header = "## Convention Updates"
     else:
         return None
@@ -176,10 +176,10 @@ def append_decision(
 ) -> int:
     """Append a decision entry to the decision log. Returns the ADR number."""
     project_root = Path(project_root)
-    log_path = project_root / "agent_docs" / "decision_log.md"
+    log_path = project_root / ".shipwright" / "agent_docs" / "decision_log.md"
 
-    # Ensure agent_docs/ exists
-    log_path.parent.mkdir(exist_ok=True)
+    # Ensure .shipwright/agent_docs/ exists
+    log_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Read existing or create header
     if log_path.exists():
@@ -247,7 +247,7 @@ def main() -> None:
         status=args.status,
         architecture_impact=args.architecture_impact,
     )
-    print(f"ADR-{number:03d} appended to agent_docs/decision_log.md")
+    print(f"ADR-{number:03d} appended to .shipwright/agent_docs/decision_log.md")
 
 
 if __name__ == "__main__":

@@ -151,6 +151,6 @@ def test_has_handoff_false(tmp_project):
 
 
 def test_has_handoff_true(tmp_project):
-    handoff = tmp_project / "agent_docs" / "session_handoff.md"
+    handoff = tmp_project / ".shipwright" / "agent_docs" / "session_handoff.md"
     handoff.write_text("# Handoff")
     assert has_handoff(tmp_project) is True

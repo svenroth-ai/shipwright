@@ -57,7 +57,7 @@ def _write_rtm(proj: Path, fr_ids: list[str]) -> None:
 
 @pytest.fixture
 def proj(tmp_path: Path) -> Path:
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     return tmp_path
 
 

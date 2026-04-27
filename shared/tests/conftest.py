@@ -39,9 +39,9 @@ def _isolate_scanner_environment(monkeypatch):
 
 @pytest.fixture
 def tmp_project(tmp_path):
-    """Create a temporary project directory with agent_docs/."""
-    agent_docs = tmp_path / "agent_docs"
-    agent_docs.mkdir()
+    """Create a temporary project directory with .shipwright/agent_docs/."""
+    agent_docs = tmp_path / ".shipwright" / "agent_docs"
+    agent_docs.mkdir(parents=True, exist_ok=True)
     return tmp_path
 
 

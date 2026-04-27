@@ -71,12 +71,12 @@ def seed_canon_plan(
                     "timestamp": "2026-04-14T10:00:00Z"}) + "\n"
     )
     # C2
-    (root / "agent_docs").mkdir()
-    (root / "agent_docs" / "build_dashboard.md").write_text("- plan: complete\n")
+    (root / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (root / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text("- plan: complete\n")
     # C3
-    (root / "agent_docs" / "session_handoff.md").write_text("fresh")
+    (root / ".shipwright" / "agent_docs" / "session_handoff.md").write_text("fresh")
     # C4
-    (root / "agent_docs" / "decision_log.md").write_text(
+    (root / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-027: Plan decision for {split}\n- **Status:** accepted\n".replace("{split}", split)
     )
     # C5 is skipped by policy (plan)
@@ -270,7 +270,7 @@ def test_run_plan_checks_does_not_require_c5(tmp_path):
 def test_run_plan_checks_requires_c4_project_adr(tmp_path):
     """Plan keeps C4 — it's a decision-taking phase."""
     seed_canon_plan(tmp_path, run_id="plan-happy")
-    (tmp_path / "agent_docs" / "decision_log.md").write_text(
+    (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-001: Unrelated thing\n- **Status:** accepted\n"
     )
     results = run_plan_checks(tmp_path, run_id="plan-happy")

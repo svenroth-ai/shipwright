@@ -50,7 +50,7 @@ def _write_events(project_root: Path, events: list[dict[str, Any]]) -> None:
 
 @pytest.fixture
 def proj(tmp_path: Path) -> Path:
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     return tmp_path
 
 
@@ -499,7 +499,7 @@ def test_d1_passes_with_html_mockup(proj: Path):
 
 
 def test_d1_passes_with_screens_md_only(proj: Path):
-    (proj / "agent_docs" / "screens.md").write_text("# Screens\n", encoding="utf-8")
+    (proj / ".shipwright" / "agent_docs" / "screens.md").write_text("# Screens\n", encoding="utf-8")
     f = design_compliance.check_d1_design_artifact(proj)
     assert f["status"] == pq.STATUS_PASS
 
@@ -511,8 +511,8 @@ def test_d2_warns_on_missing(proj: Path):
 
 
 def test_d2_passes_with_both_docs(proj: Path):
-    (proj / "agent_docs" / "screens.md").write_text("# Screens\n", encoding="utf-8")
-    (proj / "agent_docs" / "user-flow.md").write_text("# Flows\n", encoding="utf-8")
+    (proj / ".shipwright" / "agent_docs" / "screens.md").write_text("# Screens\n", encoding="utf-8")
+    (proj / ".shipwright" / "agent_docs" / "user-flow.md").write_text("# Flows\n", encoding="utf-8")
     f = design_compliance.check_d2_docs_present(proj)
     assert f["status"] == pq.STATUS_PASS
 

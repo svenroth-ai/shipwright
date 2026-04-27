@@ -12,6 +12,14 @@ from pathlib import Path
 
 import pytest
 
+
+def _agent_docs_root(tmp: Path) -> Path:
+    """Return canonical agent_docs subdir under tmp, creating parents."""
+    p = tmp / ".shipwright" / "agent_docs"
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
 from tools.verify_iterate_finalization import (
     CheckResult,
     check_adr_in_iterate_history,
@@ -34,7 +42,7 @@ from tools.verifiers.iterate_checks import (
 
 def seed_project(root: Path, run_id: str, commit_hash: str, adr: str = "ADR-999") -> None:
     """Create a tmp project state that would pass every check."""
-    (root / "agent_docs").mkdir(exist_ok=True)
+    (root / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
 
     (root / "shipwright_run_config.json").write_text(json.dumps({
         "iterate_history": [
@@ -46,7 +54,7 @@ def seed_project(root: Path, run_id: str, commit_hash: str, adr: str = "ADR-999"
         json.dumps({"type": "work_completed", "commit": commit_hash}) + "\n"
     )
 
-    (root / "agent_docs" / "decision_log.md").write_text(
+    (root / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         f"# Decision Log\n\n### {adr}: Test decision\n- **Date:** 2026-04-13\n"
     )
 
@@ -54,9 +62,9 @@ def seed_project(root: Path, run_id: str, commit_hash: str, adr: str = "ADR-999"
         "## [Unreleased]\n\n### Fixed\n- Something ([ADR-999])\n"
     )
 
-    (root / "agent_docs" / "session_handoff.md").write_text("fresh")
+    (root / ".shipwright" / "agent_docs" / "session_handoff.md").write_text("fresh")
 
-    (root / "agent_docs" / "build_dashboard.md").write_text(
+    (root / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text(
         f"# Build Dashboard\nrun_id: {run_id}\n"
     )
 
@@ -131,11 +139,11 @@ def test_events_fails_when_file_missing(tmp_path):
 def test_adr_check_passes_when_both_config_and_log_align(tmp_path):
     proj = tmp_path / "webui"
     proj.mkdir()
-    (proj / "agent_docs").mkdir()
+    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     (proj / "shipwright_run_config.json").write_text(json.dumps({
         "iterate_history": [{"run_id": "r1", "adr": "ADR-042"}],
     }))
-    (proj / "agent_docs" / "decision_log.md").write_text(
+    (proj / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "# Decision Log\n\n### ADR-042: Some decision\n- **Date:** 2026-04-13\n"
     )
     result = check_adr_in_iterate_history(proj, "r1")
@@ -145,11 +153,11 @@ def test_adr_check_passes_when_both_config_and_log_align(tmp_path):
 def test_adr_check_fails_when_adr_not_in_decision_log(tmp_path):
     proj = tmp_path / "webui"
     proj.mkdir()
-    (proj / "agent_docs").mkdir()
+    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     (proj / "shipwright_run_config.json").write_text(json.dumps({
         "iterate_history": [{"run_id": "r1", "adr": "ADR-042"}],
     }))
-    (proj / "agent_docs" / "decision_log.md").write_text("# Decision Log\n")
+    (proj / ".shipwright" / "agent_docs" / "decision_log.md").write_text("# Decision Log\n")
     result = check_adr_in_iterate_history(proj, "r1")
     assert result.ok is False
 
@@ -157,11 +165,11 @@ def test_adr_check_fails_when_adr_not_in_decision_log(tmp_path):
 def test_adr_check_fails_when_iterate_history_has_no_adr_for_run(tmp_path):
     proj = tmp_path / "webui"
     proj.mkdir()
-    (proj / "agent_docs").mkdir()
+    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     (proj / "shipwright_run_config.json").write_text(json.dumps({
         "iterate_history": [{"run_id": "r1"}],
     }))
-    (proj / "agent_docs" / "decision_log.md").write_text("# Decision Log\n")
+    (proj / ".shipwright" / "agent_docs" / "decision_log.md").write_text("# Decision Log\n")
     result = check_adr_in_iterate_history(proj, "r1")
     assert result.ok is False
 
@@ -205,8 +213,8 @@ def test_changelog_warns_when_file_missing(tmp_path):
 def test_session_handoff_passes_when_file_is_fresh(tmp_path):
     proj = tmp_path / "webui"
     proj.mkdir()
-    (proj / "agent_docs").mkdir()
-    (proj / "agent_docs" / "session_handoff.md").write_text("fresh content")
+    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (proj / ".shipwright" / "agent_docs" / "session_handoff.md").write_text("fresh content")
     # max_age default is 600s, the file was just written
     result = check_session_handoff_fresh(proj)
     assert result.ok is True
@@ -215,8 +223,8 @@ def test_session_handoff_passes_when_file_is_fresh(tmp_path):
 def test_session_handoff_warns_when_file_is_stale(tmp_path):
     proj = tmp_path / "webui"
     proj.mkdir()
-    (proj / "agent_docs").mkdir()
-    handoff = proj / "agent_docs" / "session_handoff.md"
+    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    handoff = proj / ".shipwright" / "agent_docs" / "session_handoff.md"
     handoff.write_text("old")
     # Force mtime to 2 hours ago
     import os
@@ -230,7 +238,7 @@ def test_session_handoff_warns_when_file_is_stale(tmp_path):
 def test_session_handoff_missing_is_a_warning(tmp_path):
     proj = tmp_path / "webui"
     proj.mkdir()
-    (proj / "agent_docs").mkdir()
+    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     result = check_session_handoff_fresh(proj)
     assert result.ok is False
 
@@ -274,8 +282,8 @@ def test_run_all_checks_returns_red_when_commit_not_in_events(tmp_path):
 def test_dashboard_passes_when_run_id_present(tmp_path):
     proj = tmp_path / "webui"
     proj.mkdir()
-    (proj / "agent_docs").mkdir()
-    (proj / "agent_docs" / "build_dashboard.md").write_text("run_id: iter-42\n")
+    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (proj / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text("run_id: iter-42\n")
     result = check_build_dashboard_has_run_id(proj, "iter-42")
     assert result.ok is True
 
@@ -283,8 +291,8 @@ def test_dashboard_passes_when_run_id_present(tmp_path):
 def test_dashboard_warns_when_run_id_missing(tmp_path):
     proj = tmp_path / "webui"
     proj.mkdir()
-    (proj / "agent_docs").mkdir()
-    (proj / "agent_docs" / "build_dashboard.md").write_text("old content\n")
+    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (proj / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text("old content\n")
     result = check_build_dashboard_has_run_id(proj, "iter-42")
     assert result.ok is False
     assert result.severity == "warning"
@@ -304,11 +312,11 @@ def test_dashboard_warns_when_file_missing(tmp_path):
 def test_architecture_passes_for_bugfix(tmp_path):
     proj = tmp_path / "webui"
     proj.mkdir()
-    (proj / "agent_docs").mkdir()
+    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     (proj / "shipwright_run_config.json").write_text(json.dumps({
         "iterate_history": [{"run_id": "r1", "intent": "bug"}],
     }))
-    (proj / "agent_docs" / "architecture.md").write_text("old")
+    (proj / ".shipwright" / "agent_docs" / "architecture.md").write_text("old")
     result = check_architecture_reviewed(proj, "r1")
     assert result.ok is True
 
@@ -316,13 +324,13 @@ def test_architecture_passes_for_bugfix(tmp_path):
 def test_architecture_warns_for_stale_feature(tmp_path):
     proj = tmp_path / "webui"
     proj.mkdir()
-    (proj / "agent_docs").mkdir()
+    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     cfg = proj / "shipwright_run_config.json"
     cfg.write_text(json.dumps({
         "iterate_history": [{"run_id": "r1", "intent": "change"}],
     }))
     import time
-    arch = proj / "agent_docs" / "architecture.md"
+    arch = proj / ".shipwright" / "agent_docs" / "architecture.md"
     arch.write_text("old arch")
     import os
     os.utime(arch, (time.time() - 3600, time.time() - 3600))
@@ -334,13 +342,13 @@ def test_architecture_warns_for_stale_feature(tmp_path):
 def test_architecture_passes_when_fresh(tmp_path):
     proj = tmp_path / "webui"
     proj.mkdir()
-    (proj / "agent_docs").mkdir()
+    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     cfg = proj / "shipwright_run_config.json"
     cfg.write_text(json.dumps({
         "iterate_history": [{"run_id": "r1", "intent": "feature"}],
     }))
     import time, os
     os.utime(cfg, (time.time() - 3600, time.time() - 3600))
-    (proj / "agent_docs" / "architecture.md").write_text("fresh arch")
+    (proj / ".shipwright" / "agent_docs" / "architecture.md").write_text("fresh arch")
     result = check_architecture_reviewed(proj, "r1")
     assert result.ok is True

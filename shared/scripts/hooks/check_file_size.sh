@@ -72,7 +72,7 @@ fi
 LINE_COUNT=$(wc -l < "$FILE_PATH" | tr -d ' ')
 
 if [ "$LINE_COUNT" -gt "$MAX_LINES" ]; then
-    echo "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"WARNING: ${FILE_PATH} has ${LINE_COUNT} lines (threshold: ${MAX_LINES}).\\n\\nLarge files degrade AI agent performance by consuming excessive context window space. Consider refactoring into smaller modules.\\n\\nThe user may say 'Continue anyway' to override. If they do, log the override to agent_docs/compliance_overrides.log.\",\"blocked\":true,\"reason\":\"File exceeds ${MAX_LINES} line limit: ${LINE_COUNT} lines\"}}"
+    echo "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"WARNING: ${FILE_PATH} has ${LINE_COUNT} lines (threshold: ${MAX_LINES}).\\n\\nLarge files degrade AI agent performance by consuming excessive context window space. Consider refactoring into smaller modules.\\n\\nThe user may say 'Continue anyway' to override. If they do, log the override to .shipwright/agent_docs/compliance_overrides.log.\",\"blocked\":true,\"reason\":\"File exceeds ${MAX_LINES} line limit: ${LINE_COUNT} lines\"}}"
     exit 2
 fi
 

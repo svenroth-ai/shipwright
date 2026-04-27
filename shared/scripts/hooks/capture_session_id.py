@@ -14,7 +14,7 @@ bash subprocesses inherit it — additionalContext alone does not reach
 child processes spawned by Claude's Bash tool.
 
 **Phase-Quality injection (PR 4, Szenario C):** at SessionStart this
-hook reads ``agent_docs/skill-compliance-findings.md`` and appends up
+hook reads ``.shipwright/agent_docs/skill-compliance-findings.md`` and appends up
 to 5 Tier-1 FAILs as ``additionalContext``. Only Tier-1 FAILs are
 injected; Tier-2 (heuristic) is silent (plan § 4.3).
 
@@ -182,7 +182,7 @@ def _build_phase_quality_injection(project_root: str) -> str:
         if cwd_is_strict_ancestor_of(cwd, pr) \
                 and not project_root_was_explicitly_selected(pr):
             return ""
-    summary_path = pr / "agent_docs" / "skill-compliance-findings.md"
+    summary_path = pr / ".shipwright" / "agent_docs" / "skill-compliance-findings.md"
     try:
         text = summary_path.read_text(encoding="utf-8")
     except (FileNotFoundError, OSError):

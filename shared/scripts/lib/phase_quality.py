@@ -102,7 +102,7 @@ GC_AGE_DAYS = 90
 
 FINDING_DIR = "compliance/skill-compliance"
 REPORT_PATH = "compliance/skill-compliance-report.md"
-SUMMARY_PATH = "agent_docs/skill-compliance-findings.md"
+SUMMARY_PATH = ".shipwright/agent_docs/skill-compliance-findings.md"
 DASHBOARD_PATH = "compliance/skill-compliance-dashboard.md"
 LOCK_PATH = ".shipwright/locks/phase-quality.lock"
 
@@ -165,13 +165,13 @@ def is_shipwright_project(project_root: Path) -> bool:
 
     Matches the contract used by ``generate_handoff_on_stop.py`` and
     ``check_rtm_coverage.py`` so all Stop hooks agree on what counts as
-    greenfield. We require at least one marker OR ``agent_docs/`` so
+    greenfield. We require at least one marker OR ``.shipwright/agent_docs/`` so
     fresh projects between ``/shipwright-project`` init and the first
     config write aren't skipped.
     """
     if any((project_root / m).exists() for m in _CONFIG_MARKERS):
         return True
-    return (project_root / "agent_docs").is_dir()
+    return (project_root / ".shipwright" / "agent_docs").is_dir()
 
 
 def phase_from_plugin_root(plugin_root: str | os.PathLike[str] | None) -> str | None:
@@ -425,7 +425,7 @@ CANON_REMEDIATION: dict[str, str] = {
     "C1": "Run record_event.py --type phase_completed --source <phase>",
     "C2": "Run update_build_dashboard.py --phase <phase>",
     "C3": "Regenerate session_handoff.md via generate_session_handoff.py --reason '<phase>: ...'",
-    "C4": "Add an ADR to agent_docs/decision_log.md via write_decision_log.py",
+    "C4": "Add an ADR to .shipwright/agent_docs/decision_log.md via write_decision_log.py",
     "C5": "Prepend an Unreleased bullet via append_changelog_entry.py",
 }
 
@@ -881,7 +881,7 @@ def rewrite_aggregated_report(project_root: Path) -> Path | None:
 
 
 def rewrite_session_findings_summary(project_root: Path) -> Path | None:
-    """Regenerate ``agent_docs/skill-compliance-findings.md`` — the
+    """Regenerate ``.shipwright/agent_docs/skill-compliance-findings.md`` — the
     short-form digest consumed by the future SessionStart-Injection hook
     (PR 4).
     """

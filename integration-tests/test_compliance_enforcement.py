@@ -220,7 +220,7 @@ class TestComplianceEnforcementInPipeline:
         assert "check_security_scan" in entries[1]
 
         # Verify log file is in agent_docs
-        log_path = trilogy_project / "agent_docs" / "compliance_overrides.log"
+        log_path = trilogy_project / ".shipwright" / "agent_docs" / "compliance_overrides.log"
         assert log_path.exists()
 
 

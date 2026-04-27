@@ -36,12 +36,12 @@ from tools.verifiers import spec_checks as sc  # noqa: E402
 
 @pytest.fixture
 def proj(tmp_path: Path) -> Path:
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     return tmp_path
 
 
 def _write_top_spec(proj: Path, content: str) -> None:
-    (proj / "agent_docs" / "spec.md").write_text(content, encoding="utf-8")
+    (proj / ".shipwright" / "agent_docs" / "spec.md").write_text(content, encoding="utf-8")
 
 
 def _write_claude_md(proj: Path, content: str) -> None:
@@ -301,7 +301,7 @@ def test_s4_skip_without_git(proj: Path):
 
 def test_s4_skip_on_partial_history(tmp_path: Path):
     _init_git_repo(tmp_path)
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     # Only one spec commit
     _write_top_spec(tmp_path, "## FR-1: one\n**Description:** x\n"
                               "**Acceptance Criteria:** y\n")
@@ -313,7 +313,7 @@ def test_s4_skip_on_partial_history(tmp_path: Path):
 def test_s4_warns_on_undeprecated_removal(tmp_path: Path):
     """R16 — removed FR without status=deprecated → WARN (never FAIL)."""
     _init_git_repo(tmp_path)
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     _write_top_spec(tmp_path, (
         "## FR-1: first\n**Description:** a\n**Acceptance Criteria:** b\n"
         "## FR-2: second\n**Description:** c\n**Acceptance Criteria:** d\n"
@@ -332,7 +332,7 @@ def test_s4_warns_on_undeprecated_removal(tmp_path: Path):
 
 def test_s4_passes_when_removed_fr_is_deprecated(tmp_path: Path):
     _init_git_repo(tmp_path)
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     _write_top_spec(tmp_path, (
         "## FR-1: first\n**Description:** a\n**Acceptance Criteria:** b\n"
         "## FR-2: second\n**Description:** c\n**Acceptance Criteria:** d\n"
@@ -462,7 +462,7 @@ def test_s9_skip_when_no_git(proj: Path):
 
 def test_s9_warns_on_ui_feature_without_readme_touch(tmp_path: Path):
     _init_git_repo(tmp_path)
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     (tmp_path / "webui").mkdir()
     (tmp_path / "webui" / "client").mkdir()
     (tmp_path / "webui" / "client" / "x.tsx").write_text("x", encoding="utf-8")
@@ -478,7 +478,7 @@ def test_s9_warns_on_ui_feature_without_readme_touch(tmp_path: Path):
 
 def test_s9_passes_when_readme_fresh(tmp_path: Path):
     _init_git_repo(tmp_path)
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     (tmp_path / "webui" / "client").mkdir(parents=True)
     (tmp_path / "webui" / "client" / "x.tsx").write_text("x", encoding="utf-8")
     _write_readme(tmp_path, "# Project\n")
@@ -507,7 +507,7 @@ def test_s10_skip_when_git_unavailable(proj: Path):
 
 def test_s10_passes_when_no_new_top_level_dirs(tmp_path: Path):
     _init_git_repo(tmp_path)
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     _write_iterate_history(tmp_path, [{"run_id": "r1", "type": "feature"}])
     # nothing new to commit — no file paths touched
     _git_commit_all(tmp_path, "empty")
@@ -518,7 +518,7 @@ def test_s10_passes_when_no_new_top_level_dirs(tmp_path: Path):
 
 def test_s10_never_fails_under_any_input(tmp_path: Path):
     _init_git_repo(tmp_path)
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     _write_iterate_history(tmp_path, [{"run_id": "r1", "type": "feature"}])
     new_dir = tmp_path / "brand-new"
     new_dir.mkdir()

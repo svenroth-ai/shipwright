@@ -117,7 +117,7 @@ def test_four_parallel_appends_against_legacy_array(tmp_path: Path) -> None:
     assert config.get("iterate_history") == []
 
     # Entry dir holds 4 legacy + 4 new = 8 distinct files.
-    entries_dir = project_root / "agent_docs" / "iterates"
+    entries_dir = project_root / ".shipwright" / "agent_docs" / "iterates"
     files = sorted(p.name for p in entries_dir.iterdir() if p.name.endswith(".json"))
     expected_new = [f"iterate-2026-04-24-{s}.json" for s in slugs]
     for exp in expected_new:
@@ -163,6 +163,6 @@ def test_parallel_appends_on_clean_project(tmp_path: Path) -> None:
     assert config.get("_iterate_migration_state") == "complete"
     assert config.get("_iterate_migration_quarantined_count") == 0
 
-    entries_dir = project_root / "agent_docs" / "iterates"
+    entries_dir = project_root / ".shipwright" / "agent_docs" / "iterates"
     files = sorted(p.name for p in entries_dir.iterdir() if p.name.endswith(".json"))
     assert files == [f"iterate-2026-04-24-{s}.json" for s in slugs]

@@ -142,8 +142,8 @@ def test_pipeline_build_split_uses_split_scoped_paths(v2_project):
     out = build_phase_context(v2_project, "ptk-build-01")
     assert out["splitId"] == "01-core"
     # Split-scoped sections dir replaces the generic one
-    assert "agent_docs/sections/01-core/" in out["skill_artifacts_to_read"]
-    assert "agent_docs/sections/" not in out["skill_artifacts_to_read"]
+    assert ".shipwright/agent_docs/sections/01-core/" in out["skill_artifacts_to_read"]
+    assert ".shipwright/agent_docs/sections/" not in out["skill_artifacts_to_read"]
 
 
 def test_corrupt_run_config_returns_standalone(tmp_path):

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate agent_docs/build_dashboard.md from pipeline state and event log.
+"""Generate .shipwright/agent_docs/build_dashboard.md from pipeline state and event log.
 
 Covers all pipeline phases (project through deploy), not just build.
 Called by individual phase SKILLs at completion and by the Stop hook with status=paused.
@@ -415,8 +415,8 @@ def main() -> int:
     project_root = Path(a.project_root).resolve()
     content = generate_dashboard(project_root, phase=a.phase, section=a.section,
                                  step=a.step, detail=a.detail, status=a.status, session_id=a.session_id)
-    agent_docs = project_root / "agent_docs"
-    agent_docs.mkdir(exist_ok=True)
+    agent_docs = project_root / ".shipwright" / "agent_docs"
+    agent_docs.mkdir(parents=True, exist_ok=True)
     (agent_docs / "build_dashboard.md").write_text(content, encoding="utf-8")
     print(json.dumps({"success": True, "dashboard": str(agent_docs / "build_dashboard.md")}))
     return 0

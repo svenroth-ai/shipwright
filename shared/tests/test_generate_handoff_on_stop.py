@@ -7,6 +7,12 @@ import sys
 from pathlib import Path
 
 
+def _agent_docs_root(tmp: Path) -> Path:
+    """Return canonical agent_docs subdir under tmp, creating parents."""
+    p = tmp / ".shipwright" / "agent_docs"
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
 
 # The hook script path
 HOOK_SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "hooks" / "generate_handoff_on_stop.py"
@@ -48,7 +54,7 @@ def test_generates_handoff_with_run_config(tmp_project):
     )
 
     assert result.returncode == 0
-    handoff = tmp_project / "agent_docs" / "session_handoff.md"
+    handoff = tmp_project / ".shipwright" / "agent_docs" / "session_handoff.md"
     assert handoff.exists()
     content = handoff.read_text(encoding="utf-8")
     assert "# Session Handoff" in content
@@ -61,7 +67,7 @@ def test_generates_handoff_with_only_agent_docs(tmp_project):
     result = run_hook(tmp_project)
 
     assert result.returncode == 0
-    handoff = tmp_project / "agent_docs" / "session_handoff.md"
+    handoff = tmp_project / ".shipwright" / "agent_docs" / "session_handoff.md"
     assert handoff.exists()
     content = handoff.read_text(encoding="utf-8")
     assert "# Session Handoff" in content
@@ -87,7 +93,7 @@ def test_idempotent(tmp_project):
     result2 = run_hook(tmp_project)
     assert result2.returncode == 0
 
-    handoff = tmp_project / "agent_docs" / "session_handoff.md"
+    handoff = tmp_project / ".shipwright" / "agent_docs" / "session_handoff.md"
     assert handoff.exists()
     content = handoff.read_text(encoding="utf-8")
     assert "# Session Handoff" in content
@@ -108,7 +114,7 @@ def test_default_session_id_when_env_not_set(tmp_project):
     )
 
     assert result.returncode == 0
-    handoff = tmp_project / "agent_docs" / "session_handoff.md"
+    handoff = tmp_project / ".shipwright" / "agent_docs" / "session_handoff.md"
     assert handoff.exists()
     assert "unknown" in handoff.read_text(encoding="utf-8")
 
@@ -123,8 +129,8 @@ def test_canon_marker_same_run_id_skips_regeneration(tmp_project):
     """Iterate 12.1: Stop hook must NOT overwrite a handoff whose canon
     frontmatter matches the current SHIPWRIGHT_RUN_ID."""
     # Seed a pre-existing handoff that was written by a phase's C3 step.
-    agent_docs = tmp_project / "agent_docs"
-    agent_docs.mkdir(exist_ok=True)
+    agent_docs = tmp_project / ".shipwright" / "agent_docs"
+    agent_docs.mkdir(parents=True, exist_ok=True)
     handoff = agent_docs / "session_handoff.md"
     canon_body = (
         "---\n"
@@ -161,8 +167,8 @@ def test_canon_marker_same_run_id_skips_regeneration(tmp_project):
 def test_canon_marker_different_run_id_regenerates(tmp_project):
     """A stale canon frontmatter from a prior run must not prevent
     regeneration when the current run_id differs."""
-    agent_docs = tmp_project / "agent_docs"
-    agent_docs.mkdir(exist_ok=True)
+    agent_docs = tmp_project / ".shipwright" / "agent_docs"
+    agent_docs.mkdir(parents=True, exist_ok=True)
     handoff = agent_docs / "session_handoff.md"
     handoff.write_text(
         "---\n"
@@ -197,8 +203,8 @@ def test_canon_marker_different_run_id_regenerates(tmp_project):
 def test_canon_marker_missing_run_id_env_regenerates(tmp_project):
     """When the frontmatter is present but SHIPWRIGHT_RUN_ID is unset,
     the hook must fall through to normal regeneration (safe default)."""
-    agent_docs = tmp_project / "agent_docs"
-    agent_docs.mkdir(exist_ok=True)
+    agent_docs = tmp_project / ".shipwright" / "agent_docs"
+    agent_docs.mkdir(parents=True, exist_ok=True)
     (agent_docs / "session_handoff.md").write_text(
         "---\n"
         "canon_generated: true\n"
@@ -227,7 +233,7 @@ def test_canon_marker_missing_run_id_env_regenerates(tmp_project):
         env=env,
     )
     assert result.returncode == 0
-    content = (tmp_project / "agent_docs" / "session_handoff.md").read_text(encoding="utf-8")
+    content = (tmp_project / ".shipwright" / "agent_docs" / "session_handoff.md").read_text(encoding="utf-8")
     # Should be regenerated — old content gone.
     assert "Old." not in content
     assert "# Session Handoff" in content
@@ -236,8 +242,8 @@ def test_canon_marker_missing_run_id_env_regenerates(tmp_project):
 def test_non_canon_handoff_always_regenerates(tmp_project):
     """Plain handoff without frontmatter: regenerate every time, same
     as pre-12.1 behaviour. Regression guard."""
-    agent_docs = tmp_project / "agent_docs"
-    agent_docs.mkdir(exist_ok=True)
+    agent_docs = tmp_project / ".shipwright" / "agent_docs"
+    agent_docs.mkdir(parents=True, exist_ok=True)
     (agent_docs / "session_handoff.md").write_text(
         "# Session Handoff\n\nOld manual content.\n",
         encoding="utf-8",
@@ -254,7 +260,7 @@ def test_non_canon_handoff_always_regenerates(tmp_project):
         },
     )
     assert result.returncode == 0
-    content = (tmp_project / "agent_docs" / "session_handoff.md").read_text(encoding="utf-8")
+    content = (tmp_project / ".shipwright" / "agent_docs" / "session_handoff.md").read_text(encoding="utf-8")
     assert "Old manual content" not in content
     assert "session end" in content
 
@@ -267,7 +273,7 @@ def test_with_full_config_set(project_with_configs):
     )
 
     assert result.returncode == 0
-    handoff = project_with_configs / "agent_docs" / "session_handoff.md"
+    handoff = project_with_configs / ".shipwright" / "agent_docs" / "session_handoff.md"
     content = handoff.read_text(encoding="utf-8")
     assert "full-session" in content
     assert "build" in content  # Phase should be detected as build

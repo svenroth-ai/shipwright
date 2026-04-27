@@ -254,9 +254,9 @@ def check_per_section_adr_recorded(project_root: Path) -> CheckResult:
     if not sections:
         return CheckResult(name, True, "no complete sections to check")
 
-    log_path = project_root / "agent_docs" / "decision_log.md"
+    log_path = project_root / ".shipwright" / "agent_docs" / "decision_log.md"
     if not log_path.exists():
-        return CheckResult(name, False, "agent_docs/decision_log.md missing")
+        return CheckResult(name, False, ".shipwright/agent_docs/decision_log.md missing")
     try:
         log_body = log_path.read_text(encoding="utf-8", errors="ignore")
     except OSError as exc:

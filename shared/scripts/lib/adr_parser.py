@@ -16,7 +16,7 @@ Supported shapes — Shipwright's decision_log.md mixes two layouts:
        - **Decision:** what we chose.
        - **Consequences:** what follows.
 
-2. **Section form (older project ADRs and agent_docs templates):**
+2. **Section form (older project ADRs and .shipwright/agent_docs templates):**
 
        ### ADR-005: Title
        **Context**

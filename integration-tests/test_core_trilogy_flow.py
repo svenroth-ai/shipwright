@@ -277,7 +277,7 @@ class TestCoreTrilogyFlow:
         self._setup_project_phase(trilogy_project)
 
         # Create agent_docs
-        (trilogy_project / "agent_docs").mkdir(exist_ok=True)
+        (trilogy_project / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
 
         # Update section state
         result = run_script(BUILD_PLUGIN, "tools", "update_section_state.py", [
@@ -306,15 +306,15 @@ class TestCoreTrilogyFlow:
             "--reason", "test: section 01-models complete",
         ])
         # The shared script writes the file and prints JSON status
-        assert "success" in handoff_output or (trilogy_project / "agent_docs" / "session_handoff.md").exists()
+        assert "success" in handoff_output or (trilogy_project / ".shipwright" / "agent_docs" / "session_handoff.md").exists()
 
         # Verify all artifacts exist
         assert (trilogy_project / "shipwright_build_config.json").exists()
-        assert (trilogy_project / "agent_docs" / "decision_log.md").exists()
-        assert (trilogy_project / "agent_docs" / "session_handoff.md").exists()
+        assert (trilogy_project / ".shipwright" / "agent_docs" / "decision_log.md").exists()
+        assert (trilogy_project / ".shipwright" / "agent_docs" / "session_handoff.md").exists()
 
         # Verify decision log content
-        log = (trilogy_project / "agent_docs" / "decision_log.md").read_text(encoding="utf-8")
+        log = (trilogy_project / ".shipwright" / "agent_docs" / "decision_log.md").read_text(encoding="utf-8")
         assert "Supabase magic link" in log
         assert "ADR-001" in log
 
@@ -327,7 +327,7 @@ class TestCoreTrilogyFlow:
         self._setup_plan_phase(trilogy_project)
 
         # Simulate build phase artifacts
-        (trilogy_project / "agent_docs").mkdir(exist_ok=True)
+        (trilogy_project / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
 
         run_script(BUILD_PLUGIN, "tools", "update_section_state.py", [
             "--section", "01-models",
@@ -363,7 +363,7 @@ class TestCoreTrilogyFlow:
 
         # Build phase artifacts
         assert (trilogy_project / "shipwright_build_config.json").exists()
-        assert (trilogy_project / "agent_docs" / "decision_log.md").exists()
+        assert (trilogy_project / ".shipwright" / "agent_docs" / "decision_log.md").exists()
 
         # Layer-3 drift safety net: nothing landed at a legacy top-level path.
         _assert_no_legacy_artifact_dirs(trilogy_project)

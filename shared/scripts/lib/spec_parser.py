@@ -1,6 +1,6 @@
 """Spec parser for the Phase-Quality spec category (PR 4 — S1-S10).
 
-Pure parsers for Shipwright spec documents (``agent_docs/spec.md`` plus
+Pure parsers for Shipwright spec documents (``.shipwright/agent_docs/spec.md`` plus
 per-split ``.shipwright/planning/<split>/spec.md``). Used by
 ``tools/verifiers/spec_checks.py`` so every S* check operates on the
 same normalised view of an FR.
@@ -15,7 +15,7 @@ Supports the two shapes Shipwright writes today:
    to it so table-FR parsing can never drift from the traceability
    checks.
 
-2. **Heading form** (``agent_docs/spec.md``)::
+2. **Heading form** (``.shipwright/agent_docs/spec.md``)::
 
        ## FR-7: Title
        **Description:** what the requirement says.
@@ -198,8 +198,8 @@ def count_fr_headings(content: str) -> int:
 # ---------------------------------------------------------------------------
 
 def read_top_level_spec(project_root: Path) -> str | None:
-    """Return the text of ``agent_docs/spec.md`` or ``None`` when missing."""
-    path = project_root / "agent_docs" / "spec.md"
+    """Return the text of ``.shipwright/agent_docs/spec.md`` or ``None`` when missing."""
+    path = project_root / _AGENT_DOCS_DIRNAME / "spec.md"
     if not path.exists():
         return None
     try:
@@ -209,7 +209,7 @@ def read_top_level_spec(project_root: Path) -> str | None:
 
 
 def top_level_spec_is_non_empty(project_root: Path) -> bool:
-    """True when ``agent_docs/spec.md`` exists AND has non-whitespace text."""
+    """True when ``.shipwright/agent_docs/spec.md`` exists AND has non-whitespace text."""
     content = read_top_level_spec(project_root)
     return bool(content and content.strip())
 
@@ -239,20 +239,24 @@ class FRCoherenceReport:
 # Mirrors PLANNING_DIR in shared/scripts/lib/artifact_migrations.py.
 _PLANNING_DIRNAME = ".shipwright/planning"
 
+# Canonical home of the agent_docs artifact set, relative to project_root.
+# Mirrors agent_docs entry in shared/scripts/lib/artifact_migrations.py.
+_AGENT_DOCS_DIRNAME = ".shipwright/agent_docs"
+
 
 def _iter_spec_files(project_root: Path) -> Iterable[Path]:
     """Yield every spec file we care about for coherence checks.
 
     Includes:
 
-    - ``agent_docs/spec.md`` (project-level canonical spec).
+    - ``.shipwright/agent_docs/spec.md`` (project-level canonical spec).
     - ``.shipwright/planning/<split>/spec.md`` (split specs from plan phase).
     - ``.shipwright/planning/iterate/*.md`` (iterate-spec files produced per-run).
 
     Files are yielded in stable (sorted) order so callers get
     deterministic reports.
     """
-    top = project_root / "agent_docs" / "spec.md"
+    top = project_root / _AGENT_DOCS_DIRNAME / "spec.md"
     if top.exists():
         yield top
 

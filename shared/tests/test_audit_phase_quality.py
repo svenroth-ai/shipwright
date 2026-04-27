@@ -29,6 +29,13 @@ import pytest
 from lib import phase_quality as pq  # noqa: E402
 
 
+def _agent_docs_root(tmp: Path) -> Path:
+    """Return canonical agent_docs subdir under tmp, creating parents."""
+    p = tmp / ".shipwright" / "agent_docs"
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
 HOOK_SCRIPT = (
     Path(__file__).resolve().parent.parent
     / "scripts" / "hooks" / "audit_phase_quality_on_stop.py"
@@ -43,7 +50,7 @@ HOOK_SCRIPT = (
 @pytest.fixture
 def shipwright_project(tmp_path: Path) -> Path:
     """A minimal Shipwright-managed project with events + dashboard."""
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     (tmp_path / "shipwright_run_config.json").write_text(
         json.dumps({
             "run_id": "run-abc",
@@ -59,11 +66,11 @@ def shipwright_project(tmp_path: Path) -> Path:
         "\n".join(json.dumps(e) for e in events) + "\n",
         encoding="utf-8",
     )
-    (tmp_path / "agent_docs" / "build_dashboard.md").write_text(
+    (tmp_path / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text(
         "# Dashboard\n\n## build\nsection complete\n",
         encoding="utf-8",
     )
-    handoff = tmp_path / "agent_docs" / "session_handoff.md"
+    handoff = tmp_path / ".shipwright" / "agent_docs" / "session_handoff.md"
     handoff.write_text("# Session Handoff\n\nReason: build: finalize\n", encoding="utf-8")
     # Fresh mtime so C3 passes
     now = time.time()
@@ -74,7 +81,7 @@ def shipwright_project(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     # decision_log with a build ADR (covers C4)
-    (tmp_path / "agent_docs" / "decision_log.md").write_text(
+    (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "## ADR-001: build decision\n\n**Status:** Accepted\n\nBody.\n",
         encoding="utf-8",
     )
@@ -88,7 +95,7 @@ def shipwright_project(tmp_path: Path) -> Path:
 
 def test_is_shipwright_project_requires_marker_or_agent_docs(tmp_path: Path):
     assert pq.is_shipwright_project(tmp_path) is False
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     assert pq.is_shipwright_project(tmp_path) is True
 
 
@@ -169,7 +176,7 @@ def test_canon_passes_c1_when_event_present(shipwright_project: Path):
 
 
 def test_canon_c1_fails_when_event_missing(tmp_path: Path):
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     findings = pq.run_canon_checks("build", tmp_path)
     c1 = next(f for f in findings if f["id"] == "C1")
     assert c1["status"] == pq.STATUS_FAIL
@@ -193,7 +200,7 @@ def test_skip_env_var_overrides_canon_check(
 
 
 def test_write_finding_json_produces_all_six_categories(tmp_path: Path):
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     findings = {
         "canon": [{"id": "C1", "status": "PASS", "evidence": "ok"}],
     }
@@ -212,13 +219,13 @@ def test_write_finding_json_produces_all_six_categories(tmp_path: Path):
 
 
 def test_already_audited_true_after_write(tmp_path: Path):
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     pq.write_finding_json(tmp_path, "build", "run-1", "sess-1", {"canon": []})
     assert pq.already_audited(tmp_path, "build", "run-1", "sess-1") is True
 
 
 def test_already_audited_false_for_corrupt_json(tmp_path: Path):
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     path = pq.finding_path(tmp_path, "build", "run-1", "sess-1")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("not json", encoding="utf-8")
@@ -231,7 +238,7 @@ def test_already_audited_false_for_corrupt_json(tmp_path: Path):
 
 
 def test_aggregate_report_regenerates_from_findings(tmp_path: Path):
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     pq.write_finding_json(
         tmp_path, "build", "run-1", "sess-1",
         {"canon": [{"id": "C1", "status": "PASS", "evidence": "ok"}]},
@@ -246,7 +253,7 @@ def test_aggregate_report_regenerates_from_findings(tmp_path: Path):
 
 
 def test_dashboard_file_regenerates_with_one_row_per_phase(tmp_path: Path):
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     pq.write_finding_json(
         tmp_path, "build", "run-1", "sess-1",
         {"canon": [{"id": "C1", "status": "PASS", "evidence": "ok"}]},
@@ -266,7 +273,7 @@ def test_dashboard_file_regenerates_with_one_row_per_phase(tmp_path: Path):
 
 
 def test_aggregate_report_skips_corrupt_json_with_warning(tmp_path: Path, capsys):
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     good = pq.write_finding_json(
         tmp_path, "build", "run-1", "sess-1",
         {"canon": [{"id": "C1", "status": "PASS", "evidence": "ok"}]},
@@ -282,7 +289,7 @@ def test_aggregate_report_skips_corrupt_json_with_warning(tmp_path: Path, capsys
 
 
 def test_session_summary_highlights_open_fails(tmp_path: Path):
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     pq.write_finding_json(
         tmp_path, "build", "run-1", "sess-1",
         {"canon": [{"id": "C1", "status": "FAIL", "evidence": "no event"}]},
@@ -396,7 +403,7 @@ def test_hook_is_non_blocking_on_error(monkeypatch, shipwright_project: Path):
     # still land in the error branch gracefully.
     (shipwright_project / "CHANGELOG.md").unlink()
     # Also break the decision_log so C4 hits a fail path
-    (shipwright_project / "agent_docs" / "decision_log.md").write_text(
+    (shipwright_project / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "no adrs here\n", encoding="utf-8",
     )
     result = _run_hook(shipwright_project)
@@ -637,7 +644,7 @@ def monorepo_with_managed_subdir(tmp_path: Path) -> tuple[Path, Path]:
     auto-descent in resolve_project_root().
     """
     subdir = tmp_path / "managed"
-    (subdir / "agent_docs").mkdir(parents=True)
+    (subdir / ".shipwright" / "agent_docs").mkdir(parents=True)
     (subdir / "shipwright_run_config.json").write_text(
         json.dumps({
             "run_id": "run-monorepo",
@@ -653,11 +660,11 @@ def monorepo_with_managed_subdir(tmp_path: Path) -> tuple[Path, Path]:
         "\n".join(json.dumps(e) for e in events) + "\n",
         encoding="utf-8",
     )
-    (subdir / "agent_docs" / "build_dashboard.md").write_text(
+    (subdir / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text(
         "# Dashboard\n\n## build\nsection complete\n",
         encoding="utf-8",
     )
-    handoff = subdir / "agent_docs" / "session_handoff.md"
+    handoff = subdir / ".shipwright" / "agent_docs" / "session_handoff.md"
     handoff.write_text("# Session Handoff\n\nReason: build: finalize\n", encoding="utf-8")
     now = time.time()
     os.utime(handoff, (now, now))
@@ -665,7 +672,7 @@ def monorepo_with_managed_subdir(tmp_path: Path) -> tuple[Path, Path]:
         "# Changelog\n\n## [Unreleased]\n\n### Added\n- build bullet\n",
         encoding="utf-8",
     )
-    (subdir / "agent_docs" / "decision_log.md").write_text(
+    (subdir / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "## ADR-001: build decision\n\n**Status:** Accepted\n\nBody.\n",
         encoding="utf-8",
     )

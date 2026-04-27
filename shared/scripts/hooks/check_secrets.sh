@@ -97,7 +97,7 @@ fi
 
 if [ -n "$FINDINGS" ]; then
     FINDINGS_ESCAPED=$(echo -e "$FINDINGS" | sed 's/"/\\"/g' | tr '\n' ' ')
-    echo "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"BLOCKED: Potential secrets detected in ${FILE_PATH}:\\n${FINDINGS_ESCAPED}\\nDo NOT commit files with hardcoded secrets. Use environment variables instead.\\n\\nThe user may say 'Continue anyway' to override. If they do, log the override to agent_docs/compliance_overrides.log.\",\"blocked\":true,\"reason\":\"Secret pattern detected in ${FILE_PATH}\"}}"
+    echo "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"BLOCKED: Potential secrets detected in ${FILE_PATH}:\\n${FINDINGS_ESCAPED}\\nDo NOT commit files with hardcoded secrets. Use environment variables instead.\\n\\nThe user may say 'Continue anyway' to override. If they do, log the override to .shipwright/agent_docs/compliance_overrides.log.\",\"blocked\":true,\"reason\":\"Secret pattern detected in ${FILE_PATH}\"}}"
     exit 2
 fi
 

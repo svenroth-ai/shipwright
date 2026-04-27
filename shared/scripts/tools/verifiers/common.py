@@ -6,7 +6,7 @@ Contains:
    ``*_checks.py`` module.
 2. File readers for the cross-artifact sync invariants that every phase
    verifies: ``shipwright_run_config.json``, ``shipwright_events.jsonl``,
-   ``agent_docs/decision_log.md``, ``CHANGELOG.md``.
+   ``.shipwright/agent_docs/decision_log.md``, ``CHANGELOG.md``.
 3. Generic C1-C5 "Minimum Phase Completion Canon" checks. Iterate 12.1+
    phase check modules call these with the phase name; the checks own
    the lookup logic so plugins don't each re-implement "is there a
@@ -43,6 +43,11 @@ from lib.drift_parsers import (  # noqa: E402
     find_gaps_in_adr_ids,
     parse_adr_headers,
 )
+
+
+# Canonical home of the agent_docs artifact set, relative to project_root.
+# Mirrors agent_docs entry in shared/scripts/lib/artifact_migrations.py.
+_AGENT_DOCS_DIRNAME = ".shipwright/agent_docs"
 
 
 # ---------------------------------------------------------------------------
@@ -162,8 +167,8 @@ def read_events_jsonl(project_root: Path) -> list[dict[str, Any]]:
 
 
 def read_decision_log(project_root: Path) -> str:
-    """Return the raw text of ``agent_docs/decision_log.md`` or ``""``."""
-    path = project_root / "agent_docs" / "decision_log.md"
+    """Return the raw text of ``.shipwright/agent_docs/decision_log.md`` or ``""``."""
+    path = project_root / _AGENT_DOCS_DIRNAME / "decision_log.md"
     if not path.exists():
         return ""
     try:
@@ -242,7 +247,7 @@ def check_c1_phase_event_recorded(project_root: Path, phase: str) -> CheckResult
 
 def check_c2_dashboard_reflects_phase(project_root: Path, phase: str) -> CheckResult:
     name = f"C2 build_dashboard mentions {phase}"
-    dashboard = project_root / "agent_docs" / "build_dashboard.md"
+    dashboard = project_root / _AGENT_DOCS_DIRNAME / "build_dashboard.md"
     if not dashboard.exists():
         return CheckResult(name, False, "build_dashboard.md missing")
     try:
@@ -277,7 +282,7 @@ def check_c3_session_handoff_fresh_after_phase(
     """
     del phase  # not used today; kept for API symmetry
     name = "C3 session_handoff.md fresh"
-    handoff = project_root / "agent_docs" / "session_handoff.md"
+    handoff = project_root / _AGENT_DOCS_DIRNAME / "session_handoff.md"
     if not handoff.exists():
         return CheckResult(
             name, False, "session_handoff.md missing",

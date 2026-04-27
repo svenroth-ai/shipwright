@@ -54,7 +54,7 @@ def _canonical_entry(slug: str = "feat-x", complexity: str = "medium") -> dict:
 def _seed_dir_only_project(tmp_path: Path, entries: list[dict]) -> Path:
     """Fresh-adopted project: entries live in the dir, run config has no
     legacy array."""
-    (tmp_path / "agent_docs").mkdir()
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     d = iterates_dir(tmp_path)
     d.mkdir(parents=True)
     for entry in entries:
@@ -71,8 +71,8 @@ def _seed_dir_only_project(tmp_path: Path, entries: list[dict]) -> Path:
 
 
 def _seed_decision_log(project_root: Path, adr_id: str = "ADR-055") -> None:
-    log = project_root / "agent_docs" / "decision_log.md"
-    log.parent.mkdir(exist_ok=True)
+    log = project_root / ".shipwright" / "agent_docs" / "decision_log.md"
+    log.parent.mkdir(parents=True, exist_ok=True)
     log.write_text(
         f"# Decision log\n\n### {adr_id}: File-per-iterate refactor\n\n"
         "Some decision text.\n",
@@ -160,7 +160,7 @@ class TestIterateChecksDirOnly:
         config = json.loads((tmp_path / RUN_CONFIG_NAME).read_text())
         config["_iterate_migration_quarantined_count"] = 2
         config["_iterate_migration_quarantine_report"] = (
-            "agent_docs/iterates/_quarantine/invalid-legacy-20260423.json"
+            ".shipwright/agent_docs/iterates/_quarantine/invalid-legacy-20260423.json"
         )
         (tmp_path / RUN_CONFIG_NAME).write_text(json.dumps(config), encoding="utf-8")
 
@@ -205,7 +205,7 @@ class TestSpecChecksDirOnly:
         assert resolved["run_id"] == "iterate-2026-04-20-new"
 
     def test_iterate_complexity_returns_none_for_empty_project(self, tmp_path):
-        (tmp_path / "agent_docs").mkdir()
+        (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
         assert _iterate_complexity(tmp_path, "iterate-2026-04-23-x") is None
 
     def test_iterate_complexity_lowercase_normalization_via_reader(
@@ -241,7 +241,7 @@ class TestHandoffDirOnly:
     def test_last_iterate_block_omitted_on_empty_project(self, tmp_path):
         """Fresh adopted project with no iterate runs yet must render a
         handoff without the Last Iterate section — no placeholder noise."""
-        (tmp_path / "agent_docs").mkdir()
+        (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
         (tmp_path / RUN_CONFIG_NAME).write_text(
             json.dumps({"scope": "full_app", MIGRATION_STATE_KEY: "complete"}),
             encoding="utf-8",
@@ -255,7 +255,7 @@ class TestHandoffDirOnly:
         config = json.loads((tmp_path / RUN_CONFIG_NAME).read_text())
         config["_iterate_migration_quarantined_count"] = 3
         config["_iterate_migration_quarantine_report"] = (
-            "agent_docs/iterates/_quarantine/invalid-legacy-20260423.json"
+            ".shipwright/agent_docs/iterates/_quarantine/invalid-legacy-20260423.json"
         )
         (tmp_path / RUN_CONFIG_NAME).write_text(json.dumps(config), encoding="utf-8")
 

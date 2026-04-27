@@ -64,16 +64,16 @@ def seed_canon_project(
     )
 
     # C2 — build_dashboard mentions project
-    (root / "agent_docs").mkdir(exist_ok=True)
-    (root / "agent_docs" / "build_dashboard.md").write_text(
+    (root / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (root / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text(
         "## Phases\n\n- project: complete\n"
     )
 
     # C3 — fresh session_handoff
-    (root / "agent_docs" / "session_handoff.md").write_text("fresh")
+    (root / ".shipwright" / "agent_docs" / "session_handoff.md").write_text("fresh")
 
     # C4 — ADR referencing project
-    (root / "agent_docs" / "decision_log.md").write_text(
+    (root / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-027: Project decomposition decision\n"
         "- **Status:** accepted\n"
     )

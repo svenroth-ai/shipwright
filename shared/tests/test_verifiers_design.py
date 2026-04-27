@@ -67,10 +67,10 @@ def seed_canon_design(
                     "timestamp": "2026-04-14T10:00:00Z"}) + "\n"
     )
     # C2 dashboard
-    (root / "agent_docs").mkdir()
-    (root / "agent_docs" / "build_dashboard.md").write_text("- design: complete\n")
+    (root / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (root / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text("- design: complete\n")
     # C3 handoff
-    (root / "agent_docs" / "session_handoff.md").write_text("fresh")
+    (root / ".shipwright" / "agent_docs" / "session_handoff.md").write_text("fresh")
     # C4 is skipped for design by policy
     # C5 changelog
     (root / "CHANGELOG.md").write_text(
@@ -80,7 +80,7 @@ def seed_canon_design(
     (root / "shipwright_run_config.json").write_text(json.dumps({
         "phase_history": {"design": [{"run_id": run_id, "date": "2026-04-14"}]},
     }))
-    (root / "agent_docs" / "decision_log.md").write_text(
+    (root / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-001: Anchor\n- **Status:** accepted\n"
     )
 
@@ -215,7 +215,7 @@ def test_run_design_checks_does_not_require_c4(tmp_path):
     """Design skips C4 — no ADR-with-phase-name needed."""
     seed_canon_design(tmp_path, run_id="design-happy")
     # Replace decision_log with an ADR that doesn't mention "design"
-    (tmp_path / "agent_docs" / "decision_log.md").write_text(
+    (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-001: Unrelated thing\n- **Status:** accepted\n"
     )
     results = run_design_checks(tmp_path, run_id="design-happy")

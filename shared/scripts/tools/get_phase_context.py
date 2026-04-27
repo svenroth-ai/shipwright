@@ -34,7 +34,7 @@ Output: structured JSON on stdout with the following shape:
       "runConditions": {...},
       "splits_frozen": [...],
       "skill_artifacts_to_read": [
-        "agent_docs/sections/01-core/...",
+        ".shipwright/agent_docs/sections/01-core/...",
         "shipwright_plan_config.json",
         ...
       ],
@@ -76,7 +76,7 @@ CONFIG_NAME = "shipwright_run_config.json"
 PHASE_OWN_ARTIFACTS: dict[str, list[str]] = {
     "project": [".shipwright/planning/requirements.md"],
     "design": [".shipwright/designs/", "shipwright_design_config.json"],
-    "plan": ["agent_docs/sections/", "shipwright_plan_config.json"],
+    "plan": [".shipwright/agent_docs/sections/", "shipwright_plan_config.json"],
     "build": ["shipwright_build_config.json"],
     "test": ["shipwright_test_results.json"],
     "security": ["compliance/security-scan-report.md"],
@@ -89,7 +89,7 @@ PHASE_PREREQ_ARTIFACTS: dict[str, list[str]] = {
     "design": [".shipwright/planning/requirements.md", "shipwright_project_config.json"],
     "plan": [".shipwright/planning/requirements.md", "shipwright_design_config.json",
              ".shipwright/designs/"],
-    "build": ["agent_docs/sections/", "shipwright_plan_config.json"],
+    "build": [".shipwright/agent_docs/sections/", "shipwright_plan_config.json"],
     "test": ["shipwright_build_config.json"],
     "security": ["shipwright_test_results.json"],
     "changelog": ["shipwright_test_results.json"],
@@ -101,14 +101,14 @@ def _suggest_artifacts(phase: str, split_id: Optional[str]) -> list[str]:
     """Return a deduplicated list of artifact paths the Skill should read.
 
     Combines the phase's prerequisite artifacts with split-scoped subdirs
-    when applicable (e.g. build/01-core reads agent_docs/sections/01-core/).
+    when applicable (e.g. build/01-core reads .shipwright/agent_docs/sections/01-core/).
     """
     paths: list[str] = list(PHASE_PREREQ_ARTIFACTS.get(phase, []))
     if split_id:
-        # Replace any generic agent_docs/sections/ entry with the split-scoped one
-        scoped = f"agent_docs/sections/{split_id}/"
-        paths = [p if p != "agent_docs/sections/" else scoped for p in paths]
-        if scoped not in paths and "agent_docs/sections/" not in paths:
+        # Replace any generic .shipwright/agent_docs/sections/ entry with the split-scoped one
+        scoped = f".shipwright/agent_docs/sections/{split_id}/"
+        paths = [p if p != ".shipwright/agent_docs/sections/" else scoped for p in paths]
+        if scoped not in paths and ".shipwright/agent_docs/sections/" not in paths:
             paths.append(scoped)
     # Dedupe preserving order
     seen = set()

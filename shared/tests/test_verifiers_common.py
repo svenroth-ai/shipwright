@@ -9,6 +9,14 @@ from __future__ import annotations
 
 import json
 import time
+from pathlib import Path
+
+
+def _agent_docs_root(tmp: Path) -> Path:
+    """Return canonical agent_docs subdir under tmp, creating parents."""
+    p = tmp / ".shipwright" / "agent_docs"
+    p.mkdir(parents=True, exist_ok=True)
+    return p
 
 
 from tools.verifiers.common import (
@@ -124,8 +132,8 @@ def test_c1_fails_when_no_event(tmp_path):
 
 
 def test_c2_passes_when_dashboard_mentions_phase(tmp_path):
-    (tmp_path / "agent_docs").mkdir()
-    (tmp_path / "agent_docs" / "build_dashboard.md").write_text(
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text(
         "## Phases\n\n- project: complete\n"
     )
     r = check_c2_dashboard_reflects_phase(tmp_path, "project")
@@ -133,24 +141,24 @@ def test_c2_passes_when_dashboard_mentions_phase(tmp_path):
 
 
 def test_c2_warns_when_phase_absent(tmp_path):
-    (tmp_path / "agent_docs").mkdir()
-    (tmp_path / "agent_docs" / "build_dashboard.md").write_text("## Phases\n")
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text("## Phases\n")
     r = check_c2_dashboard_reflects_phase(tmp_path, "project")
     assert r.ok is False
     assert r.severity == Severity.WARNING.value
 
 
 def test_c3_passes_when_handoff_is_fresh(tmp_path):
-    (tmp_path / "agent_docs").mkdir()
-    (tmp_path / "agent_docs" / "session_handoff.md").write_text("fresh")
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ".shipwright" / "agent_docs" / "session_handoff.md").write_text("fresh")
     r = check_c3_session_handoff_fresh_after_phase(tmp_path, "project")
     assert r.ok is True
 
 
 def test_c3_warns_when_handoff_stale(tmp_path):
     import os
-    (tmp_path / "agent_docs").mkdir()
-    handoff = tmp_path / "agent_docs" / "session_handoff.md"
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    handoff = tmp_path / ".shipwright" / "agent_docs" / "session_handoff.md"
     handoff.write_text("old")
     old = time.time() - 7200
     os.utime(handoff, (old, old))
@@ -160,8 +168,8 @@ def test_c3_warns_when_handoff_stale(tmp_path):
 
 
 def test_c4_passes_when_adr_mentions_phase_in_title(tmp_path):
-    (tmp_path / "agent_docs").mkdir()
-    (tmp_path / "agent_docs" / "decision_log.md").write_text(
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-027: Project initialization decision\n- **Status:** accepted\n"
     )
     r = check_c4_decision_log_has_phase_adr(tmp_path, "project")
@@ -169,8 +177,8 @@ def test_c4_passes_when_adr_mentions_phase_in_title(tmp_path):
 
 
 def test_c4_fails_when_no_matching_adr(tmp_path):
-    (tmp_path / "agent_docs").mkdir()
-    (tmp_path / "agent_docs" / "decision_log.md").write_text(
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-027: Completely unrelated thing\n"
     )
     r = check_c4_decision_log_has_phase_adr(tmp_path, "project")
@@ -204,8 +212,8 @@ def test_c5_warns_when_changelog_missing(tmp_path):
 # ---------------------------------------------------------------------------
 
 def test_f1_adr_ids_sequential_passes(tmp_path):
-    (tmp_path / "agent_docs").mkdir()
-    (tmp_path / "agent_docs" / "decision_log.md").write_text(
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-001: First\n### ADR-002: Second\n### ADR-003: Third\n"
     )
     r = check_adr_ids_sequential(tmp_path)
@@ -213,8 +221,8 @@ def test_f1_adr_ids_sequential_passes(tmp_path):
 
 
 def test_f1_adr_ids_detects_duplicates(tmp_path):
-    (tmp_path / "agent_docs").mkdir()
-    (tmp_path / "agent_docs" / "decision_log.md").write_text(
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-001: First\n### ADR-001: Duplicate\n"
     )
     r = check_adr_ids_sequential(tmp_path)
@@ -223,8 +231,8 @@ def test_f1_adr_ids_detects_duplicates(tmp_path):
 
 
 def test_f1_adr_ids_warns_on_gaps(tmp_path):
-    (tmp_path / "agent_docs").mkdir()
-    (tmp_path / "agent_docs" / "decision_log.md").write_text(
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-001: First\n### ADR-003: Third\n"
     )
     r = check_adr_ids_sequential(tmp_path)
@@ -234,8 +242,8 @@ def test_f1_adr_ids_warns_on_gaps(tmp_path):
 
 
 def test_f2_adr_status_valid_passes(tmp_path):
-    (tmp_path / "agent_docs").mkdir()
-    (tmp_path / "agent_docs" / "decision_log.md").write_text(
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-001: A\n- **Status:** accepted\n"
     )
     r = check_adr_status_valid(tmp_path)
@@ -243,8 +251,8 @@ def test_f2_adr_status_valid_passes(tmp_path):
 
 
 def test_f2_adr_status_rejects_bogus(tmp_path):
-    (tmp_path / "agent_docs").mkdir()
-    (tmp_path / "agent_docs" / "decision_log.md").write_text(
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-001: A\n- **Status:** totally-made-up\n"
     )
     r = check_adr_status_valid(tmp_path)
@@ -252,8 +260,8 @@ def test_f2_adr_status_rejects_bogus(tmp_path):
 
 
 def test_f3_supersession_resolved(tmp_path):
-    (tmp_path / "agent_docs").mkdir()
-    (tmp_path / "agent_docs" / "decision_log.md").write_text(
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-001: Old\n- **Status:** superseded\n\n"
         "### ADR-002: New\n- **Status:** accepted\n- **Supersedes:** ADR-001\n"
     )
@@ -262,8 +270,8 @@ def test_f3_supersession_resolved(tmp_path):
 
 
 def test_f3_supersession_dangling(tmp_path):
-    (tmp_path / "agent_docs").mkdir()
-    (tmp_path / "agent_docs" / "decision_log.md").write_text(
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-002: New\n- **Supersedes:** ADR-999\n"
     )
     r = check_adr_supersession_exists(tmp_path)

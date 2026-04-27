@@ -34,8 +34,8 @@ def _update_dashboard(project_root: Path, session_id: str) -> str | None:
         from tools.update_build_dashboard import generate_dashboard
 
         content = generate_dashboard(project_root, phase="iterate", session_id=session_id)
-        out_path = project_root / "agent_docs" / "build_dashboard.md"
-        out_path.parent.mkdir(exist_ok=True)
+        out_path = project_root / ".shipwright" / "agent_docs" / "build_dashboard.md"
+        out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(content, encoding="utf-8")
         return str(out_path.relative_to(project_root))
     except Exception as exc:
@@ -110,8 +110,8 @@ def _generate_handoff(project_root: Path, session_id: str, run_id: str, reason: 
             reason=reason,
             canon_frontmatter=canon_fm,
         )
-        out_path = project_root / "agent_docs" / "session_handoff.md"
-        out_path.parent.mkdir(exist_ok=True)
+        out_path = project_root / ".shipwright" / "agent_docs" / "session_handoff.md"
+        out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(content, encoding="utf-8")
         return str(out_path.relative_to(project_root))
     except Exception as exc:

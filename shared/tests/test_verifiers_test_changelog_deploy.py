@@ -50,12 +50,12 @@ def _seed_canon_backplate(root: Path, phase: str, run_id: str) -> None:
             "timestamp": "2026-04-14T10:00:00Z",
         }) + "\n"
     )
-    (root / "agent_docs").mkdir(exist_ok=True)
-    (root / "agent_docs" / "build_dashboard.md").write_text(
+    (root / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (root / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text(
         f"# Dashboard\n\n- {phase}: complete\n"
     )
-    (root / "agent_docs" / "session_handoff.md").write_text("fresh")
-    (root / "agent_docs" / "decision_log.md").write_text(
+    (root / ".shipwright" / "agent_docs" / "session_handoff.md").write_text("fresh")
+    (root / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
         "### ADR-001: Anchor\n- **Status:** accepted\n"
     )
     (root / "shipwright_run_config.json").write_text(json.dumps({

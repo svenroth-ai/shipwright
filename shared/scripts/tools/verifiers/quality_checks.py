@@ -3,7 +3,7 @@
 Implements Q1 and Q2 — the "was the decision substance actually
 captured" and "did build finish every planned section" gates.
 
-- **Q1** (Tier-2, WARN): the latest ADR in ``agent_docs/decision_log.md``
+- **Q1** (Tier-2, WARN): the latest ADR in ``.shipwright/agent_docs/decision_log.md``
   has a non-trivial Context (≥50 chars), Decision (≥30) and
   Consequences (≥30) section. Heuristic — thresholds are intentionally
   forgiving (plan § 7 R13). Never FAIL.
@@ -82,7 +82,7 @@ def check_q1_adr_substance(project_root: Path) -> dict[str, Any]:
     if not content:
         return make_finding(
             "Q1", STATUS_SKIP,
-            "agent_docs/decision_log.md missing or empty — nothing to audit",
+            ".shipwright/agent_docs/decision_log.md missing or empty — nothing to audit",
             name=Q1_NAME,
         )
 

@@ -1,4 +1,4 @@
-"""Append an iterate entry to ``agent_docs/iterates/<run_id>.json``.
+"""Append an iterate entry to ``.shipwright/agent_docs/iterates/<run_id>.json``.
 
 Replaces the manual ``iterate_history`` array-append in
 ``shipwright_run_config.json`` (historic F5c in the iterate SKILL). The
@@ -11,7 +11,7 @@ Behavior:
   ``iterate_history`` array, the tool runs a one-shot migration under
   the same lock as the append. Invalid legacy rows and duplicate
   ``run_id`` values are diverted to
-  ``agent_docs/iterates/_quarantine/`` and the count is recorded on the
+  ``.shipwright/agent_docs/iterates/_quarantine/`` and the count is recorded on the
   run config as ``_iterate_migration_quarantined_count`` for downstream
   visibility.
 * The append itself is atomic per file; migration + append + retention
@@ -315,7 +315,7 @@ def append_iterate_entry(
 
     Returns a result dict:
         {
-            "entry_path": "agent_docs/iterates/iterate-....json",
+            "entry_path": ".shipwright/agent_docs/iterates/iterate-....json",
             "migrated": True | False,
             "quarantined_count": int,
             "retention_deleted": int,

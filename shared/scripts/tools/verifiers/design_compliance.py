@@ -8,8 +8,8 @@ Plan § 3 deliberately allows text-only flows for D1, so the artifact
 gate is satisfied by any of:
 
 - ``.shipwright/designs/mockups/*.html`` (or ``.shipwright/designs/*.html``)
-- ``agent_docs/screens.md``
-- ``agent_docs/user-flow.md``
+- ``.shipwright/agent_docs/screens.md``
+- ``.shipwright/agent_docs/user-flow.md``
 """
 
 from __future__ import annotations
@@ -34,12 +34,12 @@ D1_NAME = "D1 at least one design artifact"
 D2_NAME = "D2 screens.md + user-flow.md documented (Tier-2)"
 
 D1_REMEDIATION = (
-    "Produce mockups/*.html OR write agent_docs/screens.md OR "
-    "agent_docs/user-flow.md before completing the design phase."
+    "Produce mockups/*.html OR write .shipwright/agent_docs/screens.md OR "
+    ".shipwright/agent_docs/user-flow.md before completing the design phase."
 )
 D2_REMEDIATION = (
-    "Document screens in agent_docs/screens.md and flows in "
-    "agent_docs/user-flow.md (text-only descriptions are OK)."
+    "Document screens in .shipwright/agent_docs/screens.md and flows in "
+    ".shipwright/agent_docs/user-flow.md (text-only descriptions are OK)."
 )
 
 
@@ -57,8 +57,8 @@ def _html_mockups_exist(project_root: Path) -> list[Path]:
 
 def check_d1_design_artifact(project_root: Path) -> dict[str, Any]:
     mockups = _html_mockups_exist(project_root)
-    screens = project_root / "agent_docs" / "screens.md"
-    flow = project_root / "agent_docs" / "user-flow.md"
+    screens = project_root / ".shipwright" / "agent_docs" / "screens.md"
+    flow = project_root / ".shipwright" / "agent_docs" / "user-flow.md"
 
     evidence_parts: list[str] = []
     if mockups:
@@ -83,8 +83,8 @@ def check_d1_design_artifact(project_root: Path) -> dict[str, Any]:
 
 
 def check_d2_docs_present(project_root: Path) -> dict[str, Any]:
-    screens = project_root / "agent_docs" / "screens.md"
-    flow = project_root / "agent_docs" / "user-flow.md"
+    screens = project_root / ".shipwright" / "agent_docs" / "screens.md"
+    flow = project_root / ".shipwright" / "agent_docs" / "user-flow.md"
     missing: list[str] = []
     if not screens.exists() or screens.stat().st_size == 0:
         missing.append("screens.md")
@@ -93,7 +93,7 @@ def check_d2_docs_present(project_root: Path) -> dict[str, Any]:
     if missing:
         return make_finding(
             "D2", STATUS_WARN,
-            f"missing under agent_docs/: {missing}",
+            f"missing under .shipwright/agent_docs/: {missing}",
             name=D2_NAME,
             remediation=D2_REMEDIATION,
         )
