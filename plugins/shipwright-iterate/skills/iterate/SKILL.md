@@ -336,7 +336,7 @@ Use answers to populate the Iterate Spec (Step 1).
 
 1. "What exactly should change and why?"
 2. "Are there related areas that should remain unchanged?"
-3. [If UI change] "Which screen mockup(s) from designs/screens/ show the target state?"
+3. [If UI change] "Which screen mockup(s) from .shipwright/designs/screens/ show the target state?"
 
 Use answers to populate the Iterate Spec (Step 1) and scope the Spec Update (Step 2).
 
@@ -409,9 +409,9 @@ Note: "touches_db" (ordinary query/model edits without schema changes) is NOT a 
 Read only when the change touches their domain:
 
 - `.shipwright/planning/*/sections/*.md` — only the section files for affected areas
-- `designs/visual-guidelines.md` — only for UI changes
-- `designs/screens/*.html` — only for UI changes requiring mockup reference
-- `designs/chrome-definition.md` — only for UI changes needing chrome context
+- `.shipwright/designs/visual-guidelines.md` — only for UI changes
+- `.shipwright/designs/screens/*.html` — only for UI changes requiring mockup reference
+- `.shipwright/designs/chrome-definition.md` — only for UI changes needing chrome context
 - `{build_plugin_root}/skills/build/references/shadcn-rules.md` — Core Rules only, for UI changes
 - `{build_plugin_root}/skills/build/references/shadcn-project-conventions.md` — Card/Button conventions, for UI changes
 - `{build_plugin_root}/skills/build/references/shadcn-block-patterns.md` — Index + matching category only
@@ -452,7 +452,7 @@ Create `.shipwright/planning/iterate/{date}-{short-description}.md` using this t
 
 ## Design Notes
 {Filled during Design Check. Include:
- - Affected mockup files from designs/screens/ (e.g. "10-kanban-board.html")
+ - Affected mockup files from .shipwright/designs/screens/ (e.g. "10-kanban-board.html")
  - Design tokens applied (colors, spacing, typography)
  - New vs modified components
  - Deviations from visual guidelines with justification}
@@ -591,7 +591,7 @@ Check if the spec itself was incorrect. If yes, update. If no, skip.
    - API (request/response) → check network calls, status codes, payloads
    - Data (DB/state) → check queries, migrations, state shape
    - External (third-party) → check service status, API changes
-   - [If UI layer] Compare current state against designs/screens/{relevant}.html
+   - [If UI layer] Compare current state against .shipwright/designs/screens/{relevant}.html
      to determine intended behavior before fixing
 3. **Root Cause** — trace from symptom to cause. Ask "why?" at each level.
    Do NOT fix the first thing that looks wrong — that's symptom-patching.
@@ -1118,7 +1118,7 @@ When metadata is incomplete:
 - **Code-reviewer unavailable:** self-review only, flag in ADR as "review-limited"
 - **review.py unavailable / no API key + user chose skip:** Branch B Option 2 — fall back to the mandatory self-review that already ran, log the opt-out (with reason) in the iterate ADR, write `external_review_state.json` marker with `status: skipped_user_opt_out`
 - **Pipeline handoff fails:** print manual instructions + handoff file path
-- **No designs/screens/:** skip mockup comparison in design fidelity check, design_fidelity marked "degraded", note in ADR
+- **No .shipwright/designs/screens/:** skip mockup comparison in design fidelity check, design_fidelity marked "degraded", note in ADR
 
 Record all degraded conditions in `shipwright_test_results.json` → `degraded` array.
 

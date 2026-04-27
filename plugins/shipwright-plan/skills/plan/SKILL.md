@@ -432,7 +432,7 @@ Verify all sections declared in SECTION_MANIFEST have corresponding files.
 
 ## Step 8: E2E Test Plan (Shipwright Enhancement — Optional)
 
-**Runs if `e2e_test_plan.enabled` is true in config, OR if no config exists and the project has a UI** (i.e., `designs/screens/` contains HTML mockups, or `component_library` is set in profile). Default to enabled for UI projects.
+**Runs if `e2e_test_plan.enabled` is true in config, OR if no config exists and the project has a UI** (i.e., `.shipwright/designs/screens/` contains HTML mockups, or `component_library` is set in profile). Default to enabled for UI projects.
 
 See [e2e-test-plan.md](references/e2e-test-plan.md) for guidance.
 

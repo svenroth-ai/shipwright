@@ -12,7 +12,7 @@ AskUserQuestion:
     A) All screens approved — finalize design phase
        → Updates specs & decisions, writes session handoff, ready for /shipwright-plan
     B) Feedback ready — I've reviewed and exported the feedback file
-       → Reads designs/design-feedback-roundN.md, revises flagged screens, then asks again
+       → Reads .shipwright/designs/design-feedback-roundN.md, revises flagged screens, then asks again
     C) Pause for now
        → State is saved, continue later with /shipwright-design
 ```
@@ -21,23 +21,23 @@ AskUserQuestion:
 
 **FR-Coverage Gate** (verify before finalizing):
 - Read the spec's Functional Requirements that have UI relevance
-- Verify each UI-relevant FR has at least one screen in `designs/design-manifest.md`
-- Verify `designs/visual-guidelines.md` exists and contains: Colors, Typography, Spacing
+- Verify each UI-relevant FR has at least one screen in `.shipwright/designs/design-manifest.md`
+- Verify `.shipwright/designs/visual-guidelines.md` exists and contains: Colors, Typography, Spacing
 - If uncovered FRs or missing guidelines → fix before proceeding to Spec Backflow
 
 1. **Spec Backflow (full)**:
 
    | Artifact | What to update |
    |----------|---------------|
-   | `designs/visual-guidelines.md` | Final color values, token changes |
-   | `designs/design-manifest.md` | Final screen titles, statuses |
-   | `designs/index.html` | Regenerate screens array |
+   | `.shipwright/designs/visual-guidelines.md` | Final color values, token changes |
+   | `.shipwright/designs/design-manifest.md` | Final screen titles, statuses |
+   | `.shipwright/designs/index.html` | Regenerate screens array |
    | `.shipwright/planning/*/spec.md` Section 7 (UI Requirements) | Add screen references per FR: "FR-01.09 → screens/03-dashboard.html" |
    | `.shipwright/planning/*/spec.md` Section 5 (Functional Requirements) | Add `[UI: Screen #NN]` cross-reference tags to FRs that have mockups |
    | `agent_docs/decision_log.md` | All final design decisions (DR-NNN format, see below) |
    | `shipwright_project_config.json` | Set `design_phase: "complete"` |
 
-2. **Write session handoff** to `designs/design-handoff.md`:
+2. **Write session handoff** to `.shipwright/designs/design-handoff.md`:
 
    ```markdown
    # Design Phase — Session Handoff
@@ -53,10 +53,10 @@ AskUserQuestion:
    {List of DR-NNN decisions made during design phase}
 
    ## Files for Implementation
-   - Visual system: `designs/visual-guidelines.md`
-   - Screen registry: `designs/design-manifest.md`
-   - Screen mockups: `designs/screens/*.html`
-   - User flows: `designs/flows/*.html`
+   - Visual system: `.shipwright/designs/visual-guidelines.md`
+   - Screen registry: `.shipwright/designs/design-manifest.md`
+   - Screen mockups: `.shipwright/designs/screens/*.html`
+   - User flows: `.shipwright/designs/flows/*.html`
 
    ## Notes for /shipwright-plan
    {Any implementation-relevant notes from feedback, e.g.
@@ -84,7 +84,7 @@ Where `{shared_root}` = `{plugin_root}/../../shared`.
 
 ## Option B — Process Feedback
 
-1. Find the latest `designs/design-feedback-round*.md` file (highest round number)
+1. Find the latest `.shipwright/designs/design-feedback-round*.md` file (highest round number)
 2. Parse it: identify screens with status **CHANGES** or **REJECTED**
 3. Identify **global changes** (changes that affect multiple screens — e.g. color shifts, icon style changes, nav label renames). Apply these to ALL screens, not just flagged ones.
 4. Revise only flagged screens — use the snippet assembly process from Step 4
@@ -92,9 +92,9 @@ Where `{shared_root}` = `{plugin_root}/../../shared`.
 
    | Artifact | What to update | Condition |
    |----------|---------------|-----------|
-   | `designs/visual-guidelines.md` | Color values, token changes | If global design changes were made |
-   | `designs/design-manifest.md` | Screen titles (if renamed), status → `revised-rN` | Always |
-   | `designs/index.html` | Regenerate screens array with updated data | Always |
+   | `.shipwright/designs/visual-guidelines.md` | Color values, token changes | If global design changes were made |
+   | `.shipwright/designs/design-manifest.md` | Screen titles (if renamed), status → `revised-rN` | Always |
+   | `.shipwright/designs/index.html` | Regenerate screens array with updated data | Always |
    | `agent_docs/decision_log.md` | New design decisions (DR-NNN format) | If non-trivial decisions |
 
 6. Print review instructions again (same banner as Step 8)
@@ -129,7 +129,7 @@ Design decisions are logged to `agent_docs/decision_log.md` using this format:
   ├── AskUserQuestion (A/B/C) ← dialog stays open
   │
   │   [User reviews in browser meanwhile]
-  │   [User exports feedback to designs/]
+  │   [User exports feedback to .shipwright/designs/]
   │
   ├─[B]─→ Read feedback file
   │        Revise CHANGES/REJECTED screens

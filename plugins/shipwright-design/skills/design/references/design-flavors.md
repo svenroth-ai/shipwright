@@ -12,7 +12,7 @@ mockup generator applies consistently across all screens.
 |--------|--------------|----------|-----------|
 | `untitled-ui` | [Untitled UI](https://www.untitledui.com/) | SaaS dashboards, admin panels, B2B apps | [untitled-ui-components.md](untitled-ui-components.md) |
 | `material-design` | [Material Design 3](https://m3.material.io/) | Consumer apps, Android-first, Google ecosystem | [material-design-components.md](material-design-components.md) |
-| `custom` | User-provided | Existing brand guidelines or design system | Upload to `designs/uploads/` |
+| `custom` | User-provided | Existing brand guidelines or design system | Upload to `.shipwright/designs/uploads/` |
 
 ## Flavor Selection
 
@@ -23,7 +23,7 @@ Which design system should I use as the visual foundation?
 
   1. Untitled UI — Clean, professional SaaS style (default)
   2. Material Design 3 — Google's design system, great for consumer apps
-  3. Custom — I'll upload my own guidelines to designs/uploads/
+  3. Custom — I'll upload my own guidelines to .shipwright/designs/uploads/
 
 Choice [1]:
 ```
@@ -47,7 +47,7 @@ snippets-layout.md        → Page Shell + Layout HTML (Sidebar / Top Nav / Cent
         ↓
 snippets-components.md    → Component HTML (Table, Form, Cards, Stats, Modal, etc.)
         ↓
-Assembled Screen          → designs/screens/NN-name.html
+Assembled Screen          → .shipwright/designs/screens/NN-name.html
 ```
 
 ### How Flavors Map to Snippets
@@ -97,7 +97,7 @@ Each flavor reference document must cover:
 
 When the user selects `custom`:
 
-1. Prompt user to upload guidelines to `designs/uploads/`
+1. Prompt user to upload guidelines to `.shipwright/designs/uploads/`
 2. Read uploaded `.md` or `.pdf` files for design tokens
 3. Extract: colors, typography, spacing, border radius, shadows
 4. Map extracted tokens to the snippet variable structure (see [snippets-variables.md](snippets-variables.md) → "Custom Flavor: Variable Mapping Guide")

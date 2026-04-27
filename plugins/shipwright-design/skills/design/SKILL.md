@@ -25,23 +25,23 @@ Generate HTML mockups from your specs.
 
 Usage:
   /shipwright-design                                       (analyze specs, generate all)
-  /shipwright-design @designs/screens/02-dashboard.html    (iterate on one screen)
-  /shipwright-design @designs/design-feedback-round2.md    (process feedback file)
+  /shipwright-design @.shipwright/designs/screens/02-dashboard.html    (iterate on one screen)
+  /shipwright-design @.shipwright/designs/design-feedback-round2.md    (process feedback file)
   /shipwright-design --upload                              (integrate uploaded designs)
 
 Output:
-  - designs/screens/*.html         (individual screen mockups)
-  - designs/flows/*.html           (multi-screen user flows)
-  - designs/index.html             (review viewer with feedback panel)
-  - designs/design-manifest.md     (screen registry)
-  - designs/visual-guidelines.md   (design tokens for build phase)
-  - designs/design-handoff.md      (session handoff at finalization)
+  - .shipwright/designs/screens/*.html         (individual screen mockups)
+  - .shipwright/designs/flows/*.html           (multi-screen user flows)
+  - .shipwright/designs/index.html             (review viewer with feedback panel)
+  - .shipwright/designs/design-manifest.md     (screen registry)
+  - .shipwright/designs/visual-guidelines.md   (design tokens for build phase)
+  - .shipwright/designs/design-handoff.md      (session handoff at finalization)
 ================================================================================
 ```
 
 ### B. Detect Mode
 
-**New Design Session** (no `designs/` directory):
+**New Design Session** (no `.shipwright/designs/` directory):
 - Read specs, generate from scratch
 - Continue to Step 1
 
@@ -51,8 +51,8 @@ Output:
 - Regenerate that screen only
 - Skip to [Iteration Mode](#iteration-mode)
 
-**Upload Integration** (`--upload` flag or `designs/uploads/` exists with files):
-- Scan `designs/uploads/` for existing mockups
+**Upload Integration** (`--upload` flag or `.shipwright/designs/uploads/` exists with files):
+- Scan `.shipwright/designs/uploads/` for existing mockups
 - Integrate into design-manifest.md
 - Generate only missing screens
 - Skip to [Upload Mode](#upload-mode)
@@ -209,17 +209,17 @@ AskUserQuestion:
 1. **Design System Flavor**: "Which design system should I use as the visual foundation?"
    - **Untitled UI** — Clean, professional SaaS style (default)
    - **Material Design 3** — Google's design system, great for consumer apps
-   - **Custom** — Upload your own guidelines to `designs/uploads/`
+   - **Custom** — Upload your own guidelines to `.shipwright/designs/uploads/`
    See [design-flavors.md](references/design-flavors.md) for details.
 2. **Brand Character**: "What character should the app have?"
    - **A) Warm & Premium** — Earth tones, beige/cream backgrounds, elegant feel (think: luxury brands, boutique)
    - **B) Clean & Modern** — Whites, subtle grays, one accent color (think: Stripe, Linear)
    - **C) Bold & Energetic** — Vibrant colors, strong contrasts (think: Vercel, Figma)
-   - **D) I have specific brand guidelines** → upload to `designs/uploads/`
+   - **D) I have specific brand guidelines** → upload to `.shipwright/designs/uploads/`
    If brand tokens were extracted in Step 2.5, present them here as suggestion and let the user confirm or override.
    See [design-system-patterns.md](references/design-system-patterns.md) → "Character Palettes" for full token sets.
 3. **Layout**: "Sidebar navigation or top navigation bar?"
-4. **Existing designs**: "Do you have existing mockups or screenshots to include? Drop them in designs/uploads/ if so."
+4. **Existing designs**: "Do you have existing mockups or screenshots to include? Drop them in .shipwright/designs/uploads/ if so."
 5. **Special UX**: "Any specific UX requirements? (dark mode, mobile-first, accessibility focus, etc.)"
 
 **Palette derivation:** After the user picks a character (or confirms extracted tokens), derive the full palette automatically:
@@ -232,7 +232,7 @@ AskUserQuestion:
 
 **Flavor resolution:** User choice > profile default (`design_system.name`) > `untitled-ui`.
 
-**If custom flavor selected:** Prompt user to upload guidelines to `designs/uploads/`. Read them and use as the design foundation for all mockups. Skip generating new guidelines in Step 6.5 — instead, reference the uploaded file.
+**If custom flavor selected:** Prompt user to upload guidelines to `.shipwright/designs/uploads/`. Read them and use as the design foundation for all mockups. Skip generating new guidelines in Step 6.5 — instead, reference the uploaded file.
 
 **Then present the proposed screen list:**
 
@@ -265,15 +265,15 @@ Add, remove, or modify?
 2. **Main layout screen** — Sidebar + content (or top nav), shows navigation feel
 3. **One content-heavy screen** — Detail page with cards, buttons, and text hierarchy
 
-Pick these from the confirmed screen list. Save them to `designs/screens/` as usual.
+Pick these from the confirmed screen list. Save them to `.shipwright/designs/screens/` as usual.
 
 ```
 AskUserQuestion:
   question: |
     I've generated 3 preview screens. Open them in your browser:
-      - designs/screens/{login-screen}.html
-      - designs/screens/{layout-screen}.html
-      - designs/screens/{content-screen}.html
+      - .shipwright/designs/screens/{login-screen}.html
+      - .shipwright/designs/screens/{layout-screen}.html
+      - .shipwright/designs/screens/{content-screen}.html
 
     Does the look and feel match what you want?
     Specifically: colors, font, card style, overall warmth?
@@ -301,7 +301,7 @@ AskUserQuestion:
    - **Topbar config:** search placeholder text, notification bell (yes/no), user avatar (yes/no)
    - **User info:** realistic name, initials, and role for the app domain
    - **Footer** (if the layout uses one)
-3. Write `designs/chrome-definition.md` containing:
+3. Write `.shipwright/designs/chrome-definition.md` containing:
    - Filled data tables (the source of truth)
    - **Resolved HTML blocks** — fully expanded sidebar, topbar, top-nav, and footer HTML with all real labels, icons, and content. No `{{PLACEHOLDERS}}` remaining.
 4. Present the navigation structure for user confirmation:
@@ -344,7 +344,7 @@ For each confirmed screen, **assemble from pre-built snippets** rather than writ
    - Dashboard/admin/list/detail/settings → Layout A (Sidebar + Content)
    - Public/marketing pages → Layout B (Top Navigation)
    - Always include the shared Button Styles block.
-4. **Shared Chrome** — Read `designs/chrome-definition.md` (generated in Step 3.7). Copy the resolved HTML blocks **verbatim**:
+4. **Shared Chrome** — Read `.shipwright/designs/chrome-definition.md` (generated in Step 3.7). Copy the resolved HTML blocks **verbatim**:
    - **Layout A screens:** Copy the **Resolved Sidebar Block** into `<aside class="sidebar">`. Copy the **Resolved Topbar Block** into `<header class="topbar">`. Change ONLY which `.nav-item` has `class="nav-item active"` to match the current screen.
    - **Layout B screens:** Copy the **Resolved Top-Nav Block** into `<header class="topnav">`. Change ONLY which `.topnav-link` has `class="topnav-link active"` to match the current screen.
    - **Layout C screens:** Copy only the app name and logo SVG from the chrome definition into `.auth-logo`.
@@ -359,7 +359,7 @@ For each confirmed screen, **assemble from pre-built snippets** rather than writ
    - SVG stroke icons (no emojis — premium, abstract feel)
    - Do NOT modify the sidebar, topbar, or footer — those come from `chrome-definition.md`.
 7. **Unique elements** — Write from scratch ONLY for content that doesn't match any snippet (custom visualizations, domain-specific widgets, unique layouts).
-8. **Save** to `designs/screens/{NN}-{name}.html`
+8. **Save** to `.shipwright/designs/screens/{NN}-{name}.html`
 
 ### Design Context References
 
@@ -387,7 +387,7 @@ For each confirmed flow:
 1. Combine relevant screens into a single HTML file
 2. Add navigation between steps (tabs, stepper, or side-by-side)
 3. Show the complete journey
-4. Save to `designs/flows/{flow-name}.html`
+4. Save to `.shipwright/designs/flows/{flow-name}.html`
 
 Flows show screens in sequence with arrows or step indicators.
 
@@ -397,7 +397,7 @@ Flows show screens in sequence with arrows or step indicators.
 
 **Goal:** Create the registry that downstream skills read.
 
-Write `designs/design-manifest.md`:
+Write `.shipwright/designs/design-manifest.md`:
 
 ```markdown
 # Design Manifest
@@ -440,15 +440,15 @@ Write `designs/design-manifest.md`:
 
 ## Step 6a: Generate Review Viewer (Index Page)
 
-**Goal:** Create `designs/index.html` — a full review tool with grid view, fullscreen viewer, and integrated feedback panel.
+**Goal:** Create `.shipwright/designs/index.html` — a full review tool with grid view, fullscreen viewer, and integrated feedback panel.
 
 ### How to Generate
 
 1. Read the complete template from [review-viewer-template.md](references/review-viewer-template.md)
-2. Read `designs/visual-guidelines.md` → extract primary color, font, background, surface, text, muted, border colors, and border radius
-3. Read `designs/design-manifest.md` → build the `screens` JavaScript array
+2. Read `.shipwright/designs/visual-guidelines.md` → extract primary color, font, background, surface, text, muted, border colors, and border radius
+3. Read `.shipwright/designs/design-manifest.md` → build the `screens` JavaScript array
 4. Replace all `{{PLACEHOLDERS}}` in the template with project-specific values
-5. Write to `designs/index.html`
+5. Write to `.shipwright/designs/index.html`
 
 ### Placeholder Mapping
 
@@ -514,15 +514,15 @@ SHIPWRIGHT-DESIGN: Generation Complete
 Screens:     {N} generated
 Flows:       {M} generated
 Uploads:     {K} integrated
-Guidelines:  designs/visual-guidelines.md {generated | from upload}
-Manifest:    designs/design-manifest.md
-Index:       designs/index.html (with review viewer + feedback panel)
+Guidelines:  .shipwright/designs/visual-guidelines.md {generated | from upload}
+Manifest:    .shipwright/designs/design-manifest.md
+Index:       .shipwright/designs/index.html (with review viewer + feedback panel)
 ================================================================================
 
 ================================================================================
 REVIEW YOUR SCREENS
 ================================================================================
-1. Open designs/index.html in your FILE EXPLORER (not the IDE)
+1. Open .shipwright/designs/index.html in your FILE EXPLORER (not the IDE)
    → The file opens in your default browser with the review viewer
 
 2. Use Grid View or Viewer Mode to review each screen
@@ -539,7 +539,7 @@ REVIEW YOUR SCREENS
 
 **Generate screen-routes.json** for design fidelity testing (`/shipwright-test --design-fidelity`):
 
-After all screens are generated, create `designs/screen-routes.json` mapping each mockup to its app route:
+After all screens are generated, create `.shipwright/designs/screen-routes.json` mapping each mockup to its app route:
 
 ```json
 {
@@ -626,13 +626,13 @@ Where `{shared_root}` = `{plugin_root}/../../shared`.
 
 ### Mode 1: Iterate on a single screen
 
-When invoked with a specific HTML file (e.g. `@designs/screens/02-dashboard.html`):
+When invoked with a specific HTML file (e.g. `@.shipwright/designs/screens/02-dashboard.html`):
 
 1. Read the HTML file
 2. Ask: "What would you like to change?"
 3. If the change affects shared chrome (nav, header, footer, branding) → follow [Chrome Change Propagation](#chrome-change-propagation) instead
 4. Apply changes using the snippet assembly approach where applicable
-5. Re-read `designs/chrome-definition.md` and verify the chrome blocks are still copied verbatim (with correct active state)
+5. Re-read `.shipwright/designs/chrome-definition.md` and verify the chrome blocks are still copied verbatim (with correct active state)
 6. Regenerate the file
 7. Update design-manifest.md if needed
 8. Regenerate index.html
@@ -640,7 +640,7 @@ When invoked with a specific HTML file (e.g. `@designs/screens/02-dashboard.html
 
 ### Mode 2: Process feedback file
 
-When invoked with a feedback file (e.g. `@designs/design-feedback-round2.md`):
+When invoked with a feedback file (e.g. `@.shipwright/designs/design-feedback-round2.md`):
 
 1. Read the feedback file
 2. For each screen with status **CHANGES** or **REJECTED**:
@@ -658,7 +658,7 @@ When invoked with a feedback file (e.g. `@designs/design-feedback-round2.md`):
 
 If **any** iteration (Mode 1 or Mode 2) changes a shared chrome element — navigation items, labels, icons, header, footer, or branding:
 
-1. **Update `designs/chrome-definition.md` first** — edit the data tables AND regenerate the resolved HTML blocks
+1. **Update `.shipwright/designs/chrome-definition.md` first** — edit the data tables AND regenerate the resolved HTML blocks
 2. **Identify all affected screens** — every screen using the same layout (A or B) must be updated
 3. **Re-copy the chrome blocks** — replace the sidebar/topbar/footer in each affected screen with the updated resolved blocks (preserve the correct `active` class per screen)
 4. **Report** which screens were updated and what changed
@@ -669,7 +669,7 @@ If **any** iteration (Mode 1 or Mode 2) changes a shared chrome element — navi
 
 ## Upload Mode
 
-When `designs/uploads/` contains files:
+When `.shipwright/designs/uploads/` contains files:
 
 1. Scan directory for images (PNG, JPG), HTML files, and markdown files
 2. **Check for visual guidelines:** If a `.md` file contains "Visual Guidelines" or design tokens (colors, typography, spacing), treat it as the project's design foundation
@@ -687,7 +687,7 @@ When `designs/uploads/` contains files:
 - [snippets-layout.md](references/snippets-layout.md) — Copy-paste HTML/CSS layout blocks (Page Shell, Sidebar, Top Nav, Centered Card, Buttons)
 - [snippets-components.md](references/snippets-components.md) — Copy-paste HTML/CSS component blocks (Table, Card Grid, Form, Stats, Modal, Tabs, Badges, Empty State, Breadcrumbs, Detail, Notifications)
 - [snippets-variables.md](references/snippets-variables.md) — Complete CSS `:root` variable blocks for each flavor × character combination
-- [review-viewer-template.md](references/review-viewer-template.md) — Complete HTML template for designs/index.html (review viewer with feedback panel)
+- [review-viewer-template.md](references/review-viewer-template.md) — Complete HTML template for .shipwright/designs/index.html (review viewer with feedback panel)
 
 ### Design Context (secondary — consult for design decisions and understanding)
 - [design-flavors.md](references/design-flavors.md) — Design system flavor architecture and selection

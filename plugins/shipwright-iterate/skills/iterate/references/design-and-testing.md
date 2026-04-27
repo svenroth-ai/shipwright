@@ -7,7 +7,7 @@ Consolidated protocol for: Design Check, Scoped Testing, Browser Verify, Design 
 ## Design Check (2-tier)
 
 ### Tier 1 — Small + UI (text description)
-1. Read `designs/visual-guidelines.md` for design tokens
+1. Read `.shipwright/designs/visual-guidelines.md` for design tokens
 2. Describe the UI change in structured text:
    - Which screen/component is affected
    - What changes visually (layout, components, colors, spacing)
@@ -16,8 +16,8 @@ Consolidated protocol for: Design Check, Scoped Testing, Browser Verify, Design 
 
 ### Tier 2 — Medium+ + UI (markdown component sketch)
 All of Tier 1, plus:
-1. Read `designs/chrome-definition.md` for shared chrome
-2. Read relevant existing mockup HTML from `designs/screens/`
+1. Read `.shipwright/designs/chrome-definition.md` for shared chrome
+2. Read relevant existing mockup HTML from `.shipwright/designs/screens/`
 3. Write a markdown component tree:
    ```
    PageShell
@@ -151,7 +151,7 @@ UI changes at any complexity level.
    uv run {shared_root}/scripts/browser_verify.py --cwd {project_root}
    ```
 3. If JS errors: read screenshot, diagnose, fix (max 3 retries)
-3b. If UI change: compare screenshot against designs/screens/{affected}.html
+3b. If UI change: compare screenshot against .shipwright/designs/screens/{affected}.html
     mockup for layout/styling alignment before proceeding to Design Fidelity
 4. Server stays running for smoke test / design fidelity
 
@@ -241,7 +241,7 @@ uv run {test_plugin_root}/scripts/lib/ui_consistency_check.py \
 ### Skip When
 - Trivial/small complexity
 - No UI changes
-- `designs/visual-guidelines.md` does not exist
+- `.shipwright/designs/visual-guidelines.md` does not exist
 - Profile has no UI config
 
 ---

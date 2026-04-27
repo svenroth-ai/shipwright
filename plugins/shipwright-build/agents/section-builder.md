@@ -29,12 +29,12 @@ Execute these steps **in order**. Do NOT skip steps.
 
 1. Read `CLAUDE.md` from `{project_root}` for project conventions
 2. Read `agent_docs/` directory for architecture docs, decision log, prior decisions
-3. Read `designs/visual-guidelines.md` (if exists) for brand colors, typography, spacing, component patterns
+3. Read `.shipwright/designs/visual-guidelines.md` (if exists) for brand colors, typography, spacing, component patterns
 4. Read the section spec at `{section_file}` thoroughly
    - If spec contains `## Design Reference`: read the referenced mockup HTML file(s)
-   - If no design reference but `designs/screens/` exists: check for relevant mockups
+   - If no design reference but `.shipwright/designs/screens/` exists: check for relevant mockups
    - The mockup is visual truth for layout and visual hierarchy (not DOM structure)
-5. Read `designs/chrome-definition.md` (if exists) for shared nav/header/footer structure
+5. Read `.shipwright/designs/chrome-definition.md` (if exists) for shared nav/header/footer structure
 6. For UI sections, read from `{plugin_root}/skills/build/references/`:
    - `shadcn-rules.md` — Core Rules section (always)
    - `shadcn-project-conventions.md` — Card/Button project conventions (Shipwright Enhancement)

@@ -153,7 +153,7 @@ Used by shipwright-design to generate mockups.}
 | {Screen name} | {What the user sees} | {Key UI elements: forms, tables, cards, etc.} |
 
 **Layout preference:** {Sidebar | Top-nav | Centered | Full-width}
-**Design references:** {Link to existing mockups in designs/uploads/ if any}
+**Design references:** {Link to existing mockups in .shipwright/designs/uploads/ if any}
 
 ## 8. References
 

@@ -154,20 +154,8 @@ ALLOWLIST: dict[str, list[str]] = {
         # Production code + tests for plugins migrated through Sub-Iterate C.
         # Earlier sub-iterates removed entries already migrated.
         # Remaining narrows as Sub-Iterate D (prose) lands.
-        # Plugin prose touched in D — narrows as D lands
-        "plugins/shipwright-design/skills/**/*.md",
-        "plugins/shipwright-build/skills/build/SKILL.md",
-        "plugins/shipwright-iterate/skills/iterate/SKILL.md",
-        "plugins/shipwright-iterate/skills/iterate/references/design-and-testing.md",
-        "plugins/shipwright-plan/skills/plan/SKILL.md",
-        "plugins/shipwright-test/skills/test/SKILL.md",
-        "plugins/shipwright-test/skills/test/references/test-layers.md",
-        # Plugin agents + project references — surfaced by Layer-1 lint
-        # in Sub-Iterate A (Explore-discovery missed these). Migrated in D.
-        "plugins/shipwright-build/agents/section-builder.md",
-        "plugins/shipwright-plan/agents/section-writer.md",
-        "plugins/shipwright-test/agents/test-runner.md",
-        "plugins/shipwright-project/skills/project/references/spec-generation.md",
+        # Plugin prose touched in D — completed, kept here only as
+        # commented record. Removed from active glob list.
         # Templates + docs touched in E — narrows as E lands
         "shared/templates/agent-docs/conventions.md.template",
         "docs/guide.md",

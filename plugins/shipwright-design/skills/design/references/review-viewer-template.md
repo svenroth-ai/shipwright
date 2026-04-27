@@ -1,8 +1,8 @@
 # Review Viewer Template
 
-Complete HTML template for `designs/index.html`. Claude populates the `screens` array from `design-manifest.md` and applies design tokens from `visual-guidelines.md`.
+Complete HTML template for `.shipwright/designs/index.html`. Claude populates the `screens` array from `design-manifest.md` and applies design tokens from `visual-guidelines.md`.
 
-> **Usage**: Read this template, replace `{{PLACEHOLDERS}}`, populate the `screens` array, set theme colors, and write to `designs/index.html`.
+> **Usage**: Read this template, replace `{{PLACEHOLDERS}}`, populate the `screens` array, set theme colors, and write to `.shipwright/designs/index.html`.
 
 ---
 
@@ -35,7 +35,7 @@ const screens = [
     split: "01 — Foundation",       // Split heading from project-manifest.md
     num: "01",                       // Screen number (string, preserves leading zeros)
     title: "Login",                  // Screen display name
-    file: "screens/01-login.html",   // Relative path from designs/
+    file: "screens/01-login.html",   // Relative path from .shipwright/designs/
     frs: "FR-01.04, FR-01.05",      // Linked functional requirements
     type: "screen"                   // "screen" or "flow"
   },

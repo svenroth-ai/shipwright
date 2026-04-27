@@ -60,7 +60,7 @@ Use for: Dashboards, admin panels, settings, list views, detail views.
 
 ```html
 <div class="app-layout">
-  <!-- CHROME: Copy the "Resolved Sidebar Block" from designs/chrome-definition.md verbatim.
+  <!-- CHROME: Copy the "Resolved Sidebar Block" from .shipwright/designs/chrome-definition.md verbatim.
        Change ONLY which .nav-item has class="nav-item active" for this screen.
        See snippets-chrome.md for the full structure reference. -->
   <aside class="sidebar">
@@ -68,7 +68,7 @@ Use for: Dashboards, admin panels, settings, list views, detail views.
   </aside>
 
   <div class="main-area">
-    <!-- CHROME: Copy the "Resolved Topbar Block" from designs/chrome-definition.md verbatim.
+    <!-- CHROME: Copy the "Resolved Topbar Block" from .shipwright/designs/chrome-definition.md verbatim.
          No per-screen changes needed for the topbar. -->
     <header class="topbar">
       <!-- ... resolved topbar content from chrome-definition.md ... -->
@@ -299,7 +299,7 @@ Use for: Marketing sites, simpler apps, public-facing pages.
 
 ```html
 <div class="app-topnav">
-  <!-- CHROME: Copy the "Resolved Top-Nav Block" from designs/chrome-definition.md verbatim.
+  <!-- CHROME: Copy the "Resolved Top-Nav Block" from .shipwright/designs/chrome-definition.md verbatim.
        Change ONLY which .topnav-link has class="topnav-link active" for this screen.
        See snippets-chrome.md for the full structure reference. -->
   <header class="topnav">
@@ -404,7 +404,7 @@ Use for: Login, signup, password reset, email verification, onboarding steps.
 ```html
 <div class="auth-layout">
   <div class="auth-card">
-    <!-- CHROME: Copy APP_NAME and LOGO_SVG from designs/chrome-definition.md → App Branding -->
+    <!-- CHROME: Copy APP_NAME and LOGO_SVG from .shipwright/designs/chrome-definition.md → App Branding -->
     <div class="auth-logo">
       <span class="logo-icon">{{LOGO_SVG from chrome-definition.md}}</span>
       <span class="logo-text">{{APP_NAME from chrome-definition.md}}</span>
@@ -539,7 +539,7 @@ Used across all layouts. Include in every screen.
 
 ## Reference: Chrome HTML Structure
 
-> These blocks show the **expected HTML structure** for shared chrome elements. Use them as a guide when generating the resolved blocks in `designs/chrome-definition.md`. See [snippets-chrome.md](snippets-chrome.md) for the full chrome definition template.
+> These blocks show the **expected HTML structure** for shared chrome elements. Use them as a guide when generating the resolved blocks in `.shipwright/designs/chrome-definition.md`. See [snippets-chrome.md](snippets-chrome.md) for the full chrome definition template.
 
 ### Sidebar Structure (Layout A)
 

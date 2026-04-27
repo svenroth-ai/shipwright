@@ -236,13 +236,13 @@ When diagnosing E2E failures, analyze:
 
 ### Step 4.5: Cross-Page UI Consistency Check
 
-**Skip if:** `designs/visual-guidelines.md` does not exist, OR profile has no `component_library`.
+**Skip if:** `.shipwright/designs/visual-guidelines.md` does not exist, OR profile has no `component_library`.
 
 **Run consistency analysis:**
 ```bash
 uv run {plugin_root}/scripts/lib/ui_consistency_check.py \
   --cwd "{project_root}" \
-  --guidelines "designs/visual-guidelines.md"
+  --guidelines ".shipwright/designs/visual-guidelines.md"
 ```
 
 Parse JSON output for `passed`, `total`, `categories`, `root_cause_groups`.

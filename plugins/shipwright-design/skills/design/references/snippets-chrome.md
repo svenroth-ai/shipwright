@@ -8,7 +8,7 @@ Defines the **shared chrome** — navigation, header, footer, branding — that 
 
 ## How It Works
 
-1. **Step 3.7** generates `designs/chrome-definition.md` using the templates below
+1. **Step 3.7** generates `.shipwright/designs/chrome-definition.md` using the templates below
 2. **Step 4** copies the resolved HTML blocks from `chrome-definition.md` into each screen
 3. The **only per-screen change** is which `.nav-item` or `.topnav-link` gets the `active` class
 4. All other chrome content (labels, icons, branding, user info) stays identical
@@ -17,7 +17,7 @@ Defines the **shared chrome** — navigation, header, footer, branding — that 
 
 ## Chrome Definition Template
 
-Write this to `designs/chrome-definition.md` after the design interview (Step 3) and preview confirmation (Step 3.5).
+Write this to `.shipwright/designs/chrome-definition.md` after the design interview (Step 3) and preview confirmation (Step 3.5).
 
 ````markdown
 # Chrome Definition
@@ -192,7 +192,7 @@ When copying a resolved block into a screen:
 
 If the user requests changes to shared chrome elements during iteration:
 
-1. Update the **data tables** in `designs/chrome-definition.md` first
+1. Update the **data tables** in `.shipwright/designs/chrome-definition.md` first
 2. Regenerate the **resolved HTML blocks** from the updated tables
 3. Re-copy the updated blocks into **all screens** that use the affected layout
 4. Report which screens were updated

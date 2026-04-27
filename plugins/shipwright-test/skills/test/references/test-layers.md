@@ -53,7 +53,7 @@ Shipwright uses a layered testing strategy. Each layer catches different classes
 ### 3.6. Cross-Page UI Consistency Check
 - **What:** Detects inconsistencies across pages (heading sizes, spacing, component patterns, form structure, token usage, interactive patterns)
 - **Tool:** `ui_consistency_check.py` (static source analysis, no browser needed)
-- **When:** After E2E results verification (3.5), before design fidelity (3.7). Only for UI projects with `designs/visual-guidelines.md`
+- **When:** After E2E results verification (3.5), before design fidelity (3.7). Only for UI projects with `.shipwright/designs/visual-guidelines.md`
 - **Speed:** Fast (< 10s, static file analysis)
 - **Non-blocking:** WARNING level — outliers logged, autofix attempted, never hard-fails pipeline
 - **Algorithm:** Majority-wins — most common pattern = expected, deviations are outliers
@@ -61,7 +61,7 @@ Shipwright uses a layered testing strategy. Each layer catches different classes
 ### 3.7. Design Fidelity Verification
 - **What:** Code-level structural comparison of implementation TSX against mockup HTML designs
 - **Tool:** `design_fidelity_check.py` (structural extraction) + agent deep analysis
-- **When:** After cross-page consistency check (3.6). Only for UI projects with `designs/screen-routes.json`
+- **When:** After cross-page consistency check (3.6). Only for UI projects with `.shipwright/designs/screen-routes.json`
 - **Speed:** Fast (< 10s for extraction, agent review time variable)
 - **Non-blocking:** WARNING level — mismatches logged, autofix attempted, never hard-fails pipeline
 - **Approach:** Reads source code of both mockup and implementation, compares layout structure, component hierarchy, component types, and shadcn/ui patterns. No screenshots needed.

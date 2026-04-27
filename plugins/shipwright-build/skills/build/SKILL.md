@@ -288,10 +288,10 @@ Read the section file thoroughly. Identify:
 **Design Reference (mandatory for UI sections):** If the section contains a `## Design Reference` block, you **MUST read the referenced mockup HTML file** before writing any implementation code. The mockup is the visual truth — the text spec describes behavior, the mockup describes appearance. Match:
 - Layout structure (sidebar vs header, grid vs flex, widths)
 - Component hierarchy (card structure, nav groups, form layouts)
-- Colors, spacing, typography, shadows, border-radius from `designs/visual-guidelines.md`
+- Colors, spacing, typography, shadows, border-radius from `.shipwright/designs/visual-guidelines.md`
 - Responsive behavior (mobile hamburger, breakpoints)
 
-If no `## Design Reference` exists but `designs/screens/` contains relevant mockups, read them anyway. When in doubt, the mockup wins over your assumptions about layout.
+If no `## Design Reference` exists but `.shipwright/designs/screens/` contains relevant mockups, read them anyway. When in doubt, the mockup wins over your assumptions about layout.
 
 If prerequisites reference other sections, verify those are complete
 (check for their commits on the branch or main).
@@ -509,7 +509,7 @@ If `has_frontend_changes == false`, skip. Otherwise Browser Verify is mandatory.
 **Prerequisite self-healing** (before running — do NOT skip):
 - If profile has no `dev_server` config but `shipwright_build_config.json` has `dev_url`: use that URL.
 - If neither: autodetect via `package.json` scripts (Vite 5173 / Next 3000 / Astro 4321).
-- If `designs/visual-guidelines.md` missing but mockups exist in `designs/screens/`: auto-generate from CSS `:root` variables (same derivation as test phase Step B3).
+- If `.shipwright/designs/visual-guidelines.md` missing but mockups exist in `.shipwright/designs/screens/`: auto-generate from CSS `:root` variables (same derivation as test phase Step B3).
 - If ALL resolution paths fail: escalate via AskUserQuestion with the list of changed frontend files. Do NOT silently skip.
 
 **Flow:**
@@ -547,7 +547,7 @@ uv run {shared_root}/scripts/browser_verify.py --cwd {project_root}
    f. **If same root cause as previous attempt** → change approach (different fix strategy, not same fix again)
    g. If still failing after 3 retries, present findings to user via AskUserQuestion with diagnosis summary
 
-6. **Visual guidelines check** (if `designs/visual-guidelines.md` exists):
+6. **Visual guidelines check** (if `.shipwright/designs/visual-guidelines.md` exists):
    When reviewing the screenshot, also check against the visual guidelines:
    - Brand colors match (primary, background, accent)
    - Typography consistent (font family, sizes, weights)

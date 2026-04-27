@@ -35,8 +35,8 @@ Test layers:
   1.6 pgTAP database tests (if supabase/tests/database/ exists)
   2.  Smoke test (HTTP 200 on DEV URL)
   3.  Playwright E2E (if UI project + DEV URL available)
-  3.6 Cross-page consistency (if designs/visual-guidelines.md exists)
-  4.  Design fidelity (if designs/screen-routes.json exists)
+  3.6 Cross-page consistency (if .shipwright/designs/visual-guidelines.md exists)
+  4.  Design fidelity (if .shipwright/designs/screen-routes.json exists)
   5.  Security scan → see /shipwright-security
 ================================================================================
 ```
@@ -96,19 +96,19 @@ This follows the constitution rule: **never silently skip a test layer due to mi
    - If found: add `"dev_url": "http://localhost:{port}"` to `shipwright_build_config.json`
    - If not found: **ASK** user "What port does your dev server run on?"
 
-**2. `designs/visual-guidelines.md` missing but `designs/screens/` has HTML files?**
+**2. `.shipwright/designs/visual-guidelines.md` missing but `.shipwright/designs/screens/` has HTML files?**
    - Read CSS `:root` variables from the first mockup HTML file
    - Extract color, typography, spacing, radius, and shadow tokens
-   - Generate `designs/visual-guidelines.md` using the template format
+   - Generate `.shipwright/designs/visual-guidelines.md` using the template format
    - Commit: `chore(test): auto-generate visual-guidelines.md from mockup CSS`
 
-**3. `designs/screen-routes.json` missing but mockups + router exist?**
-   - List mockup HTML files in `designs/screens/`
+**3. `.shipwright/designs/screen-routes.json` missing but mockups + router exist?**
+   - List mockup HTML files in `.shipwright/designs/screens/`
    - Read router config (`src/router.tsx`, `src/App.tsx`, or framework equivalent)
-   - Generate `designs/screen-routes.json` mapping each mockup to its route
+   - Generate `.shipwright/designs/screen-routes.json` mapping each mockup to its route
    - Commit: `chore(test): auto-generate screen-routes.json from mockups + router`
 
-**4. `.shipwright/planning/claude-plan-e2e.md` missing but `designs/screen-routes.json` exists?**
+**4. `.shipwright/planning/claude-plan-e2e.md` missing but `.shipwright/designs/screen-routes.json` exists?**
    - Generate a minimal E2E test plan with one flow per major screen/route
    - Include page object model suggestions and test data structure
    - Commit: `chore(test): auto-generate E2E test plan from screen routes`
@@ -356,7 +356,7 @@ e2e/
    - Respect `playwright.config.ts` settings (base URL, browser, timeouts)
    - Tests must be runnable against the dev server (localhost)
    - Use `test.skip()` for flows that require external services (e.g., Stripe Checkout redirect)
-   - If `designs/visual-guidelines.md` exists, generate basic visual assertion tests in `e2e/flows/00-visual.spec.ts`:
+   - If `.shipwright/designs/visual-guidelines.md` exists, generate basic visual assertion tests in `e2e/flows/00-visual.spec.ts`:
      - Check brand colors on key elements (header, CTA buttons, links)
      - Check font-family on body/headings
      - Check page background color
@@ -456,7 +456,7 @@ miscounts from setup projects, retries, or skipped tests.
 
 ## Step 3.6: Cross-Page UI Consistency Check (if applicable)
 
-**Condition:** Runs if `designs/visual-guidelines.md` exists AND profile has UI config (`component_library` set). Also runs standalone via `--consistency` flag or alongside `--visual`.
+**Condition:** Runs if `.shipwright/designs/visual-guidelines.md` exists AND profile has UI config (`component_library` set). Also runs standalone via `--consistency` flag or alongside `--visual`.
 
 **Purpose:** Detect cross-page UI inconsistencies that per-page mockup comparison cannot catch (e.g., mixed heading sizes, inconsistent spacing, different table wrappers across pages). Non-blocking (WARNING level).
 
@@ -464,7 +464,7 @@ miscounts from setup projects, retries, or skipped tests.
 ```bash
 uv run {plugin_root}/scripts/lib/ui_consistency_check.py \
   --cwd "{project_root}" \
-  --guidelines "designs/visual-guidelines.md"
+  --guidelines ".shipwright/designs/visual-guidelines.md"
 ```
 
 Parse JSON output: `passed`, `total`, `skipped`, `categories`, `root_cause_groups`.
@@ -508,7 +508,7 @@ e. If same issue persists after 3 attempts: park with diagnosis
 
 ## Step 3.7: Design Fidelity Verification — Regressions-Only (if applicable)
 
-**Condition:** Runs if `designs/screen-routes.json` exists in the project root. Also runs standalone via `--design-fidelity` flag.
+**Condition:** Runs if `.shipwright/designs/screen-routes.json` exists in the project root. Also runs standalone via `--design-fidelity` flag.
 
 **Purpose:** Detect and fix design fidelity regressions introduced by later build sections (cross-section side effects). Build handles the bulk of fidelity checks per-section; Test is the safety net. Non-blocking (WARNING level) — fidelity differences don't fail the pipeline.
 
@@ -673,7 +673,7 @@ Valid skip reasons:
 - `skipped: no Playwright config` (E2E)
 - `skipped: profile has no UI` (E2E)
 - `skipped: smoke test failed` (E2E, because prerequisite not met)
-- `skipped: no designs/visual-guidelines.md` (Consistency)
+- `skipped: no .shipwright/designs/visual-guidelines.md` (Consistency)
 - `skipped: profile has no UI` (Consistency)
 - `skipped: no screen-routes.json` (Design fidelity)
 
