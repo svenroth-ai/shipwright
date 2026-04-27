@@ -50,10 +50,21 @@ def main() -> int:
         return 0
 
     # Check if .shipwright/designs/screens/ exists (from /shipwright-design phase).
-    # planning_dir is `<project>/.shipwright/planning/<split>` post-migration, so
-    # project root is three parents up.
-    project_root = planning_dir.parent.parent.parent
-    designs_dir = project_root / ".shipwright" / "designs" / "screens"
+    # planning_dir is `<project>/.shipwright/planning/<split>` post-migration.
+    # Validate the shape defensively before climbing three levels — a future
+    # caller passing the planning root instead of a split would silently
+    # resolve to the parent of the project otherwise.
+    parts = planning_dir.parts
+    if len(parts) >= 3 and parts[-2] == "planning" and parts[-3] == ".shipwright":  # artifact-path-canon: legacy
+        project_root = planning_dir.parent.parent.parent
+    else:
+        # Fallback: best-effort skip; do not crash the batch generator.
+        project_root = None
+    designs_dir = (
+        project_root / ".shipwright" / "designs" / "screens"
+        if project_root is not None
+        else Path()
+    )
     has_mockups = designs_dir.is_dir()
     mockup_files = sorted(f.name for f in designs_dir.glob("*.html")) if has_mockups else []
     mockup_hint = ""
