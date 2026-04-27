@@ -521,7 +521,7 @@ Shipwright's orchestrator pipeline consists of **7 phases** (project, design, pl
 
 **Standalone usage.** Yes. Run `/shipwright-project` independently whenever you want to decompose requirements without running the full pipeline. The output feeds directly into `/shipwright-plan`.
 
-**Where the planning artifacts live.** Since v0.6.0 the planning directory is `.shipwright/planning/` — under the hidden project-state folder, alongside `securityreports/`, `adopt/`, `runs/`, and `tmp/`. This keeps the project root visually clean: the only Shipwright-owned top-level directories are `agent_docs/`, `compliance/`, `designs/`, `e2e/`, plus the always-hidden `.shipwright/`.
+**Where the planning artifacts live.** Since v0.6.0 the planning directory is `.shipwright/planning/` — under the hidden project-state folder, alongside `securityreports/`, `adopt/`, `runs/`, and `tmp/`. The same hidden home now also covers `.shipwright/designs/` (post-design-relocation). The only remaining Shipwright-owned top-level directories are `agent_docs/`, `compliance/`, and `e2e/` — all queued for follow-on relocation.
 
 If a session start finds a legacy top-level `planning/` directory, the drift detector writes `.shipwright/stale-folders.md` with a `git mv planning .shipwright/planning` remediation hint and exits non-zero so you see it. Run `uv run shared/scripts/tools/migrate_artifact_dir.py --artifact planning` (added in Sub-Iterate F) to do the move automatically. <!-- artifact-path-canon: legacy -->
 
@@ -535,8 +535,8 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 
 ```
 /shipwright-design                                       (analyze all specs, generate all screens)
-/shipwright-design @designs/screens/02-dashboard.html    (iterate on one screen)
-/shipwright-design @designs/design-feedback-round2.md    (process exported feedback)
+/shipwright-design @.shipwright/designs/screens/02-dashboard.html    (iterate on one screen)
+/shipwright-design @.shipwright/designs/design-feedback-round2.md    (process exported feedback)
 /shipwright-design --upload                              (integrate uploaded designs)
 ```
 
@@ -545,17 +545,17 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 | *(no argument)* | Full generation from specs |
 | `@screen.html` | Iterate on a single existing screen |
 | `@feedback.md` | Process a feedback file exported from the review viewer |
-| `--upload` | Integrate existing designs from `designs/uploads/` |
+| `--upload` | Integrate existing designs from `.shipwright/designs/uploads/` |
 
-**What it needs.** Completed specs from `/shipwright-project`: `shipwright_project_config.json`, `.shipwright/planning/project-manifest.md`, and `.shipwright/planning/*/spec.md`. Optionally, existing designs or brand guidelines in `designs/uploads/`.
+**What it needs.** Completed specs from `/shipwright-project`: `shipwright_project_config.json`, `.shipwright/planning/project-manifest.md`, and `.shipwright/planning/*/spec.md`. Optionally, existing designs or brand guidelines in `.shipwright/designs/uploads/`.
 
 **What it produces**
 
-- `designs/screens/*.html` -- standalone HTML mockups for each screen (self-contained, responsive, realistic data)
-- `designs/flows/*.html` -- multi-screen user flow mockups (e.g., auth flow, CRUD flow)
-- `designs/index.html` -- a review viewer with grid view, fullscreen mode, keyboard navigation, and an integrated feedback panel
-- `designs/design-manifest.md` -- screen registry mapping each screen to its functional requirements
-- `designs/visual-guidelines.md` -- design tokens (colors, fonts, spacing, radii) for the build phase to consume
+- `.shipwright/designs/screens/*.html` -- standalone HTML mockups for each screen (self-contained, responsive, realistic data)
+- `.shipwright/designs/flows/*.html` -- multi-screen user flow mockups (e.g., auth flow, CRUD flow)
+- `.shipwright/designs/index.html` -- a review viewer with grid view, fullscreen mode, keyboard navigation, and an integrated feedback panel
+- `.shipwright/designs/design-manifest.md` -- screen registry mapping each screen to its functional requirements
+- `.shipwright/designs/visual-guidelines.md` -- design tokens (colors, fonts, spacing, radii) for the build phase to consume
 
 **How it works**
 
@@ -564,10 +564,10 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 - Conducts a short design interview (3-5 questions): design system flavor (Untitled UI or Material Design 3), brand character (warm, clean, or bold), layout preference, and special UX needs
 - Generates 3 preview screens first for you to validate the palette and style before committing to all screens
 - Assembles screens from a snippet library (layouts, components, CSS variables) for consistency and speed
-- Generates multi-screen user flows and a review viewer (`designs/index.html`) with built-in feedback collection
+- Generates multi-screen user flows and a review viewer (`.shipwright/designs/index.html`) with built-in feedback collection
 - Enters a review loop: you review in the browser, export feedback, and Shipwright applies changes iteratively until you finalize
 
-**Standalone usage.** Yes. `/shipwright-design` works independently as long as specs exist. You can also iterate on individual screens or process feedback files at any time. The review viewer at `designs/index.html` is your primary tool for reviewing and providing feedback.
+**Standalone usage.** Yes. `/shipwright-design` works independently as long as specs exist. You can also iterate on individual screens or process feedback files at any time. The review viewer at `.shipwright/designs/index.html` is your primary tool for reviewing and providing feedback.
 
 ---
 

@@ -50,7 +50,7 @@
 
 - Design system: {DESIGN_SYSTEM_NAME} ({DESIGN_SYSTEM_URL})
 - Component library: {COMPONENT_LIBRARY} (for implementation)
-- Mockups: `designs/` directory (HTML, iterable via chat)
+- Mockups: `.shipwright/designs/` directory (HTML, iterable via chat)
 - Layout: Responsive, mobile-first
 - Accessibility: WCAG 2.1 AA minimum
 

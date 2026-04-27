@@ -156,10 +156,9 @@ ALLOWLIST: dict[str, list[str]] = {
         # Remaining narrows as Sub-Iterate D (prose) lands.
         # Plugin prose touched in D — completed, kept here only as
         # commented record. Removed from active glob list.
-        # Templates + docs touched in E — narrows as E lands
-        "shared/templates/agent-docs/conventions.md.template",
-        "docs/guide.md",
-        "docs/hooks-and-pipeline.md",
+        # Templates + docs touched in E — completed.
+        # New edge-case test file that intentionally references both paths.
+        "shared/tests/test_artifact_drift_edge_cases.py",
         # Plugin metadata: descriptive keyword "designs", not a path. Permanent.
         "plugins/**/.claude-plugin/plugin.json",
         "**/pyproject.toml",
