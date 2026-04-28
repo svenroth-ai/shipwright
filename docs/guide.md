@@ -96,7 +96,7 @@ Shipwright follows nine design principles that shape every decision in the pipel
 6. **Resume anywhere.** All pipeline state is file-based. The event log is the single source of truth for what happened, when, and with what test results. You can interrupt a run, close your session, and resume exactly where you left off.
 7. **Migration safety.** Destructive database changes (DROP TABLE, DROP COLUMN) always require explicit confirmation before execution.
 8. **Linters over instructions.** Mechanical enforcement through hooks beats advisory prose. Hooks block dangerous actions deterministically rather than relying on the agent to follow written rules.
-9. **Progressive disclosure.** CLAUDE.md stays lean (around 200 lines). Detailed architecture docs, conventions, and decision logs live in `agent_docs/`.
+9. **Progressive disclosure.** CLAUDE.md stays lean (around 200 lines). Detailed architecture docs, conventions, and decision logs live in `.shipwright/agent_docs/`.
 
 ### Integrated Learnings
 
@@ -137,7 +137,7 @@ Aligned with the five domains of Anthropic's [Claude Certified Architect](https:
 - **Compliance enforcement hooks** -- `PreToolUse` hooks that soft-block (exit code 2) when RTM coverage drops or security scans are stale. Overrides are logged to `compliance_overrides.log`.
 - **Path-specific rules** -- `.claude/rules/` templates for tests, API routes, migrations, components, and config files, so the agent gets context-appropriate guidance per file type.
 - **Few-shot examples in subagent definitions** -- code-reviewer, section-writer, and opus-plan-reviewer include worked examples so agents produce consistent output.
-- **Progressive disclosure** -- CLAUDE.md stays lean (~200 lines), detailed docs live in `agent_docs/`.
+- **Progressive disclosure** -- CLAUDE.md stays lean (~200 lines), detailed docs live in `.shipwright/agent_docs/`.
 
 ---
 
@@ -381,7 +381,7 @@ If those are true, `/shipwright-adopt` is the right entry point. `/shipwright-pr
 1. **Layer 1 — deterministic analysis.** Scans manifests, tsconfig/eslint/prettier, folder layout, test frameworks, CI, and git log. Produces `.shipwright/adopt/snapshot.json`.
 2. **Layer 1.5 — Playwright route crawl (if web app).** Starts the dev-server, crawls the running app BFS-style, captures route + h1 + CTAs + screenshots into `.shipwright/adopt/routes.json`. Falls back to AST-based route inference if no dev-server is available.
 3. **Layer 2 — Claude Code semantic enrichment.** Inline with the skill, Claude reads the snapshot + sample files + screenshots and writes `enrichment.json` with a product description, FR labels, architecture prose, conventions prose, and retroactive ADR drafts.
-4. **Artifact generation.** Writes `CLAUDE.md`, `agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `.shipwright/planning/01-adopted/spec.md`, the six `shipwright_*_config.json` files, `shipwright_events.jsonl`, and `e2e/flows/adopted-baseline.spec.ts` (regression guard from the crawl).
+4. **Artifact generation.** Writes `CLAUDE.md`, `.shipwright/agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `.shipwright/planning/01-adopted/spec.md`, the six `shipwright_*_config.json` files, `shipwright_events.jsonl`, and `e2e/flows/adopted-baseline.spec.ts` (regression guard from the crawl).
 5. **Compliance seeding.** Generates `compliance/{sbom,change-history,traceability-matrix,test-evidence,dashboard}.md` via the existing compliance infrastructure.
 6. **Layer 3 — external LLM review.** Runs `llm_review.py` over the generated artifacts to flag hallucinations or contradictions (skipped gracefully if no API key is set).
 7. **Validation + commit.** Runs `validate_adoption.py`, then a single Conventional Commit `chore(shipwright): adopt repository into Shipwright SDLC`.
@@ -419,7 +419,7 @@ See Appendix B for the full reference of all 13 flags with arguments and types.
 
 ### Nested sub-projects
 
-If Adopt finds a directory with its own `.git/`, `shipwright_run_config.json`, or `CLAUDE.md` + `agent_docs/`, it asks you whether to include, exclude, or adopt it separately. Default: exclude (the sub-project keeps its own pipeline state and can be adopted independently later). See `plugins/shipwright-adopt/skills/adopt/references/nested-project-policy.md` for details.
+If Adopt finds a directory with its own `.git/`, `shipwright_run_config.json`, or `CLAUDE.md` + `.shipwright/agent_docs/`, it asks you whether to include, exclude, or adopt it separately. Default: exclude (the sub-project keeps its own pipeline state and can be adopted independently later). See `plugins/shipwright-adopt/skills/adopt/references/nested-project-policy.md` for details.
 
 ### After adoption
 
@@ -481,7 +481,7 @@ Shipwright's orchestrator pipeline consists of **7 phases** (project, design, pl
 
 ### 4.2 Project Decomposition -- /shipwright-project
 
-**Purpose.** Transforms your project requirements into well-scoped planning units called "splits." Each split gets its own spec file that downstream phases consume. For new projects, this phase also scaffolds `CLAUDE.md` and the `agent_docs/` directory.
+**Purpose.** Transforms your project requirements into well-scoped planning units called "splits." Each split gets its own spec file that downstream phases consume. For new projects, this phase also scaffolds `CLAUDE.md` and the `.shipwright/agent_docs/` directory.
 
 **Command and Arguments**
 
@@ -497,7 +497,7 @@ Shipwright's orchestrator pipeline consists of **7 phases** (project, design, pl
 | `"description"` | Uses the text as starting context for the interview |
 | *(no argument)* | Full interactive interview from scratch |
 
-**What it needs.** A project idea -- either as a file, an inline description, or nothing at all (the interview will discover everything). For extensions to existing projects, it reads the existing `CLAUDE.md` and `agent_docs/architecture.md` for context.
+**What it needs.** A project idea -- either as a file, an inline description, or nothing at all (the interview will discover everything). For extensions to existing projects, it reads the existing `CLAUDE.md` and `.shipwright/agent_docs/architecture.md` for context.
 
 **What it produces**
 
@@ -506,7 +506,7 @@ Shipwright's orchestrator pipeline consists of **7 phases** (project, design, pl
 - `.shipwright/planning/project-manifest.md` -- execution order, dependencies between splits, and overview
 - `.shipwright/planning/requirements.md` -- consolidated requirements (generated for inline/chat modes)
 - `.shipwright/planning/shipwright_project_interview.md` -- full interview transcript
-- `CLAUDE.md` and `agent_docs/` (architecture, conventions, decision log, sprint, handoff) for new projects
+- `CLAUDE.md` and `.shipwright/agent_docs/` (architecture, conventions, decision log, sprint, handoff) for new projects
 - `.claude/rules/*.md` -- path-specific rules derived from the technology profile
 
 **How it works**
@@ -516,12 +516,12 @@ Shipwright's orchestrator pipeline consists of **7 phases** (project, design, pl
 - Analyzes the interview to determine whether the project needs multiple splits or is a single unit
 - Writes `project-manifest.md` with the proposed structure and presents it for your approval
 - Creates split directories and generates `spec.md` for each split
-- For new projects: detects the technology profile, scaffolds `CLAUDE.md`, `agent_docs/`, and path-specific Claude rules
-- Logs all project-level decisions (auth strategy, third-party services, naming conventions) to `agent_docs/decision_log.md`
+- For new projects: detects the technology profile, scaffolds `CLAUDE.md`, `.shipwright/agent_docs/`, and path-specific Claude rules
+- Logs all project-level decisions (auth strategy, third-party services, naming conventions) to `.shipwright/agent_docs/decision_log.md`
 
 **Standalone usage.** Yes. Run `/shipwright-project` independently whenever you want to decompose requirements without running the full pipeline. The output feeds directly into `/shipwright-plan`.
 
-**Where the planning artifacts live.** Since v0.6.0 the planning directory is `.shipwright/planning/` — under the hidden project-state folder, alongside `securityreports/`, `adopt/`, `runs/`, and `tmp/`. The same hidden home now also covers `.shipwright/designs/` (post-design-relocation). The only remaining Shipwright-owned top-level directories are `agent_docs/`, `compliance/`, and `e2e/` — all queued for follow-on relocation.
+**Where the planning artifacts live.** Since v0.6.0 the planning directory is `.shipwright/planning/` — under the hidden project-state folder, alongside `securityreports/`, `adopt/`, `runs/`, and `tmp/`. The same hidden home now also covers `.shipwright/designs/` and `.shipwright/agent_docs/` (post-relocation). The only remaining Shipwright-owned top-level directories are `compliance/` and `e2e/` — both queued for follow-on relocation.
 
 If a session start finds a legacy top-level `planning/` directory, the drift detector writes `.shipwright/stale-folders.md` with a `git mv planning .shipwright/planning` remediation hint and exits non-zero so you see it. Run `uv run shared/scripts/tools/migrate_artifact_dir.py --artifact planning` (added in Sub-Iterate F) to do the move automatically. <!-- artifact-path-canon: legacy -->
 
@@ -603,7 +603,7 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 - Sends the plan to Gemini and OpenAI in parallel for external review by default, presents findings, and lets you accept or reject each. If no API key is available, the skill stops and asks whether to add one or fall back to the mandatory self-review ("2x denken") pass. The outcome is written to `external_review_state.json` so the compliance dashboard can show it
 - Splits the plan into individual section files under `sections/`, each containing everything `/shipwright-build` needs to implement that unit
 - Validates that every functional requirement from the spec is covered by at least one section, and that section dependencies are correctly ordered
-- Logs all planning decisions to `agent_docs/decision_log.md`
+- Logs all planning decisions to `.shipwright/agent_docs/decision_log.md`
 
 **Standalone usage.** Yes. Run `/shipwright-plan @path/to/spec.md` for any spec file. This is useful when you want to re-plan a single split without re-running the entire pipeline. The output section files feed directly into `/shipwright-build`.
 
@@ -630,10 +630,10 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 - Production code and test files as specified in the section plan
 - A git commit on a feature branch (`{project-slug}/NN-name`) using Conventional Commits format
 - A `work_completed` event in `shipwright_events.jsonl` (commit hash, test results, affected FRs, review data)
-- Updated `agent_docs/decision_log.md` with implementation decisions
-- Updated `agent_docs/build_dashboard.md` with progress tracking
-- `agent_docs/session_handoff.md` (generated on context pressure or phase completion)
-- Updated `agent_docs/conventions.md` with implementation learnings (when new patterns or gotchas discovered)
+- Updated `.shipwright/agent_docs/decision_log.md` with implementation decisions
+- Updated `.shipwright/agent_docs/build_dashboard.md` with progress tracking
+- `.shipwright/agent_docs/session_handoff.md` (generated on context pressure or phase completion)
+- Updated `.shipwright/agent_docs/conventions.md` with implementation learnings (when new patterns or gotchas discovered)
 - SQL migration files with both `up.sql` and `down.sql` (when applicable)
 
 **How it works**
@@ -686,7 +686,7 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 - `playwright-report/index.html` -- interactive HTML report with screenshots, linked from compliance reports
 - Design fidelity verification results (code-level comparison of implementation vs mockup HTML)
 - Design fidelity triage results in `shipwright_test_results.json` (regressions, persistent failures, resolved screens)
-- Updated `agent_docs/conventions.md` with test learnings (when flaky patterns or infra quirks discovered)
+- Updated `.shipwright/agent_docs/conventions.md` with test learnings (when flaky patterns or infra quirks discovered)
 - A summary report printed to the terminal
 
 **How it works:**
@@ -843,7 +843,7 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 - Smoke test verification confirming the deployment is live
 - For PROD: a backup clone of the environment before deployment (rollback point)
 - Applied database migrations (if Supabase migration files exist)
-- Updated `agent_docs/conventions.md` with deployment learnings (when infra gotchas or config quirks discovered)
+- Updated `.shipwright/agent_docs/conventions.md` with deployment learnings (when infra gotchas or config quirks discovered)
 
 **How it works:**
 
@@ -895,7 +895,7 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 **What it needs (detective audit):**
 - `shipwright_events.jsonl` — primary event source.
 - `.shipwright/planning/*/spec.md` and `.shipwright/planning/*/plan.md` — FR definitions + section manifests.
-- `agent_docs/decision_log.md` — ADRs.
+- `.shipwright/agent_docs/decision_log.md` — ADRs.
 - `compliance/` docs (for Group E staleness comparison).
 - A git repo (Group B7 reverse-direction scan, Group G git-log activity).
 
@@ -907,7 +907,7 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 - `compliance/dashboard.md` -- Start-here overview with quality indicators, project velocity, and links.
 - `compliance/traceability-matrix.md` -- Every requirement mapped to the work events that verify it, with a "Last Verified" column.
 - `compliance/test-evidence.md` -- Test results across unit / integration / pgTAP / smoke / E2E / consistency / visual, with pass/fail counts and skip reasons.
-- `compliance/change-history.md` -- All commits + decisions (from `agent_docs/decision_log.md`) + version tags.
+- `compliance/change-history.md` -- All commits + decisions (from `.shipwright/agent_docs/decision_log.md`) + version tags.
 - `compliance/sbom.md` -- Software Bill of Materials with versions and license types. Flags copyleft licenses.
 
 **How the detective audit works:**
@@ -1172,12 +1172,12 @@ When using skills individually, provide the input artifact (spec file, section f
 
 ### 7.4 Session Recovery and Handoff
 
-Claude Code has a finite context window. During long builds, Shipwright monitors context pressure and, when the window is filling up, automatically generates a **session handoff** document (`agent_docs/session_handoff.md`) containing the current phase, split, section, completed work, and next steps.
+Claude Code has a finite context window. During long builds, Shipwright monitors context pressure and, when the window is filling up, automatically generates a **session handoff** document (`.shipwright/agent_docs/session_handoff.md`) containing the current phase, split, section, completed work, and next steps.
 
 To resume after a pause or context limit:
 
 1. Start a new Claude Code session (or type `/clear`).
-2. Shipwright reads `shipwright_run_config.json` and `agent_docs/session_handoff.md`.
+2. Shipwright reads `shipwright_run_config.json` and `.shipwright/agent_docs/session_handoff.md`.
 3. The pipeline resumes from where it left off.
 
 All state is file-based -- nothing lives only in memory. You can interrupt at any point, close your editor, and come back later.
@@ -1193,7 +1193,7 @@ The **constitution** (`shared/constitution.md`) defines behavioral boundaries fo
 - Use parameterized queries -- never interpolate user input into SQL.
 - Validate input at system boundaries.
 - Run the self-review checklist before committing.
-- Log deviating decisions in `agent_docs/decision_log.md`.
+- Log deviating decisions in `.shipwright/agent_docs/decision_log.md`.
 - Keep files under 300 lines -- split if larger.
 - Fix the code, not the test -- never weaken assertions to pass.
 
@@ -1331,7 +1331,7 @@ Every iterate run -- regardless of complexity -- ends with the same mandatory fi
 6. **Test results JSON** -- write structured test results to `shipwright_test_results.json`
 7. **Update compliance** -- regenerate traceability and reports (pre-commit)
 8. **Update build dashboard** -- refresh `build_dashboard.md` (pre-commit)
-9. **Record iterate entry** -- `append_iterate_entry.py` writes `agent_docs/iterates/<run_id>.json` (last 50 entries retained; commit hash intentionally omitted — look it up in `shipwright_events.jsonl` by `run_id`). On first contact with a legacy `iterate_history` array, the tool migrates all valid rows under the same transaction lock; invalid / duplicate rows land in `agent_docs/iterates/_quarantine/` and the count surfaces in the handoff + verifier output.
+9. **Record iterate entry** -- `append_iterate_entry.py` writes `.shipwright/agent_docs/iterates/<run_id>.json` (last 50 entries retained; commit hash intentionally omitted — look it up in `shipwright_events.jsonl` by `run_id`). On first contact with a legacy `iterate_history` array, the tool migrates all valid rows under the same transaction lock; invalid / duplicate rows land in `.shipwright/agent_docs/iterates/_quarantine/` and the count surfaces in the handoff + verifier output.
 10. **Conventional commit** -- single atomic commit with explicit `git add` list (never `-A`), `Run-ID` trailer and FR references
 11. **Record event** -- append `work_completed` to `shipwright_events.jsonl` with the real commit hash (the only step that legitimately runs post-commit, and it writes only to a gitignored file)
 12. **Merge, push & verify** -- merge branch to main, push, verify event was recorded, regenerate session handoff
@@ -1493,14 +1493,14 @@ Hooks are Python and shell scripts that fire on specific Claude Code events. The
 | Hook | Trigger | What It Does |
 |------|---------|-----------------|
 | `check_drift.py` | SessionStart | CLAUDE.md vs filesystem drift (Structure block, package.json scripts) |
-| `check_artifact_drift.py` | SessionStart | Cross-artifact drift detection (configs, planning, agent_docs) |
+| `check_artifact_drift.py` | SessionStart | Cross-artifact drift detection (configs, planning, .shipwright/agent_docs) |
 | `track_tool_calls.py` | PostToolUse | Counts tool calls for context-pressure detection |
 | `audit_phase_quality_on_stop.py` | Stop | Runs the 36-check Phase-Quality audit (see Section 9 below) |
-| `generate_handoff_on_stop.py` | Stop | Writes `agent_docs/session_handoff.md` |
+| `generate_handoff_on_stop.py` | Stop | Writes `.shipwright/agent_docs/session_handoff.md` |
 | `suggest_iterate.py` | UserPromptSubmit | Multilingual phase router — auto-suggests `/shipwright-iterate` for post-test code changes |
 | `write_terminal_marker.py` | SessionStart | Writes a terminal marker the WebUI Command Center watches |
 
-Hooks use **exit code 2 (soft-block)**: you can say "Continue anyway," but the override is logged to `agent_docs/compliance_overrides.log` and flagged at the next checkpoint.
+Hooks use **exit code 2 (soft-block)**: you can say "Continue anyway," but the override is logged to `.shipwright/agent_docs/compliance_overrides.log` and flagged at the next checkpoint.
 
 ### TDD Workflow
 
@@ -1549,9 +1549,9 @@ Shipwright ships a **pipeline-wide finalization verifier** that runs after every
 | Step | Invariant | Severity |
 |------|-----------|----------|
 | **C1** | `phase_completed` event exists in `shipwright_events.jsonl` for the phase | ERROR |
-| **C2** | `agent_docs/build_dashboard.md` mentions the phase | WARNING |
-| **C3** | `agent_docs/session_handoff.md` is fresh (canon-marker frontmatter) | WARNING |
-| **C4** | `agent_docs/decision_log.md` has an ADR referencing the phase | ERROR (decision-taking phases only) |
+| **C2** | `.shipwright/agent_docs/build_dashboard.md` mentions the phase | WARNING |
+| **C3** | `.shipwright/agent_docs/session_handoff.md` is fresh (canon-marker frontmatter) | WARNING |
+| **C4** | `.shipwright/agent_docs/decision_log.md` has an ADR referencing the phase | ERROR (decision-taking phases only) |
 | **C5** | `CHANGELOG.md [Unreleased]` has a bullet under the right category | ERROR (user-facing phases only) |
 
 Plus per-phase preventive checks: build verifies every section's test files exist on disk (**B3**) and every recorded section commit SHA is reachable via git (**B6**) — the latter catches history rewrites before they contaminate compliance. Plan verifies section manifest consistency, FR orphans, and section-id validity. Design verifies every screen in `design-manifest.md` exists and every FR is linked to at least one screen. Changelog runs two Sonder-Checks — the latest `## [vX.Y.Z]` in `CHANGELOG.md` must match an existing git tag, and the top version must match the latest `git tag --list v*`.
@@ -1597,7 +1597,7 @@ The audit covers six categories (plan § 2, plan § 3):
 **Artifacts** (deterministically regenerated, hard-capped):
 - `compliance/skill-compliance/<phase>-<run_id>-<session>.json` — per-run finding (atomic, GC after 90 days)
 - `compliance/skill-compliance-report.md` — last 10 runs, markdown table
-- `agent_docs/skill-compliance-findings.md` — last 5 runs, source for SessionStart-Injection
+- `.shipwright/agent_docs/skill-compliance-findings.md` — last 5 runs, source for SessionStart-Injection
 - `compliance/skill-compliance-dashboard.md` — phase × category matrix
 
 **Enforcement rollout (staggered, default OFF in code):**
@@ -1610,7 +1610,7 @@ The audit covers six categories (plan § 2, plan § 3):
 | `SHIPWRIGHT_SKIP_QUALITY_CHECK` | — | comma-separated check ids to mark as SKIP (e.g. `C4,S9`) |
 | `SHIPWRIGHT_AUDIT_OVERRIDE_REASON` | — | required when using `SHIPWRIGHT_SKIP_QUALITY_CHECK` |
 
-The audit hook is always greenfield-safe (silent no-op when neither `shipwright_*_config.json` nor `agent_docs/` is present) and non-blocking (exit 0 even on internal errors). Hook wiring, finding schema and the detailed check catalog live in [docs/hooks-and-pipeline.md § audit_phase_quality_on_stop.py](hooks-and-pipeline.md#shared-hook-audit_phase_quality_on_stoppy).
+The audit hook is always greenfield-safe (silent no-op when neither `shipwright_*_config.json` nor `.shipwright/agent_docs/` is present) and non-blocking (exit 0 even on internal errors). Hook wiring, finding schema and the detailed check catalog live in [docs/hooks-and-pipeline.md § audit_phase_quality_on_stop.py](hooks-and-pipeline.md#shared-hook-audit_phase_quality_on_stoppy).
 
 ---
 
@@ -1618,9 +1618,9 @@ The audit hook is always greenfield-safe (silent no-op when neither `shipwright_
 
 Shipwright generates and maintains documentation throughout the pipeline. You do not write these files manually -- they are created and updated as a side effect of each phase.
 
-### agent_docs/ Directory
+### .shipwright/agent_docs/ Directory
 
-The `agent_docs/` directory is the project's knowledge base for AI agents. Its contents:
+The `.shipwright/agent_docs/` directory is the project's knowledge base for AI agents. Its contents:
 
 | File | Purpose | Updated By |
 |------|---------|-----------|
@@ -1640,7 +1640,7 @@ The project master document, generated during `/shipwright-project`. It stays le
 - **Structure** -- Folder layout.
 - **Key Files** -- Important files with one-line descriptions.
 - **Gotchas** -- Project-specific pitfalls.
-- **Context** -- References to `@agent_docs/` files, loaded on demand.
+- **Context** -- References to `@.shipwright/agent_docs/` files, loaded on demand.
 
 ### Decision Log (ADR Format)
 
@@ -1652,7 +1652,7 @@ Each decision record follows the ADR template: Status, Context, Decision, Conseq
 
 ### Project Activity Dashboard
 
-`agent_docs/build_dashboard.md` shows the project's current state, derived from the event log. The most recent changes appear at the top (newest first), followed by test status, pipeline progress, and build history grouped by split. This is the first file an agent reads to understand what has happened and what to do next.
+`.shipwright/agent_docs/build_dashboard.md` shows the project's current state, derived from the event log. The most recent changes appear at the top (newest first), followed by test status, pipeline progress, and build history grouped by split. This is the first file an agent reads to understand what has happened and what to do next.
 
 ### Compliance Reports
 
@@ -1682,10 +1682,10 @@ Read these in order. Stop as soon as you have the answer you need — most revie
 |---|------|----------------|------|
 | 1 | `README.md` | What this project is, how to install, how to run | ~1 min |
 | 2 | `CLAUDE.md` | Stack, build/test/deploy commands, structure, key files, gotchas | ~3 min |
-| 3 | `agent_docs/conventions.md` | Code patterns, naming, git workflow, component examples | ~5 min |
-| 4 | `agent_docs/architecture.md` | System overview, stack table, data flow, security model | ~5 min |
-| 5 | `agent_docs/decision_log.md` | Architecture Decision Records — why each non-obvious choice was made | scan-based |
-| 6 | `agent_docs/session_handoff.md` | Most recent state: last commit, last test status, last completed phase | ~1 min |
+| 3 | `.shipwright/agent_docs/conventions.md` | Code patterns, naming, git workflow, component examples | ~5 min |
+| 4 | `.shipwright/agent_docs/architecture.md` | System overview, stack table, data flow, security model | ~5 min |
+| 5 | `.shipwright/agent_docs/decision_log.md` | Architecture Decision Records — why each non-obvious choice was made | scan-based |
+| 6 | `.shipwright/agent_docs/session_handoff.md` | Most recent state: last commit, last test status, last completed phase | ~1 min |
 | 7 | `shipwright_*_config.json` | Pipeline state machine: current step, completed steps, project metadata. Several files (run, project, plan, build, test, deploy, security, sync) — grep the one whose name matches your question | scan-based |
 | 8 | `shipwright_events.jsonl` | Append-only event log — single source of truth for what happened, when. Compliance reports and the activity dashboard derive from this | scan-based |
 
@@ -1697,18 +1697,18 @@ When you have a specific question, go directly to the file that owns the answer.
 
 | Question | Authoritative File | Why |
 |----------|-------------------|-----|
-| What stack / framework? | `shipwright_run_config.json` (`profile`) + `agent_docs/architecture.md` (Stack table) | Profile is normative; architecture.md expands it |
-| What conventions / code style? | `agent_docs/conventions.md` | Single source — never duplicated |
-| Why was X chosen over Y? | `agent_docs/decision_log.md` | ADR format with rejected alternatives |
-| What did the last iterate do? | `shipwright_events.jsonl` (most recent `work_completed`) + `agent_docs/build_dashboard.md` | Event log is canonical; dashboard is a rendered view |
+| What stack / framework? | `shipwright_run_config.json` (`profile`) + `.shipwright/agent_docs/architecture.md` (Stack table) | Profile is normative; architecture.md expands it |
+| What conventions / code style? | `.shipwright/agent_docs/conventions.md` | Single source — never duplicated |
+| Why was X chosen over Y? | `.shipwright/agent_docs/decision_log.md` | ADR format with rejected alternatives |
+| What did the last iterate do? | `shipwright_events.jsonl` (most recent `work_completed`) + `.shipwright/agent_docs/build_dashboard.md` | Event log is canonical; dashboard is a rendered view |
 | What test status right now? | `shipwright_test_results.json` | Last test run, pass/fail counts per layer |
 | What requirement maps to which file? | `shipwright_sync_config.json` (if present) | FR ↔ file mapping |
 | What requirements does this project even have? | `.shipwright/planning/*/spec.md` | IREB-aligned FR/NFR specs |
 | Where in the pipeline are we? | `shipwright_run_config.json` (`status`, `current_step`) + `phase_history` for "which step ran when" | Pipeline state machine; `current_step` is the live cursor, `phase_history` is the trail |
 | What sections has build completed? | `shipwright_build_config.json` (`completed_sections`) | Per-section build state lives here, not in run config |
-| What iterates have run? | `agent_docs/iterates/*.json` (one file per iterate) — fall back to legacy `iterate_history` array in `shipwright_run_config.json` for older projects | Iterate 12 split the array into per-file entries; the run-config array is migration-only |
-| What was the most recent decision? | `agent_docs/decision_log.md` (latest ADR) | Forward-only append |
-| Did anyone override a hook? | `agent_docs/compliance_overrides.log` | Audit trail of soft-block overrides |
+| What iterates have run? | `.shipwright/agent_docs/iterates/*.json` (one file per iterate) — fall back to legacy `iterate_history` array in `shipwright_run_config.json` for older projects | Iterate 12 split the array into per-file entries; the run-config array is migration-only |
+| What was the most recent decision? | `.shipwright/agent_docs/decision_log.md` (latest ADR) | Forward-only append |
+| Did anyone override a hook? | `.shipwright/agent_docs/compliance_overrides.log` | Audit trail of soft-block overrides |
 
 #### Quickstart Pattern
 
@@ -1740,13 +1740,13 @@ Once oriented, common follow-up actions:
 | Tag a release | `/shipwright-changelog` | Aggregates `[Unreleased]` entries, bumps semver, opens PR |
 | Deploy to DEV/PROD | `/shipwright-deploy` | DEV auto, PROD manual (per design principle) |
 
-Avoid editing files directly when the skill exists — the skill keeps `agent_docs/`, `shipwright_events.jsonl`, and compliance reports in sync. Hand-edits silently produce drift that `/shipwright-compliance` will flag later.
+Avoid editing files directly when the skill exists — the skill keeps `.shipwright/agent_docs/`, `shipwright_events.jsonl`, and compliance reports in sync. Hand-edits silently produce drift that `/shipwright-compliance` will flag later.
 
 #### Why No Aggregated Project Summary File
 
 Frameworks like Replit ship a single `replit.md` that aggregates setup, API, deployment, troubleshooting into one file. It looks hand-off-friendly on day one. Six iterates later, half of it is wrong — the aggregate is a view over files that have moved on, and nothing forced it to update.
 
-Shipwright takes the opposite approach: each file owns one concern. `CLAUDE.md` is the entry point and stays lean (~200 lines). Detail lives in `agent_docs/`. Pipeline state lives in `shipwright_*_config.json`. Compliance evidence lives in `shipwright_events.jsonl`. There is no synthesized "everything" file because there is no way to keep one in sync without paying drift in tokens or operator attention every iterate.
+Shipwright takes the opposite approach: each file owns one concern. `CLAUDE.md` is the entry point and stays lean (~200 lines). Detail lives in `.shipwright/agent_docs/`. Pipeline state lives in `shipwright_*_config.json`. Compliance evidence lives in `shipwright_events.jsonl`. There is no synthesized "everything" file because there is no way to keep one in sync without paying drift in tokens or operator attention every iterate.
 
 The price is that you read 2–3 files to onboard instead of 1. The benefit is that what you read is current.
 
@@ -1839,13 +1839,13 @@ Or read `CHANGELOG.md` in the repository root for release notes.
 | **Phase Validator** | A function that runs before marking a pipeline phase complete. Checks that required artifacts exist (specs, section files, test results). Returns issues with severity ASK (blocks until user confirms) or INFORM (logs and continues). |
 | **RTM (Requirements Traceability Matrix)** | A compliance report mapping every requirement to work events that verify it, with "Last Verified" timestamps. Proves that all requirements were implemented and tested. |
 | **SBOM (Software Bill of Materials)** | A compliance report listing all project dependencies with their versions, extracted from `package.json` and `package-lock.json`. Used for supply chain auditing. |
-| **ADR (Architecture Decision Record)** | A structured log entry documenting an architecture decision: status, context, decision, and consequences (including rejected alternatives). Stored in `agent_docs/decision_log.md`. |
+| **ADR (Architecture Decision Record)** | A structured log entry documenting an architecture decision: status, context, decision, and consequences (including rejected alternatives). Stored in `.shipwright/agent_docs/decision_log.md`. |
 | **Conventional Commits** | A commit message format (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`) that enables automated changelog generation and semantic versioning. |
 | **IREB** | International Requirements Engineering Board. Shipwright aligns its requirements specs with IREB practices: structured requirements with acceptance criteria that map directly to tests. |
-| **Agent Docs** | The `agent_docs/` directory containing architecture, conventions, decision log, sprint status, and session handoff documents. These files provide context for AI agents working on the project. |
+| **Agent Docs** | The `.shipwright/agent_docs/` directory containing architecture, conventions, decision log, sprint status, and session handoff documents. These files provide context for AI agents working on the project. |
 | **Feature Branch** | A Git branch (`feature/{name}`) created during the build phase. Each split is built on its own feature branch, merged to `main` via PR during the changelog phase. |
 | **Context Pressure** | A measure of how full Claude Code's context window is. Shipwright monitors tool call counts and estimates remaining capacity. When pressure is high, it triggers a session handoff. |
-| **Session Handoff** | An auto-generated document (`agent_docs/session_handoff.md`) containing current state, completed work, and next steps. Written before context compaction so a new session can resume seamlessly. |
+| **Session Handoff** | An auto-generated document (`.shipwright/agent_docs/session_handoff.md`) containing current state, completed work, and next steps. Written before context compaction so a new session can resume seamlessly. |
 
 ---
 
@@ -1890,7 +1890,7 @@ in the WebUI repo.
 |---------|-----------|-------|---------|
 | `/shipwright-run` | `"description"` or `@requirements.md` | -- | Coordinate a multi-session pipeline. Writes `shipwright_run_config.json` (schema v2) with `phase_tasks[]`, prints a launch card for the first phase, and ends. Each phase runs in its own external Claude CLI session; phase Stop hooks plan the next phase. Re-invoke on an existing config to print a resume launch card. |
 | `/shipwright-iterate` | `"description"` | `--type feature\|change\|bug`, `--complexity trivial\|small\|medium\|large`, `--review`, `--pause`, `--campaign <slug>`, `--autonomous` | Complexity-adaptive SDLC for ongoing changes. Auto-detects intent and complexity, scales phases from quick fix to structured mini-pipeline with planning, review, and testing. Campaign mode (`--campaign`) groups related sub-iterates; `--autonomous` runs them sequentially via subagents without manual gates. |
-| `/shipwright-project` | `"description"` or `@requirements.md` | -- | Decompose requirements into splits and IREB-aligned specs. Generates `CLAUDE.md`, `agent_docs/`, and project config. Interviews you about requirements. |
+| `/shipwright-project` | `"description"` or `@requirements.md` | -- | Decompose requirements into splits and IREB-aligned specs. Generates `CLAUDE.md`, `.shipwright/agent_docs/`, and project config. Interviews you about requirements. |
 | `/shipwright-design` | -- | -- | Generate HTML mockups from specs. Produces screens with review viewer, feedback loop, and spec backflow. Runs after project, before plan. |
 | `/shipwright-plan` | `@spec.md` | -- | Create implementation plan for one split. Researches stack, interviews for clarification, generates section files. Optionally sends plan to external LLMs (Gemini + OpenAI) for review. |
 | `/shipwright-build` | `@section.md` | `--autonomous`, `--from <section>` | Implement one section using TDD. Writes failing test, implements code, runs code review subagent, creates Conventional Commit on feature branch. With `--autonomous`, loops through all pending sections via subagents without manual gates. |
@@ -1899,7 +1899,7 @@ in the WebUI repo.
 | `/shipwright-changelog` | -- | -- | Parse Conventional Commits from git history, generate Keep-a-Changelog entries, suggest semver bump, create version tag, and open a pull request. |
 | `/shipwright-deploy` | -- | `--env prod` | Deploy to Jelastic (Infomaniak). DEV deploys automatically; PROD requires `--env prod` flag and explicit confirmation. Runs smoke test after deploy, rolls back on failure. |
 | `/shipwright-compliance` | -- | `--fix`, `--only <groups>`, `--format md\|json\|both` | **Out-of-band** — detective cross-artifact audit (Groups C + F shipped; A/B/D/E/G planned). Also fires as auto-background subprocess after every completed pipeline phase via `update_compliance.py --phase <name>` (no manual flag needed). |
-| `/shipwright-adopt` | -- | `--dry-run`, `--profile <name>`, `--scope full_app\|library\|cli`, `--include-nested`, `--exclude-path <p>`, `--skip-crawl`, `--crawl-base-url <url>`, `--crawl-auth-token <tok>`, `--crawl-max-depth <n>`, `--crawl-max-pages <n>`, `--no-backfill-events`, `--no-sync`, `--planning-split <name>` | Onboard an existing (brownfield) repo into Shipwright. Analyzes stack + routes + conventions + git history, writes CLAUDE.md + agent_docs + configs + compliance reports + an E2E baseline. Not a pipeline phase — runs once per repo. |
+| `/shipwright-adopt` | -- | `--dry-run`, `--profile <name>`, `--scope full_app\|library\|cli`, `--include-nested`, `--exclude-path <p>`, `--skip-crawl`, `--crawl-base-url <url>`, `--crawl-auth-token <tok>`, `--crawl-max-depth <n>`, `--crawl-max-pages <n>`, `--no-backfill-events`, `--no-sync`, `--planning-split <name>` | Onboard an existing (brownfield) repo into Shipwright. Analyzes stack + routes + conventions + git history, writes CLAUDE.md + .shipwright/agent_docs + configs + compliance reports + an E2E baseline. Not a pipeline phase — runs once per repo. |
 
 ### Verifier and Canon Helper Scripts
 

@@ -244,13 +244,9 @@ ALLOWLIST: dict[str, list[str]] = {
         "integration-tests/**",
         # Sub-Iterate D (prose) completed. Plugin SKILLs/agents/references +
         # README + CLAUDE.md + constitution all migrated. Removed.
-        # Templates + Docs, in E migrated.
-        "shared/templates/**",
-        "docs/guide.md",
-        "docs/hooks-and-pipeline.md",
-        # YAML/Schema, in B/E migrated.
-        ".github/ISSUE_TEMPLATE/bug_report.yml",
-        "shared/schemas/run_config.v2.schema.json",
+        # Sub-Iterate E (templates + docs) completed. shared/templates/**,
+        # docs/guide.md, docs/hooks-and-pipeline.md, bug_report.yml, and
+        # run_config.v2.schema.json all migrated to canonical. Removed.
         # Plugin metadata: descriptive keyword "agent_docs", not a path. Permanent.
         "plugins/**/.claude-plugin/plugin.json",
         ".claude-plugin/marketplace.json",

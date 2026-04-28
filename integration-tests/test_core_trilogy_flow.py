@@ -365,6 +365,22 @@ class TestCoreTrilogyFlow:
         assert (trilogy_project / "shipwright_build_config.json").exists()
         assert (trilogy_project / ".shipwright" / "agent_docs" / "decision_log.md").exists()
 
+        # Sub-Iterate E (agent_docs in_progress) — explicit no-legacy assertion.
+        # The general `_assert_no_legacy_artifact_dirs` helper iterates only
+        # `migrated` artifacts; agent_docs is `in_progress` until F flips it.
+        # This temporary assertion guards against trilogy phases regressing on
+        # the canonical write path during the migration window. F removes this
+        # block once `agent_docs` flips to `migrated` (helper takes over).
+        legacy_agent_docs = trilogy_project / "agent_docs"
+        canonical_agent_docs = trilogy_project / ".shipwright" / "agent_docs"
+        assert canonical_agent_docs.is_dir(), (
+            "Canonical .shipwright/agent_docs/ must exist after trilogy"
+        )
+        assert not legacy_agent_docs.exists(), (
+            f"Legacy agent_docs/ must NOT be created during E (in_progress); "
+            f"trilogy regressed: {list(legacy_agent_docs.iterdir()) if legacy_agent_docs.exists() else None}"
+        )
+
         # Layer-3 drift safety net: nothing landed at a legacy top-level path.
         _assert_no_legacy_artifact_dirs(trilogy_project)
 

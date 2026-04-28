@@ -79,7 +79,7 @@
     },
     "iterate_history": {
       "type": "array",
-      "description": "Legacy field; new entries live under agent_docs/iterates/."
+      "description": "Legacy field; new entries live under .shipwright/agent_docs/iterates/."
     },
     "created_at": {
       "type": "string",

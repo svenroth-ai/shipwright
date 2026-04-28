@@ -104,7 +104,7 @@ body:
     id: logs
     attributes:
       label: Relevant logs
-      description: Any error output, stack traces, or `agent_docs/` session handoff content
+      description: Any error output, stack traces, or `.shipwright/agent_docs/` session handoff content
       render: shell
 
   - type: checkboxes

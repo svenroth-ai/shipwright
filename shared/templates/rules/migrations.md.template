@@ -66,7 +66,7 @@ Never combine an additive change (`ADD COLUMN`, `CREATE TABLE`, RLS-policy add) 
 
 Why: an additive-and-destructive migration cannot be safely rolled back. The `down.sql` would have to recreate the dropped column with no data — which is silently lossy. Splitting the change makes both phases independently reversible and gives downstream consumers (mobile apps, third-party integrations, cached query plans) a window to migrate.
 
-**Enforcement reality (be honest with yourself):** there is no automated hook that scans staged `up.sql` for ADD+DROP co-occurrence today — adding one is a deferred follow-up. The constitution lists this under ASK FIRST so the agent must self-audit and stop to ask the user before bundling. If a destructive change must ship in the same migration as an additive one, document the reason in the migration's `-- WHY:` block AND in `agent_docs/decision_log.md` as an ADR.
+**Enforcement reality (be honest with yourself):** there is no automated hook that scans staged `up.sql` for ADD+DROP co-occurrence today — adding one is a deferred follow-up. The constitution lists this under ASK FIRST so the agent must self-audit and stop to ask the user before bundling. If a destructive change must ship in the same migration as an additive one, document the reason in the migration's `-- WHY:` block AND in `.shipwright/agent_docs/decision_log.md` as an ADR.
 
 ## Example: up.sql / down.sql pair
 

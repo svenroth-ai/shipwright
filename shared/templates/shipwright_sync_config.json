@@ -34,7 +34,7 @@
     },
     {
       "pattern": "supabase/migrations/*",
-      "artifacts": ["agent_docs/architecture.md"],
+      "artifacts": [".shipwright/agent_docs/architecture.md"],
       "frs": [],
       "category": "database"
     },

@@ -27,13 +27,13 @@ For any code changes after the initial build (features, bug fixes, refactoring, 
 ## Context
 
 **Read first** (stable, always relevant):
-- @agent_docs/architecture.md — system overview, layers, security model
-- @agent_docs/conventions.md — code patterns, naming, git workflow
+- @.shipwright/agent_docs/architecture.md — system overview, layers, security model
+- @.shipwright/agent_docs/conventions.md — code patterns, naming, git workflow
 
 **Read on demand** (volatile, changes per session):
-- @agent_docs/decision_log.md — when making or reviewing decisions
-- @agent_docs/build_dashboard.md — when checking progress or planning next steps
-- @agent_docs/session_handoff.md — when resuming after a pause or /clear
+- @.shipwright/agent_docs/decision_log.md — when making or reviewing decisions
+- @.shipwright/agent_docs/build_dashboard.md — when checking progress or planning next steps
+- @.shipwright/agent_docs/session_handoff.md — when resuming after a pause or /clear
 
 **Other references:**
 - @.shipwright/planning/ — specs and section files

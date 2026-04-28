@@ -217,7 +217,7 @@ Stop hooks (in order — critical):
                                     plan_next_phase auto-runs from
                                     complete-phase-task)
    2. generate_handoff_on_stop.py  (writes phase-specific handoff under
-                                    agent_docs/runs/<runId>/<ptk>/handoff.md)
+                                    .shipwright/agent_docs/runs/<runId>/<ptk>/handoff.md)
    3. audit_phase_quality_on_stop.py (existing — unchanged)
 ```
 
@@ -422,7 +422,7 @@ off-scope audit runs that might have predated the guard.
   contract as the workflow dispatcher.
 - `spec` (PR 4) — cross-phase spec category at
   `shared/scripts/tools/verifiers/spec_checks.py`. Runs S1-S10 against
-  the top-level spec (agent_docs/spec.md), per-iterate spec files,
+  the top-level spec (.shipwright/agent_docs/spec.md), per-iterate spec files,
   CLAUDE.md, README.md, FR coherence, and git-based doc-freshness
   heuristics. Uses `lib/spec_parser.py` for FR heading parsing.
 
@@ -449,8 +449,8 @@ evidence (plan § 4.5).
 | Sec2 | security (out-of-band) | FAIL | 1 | No pipe-table row containing both `CRITICAL` and `UNRESOLVED`/`OPEN`/`FAIL` — or active override line in `compliance/compliance_overrides.log`. Audits the standalone security skill, not a pipeline phase. |
 | Cmp1 | compliance | WARN | 2 | `compliance/dashboard.md` mentions every `run_config.completed_steps` phase (Tier-2, redundant with C2) |
 | Cmp2 | compliance | FAIL | 1 | `traceability-matrix.md` coverage ≥ `shipwright_compliance_config.json.enforcement.rtm_coverage_min` (default 80%) |
-| D1 | design | FAIL | 1 | ≥1 artifact: `.shipwright/designs/mockups/*.html` OR `agent_docs/screens.md` OR `agent_docs/user-flow.md` |
-| D2 | design | WARN | 2 | Both `agent_docs/screens.md` and `agent_docs/user-flow.md` present + non-empty |
+| D1 | design | FAIL | 1 | ≥1 artifact: `.shipwright/designs/mockups/*.html` OR `.shipwright/agent_docs/screens.md` OR `.shipwright/agent_docs/user-flow.md` |
+| D2 | design | WARN | 2 | Both `.shipwright/agent_docs/screens.md` and `.shipwright/agent_docs/user-flow.md` present + non-empty |
 
 **Infrastructure category (PR 3):** `shared/scripts/tools/verifiers/infrastructure_checks.py`
 
@@ -472,18 +472,18 @@ evidence (plan § 4.5).
 
 | ID | Phase(s) | Default on Missing | Tier | Evidence Source |
 |---|---|---|---|---|
-| Q1 | project, plan, build, iterate | WARN (never FAIL — R13) | 2 | Latest ADR in `agent_docs/decision_log.md` has Context ≥50, Decision ≥30, Consequences ≥30 chars. Uses `lib/adr_parser.py` (handles both bullet-form and section-form). |
+| Q1 | project, plan, build, iterate | WARN (never FAIL — R13) | 2 | Latest ADR in `.shipwright/agent_docs/decision_log.md` has Context ≥50, Decision ≥30, Consequences ≥30 chars. Uses `lib/adr_parser.py` (handles both bullet-form and section-form). |
 | Q2 | build | FAIL | 1 | Every section in `shipwright_plan_snapshot.json` (falls back to `.shipwright/planning/sections/*.md` / `.shipwright/planning/<split>/sections/*.md`) has status ∈ {complete, completed, done} in `shipwright_build_config.json.sections`. SKIP when no plan material. |
 
 **Spec category (PR 4):** `shared/scripts/tools/verifiers/spec_checks.py`
 
 | ID | Phase(s) | Default on Missing | Tier | Evidence Source |
 |---|---|---|---|---|
-| S1 | project | FAIL | 1 | `agent_docs/spec.md` exists, non-empty, ≥1 `## FR-...` heading (via `lib/spec_parser.count_fr_headings`). |
+| S1 | project | FAIL | 1 | `.shipwright/agent_docs/spec.md` exists, non-empty, ≥1 `## FR-...` heading (via `lib/spec_parser.count_fr_headings`). |
 | S2 | iterate (medium+) | FAIL | 1 | `.shipwright/planning/iterate/<*run_id*>.md` present when `iterate_history[run_id].complexity` ∈ {medium, large}. SKIPs for trivial/small (R15). |
 | S3 | iterate (medium+) | WARN (never FAIL — R17) | 2 | `.shipwright/planning/iterate/<*run_id*>-miniplan.md` present when complexity ≥ medium. SKIPs below medium. |
-| S4 | iterate | WARN (never FAIL — R16) | 2 | Git-diff of `agent_docs/spec.md` over last 10 commits: removed FR ids must retain `status: deprecated`. SKIPs without git history. |
-| S5 | project, iterate | WARN (never FAIL) | 2 | Every FR heading across `agent_docs/spec.md`, `.shipwright/planning/*/spec.md`, and `.shipwright/planning/iterate/*.md` has Description + Acceptance sections (via `lib/spec_parser.compute_fr_coherence`). |
+| S4 | iterate | WARN (never FAIL — R16) | 2 | Git-diff of `.shipwright/agent_docs/spec.md` over last 10 commits: removed FR ids must retain `status: deprecated`. SKIPs without git history. |
+| S5 | project, iterate | WARN (never FAIL) | 2 | Every FR heading across `.shipwright/agent_docs/spec.md`, `.shipwright/planning/*/spec.md`, and `.shipwright/planning/iterate/*.md` has Description + Acceptance sections (via `lib/spec_parser.compute_fr_coherence`). |
 | S6 | project | FAIL | 1 | `CLAUDE.md` exists at project root, non-empty. |
 | S7 | project | WARN (never FAIL) | 2 | `CLAUDE.md` has a `## Structure` fenced code block (via `lib/drift_parsers.extract_structure_block`). |
 | S8 | project | FAIL | 1 | `README.md` exists, non-empty. |
@@ -499,7 +499,7 @@ dashboard as heuristic signal only (plan § 3, § 9.2).
 |---|---|---|
 | `compliance/skill-compliance/<phase>-<run_id>-<session_id>.json` | Per-run Finding JSON (atomic write) | GC → `archive/` after 90d |
 | `compliance/skill-compliance-report.md` | Last 10 runs, markdown | cap 10 |
-| `agent_docs/skill-compliance-findings.md` | Last 5 runs, SessionStart-Injection source (PR 4 wires the injection) | cap 5 |
+| `.shipwright/agent_docs/skill-compliance-findings.md` | Last 5 runs, SessionStart-Injection source (PR 4 wires the injection) | cap 5 |
 | `compliance/skill-compliance-dashboard.md` | Phase × category status matrix | overwritten each run |
 
 Aggregate rewrites serialise through
@@ -537,7 +537,7 @@ across PR 1-4.
 **SessionStart-Injection flow (PR 4):**
 
 The canonical SessionStart hook `shared/scripts/hooks/capture_session_id.py`
-reads `agent_docs/skill-compliance-findings.md` at session start and
+reads `.shipwright/agent_docs/skill-compliance-findings.md` at session start and
 injects up to **5 Tier-1 FAILs** as `additionalContext` unless the user
 has opted out via `SHIPWRIGHT_PHASE_QUALITY_MODE=audit_only`. Injection
 is the default since the Phase-Quality epic completed — rollout
@@ -548,7 +548,7 @@ are filtered out.
 
 ```
 Session ends → Stop hook writes finding JSON + regenerates
-                agent_docs/skill-compliance-findings.md
+                .shipwright/agent_docs/skill-compliance-findings.md
                     ↓
 Next session starts → capture_session_id.py reads summary file
                         ↓
@@ -638,7 +638,7 @@ phase to load explicitly.
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
-| Stop | — | `generate_handoff_on_stop.py` (shared) | Writes `agent_docs/session_handoff.md` for resume |
+| Stop | — | `generate_handoff_on_stop.py` (shared) | Writes `.shipwright/agent_docs/session_handoff.md` for resume |
 | Stop | — | `master_stop_check.py` | **Observational** v2 master Stop hook. Prints pipeline status (in_progress / complete / failed) to stderr based on `phase_tasks[]` and `run.status`. **Never** mutates state — final-status responsibility lives in `complete-phase-task` of the last phase. |
 
 ### shipwright-project
@@ -765,7 +765,7 @@ Non-pipeline skill — onboards a **brownfield** repo into the Shipwright SDLC. 
 
 Reads: `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `composer.json`, `Gemfile`, `tsconfig.json`, `.eslintrc*`, `.prettierrc*`, `.editorconfig`, `README.md`, `.github/workflows/`, git log, plus route/page files for AST feature inference; optionally the running dev-server via Playwright BFS crawl.
 
-Writes: `CLAUDE.md`, `agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `.shipwright/planning/<split>/spec.md`, all six `shipwright_*_config.json` (run-config LAST), `shipwright_events.jsonl` (one `adopted` event + optional backfill), `.claude/settings.json` (merges the `suggest_iterate` UserPromptSubmit hook), `e2e/flows/adopted-baseline.spec.ts` when a Playwright crawl succeeded, `.shipwright/adopt/{snapshot,enrichment,routes}.json`, `.shipwright/adopt/review.md`, and seeds the five `compliance/*.md` via the existing compliance generators.
+Writes: `CLAUDE.md`, `.shipwright/agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `.shipwright/planning/<split>/spec.md`, all six `shipwright_*_config.json` (run-config LAST), `shipwright_events.jsonl` (one `adopted` event + optional backfill), `.claude/settings.json` (merges the `suggest_iterate` UserPromptSubmit hook), `e2e/flows/adopted-baseline.spec.ts` when a Playwright crawl succeeded, `.shipwright/adopt/{snapshot,enrichment,routes}.json`, `.shipwright/adopt/review.md`, and seeds the five `compliance/*.md` via the existing compliance generators.
 
 Phase-Quality integration: registered as phase `adopt` in `PLUGIN_TO_PHASE`, `C4_PHASES`, and `_WORKFLOW_PHASE_DISPATCH`. The verifier module `shared/scripts/tools/verifiers/adopt_compliance.py` runs A1–A8 canon checks on every Stop hook after adoption completes. A4, A5, A8 are Tier-2 (heuristic, non-blocking); A1–A3, A6, A7 are Tier-1 ERROR on FAIL.
 
@@ -946,7 +946,7 @@ Executed by the orchestrator between each skill invocation (orchestrate SKILL.md
 2. **Record Phase Event** — `record_event.py --type phase_completed --phase {phase}` appends to `shipwright_events.jsonl`.
 3. **Upstream Success Check** — Reads `shipwright_run_config.json`, verifies previous phase is in `completed_steps`. Prevents cascading failures.
 4. **Incremental Compliance Update** — `update_compliance.py --phase {phase}` (non-blocking subprocess, errors swallowed).
-5. **Dashboard Update** — `update_build_dashboard.py --phase {phase}` refreshes `agent_docs/build_dashboard.md`.
+5. **Dashboard Update** — `update_build_dashboard.py --phase {phase}` refreshes `.shipwright/agent_docs/build_dashboard.md`.
 6. **Tool Counter Reset** — `reset_tool_counter.py` prevents stale counts from triggering false context pressure.
 7. **Context Pressure Check** — `estimate_context_pressure.py --threshold 120`. If `recommend_checkpoint` is true, generates handoff and stops.
 
@@ -990,9 +990,9 @@ When writing decision log entries, the `--architecture-impact` flag on `write_de
 
 | Impact Type | Target File | Section Added |
 |-------------|-------------|---------------|
-| `component` | `agent_docs/architecture.md` | `## Architecture Updates` |
-| `data-flow` | `agent_docs/architecture.md` | `## Architecture Updates` |
-| `convention` | `agent_docs/conventions.md` | `## Convention Updates` |
+| `component` | `.shipwright/agent_docs/architecture.md` | `## Architecture Updates` |
+| `data-flow` | `.shipwright/agent_docs/architecture.md` | `## Architecture Updates` |
+| `convention` | `.shipwright/agent_docs/conventions.md` | `## Convention Updates` |
 | `none` | — | No update |
 
 Format: `- **ADR-NNN** (YYYY-MM-DD): Short description`
@@ -1087,9 +1087,9 @@ not a canon target.
 | Step | Requirement | Tool | Severity |
 |---|---|---|---|
 | **C1** | `phase_completed` event recorded in `shipwright_events.jsonl` | `shared/scripts/tools/record_event.py --type phase_completed --source <phase>` | **ERROR** |
-| **C2** | `agent_docs/build_dashboard.md` reflects the phase | `shared/scripts/tools/update_build_dashboard.py --phase <phase>` | **WARNING** |
-| **C3** | `agent_docs/session_handoff.md` regenerated with phase-specific reason | `shared/scripts/tools/generate_session_handoff.py --reason "<phase>: …"` | **WARNING** |
-| **C4** | `agent_docs/decision_log.md` has a new ADR referencing the phase | `shared/scripts/tools/write_decision_log.py --title …` | **ERROR** (only for decision-taking phases) |
+| **C2** | `.shipwright/agent_docs/build_dashboard.md` reflects the phase | `shared/scripts/tools/update_build_dashboard.py --phase <phase>` | **WARNING** |
+| **C3** | `.shipwright/agent_docs/session_handoff.md` regenerated with phase-specific reason | `shared/scripts/tools/generate_session_handoff.py --reason "<phase>: …"` | **WARNING** |
+| **C4** | `.shipwright/agent_docs/decision_log.md` has a new ADR referencing the phase | `shared/scripts/tools/write_decision_log.py --title …` | **ERROR** (only for decision-taking phases) |
 | **C5** | `CHANGELOG.md [Unreleased]` has a bullet under the right Keep-a-Changelog category | `shared/scripts/tools/append_changelog_entry.py --category <Added\|Changed\|Fixed\|…> --entry "…"` | **ERROR** (only for user-facing phases) |
 
 ### C4 Skip Criteria — Who Gets an ADR
@@ -1135,7 +1135,7 @@ Shipwright writes iterate-finalization artifacts through deterministic,
 lock-serialised tools so every Canon caller lands in a consistent shape:
 
 - **`shared/scripts/tools/append_iterate_entry.py`** (file-per-iterate
-  refactor) — writes one `agent_docs/iterates/<run_id>.json` entry atomically,
+  refactor) — writes one `.shipwright/agent_docs/iterates/<run_id>.json` entry atomically,
   runs legacy-array → dir migration on first touch under a state-machine
   sentinel, applies 50-entry retention, quarantines invalid or duplicate
   legacy rows. Holds `shipwright_run_config.json.lock` for the full
@@ -1182,7 +1182,7 @@ A new top-level field in `shipwright_run_config.json` parallel to
 ```
 
 - Retention: last 50 entries per phase.
-- `iterate` writes to `agent_docs/iterates/<run_id>.json` (file-per-iterate
+- `iterate` writes to `.shipwright/agent_docs/iterates/<run_id>.json` (file-per-iterate
   refactor — richer schema: branch, spec path, tests_passed, adr). The
   legacy `iterate_history` key is left empty on new projects for
   backward-compat with external readers. Not mirrored into `phase_history`.
@@ -1300,7 +1300,7 @@ fixes this with a pure run-id match:
 The canon verifier runs against **Shipwright-managed consumer projects**
 (those with `shipwright_run_config.json` at project root), not against
 the Shipwright monorepo itself. The monorepo root is plugin development
-and intentionally has no `shipwright_*_config.json`, `agent_docs/`, or
+and intentionally has no `shipwright_*_config.json`, `.shipwright/agent_docs/`, or
 `build_dashboard.md`; running `verify_phase.py --project-root . --phase all`
 against it will report many phase-own failures by design. The authoritative
 audit is code-level (the Coverage Matrix above), plus a runtime smoke
