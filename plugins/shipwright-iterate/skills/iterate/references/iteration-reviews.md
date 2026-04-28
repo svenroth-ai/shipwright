@@ -208,7 +208,7 @@ Heuristic signals:
 - Agent notices it's losing track of earlier context
 
 ### Required Payload
-Write to `agent_docs/session_handoff.md`:
+Write to `.shipwright/agent_docs/session_handoff.md`:
 
 ```markdown
 # Session Handoff: {run_id}

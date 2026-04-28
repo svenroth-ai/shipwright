@@ -104,7 +104,7 @@ Before starting fresh, check if a previous iterate run was interrupted:
      the helper cannot reliably detect them locally.
    - Both `main` AND `master` present without `--main` → `main: null`
      + ambiguity error. Pass `--main <name>` explicitly.
-2. Check if `agent_docs/session_handoff.md` exists and references an iterate run_id
+2. Check if `.shipwright/agent_docs/session_handoff.md` exists and references an iterate run_id
 3. Check current git branch — if already on an `iterate/` branch
 4. **Worktree self-exclusion:** if running inside a secondary worktree
    (`git rev-parse --show-toplevel` differs from the main repo path), exclude the
@@ -139,7 +139,7 @@ Decision guide:
 
 **Wait for user choice.**
 
-- **Resume:** Read `agent_docs/session_handoff.md` for full state (completed phases, remaining work, test status, blocked items). Skip Steps C-G (Run ID, Intent, Complexity, Summary, Interview). Reuse the existing run_id, branch, and iterate spec.
+- **Resume:** Read `.shipwright/agent_docs/session_handoff.md` for full state (completed phases, remaining work, test status, blocked items). Skip Steps C-G (Run ID, Intent, Complexity, Summary, Interview). Reuse the existing run_id, branch, and iterate spec.
 
   **Mandatory replay check (BEFORE dispatching to the Remaining phase).**
   Mandatory phases are not skippable just because a previous session advanced
@@ -161,7 +161,7 @@ Decision guide:
   Only after both checks pass, dispatch to the phase listed under "Remaining"
   in the handoff (fall back to Build if no Remaining section is present — the
   current handoff generator does not write one).
-- **Abandon:** Delete the iterate branch (`git branch -D iterate/{name}`), remove `agent_docs/session_handoff.md`, proceed with fresh run from Step B2.
+- **Abandon:** Delete the iterate branch (`git branch -D iterate/{name}`), remove `.shipwright/agent_docs/session_handoff.md`, proceed with fresh run from Step B2.
 - **Complete:** Read handoff for context, skip to Finalization (F1-F11) to commit, record event, and merge what's already been built. **Same replay check applies** — run External Review / Self-Review first if markers are missing, before F1.
 - **Parallel:** Leave the detected run completely untouched. Exit this session with status `parallel_setup` (not `abandoned` or `failed` — no work is lost). Print the worktree setup commands below and stop. The new iterate is started in a **new Claude Code session inside the worktree**, not in this session.
 
@@ -216,9 +216,9 @@ See also: `docs/guide.md` chapter "Parallel Development with Worktrees" for the 
 **Read ALL of these files NOW before proceeding.** This context is required for accurate intent classification, complexity assessment, and interview questions. Do NOT skip this step.
 
 1. `CLAUDE.md` — stack, conventions, commands
-2. `agent_docs/conventions.md` — coding standards, naming, patterns
-3. `agent_docs/decision_log.md` — ALL architectural decisions (read the complete file)
-4. `agent_docs/architecture.md` — app structure, component tree, data flow
+2. `.shipwright/agent_docs/conventions.md` — coding standards, naming, patterns
+3. `.shipwright/agent_docs/decision_log.md` — ALL architectural decisions (read the complete file)
+4. `.shipwright/agent_docs/architecture.md` — app structure, component tree, data flow
 5. `shipwright_sync_config.json` — file-to-FR mappings (if exists)
 6. `.shipwright/planning/*/spec.md` — ALL spec files across all splits (read completely)
 7. `shipwright_test_results.json` — last test run status, degraded conditions
@@ -395,9 +395,9 @@ Note: "touches_db" (ordinary query/model edits without schema changes) is NOT a 
 
 1. `shipwright_run_config.json` — project metadata, profile, completed sections
 2. `CLAUDE.md` — project conventions, stack, commands
-3. `agent_docs/conventions.md` — coding standards, naming, patterns
-4. `agent_docs/decision_log.md` — ALL architectural decisions (read completely)
-5. `agent_docs/architecture.md` — app structure, component tree, data flow
+3. `.shipwright/agent_docs/conventions.md` — coding standards, naming, patterns
+4. `.shipwright/agent_docs/decision_log.md` — ALL architectural decisions (read completely)
+5. `.shipwright/agent_docs/architecture.md` — app structure, component tree, data flow
 6. `shipwright_sync_config.json` — file-to-FR mappings (if exists)
 7. `.shipwright/planning/*/spec.md` — ALL spec files across all splits (read completely)
 8. `git log --oneline -20` — recent commits (prevents duplicate work)
@@ -858,7 +858,7 @@ Apply the reflection protocol (`references/reflection.md`):
 1. Review the work done in this iterate run
 2. Check: new patterns, gotchas, corrections, tool/infra insights?
 3. **Decisions** → ADR with `--architecture-impact convention` (handled via F3 if applicable)
-4. **Observations** → append to `agent_docs/conventions.md` under `## Learnings`
+4. **Observations** → append to `.shipwright/agent_docs/conventions.md` under `## Learnings`
 5. **Cross-project insights** → save Claude Code feedback/project Memory
 6. If no learnings: skip — do not force entries
 
@@ -956,14 +956,14 @@ uv run {shared_root}/scripts/tools/append_iterate_entry.py \
   }'
 ```
 
-Writes: `agent_docs/iterates/<run_id>.json` (atomic, under file lock
+Writes: `.shipwright/agent_docs/iterates/<run_id>.json` (atomic, under file lock
 covering the full append transaction). `run_id` and `date` are added by
 the tool itself (canonical ISO-8601 UTC `...Z` form) — do NOT set them
 in `--entry-json`.
 
 On first call against a project with a legacy `iterate_history` array,
 the tool migrates every row into its own file; invalid or duplicate
-legacy rows land in `agent_docs/iterates/_quarantine/` and the count is
+legacy rows land in `.shipwright/agent_docs/iterates/_quarantine/` and the count is
 recorded on run config as `_iterate_migration_quarantined_count` so the
 handoff + verifiers surface it.
 
@@ -993,15 +993,15 @@ git add <test files added/modified in build>
 
 # Finalization artifacts (always)
 git add {project_root}/CHANGELOG-unreleased.d/       # F4 drop files (one or more)
-git add {project_root}/agent_docs/decision_log.md
-git add {project_root}/agent_docs/build_dashboard.md
-git add {project_root}/agent_docs/iterates/          # F5c entry + any migration quarantine
+git add {project_root}/.shipwright/agent_docs/decision_log.md
+git add {project_root}/.shipwright/agent_docs/build_dashboard.md
+git add {project_root}/.shipwright/agent_docs/iterates/          # F5c entry + any migration quarantine
 git add {project_root}/shipwright_test_results.json
 git add {project_root}/shipwright_run_config.json
 
 # Conditional finalization artifacts
-git add {project_root}/agent_docs/conventions.md       # if F3a wrote learnings
-git add {project_root}/agent_docs/architecture.md      # if F2 flagged structural impact
+git add {project_root}/.shipwright/agent_docs/conventions.md       # if F3a wrote learnings
+git add {project_root}/.shipwright/agent_docs/architecture.md      # if F2 flagged structural impact
 git add {project_root}/.shipwright/planning/**/spec.md             # if F1 flagged drift
 git add {project_root}/.shipwright/planning/iterate/*.md           # if medium+ (iterate spec / mini-plan)
 

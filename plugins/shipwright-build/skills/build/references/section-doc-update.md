@@ -2,7 +2,7 @@
 
 ## Decision Log
 
-After code review interview, write each decision to `agent_docs/decision_log.md` using the shared ADR tool (one call per decision):
+After code review interview, write each decision to `.shipwright/agent_docs/decision_log.md` using the shared ADR tool (one call per decision):
 
 ```bash
 uv run {plugin_root}/../../shared/scripts/tools/write_decision_log.py \
@@ -36,7 +36,7 @@ uv run {shared_root}/scripts/tools/generate_session_handoff.py \
   --reason "mid-build handoff: section {section_name}"
 ```
 
-This writes `agent_docs/session_handoff.md`. The shared handoff writer
+This writes `.shipwright/agent_docs/session_handoff.md`. The shared handoff writer
 reads `shipwright_build_config.json` automatically, so the current
 split, current section, completion counts, last events, and recent
 ADRs all get populated from the persisted state — no extra flags

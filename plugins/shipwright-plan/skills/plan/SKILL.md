@@ -101,9 +101,9 @@ The plugin_root is the directory two levels up from `scripts/checks/`.
 **Read these files NOW before proceeding.** This context ensures architecture, coding standards, and past decisions inform the implementation plan. Do NOT skip this step.
 
 1. `CLAUDE.md` — stack, conventions, commands
-2. `agent_docs/conventions.md` — coding standards, naming, patterns
-3. `agent_docs/decision_log.md` — ALL architectural decisions (read the complete file)
-4. `agent_docs/architecture.md` — app structure, component tree, data flow
+2. `.shipwright/agent_docs/conventions.md` — coding standards, naming, patterns
+3. `.shipwright/agent_docs/decision_log.md` — ALL architectural decisions (read the complete file)
+4. `.shipwright/agent_docs/architecture.md` — app structure, component tree, data flow
 5. Run: `git log --oneline -10` — recent commits
 
 If a file does not exist, skip it but print a WARNING:

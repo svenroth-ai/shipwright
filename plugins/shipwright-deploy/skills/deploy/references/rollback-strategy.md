@@ -23,7 +23,7 @@
 
 ## Rollback Logging
 
-Every rollback is logged in `agent_docs/decision_log.md`:
+Every rollback is logged in `.shipwright/agent_docs/decision_log.md`:
 ```
 - **Decision:** Rollback triggered for {env}
   **Rationale:** Smoke test failed: {error}

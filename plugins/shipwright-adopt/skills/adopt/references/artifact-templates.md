@@ -18,7 +18,7 @@ structural output).
 | `## Ongoing Changes` note | Static block pointing to `/shipwright-iterate` |
 | Profile pointer | `snapshot.profile.matched` |
 
-## agent_docs/architecture.md
+## .shipwright/agent_docs/architecture.md
 
 Source: `shared/templates/agent-docs/architecture.md.template` (slot
 names: `{ARCHITECTURE_DIAGRAM}`, `{DATA_FLOW_DESCRIPTION}`).
@@ -31,10 +31,10 @@ names: `{ARCHITECTURE_DIAGRAM}`, `{DATA_FLOW_DESCRIPTION}`).
 | Layers Detected section | `snapshot.folders.layers[]` |
 | Profile pointer | `snapshot.profile.matched` |
 
-**Style**: ASCII in fenced code block — match `webui/agent_docs/architecture.md`.
+**Style**: ASCII in fenced code block — match `webui/.shipwright/agent_docs/architecture.md`.
 No Mermaid in V1 (V2 follow-up epic rolls out Mermaid + arc42 together).
 
-## agent_docs/conventions.md
+## .shipwright/agent_docs/conventions.md
 
 | Slot | Source |
 |---|---|
@@ -45,7 +45,7 @@ No Mermaid in V1 (V2 follow-up epic rolls out Mermaid + arc42 together).
 | Project-specific rules prose | `enrichment.conventions_prose` |
 | Commit / files rules | Static block (Conventional Commits + 300-LOC) |
 
-## agent_docs/decision_log.md
+## .shipwright/agent_docs/decision_log.md
 
 | Slot | Source |
 |---|---|
@@ -53,7 +53,7 @@ No Mermaid in V1 (V2 follow-up epic rolls out Mermaid + arc42 together).
 | ADR-0002+ | `enrichment.adrs[]` — one per `git.major_refactor_commits[]` |
 | All retroactive ADRs | Tagged `Status: accepted (retroactive, llm-inferred)` |
 
-## agent_docs/build_dashboard.md
+## .shipwright/agent_docs/build_dashboard.md
 
 | Slot | Source |
 |---|---|

@@ -46,7 +46,7 @@ User Description
 └─────────────┬──────────────┘
               ▼
 ┌────────────────────────────┐
-│ shipwright-project         │  Interview → Split → IREB Specs → CLAUDE.md + agent_docs
+│ shipwright-project         │  Interview → Split → IREB Specs → CLAUDE.md + .shipwright/agent_docs
 └─────────────┬──────────────┘
               ▼
 ┌────────────────────────────┐
@@ -119,7 +119,7 @@ Multi-project kanban across every Shipwright task you touch. Click a task for it
 | `shipwright-changelog` | Release — Keep-a-Changelog format, semver bump suggestion, PR creation |
 | `shipwright-compliance` | Compliance — IREB traceability, RTM, SBOM, test evidence, change history, dashboard |
 | `shipwright-preview` | Preview — local dev server, browser URL, profile-driven (available after first build split) |
-| `shipwright-adopt` | Brownfield onboarding — analyze existing repo, generate CLAUDE.md + agent_docs + configs + E2E baseline |
+| `shipwright-adopt` | Brownfield onboarding — analyze existing repo, generate CLAUDE.md + .shipwright/agent_docs + configs + E2E baseline |
 
 ## Stack Profiles
 
@@ -227,7 +227,7 @@ shipwright/
 # Command Center WebUI: github.com/svenroth-ai/shipwright-webui (separate repo)
 ├── shared/                           # Shared across plugins
 │   ├── profiles/                     # Stack profile definitions (JSON)
-│   ├── templates/                    # CLAUDE.md, agent_docs, CI/CD, rules templates
+│   ├── templates/                    # CLAUDE.md, .shipwright/agent_docs, CI/CD, rules templates
 │   └── scripts/                      # Shared Python utilities
 ├── scripts/
 │   ├── install.sh                    # All-in-one installer
@@ -263,7 +263,7 @@ plugins/shipwright-{name}/
 6. **Resume anywhere** — file-based state allows interrupting and resuming at any point
 7. **Migration safety** — destructive SQL changes always require confirmation
 8. **Linters over instructions** — mechanical enforcement (hooks) beats advisory prose (CLAUDE.md rules)
-9. **Progressive disclosure** — CLAUDE.md stays lean (~200 lines), details live in `@agent_docs/`
+9. **Progressive disclosure** — CLAUDE.md stays lean (~200 lines), details live in `@.shipwright/agent_docs/`
 
 ## Documentation
 

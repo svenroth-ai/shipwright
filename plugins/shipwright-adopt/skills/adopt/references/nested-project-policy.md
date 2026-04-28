@@ -4,7 +4,7 @@ Adopt detects sub-directories that look like independent projects and
 asks the user how to handle them. The canonical case in this monorepo
 is `webui/` — an embedded Shipwright sub-project with its own
 `shipwright_run_config.json`, its own `CLAUDE.md`, its own
-`agent_docs/`, and its own pipeline state.
+`.shipwright/agent_docs/`, and its own pipeline state.
 
 ## Detection markers
 
@@ -12,7 +12,7 @@ A directory is flagged as a nested project if it has **any** of:
 
 - A `.git/` directory (git submodule or separate clone)
 - A `shipwright_run_config.json` (separate Shipwright pipeline state)
-- Both `CLAUDE.md` and `agent_docs/` (has own Shipwright artifacts)
+- Both `CLAUDE.md` and `.shipwright/agent_docs/` (has own Shipwright artifacts)
 - A `package.json` AND one of the above (workspace inside a larger
   project)
 

@@ -4,7 +4,7 @@
 
 Before starting the interview:
 - `{initial_file}` - The requirements file passed by user
-- If Extension scope: existing `CLAUDE.md` and `agent_docs/architecture.md`
+- If Extension scope: existing `CLAUDE.md` and `.shipwright/agent_docs/architecture.md`
 
 ## Philosophy
 

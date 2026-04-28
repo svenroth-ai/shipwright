@@ -16,7 +16,7 @@
 - Validate input at system boundaries (API routes, external data, user input)
 - Create a NEW commit after fixing pre-commit issues (the previous commit didn't happen)
 - Run self-review checklist before committing: spec compliance, error handling, security, test quality, naming
-- Log decisions that deviate from spec in `agent_docs/decision_log.md`
+- Log decisions that deviate from spec in `.shipwright/agent_docs/decision_log.md`
 - Update compliance incrementally after each pipeline phase
 - Keep files under 300 lines — split if larger
 - Fix the code, not the test — never weaken assertions to make tests pass

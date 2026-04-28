@@ -209,7 +209,7 @@ Read the JSON output. Branch on `all_passed`:
 - **`true`** — proceed to "Post-Migration Manual Steps".
 - **`false`** — present the failing report (per-file, per-VERIFY-statement) to the user via AskUserQuestion. Two options:
   - **Rollback now (recommended)** — fall through to Step 5's clone-restore path immediately.
-  - **Override and continue** — the user must explicitly acknowledge that the verifier is reporting a real schema mismatch the deploy is choosing to ignore. **Before proceeding, write an ADR entry** to `agent_docs/decision_log.md` capturing: the migration file(s), the failing VERIFY statement(s), the user's stated reason for override, and the timestamp. This is mandatory — a one-click override on a failed PROD VERIFY without an audit trail is exactly the kind of "did anyone notice that?" event compliance reports must surface afterward. Use `write_decision_log.py` (see Step 9) with title `"Override: failed migration verification"`.
+  - **Override and continue** — the user must explicitly acknowledge that the verifier is reporting a real schema mismatch the deploy is choosing to ignore. **Before proceeding, write an ADR entry** to `.shipwright/agent_docs/decision_log.md` capturing: the migration file(s), the failing VERIFY statement(s), the user's stated reason for override, and the timestamp. This is mandatory — a one-click override on a failed PROD VERIFY without an audit trail is exactly the kind of "did anyone notice that?" event compliance reports must surface afterward. Use `write_decision_log.py` (see Step 9) with title `"Override: failed migration verification"`.
 
 **Backwards-compat:** migrations without any `-- VERIFY:` comment are reported as `skipped=True, all_passed=True` and do not cause a rollback. New migrations should always include at least one `-- VERIFY:` block — see `shared/templates/rules/migrations.md.template` for the convention and examples.
 
@@ -345,7 +345,7 @@ If deployment had issues or required adjustments:
 3. Rollback insights?
 
 If learnings exist:
-- **Observations** → append to `agent_docs/conventions.md` under `## Learnings`
+- **Observations** → append to `.shipwright/agent_docs/conventions.md` under `## Learnings`
   Format: `- ({YYYY-MM-DD}) deploy — {summary}`
 - **Cross-project insights** → save Claude Code feedback/project Memory
 If none: skip.
@@ -368,7 +368,7 @@ uv run {plugin_root}/scripts/lib/rollback.py \
   --clone-name "{prod_env}-backup"
 ```
 
-Log rollback in `agent_docs/decision_log.md`.
+Log rollback in `.shipwright/agent_docs/decision_log.md`.
 
 ```
 ================================================================================

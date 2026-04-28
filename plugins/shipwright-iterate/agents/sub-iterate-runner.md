@@ -29,7 +29,7 @@ You receive these parameters in the prompt:
 
 1. If `base_branch` is set: `git checkout {base_branch}`
 2. Create sub-iterate branch: `git checkout -b {branch_name}`
-3. Read `CLAUDE.md`, `agent_docs/`, existing specs, architecture docs
+3. Read `CLAUDE.md`, `.shipwright/agent_docs/`, existing specs, architecture docs
 4. Read the sub-iterate spec at `{sub_iterate_spec}`
 5. Read `shipwright_run_config.json` for project context
 

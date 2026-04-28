@@ -108,9 +108,9 @@ find "$(pwd)" -name "setup_implementation_session.py" -path "*/shipwright-build/
 **Read these files NOW before proceeding.** This context ensures coding standards, past decisions, and app structure are known before implementation begins. Do NOT skip this step.
 
 1. `CLAUDE.md` — stack, conventions, commands
-2. `agent_docs/conventions.md` — coding standards, naming, patterns
-3. `agent_docs/decision_log.md` — ALL architectural decisions (read the complete file)
-4. `agent_docs/architecture.md` — app structure, component tree, data flow
+2. `.shipwright/agent_docs/conventions.md` — coding standards, naming, patterns
+3. `.shipwright/agent_docs/decision_log.md` — ALL architectural decisions (read the complete file)
+4. `.shipwright/agent_docs/architecture.md` — app structure, component tree, data flow
 5. Run: `git log --oneline -10` — recent commits from other sections
 
 If a file does not exist, skip it silently.
@@ -798,7 +798,7 @@ See [section-doc-update.md](references/section-doc-update.md) for details.
 
 **Goal:** Record decisions made during implementation.
 
-If `agent_docs/decision_log.md` exists, log each significant decision using the shared tool:
+If `.shipwright/agent_docs/decision_log.md` exists, log each significant decision using the shared tool:
 
 ```bash
 uv run {plugin_root}/../../shared/scripts/tools/write_decision_log.py \
@@ -981,7 +981,7 @@ Apply the reflection protocol (`references/reflection.md`):
 
 1. Review what was learned building this section
 2. **Decisions** → ADR with `--architecture-impact convention`
-3. **Observations** → append to `agent_docs/conventions.md` under `## Learnings`
+3. **Observations** → append to `.shipwright/agent_docs/conventions.md` under `## Learnings`
 4. **Cross-project insights** → save Claude Code feedback/project Memory
 5. If no learnings: skip
 
@@ -999,7 +999,7 @@ uv run {shared_root}/scripts/tools/generate_session_handoff.py \
   --reason "mid-build handoff: section {section_name} {complete|in_progress}"
 ```
 
-This writes `agent_docs/session_handoff.md` so the next session can
+This writes `.shipwright/agent_docs/session_handoff.md` so the next session can
 resume. The shared writer reads `shipwright_build_config.json`
 automatically, so current split + current section + progress counts
 come from the persisted state without extra flags — only `--reason`
@@ -1132,7 +1132,7 @@ If `recommend_checkpoint` is true mid-section:
 CHECKPOINT — Context pressure detected
 ================================================================================
 Progress saved. Section {section_name} paused at step {N}.
-Dashboard: agent_docs/build_dashboard.md
+Dashboard: .shipwright/agent_docs/build_dashboard.md
 
 To continue:
   1. Open a new session (+ button) <- recommended

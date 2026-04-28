@@ -13,7 +13,7 @@ All detectors live in `scripts/lib/` and are composed by
 | `test_framework_detector` | `package.json` deps, `pytest.ini`, `pyproject.toml` `[tool.pytest]`, `go.mod`, `Cargo.toml`, `supabase/tests/database/` | `test_frameworks.{unit,integration,e2e,db,coverage_tool}` |
 | `ci_detector` | `.github/workflows/`, `.gitlab-ci.yml`, `.circleci/config.yml`, `Jenkinsfile`, `.travis.yml` | `ci_pipeline.{provider,workflows}` |
 | `folder_introspector` | Top-level directories + `src/` children | `folders.{layers,loc_by_layer}` |
-| `nested_project_detector` | Sub-dirs with `.git/`, `shipwright_run_config.json`, `CLAUDE.md` + `agent_docs/`, or deep `package.json`/`pyproject.toml` | `nested_projects[]` |
+| `nested_project_detector` | Sub-dirs with `.git/`, `shipwright_run_config.json`, `CLAUDE.md` + `.shipwright/agent_docs/`, or deep `package.json`/`pyproject.toml` | `nested_projects[]` |
 | `feature_inferrer` (AST) | Next App/Pages router, Express/Fastify routes, FastAPI/Flask `@app.route` | `features[]` with `fr_id`, `route`, `source_file`, `framework`, `confidence` |
 | `git_analyzer` | `git log --numstat` | `git.{commits_total,first_commit,contributors,major_refactor_commits}` |
 

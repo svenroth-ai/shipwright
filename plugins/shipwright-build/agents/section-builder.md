@@ -28,7 +28,7 @@ Execute these steps **in order**. Do NOT skip steps.
 ### Step 1: Setup
 
 1. Read `CLAUDE.md` from `{project_root}` for project conventions
-2. Read `agent_docs/` directory for architecture docs, decision log, prior decisions
+2. Read `.shipwright/agent_docs/` directory for architecture docs, decision log, prior decisions
 3. Read `.shipwright/designs/visual-guidelines.md` (if exists) for brand colors, typography, spacing, component patterns
 4. Read the section spec at `{section_file}` thoroughly
    - If spec contains `## Design Reference`: read the referenced mockup HTML file(s)
@@ -352,7 +352,7 @@ git push -u origin {branch_name}
 
 ### Step 14: Update Decision Log
 
-If `agent_docs/decision_log.md` exists, log significant decisions. For each decision, classify its architecture impact:
+If `.shipwright/agent_docs/decision_log.md` exists, log significant decisions. For each decision, classify its architecture impact:
 - `component` — new component, service, or major subsystem added/changed
 - `data-flow` — data flow, API contract, or storage model changed
 - `convention` — coding convention, naming pattern, or folder structure changed
@@ -368,13 +368,13 @@ uv run {shared_root}/scripts/tools/write_decision_log.py \
   --project-root "{project_root}"
 ```
 
-When `--architecture-impact` is not `none`, the script automatically appends an update note to `agent_docs/architecture.md` (for component/data-flow) or `agent_docs/conventions.md` (for convention).
+When `--architecture-impact` is not `none`, the script automatically appends an update note to `.shipwright/agent_docs/architecture.md` (for component/data-flow) or `.shipwright/agent_docs/conventions.md` (for convention).
 
 ### Step 14a: Reflection — Capture Learnings
 
 Check for new patterns, gotchas, or corrections discovered during this section.
 - **Decisions** → use `write_decision_log.py` with `--architecture-impact convention`
-- **Observations** → append to `agent_docs/conventions.md` under `## Learnings`
+- **Observations** → append to `.shipwright/agent_docs/conventions.md` under `## Learnings`
   Format: `- ({YYYY-MM-DD}) build — {summary}`
 - If none: skip
 

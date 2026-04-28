@@ -23,7 +23,7 @@ plugins/                    # Claude Code plugins (one per SDLC phase)
 # Command Center WebUI lives at github.com/svenroth-ai/shipwright-webui since v0.4.0
 shared/                     # Shared across all plugins
   profiles/                 # Stack profile definitions (JSON)
-  templates/                # CLAUDE.md, agent_docs, CI templates
+  templates/                # CLAUDE.md, .shipwright/agent_docs, CI templates
   scripts/                  # Shared Python utilities
   tests/                    # Tests for shared scripts and hooks
 scripts/                    # Top-level scripts (install.sh, verify-setup.sh)

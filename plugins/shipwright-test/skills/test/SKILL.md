@@ -80,7 +80,7 @@ Store the detected mode in a variable `invocation_mode` = `"pipeline"` | `"stand
 
 Read these files for app context before running tests:
 
-1. `agent_docs/architecture.md` — app structure (understand what to test)
+1. `.shipwright/agent_docs/architecture.md` — app structure (understand what to test)
 2. `shipwright_test_results.json` — previous test state (if exists, for comparison)
 
 If a file does not exist, skip it silently.
@@ -685,7 +685,7 @@ If test failures required investigation or fixes:
 3. Test strategy insights (missing coverage, better approaches)?
 
 If learnings exist:
-- **Observations** → append to `agent_docs/conventions.md` under `## Learnings`
+- **Observations** → append to `.shipwright/agent_docs/conventions.md` under `## Learnings`
   Format: `- ({YYYY-MM-DD}) test — {summary}`
 - **Cross-project insights** → save Claude Code feedback/project Memory
 If none: skip.

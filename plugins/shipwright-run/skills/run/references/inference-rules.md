@@ -5,7 +5,7 @@
 | Signal | Scope |
 |--------|-------|
 | No `CLAUDE.md` in project root | Full Application |
-| `CLAUDE.md` exists + `agent_docs/` exists | Extension |
+| `CLAUDE.md` exists + `.shipwright/agent_docs/` exists | Extension |
 
 > **Note:** There is no longer an `iterate` scope. Ongoing changes to
 > an existing project use the dedicated `/shipwright-iterate` skill,

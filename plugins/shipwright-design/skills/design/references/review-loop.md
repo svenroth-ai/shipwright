@@ -34,7 +34,7 @@ AskUserQuestion:
    | `.shipwright/designs/index.html` | Regenerate screens array |
    | `.shipwright/planning/*/spec.md` Section 7 (UI Requirements) | Add screen references per FR: "FR-01.09 → screens/03-dashboard.html" |
    | `.shipwright/planning/*/spec.md` Section 5 (Functional Requirements) | Add `[UI: Screen #NN]` cross-reference tags to FRs that have mockups |
-   | `agent_docs/decision_log.md` | All final design decisions (DR-NNN format, see below) |
+   | `.shipwright/agent_docs/decision_log.md` | All final design decisions (DR-NNN format, see below) |
    | `shipwright_project_config.json` | Set `design_phase: "complete"` |
 
 2. **Write session handoff** to `.shipwright/designs/design-handoff.md`:
@@ -95,7 +95,7 @@ Where `{shared_root}` = `{plugin_root}/../../shared`.
    | `.shipwright/designs/visual-guidelines.md` | Color values, token changes | If global design changes were made |
    | `.shipwright/designs/design-manifest.md` | Screen titles (if renamed), status → `revised-rN` | Always |
    | `.shipwright/designs/index.html` | Regenerate screens array with updated data | Always |
-   | `agent_docs/decision_log.md` | New design decisions (DR-NNN format) | If non-trivial decisions |
+   | `.shipwright/agent_docs/decision_log.md` | New design decisions (DR-NNN format) | If non-trivial decisions |
 
 6. Print review instructions again (same banner as Step 8)
 7. → **Loop back** to the AskUserQuestion (same 3 options)
@@ -107,7 +107,7 @@ Where `{shared_root}` = `{plugin_root}/../../shared`.
 
 ## Decision Log Format
 
-Design decisions are logged to `agent_docs/decision_log.md` using this format:
+Design decisions are logged to `.shipwright/agent_docs/decision_log.md` using this format:
 
 ```markdown
 ### DR-{NNN}: {Title}

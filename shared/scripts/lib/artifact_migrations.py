@@ -210,12 +210,6 @@ ALLOWLIST: dict[str, list[str]] = {
         "CHANGELOG.md",
         "CHANGELOG-unreleased.d/**",
         "docs/migrations/**",
-        "shared/constitution.md",
-        # Repo-Root README + CLAUDE.md — kept in allowlist until D migrates
-        # the path-refs. After D, both files should have only `.shipwright/agent_docs/`
-        # references; D removes these allowlist entries.
-        "README.md",
-        "CLAUDE.md",
         # Sub-Iterate B (shared/) — narrowed: lokale Konstanten in spec_parser /
         # generate_handoff_on_stop / verifiers/common kept (Layer-6 manifest
         # binds `LEGACY_AGENT_DOCS_DIRNAME = "agent_docs"`). Files no longer
@@ -233,6 +227,9 @@ ALLOWLIST: dict[str, list[str]] = {
         "plugins/shipwright-adopt/scripts/lib/artifact_writer.py",
         "plugins/shipwright-adopt/scripts/lib/visual_docs_generator.py",
         "plugins/shipwright-adopt/scripts/lib/config_writer.py",
+        # project-scaffolding.md documents the same JSON-flag config_writer.py
+        # writes — `"agent_docs": true` is metadata, not a path. Permanent.
+        "plugins/shipwright-project/skills/project/references/project-scaffolding.md",
         # Tests — narrowed in B + C as files migrate. Tests using helper-construct
         # `tmp / ".shipwright" / "agent_docs"` are post-shipwright canonical and
         # don't need to be in allowlist (AST treats them as canonical-form).
@@ -245,10 +242,8 @@ ALLOWLIST: dict[str, list[str]] = {
         "plugins/shipwright-compliance/tests/**",
         "plugins/shipwright-run/tests/**",
         "integration-tests/**",
-        # Plugin prose, in D migrated.
-        "plugins/**/skills/**/*.md",
-        "plugins/**/agents/*.md",
-        "plugins/**/agents/**/*.md",
+        # Sub-Iterate D (prose) completed. Plugin SKILLs/agents/references +
+        # README + CLAUDE.md + constitution all migrated. Removed.
         # Templates + Docs, in E migrated.
         "shared/templates/**",
         "docs/guide.md",

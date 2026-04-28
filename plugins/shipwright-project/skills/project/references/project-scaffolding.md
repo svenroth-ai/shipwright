@@ -2,7 +2,7 @@
 
 ## Purpose
 
-After spec generation, shipwright-project generates CLAUDE.md and agent_docs/ for the target project. This provides immediate context for all subsequent skills (/shipwright-plan, /shipwright-build, etc.) and serves as living documentation.
+After spec generation, shipwright-project generates CLAUDE.md and .shipwright/agent_docs/ for the target project. This provides immediate context for all subsequent skills (/shipwright-plan, /shipwright-build, etc.) and serves as living documentation.
 
 **Only runs for Full Application scope.** Extensions already have these files.
 
@@ -33,7 +33,7 @@ Fill placeholders:
 - `{BUILD_COMMAND}` — from profile (e.g., "npm run build")
 - `{TEST_COMMAND}` — from profile (e.g., "npx vitest run")
 
-### 2. agent_docs/architecture.md
+### 2. .shipwright/agent_docs/architecture.md
 
 Load template from `{plugin_root}/../../shared/templates/agent-docs/architecture.md.template`.
 
@@ -42,13 +42,13 @@ Fill with:
 - Architecture decisions from interview
 - Data flow description from requirements
 
-### 3. agent_docs/decision_log.md
+### 3. .shipwright/agent_docs/decision_log.md
 
 Load template from `{plugin_root}/../../shared/templates/agent-docs/decision-log.md.template`.
 
 Initialize with project name and profile name. No entries yet — shipwright-build will populate this.
 
-### 4. agent_docs/conventions.md
+### 4. .shipwright/agent_docs/conventions.md
 
 Load template from `{plugin_root}/../../shared/templates/agent-docs/conventions.md.template`.
 

@@ -1,6 +1,6 @@
 ---
 name: shipwright-project
-description: "Decomposes project requirements into well-scoped planning units for /shipwright-plan. Generates CLAUDE.md and agent_docs for the target project.\nTRIGGER when: user wants to start a new project, define requirements, create a project spec, decompose a project into components, scaffold a new application, set up project structure, analyze requirements, or extend an existing project with new features that need full planning.\nDO NOT TRIGGER when: user asks to implement code (/shipwright-build), run tests (/shipwright-test), fix a bug or make a small change (/shipwright-iterate), deploy (/shipwright-deploy), generate a changelog (/shipwright-changelog), plan implementation details for an existing spec (/shipwright-plan), or design UI mockups (/shipwright-design)."
+description: "Decomposes project requirements into well-scoped planning units for /shipwright-plan. Generates CLAUDE.md and .shipwright/agent_docs for the target project.\nTRIGGER when: user wants to start a new project, define requirements, create a project spec, decompose a project into components, scaffold a new application, set up project structure, analyze requirements, or extend an existing project with new features that need full planning.\nDO NOT TRIGGER when: user asks to implement code (/shipwright-build), run tests (/shipwright-test), fix a bug or make a small change (/shipwright-iterate), deploy (/shipwright-deploy), generate a changelog (/shipwright-changelog), plan implementation details for an existing spec (/shipwright-plan), or design UI mockups (/shipwright-design)."
 license: MIT
 compatibility: Requires uv (Python 3.11+), git repository recommended
 ---
@@ -36,7 +36,7 @@ Output:
   - Numbered split directories (01-name/, 02-name/, ...)
   - spec.md in each split directory
   - project-manifest.md with execution order and dependencies
-  - CLAUDE.md + agent_docs/ for the target project (new)
+  - CLAUDE.md + .shipwright/agent_docs/ for the target project (new)
 ================================================================================
 ```
 
@@ -75,13 +75,13 @@ Before validating input, determine the scope from context:
 
 **Extension**:
 - Existing CLAUDE.md found in project root
-- Existing agent_docs/ directory
+- Existing .shipwright/agent_docs/ directory
 - User describes adding features to existing project
 - Light interview (1-3 questions), usually single split
 
 **How to detect:**
 1. Check if `CLAUDE.md` exists in the current working directory
-2. Check if `agent_docs/` directory exists
+2. Check if `.shipwright/agent_docs/` directory exists
 3. If both exist → Extension scope
 4. Otherwise → Full Application scope
 
@@ -126,7 +126,7 @@ Determine if running within the pipeline or standalone:
 3. **Standalone mode**: file missing OR `status == "complete"` OR `current_step != "project"`
    - Skip pipeline state updates (no `orchestrator.py update-step` calls)
    - Skip upstream completion checks
-   - Still produce all artifacts (configs, specs, agent_docs)
+   - Still produce all artifacts (configs, specs, .shipwright/agent_docs)
    - Print: `"Running in standalone mode — pipeline state will not be updated."`
 4. If `status == "in_progress"` AND `current_step != "project"`:
    - Warn: `"Pipeline is in progress at step {current_step}. Running /shipwright-project out of sequence may cause issues."`
@@ -254,9 +254,9 @@ See [interview-protocol.md](references/interview-protocol.md) for detailed guida
 - **Chat mode**: No pre-existing context — interview is the primary source
 - If Extension scope, read ALL existing project context:
   - `CLAUDE.md` — stack, conventions, commands
-  - `agent_docs/architecture.md` — app structure, component tree
-  - `agent_docs/conventions.md` — coding standards, naming, patterns
-  - `agent_docs/decision_log.md` — ALL past architectural decisions (read completely)
+  - `.shipwright/agent_docs/architecture.md` — app structure, component tree
+  - `.shipwright/agent_docs/conventions.md` — coding standards, naming, patterns
+  - `.shipwright/agent_docs/decision_log.md` — ALL past architectural decisions (read completely)
   - `shipwright_sync_config.json` — existing file-to-FR mappings (if exists)
   - ALL `.shipwright/planning/*/spec.md` — existing specs across all splits (read completely)
   - Run: `git log --oneline -20` — recent project history
@@ -359,7 +359,7 @@ For each split that needs writing:
 
 ## Step 7: Project Scaffolding (NEW — Shipwright Enhancement)
 
-**Goal:** Generate CLAUDE.md and agent_docs/ for the target project.
+**Goal:** Generate CLAUDE.md and .shipwright/agent_docs/ for the target project.
 
 **This step only runs for Full Application scope.** Extensions already have these files.
 
@@ -374,9 +374,9 @@ See [project-scaffolding.md](references/project-scaffolding.md) for details.
 **Generate these files in the project root:**
 
 1. **CLAUDE.md** — from template, filled with project-specific values
-2. **agent_docs/architecture.md** — system architecture from interview
-3. **agent_docs/decision_log.md** — initialized with header
-4. **agent_docs/conventions.md** — from profile's architecture rules and folder structure
+2. **.shipwright/agent_docs/architecture.md** — system architecture from interview
+3. **.shipwright/agent_docs/decision_log.md** — initialized with header
+4. **.shipwright/agent_docs/conventions.md** — from profile's architecture rules and folder structure
 5. **`.claude/rules/*.md`** — path-specific rules from profile (Claude Architect Best Practice)
 
 **Path-specific rules generation:**
@@ -483,7 +483,7 @@ This prevents stale feature branches from accumulating after Shipwright's `gh pr
 1. All declared splits have spec.md files
 2. project-manifest.md exists and lists all splits with execution order
 3. CLAUDE.md exists (Full Application only)
-4. agent_docs/ directory exists with all 5 files (Full Application only)
+4. .shipwright/agent_docs/ directory exists with all 5 files (Full Application only)
 5. **Spec Completeness Gate** — for each spec.md, verify it contains:
    - Scope section (what's included / excluded)
    - Functional Requirements (at least 1 FR with ID, e.g., FR-01.01)
@@ -567,7 +567,7 @@ Created {N} split(s):
 
 Project manifest: project-manifest.md
 {CLAUDE.md: Generated (Full Application only)}
-{agent_docs/: Generated (Full Application only)}
+{.shipwright/agent_docs/: Generated (Full Application only)}
 
 Next steps:
   1. Review project-manifest.md for execution order
@@ -612,4 +612,4 @@ AskUserQuestion:
 - [split-heuristics.md](references/split-heuristics.md) - How to evaluate split quality
 - [project-manifest.md](references/project-manifest.md) - Manifest format with SPLIT_MANIFEST block
 - [spec-generation.md](references/spec-generation.md) - Spec file templates
-- [project-scaffolding.md](references/project-scaffolding.md) - CLAUDE.md + agent_docs generation (NEW)
+- [project-scaffolding.md](references/project-scaffolding.md) - CLAUDE.md + .shipwright/agent_docs generation (NEW)

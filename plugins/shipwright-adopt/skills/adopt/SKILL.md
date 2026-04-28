@@ -3,7 +3,7 @@ name: shipwright-adopt
 description: |
   Onboards an EXISTING repository (brownfield) into the Shipwright SDLC.
   Analyzes the codebase (stack, routes, conventions, git history), generates
-  CLAUDE.md + agent_docs + planning specs + compliance artifacts + all six
+  CLAUDE.md + .shipwright/agent_docs + planning specs + compliance artifacts + all six
   shipwright_*_config.json, installs the suggest_iterate hook, and writes
   a baseline E2E suite from a Playwright crawl when possible. After
   completion, /shipwright-iterate takes over for all future changes.
@@ -69,8 +69,8 @@ If `existing_artifacts` is non-empty, **show the list** to the user and
 
 > "Found N existing artifacts that adopt would touch:
 >   • CLAUDE.md
->   • agent_docs/decision_log.md (will be auto-merged with new ADRs)
->   • agent_docs/architecture.md (will be backed up + overwritten)
+>   • .shipwright/agent_docs/decision_log.md (will be auto-merged with new ADRs)
+>   • .shipwright/agent_docs/architecture.md (will be backed up + overwritten)
 >   • ...
 >
 > Adopt automatically backs each one up to .shipwright/adopt/backups/
@@ -273,7 +273,7 @@ Write a **strict JSON object** to `.shipwright/adopt/enrichment.json`:
 - **No marketing copy.** Keep descriptions nüchtern, technical,
   IREB-compatible.
 - **ASCII box diagram style**: match the existing convention used in
-  `webui/agent_docs/architecture.md` — plain ASCII box-drawing characters
+  `webui/.shipwright/agent_docs/architecture.md` — plain ASCII box-drawing characters
   (`┌`, `─`, `│`, `└`), no Mermaid. Size: roughly 40–60 lines.
 
 **Validation + fallback** (4.4). `generate_adoption_artifacts.py` validates
@@ -324,7 +324,7 @@ uv run ${CLAUDE_PLUGIN_ROOT}/scripts/tools/generate_adoption_artifacts.py \
 
 Writes — **in order**:
 1. `CLAUDE.md`
-2. `agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`
+2. `.shipwright/agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`
 3. `.shipwright/planning/<split>/spec.md`
 4. The five required configs, then `shipwright_sync_config.json` (unless
    `--no-sync`), and **`shipwright_run_config.json` LAST**.
@@ -333,13 +333,13 @@ Writes — **in order**:
 6. `.claude/settings.json` with the `suggest_iterate` UserPromptSubmit
    hook (idempotent merge).
 7. `e2e/flows/adopted-baseline.spec.ts` if routes.json exists.
-8. `agent_docs/design_tokens.md` + `agent_docs/guideline.md` +
-   `agent_docs/visual/screenshots/*.png` — **visual frontend
+8. `.shipwright/agent_docs/design_tokens.md` + `.shipwright/agent_docs/guideline.md` +
+   `.shipwright/agent_docs/visual/screenshots/*.png` — **visual frontend
    documentation (Tier 5)**. Opt-in: only written when the project has
    a frontend signal (multi-service frontend, components under
    src/components/src/ui/src/app, tailwind.config.*, or `:root` CSS
    variables). Backend-only profiles produce `wrote_docs: false` in
-   `results.visual_docs` and write nothing under `agent_docs/visual/`.
+   `results.visual_docs` and write nothing under `.shipwright/agent_docs/visual/`.
 
    - **design_tokens.md** lists Tailwind colors / spacing / typography
      (parsed from `tailwind.config.{ts,js,mjs,cjs}` via regex — no Node
@@ -386,7 +386,7 @@ a `**GITIGNORED OUTPUTS**` block in the handoff and ask the user via
 `AskUserQuestion`:
 
 > "N of M adopt-generated artifacts are excluded by .gitignore (e.g.
-> agent_docs/, .shipwright/planning/, shipwright_*_config.json). They will not be
+> .shipwright/agent_docs/, .shipwright/planning/, shipwright_*_config.json). They will not be
 > committed unless you adjust .gitignore. Continue without changes,
 > stop and review .gitignore, or proceed and adjust manually after?"
 
@@ -445,7 +445,7 @@ Inferred <N> functional requirements from existing codebase.
 Seeded compliance artifacts (SBOM, change-history, RTM skeleton).
 Test evidence starts collecting from next /shipwright-test run.
 
-See agent_docs/decision_log.md ADR-0001.
+See .shipwright/agent_docs/decision_log.md ADR-0001.
 ```
 
 3. Print a handoff message:

@@ -15,7 +15,7 @@ After completing work, reflect on what was learned during implementation.
 Use `write_decision_log.py` with `--architecture-impact convention` — creates a proper ADR and auto-appends to conventions.md.
 
 ### For observations (gotchas, framework quirks, infra insights)
-Append directly to `agent_docs/conventions.md` under `## Learnings`:
+Append directly to `.shipwright/agent_docs/conventions.md` under `## Learnings`:
 ```
 - ({YYYY-MM-DD}) {phase} — {summary}
 ```

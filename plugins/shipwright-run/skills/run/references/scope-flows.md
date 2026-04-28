@@ -19,7 +19,7 @@ User description
 **Characteristics:**
 - Deep interview (5-15 questions)
 - Multiple splits possible
-- CLAUDE.md + agent_docs generated
+- CLAUDE.md + .shipwright/agent_docs generated
 - Full test suite
 
 ## Extension
@@ -38,7 +38,7 @@ User description
 ```
 
 **Characteristics:**
-- Reads existing CLAUDE.md + agent_docs
+- Reads existing CLAUDE.md + .shipwright/agent_docs
 - Light interview (1-3 questions)
 - Usually single split
 - Existing test suite extended
