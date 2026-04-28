@@ -634,17 +634,21 @@ Honest list from the planning migration. Treat as advice, not gospel.
     status -uall` for untracked Discovery output; remove or relocate
     to `~/.claude/plans/` before Sub-Iterate A starts.
 
-21. **Shipwright-security default-excludes the entire
-    `.shipwright/` directory.** `plugins/shipwright-security/scripts/
-    lib/oss_backend.py:_DEFAULT_EXCLUDES` excludes `.shipwright`
-    broadly. After agent_docs migration, this means
-    `compliance_overrides.log` is no longer scanned for secrets —
-    same as planning specs and ADRs (also excluded by design). The
-    log contains audit metadata, not source-code secrets, so this is
-    acceptable; document as a known property of the security scan
-    boundary. If a future artifact under `.shipwright/` needs
-    inclusion in the secret scan, refine the exclude list to
-    something more granular than `.shipwright`.
+21. **Scanner-Exclusion Contract** (resolved in Sub-Iterate H,
+    v0.10+). The original blanket `.shipwright`-exclude was lifted:
+    `plugins/shipwright-security/scripts/lib/oss_backend.py` now
+    keeps per-scanner lists (`_SEMGREP_EXCLUDES = ()`,
+    `_TRIVY_EXCLUDES`, `_GITLEAKS_EXCLUDES`) and `.shipwright/` is
+    intentionally absent from all of them. Effective behavior:
+    Semgrep skips whatever the project `.gitignore` ignores (the
+    SSoT for tracked-vs-untracked); Trivy and Gitleaks scan
+    `.shipwright/` since they do not honor `.gitignore`, but
+    Trivy finds nothing in markdown (no manifests) and
+    Gitleaks `detect`-mode skips uncommitted files. Projects that
+    want `.shipwright/` skipped explicitly set
+    `SHIPWRIGHT_SCAN_EXCLUDES=.shipwright`. See
+    `plugins/shipwright-security/skills/security/references/oss-scanners.md`
+    for the full per-scanner truth table.
 
 ---
 
