@@ -194,9 +194,29 @@ class TestComplianceEnforcementInPipeline:
         assert rc2 == 0
 
     def test_override_logging_integration(self, trilogy_project):
-        """Override logger creates entries that can be read back."""
-        sys.path.insert(0, str(COMPLIANCE_PLUGIN / "scripts"))
-        from lib.override_logger import log_override, read_overrides
+        """Override logger creates entries that can be read back.
+
+        Imported via file-spec rather than ``from lib.override_logger import ...``
+        because two ``lib/`` packages co-exist in this repo
+        (``shared/scripts/lib/`` and ``plugins/shipwright-compliance/scripts/lib/``).
+        Once any earlier test has imported from ``shared/scripts/lib/`` (e.g.
+        ``lib.artifact_migrations`` from the integration negative-assertions),
+        ``sys.modules['lib']`` is cached as the shared package and the
+        ``sys.path.insert`` trick below cannot redirect a subsequent
+        ``from lib.X import Y`` -- Python won't re-resolve a cached package.
+        """
+        import importlib.util
+
+        override_logger_path = (
+            COMPLIANCE_PLUGIN / "scripts" / "lib" / "override_logger.py"
+        )
+        spec = importlib.util.spec_from_file_location(
+            "_compliance_override_logger_under_test", override_logger_path
+        )
+        override_logger = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(override_logger)
+        log_override = override_logger.log_override
+        read_overrides = override_logger.read_overrides
 
         # Simulate: hook blocked, user overrides
         log_override(
