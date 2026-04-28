@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.1] - 2026-04-28
+
 ### Changed
 
 - **shipwright-security: per-scanner exclusion contract** (Sub-Iterate H, Pfad B'). The
@@ -36,14 +38,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     in `git log` would no longer be found.
   - `_resolve_excludes()` now takes a scanner name; `SHIPWRIGHT_SCAN_EXCLUDES`
     extends every scanner uniformly (cross-scanner semantics, simplest validation).
-  - 48 unit tests including new regression sentinels:
+  - 50 unit tests + 3 opt-in real-binary smoke tests (`@pytest.mark.smoke`,
+    PEM-marker fixture in `tmp_path`), including new regression sentinels:
     `test_shipwright_dir_is_not_in_{trivy,gitleaks}_excludes`,
     `test_securityreports_is_not_in_{trivy,gitleaks}_excludes`,
-    `test_gitleaks_stays_in_detect_mode`, `test_trivy_excludes_covers_polyglot_build_dirs`.
+    `test_gitleaks_stays_in_detect_mode`, `test_trivy_excludes_covers_polyglot_build_dirs`,
+    `test_{trivy,gitleaks}_excludes_covers_shipwright_worktrees`.
   - Documentation: `references/oss-scanners.md` rewritten with a per-scanner truth
-    table, migration notice, and known edge cases (symlinks, nested gitignore,
-    tracked-files-in-gitignored-paths). `docs/migrations/artifact-migration-reference.md`
-    lesson 21 updated to reflect the contract change.
+    table, migration notice (incl. recommended `.gitignore` snippet for tracking
+    `.shipwright/agent_docs/` while keeping reports ignored), and known edge cases
+    (symlinks, nested gitignore, tracked-files-in-gitignored-paths).
+    `docs/migrations/artifact-migration-reference.md` lesson 21 updated to reflect
+    the contract change.
 
 ## [v0.9.0] - 2026-04-28
 
