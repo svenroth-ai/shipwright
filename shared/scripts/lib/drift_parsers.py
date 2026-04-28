@@ -106,7 +106,8 @@ HIDDEN_DIR_DEFAULTS: frozenset[str] = frozenset({
     "node_modules", "__pycache__", "dist", "build", ".venv", ".git",
     ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox", ".idea", ".vscode",
     "vendor", "e2e-results", "playwright-report", "test-results",
-    "agent_docs", "compliance",
+    "agent_docs",  # artifact-path-canon: legacy (post-migration tolerance)
+    "compliance",
     "designs",  # artifact-path-canon: legacy (post-migration tolerance)
     ".shipwright",  # canonical umbrella for post-migration artifacts
     "planning",  # artifact-path-canon: legacy (post-migration tolerance)
