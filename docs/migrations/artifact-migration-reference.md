@@ -356,14 +356,21 @@ magnitude across an order-of-magnitude range.
 | 3 -- Integration negative assertion | `integration-tests/test_core_trilogy_flow.py` + `test_state_recovery.py` | E2E trilogy must not produce any legacy top-level dir | Important: load `lib.artifact_migrations` via `importlib.util.spec_from_file_location` to avoid `sys.modules['lib']` poisoning the compliance plugin's separate `lib/` package. |
 | 4 -- Drift detector unit tests | `shared/tests/test_stale_artifact_detector.py` | Hook returns correct exit code, JSON, severity, self-heal | Already in place from Sub-Iterate A; reused unchanged. |
 | 5 -- gitignore canon | `shared/tests/test_gitignore_canon.py` | Legacy entry kept with "legacy path" comment within `[idx-1, idx+2]` | Trap: gitignore does NOT support trailing comments. Pattern + comment must be on different lines. |
-| 6 -- Constants vs manifest cross-validation | not yet in place | Local PLANNING_DIR constant must match manifest | Scoped in Sub-Iterate-A plan but not implemented. Add before next migration if local constants proliferate. |
+| 6 -- Constants vs manifest cross-validation | `shared/tests/test_constants_match_manifest.py` | Local `<NAME>_DIR` / `LEGACY_<NAME>_DIRNAME` constants must equal the manifest values | Built post-agent_docs (2026-04-28) once 14 constants across 11 modules existed. Recognized name patterns: `<NAME>_DIR`, `<NAME>_DIRNAME`, `<NAME>_PATH`, plus `LEGACY_<NAME>_*`. Catches typos (e.g. `PLANNING_DIRNAME = ".shipwright/planing"`) that Layer-1 lint cannot see -- Layer 1 only forbids legacy literals in source, not malformed canonical literals. Verified on a deliberate typo: failure message gives file:line + expected value + 3 fix options. |
 | 7 -- Cross-platform path tests | `shared/tests/test_path_canon_windows.py` | Windows backslash vs POSIX, symlink handling | Already in place from A; reused. |
 
-**Note on Layer 6:** the planning migration did NOT create local
-`PLANNING_DIR` constants in every Python module (we used the literal
-`.shipwright/planning` directly because it appeared only a handful of
-times per file). If a future artifact is referenced 5+ times in the
-same module, introduce a module-local constant *and* implement Layer 6.
+**Note on Layer 6 history:** Sub-Iterate A scoped this layer but it was deliberately
+deferred for the planning migration -- planning didn't introduce per-module local
+constants, so there was nothing to cross-validate. The designs migration also
+skipped local constants. The agent_docs migration was the threshold: it
+introduced `AGENT_DOCS_DIR` and `LEGACY_AGENT_DOCS_DIRNAME` in
+`plugins/shipwright-adopt/scripts/lib/{artifact_writer,visual_docs_generator}.py`
+plus a sprinkle of `PLANNING_DIRNAME` in shared verifiers, and the gap became
+real. Layer 6 was built as a follow-up after the agent_docs G commit.
+
+**Future migrations:** Layer 6 already covers any new `<NAME>_*` constant that
+follows the recognized naming convention -- no work needed in Sub-Iterate A
+when adding a new artifact, just append to `ARTIFACT_MIGRATIONS`.
 
 ---
 
