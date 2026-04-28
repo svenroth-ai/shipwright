@@ -141,16 +141,24 @@ def test_semgrep_scans_shipwright_dir_after_refactor(
     handles that)."""
     monkeypatch.delenv("SHIPWRIGHT_SCAN_EXCLUDES", raising=False)
     findings = _run_semgrep(str(synthetic_repo))
-    if findings is None or len(findings) == 0:
+    paths = [_finding_path(f) for f in findings or []]
+
+    # Positive-control gate: src/main_key.pem is in a never-excluded
+    # location, so Semgrep MUST detect it when the registry is reachable
+    # and the rule fires. If it isn't found, the scanner itself is unable
+    # to detect this fixture (registry fetch failed, rules disabled, etc.)
+    # and we cannot validate exclusion behavior in this run — skip with a
+    # clear reason rather than risk a false-positive pass.
+    if not any("main_key.pem" in p for p in paths):
         pytest.skip(
-            "Semgrep returned no findings — likely a registry-fetch or "
-            "rules-availability issue. Smoke test cannot assert on "
-            "exclusion behavior without findings to bucket."
+            f"Semgrep did not find the positive-control fixture file "
+            f"(src/main_key.pem) — likely a registry fetch failure or "
+            f"rule-availability change. Got paths: {paths}"
         )
 
-    paths = [_finding_path(f) for f in findings]
     assert any(".shipwright" in p for p in paths), (
-        f"Semgrep should now find content under .shipwright/agent_docs/; "
+        f"Semgrep found the positive control but missed "
+        f".shipwright/agent_docs/key.pem — exclusion-list regression. "
         f"got paths: {paths}"
     )
     assert not any("node_modules" in p for p in paths), (
@@ -168,17 +176,23 @@ def test_gitleaks_detect_scans_committed_shipwright_dir(
     ``.shipwright/agent_docs/`` and must NOT report ``node_modules/``."""
     monkeypatch.delenv("SHIPWRIGHT_SCAN_EXCLUDES", raising=False)
     findings = _run_gitleaks(str(synthetic_repo))
-    if not findings:
+    paths = [_finding_path(f) for f in findings or []]
+
+    # Positive-control gate: src/main_key.pem is committed in the
+    # synthetic repo and is never excluded by any allowlist. If Gitleaks
+    # cannot find it, the binary itself is misbehaving on this fixture
+    # and we cannot validate the exclusion contract.
+    if not any("main_key.pem" in p for p in paths):
         pytest.skip(
-            "Gitleaks returned no findings — likely a default-rules "
-            "availability issue on this binary. Cannot assert exclusion "
-            "behavior without findings."
+            f"Gitleaks did not find the positive-control fixture file "
+            f"(src/main_key.pem) — likely a binary/ruleset mismatch on "
+            f"this machine. Got paths: {paths}"
         )
 
-    paths = [_finding_path(f) for f in findings]
     assert any(".shipwright" in p for p in paths), (
-        f"Gitleaks should now find committed secrets under "
-        f".shipwright/agent_docs/; got paths: {paths}"
+        f"Gitleaks found the positive control but missed "
+        f".shipwright/agent_docs/key.pem — exclusion-list regression. "
+        f"got paths: {paths}"
     )
     assert not any("node_modules" in p for p in paths), (
         f"Gitleaks must skip node_modules via the TOML allowlist; "

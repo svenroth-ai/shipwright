@@ -166,6 +166,18 @@ What this means for `.shipwright/`:
 quote vulnerability descriptions verbatim, which can re-trigger Gitleaks
 patterns on subsequent scans.
 
+> **Scope note:** The snippet below is a `.gitignore` change. It controls
+> what gets committed and what Semgrep walks into (Semgrep respects
+> `.gitignore` for untracked files). It does **not** affect Trivy or
+> Gitleaks — those tools ignore `.gitignore` natively, and their
+> directory-level skips are governed by the plugin defaults plus
+> `SHIPWRIGHT_SCAN_EXCLUDES`. The snippet works for our use case because
+> uncommitted reports are invisible to Gitleaks `detect` (history-only)
+> and Trivy `--scanners vuln` finds nothing in our markdown/JSON
+> reports — but if you ever commit reports or extend Trivy with
+> `--scanners misconfig`, you must also add `securityreports` to
+> `SHIPWRIGHT_SCAN_EXCLUDES`.
+
 The default Shipwright gitignore line is `.shipwright/` (whole tree ignored).
 git can't re-include a child once the parent directory is fully ignored, so
 to track `agent_docs/` while keeping reports ignored, replace the directory-
