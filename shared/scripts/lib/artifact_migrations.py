@@ -80,9 +80,9 @@ ARTIFACT_MIGRATIONS: list[dict] = [
             r"(?<![\w/.\\])(?<!/ )'agent_docs'",
         ],
         "ast_check_string": "agent_docs",
-        "status": "in_progress",
+        "status": "migrated",
         "started": "2026-04-27",
-        "completed": None,
+        "completed": "2026-04-28",
     },
 ]
 
