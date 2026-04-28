@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.9.0] - 2026-04-28
+
+### Added
+
+- **[testing] Layer-6 cross-validation test (`shared/tests/test_constants_match_manifest.py`)** finally implemented. The 7-layer test schema for artifact migrations had Layer 6 scoped since Sub-Iterate A of the planning migration but was deferred -- planning + designs migrations did not introduce per-module local constants, so there was nothing to cross-validate. The agent_docs migration crossed the threshold (14 `<NAME>_DIR` / `LEGACY_<NAME>_DIRNAME` constants across 11 modules), creating real silent-drift risk: a typo like `PLANNING_DIRNAME = ".shipwright/planing"` would pass Layer-1 lint and ship. Layer 6 walks every `.py` file, AST-parses module-level string constants, classifies any whose name matches `<NAME>_DIR` / `<NAME>_DIRNAME` / `<NAME>_PATH` (canonical) or `LEGACY_<NAME>_*` (legacy), and asserts the value equals `ARTIFACT_MIGRATIONS[name]["canonical" or "legacy_dirname"]`. Verified on a deliberate typo: failure message includes file:line, expected value, and 3 fix options. 10 tests including 8 unit tests for the classifier itself. Reference doc (`docs/migrations/artifact-migration-reference.md` § 5 + Layer-6 history note) updated to reflect 'built' status and pattern history.
+
+### Changed
+
+- **[agent_docs folder move]** `agent_docs/` relocated to `.shipwright/agent_docs/` across all Shipwright plugins. Third artifact migration validating the hard-cutover + drift-detector pattern. Largest migration so far -- ~2.3x planning, ~5.5x designs (~523 Python touchpoints + ~195 prose hits across ~36 .md files; shipwright-adopt as the dominant single plugin due to wholesale agent_docs scaffolding for adopted projects). All plugins (project, plan, design, build, test, iterate, adopt, compliance, run) read and write under the canonical path; no Grace-Period fallback. SessionStart drift detector hard-gates on legacy `agent_docs/` for projects that haven't migrated (exit 1 + structured JSON + `.shipwright/stale-folders.md`). User-facing migration doc `docs/migrations/.shipwright-agent_docs-relocation.md` documents the automated `migrate_artifact_dir.py --artifact agent_docs` path. Reference doc `docs/migrations/artifact-migration-reference.md` extended with the full agent_docs section + 7 lessons learned. `drift_parsers.py:HIDDEN_DIR_DEFAULTS` updated with the new canonical entry. Per-module local constants introduced for the first time (`AGENT_DOCS_DIR`, `LEGACY_AGENT_DOCS_DIRNAME` in adopt's artifact_writer.py + visual_docs_generator.py) -- prompted the Layer-6 cross-validation test to be built in the same release.
+
+### Fixed
+
+- **[testing] integration-tests/test_compliance_enforcement.py::test_override_logging_integration** failed in the full integration-tests run while passing in isolation. Two `lib/` packages coexist in this repo (`shared/scripts/lib/` and `plugins/shipwright-compliance/scripts/lib/`); once any earlier test imported from the shared one (e.g. `lib.artifact_migrations` from the Layer-3 negative-assertions added during the planning migration), Python cached `sys.modules['lib']` as the shared package and the test's later `sys.path.insert` + `from lib.override_logger import ...` could not redirect to the compliance plugin's `lib`. Fixed by switching to a file-spec import via `importlib.util.spec_from_file_location`, the same pattern already used in the integration-tests Layer-3 helper for the same reason. Latent bug that pre-dated the planning migration -- migration just made it manifest more reliably by adding more shared-`lib` imports earlier in the test session.
+
 ## [0.8.0] - 2026-04-27
 
 ### Changed
