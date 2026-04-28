@@ -264,6 +264,11 @@ class TestTrivyExcludes:
         ):
             assert name in _TRIVY_EXCLUDES, f"missing {name!r} in _TRIVY_EXCLUDES"
 
+    def test_trivy_excludes_covers_shipwright_worktrees(self):
+        """H.D.5 finding: parallel-iterate .worktrees/ contains stale
+        node_modules that Trivy crawls (it doesn't honor gitignore)."""
+        assert ".worktrees" in _TRIVY_EXCLUDES
+
     def test_shipwright_dir_is_not_in_trivy_excludes(self):
         """Regression sentinel — H.A trigger: scanner used to silently skip
         .shipwright/agent_docs/. Removing the blanket exclude lets the user
@@ -310,6 +315,9 @@ class TestGitleaksExcludes:
             assert name in _GITLEAKS_EXCLUDES, (
                 f"missing {name!r} in _GITLEAKS_EXCLUDES"
             )
+
+    def test_gitleaks_excludes_covers_shipwright_worktrees(self):
+        assert ".worktrees" in _GITLEAKS_EXCLUDES
 
     def test_shipwright_dir_is_not_in_gitleaks_excludes(self):
         assert ".shipwright" not in _GITLEAKS_EXCLUDES

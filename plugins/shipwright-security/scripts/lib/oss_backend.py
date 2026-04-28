@@ -167,6 +167,11 @@ _TRIVY_EXCLUDES: tuple[str, ...] = (
     # Coverage outputs
     "coverage",
     "htmlcov",
+    # Shipwright-canonical parallel-iterate worktree path (gitignored
+    # by convention; surfaced as Trivy noise during H.D.5 benchmark
+    # because Trivy and Gitleaks do not honor .gitignore — 13
+    # false-positives in stale parallel-iterate node_modules).
+    ".worktrees",
 )
 
 # Gitleaks scans the same dependency/build trees as Trivy.

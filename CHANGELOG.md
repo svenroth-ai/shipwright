@@ -21,9 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Trivy** and **Gitleaks** keep a conservative cross-language minimum
     (.venv, node_modules, .git, .pytest_cache, .mypy_cache, .ruff_cache, .tox,
     __pycache__, dist, build, .next, .cache, target, bin, obj, vendor, .gradle,
-    .terraform, .direnv, coverage, htmlcov) since neither tool honors `.gitignore`.
-    Polyglot dirs (Java/.NET/Go/Ruby/Terraform/nix) added per external-review
-    Reviewer-Finding 4.
+    .terraform, .direnv, coverage, htmlcov, .worktrees) since neither tool
+    honors `.gitignore`. Polyglot dirs (Java/.NET/Go/Ruby/Terraform/nix)
+    added per external-review Reviewer-Finding 4. `.worktrees` added per
+    H.D.5 benchmark — parallel-iterate worktrees ship stale node_modules
+    Trivy would otherwise crawl as 13+ noise findings.
   - **`.shipwright`** and **`securityreports`** are NOT in any list anymore. Projects
     that want them skipped: gitignore them (Semgrep) or set `SHIPWRIGHT_SCAN_EXCLUDES`
     (Trivy/Gitleaks). Recommended `.gitignore` snippet documented in

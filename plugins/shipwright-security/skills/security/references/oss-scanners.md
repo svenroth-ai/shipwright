@@ -127,6 +127,9 @@ dist  build
 target   bin   obj   vendor   .gradle   .terraform   .direnv
 # Coverage outputs
 coverage  htmlcov
+# Shipwright parallel-iterate worktrees (gitignored at project level,
+# but neither tool honors .gitignore)
+.worktrees
 ```
 
 `.shipwright/` is **not** in this list — projects opt into scanning their
