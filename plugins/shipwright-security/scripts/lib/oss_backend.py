@@ -113,23 +113,70 @@ _TOOL_INFO = {
 
 _TIMEOUT = 300  # 5 minutes per tool
 
-# Directories always skipped: build artifacts, dependency trees, VCS, caches.
-# Scanning these produces timeouts (Semgrep on node_modules) and noise about
-# third-party code we don't own. Users extend — never replace — via
-# SHIPWRIGHT_SCAN_EXCLUDES.
-_DEFAULT_EXCLUDES: tuple[str, ...] = (
+# Per-scanner exclusion contract (Sub-Iterate H, Pfad B').
+#
+# Gitignore is the single source of truth for "what should the scanner
+# look at". Per-scanner lists below cover only what the tool itself
+# cannot resolve from gitignore.
+#
+# Semgrep:  empty list. Semgrep ships .semgrepignore (covers
+#           node_modules/build/dist/vendor/.venv/.tox/.npm/.yarn etc.) AND
+#           respects the project .gitignore for untracked files. Adding
+#           plugin-side excludes would either duplicate built-ins or
+#           silently override user gitignore decisions.
+# Trivy:    conservative cross-language build/dependency list. Trivy has
+#           no .gitignore awareness, so without an explicit list it
+#           crawls node_modules / target / vendor / etc.
+# Gitleaks: same conservative list, applied as a generated TOML
+#           [allowlist] paths array. Gitleaks has no --exclude flag and
+#           also ignores .gitignore in detect-mode.
+#
+# What is NOT in any list anymore:
+#   - .shipwright       (was the H trigger — silently skipped agent_docs)
+#   - securityreports   (legacy pre-iterate-3 location, deprecation done)
+# Projects that want them skipped: gitignore them (Semgrep) or set
+# SHIPWRIGHT_SCAN_EXCLUDES (Trivy/Gitleaks).
+
+_SEMGREP_EXCLUDES: tuple[str, ...] = ()
+
+_TRIVY_EXCLUDES: tuple[str, ...] = (
+    # Python
     ".venv",
-    "node_modules",
-    ".git",
     ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".tox",
+    "__pycache__",
+    # JS/TS
+    "node_modules",
+    ".next",
+    # VCS + generic caches
+    ".git",
+    ".cache",
+    # Generic build outputs
     "dist",
     "build",
-    ".next",
-    "__pycache__",
-    ".cache",
-    ".shipwright",     # canonical hidden dir for shipwright artifacts
-    "securityreports", # legacy pre-iterate-3 location, kept one cycle for migrating projects
+    # Polyglot build/dep dirs (Reviewer-Finding 4: Java/.NET/Go/Ruby/Terraform/nix)
+    "target",       # Rust + Java (Maven)
+    "bin",          # .NET
+    "obj",          # .NET
+    "vendor",       # Go, PHP, Ruby
+    ".gradle",      # Java/Kotlin
+    ".terraform",   # Terraform
+    ".direnv",      # nix-direnv
+    # Coverage outputs
+    "coverage",
+    "htmlcov",
 )
+
+# Gitleaks scans the same dependency/build trees as Trivy.
+_GITLEAKS_EXCLUDES: tuple[str, ...] = _TRIVY_EXCLUDES
+
+_SCANNER_EXCLUDES: dict[str, tuple[str, ...]] = {
+    "semgrep": _SEMGREP_EXCLUDES,
+    "trivy": _TRIVY_EXCLUDES,
+    "gitleaks": _GITLEAKS_EXCLUDES,
+}
 
 # Env-var additions must be simple folder names: letters, digits, underscore,
 # dot, hyphen. Rejects glob wildcards, path separators, and parent traversal
@@ -138,10 +185,21 @@ _SIMPLE_NAME_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 _FORBIDDEN_NAMES = frozenset({".", ".."})
 
 
-def _resolve_excludes() -> tuple[str, ...]:
-    """Return defaults plus validated SHIPWRIGHT_SCAN_EXCLUDES entries."""
+def _resolve_excludes(scanner: str) -> tuple[str, ...]:
+    """Return scanner-specific defaults plus validated SHIPWRIGHT_SCAN_EXCLUDES.
+
+    The env var extends every scanner uniformly — simplest semantics and keeps
+    the validation logic centralized. Per-scanner env overrides (e.g.
+    SHIPWRIGHT_TRIVY_EXCLUDES) are intentionally not supported in v1.
+    """
+    if scanner not in _SCANNER_EXCLUDES:
+        raise ValueError(
+            f"Unknown scanner: {scanner!r}. "
+            f"Expected one of: {sorted(_SCANNER_EXCLUDES)}"
+        )
+    defaults = list(_SCANNER_EXCLUDES[scanner])
+
     extras_raw = os.environ.get("SHIPWRIGHT_SCAN_EXCLUDES", "")
-    defaults = list(_DEFAULT_EXCLUDES)
     if not extras_raw.strip():
         return tuple(defaults)
 
@@ -163,7 +221,7 @@ def _resolve_excludes() -> tuple[str, ...]:
 def _run_semgrep(target: str) -> list[dict[str, Any]]:
     """Run Semgrep and return normalized findings."""
     cmd = ["semgrep", "scan", "--json", "--config", "auto"]
-    for name in _resolve_excludes():
+    for name in _resolve_excludes("semgrep"):
         cmd.extend(["--exclude", name])
     cmd.append(target)
     raw = _run_tool(cmd, tool_name="semgrep")
@@ -175,7 +233,7 @@ def _run_semgrep(target: str) -> list[dict[str, Any]]:
 def _run_trivy(target: str) -> list[dict[str, Any]]:
     """Run Trivy and return normalized findings."""
     cmd = ["trivy", "fs", "--format", "json", "--scanners", "vuln"]
-    for name in _resolve_excludes():
+    for name in _resolve_excludes("trivy"):
         cmd.extend(["--skip-dirs", name])
     cmd.append(target)
     raw = _run_tool(cmd, tool_name="trivy")
@@ -191,7 +249,7 @@ def _run_gitleaks(target: str) -> list[dict[str, Any]]:
     with [allowlist] paths regex entries. A temp config is generated per
     invocation and cleaned up after the subprocess returns.
     """
-    config_path = _write_gitleaks_allowlist(_resolve_excludes())
+    config_path = _write_gitleaks_allowlist(_resolve_excludes("gitleaks"))
     try:
         cmd = [
             "gitleaks", "detect",
