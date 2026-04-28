@@ -25,4 +25,5 @@ addopts = "-v --tb=short"
 pythonpath = [".", "scripts"]
 markers = [
     "integration: marks tests as integration tests",
+    "smoke: real-binary scanner smoke tests (opt-in; skipped when binary missing)",
 ]

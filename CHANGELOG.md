@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **shipwright-security: per-scanner exclusion contract** (Sub-Iterate H, Pfad B'). The
+  single `_DEFAULT_EXCLUDES` tuple in `plugins/shipwright-security/scripts/lib/oss_backend.py`
+  was replaced with three per-scanner tuples (`_SEMGREP_EXCLUDES = ()`, `_TRIVY_EXCLUDES`,
+  `_GITLEAKS_EXCLUDES`). Trigger: the previous blanket `.shipwright` exclude silently
+  skipped `.shipwright/agent_docs/` (decision_log, conventions, session_handoff) for all
+  three scanners after the agent_docs migration. The new contract:
+  - **Semgrep** carries no plugin-side excludes — it ships its own `.semgrepignore`
+    (covers node_modules/build/dist/vendor/.venv/.tox/.npm/.yarn etc.) and respects the
+    project `.gitignore` for untracked files. Project gitignore is now the SSoT.
+  - **Trivy** and **Gitleaks** keep a conservative cross-language minimum
+    (.venv, node_modules, .git, .pytest_cache, .mypy_cache, .ruff_cache, .tox,
+    __pycache__, dist, build, .next, .cache, target, bin, obj, vendor, .gradle,
+    .terraform, .direnv, coverage, htmlcov, .worktrees) since neither tool
+    honors `.gitignore`. Polyglot dirs (Java/.NET/Go/Ruby/Terraform/nix)
+    added per external-review Reviewer-Finding 4. `.worktrees` added per
+    H.D.5 benchmark — parallel-iterate worktrees ship stale node_modules
+    Trivy would otherwise crawl as 13+ noise findings.
+  - **`.shipwright`** and **`securityreports`** are NOT in any list anymore. Projects
+    that want them skipped: gitignore them (Semgrep) or set `SHIPWRIGHT_SCAN_EXCLUDES`
+    (Trivy/Gitleaks). Recommended `.gitignore` snippet documented in
+    `references/oss-scanners.md`.
+  - Gitleaks stays in `detect`-mode (covers git history). The originally planned
+    `detect`→`dir` mode-switch (H.B) was struck after dual external review (Gemini +
+    OpenAI via OpenRouter) flagged it as a security regression — historical secrets
+    in `git log` would no longer be found.
+  - `_resolve_excludes()` now takes a scanner name; `SHIPWRIGHT_SCAN_EXCLUDES`
+    extends every scanner uniformly (cross-scanner semantics, simplest validation).
+  - 48 unit tests including new regression sentinels:
+    `test_shipwright_dir_is_not_in_{trivy,gitleaks}_excludes`,
+    `test_securityreports_is_not_in_{trivy,gitleaks}_excludes`,
+    `test_gitleaks_stays_in_detect_mode`, `test_trivy_excludes_covers_polyglot_build_dirs`.
+  - Documentation: `references/oss-scanners.md` rewritten with a per-scanner truth
+    table, migration notice, and known edge cases (symlinks, nested gitignore,
+    tracked-files-in-gitignored-paths). `docs/migrations/artifact-migration-reference.md`
+    lesson 21 updated to reflect the contract change.
+
 ## [v0.9.0] - 2026-04-28
 
 ### Added

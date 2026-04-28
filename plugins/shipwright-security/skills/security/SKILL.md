@@ -120,13 +120,28 @@ backend = get_backend()
 findings = backend.scan(target_dir)
 ```
 
-Each tool runs with default path exclusions (`.venv`, `node_modules`, `.git`,
-`.pytest_cache`, `dist`, `build`, `.next`, `__pycache__`, `.cache`) to avoid
-timeouts and third-party noise. Extend via `SHIPWRIGHT_SCAN_EXCLUDES` — see
-`references/oss-scanners.md` for the full exclusion contract and validation
-rules.
+Each scanner gets a per-tool exclusion list:
 
-- Semgrep: `semgrep scan --json --config auto --exclude <each-default> {target}`
+- **Semgrep** — empty plugin list. Semgrep ships its own `.semgrepignore`
+  (covers `node_modules`, `build`, `dist`, `vendor`, `.venv`, `.tox`,
+  `.npm`, `.yarn`, …) and respects the project `.gitignore` for untracked
+  files. The project gitignore is the source of truth.
+- **Trivy** and **Gitleaks** — same conservative cross-language build/dep
+  list (Python `.venv` / `__pycache__` / `.tox` / `.mypy_cache` /
+  `.ruff_cache`, JS `node_modules` / `.next`, polyglot `target` / `bin` /
+  `obj` / `vendor` / `.gradle` / `.terraform` / `.direnv`, generic
+  `dist` / `build` / `.git` / `.cache`, coverage `coverage` / `htmlcov`).
+  Both tools ignore `.gitignore` natively, so the plugin keeps a minimum
+  list to prevent Trivy crawling `node_modules` and Gitleaks blowing up
+  on third-party history.
+
+`.shipwright/` is **no longer** in any list — projects decide via
+`.gitignore` (Semgrep) or `SHIPWRIGHT_SCAN_EXCLUDES` (Trivy/Gitleaks).
+See `references/oss-scanners.md` for the full per-scanner truth table,
+the migration notice, and known edge cases (symlinks, nested gitignore,
+tracked-files-in-gitignored-paths).
+
+- Semgrep: `semgrep scan --json --config auto {target}` (env extras add `--exclude` flags)
 - Trivy: `trivy fs --format json --scanners vuln --skip-dirs <each-default> {target}`
 - Gitleaks: `gitleaks detect --report-format json -s {target} --report-path - --config <temp-toml-with-allowlist>`
 
