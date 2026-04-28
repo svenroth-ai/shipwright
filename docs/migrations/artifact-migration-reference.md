@@ -2,13 +2,14 @@
 
 This document is the SSoT for every future top-level artifact directory
 that gets relocated under `.shipwright/`. It was written **after** the
-planning relocation (Sub-Iterates A-G, 2026-04-26 -> 2026-04-27) and is
-based on what actually happened, not on the original plan's
-speculation.
+planning relocation (Sub-Iterates A-G, 2026-04-26 -> 2026-04-27) and
+extended with each subsequent migration: designs (2026-04-27),
+agent_docs (2026-04-28). It is based on what actually happened, not on
+the original plan's speculation.
 
-Read this BEFORE starting a new migration (e.g. `agent_docs/`,
-`compliance/`, `designs/`, `e2e/`, `CHANGELOG-unreleased.d/`). Keep
-the structure unless you have a specific reason to deviate.
+Read this BEFORE starting a new migration (e.g. `compliance/`, `e2e/`,
+`CHANGELOG-unreleased.d/`). Keep the structure unless you have a
+specific reason to deviate.
 
 ---
 
@@ -317,29 +318,32 @@ of artifact size.
 
 ---
 
-## 4. Touchpoint Table (template, with the planning + designs numbers as examples)
+## 4. Touchpoint Table (template, with planning + designs + agent_docs numbers as examples)
 
 Fill this in during the Explore phase. Use the prior migration numbers
 as a sanity check -- if your artifact has fewer touchpoints, B-E will
-be faster; if more, expect proportional growth. Two reference data sets
-now (planning + designs) so you can sanity-check magnitude.
+be faster; if more, expect proportional growth. Three reference data
+sets now (planning + designs + agent_docs) so you can sanity-check
+magnitude across an order-of-magnitude range.
 
-| Category | planning hits | designs hits | Reality check |
-|---|---|---|---|
-| Python `.py` PATH_LITERAL | ~231 in 55 files | ~17 in 8 files | designs scope is much smaller — concentrated in shipwright-{design,plan,test} + shared/verifiers |
-| SKILL.md / agents.md / references.md prose | ~120 (~2/3 false-positive `{planning_dir}` template) | ~115 in 17 files (zero template-vars, all real PATH-REFs) | designs prose was *cleaner* than planning despite similar volume — disambiguate up front |
-| `shared/templates/shipwright_sync_config.json` | 6 hardcoded paths | 0 | not all templates touch every artifact |
-| `shared/templates/claude-md-template.md` | 1 (`@planning/`) | 0 | claude-md-template did NOT mention designs |
-| `shared/templates/agent-docs/conventions.md.template` | 0 | 1 | designs surfaced this template Sub-Iterate E. Re-grep `shared/templates/**` per migration |
-| `docs/guide.md` | 5 PATH_REFs + new convention para | ~10 PATH_REFs + paragraph update | both scopes similar |
-| `docs/hooks-and-pipeline.md` | 9 PATH_REFs | 3 PATH_REFs | designs has fewer because it's a single phase, not a section/manifest concept |
-| `.gitignore` | 1 line edit | 1 line edit | Inline-comment trap recurs every migration. Comment on separate line from pattern, within `[idx-1, idx+2]` window |
-| Plugin agents/* + project references/* | NOT searched in planning | 4 files / 10 hits | NEW lesson 8 — always include these in Explore prompts |
-| `plugin.json` / `marketplace.json` keywords | 4 hits | descriptive (no path) | permanent allowlist |
-| Test fixture `sample_*_config.json` | 4 path entries | 0 | not all artifacts have config templates |
-| CI workflows | 0 | 0 | -- |
-| Shell scripts | 0 | 0 | -- |
-| `hooks.json` | 0 | 0 | hooks call generic shared scripts; pathless |
+| Category | planning hits | designs hits | agent_docs hits | Reality check |
+|---|---|---|---|---|
+| Python `.py` PATH_LITERAL | ~231 in 55 files | ~17 in 8 files | **~523 in 98 files** | agent_docs is ~2.3× planning, ~5.5× designs — largest migration so far. Heaviest single plugin: shipwright-adopt (~70 hits / 9 files). |
+| SKILL.md / agents.md / references.md prose | ~120 (~2/3 false-positive `{planning_dir}` template) | ~115 in 17 files (zero template-vars) | **~110 in 26 files (zero template-vars)** | Both designs + agent_docs cleaner than planning. Disambiguate up front. agent_docs has more files (heavier multi-plugin coverage) but similar hit count |
+| `shared/templates/shipwright_sync_config.json` | 6 hardcoded paths | 0 | **1** | not all templates touch every artifact |
+| `shared/templates/claude-md-template.md` | 1 (`@planning/`) | 0 | **5** (`@agent_docs/<file>.md`) | claude-md-template references agent_docs heavily because that's where its slot-filling targets live |
+| `shared/templates/agent-docs/conventions.md.template` | 0 | 1 | 0 | designs surfaced this template; agent_docs's runtime-path doesn't appear in template-name (no recursion). Re-grep `shared/templates/**` per migration |
+| `docs/guide.md` | 5 PATH_REFs + new convention para | ~10 PATH_REFs + paragraph update | **53 PATH_REFs + tail-sentence update** | agent_docs is by far the largest doc-touchpoint because guide.md references agent_docs continuously across multiple chapters |
+| `docs/hooks-and-pipeline.md` | 9 PATH_REFs | 3 PATH_REFs | **23 PATH_REFs** | agent_docs has heavy phase-verifier-tables + hook-registry + pipeline-phase-mapping references |
+| `.gitignore` | 1 line edit | 1 line edit | 1 line edit | Inline-comment trap recurs every migration. Comment on separate line from pattern, within `[idx-1, idx+2]` window |
+| Plugin agents/* + project references/* | NOT searched in planning | 4 files / 10 hits | **2 agents + 14 references / ~22 hits** | NEW lesson 8 — always include these in Explore prompts |
+| `plugin.json` / `marketplace.json` keywords | 4 hits | descriptive (no path) | descriptive (1 hit, STAYS) | permanent allowlist |
+| Test fixture `sample_*_config.json` | 4 path entries | 0 | 0 | not all artifacts have config templates |
+| `bug_report.yml` | 0 | 0 | **1** | NEW touchpoint type (Lesson 18). Always grep `.github/ISSUE_TEMPLATE/**/*.yml` |
+| `run_config.v2.schema.json` description | 0 | 0 | **1** | NEW touchpoint type (Lesson 16). JSON-Schema descriptions can't be inline-marked — rephrase to canonical instead |
+| Shell scripts (`.sh`) | 0 | 0 | **2** | NEW touchpoint type (Lesson 15). `check_secrets.sh:100` + `check_file_size.sh` emit user-facing JSON with path instructions. Migrate as production code in B, not prose in D |
+| CI workflows | 0 | 0 | 0 | -- |
+| `hooks.json` | 0 | 0 | 0 | hooks call generic shared scripts; pathless |
 
 ---
 
@@ -578,6 +582,63 @@ Honest list from the planning migration. Treat as advice, not gospel.
     drift_parsers marker and in the Pre-G hotfix's defensive
     `parts[-2] == "planning"` check.
 
+15. **Shell-hook scripts (`*.sh`) are production touchpoints, not
+    prose.** Hooks like `check_secrets.sh` and `check_file_size.sh`
+    emit user-facing JSON with path strings (`"log the override to
+    .shipwright/agent_docs/compliance_overrides.log"`). When such a
+    string appears, the file belongs in Sub-Iterate B with the Python
+    production code, not in Sub-Iterate D with the prose. agent_docs
+    migration surfaced this — 2 such files. Always grep `*.sh` files
+    in the B-scope inventory.
+
+16. **JSON Schema `description` fields cannot be inline-marked.**
+    JSON has no comment syntax, so `# artifact-path-canon: legacy`
+    is not legal in a `.json` description. Solution: rephrase the
+    description to use the canonical path. agent_docs migration hit
+    this at `shared/schemas/run_config.v2.schema.json:82` ("Legacy
+    field; new entries live under .shipwright/agent_docs/iterates/.").
+
+17. **Tail-sentences in `docs/guide.md` rot with each migration.**
+    Time-locked statements like "remaining top-level dirs are X, Y,
+    Z" become factually wrong after each subsequent migration. Pre-G
+    discovery step: grep `docs/guide.md` for "remaining" + the prior
+    artifact-list pattern, update the count and items. agent_docs
+    migration found this at line 524 (3-item list -> 2-item list).
+
+18. **`.github/ISSUE_TEMPLATE/*.yml` is a touchpoint type.**
+    Bug-report templates can carry path references in their
+    description fields. Always grep `.github/ISSUE_TEMPLATE/**/*.yml`
+    in Touchpoint Discovery, separate from prose-files. agent_docs
+    migration surfaced 1 hit at `bug_report.yml:107`.
+
+19. **Heavy single-plugin scope in C may justify a sub-section
+    Commit-body, not a split.** When one plugin contributes >50 hits
+    in a single Sub-Iterate-scope (agent_docs C: ~70 hits in
+    shipwright-adopt), C-Plan Step 10 mandates a Decision-Gate at
+    the 800-line-diff mark. agent_docs C stayed under (~478 lines
+    diff), so single-commit was correct. If your scope crosses the
+    threshold, split per Plan-Step 10. Either way, sub-section the
+    commit body explicitly so reviewers can scope-narrow.
+
+20. **Stray Explore-agent artifacts must be cleaned before A.**
+    Explore-subagents can dump large markdown reports into the
+    repo-root (`agent_docs_refs.md` ~70 KB, untracked). These are
+    Discovery artifacts, not project files. Pre-A check: `git
+    status -uall` for untracked Discovery output; remove or relocate
+    to `~/.claude/plans/` before Sub-Iterate A starts.
+
+21. **Shipwright-security default-excludes the entire
+    `.shipwright/` directory.** `plugins/shipwright-security/scripts/
+    lib/oss_backend.py:_DEFAULT_EXCLUDES` excludes `.shipwright`
+    broadly. After agent_docs migration, this means
+    `compliance_overrides.log` is no longer scanned for secrets —
+    same as planning specs and ADRs (also excluded by design). The
+    log contains audit metadata, not source-code secrets, so this is
+    acceptable; document as a known property of the security scan
+    boundary. If a future artifact under `.shipwright/` needs
+    inclusion in the secret scan, refine the exclude list to
+    something more granular than `.shipwright`.
+
 ---
 
 ## 11. Reference Commits
@@ -633,7 +694,66 @@ Second artifact migration validating the pattern. ~17 production touchpoints
   `test_10_design_setup_re_run_idempotency` per External-Review GPT-8.
 - `012c610` -- Pre-G hotfix: defensive shape validation on planning_dir
   in generate-batch-tasks.py per External-Review HIGH finding (OpenAI).
-- *(this commit)* -- Sub-Iterate G: reference doc + pattern memory updates.
+- `f9d5ef1` -- Sub-Iterate G: reference doc + pattern memory updates.
+
+### agent_docs migration (2026-04-28)
+
+Third artifact migration validating the pattern. ~523 Python
+touchpoints + ~195 prose touchpoints across ~36 .md files. Largest
+migration so far — ~2.3× planning, ~5.5× designs. Spans all 6 SDLC
+plugins, with shipwright-adopt as the dominant single plugin (~70 hits
+/ 9 files) due to wholesale agent_docs/ scaffolding for adopted projects.
+
+- `2235455` -- Sub-Iterate A: manifest activation (`pending` -> `in_progress`),
+  ALLOWLIST seed (~80 entries), .gitignore stays untouched (legacy
+  entry already present from prior pre-migration .gitignore). Layer-1
+  + Layer-4 + Layer-5 + Layer-6 baseline green.
+- `b5146ed` -- Sub-Iterate B: shared/ Python migration (16 production
+  + 22 test files) + 2 shell hooks (`check_secrets.sh`, `check_file_size.sh`)
+  + Layer-6 candidate constants in spec_parser.py,
+  generate_handoff_on_stop.py, verifiers/common.py,
+  verifiers/design_compliance.py.
+- `d6d7690` -- Sub-Iterate C: plugins/ Python migration (heavy:
+  shipwright-adopt 9 files / 70 hits, with constants in
+  artifact_writer.py + visual_docs_generator.py)
+  + Layer-2 setup-contract additions:
+  `test_adopt_write_agent_docs_writes_under_dot_shipwright` and
+  `test_no_legacy_agent_docs_path_construction_in_plugin_source`
+  parametrized over 6 plugins. shipwright-{build,compliance,iterate,
+  project,run} also covered. Fixture `nested-shipwright/webui/`
+  rename to canonical layout.
+- `ba9e418` -- Sub-Iterate D: plugin prose migration (30 .md files,
+  ~195 edits via bulk Edit replace_all on 7 unambiguous patterns).
+  README.md + CLAUDE.md (repo-root) + constitution.md also migrated.
+  ZERO template-vars to disambiguate (cleaner than planning's ~2/3
+  false-positive trap; same as designs).
+- `cded715` -- Sub-Iterate E: templates (claude-md-template,
+  migrations.md.template, shipwright_sync_config.json) +
+  docs/guide.md (53 hits, including line 524 sentence rephrase from
+  3-item to 2-item list of remaining top-level dirs) +
+  docs/hooks-and-pipeline.md (23 hits) + bug_report.yml +
+  run_config.v2.schema.json description rephrase. 3 NEW touchpoint
+  types surfaced (Lessons 15, 16, 18). Layer-3 trilogy temp E-stage
+  no-legacy assertion added (removed in F when status flips).
+- `7060a97` -- Sub-Iterate F Step 1: .gitignore legacy comment
+  (separate-line, [idx-1, idx+2] window per Lesson 6).
+- `feb9151` -- Sub-Iterate F Step 3: drift_parsers.py:108
+  HIDDEN_DIR_DEFAULTS line extended to 3-entry inline marker per
+  artifact.
+- `55cf340` -- Sub-Iterate F Step 4: user-facing
+  `docs/migrations/.shipwright-agent_docs-relocation.md` with
+  CI/CD-update + concurrent-session-warning + drift-detector-JSON-
+  example + recovery-anleitung sections (per External Review G3 + O7
+  + O10 + O11).
+- `edb5de6` -- Sub-Iterate F Step 2 (final atomic): status flip
+  `in_progress` -> `migrated` + remove temporary E-stage trilogy
+  assertion (universal `_assert_no_legacy_artifact_dirs` helper now
+  covers agent_docs as `migrated`). Manual smoke trace in commit
+  body: migrate_artifact_dir.py dry-run + live + spaces-in-path +
+  both-dirs-refusal + drift-detector legacy/clean.
+- *(this commit)* -- Sub-Iterate G: reference doc + pattern memory
+  updates (this file's third data column + agent_docs section in §
+  11 + new lessons 15-20 in § 10).
 
 ---
 
