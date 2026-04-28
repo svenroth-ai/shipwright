@@ -52,7 +52,10 @@ shipwright_*_config.json
 !shared/templates/shipwright_*_config.json
 shipwright_events.jsonl
 shipwright_events.jsonl.lock
+# Canonical agent_docs home is .shipwright/agent_docs/.
 agent_docs/
+# legacy path - do not remove. Sub-Iterate F of agent_docs migration (2026-04-28).
+# See docs/migrations/.shipwright-agent_docs-relocation.md.
 # Canonical designs home is .shipwright/designs/.
 designs/
 # legacy path - do not remove. Sub-Iterate F of designs migration (2026-04-27).
