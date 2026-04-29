@@ -84,6 +84,21 @@ ARTIFACT_MIGRATIONS: list[dict] = [
         "started": "2026-04-27",
         "completed": "2026-04-28",
     },
+    {
+        "name": "compliance",
+        "canonical": ".shipwright/compliance",
+        "legacy_dirname": "compliance",
+        "old_path_patterns": [
+            r"(?<![\w/.\\])compliance/",
+            r"(?<![\w/.\\])compliance\\",
+            r'(?<![\w/.\\])(?<!/ )"compliance"',
+            r"(?<![\w/.\\])(?<!/ )'compliance'",
+        ],
+        "ast_check_string": "compliance",
+        "status": "in_progress",
+        "started": "2026-04-29",
+        "completed": None,
+    },
 ]
 
 # Files exempt from the lint, per migration. Entries may be exact paths
@@ -254,6 +269,115 @@ ALLOWLIST: dict[str, list[str]] = {
         # .gitignore retains legacy entry with "# legacy path" comment in F.
         ".gitignore",
         ".claude-plugin/**",
+        # shipwright-security oss-scanners.md describes the scanner-exclusion contract
+        # which intentionally references the legacy `agent_docs/` path as the historical
+        # state being migrated away from. Added 2026-04-29 after security Sub-Iterate H
+        # added these references without updating the allowlist (pre-existing regression).
+        "plugins/shipwright-security/skills/security/references/oss-scanners.md",
+    ],
+    "compliance": [
+        # Migration framework itself — references both paths by design
+        "shared/scripts/lib/artifact_migrations.py",
+        "shared/scripts/lib/stale_artifact_detector.py",
+        "shared/scripts/hooks/check_artifact_drift.py",
+        "shared/scripts/lib/drift_parsers.py",  # HIDDEN_DIR_DEFAULTS:108
+        "shared/tests/test_artifact_path_canon.py",
+        "shared/tests/test_stale_artifact_detector.py",
+        "shared/tests/test_gitignore_canon.py",
+        "shared/tests/test_constants_match_manifest.py",
+        "shared/tests/test_path_canon_windows.py",
+        # Layer-2 setup-contract test references both paths by design
+        "shared/tests/test_setup_writes_canonical.py",
+        # Edge-case test file that intentionally references both paths (introduced in designs migration)
+        "shared/tests/test_artifact_drift_edge_cases.py",
+        # Migration tooling (CLI + helpers) takes artifact name as argument
+        "shared/scripts/tools/migrate_artifact_dir.py",
+        "shared/scripts/tools/print_next_migration_prompt.py",
+        "shared/tests/test_migrate_artifact_dir.py",
+        "shared/tests/test_print_next_migration_prompt.py",
+        # Plan files (this migration's own design docs)
+        "C:/Users/SvenRoth/.claude/plans/iterate-shipwright-relocation-compliance-*.md",
+        # Historical changelog & migration docs (must not be rewritten)
+        "CHANGELOG.md",
+        "CHANGELOG-unreleased.d/**",
+        "docs/migrations/**",
+        "shared/constitution.md",
+        "README.md",
+        "CLAUDE.md",
+        # Pre-Migration touchpoint inventory — production files migrated through B+C
+        # (will narrow as sub-iterates progress)
+        # shared/ (B-scope, ~10 files)
+        "shared/scripts/lib/phase_quality.py",
+        "shared/scripts/hooks/generate_handoff_on_stop.py",
+        "shared/scripts/tools/get_phase_context.py",
+        "shared/scripts/tools/finalize_iterate.py",
+        "shared/scripts/tools/verifiers/traceability_checks.py",
+        "shared/scripts/tools/verifiers/security_compliance.py",
+        "shared/scripts/tools/verifiers/iterate_compliance.py",
+        "shared/scripts/tools/verifiers/iterate_checks.py",
+        "shared/scripts/tools/verifiers/compliance_compliance.py",
+        "shared/scripts/tools/verifiers/infrastructure_checks.py",
+        # plugins/ (C-scope, ~14 files)
+        "plugins/shipwright-compliance/scripts/lib/compliance_report.py",
+        "plugins/shipwright-compliance/scripts/lib/sbom_generator.py",
+        "plugins/shipwright-compliance/scripts/lib/rtm_generator.py",
+        "plugins/shipwright-compliance/scripts/lib/test_evidence.py",
+        "plugins/shipwright-compliance/scripts/lib/change_history.py",
+        "plugins/shipwright-compliance/scripts/audit/audit_report.py",
+        "plugins/shipwright-compliance/scripts/audit/audit_staleness.py",
+        "plugins/shipwright-compliance/scripts/audit/group_c.py",
+        "plugins/shipwright-compliance/scripts/audit/run_audit.py",
+        "plugins/shipwright-compliance/scripts/hooks/check_security_scan.py",
+        "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py",
+        "plugins/shipwright-adopt/scripts/lib/compliance_bridge.py",
+        "plugins/shipwright-adopt/scripts/lib/dry_run_reporter.py",
+        "plugins/shipwright-run/scripts/lib/phase_validators.py",
+        "plugins/shipwright-run/scripts/lib/orchestrator.py",
+        # Tests (narrowed in B+C as files migrate)
+        "shared/tests/**",
+        "shared/scripts/tests/**",
+        "plugins/shipwright-compliance/tests/**",
+        "plugins/shipwright-adopt/tests/**",
+        "plugins/shipwright-run/tests/**",
+        "integration-tests/**",
+        # Plugin Prosa (D-scope, 4 SKILL.md files — compliance SKILL.md added after
+        # Layer-1-lint surfaced 3 missed PATH-REFs at lines 50/110/113 during A)
+        "plugins/shipwright-iterate/skills/iterate/SKILL.md",
+        "plugins/shipwright-adopt/skills/adopt/SKILL.md",
+        "plugins/shipwright-run/skills/run/SKILL.md",
+        "plugins/shipwright-compliance/skills/compliance/SKILL.md",  # 3 PATH-REFs migrated in D
+        # Templates + Docs (E-scope) — no shared/templates/-touchpoints for compliance
+        "docs/guide.md",
+        "docs/hooks-and-pipeline.md",
+        # Plugin metadata: descriptive keyword "compliance", not a path. Permanent.
+        "plugins/**/.claude-plugin/plugin.json",
+        ".claude-plugin/marketplace.json",
+        "**/pyproject.toml",
+        # .gitignore retains legacy entry under "# legacy path" comment (F adds the block).
+        ".gitignore",
+        ".claude-plugin/**",
+        # Schema field "last_compliance_update" — KEYWORD only, not a path. Permanent.
+        "shared/schemas/run_config.v2.schema.json",
+        # GitHub Issue Template — only KEYWORD plugin name "shipwright-compliance"
+        ".github/ISSUE_TEMPLATE/bug_report.yml",
+        # Dependabot config — plugin-dir reference (descriptive)
+        ".github/dependabot.yml",
+        # Spec/ markdown referenced plugin internals (gitignored, but Layer-1 may scan)
+        "Spec/**",
+        # KEYWORD / PHASE-NAME / PLUGIN-PATH-COMMENT entries (descriptive, not PATH-REFs).
+        # All discovered during A's Layer-1-lint baseline; documented as non-touchpoints.
+        "plugins/shipwright-iterate/scripts/lib/classify_phase.py",      # phase-name dict + lists
+        "plugins/shipwright-iterate/tests/test_classify_phase.py",       # phase-name assertion
+        "plugins/shipwright-project/scripts/write_run_config.py",        # PIPELINE_PHASES list
+        "shared/scripts/hooks/suggest_iterate.py",                       # phase-regex dict + slash-cmd map
+        "shared/scripts/lib/config.py",                                  # config-file mapping
+        "shared/scripts/tools/__init__.py",                              # docstring plugin-path comment
+        "shared/scripts/tools/update_build_dashboard.py",                # PIPELINE_PHASES list
+        "plugins/shipwright-compliance/scripts/audit/audit_adapters.py", # plugin-path comment
+        "plugins/shipwright-compliance/scripts/tools/update_compliance.py", # action-mapping dict key
+        # Pending C-migration (path-ref in adopt's decision-log template, line 204).
+        # The entry will narrow once Sub-Iterate C migrates the template string.
+        "plugins/shipwright-adopt/scripts/lib/artifact_writer.py",
     ],
 }
 
