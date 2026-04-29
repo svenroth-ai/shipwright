@@ -318,32 +318,35 @@ of artifact size.
 
 ---
 
-## 4. Touchpoint Table (template, with planning + designs + agent_docs numbers as examples)
+## 4. Touchpoint Table (template, with planning + designs + agent_docs + compliance numbers as examples)
 
 Fill this in during the Explore phase. Use the prior migration numbers
 as a sanity check -- if your artifact has fewer touchpoints, B-E will
-be faster; if more, expect proportional growth. Three reference data
-sets now (planning + designs + agent_docs) so you can sanity-check
-magnitude across an order-of-magnitude range.
+be faster; if more, expect proportional growth. Four reference data
+sets now (planning + designs + agent_docs + compliance) so you can
+sanity-check magnitude across an order-of-magnitude range.
 
-| Category | planning hits | designs hits | agent_docs hits | Reality check |
-|---|---|---|---|---|
-| Python `.py` PATH_LITERAL | ~231 in 55 files | ~17 in 8 files | **~523 in 98 files** | agent_docs is ~2.3× planning, ~5.5× designs — largest migration so far. Heaviest single plugin: shipwright-adopt (~70 hits / 9 files). |
-| SKILL.md / agents.md / references.md prose | ~120 (~2/3 false-positive `{planning_dir}` template) | ~115 in 17 files (zero template-vars) | **~110 in 26 files (zero template-vars)** | Both designs + agent_docs cleaner than planning. Disambiguate up front. agent_docs has more files (heavier multi-plugin coverage) but similar hit count |
-| `shared/templates/shipwright_sync_config.json` | 6 hardcoded paths | 0 | **1** | not all templates touch every artifact |
-| `shared/templates/claude-md-template.md` | 1 (`@planning/`) | 0 | **5** (`@agent_docs/<file>.md`) | claude-md-template references agent_docs heavily because that's where its slot-filling targets live |
-| `shared/templates/agent-docs/conventions.md.template` | 0 | 1 | 0 | designs surfaced this template; agent_docs's runtime-path doesn't appear in template-name (no recursion). Re-grep `shared/templates/**` per migration |
-| `docs/guide.md` | 5 PATH_REFs + new convention para | ~10 PATH_REFs + paragraph update | **53 PATH_REFs + tail-sentence update** | agent_docs is by far the largest doc-touchpoint because guide.md references agent_docs continuously across multiple chapters |
-| `docs/hooks-and-pipeline.md` | 9 PATH_REFs | 3 PATH_REFs | **23 PATH_REFs** | agent_docs has heavy phase-verifier-tables + hook-registry + pipeline-phase-mapping references |
-| `.gitignore` | 1 line edit | 1 line edit | 1 line edit | Inline-comment trap recurs every migration. Comment on separate line from pattern, within `[idx-1, idx+2]` window |
-| Plugin agents/* + project references/* | NOT searched in planning | 4 files / 10 hits | **2 agents + 14 references / ~22 hits** | NEW lesson 8 — always include these in Explore prompts |
-| `plugin.json` / `marketplace.json` keywords | 4 hits | descriptive (no path) | descriptive (1 hit, STAYS) | permanent allowlist |
-| Test fixture `sample_*_config.json` | 4 path entries | 0 | 0 | not all artifacts have config templates |
-| `bug_report.yml` | 0 | 0 | **1** | NEW touchpoint type (Lesson 18). Always grep `.github/ISSUE_TEMPLATE/**/*.yml` |
-| `run_config.v2.schema.json` description | 0 | 0 | **1** | NEW touchpoint type (Lesson 16). JSON-Schema descriptions can't be inline-marked — rephrase to canonical instead |
-| Shell scripts (`.sh`) | 0 | 0 | **2** | NEW touchpoint type (Lesson 15). `check_secrets.sh:100` + `check_file_size.sh` emit user-facing JSON with path instructions. Migrate as production code in B, not prose in D |
-| CI workflows | 0 | 0 | 0 | -- |
-| `hooks.json` | 0 | 0 | 0 | hooks call generic shared scripts; pathless |
+| Category | planning hits | designs hits | agent_docs hits | compliance hits | Reality check |
+|---|---|---|---|---|---|
+| Python `.py` PATH_LITERAL | ~231 in 55 files | ~17 in 8 files | ~523 in 98 files | **~79 in ~25 files** | compliance mid-tier — smaller than agent_docs (~6×) and planning (~3×), only ~1.4× designs Python+Prose-Sum. Heaviest single plugin: shipwright-compliance (~32 hits / 11 files; self-referential migration). |
+| SKILL.md / agents.md / references.md prose | ~120 (~2/3 false-positive `{planning_dir}` template) | ~115 in 17 files (zero template-vars) | ~110 in 26 files (zero template-vars) | **~6 in 4 files (zero template-vars; compliance's own SKILL added during A's lint baseline)** | Smallest D-scope yet. Initial Inventory missed compliance plugin's own SKILL.md (3 hits at lines 50/110/113) — Layer-1-lint baseline at A surfaced it. Always grep `plugins/<artifact>/skills/<artifact>/SKILL.md` for self-referential migrations. |
+| `shared/templates/shipwright_sync_config.json` | 6 hardcoded paths | 0 | 1 | **0** | -- |
+| `shared/templates/claude-md-template.md` | 1 (`@planning/`) | 0 | 5 (`@agent_docs/<file>.md`) | **0** | -- |
+| `shared/templates/agent-docs/conventions.md.template` | 0 | 1 | 0 | **0** | -- |
+| `docs/guide.md` | 5 PATH_REFs + new convention para | ~10 PATH_REFs + paragraph update | 53 PATH_REFs + tail-sentence update | **12 PATH_REFs + tail-sentence rephrase (line 524: 2-item -> 1-item list)** | Mid-tier. Lesson 17 recurs every migration: tail-sentence "remaining top-level dirs are X, Y, Z" rots with each. |
+| `docs/hooks-and-pipeline.md` | 9 PATH_REFs | 3 PATH_REFs | 23 PATH_REFs | **~18 PATH_REFs** | compliance has heavy phase-validator Mtime-tables + RTM/SBOM/test-evidence/change-history references. Plus 1 PLUGIN-PATH that stays (`skills/compliance/SKILL.md` line 1268 is plugin-skill path, not artifact). |
+| `.gitignore` | 1 line edit | 1 line edit | 1 line edit | **3 lines added (NEW Lesson 26: pre-existing legacy entry without comment block)** | compliance had `compliance/` at line 70 with NO comment block (prior migrations added theirs in F). Sub-Iterate F **adds the missing block** instead of just extending one. Pre-F-Sanity-Check pattern. |
+| Plugin agents/* + project references/* | NOT searched in planning | 4 files / 10 hits | 2 agents + 14 references / ~22 hits | **0** | -- |
+| `plugin.json` / `marketplace.json` keywords | 4 hits | descriptive (no path) | descriptive (1 hit, STAYS) | **6 hits, all descriptive (plugin name `shipwright-compliance` + keywords arrays)** | permanent allowlist. compliance has plugin-name overlap (shipwright-compliance plugin vs compliance/ artifact) — disambiguation explicit in Explore prompts. |
+| `pyproject.toml` keywords | -- | -- | -- | **3 hits (descriptive, stay)** | NEW data point. Plugin-name + concept overlap surfaces here. Permanent allowlist via `**/pyproject.toml` glob. |
+| Test fixture `sample_*_config.json` | 4 path entries | 0 | 0 | **0** | -- |
+| `bug_report.yml` | 0 | 0 | 1 | **0 (KEYWORD only — `shipwright-compliance` plugin name in dropdown)** | -- |
+| `run_config.v2.schema.json` description | 0 | 0 | 1 | **0 PATH-REF (1 KEYWORD: `last_compliance_update` field-name not path)** | NEW datapoint: Lesson 16 doesn't apply when "compliance" is a field-name component, not an artifact path. |
+| Shell scripts (`.sh`) | 0 | 0 | 2 | **0** | Lesson 15 doesn't apply this round. |
+| CI workflows | 0 | 0 | 0 | **0** (only Dependabot plugin-dir, KEYWORD) | -- |
+| `hooks.json` | 0 | 0 | 0 | **0** | hooks call generic shared scripts; pathless |
+| Hook docstrings/comments (NEW touchpoint sub-type) | -- | -- | -- | **3 (audit_report.py:5, audit_staleness.py:37, run_audit.py:63 + check_rtm_coverage.py:4)** | NEW Lesson 28: hook + audit module DOCSTRINGS routinely contain path-refs that Layer-1 lint catches but Inventory often misses. Always grep module-level + first-paragraph docstrings of audit/ + hooks/ files explicitly. |
+| Plugin-config-file `shipwright_<plugin>_config.json` (separate artifact) | -- | -- | -- | **14+ refs, all stay** | NEW boundary case: not every `<artifact>` keyword is a path-ref. shipwright_compliance_config.json is a SEPARATE artifact at project root (gitignored), not the `compliance/` directory. Layer-1 regex's negative-lookbehind (`_` ∈ `\w`) correctly excludes it; document the boundary explicitly. |
 
 ---
 
@@ -650,6 +653,90 @@ Honest list from the planning migration. Treat as advice, not gospel.
     `plugins/shipwright-security/skills/security/references/oss-scanners.md`
     for the full per-scanner truth table.
 
+### Additional lessons from the `compliance` migration (2026-04-29)
+
+22. **Plugin-name + artifact-name overlap requires explicit disambiguation
+    in Touchpoint-Discovery prompts.** compliance was the first migration
+    where the artifact name (`compliance/`) shares a name with a plugin
+    (`shipwright-compliance`). Without explicit guidance to the Explore
+    agents to filter PLUGIN-NAME / PHASE-NAME / FUNCTION-NAME hits as
+    KEYWORD (not PATH-REF), ~60% of raw grep hits would have polluted
+    the inventory. Pattern that worked: explicit verdict categories
+    (PATH-REF / PLUGIN-NAME / PHASE-NAME / TEMPLATE-VAR / KEYWORD /
+    AMBIGUOUS) in Agent prompts + a top-of-report sample of false-
+    positives so the disambiguation can be verified.
+
+23. **Manifest pattern negative-lookbehind needs verification when
+    artifact name is a substring of plugin/concept names.** Pattern
+    `(?<![\w/.\\])compliance/` correctly excludes `shipwright-compliance/`
+    in practice ONLY because the codebase consistently uses
+    `Path(__file__).parent...` for plugin-internal paths (verified via
+    `grep -rnE '"shipwright-compliance[/\\]"' shared/ plugins/ --include='*.py'`
+    -> 0 hits). Layer-1 regex would otherwise match `-compliance/` because
+    `-` is not in `[\w/.\\]`. **Test it explicitly during Sub-Iterate A**
+    with a Layer-1 lint run + grep for plugin-name string literals. If a
+    future artifact name has broader linguistic overlap, the lookbehind
+    might need extension (e.g. `(?<!shipwright-)`).
+
+24. **Self-referential migrations (artifact written by its own plugin)
+    need an extra prose grep.** The shipwright-compliance plugin's own
+    SKILL.md (`plugins/shipwright-compliance/skills/compliance/SKILL.md`)
+    had 3 PATH-REFs that the Inventory Prose agent missed because the
+    agent's prompt focused on cross-plugin references and didn't enumerate
+    `plugins/<artifact>/skills/<artifact>/SKILL.md` as a self-referential
+    case. **Pattern**: when the artifact name matches a plugin's skill
+    dir, ALWAYS grep `plugins/shipwright-<artifact>/skills/<artifact>/SKILL.md`
+    explicitly. Layer-1-lint at A surfaced this in compliance migration
+    via 3 hits in lines 50/110/113.
+
+25. **Cross-plugin write-coupling via bridge modules requires lockstep
+    commits.** shipwright-adopt -> shipwright-compliance coupling lives
+    in `compliance_bridge.py` (5-tuple of generator_name -> output_path)
+    + `dry_run_reporter.py` (5 ProposedWrite mirror). If only one is
+    migrated, dry-run output and live runs diverge. Lockstep-rule:
+    bridge + mirror in same commit. compliance migration validated this
+    pattern; expect similar coupling in future migrations whose adopt
+    plugin scaffolds the artifact.
+
+26. **`.gitignore` Lücke pre-Migration ist häufiger als erwartet.**
+    Pre-compliance-migration hatte `compliance/` keinen Legacy-
+    Kommentar-Block (anders als planning/designs/agent_docs). Vermutlich
+    historisch früher hinzugefügt vor Migration-Pattern-Etablierung.
+    Sub-Iterate F muss daher den Block neu schreiben (3 Zeilen vor dem
+    Pattern), nicht nur erweitern. **Pre-F-Sanity-Check**: für jedes
+    `migrated`-Artifact prüfen ob Legacy-Kommentar-Block existiert; wenn
+    nicht: in F nachholen.
+
+27. **Real-Scanner-Smoke jetzt assertion-based (per External-Review O-1.2).**
+    Verbesserung gegenüber agent_docs-Migration: nicht nur grep-on-output
+    (kann false confidence geben), sondern synthetisches Secret-Fixture
+    mit non-allowlisted Pattern (z.B. github-pat `ghp_...`) das gitleaks
+    DETEKTIEREN MUSS. Wenn gitleaks 0 Hits: Scanner-Exclusion-Bug ->
+    Hot-Fix vor Status-Flip. **AKIAIOSFODNN7EXAMPLE ist gitleaks
+    stopword** (Test-Allowlist) — verwendet keine "Beispiel"-Patterns.
+    Compliance migration verified gitleaks-inclusion empirisch (2 leaks
+    detected: generic-api-key + github-pat in `.shipwright/compliance/test-secret-fixture.md`).
+
+28. **Hook + audit module DOCSTRINGS routinely contain path-refs.** Initial
+    Inventory Python agent classified docstring/comment hits as KEYWORD or
+    skipped them, but Layer-1-lint catches them as text-regex matches.
+    compliance migration surfaced 4 such hits (audit_report.py:5,
+    audit_staleness.py:37, run_audit.py:63, check_rtm_coverage.py:4) —
+    all docstrings/comments mentioning `compliance/<file>.md`. **Pattern**:
+    in Sub-Iterate A's pre-flight, explicitly grep module-level + function
+    docstrings of `plugins/<artifact>/scripts/audit/*.py` and
+    `plugins/<artifact>/scripts/hooks/*.py` for the artifact-name path
+    pattern. Update C-Plan to list them as explicit touchpoints rather
+    than relying on Layer-1-lint to catch them reactively.
+
+29. **Plugin-config-file boundary clarity.** `shipwright_<plugin>_config.json`
+    (e.g. `shipwright_compliance_config.json`) is a SEPARATE artifact from
+    `<artifact>/` directory. It lives at project root (gitignored), is
+    referenced by 14+ files in compliance migration, and is correctly
+    excluded by Layer-1 regex (`_` ∈ `\w` -> negative-lookbehind matches).
+    **Always document this boundary explicitly** in MAIN's "Was NICHT
+    migriert wird" section so reviewers don't conflate the two artifacts.
+
 ---
 
 ## 11. Reference Commits
@@ -765,6 +852,91 @@ plugins, with shipwright-adopt as the dominant single plugin (~70 hits
 - *(this commit)* -- Sub-Iterate G: reference doc + pattern memory
   updates (this file's third data column + agent_docs section in §
   11 + new lessons 15-20 in § 10).
+
+### compliance migration (2026-04-29)
+
+Fourth artifact migration validating the pattern. ~79 Python touchpoints
++ ~35 prose touchpoints across ~30 files. Mid-tier — smaller than
+agent_docs (~6×) and planning (~3×), only ~1.4× designs Python+Prose-Sum.
+
+**Special characteristics:**
+- First migration where artifact name (`compliance/`) overlaps with plugin
+  name (`shipwright-compliance`) and phase name (`compliance` in
+  pipeline-step lists). Disambiguation explicit in Explore-agent prompts;
+  manifest regex negative-lookbehind verified empirically at Sub-Iterate A.
+- Self-referential migration: shipwright-compliance plugin owns the
+  compliance/ artifact AND writes it via 6 generators (compliance_report,
+  sbom_generator, rtm_generator, test_evidence, change_history,
+  audit_report) sharing a common output_dir pattern.
+- Cross-plugin write-coupling: shipwright-adopt's compliance_bridge.py
+  invokes the compliance generators with hardcoded output paths (5-tuple);
+  dry_run_reporter.py mirrors with 5 ProposedWrite entries. Lockstep-commit
+  required (validated in Sub-Iterate C).
+
+- `4109148` -- Sub-Iterate A: manifest activation (`pending` -> `in_progress`),
+  ALLOWLIST seed (~30 entries), .gitignore stays untouched (legacy
+  entry already on line 70 from pre-migration era; Sub-Iterate F adds
+  the missing legacy comment block). Layer-1 + Layer-4 + Layer-5 +
+  Layer-6 + Layer-7 baseline green. **Bundled hot-fix:** added
+  `oss-scanners.md` to agent_docs ALLOWLIST (security Sub-Iterate H
+  introduced 2 legacy `agent_docs/` references without allowlisting them).
+  Sub-Iterate A's lint baseline also surfaced 3 missed PATH-REFs in
+  `plugins/shipwright-compliance/skills/compliance/SKILL.md` (lines
+  50/110/113) and 1 in `plugins/shipwright-adopt/scripts/lib/artifact_writer.py:204`
+  decision-log template — both temporarily allowlisted, migrated in D and C.
+- `166571e` -- Sub-Iterate B: shared/ Python migration (10 production
+  files + 5 test files). Layer-6 constants `COMPLIANCE_DIR` +
+  `LEGACY_COMPLIANCE_DIRNAME` introduced in `phase_quality.py` (3
+  module-level paths derived), `security_compliance.py`,
+  `infrastructure_checks.py`, `compliance_compliance.py`. Helper
+  `_compliance_path(proj, name)` introduced in heavy-hit test files.
+- `995369d` -- Sub-Iterate C: plugins/ Python migration (heavy on
+  shipwright-compliance: 32 hits / 11 files; lockstep in
+  shipwright-adopt: 7 hits / 2 files; light in shipwright-run: 4 hits /
+  2 files). **NEW Step 11 (per External-Review G-1A): Generator-Output
+  Relative-Link Fix** — 13 hardcoded `../<file>` Markdown links in 3
+  generators broke after migration (compliance/ was 1-deep,
+  .shipwright/compliance/ is 2-deep). Per-line mapping:
+  `../<project_root_file>` -> `../../<file>`;
+  `../.shipwright/<other_artifact>/...` -> `../<other_artifact>/...`.
+  Affected: compliance_report.py:47-60, rtm_generator.py:62/71/186/265/305/428,
+  test_evidence.py:286. Layer-2 setup-contract additions:
+  `test_compliance_generators_write_under_dot_shipwright` and
+  `test_no_legacy_compliance_path_construction_in_plugin_source`
+  parametrized over shipwright-{adopt,compliance,run}.
+- `13a9a94` -- Sub-Iterate D: plugin prose migration (smallest D-scope
+  yet: 6 hits in 4 SKILL.md files via inline edits, no bulk replace_all
+  needed). Zero template-vars to disambiguate. **D-scope grew from 3 to 4**
+  during A's lint baseline (compliance plugin's own SKILL.md added).
+- `6c0b5bb` -- Sub-Iterate E: docs/guide.md (12 PATH-REF +
+  line 524 tail-sentence rephrase from 2-item to 1-item per Lesson 17)
+  + docs/hooks-and-pipeline.md (~18 PATH-REF). Zero template touchpoints.
+  No Layer-3 temp E-stage assertion (universal `_assert_no_legacy_artifact_dirs`
+  helper handles status=migrated automatically; in_progress is warn-only).
+- `1dc6760` -- Sub-Iterate F Step 1: .gitignore legacy comment block
+  added (NEW pattern — pre-migration entry had no block, see Lesson 26).
+- `a8c9076` -- Sub-Iterate F Step 3: drift_parsers.py
+  HIDDEN_DIR_DEFAULTS `compliance` entry extended with inline marker
+  `# artifact-path-canon: legacy (post-migration tolerance)`.
+- `06d522d` -- Sub-Iterate F Step 4: user-facing
+  `docs/migrations/.shipwright-compliance-relocation.md` with all
+  post-agent_docs sections + audit-relevance section (compliance reports
+  as audit evidence, override-log preservation, skill-compliance subdir
+  layout) + audit-system path-update warning in CI/CD section.
+- `e086437` -- Sub-Iterate F Step 2 (final atomic): status flip
+  `in_progress` -> `migrated`. Manual smoke trace in commit body:
+  migrate_artifact_dir.py dry-run + live + spaces-in-path +
+  both-dirs-refusal + drift-detector legacy/clean. **Real-Scanner-Smoke
+  (assertion-based per External-Review O-1.2):** gitleaks empirically
+  detects 2 leaks (generic-api-key + github-pat) in
+  `.shipwright/compliance/test-secret-fixture.md` -> canonical scanned,
+  not silently skipped.
+- `c4d9a98` -- Pre-G fixup: migrated 2 mock-fixture lines in
+  `plugins/shipwright-run/tests/test_orchestrator.py` to canonical path
+  (surfaced by Pre-G repo-wide sanity grep).
+- *(this commit)* -- Sub-Iterate G: reference doc + pattern memory
+  updates (this file's fourth data column + compliance section in
+  § 11 + new lessons 22-29 in § 10).
 
 ---
 
