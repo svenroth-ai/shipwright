@@ -257,7 +257,7 @@ Project artifacts:
   - CLAUDE.md
   - .shipwright/agent_docs/ (architecture, conventions, decision_log, sprint, handoff)
   - CHANGELOG.md
-  - compliance/ (RTM, test evidence, change history, SBOM, dashboard)
+  - .shipwright/compliance/ (RTM, test evidence, change history, SBOM, dashboard)
   - shipwright_*_config.json files
 
 For ongoing changes, use /shipwright-iterate.

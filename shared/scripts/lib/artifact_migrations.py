@@ -333,12 +333,7 @@ ALLOWLIST: dict[str, list[str]] = {
         "plugins/shipwright-adopt/tests/**",
         "plugins/shipwright-run/tests/**",
         "integration-tests/**",
-        # Plugin Prosa (D-scope, 4 SKILL.md files — compliance SKILL.md added after
-        # Layer-1-lint surfaced 3 missed PATH-REFs at lines 50/110/113 during A)
-        "plugins/shipwright-iterate/skills/iterate/SKILL.md",
-        "plugins/shipwright-adopt/skills/adopt/SKILL.md",
-        "plugins/shipwright-run/skills/run/SKILL.md",
-        "plugins/shipwright-compliance/skills/compliance/SKILL.md",  # 3 PATH-REFs migrated in D
+        # Plugin Prosa (D-scope) — migrated in D, no longer in ALLOWLIST.
         # Templates + Docs (E-scope) — no shared/templates/-touchpoints for compliance
         "docs/guide.md",
         "docs/hooks-and-pipeline.md",

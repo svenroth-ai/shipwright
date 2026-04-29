@@ -47,7 +47,7 @@ Groups:
   G — Agent-docs freshness vs. git activity (scope match, ADR refs)
 
 Reports written:
-  - compliance/audit-report.md           ← human-readable summary
+  - .shipwright/compliance/audit-report.md  ← human-readable summary
   - shipwright_audit_report.json          ← structured payload
 ================================================================================
 ```
@@ -107,10 +107,10 @@ Top failures (preventive re-run):
   - F3 "ADR-041 superseded but no replacement linked"
 
 Fixes applied:
-  - compliance/traceability-matrix.md (regenerated)
+  - .shipwright/compliance/traceability-matrix.md (regenerated)
 
 Report:
-  compliance/audit-report.md
+  .shipwright/compliance/audit-report.md
   shipwright_audit_report.json
 ================================================================================
 ```

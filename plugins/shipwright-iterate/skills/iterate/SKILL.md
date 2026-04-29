@@ -1005,8 +1005,8 @@ git add {project_root}/.shipwright/agent_docs/architecture.md      # if F2 flagg
 git add {project_root}/.shipwright/planning/**/spec.md             # if F1 flagged drift
 git add {project_root}/.shipwright/planning/iterate/*.md           # if medium+ (iterate spec / mini-plan)
 
-# Compliance artifacts (if the project tracks compliance/)
-git add {project_root}/compliance/
+# Compliance artifacts (if the project tracks .shipwright/compliance/)
+git add {project_root}/.shipwright/compliance/
 
 git commit -m "<type>(<scope>): <description>
 
