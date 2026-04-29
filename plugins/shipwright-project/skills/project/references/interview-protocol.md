@@ -20,7 +20,7 @@ The interview surfaces the user's mental model. Claude has freedom to ask questi
 - Build full understanding of the project
 
 ### Extension (light interview)
-- Read existing CLAUDE.md + agent_docs first
+- Read existing CLAUDE.md + .shipwright/agent_docs first
 - 1-3 focused questions
 - Focus: what's changing, what's affected, dependencies on existing code
 - Don't re-ask what's documented

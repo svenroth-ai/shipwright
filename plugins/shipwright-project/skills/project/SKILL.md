@@ -106,15 +106,15 @@ Determine how the user invoked the skill:
 - No file, no description — the interview is the primary source
 - A `requirements.md` will be generated at the end of the interview
 
-**For Modes 2 and 3:** Ask the user for a project directory name (or infer from description):
+**For Modes 2 and 3:** Ask the user for a project directory name (or infer from description). The planning workspace lives under `.shipwright/planning/` inside the chosen project directory (canonical post-migration layout):
 ```
 AskUserQuestion:
-  question: "Where should I create the planning directory?"
+  question: "Where should I create the project? Planning artifacts will go under <project>/.shipwright/planning/."
   suggestions:
-    - "{inferred_name}/planning" (e.g., "time-tracker/planning")
-    - Current directory
+    - "{inferred_name}" (e.g., "time-tracker"; planning goes to time-tracker/.shipwright/planning/)
+    - Current directory (planning goes to ./.shipwright/planning/)
 ```
-Create the planning directory and proceed to Step E.
+Create `<project>/.shipwright/planning/` and proceed to Step E.
 
 ### D. Detect Invocation Mode
 
