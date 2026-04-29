@@ -479,7 +479,7 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "$(pwd)" --section "{section_name}" --step 4 --detail "Implementation complete (green phase)" --session-id "{SHIPWRIGHT_SESSION_ID}"
 
 uv run {shared_root}/scripts/tools/estimate_context_pressure.py \
-  --counter-file "$(pwd)/.shipwright_toolcall_count" --threshold 120
+  --counter-file "$(pwd)/.shipwright/toolcall_count" --threshold 120
 ```
 If `recommend_checkpoint` is true AND section is not yet complete:
 1. Commit partial progress
@@ -786,7 +786,7 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
   --project-root "$(pwd)" --section "{section_name}" --step 8 --detail "Committed" --session-id "{SHIPWRIGHT_SESSION_ID}"
 
 uv run {shared_root}/scripts/tools/estimate_context_pressure.py \
-  --counter-file "$(pwd)/.shipwright_toolcall_count" --threshold 120
+  --counter-file "$(pwd)/.shipwright/toolcall_count" --threshold 120
 ```
 If `recommend_checkpoint` is true: follow the same checkpoint procedure as Step 4.
 

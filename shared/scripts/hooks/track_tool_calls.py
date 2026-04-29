@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """PostToolUse hook: Increment tool call counter.
 
-Atomically increments .shipwright_toolcall_count in the project root
+Atomically increments .shipwright/toolcall_count in the project root
 (via SHIPWRIGHT_PROJECT_ROOT env var, fallback to cwd).
 Used by estimate_context_pressure.py to detect when context window
 is getting full.
@@ -50,7 +50,7 @@ def main() -> int:
     if not _is_shipwright_project(project_root):
         return 0
 
-    counter_file = project_root / ".shipwright_toolcall_count"
+    counter_file = project_root / ".shipwright" / "toolcall_count"
 
     count = 0
     if counter_file.exists():
@@ -60,6 +60,7 @@ def main() -> int:
             count = 0
 
     count += 1
+    counter_file.parent.mkdir(parents=True, exist_ok=True)
     counter_file.write_text(str(count), encoding="utf-8")
 
     return 0

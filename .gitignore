@@ -66,6 +66,8 @@ planning/
 # Kept as a safety net against re-tracked legacy files.
 # See docs/migrations/.shipwright-relocation.md.
 .shipwright/
+# Canonical tool-call counter is .shipwright/toolcall_count.
+# legacy path - do not remove. Renamed 2026-04-29 (drive-by, no migration).
 .shipwright_toolcall_count
 # Canonical compliance home is .shipwright/compliance/.
 compliance/

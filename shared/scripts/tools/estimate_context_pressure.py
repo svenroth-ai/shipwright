@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Estimate context window pressure from tool call count.
 
-Reads .shipwright_toolcall_count (plain integer file) and returns
+Reads .shipwright/toolcall_count (plain integer file) and returns
 a recommendation on whether to checkpoint.
 
 Usage:
@@ -49,8 +49,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Estimate context pressure")
     parser.add_argument(
         "--counter-file",
-        default=".shipwright_toolcall_count",
-        help="Path to tool call counter file (default: .shipwright_toolcall_count in cwd)",
+        default=".shipwright/toolcall_count",
+        help="Path to tool call counter file (default: .shipwright/toolcall_count in cwd)",
     )
     parser.add_argument(
         "--threshold",

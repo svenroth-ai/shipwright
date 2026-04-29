@@ -136,10 +136,12 @@ class TestAutopilotFlow:
     def test_context_pressure_triggers_checkpoint(self, autopilot_project):
         """High tool call count triggers checkpoint recommendation."""
         # Simulate 150 tool calls
-        (autopilot_project / ".shipwright_toolcall_count").write_text("150", encoding="utf-8")
+        counter = autopilot_project / ".shipwright" / "toolcall_count"
+        counter.parent.mkdir(parents=True, exist_ok=True)
+        counter.write_text("150", encoding="utf-8")
 
         result = run_script_json(PRESSURE, [
-            "--counter-file", str(autopilot_project / ".shipwright_toolcall_count"),
+            "--counter-file", str(counter),
             "--threshold", "120",
         ])
         assert result["recommend_checkpoint"] is True
@@ -147,10 +149,12 @@ class TestAutopilotFlow:
 
     def test_no_pressure_below_threshold(self, autopilot_project):
         """Low tool call count does not trigger checkpoint."""
-        (autopilot_project / ".shipwright_toolcall_count").write_text("50", encoding="utf-8")
+        counter = autopilot_project / ".shipwright" / "toolcall_count"
+        counter.parent.mkdir(parents=True, exist_ok=True)
+        counter.write_text("50", encoding="utf-8")
 
         result = run_script_json(PRESSURE, [
-            "--counter-file", str(autopilot_project / ".shipwright_toolcall_count"),
+            "--counter-file", str(counter),
             "--threshold", "120",
         ])
         assert result["recommend_checkpoint"] is False

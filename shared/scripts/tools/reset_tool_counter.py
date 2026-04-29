@@ -8,7 +8,7 @@ Usage:
     uv run reset_tool_counter.py [--counter-file <path>]
 
 Output (JSON):
-    {"reset": true, "counter_file": "/path/to/.shipwright_toolcall_count"}
+    {"reset": true, "counter_file": "/path/to/.shipwright/toolcall_count"}
 """
 
 import argparse
@@ -22,8 +22,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Reset tool call counter")
     parser.add_argument(
         "--counter-file",
-        default=".shipwright_toolcall_count",
-        help="Path to tool call counter file (default: .shipwright_toolcall_count in cwd)",
+        default=".shipwright/toolcall_count",
+        help="Path to tool call counter file (default: .shipwright/toolcall_count in cwd)",
     )
     args = parser.parse_args()
 
@@ -32,6 +32,7 @@ def main() -> int:
         project_root = Path(os.environ.get("SHIPWRIGHT_PROJECT_ROOT", Path.cwd()))
         counter_file = project_root / counter_file
 
+    counter_file.parent.mkdir(parents=True, exist_ok=True)
     counter_file.write_text("0", encoding="utf-8")
 
     print(json.dumps({"reset": True, "counter_file": str(counter_file)}))

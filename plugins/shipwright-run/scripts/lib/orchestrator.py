@@ -583,8 +583,9 @@ def _collect_critical_gate_issues(finding: dict[str, Any]) -> list[dict[str, Any
 
 def _reset_tool_counter(project_root: Path) -> None:
     """Reset tool call counter to zero (between-skill cleanup)."""
-    counter = project_root / ".shipwright_toolcall_count"
+    counter = project_root / ".shipwright" / "toolcall_count"
     try:
+        counter.parent.mkdir(parents=True, exist_ok=True)
         counter.write_text("0", encoding="utf-8")
     except OSError:
         pass

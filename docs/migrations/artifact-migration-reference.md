@@ -88,8 +88,10 @@ linked memo and confirming a trigger has fired:
 
 - **`shipwright_*_config.json`** files at project root
   (run/project/plan/build/test/security/compliance/design/deploy/changelog/sync)
-  + `shipwright_events.jsonl` + `.shipwright_toolcall_count` —
-  `project_config_jsons_migration_deferred.md`. Industry pattern
+  + `shipwright_events.jsonl` —
+  `project_config_jsons_migration_deferred.md`. (Outlier
+  `.shipwright_toolcall_count` was renamed to `.shipwright/toolcall_count`
+  drive-by 2026-04-29; no separate migration.) Industry pattern
   actually *favors* root for per-tool configs with namespace prefix
   (`tsconfig.json`, `pyproject.toml`, `Cargo.toml`,
   `playwright.config.ts` etc.). Audited 2026-04-29: zero CI / S3 /
