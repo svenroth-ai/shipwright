@@ -250,12 +250,12 @@ def test_compliance_runs_on_step_complete(tmp_project, mocker):
     """Compliance update is triggered when a step completes."""
     create_config("full_app", "supabase-nextjs", "guided", "jelastic-dev", tmp_project)
 
-    mock_result = {"success": True, "phase": "project", "updated_reports": ["compliance/rtm.md"]}
+    mock_result = {"success": True, "phase": "project", "updated_reports": [".shipwright/compliance/rtm.md"]}
     mocker.patch("orchestrator.run_compliance_update", return_value=mock_result)
 
     config = update_step(tmp_project, "project", "complete", force=True)
     assert config["last_compliance_update"]["phase"] == "project"
-    assert "compliance/rtm.md" in config["last_compliance_update"]["reports"]
+    assert ".shipwright/compliance/rtm.md" in config["last_compliance_update"]["reports"]
 
 
 def test_compliance_skipped_on_failure(tmp_project, mocker):
