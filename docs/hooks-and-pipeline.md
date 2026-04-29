@@ -440,14 +440,14 @@ evidence (plan § 4.5).
 |---|---|---|---|---|
 | W1 | build | SKIP (never FAIL — R8) | 2 | `shipwright_events.jsonl`: `test_run` timestamp ≤ latest `work_completed` |
 | W2 | iterate | FAIL | 1 | `.shipwright/planning/iterate/{run_id}-external-review.json` OR `external_review_state.json` newer than spec |
-| W3 | iterate | FAIL | 1 | `work_completed` event (source=iterate) + `compliance/test-evidence.md` mtime <24h |
+| W3 | iterate | FAIL | 1 | `work_completed` event (source=iterate) + `.shipwright/compliance/test-evidence.md` mtime <24h |
 | W4 | test | FAIL | 1 | `shipwright_test_results.json.coverage.total` ≥ `shipwright_test_config.json.coverage.min` (default 70) |
 | W5 | plan | FAIL | 1 | `.shipwright/planning/external_review_state.json` status=`completed` OR `skipped_*` with non-empty reason |
 | W6 | changelog | FAIL | 1 | Wrapper around `changelog_checks.check_git_tag_exists` |
 | W7 | deploy | FAIL | 1 | `shipwright_deploy_config.json.smoke_test_status` OR `test_results.smoke.status` OR latest `test_run` event layer `smoke.status == "pass"` |
-| Sec1 | security (out-of-band) | FAIL | 1 | `compliance/security-scan-report.md` mtime ≥ latest `phase_started[security]`. Audits the standalone `/shipwright-security` skill — runs from the security skill's Stop hook, not as a pipeline gate. |
-| Sec2 | security (out-of-band) | FAIL | 1 | No pipe-table row containing both `CRITICAL` and `UNRESOLVED`/`OPEN`/`FAIL` — or active override line in `compliance/compliance_overrides.log`. Audits the standalone security skill, not a pipeline phase. |
-| Cmp1 | compliance | WARN | 2 | `compliance/dashboard.md` mentions every `run_config.completed_steps` phase (Tier-2, redundant with C2) |
+| Sec1 | security (out-of-band) | FAIL | 1 | `.shipwright/compliance/security-scan-report.md` mtime ≥ latest `phase_started[security]`. Audits the standalone `/shipwright-security` skill — runs from the security skill's Stop hook, not as a pipeline gate. |
+| Sec2 | security (out-of-band) | FAIL | 1 | No pipe-table row containing both `CRITICAL` and `UNRESOLVED`/`OPEN`/`FAIL` — or active override line in `.shipwright/compliance/compliance_overrides.log`. Audits the standalone security skill, not a pipeline phase. |
+| Cmp1 | compliance | WARN | 2 | `.shipwright/compliance/dashboard.md` mentions every `run_config.completed_steps` phase (Tier-2, redundant with C2) |
 | Cmp2 | compliance | FAIL | 1 | `traceability-matrix.md` coverage ≥ `shipwright_compliance_config.json.enforcement.rtm_coverage_min` (default 80%) |
 | D1 | design | FAIL | 1 | ≥1 artifact: `.shipwright/designs/mockups/*.html` OR `.shipwright/agent_docs/screens.md` OR `.shipwright/agent_docs/user-flow.md` |
 | D2 | design | WARN | 2 | Both `.shipwright/agent_docs/screens.md` and `.shipwright/agent_docs/user-flow.md` present + non-empty |
@@ -456,16 +456,16 @@ evidence (plan § 4.5).
 
 | ID | Phase(s) | Default on Missing | Tier | Evidence Source |
 |---|---|---|---|---|
-| I1 | build, iterate | FAIL | 1 | `compliance/traceability-matrix.md` mtime ≥ latest `phase_completed[phase]` (10s tolerance). SKIP if no event (R11). |
-| I2 | build, test, iterate | FAIL | 1 | `compliance/test-evidence.md` mtime ≥ latest `phase_started[phase]`. SKIP if no event. |
-| I3 | build, iterate, changelog | FAIL | 1 | `compliance/change-history.md` mtime ≥ latest `phase_started[phase]`. SKIP if no event. |
-| I4 | build, iterate | WARN (never FAIL — Tier-2) | 2 | `compliance/sbom.md` freshness — only surfaces when `pyproject.toml` / `package.json` / `requirements.txt` mtime > SBOM mtime. SKIP on clean runs. |
+| I1 | build, iterate | FAIL | 1 | `.shipwright/compliance/traceability-matrix.md` mtime ≥ latest `phase_completed[phase]` (10s tolerance). SKIP if no event (R11). |
+| I2 | build, test, iterate | FAIL | 1 | `.shipwright/compliance/test-evidence.md` mtime ≥ latest `phase_started[phase]`. SKIP if no event. |
+| I3 | build, iterate, changelog | FAIL | 1 | `.shipwright/compliance/change-history.md` mtime ≥ latest `phase_started[phase]`. SKIP if no event. |
+| I4 | build, iterate | WARN (never FAIL — Tier-2) | 2 | `.shipwright/compliance/sbom.md` freshness — only surfaces when `pyproject.toml` / `package.json` / `requirements.txt` mtime > SBOM mtime. SKIP on clean runs. |
 
 **Traceability category (PR 3):** `shared/scripts/tools/verifiers/traceability_checks.py`
 
 | ID | Phase(s) | Default on Missing | Tier | Evidence Source |
 |---|---|---|---|---|
-| T1 | project, iterate | FAIL | 1 | Every FR from `.shipwright/planning/*/spec.md` (via `drift_parsers.collect_requirements_from_planning`) appears in `compliance/traceability-matrix.md`. |
+| T1 | project, iterate | FAIL | 1 | Every FR from `.shipwright/planning/*/spec.md` (via `drift_parsers.collect_requirements_from_planning`) appears in `.shipwright/compliance/traceability-matrix.md`. |
 | T2 | project, iterate | WARN (never FAIL — R12) | 2 | No FR id referenced in RTM missing from every spec. Tier-2 — FR renames produce legitimate FPs. |
 
 **Quality category (PR 3):** `shared/scripts/tools/verifiers/quality_checks.py`
@@ -497,10 +497,10 @@ dashboard as heuristic signal only (plan § 3, § 9.2).
 **Artifacts written (deterministically regenerated):**
 | File | Purpose | Retention |
 |---|---|---|
-| `compliance/skill-compliance/<phase>-<run_id>-<session_id>.json` | Per-run Finding JSON (atomic write) | GC → `archive/` after 90d |
-| `compliance/skill-compliance-report.md` | Last 10 runs, markdown | cap 10 |
+| `.shipwright/compliance/skill-compliance/<phase>-<run_id>-<session_id>.json` | Per-run Finding JSON (atomic write) | GC → `archive/` after 90d |
+| `.shipwright/compliance/skill-compliance-report.md` | Last 10 runs, markdown | cap 10 |
 | `.shipwright/agent_docs/skill-compliance-findings.md` | Last 5 runs, SessionStart-Injection source (PR 4 wires the injection) | cap 5 |
-| `compliance/skill-compliance-dashboard.md` | Phase × category status matrix | overwritten each run |
+| `.shipwright/compliance/skill-compliance-dashboard.md` | Phase × category status matrix | overwritten each run |
 
 Aggregate rewrites serialise through
 `.shipwright/locks/phase-quality.lock` so concurrent Stop events from
@@ -575,7 +575,7 @@ validate_phase() → base validator issues
     ↓
 SHIPWRIGHT_ENFORCE_CRITICAL_GATES == 1?
     │
-    yes → load compliance/skill-compliance/<step>-*.json (newest)
+    yes → load .shipwright/compliance/skill-compliance/<step>-*.json (newest)
           for each workflow finding with id ∈ {W5, W6, W7} AND status=FAIL
             AND tier != 2:
               append ask-level validation_issue with evidence+remediation
@@ -747,7 +747,7 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 2. **On-demand detective audit** (new in v7): `/shipwright-compliance`
    invokes `scripts/audit/run_audit.py`. Reads specs, plan.md,
    configs, shipwright_events.jsonl, ADRs, and the compliance docs.
-   Writes `compliance/audit-report.md` + `shipwright_audit_report.json`.
+   Writes `.shipwright/compliance/audit-report.md` + `shipwright_audit_report.json`.
    Does not modify anything unless `--fix` is passed (Group E per-doc
    regen only).
 
@@ -765,7 +765,7 @@ Non-pipeline skill — onboards a **brownfield** repo into the Shipwright SDLC. 
 
 Reads: `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `composer.json`, `Gemfile`, `tsconfig.json`, `.eslintrc*`, `.prettierrc*`, `.editorconfig`, `README.md`, `.github/workflows/`, git log, plus route/page files for AST feature inference; optionally the running dev-server via Playwright BFS crawl.
 
-Writes: `CLAUDE.md`, `.shipwright/agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `.shipwright/planning/<split>/spec.md`, all six `shipwright_*_config.json` (run-config LAST), `shipwright_events.jsonl` (one `adopted` event + optional backfill), `.claude/settings.json` (merges the `suggest_iterate` UserPromptSubmit hook), `e2e/flows/adopted-baseline.spec.ts` when a Playwright crawl succeeded, `.shipwright/adopt/{snapshot,enrichment,routes}.json`, `.shipwright/adopt/review.md`, and seeds the five `compliance/*.md` via the existing compliance generators.
+Writes: `CLAUDE.md`, `.shipwright/agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `.shipwright/planning/<split>/spec.md`, all six `shipwright_*_config.json` (run-config LAST), `shipwright_events.jsonl` (one `adopted` event + optional backfill), `.claude/settings.json` (merges the `suggest_iterate` UserPromptSubmit hook), `e2e/flows/adopted-baseline.spec.ts` when a Playwright crawl succeeded, `.shipwright/adopt/{snapshot,enrichment,routes}.json`, `.shipwright/adopt/review.md`, and seeds the five `.shipwright/compliance/*.md` via the existing compliance generators.
 
 Phase-Quality integration: registered as phase `adopt` in `PLUGIN_TO_PHASE`, `C4_PHASES`, and `_WORKFLOW_PHASE_DISPATCH`. The verifier module `shared/scripts/tools/verifiers/adopt_compliance.py` runs A1–A8 canon checks on every Stop hook after adoption completes. A4, A5, A8 are Tier-2 (heuristic, non-blocking); A1–A3, A6, A7 are Tier-1 ERROR on FAIL.
 
@@ -932,7 +932,7 @@ Each plugin reads project context at startup to ensure consistency. This table s
 | `session_handoff.md` | generate_handoff_on_stop.py | all plugins (Stop hook), **finalize_iterate.py** (iterate) |
 | `events.jsonl` | record_event.py | build, iterate, test, deploy, changelog, orchestrator (append-only) |
 | `test_results.json` | test, iterate | test, iterate |
-| `compliance/*` | compliance plugin | update_compliance.py (all phases trigger), **Stop hook** (all plugins, best-effort), **finalize_iterate.py** (iterate) |
+| `.shipwright/compliance/*` | compliance plugin | update_compliance.py (all phases trigger), **Stop hook** (all plugins, best-effort), **finalize_iterate.py** (iterate) |
 | `sync_config.json` | project | iterate (FR mappings) |
 | `{migrations.dir}` (profile) | build, iterate (create + apply DEV, serialized) | deploy (PROD apply only) |
 

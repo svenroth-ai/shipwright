@@ -334,7 +334,9 @@ ALLOWLIST: dict[str, list[str]] = {
         "plugins/shipwright-run/tests/**",
         "integration-tests/**",
         # Plugin Prosa (D-scope) — migrated in D, no longer in ALLOWLIST.
-        # Templates + Docs (E-scope) — no shared/templates/-touchpoints for compliance
+        # Templates + Docs (E-scope) — migrated in E. Both files retain legitimate
+        # KEYWORD/PHASE-NAME refs ("compliance" as pipeline-phase) and skill-compliance/
+        # subdir refs (canonical, but regex matches due to `-compliance/` substring).
         "docs/guide.md",
         "docs/hooks-and-pipeline.md",
         # Plugin metadata: descriptive keyword "compliance", not a path. Permanent.

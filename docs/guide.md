@@ -382,7 +382,7 @@ If those are true, `/shipwright-adopt` is the right entry point. `/shipwright-pr
 2. **Layer 1.5 — Playwright route crawl (if web app).** Starts the dev-server, crawls the running app BFS-style, captures route + h1 + CTAs + screenshots into `.shipwright/adopt/routes.json`. Falls back to AST-based route inference if no dev-server is available.
 3. **Layer 2 — Claude Code semantic enrichment.** Inline with the skill, Claude reads the snapshot + sample files + screenshots and writes `enrichment.json` with a product description, FR labels, architecture prose, conventions prose, and retroactive ADR drafts.
 4. **Artifact generation.** Writes `CLAUDE.md`, `.shipwright/agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `.shipwright/planning/01-adopted/spec.md`, the six `shipwright_*_config.json` files, `shipwright_events.jsonl`, and `e2e/flows/adopted-baseline.spec.ts` (regression guard from the crawl).
-5. **Compliance seeding.** Generates `compliance/{sbom,change-history,traceability-matrix,test-evidence,dashboard}.md` via the existing compliance infrastructure.
+5. **Compliance seeding.** Generates `.shipwright/compliance/{sbom,change-history,traceability-matrix,test-evidence,dashboard}.md` via the existing compliance infrastructure.
 6. **Layer 3 — external LLM review.** Runs `llm_review.py` over the generated artifacts to flag hallucinations or contradictions (skipped gracefully if no API key is set).
 7. **Validation + commit.** Runs `validate_adoption.py`, then a single Conventional Commit `chore(shipwright): adopt repository into Shipwright SDLC`.
 
@@ -521,7 +521,7 @@ Shipwright's orchestrator pipeline consists of **7 phases** (project, design, pl
 
 **Standalone usage.** Yes. Run `/shipwright-project` independently whenever you want to decompose requirements without running the full pipeline. The output feeds directly into `/shipwright-plan`.
 
-**Where the planning artifacts live.** Since v0.6.0 the planning directory is `.shipwright/planning/` — under the hidden project-state folder, alongside `securityreports/`, `adopt/`, `runs/`, and `tmp/`. The same hidden home now also covers `.shipwright/designs/` and `.shipwright/agent_docs/` (post-relocation). The only remaining Shipwright-owned top-level directories are `compliance/` and `e2e/` — both queued for follow-on relocation.
+**Where the planning artifacts live.** Since v0.6.0 the planning directory is `.shipwright/planning/` — under the hidden project-state folder, alongside `securityreports/`, `adopt/`, `runs/`, and `tmp/`. The same hidden home now also covers `.shipwright/designs/`, `.shipwright/agent_docs/`, and `.shipwright/compliance/` (post-relocation). The only remaining Shipwright-owned top-level directory is `e2e/` — queued for follow-on relocation.
 
 If a session start finds a legacy top-level `planning/` directory, the drift detector writes `.shipwright/stale-folders.md` with a `git mv planning .shipwright/planning` remediation hint and exits non-zero so you see it. Run `uv run shared/scripts/tools/migrate_artifact_dir.py --artifact planning` (added in Sub-Iterate F) to do the move automatically. <!-- artifact-path-canon: legacy -->
 
@@ -896,19 +896,19 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 - `shipwright_events.jsonl` — primary event source.
 - `.shipwright/planning/*/spec.md` and `.shipwright/planning/*/plan.md` — FR definitions + section manifests.
 - `.shipwright/agent_docs/decision_log.md` — ADRs.
-- `compliance/` docs (for Group E staleness comparison).
+- `.shipwright/compliance/` docs (for Group E staleness comparison).
 - A git repo (Group B7 reverse-direction scan, Group G git-log activity).
 
 **What it produces (detective audit):**
-- `compliance/audit-report.md` — human-readable report split into Preventive re-checks (C/F/B3/B6) and Detective-only checks (everything else). Fail-first ordering, suggested `/shipwright-iterate` command per finding, per-group summary table.
+- `.shipwright/compliance/audit-report.md` — human-readable report split into Preventive re-checks (C/F/B3/B6) and Detective-only checks (everything else). Fail-first ordering, suggested `/shipwright-iterate` command per finding, per-group summary table.
 - `shipwright_audit_report.json` — structured payload; every finding carries a `source` field (`detective-only` or `preventive-rerun`).
 
 **What the auto-background generator produces** (unchanged from v6):
-- `compliance/dashboard.md` -- Start-here overview with quality indicators, project velocity, and links.
-- `compliance/traceability-matrix.md` -- Every requirement mapped to the work events that verify it, with a "Last Verified" column.
-- `compliance/test-evidence.md` -- Test results across unit / integration / pgTAP / smoke / E2E / consistency / visual, with pass/fail counts and skip reasons.
-- `compliance/change-history.md` -- All commits + decisions (from `.shipwright/agent_docs/decision_log.md`) + version tags.
-- `compliance/sbom.md` -- Software Bill of Materials with versions and license types. Flags copyleft licenses.
+- `.shipwright/compliance/dashboard.md` -- Start-here overview with quality indicators, project velocity, and links.
+- `.shipwright/compliance/traceability-matrix.md` -- Every requirement mapped to the work events that verify it, with a "Last Verified" column.
+- `.shipwright/compliance/test-evidence.md` -- Test results across unit / integration / pgTAP / smoke / E2E / consistency / visual, with pass/fail counts and skip reasons.
+- `.shipwright/compliance/change-history.md` -- All commits + decisions (from `.shipwright/agent_docs/decision_log.md`) + version tags.
+- `.shipwright/compliance/sbom.md` -- Software Bill of Materials with versions and license types. Flags copyleft licenses.
 
 **How the detective audit works:**
 1. `run_audit.py` loads `audit_config.json` (G2 scope stoplist, alias map, A4 path-field allowlist, B7 exclusions) and `ComplianceData`.
@@ -1579,7 +1579,7 @@ Full canon definition, skip criteria, and per-plugin coverage matrix live in [do
 
 ### Phase-Quality Audit (Consolidated Stop-Hook)
 
-Beyond the orchestrator-driven Canon, Shipwright runs a **consolidated Stop-Hook audit** at the end of every plugin session — orchestrated or standalone. It's observability, not a gate by default: the hook writes findings to `compliance/skill-compliance/` and regenerates three summary files but never blocks the session.
+Beyond the orchestrator-driven Canon, Shipwright runs a **consolidated Stop-Hook audit** at the end of every plugin session — orchestrated or standalone. It's observability, not a gate by default: the hook writes findings to `.shipwright/compliance/skill-compliance/` and regenerates three summary files but never blocks the session.
 
 The audit covers six categories (plan § 2, plan § 3):
 
@@ -1595,10 +1595,10 @@ The audit covers six categories (plan § 2, plan § 3):
 **Tier classification (plan § 3):** Of the 36 checks, 20 are Tier-1 (candidate for enforcement after burn-in) and 16 are Tier-2 (heuristic, never enforcement). Tier-2 ids are `W1`, `I4`, `T2`, `Q1`, `S3`, `S4`, `S5`, `S7`, `S9`, `S10`, `Cmp1`, `D2` — they always land as WARN/SKIP and carry `"tier": 2` so the dashboard can group them as low-signal.
 
 **Artifacts** (deterministically regenerated, hard-capped):
-- `compliance/skill-compliance/<phase>-<run_id>-<session>.json` — per-run finding (atomic, GC after 90 days)
-- `compliance/skill-compliance-report.md` — last 10 runs, markdown table
+- `.shipwright/compliance/skill-compliance/<phase>-<run_id>-<session>.json` — per-run finding (atomic, GC after 90 days)
+- `.shipwright/compliance/skill-compliance-report.md` — last 10 runs, markdown table
 - `.shipwright/agent_docs/skill-compliance-findings.md` — last 5 runs, source for SessionStart-Injection
-- `compliance/skill-compliance-dashboard.md` — phase × category matrix
+- `.shipwright/compliance/skill-compliance-dashboard.md` — phase × category matrix
 
 **Enforcement rollout (staggered, default OFF in code):**
 
