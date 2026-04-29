@@ -67,7 +67,10 @@ planning/
 # See docs/migrations/.shipwright-relocation.md.
 .shipwright/
 .shipwright_toolcall_count
+# Canonical compliance home is .shipwright/compliance/.
 compliance/
+# legacy path - do not remove. Sub-Iterate F of compliance migration (2026-04-29).
+# See docs/migrations/.shipwright-compliance-relocation.md.
 
 # UV
 .uv/
@@ -82,3 +85,4 @@ Spec/
 
 # Git worktrees (per Shipwright parallel-iterate convention — see /shipwright-iterate B1a)
 .worktrees/
+/.shipwright/
