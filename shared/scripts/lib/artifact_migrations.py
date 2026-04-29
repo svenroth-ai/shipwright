@@ -95,9 +95,9 @@ ARTIFACT_MIGRATIONS: list[dict] = [
             r"(?<![\w/.\\])(?<!/ )'compliance'",
         ],
         "ast_check_string": "compliance",
-        "status": "in_progress",
+        "status": "migrated",
         "started": "2026-04-29",
-        "completed": None,
+        "completed": "2026-04-29",
     },
 ]
 
