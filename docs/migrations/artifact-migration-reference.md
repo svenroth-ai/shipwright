@@ -737,6 +737,22 @@ Honest list from the planning migration. Treat as advice, not gospel.
     **Always document this boundary explicitly** in MAIN's "Was NICHT
     migriert wird" section so reviewers don't conflate the two artifacts.
 
+30. **Generator-Relative-Link-Resolution: runtime test, not just
+    static-grep.** When the migration changes the depth of generated
+    output files (e.g. `compliance/<file>.md` 1-deep -> `.shipwright/compliance/<file>.md`
+    2-deep), all hardcoded `../<file>` Markdown links inside generator
+    OUTPUT break. Lesson 30: the C-Step-11 fix table is necessary but
+    NOT sufficient — Pre-G belt-and-suspenders MUST include a real
+    runtime invocation of the affected generators in a tmp project +
+    parse output Markdown links + assert each resolves. Static grep
+    of `../<X>` -> `../../<X>` is fragile against f-string template
+    edge cases (e.g. `f"({req.spec_path})"` where spec_path itself
+    starts with `.shipwright/`). compliance migration verified: real
+    `compliance_report.generate_file()` produces 8 links all resolving
+    + `rtm_generator.generate()` f-string output produces 2 link
+    patterns both resolving correctly. **Pattern**: write this runtime
+    test as part of Sub-Iterate C, not just as Pre-G belt-and-suspenders.
+
 ---
 
 ## 11. Reference Commits
@@ -934,9 +950,18 @@ agent_docs (~6×) and planning (~3×), only ~1.4× designs Python+Prose-Sum.
 - `c4d9a98` -- Pre-G fixup: migrated 2 mock-fixture lines in
   `plugins/shipwright-run/tests/test_orchestrator.py` to canonical path
   (surfaced by Pre-G repo-wide sanity grep).
+- **Pre-G Belt-and-Suspenders Generator-Relative-Link-Resolution test
+  (per Lesson 30):** real-runtime invocation of
+  `compliance_report.generate_file()` + `rtm_generator.generate()` in tmp
+  project + parse output Markdown links + assert each resolves.
+  **Result: 8/8 dashboard.md links resolve + 2/2 RTM f-string-templated
+  links resolve correctly.** Confirms the C-Step-11 mapping
+  (../<root_file> -> ../../<file>; ../.shipwright/<artifact>/... ->
+  ../<artifact>/...) is correct end-to-end at runtime, not just
+  statically per-line.
 - *(this commit)* -- Sub-Iterate G: reference doc + pattern memory
   updates (this file's fourth data column + compliance section in
-  § 11 + new lessons 22-29 in § 10).
+  § 11 + new lessons 22-30 in § 10).
 
 ---
 
