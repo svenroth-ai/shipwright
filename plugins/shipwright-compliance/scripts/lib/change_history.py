@@ -1,6 +1,6 @@
 """Commit Change Log generator.
 
-Produces compliance/change-history.md from git conventional commits.
+Produces .shipwright/compliance/change-history.md from git conventional commits.
 """
 
 from __future__ import annotations
@@ -92,14 +92,18 @@ def generate(data: ComplianceData) -> str:
     return "\n".join(lines) + "\n"
 
 
+COMPLIANCE_DIR = ".shipwright/compliance"
+LEGACY_COMPLIANCE_DIRNAME = "compliance"
+
+
 def generate_file(project_root: Path, data: ComplianceData | None = None) -> Path:
-    """Generate Change History Report and write to compliance/change-history.md."""
+    """Generate Change History Report and write to .shipwright/compliance/change-history.md."""
     if data is None:
         from scripts.lib.data_collector import collect_all
         data = collect_all(project_root)
 
-    output_dir = project_root / "compliance"
-    output_dir.mkdir(exist_ok=True)
+    output_dir = project_root / COMPLIANCE_DIR
+    output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / "change-history.md"
     output_path.write_text(generate(data), encoding="utf-8")
     return output_path

@@ -1,6 +1,6 @@
 """Compliance Dashboard generator.
 
-Produces compliance/dashboard.md — the single-page overview.
+Produces .shipwright/compliance/dashboard.md — the single-page overview.
 """
 
 from __future__ import annotations
@@ -44,20 +44,23 @@ def generate(data: ComplianceData) -> str:
         "| Traceability Matrix | [traceability-matrix.md](./traceability-matrix.md) | Requirements → Work Events → Tests |",
         "| Test Evidence | [test-evidence.md](./test-evidence.md) | Test progression timeline |",
         "| Commit Change Log | [change-history.md](./change-history.md) | Conventional Commits by type |",
-        "| Decision Log | [decision_log.md](../.shipwright/agent_docs/decision_log.md) | Architecture decisions (ADRs) |",
+        "| Decision Log | [decision_log.md](../agent_docs/decision_log.md) | Architecture decisions (ADRs) |",
         "| SBOM | [sbom.md](./sbom.md) | Open-source dependencies + licenses |",
     ]
     # Event log
+    # NOTE: Reports now live at .shipwright/compliance/<file>.md (2-deep), so links
+    # to project-root files use ../../ instead of ../. Sibling links under
+    # .shipwright/ -- agent_docs and planning subdirs -- use the ../<sibling>/ form.
     if (data.project_root / "shipwright_events.jsonl").exists():
-        artifact_rows.insert(0, "| Event Log | [shipwright_events.jsonl](../shipwright_events.jsonl) | Unified append-only event log |")
+        artifact_rows.insert(0, "| Event Log | [shipwright_events.jsonl](../../shipwright_events.jsonl) | Unified append-only event log |")
     if (data.project_root / "CHANGELOG.md").exists():
-        artifact_rows.append("| Changelog | [CHANGELOG.md](../CHANGELOG.md) | Release notes |")
+        artifact_rows.append("| Changelog | [CHANGELOG.md](../../CHANGELOG.md) | Release notes |")
     if (data.project_root / "playwright-report" / "index.html").exists():
-        artifact_rows.append("| Playwright Report | [playwright-report/index.html](../playwright-report/index.html) | Interactive E2E test results |")
+        artifact_rows.append("| Playwright Report | [playwright-report/index.html](../../playwright-report/index.html) | Interactive E2E test results |")
     if (data.project_root / "design-fidelity-report.json").exists():
-        artifact_rows.append("| Design Fidelity Report | [design-fidelity-report.json](../design-fidelity-report.json) | Per-screen design fidelity verification (build → test) |")
+        artifact_rows.append("| Design Fidelity Report | [design-fidelity-report.json](../../design-fidelity-report.json) | Per-screen design fidelity verification (build → test) |")
     elif (data.project_root / "visual-build-report.json").exists():
-        artifact_rows.append("| Design Fidelity Report | [visual-build-report.json](../visual-build-report.json) | Per-screen design fidelity verification (build → test, legacy) |")
+        artifact_rows.append("| Design Fidelity Report | [visual-build-report.json](../../visual-build-report.json) | Per-screen design fidelity verification (build → test, legacy) |")
 
     lines.extend([
         "## Compliance Artifacts",
@@ -202,14 +205,18 @@ def _quality_indicators_legacy(data: ComplianceData) -> list[str]:
     ]
 
 
+COMPLIANCE_DIR = ".shipwright/compliance"
+LEGACY_COMPLIANCE_DIRNAME = "compliance"
+
+
 def generate_file(project_root: Path, data: ComplianceData | None = None) -> Path:
-    """Generate Dashboard and write to compliance/dashboard.md."""
+    """Generate Dashboard and write to .shipwright/compliance/dashboard.md."""
     if data is None:
         from scripts.lib.data_collector import collect_all
         data = collect_all(project_root)
 
-    output_dir = project_root / "compliance"
-    output_dir.mkdir(exist_ok=True)
+    output_dir = project_root / COMPLIANCE_DIR
+    output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / "dashboard.md"
     output_path.write_text(generate(data), encoding="utf-8")
     return output_path

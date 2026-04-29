@@ -107,8 +107,8 @@ class TestOverrideLogger:
 
 def _make_rtm(project_root: Path, coverage_pct: int, unresolved: int = 0) -> None:
     """Create a minimal traceability-matrix.md with given coverage."""
-    compliance_dir = project_root / "compliance"
-    compliance_dir.mkdir(exist_ok=True)
+    compliance_dir = project_root / ".shipwright" / "compliance"
+    compliance_dir.mkdir(parents=True, exist_ok=True)
 
     # Build a minimal RTM with summary table
     lines = [

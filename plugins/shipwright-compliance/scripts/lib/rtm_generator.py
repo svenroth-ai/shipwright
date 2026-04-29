@@ -1,8 +1,13 @@
 """Requirements Traceability Matrix generator.
 
-Produces compliance/traceability-matrix.md mapping:
+Produces .shipwright/compliance/traceability-matrix.md mapping:
   Requirements → Work Events (sections + iterations) → Test Results
 with clickable links to spec files and verification timeline.
+
+NOTE: Output reports live at .shipwright/compliance/<file>.md (2-deep from
+project_root), so links to project-root files use ``../../<file>`` instead
+of ``../<file>``. Sibling links under .shipwright/ -- the planning subdir --
+use ``../planning/...`` instead of ``../.shipwright/planning/...``.
 """
 
 from __future__ import annotations
@@ -59,7 +64,7 @@ def _requirements_coverage(data: ComplianceData) -> list[str]:
     for req in data.requirements:
         # Link to spec file with anchor
         anchor = _make_anchor(req.id)
-        req_link = f"[{req.id}](../{req.spec_path}#{anchor})"
+        req_link = f"[{req.id}](../../{req.spec_path}#{anchor})"
 
         # Truncated title for table readability
         display_text = req.text[:60] + ("..." if len(req.text) > 60 else "")
@@ -68,7 +73,7 @@ def _requirements_coverage(data: ComplianceData) -> list[str]:
         if req.sections:
             section_links = []
             for sec_name in req.sections:
-                sec_link = f"[{sec_name}](../.shipwright/planning/{req.split}/sections/{sec_name}.md)"
+                sec_link = f"[{sec_name}](../planning/{req.split}/sections/{sec_name}.md)"
                 section_links.append(sec_link)
             sections_cell = ", ".join(section_links)
 
@@ -183,7 +188,7 @@ def _section_traceability(data: ComplianceData) -> list[str]:
         status = _section_status(sec)
 
         # Link to section plan
-        section_link = f"[{sec.name}](../.shipwright/planning/{sec.split}/sections/{sec.name}.md)"
+        section_link = f"[{sec.name}](../planning/{sec.split}/sections/{sec.name}.md)"
 
         # Linked requirements
         reqs = req_by_section.get(sec.name, [])
@@ -257,7 +262,7 @@ def _coverage_summary(data: ComplianceData) -> list[str]:
         if unlinked:
             lines.extend(["", "### Unlinked Requirements", ""])
             for req in unlinked:
-                lines.append(f"- [{req.id}](../{req.spec_path}) ({req.priority}): {req.text[:80]}...")
+                lines.append(f"- [{req.id}](../../{req.spec_path}) ({req.priority}): {req.text[:80]}...")
 
     # Review findings
     total_findings = sum(s.review_findings for s in data.sections)
@@ -297,7 +302,7 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
 
     for req in data.requirements:
         anchor = _make_anchor(req.id)
-        req_link = f"[{req.id}](../{req.spec_path}#{anchor})"
+        req_link = f"[{req.id}](../../{req.spec_path}#{anchor})"
         display_text = req.text[:60] + ("..." if len(req.text) > 60 else "")
 
         events = fr_events.get(req.id, [])
@@ -420,7 +425,7 @@ def _coverage_summary_events(data: ComplianceData) -> list[str]:
         if unverified:
             lines.extend(["", "### Not Verified", ""])
             for req in unverified:
-                lines.append(f"- [{req.id}](../{req.spec_path}) ({req.priority}): {req.text[:80]}...")
+                lines.append(f"- [{req.id}](../../{req.spec_path}) ({req.priority}): {req.text[:80]}...")
 
     # Last test run
     if data.test_runs:
@@ -445,14 +450,18 @@ def _coverage_summary_events(data: ComplianceData) -> list[str]:
     return lines
 
 
+COMPLIANCE_DIR = ".shipwright/compliance"
+LEGACY_COMPLIANCE_DIRNAME = "compliance"
+
+
 def generate_file(project_root: Path, data: ComplianceData | None = None) -> Path:
-    """Generate RTM and write to compliance/traceability-matrix.md."""
+    """Generate RTM and write to .shipwright/compliance/traceability-matrix.md."""
     if data is None:
         from scripts.lib.data_collector import collect_all
         data = collect_all(project_root)
 
-    output_dir = project_root / "compliance"
-    output_dir.mkdir(exist_ok=True)
+    output_dir = project_root / COMPLIANCE_DIR
+    output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / "traceability-matrix.md"
     output_path.write_text(generate(data), encoding="utf-8")
     return output_path

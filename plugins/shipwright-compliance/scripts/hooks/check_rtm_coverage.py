@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """PreToolUse hook: Soft-block git commit when RTM coverage is below threshold.
 
-Reads the compliance traceability matrix from compliance/traceability-matrix.md,
+Reads the compliance traceability matrix from .shipwright/compliance/traceability-matrix.md,
 extracts coverage percentage, and blocks commit if below threshold.
 
 Exit codes:
@@ -18,6 +18,7 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
 from typing import Any
 
 
@@ -45,7 +46,7 @@ def get_coverage_from_rtm(project_root: str) -> int | None:
 
     Returns coverage as int (0-100) or None if file doesn't exist.
     """
-    rtm_path = os.path.join(project_root, "compliance", "traceability-matrix.md")
+    rtm_path = str(Path(project_root) / ".shipwright" / "compliance" / "traceability-matrix.md")
     if not os.path.exists(rtm_path):
         return None
 
@@ -116,7 +117,7 @@ def main() -> int:
 
 def _find_uncovered_sections(project_root: str) -> list[str]:
     """Find sections without commits from the RTM."""
-    rtm_path = os.path.join(project_root, "compliance", "traceability-matrix.md")
+    rtm_path = str(Path(project_root) / ".shipwright" / "compliance" / "traceability-matrix.md")
     uncovered = []
     try:
         with open(rtm_path, encoding="utf-8") as f:

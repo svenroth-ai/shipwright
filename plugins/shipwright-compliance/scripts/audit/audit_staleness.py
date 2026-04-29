@@ -34,16 +34,19 @@ class DocInfo:
     """Registry entry describing a tracked compliance doc."""
 
     key: str  # "rtm" | "test_evidence" | "change_history" | "sbom" | "dashboard"
-    rel_path: str  # e.g. "compliance/traceability-matrix.md"
+    rel_path: str  # e.g. ".shipwright/compliance/traceability-matrix.md"
 
+
+COMPLIANCE_DIR = ".shipwright/compliance"
+LEGACY_COMPLIANCE_DIRNAME = "compliance"
 
 # Single source of truth for the doc set that Group E scans + (Step 7) fixes.
 DOC_REGISTRY: tuple[DocInfo, ...] = (
-    DocInfo("rtm", "compliance/traceability-matrix.md"),
-    DocInfo("test_evidence", "compliance/test-evidence.md"),
-    DocInfo("change_history", "compliance/change-history.md"),
-    DocInfo("sbom", "compliance/sbom.md"),
-    DocInfo("dashboard", "compliance/dashboard.md"),
+    DocInfo("rtm", f"{COMPLIANCE_DIR}/traceability-matrix.md"),
+    DocInfo("test_evidence", f"{COMPLIANCE_DIR}/test-evidence.md"),
+    DocInfo("change_history", f"{COMPLIANCE_DIR}/change-history.md"),
+    DocInfo("sbom", f"{COMPLIANCE_DIR}/sbom.md"),
+    DocInfo("dashboard", f"{COMPLIANCE_DIR}/dashboard.md"),
 )
 
 

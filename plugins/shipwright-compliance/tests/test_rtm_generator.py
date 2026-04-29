@@ -120,5 +120,5 @@ class TestGenerateFile:
         data = ComplianceData(project_root=root)
         data.timestamp = "2026-03-21T14:00:00Z"
         path = generate_file(root, data)
-        assert (root / "compliance").exists()
+        assert (root / ".shipwright" / "compliance").exists()
         assert path.exists()

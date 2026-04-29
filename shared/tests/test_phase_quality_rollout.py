@@ -160,7 +160,7 @@ def test_critical_gate_issue_carries_remediation():
 
 def test_read_latest_finding_picks_most_recent(proj: Path, monkeypatch):
     # Two phase findings; newer should win.
-    d = proj / "compliance" / "skill-compliance"
+    d = proj / ".shipwright" / "compliance" / "skill-compliance"
     d.mkdir(parents=True)
     older = d / "build-run-1-sess-1.json"
     newer = d / "build-run-2-sess-2.json"

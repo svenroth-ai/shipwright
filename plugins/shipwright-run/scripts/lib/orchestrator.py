@@ -527,11 +527,11 @@ def _read_latest_phase_quality_finding(
     """Return the most recent Phase-Quality finding JSON for ``phase``.
 
     The Stop hook writes per-run findings to
-    ``compliance/skill-compliance/<phase>-<run_id>-<session>.json``. We
+    ``.shipwright/compliance/skill-compliance/<phase>-<run_id>-<session>.json``. We
     pick the latest by mtime so the gate reflects the current run's
     audit (plan § 4.4).
     """
-    finding_dir = project_root / "compliance" / "skill-compliance"
+    finding_dir = project_root / ".shipwright" / "compliance" / "skill-compliance"
     if not finding_dir.is_dir():
         return None
 

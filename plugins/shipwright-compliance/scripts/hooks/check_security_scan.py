@@ -15,6 +15,7 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
 from typing import Any
 
 
@@ -42,7 +43,7 @@ def get_unresolved_findings(project_root: str) -> tuple[int, list[str]]:
 
     Returns (unresolved_count, finding_descriptions).
     """
-    rtm_path = os.path.join(project_root, "compliance", "traceability-matrix.md")
+    rtm_path = str(Path(project_root) / ".shipwright" / "compliance" / "traceability-matrix.md")
     if not os.path.exists(rtm_path):
         return 0, []
 

@@ -453,7 +453,7 @@ def _validate_deploy(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
 def _validate_compliance(project_root: Path) -> tuple[bool, list[dict[str, str]]]:
     """Compliance phase: check artifacts exist. INFORM only — non-blocking."""
     issues: list[dict[str, str]] = []
-    compliance_dir = project_root / "compliance"
+    compliance_dir = project_root / ".shipwright" / "compliance"
 
     required = ["dashboard.md", "traceability-matrix.md", "test-evidence.md", "change-history.md", "sbom.md"]
     present = []

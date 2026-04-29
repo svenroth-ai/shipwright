@@ -59,7 +59,7 @@ def run(
             suggested_iterate_cmd=(
                 f"/shipwright-iterate --type change "
                 f"\"reconcile {check_id} ({human_name}) "
-                f"— see compliance/audit-report.md\""
+                f"— see .shipwright/compliance/audit-report.md\""
             ),
         )
         finding.name = human_name

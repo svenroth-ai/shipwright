@@ -312,22 +312,20 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/scripts/tools/verifiers/compliance_compliance.py",        # LEGACY_COMPLIANCE_DIRNAME constant
         "shared/scripts/tools/verifiers/infrastructure_checks.py",        # LEGACY_COMPLIANCE_DIRNAME constant
         "shared/scripts/tools/verifiers/security_compliance.py",          # LEGACY_COMPLIANCE_DIRNAME constant
-        # plugins/ (C-scope, ~14 files)
-        "plugins/shipwright-compliance/scripts/lib/compliance_report.py",
-        "plugins/shipwright-compliance/scripts/lib/sbom_generator.py",
-        "plugins/shipwright-compliance/scripts/lib/rtm_generator.py",
-        "plugins/shipwright-compliance/scripts/lib/test_evidence.py",
-        "plugins/shipwright-compliance/scripts/lib/change_history.py",
-        "plugins/shipwright-compliance/scripts/audit/audit_report.py",
-        "plugins/shipwright-compliance/scripts/audit/audit_staleness.py",
-        "plugins/shipwright-compliance/scripts/audit/group_c.py",
-        "plugins/shipwright-compliance/scripts/audit/run_audit.py",
-        "plugins/shipwright-compliance/scripts/hooks/check_security_scan.py",
-        "plugins/shipwright-compliance/scripts/hooks/check_rtm_coverage.py",
-        "plugins/shipwright-adopt/scripts/lib/compliance_bridge.py",
-        "plugins/shipwright-adopt/scripts/lib/dry_run_reporter.py",
-        "plugins/shipwright-run/scripts/lib/phase_validators.py",
+        # plugins/ (C-scope) — migrated in C; files retaining legitimate
+        # LEGACY_COMPLIANCE_DIRNAME constants stay allowlisted:
+        "plugins/shipwright-compliance/scripts/lib/compliance_report.py",  # COMPLIANCE_DIR + LEGACY constant
+        "plugins/shipwright-compliance/scripts/lib/sbom_generator.py",     # COMPLIANCE_DIR + LEGACY constant
+        "plugins/shipwright-compliance/scripts/lib/rtm_generator.py",      # COMPLIANCE_DIR + LEGACY constant
+        "plugins/shipwright-compliance/scripts/lib/test_evidence.py",      # COMPLIANCE_DIR + LEGACY constant
+        "plugins/shipwright-compliance/scripts/lib/change_history.py",     # COMPLIANCE_DIR + LEGACY constant
+        "plugins/shipwright-compliance/scripts/audit/audit_staleness.py",  # COMPLIANCE_DIR + LEGACY constant
+        # Plugin-path comment in audit_adapters.py (PLUGIN-PATH, not artifact path)
+        "plugins/shipwright-compliance/scripts/audit/audit_adapters.py",
+        # PHASE-NAME / skill-compliance subdir refs (compliance is a phase name; the
+        # `skill-compliance/` subdir under .shipwright/compliance/ is the dominant text).
         "plugins/shipwright-run/scripts/lib/orchestrator.py",
+        "plugins/shipwright-run/scripts/lib/phase_validators.py",
         # Tests (narrowed in B+C as files migrate)
         "shared/tests/**",
         "shared/scripts/tests/**",

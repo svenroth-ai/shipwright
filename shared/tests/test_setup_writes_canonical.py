@@ -388,3 +388,70 @@ def test_no_legacy_agent_docs_path_construction_in_plugin_source(plugin: str) ->
         f"Plugin {plugin}: legacy agent_docs path-construction pattern still "
         f"present in {len(offenders)} file(s): {offenders}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Sub-Iterate C contract tests for compliance migration
+# ---------------------------------------------------------------------------
+
+
+def test_compliance_generators_write_under_dot_shipwright(tmp_path: Path) -> None:
+    """All shipwright-compliance generators must write under
+    .shipwright/compliance/, never compliance/ at project root."""
+    pytest.importorskip(
+        "scripts.lib.compliance_report",
+        reason="shipwright-compliance plugin not on path in current sys.modules state",
+    )
+    _add_plugin_to_path("shipwright-compliance")
+
+    project_root = tmp_path / "proj"
+    project_root.mkdir()
+    # Minimal fixtures so generators have something to write
+    (project_root / "shipwright_run_config.json").write_text(
+        '{"profile": "test", "scope": "minimal"}', encoding="utf-8"
+    )
+
+    try:
+        from scripts.lib.compliance_report import COMPLIANCE_DIR  # type: ignore
+    except ImportError:
+        pytest.skip("compliance plugin not importable in this test session")
+
+    canonical = project_root / COMPLIANCE_DIR
+    legacy = project_root / "compliance"
+
+    # Module-level constants must equal the manifest canonical
+    assert COMPLIANCE_DIR == ".shipwright/compliance"
+
+    # Legacy MUST NOT exist after any test fixture setup.
+    assert not legacy.exists(), (
+        "Legacy `compliance/` directory present at fixture-setup time; the "
+        "migration must enforce that no test path can create it."
+    )
+
+    # Confirm the canonical layout is what the generators target.
+    canonical.mkdir(parents=True, exist_ok=True)
+    assert canonical.is_dir()
+    assert not legacy.exists()
+
+
+@pytest.mark.parametrize("plugin", [
+    "shipwright-adopt", "shipwright-compliance", "shipwright-run",
+])
+def test_no_legacy_compliance_path_construction_in_plugin_source(plugin: str) -> None:
+    """Sub-Iterate C contract for compliance migration: the pattern
+    ``project_root / "compliance"`` must not appear in this plugin's source.
+    Mirrors the planning + designs + agent_docs equivalents above.
+    """
+    plug_dir = _REPO / "plugins" / plugin / "scripts"
+    if not plug_dir.is_dir():
+        pytest.skip(f"plugin {plugin} has no scripts/ directory")
+    forbidden = 'project_root / "compliance"'
+    offenders: list[str] = []
+    for py in plug_dir.rglob("*.py"):
+        text = py.read_text(encoding="utf-8")
+        if forbidden in text:
+            offenders.append(str(py.relative_to(_REPO)))
+    assert not offenders, (
+        f"Plugin {plugin}: legacy compliance path-construction pattern still "
+        f"present in {len(offenders)} file(s): {offenders}"
+    )

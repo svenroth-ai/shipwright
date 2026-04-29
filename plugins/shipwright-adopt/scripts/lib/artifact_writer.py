@@ -201,7 +201,7 @@ def _render_decision_log(
 
 ### Context
 
-This repository existed with {features_count} detected feature(s) and substantive git history before /shipwright-adopt ran. The goal is to bring it under the Shipwright SDLC (CLAUDE.md + .shipwright/agent_docs + .shipwright/planning/ + compliance/ + configs) without disrupting the existing codebase.
+This repository existed with {features_count} detected feature(s) and substantive git history before /shipwright-adopt ran. The goal is to bring it under the Shipwright SDLC (CLAUDE.md + .shipwright/agent_docs + .shipwright/planning/ + .shipwright/compliance/ + configs) without disrupting the existing codebase.
 
 ### Decision
 

@@ -60,7 +60,7 @@ def main(argv: list[str] | None = None) -> int:
         print(report.import_gate_error, file=sys.stderr)
         return 3
 
-    # Step 9 rendering. ``--format both`` writes compliance/audit-report.md
+    # Step 9 rendering. ``--format both`` writes .shipwright/compliance/audit-report.md
     # AND shipwright_audit_report.json; ``--format md|json`` writes only
     # the named one. stdout always carries the JSON payload so automated
     # callers have a stable contract.

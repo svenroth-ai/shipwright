@@ -106,7 +106,7 @@ def test_write_creates_both_artifacts(tmp_path):
     report = AuditReport(findings=[_finding(status="fail")])
     paths = write(report, tmp_path)
     assert set(paths) == {"md", "json"}
-    assert paths["md"] == tmp_path / "compliance" / "audit-report.md"
+    assert paths["md"] == tmp_path / ".shipwright" / "compliance" / "audit-report.md"
     assert paths["json"] == tmp_path / "shipwright_audit_report.json"
     assert paths["md"].exists()
     assert paths["json"].exists()
@@ -119,7 +119,7 @@ def test_write_respects_format_flags(tmp_path):
     report = AuditReport()
     paths = write(report, tmp_path, markdown=False, json_out=True)
     assert set(paths) == {"json"}
-    assert not (tmp_path / "compliance" / "audit-report.md").exists()
+    assert not (tmp_path / ".shipwright" / "compliance" / "audit-report.md").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -160,4 +160,4 @@ def test_run_audit_cli_respects_json_only_format(tmp_path):
     assert result.returncode in (0, 1), result.stderr
     payload = json.loads(result.stdout)
     assert set(payload["written"]) == {"json"}
-    assert not (tmp_path / "compliance" / "audit-report.md").exists()
+    assert not (tmp_path / ".shipwright" / "compliance" / "audit-report.md").exists()

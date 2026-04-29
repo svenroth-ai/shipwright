@@ -48,8 +48,8 @@ def run_hook(hook_script: str, payload: dict, cwd: Path) -> tuple[int, dict | No
 
 def write_rtm(project_root: Path, coverage_pct: int, unresolved: int = 0):
     """Create a realistic traceability-matrix.md."""
-    compliance_dir = project_root / "compliance"
-    compliance_dir.mkdir(exist_ok=True)
+    compliance_dir = project_root / ".shipwright" / "compliance"
+    compliance_dir.mkdir(parents=True, exist_ok=True)
 
     lines = [
         "# Requirements Traceability Matrix",

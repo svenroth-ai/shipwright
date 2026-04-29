@@ -84,12 +84,13 @@ def run_lib_fallback(project_root: Path) -> dict[str, Any]:
         results["skipped"].append(f"collect_all: {e!r}")
         return results
     # Call each generator if importable
+    _COMPLIANCE_DIR = ".shipwright/compliance"
     for mod_name, output_name in [
-        ("sbom_generator", "compliance/sbom.md"),
-        ("change_history", "compliance/change-history.md"),
-        ("rtm_generator", "compliance/traceability-matrix.md"),
-        ("test_evidence", "compliance/test-evidence.md"),
-        ("compliance_report", "compliance/dashboard.md"),
+        ("sbom_generator", f"{_COMPLIANCE_DIR}/sbom.md"),
+        ("change_history", f"{_COMPLIANCE_DIR}/change-history.md"),
+        ("rtm_generator", f"{_COMPLIANCE_DIR}/traceability-matrix.md"),
+        ("test_evidence", f"{_COMPLIANCE_DIR}/test-evidence.md"),
+        ("compliance_report", f"{_COMPLIANCE_DIR}/dashboard.md"),
     ]:
         try:
             mod = __import__(f"lib.{mod_name}", fromlist=["generate"])

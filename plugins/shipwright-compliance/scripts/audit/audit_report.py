@@ -2,7 +2,7 @@
 
 Takes an :class:`AuditReport` and produces:
 
-1. A Markdown summary (``compliance/audit-report.md``) split into two
+1. A Markdown summary (``.shipwright/compliance/audit-report.md``) split into two
    top-level sections:
    - **Preventive re-checks** (source=preventive-rerun): Groups C/F/B3/B6
    - **Detective-only checks** (source=detective-only): everything else
@@ -165,8 +165,8 @@ def write(
     """Persist the report(s) under ``project_root``. Returns {format: path}."""
     paths: dict[str, Path] = {}
     if markdown:
-        md_dir = project_root / "compliance"
-        md_dir.mkdir(exist_ok=True)
+        md_dir = project_root / ".shipwright" / "compliance"
+        md_dir.mkdir(parents=True, exist_ok=True)
         md_path = md_dir / "audit-report.md"
         md_path.write_text(render_markdown(report, project_root=project_root),
                            encoding="utf-8")

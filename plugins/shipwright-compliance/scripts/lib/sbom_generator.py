@@ -1,6 +1,6 @@
 """Software Bill of Materials (SBOM) generator.
 
-Produces compliance/sbom.md with all open-source dependencies,
+Produces .shipwright/compliance/sbom.md with all open-source dependencies,
 versions, and licenses.
 """
 
@@ -126,14 +126,18 @@ def generate(data: ComplianceData) -> str:
     return "\n".join(lines) + "\n"
 
 
+COMPLIANCE_DIR = ".shipwright/compliance"
+LEGACY_COMPLIANCE_DIRNAME = "compliance"
+
+
 def generate_file(project_root: Path, data: ComplianceData | None = None) -> Path:
-    """Generate SBOM and write to compliance/sbom.md."""
+    """Generate SBOM and write to .shipwright/compliance/sbom.md."""
     if data is None:
         from scripts.lib.data_collector import collect_all
         data = collect_all(project_root)
 
-    output_dir = project_root / "compliance"
-    output_dir.mkdir(exist_ok=True)
+    output_dir = project_root / COMPLIANCE_DIR
+    output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / "sbom.md"
     output_path.write_text(generate(data), encoding="utf-8")
     return output_path

@@ -1,6 +1,6 @@
 """Test Evidence Report generator.
 
-Produces compliance/test-evidence.md with per-section test results,
+Produces .shipwright/compliance/test-evidence.md with per-section test results,
 test execution summary (unit/smoke/e2e), and links to specs and test files.
 """
 
@@ -283,7 +283,7 @@ def _e2e_details(data: ComplianceData) -> list[str]:
         lines.extend([
             "## Playwright Report",
             "",
-            "**Interactive E2E report:** [playwright-report/index.html](../playwright-report/index.html)",
+            "**Interactive E2E report:** [playwright-report/index.html](../../playwright-report/index.html)",
             "",
         ])
 
@@ -465,14 +465,18 @@ def _code_review_evidence_events(data: ComplianceData) -> list[str]:
     return lines
 
 
+COMPLIANCE_DIR = ".shipwright/compliance"
+LEGACY_COMPLIANCE_DIRNAME = "compliance"
+
+
 def generate_file(project_root: Path, data: ComplianceData | None = None) -> Path:
-    """Generate Test Evidence Report and write to compliance/test-evidence.md."""
+    """Generate Test Evidence Report and write to .shipwright/compliance/test-evidence.md."""
     if data is None:
         from scripts.lib.data_collector import collect_all
         data = collect_all(project_root)
 
-    output_dir = project_root / "compliance"
-    output_dir.mkdir(exist_ok=True)
+    output_dir = project_root / COMPLIANCE_DIR
+    output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / "test-evidence.md"
     output_path.write_text(generate(data), encoding="utf-8")
     return output_path
