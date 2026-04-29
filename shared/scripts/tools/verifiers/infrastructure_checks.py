@@ -1,11 +1,12 @@
 """Infrastructure-category checks (Phase-Quality PR 3).
 
-Implements I1-I4 — freshness gates for the generated ``compliance/*``
-docs that downstream auditors rely on (RTM, test evidence, change
-history, SBOM). All four checks compare a doc's mtime against the
-latest ``phase_started`` / ``phase_completed`` event for the current
-phase; when no event is recorded yet, we SKIP instead of FAIL to avoid
-false positives on mid-flow audits (plan § 7 R11).
+Implements I1-I4 — freshness gates for the generated
+``.shipwright/compliance/*`` docs that downstream auditors rely on
+(RTM, test evidence, change history, SBOM). All four checks compare a
+doc's mtime against the latest ``phase_started`` / ``phase_completed``
+event for the current phase; when no event is recorded yet, we SKIP
+instead of FAIL to avoid false positives on mid-flow audits (plan
+§ 7 R11).
 
 Tier classification (plan § 3):
 - **I1-I3** — Tier-1, FAIL on missing or stale doc.
@@ -14,10 +15,10 @@ Tier classification (plan § 3):
   mtime newer than SBOM mtime) so clean runs don't produce noise.
 
 Plan mapping:
-- I1 → ``compliance/traceability-matrix.md`` > latest ``phase_completed`` ts
-- I2 → ``compliance/test-evidence.md`` > latest ``phase_started`` ts
-- I3 → ``compliance/change-history.md`` > latest ``phase_started`` ts
-- I4 → ``compliance/sbom.md`` > latest ``phase_started`` ts, **only if**
+- I1 → ``.shipwright/compliance/traceability-matrix.md`` > latest ``phase_completed`` ts
+- I2 → ``.shipwright/compliance/test-evidence.md`` > latest ``phase_started`` ts
+- I3 → ``.shipwright/compliance/change-history.md`` > latest ``phase_started`` ts
+- I4 → ``.shipwright/compliance/sbom.md`` > latest ``phase_started`` ts, **only if**
   a dependency manifest has changed since the last SBOM write
 """
 
@@ -42,26 +43,29 @@ from lib.phase_quality import (  # noqa: E402
 from tools.verifiers.common import read_events_jsonl  # noqa: E402
 
 
+COMPLIANCE_DIR = ".shipwright/compliance"
+LEGACY_COMPLIANCE_DIRNAME = "compliance"
+
 I1_NAME = "I1 traceability-matrix.md fresh after phase_completed"
 I2_NAME = "I2 test-evidence.md fresh after phase_started"
 I3_NAME = "I3 change-history.md fresh after phase_started"
 I4_NAME = "I4 sbom.md fresh when dependencies changed"
 
 I1_REMEDIATION = (
-    "Regenerate compliance/traceability-matrix.md via "
+    f"Regenerate {COMPLIANCE_DIR}/traceability-matrix.md via "
     "`uv run update_compliance.py --phase <phase>`."
 )
 I2_REMEDIATION = (
-    "Regenerate compliance/test-evidence.md via "
+    f"Regenerate {COMPLIANCE_DIR}/test-evidence.md via "
     "`uv run update_compliance.py --phase test` (or the build/iterate "
     "equivalent); test results feed this doc."
 )
 I3_REMEDIATION = (
-    "Regenerate compliance/change-history.md via "
+    f"Regenerate {COMPLIANCE_DIR}/change-history.md via "
     "`uv run update_compliance.py --phase <phase>`."
 )
 I4_REMEDIATION = (
-    "Regenerate compliance/sbom.md (for example via "
+    f"Regenerate {COMPLIANCE_DIR}/sbom.md (for example via "
     "`uv run update_compliance.py --phase build`) so dependency "
     "changes are captured."
 )
@@ -162,7 +166,7 @@ def _check_doc_fresh(
 def check_i1_rtm_fresh(project_root: Path, phase: str) -> dict[str, Any]:
     return _check_doc_fresh(
         project_root,
-        "compliance/traceability-matrix.md",
+        f"{COMPLIANCE_DIR}/traceability-matrix.md",
         phase,
         check_id="I1",
         name=I1_NAME,
@@ -174,7 +178,7 @@ def check_i1_rtm_fresh(project_root: Path, phase: str) -> dict[str, Any]:
 def check_i2_test_evidence_fresh(project_root: Path, phase: str) -> dict[str, Any]:
     return _check_doc_fresh(
         project_root,
-        "compliance/test-evidence.md",
+        f"{COMPLIANCE_DIR}/test-evidence.md",
         phase,
         check_id="I2",
         name=I2_NAME,
@@ -186,7 +190,7 @@ def check_i2_test_evidence_fresh(project_root: Path, phase: str) -> dict[str, An
 def check_i3_change_history_fresh(project_root: Path, phase: str) -> dict[str, Any]:
     return _check_doc_fresh(
         project_root,
-        "compliance/change-history.md",
+        f"{COMPLIANCE_DIR}/change-history.md",
         phase,
         check_id="I3",
         name=I3_NAME,
@@ -221,7 +225,7 @@ def check_i4_sbom_fresh_on_dep_change(
     - SBOM present, no dep file newer than SBOM → SKIP (clean run)
     - SBOM stale compared to dep files → WARN with remediation
     """
-    sbom = project_root / "compliance" / "sbom.md"
+    sbom = project_root / COMPLIANCE_DIR / "sbom.md"
     any_dep_file = any(
         (project_root / n).exists() for n in _DEPENDENCY_FILES
     )
@@ -236,7 +240,7 @@ def check_i4_sbom_fresh_on_dep_change(
     if not sbom.exists():
         return make_finding(
             "I4", STATUS_WARN,
-            "compliance/sbom.md missing but dependency manifest present",
+            f"{COMPLIANCE_DIR}/sbom.md missing but dependency manifest present",
             name=I4_NAME,
             remediation=I4_REMEDIATION,
         )

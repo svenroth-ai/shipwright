@@ -17,7 +17,7 @@ def project(tmp_path):
         encoding="utf-8",
     )
     (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
-    (tmp_path / "compliance").mkdir()
+    (tmp_path / ".shipwright" / "compliance").mkdir(parents=True)
     (tmp_path / "shipwright_events.jsonl").write_text("", encoding="utf-8")
     return tmp_path
 
@@ -98,7 +98,7 @@ def test_run_is_idempotent(project, monkeypatch):
 
 
 def test_run_graceful_without_compliance_dir(tmp_path, monkeypatch):
-    """No compliance/ dir should not crash."""
+    """No .shipwright/compliance/ dir should not crash."""
     (tmp_path / "shipwright_run_config.json").write_text("{}", encoding="utf-8")
     (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     monkeypatch.chdir(tmp_path)

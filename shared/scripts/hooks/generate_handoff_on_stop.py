@@ -285,7 +285,7 @@ def main() -> int:
 
         # Update compliance docs (best-effort, idempotent)
         try:
-            compliance_dashboard = project_root / "compliance" / "dashboard.md"
+            compliance_dashboard = project_root / ".shipwright" / "compliance" / "dashboard.md"
             run_cfg = project_root / "shipwright_run_config.json"
             needs_update = (
                 run_cfg.exists()

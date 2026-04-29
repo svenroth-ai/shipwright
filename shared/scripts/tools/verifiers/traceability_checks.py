@@ -4,7 +4,7 @@ Implements T1 and T2 — the Spec ↔ RTM mapping invariants that catch
 "requirement drifted past the matrix" bugs.
 
 - **T1** (Tier-1, FAIL): every FR declared in a ``.shipwright/planning/*/spec.md`` is
-  present in ``compliance/traceability-matrix.md``. Catches the exact
+  present in ``.shipwright/compliance/traceability-matrix.md``. Catches the exact
   gap that the plan names in § 1 ("FR-7 in spec.md, not in RTM").
 - **T2** (Tier-2, WARN): no RTM rows reference FR ids that don't exist
   in any spec. Heuristic only — test renames, partial checkouts or
@@ -41,7 +41,7 @@ T1_NAME = "T1 every spec FR is mapped in RTM"
 T2_NAME = "T2 no orphan FR rows in RTM"
 
 T1_REMEDIATION = (
-    "Add the missing FR rows to compliance/traceability-matrix.md "
+    "Add the missing FR rows to .shipwright/compliance/traceability-matrix.md "
     "(regenerate via `uv run update_compliance.py --phase <phase>`)."
 )
 T2_REMEDIATION = (
@@ -56,7 +56,7 @@ _RTM_FR_RE = re.compile(r"\bFR-\d+\.\d+\b")
 
 
 def _rtm_fr_ids(project_root: Path) -> tuple[set[str], Path | None]:
-    rtm = project_root / "compliance" / "traceability-matrix.md"
+    rtm = project_root / ".shipwright" / "compliance" / "traceability-matrix.md"
     if not rtm.exists():
         return set(), None
     try:
@@ -86,7 +86,7 @@ def check_t1_all_spec_frs_mapped(project_root: Path) -> dict[str, Any]:
     if rtm_path is None:
         return make_finding(
             "T1", STATUS_FAIL,
-            f"compliance/traceability-matrix.md missing "
+            f".shipwright/compliance/traceability-matrix.md missing "
             f"({len(requirements)} FR(s) unmapped)",
             name=T1_NAME,
             remediation=T1_REMEDIATION,
@@ -131,7 +131,7 @@ def check_t2_no_orphan_rtm_rows(project_root: Path) -> dict[str, Any]:
     if rtm_path is None:
         return make_finding(
             "T2", STATUS_SKIP,
-            "compliance/traceability-matrix.md missing — T1 covers this",
+            ".shipwright/compliance/traceability-matrix.md missing — T1 covers this",
             name=T2_NAME,
         )
 

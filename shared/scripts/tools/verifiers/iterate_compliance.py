@@ -44,7 +44,7 @@ W2_REMEDIATION = (
 )
 W3_REMEDIATION = (
     "Call record_event --type work_completed --source iterate and "
-    "regenerate compliance/test-evidence.md via update_compliance.py."
+    "regenerate .shipwright/compliance/test-evidence.md via update_compliance.py."
 )
 
 
@@ -176,7 +176,7 @@ def check_w3_work_completed_and_evidence(
     project_root: Path,
     run_id: str,
 ) -> dict[str, Any]:
-    """W3 — work_completed event recorded + compliance/test-evidence.md fresh."""
+    """W3 — work_completed event recorded + .shipwright/compliance/test-evidence.md fresh."""
     events = read_events_jsonl(project_root)
     matched = [
         e for e in events
@@ -200,11 +200,11 @@ def check_w3_work_completed_and_evidence(
             remediation=W3_REMEDIATION,
         )
 
-    evidence_file = project_root / "compliance" / "test-evidence.md"
+    evidence_file = project_root / ".shipwright" / "compliance" / "test-evidence.md"
     if not evidence_file.exists():
         return make_finding(
             "W3", STATUS_FAIL,
-            "compliance/test-evidence.md missing",
+            ".shipwright/compliance/test-evidence.md missing",
             name=W3_NAME,
             remediation=W3_REMEDIATION,
         )

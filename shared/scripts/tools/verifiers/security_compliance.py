@@ -2,13 +2,13 @@
 
 Implements Sec1 and Sec2:
 
-- **Sec1** — ``compliance/security-scan-report.md`` exists and was
+- **Sec1** — ``.shipwright/compliance/security-scan-report.md`` exists and was
   produced *after* the phase start (proxied by the latest
   ``phase_started`` event for ``security`` in
   ``shipwright_events.jsonl``). FAIL when the report is missing or
   stale.
 - **Sec2** — no unresolved ``CRITICAL`` findings remain in the report,
-  OR the user logged an override in ``compliance/compliance_overrides.log``
+  OR the user logged an override in ``.shipwright/compliance/compliance_overrides.log``
   (matches the override pattern used by ``check_security_scan.py``).
 """
 
@@ -32,16 +32,19 @@ from lib.phase_quality import (  # noqa: E402
 from tools.verifiers.common import read_events_jsonl  # noqa: E402
 
 
+COMPLIANCE_DIR = ".shipwright/compliance"
+LEGACY_COMPLIANCE_DIRNAME = "compliance"
+
 SEC1_NAME = "Sec1 security-scan-report.md fresh"
 SEC2_NAME = "Sec2 no unresolved CRITICAL findings"
 
 SEC1_REMEDIATION = (
     "Run the security scan (SKILL.md Step 2), then re-generate "
-    "compliance/security-scan-report.md."
+    f"{COMPLIANCE_DIR}/security-scan-report.md."
 )
 SEC2_REMEDIATION = (
     "Remediate CRITICAL findings in the report, or append a line to "
-    "compliance/compliance_overrides.log with timestamp + reason."
+    f"{COMPLIANCE_DIR}/compliance_overrides.log with timestamp + reason."
 )
 
 _CRITICAL_ROW_RE = re.compile(
@@ -68,11 +71,11 @@ def _latest_phase_started(project_root: Path, phase: str) -> float:
 
 
 def check_sec1_report_fresh(project_root: Path) -> dict[str, Any]:
-    report = project_root / "compliance" / "security-scan-report.md"
+    report = project_root / COMPLIANCE_DIR / "security-scan-report.md"
     if not report.exists():
         return make_finding(
             "Sec1", STATUS_FAIL,
-            "compliance/security-scan-report.md missing",
+            f"{COMPLIANCE_DIR}/security-scan-report.md missing",
             name=SEC1_NAME,
             remediation=SEC1_REMEDIATION,
         )
@@ -138,7 +141,7 @@ def _count_critical_unresolved(report_text: str) -> int:
 
 
 def _has_active_override(project_root: Path) -> tuple[bool, str]:
-    log = project_root / "compliance" / "compliance_overrides.log"
+    log = project_root / COMPLIANCE_DIR / "compliance_overrides.log"
     if not log.exists():
         return False, ""
     try:
@@ -152,7 +155,7 @@ def _has_active_override(project_root: Path) -> tuple[bool, str]:
 
 
 def check_sec2_no_critical(project_root: Path) -> dict[str, Any]:
-    report = project_root / "compliance" / "security-scan-report.md"
+    report = project_root / COMPLIANCE_DIR / "security-scan-report.md"
     if not report.exists():
         return make_finding(
             "Sec2", STATUS_SKIP,

@@ -304,19 +304,14 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/constitution.md",
         "README.md",
         "CLAUDE.md",
-        # Pre-Migration touchpoint inventory — production files migrated through B+C
-        # (will narrow as sub-iterates progress)
-        # shared/ (B-scope, ~10 files)
-        "shared/scripts/lib/phase_quality.py",
-        "shared/scripts/hooks/generate_handoff_on_stop.py",
-        "shared/scripts/tools/get_phase_context.py",
-        "shared/scripts/tools/finalize_iterate.py",
-        "shared/scripts/tools/verifiers/traceability_checks.py",
-        "shared/scripts/tools/verifiers/security_compliance.py",
-        "shared/scripts/tools/verifiers/iterate_compliance.py",
-        "shared/scripts/tools/verifiers/iterate_checks.py",
-        "shared/scripts/tools/verifiers/compliance_compliance.py",
-        "shared/scripts/tools/verifiers/infrastructure_checks.py",
+        # Files migrated in B that retain legitimate LEGACY_COMPLIANCE_DIRNAME constant
+        # (per Layer-6 cross-validation pattern) or KEYWORD/PHASE-NAME dict keys.
+        # The PATH-ref hits in these files are gone; what remains is by design.
+        "shared/scripts/lib/phase_quality.py",                            # LEGACY_COMPLIANCE_DIRNAME + phase-name dict keys
+        "shared/scripts/tools/finalize_iterate.py",                       # result["steps"]["compliance"] phase-name key
+        "shared/scripts/tools/verifiers/compliance_compliance.py",        # LEGACY_COMPLIANCE_DIRNAME constant
+        "shared/scripts/tools/verifiers/infrastructure_checks.py",        # LEGACY_COMPLIANCE_DIRNAME constant
+        "shared/scripts/tools/verifiers/security_compliance.py",          # LEGACY_COMPLIANCE_DIRNAME constant
         # plugins/ (C-scope, ~14 files)
         "plugins/shipwright-compliance/scripts/lib/compliance_report.py",
         "plugins/shipwright-compliance/scripts/lib/sbom_generator.py",

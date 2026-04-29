@@ -60,7 +60,7 @@ def _update_compliance(project_root: Path) -> list[str]:
             capture_output=True, text=True, timeout=30,
         )
         if result.returncode == 0:
-            compliance_dir = project_root / "compliance"
+            compliance_dir = project_root / ".shipwright" / "compliance"
             if compliance_dir.is_dir():
                 return [str(f.relative_to(project_root)) for f in compliance_dir.iterdir() if f.is_file()]
         else:

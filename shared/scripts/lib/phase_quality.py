@@ -100,10 +100,13 @@ MAX_REPORT_RUNS = 10
 MAX_SESSION_SUMMARY_RUNS = 5
 GC_AGE_DAYS = 90
 
-FINDING_DIR = "compliance/skill-compliance"
-REPORT_PATH = "compliance/skill-compliance-report.md"
+COMPLIANCE_DIR = ".shipwright/compliance"
+LEGACY_COMPLIANCE_DIRNAME = "compliance"
+
+FINDING_DIR = f"{COMPLIANCE_DIR}/skill-compliance"
+REPORT_PATH = f"{COMPLIANCE_DIR}/skill-compliance-report.md"
 SUMMARY_PATH = ".shipwright/agent_docs/skill-compliance-findings.md"
-DASHBOARD_PATH = "compliance/skill-compliance-dashboard.md"
+DASHBOARD_PATH = f"{COMPLIANCE_DIR}/skill-compliance-dashboard.md"
 LOCK_PATH = ".shipwright/locks/phase-quality.lock"
 
 
@@ -776,7 +779,7 @@ class LoadedFinding:
 
 
 def load_findings(project_root: Path) -> list[LoadedFinding]:
-    """Load every valid Finding-JSON under ``compliance/skill-compliance``.
+    """Load every valid Finding-JSON under ``.shipwright/compliance/skill-compliance``.
 
     Corrupt files are skipped with a stderr warning (plan § 4.13).
     """
@@ -825,7 +828,7 @@ def _roll_up_counts(payload: dict[str, Any]) -> dict[str, int]:
 
 
 def rewrite_aggregated_report(project_root: Path) -> Path | None:
-    """Regenerate ``compliance/skill-compliance-report.md`` from the
+    """Regenerate ``.shipwright/compliance/skill-compliance-report.md`` from the
     most-recent ``MAX_REPORT_RUNS`` finding JSONs.
     """
     findings = load_findings(project_root)[:MAX_REPORT_RUNS]
@@ -934,7 +937,7 @@ def rewrite_session_findings_summary(project_root: Path) -> Path | None:
 
 
 def write_quality_dashboard_file(project_root: Path) -> Path | None:
-    """Regenerate ``compliance/skill-compliance-dashboard.md``.
+    """Regenerate ``.shipwright/compliance/skill-compliance-dashboard.md``.
 
     Table: one row per phase, one column per category. Newest finding per
     phase wins. Heuristic (Tier-2) checks are reported as a separate

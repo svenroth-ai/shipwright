@@ -185,8 +185,8 @@ def test_w3_passes_with_event_and_fresh_evidence(proj: Path):
     _write_events(proj, [
         {"type": "work_completed", "source": "iterate", "ts": "2026-04-18T12:00:00Z"},
     ])
-    (proj / "compliance").mkdir()
-    ev = proj / "compliance" / "test-evidence.md"
+    (proj / ".shipwright" / "compliance").mkdir()
+    ev = proj / ".shipwright" / "compliance" / "test-evidence.md"
     ev.write_text("# Evidence\n", encoding="utf-8")
     now = time.time()
     ev.touch()
@@ -345,8 +345,8 @@ def test_sec1_fails_without_report(proj: Path):
 
 
 def test_sec1_passes_when_report_exists_without_phase_started(proj: Path):
-    (proj / "compliance").mkdir()
-    (proj / "compliance" / "security-scan-report.md").write_text(
+    (proj / ".shipwright" / "compliance").mkdir()
+    (proj / ".shipwright" / "compliance" / "security-scan-report.md").write_text(
         "# Security\n", encoding="utf-8",
     )
     f = security_compliance.check_sec1_report_fresh(proj)
@@ -354,8 +354,8 @@ def test_sec1_passes_when_report_exists_without_phase_started(proj: Path):
 
 
 def test_sec1_fails_when_report_stale(proj: Path):
-    (proj / "compliance").mkdir()
-    report = proj / "compliance" / "security-scan-report.md"
+    (proj / ".shipwright" / "compliance").mkdir()
+    report = proj / ".shipwright" / "compliance" / "security-scan-report.md"
     report.write_text("# Security\n", encoding="utf-8")
     # Force mtime far in the past
     past = time.time() - 7200
@@ -375,8 +375,8 @@ def test_sec2_skips_without_report(proj: Path):
 
 
 def test_sec2_passes_with_clean_report(proj: Path):
-    (proj / "compliance").mkdir()
-    (proj / "compliance" / "security-scan-report.md").write_text(
+    (proj / ".shipwright" / "compliance").mkdir()
+    (proj / ".shipwright" / "compliance" / "security-scan-report.md").write_text(
         "# Security\n\n| ID | Sev | Status |\n|---|---|---|\n| F-1 | LOW | resolved |\n",
         encoding="utf-8",
     )
@@ -385,8 +385,8 @@ def test_sec2_passes_with_clean_report(proj: Path):
 
 
 def test_sec2_fails_on_unresolved_critical(proj: Path):
-    (proj / "compliance").mkdir()
-    (proj / "compliance" / "security-scan-report.md").write_text(
+    (proj / ".shipwright" / "compliance").mkdir()
+    (proj / ".shipwright" / "compliance" / "security-scan-report.md").write_text(
         "# Security\n\n| ID | Sev | Status |\n|---|---|---|\n"
         "| F-1 | CRITICAL | unresolved |\n",
         encoding="utf-8",
@@ -396,13 +396,13 @@ def test_sec2_fails_on_unresolved_critical(proj: Path):
 
 
 def test_sec2_passes_with_active_override(proj: Path):
-    (proj / "compliance").mkdir()
-    (proj / "compliance" / "security-scan-report.md").write_text(
+    (proj / ".shipwright" / "compliance").mkdir()
+    (proj / ".shipwright" / "compliance" / "security-scan-report.md").write_text(
         "# Security\n\n| ID | Sev | Status |\n|---|---|---|\n"
         "| F-1 | CRITICAL | unresolved |\n",
         encoding="utf-8",
     )
-    (proj / "compliance" / "compliance_overrides.log").write_text(
+    (proj / ".shipwright" / "compliance" / "compliance_overrides.log").write_text(
         "2026-04-18 | Sec2 critical override | reason: false positive\n",
         encoding="utf-8",
     )
@@ -424,8 +424,8 @@ def test_cmp1_warns_without_dashboard(proj: Path):
 
 def test_cmp1_warns_on_missing_phase_mention(proj: Path):
     _write_run_config(proj, completed_steps=["project", "design", "build"])
-    (proj / "compliance").mkdir()
-    (proj / "compliance" / "dashboard.md").write_text(
+    (proj / ".shipwright" / "compliance").mkdir()
+    (proj / ".shipwright" / "compliance" / "dashboard.md").write_text(
         "# Dashboard\n\n- project complete\n- design complete\n",
         encoding="utf-8",
     )
@@ -436,8 +436,8 @@ def test_cmp1_warns_on_missing_phase_mention(proj: Path):
 
 def test_cmp1_passes_when_all_phases_mentioned(proj: Path):
     _write_run_config(proj, completed_steps=["project", "design", "build"])
-    (proj / "compliance").mkdir()
-    (proj / "compliance" / "dashboard.md").write_text(
+    (proj / ".shipwright" / "compliance").mkdir()
+    (proj / ".shipwright" / "compliance" / "dashboard.md").write_text(
         "# Dashboard\n\n- project\n- design\n- build\n",
         encoding="utf-8",
     )
@@ -451,8 +451,8 @@ def test_cmp2_skips_without_rtm(proj: Path):
 
 
 def test_cmp2_fails_below_threshold(proj: Path):
-    (proj / "compliance").mkdir()
-    (proj / "compliance" / "traceability-matrix.md").write_text(
+    (proj / ".shipwright" / "compliance").mkdir()
+    (proj / ".shipwright" / "compliance" / "traceability-matrix.md").write_text(
         "| Traceability coverage | 50% |\n", encoding="utf-8",
     )
     f = compliance_compliance.check_cmp2_rtm_coverage(proj)
@@ -460,8 +460,8 @@ def test_cmp2_fails_below_threshold(proj: Path):
 
 
 def test_cmp2_passes_at_threshold(proj: Path):
-    (proj / "compliance").mkdir()
-    (proj / "compliance" / "traceability-matrix.md").write_text(
+    (proj / ".shipwright" / "compliance").mkdir()
+    (proj / ".shipwright" / "compliance" / "traceability-matrix.md").write_text(
         "| Traceability coverage | 90% |\n", encoding="utf-8",
     )
     f = compliance_compliance.check_cmp2_rtm_coverage(proj)
@@ -469,8 +469,8 @@ def test_cmp2_passes_at_threshold(proj: Path):
 
 
 def test_cmp2_respects_configured_threshold(proj: Path):
-    (proj / "compliance").mkdir()
-    (proj / "compliance" / "traceability-matrix.md").write_text(
+    (proj / ".shipwright" / "compliance").mkdir()
+    (proj / ".shipwright" / "compliance" / "traceability-matrix.md").write_text(
         "| Traceability coverage | 75% |\n", encoding="utf-8",
     )
     (proj / "shipwright_compliance_config.json").write_text(

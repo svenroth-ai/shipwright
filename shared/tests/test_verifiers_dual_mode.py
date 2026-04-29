@@ -136,8 +136,8 @@ class TestIterateChecksDirOnly:
             e["date"] = f"2026-04-2{i}T10:00:00Z"
         _seed_dir_only_project(tmp_path, entries)
 
-        compliance_dir = tmp_path / "compliance"
-        compliance_dir.mkdir()
+        compliance_dir = tmp_path / ".shipwright" / "compliance"
+        compliance_dir.mkdir(parents=True)
         (compliance_dir / "dashboard.md").write_text(
             "# Compliance dashboard\n\nTotal iterates: 3\n",
             encoding="utf-8",

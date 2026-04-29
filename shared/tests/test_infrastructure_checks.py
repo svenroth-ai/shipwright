@@ -102,14 +102,14 @@ def test_i1_fails_without_rtm_file(proj: Path):
 
 def test_i1_skips_when_no_phase_completed_event(proj: Path):
     # R11 — mid-flow audit with doc but no event yet must SKIP, not FAIL.
-    _write_doc(proj, "compliance/traceability-matrix.md")
+    _write_doc(proj, ".shipwright/compliance/traceability-matrix.md")
     f = ic.check_i1_rtm_fresh(proj, "build")
     assert f["status"] == pq.STATUS_SKIP
     assert f["provenance"] == "unverified_marker"
 
 
 def test_i1_fails_when_rtm_stale(proj: Path):
-    _write_doc(proj, "compliance/traceability-matrix.md")
+    _write_doc(proj, ".shipwright/compliance/traceability-matrix.md")
     _write_events(proj, [
         {"type": "phase_completed", "phase": "build", "ts": _past_iso(-3600)},
     ])
@@ -122,7 +122,7 @@ def test_i1_passes_when_rtm_newer_than_event(proj: Path):
     _write_events(proj, [
         {"type": "phase_completed", "phase": "build", "ts": _past_iso(600)},
     ])
-    _write_doc(proj, "compliance/traceability-matrix.md")
+    _write_doc(proj, ".shipwright/compliance/traceability-matrix.md")
     f = ic.check_i1_rtm_fresh(proj, "build")
     assert f["status"] == pq.STATUS_PASS
 
@@ -138,7 +138,7 @@ def test_i2_fails_without_evidence_file(proj: Path):
 
 
 def test_i2_skips_without_phase_started_event(proj: Path):
-    _write_doc(proj, "compliance/test-evidence.md")
+    _write_doc(proj, ".shipwright/compliance/test-evidence.md")
     f = ic.check_i2_test_evidence_fresh(proj, "test")
     assert f["status"] == pq.STATUS_SKIP
 
@@ -147,7 +147,7 @@ def test_i2_passes_with_fresh_doc(proj: Path):
     _write_events(proj, [
         {"type": "phase_started", "phase": "test", "ts": _past_iso(600)},
     ])
-    _write_doc(proj, "compliance/test-evidence.md")
+    _write_doc(proj, ".shipwright/compliance/test-evidence.md")
     f = ic.check_i2_test_evidence_fresh(proj, "test")
     assert f["status"] == pq.STATUS_PASS
 
@@ -163,13 +163,13 @@ def test_i3_fails_without_doc(proj: Path):
 
 
 def test_i3_skips_without_event(proj: Path):
-    _write_doc(proj, "compliance/change-history.md")
+    _write_doc(proj, ".shipwright/compliance/change-history.md")
     f = ic.check_i3_change_history_fresh(proj, "changelog")
     assert f["status"] == pq.STATUS_SKIP
 
 
 def test_i3_fails_when_stale(proj: Path):
-    _write_doc(proj, "compliance/change-history.md")
+    _write_doc(proj, ".shipwright/compliance/change-history.md")
     _write_events(proj, [
         {"type": "phase_started", "phase": "changelog", "ts": _past_iso(-3600)},
     ])
@@ -197,14 +197,14 @@ def test_i4_warns_when_sbom_missing_but_deps_present(proj: Path):
 
 def test_i4_skips_when_sbom_newer_than_all_deps(proj: Path):
     (proj / "pyproject.toml").write_text("[project]\n", encoding="utf-8")
-    _write_doc(proj, "compliance/sbom.md", mtime_offset_seconds=120)
+    _write_doc(proj, ".shipwright/compliance/sbom.md", mtime_offset_seconds=120)
     f = ic.check_i4_sbom_fresh_on_dep_change(proj, "build")
     assert f["status"] == pq.STATUS_SKIP
 
 
 def test_i4_warns_when_deps_newer_than_sbom(proj: Path):
-    _write_doc(proj, "compliance/sbom.md")
-    sbom_mtime = (proj / "compliance" / "sbom.md").stat().st_mtime
+    _write_doc(proj, ".shipwright/compliance/sbom.md")
+    sbom_mtime = (proj / ".shipwright" / "compliance" / "sbom.md").stat().st_mtime
     pyproject = proj / "pyproject.toml"
     pyproject.write_text("[project]\n", encoding="utf-8")
     future = sbom_mtime + 120
@@ -220,7 +220,7 @@ def test_i4_never_fails(proj: Path):
     for setup in (
         lambda: None,
         lambda: (proj / "pyproject.toml").write_text("x", encoding="utf-8"),
-        lambda: _write_doc(proj, "compliance/sbom.md"),
+        lambda: _write_doc(proj, ".shipwright/compliance/sbom.md"),
     ):
         setup()
         f = ic.check_i4_sbom_fresh_on_dep_change(proj, "build")

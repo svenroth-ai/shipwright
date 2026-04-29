@@ -27,11 +27,14 @@ from lib.phase_quality import (  # noqa: E402
 from tools.verifiers.common import read_run_config  # noqa: E402
 
 
+COMPLIANCE_DIR = ".shipwright/compliance"
+LEGACY_COMPLIANCE_DIRNAME = "compliance"
+
 CMP1_NAME = "Cmp1 dashboard covers completed phases (Tier-2)"
 CMP2_NAME = "Cmp2 RTM coverage meets threshold"
 
 CMP1_REMEDIATION = (
-    "Regenerate compliance/dashboard.md via update_compliance.py so "
+    f"Regenerate {COMPLIANCE_DIR}/dashboard.md via update_compliance.py so "
     "every completed phase is represented."
 )
 CMP2_REMEDIATION = (
@@ -44,13 +47,13 @@ _COVERAGE_RE = re.compile(r"Traceability coverage\s*\|\s*(\d+)%")
 
 
 def check_cmp1_dashboard_covers_phases(project_root: Path) -> dict[str, Any]:
-    """Tier-2 heuristic: ``compliance/dashboard.md`` mentions every phase
-    listed in ``shipwright_run_config.json.completed_steps``."""
-    dashboard = project_root / "compliance" / "dashboard.md"
+    """Tier-2 heuristic: ``.shipwright/compliance/dashboard.md`` mentions every
+    phase listed in ``shipwright_run_config.json.completed_steps``."""
+    dashboard = project_root / COMPLIANCE_DIR / "dashboard.md"
     if not dashboard.exists():
         return make_finding(
             "Cmp1", STATUS_WARN,
-            "compliance/dashboard.md missing",
+            f"{COMPLIANCE_DIR}/dashboard.md missing",
             name=CMP1_NAME,
             remediation=CMP1_REMEDIATION,
         )
@@ -103,7 +106,7 @@ def _load_rtm_threshold_pct(project_root: Path) -> int:
 
 
 def _read_rtm_coverage(project_root: Path) -> int | None:
-    rtm = project_root / "compliance" / "traceability-matrix.md"
+    rtm = project_root / COMPLIANCE_DIR / "traceability-matrix.md"
     if not rtm.exists():
         return None
     try:
@@ -120,7 +123,7 @@ def check_cmp2_rtm_coverage(project_root: Path) -> dict[str, Any]:
     if coverage is None:
         return make_finding(
             "Cmp2", STATUS_SKIP,
-            "compliance/traceability-matrix.md missing or no coverage row",
+            f"{COMPLIANCE_DIR}/traceability-matrix.md missing or no coverage row",
             name=CMP2_NAME,
             remediation=CMP2_REMEDIATION,
         )

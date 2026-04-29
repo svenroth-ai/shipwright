@@ -199,10 +199,10 @@ def check_compliance_reflects_run_id(
 ) -> CheckResult:
     """Non-canon warning: compliance dashboard should reference the run."""
     name = "compliance reflects run_id"
-    dashboard = project_root / "compliance" / "dashboard.md"
+    dashboard = project_root / ".shipwright" / "compliance" / "dashboard.md"
     if not dashboard.exists():
         return CheckResult(
-            name, False, "compliance/dashboard.md missing",
+            name, False, ".shipwright/compliance/dashboard.md missing",
             severity=Severity.WARNING.value,
         )
     content = dashboard.read_text(encoding="utf-8", errors="ignore")
@@ -211,7 +211,7 @@ def check_compliance_reflects_run_id(
         return CheckResult(name, True, "compliance reflects iterate count/run_id")
     return CheckResult(
         name, False,
-        f"compliance/dashboard.md may be stale (run_id={run_id} not found)",
+        f".shipwright/compliance/dashboard.md may be stale (run_id={run_id} not found)",
         severity=Severity.WARNING.value,
     )
 

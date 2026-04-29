@@ -40,7 +40,7 @@ def _write_spec(proj: Path, split: str, rows: list[tuple[str, str, str]]) -> Non
 
 
 def _write_rtm(proj: Path, fr_ids: list[str]) -> None:
-    compliance = proj / "compliance"
+    compliance = proj / ".shipwright" / "compliance"
     compliance.mkdir(parents=True, exist_ok=True)
     lines = [
         "# Requirements Traceability Matrix",

@@ -79,7 +79,7 @@ PHASE_OWN_ARTIFACTS: dict[str, list[str]] = {
     "plan": [".shipwright/agent_docs/sections/", "shipwright_plan_config.json"],
     "build": ["shipwright_build_config.json"],
     "test": ["shipwright_test_results.json"],
-    "security": ["compliance/security-scan-report.md"],
+    "security": [".shipwright/compliance/security-scan-report.md"],
     "changelog": ["CHANGELOG.md"],
     "deploy": ["shipwright_deploy_config.json"],
 }
