@@ -157,6 +157,10 @@ ALLOWLIST: dict[str, list[str]] = {
         ".claude-plugin/**",
         # Previous-iteration plan reference (memo)
         "**/project_paths_refactor_evaluated.md",
+        # claude-md-template.md path-migration-awareness section intentionally
+        # lists legacy artefact names (planning/designs/agent_docs/compliance) so
+        # user-projects know what to do when drift detector fires.
+        "shared/templates/claude-md-template.md",
     ],
     "designs": [
         # Migration framework itself — references both paths by design
@@ -198,6 +202,8 @@ ALLOWLIST: dict[str, list[str]] = {
         # asserts the legacy entry stays present.
         ".gitignore",
         ".claude-plugin/**",
+        # claude-md-template.md path-migration-awareness section.
+        "shared/templates/claude-md-template.md",
     ],
     "agent_docs": [
         # Migration framework itself — references both paths by design
@@ -274,6 +280,8 @@ ALLOWLIST: dict[str, list[str]] = {
         # state being migrated away from. Added 2026-04-29 after security Sub-Iterate H
         # added these references without updating the allowlist (pre-existing regression).
         "plugins/shipwright-security/skills/security/references/oss-scanners.md",
+        # claude-md-template.md path-migration-awareness section.
+        "shared/templates/claude-md-template.md",
     ],
     "compliance": [
         # Migration framework itself — references both paths by design
@@ -354,6 +362,8 @@ ALLOWLIST: dict[str, list[str]] = {
         ".github/dependabot.yml",
         # Spec/ markdown referenced plugin internals (gitignored, but Layer-1 may scan)
         "Spec/**",
+        # claude-md-template.md path-migration-awareness section.
+        "shared/templates/claude-md-template.md",
         # KEYWORD / PHASE-NAME / PLUGIN-PATH-COMMENT entries (descriptive, not PATH-REFs).
         # All discovered during A's Layer-1-lint baseline; documented as non-touchpoints.
         "plugins/shipwright-iterate/scripts/lib/classify_phase.py",      # phase-name dict + lists

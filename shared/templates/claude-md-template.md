@@ -45,3 +45,13 @@ For any code changes after the initial build (features, bug fixes, refactoring, 
 - @shipwright_build_config.json — build progress per section
 - @shipwright_security_config.json — security scan results
 - @shipwright_compliance_config.json — compliance audit metadata
+
+## Path-migration awareness
+
+If you see `.shipwright/stale-folders.md` in this project, the Shipwright
+drift detector flagged a legacy artefact directory at the project root that
+should live under `.shipwright/` (e.g. legacy `planning/`, `designs/`,
+`agent_docs/`, `compliance/`). The file contains the exact `git mv`
+remediation commands — follow them, do not skip or delete it. The file
+auto-clears when the next SessionStart runs cleanly. Per-artefact migration
+guides live in the Shipwright repo under `docs/migrations/`.

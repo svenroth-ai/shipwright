@@ -53,14 +53,42 @@ migration. Replace the three placeholders, then paste:
 > then the dual-LLM external review trace, then ask for approval.
 
 Placeholders:
-- `{LEGACY_DIR}` -- top-level dir name with trailing slash, e.g.
-  `agent_docs/`, `compliance/`, `designs/`, `e2e/`,
-  `CHANGELOG-unreleased.d/`.
+- `{LEGACY_DIR}` -- top-level dir name with trailing slash. Discover
+  the next pending entry via
+  `uv run shared/scripts/tools/print_next_migration_prompt.py` rather
+  than guessing from a hardcoded list.
 - `{CANONICAL_PATH}` -- target POSIX path under `.shipwright/`, e.g.
-  `.shipwright/agent_docs`, `.shipwright/compliance`.
+  `.shipwright/<artifact_name>`.
 - `{ARTIFACT_NAME}` -- bare artifact name (no slash), used as the
-  manifest key, plan-file slug, and in commit/PR titles, e.g.
-  `agent_docs`, `compliance`, `designs`.
+  manifest key, plan-file slug, and in commit/PR titles.
+
+### Rejected migration candidates (do NOT re-evaluate)
+
+The following artefacts were considered as migration candidates and
+**explicitly rejected**. Do not re-propose without first reading the
+linked memo:
+
+- **`e2e/`** -- `project_e2e_migration_rejected.md`. Playwright
+  convention; external tooling (playwright.config.ts testDir, IDE test
+  discovery, npm scripts, CI workflows) hard-codes root-level layout.
+  Cost/benefit profile fundamentally different from
+  Shipwright-internal artefacts.
+- **`CHANGELOG-unreleased.d/`** -- `project_changelog_unreleased_migration_rejected.md`.
+  Sibling-to-CHANGELOG.md by Keep-a-Changelog convention; human-authored
+  release-doc family, not pipeline-state. Adjacent fragment-directory
+  tools (towncrier, scriv, changelog-d, reno) all expect root-level
+  discovery.
+
+### Open question (pending impact evaluation)
+
+- **`shipwright_*_config.json`** files at project root
+  (run/project/plan/build/test/security/compliance/design/deploy/changelog)
+  + `shipwright_events.jsonl` + `.shipwright_toolcall_count`. Sven flagged
+  2026-04-29: needs separate impact evaluation before considering as
+  migration candidate. Concerns: deep CLI-arg integration, machine-
+  readable schemas, potential external coupling to deployment scripts
+  and audit systems. Not on the migration candidate list until that
+  evaluation lands.
 
 ---
 
@@ -967,8 +995,20 @@ agent_docs (~6×) and planning (~3×), only ~1.4× designs Python+Prose-Sum.
 
 ## 12. Quick Start: Migrating the Next Artifact
 
+**Before starting**, verify the candidate is not already rejected — see
+§ 0 "Rejected migration candidates" subsection. As of 2026-04-29 the
+four pipeline-internal artefacts (planning, designs, agent_docs,
+compliance) are all `migrated`; `print_next_migration_prompt.py` reports
+"All 4 artifact migration(s) complete." Future candidates require
+upfront analysis (cost/benefit vs external-tool coupling, see e2e/ and
+CHANGELOG-unreleased.d/ rejection memos for the disqualifying patterns).
+
 1. Run `uv run shared/scripts/tools/print_next_migration_prompt.py` --
-   it tells you what's next and seeds the kickoff prompt.
+   it tells you what's next and seeds the kickoff prompt. If the output
+   says "All N artifact migration(s) complete." and you still want to
+   migrate something, FIRST check `~/.claude/projects/.../memory/` for
+   a `project_<artifact>_migration_rejected.md` memo before appending
+   to the manifest.
 2. Read this doc end-to-end (you're doing it).
 3. Append a `pending` entry to `ARTIFACT_MIGRATIONS` in
    `shared/scripts/lib/artifact_migrations.py`.
