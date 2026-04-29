@@ -107,7 +107,7 @@ HIDDEN_DIR_DEFAULTS: frozenset[str] = frozenset({
     ".pytest_cache", ".mypy_cache", ".ruff_cache", ".tox", ".idea", ".vscode",
     "vendor", "e2e-results", "playwright-report", "test-results",
     "agent_docs",  # artifact-path-canon: legacy (post-migration tolerance)
-    "compliance",
+    "compliance",  # artifact-path-canon: legacy (post-migration tolerance)
     "designs",  # artifact-path-canon: legacy (post-migration tolerance)
     ".shipwright",  # canonical umbrella for post-migration artifacts
     "planning",  # artifact-path-canon: legacy (post-migration tolerance)
