@@ -79,16 +79,29 @@ linked memo:
   tools (towncrier, scriv, changelog-d, reno) all expect root-level
   discovery.
 
-### Open question (pending impact evaluation)
+### Deferred migration candidates (do NOT re-evaluate without trigger)
+
+The following artefacts were considered as migration candidates and
+**explicitly deferred** — not rejected, but cost-without-benefit until
+a named trigger fires. Do not re-propose without first reading the
+linked memo and confirming a trigger has fired:
 
 - **`shipwright_*_config.json`** files at project root
-  (run/project/plan/build/test/security/compliance/design/deploy/changelog)
-  + `shipwright_events.jsonl` + `.shipwright_toolcall_count`. Sven flagged
-  2026-04-29: needs separate impact evaluation before considering as
-  migration candidate. Concerns: deep CLI-arg integration, machine-
-  readable schemas, potential external coupling to deployment scripts
-  and audit systems. Not on the migration candidate list until that
-  evaluation lands.
+  (run/project/plan/build/test/security/compliance/design/deploy/changelog/sync)
+  + `shipwright_events.jsonl` + `.shipwright_toolcall_count` —
+  `project_config_jsons_migration_deferred.md`. Industry pattern
+  actually *favors* root for per-tool configs with namespace prefix
+  (`tsconfig.json`, `pyproject.toml`, `Cargo.toml`,
+  `playwright.config.ts` etc.). Audited 2026-04-29: zero CI / S3 /
+  audit-system / IDE-extension coupling. Largest migration to date
+  (~582 Python hits / ~132 files), first *flat-file* migration so
+  `ARTIFACT_MIGRATIONS` framework would need extension, plus
+  highest-stakes bootstrap dependency (`_CONFIG_MARKER` in
+  `project_root.py`). Reactivation triggers: (1) `resolve_project_root()`
+  refactor needed for unrelated reason, (2) external coupling
+  materializes (audit-upload / log-collector with fixed canonical
+  path requirement), (3) WebUI builds a Shipwright-artefact
+  Datei-Browser. If none have fired, the deferral stands.
 
 ---
 
