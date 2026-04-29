@@ -7,77 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-- **`compliance/` -> `.shipwright/compliance/` migration** (Sub-Iterates A-G,
-  commits `4109148..8fe06f2`, 2026-04-29). Fourth artifact migration following
-  the validated A-G hard-cutover + drift-detector pattern. All Shipwright
-  plugins now write compliance artifacts (dashboard, traceability-matrix,
-  sbom, test-evidence, change-history, audit-report, security-scan-report,
-  compliance_overrides.log, skill-compliance/) to `.shipwright/compliance/`
-  instead of `compliance/` at the project root. Reads use only the canonical
-  path (no Grace fallback). The drift detector hard-gates SessionStart for
-  any project with a top-level `compliance/` directory and emits structured
-  JSON + ready-to-paste `git mv` remediation. ~79 Python touchpoints + ~35
-  prose touchpoints across ~30 files. Special characteristics: first
-  migration where artifact name overlaps with plugin name
-  (`shipwright-compliance`) and phase name (`compliance` in pipeline-step
-  lists); self-referential migration (the shipwright-compliance plugin owns
-  AND writes the artifact via 6 generators); cross-plugin write-coupling
-  via `shipwright-adopt`'s `compliance_bridge.py`. Migration CLI handles
-  existing projects non-destructively (`uv run
-  shared/scripts/tools/migrate_artifact_dir.py --artifact compliance
-  --project-root <path>`). User-facing migration guide:
-  `docs/migrations/.shipwright-compliance-relocation.md`.
-- **`drift_parsers.py` `HIDDEN_DIR_DEFAULTS`** extended with `compliance`
-  inline marker `# artifact-path-canon: legacy (post-migration tolerance)`,
-  mirroring the existing `agent_docs`, `designs`, `planning` markers.
+## [0.10.0] - 2026-04-29
 
 ### Added
 
-- **Generator-Output Relative-Link Fix** (Sub-Iterate C Step 11, per
-  External-Review G-1A) — when a migration changes the depth of generator
-  output files (e.g. `compliance/<file>.md` 1-deep -> `.shipwright/compliance/<file>.md`
-  2-deep), all hardcoded `../<file>` Markdown links inside the generator
-  output break. Compliance migration's 3 generators (`compliance_report.py`,
-  `rtm_generator.py`, `test_evidence.py`) had 13 affected lines. Per-line
-  mapping: `../<project_root_file>` -> `../../<file>` (now 2-deep);
-  `../.shipwright/<other_artifact>/...` -> `../<other_artifact>/...` (now
-  sibling under `.shipwright/`). Verified empirically via real-runtime
-  invocation: 8/8 dashboard.md links + 2/2 RTM f-string-templated links
-  resolve at runtime. Pattern documented as Lesson 30 in
-  `docs/migrations/artifact-migration-reference.md` for future migrations.
-- **Layer-2 setup-contract tests for compliance** (Sub-Iterate C). New
-  tests in `shared/tests/test_setup_writes_canonical.py`:
-  `test_compliance_generators_write_under_dot_shipwright` (verifies
-  `COMPLIANCE_DIR` constant + canonical layout) and
-  `test_no_legacy_compliance_path_construction_in_plugin_source`
-  parametrized over `shipwright-{adopt,compliance,run}` (forbids
-  `project_root / "compliance"` literal in plugin source). Mirrors the
-  established planning + designs + agent_docs Layer-2 pattern.
-- **8 new lessons** (22-29) in `docs/migrations/artifact-migration-reference.md`
-  surfaced by the compliance migration: plugin-name + artifact-name
-  overlap disambiguation in Explore prompts (#22); manifest-pattern
-  negative-lookbehind verification (#23); self-referential migrations
-  must grep `plugins/<artifact>/skills/<artifact>/SKILL.md` explicitly
-  (#24); cross-plugin bridge lockstep commits (#25); pre-F-Sanity-Check
-  for legacy `.gitignore` entries without comment blocks (#26);
-  assertion-based real-scanner-smoke with synthetic secret fixture not
-  example-Patterns (#27); hook + audit module docstrings as first-class
-  touchpoints (#28); plugin-config-file boundary clarity (#29). Plus
-  Lesson 30 (runtime relative-link-resolution test).
+- **Generator-Output Relative-Link Fix** (Sub-Iterate C Step 11) — when a migration changes the depth of generator output files (e.g. `compliance/<file>.md` 1-deep -> `.shipwright/compliance/<file>.md` 2-deep), all hardcoded `../<file>` Markdown links inside the generator output break. Compliance migration's 3 generators (`compliance_report.py`, `rtm_generator.py`, `test_evidence.py`) had 13 affected lines. Per-line mapping: `../<project_root_file>` -> `../../<file>` (now 2-deep); `../.shipwright/<other_artifact>/...` -> `../<other_artifact>/...` (now sibling under `.shipwright/`). Verified empirically via real-runtime invocation: 8/8 dashboard.md links + 2/2 RTM f-string-templated links resolve at runtime. Pattern documented as Lesson 30 in `docs/migrations/artifact-migration-reference.md` for future migrations.
+- **Layer-2 setup-contract tests for compliance** (Sub-Iterate C). New tests in `shared/tests/test_setup_writes_canonical.py`: `test_compliance_generators_write_under_dot_shipwright` (verifies COMPLIANCE_DIR constant + canonical layout) and `test_no_legacy_compliance_path_construction_in_plugin_source` parametrized over `shipwright-{adopt,compliance,run}` (forbids `project_root / "compliance"` literal in plugin source). Mirrors the established planning + designs + agent_docs Layer-2 pattern.
+
+### Changed
+
+- **`compliance/` -> `.shipwright/compliance/` migration** (Sub-Iterates A-G, commits `4109148..8fe06f2`, 2026-04-29). Fourth artifact migration following the validated A-G hard-cutover + drift-detector pattern. All Shipwright plugins now write compliance artifacts (dashboard, traceability-matrix, sbom, test-evidence, change-history, audit-report, security-scan-report, compliance_overrides.log, skill-compliance/) to `.shipwright/compliance/` instead of `compliance/` at the project root. Reads use only the canonical path (no Grace fallback). The drift detector hard-gates SessionStart for any project with a top-level `compliance/` directory and emits structured JSON + ready-to-paste `git mv` remediation. ~79 Python touchpoints + ~35 prose touchpoints across ~30 files. **Special characteristics:** first migration where artifact name overlaps with plugin name (`shipwright-compliance`) and phase name (`compliance` in pipeline-step lists); self-referential migration (the shipwright-compliance plugin owns AND writes the artifact via 6 generators); cross-plugin write-coupling via `shipwright-adopt`'s `compliance_bridge.py`. **Migration CLI** (`uv run shared/scripts/tools/migrate_artifact_dir.py --artifact compliance --project-root <path>`) handles existing projects non-destructively. User-facing migration guide: `docs/migrations/.shipwright-compliance-relocation.md`.
 
 ### Fixed
 
-- **`agent_docs` allowlist hot-fix** (bundled in compliance Sub-Iterate A,
-  commit `4109148`). The Layer-1 canon lint baseline was already broken
-  on `main` before the compliance migration: shipwright-security
-  Sub-Iterate H (commits `6a51439`/`1090f15`/`2b9b41e`) added
-  `plugins/shipwright-security/skills/security/references/oss-scanners.md`
-  with 2 references to legacy `agent_docs/` path without updating
-  `ALLOWLIST['agent_docs']`. Fixed by allowlisting that file — the
-  references intentionally describe the scanner-exclusion contract
-  historical state, not migration drift.
+- **Bare-token Claude-instruction leaks from planning + agent_docs migrations.** The Layer-1 canon lint regex catches `<artifact>/`, `<artifact>\`, `"<artifact>"`, `'<artifact>'` — but NOT bare `<artifact>` as a word in prose instructions. Two real Claude-instruction leaks slipped through Sub-Iterate D bulk-replace in earlier migrations and were caught 2026-04-29 via a manual cross-migration audit:
+
+- `plugins/shipwright-project/skills/project/references/interview-protocol.md:23` instructed Claude to "Read existing CLAUDE.md + agent_docs first" — would have looked at the legacy path on a migrated project (silent degradation to "no existing docs" interview pacing). Now reads `.shipwright/agent_docs`.
+- `plugins/shipwright-project/skills/project/SKILL.md:109-117` (Modes 2 and 3, standalone /shipwright-project) asked the user "Where should I create the planning directory?" with suggestion `{inferred_name}/planning` — created legacy top-level `planning/` at the inferred project root. The next SessionStart in such a project would hard-gate via the drift detector. Pipeline-mode (the default in tests) goes through other paths so test coverage never exercised this — standalone-mode users since the planning migration shipped 2026-04-27 would have seen `.shipwright/stale-folders.md` immediately. Now creates `<project>/.shipwright/planning/`.
+
+Cross-migration audit also verified clean for designs and shipwright-security (H-iterate). Compliance migration was clean naturally / via Pre-G belt-and-suspenders trace (Lesson 30) — no compliance-side bare-token leaks. Audit script and the bare-token grep pattern are now part of the post-migration review discipline (`feedback_post_migration_review_discipline.md`) as a mandatory D-step for future migrations.
+- **agent_docs allowlist hot-fix** (bundled in compliance Sub-Iterate A). The Layer-1 canon lint baseline was already broken on `main` before the compliance migration: shipwright-security Sub-Iterate H (commits `6a51439`/`1090f15`/`2b9b41e`) added `plugins/shipwright-security/skills/security/references/oss-scanners.md` with 2 references to legacy `agent_docs/` path without updating `ALLOWLIST['agent_docs']`. Fixed by allowlisting that file — the references intentionally describe the scanner-exclusion contract historical state, not migration drift.
 
 ## [v0.9.1] - 2026-04-28
 
