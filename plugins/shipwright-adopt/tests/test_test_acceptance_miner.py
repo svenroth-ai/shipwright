@@ -149,6 +149,51 @@ def test_mines_pytest_top_level_tests_dir(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+def test_sequential_top_level_describes_attribute_correctly(tmp_path: Path) -> None:
+    """Two sibling top-level describes: each `it` keeps its own describe's
+    label. The naive 'most-recent-describe-wins' heuristic loses this."""
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "x.ts").write_text("export const x = 1;\n", encoding="utf-8")
+    (src / "x.test.ts").write_text(
+        "describe('A', () => {\n"
+        "  it('case A1', () => {});\n"
+        "});\n"
+        "describe('B', () => {\n"
+        "  it('case B1', () => {});\n"
+        "});\n",
+        encoding="utf-8",
+    )
+    result = mine_acceptance_criteria(tmp_path, "src/x.ts")
+    assert "A: case A1" in result
+    assert "B: case B1" in result
+    # B must not steal case A1 — that's the bug the brace-balance fix targets.
+    assert "B: case A1" not in result
+
+
+def test_nested_describes_use_innermost_label(tmp_path: Path) -> None:
+    """When describes are nested, the `it` is attributed to the innermost
+    still-open describe at the it's position."""
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "x.ts").write_text("export const x = 1;\n", encoding="utf-8")
+    (src / "x.test.ts").write_text(
+        "describe('outer', () => {\n"
+        "  describe('inner', () => {\n"
+        "    it('case 1', () => {});\n"
+        "  });\n"
+        "  it('case 2', () => {});\n"
+        "});\n",
+        encoding="utf-8",
+    )
+    result = mine_acceptance_criteria(tmp_path, "src/x.ts")
+    # case 1 is in inner, case 2 is in outer (after inner closed).
+    assert "inner: case 1" in result
+    assert "outer: case 2" in result
+    # outer must not also claim case 1 (innermost wins).
+    assert "outer: case 1" not in result
+
+
 def test_caps_at_ten_acs_per_fr(tmp_path: Path) -> None:
     """The 11th + ACs are dropped to keep spec.md scannable."""
     (tmp_path / "src").mkdir()

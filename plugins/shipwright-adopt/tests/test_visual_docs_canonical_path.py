@@ -142,6 +142,48 @@ def test_result_dict_carries_canonical_paths(tmp_path: Path) -> None:
     assert result["component_inventory"].name == "component_inventory.md"
 
 
+def test_visual_guidelines_resolves_short_alias_color_keys(tmp_path: Path) -> None:
+    """Many shadcn-flavored projects use short aliases (`--bg`, `--fg`,
+    `--accent`) instead of the canonical `background` / `foreground` /
+    `primary`. The role-mapping should resolve those — otherwise every
+    Background / Foreground / Primary slot stays `_TBD_` even when the
+    project does define those colors."""
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "globals.css").write_text(
+        ":root {\n"
+        "  --bg: #ffffff;\n"
+        "  --fg: #111111;\n"
+        "  --accent: #0066cc;\n"
+        "  --error: #ff0000;\n"
+        "}\n",
+        encoding="utf-8",
+    )
+    generate_visual_docs(tmp_path)
+    body = (tmp_path / ".shipwright" / "designs" / "visual-guidelines.md").read_text(
+        encoding="utf-8"
+    )
+    # All four alias keys should slot into their canonical roles.
+    assert "#ffffff" in body  # Background ← --bg
+    assert "#111111" in body  # Foreground ← --fg
+    assert "#0066cc" in body  # Primary ← --accent
+    assert "#ff0000" in body  # Destructive ← --error
+
+
+def test_visual_guidelines_resolves_radius_var(tmp_path: Path) -> None:
+    """A `--radius` CSS var should fill the Cards / Buttons / Inputs
+    radius rows rather than leaving them all `_TBD_`."""
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "globals.css").write_text(
+        ":root { --radius: 0.5rem; }\n",
+        encoding="utf-8",
+    )
+    generate_visual_docs(tmp_path)
+    body = (tmp_path / ".shipwright" / "designs" / "visual-guidelines.md").read_text(
+        encoding="utf-8"
+    )
+    assert "0.5rem" in body
+
+
 def test_skipped_when_no_visual_signal(tmp_path: Path) -> None:
     """Backend-only project: no canonical artifact written, no error."""
     result = generate_visual_docs(tmp_path)

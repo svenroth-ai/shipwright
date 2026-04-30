@@ -242,3 +242,189 @@ def test_harvest_conventions_returns_none_when_readme_lacks_relevant_sections(
     )
     result = harvest_conventions(tmp_path)
     assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Integration with generate() — wiring through to written artifacts
+# ---------------------------------------------------------------------------
+
+
+def test_harvested_decisions_land_in_decision_log_md(tmp_path: Path) -> None:
+    """End-to-end: docs/adr/ exists → harvested entries appear verbatim in
+    .shipwright/agent_docs/decision_log.md, with an attribution header
+    pointing back to the source. Adopt's own ADR-0001 still appears."""
+    import json
+    import subprocess
+
+    from tools.generate_adoption_artifacts import generate
+
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "-c", "user.email=t@t", "-c", "user.name=t",
+         "commit", "--allow-empty", "-m", "init", "-q"],
+        cwd=tmp_path, check=True,
+    )
+    adr_dir = tmp_path / "docs" / "adr"
+    adr_dir.mkdir(parents=True)
+    (adr_dir / "0001-record-architecture-decisions.md").write_text(
+        "# 1. Record architecture decisions\n\n"
+        "## Status\n\nAccepted\n\n"
+        "## Context\n\nUSER-AUTHORED-ADR-CONTENT\n",
+        encoding="utf-8",
+    )
+    (adr_dir / "0002-pick-postgres.md").write_text(
+        "# 2. Pick Postgres\n\nWHY-WE-PICKED-POSTGRES\n",
+        encoding="utf-8",
+    )
+    snap_dir = tmp_path / ".shipwright" / "adopt"
+    snap_dir.mkdir(parents=True)
+    (snap_dir / "snapshot.json").write_text(json.dumps({
+        "stack": {"primary_language": "typescript"},
+        "profile": {"matched": "generic"},
+        "commands": {"dev": None, "build": None, "test": None},
+        "features": [],
+        "git": {"commits_total": 0, "contributors_total": 0,
+                "major_refactor_commits": []},
+        "folders": {"layers": [], "loc_by_layer": {}},
+        "conventions": {},
+        "ci_pipeline": {"provider": None},
+        "excludes": [],
+    }), encoding="utf-8")
+
+    generate(
+        tmp_path,
+        snapshot_path=snap_dir / "snapshot.json",
+        enrichment_path=snap_dir / "enrichment.json",
+        routes_path=snap_dir / "routes.json",
+        split_name="01-adopted", plugin_version="0.2.0",
+        scope_override=None, profile_override=None,
+        write_sync=False, backfill_events=False,
+    )
+
+    decision_log = (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").read_text(
+        encoding="utf-8"
+    )
+    # Adopt's own ADR-0001 still anchors the file.
+    assert "ADR-0001: Adopt this repository into the Shipwright SDLC" in decision_log
+    # Prior-art content lifted verbatim.
+    assert "USER-AUTHORED-ADR-CONTENT" in decision_log
+    assert "WHY-WE-PICKED-POSTGRES" in decision_log
+    # Attribution header documents the source path.
+    assert "docs/adr" in decision_log
+
+
+def test_harvested_conventions_land_in_conventions_md(tmp_path: Path) -> None:
+    """End-to-end: CONTRIBUTING.md exists → its content lands in
+    .shipwright/agent_docs/conventions.md after the auto-detected linter
+    block, with an Imported-from header."""
+    import json
+    import subprocess
+
+    from tools.generate_adoption_artifacts import generate
+
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "-c", "user.email=t@t", "-c", "user.name=t",
+         "commit", "--allow-empty", "-m", "init", "-q"],
+        cwd=tmp_path, check=True,
+    )
+    (tmp_path / "CONTRIBUTING.md").write_text(
+        "# Contributing\n\n"
+        "## Code style\n\n"
+        "USE-PRETTIER-AT-100-COLS\n"
+        "## Naming\n\n"
+        "COMPONENTS-ARE-PASCAL-CASE\n",
+        encoding="utf-8",
+    )
+    snap_dir = tmp_path / ".shipwright" / "adopt"
+    snap_dir.mkdir(parents=True)
+    (snap_dir / "snapshot.json").write_text(json.dumps({
+        "stack": {"primary_language": "typescript"},
+        "profile": {"matched": "generic"},
+        "commands": {"dev": None, "build": None, "test": None},
+        "features": [],
+        "git": {"commits_total": 0, "contributors_total": 0,
+                "major_refactor_commits": []},
+        "folders": {"layers": [], "loc_by_layer": {}},
+        "conventions": {"linter": "eslint"},
+        "ci_pipeline": {"provider": None},
+        "excludes": [],
+    }), encoding="utf-8")
+
+    generate(
+        tmp_path,
+        snapshot_path=snap_dir / "snapshot.json",
+        enrichment_path=snap_dir / "enrichment.json",
+        routes_path=snap_dir / "routes.json",
+        split_name="01-adopted", plugin_version="0.2.0",
+        scope_override=None, profile_override=None,
+        write_sync=False, backfill_events=False,
+    )
+
+    conventions = (tmp_path / ".shipwright" / "agent_docs" / "conventions.md").read_text(
+        encoding="utf-8"
+    )
+    # Auto-detected linter block still rendered.
+    assert "eslint" in conventions
+    # Imported content lifted verbatim, after the auto block.
+    assert "USE-PRETTIER-AT-100-COLS" in conventions
+    assert "COMPONENTS-ARE-PASCAL-CASE" in conventions
+    # Attribution header points back to the source file.
+    assert "CONTRIBUTING.md" in conventions
+    assert "Imported from" in conventions
+    # Imported section comes AFTER the auto block (auto block first).
+    auto_pos = conventions.find("Linter / Formatter")
+    imported_pos = conventions.find("Imported from")
+    assert 0 < auto_pos < imported_pos
+
+
+def test_no_prior_art_falls_back_to_today_behavior(tmp_path: Path) -> None:
+    """When no prior art exists, the harvest is a silent no-op and adopt
+    writes the historical scaffold-only output. No `Imported from` header,
+    no broken attribution."""
+    import json
+    import subprocess
+
+    from tools.generate_adoption_artifacts import generate
+
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "-c", "user.email=t@t", "-c", "user.name=t",
+         "commit", "--allow-empty", "-m", "init", "-q"],
+        cwd=tmp_path, check=True,
+    )
+    snap_dir = tmp_path / ".shipwright" / "adopt"
+    snap_dir.mkdir(parents=True)
+    (snap_dir / "snapshot.json").write_text(json.dumps({
+        "stack": {"primary_language": "typescript"},
+        "profile": {"matched": "generic"},
+        "commands": {"dev": None, "build": None, "test": None},
+        "features": [],
+        "git": {"commits_total": 0, "contributors_total": 0,
+                "major_refactor_commits": []},
+        "folders": {"layers": [], "loc_by_layer": {}},
+        "conventions": {},
+        "ci_pipeline": {"provider": None},
+        "excludes": [],
+    }), encoding="utf-8")
+
+    generate(
+        tmp_path,
+        snapshot_path=snap_dir / "snapshot.json",
+        enrichment_path=snap_dir / "enrichment.json",
+        routes_path=snap_dir / "routes.json",
+        split_name="01-adopted", plugin_version="0.2.0",
+        scope_override=None, profile_override=None,
+        write_sync=False, backfill_events=False,
+    )
+
+    decision_log = (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").read_text(
+        encoding="utf-8"
+    )
+    conventions = (tmp_path / ".shipwright" / "agent_docs" / "conventions.md").read_text(
+        encoding="utf-8"
+    )
+    # Adopt scaffold ADR-0001 only — no Imported decisions section.
+    assert "ADR-0001" in decision_log
+    assert "Imported decisions" not in decision_log
+    assert "Imported from" not in conventions

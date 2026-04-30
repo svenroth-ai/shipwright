@@ -62,20 +62,42 @@ def _render_design_tokens_md(tokens: dict[str, Any]) -> str:
 
 # Map common CSS-var / Tailwind names onto the canonical schema's roles.
 # Adopt does not invent values — when a slot has no signal, it stays "TBD".
+# The aliases cover the shadcn / Tailwind / DaisyUI vocabularies most
+# brownfield projects actually use; rare custom names still surface in
+# the design_tokens.md audit trail.
 _COLOR_ROLE_KEYS: dict[str, tuple[str, ...]] = {
-    "Background": ("background", "bg", "background-color"),
-    "Foreground": ("foreground", "fg", "text", "text-color"),
-    "Primary": ("primary", "brand", "accent-primary"),
-    "Secondary": ("secondary", "accent-secondary"),
-    "Muted": ("muted", "subtle", "neutral"),
-    "Destructive": ("destructive", "danger", "error"),
-    "Border": ("border", "divider"),
+    "Background": (
+        "background", "bg", "background-color", "page-bg", "surface", "base-100",
+    ),
+    "Foreground": (
+        "foreground", "fg", "text", "text-color", "body-color", "on-surface",
+        "base-content",
+    ),
+    "Primary": (
+        "primary", "brand", "accent-primary", "accent",
+        "primary-color", "main",
+    ),
+    "Secondary": (
+        "secondary", "accent-secondary", "secondary-color", "alt",
+    ),
+    "Muted": (
+        "muted", "subtle", "neutral", "muted-foreground", "muted-bg",
+        "base-200",
+    ),
+    "Destructive": (
+        "destructive", "danger", "error", "warn", "warning", "critical",
+        "alert",
+    ),
+    "Border": ("border", "divider", "outline", "ring", "stroke"),
 }
 
 _RADIUS_KEYS = {
-    "Cards": ("radius", "card-radius", "rounded"),
-    "Buttons": ("radius", "button-radius"),
-    "Inputs": ("radius", "input-radius"),
+    "Cards": ("radius", "card-radius", "rounded", "border-radius",
+              "radius-card", "radius-lg"),
+    "Buttons": ("radius", "button-radius", "btn-radius",
+                "radius-button", "radius-md"),
+    "Inputs": ("radius", "input-radius", "field-radius",
+               "radius-input", "radius-sm"),
 }
 
 

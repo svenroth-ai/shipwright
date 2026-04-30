@@ -90,28 +90,43 @@ _IT_RE = re.compile(
 )
 
 
+_DESCRIBE_FINDER = re.compile(r"""\bdescribe\s*\(\s*(['"])([^'"]+)\1""")
+_IT_FINDER = re.compile(r"""\b(it|test)\s*\(\s*(['"])([^'"]+)\2""")
+
+
 def _mine_js(test_file: Path) -> list[str]:
-    """Walk a JS/TS test file. Output: '<describe>: <it>' bullets when a
-    describe was the most-recent ancestor; bare '<it>' otherwise."""
+    """Walk a JS/TS test file and emit `<describe>: <it>` bullets, picking
+    the *innermost still-open* describe for each it.
+
+    Open/closed tracking uses a brace-balance heuristic: a describe is
+    considered open at position P if the count of `{` between the
+    describe's match-end and P exceeds the count of `}`. Imperfect when
+    string literals or comments contain unbalanced braces, but robust
+    enough for typical Jest / Vitest / Mocha files. The previous
+    `last_describe` heuristic mis-attributed `it`s that came after a
+    sibling describe had closed (the case-2-after-inner-closes scenario)."""
     try:
         body = test_file.read_text(encoding="utf-8", errors="ignore")
     except OSError:
         return []
+
+    describes = [(m.end(), m.group(2)) for m in _DESCRIBE_FINDER.finditer(body)]
     bullets: list[str] = []
-    last_describe: str | None = None
-    # Walk in source order so the right describe wraps each it/test.
-    iter_pos = 0
-    pattern = re.compile(
-        r"""\bdescribe\s*\(\s*(['"])([^'"]+)\1|\b(it|test)\s*\(\s*(['"])([^'"]+)\4"""
-    )
-    for m in pattern.finditer(body):
-        if m.group(2) is not None:  # describe match
-            last_describe = m.group(2)
-        else:  # it / test match
-            label = m.group(5)
-            bullet = f"{last_describe}: {label}" if last_describe else label
-            bullets.append(bullet)
-        iter_pos += 1
+
+    for it_match in _IT_FINDER.finditer(body):
+        it_pos = it_match.start()
+        it_label = it_match.group(3)
+        # Innermost still-open describe at it_pos = last describe whose
+        # opening `{...` has not yet closed by it_pos.
+        innermost: str | None = None
+        for d_end, d_label in describes:
+            if d_end > it_pos:
+                break
+            chunk = body[d_end:it_pos]
+            if chunk.count("{") > chunk.count("}"):
+                innermost = d_label
+        bullets.append(f"{innermost}: {it_label}" if innermost else it_label)
+
     return bullets
 
 
