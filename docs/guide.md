@@ -32,20 +32,21 @@ All three work from the Claude Code VSCode Extension or CLI terminal directly. T
 
 ### Who is Shipwright for?
 
-Shipwright is for engineers, BAs, architects, and tech leads who work with Claude Code — and have noticed that AI velocity alone does not get you to a shippable product. What they build gets seen by others: customers, colleagues, markets. They are not necessarily engineers in the classical sense, but they have enough technical judgment to know that more prompting does not produce more quality. They are looking for the guardrails that turn AI from "fast" into "fast *and* good." Shipwright is the discipline layer — Specs, Tests, traceable decisions, living traceability — and the Masterclass guides the path from "AI as a tool" to "AI as a professional discipline."
+Shipwright is for engineers, BAs, architects, and tech leads who work with Claude Code — and have noticed that AI velocity alone does not get you to a shippable product. What they build (or oversee) gets seen by others: customers, colleagues, markets. They are not necessarily engineers in the classical sense, but they have enough technical judgment to know that more prompting does not produce more quality. They are looking for the guardrails that turn AI from "fast" into "fast *and* good." Shipwright is the discipline layer — Specs, Tests, traceable decisions, living traceability — and the Masterclass guides the path from "AI as a tool" to "AI as a professional discipline."
 
 **Tool users — actively run Shipwright in their own projects:**
 
-- **Engineers** in mid-size companies and enterprises who use Claude Code daily and want better practices, not better autocomplete.
-- **Solution Architects** who design systems and want their architectural decisions to live in the code, not rot in slide decks.
-- **IT Allrounders in mid-sized companies** who can't or won't use Replit-style tools — for compliance, customer reputation, or because they want to understand what is running in production.
-- **Independent consultants and boutique agencies** who deliver to clients and refuse to ship vibe-coded output with their name on it.
+- **Developers** that want more than just vibe coding. A structured pipeline from day one, with a visual dashboard to stay on top.
+- **IT Allrounders** who can't or won't use Replit-style tools: for compliance, customer reputation, or because they want to understand what is running in production.
+- **Consultants and smaller boutiques** that deliver to clients and refuse to ship vibe-coded output with their name on it.
 - **Serious founders** with enough technical background to know that more prompting won't give better quality — looking for the discipline that turns AI velocity into shippable products.
 
-**Curriculum audience — learn the discipline, don't necessarily run the tool:**
+**Curriculum audience — typically in larger organizations, learning the discipline rather than running the tool day-to-day:**
 
-- **Business Analysts and Requirements Engineers** who write specs all day and want them to stay alive — coupled to code, traceable, never stale.
-- **Practitioners who have already invested heavily in Claude Code** and are looking for the next step — moving from "I can prompt it" to "I understand what else is possible and needed with it."
+- **Business Analysts and Requirements Engineers** looking to bring requirements discipline back into AI-coded projects — what to demand of specs, what to verify, what to reject.
+- **Solution Architects** learning to recognize when AI-coded systems honor the architecture, and when they quietly drift away from it.
+- **Tech Leaders** who want to understand how the current SDLC needs to evolve into a model that is AI-native.
+- **Practitioners** who have already invested heavily in Claude Code and are looking for the next step — moving from "I can prompt it" to "I understand what else is possible and needed with it."
 
 ### Not for
 
