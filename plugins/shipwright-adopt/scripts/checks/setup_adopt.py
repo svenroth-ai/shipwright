@@ -68,7 +68,11 @@ _EXISTING_ARTIFACT_CANDIDATES: tuple[str, ...] = (
     # them here so the SKILL.md prompt acknowledges they'll be touched, and
     # so `visual_docs_generator` can back them up.
     ".shipwright/agent_docs/design_tokens.md",
+    ".shipwright/agent_docs/component_inventory.md",
+    # Legacy name from pre-Fix-1 adopt runs: still listed so the user is told
+    # it will be backed up before being removed in favor of component_inventory.md.
     ".shipwright/agent_docs/guideline.md",
+    ".shipwright/designs/visual-guidelines.md",
     "shipwright_events.jsonl",
     "shipwright_sync_config.json",
     "shipwright_project_config.json",
