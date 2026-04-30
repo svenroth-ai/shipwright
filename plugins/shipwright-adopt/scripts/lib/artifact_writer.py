@@ -102,6 +102,7 @@ def _render_architecture_md(
     architecture_diagram: str,
     data_flow_description: str,
     profile_name: str,
+    see_also_links: list[str] | None = None,
 ) -> str:
     runtime = _fmt_stack_line(stack.get("runtime", {}))
     frontend = _fmt_stack_line(stack.get("frontend", {}))
@@ -114,6 +115,14 @@ def _render_architecture_md(
         layers_block += f"- **{layer['name']}**: {paths_fmt}\n"
     if not layers_block:
         layers_block = "_No layers detected._\n"
+    see_also = ""
+    if see_also_links:
+        bullets = "\n".join(f"- [`{link}`](../../{link})" for link in see_also_links)
+        see_also = (
+            "\n## See also\n\n"
+            "_Existing user-facing documentation discovered by /shipwright-adopt._\n\n"
+            + bullets + "\n"
+        )
     return f"""# Architecture — {project_name}
 
 ## System Overview
@@ -141,7 +150,7 @@ See `decision_log.md` for detailed ADRs. Profile-level decisions (stack, auth pa
 ## Data Flow
 
 {data_flow_description}
-"""
+{see_also}"""
 
 
 def _render_conventions_md(
@@ -149,13 +158,24 @@ def _render_conventions_md(
     project_name: str,
     conventions: dict[str, Any],
     conventions_prose: str,
+    harvested_conventions: tuple[str, str] | None = None,
 ) -> str:
+    """Render conventions.md.
+
+    `harvested_conventions` is an optional `(content, source_path)` tuple
+    produced by `prior_art_harvester.harvest_conventions`. When present,
+    the harvested content is appended verbatim after the auto-detected
+    block with an attribution header. No merging — the auto-section is
+    short and the imported section is rich; concatenation keeps both
+    visible without the risk of silent edits.
+    """
     linter = conventions.get("linter") or "_none detected_"
     formatter = conventions.get("formatter") or "_none detected_"
     ts_strict = "yes" if conventions.get("tsconfig_strict") else "no"
     ec = conventions.get("editorconfig") or {}
     ec_line = ", ".join(f"{k}={v}" for k, v in ec.items()) if ec else "_none_"
-    return f"""# Conventions — {project_name}
+
+    base = f"""# Conventions — {project_name}
 
 ## Linter / Formatter
 
@@ -178,6 +198,16 @@ def _render_conventions_md(
 - Keep files under 300 lines; split larger modules.
 - Tests live alongside implementation with `.test.*` / `_test.*` suffix OR in a `tests/` directory — whichever is consistent with the rest of the codebase.
 """
+    if harvested_conventions is not None:
+        content, source = harvested_conventions
+        base += (
+            f"\n---\n\n## Imported from `{source}`\n\n"
+            f"_Copied verbatim by /shipwright-adopt during onboarding. "
+            f"Edit in place; future adopt re-runs back this file up to "
+            f"`.shipwright/adopt/backups/`._\n\n"
+            f"{content.strip()}\n"
+        )
+    return base
 
 
 def _render_decision_log(
@@ -188,11 +218,29 @@ def _render_decision_log(
     commit_sha: str | None,
     features_count: int,
     retroactive_adrs: list[dict[str, Any]],
+    harvested_decisions: tuple[str, str] | None = None,
 ) -> str:
+    """Render decision_log.md.
+
+    `harvested_decisions` is an optional `(content, source_path)` tuple
+    produced by `prior_art_harvester.harvest_decision_log`. When present,
+    the harvested content is appended verbatim AFTER the adopt ADR-0001 +
+    retroactive ADRs, with an attribution header. The harvested entries
+    keep their original numbering — adopt's "Adopted into Shipwright SDLC"
+    entry is the *latest* in the log, with the prior art preserved
+    underneath it.
+    """
     today = _utc_today()
     commit = commit_sha or "HEAD"
+    harvest_note = (
+        f"\n_This log was bootstrapped from existing prior art at "
+        f"`{harvested_decisions[1]}` — see the **Imported decisions** "
+        f"section below for the verbatim contents._\n"
+        if harvested_decisions is not None
+        else ""
+    )
     header = f"""# Decision Log — {project_name}
-
+{harvest_note}
 ## ADR-0001: Adopt this repository into the Shipwright SDLC
 
 - **Status**: accepted
@@ -244,6 +292,15 @@ Adopted into Shipwright using profile `{profile}` and scope `{scope}`. Retroacti
 
 ---
 """
+    if harvested_decisions is not None:
+        content, source = harvested_decisions
+        body += (
+            f"\n## Imported decisions (verbatim from `{source}`)\n\n"
+            f"_Copied during /shipwright-adopt onboarding. Original ADR numbering "
+            f"and ordering preserved. Future decisions land above this section, "
+            f"not within it._\n\n"
+            f"{content.strip()}\n"
+        )
     return body
 
 
@@ -257,6 +314,7 @@ def _render_build_dashboard(
     contributors_total: int,
     nested_excluded: list[str],
     loc_by_layer: dict[str, int],
+    changelog_link: str | None = None,
 ) -> str:
     loc_block = ""
     for layer, loc in sorted(loc_by_layer.items()):
@@ -264,6 +322,13 @@ def _render_build_dashboard(
     if not loc_block:
         loc_block = "_No layers tallied._\n"
     excluded_block = ", ".join(f"`{p}`" for p in nested_excluded) if nested_excluded else "_none_"
+    changelog_block = ""
+    if changelog_link:
+        changelog_block = (
+            "\n## See also\n\n"
+            f"- [`{changelog_link}`](../../{changelog_link}) — release history "
+            "(future entries via /shipwright-changelog).\n"
+        )
     return f"""# Build Dashboard — {project_name}
 
 ## Adoption Snapshot
@@ -292,7 +357,7 @@ def _render_build_dashboard(
 | changelog | not run |
 | deploy | not run |
 | compliance | seeded |
-"""
+{changelog_block}"""
 
 
 def _render_spec_md(
@@ -324,6 +389,41 @@ def _render_spec_md(
         constraint_block += f"- **C-{idx:02d}**: {c}\n"
     if not constraint_block:
         constraint_block = "_No constraints inferred._\n"
+
+    # Acceptance Criteria block. When any FR carries non-empty
+    # `acceptance_criteria`, render a per-FR sub-list with origin marker
+    # (enrichment / tests). FRs without ACs keep today's "TBD" placeholder.
+    has_any_ac = any(f.get("acceptance_criteria") for f in features)
+    ac_block = ""
+    if has_any_ac:
+        for f in features:
+            fr_id = f.get("fr_id", "FR-01.?")
+            label = f.get("label", "")
+            acs = f.get("acceptance_criteria") or []
+            source = f.get("acceptance_source") or ""
+            if not acs:
+                ac_block += (
+                    f"### {fr_id} — {label}\n\n"
+                    "_TBD — refine via /shipwright-iterate._\n\n"
+                )
+                continue
+            origin_note = (
+                f"_Source: {source}._" if source else ""
+            )
+            ac_block += f"### {fr_id} — {label}\n\n{origin_note}\n\n"
+            for ac in acs:
+                ac_block += f"- {ac}\n"
+            ac_block += "\n"
+    else:
+        ac_block = (
+            "Acceptance criteria per FR are placeholders (`TBD`) — refine them "
+            "with explicit behavior expectations as features evolve via "
+            "`/shipwright-iterate`.\n\n"
+            "The auto-generated E2E baseline at `e2e/flows/adopted-baseline.spec.ts` "
+            "(if Playwright crawl succeeded) covers mechanical rendering / "
+            "visibility checks, not semantic behavior.\n"
+        )
+
     return f"""# Specification — {project_name} / {split_name}
 
 _Generated by /shipwright-adopt on {today}. Refine via /shipwright-iterate._
@@ -348,10 +448,7 @@ _Generated by /shipwright-adopt on {today}. Refine via /shipwright-iterate._
 
 ## Acceptance Criteria
 
-Acceptance criteria per FR are placeholders (`TBD`) — refine them with explicit behavior expectations as features evolve via `/shipwright-iterate`.
-
-The auto-generated E2E baseline at `e2e/flows/adopted-baseline.spec.ts` (if Playwright crawl succeeded) covers mechanical rendering / visibility checks, not semantic behavior.
-"""
+{ac_block}"""
 
 
 def write_claude_md(
@@ -419,6 +516,10 @@ def write_agent_docs(
     nested_excluded: list[str],
     commit_sha: str | None,
     retroactive_adrs: list[dict[str, Any]],
+    harvested_decisions: tuple[str, str] | None = None,
+    harvested_conventions: tuple[str, str] | None = None,
+    user_facing_docs: list[str] | None = None,
+    changelog_link: str | None = None,
 ) -> list[Path]:
     """Write the four agent_docs artifacts with preservation guardrails.
 
@@ -438,6 +539,7 @@ def write_agent_docs(
         project_name=project_name, stack=stack, layers=layers,
         architecture_diagram=architecture_diagram,
         data_flow_description=data_flow_description, profile_name=profile,
+        see_also_links=user_facing_docs,
     ), encoding="utf-8")
     record_preservation_action(
         project_root,
@@ -454,6 +556,7 @@ def write_agent_docs(
     conv.write_text(_render_conventions_md(
         project_name=project_name, conventions=conventions,
         conventions_prose=conventions_prose,
+        harvested_conventions=harvested_conventions,
     ), encoding="utf-8")
     record_preservation_action(
         project_root,
@@ -470,6 +573,7 @@ def write_agent_docs(
         project_name=project_name, profile=profile, scope=scope,
         commit_sha=commit_sha, features_count=features_count,
         retroactive_adrs=retroactive_adrs,
+        harvested_decisions=harvested_decisions,
     )
     dec_backup = preserve_if_exists(project_root, dec_rel)
     if dec.exists():
@@ -501,6 +605,7 @@ def write_agent_docs(
         features_count=features_count, commits_total=commits_total,
         contributors_total=contributors_total, nested_excluded=nested_excluded,
         loc_by_layer=loc_by_layer,
+        changelog_link=changelog_link,
     ), encoding="utf-8")
     record_preservation_action(
         project_root,

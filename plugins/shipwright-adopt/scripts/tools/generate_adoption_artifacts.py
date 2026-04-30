@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -93,6 +94,72 @@ def _extract_constraints(snapshot: dict[str, Any]) -> list[str]:
     return constraints
 
 
+# Fix 3a: Test-file detection. Source_file paths matching these patterns are
+# tests, not features. Filter them out of the FR list — Fix 5 mines them as
+# acceptance criteria for sibling FRs instead.
+_TEST_PATH_RE = re.compile(
+    r"(^|/)("
+    r"__tests__|__mocks__|tests?"
+    r")(/|$)|"
+    r"(^|/)(conftest|test_[^/]+)\.py$|"
+    r"\.(test|spec)\.(ts|tsx|js|jsx|mjs|cjs|py)$"
+)
+
+
+def _is_test_path(source_file: str) -> bool:
+    """True if the path looks like a test/mock/fixture rather than a feature."""
+    if not source_file or source_file == "—":
+        return False
+    return bool(_TEST_PATH_RE.search(source_file.replace("\\", "/")))
+
+
+def _normalize_route(route: str) -> str:
+    """Trailing-slash normalization for dedup. `/about/` and `/about` are the
+    same route. The empty string and `/` collapse to `/`."""
+    if not route:
+        return ""
+    if route == "/":
+        return "/"
+    return route.rstrip("/")
+
+
+# Fix 4: see-also cross-links to existing user-facing docs.
+_GUIDE_FILENAMES: tuple[str, ...] = (
+    "guide.md", "manual.md", "usage.md", "getting-started.md", "handbook.md",
+)
+_GUIDE_MIN_LINES = 100  # threshold for "non-trivial enough to link"
+
+
+def _discover_user_facing_docs(project_root: Path) -> list[str]:
+    """Return relative paths of user-facing docs worth linking from
+    architecture.md. Always includes README.md when present; includes
+    `docs/<name>.md` only when the file exceeds _GUIDE_MIN_LINES."""
+    found: list[str] = []
+    readme = project_root / "README.md"
+    if readme.is_file():
+        found.append("README.md")
+    docs = project_root / "docs"
+    if docs.is_dir():
+        for name in _GUIDE_FILENAMES:
+            cand = docs / name
+            if not cand.is_file():
+                continue
+            try:
+                line_count = sum(1 for _ in cand.open("r", encoding="utf-8", errors="ignore"))
+            except OSError:
+                continue
+            if line_count >= _GUIDE_MIN_LINES:
+                found.append(f"docs/{name}")
+    return found
+
+
+def _discover_changelog(project_root: Path) -> str | None:
+    """Return `CHANGELOG.md` if present at project root, else None."""
+    if (project_root / "CHANGELOG.md").is_file():
+        return "CHANGELOG.md"
+    return None
+
+
 def generate(
     project_root: Path,
     *,
@@ -119,6 +186,11 @@ def generate(
     from enrichment_fallback import build_fallback_enrichment  # type: ignore
     from gitignore_check import check_paths_against_gitignore  # type: ignore
     from visual_docs_generator import generate_visual_docs  # type: ignore
+    from prior_art_harvester import (  # type: ignore
+        harvest_conventions, harvest_decision_log,
+    )
+    from test_acceptance_miner import mine_acceptance_criteria  # type: ignore
+    from known_issues_inventory import write_known_issues_inventory  # type: ignore
 
     snapshot = _read_json(snapshot_path)
     routes = []
@@ -160,64 +232,105 @@ def generate(
     # 20-route Hono backend got reduced to whatever the Vite SPA crawl
     # found (often 5 frontend pages). Now: union by route key, both
     # origins recorded, no duplicates.
-    ast_features = snapshot.get("features", []) or []
+    #
+    # Fix 3a: filter test files out of AST features — they're not
+    # functional requirements. Fix 5 mines them as ACs separately.
+    ast_features = [
+        f for f in (snapshot.get("features", []) or [])
+        if not _is_test_path(f.get("source_file", ""))
+    ]
     crawl_routes = routes or []
 
     merged_features: list[dict[str, Any]] = []
-    seen_routes: set[str] = set()
+    seen_routes: set[str] = set()  # normalized route keys
 
     def _enrichment_match(route_key: str) -> dict[str, Any]:
+        norm = _normalize_route(route_key)
         for e in enrichment.get("features", []):
-            if e.get("route") == route_key or e.get("url") == route_key:
+            cand = e.get("route") or e.get("url", "")
+            if _normalize_route(cand) == norm:
                 return e
         return {}
+
+    def _record_ac(feat: dict[str, Any], enrich: dict[str, Any]) -> None:
+        """Fix 3b: pass through a real `acceptance_draft` as ACs. The
+        sentinel "TBD" placeholder stays a placeholder. Fix 5 (test-AC
+        miner) populates this list later when enrichment is empty.
+        """
+        feat["acceptance_draft"] = enrich.get("acceptance_draft") or "TBD"
+        draft = (enrich.get("acceptance_draft") or "").strip()
+        if draft and draft.lower() != "tbd":
+            feat["acceptance_criteria"] = [draft]
+            feat["acceptance_source"] = "enrichment"
+        else:
+            feat["acceptance_criteria"] = []
+            feat["acceptance_source"] = ""
 
     # Crawl routes first — they typically have richer metadata (titles,
     # screenshots) that adopt's downstream consumers (E2E generator,
     # design extraction) rely on.
     for route in crawl_routes:
         url = route.get("url", "")
-        if not url or url in seen_routes:
+        norm = _normalize_route(url)
+        if not norm or norm in seen_routes:
             continue
-        seen_routes.add(url)
-        ast_match = next((f for f in ast_features if f.get("route") == url), {})
+        seen_routes.add(norm)
+        ast_match = next(
+            (f for f in ast_features if _normalize_route(f.get("route", "")) == norm),
+            {},
+        )
         enrich = _enrichment_match(url)
         origin = "ast+crawl" if ast_match else "crawl"
-        merged_features.append({
+        feat = {
             "route": url,
             "url": url,
             "source_file": ast_match.get("source_file") or route.get("source_file", "—"),
             "label": enrich.get("label") or route.get("title") or url,
+            # Prefer the enrichment description (richest source).
             "description": enrich.get("description") or "TBD — refine via /shipwright-iterate",
-            "acceptance_draft": enrich.get("acceptance_draft") or "TBD",
             "origin": origin,
-        })
+        }
+        _record_ac(feat, enrich)
+        merged_features.append(feat)
 
     # AST features that crawl didn't see (typically backend API routes
     # not reachable from the SPA's link graph). Without this loop the
     # adopt spec.md missed every API FR.
     for ast_f in ast_features:
         route_key = ast_f.get("route", "")
-        if not route_key or route_key in seen_routes:
+        norm = _normalize_route(route_key)
+        if not norm or norm in seen_routes:
             continue
-        seen_routes.add(route_key)
+        seen_routes.add(norm)
         enrich = _enrichment_match(route_key)
-        merged_features.append({
+        feat = {
             "route": route_key,
             "url": route_key,
             "source_file": ast_f.get("source_file", "—"),
             "label": enrich.get("label") or route_key,
             "description": enrich.get("description") or "TBD — refine via /shipwright-iterate",
-            "acceptance_draft": enrich.get("acceptance_draft") or "TBD",
             "framework": ast_f.get("framework"),
             "method": ast_f.get("method"),
             "origin": "ast",
-        })
+        }
+        _record_ac(feat, enrich)
+        merged_features.append(feat)
 
     # Assign FR IDs after the union is known — preserves the 1..N sequence
     # the spec template expects.
     for i, feat in enumerate(merged_features, start=1):
         feat["fr_id"] = f"FR-01.{i:02d}"
+
+    # Fix 5: mine sibling test files for ACs when enrichment didn't supply
+    # any. Enrichment > tests > "TBD" — never overwrite a non-empty
+    # enrichment AC. The miner is silent when no sibling test exists.
+    for feat in merged_features:
+        if feat.get("acceptance_criteria"):
+            continue
+        mined = mine_acceptance_criteria(project_root, feat.get("source_file", ""))
+        if mined:
+            feat["acceptance_criteria"] = mined
+            feat["acceptance_source"] = "tests"
 
     product_description = _pick(
         enrichment, "product_description",
@@ -242,6 +355,24 @@ def generate(
     qr = _extract_qr(snapshot)
     constraints = _extract_constraints(snapshot)
 
+    # Prior-art harvest (Fix 2). Best-effort: when a recognized source exists,
+    # the harvested content is appended to decision_log.md / conventions.md
+    # with attribution. Absence is silent — fall back to today's behavior.
+    harvested_decisions_result = harvest_decision_log(project_root)
+    harvested_conventions_result = harvest_conventions(project_root)
+    user_facing_docs = _discover_user_facing_docs(project_root)
+    changelog_link = _discover_changelog(project_root)
+    harvested_decisions = (
+        (harvested_decisions_result.content, harvested_decisions_result.source_path)
+        if harvested_decisions_result is not None
+        else None
+    )
+    harvested_conventions_t = (
+        (harvested_conventions_result.content, harvested_conventions_result.source_path)
+        if harvested_conventions_result is not None
+        else None
+    )
+
     results: dict[str, Any] = {"written": []}
 
     # Artifacts
@@ -264,6 +395,10 @@ def generate(
         nested_excluded=nested_excluded,
         commit_sha=commit_sha,
         retroactive_adrs=enrichment.get("adrs", []),
+        harvested_decisions=harvested_decisions,
+        harvested_conventions=harvested_conventions_t,
+        user_facing_docs=user_facing_docs or None,
+        changelog_link=changelog_link,
     ):
         results["written"].append(str(p))
     p = write_spec(
@@ -353,7 +488,20 @@ def generate(
     }
     if visual_result["wrote_docs"]:
         results["written"].append(str(visual_result["design_tokens"]))
-        results["written"].append(str(visual_result["guideline"]))
+        results["written"].append(str(visual_result["component_inventory"]))
+        results["written"].append(str(visual_result["visual_guidelines"]))
+
+    # Fix 6: pre-compute the TODO/FIXME inventory. /shipwright-iterate users
+    # grep for these markers as their first step after onboarding — emit a
+    # pre-grouped file even when zero markers are found, so operators
+    # don't wonder if the scan ran.
+    known_issues_result = write_known_issues_inventory(project_root)
+    results["known_issues"] = {
+        "total": known_issues_result["total"],
+        "by_marker": known_issues_result["by_marker"],
+        "truncated": known_issues_result["truncated"],
+    }
+    results["written"].append(str(known_issues_result["path"]))
 
     # 4.1 — Gitignore awareness. After all writes, check which output paths
     # would be excluded by the project's .gitignore. The SKILL.md handoff

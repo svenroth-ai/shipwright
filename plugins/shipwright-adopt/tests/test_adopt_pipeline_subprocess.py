@@ -129,7 +129,8 @@ def test_full_pipeline_e2e_via_subprocess(tmp_path: Path) -> None:
 
     # Tier-5 visual docs were produced (fixture has client/components + tailwind)
     assert (tmp_path / ".shipwright" / "agent_docs" / "design_tokens.md").exists()
-    assert (tmp_path / ".shipwright" / "agent_docs" / "guideline.md").exists()
+    assert (tmp_path / ".shipwright" / "agent_docs" / "component_inventory.md").exists()
+    assert (tmp_path / ".shipwright" / "designs" / "visual-guidelines.md").exists()
     assert payload["visual_docs"]["wrote_docs"] is True
     assert payload["visual_docs"]["component_count"] >= 1
     # frontend_root must be the client dir (multi-service pivot worked)

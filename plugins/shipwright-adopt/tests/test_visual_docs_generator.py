@@ -54,16 +54,17 @@ def test_generate_writes_design_tokens_md(tmp_path: Path) -> None:
     assert tokens_path == result["design_tokens"]
 
 
-def test_generate_writes_guideline_md_with_components_section(tmp_path: Path) -> None:
+def test_generate_writes_component_inventory_md(tmp_path: Path) -> None:
+    """Component table moved to component_inventory.md (architecture doc).
+    The design-system view lives in `.shipwright/designs/visual-guidelines.md`
+    — see test_visual_docs_canonical_path.py for that side."""
     _setup_fixture(tmp_path)
-    result = generate_visual_docs(tmp_path)
-    guideline_path = tmp_path / ".shipwright" / "agent_docs" / "guideline.md"
-    assert guideline_path.exists()
-    body = guideline_path.read_text(encoding="utf-8")
+    generate_visual_docs(tmp_path)
+    inventory_path = tmp_path / ".shipwright" / "agent_docs" / "component_inventory.md"
+    assert inventory_path.exists()
+    body = inventory_path.read_text(encoding="utf-8")
     assert "Button" in body
     assert "Card" in body
-    # Should reference colors + components in cohesive sections
-    assert "Colors" in body or "colors" in body
     assert "Components" in body or "components" in body
 
 
@@ -102,8 +103,12 @@ def test_generate_with_explicit_frontend_root(tmp_path: Path) -> None:
         "export default { theme: { extend: { colors: { brand: '#abc' } } } };\n",
         encoding="utf-8",
     )
-    result = generate_visual_docs(tmp_path, frontend_root=tmp_path / "client")
-    body = (tmp_path / ".shipwright" / "agent_docs" / "guideline.md").read_text(encoding="utf-8")
+    generate_visual_docs(tmp_path, frontend_root=tmp_path / "client")
+    body = (tmp_path / ".shipwright" / "agent_docs" / "component_inventory.md").read_text(
+        encoding="utf-8"
+    )
     assert "Header" in body
-    tokens = (tmp_path / ".shipwright" / "agent_docs" / "design_tokens.md").read_text(encoding="utf-8")
+    tokens = (tmp_path / ".shipwright" / "agent_docs" / "design_tokens.md").read_text(
+        encoding="utf-8"
+    )
     assert "brand" in tokens
