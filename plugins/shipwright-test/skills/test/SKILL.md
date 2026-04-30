@@ -37,7 +37,7 @@ Test layers:
   3.  Playwright E2E (if UI project + DEV URL available)
   3.6 Cross-page consistency (if .shipwright/designs/visual-guidelines.md exists)
   4.  Design fidelity (if .shipwright/designs/screen-routes.json exists)
-  5.  Security scan → see /shipwright-security
+  5.  Security scan → out-of-band; see /shipwright-security (not auto-invoked)
 ================================================================================
 ```
 
@@ -584,10 +584,10 @@ uv run {plugin_root}/../../shared/scripts/dev_server.py stop --cwd {project_root
 
 ## Step 4: Security Scan → /shipwright-security
 
-Security scanning is handled by the dedicated `/shipwright-security` plugin (Aikido integration).
+Security scanning is handled by the dedicated `/shipwright-security` plugin and runs **out-of-band** — `/shipwright-run` does NOT auto-invoke it (decoupled in iterate `sec-report-and-orchestrator-decouple`, 2026-04). The previous `AIKIDO_CLIENT_ID`-gated auto-insert is gone.
 
-- Standalone: `/shipwright-security`
-- Pipeline: Automatically called after test by `/shipwright-run` (if `AIKIDO_CLIENT_ID` is set)
+- Standalone: `/shipwright-security` (manual, typically after test)
+- CI: `.github/workflows/security.yml` (dormant by default; activate `pull_request` / `schedule` triggers at Phase B)
 
 This step is a no-op in shipwright-test.
 

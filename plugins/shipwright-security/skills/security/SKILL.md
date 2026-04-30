@@ -13,6 +13,19 @@ Security scanning with automated remediation. Pluggable scanner backend:
 
 ---
 
+## Target Operating Model
+
+Security runs **out-of-band** — it is not a pipeline phase. `/shipwright-run` does NOT invoke security automatically (decoupled in iterate `sec-report-and-orchestrator-decouple`, 2026-04).
+
+Two activation paths:
+
+- **Manual / local:** invoke `/shipwright-security` ad hoc, typically after `/shipwright-test`.
+- **CI / GitHub Actions:** the active scanner chain lives at [`.github/workflows/security.yml`](../../../../.github/workflows/security.yml). It ships dormant — only `workflow_dispatch` is enabled out of the box. The `pull_request` and weekly `schedule` triggers are commented out and activated deliberately at Phase B / Go-Live. SARIF uploads, PR comments, fork-PR guards, and the critical-findings gate are fully wired.
+
+Pipeline state machine, hooks, and config files do not auto-insert a security phase. `runConditions.securityEnabled` exists for diagnostic purposes only and gates nothing.
+
+---
+
 ## CRITICAL: First Actions
 
 **Governing rules:** Read and follow `shared/constitution.md` (ALWAYS / ASK FIRST / NEVER boundaries).
@@ -30,7 +43,7 @@ Usage: /shipwright-security
    or: /shipwright-security issues --repo owner/repo     (Aikido only)
    or: /shipwright-security summary                      (Aikido only)
    or: /shipwright-security report --repo owner/repo     (Aikido only)
-   or: Invoked by /shipwright-run (orchestrator)
+   (Security is out-of-band — /shipwright-run does NOT invoke it; run manually or via CI)
 
 Modes:
   Pipeline mode: Inside Shipwright project → full remediation loop
