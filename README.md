@@ -107,7 +107,7 @@ Multi-project kanban across every Shipwright task you touch. Click a task for it
 
 | Skill | Purpose |
 |-------|---------|
-| `shipwright-run` | Orchestrator — inference engine, scope detection, pipeline state machine |
+| `shipwright-run` | Pipeline Initializer & Phase Coordinator — inference engine, scope detection, pipeline state machine |
 | `shipwright-iterate` | Daily iteration — intent classification, complexity assessment, adaptive pipeline |
 | `shipwright-project` | Requirements — IREB-aligned specs, scope detection, chat + file + inline input |
 | `shipwright-design` | UI Design — snippet-assembled HTML mockups, review viewer, design system flavors |
@@ -129,7 +129,7 @@ Profiles define the entire stack: versions, folder structure, deploy target, tes
 |---------|-------|--------|
 | `supabase-nextjs` | Next.js 16 · Supabase · Tailwind 4 · shadcn/ui · Zustand · Vitest · Playwright | Jelastic (Infomaniak) |
 
-**Custom profiles.** Drop a new JSON file into `shared/profiles/` to define your own stack — versions, folder layout, deploy target, test strategy, linting, CI, and architecture rules. Shipwright picks it up automatically and the orchestrator can infer it from your project description.
+**Custom profiles.** Drop a new JSON file into `shared/profiles/` to define your own stack — versions, folder layout, deploy target, test strategy, linting, CI, and architecture rules. Shipwright picks it up automatically and `/shipwright-run` can infer it from your project description.
 
 ## Getting Started
 
@@ -211,7 +211,7 @@ For the full setup guide (troubleshooting, deployment targets, external LLM revi
 ```
 shipwright/
 ├── plugins/                          # Claude Code plugins (one per SDLC phase)
-│   ├── shipwright-run/               # Orchestrator
+│   ├── shipwright-run/               # Pipeline Initializer
 │   ├── shipwright-project/           # Requirements decomposition (IREB)
 │   ├── shipwright-design/            # UI mockups (HTML)
 │   ├── shipwright-plan/              # Deep planning + external LLM review

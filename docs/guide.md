@@ -362,7 +362,7 @@ You are not limited to a single command. Shipwright supports several input metho
 /shipwright-changelog
 ```
 
-Every skill works standalone. You can run `/shipwright-test` without having used the rest of the pipeline, or invoke `/shipwright-plan` on a spec you wrote manually. The orchestrator is convenient, not mandatory.
+Every skill works standalone. You can run `/shipwright-test` without having used the rest of the pipeline, or invoke `/shipwright-plan` on a spec you wrote manually. The full pipeline is convenient, not mandatory.
 
 ## 3.5 Adopting an existing repo
 
@@ -441,7 +441,7 @@ Shipwright's orchestrator pipeline consists of **7 phases** (project, design, pl
 
 ### 4.1 Orchestration -- /shipwright-run
 
-**Purpose.** The orchestrator is your single entry point. It takes a project description, infers settings, writes the pipeline spec to `shipwright_run_config.json`, prints a launch card for the first phase, and ends. Each phase then runs in its **own external Claude CLI session** — phase Stop hooks plan the next phase via the orchestrator state machine, so the pipeline progresses without the master session being open. (Multi-session lifecycle, schema v2 — see [Multi-Session Pipeline Lifecycle](hooks-and-pipeline.md#multi-session-pipeline-lifecycle-v2).)
+**Purpose.** `/shipwright-run` is the **Pipeline Initializer & Phase Coordinator** — your single entry point. It takes a project description, infers settings, writes the pipeline spec to `shipwright_run_config.json`, prints a launch card for the first phase, and ends. Each phase then runs in its **own external Claude CLI session** — phase Stop hooks plan the next phase via the orchestrator state machine, so the pipeline progresses without the master session being open. (Multi-session lifecycle, schema v2 — see [Multi-Session Pipeline Lifecycle](hooks-and-pipeline.md#multi-session-pipeline-lifecycle-v2).)
 
 **Command and Arguments**
 
@@ -716,7 +716,7 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 
 Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason}`) before the phase is considered complete. If any layer has no result, the phase stays in `incomplete` status.
 
-**Standalone usage:** Yes. You can run `/shipwright-test` at any time against any project with a recognized profile. It works independently of the orchestrator. The `--fix` flag and `--e2e-only` flag give you targeted control outside the pipeline.
+**Standalone usage:** Yes. You can run `/shipwright-test` at any time against any project with a recognized profile. It works independently of the pipeline. The `--fix` flag and `--e2e-only` flag give you targeted control outside the pipeline.
 
 ---
 

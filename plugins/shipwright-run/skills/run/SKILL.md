@@ -1,6 +1,6 @@
 ---
 name: shipwright-run
-description: "Master orchestrator for the Shipwright SDLC pipeline. Specs the pipeline, prints a phase launch card, then ends — each phase runs in its own external Claude session.\nTRIGGER when: user wants to run the full pipeline, start the complete SDLC process, build an entire application from scratch, or resume an interrupted pipeline. Also when user says 'shipwright run' or 'start the pipeline'.\nDO NOT TRIGGER when: user asks for a specific phase only (project, design, plan, build, test, deploy, changelog, compliance), or asks to fix/change/add something to an existing project (/shipwright-iterate). If the user wants only ONE phase, trigger that specific skill instead."
+description: "Pipeline Initializer & Phase Coordinator for the Shipwright SDLC pipeline. Writes the run spec, prints a phase launch card, then ends — each phase runs in its own external Claude session.\nTRIGGER when: user wants to run the full pipeline, start the complete SDLC process, build an entire application from scratch, or resume an interrupted pipeline. Also when user says 'shipwright run' or 'start the pipeline'.\nDO NOT TRIGGER when: user asks for a specific phase only (project, design, plan, build, test, deploy, changelog, compliance), or asks to fix/change/add something to an existing project (/shipwright-iterate). If the user wants only ONE phase, trigger that specific skill instead."
 license: MIT
 compatibility: Requires uv (Python 3.11+), git. Optional: JELASTIC_TOKEN for deploy.
 ---
