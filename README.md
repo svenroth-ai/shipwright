@@ -3,7 +3,11 @@
 ![Status](https://img.shields.io/badge/status-early--access--beta-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-**Shipwright is a structured SDLC framework for Claude Code.** From one-line description to deployed, tested, secured app — via a cleanly orchestrated pipeline of skills that also work on their own. Use it from the **Claude Code VSCode Extension or CLI terminal** — or, for multi-project work, through the **Shipwright Command Center** web UI: one kanban board across every Shipwright task, so you stop juggling windows and VS Code sessions to see where things stand. Built for daily iteration, not one-shot generation. **Ships audit-ready compliance artifacts as a byproduct — no extra work.**
+**Shipwright is the harness around your AI coding workflow.** Specs, Tests, Architectural Decisions, Living Traceability, and Compliance artifacts that turn AI velocity into shippable software. Not a stack framework; not autonomous codegen — the discipline layer that makes the rest reliable.
+
+> **Sidenote.** What Shipwright builds, the wider AI engineering field is starting to call *harness engineering* (Martin Fowler, 2026). Shipwright is your harness.
+
+From one-line description to deployed, tested, secured app — via a cleanly orchestrated pipeline of skills that also work on their own. Use it from the **Claude Code VSCode Extension or CLI terminal**, or — for multi-project work — through the **Shipwright Command Center** web UI: one kanban board across every Shipwright task. Built for daily iteration, not one-shot generation. **Ships audit-ready compliance artifacts as a byproduct — no extra work.**
 
 ```
 /shipwright-run "A SaaS time tracking app with Supabase and Next.js"

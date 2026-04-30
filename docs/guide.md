@@ -30,6 +30,38 @@ You can drive all of this from the Claude Code VSCode Extension or CLI terminal,
 
 All three work from the Claude Code VSCode Extension or CLI terminal directly. The Command Center WebUI layers a multi-project kanban on top — you still run Claude in your own terminal or VS Code Extension, you just stop juggling windows and VS Code sessions to see what's where.
 
+### Who is Shipwright for?
+
+Shipwright is for engineers, BAs, architects, and tech leads who work with Claude Code — and have noticed that AI velocity alone does not get you to a shippable product. What they build gets seen by others: customers, colleagues, markets. They are not necessarily engineers in the classical sense, but they have enough technical judgment to know that more prompting does not produce more quality. They are looking for the guardrails that turn AI from "fast" into "fast *and* good." Shipwright is the discipline layer — Specs, Tests, traceable decisions, living traceability — and the Masterclass guides the path from "AI as a tool" to "AI as a professional discipline."
+
+**Tool users — actively run Shipwright in their own projects:**
+
+- **Engineers** in mid-size companies and enterprises who use Claude Code daily and want better practices, not better autocomplete.
+- **Solution Architects** who design systems and want their architectural decisions to live in the code, not rot in slide decks.
+- **IT Allrounders in mid-sized companies** who can't or won't use Replit-style tools — for compliance, customer reputation, or because they want to understand what is running in production.
+- **Independent consultants and boutique agencies** who deliver to clients and refuse to ship vibe-coded output with their name on it.
+- **Serious founders** with enough technical background to know that more prompting won't give better quality — looking for the discipline that turns AI velocity into shippable products.
+
+**Curriculum audience — learn the discipline, don't necessarily run the tool:**
+
+- **Business Analysts and Requirements Engineers** who write specs all day and want them to stay alive — coupled to code, traceable, never stale.
+- **Practitioners who have already invested heavily in Claude Code** and are looking for the next step — moving from "I can prompt it" to "I understand what else is possible and needed with it."
+
+### Not for
+
+- Hobbyists building toys without external accountability.
+- Vibe-coding workflows where discipline feels like overhead.
+- No-code founders without engineering judgment.
+- Classical SAFe / Waterfall veterans looking for tooling around *their* existing process.
+
+### Discipline Layer — the Harness around AI Coding
+
+Shipwright positions itself as a **discipline layer for AI coding**, not a stack framework. The two stack profiles (`supabase-nextjs`, `vite-hono`) and the Jelastic deploy target are reference implementations, not the product. The product is the discipline: IREB-aligned specs, ADRs, RTM, phase-gates, living traceability, compliance artifacts.
+
+> **Sidenote.** What Shipwright builds, the wider AI engineering field is starting to call *harness engineering* (Martin Fowler, 2026). The harness is the surrounding system of guides (Specs, Conventions, Architecture docs) and sensors (Linters, Tests, Reviews, Scanners) that steers and corrects AI output before and after generation.
+
+**Honest limit.** Shipwright takes the supervision overhead off Maintainability and Architecture-Fitness. **Behavior correctness — does this actually do what users need — remains your call.** We make that judgment cheaper, not unnecessary. The "behavior harness" is unsolved across the industry; do not expect Shipwright (or any tool) to remove the human from that loop.
+
 ### What You Get
 
 - **IREB-aligned specs** from a structured requirements interview - testable acceptance criteria from day one
