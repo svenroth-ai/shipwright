@@ -28,11 +28,14 @@ const WAIT_TIMEOUT = WAIT_STRATEGY === 'networkidle' ? 10_000 : 3_000;
 // SHIPWRIGHT_CRAWL_SETTLE_MS.
 const SETTLE_MS = parseInt(process.env.SHIPWRIGHT_CRAWL_SETTLE_MS || '1500', 10);
 
-// Mock all `/api/**` requests with empty `[]` 200s by default. Removes
-// polling network noise (TanStack Query, SWR) that races screenshots and
-// keeps `networkidle` from ever firing. Set SHIPWRIGHT_CRAWL_MOCK_API=0
-// for apps where mocked APIs break route rendering (e.g. router-level
-// auth guards that redirect on a 401 from the user endpoint).
+// Smart `/api/**` mocking: GET/HEAD/OPTIONS pass through to the real
+// backend (consumers see real response shapes — `{ ... }` or `[ ... ]` —
+// and pages render normally), while writes (POST/PUT/PATCH/DELETE) are
+// stubbed with an empty `{}` 200 to keep the crawl side-effect-free.
+// Replaces the prior blanket `200 []` mock that exploded object-shape
+// endpoints (e.g. `/api/health`, `/api/diagnostics`) the moment a
+// consumer did `data.something`. Set SHIPWRIGHT_CRAWL_MOCK_API=0 to
+// disable mocking entirely (writes hit the real backend).
 const MOCK_API = (process.env.SHIPWRIGHT_CRAWL_MOCK_API ?? '1') !== '0';
 
 // Comma-separated paths to seed the BFS queue with at depth 0. Escape
@@ -73,14 +76,23 @@ function safeFilename(url: string): string {
 }
 
 async function extractMeta(page: Page, url: string, depth: number, screenshotPath: string): Promise<RouteEntry> {
+  // All locator extractions use a short META_TIMEOUT. Playwright's default
+  // auto-wait is 30 s — when an SPA route legitimately has no <h1>, that
+  // call sits for 30 s waiting for one to appear, during which polling /
+  // Vite HMR / dependency-optimization reloads can kill the page out from
+  // under us, and the *next* operation (the screenshot) reports "Target
+  // page, context or browser has been closed". A 1.5 s ceiling keeps each
+  // missing-element bail-out fast and well inside the screenshot's
+  // stability window.
+  const META_TIMEOUT = 1500;
   const title = await page.title().catch(() => '');
-  const h1 = await page.locator('h1').first().innerText().catch(() => '');
-  const h2 = await page.locator('h2').allInnerTexts().catch(() => []);
-  const buttons = await page.locator('button, [role="button"], a.button, [type="submit"]').allInnerTexts().catch(() => []);
+  const h1 = await page.locator('h1').first().innerText({ timeout: META_TIMEOUT }).catch(() => '');
+  const h2 = await page.locator('h2').allInnerTexts({ timeout: META_TIMEOUT }).catch(() => []);
+  const buttons = await page.locator('button, [role="button"], a.button, [type="submit"]').allInnerTexts({ timeout: META_TIMEOUT }).catch(() => []);
   const formHandles = await page.locator('form').all().catch(() => []);
   const forms: { action: string; fields: string[] }[] = [];
   for (const f of formHandles) {
-    const action = await f.getAttribute('action').catch(() => '') || '';
+    const action = await f.getAttribute('action', { timeout: META_TIMEOUT }).catch(() => '') || '';
     const inputs = await f.locator('input[name], textarea[name], select[name]').evaluateAll(
       (els) => (els as HTMLElement[]).map((e) => (e as HTMLInputElement).name)
     ).catch(() => []);
@@ -113,20 +125,31 @@ async function extractMeta(page: Page, url: string, depth: number, screenshotPat
 }
 
 async function installApiMocks(context: BrowserContext): Promise<void> {
-  // Empty-array 200 covers the common JSON-list endpoint shape. Apps
-  // expecting an object body just see `[]` and render their empty state,
-  // which is fine for route discovery — we're after the chrome (links,
-  // titles), not the data.
+  // Reads pass through, writes are stubbed. Keeps the crawl side-effect-
+  // free (no rows created, no state mutated) while letting consumers
+  // render against real GET data — object-shape endpoints don't explode
+  // the way they did under the previous blanket `200 []` mock that
+  // caused `data.something` references to crash. Writes get an empty
+  // `{}` 200 so client-side success handlers fire without anything
+  // actually persisting to the backend. SSE / EventSource endpoints
+  // also pass through cleanly under `route.continue()` as long as the
+  // BFS gives each route a fresh page (see page-isolation invariant
+  // below) — the browser cleans up the open stream when the page closes.
   await context.route('**/api/**', (route) => {
+    const method = route.request().method();
+    if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
+      route.continue().catch(() => { /* route already handled / context closed */ });
+      return;
+    }
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: '[]',
+      body: '{}',
     }).catch(() => { /* route already handled / context closed */ });
   });
 }
 
-test('shipwright-adopt route crawler', async ({ page, context }) => {
+test('shipwright-adopt route crawler', async ({ context }) => {
   test.setTimeout(180_000);
   fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
   fs.mkdirSync(path.dirname(OUT_JSON), { recursive: true });
@@ -166,18 +189,25 @@ test('shipwright-adopt route crawler', async ({ page, context }) => {
       if (visited.has(canonical)) continue;
       visited.add(canonical);
 
+      // Fresh page per route — page-isolation invariant. Once a polling
+      // re-render races `page.screenshot()` and throws "Target page closed",
+      // the SAME page object is dead for every subsequent goto. Reusing it
+      // (the prior single-page-across-the-whole-BFS pattern) silently
+      // cascade-failed every remaining route through the inner catch.
+      // Cost: ~50 ms newPage()/close() per route — cheap insurance.
+      const routePage = await context.newPage();
       try {
-        const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15_000 });
+        const response = await routePage.goto(url, { waitUntil: 'domcontentloaded', timeout: 15_000 });
         if (!response || !response.ok()) continue;
-        await page.waitForLoadState(WAIT_STRATEGY, { timeout: WAIT_TIMEOUT }).catch(() => { /* ignore */ });
-        await page.waitForTimeout(SETTLE_MS);  // settle for hydration / late renders / lazy chunks
+        await routePage.waitForLoadState(WAIT_STRATEGY, { timeout: WAIT_TIMEOUT }).catch(() => { /* ignore */ });
+        await routePage.waitForTimeout(SETTLE_MS);  // settle for hydration / late renders / lazy chunks
 
         const screenshotPath = path.join(SCREENSHOTS_DIR, `${safeFilename(canonical)}.png`);
-        const entry = await extractMeta(page, canonical, depth, screenshotPath);
+        const entry = await extractMeta(routePage, canonical, depth, screenshotPath);
         results.push(entry);
 
         if (depth < MAX_DEPTH) {
-          const links = await page.locator('a[href]').evaluateAll((els) =>
+          const links = await routePage.locator('a[href]').evaluateAll((els) =>
             (els as HTMLAnchorElement[]).map((a) => a.href).filter(Boolean)
           ).catch(() => []);
           for (const link of links) {
@@ -191,6 +221,8 @@ test('shipwright-adopt route crawler', async ({ page, context }) => {
       } catch (_e) {
         // Swallow errors and move on — best-effort crawl
         continue;
+      } finally {
+        await routePage.close().catch(() => { /* already closed / context teardown race */ });
       }
     }
   } finally {

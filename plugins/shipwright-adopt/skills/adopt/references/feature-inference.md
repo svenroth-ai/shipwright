@@ -48,10 +48,14 @@ mechanisms:
    skipped. The spec adds each seed to the BFS queue at depth 0, so
    they're always visited even if the entry page exposes no links.
 2. **API mocking** — `SHIPWRIGHT_CRAWL_MOCK_API` (default on) installs
-   a `context.route('**/api/**')` that returns `200 []`, removing
-   polling network noise so `networkidle` can fire and screenshots
-   don't race re-renders. Set `SHIPWRIGHT_CRAWL_MOCK_API=0` for apps
-   whose router-level guards depend on a real `/api/me` response.
+   a `context.route('**/api/**')` that **passes GETs through** to the
+   real backend (consumers see real response shapes — `{ ... }` or
+   `[ ... ]` — and render correctly) and stubs **only writes**
+   (POST/PUT/PATCH/DELETE) with an empty `{}` 200. Preserves the
+   crawl-without-side-effects invariant. The previous blanket
+   `200 []` mock crashed object-shape endpoints (e.g. `/api/health`)
+   the moment a consumer did `data.something`. Set
+   `SHIPWRIGHT_CRAWL_MOCK_API=0` to disable mocking entirely.
 3. **Longer settle window** — `SHIPWRIGHT_CRAWL_SETTLE_MS` (default
    1500 ms, was 500 ms) gives Tailwind/lazy-chunk SPAs more time to
    hydrate before BFS scrapes links. Capped at 1500 ms by default

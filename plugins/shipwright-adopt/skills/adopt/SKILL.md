@@ -224,13 +224,28 @@ If the dev-server fails to become healthy within its profile's
 and fall back to AST-based `features[]` from the snapshot. Document
 the skip reason in the eventual handoff.
 
+**API mocking semantics.** `SHIPWRIGHT_CRAWL_MOCK_API` (default on)
+installs a `context.route('**/api/**')` that **passes GETs through**
+to the real backend (so consumers receive real response shapes — both
+`{ ... }` and `[ ... ]` — and pages render correctly), and stubs
+**only writes** (POST/PUT/PATCH/DELETE) with an empty `{}` 200. This
+preserves the crawl-without-side-effects invariant while keeping
+object-shape endpoints (e.g. `/api/health`, `/api/diagnostics`) from
+crashing consumers that do `data.something`. Set
+`SHIPWRIGHT_CRAWL_MOCK_API=0` to disable mocking entirely (writes hit
+the real backend) — usually only needed if the test bed lacks a live
+API and even GETs need to be stubbed manually upstream.
+
 **Screenshot fall-back signal.** `route_crawler.py` returns
-`screenshots_succeeded` and `screenshots_failed` in its summary. If
+`screenshots_succeeded` and `screenshots_failed` in its summary. Each
+route runs in a fresh page (page-isolation invariant), so an isolated
+screenshot failure no longer cascades — a low ratio just means a
+handful of routes raced their re-renders. If
 `screenshots_succeeded == 0` and `routes > 0`, treat as a degraded
-crawl (the app likely tore down mid-screenshot — common with router-
-level guards that redirect on a 401 from the mocked API). Either
-retry with `SHIPWRIGHT_CRAWL_MOCK_API=0` in the subprocess env or
-fall back to AST features and note the reason in the handoff.
+crawl (the entire app likely tears down mid-render — common with
+router-level guards that redirect on a 401 from a mocked endpoint).
+Either retry with `SHIPWRIGHT_CRAWL_MOCK_API=0` in the subprocess env
+or fall back to AST features and note the reason in the handoff.
 
 ### Step B.8 — Semantic Enrichment (Layer 2, inline)
 

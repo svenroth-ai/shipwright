@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+import json
+import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import route_crawler  # noqa: E402
 from route_crawler import (  # noqa: E402
     _normalize_route,
     _summarize_screenshots,
     extract_static_routes,
+    run_crawl,
 )
 
 
@@ -202,3 +206,86 @@ def test_summarize_screenshots_empty():
 
 def test_summarize_screenshots_handles_non_list():
     assert _summarize_screenshots("not a list") == (0, 0)
+
+
+# --- page-isolation invariant -------------------------------------------
+#
+# The crawler template now runs each route in a fresh page (context.newPage())
+# and closes it in a `finally` block. Before this fix, a single
+# "Target page closed" thrown by a polling re-render racing
+# `page.screenshot()` on route N silently cascade-failed every remaining
+# route through the inner catch — routes.json ended up with one entry, no
+# screenshots, and the test timed out chasing zero progress. The fix is in
+# crawler.ts.template; these tests pin the *contract* the wrapper relies
+# on so a future revert to a shared-page model fails loudly here.
+
+
+def test_page_isolation_invariant_failed_route_does_not_suppress_others():
+    """Mixed success/failure across non-adjacent routes must all land in
+    routes.json. With the pre-fix shared-page crawler, a screenshot failure
+    on route 2 would prevent routes 3..N from ever being recorded; with
+    fresh-per-route pages, each route is independent."""
+    routes = [
+        {"url": "/", "screenshot": "shots/root.png"},
+        {"url": "/dashboard", "screenshot_error": "Target page closed"},
+        {"url": "/inbox", "screenshot": "shots/inbox.png"},
+        {"url": "/settings", "screenshot": "shots/settings.png"},
+        {"url": "/diagnostics", "screenshot_error": "EPERM"},
+    ]
+    succeeded, failed = _summarize_screenshots(routes)
+    # All five routes survived to be recorded.
+    assert len(routes) == 5
+    # Failures and successes were both counted accurately.
+    assert succeeded == 3
+    assert failed == 2
+
+
+def test_run_crawl_surfaces_all_routes_when_a_screenshot_fails(tmp_path, monkeypatch):
+    """End-to-end through run_crawl: a routes.json with mixed
+    success/failure (the page-isolation guarantee made manifest) is
+    parsed, summarised, and returned with all routes present.
+
+    Mocks the playwright subprocess so the assertion targets the wrapper's
+    handling of the post-fix output shape, not the crawl itself.
+    """
+    output = tmp_path / ".shipwright" / "adopt" / "routes.json"
+    screenshots = tmp_path / ".shipwright" / "adopt" / "screenshots"
+    fake_routes = [
+        {"url": "/", "screenshot": "shots/root.png"},
+        {"url": "/projects", "screenshot_error": "Target page closed"},
+        {"url": "/inbox", "screenshot": "shots/inbox.png"},
+        {"url": "/settings", "screenshot": "shots/settings.png"},
+    ]
+
+    def fake_subprocess_run(*_args, **kwargs):
+        # Simulate the post-fix crawler: each route runs in its own page,
+        # so a failed screenshot on route 2 does NOT eat routes 3 and 4.
+        out_path = Path(kwargs["env"]["SHIPWRIGHT_CRAWL_OUT"])
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json.dumps(fake_routes), encoding="utf-8")
+        return subprocess.CompletedProcess(args=_args, returncode=0, stdout="", stderr="")
+
+    # Patch the npx resolver, template install, and the subprocess call so
+    # the crawl never actually shells out.
+    monkeypatch.setattr(route_crawler, "resolve_executable", lambda _name: "/fake/npx")
+    monkeypatch.setattr(
+        route_crawler,
+        "_install_template",
+        lambda project_root, config_dir=None: tmp_path / "_fake-spec.ts",
+    )
+    monkeypatch.setattr(subprocess, "run", fake_subprocess_run)
+
+    summary = run_crawl(
+        tmp_path,
+        base_url="http://localhost:5175",
+        output=output,
+        screenshots_dir=screenshots,
+        max_depth=3,
+        max_pages=50,
+        auth_token=None,
+    )
+
+    assert summary["status"] == "success"
+    assert summary["routes"] == 4  # all four survived, including post-failure routes 3 + 4
+    assert summary["screenshots_succeeded"] == 3
+    assert summary["screenshots_failed"] == 1
