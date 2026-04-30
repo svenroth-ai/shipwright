@@ -224,6 +224,14 @@ If the dev-server fails to become healthy within its profile's
 and fall back to AST-based `features[]` from the snapshot. Document
 the skip reason in the eventual handoff.
 
+**Screenshot fall-back signal.** `route_crawler.py` returns
+`screenshots_succeeded` and `screenshots_failed` in its summary. If
+`screenshots_succeeded == 0` and `routes > 0`, treat as a degraded
+crawl (the app likely tore down mid-screenshot — common with router-
+level guards that redirect on a 401 from the mocked API). Either
+retry with `SHIPWRIGHT_CRAWL_MOCK_API=0` in the subprocess env or
+fall back to AST features and note the reason in the handoff.
+
 ### Step B.8 — Semantic Enrichment (Layer 2, inline)
 
 Read `.shipwright/adopt/snapshot.json` and (if present)

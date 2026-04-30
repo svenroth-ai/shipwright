@@ -2,7 +2,7 @@
 // Copies into target project as a Playwright spec and runs via `npx playwright test`.
 // Writes results to --output-json path provided via env SHIPWRIGHT_CRAWL_OUT.
 
-import { test, expect, Page } from '@playwright/test';
+import { test, expect, Page, BrowserContext } from '@playwright/test';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -19,6 +19,30 @@ const AUTH_TOKEN = process.env.SHIPWRIGHT_CRAWL_AUTH_TOKEN || '';
 type WaitStrategy = 'load' | 'networkidle' | 'domcontentloaded';
 const WAIT_STRATEGY = (process.env.SHIPWRIGHT_CRAWL_WAIT_STRATEGY || 'load') as WaitStrategy;
 const WAIT_TIMEOUT = WAIT_STRATEGY === 'networkidle' ? 10_000 : 3_000;
+
+// Post-navigation settle. Bumped from 500 to 1500 ms because
+// Tailwind/lazy-chunk SPAs need more than 500 ms after `load` for
+// router-mounted <Link>s to appear in the DOM — without them, BFS sees
+// zero same-origin links on the entry page and exits at depth 0.
+// Cap default at 1500: adopt is meant to be fast. Override via
+// SHIPWRIGHT_CRAWL_SETTLE_MS.
+const SETTLE_MS = parseInt(process.env.SHIPWRIGHT_CRAWL_SETTLE_MS || '1500', 10);
+
+// Mock all `/api/**` requests with empty `[]` 200s by default. Removes
+// polling network noise (TanStack Query, SWR) that races screenshots and
+// keeps `networkidle` from ever firing. Set SHIPWRIGHT_CRAWL_MOCK_API=0
+// for apps where mocked APIs break route rendering (e.g. router-level
+// auth guards that redirect on a 401 from the user endpoint).
+const MOCK_API = (process.env.SHIPWRIGHT_CRAWL_MOCK_API ?? '1') !== '0';
+
+// Comma-separated paths to seed the BFS queue with at depth 0. Escape
+// hatch for SPAs whose links never appear in the static HTML (router
+// configs, dynamic menus). Python wrapper auto-populates this when it
+// can statically extract route literals from router config files.
+const SEED_ROUTES = (process.env.SHIPWRIGHT_CRAWL_SEED_ROUTES || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 interface RouteEntry {
   url: string;
@@ -62,6 +86,11 @@ async function extractMeta(page: Page, url: string, depth: number, screenshotPat
     ).catch(() => []);
     forms.push({ action, fields: inputs.slice(0, 20) });
   }
+  // Best-effort quiet window before grabbing the screenshot. Polling apps
+  // will hit the 1500 ms timeout, but for the brief window before the
+  // next poll tick most apps go quiet long enough to avoid mid-render
+  // tear-down racing the screenshot.
+  await page.waitForLoadState('networkidle', { timeout: 1500 }).catch(() => { /* ignore */ });
   let screenshotError: string | undefined;
   try {
     await page.screenshot({ path: screenshotPath, fullPage: false });
@@ -83,6 +112,20 @@ async function extractMeta(page: Page, url: string, depth: number, screenshotPat
   return entry;
 }
 
+async function installApiMocks(context: BrowserContext): Promise<void> {
+  // Empty-array 200 covers the common JSON-list endpoint shape. Apps
+  // expecting an object body just see `[]` and render their empty state,
+  // which is fine for route discovery — we're after the chrome (links,
+  // titles), not the data.
+  await context.route('**/api/**', (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: '[]',
+    }).catch(() => { /* route already handled / context closed */ });
+  });
+}
+
 test('shipwright-adopt route crawler', async ({ page, context }) => {
   test.setTimeout(180_000);
   fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
@@ -91,9 +134,24 @@ test('shipwright-adopt route crawler', async ({ page, context }) => {
   if (AUTH_TOKEN) {
     await context.setExtraHTTPHeaders({ Authorization: `Bearer ${AUTH_TOKEN}` });
   }
+  if (MOCK_API) {
+    await installApiMocks(context);
+  }
 
   const base = new URL(BASE_URL);
   const queue: { url: string; depth: number }[] = [{ url: BASE_URL, depth: 0 }];
+  // Seed the queue with statically-known routes (from Python wrapper or
+  // operator-supplied env var). These are added at depth 0 so they're
+  // always visited even if BFS link-discovery finds nothing on the entry.
+  for (const seed of SEED_ROUTES) {
+    const seedPath = seed.startsWith('/') ? seed : `/${seed}`;
+    try {
+      const seedUrl = new URL(seedPath, base).toString();
+      queue.push({ url: seedUrl, depth: 0 });
+    } catch {
+      // Malformed seed — skip silently.
+    }
+  }
   const visited = new Set<string>();
   const results: RouteEntry[] = [];
 
@@ -112,7 +170,7 @@ test('shipwright-adopt route crawler', async ({ page, context }) => {
         const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15_000 });
         if (!response || !response.ok()) continue;
         await page.waitForLoadState(WAIT_STRATEGY, { timeout: WAIT_TIMEOUT }).catch(() => { /* ignore */ });
-        await page.waitForTimeout(500);  // small settle for hydration / late renders
+        await page.waitForTimeout(SETTLE_MS);  // settle for hydration / late renders / lazy chunks
 
         const screenshotPath = path.join(SCREENSHOTS_DIR, `${safeFilename(canonical)}.png`);
         const entry = await extractMeta(page, canonical, depth, screenshotPath);

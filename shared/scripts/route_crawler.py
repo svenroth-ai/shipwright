@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -32,6 +33,25 @@ from lib.cmd_resolver import resolve_executable  # noqa: E402
 
 
 _DEFAULT_CRAWL_TIMEOUT = 240  # seconds
+
+# Static SPA-route extraction. Keep these globs narrow — broad scans
+# (`**/*.tsx`) trip on Playwright bundles, vendor copies, build output.
+_ROUTER_FILE_GLOBS = (
+    "**/router.tsx",
+    "**/router.ts",
+    "**/routes.tsx",
+    "**/routes.ts",
+)
+
+# Match `path: '...'` and `path: "..."` literals. Captures the literal
+# only — no template strings (we'd need a JS parser to resolve those).
+# Not anchored to a router builder call: TanStack-style nested route
+# objects, react-router `RouteObject[]`s, and plain config arrays all
+# share this shape, and the false-positive cost of grabbing an unrelated
+# `path:` is just an extra harmless GET.
+_ROUTE_LITERAL_RE = re.compile(r"""\bpath\s*:\s*['"]([^'"\n]+)['"]""")
+# Detects `index: true` so we can map an index child back to its parent.
+_INDEX_TRUE_RE = re.compile(r"""\bindex\s*:\s*true\b""")
 
 
 def _read_playwright_error_context(run_cwd: Path, max_chars: int = 1500) -> str:
@@ -59,6 +79,99 @@ def _read_playwright_error_context(run_cwd: Path, max_chars: int = 1500) -> str:
     except OSError:
         return ""
     return body[-max_chars:] if len(body) > max_chars else body
+
+
+def _normalize_route(raw: str) -> str | None:
+    """Normalize a route literal into a crawlable path.
+
+    - Strips param markers (`:id`, `*`, `?`) so the seeded URL is at
+      least visitable; the SPA may redirect or 404, that's fine.
+    - Drops empty segments that result from stripping.
+    - Drops the literal `*` catch-all (yields no useful route).
+
+    Returns None for routes that don't normalize to anything useful.
+    """
+    raw = raw.strip()
+    if not raw or raw == "*":
+        return None
+    # Make path-relative routes absolute.
+    if not raw.startswith("/"):
+        raw = "/" + raw
+    parts: list[str] = []
+    for seg in raw.split("/"):
+        if not seg:
+            continue
+        if seg.startswith(":") or seg == "*":
+            # `:id` or splat — skip; visiting "/users/:id" literally
+            # almost never resolves. We could substitute "1" but that
+            # invites false 200s; better to just not seed it.
+            return None
+        # `:id?` style optional params — also skip.
+        if seg.endswith("?"):
+            return None
+        parts.append(seg)
+    return "/" + "/".join(parts) if parts else "/"
+
+
+def extract_static_routes(project_root: Path) -> list[str]:
+    """Best-effort static extraction of SPA route literals.
+
+    Scans common router-config files (`router.tsx`, `routes.tsx`, etc.)
+    for `path: '...'` literals and returns a deduplicated, ordered list
+    of normalized paths. Used to seed the BFS queue when the crawled
+    entry page exposes no static <a href> links (lazy sidebars, post-
+    hydration nav, etc.).
+
+    Heuristic and intentionally simple — see `references/feature-inference.md`
+    for context. Silently returns [] on any I/O / parse failure rather
+    than raising; the crawl proceeds without seeds.
+
+    Param routes (`:id`, `:slug?`) and splat `*` are skipped because
+    visiting them literally is pointless.
+
+    `index: true` children inherit the parent path. We don't try to walk
+    nested-array structure; we just emit the parents normally and let
+    the SPA's own router resolve the index.
+    """
+    seeds: list[str] = []
+    seen: set[str] = set()
+    for glob in _ROUTER_FILE_GLOBS:
+        try:
+            files = list(project_root.glob(glob))
+        except OSError:
+            continue
+        for f in files:
+            # Skip node_modules and build output to avoid grabbing routes
+            # from bundled vendor code.
+            parts = f.parts
+            if any(p in {"node_modules", "dist", "build", ".next", "out"} for p in parts):
+                continue
+            try:
+                text = f.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            for m in _ROUTE_LITERAL_RE.finditer(text):
+                normalized = _normalize_route(m.group(1))
+                if normalized and normalized not in seen:
+                    seen.add(normalized)
+                    seeds.append(normalized)
+    return seeds
+
+
+def _summarize_screenshots(routes_data: list) -> tuple[int, int]:
+    """Return (succeeded, failed) screenshot counts from routes.json data.
+
+    Each route entry has a `screenshot_error` field iff the screenshot
+    failed. Absence of the field = success. Routes that failed to
+    navigate aren't in routes_data at all (the template `continue`s past
+    them), so this counts only routes that made it into the results
+    array.
+    """
+    if not isinstance(routes_data, list):
+        return (0, 0)
+    failed = sum(1 for r in routes_data if isinstance(r, dict) and r.get("screenshot_error"))
+    succeeded = len(routes_data) - failed
+    return (succeeded, failed)
 
 
 def _find_template() -> Path | None:
@@ -128,6 +241,14 @@ def run_crawl(
     if auth_token:
         env["SHIPWRIGHT_CRAWL_AUTH_TOKEN"] = auth_token
 
+    # Auto-seed routes from static router-config files unless the caller
+    # has already populated SHIPWRIGHT_CRAWL_SEED_ROUTES (manual override
+    # wins). Best-effort — empty list is fine.
+    if not env.get("SHIPWRIGHT_CRAWL_SEED_ROUTES"):
+        seeds = extract_static_routes(project_root)
+        if seeds:
+            env["SHIPWRIGHT_CRAWL_SEED_ROUTES"] = ",".join(seeds)
+
     npx = resolve_executable("npx")
     # `playwright test <path>` treats the path argument as a REGEX. On Windows
     # `relative_to` returns backslashes (`e2e\_shipwright-adopt-crawler.spec.ts`),
@@ -174,9 +295,13 @@ def run_crawl(
             "error_context": _read_playwright_error_context(run_cwd),
         }
 
+    routes_count = len(data) if isinstance(data, list) else 0
+    succeeded, failed = _summarize_screenshots(data if isinstance(data, list) else [])
     return {
         "status": "success" if data else "empty",
-        "routes": len(data) if isinstance(data, list) else 0,
+        "routes": routes_count,
+        "screenshots_succeeded": succeeded,
+        "screenshots_failed": failed,
         "output": str(output),
     }
 
