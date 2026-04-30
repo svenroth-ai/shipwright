@@ -802,56 +802,56 @@ Honest list from the planning migration. Treat as advice, not gospel.
 
 For grep / blame / re-orientation:
 
-- `7cfa628` -- security report dir relocation, established the
+- `b8fc243` -- security report dir relocation, established the
   `.shipwright/` convention.
-- `ba0eebe` -- Sub-Iterate A: drift safety net (artifact_migrations
+- `ad62e15` -- Sub-Iterate A: drift safety net (artifact_migrations
   manifest + Layer-1 lint + Layer-4 detector + gitignore canon).
-- `0021a23` -- Sub-Iterate B: shared/ Python migration.
-- `2919ccf` -- Sub-Iterate C: plugins/ Python migration + Layer-2
+- `a056d41` -- Sub-Iterate B: shared/ Python migration.
+- `3c64a71` -- Sub-Iterate C: plugins/ Python migration + Layer-2
   setup-contract tests.
-- `407081d` -- Sub-Iterate D: plugin prose migration.
-- `ca1efb8` -- Sub-Iterate E: templates + docs + integration-tests +
+- `7b33dc2` -- Sub-Iterate D: plugin prose migration.
+- `6b1418b` -- Sub-Iterate E: templates + docs + integration-tests +
   Layer-3 negative-assertion.
-- `864420c` -- Sub-Iterate F: hard cutover (status flip), migration
+- `cf193f9` -- Sub-Iterate F: hard cutover (status flip), migration
   CLI, next-migration prompt, user-facing migration doc.
-- *(planning Sub-Iterate G)* -- reference doc + pattern memory (this file's first version).
+- `2466b00` -- Sub-Iterate G: reference doc + pattern memory (this file's first version).
 
 ### designs migration (2026-04-27)
 
 Second artifact migration validating the pattern. ~17 production touchpoints
 + ~115 prose touchpoints across 7 sub-iterates B-F + Pre-G hotfix + G:
 
-- `643cfd3` -- Sub-Iterate A: manifest activation (`pending` -> `in_progress`),
+- `01b493a` -- Sub-Iterate A: manifest activation (`pending` -> `in_progress`),
   ALLOWLIST seed, .gitignore legacy entry. Layer-1 surfaced 4 plugin
   agents/references files Explore-discovery had missed (ground truth for
   pattern-memory § 2 "always grep agents/* in addition to skills/*").
-- `19c9567` -- Sub-Iterate B: shared/ Python migration (3 verifiers +
+- `80e40be` -- Sub-Iterate B: shared/ Python migration (3 verifiers +
   get_phase_context + 2 shared tests + Layer-6 candidate constant
   `DESIGNS_DIR` in design_checks.py).
-- `14f81ea` -- Sub-Iterate C: plugins/ Python migration (5 plugin scripts
+- `b39407f` -- Sub-Iterate C: plugins/ Python migration (5 plugin scripts
   + 4 plugin test files) + Layer-2 setup-contract additions:
   `test_design_setup_session_writes_canonical_designs` and
   `test_no_legacy_designs_path_construction_in_plugin_source`.
   **Bonus**: latent bug fix in generate-batch-tasks.py (planning_dir.parent
   was correct pre-planning-migration, broken post-migration; corrected
   to .parent.parent.parent + later hardened with shape validation).
-- `d38f4fb` -- Sub-Iterate D: plugin prose migration (17 .md files,
+- `32388fd` -- Sub-Iterate D: plugin prose migration (17 .md files,
   ~115 edits via bulk Edit replace_all on 10 unambiguous patterns,
   not Edit-pro-Hit which the planning lessons warned against).
-- `0f04c3e` -- Sub-Iterate E: templates + docs + Layer-3 already
+- `bbd56d4` -- Sub-Iterate E: templates + docs + Layer-3 already
   iterates manifest so designs is auto-covered + 2 NEW edge case
   tests in `shared/tests/test_artifact_drift_edge_cases.py`
   (both-dirs-present + canonical-only self-heal + generated-output
   content scan, addressing External-Review GPT-9 + GPT-10).
-- `d415308` -- Sub-Iterate F: hard cutover. Status flip, .gitignore
+- `af64a26` -- Sub-Iterate F: hard cutover. Status flip, .gitignore
   retention comment in window, drift_parsers.py:108 line split with
   per-artifact `# artifact-path-canon: legacy` markers, user-facing
   `docs/migrations/.shipwright-designs-relocation.md` (with `git rm
   --cached` guidance per External-Review GPT-7), idempotency test
   `test_10_design_setup_re_run_idempotency` per External-Review GPT-8.
-- `012c610` -- Pre-G hotfix: defensive shape validation on planning_dir
+- `3421434` -- Pre-G hotfix: defensive shape validation on planning_dir
   in generate-batch-tasks.py per External-Review HIGH finding (OpenAI).
-- `f9d5ef1` -- Sub-Iterate G: reference doc + pattern memory updates.
+- `2854718` -- Sub-Iterate G: reference doc + pattern memory updates.
 
 ### agent_docs migration (2026-04-28)
 
@@ -861,16 +861,16 @@ migration so far — ~2.3× planning, ~5.5× designs. Spans all 6 SDLC
 plugins, with shipwright-adopt as the dominant single plugin (~70 hits
 / 9 files) due to wholesale agent_docs/ scaffolding for adopted projects.
 
-- `2235455` -- Sub-Iterate A: manifest activation (`pending` -> `in_progress`),
+- `81cef64` -- Sub-Iterate A: manifest activation (`pending` -> `in_progress`),
   ALLOWLIST seed (~80 entries), .gitignore stays untouched (legacy
   entry already present from prior pre-migration .gitignore). Layer-1
   + Layer-4 + Layer-5 + Layer-6 baseline green.
-- `b5146ed` -- Sub-Iterate B: shared/ Python migration (16 production
+- `ca0fd19` -- Sub-Iterate B: shared/ Python migration (16 production
   + 22 test files) + 2 shell hooks (`check_secrets.sh`, `check_file_size.sh`)
   + Layer-6 candidate constants in spec_parser.py,
   generate_handoff_on_stop.py, verifiers/common.py,
   verifiers/design_compliance.py.
-- `d6d7690` -- Sub-Iterate C: plugins/ Python migration (heavy:
+- `c009a0a` -- Sub-Iterate C: plugins/ Python migration (heavy:
   shipwright-adopt 9 files / 70 hits, with constants in
   artifact_writer.py + visual_docs_generator.py)
   + Layer-2 setup-contract additions:
@@ -879,12 +879,12 @@ plugins, with shipwright-adopt as the dominant single plugin (~70 hits
   parametrized over 6 plugins. shipwright-{build,compliance,iterate,
   project,run} also covered. Fixture `nested-shipwright/webui/`
   rename to canonical layout.
-- `ba9e418` -- Sub-Iterate D: plugin prose migration (30 .md files,
+- `9dc880d` -- Sub-Iterate D: plugin prose migration (30 .md files,
   ~195 edits via bulk Edit replace_all on 7 unambiguous patterns).
   README.md + CLAUDE.md (repo-root) + constitution.md also migrated.
   ZERO template-vars to disambiguate (cleaner than planning's ~2/3
   false-positive trap; same as designs).
-- `cded715` -- Sub-Iterate E: templates (claude-md-template,
+- `e0dd9bc` -- Sub-Iterate E: templates (claude-md-template,
   migrations.md.template, shipwright_sync_config.json) +
   docs/guide.md (53 hits, including line 524 sentence rephrase from
   3-item to 2-item list of remaining top-level dirs) +
@@ -892,23 +892,23 @@ plugins, with shipwright-adopt as the dominant single plugin (~70 hits
   run_config.v2.schema.json description rephrase. 3 NEW touchpoint
   types surfaced (Lessons 15, 16, 18). Layer-3 trilogy temp E-stage
   no-legacy assertion added (removed in F when status flips).
-- `7060a97` -- Sub-Iterate F Step 1: .gitignore legacy comment
+- `95d2c5c` -- Sub-Iterate F Step 1: .gitignore legacy comment
   (separate-line, [idx-1, idx+2] window per Lesson 6).
-- `feb9151` -- Sub-Iterate F Step 3: drift_parsers.py:108
+- `10e1f65` -- Sub-Iterate F Step 3: drift_parsers.py:108
   HIDDEN_DIR_DEFAULTS line extended to 3-entry inline marker per
   artifact.
-- `55cf340` -- Sub-Iterate F Step 4: user-facing
+- `1744bff` -- Sub-Iterate F Step 4: user-facing
   `docs/migrations/.shipwright-agent_docs-relocation.md` with
   CI/CD-update + concurrent-session-warning + drift-detector-JSON-
   example + recovery-anleitung sections (per External Review G3 + O7
   + O10 + O11).
-- `edb5de6` -- Sub-Iterate F Step 2 (final atomic): status flip
+- `1bf4af6` -- Sub-Iterate F Step 2 (final atomic): status flip
   `in_progress` -> `migrated` + remove temporary E-stage trilogy
   assertion (universal `_assert_no_legacy_artifact_dirs` helper now
   covers agent_docs as `migrated`). Manual smoke trace in commit
   body: migrate_artifact_dir.py dry-run + live + spaces-in-path +
   both-dirs-refusal + drift-detector legacy/clean.
-- *(this commit)* -- Sub-Iterate G: reference doc + pattern memory
+- `8ad450a` -- Sub-Iterate G: reference doc + pattern memory
   updates (this file's third data column + agent_docs section in §
   11 + new lessons 15-20 in § 10).
 
@@ -932,7 +932,7 @@ agent_docs (~6×) and planning (~3×), only ~1.4× designs Python+Prose-Sum.
   dry_run_reporter.py mirrors with 5 ProposedWrite entries. Lockstep-commit
   required (validated in Sub-Iterate C).
 
-- `4109148` -- Sub-Iterate A: manifest activation (`pending` -> `in_progress`),
+- `61728f0` -- Sub-Iterate A: manifest activation (`pending` -> `in_progress`),
   ALLOWLIST seed (~30 entries), .gitignore stays untouched (legacy
   entry already on line 70 from pre-migration era; Sub-Iterate F adds
   the missing legacy comment block). Layer-1 + Layer-4 + Layer-5 +
@@ -943,13 +943,13 @@ agent_docs (~6×) and planning (~3×), only ~1.4× designs Python+Prose-Sum.
   `plugins/shipwright-compliance/skills/compliance/SKILL.md` (lines
   50/110/113) and 1 in `plugins/shipwright-adopt/scripts/lib/artifact_writer.py:204`
   decision-log template — both temporarily allowlisted, migrated in D and C.
-- `166571e` -- Sub-Iterate B: shared/ Python migration (10 production
+- `f6be006` -- Sub-Iterate B: shared/ Python migration (10 production
   files + 5 test files). Layer-6 constants `COMPLIANCE_DIR` +
   `LEGACY_COMPLIANCE_DIRNAME` introduced in `phase_quality.py` (3
   module-level paths derived), `security_compliance.py`,
   `infrastructure_checks.py`, `compliance_compliance.py`. Helper
   `_compliance_path(proj, name)` introduced in heavy-hit test files.
-- `995369d` -- Sub-Iterate C: plugins/ Python migration (heavy on
+- `5a9ba0e` -- Sub-Iterate C: plugins/ Python migration (heavy on
   shipwright-compliance: 32 hits / 11 files; lockstep in
   shipwright-adopt: 7 hits / 2 files; light in shipwright-run: 4 hits /
   2 files). **NEW Step 11 (per External-Review G-1A): Generator-Output
@@ -963,26 +963,26 @@ agent_docs (~6×) and planning (~3×), only ~1.4× designs Python+Prose-Sum.
   `test_compliance_generators_write_under_dot_shipwright` and
   `test_no_legacy_compliance_path_construction_in_plugin_source`
   parametrized over shipwright-{adopt,compliance,run}.
-- `13a9a94` -- Sub-Iterate D: plugin prose migration (smallest D-scope
+- `335b1d9` -- Sub-Iterate D: plugin prose migration (smallest D-scope
   yet: 6 hits in 4 SKILL.md files via inline edits, no bulk replace_all
   needed). Zero template-vars to disambiguate. **D-scope grew from 3 to 4**
   during A's lint baseline (compliance plugin's own SKILL.md added).
-- `6c0b5bb` -- Sub-Iterate E: docs/guide.md (12 PATH-REF +
+- `8e85961` -- Sub-Iterate E: docs/guide.md (12 PATH-REF +
   line 524 tail-sentence rephrase from 2-item to 1-item per Lesson 17)
   + docs/hooks-and-pipeline.md (~18 PATH-REF). Zero template touchpoints.
   No Layer-3 temp E-stage assertion (universal `_assert_no_legacy_artifact_dirs`
   helper handles status=migrated automatically; in_progress is warn-only).
-- `1dc6760` -- Sub-Iterate F Step 1: .gitignore legacy comment block
+- `b209566` -- Sub-Iterate F Step 1: .gitignore legacy comment block
   added (NEW pattern — pre-migration entry had no block, see Lesson 26).
-- `a8c9076` -- Sub-Iterate F Step 3: drift_parsers.py
+- `57c1180` -- Sub-Iterate F Step 3: drift_parsers.py
   HIDDEN_DIR_DEFAULTS `compliance` entry extended with inline marker
   `# artifact-path-canon: legacy (post-migration tolerance)`.
-- `06d522d` -- Sub-Iterate F Step 4: user-facing
+- `6398642` -- Sub-Iterate F Step 4: user-facing
   `docs/migrations/.shipwright-compliance-relocation.md` with all
   post-agent_docs sections + audit-relevance section (compliance reports
   as audit evidence, override-log preservation, skill-compliance subdir
   layout) + audit-system path-update warning in CI/CD section.
-- `e086437` -- Sub-Iterate F Step 2 (final atomic): status flip
+- `f5372f3` -- Sub-Iterate F Step 2 (final atomic): status flip
   `in_progress` -> `migrated`. Manual smoke trace in commit body:
   migrate_artifact_dir.py dry-run + live + spaces-in-path +
   both-dirs-refusal + drift-detector legacy/clean. **Real-Scanner-Smoke
@@ -990,7 +990,7 @@ agent_docs (~6×) and planning (~3×), only ~1.4× designs Python+Prose-Sum.
   detects 2 leaks (generic-api-key + github-pat) in
   `.shipwright/compliance/test-secret-fixture.md` -> canonical scanned,
   not silently skipped.
-- `c4d9a98` -- Pre-G fixup: migrated 2 mock-fixture lines in
+- `50d1d86` -- Pre-G fixup: migrated 2 mock-fixture lines in
   `plugins/shipwright-run/tests/test_orchestrator.py` to canonical path
   (surfaced by Pre-G repo-wide sanity grep).
 - **Pre-G Belt-and-Suspenders Generator-Relative-Link-Resolution test
@@ -1002,9 +1002,11 @@ agent_docs (~6×) and planning (~3×), only ~1.4× designs Python+Prose-Sum.
   (../<root_file> -> ../../<file>; ../.shipwright/<artifact>/... ->
   ../<artifact>/...) is correct end-to-end at runtime, not just
   statically per-line.
-- *(this commit)* -- Sub-Iterate G: reference doc + pattern memory
+- `ffaa0b4` -- Sub-Iterate G: reference doc + pattern memory
   updates (this file's fourth data column + compliance section in
   § 11 + new lessons 22-30 in § 10).
+- `3595786` -- Sub-Iterate G follow-up: Lesson 30 added retroactively
+  + Pre-G belt-and-suspenders trace appended (post-rewrite addendum).
 
 ---
 
