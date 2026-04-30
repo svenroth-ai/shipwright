@@ -62,6 +62,8 @@ Shipwright positions itself as a **discipline layer for AI coding**, not a stack
 
 **Honest limit.** Shipwright takes the supervision overhead off Maintainability and Architecture-Fitness. **Behavior correctness — does this actually do what users need — remains your call.** We make that judgment cheaper, not unnecessary. The "behavior harness" is unsolved across the industry; do not expect Shipwright (or any tool) to remove the human from that loop.
 
+> **First time seeing IREB, RTM, ADR, SBOM, or Harness?** Jump to the [Plain-Language Index in Appendix A](#plain-language-index) — every industry term in this guide has a one-sentence plain-language equivalent.
+
 ### What You Get
 
 - **IREB-aligned specs** from a structured requirements interview - testable acceptance criteria from day one
@@ -1857,6 +1859,22 @@ Or read `CHANGELOG.md` in the repository root for release notes.
 ---
 
 ## Appendix A: Glossary
+
+### Plain-Language Index
+
+If you encountered an unfamiliar term in this guide, this is the fast way in. Each row leads with the plain-language description, then names the industry-standard term used in the rest of the doc. The full formal table below covers more.
+
+| If you mean… | Official term |
+|---|---|
+| Description of what the app should do, who it's for, and what it must not do | **IREB-Spec** (a requirements specification written per IREB practice) |
+| Log of architectural decisions with rationale — why this database, why this pattern | **ADR** (Architecture Decision Record) |
+| Coverage matrix where every requirement points at the test that proves it | **RTM** (Requirements Traceability Matrix) |
+| Inventory of every third-party component in the app — for license and CVE tracking | **SBOM** (Software Bill of Materials) |
+| Standardized commit-message format (`feat:`, `fix:`, etc.) so version history is machine-readable | **Conventional Commits** |
+| A checkpoint between two pipeline steps where output is verified before the next step starts | **Phase Gate** / **Quality Gate** |
+| The whole system of guides (Specs, Conventions) and sensors (Tests, Reviews, Scanners) that steers AI output before and after generation | **Harness** (Martin Fowler 2026: "harness engineering") |
+
+### Formal Glossary
 
 | Term | Definition |
 |------|-----------|
