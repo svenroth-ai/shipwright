@@ -1,0 +1,66 @@
+{
+  "$schema": "../deploy-profile.schema.json",
+  "profile_schema_version": "1.0",
+  "target_id": "jelastic",
+  "target_kind": "paas-cloud",
+  "description": "Jelastic Cloud (Infomaniak datacenter, Switzerland) — clone-environment-based PROD safety, git-tag-revert DEV. Reference implementation; client code in plugins/shipwright-deploy/scripts/lib/jelastic_client.py.",
+  "implementation_status": "shipped",
+  "confidence": "verified",
+  "client": {
+    "entrypoint": "plugins/shipwright-deploy/scripts/lib/jelastic_client.py",
+    "runner": "python"
+  },
+  "auth": {
+    "required_env_vars": [
+      {
+        "name": "JELASTIC_TOKEN",
+        "description": "Jelastic Personal Access Token for API access (Infomaniak datacenter)."
+      }
+    ],
+    "optional_env_vars": [
+      {
+        "name": "SUPABASE_ACCESS_TOKEN",
+        "description": "Required only if the project uses Supabase migrations."
+      }
+    ]
+  },
+  "environments": {
+    "dev": {
+      "url_pattern": "dev-{project}.jpc.infomaniak.com",
+      "confirmation": "none"
+    },
+    "prod": {
+      "url_pattern": "{project}.jpc.infomaniak.com",
+      "confirmation": "user"
+    }
+  },
+  "pre_deploy_safety": {
+    "dev_strategy": "none",
+    "prod_strategy": "clone-environment",
+    "backup_naming_pattern": "{prod_env}-backup"
+  },
+  "test_gate": {
+    "policy": "strict",
+    "results_source": "shipwright_test_results.json"
+  },
+  "migrations": {
+    "supported": true,
+    "dev_strategy": "auto-apply",
+    "prod_strategy": "dry-run-then-confirm",
+    "verify_after_apply": true
+  },
+  "smoke_test": {
+    "health_path": "/api/health",
+    "timeout_seconds": 30,
+    "poll_interval_seconds": 5,
+    "max_wait_seconds": 60
+  },
+  "rollback": {
+    "revertable_strategy_dev": "git-tag-revert",
+    "revertable_strategy_prod": "clone-restore",
+    "auto_trigger": "smoke-test-fail",
+    "operator_interface": "cli",
+    "manual_procedure_reference": "/shipwright-deploy --rollback (lists backup clones, prompts for confirmation, restores from selected clone)",
+    "data_rollback_strategy": "down-migration"
+  }
+}
