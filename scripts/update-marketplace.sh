@@ -218,6 +218,30 @@ mkdir -p "$PLUGINS_LINK_DIR"
 
 links_created=0
 links_updated=0
+dirs_synced=0
+
+# Helper: file-by-file copy from $1 to $2, preserving directory structure.
+# Used when $link_path exists as a real directory (e.g. Windows where ln -s
+# silently degrades to copy/junction, or end-users on older script versions
+# that mirrored via copy). Without this, runtime resolves stale code.
+sync_dir_from_to() {
+    local src="$1" dst="$2"
+    mkdir -p "$dst"
+    while IFS= read -r -d '' file; do
+        local rel="${file#$src/}"
+        local target="$dst/$rel"
+        mkdir -p "$(dirname "$target")"
+        if [ ! -f "$target" ] || ! diff -q --strip-trailing-cr "$file" "$target" > /dev/null 2>&1; then
+            cp "$file" "$target"
+        fi
+    done < <(find "$src" -type f \
+        -not -path "*/__pycache__/*" \
+        -not -path "*/.venv/*" \
+        -not -path "*/.pytest_cache/*" \
+        -not -path "*/.git/*" \
+        -not -name "*.pyc" \
+        -print0)
+}
 
 for plugin in "${PLUGINS[@]}"; do
     plugin_key="${plugin}@${MARKETPLACE_NAME}"
@@ -244,7 +268,8 @@ except Exception:
 
     link_path="$PLUGINS_LINK_DIR/$plugin"
 
-    # Remove existing link/dir if it points elsewhere
+    # Three cases: existing symlink (re-point if wrong), existing real dir
+    # (file-copy fallback), or missing (try symlink, fall back to copy).
     if [ -L "$link_path" ]; then
         current_target=$(readlink "$link_path")
         if [ "$current_target" != "$cache_target" ]; then
@@ -252,16 +277,25 @@ except Exception:
             ln -s "$cache_target" "$link_path"
             ((links_updated++)) || true
         fi
+    elif [ -d "$link_path" ]; then
+        # Real directory (Windows or legacy install) — file-copy sync.
+        sync_dir_from_to "$cache_target" "$link_path"
+        ((dirs_synced++)) || true
     elif [ ! -e "$link_path" ]; then
-        ln -s "$cache_target" "$link_path"
-        ((links_created++)) || true
+        if ln -s "$cache_target" "$link_path" 2>/dev/null; then
+            ((links_created++)) || true
+        else
+            # Symlink creation failed (likely Windows non-admin) — copy instead.
+            sync_dir_from_to "$cache_target" "$link_path"
+            ((dirs_synced++)) || true
+        fi
     fi
 done
 
-if [ "$links_created" -gt 0 ] || [ "$links_updated" -gt 0 ]; then
-    echo "  [OK] ${links_created} created, ${links_updated} updated"
+if [ "$links_created" -gt 0 ] || [ "$links_updated" -gt 0 ] || [ "$dirs_synced" -gt 0 ]; then
+    echo "  [OK] ${links_created} symlinks created, ${links_updated} updated, ${dirs_synced} dirs file-synced"
 else
-    echo "  [OK] all symlinks up to date"
+    echo "  [OK] all plugin mirrors up to date"
 fi
 
 # Clean up stale version dirs (e.g. 0.0.0 from failed syncs)
