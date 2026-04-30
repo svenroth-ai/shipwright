@@ -1,0 +1,82 @@
+{
+  "$schema": "../deploy-profile.schema.json",
+  "profile_schema_version": "1.0",
+  "target_id": "compose-vps",
+  "target_kind": "self-hosted-vm",
+  "description": "Disciplined Docker Compose deploy on a single Linux VM (Hetzner / Strato / Hosteurope / generic VPS). DECLARATIVE STUB — no runtime client shipped. Describes the disciplined subtype: registry-backed images with immutable semver tags, no `:latest`. Setups using mutable tags or local-build-on-server are out of scope for this profile. Coolify / Dokku / Caprover / Kubernetes / Docker Swarm are sibling targets that may get their own profiles when implemented. Fields derived from public best-practice articles accessed 2026-04-30.",
+  "implementation_status": "stub",
+  "confidence": "documented",
+  "client": null,
+  "auth": {
+    "required_env_vars": [
+      {
+        "name": "DOCKER_REGISTRY_USER",
+        "description": "Image registry username (Docker Hub, GitHub Container Registry, GitLab Registry, etc.)."
+      },
+      {
+        "name": "DOCKER_REGISTRY_TOKEN",
+        "description": "Image registry access token. NEVER store the token value in this profile — only the env-var name."
+      },
+      {
+        "name": "SSH_HOST",
+        "description": "VM hostname or IP address."
+      },
+      {
+        "name": "SSH_USER",
+        "description": "SSH user with docker-compose privileges on the VM."
+      }
+    ],
+    "optional_env_vars": [
+      {
+        "name": "SSH_KEY_PATH",
+        "description": "Path to SSH private key. Optional if ssh-agent is configured."
+      }
+    ]
+  },
+  "environments": {
+    "dev": {
+      "url_pattern": "dev.{domain}",
+      "confirmation": "none"
+    },
+    "prod": {
+      "url_pattern": "{domain}",
+      "confirmation": "user"
+    }
+  },
+  "pre_deploy_safety": {
+    "dev_strategy": "image-snapshot",
+    "prod_strategy": "image-snapshot",
+    "backup_naming_pattern": "{image}:{previous-semver}"
+  },
+  "test_gate": {
+    "policy": "strict",
+    "results_source": "shipwright_test_results.json"
+  },
+  "migrations": {
+    "supported": true,
+    "dev_strategy": "auto-apply",
+    "prod_strategy": "manual",
+    "verify_after_apply": false
+  },
+  "smoke_test": {
+    "health_path": "/health",
+    "timeout_seconds": 30,
+    "poll_interval_seconds": 5,
+    "max_wait_seconds": 60
+  },
+  "rollback": {
+    "revertable_strategy_dev": "image-tag-rollback",
+    "revertable_strategy_prod": "image-tag-rollback",
+    "auto_trigger": "off",
+    "operator_interface": "cli",
+    "manual_procedure_reference": "Update the image tag in docker-compose.yml on the VM (or via committed compose-file + redeploy), then: ssh {host} && docker compose pull && docker compose up -d --force-recreate. Old image tags remain in the registry as the rollback point.",
+    "data_rollback_strategy": "down-migration"
+  },
+  "known_gaps": [
+    "This profile assumes registry-backed immutable image tags (semver). Setups that build on the server or use `:latest` are out of scope — they violate Pattern 1 (Revertable Deploys) by definition.",
+    "auto_trigger is 'off' because plain Docker Compose has no built-in health-check rollback. Add Watchtower, Argus, or a CI/CD hook for auto-rollback.",
+    "Coolify / Dokku / Caprover / Portainer wrap docker-compose with their own deployment models — they should get sibling profiles (`coolify-vps`, `dokku-vps`, etc.) rather than reusing this one.",
+    "Multi-host / Docker Swarm / Kubernetes are entirely different orchestration models, not covered.",
+    "Provenance recording relies on git history of the docker-compose.yml file + registry image-tag history — there is no centralized deploy-event log unless you wire one up externally."
+  ]
+}

@@ -1,5 +1,14 @@
 # Deploy Flavors
 
+> **Declarative profile location.** Deploy target descriptors now live in
+> [`shared/profiles/deploy/<id>.json`](../../../../../shared/profiles/deploy/),
+> validated by
+> [`shared/profiles/deploy-profile.schema.json`](../../../../../shared/profiles/deploy-profile.schema.json).
+> See [rollback-discipline.md](rollback-discipline.md) for the universal
+> rollback patterns each target must satisfy. This file preserves the
+> **code-side flavor-client interface** — the contract every shipped target's
+> `client.entrypoint` script implements.
+
 ## Architecture
 
 Shipwright-deploy uses a "flavor" pattern for deployment targets.

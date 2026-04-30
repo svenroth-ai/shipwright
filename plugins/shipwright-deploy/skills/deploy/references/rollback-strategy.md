@@ -1,5 +1,12 @@
 # Rollback Strategy
 
+> **Jelastic Reference Implementation.** Universal rollback patterns
+> (revertable / provenance / procedure) applicable to any deploy target are
+> documented in [rollback-discipline.md](rollback-discipline.md). The
+> declarative profile is at
+> [`shared/profiles/deploy/jelastic.json`](../../../../../shared/profiles/deploy/jelastic.json).
+> This file describes the **Jelastic-specific** DEV-vs-PROD rollback procedure.
+
 ## DEV Rollback
 
 **Strategy:** Git-based

@@ -1,0 +1,71 @@
+{
+  "$schema": "../deploy-profile.schema.json",
+  "profile_schema_version": "1.0",
+  "target_id": "vercel",
+  "target_kind": "edge-platform",
+  "description": "Vercel atomic-immutable edge deploy. DECLARATIVE STUB — no runtime client shipped. Fields derived from official Vercel documentation accessed 2026-04-30: /docs/instant-rollback, /docs/deployments/rollback-production-deployment, /docs/cli/rollback, /docs/cli/inspect, /docs/environment-variables. Refine when first Vercel client is implemented.",
+  "implementation_status": "stub",
+  "confidence": "documented",
+  "client": null,
+  "auth": {
+    "required_env_vars": [
+      {
+        "name": "VERCEL_TOKEN",
+        "description": "Vercel API token for CLI authentication."
+      }
+    ],
+    "optional_env_vars": [
+      {
+        "name": "VERCEL_ORG_ID",
+        "description": "Organization/team ID. Optional if the project is linked locally via `vercel link`."
+      },
+      {
+        "name": "VERCEL_PROJECT_ID",
+        "description": "Project ID. Optional if the project is linked locally."
+      }
+    ]
+  },
+  "environments": {
+    "dev": {
+      "url_pattern": "{project}-{branch-hash}-{org}.vercel.app",
+      "confirmation": "none"
+    },
+    "prod": {
+      "url_pattern": "{project}.vercel.app",
+      "confirmation": "user"
+    }
+  },
+  "pre_deploy_safety": {
+    "dev_strategy": "atomic-immutable",
+    "prod_strategy": "atomic-immutable",
+    "backup_naming_pattern": null
+  },
+  "test_gate": {
+    "policy": "strict",
+    "results_source": "shipwright_test_results.json"
+  },
+  "migrations": {
+    "supported": false
+  },
+  "smoke_test": {
+    "health_path": "/",
+    "timeout_seconds": 30,
+    "poll_interval_seconds": 5,
+    "max_wait_seconds": 60
+  },
+  "rollback": {
+    "revertable_strategy_dev": "atomic-deploy-promote",
+    "revertable_strategy_prod": "atomic-deploy-promote",
+    "auto_trigger": "off",
+    "operator_interface": "cli",
+    "manual_procedure_reference": "vercel rollback [deployment-url] (or: vercel promote [deployment-url] to undo a rollback). Status: vercel rollback status. Inspect provenance: vercel inspect [deployment-url].",
+    "data_rollback_strategy": "none-app-only"
+  },
+  "known_gaps": [
+    "Custom aliases are NOT auto-rolled-back during instant-rollback; they remain pointed at the previously-aliased deployment unless manually re-aliased.",
+    "Vercel has no built-in health-check rollback — auto_trigger is honestly 'off'. Auto-rollback on failure must be implemented by external CI/CD logic.",
+    "Hobby plan is limited to rolling back to the immediately previous production deployment. Pro and Enterprise plans can roll back to any eligible (previously production-aliased) deployment.",
+    "Preview deployments are not modeled in this v1.0 schema scope (which fixes 'dev' + 'prod'). Vercel's preview-per-branch concept could be added under environments.{branch-name} in v2.0 via the existing patternProperties.",
+    "Environment variables are baked into the deployment at build time — rolling back to an old deployment ALSO rolls back to its env-var snapshot. Profile does not encode this nuance; covered in plugin-side discipline doc."
+  ]
+}

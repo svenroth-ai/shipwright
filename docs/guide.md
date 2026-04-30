@@ -891,6 +891,8 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 
 **DEV vs. PROD -- the key difference:** DEV deployments are fully automatic with no confirmation required and use git-based rollback on failure (reverting to the last known good tag). PROD deployments require explicit user confirmation, create a backup clone beforehand, and restore from that clone if anything goes wrong. You can also trigger a manual rollback at any time with `--rollback`, which lists available backup clones and lets you choose which one to restore.
 
+**Universal rollback discipline.** Three patterns apply to any deploy target -- revertable deploys, recorded provenance, documented procedure -- regardless of platform. Jelastic is one reference implementation; the discipline itself is encoded as Deploy Profiles (declarative JSON descriptors validated by a JSON Schema) at `shared/profiles/deploy/`. Three reference profiles ship today: `jelastic` (full implementation), `vercel` (declarative stub, atomic-immutable mechanic), and `compose-vps` (declarative stub, image-tag-rollback mechanic). The two stubs exist to keep the schema honest across mechanically different targets. See `plugins/shipwright-deploy/skills/deploy/references/rollback-discipline.md` for the per-pattern mapping and the 3-step checklist to add a new target.
+
 **Standalone usage:** Yes. You can run `/shipwright-deploy` independently to deploy any project configured for Jelastic. It validates its own prerequisites and does not depend on prior pipeline phases, though it works best after testing has passed.
 
 ---
@@ -969,6 +971,8 @@ Two profiles ship out-of-the-box:
 | `vite-hono` | Multi-service: Vite (frontend) + Hono (backend) | Split frontend/backend with a separate API server (or any project that wants the Vite dev-experience) |
 
 The `vite-hono` profile uses the multi-service `services: [...]` declaration documented in Section 7.3 (topo-ordered start, `depends_on` between services, partial-failure rollback). Legacy single-service profiles continue to use `dev_server: {...}`.
+
+**Sibling concept -- Deploy Profiles.** Where stack profiles describe the build-and-run shape of a project, **deploy profiles** describe the deploy-target shape (auth, environments, smoke test, rollback discipline). They live at `shared/profiles/deploy/<target_id>.json`, are validated against `shared/profiles/deploy-profile.schema.json`, and are introduced in Section 4.9. Three reference deploy profiles ship today: `jelastic` (full implementation), `vercel` (declarative stub), `compose-vps` (declarative stub). The validator at `shared/scripts/tools/validate_deploy_profile.py --all` enforces both JSON-Schema structure and a layer of cross-field semantic checks.
 
 ### The supabase-nextjs Profile
 

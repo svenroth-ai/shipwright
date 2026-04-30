@@ -1,0 +1,311 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shipwright.dev/schemas/deploy-profile/v1.json",
+  "title": "Shipwright Deploy Profile",
+  "description": "Declarative descriptor for a Shipwright deploy target. Encodes universal rollback discipline + adjacent deploy concerns (auth, environments, smoke test, migrations) for one target. See shared/profiles/deploy-profile-schema.md for field semantics and the 'Adding a New Target' checklist.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "target_id",
+    "target_kind",
+    "description",
+    "implementation_status",
+    "confidence",
+    "client",
+    "auth",
+    "environments",
+    "pre_deploy_safety",
+    "test_gate",
+    "migrations",
+    "smoke_test",
+    "rollback",
+    "profile_schema_version"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional pointer to this schema for IDE autocompletion."
+    },
+    "profile_schema_version": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Schema version this profile targets. v1.0 is the only valid value today."
+    },
+    "target_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "minLength": 1,
+      "description": "Stable, lowercase, hyphen-separated identifier. MUST equal the profile filename without extension."
+    },
+    "target_kind": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Coarse classification. Recommended values: 'paas-cloud' (Jelastic, Heroku-style), 'edge-platform' (Vercel, Cloudflare Pages), 'self-hosted-vm' (Docker Compose on VPS, bare metal). Freeform string — not a strict enum, so future categories don't require a schema bump."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable summary of the target. For stubs, describe scope, source-of-information, and known gaps."
+    },
+    "implementation_status": {
+      "type": "string",
+      "enum": ["shipped", "stub"],
+      "description": "'shipped' means a code-backed runtime client exists in this repo. 'stub' means the profile is declarative-only (reference / future-implementation skeleton)."
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["verified", "documented", "inferred"],
+      "description": "How well-grounded the profile fields are. 'verified' = backed by working implementation. 'documented' = derived from official target docs. 'inferred' = derived from general industry patterns. Required for ALL profiles. Schema rules below enforce: shipped→verified, stub→{documented|inferred}."
+    },
+    "client": {
+      "description": "When implementation_status=shipped, MUST be a non-null object pointing at the runtime client. When stub, MUST be null.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entrypoint", "runner"],
+          "properties": {
+            "entrypoint": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Repo-relative path to the client script. MUST NOT contain '..' or be an absolute path. Validator's --strict mode resolves this against repo_root and verifies the file exists."
+            },
+            "runner": {
+              "type": "string",
+              "enum": ["python", "node", "bash"],
+              "description": "Runtime executor for the entrypoint."
+            }
+          }
+        }
+      ]
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required_env_vars", "optional_env_vars"],
+      "description": "Authentication requirements. Profiles describe ENV variable NAMES — never literal secret values. Validator enforces no duplicate names within or across the two lists.",
+      "properties": {
+        "required_env_vars": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/env_var_entry" }
+        },
+        "optional_env_vars": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/env_var_entry" }
+        }
+      }
+    },
+    "environments": {
+      "type": "object",
+      "description": "Per-environment URL pattern + confirmation policy. Schema requires 'dev' and 'prod' keys. Additional keys matching '^[a-z][a-z0-9-]*$' (preview, staging, uat, etc.) are accepted via patternProperties and validate against the same env-shape — extending without a schema bump. Keys NOT matching the regex (e.g. 'Staging' uppercase, 'pre/view') are rejected via additionalProperties:false. JSON-Schema Draft 2020-12 semantics: patternProperties matches take precedence over additionalProperties — this is intentional and verified against the validator's regression tests (jsonschema 4.26+).",
+      "patternProperties": {
+        "^[a-z][a-z0-9-]*$": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["url_pattern", "confirmation"],
+          "properties": {
+            "url_pattern": {
+              "type": "string",
+              "minLength": 1,
+              "description": "URL template with placeholders like {project} or {domain}."
+            },
+            "confirmation": {
+              "type": "string",
+              "enum": ["none", "user"],
+              "description": "Whether deployment to this environment requires user confirmation."
+            }
+          }
+        }
+      },
+      "required": ["dev", "prod"],
+      "additionalProperties": false
+    },
+    "pre_deploy_safety": {
+      "type": "object",
+      "required": ["dev_strategy", "prod_strategy"],
+      "description": "How a rollback point is established before each deploy. Strategy values are recommended-not-enum strings.",
+      "properties": {
+        "dev_strategy": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Recommended values: 'none' (DEV is auto-fixable), 'git-tag' (post-fact revert), 'image-snapshot' (registry-immutable tag), 'atomic-immutable' (deploy is intrinsically preserved)."
+        },
+        "prod_strategy": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Recommended values: 'clone-environment' (Jelastic), 'atomic-immutable' (Vercel), 'image-snapshot' (Compose-VPS), 'backup-restore'."
+        },
+        "backup_naming_pattern": {
+          "type": ["string", "null"],
+          "description": "Naming convention for backup artifacts (e.g. '{prod_env}-backup'). null when not applicable (atomic-immutable targets)."
+        }
+      }
+    },
+    "test_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy", "results_source"],
+      "description": "Whether and how Shipwright requires test results before deploy.",
+      "properties": {
+        "policy": {
+          "type": "string",
+          "enum": ["strict", "warn", "skip"],
+          "description": "'strict' blocks deploy on test failure. 'warn' logs but continues. 'skip' bypasses gate."
+        },
+        "results_source": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path (relative to project root) of the test-results JSON file consumed by the gate."
+        }
+      }
+    },
+    "migrations": {
+      "type": "object",
+      "required": ["supported"],
+      "description": "Database / schema migration support. Conditional schema: when supported=false, strategy fields are FORBIDDEN (avoids 'n/a' string-as-enum-value).",
+      "properties": {
+        "supported": {
+          "type": "boolean"
+        },
+        "dev_strategy": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Recommended: 'auto-apply', 'user-confirm', 'manual'."
+        },
+        "prod_strategy": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Recommended: 'dry-run-then-confirm', 'atomic-with-app', 'manual'."
+        },
+        "verify_after_apply": {
+          "type": "boolean",
+          "description": "Whether the runtime runs verifier scripts after applying migrations (e.g. -- VERIFY: comments)."
+        }
+      },
+      "if": {
+        "properties": { "supported": { "const": false } }
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            { "required": ["dev_strategy"] },
+            { "required": ["prod_strategy"] },
+            { "required": ["verify_after_apply"] }
+          ]
+        }
+      },
+      "else": {
+        "required": ["dev_strategy", "prod_strategy", "verify_after_apply"]
+      }
+    },
+    "smoke_test": {
+      "type": "object",
+      "required": ["health_path", "timeout_seconds", "poll_interval_seconds", "max_wait_seconds"],
+      "description": "Post-deploy smoke check configuration.",
+      "properties": {
+        "health_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timeout_seconds": { "type": "integer", "minimum": 1 },
+        "poll_interval_seconds": { "type": "integer", "minimum": 1 },
+        "max_wait_seconds": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "required": [
+        "revertable_strategy_dev",
+        "revertable_strategy_prod",
+        "auto_trigger",
+        "operator_interface",
+        "manual_procedure_reference",
+        "data_rollback_strategy"
+      ],
+      "description": "Universal rollback discipline encoded as required mechanism fields. The act of populating these (with non-empty values) IS the discipline assertion — no separate boolean block. See plugins/shipwright-deploy/skills/deploy/references/rollback-discipline.md for the discipline statements.",
+      "properties": {
+        "revertable_strategy_dev": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Recommended: 'git-tag-revert', 'image-tag-rollback', 'atomic-deploy-promote', 'none'."
+        },
+        "revertable_strategy_prod": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Recommended: 'clone-restore', 'atomic-deploy-promote', 'image-tag-rollback'."
+        },
+        "auto_trigger": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Recommended: 'smoke-test-fail', 'verify-fail', 'off'. 'off' is honest for targets with no built-in auto-rollback (e.g. Vercel)."
+        },
+        "operator_interface": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Recommended: 'cli', 'ui', 'api', 'mixed'."
+        },
+        "manual_procedure_reference": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Documentation-only freeform reference. May be a CLI command, doc URL, or short prose. NEVER executed by Shipwright runtime — readers/operators run it themselves."
+        },
+        "data_rollback_strategy": {
+          "type": "string",
+          "minLength": 1,
+          "description": "How the target handles data-tier rollback (separate from app-tier). Recommended: 'down-migration', 'backup-restore', 'none-app-only', 'manual'. Pattern 1 (Revertable Deploys) explicitly covers application-tier vs data-tier distinction in the discipline doc."
+        }
+      }
+    },
+    "known_gaps": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Optional honest-limitations list. Especially valuable for stubs: e.g. 'custom aliases not auto-rolled', 'no built-in health-check rollback'. Replaces buried prose in description."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "implementation_status": { "const": "shipped" } },
+        "required": ["implementation_status"]
+      },
+      "then": {
+        "properties": {
+          "client": { "type": "object" },
+          "confidence": { "const": "verified" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "implementation_status": { "const": "stub" } },
+        "required": ["implementation_status"]
+      },
+      "then": {
+        "properties": {
+          "client": { "type": "null" },
+          "confidence": { "enum": ["documented", "inferred"] }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "env_var_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "description"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$",
+          "minLength": 1,
+          "description": "ENV variable NAME (e.g. 'JELASTIC_TOKEN'). Profiles MUST NOT contain literal secret values."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

@@ -394,8 +394,62 @@ When invoked with `--rollback`:
 
 ---
 
+## Rollback-Discipline (Universal)
+
+Shipwright treats rollback as a property of every deploy target, not a
+feature of one. Three patterns apply universally; their mechanics are
+target-specific. The Jelastic flow above is one reference implementation —
+the same discipline applies to any target Shipwright would call shipped.
+
+### Pattern 1 — Revertable Deploys
+
+Every deploy has a documented path back to the previous working state. The
+mechanics are target-specific — git-tag revert (DEV-typical), environment-
+clone restore (Jelastic PROD), atomic deploy-ID promote (Vercel), image-tag
+rollback (Docker Compose, Kubernetes) — but the property is universal: a
+deploy is not complete until its rollback is operable. **Application-tier**
+and **data-tier** rollback are separate concerns; the schema's
+`rollback.data_rollback_strategy` field captures how each target handles
+DB-schema-vs-app-code drift.
+
+### Pattern 2 — Provenance Recorded
+
+Every deploy and every rollback leaves an auditable record before the next
+change touches the same target. Pipeline-side: `phase_completed` events in
+`shipwright_events.jsonl`, an entry in `phase_history`, and — for rollbacks
+— an ADR in `decision_log.md` with the failure cause. Target-side: deploy
+IDs, clone names, image-tag history, or whatever the platform exposes via
+`vercel inspect` / `getenvinfo` / registry API. The why-it-happened
+outlives the on-call shift.
+
+### Pattern 3 — Procedure Documented
+
+Both rollback paths — automatic (smoke-test-fail) and manual
+(operator-initiated) — must be runnable from the documentation alone.
+Manual rollback requires explicit confirmation; automatic rollback logs
+its trigger and announces itself in the deploy output. A silent rollback
+is the failure mode worse than the failure that caused it.
+
+### How discipline becomes target
+
+A target proves it satisfies the discipline by filling in a Deploy Profile
+at `shared/profiles/deploy/<target_id>.json`, validated against
+`shared/profiles/deploy-profile.schema.json`. Three reference profiles
+ship today: **Jelastic** (full implementation, `confidence: verified`),
+**Vercel** (declarative stub, `confidence: documented`), and
+**Compose-VPS** (declarative stub, `confidence: documented`). The two
+stubs exist to keep the schema honest — they describe how targets with
+fundamentally different rollback mechanics (atomic vs. snapshot vs. clone)
+fill the same shape. To add a real implementation: write the client, fill
+the profile, run `validate_deploy_profile.py --strict`. See
+[`references/rollback-discipline.md`](references/rollback-discipline.md)
+for the pattern-by-pattern mapping.
+
+---
+
 ## Reference Documents
 
-- [jelastic-api.md](references/jelastic-api.md) — API endpoint reference
-- [deploy-flavors.md](references/deploy-flavors.md) — Flavor architecture
-- [rollback-strategy.md](references/rollback-strategy.md) — DEV vs PROD rollback
+- [jelastic-api.md](references/jelastic-api.md) — Jelastic API endpoint reference
+- [deploy-flavors.md](references/deploy-flavors.md) — Flavor architecture (code-side interface)
+- [rollback-strategy.md](references/rollback-strategy.md) — Jelastic-specific DEV vs PROD rollback procedure
+- [rollback-discipline.md](references/rollback-discipline.md) — Universal rollback discipline + per-target mapping (Jelastic / Vercel / Compose-VPS)
