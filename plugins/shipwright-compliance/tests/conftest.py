@@ -44,7 +44,7 @@ def project_root(tmp_path: Path) -> Path:
     shutil.copy(FIXTURES_DIR / "sample_package.json", root / "package.json")
 
     # Create compliance output directory
-    (root / "compliance").mkdir()
+    (root / ".shipwright" / "compliance").mkdir(parents=True)
 
     return root
 

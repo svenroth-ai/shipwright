@@ -247,9 +247,9 @@ UPDATE_SCRIPT = PLUGIN_ROOT / "scripts" / "tools" / "update_compliance.py"
 
 @pytest.mark.integration
 def test_update_compliance_check_mode_writes_nothing(project_root):
-    """--check returns structured JSON and does NOT touch compliance/."""
+    """--check returns structured JSON and does NOT touch .shipwright/compliance/."""
     before = {p: p.stat().st_mtime_ns
-              for p in (project_root / "compliance").iterdir()
+              for p in (project_root / ".shipwright" / "compliance").iterdir()
               if p.is_file()}
 
     result = subprocess.run(
@@ -264,9 +264,9 @@ def test_update_compliance_check_mode_writes_nothing(project_root):
     assert "staleness" in payload
     assert "docs" in payload["staleness"]
 
-    # No file mtime changes in compliance/.
+    # No file mtime changes in .shipwright/compliance/.
     after = {p: p.stat().st_mtime_ns
-             for p in (project_root / "compliance").iterdir()
+             for p in (project_root / ".shipwright" / "compliance").iterdir()
              if p.is_file()}
     assert before == after
 
