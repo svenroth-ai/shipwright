@@ -1,0 +1,1 @@
+**`vite-hono` profile bumped to Node 22.x** (was 20.x) — required by Lighthouse 13 + Playwright 1.50 (both ESM/Node-22 only). Profile also gains a `lighthouse.playwright_cwd` field set to `client` for the monorepo layout (where Playwright lives in `client/node_modules`). Additive change for the supabase-nextjs profile, which already pinned 22.x (commit `05dc2c0`).
