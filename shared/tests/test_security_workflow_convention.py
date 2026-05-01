@@ -39,6 +39,7 @@ from lib.security_workflow import (  # noqa: E402  (deferred so pytest.importors
     CRITICAL_GATE_STEP_ID,
     REQUIRED_PERMISSIONS,
     SARIF_CATEGORY,
+    SARIF_UPLOAD_USES_PREFIX,
     TEMPLATE_PATH,
     WORKFLOW_PATH,
 )
@@ -117,6 +118,27 @@ class TestSarifCategory:
             f"  Compliance audit looks for findings under this exact category — "
             f"a rename without updating the constant routes findings to a "
             f"different Security-tab bucket."
+        )
+
+
+class TestSarifUploadUsesPrefix:
+    """A5 audit identifies the SARIF upload step by ``uses:`` prefix —
+    the template must reference an action under that prefix."""
+
+    def test_template_has_step_using_canonical_action(self, template_yaml):
+        steps = _all_steps(template_yaml)
+        uses_values = [
+            s.get("uses", "") for s in steps if isinstance(s, dict)
+        ]
+        matching = [u for u in uses_values if isinstance(u, str)
+                    and u.startswith(SARIF_UPLOAD_USES_PREFIX)]
+        assert matching, (
+            f"no step uses an action starting with "
+            f"{SARIF_UPLOAD_USES_PREFIX!r}.\n"
+            f"  Found uses: {[u for u in uses_values if u]!r}.\n"
+            f"  A5 audit identifies the SARIF upload step by this prefix; "
+            f"renaming or replacing the action without updating the constant "
+            f"makes the audit unable to find the SARIF upload step."
         )
 
 

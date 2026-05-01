@@ -151,6 +151,17 @@ _DEFAULT_CONFIG: dict[str, Any] = {
         "rule_b": True,  # exclude CI-bot authors
         "rule_c": True,  # exclude commits whose diff stays in path_prefixes
     },
+    # Group A5 — CI security workflow integrity overrides. All four are
+    # escape hatches for projects that legitimately diverge from the
+    # convention-lock; ``None`` means "consume the constant from
+    # ``shared/scripts/lib/security_workflow.py``" (the default and
+    # strongly preferred path). Bad-type overrides are silently ignored
+    # by group_a5 — the audit falls back to the convention-lock value
+    # rather than crashing on user-config drift.
+    "a5_workflow_path": None,           # str — override WORKFLOW_PATH
+    "a5_required_permissions": None,    # dict[str,str] — override REQUIRED_PERMISSIONS
+    "a5_critical_gate_step_id": None,   # str — override CRITICAL_GATE_STEP_ID
+    "a5_sarif_category": None,          # str — override SARIF_CATEGORY
 }
 
 
