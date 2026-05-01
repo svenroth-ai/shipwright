@@ -138,6 +138,7 @@ jobs:
           edit-mode: replace
 
       - name: Check for critical findings
+        id: shipwright-critical-gate
         shell: bash
         run: |
           set -e
