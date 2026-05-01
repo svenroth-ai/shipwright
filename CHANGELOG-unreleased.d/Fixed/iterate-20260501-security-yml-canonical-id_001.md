@@ -1,0 +1,1 @@
+ci: add canonical `id: shipwright-critical-gate` to the monorepo's own `.github/workflows/security.yml` Critical-Findings step. Resolves the A5.4 drift surfaced by Group A5's first smoke run on this repo (the deployed workflow predated the convention lock). A5 now passes 6/6 against the monorepo.
