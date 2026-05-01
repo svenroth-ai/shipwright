@@ -7,10 +7,10 @@ Usage:
 Called by ``skills/compliance/SKILL.md`` after Step 10. Standalone CLI so
 users can invoke it outside the skill flow too (CI, ad-hoc debugging).
 
-Step 3 landed the skeleton; Step 6 wired Groups C + F (preventive re-runs);
-Step 4 wired Groups A + D (detective-only); Step 5 wired Group B
-(detective-only B1/B2/B4/B5/B7 + preventive-rerun B3/B6). Steps 7/8 (E, G)
-still pending — their slots show up as ``groups_skipped`` until they land.
+Plan v7 status: Sub-Iterate A wired Groups A + D, Sub-Iterate B wired
+Group B, Sub-Iterate C wired Groups E + G plus Step 13 default-config
+tuning. The full A..G coverage is now active. ``--fix`` rewrites stale
+compliance docs in place via Group E (no commit — caller decides).
 """
 
 from __future__ import annotations
@@ -56,7 +56,7 @@ def main(argv: list[str] | None = None) -> int:
     only = [g.strip() for g in args.only.split(",") if g.strip()] or None
 
     register_all()
-    report = run_all(project_root, only=only)
+    report = run_all(project_root, only=only, fix=args.fix)
 
     if report.import_gate_error:
         print(report.import_gate_error, file=sys.stderr)

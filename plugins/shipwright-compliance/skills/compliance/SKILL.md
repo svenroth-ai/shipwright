@@ -38,17 +38,17 @@ Usage:
   /shipwright-compliance --format json    # JSON output only
 
 Groups:
-  A — Artifact + path integrity (dev-block npm/uv/make, [project.scripts], config path-fields)  [Step 4]
-  B — Config ↔ Config ↔ Event-log coherence (splits, sections, events, reverse git scan)         [Step 5]
-  C — Planning internal coherence (preventive re-run of plan_checks)                              [Step 6]
-  D — Event-log FR coverage (uncovered FRs, stale refs, promised-not-delivered, last-build state) [Step 4]
-  E — Compliance-doc content staleness (regen + byte compare)                                     [Step 7 — pending]
-  F — ADR structural integrity (preventive re-run)                                                [Step 6]
-  G — Agent-docs freshness vs. git activity (scope match, ADR refs)                               [Step 8 — pending]
+  A — Artifact + path integrity (dev-block npm/uv/make, [project.scripts], config path-fields)
+  B — Config ↔ Config ↔ Event-log coherence (splits, sections, events, reverse git scan)
+  C — Planning internal coherence (preventive re-run of plan_checks)
+  D — Event-log FR coverage (uncovered FRs, stale refs, promised-not-delivered, last-build state)
+  E — Compliance-doc content staleness (regen + byte compare; --fix rewrites stale docs)
+  F — ADR structural integrity (preventive re-run)
+  G — Agent-docs freshness vs. git activity (G2 conventional-commit scope, G3 ADR-ID body refs)
 
 Reports written:
   - .shipwright/compliance/audit-report.md  ← human-readable summary
-  - shipwright_audit_report.json          ← structured payload
+  - shipwright_audit_report.json            ← structured payload
 ================================================================================
 ```
 
@@ -137,17 +137,44 @@ No user interaction needed for auto-background mode. When the compliance plugin 
 
 ---
 
-## Follow-up (plan v7 roadmap)
+## Coverage notes & follow-up
 
-Groups A, B, C, D, F shipped. Remaining groups land in subsequent sub-iterates:
+All Plan-v7 groups (A, B, C, D, E, F, G) are wired. The CLI no longer
+falls through to `groups_skipped=[(letter, "not-implemented")]` for any
+group — individual checks may still self-skip when their preconditions
+are absent (e.g. B7 / G2 / G3 skip on a non-git repo or before the first
+release tag).
 
-- **Sub-Iterate C (Steps 7+8+13):** Group E (staleness wiring + `--fix`) + Group G (commit-scope + ADR-ID refs) + Step 13 integration tuning
-- **Group A5 (separate iterate):** CI security workflow integrity — consumes the convention from `shared/scripts/lib/security_workflow.py` (laid down by the adopt-iterate)
+**Adopted-status note (B1 / B4):** Both checks scope themselves to
+splits with `status="complete"`. Adopted projects (`status="adopted"`)
+intentionally fall outside that scope: adopted code is treated as
+retroactively complete *without* a planning artifact and *without* a
+`split_completed` event — there's nothing for B1 (sections recorded) or
+B4 (matching event) to compare against. Coverage for adopted projects
+comes from B7 (commit-on-default-branch ↔ event match) and Group G
+(commit-quality scans), which both run regardless of split status.
 
-Until each group lands, the CLI reports its slot as `groups_skipped=[(letter, "not-implemented")]` so users see explicitly which coverage is missing.
+Follow-up iterates (separate from Sub-Iterate C):
+
+- **Group A5 (later iterate):** CI security workflow integrity —
+  consumes the convention from `shared/scripts/lib/security_workflow.py`
+  laid down by the adopt-iterate.
 
 `audit_config.json` schema (extend in `audit_detector._DEFAULT_CONFIG`):
 
-- `b7_exclusions.exclude_merge_commits`, `exclude_authors`, `exclude_path_prefixes` — rule data for B7
-- `b7_exclusions.last_release_tag_pattern` (default `v*`) — glob passed to `git describe --tags --match`
-- `retention.rule_a/rule_b/rule_c` — per-rule on/off switches for B7 (lets users keep rule data while disabling individual rules for archaeology runs)
+- `a4_path_fields` — dotted paths into `shipwright_*_config.json` whose
+  string values must point to existing files. Grammar: `key` (descend),
+  `key[]` (iterate list), `key{}` (iterate dict values). Defaults cover
+  `plan_config.splits.{}.plan_file` (multi-split layout) and
+  `plan_config.spec_file` (single-split layout).
+- `g2_stoplist` — conventional-commit scopes G2 should silently accept
+  (generic / cross-cutting scopes that don't map to a split).
+- `g2_alias_map` — split-name → variant list. A scope passes G2 when it
+  matches any alias-map value or a known `splits[].name`.
+- `b7_exclusions.exclude_merge_commits`, `exclude_authors`,
+  `exclude_path_prefixes` — rule data for B7.
+- `b7_exclusions.last_release_tag_pattern` (default `v*`) — glob passed
+  to `git describe --tags --match`.
+- `retention.rule_a/rule_b/rule_c` — per-rule on/off switches for B7
+  (lets users keep rule data while disabling individual rules for
+  archaeology runs).
