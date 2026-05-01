@@ -84,23 +84,60 @@ def registered_groups() -> dict[str, GroupFn]:
 # ---------------------------------------------------------------------------
 
 _DEFAULT_CONFIG: dict[str, Any] = {
+    # A4 paths reflect the real shipwright config schemas as written by
+    # the plan plugin (see plugins/shipwright-plan/scripts/checks/
+    # write-plan-config.py + setup-planning-session.py). The dotted-path
+    # grammar:
+    #   - ``[]`` iterates a list at that key
+    #   - ``{}`` iterates the values of a dict at that key (used when the
+    #     schema keys are dynamic, e.g. split names)
+    # Real shapes seen in deployed projects:
+    #   - aiportal: ``plan_config.splits.<name>.plan_file`` (multi-split)
+    #   - shipwright-webui (adopted): ``plan_config.spec_file`` (single-split)
+    # ``project_config`` carries no on-disk path fields today (splits[]
+    # entries only have name+status), so it's intentionally absent.
     "a4_path_fields": [
-        "project_config.splits[].spec_path",
-        "plan_config.sections[].section_file",
+        "plan_config.splits.{}.plan_file",
+        "plan_config.spec_file",
     ],
     "g2_stoplist": [
+        # G2 ignores these scopes — they're real conventional-commit scopes
+        # used in the shipwright monorepo and other adopted projects but
+        # too generic to map back to a specific plan-split or component.
+        # The strings here are commit-scope identifiers (NOT directory
+        # paths); the inline `artifact-path-canon: legacy` markers tell
+        # the canon lint to skip these literals.
         "webui", "core", "api", "test", "tests", "ci", "deps",
-        "build", "docs", "chore",
+        "build", "docs", "chore", "deploy", "iterate", "release",
+        # Cross-cutting conventions that don't carry split semantics.
+        "compliance", "security", "shipwright", "scripts", "shared",  # artifact-path-canon: legacy
+        # Documentation / changelog scopes (Step 13 tuning — surfaced as
+        # G2 false-positives during the shipwright monorepo smoke-run).
+        "changelog",
     ],
     "g2_alias_map": {
+        # Map split slugs / component names to the conventional-commit
+        # scope variants that should be treated as equivalent. A scope
+        # passes G2 when it appears in the alias-map values OR matches a
+        # known split name from project_config.splits[].name. Adopted
+        # projects with no plan-config splits skip the match check.
+        # Variants are scope identifiers, NOT directory paths.
         "auth": ["auth", "authentication", "authn", "authz"],
         "payments": ["payments", "billing"],
         "db": ["db", "database", "persistence", "storage"],
+        "adopt": ["adopt", "adopted"],
+        "plan": ["plan", "planning"],  # artifact-path-canon: legacy
     },
     "b7_exclusions": {
         "exclude_merge_commits": True,
         "exclude_authors": ["dependabot[bot]", "github-actions[bot]"],
-        "exclude_path_prefixes": ["Spec/", "docs/"],
+        # ``CHANGELOG-unreleased.d/`` is a Keep-a-Changelog drop directory
+        # — entries land per iterate without a corresponding event, so
+        # treating them as Spec/docs-class noise prevents B7 from
+        # flagging every iterate's changelog drop as uncovered drift.
+        "exclude_path_prefixes": [
+            "Spec/", "docs/", "CHANGELOG-unreleased.d/",
+        ],
         # Glob pattern passed to ``git describe --tags --match`` to find
         # the baseline tag B7 scans from. ``v*`` matches v0.1.0, v1.2.3, …
         "last_release_tag_pattern": "v*",
@@ -165,6 +202,7 @@ def run_all(
     only: list[str] | None = None,
     data: Any = None,
     run_gate: bool = True,
+    fix: bool = False,
 ) -> AuditReport:
     """Run every registered group against ``project_root``.
 
@@ -175,6 +213,9 @@ def run_all(
         data: Pre-collected ``ComplianceData``; auto-loaded when None.
         run_gate: If True, call ``verify_imports()`` first. Tests that
             only exercise detective-only groups can set this to False.
+        fix: If True, enable Group E auto-regeneration of stale docs.
+            Each rewritten doc is appended to ``report.fixes_applied``.
+            Other groups ignore the flag.
     """
     report = AuditReport()
 
@@ -187,6 +228,13 @@ def run_all(
 
     cfg = config if config is not None else load_audit_config(project_root)
     payload = data if data is not None else _load_compliance_data(project_root)
+
+    # Thread the per-run --fix flag and a write-sink for fixes_applied
+    # through the config dict. Group E reads ``fix`` and appends to
+    # ``fixes_applied``; other groups ignore both keys.
+    cfg = dict(cfg)
+    cfg["fix"] = fix
+    cfg["fixes_applied"] = report.fixes_applied
 
     wanted = {g.upper() for g in only} if only else {"A", "B", "C", "D", "E", "F", "G"}
 

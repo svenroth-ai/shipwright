@@ -279,6 +279,124 @@ def test_a4_skips_when_no_configs_present(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# A4 regression — Sub-Iterate C: real-shape config schema + {} walker
+# ---------------------------------------------------------------------------
+
+
+def _default_config_real_shape() -> dict:
+    """Mirrors the post-Sub-Iterate-C ``audit_detector._DEFAULT_CONFIG``."""
+    return {
+        "a4_path_fields": [
+            "plan_config.splits.{}.plan_file",
+            "plan_config.spec_file",
+        ],
+    }
+
+
+def test_a4_passes_against_aiportal_shape_plan_config(tmp_path):
+    """Real plan_config shape: ``splits.<name>.plan_file`` (multi-split).
+
+    The Sub-Iterate C default uses ``splits.{}.plan_file`` to walk the
+    dynamic split-name keys. This test pins the contract so future schema
+    changes can't silently drop coverage.
+    """
+    plan_a = tmp_path / ".shipwright" / "planning" / "01-foundation" / "plan.md"
+    plan_b = tmp_path / ".shipwright" / "planning" / "02-course-platform" / "plan.md"
+    _write(plan_a, "Foundation plan\n")
+    _write(plan_b, "Course platform plan\n")
+
+    _write(tmp_path / "shipwright_plan_config.json", json.dumps({
+        "splits": {
+            "01-foundation": {
+                "status": "complete",
+                "plan_file": ".shipwright/planning/01-foundation/plan.md",
+            },
+            "02-course-platform": {
+                "status": "complete",
+                "plan_file": ".shipwright/planning/02-course-platform/plan.md",
+            },
+        },
+    }))
+
+    findings = group_a.run(tmp_path, _default_config_real_shape(), None)
+    a4 = next(f for f in findings if f.check_id == "A4")
+    assert a4.status == "pass", a4.detail
+
+
+def test_a4_flags_missing_plan_file_in_multi_split_shape(tmp_path):
+    _write(tmp_path / "shipwright_plan_config.json", json.dumps({
+        "splits": {
+            "01-foundation": {
+                "plan_file": ".shipwright/planning/01-foundation/plan.md",
+            },
+        },
+    }))
+    # plan.md intentionally not created.
+    findings = group_a.run(tmp_path, _default_config_real_shape(), None)
+    a4 = next(f for f in findings if f.check_id == "A4")
+    assert a4.status == "fail"
+    assert "01-foundation/plan.md" in a4.detail
+
+
+def test_a4_passes_against_single_split_shape_plan_config(tmp_path):
+    """Real plan_config from setup-planning-session.py: top-level ``spec_file``."""
+    spec = tmp_path / ".shipwright" / "planning" / "splits" / "01-auth" / "spec.md"
+    _write(spec, "FRs\n")
+    _write(tmp_path / "shipwright_plan_config.json", json.dumps({
+        "spec_file": ".shipwright/planning/splits/01-auth/spec.md",
+        "status": "complete",
+    }))
+
+    findings = group_a.run(tmp_path, _default_config_real_shape(), None)
+    a4 = next(f for f in findings if f.check_id == "A4")
+    assert a4.status == "pass", a4.detail
+
+
+def test_a4_walker_supports_brace_dict_iteration(tmp_path):
+    """The ``{}`` dotted-path segment iterates a dict's values.
+
+    Direct test of the engine: configurable enough that future projects
+    with their own dotted-path layouts can use it.
+    """
+    cfg = {"a4_path_fields": ["plan_config.entries.{}.path"]}
+    _write(tmp_path / "real-a.txt", "x\n")
+    _write(tmp_path / "real-b.txt", "y\n")
+    _write(tmp_path / "shipwright_plan_config.json", json.dumps({
+        "entries": {
+            "alpha": {"path": "real-a.txt"},
+            "beta": {"path": "real-b.txt"},
+        },
+    }))
+    findings = group_a.run(tmp_path, cfg, None)
+    a4 = next(f for f in findings if f.check_id == "A4")
+    assert a4.status == "pass", a4.detail
+
+
+def test_a4_walker_brace_iteration_flags_missing_value(tmp_path):
+    cfg = {"a4_path_fields": ["plan_config.entries.{}.path"]}
+    _write(tmp_path / "shipwright_plan_config.json", json.dumps({
+        "entries": {"alpha": {"path": "missing.txt"}},
+    }))
+    findings = group_a.run(tmp_path, cfg, None)
+    a4 = next(f for f in findings if f.check_id == "A4")
+    assert a4.status == "fail"
+    assert "missing.txt" in a4.detail
+
+
+def test_a4_walker_brace_iteration_skips_when_node_is_list(tmp_path):
+    """``{}`` requires a dict — wrong-type yields nothing rather than crashing."""
+    cfg = {"a4_path_fields": ["plan_config.splits.{}.plan_file"]}
+    # splits is a list (project_config-style), not a dict — {} won't iterate.
+    _write(tmp_path / "shipwright_plan_config.json", json.dumps({
+        "splits": [{"name": "01-foo"}],
+    }))
+    findings = group_a.run(tmp_path, cfg, None)
+    a4 = next(f for f in findings if f.check_id == "A4")
+    # No values yielded → no path-fields → A4 skips.
+    assert a4.status == "skip"
+
+
+# ---------------------------------------------------------------------------
 # Group D — D1: spec FR uncovered in events
 # ---------------------------------------------------------------------------
 
@@ -532,16 +650,14 @@ def test_d4_flags_fr_last_touched_in_failing_build(tmp_path):
 
 
 def test_registry_wires_a_and_d_via_run_all(tmp_path):
-    """After register_all() runs, A + D are present alongside C + F."""
+    """After register_all() runs, every Plan-v7 group is present."""
     from scripts.audit import audit_detector
     from scripts.audit._registry import register_all
 
     register_all()
     registered = set(audit_detector.registered_groups().keys())
-    assert {"A", "B", "C", "D", "F"}.issubset(registered)
-    # Steps 7/8 (E, G) still pending.
-    assert "E" not in registered
-    assert "G" not in registered
+    # Sub-Iterate C wired E + G; the registry now covers all of A..G.
+    assert registered == {"A", "B", "C", "D", "E", "F", "G"}
 
 
 def test_a_d_findings_are_detective_only(tmp_path):

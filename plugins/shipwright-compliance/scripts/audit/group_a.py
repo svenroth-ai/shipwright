@@ -352,7 +352,14 @@ def _resolve_a4_targets(
 def _walk_dotted_path(data: Any, dotted: str) -> Iterable[Any]:
     """Walk ``data`` along the dotted path, yielding every leaf value reached.
 
-    ``[]`` segments iterate over list elements; dict-key segments index in.
+    Path segment grammar:
+    - ``key``   — descend into ``data[key]`` (must be dict).
+    - ``key[]`` — iterate ``data[key]`` (must be list); each element becomes a
+      branch in the walk. Bare ``[]`` iterates ``data`` itself.
+    - ``key{}`` — iterate ``data[key].values()`` (must be dict). Bare ``{}``
+      iterates ``data.values()``. Used when the schema keys are dynamic
+      (e.g. ``splits.<name>.plan_file`` where ``<name>`` is per-project).
+
     Missing keys / wrong types yield nothing rather than raising.
     """
     parts = dotted.split(".")
@@ -375,6 +382,19 @@ def _walk_dotted_path(data: Any, dotted: str) -> Iterable[Any]:
                 continue
             for item in seq:
                 queue.append((item, tail))
+            continue
+        if head.endswith("{}"):
+            key = head[:-2]
+            if key:
+                if not isinstance(node, dict):
+                    continue
+                inner = node.get(key)
+            else:
+                inner = node
+            if not isinstance(inner, dict):
+                continue
+            for value in inner.values():
+                queue.append((value, tail))
             continue
         if not isinstance(node, dict):
             continue

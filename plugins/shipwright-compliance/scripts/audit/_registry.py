@@ -14,9 +14,9 @@ from scripts.audit import audit_detector
 def register_all() -> None:
     """Register every implemented group with the detector.
 
-    Missing groups (not yet implemented in this plan's Steps 4-8) are
-    silently absent from the registry; the detector's ``run_all`` reports
-    them as ``groups_skipped`` with reason ``not-implemented``.
+    Sub-Iterate C (plan v7 Steps 7+8) wired Groups E and G; the registry
+    now covers every Plan-v7 group A..G. Future iterates that add
+    cross-cutting checks should register here in alphabetical order.
     """
     # Reset registry to avoid double-registration when called twice
     # (tests call this repeatedly with fresh fixtures).
@@ -38,8 +38,14 @@ def register_all() -> None:
     from scripts.audit import group_d
     audit_detector.register_group("D", group_d.run)
 
+    # Group E — Compliance-doc content staleness (Step 7).
+    from scripts.audit import group_e
+    audit_detector.register_group("E", group_e.run)
+
     # Group F — ADR structural integrity (Step 6).
     from scripts.audit import group_f
     audit_detector.register_group("F", group_f.run)
 
-    # Steps 7/8 add Groups E, G here.
+    # Group G — Agent-docs freshness vs. git activity (Step 8).
+    from scripts.audit import group_g
+    audit_detector.register_group("G", group_g.run)

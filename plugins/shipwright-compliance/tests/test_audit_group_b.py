@@ -606,9 +606,8 @@ def test_registry_wires_b_alongside_a_c_d_f(tmp_path):
     from scripts.audit._registry import register_all
     register_all()
     registered = set(audit_detector.registered_groups().keys())
-    assert {"A", "B", "C", "D", "F"}.issubset(registered)
-    assert "E" not in registered
-    assert "G" not in registered
+    # Sub-Iterate C wired E + G; the registry now covers all of A..G.
+    assert registered == {"A", "B", "C", "D", "E", "F", "G"}
 
 
 def test_group_b_findings_include_correct_sources(monkeypatch, tmp_path):

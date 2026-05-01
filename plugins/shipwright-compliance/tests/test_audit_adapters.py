@@ -172,10 +172,10 @@ RUN_AUDIT = PLUGIN_ROOT / "scripts" / "audit" / "run_audit.py"
 def test_run_audit_skeleton_runs_end_to_end(tmp_path):
     """CLI produces a valid JSON report on an empty project.
 
-    Registered groups (A + B + C + D + F as of Step 5) run against the
-    fixture and emit Findings (pass/fail) without crashing the CLI.
-    Unregistered groups (E, G — Steps 7/8) land under
-    ``groups_skipped``.
+    With Sub-Iterate C the full A..G are registered, so ``groups_skipped``
+    is empty on a fixture project unless a group's runner skips itself
+    internally (e.g. B7 skipping a non-git directory). All seven groups
+    must appear under ``groups_run``.
     """
     (tmp_path / "shipwright_run_config.json").write_text(
         '{"status": "in_progress"}\n', encoding="utf-8",
@@ -194,8 +194,9 @@ def test_run_audit_skeleton_runs_end_to_end(tmp_path):
     import json
     payload = json.loads(result.stdout)
     skipped_groups = {s["group"] for s in payload["groups_skipped"]}
-    assert skipped_groups == {"E", "G"}
-    assert set(payload["groups_run"]) == {"A", "B", "C", "D", "F"}
+    # No groups should fall through to "not-implemented" any more.
+    assert skipped_groups == set()
+    assert set(payload["groups_run"]) == {"A", "B", "C", "D", "E", "F", "G"}
 
 
 def test_run_audit_rejects_missing_project_root():
