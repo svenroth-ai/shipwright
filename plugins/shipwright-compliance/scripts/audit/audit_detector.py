@@ -101,6 +101,18 @@ _DEFAULT_CONFIG: dict[str, Any] = {
         "exclude_merge_commits": True,
         "exclude_authors": ["dependabot[bot]", "github-actions[bot]"],
         "exclude_path_prefixes": ["Spec/", "docs/"],
+        # Glob pattern passed to ``git describe --tags --match`` to find
+        # the baseline tag B7 scans from. ``v*`` matches v0.1.0, v1.2.3, …
+        "last_release_tag_pattern": "v*",
+    },
+    # Per-rule on/off switches for B7. Set any to false to disable that
+    # rule without removing the substantive exclusion list (lets users
+    # keep their author allowlist while disabling the merge-commit rule
+    # for archaeology runs).
+    "retention": {
+        "rule_a": True,  # exclude merge commits
+        "rule_b": True,  # exclude CI-bot authors
+        "rule_c": True,  # exclude commits whose diff stays in path_prefixes
     },
 }
 

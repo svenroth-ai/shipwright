@@ -8,8 +8,9 @@ Called by ``skills/compliance/SKILL.md`` after Step 10. Standalone CLI so
 users can invoke it outside the skill flow too (CI, ad-hoc debugging).
 
 Step 3 landed the skeleton; Step 6 wired Groups C + F (preventive re-runs);
-Step 4 wired Groups A + D (detective-only). Steps 5/7/8 still pending —
-their slots show up as ``groups_skipped`` until they land.
+Step 4 wired Groups A + D (detective-only); Step 5 wired Group B
+(detective-only B1/B2/B4/B5/B7 + preventive-rerun B3/B6). Steps 7/8 (E, G)
+still pending — their slots show up as ``groups_skipped`` until they land.
 """
 
 from __future__ import annotations

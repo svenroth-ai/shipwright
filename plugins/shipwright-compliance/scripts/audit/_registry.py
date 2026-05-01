@@ -26,6 +26,10 @@ def register_all() -> None:
     from scripts.audit import group_a
     audit_detector.register_group("A", group_a.run)
 
+    # Group B — Config / event-log coherence (Step 5).
+    from scripts.audit import group_b
+    audit_detector.register_group("B", group_b.run)
+
     # Group C — Planning coherence (Step 6).
     from scripts.audit import group_c
     audit_detector.register_group("C", group_c.run)
@@ -38,4 +42,4 @@ def register_all() -> None:
     from scripts.audit import group_f
     audit_detector.register_group("F", group_f.run)
 
-    # Steps 5/7/8 add Groups B, E, G here.
+    # Steps 7/8 add Groups E, G here.
