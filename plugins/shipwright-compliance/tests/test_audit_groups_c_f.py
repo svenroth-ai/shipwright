@@ -164,6 +164,7 @@ def test_registry_wires_c_and_f(monkeypatch, tmp_path):
 
     ids = {f.check_id for f in report.findings}
     assert {"C1", "C2", "C3", "C4", "F1", "F2", "F3"}.issubset(ids)
-    # Steps 4/5/7/8 groups stay as not-implemented for now.
+    # Steps 5/7/8 groups (B, E, G) are still not-implemented. A and D
+    # landed in Step 4.
     skipped_groups = {g for g, _r in report.groups_skipped}
-    assert skipped_groups == {"A", "B", "D", "E", "G"}
+    assert skipped_groups == {"B", "E", "G"}

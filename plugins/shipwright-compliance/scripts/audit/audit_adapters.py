@@ -14,10 +14,12 @@ native checks) — plan v7 Option Z § Architecture.
 from __future__ import annotations
 
 import importlib
+import importlib.util
 import inspect
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import ModuleType
 from typing import Any, Callable
 
 # Ensure ``shared/scripts`` is on sys.path BEFORE importing anything from
@@ -256,6 +258,54 @@ def check_result_to_finding(
 # ---------------------------------------------------------------------------
 # Convenience: importer for the iterate-12 checks
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Pollution-free loader for shared/scripts/lib parsers (Step 4 — Group A/D)
+# ---------------------------------------------------------------------------
+
+_LOADED_SHARED_LIBS: dict[str, ModuleType] = {}
+
+
+def load_shared_lib(module_name: str) -> ModuleType:
+    """Load ``shared/scripts/lib/<module_name>.py`` without polluting ``lib`` in
+    ``sys.modules``.
+
+    Group A and Group D both want ``drift_parsers`` from shared, but a plain
+    ``from lib import drift_parsers`` caches the ``lib`` package as
+    ``shared/scripts/lib`` for the rest of the test session — which then
+    shadows the compliance plugin's own ``lib`` package (where
+    ``thresholds.py`` lives) and breaks ``test_enforcement_hooks``.
+
+    Loading via ``importlib.util.spec_from_file_location`` under a unique
+    module name avoids the ``lib`` namespace entirely. Cached per module
+    name across calls.
+    """
+    cached = _LOADED_SHARED_LIBS.get(module_name)
+    if cached is not None:
+        return cached
+
+    file_path = _SHARED_SCRIPTS / "lib" / f"{module_name}.py"
+    if not file_path.is_file():
+        raise ImportError(f"shared lib module not found: {file_path}")
+
+    sentinel = f"_shipwright_compliance_audit_{module_name}"
+    spec = importlib.util.spec_from_file_location(sentinel, file_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"could not load spec for {file_path}")
+    module = importlib.util.module_from_spec(spec)
+    # Register in sys.modules BEFORE exec_module so dataclasses defined
+    # inside the loaded module can resolve their own __module__ via
+    # ``sys.modules[cls.__module__]`` — Python's stdlib ``dataclasses``
+    # does this lookup at class-creation time.
+    sys.modules[sentinel] = module
+    try:
+        spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop(sentinel, None)
+        raise
+    _LOADED_SHARED_LIBS[module_name] = module
+    return module
+
 
 def import_iterate12_checks() -> dict[str, Callable[..., Any]]:
     """Return the iterate-12 check callables by short name.

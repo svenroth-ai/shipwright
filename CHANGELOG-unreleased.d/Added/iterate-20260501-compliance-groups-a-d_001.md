@@ -1,0 +1,1 @@
+shipwright-compliance: Group A (artifact/path integrity — A2 dev-block command refs, A3 [project.scripts] entry-points, A4 config path-fields) and Group D (event-log FR coverage — D1 uncovered FRs, D2 stale refs, D3 promised-not-delivered, D4 last-build state) detective audits land per Plan v7 Step 4. Skipped-groups set narrows to {B, E, G}.

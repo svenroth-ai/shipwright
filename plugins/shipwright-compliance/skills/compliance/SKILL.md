@@ -38,13 +38,13 @@ Usage:
   /shipwright-compliance --format json    # JSON output only
 
 Groups:
-  A — Artifact presence + path integrity (npm/uv/make, markdown links, config paths)
-  B — Config ↔ Config ↔ Event log coherence (splits, sections, commits, reverse scan)
-  C — Planning internal coherence (preventive re-run of plan_checks)
-  D — Implementation evidence (event-log FR coverage, section-test coverage)
-  E — Compliance-doc content staleness (regen + byte compare)
-  F — ADR structural integrity (preventive re-run)
-  G — Agent-docs freshness vs. git activity (scope match, ADR refs)
+  A — Artifact + path integrity (dev-block npm/uv/make, [project.scripts], config path-fields)  [Step 4]
+  B — Config ↔ Config ↔ Event log coherence (splits, sections, commits, reverse scan)             [Step 5 — pending]
+  C — Planning internal coherence (preventive re-run of plan_checks)                              [Step 6]
+  D — Event-log FR coverage (uncovered FRs, stale refs, promised-not-delivered, last-build state) [Step 4]
+  E — Compliance-doc content staleness (regen + byte compare)                                     [Step 7 — pending]
+  F — ADR structural integrity (preventive re-run)                                                [Step 6]
+  G — Agent-docs freshness vs. git activity (scope match, ADR refs)                               [Step 8 — pending]
 
 Reports written:
   - .shipwright/compliance/audit-report.md  ← human-readable summary
@@ -139,4 +139,10 @@ No user interaction needed for auto-background mode. When the compliance plugin 
 
 ## Follow-up (plan v7 roadmap)
 
-Groups A, B, D, E, G (novel detective-only checks) are wired incrementally. Before every group lands, the CLI still reports its slot as `groups_skipped=[...,"not-implemented"]` — users see explicitly which coverage is missing.
+Groups A and D shipped in Step 4 (Sub-Iterate A). Remaining groups land in subsequent sub-iterates:
+
+- **Sub-Iterate B (Step 5):** Group B — config-coherence + B7 reverse git scan + `audit_config.json` schema growth
+- **Sub-Iterate C (Steps 7+8+13):** Group E (staleness wiring + `--fix`) + Group G (commit-scope + ADR-ID refs) + Step 13 integration tuning
+- **Group A5 (separate iterate):** CI security workflow integrity — depends on the parallel adopt-iterate that scaffolds `.github/workflows/security.yml` first
+
+Until each group lands, the CLI reports its slot as `groups_skipped=[(letter, "not-implemented")]` so users see explicitly which coverage is missing.
