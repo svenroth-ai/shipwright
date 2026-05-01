@@ -1,0 +1,165 @@
+name: Security Scan
+
+# DORMANT: Auto-triggers are disabled. /shipwright-adopt scaffolds this
+# workflow with workflow_dispatch only, so the user can verify Phase B
+# prerequisites (Code Scanning enabled, secrets configured, fork-PR
+# behavior reviewed) before turning auto-scans on.
+#
+# To activate (Phase B / Go-Live):
+#   1. Verify Code Scanning is enabled (repo Settings → Code security).
+#   2. Uncomment the `pull_request:` and `schedule:` blocks below.
+#   3. Commit on a feature branch and review one PR run before merging.
+#
+# See docs/security-ci-setup.md for full activation guidance.
+on:
+  # pull_request:
+  #   branches: [main]
+  # schedule:
+  #   - cron: '0 6 * * 1'  # Monday 06:00 UTC — weekly full scan
+  workflow_dispatch:
+
+# IMPORTANT: explicit permissions block — once any key is set, GitHub
+# silently flips every UNLISTED permission to `none` for the run. The
+# four below are the floor; do not delete any without re-checking the
+# downstream actions that depend on them. See
+# shared/scripts/lib/security_workflow.py for the convention lock.
+permissions:
+  contents: read           # actions/checkout@v4
+  actions: read            # github/codeql-action/upload-sarif@v3 (SARIF attach)
+  security-events: write   # SARIF upload to Code Scanning
+  pull-requests: write     # Post PR comment summary
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: Shipwright Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history for diff-aware secret scans
+
+      # --- OSS scanner installation (pinned per-tool versions) ---
+
+      - name: Install Semgrep
+        run: pip install semgrep
+
+      - name: Install Trivy
+        run: |
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo gpg --dearmor -o /usr/share/keyrings/trivy.gpg
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+
+      - name: Install Gitleaks
+        run: |
+          GITLEAKS_VERSION="8.21.2"
+          wget -qO- "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar xz
+          sudo mv gitleaks /usr/local/bin/
+          gitleaks version
+
+      - name: Prepare SARIF output directory
+        run: mkdir -p sarif
+
+      # --- Run scans (each emits native SARIF; failures are tolerated so
+      #     the critical-gate step decides whether the workflow blocks merge) ---
+
+      - name: Run Semgrep (SAST)
+        run: semgrep scan --config auto --sarif --output sarif/semgrep.sarif .
+        continue-on-error: true
+
+      - name: Run Trivy (SCA + IaC)
+        run: trivy fs --format sarif --output sarif/trivy.sarif --scanners vuln,misconfig .
+        continue-on-error: true
+
+      - name: Run Gitleaks (Secrets)
+        run: gitleaks detect --report-format sarif --report-path sarif/gitleaks.sarif --no-git || true
+
+      # --- Upload SARIF and post PR comment (with fork-PR guards) ---
+      #
+      # Fork-PR guard: PRs from forks run with a read-only GITHUB_TOKEN, so
+      # security-events:write and pull-requests:write are not granted. Both
+      # steps below are skipped on fork PRs (`head.repo.full_name` differs
+      # from the workflow's repository). Same-repo PRs, workflow_dispatch,
+      # and schedule events still upload SARIF and (for PR events) post
+      # comments.
+
+      - name: Upload SARIF to GitHub Security
+        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: sarif
+          category: shipwright-security
+
+      - name: Build PR comment summary
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        shell: bash
+        run: |
+          set -e
+          {
+            echo "## Shipwright Security Scan"
+            echo ""
+            echo "| Scanner | SARIF emitted |"
+            echo "|---|---|"
+            for tool in semgrep trivy gitleaks; do
+              if [ -f "sarif/${tool}.sarif" ]; then
+                echo "| ${tool} | ✓ |"
+              else
+                echo "| ${tool} | — |"
+              fi
+            done
+            echo ""
+            echo "Findings (if any) appear under the **Security** tab → "
+            echo "_Code scanning_ → category **shipwright-security**."
+          } > pr-comment.md
+
+      - name: Post PR comment
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: pr-comment.md
+          edit-mode: replace
+
+      - name: Check for critical findings
+        id: shipwright-critical-gate
+        shell: bash
+        run: |
+          set -e
+          # Count critical-severity findings across all SARIF files. SARIF
+          # encodes severity in `properties.security-severity` (0.0–10.0,
+          # GitHub's mapping) — anything ≥ 9.0 is "critical" by GitHub's
+          # default. Falls back to a 0 count if a SARIF file is malformed
+          # or absent, so a missing scanner does not silently mask
+          # criticals from other tools.
+          critical=0
+          for f in sarif/*.sarif; do
+            [ -f "$f" ] || continue
+            n=$(jq '
+              [.runs[]?.results[]? |
+               select(
+                 (.properties["security-severity"] // "0") | tonumber >= 9.0
+               )] | length
+            ' "$f" 2>/dev/null || echo 0)
+            critical=$((critical + n))
+          done
+          echo "Critical findings: $critical"
+          echo "critical_count=$critical" >> "$GITHUB_OUTPUT"
+          if [ "$critical" -gt 0 ]; then
+            echo "::error::Found $critical critical security findings — blocking merge"
+            exit 1
+          fi
+
+      - name: Upload scan artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results
+          path: |
+            sarif/
+            pr-comment.md
+          retention-days: 30
+          if-no-files-found: ignore
