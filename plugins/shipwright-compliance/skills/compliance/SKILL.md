@@ -39,7 +39,7 @@ Usage:
 
 Groups:
   A — Artifact + path integrity (dev-block npm/uv/make, [project.scripts], config path-fields)  [Step 4]
-  B — Config ↔ Config ↔ Event log coherence (splits, sections, commits, reverse scan)             [Step 5 — pending]
+  B — Config ↔ Config ↔ Event-log coherence (splits, sections, events, reverse git scan)         [Step 5]
   C — Planning internal coherence (preventive re-run of plan_checks)                              [Step 6]
   D — Event-log FR coverage (uncovered FRs, stale refs, promised-not-delivered, last-build state) [Step 4]
   E — Compliance-doc content staleness (regen + byte compare)                                     [Step 7 — pending]
@@ -139,10 +139,15 @@ No user interaction needed for auto-background mode. When the compliance plugin 
 
 ## Follow-up (plan v7 roadmap)
 
-Groups A and D shipped in Step 4 (Sub-Iterate A). Remaining groups land in subsequent sub-iterates:
+Groups A, B, C, D, F shipped. Remaining groups land in subsequent sub-iterates:
 
-- **Sub-Iterate B (Step 5):** Group B — config-coherence + B7 reverse git scan + `audit_config.json` schema growth
 - **Sub-Iterate C (Steps 7+8+13):** Group E (staleness wiring + `--fix`) + Group G (commit-scope + ADR-ID refs) + Step 13 integration tuning
-- **Group A5 (separate iterate):** CI security workflow integrity — depends on the parallel adopt-iterate that scaffolds `.github/workflows/security.yml` first
+- **Group A5 (separate iterate):** CI security workflow integrity — consumes the convention from `shared/scripts/lib/security_workflow.py` (laid down by the adopt-iterate)
 
 Until each group lands, the CLI reports its slot as `groups_skipped=[(letter, "not-implemented")]` so users see explicitly which coverage is missing.
+
+`audit_config.json` schema (extend in `audit_detector._DEFAULT_CONFIG`):
+
+- `b7_exclusions.exclude_merge_commits`, `exclude_authors`, `exclude_path_prefixes` — rule data for B7
+- `b7_exclusions.last_release_tag_pattern` (default `v*`) — glob passed to `git describe --tags --match`
+- `retention.rule_a/rule_b/rule_c` — per-rule on/off switches for B7 (lets users keep rule data while disabling individual rules for archaeology runs)

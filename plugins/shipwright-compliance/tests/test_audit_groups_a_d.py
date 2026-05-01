@@ -538,9 +538,8 @@ def test_registry_wires_a_and_d_via_run_all(tmp_path):
 
     register_all()
     registered = set(audit_detector.registered_groups().keys())
-    assert {"A", "C", "D", "F"}.issubset(registered)
-    # Steps 5/7/8 still pending.
-    assert "B" not in registered
+    assert {"A", "B", "C", "D", "F"}.issubset(registered)
+    # Steps 7/8 (E, G) still pending.
     assert "E" not in registered
     assert "G" not in registered
 
