@@ -1,0 +1,13 @@
+{
+  "name": "shipwright-test-perf",
+  "version": "0.1.0",
+  "description": "Lighthouse runner for /shipwright-test performance budget check. Runs against the project's Playwright Chromium (no extra browser install).",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "lighthouse": "13.1.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

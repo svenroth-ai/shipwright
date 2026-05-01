@@ -106,6 +106,19 @@
       "provider": "auto",
       "scope": ["sast", "sca", "secret-detection"],
       "_comment": "provider: 'auto' detects Aikido or OSS tools. Set 'oss' or 'aikido' to force a backend."
+    },
+    "performance": {
+      "enabled": true,
+      "lighthouse": {
+        "min_score": 85,
+        "lcp_max_ms": 2500
+      },
+      "bundle": {
+        "max_kb_gz": 250,
+        "build_output_dir": ".next/static"
+      },
+      "gate": "warn",
+      "_comment": "Performance budget gate (Lighthouse via Playwright + bundle gzip-size). Override per-project via shipwright_test_config.json.performance. gate: 'warn' (logs failures, pipeline continues) | 'block' (fails test phase). When switching to 'block', consider tightening lighthouse with --numberOfRuns=3 in a future release."
     }
   },
 

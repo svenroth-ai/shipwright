@@ -1,0 +1,36 @@
+{
+  "lighthouseVersion": "13.0.0-fixture",
+  "fetchTime": "2026-04-30T12:00:00.000Z",
+  "requestedUrl": "http://localhost:3000",
+  "finalUrl": "http://localhost:3000/",
+  "categories": {
+    "performance": {
+      "id": "performance",
+      "title": "Performance",
+      "score": 0.71
+    }
+  },
+  "audits": {
+    "largest-contentful-paint": {
+      "id": "largest-contentful-paint",
+      "title": "Largest Contentful Paint",
+      "score": 0.42,
+      "scoreDisplayMode": "numeric",
+      "numericValue": 4100.0,
+      "numericUnit": "millisecond",
+      "displayValue": "4.1 s"
+    },
+    "first-contentful-paint": {
+      "id": "first-contentful-paint",
+      "title": "First Contentful Paint",
+      "score": 0.65,
+      "numericValue": 2400.0
+    },
+    "interactive": {
+      "id": "interactive",
+      "title": "Time to Interactive",
+      "score": 0.55,
+      "numericValue": 5200.0
+    }
+  }
+}

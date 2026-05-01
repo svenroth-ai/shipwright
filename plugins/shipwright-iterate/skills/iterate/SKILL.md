@@ -373,8 +373,14 @@ One authoritative list, referenced everywhere in this skill.
 | `touches_shared_infra` | `src/lib/`, `src/components/ui/`, layout components | small | full test suite |
 | `cross_split` | changes span 2+ planning splits | medium | full review + full test suite |
 | `touches_public_api` | API route handlers, exported types | small | mandatory review |
+| `touches_build` | `package.json`, `*-lock.*`, `next.config.*`, `vite.config.*`, `tailwind.config.*`, `webpack.config.*`, `rollup.config.*`, `tsconfig.json` | small | performance test layer (Lighthouse + bundle gate via /shipwright-test Step 3.8) |
 
 Note: "touches_db" (ordinary query/model edits without schema changes) is NOT a risk flag.
+
+Note: `touches_build` triggers `/shipwright-test`'s Performance Budget step
+(Step 3.8). Behavior follows the project's profile/test_config (`warn` default,
+`block` opt-in). Skip-rules from Step 3.8 still apply (no `dev_url` → skip
+Lighthouse, no build artifacts → skip bundle).
 
 ---
 
@@ -746,6 +752,7 @@ Large is a "soft boundary" — force-continue supported with mandatory review + 
 | pgTAP DB Test | if new RLS | if new RLS | full suite | — |
 | E2E Update | if feature+UI | if feature+UI | always | — |
 | Design Fidelity | skip | if structural UI | if UI | — |
+| Performance Budget | if `touches_build` | if `touches_build` | if `touches_build` OR if UI | — |
 | architecture.md | if structural impact | if structural impact | if structural impact | — |
 | Test Results JSON | always | always | always | — |
 | run_config iterate_history | always | always | always | — |

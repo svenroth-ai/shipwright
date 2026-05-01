@@ -71,7 +71,53 @@ RISK_TAXONOMY = {
         "min_complexity": "medium",
         "enforces": ["full_review", "full_test_suite"],
     },
+    "touches_build": {
+        # Triggers performance budget check on iterate (mirrors what
+        # /shipwright-test Step 3.8 runs in the pipeline). Catches
+        # dependency / build-config changes that can blow bundle size or
+        # break Lighthouse score without anyone noticing until the next
+        # full pipeline. Patterns match prompt keywords; diff-driven
+        # detection uses TOUCHES_BUILD_FILE_PATTERNS via touches_build_files().
+        "patterns": [
+            r"package\.json", r"package-lock\.json",
+            r"yarn\.lock", r"pnpm-lock\.yaml", r"bun\.lockb",
+            r"npm-shrinkwrap\.json",
+            r"next\.config\.", r"vite\.config\.",
+            r"tailwind\.config\.", r"webpack\.config\.",
+            r"rollup\.config\.", r"tsconfig\.json",
+        ],
+        "min_complexity": "small",
+        "enforces": ["performance_test_layer"],
+    },
 }
+
+# File-glob patterns for diff-driven touches_build detection (basename match).
+TOUCHES_BUILD_FILE_PATTERNS = (
+    "package.json", "package-lock.json", "yarn.lock",
+    "pnpm-lock.yaml", "bun.lockb", "npm-shrinkwrap.json",
+    "next.config.js", "next.config.ts", "next.config.mjs", "next.config.cjs",
+    "vite.config.js", "vite.config.ts", "vite.config.mjs",
+    "tailwind.config.js", "tailwind.config.ts",
+    "webpack.config.js", "webpack.config.ts",
+    "rollup.config.js", "rollup.config.ts", "rollup.config.mjs",
+    "tsconfig.json",
+)
+
+
+def touches_build_files(changed_files: list[str]) -> bool:
+    """Return True if any changed file matches a build-touching pattern.
+
+    Diff-driven detection — caller passes `git diff --name-only` output.
+    Match is by basename only (path-agnostic).
+    """
+    if not changed_files:
+        return False
+    for path in changed_files:
+        name = path.replace("\\", "/").rsplit("/", 1)[-1]
+        if name in TOUCHES_BUILD_FILE_PATTERNS:
+            return True
+    return False
+
 
 COMPLEXITY_ORDER = ["trivial", "small", "medium", "large"]
 
