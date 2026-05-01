@@ -50,7 +50,10 @@ _ADR_DIR_CANDIDATES: tuple[str, ...] = (
 
 _ADR_FILE_CANDIDATES: tuple[str, ...] = (
     "decision_log.md",
-    "agent_docs/decision_log.md",
+    "agent_docs/decision_log.md",  # artifact-path-canon: legacy
+    # Pre-Shipwright brownfield projects may carry an ADR at the pre-shipwright
+    # location — adopting them is exactly the migration path moving away from.
+    # We MUST keep looking for it during /shipwright-adopt's harvest pass.
 )
 
 _README_CANDIDATES: tuple[str, ...] = ("README.md", "readme.md", "Readme.md")

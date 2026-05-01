@@ -136,9 +136,9 @@ def test_result_dict_carries_canonical_paths(tmp_path: Path) -> None:
     assert "visual_guidelines" in result
     assert "component_inventory" in result
     assert result["visual_guidelines"].name == "visual-guidelines.md"
-    assert (
-        result["visual_guidelines"].parent.name == "designs"
-    )
+    # Canonical-form construction (post-2026-04-27 mockups-dir migration).
+    # Asserts the full canonical parent path, not just the basename.
+    assert result["visual_guidelines"].parent == tmp_path / ".shipwright" / "designs"
     assert result["component_inventory"].name == "component_inventory.md"
 
 

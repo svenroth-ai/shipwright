@@ -47,5 +47,14 @@ def test_template_default_is_load_strategy():
 
 def test_template_includes_settle_after_wait():
     body = _read_template()
-    # Either waitForTimeout(500) or similar small fixed settle
-    assert "waitForTimeout(500)" in body or "waitForTimeout(500 " in body
+    # Settle pattern is now configurable via SHIPWRIGHT_CRAWL_SETTLE_MS env
+    # var (default 1500ms — bumped from 500 for Tailwind/lazy-chunk SPAs that
+    # need more than 500ms after `load` for router-mounted <Link>s to appear).
+    # Assert the *contract*, not the specific number.
+    assert "waitForTimeout(SETTLE_MS)" in body, (
+        "Template lost its post-navigation settle. SETTLE_MS-based "
+        "waitForTimeout must remain to give SPAs time to mount routes."
+    )
+    assert "SHIPWRIGHT_CRAWL_SETTLE_MS" in body, (
+        "Settle delay must remain user-overridable via env var."
+    )
