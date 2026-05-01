@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.13.0] - 2026-05-01
+
+### Added
+
+- compliance: Group A5 — CI security workflow integrity audit (post-Plan-v7). Validates `.github/workflows/security.yml` against the `shared/scripts/lib/security_workflow.py` convention lock — required permissions, critical-gate step id, SARIF upload action+category, dormant-trigger contract, fork-PR guard pair. Composite Group A handler merges A2/A3/A4 + A5 findings under a single rollup.
+- shared: `SARIF_UPLOAD_USES_PREFIX` constant + drift test — pins the canonical SARIF-uploading action (`github/codeql-action/upload-sarif`) so adopt-template and A5 audit cannot diverge.
+
+### Fixed
+
+- ci: add canonical `id: shipwright-critical-gate` to the monorepo's own `.github/workflows/security.yml` Critical-Findings step. Resolves the A5.4 drift surfaced by Group A5's first smoke run on this repo (the deployed workflow predated the convention lock). A5 now passes 6/6 against the monorepo.
+
 ## [v0.12.0] - 2026-05-01
 
 ### Added
