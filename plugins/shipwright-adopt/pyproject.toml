@@ -9,7 +9,9 @@ authors = [
     {name = "Sven Roth"}
 ]
 keywords = ["claude-code", "plugin", "adoption", "onboarding", "brownfield"]
-dependencies = []
+dependencies = [
+    "pyyaml>=6.0",
+]
 
 [project.optional-dependencies]
 dev = [

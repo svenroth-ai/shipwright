@@ -12,6 +12,7 @@ keywords = ["claude-code", "sdlc", "ai-framework", "plugin"]
 dependencies = [
     "openai>=2.30.0",
     "jsonschema>=4.18",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
