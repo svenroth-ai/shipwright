@@ -436,6 +436,32 @@ Writes — **in order**:
     `<root>/CHANGELOG.md` when present. No broken links — sections are
     omitted entirely when nothing matches.
 
+13. **Security CI scaffold.** Adopt copies the dormant scanner-chain
+    workflow into `<root>/.github/workflows/security.yml` so brownfield
+    repos start with a Phase-B-ready security baseline. Behavior:
+    - **Absent** → write the template verbatim. Workflow ships with
+      only `workflow_dispatch:` active; `pull_request:` and `schedule:`
+      triggers stay commented until the user activates them at Phase B.
+    - **Present** → preserve the existing file untouched, regardless
+      of contents. Pre-existing CodeQL workflows, hand-rolled scanner
+      configs, and earlier shipwright templates all win.
+
+    The convention lock at `shared/scripts/lib/security_workflow.py`
+    is the single source of truth for the deployed-file path, the
+    critical-gate step id (`shipwright-critical-gate`), the
+    minimum-required permissions, and the SARIF category. The drift
+    test at `shared/tests/test_security_workflow_convention.py` pins
+    the template at `shared/templates/github-actions/security.yml.template`
+    against those constants — the scaffolder cannot drift from what
+    `/shipwright-compliance` Group A5 audits.
+
+    Activation guidance — including the GitHub Actions
+    permission-implicit-`none` footgun, fork-PR semantics, and
+    Phase-B prerequisites — lives at `docs/security-ci-setup.md`.
+    The scaffolder result lands in `results.security_ci` as
+    `{wrote, path, reason}` so the Step H handoff banner can show
+    "installed (dormant)" vs "preserved" without re-stat'ing the file.
+
 **Vite DX templates (offer-only, NEVER auto-applied).** If
 `package.json` lists `vite` as a dependency (any Vite-based stack), the
 adoption handoff includes a one-line opt-in note pointing to:
@@ -541,6 +567,7 @@ Scope:         <full_app|library|cli>
 Features:      <N> FR(s) in .shipwright/planning/<split>/spec.md
 Crawl:         <enabled|skipped: <reason>>
 Review:        <completed|skipped: <reason>>
+Security CI:   <installed (dormant) | preserved (existing file untouched)>
 Commit:        <sha>
 
 Next steps:

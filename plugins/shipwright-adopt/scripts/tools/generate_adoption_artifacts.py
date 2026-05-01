@@ -451,6 +451,18 @@ def generate(
     else:
         results["e2e_baseline_generated"] = False
 
+    # Step E.13 — Security CI scaffold. Adopt is the entry point for
+    # brownfield repos, so a missing .github/workflows/security.yml is the
+    # default state — the scaffolder writes the dormant template. Existing
+    # files (prior shipwright workflow, hand-rolled CodeQL, anything else)
+    # are preserved bit-for-bit. See docs/security-ci-setup.md for activation
+    # guidance and the convention lock at shared/scripts/lib/security_workflow.py.
+    from security_workflow_scaffolder import scaffold_security_workflow  # type: ignore
+    security_ci_result = scaffold_security_workflow(project_root)
+    results["security_ci"] = security_ci_result
+    if security_ci_result["wrote"]:
+        results["written"].append(security_ci_result["path"])
+
     # Tier 5 — Visual frontend documentation. Opt-in via signal: any
     # frontend hint in the snapshot (multi-service frontend service, or
     # frontend.* in stack). Backend-only profiles get wrote_docs=false
