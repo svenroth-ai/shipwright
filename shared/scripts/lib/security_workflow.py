@@ -56,3 +56,11 @@ TEMPLATE_PATH = "shared/templates/github-actions/security.yml.template"
 # separate from CodeQL's own category. Both adopt template and any
 # audit must use this exact value.
 SARIF_CATEGORY = "shipwright-security"
+
+# Action prefix used to identify the SARIF-uploading step in a workflow.
+# The published action is versioned as `github/codeql-action/upload-sarif@v3`
+# (or `@v4`, future versions). A5 audit matches steps whose `uses:` value
+# starts with this prefix so it picks up legitimate version pins without
+# coupling to a specific tag. The template uses `@v3` today — bumping the
+# template's version pin must NOT require an audit code change.
+SARIF_UPLOAD_USES_PREFIX = "github/codeql-action/upload-sarif"

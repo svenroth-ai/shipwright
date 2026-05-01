@@ -38,7 +38,7 @@ Usage:
   /shipwright-compliance --format json    # JSON output only
 
 Groups:
-  A — Artifact + path integrity (dev-block npm/uv/make, [project.scripts], config path-fields)
+  A — Artifact + path integrity (A2 dev-block npm/uv/make, A3 [project.scripts], A4 config path-fields, A5 CI security workflow integrity)
   B — Config ↔ Config ↔ Event-log coherence (splits, sections, events, reverse git scan)
   C — Planning internal coherence (preventive re-run of plan_checks)
   D — Event-log FR coverage (uncovered FRs, stale refs, promised-not-delivered, last-build state)
@@ -154,11 +154,10 @@ B4 (matching event) to compare against. Coverage for adopted projects
 comes from B7 (commit-on-default-branch ↔ event match) and Group G
 (commit-quality scans), which both run regardless of split status.
 
-Follow-up iterates (separate from Sub-Iterate C):
-
-- **Group A5 (later iterate):** CI security workflow integrity —
-  consumes the convention from `shared/scripts/lib/security_workflow.py`
-  laid down by the adopt-iterate.
+All seven Plan-v7 groups are wired AND the post-Plan-v7 A5 follow-up
+(CI security workflow integrity) is live. A5 ships in the Group A
+rollup via a composite registry handler that merges A2/A3/A4 (group_a)
+and A5 (group_a5) findings.
 
 `audit_config.json` schema (extend in `audit_detector._DEFAULT_CONFIG`):
 
@@ -178,3 +177,9 @@ Follow-up iterates (separate from Sub-Iterate C):
 - `retention.rule_a/rule_b/rule_c` — per-rule on/off switches for B7
   (lets users keep rule data while disabling individual rules for
   archaeology runs).
+- `a5_workflow_path` / `a5_required_permissions` /
+  `a5_critical_gate_step_id` / `a5_sarif_category` — escape hatches for
+  projects that legitimately diverge from the convention-lock at
+  `shared/scripts/lib/security_workflow.py`. `null` (default) means
+  "consume the constant"; bad-type overrides fall back to the constant
+  rather than crashing the audit.

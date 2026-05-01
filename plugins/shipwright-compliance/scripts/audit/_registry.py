@@ -14,17 +14,27 @@ from scripts.audit import audit_detector
 def register_all() -> None:
     """Register every implemented group with the detector.
 
-    Sub-Iterate C (plan v7 Steps 7+8) wired Groups E and G; the registry
-    now covers every Plan-v7 group A..G. Future iterates that add
-    cross-cutting checks should register here in alphabetical order.
+    Sub-Iterate C (plan v7 Steps 7+8) wired Groups E and G; the post-Plan-v7
+    A5 follow-up (CI security workflow integrity) splits Group A across two
+    modules. Future iterates that add cross-cutting checks should register
+    here in alphabetical order.
     """
     # Reset registry to avoid double-registration when called twice
     # (tests call this repeatedly with fresh fixtures).
     audit_detector._GROUPS.clear()
 
-    # Group A — Artifact / path integrity (Step 4).
-    from scripts.audit import group_a
-    audit_detector.register_group("A", group_a.run)
+    # Group A — Artifact / path integrity. The detector's registry holds
+    # one handler per group letter, so A2/A3/A4 (group_a) and A5 (group_a5)
+    # ship as a single composite handler that merges their findings. This
+    # keeps audit-report.md's per-group rollup consistent with the seven-
+    # group plan.
+    from scripts.audit import group_a, group_a5
+
+    def _group_a_combined(project_root, config, data):
+        return group_a.run(project_root, config, data) + \
+               group_a5.run(project_root, config, data)
+
+    audit_detector.register_group("A", _group_a_combined)
 
     # Group B — Config / event-log coherence (Step 5).
     from scripts.audit import group_b
