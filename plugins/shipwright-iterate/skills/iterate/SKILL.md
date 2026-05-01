@@ -459,9 +459,12 @@ Create `.shipwright/planning/iterate/{date}-{short-description}.md` using this t
 ```
 
 ### Step 2: Spec Update (always)
-1. Identify which spec file(s) cover the affected area
-2. **Append** a new FR entry to the appropriate spec section
-3. If `shipwright_sync_config.json` exists, add mappings for new files
+1. Identify which spec file(s) cover the affected area.
+2. Decide: does the change extend an EXISTING FR, or warrant a NEW FR?
+   - **Extend existing** (typical for additive side-effects on an existing endpoint — e.g. POST starts writing a new file): update the FR table-row description + append new `- (E) Given … when … then …` acceptance-criteria lines covering the new behavior + any idempotency / no-op guarantees. Reference the run_id + ADR.
+   - **New FR** (typical for new endpoints, new pages, new user-visible flows): append a new table row + acceptance-criteria block.
+   - **Skipping because "additive" is NOT an option.** The Phase Matrix marks this step as `always` for FEATURE — that is load-bearing. "Additive" is a reason the update is *small*, not a reason to skip.
+3. If `shipwright_sync_config.json` exists, add mappings for new files.
 
 ### Step 3: Mini-Plan (small: inline, medium: persisted)
 See `references/iteration-planning.md` for protocol.
@@ -568,8 +571,16 @@ Go to **Finalization** below.
 ## Path B: CHANGE (modify existing behavior)
 
 Same steps as FEATURE, with these differences:
-- Step 2: **Update** existing FR entry instead of appending new one
+- Step 2: see below — same `extend vs new` framing as FEATURE, biased toward extending the existing FR
 - Step 6: Update existing tests to reflect new expected behavior, then implement
+
+### Step 2: Spec Update (always — CHANGE)
+1. Identify which spec file(s) cover the affected area.
+2. Decide: does the change extend an EXISTING FR, or carve out a NEW FR?
+   - **Extend existing** (default for CHANGE — modifying behavior of an existing endpoint, page, or component): update the FR table-row description to reflect the new behavior + append new `- (E) Given … when … then …` acceptance-criteria lines covering the modified behavior + any backwards-compatibility / migration guarantees. Reference the run_id + ADR.
+   - **New FR** (rare for CHANGE — only when the modification carves out a new user-visible capability alongside the old one): append a new table row + acceptance-criteria block.
+   - **Skipping because the change is "small" or "additive" is NOT an option.** The Phase Matrix marks this step as `always` for CHANGE — that is load-bearing. Scope size is a reason the update is *small*, not a reason to skip.
+3. If `shipwright_sync_config.json` exists, update mappings to reflect any file moves or renames.
 
 ---
 
@@ -832,8 +843,16 @@ If drift detected, update specs. If iterate spec exists (medium+), check off com
 
 ### F2: Architecture Update (conditional)
 
-Check: "Did I add a new route, component, schema, service, or data flow?"
-If yes: pass `--architecture-impact component|data-flow|convention` flag to `write_decision_log.py` in F3.
+Check ANY of:
+- New route / endpoint, OR existing route gaining a materially new behavior
+- New component / page
+- New schema / migration
+- New service / subprocess
+- **New write surface** (any new file path the project writes to, even one file under an existing dir)
+- **New read surface** (any new external file or API the project reads from)
+- New convention (naming, config layout, file location)
+
+If yes: update `architecture.md` to reflect the new state (Data Flow section for surfaces; State / Component / Convention sections for the rest), AND pass `--architecture-impact component|data-flow|convention` flag to `write_decision_log.py` in F3.
 
 ### F3: Decision Log (ADR)
 
