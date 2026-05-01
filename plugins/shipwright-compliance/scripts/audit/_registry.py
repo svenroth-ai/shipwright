@@ -22,12 +22,20 @@ def register_all() -> None:
     # (tests call this repeatedly with fresh fixtures).
     audit_detector._GROUPS.clear()
 
+    # Group A — Artifact / path integrity (Step 4).
+    from scripts.audit import group_a
+    audit_detector.register_group("A", group_a.run)
+
     # Group C — Planning coherence (Step 6).
     from scripts.audit import group_c
     audit_detector.register_group("C", group_c.run)
+
+    # Group D — Event-log FR coverage (Step 4).
+    from scripts.audit import group_d
+    audit_detector.register_group("D", group_d.run)
 
     # Group F — ADR structural integrity (Step 6).
     from scripts.audit import group_f
     audit_detector.register_group("F", group_f.run)
 
-    # Steps 4/5/7/8 add Groups A, B, D, E, G here.
+    # Steps 5/7/8 add Groups B, E, G here.
