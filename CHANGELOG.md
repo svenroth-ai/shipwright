@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.14.0] - 2026-05-02
+
+### Added
+
+- profiles: new `shared/profiles/python-plugin-monorepo.json` stack profile for Python-only plugin monorepos with no deployable web server. Matches via the existing Jaccard scorer in `profile_matcher.py`; reaches confidence 1.0 against a python-only signature without falling back to `generic`. Used by Shipwright's own self-adoption.
+
+### Changed
+
+- claude-md template + adopt's `_render_claude_md`: expand the **Ongoing Changes** section so adopted/onboarded projects surface what `/shipwright-iterate` automates (ADR entry, `CHANGELOG-unreleased.d/` fragment, Conventional Commits on an `iterate/<slug>` branch, FR / acceptance-criteria sync, compliance + dashboard refresh) and explicitly state "Do NOT edit code directly". Greenfield (`/shipwright-project`) and brownfield (`/shipwright-adopt`) pipelines stay mirrored — a new test in `shared/tests/test_claude_md_template.py` pins the bullet contract across both paths so future drift fails loud.
+- shipwright: the framework monorepo is now self-adopted into its own SDLC. `/shipwright-adopt --scope library --profile python-plugin-monorepo` runs cleanly on this repo and the resulting artifacts (`.shipwright/agent_docs/`, `.shipwright/planning/01-adopted/spec.md`, `.shipwright/compliance/`, root configs, `shipwright_events.jsonl`) are committed. `/shipwright-iterate` works natively from now on — no more orientation-only mode for framework changes.
+
+### Fixed
+
+- adopt: pick the next-free ADR id from an existing `.shipwright/agent_docs/decision_log.md` instead of hardcoding `ADR-0001` (4-digit) for the adoption marker. Brownfield repos with pre-existing 3-digit ADRs (e.g. `ADR-001..ADR-058`) now get adoption ADR `ADR-059` rather than a 4-digit `ADR-0053` that silently collided with the existing log. Output canon is now uniformly 3-digit zero-padded; the renderer raises if the next-free id would exceed 999. The merge marker carries a dynamic preamble naming the actual range (`up to ADR-058 (N ADR section(s))`) and the chosen adoption id. Surfaced by the shipwright-webui 2026-04-30 adopt run; webui repo is the reference fixture.
+- adopt: render adoption + retroactive ADRs as compact-form H3 (`### ADR-NNN: …`) instead of H2-with-colon (`## ADR-NNN: …`). The H2 form matched neither the compact (`^### ADR-…:`) nor the verbose (`^## ADR-… | … | Commit …`) regex in `shared/scripts/lib/drift_parsers.py:parse_adr_headers`, so downstream G3 / F1 / F2 / F3 audits silently skipped adopt's adoption ADR and any retroactive ADRs. Sub-section headings (`Context` / `Decision` / `Consequences` / `Rejected alternatives`) demoted to H4 to preserve hierarchy under H3. The A4 verifier split regex now accepts both H2 and H3 boundaries; the A3 verifier no longer hardcodes `ADR-0001` and accepts any 3+ digit id with `Adopt` in the title across H2/H3 + suffixes. New round-trip test in `shared/tests/test_verifiers_adopt.py` pins the contract that adopt's output is parseable by `parse_adr_headers`.
+- adopt: `validate_adoption.py:_count_adrs` was matching only H2 (`## ADR-NNN`) headings, missing the H3 (`### ADR-NNN`) canonical form introduced in commit `63352ff` (brownfield ADR parser round-trip). Density warning was firing falsely on every adoption that used the new H3 canon. Updated the regex to accept both H2 and H3 boundaries, matching the same compatibility pattern the A4 verifier already uses.
+
 ## [v0.13.0] - 2026-05-01
 
 ### Added
