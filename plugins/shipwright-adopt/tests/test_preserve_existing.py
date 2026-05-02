@@ -16,7 +16,21 @@ from lib.preserve_existing import (
     count_adr_sections,
     is_loadbearing_claude_md,
     merge_decision_log,
+    parse_max_adr_id,
     preserve_if_exists,
+)
+
+
+_BROWNFIELD_LOG_WITH_GAP = (
+    "# Decision Log — original\n\n"
+    "## ADR-001: Use Postgres\n\nDecided 2026-01-01.\n\n---\n\n"
+    "## ADR-002: Adopt monorepo\n\nDecided 2026-01-05.\n\n---\n\n"
+    "## ADR-027: Switch to NATS\n\nDecided 2026-02-10.\n\n---\n\n"
+    "## ADR-045: Pivot to assistant-ui\n\nDecided 2026-03-01.\n\n---\n\n"
+    "## ADR-045b: Pivot follow-up details\n\nDisambig suffix.\n\n---\n\n"
+    "## ADR-053: ADR-053: Stylistic title duplication\n\n"
+    "Decided 2026-03-20.\n\n---\n\n"
+    "### ADR-058: Compact H3 entry\n\nDecided 2026-04-01.\n"
 )
 
 
@@ -145,3 +159,76 @@ def test_merge_decision_log_no_merge_when_existing_has_no_adrs(tmp_path: Path) -
     assert merged == new_log_content
     assert info["existing_adrs"] == 0
     assert info["action"] == "overwritten"
+
+
+# parse_max_adr_id
+# ---------------------------------------------------------------------------
+
+def test_parse_max_adr_id_finds_highest_3plus_digit_id() -> None:
+    """Robust against H3, disambiguation suffixes, and title duplication."""
+    assert parse_max_adr_id(_BROWNFIELD_LOG_WITH_GAP) == 58
+
+
+def test_parse_max_adr_id_returns_zero_for_empty_content() -> None:
+    assert parse_max_adr_id("# Decision Log\n\n_no ADRs_\n") == 0
+
+
+def test_parse_max_adr_id_ignores_under_3_digit_historical_ids() -> None:
+    """1- and 2-digit ids predate Shipwright's canon — adopt won't
+    inherit them as the next-free-id source."""
+    body = (
+        "# Decision Log\n\n"
+        "## ADR-1: Ancient one-digit\n\n---\n\n"
+        "## ADR-12: Older two-digit\n\n---\n\n"
+    )
+    assert parse_max_adr_id(body) == 0
+
+
+def test_parse_max_adr_id_handles_h3_compact_format() -> None:
+    body = (
+        "# Decision Log\n\n"
+        "### ADR-007: Sentry for errors\n\n---\n\n"
+        "### ADR-099: A later one\n\n---\n\n"
+    )
+    assert parse_max_adr_id(body) == 99
+
+
+def test_parse_max_adr_id_handles_disambiguation_suffix() -> None:
+    """ADR-045b should be recognised as numeric id 45 (suffix dropped)."""
+    body = (
+        "# Decision Log\n\n"
+        "## ADR-045: Original\n\n---\n\n"
+        "## ADR-045b: Disambig\n\n---\n\n"
+    )
+    assert parse_max_adr_id(body) == 45
+
+
+def test_parse_max_adr_id_handles_duplicated_title_form() -> None:
+    """The webui-style "### ADR-053: ADR-053: Foo" must still match."""
+    body = "### ADR-053: ADR-053: Stylistic title duplication\n\n"
+    assert parse_max_adr_id(body) == 53
+
+
+# Brownfield-with-gap regression fixture (from the bug report)
+# ---------------------------------------------------------------------------
+
+def test_merge_decision_log_reports_max_existing_in_info(tmp_path: Path) -> None:
+    """merge_decision_log returns the parsed max id so callers can
+    pick the next free ADR number without re-scanning the file."""
+    new_log_content = (
+        "# Decision Log — adopted\n\n"
+        "## ADR-059: Adopt this repository\n\nNew adoption.\n"
+    )
+    existing = tmp_path / "decision_log.md"
+    existing.write_text(_BROWNFIELD_LOG_WITH_GAP, encoding="utf-8")
+    merged, info = merge_decision_log(
+        new_log_content, existing, adoption_adr_id=59,
+    )
+    assert info["max_existing_adr_id"] == 58
+    assert info["existing_adrs"] >= 5  # 7 sections in the fixture
+    # Dynamic preamble carries the actual range, not a hardcoded number
+    assert "ADR-058" in merged
+    assert "Adoption ADR: ADR-059." in merged
+    # Existing ADRs still survive verbatim
+    assert "ADR-045b: Pivot follow-up" in merged
+    assert "ADR-053: ADR-053: Stylistic title duplication" in merged

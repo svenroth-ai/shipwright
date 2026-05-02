@@ -49,9 +49,15 @@ No Mermaid in V1 (V2 follow-up epic rolls out Mermaid + arc42 together).
 
 | Slot | Source |
 |---|---|
-| ADR-0001 | Static adoption ADR (date, profile, scope, commit SHA) |
-| ADR-0002+ | `enrichment.adrs[]` — one per `git.major_refactor_commits[]` |
+| Adoption ADR | Static adoption ADR (date, profile, scope, commit SHA) — id is `max(existing) + 1`, 3-digit zero-padded, or `ADR-001` when no canonical ids exist |
+| Retroactive ADRs | `enrichment.adrs[]` — one per `git.major_refactor_commits[]`, numbering continues from the adoption id |
 | All retroactive ADRs | Tagged `Status: accepted (retroactive, llm-inferred)` |
+
+**Note:** Output canon is **3-digit zero-padded** (`ADR-NNN`). When an
+existing log already declares ADRs, the adoption ADR's id is the
+**next-free** number after the parsed max. The renderer fails loud rather
+than serialise a 4-digit id, even if `max + 1 > 999` — that boundary is
+a project-wide convention upgrade, not adopt's call.
 
 ## .shipwright/agent_docs/build_dashboard.md
 

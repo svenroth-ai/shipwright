@@ -101,21 +101,35 @@ def check_a2_spec_has_frs(project_root: Path) -> dict[str, Any]:
 
 
 def check_a3_adoption_adr(project_root: Path) -> dict[str, Any]:
-    """A3 (Tier-1): decision_log.md has ADR-0001 with 'Adopt' in the title."""
-    name = "A3 decision_log.md has adoption ADR-0001"
+    """A3 (Tier-1): decision_log.md has an adoption ADR (any id, 'Adopt' in title).
+
+    The id is no longer hardcoded to ADR-0001: when /shipwright-adopt
+    runs against a brownfield repo whose existing decision_log.md
+    already declares 3-digit canonical ADRs, the adoption ADR takes
+    the next-free id (e.g. ADR-059 with 58 pre-existing entries).
+    Matching on the canonical title is the stable signal across both
+    greenfield (ADR-001) and brownfield (ADR-NNN where N is max+1).
+    """
+    name = "A3 decision_log.md has adoption ADR"
     log = project_root / ".shipwright" / "agent_docs" / "decision_log.md"
     if not log.exists():
         return make_finding("A3", STATUS_FAIL, "missing .shipwright/agent_docs/decision_log.md",
                             name=name, provenance="adopt_adr_check")
     content = log.read_text(encoding="utf-8", errors="ignore")
-    if re.search(r"ADR-0001[^\n]*[Aa]dopt", content):
-        return make_finding("A3", STATUS_PASS, "ADR-0001 Adopt decision found",
+    # Match any heading-level (H2/H3) ADR-NNN with at least 3 digits and
+    # 'Adopt' in the title. Suffixes (045b) tolerated.
+    if re.search(
+        r"^#{2,3}\s+ADR-\d{3,}[a-z]?:[^\n]*[Aa]dopt",
+        content,
+        re.MULTILINE,
+    ):
+        return make_finding("A3", STATUS_PASS, "adoption ADR found",
                             name=name, provenance="adopt_adr_check")
     return make_finding(
         "A3", STATUS_FAIL,
-        "ADR-0001 not found or doesn't reference 'Adopt' in title",
+        "no adoption ADR found (expected '## ADR-NNN: Adopt ...' or H3 equivalent)",
         name=name,
-        remediation="Add an ADR-0001 entry that documents the adoption decision",
+        remediation="Add an adoption ADR entry that documents the adoption decision",
         provenance="adopt_adr_check",
     )
 
@@ -128,8 +142,10 @@ def check_a4_backfill_quality(project_root: Path) -> dict[str, Any]:
         return make_finding("A4", STATUS_SKIP, "no decision_log.md — nothing to assess",
                             name=name, provenance="adopt_adr_check")
     content = log.read_text(encoding="utf-8", errors="ignore")
-    # Find ADR-NNNN entries with 'retroactive' tag
-    entries = re.split(r"^## ADR-\d+", content, flags=re.MULTILINE)
+    # Split on either H2 or H3 ADR boundaries. Adopt now writes H3
+    # (matches Shipwright's compact-form canon and `parse_adr_headers`);
+    # older adopt-output and user-authored logs may still use H2.
+    entries = re.split(r"^#{2,3}\s+ADR-\d+", content, flags=re.MULTILINE)
     retroactive = [e for e in entries if "retroactive" in e.lower()]
     if not retroactive:
         return make_finding("A4", STATUS_SKIP, "no retroactive ADRs found",

@@ -304,8 +304,9 @@ def test_harvested_decisions_land_in_decision_log_md(tmp_path: Path) -> None:
     decision_log = (tmp_path / ".shipwright" / "agent_docs" / "decision_log.md").read_text(
         encoding="utf-8"
     )
-    # Adopt's own ADR-0001 still anchors the file.
-    assert "ADR-0001: Adopt this repository into the Shipwright SDLC" in decision_log
+    # Adopt's own adoption ADR still anchors the file. Greenfield → ADR-001
+    # (3-digit zero-padded canon).
+    assert "ADR-001: Adopt this repository into the Shipwright SDLC" in decision_log
     # Prior-art content lifted verbatim.
     assert "USER-AUTHORED-ADR-CONTENT" in decision_log
     assert "WHY-WE-PICKED-POSTGRES" in decision_log
@@ -424,7 +425,8 @@ def test_no_prior_art_falls_back_to_today_behavior(tmp_path: Path) -> None:
     conventions = (tmp_path / ".shipwright" / "agent_docs" / "conventions.md").read_text(
         encoding="utf-8"
     )
-    # Adopt scaffold ADR-0001 only — no Imported decisions section.
-    assert "ADR-0001" in decision_log
+    # Adopt scaffold ADR-001 only — no Imported decisions section.
+    # Greenfield (no existing log) → 3-digit zero-padded ADR-001.
+    assert "ADR-001:" in decision_log
     assert "Imported decisions" not in decision_log
     assert "Imported from" not in conventions

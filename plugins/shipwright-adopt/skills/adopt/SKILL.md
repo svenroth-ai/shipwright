@@ -553,7 +553,8 @@ Inferred <N> functional requirements from existing codebase.
 Seeded compliance artifacts (SBOM, change-history, RTM skeleton).
 Test evidence starts collecting from next /shipwright-test run.
 
-See .shipwright/agent_docs/decision_log.md ADR-0001.
+See .shipwright/agent_docs/decision_log.md for the adoption ADR
+(id is `max(existing) + 1`, 3-digit zero-padded — ADR-001 on greenfield).
 ```
 
 3. Print a handoff message:

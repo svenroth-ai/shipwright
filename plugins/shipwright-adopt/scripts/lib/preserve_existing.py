@@ -13,10 +13,12 @@ Policy:
 - CLAUDE.md ABOVE a byte threshold (1024 by default) is treated as
   load-bearing and NOT overwritten — adopt's suggested content goes to
   `.shipwright/adopt/CLAUDE.md.adopt-suggested` instead.
-- decision_log.md with any existing `## ADR-` heading triggers a merge:
-  the new adoption ADR-0001 is prepended; the existing body is preserved
-  verbatim. The ADRs the user wrote keep their original numbering and
-  ordering.
+- decision_log.md with any existing `## ADR-` (or `### ADR-`) heading
+  triggers a merge: the new adoption ADR is prepended; the existing
+  body is preserved verbatim. The adoption ADR's id is the next free
+  3-digit number — ADR-001 on a greenfield log, otherwise
+  `max(existing) + 1` (see `parse_max_adr_id`). The ADRs the user
+  wrote keep their original numbering and ordering.
 - architecture.md / conventions.md are backed up but overwritten — they
   are less load-bearing and easy to recover from `.preserved`.
 
@@ -40,7 +42,23 @@ SUGGESTED_CLAUDE_REL = ".shipwright/adopt/CLAUDE.md.adopt-suggested"
 LOADBEARING_CLAUDE_BYTE_THRESHOLD = 1024
 
 
-_ADR_HEADING_RE = re.compile(r"^##\s+ADR-\d+", re.MULTILINE)
+# Used by count_adr_sections — lenient on heading level (H2 or H3) and
+# on digit length, since the merge-vs-overwrite decision must err on the
+# side of preserving any existing user ADRs even if their numbering pre-
+# dates Shipwright's 3-digit canon.
+_ADR_HEADING_RE = re.compile(r"^#{2,3}\s+ADR-\d+", re.MULTILINE)
+
+# Used by parse_max_adr_id — strict 3+ digit match (Shipwright's output
+# canon). Tolerant of:
+#   * H2 vs H3 heading levels (## ADR-NNN: vs ### ADR-NNN:),
+#   * the 045b/045a disambiguation-suffix convention,
+#   * stylistic title duplication ("### ADR-053: ADR-053: Foo").
+# A 1- or 2-digit historical id is intentionally NOT contributed to the
+# max — the caller is fine starting at ADR-001 in that degenerate case.
+_ADR_ID_PARSE_RE = re.compile(
+    r"^#{2,3}\s+ADR-(\d{3,})[a-z]?:",
+    re.MULTILINE,
+)
 
 
 def preserve_if_exists(project_root: Path, rel_path: str) -> Path | None:
@@ -62,7 +80,11 @@ def preserve_if_exists(project_root: Path, rel_path: str) -> Path | None:
 
 
 def count_adr_sections(decision_log: Path) -> int:
-    """Count `## ADR-NNNN` headings in the file. 0 if missing or unreadable."""
+    """Count `## ADR-NNNN` (or `### ADR-NNNN`) headings in the file.
+
+    Returns 0 if the file is missing or unreadable. Lenient on heading
+    level and digit length — see `_ADR_HEADING_RE` for the rationale.
+    """
     if not decision_log.is_file():
         return 0
     try:
@@ -70,6 +92,26 @@ def count_adr_sections(decision_log: Path) -> int:
     except OSError:
         return 0
     return len(_ADR_HEADING_RE.findall(body))
+
+
+def parse_max_adr_id(content: str) -> int:
+    """Return the highest 3+ digit numeric ADR id in ``content``, or 0.
+
+    Used by /shipwright-adopt to pick the next-free ADR id when an
+    existing decision_log.md is present. Robust against the four
+    real-world variations seen in shipwright-webui's log: H2 vs H3
+    headings, 045b-style disambiguation suffixes, and stylistic title
+    duplication ("### ADR-053: ADR-053: Foo").
+
+    1- or 2-digit historical ids do not contribute to the max — the
+    caller falls back to ADR-001 in that degenerate case (the project
+    isn't following Shipwright's 3-digit canon, so colliding numbering
+    is the user's lookout, not adopt's).
+    """
+    matches = _ADR_ID_PARSE_RE.findall(content)
+    if not matches:
+        return 0
+    return max(int(n) for n in matches)
 
 
 def is_loadbearing_claude_md(
@@ -86,34 +128,77 @@ def is_loadbearing_claude_md(
         return False
 
 
-def merge_decision_log(new_content: str, existing: Path) -> tuple[str, dict[str, Any]]:
+def merge_decision_log(
+    new_content: str,
+    existing: Path,
+    *,
+    adoption_adr_id: int | None = None,
+) -> tuple[str, dict[str, Any]]:
     """Merge new adoption decision_log content with an existing user file.
 
     Strategy: if the existing file has any ADR sections, prepend the new
-    content's adoption ADR-0001 above the existing body (which keeps all
+    content's adoption ADR above the existing body (which keeps all
     historical ADRs intact, with their original numbering). If no ADRs
     are present, the existing file is treated as a placeholder and the
     new content replaces it.
 
-    Returns (merged_content, info). `info` carries `existing_adrs` and
-    `action` for the preservation log.
+    The merge preamble reports the actual range of pre-existing ADRs
+    (e.g. "Pre-existing entries: up to ADR-058 (58 ADR section(s))")
+    rather than hardcoding the previous-iterate's "ADR-052" snapshot.
+    `adoption_adr_id`, when provided, is reflected in the preamble so a
+    reader can see at a glance which entry adopt added.
+
+    Returns (merged_content, info). `info` carries:
+        - existing_adrs:        count of `^## ADR-` / `^### ADR-` blocks
+        - max_existing_adr_id:  highest 3+ digit numeric id (or 0 if none)
+        - action:               "merged" or "overwritten"
     """
     existing_adrs = count_adr_sections(existing)
     if existing_adrs == 0:
-        return new_content, {"existing_adrs": 0, "action": "overwritten"}
+        return new_content, {
+            "existing_adrs": 0,
+            "max_existing_adr_id": 0,
+            "action": "overwritten",
+        }
 
     existing_body = existing.read_text(encoding="utf-8", errors="ignore")
+    max_existing = parse_max_adr_id(existing_body)
+
+    preamble_lines = [
+        "<!-- Adoption merge marker — top of file is /shipwright-adopt scaffold,",
+        "     followed by the existing decision log preserved verbatim.",
+    ]
+    if max_existing > 0:
+        preamble_lines.append(
+            f"     Pre-existing entries: up to ADR-{max_existing:03d} "
+            f"({existing_adrs} ADR section(s) detected).",
+        )
+    else:
+        preamble_lines.append(
+            f"     Pre-existing entries: {existing_adrs} ADR section(s) detected "
+            f"(no 3+ digit canonical ids found — kept verbatim).",
+        )
+    if adoption_adr_id is not None:
+        preamble_lines.append(
+            f"     Adoption ADR: ADR-{adoption_adr_id:03d}.",
+        )
+    preamble_lines.append(
+        "     Original file backed up to .shipwright/adopt/backups/. -->",
+    )
+    preamble = "\n".join(preamble_lines) + "\n\n"
 
     merged = (
-        "<!-- Adoption merge marker — top of file is /shipwright-adopt scaffold,\n"
-        "     followed by the existing decision log preserved verbatim.\n"
-        "     Original file backed up to .shipwright/adopt/backups/. -->\n\n"
+        preamble
         + new_content.rstrip()
         + "\n\n---\n\n"
         + "## Existing decision log (preserved during adoption)\n\n"
         + existing_body.lstrip()
     )
-    return merged, {"existing_adrs": existing_adrs, "action": "merged"}
+    return merged, {
+        "existing_adrs": existing_adrs,
+        "max_existing_adr_id": max_existing,
+        "action": "merged",
+    }
 
 
 def record_preservation_action(

@@ -25,9 +25,41 @@ from lib.preserve_existing import (  # noqa: E402
     SUGGESTED_CLAUDE_REL,
     is_loadbearing_claude_md,
     merge_decision_log,
+    parse_max_adr_id,
     preserve_if_exists,
     record_preservation_action,
 )
+
+
+# Adopt's output canon: ADR ids are 3-digit zero-padded. We refuse to
+# serialise a 4-digit id even if the counter says so (Shipwright never
+# expected that, and the downstream parsers in shared/scripts/lib/
+# drift_parsers.py + group_g.py treat 4-digit ids as a smell). If a
+# real project ever reaches >999 ADRs, that's a Shipwright-wide
+# convention upgrade, not a silent serialisation choice in adopt.
+ADR_OUTPUT_MAX_NUMBER = 999
+
+
+def _next_adr_start_number(project_root: Path) -> int:
+    """Pick the next free ADR id for adopt's adoption + retroactive entries.
+
+    Reads `<project_root>/.shipwright/agent_docs/decision_log.md` if it
+    exists and parses the highest 3+ digit numeric ADR id. The first
+    adopt-written ADR (the adoption decision) takes ``max + 1``; any
+    retroactive ADRs continue from there.
+
+    Returns 1 (so adoption ADR is ADR-001) when no existing log exists
+    or no canonical ids are detected.
+    """
+    log_path = project_root / AGENT_DOCS_DIR / "decision_log.md"
+    if not log_path.is_file():
+        return 1
+    try:
+        body = log_path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return 1
+    max_id = parse_max_adr_id(body)
+    return max_id + 1 if max_id > 0 else 1
 
 
 def _utc_today() -> str:
@@ -90,7 +122,9 @@ def _render_claude_md(
 This project was adopted into Shipwright on {_utc_today()}. Prior code history is preserved.
 Use `/shipwright-iterate` for all future changes. Do NOT use `/shipwright-project`, `/shipwright-plan`, or `/shipwright-build` directly on this repo.
 
-See `{AGENT_DOCS_DIR}/decision_log.md` ADR-0001 for the adoption decision.
+See `{AGENT_DOCS_DIR}/decision_log.md` for the adoption ADR (the topmost
+`Adopt this repository into the Shipwright SDLC` entry — its id is the
+next-free 3-digit number after any pre-existing ADRs).
 """
 
 
@@ -219,17 +253,43 @@ def _render_decision_log(
     features_count: int,
     retroactive_adrs: list[dict[str, Any]],
     harvested_decisions: tuple[str, str] | None = None,
+    start_adr_number: int = 1,
 ) -> str:
     """Render decision_log.md.
 
+    `start_adr_number` is the numeric id assigned to the adoption ADR.
+    Defaults to 1 (greenfield). When an existing decision_log.md is
+    present, callers compute ``max + 1`` via ``_next_adr_start_number``
+    and pass it here so adopt does not silently collide with already-
+    written user ADRs.
+
+    Output canon is 3-digit zero-padded — adopt refuses to serialise a
+    4-digit id, even if the counter exceeds 999 (see
+    ``ADR_OUTPUT_MAX_NUMBER``). If the computed range would overflow,
+    a ``ValueError`` is raised so the operator audits their existing
+    log instead of silently inheriting non-canonical ids.
+
     `harvested_decisions` is an optional `(content, source_path)` tuple
     produced by `prior_art_harvester.harvest_decision_log`. When present,
-    the harvested content is appended verbatim AFTER the adopt ADR-0001 +
+    the harvested content is appended verbatim AFTER the adopt adoption +
     retroactive ADRs, with an attribution header. The harvested entries
     keep their original numbering — adopt's "Adopted into Shipwright SDLC"
     entry is the *latest* in the log, with the prior art preserved
     underneath it.
     """
+    if start_adr_number < 1:
+        raise ValueError(
+            f"start_adr_number must be >= 1, got {start_adr_number}",
+        )
+    last_id = start_adr_number + len(retroactive_adrs)
+    if last_id > ADR_OUTPUT_MAX_NUMBER:
+        raise ValueError(
+            f"adopt would render an ADR id beyond {ADR_OUTPUT_MAX_NUMBER:03d} "
+            f"(start={start_adr_number}, retroactive={len(retroactive_adrs)}, "
+            f"last={last_id}). Audit the existing decision_log.md for "
+            f"non-canonical or anomalous ADR ids — Shipwright's output "
+            f"canon is 3-digit zero-padded.",
+        )
     today = _utc_today()
     commit = commit_sha or "HEAD"
     harvest_note = (
@@ -239,29 +299,33 @@ def _render_decision_log(
         if harvested_decisions is not None
         else ""
     )
+    # ADR heading is H3 to match Shipwright's compact-form canon
+    # (`shared/scripts/tools/write_decision_log.py` and the H3 form
+    # parsed by `shared/scripts/lib/drift_parsers.py:parse_adr_headers`).
+    # Sub-sections move to H4 to preserve hierarchy under the H3 ADR.
     header = f"""# Decision Log — {project_name}
 {harvest_note}
-## ADR-0001: Adopt this repository into the Shipwright SDLC
+### ADR-{start_adr_number:03d}: Adopt this repository into the Shipwright SDLC
 
 - **Status**: accepted
 - **Date**: {today}
 - **Commit**: `{commit}`
 
-### Context
+#### Context
 
 This repository existed with {features_count} detected feature(s) and substantive git history before /shipwright-adopt ran. The goal is to bring it under the Shipwright SDLC (CLAUDE.md + .shipwright/agent_docs + .shipwright/planning/ + .shipwright/compliance/ + configs) without disrupting the existing codebase.
 
-### Decision
+#### Decision
 
 Adopted into Shipwright using profile `{profile}` and scope `{scope}`. Retroactively marked `completed_steps = ["project", "plan", "build", "test"]` so that `/shipwright-iterate` and downstream skills (`/shipwright-compliance`, `/shipwright-test`) work as on a natively-built project.
 
-### Consequences
+#### Consequences
 
 - Future changes MUST go through `/shipwright-iterate` (not `/shipwright-project`/`/shipwright-plan`/`/shipwright-build`).
 - Compliance reports (RTM, SBOM, change-history) are seeded; test-evidence starts collecting from the first `/shipwright-test` run.
 - Any existing E2E baseline auto-generated by Adopt (under `e2e/flows/adopted-baseline.spec.ts`) is a regression guard, not a substitute for real acceptance tests.
 
-### Rejected alternatives
+#### Rejected alternatives
 
 - Manual `/shipwright-project` init: would lose git history and force re-description of existing code.
 - No adoption (ad-hoc `/shipwright-iterate`): would mean missing configs, no compliance reports, and the audit pipeline would silently no-op.
@@ -269,25 +333,25 @@ Adopted into Shipwright using profile `{profile}` and scope `{scope}`. Retroacti
 ---
 """
     body = header
-    for idx, adr in enumerate(retroactive_adrs, start=2):
+    for idx, adr in enumerate(retroactive_adrs, start=start_adr_number + 1):
         sha = adr.get("sha", "")
         subject = adr.get("subject", "(no subject)")
         context = adr.get("context", "—")
         decision = adr.get("decision", "—")
         consequences = adr.get("consequences", "—")
         body += f"""
-## ADR-{idx:04d}: {subject}
+### ADR-{idx:03d}: {subject}
 
 - **Status**: accepted (retroactive, llm-inferred)
 - **Commit**: `{sha}`
 
-### Context
+#### Context
 {context}
 
-### Decision
+#### Decision
 {decision}
 
-### Consequences
+#### Consequences
 {consequences}
 
 ---
@@ -567,17 +631,27 @@ def write_agent_docs(
     paths.append(conv)
 
     # decision_log.md — backup + merge (preserves historical ADRs verbatim)
+    #
+    # Pick the next free ADR id BEFORE rendering so the adoption ADR
+    # never collides with already-written user ADRs. With an existing
+    # log of e.g. ADR-001..ADR-058 the adoption ADR becomes ADR-059
+    # (and any retroactive ADRs continue from ADR-060). Without an
+    # existing log adoption is ADR-001 as before.
     dec_rel = f"{AGENT_DOCS_DIR}/decision_log.md"
     dec = agent_docs / "decision_log.md"
+    start_adr = _next_adr_start_number(project_root)
     new_log = _render_decision_log(
         project_name=project_name, profile=profile, scope=scope,
         commit_sha=commit_sha, features_count=features_count,
         retroactive_adrs=retroactive_adrs,
         harvested_decisions=harvested_decisions,
+        start_adr_number=start_adr,
     )
     dec_backup = preserve_if_exists(project_root, dec_rel)
     if dec.exists():
-        merged_content, info = merge_decision_log(new_log, dec)
+        merged_content, info = merge_decision_log(
+            new_log, dec, adoption_adr_id=start_adr,
+        )
         dec.write_text(merged_content, encoding="utf-8")
         record_preservation_action(
             project_root,

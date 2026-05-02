@@ -131,8 +131,15 @@ def test_realistic_claude_and_decision_log_preserved_e2e(tmp_path: Path) -> None
         assert f"ADR-{i:04d}: Decision number {i}" in final_log, (
             f"original ADR-{i:04d} lost from merged decision_log"
         )
-    # And the new adoption ADR-0001 should also appear (prepended)
+    # And the new adoption ADR should appear (prepended). With max
+    # existing id = 58 the adoption ADR is ADR-059 — adopt no longer
+    # silently collides on ADR-001 / ADR-0001 with the existing log.
     assert "Adopt this repository into the Shipwright SDLC" in final_log
+    assert "ADR-059: Adopt this repository into the Shipwright SDLC" in final_log
+    # Defensive: the old 4-digit ADR-0001 form must not show up in
+    # adopt-written output (existing user ADRs still use 4-digit by
+    # convention; that's their text and is preserved verbatim).
+    assert "ADR-0059" not in final_log
 
     # Backups must contain the originals
     claude_backup = tmp_path / ".shipwright" / "adopt" / "backups" / "CLAUDE.md.preserved"

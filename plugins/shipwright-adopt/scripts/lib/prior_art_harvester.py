@@ -1,9 +1,9 @@
 """Prior-art harvester: copy existing decision/convention docs forward.
 
 Brownfield repos almost always carry maintainer-written knowledge that
-adopt's old pipeline silently dropped — leaving operators with an empty
-ADR-0001 decision log and a thin auto-conventions doc despite a perfectly
-good `docs/adr/` next door.
+adopt's old pipeline silently dropped — leaving operators with a thin
+adoption-ADR-only decision log and a thin auto-conventions doc despite
+a perfectly good `docs/adr/` next door.
 
 This module is deterministic, regex-based, and best-effort:
 
