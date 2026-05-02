@@ -42,11 +42,17 @@ def install_suggest_iterate_hook(settings_path: Path) -> dict[str, Any]:
     hooks = data.setdefault("hooks", {})
     ups = hooks.setdefault("UserPromptSubmit", [])
 
-    # Check for an existing matching hook (by command)
+    # Check for an existing matching hook (by command). We accept both
+    # the canonical matcher-group shape AND the legacy bare-command
+    # shape because pre-fix installs of this same module wrote bare
+    # commands into the wild — re-running install must stay idempotent
+    # against those files.
     for entry in ups:
         if not isinstance(entry, dict):
             continue
-        # Shape A: {"type":"command","command":"..."}
+        # Legacy shape (pre-fix): {"type":"command","command":"..."}.
+        # Claude Code rejects this format with "Expected array, but
+        # received undefined" — kept here only for detection.
         if entry.get("command") in _HOOK_ALIASES:
             return {
                 "installed": False,
@@ -54,7 +60,7 @@ def install_suggest_iterate_hook(settings_path: Path) -> dict[str, Any]:
                 "settings_path": str(settings_path),
                 "created_file": False,
             }
-        # Shape B (some Claude Code versions): {"hooks":[{"command":"..."}]}
+        # Canonical shape: {"hooks":[{"type":"command","command":"..."}]}
         nested = entry.get("hooks")
         if isinstance(nested, list):
             for sub in nested:
@@ -66,8 +72,15 @@ def install_suggest_iterate_hook(settings_path: Path) -> dict[str, Any]:
                         "created_file": False,
                     }
 
-    # Append the hook in Claude Code's canonical shape
-    ups.append({"type": "command", "command": _HOOK_COMMAND})
+    # Append the hook in Claude Code's canonical matcher-group shape.
+    # The outer entry is a matcher group; the actual command sits in
+    # its inner "hooks" array. UserPromptSubmit takes no tool matcher,
+    # so we omit the "matcher" key.
+    ups.append({
+        "hooks": [
+            {"type": "command", "command": _HOOK_COMMAND},
+        ],
+    })
 
     settings_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     return {

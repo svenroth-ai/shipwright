@@ -363,3 +363,15 @@ shipwright/
 - **Rationale:** Sub-2A annotate-not-strip preserves harvested content while making drift visible to operators. Sub-2B default-skip is safe because broad grep over plugins/*/tests/ at audit time found 0 real workflow TODOs in plugin test directories; --scan-tests opt-in handles repos that legitimately track TODOs in tests. Sub-2C the sys.path fix is more chirurgical than refactoring relative imports across the compliance plugin; lives only in the adopt plugin and avoids cross-plugin coupling.
 - **Consequences:** Future adoptions of brownfield repos with stale sibling-directory references in CONTRIBUTING.md will see drift markers in the generated conventions.md instead of inheriting the drift silently. known_issues.md no longer drowns real TODOs in test fixtures by default. compliance_bridge fallback is now consistent across all 5 generators. 233 adopt tests green (225 prior + 8 new TDD). External LLM iterate review skipped because the plan-level review (Plan v2-v3) already covered all sub-iterates.
 - **Rejected:** Strip drift sections (too aggressive — verbatim-with-marker is non-destructive). Hard-skip tests/ everywhere (no opt-in escape would penalize repos with legitimate test TODOs). Refactor compliance generators to relative imports (cross-plugin churn for a 1-line fix in adopt).
+
+---
+
+### ADR-019: Hook installer writes canonical matcher-group shape
+- **Date:** 2026-05-02
+- **Section:** Iterate — bug: hook-installer-shape
+- **Context:** /shipwright-adopt installed the UserPromptSubmit hook in the legacy bare-command shape (top-level type/command keys); Claude Code's parser requires the canonical matcher-group shape with an inner hooks array. The shipwright monorepo's self-adopt produced a settings.json that Claude Code rejected with 'Expected array, but received undefined', killing all permissions and hooks for the project.
+- **Decision:** hook_installer.py now appends a matcher-group entry ({hooks:[{type,command}]}) instead of a bare command. The reader keeps both-shape detection for idempotency against settings.json files written by buggy pre-fix releases.
+- **Commit:** PENDING
+- **Rationale:** All plugin hooks.json files already use the canonical shape; the project-level installer was the lone outlier.
+- **Consequences:** Future /shipwright-adopt runs produce parseable settings.json. Existing buggy installs are detected as already_present so re-running install does not double-add. New regression test (test_detects_legacy_shape_a_install) locks in the backward-compat path.
+- **Rejected:** (a) Removing the hook entirely — no plugin hooks.json registers suggest_iterate, so this would silently delete the feature on every adopted project. (b) Switching the writer's command from CLAUDE_PLUGIN_ROOT to CLAUDE_PROJECT_DIR — that is a separate path-resolution bug deferred to its own iterate.

@@ -295,3 +295,5 @@ Thanks for contributing! If anything in this guide is unclear, please open an is
 - **ADR-017** (2026-05-02): Repo cleanup post self-adoption: webui drift, legacy plans, FR populate
 
 - **ADR-018** (2026-05-02): Adopt plugin: drift detection, test-fixture filter, compliance fallback fix
+
+- **ADR-019** (2026-05-02): Hook installer writes canonical matcher-group shape

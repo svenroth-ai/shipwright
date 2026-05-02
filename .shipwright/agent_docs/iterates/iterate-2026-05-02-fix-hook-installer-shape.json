@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-02-fix-hook-installer-shape",
+  "date": "2026-05-02T18:55:58.577394Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/fix-hook-installer-shape",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "ADR-009"
+}

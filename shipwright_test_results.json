@@ -1,35 +1,15 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-02-adopt-prior-art-and-noise-fixes",
+    "run_id": "iterate-2026-05-02-fix-hook-installer-shape",
     "date": "2026-05-02",
-    "unit": {
-      "status": "passed",
-      "passed": 233,
-      "total": 233
-    },
-    "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "not_run"
-    },
-    "degraded": []
+    "unit": { "status": "passed", "passed": 5, "total": 5 },
+    "integration": { "status": "skipped", "passed": 0, "total": 0 },
+    "pgtap": { "status": "skipped", "passed": 0, "total": 0 },
+    "e2e": { "status": "skipped", "passed": 0, "total": 0 },
+    "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
+    "smoke": { "status": "skipped" },
+    "degraded": [
+      "2 pre-existing test failures unrelated to this iterate: test_detects_nested_shipwright_subproject (markers list assertion), test_python_falls_to_generic (profile match)"
+    ]
   }
 }
