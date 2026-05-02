@@ -1,0 +1,1 @@
+profiles: new `shared/profiles/python-plugin-monorepo.json` stack profile for Python-only plugin monorepos with no deployable web server. Matches via the existing Jaccard scorer in `profile_matcher.py`; reaches confidence 1.0 against a python-only signature without falling back to `generic`. Used by Shipwright's own self-adoption.
