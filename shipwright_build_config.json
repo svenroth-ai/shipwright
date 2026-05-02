@@ -7,11 +7,11 @@
     {
       "name": "adopted-baseline",
       "status": "adopted",
-      "commit": "8da26f338b0510167f12e16d990c0f57b07c27fa",
+      "commit": "87dbf72a8614bcf85ab28c2793517800fa907450",
       "tests_total": 0,
       "tests_passed": 0
     }
   ],
   "current_split": null,
-  "updated_at": "2026-05-02T06:54:45.261851+00:00"
+  "updated_at": "2026-05-02T18:37:57.865726+00:00"
 }

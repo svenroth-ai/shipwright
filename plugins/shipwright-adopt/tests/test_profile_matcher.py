@@ -21,11 +21,16 @@ def test_supabase_nextjs_matched(nextjs_repo: Path) -> None:
     assert result["confidence"] > 0.3
 
 
-def test_python_falls_to_generic(python_cli: Path) -> None:
+def test_python_matches_plugin_monorepo(python_cli: Path) -> None:
     sig = detect_stack(python_cli)
     result = match_profile(sig, _profiles_dir())
-    # Only supabase-nextjs profile exists today; Python CLI should fall back
-    assert result["matched"] == "generic"
+    # Since the 2026-05-02 self-adoption shipped
+    # shared/profiles/python-plugin-monorepo.json, a python-only signature
+    # now matches that profile (Jaccard score 1.0) instead of falling back
+    # to generic. The old assertion was correct for the world with no python
+    # profile in shared/profiles/; updated to reflect current behavior.
+    assert result["matched"] == "python-plugin-monorepo"
+    assert result["confidence"] >= 0.30
 
 
 def test_missing_profiles_dir(tmp_path: Path) -> None:

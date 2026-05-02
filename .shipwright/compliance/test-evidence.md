@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-05-02T06:56:52Z
+Generated: 2026-05-02T18:42:43Z
 
 ## Summary
 
@@ -13,7 +13,14 @@ Generated: 2026-05-02T06:56:52Z
 | Review findings total | 0 |
 | Review findings fixed | 0 |
 
-_No test execution results found. Run `/shipwright-test` to generate `shipwright_test_results.json`._
+## Test Execution Summary
+
+| Layer | Status | Passed | Total | Duration | Details |
+|-------|--------|--------|-------|----------|---------|
+| Unit | SKIP | 0 | 0 | 0s | Vitest |
+| Integration | — | 0 | 0 | — | not configured |
+| Smoke | — | — | — | — | — |
+| E2E | — | 0 | 0 | — | Playwright |
 
 ## Test Pyramid
 
