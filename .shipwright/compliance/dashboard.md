@@ -1,20 +1,27 @@
 # Compliance Dashboard
 
-Generated: 2026-05-02T18:42:43Z
+Generated: 2026-05-02T18:57:09Z
 Profile: python-plugin-monorepo
 Scope: library
 
 ## Quality Indicators
 
-| Indicator | Value | Status | Description |
-|-----------|-------|--------|-------------|
-| All planned splits built | 1 | PASS | Every project split has been implemented |
-| All sections completed | 0/1 | WARN | Build sections across all splits |
-| All unit tests passing | 0/0 | WARN | Unit tests across all sections |
-| Code reviewed | 1/1 sections | PASS | Sections that went through code review |
-| Architecture decisions logged | 17 | INFO | ADR entries in decision_log.md |
-| Third-party dependencies | 5 | INFO | Open-source packages in use |
-| Copyleft license risk | 0 | PASS | Packages with GPL/AGPL/LGPL/MPL licenses |
+| Metric | Value | Status |
+|--------|-------|--------|
+| Pipeline phases completed | 0/7 | WARN |
+| Work events (build) | 0 sections | WARN |
+| Work events (iterate) | 1 changes | INFO |
+| All unit tests passing | 225/225 | PASS |
+| All sections reviewed | 0/0 | WARN |
+| Architecture decisions | 18 ADRs | INFO |
+| Iterate tests passing | 1/1 iterations tested | PASS |
+| Dependencies | 5 packages | INFO |
+| Copyleft risk | 0 | PASS |
+
+## Project Velocity
+
+- Iterate: 1 changes (2026-05-02 → 2026-05-02)
+- Last activity: 2026-05-02
 
 ## External LLM Review Evidence
 

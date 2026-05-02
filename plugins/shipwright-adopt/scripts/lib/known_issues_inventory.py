@@ -68,6 +68,37 @@ def _is_skipped_path(rel: str) -> bool:
     return any(p in _SKIP_DIRS for p in parts)
 
 
+def _is_test_fixture_path(rel: str) -> bool:
+    """Iterate 2 Sub-2B: heuristic for test-shaped paths whose markers are
+    almost always test inputs, not real workflow TODOs.
+
+    Default-skipped unless caller passes scan_tests=True. The 2026-05-02
+    self-adoption found 22 of 28 markers came from
+    plugins/shipwright-adopt/tests/test_known_issues_inventory.py fixtures.
+    A broad grep over plugins/*/tests/ confirmed 0 real workflow TODOs in
+    plugin test directories at the time, so default-skip is safe. Repos
+    that legitimately track TODOs in tests can opt back in via
+    `--scan-tests` / `scan_tests=True`.
+    """
+    rel_posix = rel.replace("\\", "/")
+    parts = rel_posix.split("/")
+    if "tests" in parts:
+        return True
+    name = parts[-1]
+    stem, _, ext = name.rpartition(".")
+    if not stem:
+        return False
+    # Python: test_*.py, *_test.py
+    if ext == "py" and (stem.startswith("test_") or stem.endswith("_test")):
+        return True
+    # JS/TS: *.test.ts, *.test.tsx, *.spec.ts, *.spec.tsx, *.test.js, *.spec.js
+    if ext in {"ts", "tsx", "js", "jsx"} and (
+        stem.endswith(".test") or stem.endswith(".spec")
+    ):
+        return True
+    return False
+
+
 def _gitignore_filter(project_root: Path, rel_paths: list[str]) -> set[str]:
     """Return the set of rel_paths that git check-ignore says are ignored.
 
@@ -94,8 +125,18 @@ def _gitignore_filter(project_root: Path, rel_paths: list[str]) -> set[str]:
     return {p for p in raw.split("\0") if p}
 
 
-def _collect_source_files(project_root: Path) -> list[Path]:
-    """Walk project_root and return source files worth scanning."""
+def _collect_source_files(
+    project_root: Path,
+    *,
+    scan_tests: bool = False,
+) -> list[Path]:
+    """Walk project_root and return source files worth scanning.
+
+    When ``scan_tests`` is False (default), test-shaped paths
+    (`tests/`-anywhere, `test_*.py`, `*_test.py`, `*.test.ts`/`*.spec.ts`
+    and `tsx`/`js`/`jsx` siblings) are skipped — see `_is_test_fixture_path`
+    rationale.
+    """
     out: list[Path] = []
     for child in project_root.rglob("*"):
         if not child.is_file():
@@ -107,6 +148,8 @@ def _collect_source_files(project_root: Path) -> list[Path]:
         except ValueError:
             continue
         if _is_skipped_path(rel):
+            continue
+        if not scan_tests and _is_test_fixture_path(rel):
             continue
         out.append(child)
     return out
@@ -190,12 +233,18 @@ def _render_md(
     return body
 
 
-def write_known_issues_inventory(project_root: Path) -> dict[str, Any]:
+def write_known_issues_inventory(
+    project_root: Path,
+    *,
+    scan_tests: bool = False,
+) -> dict[str, Any]:
     """Walk source files, collect markers, write known_issues.md.
 
-    Returns a result dict useful for the SKILL.md handoff.
+    Returns a result dict useful for the SKILL.md handoff. Pass
+    ``scan_tests=True`` to include test-fixture paths (see
+    ``_is_test_fixture_path``) that are skipped by default.
     """
-    files = _collect_source_files(project_root)
+    files = _collect_source_files(project_root, scan_tests=scan_tests)
     rel_paths = [f.relative_to(project_root).as_posix() for f in files]
     ignored = _gitignore_filter(project_root, rel_paths)
 

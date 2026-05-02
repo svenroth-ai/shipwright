@@ -1,24 +1,20 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-02T18:42:43Z
+Generated: 2026-05-02T18:57:09Z
 
-## Section Traceability
+## Verification Timeline
 
-| Split | Section | Requirements | Commit | Tests | Status |
-|-------|---------|-------------|--------|-------|--------|
-| 01-adopted | [adopted-baseline](../planning/01-adopted/sections/adopted-baseline.md) | — | 87dbf72a8614 | — | ADOPTED |
+| Event | Source | Type | FRs | Tests | Commit | Date |
+|-------|--------|------|-----|-------|--------|------|
+| post-adoption framework cleanup (Sub-1A through 1D) | iterate | change | FR-01.01, FR-01.02, FR-01.03 +10 | 225/225 | 3db485b | 2026-05-02 |
 
 ## Coverage Summary
 
 | Metric | Value |
 |--------|-------|
-| Total splits | 1 |
-| Total sections | 1 |
-| Sections with commits | 1 |
-| Sections with passing tests | 0 |
-| Traceability coverage | 100% |
-| E2E specs | 0 (across 0 splits) |
-| E2E planned flows | 0 |
+| Total splits built | 0 |
+| Build sections | 0 |
+| Iterate changes | 1 |
 | Total review findings | 0 |
 | Unresolved findings | 0 |
 

@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-20260502-repo-post-adoption-cleanup",
+    "run_id": "iterate-2026-05-02-adopt-prior-art-and-noise-fixes",
     "date": "2026-05-02",
     "unit": {
       "status": "passed",
-      "passed": 225,
-      "total": 225
+      "passed": 233,
+      "total": 233
     },
     "integration": {
       "status": "not_run",

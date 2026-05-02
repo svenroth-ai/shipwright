@@ -75,6 +75,12 @@ def run_lib_fallback(project_root: Path) -> dict[str, Any]:
         return results
     # Also add scripts/ so its internal relative imports resolve
     sys.path.insert(0, str(lib_dir.parent))
+    # And the plugin root, so generators that do `from scripts.lib.X import Y`
+    # (sbom_generator, change_history, test_evidence) can resolve `scripts`
+    # as a namespace package. Without this, those three modules failed with
+    # ModuleNotFoundError("No module named 'scripts'") while rtm_generator
+    # and compliance_report (which don't use that import pattern) succeeded.
+    sys.path.insert(0, str(lib_dir.parent.parent))
     try:
         # Import data_collector for ComplianceData
         from lib import data_collector  # type: ignore

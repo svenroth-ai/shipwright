@@ -358,8 +358,15 @@ def generate(
     # Prior-art harvest (Fix 2). Best-effort: when a recognized source exists,
     # the harvested content is appended to decision_log.md / conventions.md
     # with attribution. Absence is silent — fall back to today's behavior.
+    # The conventions harvest is passed snapshot.excludes[] so harvested
+    # CONTRIBUTING.md sections that reference excluded or absent paths
+    # (e.g. `cd webui/client` after webui moved to a separate repo) get
+    # `<!-- adopt-drift: ... -->` markers instead of silently inheriting
+    # the drift (Iterate 2 Sub-2A).
     harvested_decisions_result = harvest_decision_log(project_root)
-    harvested_conventions_result = harvest_conventions(project_root)
+    harvested_conventions_result = harvest_conventions(
+        project_root, excludes=nested_excluded,
+    )
     user_facing_docs = _discover_user_facing_docs(project_root)
     changelog_link = _discover_changelog(project_root)
     harvested_decisions = (

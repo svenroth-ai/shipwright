@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-05-02T18:42:43Z
-Total commits: 539
+Generated: 2026-05-02T18:57:09Z
+Total commits: 540
 
 ## Commit Distribution
 
@@ -11,7 +11,7 @@ pie title Commit Types
     "fix" : 143
     "docs" : 87
     "chore" : 59
-    "refactor" : 31
+    "refactor" : 32
     "test" : 12
     "other" : 7
 ```
@@ -527,10 +527,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Refactoring (refactor) — 31 commits
+### Refactoring (refactor) — 32 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-02 | repo | post-adoption framework cleanup (Sub-1A through 1D) | 3db485b24305 |
 | 2026-04-29 | toolcall-counter | rename .shipwright_toolcall_count to .shipwright/toolcall_count | 1b2d6f0ab9b7 |
 | 2026-04-29 | shared | add compliance to drift_parsers HIDDEN_DIR_DEFAULTS marker | 57c11809fd67 |
 | 2026-04-29 | plugins | migrate compliance/ to .shipwright/compliance/ across plugins | 5a9ba0ecdc31 |
@@ -596,7 +597,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 539 |
+| Total commits | 540 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 539 |
+| Human-authored commits | 540 |
 

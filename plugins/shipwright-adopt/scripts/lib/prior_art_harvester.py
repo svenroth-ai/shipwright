@@ -218,12 +218,136 @@ def _harvest_agent_doc_section(
     return None
 
 
-def harvest_conventions(project_root: Path) -> HarvestResult | None:
+_DRIFT_MARKER_TEMPLATE = (
+    "<!-- adopt-drift: harvested reference to '{path}' but {reason} — "
+    "review before relying on this section. -->"
+)
+
+_CD_PATH_RE = re.compile(r"^\s*cd\s+([^\s;&|`]+)", re.MULTILINE)
+
+
+def _is_url_like(token: str) -> bool:
+    return token.startswith(("http://", "https://", "ftp://", "git@"))
+
+
+def _is_excluded(rel_path: str, excludes: list[str]) -> bool:
+    """Match `rel_path` against entries from `--exclude-path` (rooted globs).
+
+    Adopt's exclude entries are typically `dirname/` (trailing slash). We
+    treat them as path-prefix matches once stripped of the trailing slash.
+    """
+    norm_rel = rel_path.replace("\\", "/").rstrip("/")
+    for ex in excludes:
+        norm_ex = ex.replace("\\", "/").rstrip("/")
+        if not norm_ex:
+            continue
+        if norm_rel == norm_ex or norm_rel.startswith(norm_ex + "/"):
+            return True
+    return False
+
+
+def _annotate_drift(
+    body: str,
+    project_root: Path,
+    excludes: list[str],
+) -> str:
+    """Scan `cd <path>` patterns in fenced code blocks and prepend a drift
+    marker for paths that are excluded or absent from project_root.
+
+    Markdown code blocks (``` … ```) are the primary site for these drift
+    references in CONTRIBUTING.md / README.md. We only inspect the first
+    capture group of `cd <path>`; URLs and absolute paths are ignored.
+    """
+    if not body:
+        return body
+
+    out_lines: list[str] = []
+    in_code_block = False
+    block_start_idx: int | None = None
+    block_lines: list[str] = []
+    block_drift_paths: list[tuple[str, str]] = []  # (path, reason)
+
+    def _flush_block() -> None:
+        nonlocal block_start_idx, block_lines, block_drift_paths
+        if block_drift_paths:
+            for path_token, reason in block_drift_paths:
+                out_lines.append(_DRIFT_MARKER_TEMPLATE.format(
+                    path=path_token, reason=reason,
+                ))
+        out_lines.extend(block_lines)
+        block_start_idx = None
+        block_lines = []
+        block_drift_paths = []
+
+    for line in body.splitlines():
+        if line.lstrip().startswith("```"):
+            if not in_code_block:
+                # Opening fence
+                in_code_block = True
+                block_lines = [line]
+            else:
+                # Closing fence
+                block_lines.append(line)
+                in_code_block = False
+                _flush_block()
+            continue
+        if in_code_block:
+            block_lines.append(line)
+            m = _CD_PATH_RE.search(line)
+            if m:
+                token = m.group(1).rstrip("/").strip()
+                if not token or _is_url_like(token):
+                    continue
+                # Only treat tokens that look like relative paths (contain
+                # '/' or are bare directory names without absolute markers).
+                if token.startswith("/") or token.startswith("~"):
+                    continue
+                # Decide reason
+                reason: str | None = None
+                if excludes and _is_excluded(token, excludes):
+                    reason = "path is in --exclude-path entries"
+                elif not (project_root / token).exists():
+                    reason = "path does not exist in project"
+                if reason is not None:
+                    block_drift_paths.append((token, reason))
+        else:
+            out_lines.append(line)
+
+    if in_code_block:
+        # Unterminated block — flush as-is without annotation.
+        out_lines.extend(block_lines)
+
+    return "\n".join(out_lines)
+
+
+def harvest_conventions(
+    project_root: Path,
+    excludes: list[str] | None = None,
+) -> HarvestResult | None:
     """Look for an existing conventions document and return its content.
 
     Priority: dedicated files (richest) → README section → AGENTS/CLAUDE
     sections (sparse, often most reliable when they exist).
+
+    When ``excludes`` is provided (typically from `--exclude-path` flags
+    threaded through ``generate_adoption_artifacts.py``), the harvested
+    body is post-processed: any ``cd <path>`` pattern in a fenced code
+    block whose path is either excluded or absent from disk gets a
+    ``<!-- adopt-drift: … -->`` marker prepended to the block. Default
+    ``None`` preserves backwards-compat for legacy callers.
     """
+    excludes = excludes or []
+
+    def _annotate(result: HarvestResult) -> HarvestResult:
+        annotated = _annotate_drift(result.content, project_root, excludes)
+        if annotated == result.content:
+            return result
+        return HarvestResult(
+            content=annotated,
+            source_path=result.source_path,
+            entry_count=result.entry_count,
+        )
+
     for rel in _CONVENTIONS_FILE_CANDIDATES:
         path = project_root / rel
         if not path.is_file():
@@ -231,7 +355,7 @@ def harvest_conventions(project_root: Path) -> HarvestResult | None:
         body = _read_text(path).strip()
         if not body:
             continue
-        return HarvestResult(content=body, source_path=rel, entry_count=1)
+        return _annotate(HarvestResult(content=body, source_path=rel, entry_count=1))
 
     readme_result = _harvest_readme_section(
         project_root,
@@ -239,6 +363,9 @@ def harvest_conventions(project_root: Path) -> HarvestResult | None:
         source_label_suffix="conventions",
     )
     if readme_result is not None:
-        return readme_result
+        return _annotate(readme_result)
 
-    return _harvest_agent_doc_section(project_root, ("AGENTS.md", "CLAUDE.md"))
+    agent_result = _harvest_agent_doc_section(project_root, ("AGENTS.md", "CLAUDE.md"))
+    if agent_result is not None:
+        return _annotate(agent_result)
+    return None
