@@ -120,7 +120,18 @@ def _render_claude_md(
 
 ## Ongoing Changes
 This project was adopted into Shipwright on {_utc_today()}. Prior code history is preserved.
-Use `/shipwright-iterate` for all future changes. Do NOT use `/shipwright-project`, `/shipwright-plan`, or `/shipwright-build` directly on this repo.
+
+**Use `/shipwright-iterate` for code changes — Do NOT edit code directly.**
+The skill keeps specs, tests, ADRs, and the CHANGELOG in sync.
+
+What `/shipwright-iterate` automates:
+- ADR entry in `{AGENT_DOCS_DIR}/decision_log.md`
+- CHANGELOG fragment under `CHANGELOG-unreleased.d/<category>/`
+- Conventional Commits on an `iterate/<slug>` branch, merged to main on green tests
+- FR / acceptance-criteria sync in `.shipwright/planning/`
+- Compliance + dashboard refresh
+
+Do NOT invoke `/shipwright-project`, `/shipwright-plan`, or `/shipwright-build` directly — those are pre-onboarding phases.
 
 See `{AGENT_DOCS_DIR}/decision_log.md` for the adoption ADR (the topmost
 `Adopt this repository into the Shipwright SDLC` entry — its id is the

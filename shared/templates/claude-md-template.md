@@ -12,8 +12,17 @@
 - **Deploy PROD**: /shipwright-deploy --env prod
 
 ## Ongoing Changes
-For any code changes after the initial build (features, bug fixes, refactoring, modifications):
-→ Use `/shipwright-iterate` — it keeps specs, tests, and ADRs in sync automatically.
+**Use `/shipwright-iterate` for code changes — Do NOT edit code directly.**
+The skill keeps specs, tests, ADRs, and the CHANGELOG in sync.
+
+What `/shipwright-iterate` automates:
+- ADR entry in `.shipwright/agent_docs/decision_log.md`
+- CHANGELOG fragment under `CHANGELOG-unreleased.d/<category>/`
+- Conventional Commits on an `iterate/<slug>` branch, merged to main on green tests
+- FR / acceptance-criteria sync in `.shipwright/planning/`
+- Compliance + dashboard refresh
+
+Do NOT invoke `/shipwright-project`, `/shipwright-plan`, or `/shipwright-build` directly — those are pre-onboarding phases.
 
 ## Structure
 {FOLDER_STRUCTURE}
