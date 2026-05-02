@@ -21,8 +21,8 @@
   "autonomy": "supervised",
   "standalone": false,
   "adoption": {
-    "adopted_at": "2026-05-02T06:54:45.271037+00:00",
-    "commit_at_adoption": "8da26f338b0510167f12e16d990c0f57b07c27fa",
+    "adopted_at": "2026-05-02T18:37:57.870696+00:00",
+    "commit_at_adoption": "87dbf72a8614bcf85ab28c2793517800fa907450",
     "features_inferred": 0,
     "nested_excluded": [
       "webui/",
@@ -41,36 +41,36 @@
     "project": [
       {
         "outcome": "adopted",
-        "run_id": "adopt-2026-05-02T065445",
-        "at": "2026-05-02T06:54:45.271037+00:00"
+        "run_id": "adopt-2026-05-02T183757",
+        "at": "2026-05-02T18:37:57.870696+00:00"
       }
     ],
     "plan": [
       {
         "outcome": "adopted",
-        "run_id": "adopt-2026-05-02T065445",
-        "at": "2026-05-02T06:54:45.271037+00:00"
+        "run_id": "adopt-2026-05-02T183757",
+        "at": "2026-05-02T18:37:57.870696+00:00"
       }
     ],
     "build": [
       {
         "outcome": "adopted",
-        "run_id": "adopt-2026-05-02T065445",
-        "at": "2026-05-02T06:54:45.271037+00:00"
+        "run_id": "adopt-2026-05-02T183757",
+        "at": "2026-05-02T18:37:57.870696+00:00"
       }
     ],
     "test": [
       {
         "outcome": "adopted-skipped",
-        "run_id": "adopt-2026-05-02T065445",
-        "at": "2026-05-02T06:54:45.271037+00:00"
+        "run_id": "adopt-2026-05-02T183757",
+        "at": "2026-05-02T18:37:57.870696+00:00"
       }
     ]
   },
   "iterate_history": [],
   "_iterate_migration_state": "complete",
-  "_iterate_migration_ts": "2026-05-02T06:54:45.271037+00:00",
+  "_iterate_migration_ts": "2026-05-02T18:37:57.870696+00:00",
   "_iterate_migration_quarantined_count": 0,
-  "created_at": "2026-05-02T06:54:45.271037+00:00",
-  "updated_at": "2026-05-02T06:54:45.271037+00:00"
+  "created_at": "2026-05-02T18:37:57.870696+00:00",
+  "updated_at": "2026-05-02T18:37:57.870696+00:00"
 }

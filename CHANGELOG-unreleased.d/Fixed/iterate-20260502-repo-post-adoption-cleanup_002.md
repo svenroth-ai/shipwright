@@ -1,0 +1,1 @@
+.shipwright/agent_docs/known_issues.md gained a disclaimer header explaining that 22 of 28 TODO/FIXME entries come from plugins/shipwright-adopt/tests/test_known_issues_inventory.py test fixtures and are not real workflow TODOs. Scanner-side fix tracked as Iterate 2 Sub-2B.

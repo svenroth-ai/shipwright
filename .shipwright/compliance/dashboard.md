@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-05-02T18:21:34Z
+Generated: 2026-05-02T18:42:43Z
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -12,7 +12,7 @@ Scope: library
 | All sections completed | 0/1 | WARN | Build sections across all splits |
 | All unit tests passing | 0/0 | WARN | Unit tests across all sections |
 | Code reviewed | 1/1 sections | PASS | Sections that went through code review |
-| Architecture decisions logged | 8 | INFO | ADR entries in decision_log.md |
+| Architecture decisions logged | 17 | INFO | ADR entries in decision_log.md |
 | Third-party dependencies | 5 | INFO | Open-source packages in use |
 | Copyleft license risk | 0 | PASS | Packages with GPL/AGPL/LGPL/MPL licenses |
 

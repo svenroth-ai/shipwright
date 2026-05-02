@@ -46,12 +46,16 @@ cd ~/shipwright && uv sync
 
 ### Additional requirements for contributors
 
-Working on the **WebUI** additionally requires:
+Working on a specific plugin additionally requires that plugin's own dependencies:
 
 ```bash
-cd webui/client && npm ci
-cd ../server && npm ci
+cd plugins/shipwright-build && uv sync
+# or any other plugin under plugins/
 ```
+
+Working on the **WebUI** is done in the separate
+[`shipwright-webui`](https://github.com/svenroth-ai/shipwright-webui) repository
+— not in this repo. See its own `CONTRIBUTING.md` for setup.
 
 Working on **`shipwright-security`** additionally requires the OSS scanners (see [Running Security Scans Locally](#running-security-scans-locally)).
 
@@ -71,23 +75,18 @@ cd /path/to/shipwright
 uv run pytest integration-tests/ -v
 ```
 
-### WebUI tests
-
-```bash
-cd webui/client
-npm test
-npx tsc --noEmit
-```
-
 ### Linting
 
 ```bash
 # Python
 uv run ruff check .
 
-# TypeScript
-cd webui/client && npx oxlint .
+# Type-checking
+uv run pyright
 ```
+
+(WebUI test/lint commands live in the separate
+[`shipwright-webui`](https://github.com/svenroth-ai/shipwright-webui) repo.)
 
 ## Running Security Scans Locally
 
@@ -170,7 +169,7 @@ All commits must follow [Conventional Commits](https://www.conventionalcommits.o
 **Examples:**
 ```
 feat(shipwright-build): add retry loop for flaky tests
-fix(webui): resolve kanban column overflow on narrow screens
+fix(security): resolve false-positive in prompt injection scanner
 docs(contributing): explain graduated trust model
 test(security): add fixture for typosquatting detection
 ```

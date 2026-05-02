@@ -1,12 +1,12 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-02T18:21:34Z
+Generated: 2026-05-02T18:42:43Z
 
 ## Section Traceability
 
 | Split | Section | Requirements | Commit | Tests | Status |
 |-------|---------|-------------|--------|-------|--------|
-| 01-adopted | [adopted-baseline](../planning/01-adopted/sections/adopted-baseline.md) | — | 8da26f338b05 | — | ADOPTED |
+| 01-adopted | [adopted-baseline](../planning/01-adopted/sections/adopted-baseline.md) | — | 87dbf72a8614 | — | ADOPTED |
 
 ## Coverage Summary
 

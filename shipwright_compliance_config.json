@@ -3,12 +3,9 @@
     "rtm_coverage_min": 0.7
   },
   "status": "initial",
-  "last_full_generation": "2026-05-02T06:54:45.264355+00:00",
+  "last_full_generation": "2026-05-02T18:37:57.867344+00:00",
   "seeded_by_adopt": true,
   "phases_covered": [
-    "project",
-    "plan",
-    "build",
-    "test"
+    "iterate"
   ]
 }

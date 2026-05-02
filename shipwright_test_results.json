@@ -1,0 +1,35 @@
+{
+  "iterate_latest": {
+    "run_id": "iterate-20260502-repo-post-adoption-cleanup",
+    "date": "2026-05-02",
+    "unit": {
+      "status": "passed",
+      "passed": 225,
+      "total": 225
+    },
+    "integration": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": []
+  }
+}

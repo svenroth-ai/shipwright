@@ -10,7 +10,19 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 
 | ID | Name | Priority | Description | Source |
 |----|------|----------|-------------|--------|
-| FR-01.01 | _no features detected_ | May | Edit manually after adoption | — |
+| FR-01.01 | /shipwright-run | Must | Orchestrate the full Shipwright SDLC pipeline — drives project, plan, build, test, security, deploy, changelog, and compliance phases end-to-end. | enrichment.json |
+| FR-01.02 | /shipwright-project | Must | Decompose project requirements (IREB) into well-scoped planning units; generate initial CLAUDE.md and `.shipwright/agent_docs` for the target project. | enrichment.json |
+| FR-01.03 | /shipwright-plan | Must | AI-assisted deep planning with research, optional interview, external dual-LLM review (Gemini + GPT in parallel), TDD-first approach; produces section files consumable by /shipwright-build. | enrichment.json |
+| FR-01.04 | /shipwright-design | Should | Generate UI mockups from IREB specs as standalone HTML screens and user flows; iteratable via chat. | enrichment.json |
+| FR-01.05 | /shipwright-build | Must | Implement code from /shipwright-plan sections with TDD (red-green-refactor), code review, Conventional Commits, feature-branch git workflow. | enrichment.json |
+| FR-01.06 | /shipwright-test | Must | Run unit tests, E2E tests (Playwright), smoke tests, and security scans for Shipwright projects. | enrichment.json |
+| FR-01.07 | /shipwright-security | Must | Security scanning chain (Aikido + Semgrep + Trivy + Gitleaks) with automated remediation loop and per-scanner exclude lists. | enrichment.json |
+| FR-01.08 | /shipwright-deploy | Should | Deploy to configured targets with smoke testing and rollback; Jelastic (Infomaniak) shipped, Vercel + compose-VPS profiles documented as stubs. | enrichment.json |
+| FR-01.09 | /shipwright-changelog | Must | Parse Conventional Commits from git history, generate Keep-a-Changelog entries, create version tags, open release PRs. | enrichment.json |
+| FR-01.10 | /shipwright-compliance | Must | Generate audit-ready compliance documentation (RTM, test evidence, change history, SBOM) and run on-demand cross-artifact detective audit. | enrichment.json |
+| FR-01.11 | /shipwright-iterate | Must | Complexity-adaptive SDLC for ongoing changes — auto-detects intent and complexity, scales from quick fix to structured feature with specs, plans, reviews, tests. | enrichment.json |
+| FR-01.12 | /shipwright-preview | May | Local browser preview — start dev server for the target project and show the URL. | enrichment.json |
+| FR-01.13 | /shipwright-adopt | Must | Onboard an existing (brownfield) repository into the Shipwright SDLC; analyzes codebase, generates CLAUDE.md, agent_docs, planning specs, compliance artifacts, suggest_iterate hook, and an E2E baseline. | enrichment.json |
 
 
 ## Quality Requirements

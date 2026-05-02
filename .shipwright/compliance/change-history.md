@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-05-02T18:21:34Z
-Total commits: 538
+Generated: 2026-05-02T18:42:43Z
+Total commits: 539
 
 ## Commit Distribution
 
@@ -10,7 +10,7 @@ pie title Commit Types
     "feat" : 200
     "fix" : 143
     "docs" : 87
-    "chore" : 58
+    "chore" : 59
     "refactor" : 31
     "test" : 12
     "other" : 7
@@ -463,10 +463,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Chores (chore) — 58 commits
+### Chores (chore) — 59 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-02 | compliance | refresh dashboard timestamps + change-history after v0.14.0 | 87dbf72a8614 |
 | 2026-05-02 | release | v0.14.0 | 57bc7928765d |
 | 2026-05-02 | shipwright | adopt repository into Shipwright SDLC | bf59b217f576 |
 | 2026-05-02 | adopt | prepare shipwright monorepo for self-adoption | 2116996e34bf |
@@ -595,7 +596,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 538 |
+| Total commits | 539 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 538 |
+| Human-authored commits | 539 |
 
