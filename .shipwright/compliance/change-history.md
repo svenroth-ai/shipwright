@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-05-02T06:56:51Z
-Total commits: 535
+Generated: 2026-05-02T18:21:34Z
+Total commits: 538
 
 ## Commit Distribution
 
@@ -9,8 +9,8 @@ Total commits: 535
 pie title Commit Types
     "feat" : 200
     "fix" : 143
-    "docs" : 86
-    "chore" : 56
+    "docs" : 87
+    "chore" : 58
     "refactor" : 31
     "test" : 12
     "other" : 7
@@ -371,10 +371,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Documentation (docs) — 86 commits
+### Documentation (docs) — 87 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-02 | changelog | add Added/Changed/Fixed fragments for self-adoption iterate | 38f35c9285df |
 | 2026-05-02 | changelog | add Fixed fragments for adopt brownfield ADR + H3 canon | 3f52f7938741 |
 | 2026-05-01 | changelog | record compliance Sub-Iterate C drop (F4 backfill) | 12814ea67cf6 |
 | 2026-05-01 | changelog | record adopt-security-scaffolding iterate | fa830e3b4c40 |
@@ -462,10 +463,12 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Chores (chore) — 56 commits
+### Chores (chore) — 58 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-02 | release | v0.14.0 | 57bc7928765d |
+| 2026-05-02 | shipwright | adopt repository into Shipwright SDLC | bf59b217f576 |
 | 2026-05-02 | adopt | prepare shipwright monorepo for self-adoption | 2116996e34bf |
 | 2026-05-01 | release | v0.13.0 | 0811f2818b88 |
 | 2026-05-01 | release | v0.12.0 | be8521ee7480 |
@@ -592,7 +595,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 535 |
+| Total commits | 538 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 535 |
+| Human-authored commits | 538 |
 

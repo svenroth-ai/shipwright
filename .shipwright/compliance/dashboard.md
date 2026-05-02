@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-05-02T06:56:52Z
+Generated: 2026-05-02T18:21:34Z
 Profile: python-plugin-monorepo
 Scope: library
 
