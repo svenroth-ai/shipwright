@@ -1,0 +1,35 @@
+{
+  "name": "python-plugin-monorepo",
+  "description": "Python plugin monorepo (uv workspace). Library/framework with no deployable web server. Each subdirectory under plugins/ is its own pyproject.toml-managed package; shared/ holds cross-plugin scripts and profiles. No root dev server, no frontend.",
+  "version": "0.1.0",
+  "stack": {
+    "runtime": {
+      "python": "3.11+"
+    },
+    "frontend": {},
+    "backend": {}
+  },
+  "dev_server": null,
+  "services": [],
+  "testing": {
+    "unit": "pytest",
+    "command": "uv run pytest"
+  },
+  "linting": {
+    "tool": "ruff",
+    "command": "uv run ruff check"
+  },
+  "deploy": null,
+  "folder_structure": {
+    "plugins/": "Per-SDLC-phase Claude Code plugins (each with .claude-plugin/, hooks/, skills/, scripts/, tests/, pyproject.toml)",
+    "shared/": "Cross-plugin scripts, profiles, templates, prompts",
+    "docs/": "User-facing documentation (guide.md is canonical)",
+    "integration-tests/": "Cross-plugin integration tests",
+    "scripts/": "Top-level developer scripts (install.sh, update-marketplace.sh)"
+  },
+  "required_env_vars": {
+    "build": [],
+    "deploy": [],
+    "plugin": []
+  }
+}

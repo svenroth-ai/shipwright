@@ -53,26 +53,29 @@ shipwright_*_config.json
 shipwright_events.jsonl
 shipwright_events.jsonl.lock
 # Canonical agent_docs home is .shipwright/agent_docs/.
-agent_docs/
 # legacy path - do not remove. Sub-Iterate F of agent_docs migration (2026-04-28).
+# Anchored to root since 2026-05-02 self-adoption to allow .shipwright/agent_docs/.
 # See docs/migrations/.shipwright-agent_docs-relocation.md.
+/agent_docs/
 # Canonical designs home is .shipwright/designs/.
-designs/
 # legacy path - do not remove. Sub-Iterate F of designs migration (2026-04-27).
+# Anchored to root since 2026-05-02 self-adoption to allow .shipwright/designs/.
 # See docs/migrations/.shipwright-designs-relocation.md.
+/designs/
 # Canonical planning home is .shipwright/planning/.
-planning/
 # legacy path - do not remove. Sub-Iterate F (2026-04-27).
 # Kept as a safety net against re-tracked legacy files.
+# Anchored to root since 2026-05-02 self-adoption to allow .shipwright/planning/.
 # See docs/migrations/.shipwright-relocation.md.
-.shipwright/
+/planning/
 # Canonical tool-call counter is .shipwright/toolcall_count.
 # legacy path - do not remove. Renamed 2026-04-29 (drive-by, no migration).
 .shipwright_toolcall_count
 # Canonical compliance home is .shipwright/compliance/.
-compliance/
 # legacy path - do not remove. Sub-Iterate F of compliance migration (2026-04-29).
+# Anchored to root since 2026-05-02 self-adoption to allow .shipwright/compliance/.
 # See docs/migrations/.shipwright-compliance-relocation.md.
+/compliance/
 
 # UV
 .uv/
@@ -87,4 +90,15 @@ Spec/
 
 # Git worktrees (per Shipwright parallel-iterate convention — see /shipwright-iterate B1a)
 .worktrees/
-/.shipwright/
+
+# Shipwright self-adoption (2026-05-02): the framework adopts itself.
+# The canonical .shipwright/ artifact homes (agent_docs/, planning/,
+# compliance/, designs/, adopt/<snapshots>) are tracked. Transient subdirs
+# (scratch, reviews, security reports, tmp, adopt/backups) stay ignored
+# via explicit exclusion of those specific subpaths — git cannot re-include
+# files inside an excluded parent, so we invert the rule.
+/.shipwright/external-review-temp/
+/.shipwright/reviews/
+/.shipwright/securityreports/
+/.shipwright/tmp/
+/.shipwright/adopt/backups/

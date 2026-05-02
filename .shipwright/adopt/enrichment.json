@@ -1,0 +1,109 @@
+{
+  "product_description": "Shipwright is an AI-powered SDLC framework built on Claude Code. It is structured as a monorepo of Claude Code plugins (one per SDLC phase) with shared scripts, profiles, and templates. End users invoke individual phases (project, plan, build, test, security, deploy, changelog, compliance, iterate, preview, design, adopt) via slash commands; the run plugin orchestrates them end-to-end. The repo itself is a library/framework — there is no deployable web service in the repo root; the optional Command Center WebUI lives in a separate repository.",
+
+  "features": [
+    {
+      "route": "/shipwright-run",
+      "description": "Orchestrate the full Shipwright SDLC pipeline — from user description to deployed application. Entry point that drives project, plan, build, test, security, deploy, changelog, and compliance phases."
+    },
+    {
+      "route": "/shipwright-project",
+      "description": "Decompose project requirements (IREB style) into well-scoped planning units. Generates initial CLAUDE.md and .shipwright/agent_docs for the target project."
+    },
+    {
+      "route": "/shipwright-plan",
+      "description": "AI-assisted deep planning with research, optional interview, external LLM review (Gemini + GPT in parallel), and TDD-first approach. Produces section files consumable by /shipwright-build."
+    },
+    {
+      "route": "/shipwright-design",
+      "description": "Generate UI mockups from IREB specs as standalone HTML screens and user flows. Iteratable via chat."
+    },
+    {
+      "route": "/shipwright-build",
+      "description": "Implement code from /shipwright-plan sections with TDD (red-green-refactor), code review, Conventional Commits, and feature-branch git workflow."
+    },
+    {
+      "route": "/shipwright-test",
+      "description": "Run unit tests, E2E tests (Playwright), smoke tests, and security scans for Shipwright projects."
+    },
+    {
+      "route": "/shipwright-security",
+      "description": "Security scanning chain (Aikido + Semgrep + Trivy + Gitleaks) with automated remediation loop and per-scanner exclude lists."
+    },
+    {
+      "route": "/shipwright-deploy",
+      "description": "Deploy to configured targets with smoke testing and rollback. Jelastic (Infomaniak) as first flavor; Vercel and compose-VPS profiles documented as stubs."
+    },
+    {
+      "route": "/shipwright-changelog",
+      "description": "Parse Conventional Commits from git history, generate Keep-a-Changelog entries, create version tags, and open release PRs."
+    },
+    {
+      "route": "/shipwright-compliance",
+      "description": "Generate audit-ready compliance documentation (RTM, test evidence, change history, SBOM) and run on-demand cross-artifact detective audit."
+    },
+    {
+      "route": "/shipwright-iterate",
+      "description": "Complexity-adaptive SDLC for ongoing changes. Auto-detects intent and complexity, scaling from quick fix to structured feature with specs, plans, reviews, and tests."
+    },
+    {
+      "route": "/shipwright-preview",
+      "description": "Local browser preview — start dev server for the target project and show the URL."
+    },
+    {
+      "route": "/shipwright-adopt",
+      "description": "Onboard an existing (brownfield) repository into the Shipwright SDLC. Analyzes codebase, generates CLAUDE.md, agent_docs, planning specs, compliance artifacts, the suggest_iterate hook, and an E2E baseline."
+    }
+  ],
+
+  "architecture_prose": "Each SDLC phase is its own Claude Code plugin under plugins/<phase>/, with the standard Claude Code plugin layout: .claude-plugin/plugin.json, hooks/hooks.json, skills/<phase>/SKILL.md, scripts/ (checks, hooks, lib, tools), tests/, and pyproject.toml. Cross-plugin code lives under shared/ (scripts, profiles, templates, prompts, config). Plugins communicate via a unified session id (SHIPWRIGHT_SESSION_ID), shared shipwright_*_config.json files written into the target project, and an append-only shipwright_events.jsonl event log. Hooks defined in hooks.json are the single source of truth for between-phase actions and quality gates; behavior is documented in docs/hooks-and-pipeline.md. Memory and decision history is captured in .shipwright/agent_docs/decision_log.md (canonical H3 ADR format) and per-iterate or per-phase artifacts under .shipwright/planning/ and .shipwright/compliance/. A separate plugin cache at ~/.claude/plugins/cache/shipwright/ is used by Claude Code at runtime; updates require running scripts/update-marketplace.sh after pushing plugin-side changes.",
+
+  "architecture_diagram": "+----------------------------------------------------------+\n| Claude Code (host)                                       |\n|   loads plugins from ~/.claude/plugins/cache/shipwright/ |\n+----------------------------------------------------------+\n        |\n        v\n+---------------------+    +--------------------------------+\n| plugins/            |    | shared/                        |\n|   shipwright-run    |--->|   scripts/  (lib, tools, hooks)|\n|   shipwright-project|--->|   profiles/ (stack + deploy)   |\n|   shipwright-plan   |--->|   templates/                   |\n|   shipwright-design |--->|   prompts/  (review prompts)   |\n|   shipwright-build  |--->|   config/   (defaults)         |\n|   shipwright-test   |    +--------------------------------+\n|   shipwright-security|              ^\n|   shipwright-deploy |               | reads/writes\n|   shipwright-changelog              |\n|   shipwright-compliance ------------+\n|   shipwright-iterate |\n|   shipwright-preview |\n|   shipwright-adopt   |\n+---------------------+\n        |\n        | writes/reads in target project\n        v\n+----------------------------------------------------------+\n| Target project                                           |\n|   CLAUDE.md                                              |\n|   shipwright_*_config.json (run, project, plan, build,   |\n|                             compliance, sync, ...)       |\n|   shipwright_events.jsonl                                |\n|   .shipwright/                                           |\n|     agent_docs/  planning/  compliance/  designs/        |\n|     adopt/  reviews/                                     |\n+----------------------------------------------------------+",
+
+  "conventions_prose": "Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hooks resolve plugin paths via ${CLAUDE_PLUGIN_ROOT}. Config files written to target projects use the prefix shipwright_ (e.g. shipwright_run_config.json) and environment variables use SHIPWRIGHT_ (e.g. SHIPWRIGHT_SESSION_ID, SHIPWRIGHT_PLUGIN_ROOT). Commits follow Conventional Commits with the plugin name as scope (e.g. fix(adopt): ..., feat(security): ...). Branches for self-monorepo work follow iterate/<short-kebab-description>. After any push that touches plugin-side files, scripts/update-marketplace.sh syncs the runtime plugin cache. Linting uses ruff; type-checking uses pyright; tests use pytest. The canonical user-facing documentation is docs/guide.md; the canonical hook + pipeline reference is docs/hooks-and-pipeline.md. CLAUDE.md captures operational rules; generated agent_docs link back rather than duplicating these sources of truth.",
+
+  "adrs": [
+    {
+      "title": "Plugin-per-phase architecture",
+      "context": "Shipwright spans many distinct SDLC phases (project, plan, build, test, security, deploy, changelog, compliance, iterate, design, preview, adopt). A monolithic skill would have grown to thousands of lines and entangled phase-specific dependencies, hooks, and review chains.",
+      "decision": "Each SDLC phase is implemented as its own Claude Code plugin under plugins/<phase>/ with isolated pyproject.toml, hooks/hooks.json, skills/<phase>/SKILL.md, and tests. Cross-plugin code lives under shared/.",
+      "consequences": "Plugins evolve independently and have small surface area. The trade-off is a runtime plugin cache (~/.claude/plugins/cache/shipwright/) that must be re-synced after plugin-side changes via scripts/update-marketplace.sh. Hooks and the event log carry inter-plugin state."
+    },
+    {
+      "title": "Hooks as single source of truth for between-phase actions",
+      "context": "Between-phase quality gates (canon checks, drift checks, phase-quality stop hook, compliance updates) need to execute deterministically regardless of which plugin invoked the next phase.",
+      "decision": "All between-phase actions and quality gates are wired in plugins/<phase>/hooks/hooks.json and centrally documented in docs/hooks-and-pipeline.md. SKILL.md files do not duplicate hook behavior in prose; they reference the doc.",
+      "consequences": "Adding or changing a phase requires updating both hooks.json and docs/hooks-and-pipeline.md; the doc is the authoritative reference for who reads/writes which artifact and when each gate fires."
+    },
+    {
+      "title": "External LLM review at SDLC gates (plan/iterate/code)",
+      "context": "Self-review by the same LLM that wrote the plan or code has a strong confirmation bias. Single-reviewer dual-LLM checks (Gemini + GPT in parallel) caught real blockers (e.g. monorepo-auto-descent-guard semantics) that would otherwise have shipped invisible.",
+      "decision": "All external LLM review flows through one shared CLI: shared/scripts/tools/external_review.py, with three modes: plan (full plan vs project spec), iterate (mini-plan vs iterate spec), code (diff vs section/iterate spec). Each mode runs Gemini + GPT in parallel via OpenRouter and writes a marker file used by compliance.",
+      "consequences": "Non-trivial plans gain ~60s + cents-per-review of overhead in exchange for catching blocker-class bugs early. Marker files (external_review_state.json, external_code_review_state.json) are committed as compliance evidence. The underlying lib (llm_review.py) is implementation detail; skills must call the CLI."
+    },
+    {
+      "title": "Per-scanner exclude lists for security tools",
+      "context": "Trivy and Gitleaks do not honor .gitignore by default, so secrets stored in fixture or test directories were being flagged as production findings. Semgrep does honor gitignore.",
+      "decision": "Each scanner gets its own exclude list rather than collapsing on a single gitignore-as-SSoT model. .worktrees/ was added after a benchmark showed scan times improved.",
+      "consequences": "Slightly more configuration per scanner, but findings now match developer intent. Replaces the original \"gitignore is SSoT for all scanners\" thesis from earlier iterates."
+    },
+    {
+      "title": "Artifact relocation under .shipwright/",
+      "context": "Top-level directories named planning/, designs/, agent_docs/, and compliance/ collided with target-project directories of the same names and made it hard to tell which artifacts belonged to Shipwright vs the user's app.",
+      "decision": "Relocated all four artifact roots under .shipwright/<artifact>/ (planning, designs, agent_docs, compliance). Hard-cutover migration with sub-iterates A through G per artifact, plus a per-scanner gitignore-exclude pass (sub-iterate H). Documented as the standard pattern in docs/migrations/artifact-migration-reference.md.",
+      "consequences": "All Shipwright-owned artifacts live under .shipwright/. e2e/ stayed top-level (Playwright convention) and CHANGELOG-unreleased.d/ stayed top-level (Keep-a-Changelog sibling-to-CHANGELOG convention). Configuration JSON files (shipwright_*_config.json) and events.jsonl stayed top-level; their relocation was evaluated and deferred."
+    },
+    {
+      "title": "/shipwright-iterate as primary post-adoption interface",
+      "context": "Once a project is adopted into Shipwright, users still need a low-friction way to make code changes — fixes, small features, refactors — without invoking the full project/plan/build/test/deploy chain.",
+      "decision": "/shipwright-iterate is the canonical entry point for ongoing changes in any completed Shipwright project. It is complexity-adaptive: trivial changes proceed directly while medium-or-larger iterates run mini-planning, external review, TDD, and a structured review cascade. /shipwright-adopt installs the suggest_iterate hook to route ad-hoc change prompts to it.",
+      "consequences": "Users do not need to remember which SDLC phase to invoke for a given change. The trade-off is that /shipwright-iterate has substantial internal logic (intent + complexity classifier, sub-iterate spawning) that the other phases delegate to."
+    },
+    {
+      "title": "Public-ready git history rewrite",
+      "context": "The repo started with the maintainer's company email in commit metadata. Going public required cleaning that without losing history.",
+      "decision": "On 2026-04-30 the entire history (524 commits) was retroactively rewritten to use the GitHub-noreply email, then force-pushed. Documented as a one-time migration; future commits use the noreply email by default.",
+      "consequences": "Commit SHAs changed for every commit. External clones and forks made before that date no longer share history. Worth it for public-readiness."
+    }
+  ]
+}
