@@ -1,0 +1,17 @@
+{
+  "status": "adopted",
+  "dev_url": null,
+  "profile": "python-plugin-monorepo",
+  "test_cmd": null,
+  "sections": [
+    {
+      "name": "adopted-baseline",
+      "status": "adopted",
+      "commit": "8da26f338b0510167f12e16d990c0f57b07c27fa",
+      "tests_total": 0,
+      "tests_passed": 0
+    }
+  ],
+  "current_split": null,
+  "updated_at": "2026-05-02T06:54:45.261851+00:00"
+}

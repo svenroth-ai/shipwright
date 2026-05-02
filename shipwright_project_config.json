@@ -1,0 +1,24 @@
+{
+  "status": "complete",
+  "scope": "library",
+  "profile": "python-plugin-monorepo",
+  "planning_dir": ".shipwright/planning",
+  "splits": [
+    {
+      "name": "01-adopted",
+      "status": "adopted"
+    }
+  ],
+  "requirements": {
+    "source": "inferred-from-codebase",
+    "fr_count": 0,
+    "qr_count": 1
+  },
+  "artifacts": {
+    "claude_md": true,
+    "agent_docs": true,
+    "manifest": false
+  },
+  "adopted": true,
+  "updated_at": "2026-05-02T06:54:45.258720+00:00"
+}

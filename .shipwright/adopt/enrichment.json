@@ -64,43 +64,43 @@
 
   "adrs": [
     {
-      "title": "Plugin-per-phase architecture",
+      "subject": "Plugin-per-phase architecture",
       "context": "Shipwright spans many distinct SDLC phases (project, plan, build, test, security, deploy, changelog, compliance, iterate, design, preview, adopt). A monolithic skill would have grown to thousands of lines and entangled phase-specific dependencies, hooks, and review chains.",
       "decision": "Each SDLC phase is implemented as its own Claude Code plugin under plugins/<phase>/ with isolated pyproject.toml, hooks/hooks.json, skills/<phase>/SKILL.md, and tests. Cross-plugin code lives under shared/.",
       "consequences": "Plugins evolve independently and have small surface area. The trade-off is a runtime plugin cache (~/.claude/plugins/cache/shipwright/) that must be re-synced after plugin-side changes via scripts/update-marketplace.sh. Hooks and the event log carry inter-plugin state."
     },
     {
-      "title": "Hooks as single source of truth for between-phase actions",
+      "subject": "Hooks as single source of truth for between-phase actions",
       "context": "Between-phase quality gates (canon checks, drift checks, phase-quality stop hook, compliance updates) need to execute deterministically regardless of which plugin invoked the next phase.",
       "decision": "All between-phase actions and quality gates are wired in plugins/<phase>/hooks/hooks.json and centrally documented in docs/hooks-and-pipeline.md. SKILL.md files do not duplicate hook behavior in prose; they reference the doc.",
       "consequences": "Adding or changing a phase requires updating both hooks.json and docs/hooks-and-pipeline.md; the doc is the authoritative reference for who reads/writes which artifact and when each gate fires."
     },
     {
-      "title": "External LLM review at SDLC gates (plan/iterate/code)",
+      "subject": "External LLM review at SDLC gates (plan/iterate/code)",
       "context": "Self-review by the same LLM that wrote the plan or code has a strong confirmation bias. Single-reviewer dual-LLM checks (Gemini + GPT in parallel) caught real blockers (e.g. monorepo-auto-descent-guard semantics) that would otherwise have shipped invisible.",
       "decision": "All external LLM review flows through one shared CLI: shared/scripts/tools/external_review.py, with three modes: plan (full plan vs project spec), iterate (mini-plan vs iterate spec), code (diff vs section/iterate spec). Each mode runs Gemini + GPT in parallel via OpenRouter and writes a marker file used by compliance.",
       "consequences": "Non-trivial plans gain ~60s + cents-per-review of overhead in exchange for catching blocker-class bugs early. Marker files (external_review_state.json, external_code_review_state.json) are committed as compliance evidence. The underlying lib (llm_review.py) is implementation detail; skills must call the CLI."
     },
     {
-      "title": "Per-scanner exclude lists for security tools",
+      "subject": "Per-scanner exclude lists for security tools",
       "context": "Trivy and Gitleaks do not honor .gitignore by default, so secrets stored in fixture or test directories were being flagged as production findings. Semgrep does honor gitignore.",
       "decision": "Each scanner gets its own exclude list rather than collapsing on a single gitignore-as-SSoT model. .worktrees/ was added after a benchmark showed scan times improved.",
       "consequences": "Slightly more configuration per scanner, but findings now match developer intent. Replaces the original \"gitignore is SSoT for all scanners\" thesis from earlier iterates."
     },
     {
-      "title": "Artifact relocation under .shipwright/",
+      "subject": "Artifact relocation under .shipwright/",
       "context": "Top-level directories named planning/, designs/, agent_docs/, and compliance/ collided with target-project directories of the same names and made it hard to tell which artifacts belonged to Shipwright vs the user's app.",
       "decision": "Relocated all four artifact roots under .shipwright/<artifact>/ (planning, designs, agent_docs, compliance). Hard-cutover migration with sub-iterates A through G per artifact, plus a per-scanner gitignore-exclude pass (sub-iterate H). Documented as the standard pattern in docs/migrations/artifact-migration-reference.md.",
       "consequences": "All Shipwright-owned artifacts live under .shipwright/. e2e/ stayed top-level (Playwright convention) and CHANGELOG-unreleased.d/ stayed top-level (Keep-a-Changelog sibling-to-CHANGELOG convention). Configuration JSON files (shipwright_*_config.json) and events.jsonl stayed top-level; their relocation was evaluated and deferred."
     },
     {
-      "title": "/shipwright-iterate as primary post-adoption interface",
+      "subject": "/shipwright-iterate as primary post-adoption interface",
       "context": "Once a project is adopted into Shipwright, users still need a low-friction way to make code changes — fixes, small features, refactors — without invoking the full project/plan/build/test/deploy chain.",
       "decision": "/shipwright-iterate is the canonical entry point for ongoing changes in any completed Shipwright project. It is complexity-adaptive: trivial changes proceed directly while medium-or-larger iterates run mini-planning, external review, TDD, and a structured review cascade. /shipwright-adopt installs the suggest_iterate hook to route ad-hoc change prompts to it.",
       "consequences": "Users do not need to remember which SDLC phase to invoke for a given change. The trade-off is that /shipwright-iterate has substantial internal logic (intent + complexity classifier, sub-iterate spawning) that the other phases delegate to."
     },
     {
-      "title": "Public-ready git history rewrite",
+      "subject": "Public-ready git history rewrite",
       "context": "The repo started with the maintainer's company email in commit metadata. Going public required cleaning that without losing history.",
       "decision": "On 2026-04-30 the entire history (524 commits) was retroactively rewritten to use the GitHub-noreply email, then force-pushed. Documented as a one-time migration; future commits use the noreply email by default.",
       "consequences": "Commit SHAs changed for every commit. External clones and forks made before that date no longer share history. Worth it for public-readiness."

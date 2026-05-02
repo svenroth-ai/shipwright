@@ -45,13 +45,20 @@ e2e-results.json
 # Vite
 .vite/
 
-# Shipwright runtime artifacts (generated in target projects, not in this repo)
+# Shipwright runtime artifacts (generated in target projects, not in this repo).
+# Self-adoption 2026-05-02: the framework adopts itself, so root-level
+# configs + events.jsonl are now also tracked. Nested target-project copies
+# (e.g. tests/fixtures/<project>/shipwright_*_config.json) stay ignored.
 shipwright_*_config.json
 # Exception: the template under shared/templates/ MUST be tracked — it's the
 # canonical version copied into every adopted/new project.
 !shared/templates/shipwright_*_config.json
+# Exception: root-level configs from the framework's own self-adoption.
+!/shipwright_*_config.json
 shipwright_events.jsonl
 shipwright_events.jsonl.lock
+# Exception: root-level event log from the framework's own self-adoption.
+!/shipwright_events.jsonl
 # Canonical agent_docs home is .shipwright/agent_docs/.
 # legacy path - do not remove. Sub-Iterate F of agent_docs migration (2026-04-28).
 # Anchored to root since 2026-05-02 self-adoption to allow .shipwright/agent_docs/.

@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "file": "CLAUDE.md",
+      "action": "skipped_loadbearing",
+      "backup": ".shipwright/adopt/backups/CLAUDE.md.preserved",
+      "note": "existing CLAUDE.md > 1024 bytes; adopt suggestion at .shipwright/adopt/CLAUDE.md.adopt-suggested"
+    },
+    {
+      "file": ".shipwright/agent_docs/architecture.md",
+      "action": "written_fresh"
+    },
+    {
+      "file": ".shipwright/agent_docs/conventions.md",
+      "action": "written_fresh"
+    },
+    {
+      "file": ".shipwright/agent_docs/decision_log.md",
+      "action": "written_fresh"
+    },
+    {
+      "file": ".shipwright/agent_docs/build_dashboard.md",
+      "action": "written_fresh"
+    },
+    {
+      "file": "CLAUDE.md",
+      "action": "skipped_loadbearing",
+      "backup": ".shipwright/adopt/backups/CLAUDE.md.preserved",
+      "note": "existing CLAUDE.md > 1024 bytes; adopt suggestion at .shipwright/adopt/CLAUDE.md.adopt-suggested"
+    },
+    {
+      "file": ".shipwright/agent_docs/architecture.md",
+      "action": "overwritten_with_backup",
+      "backup": ".shipwright/adopt/backups/.shipwright/agent_docs/architecture.md.preserved"
+    },
+    {
+      "file": ".shipwright/agent_docs/conventions.md",
+      "action": "overwritten_with_backup",
+      "backup": ".shipwright/adopt/backups/.shipwright/agent_docs/conventions.md.preserved"
+    },
+    {
+      "file": ".shipwright/agent_docs/decision_log.md",
+      "action": "merged",
+      "backup": ".shipwright/adopt/backups/.shipwright/agent_docs/decision_log.md.preserved",
+      "note": "existing_adrs=8"
+    },
+    {
+      "file": ".shipwright/agent_docs/build_dashboard.md",
+      "action": "overwritten_with_backup",
+      "backup": ".shipwright/adopt/backups/.shipwright/agent_docs/build_dashboard.md.preserved"
+    },
+    {
+      "file": "CLAUDE.md",
+      "action": "skipped_loadbearing",
+      "backup": ".shipwright/adopt/backups/CLAUDE.md.preserved",
+      "note": "existing CLAUDE.md > 1024 bytes; adopt suggestion at .shipwright/adopt/CLAUDE.md.adopt-suggested"
+    },
+    {
+      "file": ".shipwright/agent_docs/architecture.md",
+      "action": "overwritten_with_backup",
+      "backup": ".shipwright/adopt/backups/.shipwright/agent_docs/architecture.md.preserved"
+    },
+    {
+      "file": ".shipwright/agent_docs/conventions.md",
+      "action": "overwritten_with_backup",
+      "backup": ".shipwright/adopt/backups/.shipwright/agent_docs/conventions.md.preserved"
+    },
+    {
+      "file": ".shipwright/agent_docs/decision_log.md",
+      "action": "written_fresh"
+    },
+    {
+      "file": ".shipwright/agent_docs/build_dashboard.md",
+      "action": "overwritten_with_backup",
+      "backup": ".shipwright/adopt/backups/.shipwright/agent_docs/build_dashboard.md.preserved"
+    }
+  ]
+}

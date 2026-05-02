@@ -1,0 +1,48 @@
+# shipwright
+
+## WHAT
+Shipwright is an AI-powered SDLC framework built on Claude Code. It is structured as a monorepo of Claude Code plugins (one per SDLC phase) with shared scripts, profiles, and templates. End users invoke individual phases (project, plan, build, test, security, deploy, changelog, compliance, iterate, preview, design, adopt) via slash commands; the run plugin orchestrates them end-to-end. The repo itself is a library/framework — there is no deployable web service in the repo root; the optional Command Center WebUI lives in a separate repository.
+
+## Stack
+- **Runtime**: python
+- **Frontend**: —
+- **Backend**: —
+- **Database**: —
+- **Auth**: —
+- **Profile**: `python-plugin-monorepo`
+
+## HOW
+
+### Development
+```bash
+—
+```
+
+### Build
+```bash
+—
+```
+
+### Test
+```bash
+—
+```
+
+## Ongoing Changes
+This project was adopted into Shipwright on 2026-05-02. Prior code history is preserved.
+
+**Use `/shipwright-iterate` for code changes — Do NOT edit code directly.**
+The skill keeps specs, tests, ADRs, and the CHANGELOG in sync.
+
+What `/shipwright-iterate` automates:
+- ADR entry in `.shipwright/agent_docs/decision_log.md`
+- CHANGELOG fragment under `CHANGELOG-unreleased.d/<category>/`
+- Conventional Commits on an `iterate/<slug>` branch, merged to main on green tests
+- FR / acceptance-criteria sync in `.shipwright/planning/`
+- Compliance + dashboard refresh
+
+Do NOT invoke `/shipwright-project`, `/shipwright-plan`, or `/shipwright-build` directly — those are pre-onboarding phases.
+
+See `.shipwright/agent_docs/decision_log.md` for the adoption ADR (the topmost
+`Adopt this repository into the Shipwright SDLC` entry — its id is the
+next-free 3-digit number after any pre-existing ADRs).

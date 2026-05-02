@@ -1,0 +1,76 @@
+{
+  "pipeline": [
+    "project",
+    "design",
+    "plan",
+    "build",
+    "test",
+    "changelog",
+    "deploy"
+  ],
+  "status": "complete",
+  "current_step": null,
+  "completed_steps": [
+    "project",
+    "plan",
+    "build",
+    "test"
+  ],
+  "profile": "python-plugin-monorepo",
+  "scope": "library",
+  "autonomy": "supervised",
+  "standalone": false,
+  "adoption": {
+    "adopted_at": "2026-05-02T06:54:45.271037+00:00",
+    "commit_at_adoption": "8da26f338b0510167f12e16d990c0f57b07c27fa",
+    "features_inferred": 0,
+    "nested_excluded": [
+      "webui/",
+      ".worktrees/",
+      "Content-Manager/",
+      "e2e/",
+      ".venv",
+      "__pycache__",
+      ".pytest_cache",
+      ".ruff_cache",
+      ".mypy_cache"
+    ],
+    "plugin_version": "0.1.0"
+  },
+  "phase_history": {
+    "project": [
+      {
+        "outcome": "adopted",
+        "run_id": "adopt-2026-05-02T065445",
+        "at": "2026-05-02T06:54:45.271037+00:00"
+      }
+    ],
+    "plan": [
+      {
+        "outcome": "adopted",
+        "run_id": "adopt-2026-05-02T065445",
+        "at": "2026-05-02T06:54:45.271037+00:00"
+      }
+    ],
+    "build": [
+      {
+        "outcome": "adopted",
+        "run_id": "adopt-2026-05-02T065445",
+        "at": "2026-05-02T06:54:45.271037+00:00"
+      }
+    ],
+    "test": [
+      {
+        "outcome": "adopted-skipped",
+        "run_id": "adopt-2026-05-02T065445",
+        "at": "2026-05-02T06:54:45.271037+00:00"
+      }
+    ]
+  },
+  "iterate_history": [],
+  "_iterate_migration_state": "complete",
+  "_iterate_migration_ts": "2026-05-02T06:54:45.271037+00:00",
+  "_iterate_migration_quarantined_count": 0,
+  "created_at": "2026-05-02T06:54:45.271037+00:00",
+  "updated_at": "2026-05-02T06:54:45.271037+00:00"
+}

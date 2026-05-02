@@ -1,0 +1,128 @@
+{
+  "project_root": "C:\\Users\\SvenRoth\\dinovo GmbH\\AI Backup - Documents\\03 Development\\shipwright",
+  "excludes": [
+    "webui/",
+    ".worktrees/",
+    "Content-Manager/",
+    "e2e/",
+    ".venv",
+    "__pycache__",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".mypy_cache"
+  ],
+  "stack": {
+    "primary_language": "python",
+    "runtime": {
+      "python": ">=3.11"
+    },
+    "frontend": {},
+    "backend": {},
+    "database": {},
+    "auth": {},
+    "signals": [
+      "has-pyproject-toml"
+    ],
+    "multi_service": {
+      "detected": false,
+      "confidence": "low",
+      "services": [],
+      "evidence": []
+    }
+  },
+  "profile": {
+    "matched": "python-plugin-monorepo",
+    "confidence": 1.0,
+    "candidates": [
+      {
+        "name": "python-plugin-monorepo",
+        "score": 1.0,
+        "matched_deps": [
+          "python"
+        ]
+      },
+      {
+        "name": "supabase-nextjs",
+        "score": 0.0,
+        "matched_deps": []
+      },
+      {
+        "name": "vite-hono",
+        "score": 0.0,
+        "matched_deps": []
+      }
+    ]
+  },
+  "conventions": {
+    "linter": null,
+    "formatter": null,
+    "tsconfig_strict": false,
+    "editorconfig": null,
+    "python_style": null,
+    "typescript": false
+  },
+  "test_frameworks": {
+    "unit": {
+      "framework": "pytest",
+      "command": "pytest"
+    },
+    "integration": null,
+    "e2e": null,
+    "db": null,
+    "coverage_tool": null
+  },
+  "ci_pipeline": {
+    "provider": "github-actions",
+    "workflows": [
+      ".github/workflows/ci.yml",
+      ".github/workflows/codeql.yml",
+      ".github/workflows/security.yml"
+    ]
+  },
+  "folders": {
+    "layers": [
+      {
+        "name": "docs",
+        "paths": [
+          "docs"
+        ]
+      },
+      {
+        "name": "infrastructure",
+        "paths": [
+          "scripts"
+        ]
+      },
+      {
+        "name": "tests",
+        "paths": [
+          "Spec",
+          "integration-tests"
+        ]
+      }
+    ],
+    "loc_by_layer": {
+      "docs": 0,
+      "tests": 3282,
+      "infrastructure": 678
+    }
+  },
+  "nested_projects": [],
+  "features": [],
+  "git": {
+    "commits_total": 585,
+    "first_commit": "2026-05-02T08:50:20+02:00",
+    "contributors": [
+      "Sven Roth",
+      "svroch"
+    ],
+    "contributors_total": 2,
+    "major_refactor_commits": []
+  },
+  "commands": {
+    "dev": null,
+    "build": null,
+    "test": null,
+    "lint": null
+  }
+}

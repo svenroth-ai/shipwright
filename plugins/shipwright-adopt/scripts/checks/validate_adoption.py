@@ -136,7 +136,11 @@ def _count_adrs(decision_log: Path) -> int:
     if not decision_log.is_file():
         return 0
     body = decision_log.read_text(encoding="utf-8", errors="ignore")
-    return len(re.findall(r"^##\s+ADR-\d+", body, re.MULTILINE))
+    # Match both H2 and H3 ADR headings. H3 is the canonical form used by
+    # write_decision_log.py (and by adopt's decision_log generator since
+    # commit 63352ff which fixed brownfield-ADR parser round-trip); H2 is
+    # accepted for compatibility with older logs.
+    return len(re.findall(r"^#{2,3}\s+ADR-\d+", body, re.MULTILINE))
 
 
 def _read_snapshot_commits_total(project_root: Path) -> int | None:
