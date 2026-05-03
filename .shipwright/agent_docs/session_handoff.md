@@ -1,12 +1,20 @@
+---
+canon_generated: true
+run_id: "iterate-2026-05-03-changelog-msys-linter"
+phase: "iterate"
+reason: "iterate: changelog MSYS path-mangling linter"
+timestamp: "2026-05-03T18:14:57.614691+00:00"
+---
+
 # Session Handoff
 
-> Auto-generated 2026-05-03 17:39:20 UTC
+> Auto-generated 2026-05-03 18:14:57 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-03 17:39:20 UTC
-- **Reason**: release v0.15.0
+- **Timestamp**: 2026-05-03 18:14:57 UTC
+- **Reason**: iterate: changelog MSYS path-mangling linter
 
 ## Last Iterate
 
@@ -19,9 +27,19 @@
 - **Tests passed**: True
 - **Spec**: .shipwright/planning/iterate/2026-05-03-hooks-json-quoting.md
 
+## Current Iterate Progress
+
+- **Branch**: iterate/changelog-msys-linter
+- **External Review Marker**: missing
+
+### Mandatory replay on Resume
+
+Before dispatching to the handoff's Remaining phase, run these if missing:
+- Finalization (F0–F11) after all mandatory phases pass
+
 ## Legacy build state
 
-- **Phase**: build
+- **Phase**: design
 - **Current Split**: 01-adopted
 - **Current Section**: adopted-baseline
 
@@ -30,8 +48,8 @@
 
 ## Git State
 
-- **Branch**: main
-- **Last Commit**: 7b144fa chore(release): v0.15.0
+- **Branch**: iterate/changelog-msys-linter
+- **Last Commit**: ed4b076 chore(release): post-tag canon completion for v0.15.0
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -62,12 +80,7 @@
 
 ## Recent Decisions
 
-### ADR-022: Quote ${CLAUDE_PLUGIN_ROOT} in plugins/*/hooks/hooks.json
-
-> Parallel-iterate note: numbering 022 (not 021) because ADR-021 was
-> reserved for Sven's parallel `iterate/adopt-env-local-scaffold`
-> (env.local scaffolding) which landed first locally.
-
+### ADR-023: Detect Git-Bash MSYS path-mangling in changelog drop bullets
 - **Date:** 2026-05-03
-- **Section:** Iterate — bug: hooks.json quoting (deferred from ADR-020)
-- **Context:** Every plugins/*/hooks/hooks.json embeds uv-run/bash with unquoted ${CLAUDE_PLUGIN_ROOT}. Same shell word-splitting bug as ADR-020 (sugg
+- **Section:** Iterate — bug: changelog MSYS path-mangling linter
+- **Context:** During v0.15.0 release prep, an Added bullet appeared as 'C:/Program Files/Git/shipwright-adopt now scaffolds ...' instead of '/shipwright-adopt now scaffolds ...'. Caught at dry-run by hand. Root cause: Git-Bash on Windows auto-converts a leading-slash argv arg into the Bash install root before the receiving Python script sees 
