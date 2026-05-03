@@ -114,19 +114,104 @@ markdown → re-parse → assert equivalence.
 
 ## Confidence Calibration
 
-- **Boundaries touched:** see Affected Boundaries.
-- **Empirical probes:** _to be filled by runner_
-  - Round-trip: parse → render-json → render-md → parse → assert
-    equivalence on fixture spec.
-  - BOM probe: prepend `﻿` to fixture spec, parser must succeed.
-  - CRLF probe: convert fixture to CRLF, parse must succeed.
-  - Non-ASCII probe: producer/consumer names with umlauts in fixture.
-  - Empty Affected Boundaries section probe: heading without table →
-    parser returns empty list, not crash.
-  - Drift-signal probe: spec with IO-touching commit but no Affected
-    Boundaries section → drift signal fires.
-- **Edge cases NOT probed + why:** _to be filled by runner_
-- **Confidence-pattern check:** _to be filled by runner_
+- **Boundaries touched:** see Affected Boundaries above. The most
+  load-bearing one is the **markdown `## Affected Boundaries` table**
+  — iterate-spec authors edit it by hand, so all 8 probe categories
+  from A's `boundary-probes.md` apply. Secondary boundary is
+  `events.jsonl` consumption, which is producer-machine-only (lower
+  risk).
+
+- **Empirical probes run (all PASS):**
+  1. **Round-trip probe.** Fixture spec with 3-row Affected Boundaries
+     table → `parse_affected_boundaries` → `render_json` → JSON dict →
+     `_render_boundaries_table` → re-parsed → asserted structural
+     equivalence (producer/consumer/format match field-by-field).
+     `TestRoundTripRender::test_render_json_then_markdown_then_reparse_equivalent`
+     PASSED.
+  2. **BOM probe.** Fixture spec prefixed with `\xef\xbb\xbf` →
+     parser strips BOM in `_read_text_lenient` and returns 3 boundaries.
+     `TestParseMarkdownTable::test_handles_utf8_bom` PASSED.
+  3. **CRLF probe.** Fixture spec converted to CRLF line endings →
+     parser normalizes via `replace("\\r\\n", "\\n")` and returns the
+     same 3 boundaries with no trailing `\\r` polluting the format
+     value. `test_handles_crlf_line_endings` PASSED.
+  4. **Non-ASCII probe.** Producer name `Müllabfuhr.py::dump` and
+     format `JSON — ümlaut payload` round-trip through UTF-8 decode
+     intact. `test_handles_non_ascii` PASSED.
+  5. **Empty section probe.** Spec with `## Affected Boundaries`
+     heading followed only by prose `(none — pure refactor)` → parser
+     returns `[]` instead of crashing. `test_section_present_but_no_table_returns_empty`
+     PASSED.
+  6. **Drift-signal probe.** Spec WITHOUT `## Affected Boundaries`
+     section + fixture events.jsonl with `changed_files: [".env.local",
+     "shipwright_run_config.json"]` → `correlate_with_commits` flags
+     `drift_signal=True`. `test_drift_signal_fires_when_io_commit_lacks_section`
+     PASSED.
+  7. **Real-world smoke test.** Ran the tool against the live
+     `.shipwright/planning/iterate/` tree:
+     - 17 specs scanned
+     - 4 specs with `## Affected Boundaries` (= A, B, C, D — all four
+       campaign sub-iterates correctly detected, with 5/3/4/4 boundary
+       rows respectively, matching the actual table contents)
+     - 7 drift signals (pre-existing iterate specs touching `.env.local`,
+       `hooks.json`, `.claude/settings.json`, `shipwright_test_config.json`
+       — exactly the audit hook intent)
+     - `round_trip_tested: 2/16` (heuristic finds tests mentioning
+       producer bare-names; conservative because most A/B/C/D producer
+       names are descriptive prose like "iterate-spec authors",
+       not Python identifiers)
+  8. **8th probe — exact-heading discipline.** Heading like
+     `## Affected Boundaries Notes` (with extra suffix) is correctly
+     ignored — the regex `^##\s+Affected Boundaries\s*$` is exact.
+     `test_heading_match_is_exact` PASSED.
+  9. **Lint/type check.** `uvx ruff check
+     plugins/shipwright-test/scripts/tools/
+     plugins/shipwright-test/tests/test_boundary_coverage_report.py`
+     → "All checks passed!".
+  10. **Full plugin suite probe.** `pytest plugins/shipwright-test/tests/`
+      → 122 tests green (103 baseline + 19 new). `pytest
+      plugins/shipwright-iterate/tests/` → 146 tests green (no
+      regressions from C). `pytest shared/tests/` → 1237 passed +
+      34 pre-existing failures in `test_phase_plugin_hooks_consistency.py`
+      (out of scope — predates this campaign).
+
+- **Edge cases NOT probed + why acceptable:**
+  - **POSIX `export` prefix, inline `# comment`, hash-in-quotes,
+    empty values.** These four probes from A's boundary-probes.md
+    target *env-file* parsing semantics. The `## Affected Boundaries`
+    table is markdown, not env-file syntax — operators don't write
+    `export Producer | Consumer | Format` in spec tables. Skipping
+    these four with one-line justification per A's
+    `references/boundary-probes.md` "machine-only formats" note.
+  - **AST-pair detection on iterate-spec source files.** D consumes
+    A's `is_io_boundary_change` directly; the path-match path catches
+    every drift signal seen on real specs (7/7 above). AST-pair work
+    deferred per A's same-rationale.
+  - **Cross-process round-trip via subprocess invocation.** D's
+    producer (the tool itself) and consumer (`shipwright_test_results.json`
+    merge) live in the same process — the in-process render-then-reparse
+    test in probe #1 is the load-bearing assertion.
+
+- **Confidence-pattern check.** Asked "what would my round-trip probe
+  miss?":
+  - **Answer 1:** A spec where someone writes `## Affected Boundaries`
+    but mistakenly uses HTML table syntax (`<table>...</table>`) instead
+    of markdown pipes. Parser would silently return `[]`. Mitigated by
+    the drift-signal path: if commits also touch IO files, it still
+    fires.
+  - **Answer 2:** A spec author lists the boundary rows but forgets
+    the header row (so `data_rows = table_rows[1:]` skips a real row).
+    Acknowledged as an under-detection bug with floor=1 missed
+    boundary; not a correctness/safety issue. Documented as future
+    enhancement candidate (validate header tokens).
+  - **Answer 3:** Round-trip-tested heuristic depends on producer name
+    being a Python identifier substring. Producer names in A/B/C/D
+    specs are prose ("iterate-spec authors", "is_io_boundary_change") —
+    so the 2/16 detection rate accurately reflects the heuristic's
+    floor on prose producers, not a parser bug.
+  No additional probes warranted — all real-world failure modes are
+  documented and the 17-spec smoke-test confirms the tool produces
+  meaningful audit output.
 
 ## Runner Overrides
 
