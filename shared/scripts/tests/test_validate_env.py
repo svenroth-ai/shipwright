@@ -1,6 +1,8 @@
 """Tests for shared.scripts.validate_env module."""
 
 import json
+import os
+import sys
 
 import pytest
 
@@ -626,6 +628,144 @@ class TestFrameworkOrderDriftProtection:
             f"  external_review_config.is_external_review_enabled(): {primary_runtime_keys}\n"
             f"Update _SHIPWRIGHT_FRAMEWORK_VARS to match (or update this test "
             f"if GOOGLE_API_KEY-style aliases were added)."
+        )
+
+
+class TestInlineCommentParsing:
+    """Regression for the producer-consumer round-trip:
+    ``init_env_file`` emits ``# KEY=        # description``. When the user
+    uncomments the line and fills the value, the result is
+    ``KEY=value        # description``. The parser MUST strip the inline
+    comment so ``load_shipwright_env`` doesn't put the trailing comment text
+    into ``os.environ[KEY]`` — otherwise external_review.py sends the entire
+    string as the API key.
+
+    Standard POSIX/dotenv convention: inline comments start at first
+    whitespace+``#``. Unquoted ``value#nohash`` keeps the literal ``#``.
+    Quoted values keep ``#`` as content.
+
+    Caught empirically on iterate-2026-05-03-adopt-env-local-scaffold during
+    a real producer-consumer round-trip test (load_shipwright_env reading
+    what the scaffold wrote). Pre-existing latent bug; this iterate
+    activates the scaffold so the bug becomes user-visible.
+    """
+
+    def test_inline_comment_stripped_unquoted(self, tmp_path):
+        env_file = tmp_path / ".env.local"
+        env_file.write_text(
+            "OPENROUTER_API_KEY=sk-or-real-secret        # Description trailing\n",
+            encoding="utf-8",
+        )
+        result = parse_env_file(env_file)
+        assert result == {"OPENROUTER_API_KEY": "sk-or-real-secret"}
+
+    def test_inline_comment_in_quoted_value_preserved(self, tmp_path):
+        env_file = tmp_path / ".env.local"
+        env_file.write_text(
+            'NOTE="value with # hash inside"\n',
+            encoding="utf-8",
+        )
+        result = parse_env_file(env_file)
+        assert result == {"NOTE": "value with # hash inside"}
+
+    def test_quoted_value_with_trailing_comment(self, tmp_path):
+        env_file = tmp_path / ".env.local"
+        env_file.write_text(
+            'KEY="real-value" # comment after closing quote\n',
+            encoding="utf-8",
+        )
+        result = parse_env_file(env_file)
+        assert result == {"KEY": "real-value"}
+
+    def test_hash_without_leading_whitespace_is_literal(self, tmp_path):
+        """``KEY=value#tag`` keeps ``#tag`` — only whitespace+``#`` is a
+        comment marker. Matches python-dotenv semantics."""
+        env_file = tmp_path / ".env.local"
+        env_file.write_text(
+            "PASSWORD=p4ss#word\n",
+            encoding="utf-8",
+        )
+        result = parse_env_file(env_file)
+        assert result == {"PASSWORD": "p4ss#word"}
+
+    def test_export_with_inline_comment(self, tmp_path):
+        env_file = tmp_path / ".env.local"
+        env_file.write_text(
+            "export OPENAI_API_KEY=sk-real # inline\n",
+            encoding="utf-8",
+        )
+        result = parse_env_file(env_file)
+        assert result == {"OPENAI_API_KEY": "sk-real"}
+
+    def test_only_whitespace_value_with_comment_is_empty(self, tmp_path):
+        env_file = tmp_path / ".env.local"
+        env_file.write_text(
+            "OPENROUTER_API_KEY=        # User has not filled this in yet\n",
+            encoding="utf-8",
+        )
+        result = parse_env_file(env_file)
+        assert result == {"OPENROUTER_API_KEY": ""}
+
+    def test_round_trip_with_load_shipwright_env(self, tmp_path, monkeypatch):
+        """End-to-end: scaffold-style line → load_shipwright_env → os.environ.
+
+        This is the integration boundary that the original parse_env_file
+        bug crossed undetected. Locks it in.
+        """
+        env_file = tmp_path / ".env.local"
+        env_file.write_text(
+            "OPENROUTER_API_KEY=sk-or-real-12345        # OpenRouter API key\n"
+            "GEMINI_API_KEY=AIza-real-67890        # Direct Gemini key\n",
+            encoding="utf-8",
+        )
+        monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+        monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+        from pathlib import Path as _P
+        sys.path.insert(0, str(_P(__file__).resolve().parent.parent / "lib"))
+        from env import load_shipwright_env  # type: ignore
+        load_shipwright_env(tmp_path)
+        assert os.environ.get("OPENROUTER_API_KEY") == "sk-or-real-12345"
+        assert os.environ.get("GEMINI_API_KEY") == "AIza-real-67890"
+
+
+class TestParseEnvFileLibCopy:
+    """``shared/scripts/lib/env.py`` carries a parallel ``parse_env_file`` so
+    ``load_shipwright_env`` can be imported by plugins without pulling in
+    the ``shared.scripts`` package. The two copies must produce identical
+    output on the same input. Locks down the duplication.
+
+    Caught empirically on iterate-2026-05-03-adopt-env-local-scaffold:
+    the lib copy was missing the inline-comment fix when validate_env's
+    copy got it. This drift is invisible to a unit test against
+    parse_env_file alone — only a producer-consumer round-trip
+    (load_shipwright_env reading scaffolded output) surfaces it.
+    """
+
+    @pytest.fixture
+    def both_parsers(self):
+        from pathlib import Path as _P
+        sys.path.insert(0, str(_P(__file__).resolve().parent.parent / "lib"))
+        from env import parse_env_file as parse_lib  # type: ignore
+        return parse_env_file, parse_lib
+
+    @pytest.mark.parametrize("content", [
+        "KEY=value\n",
+        'KEY="quoted value"\n',
+        "KEY='single quoted'\n",
+        "OPENROUTER_API_KEY=sk-real        # description trailing\n",
+        "export OPENAI_API_KEY=sk-test        # comment\n",
+        "EMPTY=        # only comment\n",
+        "PASSWORD=p4ss#word\n",
+        'NOTE="value with # hash"\n',
+        "KEY=\n",
+        "# full line comment\nKEY=value\n",
+    ])
+    def test_two_copies_produce_identical_output(self, both_parsers, tmp_path, content):
+        validate_env_parser, lib_parser = both_parsers
+        env_file = tmp_path / ".env.local"
+        env_file.write_text(content, encoding="utf-8")
+        assert validate_env_parser(env_file) == lib_parser(env_file), (
+            f"parse_env_file copies drifted on input: {content!r}"
         )
 
 

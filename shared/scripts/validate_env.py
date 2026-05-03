@@ -26,6 +26,7 @@ Output (JSON):
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -33,11 +34,45 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "lib"))
 
 
+def _strip_inline_comment(raw: str) -> str:
+    """Return the value portion of an env-file RHS, stripping inline comments.
+
+    POSIX/dotenv conventions:
+      - Leading whitespace is not part of the value.
+      - If the value is wrapped in matching single/double quotes, the value is
+        the content BETWEEN the quotes — anything after the closing quote
+        (including ``#`` markers) is comment territory.
+      - For unquoted values, an inline comment starts at the first whitespace
+        followed by ``#``. ``KEY=value#nohash`` keeps ``#nohash`` because there
+        is no whitespace separator (matches python-dotenv semantics).
+
+    No escape handling on quotes — keeps parser surface small. The producer
+    side (``init_env_file``) never emits escaped quotes.
+    """
+    raw = raw.lstrip()
+    if not raw or raw[0] == "#":
+        # Pure-comment RHS like ``KEY=        # placeholder``: empty value.
+        return ""
+    if raw[0] in ('"', "'"):
+        quote = raw[0]
+        end = raw.find(quote, 1)
+        if end == -1:
+            # Unclosed quote — fall back to defensive literal interpretation.
+            return raw[1:].rstrip()
+        return raw[1:end]
+    # Unquoted: strip inline comment if separated by whitespace.
+    m = re.search(r"\s+#", raw)
+    if m:
+        raw = raw[:m.start()]
+    return raw.rstrip()
+
+
 def parse_env_file(env_path: Path) -> dict[str, str]:
     """Parse a .env file into a dict of key-value pairs.
 
     Handles ``KEY=value``, ``KEY="value"``, ``KEY='value'``, ``export KEY=value``
-    (POSIX-style), comments, and blank lines. Does NOT expand variable references.
+    (POSIX-style), inline ``# comment`` (whitespace-separated, unquoted only),
+    full-line comments, and blank lines. Does NOT expand variable references.
     """
     env_vars: dict[str, str] = {}
     if not env_path.exists():
@@ -55,10 +90,7 @@ def parse_env_file(env_path: Path) -> dict[str, str]:
             line = line[len("export"):].lstrip()
         key, _, value = line.partition("=")
         key = key.strip()
-        value = value.strip()
-        # Strip surrounding quotes
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
-            value = value[1:-1]
+        value = _strip_inline_comment(value)
         if key:
             env_vars[key] = value
     return env_vars

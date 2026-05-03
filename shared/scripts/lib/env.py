@@ -5,6 +5,7 @@ Variables already present in os.environ are never overwritten.
 """
 
 import os
+import re
 from pathlib import Path
 
 
@@ -37,11 +38,35 @@ def find_shipwright_root(start: Path | None = None) -> Path:
     )
 
 
+def _strip_inline_comment(raw: str) -> str:
+    """See ``shared/scripts/validate_env._strip_inline_comment`` for the
+    canonical contract. Duplicated here intentionally: ``shared/scripts/lib/``
+    is imported by ``load_shipwright_env`` from any plugin without going
+    through the parent ``shared.scripts`` package, so a cross-module import
+    here would create a circular shape. Drift between the two copies is
+    locked down by ``TestParseEnvFileLibCopy``.
+    """
+    raw = raw.lstrip()
+    if not raw or raw[0] == "#":
+        return ""
+    if raw[0] in ('"', "'"):
+        quote = raw[0]
+        end = raw.find(quote, 1)
+        if end == -1:
+            return raw[1:].rstrip()
+        return raw[1:end]
+    m = re.search(r"\s+#", raw)
+    if m:
+        raw = raw[:m.start()]
+    return raw.rstrip()
+
+
 def parse_env_file(env_path: Path) -> dict[str, str]:
     """Parse a .env file into a dict of key-value pairs.
 
-    Handles ``KEY=value``, ``KEY="value"``, ``KEY='value'``,
-    comments, and blank lines.  Does NOT expand variable references.
+    Handles ``KEY=value``, ``KEY="value"``, ``KEY='value'``, ``export KEY=value``
+    (POSIX-style), inline ``# comment`` (whitespace-separated, unquoted only),
+    full-line comments, and blank lines. Does NOT expand variable references.
     """
     env_vars: dict[str, str] = {}
     if not env_path.exists():
@@ -53,11 +78,11 @@ def parse_env_file(env_path: Path) -> dict[str, str]:
             continue
         if "=" not in line:
             continue
+        if line.startswith("export ") or line.startswith("export\t"):
+            line = line[len("export"):].lstrip()
         key, _, value = line.partition("=")
         key = key.strip()
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
-            value = value[1:-1]
+        value = _strip_inline_comment(value)
         if key:
             env_vars[key] = value
     return env_vars
