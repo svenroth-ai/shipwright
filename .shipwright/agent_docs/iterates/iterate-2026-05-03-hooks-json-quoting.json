@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-03-hooks-json-quoting",
+  "date": "2026-05-03T15:40:35.711132Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/hooks-json-quoting",
+  "spec": ".shipwright/planning/iterate/2026-05-03-hooks-json-quoting.md",
+  "tests_passed": true,
+  "adr": "ADR-022"
+}

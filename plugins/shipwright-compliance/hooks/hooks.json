@@ -4,11 +4,11 @@
       "hooks": [
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/capture_session_id.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/capture_session_id.py\""
         },
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_artifact_drift.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_artifact_drift.py\""
         }
       ]
     }
@@ -19,11 +19,11 @@
       "hooks": [
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check_rtm_coverage.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check_rtm_coverage.py\""
         },
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check_security_scan.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check_security_scan.py\""
         }
       ]
     }
@@ -33,11 +33,11 @@
       "hooks": [
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_phase_quality_on_stop.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_phase_quality_on_stop.py\""
         },
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py\""
         }
       ]
     }

@@ -4,11 +4,11 @@
       "hooks": [
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/capture_session_id.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/capture_session_id.py\""
         },
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_artifact_drift.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_artifact_drift.py\""
         }
       ]
     }
@@ -18,11 +18,11 @@
       "hooks": [
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py\""
         },
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/master_stop_check.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/master_stop_check.py\""
         }
       ]
     }

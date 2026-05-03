@@ -399,3 +399,20 @@ shipwright/
 - **Rationale:** Framework keys live in validate_env.py (single hardcoded list mirrored by an AST-based drift-protection test against external_review_config.py) rather than scattered across N profile JSONs, so the LLM-review key set has one home. .gitignore hard-stop matches the existing security invariant: never stage a secrets file in a repo where the ignore rule cannot be enforced. Both external reviewers (Gemini + OpenAI via OpenRouter) reviewed the plan AND the diff; HIGH and MEDIUM findings on AC2/AC6 contract, drift-protection rigor, payload shape, and gitignore append cases were folded back into the spec and tests before commit.
 - **Consequences:** Every brownfield-adopted repo now has a single canonical .env.local SSoT for both profile-specific build/deploy keys and the framework-level review keys. Re-running adopt is byte-equal idempotent. Foundation for the v0.4 shipwright-security phase_parameters work — the new secrets surface can read from the same load_shipwright_env() rather than inventing a second source. One incidental fix: corrected pre-existing broken assertion in test_skips_deploy_phase (deploy phase has worked since 2026-03-30 commit 2ae53b4 but the test was never updated).
 - **Rejected:** Add LLM keys to every profile JSON (scatters the same three entries across 3+ files, drift hotspot). Run validate_env via subprocess from the SKILL.md (LLM has to remember to invoke; integration tests can't directly assert behavior). Scaffold .env.example as a checked-in convention (no concrete consumer today; deferred). Generic phase=all framework merge for direct CLI users (changes shared semantics; gated behind include_framework instead).
+
+---
+
+### ADR-022: Quote ${CLAUDE_PLUGIN_ROOT} in plugins/*/hooks/hooks.json
+
+> Parallel-iterate note: numbering 022 (not 021) because ADR-021 was
+> reserved for Sven's parallel `iterate/adopt-env-local-scaffold`
+> (env.local scaffolding) which landed first locally.
+
+- **Date:** 2026-05-03
+- **Section:** Iterate — bug: hooks.json quoting (deferred from ADR-020)
+- **Context:** Every plugins/*/hooks/hooks.json embeds uv-run/bash with unquoted ${CLAUDE_PLUGIN_ROOT}. Same shell word-splitting bug as ADR-020 (suggest_iterate UserPromptSubmit hook), but trigger is the plugin-install-path containing spaces — today only fires for users whose Windows username has a space (e.g. 'John Doe' → ~/.claude/plugins/cache/shipwright/... = C:\Users\John Doe\...). Empirically reproduced via end-to-end shell test: unquoted path → uv exits 2 with 'Failed to spawn: c:\Users\SvenRoth\dinovo'. Deferred from ADR-020 with explicit out-of-scope marker; closed here.
+- **Decision:** Repo-wide sweep of plugins/*/hooks/hooks.json (12 files, ~78 command strings): wrap ${CLAUDE_PLUGIN_ROOT}/path/to/script in escaped double quotes inside the JSON value. Add shared/tests/test_hooks_json_quoting.py as parametrized regression that walks every plugin's hooks.json and asserts the AC-1 invariant — future hooks added without quoting fail the test, not the user's machine. NOT adding --no-project: between-phase hooks need uv to resolve plugin-local pyproject.toml deps.
+- **Commit:** pending
+- **Rationale:** Empirical: end-to-end test reproduces the exact failure (exit 2 + 'Failed to spawn: c:\Users\SvenRoth\dinovo') and verifies the canonical fix (exit 0). Same as ADR-020 TEST 1, applied to the between-phase hooks.
+- **Consequences:** Users with Windows usernames containing spaces (or anyone with a non-default plugin install path containing spaces) get functional Stop/SessionStart/PreToolUse/UserPromptSubmit hooks. Test prevents regression. Diff is purely text — no behavior change for users on space-free install paths.
+- **Rejected:** Adding --no-project to between-phase hooks: rejected because they need pyproject.toml resolution for plugin-local deps. Rejected: 'wait until a user reports it' — 5-min mechanical fix with regression test, low risk.

@@ -1,18 +1,17 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-03-adopt-env-local-scaffold",
+    "run_id": "iterate-2026-05-03-hooks-json-quoting",
     "date": "2026-05-03",
     "unit": {
       "status": "passed",
-      "passed": 36,
-      "total": 36,
-      "scope": "shared/scripts/tests/test_validate_env.py"
+      "passed": 13,
+      "total": 13,
+      "scope": "shared/tests/test_hooks_json_quoting.py (12 plugin parametrizations + 1 JSON-validity check)"
     },
     "integration": {
-      "status": "passed",
-      "passed": 11,
-      "total": 11,
-      "scope": "plugins/shipwright-adopt: test_skill_md_env_scaffold (7) + test_adopt_pipeline_subprocess (4)"
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "skipped",
@@ -32,24 +31,10 @@
     "smoke": {
       "status": "skipped"
     },
-    "full_suite": {
-      "status": "passed",
-      "scopes": [
-        "root pytest: 66 passed, 2 deselected (slow)",
-        "plugins/shipwright-adopt: 258 passed",
-        "plugins/shipwright-build: 46 passed",
-        "plugins/shipwright-compliance: 302 passed",
-        "plugins/shipwright-design: 12 passed",
-        "plugins/shipwright-iterate: 87 passed",
-        "plugins/shipwright-plan: 31 passed",
-        "plugins/shipwright-preview: 10 passed",
-        "plugins/shipwright-project: 43 passed",
-        "plugins/shipwright-run: 144 passed",
-        "plugins/shipwright-test: 103 passed"
-      ]
-    },
+    "_merge_note": "This iterate's test scope is the new hooks.json regression module only. The full test suite was last exercised by the parallel iterate-2026-05-03-adopt-env-local-scaffold (ADR-021) which merged into main just before this one — its full_suite results (root pytest 66 + adopt 258 + build 46 + compliance 302 + design 12 + iterate 87 + plan 31 + preview 10 + project 43 + run 144 + test 103 = 1102 passed, 2 deselected slow) hold for everything outside this iterate's scope.",
     "degraded": [
-      "Pre-existing test failures unrelated to this iterate, present on main: (1) shipwright-deploy::test_validate_without_token — assertion targets warnings list but validate-deploy.py emits to errors list (broken since 432661a). (2) shipwright-security::test_explicit_name_not_in_registry — flaky test ordering, passes in isolation. Both verified out of scope and unchanged by this iterate."
+      "Test count narrowed to the single new shared/tests/test_hooks_json_quoting.py module (13 cases). Did not re-run plugin suites or full shared/tests/ in this iterate — change is text-only in plugins/*/hooks/hooks.json + 1 new test file; no plugin-side code or other shared module touched. Empirically validated separately via end-to-end shell test (canonical exit 0 vs unquoted exit 2/127 with exact word-split symptom).",
+      "Pre-existing test failures unrelated to either iterate, present on main: (1) shipwright-deploy::test_validate_without_token — assertion targets warnings list but validate-deploy.py emits to errors list (broken since 432661a). (2) shipwright-security::test_explicit_name_not_in_registry — flaky test ordering, passes in isolation. Both verified out of scope and unchanged by either iterate."
     ]
   }
 }
