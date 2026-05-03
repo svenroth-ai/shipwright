@@ -1,1 +1,0 @@
-CONTRIBUTING.md and the auto-generated agent_docs/conventions.md no longer reference 'cd webui/client && npm ci' as a sibling directory. WebUI lives in the separate shipwright-webui repo since v0.4.0; CONTRIBUTING.md now links there for setup. Conventions.md was re-generated from the cleaned source via generate_adoption_artifacts.py --no-backfill-events.

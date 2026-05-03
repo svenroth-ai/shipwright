@@ -1,1 +1,0 @@
-.shipwright/planning/01-adopted/spec.md FR list populated with FR-01.01..FR-01.13 (one FR per plugin) sourced from .shipwright/adopt/enrichment.json. Replaces the auto-generated 'no features detected' placeholder produced by the AST scanner that does not understand uv-workspace plugin monorepos.

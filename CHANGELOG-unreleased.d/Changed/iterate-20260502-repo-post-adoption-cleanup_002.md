@@ -1,1 +1,0 @@
-.shipwright/planning/iterate/ legacy iterate plans (3 plans plus 3 mini-plans from 2026-04-30 phase0-i3-performance-budgets, 2026-04-30 rollback-discipline, 2026-05-01 compliance-group-a5) are now tracked in-place with a README.md disclaimer. Were transparently hidden by the broad .shipwright/ gitignore until self-adoption restructured it.

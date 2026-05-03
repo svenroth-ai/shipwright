@@ -1,1 +1,0 @@
-C:/Program Files/Git/shipwright-adopt now scaffolds <project_root>/.env.local with profile required_env_vars + framework-level external-review keys (OPENROUTER/GEMINI/OPENAI). Idempotent, gitignore-enforced, hard-stop on permission failure (ADR-021).

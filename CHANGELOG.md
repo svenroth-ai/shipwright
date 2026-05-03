@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-05-03
+
+### Added
+
+- `/shipwright-adopt` now scaffolds `<project_root>/.env.local` with profile `required_env_vars` + framework-level external-review keys (OPENROUTER/GEMINI/OPENAI). Idempotent, gitignore-enforced, hard-stop on permission failure (ADR-021).
+
+### Changed
+
+- shared/scripts/validate_env: init_env_file gains include_framework=False kwarg (preserves --init CLI semantics) and a rich return contract (path, vars, framework_keys, missing_keys). parse_env_file now tolerates POSIX-style 'export KEY=' prefix.
+- .shipwright/planning/01-adopted/spec.md FR list populated with FR-01.01..FR-01.13 (one FR per plugin) sourced from .shipwright/adopt/enrichment.json. Replaces the auto-generated 'no features detected' placeholder produced by the AST scanner that does not understand uv-workspace plugin monorepos.
+- .shipwright/planning/iterate/ legacy iterate plans (3 plans plus 3 mini-plans from 2026-04-30 phase0-i3-performance-budgets, 2026-04-30 rollback-discipline, 2026-05-01 compliance-group-a5) are now tracked in-place with a README.md disclaimer. Were transparently hidden by the broad .shipwright/ gitignore until self-adoption restructured it.
+
+### Fixed
+
+- /shipwright-adopt: hook installer now writes canonical matcher-group shape, fixing 'Expected array, but received undefined' parse error in adopted .claude/settings.json (#hook-installer-shape)
+- shared/scripts/tests/test_validate_env: pre-existing test_skips_deploy_phase asserted action=skipped but the function has supported deploy phase since commit 2ae53b4 (2026-03-30); renamed to test_creates_for_deploy_phase with the correct assertion.
+- shared/scripts/lib/env.py + shared/scripts/validate_env.py: parse_env_file now strips inline '# comment' from unquoted values (POSIX/dotenv convention). Pre-existing latent bug since 2026-03-30 became user-visible after ADR-021 wired the scaffold into adopt; load_shipwright_env was reading the description text as part of the API key value.
+- **all plugins:** every `plugins/*/hooks/hooks.json` now wraps `${CLAUDE_PLUGIN_ROOT}` in escaped double quotes inside hook `command` strings. Closes the deferred lurking bug from ADR-020: users with Windows usernames containing spaces had every Stop/SessionStart/PreToolUse/UserPromptSubmit hook silently fail with shell word-splitting. Adds `shared/tests/test_hooks_json_quoting.py` regression test that catches future unquoted hooks at test time.
+- **adopt/project/run:** suggest_iterate UserPromptSubmit hook now wraps ${CLAUDE_PLUGIN_ROOT} in double quotes and passes `--no-project` to `uv run`, so target projects on paths containing spaces (OneDrive-synced "AI Backup - Documents", Windows usernames with spaces) no longer have every prompt blocked. Builds on the Shape A→B fix from ADR-019: the installer now also upgrades any of six known legacy hook command literals in place across BOTH carrier shapes on re-run, fixing already-adopted projects without manual settings.json edits.
+- adopt: shipwright-adopt/scripts/lib/compliance_bridge.py:run_lib_fallback now inserts both scripts/ AND the compliance plugin root on sys.path. Three of five fallback generators (sbom_generator, change_history, test_evidence) use from scripts.lib.mermaid import ... and require the parent of scripts/ on sys.path; without the fix they all skipped with ModuleNotFoundError("No module named scripts"). New subprocess-based regression test pins the contract.
+- adopt: shipwright-adopt/scripts/lib/known_issues_inventory.py default-skips test-shaped paths (tests/ anywhere, test_*.py, *_test.py, *.test.ts, *.spec.ts and tsx/js/jsx siblings) via the new _is_test_fixture_path heuristic. The 2026-05-02 self-adoption surfaced that 22 of 28 known_issues entries came from inventory test fixtures, drowning real workflow TODOs. Repos that legitimately track TODOs in test files can opt back in via scan_tests=True (CLI exposure tracked separately).
+- adopt: shipwright-adopt/scripts/lib/prior_art_harvester.py:harvest_conventions gained an optional excludes parameter. When provided (typically from --exclude-path threaded via generate_adoption_artifacts.py), the harvested body is post-processed: cd <path> tokens in fenced code blocks whose paths are excluded or absent on disk get a <!-- adopt-drift: ... --> marker prepended to the block. Default None preserves backwards-compat for legacy callers.
+- CONTRIBUTING.md and the auto-generated agent_docs/conventions.md no longer reference 'cd webui/client && npm ci' as a sibling directory. WebUI lives in the separate shipwright-webui repo since v0.4.0; CONTRIBUTING.md now links there for setup. Conventions.md was re-generated from the cleaned source via generate_adoption_artifacts.py --no-backfill-events.
+- .shipwright/agent_docs/known_issues.md gained a disclaimer header explaining that 22 of 28 TODO/FIXME entries come from plugins/shipwright-adopt/tests/test_known_issues_inventory.py test fixtures and are not real workflow TODOs. Scanner-side fix tracked as Iterate 2 Sub-2B.
+
 ## [v0.14.0] - 2026-05-02
 
 ### Added
