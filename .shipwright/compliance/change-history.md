@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-05-03T14:11:43Z
-Total commits: 546
+Generated: 2026-05-03T15:57:58Z
+Total commits: 552
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 200
-    "fix" : 146
+    "feat" : 201
+    "fix" : 148
     "docs" : 87
-    "chore" : 62
+    "chore" : 65
     "refactor" : 32
     "test" : 12
     "other" : 7
@@ -18,10 +18,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 200 commits
+### Features (feat) — 201 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-03 | adopt | scaffold .env.local with profile + framework keys (ADR-021) | 995300862e93 |
 | 2026-05-02 | adopt | expand CLAUDE.md "Ongoing Changes" with iterate-workflow bullets | 8da26f338b05 |
 | 2026-05-01 | compliance | add Group A5 — CI security workflow integrity audit | 66fc9ac1ed9d |
 | 2026-05-01 | compliance | wire Group E + G + tuning (plan v7 Steps 7+8+13) | 423f7021bb4c |
@@ -223,10 +224,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 146 commits
+### Fixes (fix) — 148 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-03 | hooks | quote ${CLAUDE_PLUGIN_ROOT} in plugins/*/hooks/hooks.json | 6ca369d948c0 |
+| 2026-05-03 | env | strip inline `# comment` from parse_env_file values (latent bug, ADR-021) | 1a9c7f48079f |
 | 2026-05-03 | adopt | quote suggest_iterate hook path + upgrade legacy entries (Shape + command) in place | b24f804b1d89 |
 | 2026-05-02 | adopt | write canonical matcher-group shape for UserPromptSubmit hook | 1ddf9ae549c2 |
 | 2026-05-02 | adopt | drift detection, test-fixture filter, compliance fallback (Iterate 2 of 2) | cffe191e793c |
@@ -466,10 +469,13 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Chores (chore) — 62 commits
+### Chores (chore) — 65 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-03 | iterate-hooks-json | post-F6 housekeeping (F7 event for ADR-022) | 3476ce2245be |
+| 2026-05-03 | iterate-env-local | F4 + F7 for inline-comment fix | 3409c601c597 |
+| 2026-05-03 | iterate-env-local | post-F6 housekeeping (F7 event for ADR-021 + post-merge handoff regenerate) | 95e6f2ca921b |
 | 2026-05-03 | iterate-quoted-path | post-F6 housekeeping (F7 event for ADR-020) | d93ea0ac547e |
 | 2026-05-03 | compliance | refresh artifacts post-rebase + record event for ADR-019 | 449aacfd1ab5 |
 | 2026-05-02 | iterate-2 | post-F6 housekeeping (F7 event + ADR-018 conventions append) | eefae4699231 |
@@ -603,7 +609,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 546 |
+| Total commits | 552 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 546 |
+| Human-authored commits | 552 |
 
