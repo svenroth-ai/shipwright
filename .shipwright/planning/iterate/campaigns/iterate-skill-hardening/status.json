@@ -1,0 +1,47 @@
+{
+  "campaign": "iterate-skill-hardening",
+  "branch_strategy": "stacked",
+  "created_at": "2026-05-03T18:42:00.821407+00:00",
+  "sub_iterates": [
+    {
+      "id": "A",
+      "slug": "boundary-tests-foundation",
+      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\iterate-skill-hardening\\sub-iterates\\A-boundary-tests-foundation.md",
+      "status": "pending",
+      "commit": null,
+      "branch": null,
+      "tests_passed": null,
+      "tests_total": null
+    },
+    {
+      "id": "B",
+      "slug": "confidence-calibration-phase",
+      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\iterate-skill-hardening\\sub-iterates\\B-confidence-calibration-phase.md",
+      "status": "pending",
+      "commit": null,
+      "branch": null,
+      "tests_passed": null,
+      "tests_total": null
+    },
+    {
+      "id": "C",
+      "slug": "multi-session-discipline",
+      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\iterate-skill-hardening\\sub-iterates\\C-multi-session-discipline.md",
+      "status": "pending",
+      "commit": null,
+      "branch": null,
+      "tests_passed": null,
+      "tests_total": null
+    },
+    {
+      "id": "D",
+      "slug": "boundary-coverage-report",
+      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\iterate-skill-hardening\\sub-iterates\\D-boundary-coverage-report.md",
+      "status": "pending",
+      "commit": null,
+      "branch": null,
+      "tests_passed": null,
+      "tests_total": null
+    }
+  ]
+}
