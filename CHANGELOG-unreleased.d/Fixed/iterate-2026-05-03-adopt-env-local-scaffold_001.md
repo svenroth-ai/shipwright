@@ -1,0 +1,1 @@
+shared/scripts/tests/test_validate_env: pre-existing test_skips_deploy_phase asserted action=skipped but the function has supported deploy phase since commit 2ae53b4 (2026-03-30); renamed to test_creates_for_deploy_phase with the correct assertion.

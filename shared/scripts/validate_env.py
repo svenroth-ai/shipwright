@@ -36,8 +36,8 @@ sys.path.insert(0, str(Path(__file__).parent / "lib"))
 def parse_env_file(env_path: Path) -> dict[str, str]:
     """Parse a .env file into a dict of key-value pairs.
 
-    Handles KEY=value, KEY="value", KEY='value', comments, and blank lines.
-    Does NOT expand variable references.
+    Handles ``KEY=value``, ``KEY="value"``, ``KEY='value'``, ``export KEY=value``
+    (POSIX-style), comments, and blank lines. Does NOT expand variable references.
     """
     env_vars: dict[str, str] = {}
     if not env_path.exists():
@@ -49,6 +49,10 @@ def parse_env_file(env_path: Path) -> dict[str, str]:
             continue
         if "=" not in line:
             continue
+        # Strip optional `export ` prefix (POSIX shell habit; some operators
+        # source `.env.local` directly into a shell session).
+        if line.startswith("export ") or line.startswith("export\t"):
+            line = line[len("export"):].lstrip()
         key, _, value = line.partition("=")
         key = key.strip()
         value = value.strip()
@@ -68,6 +72,32 @@ def load_profile(profile_name: str, profile_dir: Path) -> dict | None:
     return json.loads(profile_path.read_text(encoding="utf-8"))
 
 
+# Framework-level env vars used by Shipwright itself, regardless of stack
+# profile. Mirrors the OpenRouter-first fallback order in
+# ``shared/scripts/lib/external_review_config.py:is_external_review_enabled``
+# so the .env.local scaffold reflects what the runtime actually checks for.
+# Drift between the two is locked down by
+# ``TestFrameworkOrderDriftProtection``.
+_SHIPWRIGHT_FRAMEWORK_VARS: list[dict] = [
+    {
+        "name": "OPENROUTER_API_KEY",
+        "description": "OpenRouter API key for external plan/iterate/code reviews "
+                       "(preferred — single key for both Gemini and OpenAI)",
+        "optional": True,
+    },
+    {
+        "name": "GEMINI_API_KEY",
+        "description": "Direct Google Gemini API key (alternative to OpenRouter)",
+        "optional": True,
+    },
+    {
+        "name": "OPENAI_API_KEY",
+        "description": "Direct OpenAI API key (alternative to OpenRouter)",
+        "optional": True,
+    },
+]
+
+
 def _collect_phase_vars(
     profile: dict, phase: str,
 ) -> list[tuple[str, list[dict]]]:
@@ -75,6 +105,11 @@ def _collect_phase_vars(
 
     If *phase* is ``"all"``, returns all sections.  Otherwise returns
     only the requested phase.
+
+    The framework-level review-key section is appended by
+    ``init_env_file`` when ``include_framework=True``; this helper
+    intentionally only inspects the profile so global ``phase=all``
+    semantics for direct CLI users stay unchanged.
     """
     required = profile.get("required_env_vars", {})
     phase_order = ["build", "deploy", "plugin"]
@@ -89,14 +124,45 @@ def _collect_phase_vars(
     return [(phase.capitalize(), vars_list)] if vars_list else []
 
 
+def _dedup_sections(
+    sections: list[tuple[str, list[dict]]],
+) -> list[tuple[str, list[dict]]]:
+    """Drop duplicate var entries — first occurrence (by name) wins.
+
+    Preserves the original section structure: a section that becomes empty
+    after deduplication is dropped entirely.
+    """
+    seen: set[str] = set()
+    out: list[tuple[str, list[dict]]] = []
+    for label, vars_list in sections:
+        kept = []
+        for var in vars_list:
+            name = var.get("name")
+            if not name or name in seen:
+                continue
+            seen.add(name)
+            kept.append(var)
+        if kept:
+            out.append((label, kept))
+    return out
+
+
 def _find_existing_keys(env_file_path: Path) -> set[str]:
-    """Parse existing .env.local and return all keys (active or commented)."""
+    """Parse existing .env.local and return all keys (active or commented).
+
+    Tolerates both ``KEY=value`` and ``export KEY=value`` forms (commented
+    or active). Whitespace around ``=`` is also tolerated.
+    """
     keys: set[str] = set()
     if not env_file_path.exists():
         return keys
     for line in env_file_path.read_text(encoding="utf-8").splitlines():
         stripped = line.strip()
         check = stripped.lstrip("#").strip()
+        # Strip optional `export ` prefix (handles `export KEY=` and
+        # `# export KEY=` shapes alike).
+        if check.startswith("export ") or check.startswith("export\t"):
+            check = check[len("export"):].lstrip()
         if "=" in check:
             key = check.partition("=")[0].strip()
             if key:
@@ -139,12 +205,38 @@ def init_env_file(
     project_root: Path,
     phase: str,
     profile_dir: Path,
+    *,
+    include_framework: bool = False,
 ) -> dict:
     """Create or update .env.local with commented placeholders for required vars.
 
     Includes all phases when *phase* is ``"all"``, or a single phase otherwise.
     Also ensures .env.local is in .gitignore before creating the file.
-    Returns a result dict with status: created, updated, or unchanged.
+
+    When ``include_framework=True``, the framework-level external-review keys
+    (``OPENROUTER_API_KEY`` / ``GEMINI_API_KEY`` / ``OPENAI_API_KEY``) are
+    appended after the profile-defined vars and deduplicated by name — first
+    occurrence wins, so a profile that already lists one of these keys keeps
+    its custom description. Default ``False`` preserves the global
+    ``phase=all`` semantics for direct CLI (``--init``) users.
+
+    Hard-stop: if ``_ensure_gitignore`` raises (permission/OS error), the
+    function returns ``{"action": "skipped", "reason":
+    "gitignore_enforcement_failed", "error": ...}`` and writes NO
+    ``.env.local`` — secrets are never staged on a repo where the .gitignore
+    rule could not be enforced.
+
+    Return shape (always a dict):
+      - ``action``: ``created`` | ``updated`` | ``unchanged`` | ``skipped``
+      - ``path``: absolute path of ``.env.local`` (also under legacy key
+        ``env_file_path`` for backwards-compat)
+      - ``vars``: every key declared in this run (created + unchanged paths)
+      - ``added``: only the keys appended this call (updated path)
+      - ``framework_keys``: framework keys merged (when ``include_framework``)
+      - ``missing_keys``: keys whose value in the FINAL file state is empty
+        or matches ``_is_placeholder`` (computed even on ``unchanged``)
+      - ``profile``: matched profile name
+      - ``reason`` / ``error``: populated only on skipped paths
     """
     # Load profile
     run_config_path = project_root / "shipwright_run_config.json"
@@ -161,12 +253,29 @@ def init_env_file(
         return {"action": "skipped", "reason": f"Profile '{profile_name}' not found"}
 
     sections = _collect_phase_vars(profile, phase)
+    if include_framework:
+        sections = sections + [("Framework / External Review", list(_SHIPWRIGHT_FRAMEWORK_VARS))]
+    sections = _dedup_sections(sections)
     all_vars = [v for _, vars_list in sections for v in vars_list]
     if not all_vars:
         return {"action": "skipped", "reason": f"No vars defined for phase '{phase}'"}
 
-    # Ensure .env.local is gitignored BEFORE creating it
-    _ensure_gitignore(project_root)
+    framework_names = [v["name"] for v in _SHIPWRIGHT_FRAMEWORK_VARS]
+
+    # Ensure .env.local is gitignored BEFORE creating it.
+    # If enforcement fails (permission denied, locked file, OS error), abort
+    # before any .env.local write — never stage secrets in a repo where the
+    # ignore rule could not be locked in.
+    try:
+        _ensure_gitignore(project_root)
+    except OSError as exc:
+        return {
+            "action": "skipped",
+            "reason": "gitignore_enforcement_failed",
+            "error": str(exc),
+            "path": str(project_root / ".env.local"),
+            "env_file_path": str(project_root / ".env.local"),
+        }
 
     env_file_path = project_root / ".env.local"
     existing_keys = _find_existing_keys(env_file_path)
@@ -177,8 +286,12 @@ def init_env_file(
         if not missing_vars:
             return {
                 "action": "unchanged",
+                "path": str(env_file_path),
                 "env_file_path": str(env_file_path),
                 "profile": profile_name,
+                "vars": [v["name"] for v in all_vars],
+                "framework_keys": framework_names if include_framework else [],
+                "missing_keys": _compute_missing_keys(env_file_path, all_vars),
             }
 
         # Append missing vars to existing file
@@ -193,15 +306,19 @@ def init_env_file(
 
         return {
             "action": "updated",
+            "path": str(env_file_path),
             "env_file_path": str(env_file_path),
             "profile": profile_name,
             "added": [v["name"] for v in missing_vars],
+            "vars": [v["name"] for v in all_vars],
+            "framework_keys": framework_names if include_framework else [],
+            "missing_keys": _compute_missing_keys(env_file_path, all_vars),
         }
 
     # Create new file with all sections
     lines = [
         "# =============================================================================",
-        f"# Environment Variables — generated by Shipwright",
+        "# Environment Variables — generated by Shipwright",
         f"# Profile: {profile_name}",
         "#",
         "# Fill in the values below and remove the leading '#' to activate each variable.",
@@ -220,10 +337,35 @@ def init_env_file(
 
     return {
         "action": "created",
+        "path": str(env_file_path),
         "env_file_path": str(env_file_path),
         "profile": profile_name,
         "vars": [v["name"] for v in all_vars],
+        "framework_keys": framework_names if include_framework else [],
+        "missing_keys": _compute_missing_keys(env_file_path, all_vars),
     }
+
+
+def _compute_missing_keys(env_file_path: Path, all_vars: list[dict]) -> list[str]:
+    """Return names of vars whose value in the FINAL file state is empty
+    or a placeholder per ``_is_placeholder``.
+
+    Independent of ``action`` — a freshly created scaffold has every key
+    placeholder-empty, an ``unchanged`` outcome may also have placeholder
+    values lingering from a prior run, and an ``updated`` outcome may
+    have a mix of filled + new-but-empty entries. The handoff banner
+    in adopt's Step H reads this list verbatim to decide what to surface.
+    """
+    if not env_file_path.exists():
+        return [v["name"] for v in all_vars]
+    parsed = parse_env_file(env_file_path)
+    out: list[str] = []
+    for var in all_vars:
+        name = var["name"]
+        value = parsed.get(name, "")
+        if _is_placeholder(value):
+            out.append(name)
+    return out
 
 
 _PLACEHOLDER_PATTERNS = [

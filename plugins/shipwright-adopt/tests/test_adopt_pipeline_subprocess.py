@@ -16,7 +16,6 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -150,6 +149,132 @@ def test_full_pipeline_e2e_via_subprocess(tmp_path: Path) -> None:
     assert "Dashboard" in spec  # crawl entries surface their title
     # Distinct FR rows for all 4 (2 crawl + 2 AST)
     assert spec.count("FR-01.") >= 4
+
+    # Step E.5 — .env.local scaffold.
+    env_local = tmp_path / ".env.local"
+    assert env_local.exists(), ".env.local was not scaffolded"
+    env_text = env_local.read_text(encoding="utf-8")
+    # Framework keys land regardless of the active profile (vite-hono has
+    # no required_env_vars block, so these come from _SHIPWRIGHT_FRAMEWORK_VARS).
+    for key in ("OPENROUTER_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY"):
+        assert f"# {key}=" in env_text, f"Framework key {key} missing from .env.local"
+    # Documented payload shape from AC1/AC8 — locks in deterministic
+    # consumption by the Step H banner. A future regression that drops
+    # any key would fail here loud.
+    env_payload = payload["env_local"]
+    assert env_payload["action"] == "created"
+    assert "path" in env_payload, "missing 'path' in env_local payload"
+    assert env_payload["path"].replace("\\", "/").endswith("/.env.local")
+    assert "vars" in env_payload, "missing 'vars' in env_local payload"
+    # vars must contain at minimum the framework triple, in fallback order.
+    fw_in_vars = [v for v in env_payload["vars"]
+                  if v in {"OPENROUTER_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY"}]
+    assert fw_in_vars == ["OPENROUTER_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY"]
+    assert env_payload["framework_keys"] == [
+        "OPENROUTER_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY",
+    ]
+    # Every key is placeholder-empty on first scaffold.
+    assert set(env_payload["missing_keys"]) >= {
+        "OPENROUTER_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY",
+    }
+    # .gitignore is enforced before the file is written.
+    gi = (tmp_path / ".gitignore").read_text(encoding="utf-8")
+    assert ".env.local" in gi
+
+
+def test_pipeline_env_local_idempotent_on_rerun(tmp_path: Path) -> None:
+    """Second adopt run on the same project must leave `.env.local` byte-equal
+    and report ``action == 'unchanged'``. Locks in AC2 from the iterate spec
+    against future drift in `init_env_file` formatting."""
+    _git_init(tmp_path)
+    _write_snapshot(tmp_path)
+    _write_frontend_assets(tmp_path)
+
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+
+    # First run — creates .env.local
+    r1 = subprocess.run(
+        ["uv", "run", "python", str(SCRIPT), "--project-root", str(tmp_path)],
+        capture_output=True, text=True, env=env, timeout=120, check=False,
+    )
+    assert r1.returncode == 0, f"first run failed: {r1.stderr[-1000:]}"
+    payload1 = json.loads(r1.stdout[r1.stdout.find("{"):])
+    assert payload1["env_local"]["action"] == "created"
+    env_bytes_after_first = (tmp_path / ".env.local").read_bytes()
+
+    # Second run on the same project root.
+    r2 = subprocess.run(
+        ["uv", "run", "python", str(SCRIPT), "--project-root", str(tmp_path)],
+        capture_output=True, text=True, env=env, timeout=120, check=False,
+    )
+    assert r2.returncode == 0, f"second run failed: {r2.stderr[-1000:]}"
+    payload2 = json.loads(r2.stdout[r2.stdout.find("{"):])
+    assert payload2["env_local"]["action"] == "unchanged"
+    # AC6 — Step H banner depends on missing_keys being non-empty even on
+    # an unchanged rerun when entries are still placeholder-only. Locks in
+    # the contract so the user is still prompted to fill in keys.
+    assert set(payload2["env_local"]["missing_keys"]) >= {
+        "OPENROUTER_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY",
+    }, "unchanged rerun must still surface placeholder keys via missing_keys"
+    # File preserved BYTE-for-byte (tests against trailing-newline / whitespace
+    # churn that subtle formatting bugs would introduce on re-run).
+    assert (tmp_path / ".env.local").read_bytes() == env_bytes_after_first
+    # .gitignore must remain unchanged when it already matched .env.local.
+    gi_after_first = (tmp_path / ".gitignore").read_bytes()
+    # Re-read after second run (idempotent _ensure_gitignore should be a no-op)
+    assert (tmp_path / ".gitignore").read_bytes() == gi_after_first
+    # And it really does still match .env.local.
+    gi_text = (tmp_path / ".gitignore").read_text(encoding="utf-8")
+    assert ".env.local" in gi_text
+
+
+def test_pipeline_env_local_appends_missing_keys(tmp_path: Path) -> None:
+    """If `.env.local` already exists with one of the framework keys, adopt
+    appends only the missing keys and preserves existing user content
+    byte-for-byte. Locks in the 'updated' path from AC2 / AC8."""
+    _git_init(tmp_path)
+    _write_snapshot(tmp_path)
+    _write_frontend_assets(tmp_path)
+
+    # Pre-populate .env.local with one filled key plus arbitrary user content.
+    pre_existing = (
+        "# User notes — do not delete\n"
+        "OPENROUTER_API_KEY=sk-or-v1-real-secret\n"
+        "MY_PERSONAL_THING=keep-me\n"
+    )
+    (tmp_path / ".env.local").write_text(pre_existing, encoding="utf-8")
+    # Pre-create .gitignore so the scaffold doesn't have to add it.
+    (tmp_path / ".gitignore").write_text(".env.local\n", encoding="utf-8")
+
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+
+    r = subprocess.run(
+        ["uv", "run", "python", str(SCRIPT), "--project-root", str(tmp_path)],
+        capture_output=True, text=True, env=env, timeout=120, check=False,
+    )
+    assert r.returncode == 0, f"adopt run failed: {r.stderr[-1000:]}"
+    payload = json.loads(r.stdout[r.stdout.find("{"):])
+    assert payload["env_local"]["action"] == "updated"
+    # Only GEMINI + OPENAI were appended; OPENROUTER already present.
+    added = set(payload["env_local"].get("added", []))
+    assert "OPENROUTER_API_KEY" not in added
+    assert {"GEMINI_API_KEY", "OPENAI_API_KEY"} <= added
+
+    final = (tmp_path / ".env.local").read_text(encoding="utf-8")
+    # User content preserved verbatim
+    assert "# User notes — do not delete" in final
+    assert "OPENROUTER_API_KEY=sk-or-v1-real-secret" in final
+    assert "MY_PERSONAL_THING=keep-me" in final
+    # Newly added framework keys present (commented placeholders).
+    assert "# GEMINI_API_KEY=" in final
+    assert "# OPENAI_API_KEY=" in final
+    # missing_keys must NOT include OPENROUTER (it has a real value).
+    assert "OPENROUTER_API_KEY" not in payload["env_local"]["missing_keys"]
+    # .gitignore was pre-populated as exact match — must remain untouched.
+    gi_text = (tmp_path / ".gitignore").read_text(encoding="utf-8")
+    assert gi_text == ".env.local\n"
 
 
 def test_pipeline_loud_failure_on_invalid_enrichment(tmp_path: Path) -> None:

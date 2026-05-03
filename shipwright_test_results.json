@@ -1,16 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-03-suggest-iterate-quoted-path",
+    "run_id": "iterate-2026-05-03-adopt-env-local-scaffold",
     "date": "2026-05-03",
     "unit": {
       "status": "passed",
-      "passed": 249,
-      "total": 249
+      "passed": 36,
+      "total": 36,
+      "scope": "shared/scripts/tests/test_validate_env.py"
     },
     "integration": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 11,
+      "total": 11,
+      "scope": "plugins/shipwright-adopt: test_skill_md_env_scaffold (7) + test_adopt_pipeline_subprocess (4)"
     },
     "pgtap": {
       "status": "skipped",
@@ -30,8 +32,24 @@
     "smoke": {
       "status": "skipped"
     },
+    "full_suite": {
+      "status": "passed",
+      "scopes": [
+        "root pytest: 66 passed, 2 deselected (slow)",
+        "plugins/shipwright-adopt: 258 passed",
+        "plugins/shipwright-build: 46 passed",
+        "plugins/shipwright-compliance: 302 passed",
+        "plugins/shipwright-design: 12 passed",
+        "plugins/shipwright-iterate: 87 passed",
+        "plugins/shipwright-plan: 31 passed",
+        "plugins/shipwright-preview: 10 passed",
+        "plugins/shipwright-project: 43 passed",
+        "plugins/shipwright-run: 144 passed",
+        "plugins/shipwright-test: 103 passed"
+      ]
+    },
     "degraded": [
-      "root .venv broken (Windows file-permission error during `uv sync`); ran tests via plugin-local .venvs. Adopt: 249/249 via plugins/shipwright-adopt/.venv. Shared hook tests: 102/102 via plugins/shipwright-iterate/.venv."
+      "Pre-existing test failures unrelated to this iterate, present on main: (1) shipwright-deploy::test_validate_without_token — assertion targets warnings list but validate-deploy.py emits to errors list (broken since 432661a). (2) shipwright-security::test_explicit_name_not_in_registry — flaky test ordering, passes in isolation. Both verified out of scope and unchanged by this iterate."
     ]
   }
 }

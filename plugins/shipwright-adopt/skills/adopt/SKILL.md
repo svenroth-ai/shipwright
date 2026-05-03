@@ -498,6 +498,55 @@ a `**GITIGNORED OUTPUTS**` block in the handoff and ask the user via
 > committed unless you adjust .gitignore. Continue without changes,
 > stop and review .gitignore, or proceed and adjust manually after?"
 
+### Step E.5 — Env Scaffold (`.env.local`)
+
+After the artifact generator returns, adopt MUST scaffold a
+`<project_root>/.env.local` so the framework's runtime secret loader
+(`shared/scripts/lib/env.py::load_shipwright_env`) and the external
+review CLI (`shared/scripts/tools/external_review.py`) have a single
+canonical surface to read from on this project. The artifact generator
+calls `shared/scripts/validate_env.py::init_env_file(project_root,
+"all", profile_dir, include_framework=True)` directly — there is no
+separate subprocess invocation here. The result lands in
+`results["env_local"]` for the Step H handoff banner.
+
+What gets written:
+
+- **Profile-specific keys** — `required_env_vars[build|deploy|plugin]`
+  from the active stack profile (e.g. `NEXT_PUBLIC_SUPABASE_URL` for
+  `supabase-nextjs`, `JELASTIC_TOKEN` for deploy phase, …).
+- **Framework keys** — always: `OPENROUTER_API_KEY`, `GEMINI_API_KEY`,
+  `OPENAI_API_KEY` (in that order — mirroring the fallback chain in
+  `external_review_config.py`). These appear regardless of which
+  stack profile is matched, because external review is framework-level
+  and runs in every plugin's planning/iterate gate.
+
+Behavior contract:
+
+- **Idempotent — never overwrites.** Running adopt against a project
+  that already has `.env.local` does NOT replace existing values.
+  Missing keys are appended; the action is `created` / `updated` /
+  `unchanged` accordingly.
+- **`.gitignore` enforced FIRST.** Before writing `.env.local`, the
+  scaffold ensures the project's `.gitignore` matches the file
+  (literal `.env.local`, `.env*.local`, or `.env.*.local`). On
+  enforcement failure (permission/OS error), the scaffold returns
+  `action: skipped, reason: gitignore_enforcement_failed` and writes
+  NOTHING — secrets must never land in a repo where the ignore rule
+  could not be locked in.
+- **No real values written, ever.** Every entry is comment-prefixed
+  (`# KEY=    # description`) so the file is inert until the user
+  uncomments and fills in the value. The user copies values from
+  their password manager / secrets vault.
+- **Existing user content preserved byte-for-byte** on the `updated`
+  path — appended new keys only, never re-orders or rewrites pre-
+  existing lines.
+
+The result dict surfaced under `results["env_local"]` carries
+`{action, path, vars, framework_keys, missing_keys, profile}` — Step
+H consumes `missing_keys` (computed from the FINAL file state, not
+just newly added keys) to decide what to surface in the handoff.
+
 ### Step F — Compliance Seeding
 
 Run:
@@ -557,7 +606,15 @@ See .shipwright/agent_docs/decision_log.md for the adoption ADR
 (id is `max(existing) + 1`, 3-digit zero-padded — ADR-001 on greenfield).
 ```
 
-3. Print a handoff message:
+3. Print a handoff message. The `Env scaffold:` line and the optional
+   "Edit .env.local" block are populated from `results["env_local"]`
+   (see Step E.5). Render the "Edit .env.local" block whenever
+   `missing_keys` is non-empty — independently of `action`, so an
+   `unchanged` outcome with placeholder-only entries STILL prompts the
+   user. The list of keys MUST be derived from
+   `results["env_local"]["missing_keys"]` (which already merges the
+   profile's `required_env_vars` with the framework keys), NOT
+   hardcoded:
 
 ```
 ================================================================================
@@ -569,9 +626,12 @@ Features:      <N> FR(s) in .shipwright/planning/<split>/spec.md
 Crawl:         <enabled|skipped: <reason>>
 Review:        <completed|skipped: <reason>>
 Security CI:   <installed (dormant) | preserved (existing file untouched)>
+Env scaffold:  <created|updated|unchanged|skipped: <reason>>  → <abs path to .env.local>
 Commit:        <sha>
 
 Next steps:
+  •  Edit .env.local — fill in the keys still flagged as missing:
+       <one bullet per key in results["env_local"]["missing_keys"]>
   •  /shipwright-iterate       — for all future feature/bug/refactor work
   •  /shipwright-test          — to collect first real test-evidence
   •  /shipwright-compliance    — on-demand detective audit of artifacts
@@ -581,6 +641,15 @@ Do NOT use /shipwright-project on this repo — adoption replaces it.
 Do NOT use /shipwright-plan or /shipwright-build directly — /shipwright-iterate
 handles both for adopted projects.
 ================================================================================
+```
+
+If `results["env_local"]["action"] == "skipped"` AND
+`reason == "gitignore_enforcement_failed"`, surface a loud line in
+the banner instead of the "Edit .env.local" block:
+
+```
+  ⚠  Env scaffold skipped — fix .gitignore permissions and re-run /shipwright-adopt
+     ({results["env_local"]["error"]}). No .env.local was written.
 ```
 
 ## References
