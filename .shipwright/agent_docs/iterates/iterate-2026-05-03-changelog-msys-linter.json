@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-03-changelog-msys-linter",
+  "date": "2026-05-03T18:14:58.160136Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/changelog-msys-linter",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "ADR-023"
+}

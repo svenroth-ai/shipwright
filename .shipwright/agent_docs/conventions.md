@@ -310,3 +310,5 @@ Thanks for contributing! If anything in this guide is unclear, please open an is
 - **ADR-021** (2026-05-03): Adopt scaffolds .env.local with profile + framework keys (Layer-3 SSoT)
 
 - **ADR-022** (2026-05-03): Quote ${CLAUDE_PLUGIN_ROOT} in plugins/*/hooks/hooks.json
+
+- **ADR-023** (2026-05-03): Detect Git-Bash MSYS path-mangling in changelog drop bullets

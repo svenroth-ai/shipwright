@@ -22,6 +22,19 @@ CLI:
         --run-id iterate-2026-04-23-feat-x \\
         --category Added \\
         --bullet "New parallel-iterate convention ..."
+
+Caveat — Git-Bash on Windows mangles leading-slash arguments:
+    Calling this script with ``--bullet "/shipwright-adopt now scaffolds ..."``
+    from Git-Bash on Windows produces a drop file whose first line is
+    ``C:/Program Files/Git/shipwright-adopt now scaffolds ...`` because
+    the MSYS layer auto-converts the leading ``/`` into the Bash install
+    root path BEFORE Python's argv is populated. This script emits a
+    stderr WARN on detection but does NOT auto-rewrite — by the time
+    we see the argv, the user's intent is unrecoverable (a literal
+    reference to a path under Git's install dir would be a false
+    positive). The release-time linter in ``aggregate_changelog.py``
+    catches the same pattern; pass ``--strict`` to that script in CI to
+    fail-fast.
 """
 
 from __future__ import annotations
@@ -29,6 +42,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -56,6 +70,39 @@ _MAX_COUNTER = 1000
 
 class ChangelogDropError(RuntimeError):
     """Raised when a bullet cannot be written (bad category, bad path, I/O)."""
+
+
+# Mirror of aggregate_changelog._MSYS_MANGLE_RE. Kept as a duplicate to
+# avoid a write-side import of the aggregator (which would create a
+# circular module-load shape — aggregator imports drop_dir from here at
+# import time).
+_MSYS_MANGLE_RE = re.compile(
+    r"^C:/Program Files/Git/[A-Za-z0-9._-]+(?=[\s/]|$)"
+)
+
+
+def _warn_if_msys_mangled(bullet: str, run_id: str, category: str) -> None:
+    """Emit a stderr WARN when ``bullet`` looks like a Git-Bash mangle.
+
+    Does NOT raise — by the time we see the argv, the user's intent is
+    not reliably recoverable. Auto-rewriting risks false positives on
+    legitimate paths under Git's install dir.
+    """
+    first_line = bullet.lstrip().splitlines()[0] if bullet.strip() else ""
+    if not _MSYS_MANGLE_RE.match(first_line):
+        return
+    print(
+        f"[write_changelog_drop] WARNING: bullet for run_id={run_id!r} "
+        f"category={category!r} starts with {first_line!r} — looks like "
+        f"Git-Bash on Windows auto-converted a leading slash in your "
+        f"--bullet argv into 'C:/Program Files/Git/'. The drop file is "
+        f"being written verbatim so you can inspect it; consider editing "
+        f"the file or re-running with the bullet quoted differently "
+        f"(e.g. prefix with a backslash or use '--bullet=...' instead "
+        f"of '--bullet ...'). aggregate_changelog.py --strict will "
+        f"refuse to publish it.",
+        file=sys.stderr,
+    )
 
 
 def drop_dir(project_root: Path) -> Path:
@@ -156,6 +203,8 @@ def write_changelog_drop(
     stripped = bullet.strip()
     if not stripped:
         raise ChangelogDropError("bullet is empty")
+
+    _warn_if_msys_mangled(stripped, run_id, category)
 
     project_root = project_root.resolve()
 

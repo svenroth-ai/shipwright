@@ -79,6 +79,48 @@ class AggregatorError(RuntimeError):
     """Raised when aggregation cannot proceed (missing file, I/O, lock)."""
 
 
+# Git-Bash on Windows auto-converts a leading-slash argv argument into
+# the Bash install root prefix (e.g. ``--bullet /shipwright-adopt`` becomes
+# ``C:/Program Files/Git/shipwright-adopt`` before the receiving Python
+# script ever sees it). Drop files written via that mangled argv carry
+# the prefix verbatim and would publish into CHANGELOG.md unless caught
+# at release time. The pattern matches the directory-component path that
+# Git-for-Windows installs to by default; portable Git installs that
+# write a different prefix are not covered (would require detecting the
+# active MSYS root, which we don't try here).
+_MSYS_MANGLE_RE = re.compile(
+    r"^C:/Program Files/Git/[A-Za-z0-9._-]+(?=[\s/]|$)"
+)
+
+
+def _detect_msys_mangled_bullets(
+    by_category: dict[str, list[tuple[str, str]]],
+    project_root: Path,
+) -> list[tuple[str, str, str]]:
+    """Return ``(category, source_relpath, bullet_text)`` for every drop
+    file whose bullet text starts with the Git-Bash mangle prefix.
+
+    Reports only the prefix-on-line-one case — that is the documented
+    production failure mode (one-bullet-per-drop file, content =
+    bullet text). Mid-text occurrences of ``C:/Program Files/Git/`` are
+    left alone since they could legitimately reference a real path
+    under the Git install dir.
+    """
+    findings: list[tuple[str, str, str]] = []
+    drops_root = drop_dir(project_root)
+    for category, bullets in by_category.items():
+        for stem, content in bullets:
+            first_line = content.lstrip().splitlines()[0] if content.strip() else ""
+            if _MSYS_MANGLE_RE.match(first_line):
+                drop_relpath = (
+                    drops_root / category / f"{stem}.md"
+                ).relative_to(project_root)
+                findings.append(
+                    (category, str(drop_relpath), first_line)
+                )
+    return findings
+
+
 def _snapshot_drop_files(project_root: Path) -> tuple[dict[str, list[tuple[str, str]]], list[Path]]:
     """Read all drop files under ``CHANGELOG-unreleased.d/<category>/``.
 
@@ -278,6 +320,7 @@ def aggregate(
     *,
     release_date: str | None = None,
     dry_run: bool = False,
+    strict: bool = False,
     lock_timeout_seconds: float = 10.0,
 ) -> dict[str, object]:
     """Run one aggregation pass.
@@ -286,6 +329,11 @@ def aggregate(
     ``section_written`` (the rendered Markdown — empty when no drops
     found), ``processed_files`` (relative paths), and
     ``legacy_unreleased_bullets`` (count, for operator awareness).
+
+    ``strict``: when True, any MSYS path-mangling finding (Git-Bash on
+    Windows converted a leading-slash bullet into ``C:/Program Files/
+    Git/...``) raises ``AggregatorError`` instead of just warning. Use
+    in release CI to fail-fast.
     """
     project_root = project_root.resolve()
     release_date = release_date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -294,6 +342,27 @@ def aggregate(
     lock_path = project_root / CHANGELOG_LOCK_NAME
     with file_lock(lock_path, timeout_seconds=lock_timeout_seconds):
         by_category, processed = _snapshot_drop_files(project_root)
+
+        # MSYS path-mangling linter — runs BEFORE rendering so strict
+        # mode aborts without a half-written CHANGELOG.md.
+        msys_findings = _detect_msys_mangled_bullets(by_category, project_root)
+        for category, relpath, first_line in msys_findings:
+            print(
+                f"[aggregate_changelog] WARNING: MSYS/Git-Bash path "
+                f"mangling detected in {relpath} ({category}): "
+                f"bullet starts with {first_line!r}. The leading "
+                f"'C:/Program Files/Git/' prefix is almost certainly "
+                f"a Git-Bash auto-conversion of a leading slash in the "
+                f"original --bullet argv. Edit the drop file and strip "
+                f"the prefix before publishing.",
+                file=sys.stderr,
+            )
+        if msys_findings and strict:
+            raise AggregatorError(
+                f"refusing to aggregate: {len(msys_findings)} drop file(s) "
+                f"contain MSYS/Git-Bash path-mangling; strict mode is on"
+            )
+
         section = _render_versioned_section(version, release_date, by_category)
 
         if not section:
@@ -303,6 +372,7 @@ def aggregate(
                 "section_written": "",
                 "processed_files": [],
                 "legacy_unreleased_bullets": 0,
+                "msys_mangled_findings": [],
                 "changelog_updated": False,
             }
 
@@ -344,6 +414,10 @@ def aggregate(
                 str(p.relative_to(project_root)) for p in processed
             ],
             "legacy_unreleased_bullets": legacy_bullets,
+            "msys_mangled_findings": [
+                {"category": cat, "drop_file": rp, "first_line": fl}
+                for cat, rp, fl in msys_findings
+            ],
             "changelog_updated": not dry_run,
         }
 
@@ -360,6 +434,15 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Render section and report would-be-deletions without modifying disk",
     )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help=(
+            "Treat MSYS/Git-Bash path-mangling findings as errors: refuse "
+            "to aggregate (exit 1) instead of just warning. Recommended "
+            "for release CI."
+        ),
+    )
     parser.add_argument("--lock-timeout", type=float, default=10.0)
     args = parser.parse_args(argv)
 
@@ -369,6 +452,7 @@ def main(argv: list[str] | None = None) -> int:
             args.version,
             release_date=args.release_date,
             dry_run=args.dry_run,
+            strict=args.strict,
             lock_timeout_seconds=args.lock_timeout,
         )
     except LockTimeout as exc:

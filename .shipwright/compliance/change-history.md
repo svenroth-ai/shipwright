@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-05-03T17:39:33Z
-Total commits: 555
+Generated: 2026-05-03T18:14:57Z
+Total commits: 556
 
 ## Commit Distribution
 
@@ -10,7 +10,7 @@ pie title Commit Types
     "feat" : 201
     "fix" : 149
     "docs" : 87
-    "chore" : 67
+    "chore" : 68
     "refactor" : 32
     "test" : 12
     "other" : 7
@@ -470,10 +470,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Chores (chore) — 67 commits
+### Chores (chore) — 68 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-03 | release | post-tag canon completion for v0.15.0 | ed4b076571b4 |
 | 2026-05-03 | release | v0.15.0 | 7b144fa52871 |
 | 2026-05-03 | post-merge | regenerate compliance + dashboard + handoff for merged state | 566260f0a899 |
 | 2026-05-03 | iterate-hooks-json | post-F6 housekeeping (F7 event for ADR-022) | 3476ce2245be |
@@ -612,7 +613,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 555 |
+| Total commits | 556 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 555 |
+| Human-authored commits | 556 |
 
