@@ -1,44 +1,23 @@
----
-canon_generated: true
-run_id: "iterate-2026-05-03-adopt-env-local-scaffold"
-phase: "iterate"
-reason: "iterate: adopt scaffolds .env.local from validate_env framework set"
-timestamp: "2026-05-03T14:11:43.709137+00:00"
----
-
 # Session Handoff
 
-> Auto-generated 2026-05-03 14:11:43 UTC
+> Auto-generated 2026-05-03 14:13:38 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-03 14:11:43 UTC
-- **Reason**: iterate: adopt scaffolds .env.local from validate_env framework set
+- **Timestamp**: 2026-05-03 14:13:38 UTC
+- **Reason**: iterate completion: iterate-2026-05-03-adopt-env-local-scaffold
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-03-suggest-iterate-quoted-path
-- **Date**: 2026-05-03T12:25:22.988305Z
-- **Type**: bug
-- **Complexity**: medium
-- **Branch**: iterate/suggest-quoted-path-v2
-- **ADR**: ADR-020
-- **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-03-suggest-iterate-quoted-path.md
-
-## Current Iterate Progress
-
-- **Branch**: iterate/adopt-env-local-scaffold
 - **Run ID**: iterate-2026-05-03-adopt-env-local-scaffold
-- **Spec**: .shipwright/planning/iterate/2026-05-03-adopt-env-local-scaffold.md
+- **Date**: 2026-05-03T14:11:49.467713Z
+- **Type**: feature
 - **Complexity**: medium
-- **External Review Marker**: completed (iterate-2026-05-03-adopt-env-local-scaffold-external-review.json @ 2026-05-03T13:00:00)
-
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Finalization (F0–F11) after all mandatory phases pass
+- **Branch**: iterate/adopt-env-local-scaffold
+- **ADR**: ADR-021
+- **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-05-03-adopt-env-local-scaffold.md
 
 ## Legacy build state
 
@@ -51,8 +30,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/adopt-env-local-scaffold
-- **Last Commit**: a462487 Merge iterate/suggest-quoted-path-v2: suggest_iterate hook quoted-path + Shape A/B upgrade-in-place (ADR-020, layers on ADR-019)
+- **Branch**: main
+- **Last Commit**: f3e17b1 Merge iterate/adopt-env-local-scaffold: adopt scaffolds .env.local with profile + framework keys (ADR-021)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +47,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-aab7ddbd | work_completed | iterate (iterate: adopt scaffolds .env.local with profile + framework keys (ADR-021)) | 2026-05-03 |
 | evt-b0b9c422 | work_completed | iterate (suggest_iterate hook quoted-path + Shape A/B upgrade-in-place) | 2026-05-03 |
 | evt-6c637864 | work_completed | iterate (fix hook_installer Shape A -> B) | 2026-05-03 |
 | evt-273bbb54 | work_completed | iterate (shipwright-adopt durable fixes (Sub-2A drift detection, 2B test-fixture filter, 2C compliance_bridge sys.path)) | 2026-05-02 |
 | evt-e3d2949e | work_completed | iterate (post-adoption framework cleanup (Sub-1A through 1D)) | 2026-05-02 |
-| — | adopted | — | — |
 
 ## Recovery
 
 - **Pipeline**: 0 phases completed
-- **Total work events**: 4
-- **Last iterate**: bug — suggest_iterate hook quoted-path + Shape A/B upgrade-in-place (2026-05-03)
+- **Total work events**: 5
+- **Last iterate**: feature — iterate: adopt scaffolds .env.local with profile + framework keys (ADR-021) (2026-05-03)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
