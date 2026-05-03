@@ -1,20 +1,12 @@
----
-canon_generated: true
-run_id: "iterate-2026-05-03-hooks-json-quoting"
-phase: "iterate"
-reason: "post-merge regen: bug-3 + hooks-json-quoting"
-timestamp: "2026-05-03T15:57:58.168924+00:00"
----
-
 # Session Handoff
 
-> Auto-generated 2026-05-03 15:57:58 UTC
+> Auto-generated 2026-05-03 17:39:20 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-03 15:57:58 UTC
-- **Reason**: post-merge regen: bug-3 + hooks-json-quoting
+- **Timestamp**: 2026-05-03 17:39:20 UTC
+- **Reason**: release v0.15.0
 
 ## Last Iterate
 
@@ -39,7 +31,7 @@ timestamp: "2026-05-03T15:57:58.168924+00:00"
 ## Git State
 
 - **Branch**: main
-- **Last Commit**: 5a34ad7 Merge iterate/hooks-json-quoting: hooks.json ${CLAUDE_PLUGIN_ROOT} quoting (ADR-022, closes ADR-020 follow-up)
+- **Last Commit**: 7b144fa chore(release): v0.15.0
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -55,15 +47,15 @@ timestamp: "2026-05-03T15:57:58.168924+00:00"
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-e67c7be3 | phase_completed | changelog | 2026-05-03 |
 | evt-ca7b7d64 | work_completed | iterate (hooks.json quoting (deferred from ADR-020)) | 2026-05-03 |
 | evt-baaf4b0e | work_completed | iterate (iterate fix: parse_env_file inline-comment stripping + lib copy sync) | 2026-05-03 |
 | evt-aab7ddbd | work_completed | iterate (iterate: adopt scaffolds .env.local with profile + framework keys (ADR-021)) | 2026-05-03 |
 | evt-b0b9c422 | work_completed | iterate (suggest_iterate hook quoted-path + Shape A/B upgrade-in-place) | 2026-05-03 |
-| evt-6c637864 | work_completed | iterate (fix hook_installer Shape A -> B) | 2026-05-03 |
 
 ## Recovery
 
-- **Pipeline**: 0 phases completed
+- **Pipeline**: 1 phases completed
 - **Total work events**: 7
 - **Last iterate**: bug — hooks.json quoting (deferred from ADR-020) (2026-05-03)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline

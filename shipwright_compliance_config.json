@@ -6,6 +6,7 @@
   "last_full_generation": "2026-05-02T18:37:57.867344+00:00",
   "seeded_by_adopt": true,
   "phases_covered": [
-    "iterate"
+    "iterate",
+    "changelog"
   ]
 }

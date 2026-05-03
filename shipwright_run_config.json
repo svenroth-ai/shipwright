@@ -9,12 +9,13 @@
     "deploy"
   ],
   "status": "complete",
-  "current_step": null,
+  "current_step": "design",
   "completed_steps": [
     "project",
     "plan",
     "build",
-    "test"
+    "test",
+    "changelog"
   ],
   "profile": "python-plugin-monorepo",
   "scope": "library",
@@ -65,6 +66,14 @@
         "run_id": "adopt-2026-05-02T183757",
         "at": "2026-05-02T18:37:57.870696+00:00"
       }
+    ],
+    "changelog": [
+      {
+        "run_id": "changelog-v0.15.0-20260503-193920",
+        "date": "2026-05-03",
+        "version": "v0.15.0",
+        "outcome": "tagged"
+      }
     ]
   },
   "iterate_history": [],
@@ -72,5 +81,15 @@
   "_iterate_migration_ts": "2026-05-02T18:37:57.870696+00:00",
   "_iterate_migration_quarantined_count": 0,
   "created_at": "2026-05-02T18:37:57.870696+00:00",
-  "updated_at": "2026-05-02T18:37:57.870696+00:00"
+  "updated_at": "2026-05-03T17:39:33.741146+00:00",
+  "last_compliance_update": {
+    "phase": "changelog",
+    "reports": [
+      ".shipwright\\compliance\\traceability-matrix.md",
+      ".shipwright\\compliance\\test-evidence.md",
+      ".shipwright\\compliance\\change-history.md",
+      ".shipwright\\compliance\\sbom.md",
+      ".shipwright\\compliance\\dashboard.md"
+    ]
+  }
 }

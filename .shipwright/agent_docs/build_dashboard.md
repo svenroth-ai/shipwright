@@ -1,5 +1,5 @@
 # Project Activity Dashboard
-> Updated: 2026-05-03 15:57 UTC | Session: unknown
+> Updated: 2026-05-03 17:39 UTC | Session: changelog-v0.15.0
 
 ## Recent Changes (7 iterations)
 
@@ -15,3 +15,16 @@
 
 ## Test Status
 Last run: 2026-05-03 | Unit: 13/13 | Smoke: skipped | (iterate)
+
+## Pipeline
+
+| Phase | Status | Completed |
+|-------|--------|-----------|
+| project | — | — |
+| design | — | — |
+| plan | — | — |
+| build | — | — |
+| test | — | — |
+| changelog | complete | 2026-05-03 |
+| compliance | — | — |
+| deploy | — | — |
