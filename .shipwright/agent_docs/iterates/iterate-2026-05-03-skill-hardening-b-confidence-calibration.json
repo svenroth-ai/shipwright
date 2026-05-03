@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-03-skill-hardening-b-confidence-calibration",
+  "date": "2026-05-03T20:13:52.417214Z",
+  "type": "feature",
+  "complexity": "small",
+  "branch": "iterate/skill-hardening-B-confidence-calibration",
+  "spec": ".shipwright/planning/iterate/campaigns/iterate-skill-hardening/sub-iterates/B-confidence-calibration-phase.md",
+  "tests_passed": true,
+  "adr": "ADR-025"
+}

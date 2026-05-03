@@ -109,19 +109,19 @@ rather than ad-hoc.
 
 ## Confidence Calibration
 
-- **Boundaries touched:** see "Affected Boundaries" above.
-- **Empirical probes:** _to be filled by runner_
-  - Re-render the iterate spec template in a fixture, assert that the
-    Confidence Calibration section now has all 4 fields by name.
-  - Parse SKILL.md's Phase Matrix and assert the Confidence Calibration
-    row exists with the right cells.
-- **Edge cases NOT probed + why acceptable:** _to be filled by runner_
-  - Cross-platform line endings in the markdown reference doc — not
-    load-bearing.
-- **Confidence-pattern check:** _to be filled by runner_
-  Specifically: has any "are you confident?" question received a "yes"
-  in this sub-iterate followed by a real finding? If yes, run one more
-  probe before F0.
+- **Boundaries touched:**
+  - `references/confidence-anti-patterns.md` headings → `tests/test_confidence_anti_patterns_doc.py` drift parser (markdown structure)
+  - `SKILL.md` Phase Matrix table → `tests/test_skill_phase_matrix.py` drift parser (markdown table)
+  - Iterate spec template inside SKILL.md → every iterate runner reading the spec template (plain text)
+- **Empirical probes run:**
+  - Probe 1: `is_io_boundary_change(my_diff)` against [SKILL.md, confidence-anti-patterns.md, two test files] — returned `False`. **Negative-probe finding (expected): flag does not fire on markdown changes.** Confirms SKILL.md is human-consumed markdown, not a serialized format.
+  - Probe 2: Extract iterate spec template fenced block from SKILL.md via regex, assert all 4 calibration bullets present in the *extracted* template (not just word-match across full file). PASS — bullets `Boundaries touched`, `Empirical probes run`, `Edge cases NOT probed`, `Confidence-pattern check` all present.
+  - Probe 3: Parse Phase Matrix section, locate Confidence Calibration row, assert cells `[Confidence Calibration | skip | if touches_io_boundary | always | always]`. PASS — initial probe-side bug (matched Override Classes row instead of Matrix row) was caught and fixed in the probe; SKILL.md content was correct from the start.
+- **Edge cases NOT probed + why acceptable:**
+  - UTF-8 BOM / CRLF / non-ASCII in markdown files — markdown is human-consumed, not parsed by a serializer. Drift-protection tests use `read_text(encoding="utf-8")` which handles these uniformly.
+  - POSIX `export` / inline `# comment` / quoted `#` — operator-input categories don't apply to markdown reference docs.
+  - Round-trip producer→file→consumer — markdown is single-direction (writer → file → human reader), no serializer/deserializer pair to drift-test.
+- **Confidence-pattern check:** No "are you confident?"-style yes-then-bug pattern fired in this sub-iterate. The iterate followed strict TDD (RED-then-GREEN); the only finding during probing was in the probe itself (Probe 3 matched the wrong table row before scoping), which is a probe-side fix, not a SKILL.md bug. Asymptote condition: 3 probes run, last probe passed, no yes-then-bug pattern → declared **exhausted**.
 
 ## Runner Overrides
 

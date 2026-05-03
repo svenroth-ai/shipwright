@@ -440,3 +440,15 @@ shipwright/
 - **Rationale:** Sven caught the env-iterate bugs by demanding an empirical producer→file→consumer round-trip — the cheap fix would have been a one-off test, but the systemic fix is to make every future iterate ask the boundary question up-front. Self-adopting the rule into the skill keeps it from being a tribal-knowledge gotcha.
 - **Consequences:** Future iterates touching .env, hooks.json, settings.json, *_config.json, *_state.json (or matching producer/consumer keywords) get the boundary-probe gate automatically. Risk-floor min_complexity=small with enforces=round_trip_test. Path-match covers all known real-world cases; AST-pair detection deferred.
 - **Rejected:** Add a generic round-trip mantra to Self-Review without taxonomy support — too easy to skip; risk-flag-driven gating ensures the prompt itself surfaces when probing is mandatory. AST-pair detection now — deferred per Implementation Plan because path-match catches all known cases empirically.
+
+---
+
+### ADR-025: Confidence Calibration phase added to iterate skill (ADR-025)
+- **Date:** 2026-05-03
+- **Section:** Iterate — feature: confidence calibration phase (Sub-Iterate B)
+- **Context:** Confidence collapses without empirical anchor. On the 2026-05-03 env-iterate, 'are you confident?' was answered 'yes' twice — and twice a probe afterwards found a real bug. Three rounds established the asymptote: not done until at least one probe finds nothing.
+- **Decision:** Add Step 7.5 Confidence Calibration to Path A between Self-Review and Full Code Review. Mandatory at medium+, Safety-enforced at small with touches_io_boundary, Advisory otherwise. Backed by references/confidence-anti-patterns.md (anti-pattern + asymptote + decision rule + cross-refs).
+- **Commit:** PENDING
+- **Rationale:** The 'are you confident?' question is unfalsifiable — same brain that wrote the bug being asked if it sees the bug. Replacing the question with named probes converts confidence-attestation into evidence-of-exhaustion at constant marginal cost (one probe ~5min vs hotfix cost).
+- **Consequences:** Iterate runs at medium+ now have a structural calibration gate before F0. Self-attestation ('yes I'm confident') replaced by 4 named probes + findings in the iterate spec. Drift-protection tests (test_confidence_anti_patterns_doc.py + test_skill_phase_matrix.py) catch accidental section/row removal.
+- **Rejected:** Generic 'review checklist' addition — too soft, no asymptote enforcement. Hard mandatory at all complexity levels — too heavy for trivial markdown edits where no producer/consumer pair exists.

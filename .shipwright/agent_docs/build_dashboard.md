@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-03 20:01 UTC | Session: unknown
+> Updated: 2026-05-03 20:13 UTC | Session: unknown
 
-## Recent Changes (8 iterations)
+## Recent Changes (9 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | Sub-Iterate A: Boundary Tests Foundation (campaign iterate-skill-hardening) | 126/126 | ba98745 |  | 2026-05-03 |
 | bug | changelog MSYS path-mangling linter | 19/19 | a13fd64 |  | 2026-05-03 |
 | bug | hooks.json quoting (deferred from ADR-020) | 13/13 | 6ca369d | FR-01.01, FR-01.02, FR-01.03 | 2026-05-03 |
 | fix | iterate fix: parse_env_file inline-comment stripping + lib copy sync | 53/53 | 1a9c7f4 |  | 2026-05-03 |
@@ -15,7 +16,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-03 | Unit: 126/126 | Smoke: skipped | (iterate)
+Last run: 2026-05-03 | Unit: 146/146 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

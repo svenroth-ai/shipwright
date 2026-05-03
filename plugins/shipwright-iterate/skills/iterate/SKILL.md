@@ -33,6 +33,7 @@ Design Check, Testing, Visual, E2E     → references/design-and-testing.md
 Reflection Protocol                    → references/reflection.md
 Boundary Probe — edge-case checklist   → references/boundary-probes.md
 Boundary Probe — round-trip patterns   → references/round-trip-tests.md
+Confidence Calibration — anti-patterns → references/confidence-anti-patterns.md
 Risk Taxonomy, Override Classes        → this file (inline)
 Phase Matrix                           → this file (Section 6, NORMATIVE)
 ```
@@ -391,8 +392,8 @@ Lighthouse, no build artifacts → skip bundle).
 
 | Category | Phases | User can skip? |
 |---|---|---|
-| **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON, iterate_history | Never skippable |
-| **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations), Boundary Probe (when `touches_io_boundary`) | Only with explicit risk acknowledgment |
+| **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON, iterate_history, Confidence Calibration (medium+) | Never skippable |
+| **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations), Boundary Probe (when `touches_io_boundary`), Confidence Calibration (small with `touches_io_boundary`) | Only with explicit risk acknowledgment |
 | **Advisory** | Design check, mini-plan, design fidelity, E2E update, external LLM review, release prompt | Freely skippable |
 | **Complexity-gated** | Iterate spec, context scan depth | Adjustable via "make it medium/small" |
 
@@ -478,15 +479,21 @@ Create `.shipwright/planning/iterate/{date}-{short-description}.md` using this t
 If no boundaries touched: write `n/a` with one-line justification.}
 
 ## Confidence Calibration
-{Empirical probes run before declaring the iterate ready for F0.
- Future iterates (campaign iterate-skill-hardening Sub-Iterate B) will
- expand this section with the full Calibration phase. Today, the
- minimum bar is:
- - Boundaries touched: see "Affected Boundaries" above
- - Empirical probes run: {list of probes — round-trip, BOM, CRLF, ...}
- - Edge cases NOT probed + why acceptable: {one-line justifications}
- - Confidence-pattern check: ask "what would my round-trip probe miss?"
-   and run one more probe if any answer is non-trivial}
+{Mandatory at medium+; mandatory at small when `touches_io_boundary`
+ fires. Empirical probes run before F0 Fresh Verification Gate. See
+ SKILL.md Path A Step 7.5 + `references/confidence-anti-patterns.md`.
+
+- **Boundaries touched:** {list from "Affected Boundaries" above}
+- **Empirical probes run:** {one-line per probe + finding — real
+  round-trip / edge-case tests, not "I re-read the diff". Source:
+  the 8 categories in references/boundary-probes.md plus any
+  format-specific probes}
+- **Edge cases NOT probed + why acceptable:** {one line per skipped
+  category, with rationale. Operator-input categories may be skipped
+  for machine-only formats with justification}
+- **Confidence-pattern check:** {has any "are you confident?"-style
+  question already produced "yes" + a subsequent finding in this
+  run? If yes, run one more probe before F0 — asymptote heuristic}}
 ```
 
 ### Step 2: Spec Update (always)
@@ -586,7 +593,42 @@ supabase test db
 ```
 
 ### Step 7: Self-Review (always)
-See `references/iteration-reviews.md` for 6-point checklist.
+See `references/iteration-reviews.md` for 7-point checklist
+(item 7: Affected Boundaries).
+
+### Step 7.5: Confidence Calibration (mandatory at medium+, also when `touches_io_boundary`)
+
+The "are you confident?" question is unfalsifiable. Replace it with
+empirical probes per `references/confidence-anti-patterns.md`. Before
+F0 Fresh Verification Gate, the runner MUST populate the
+**Confidence Calibration** section of the iterate spec with answers
+to these four questions (one bullet each):
+
+1. **Boundaries touched:** which producer/consumer pairs from the
+   spec's "Affected Boundaries" section apply to this run? (Copy
+   the table or reference it by section.)
+2. **Empirical probes run:** one line per probe + finding. Probes
+   must be real round-trip / edge-case tests, not "I re-read the
+   diff". Source: the 8 categories in `references/boundary-probes.md`
+   plus any format-specific probes the runner identifies.
+3. **Edge cases NOT probed + why acceptable:** one line per skipped
+   category, with justification. For machine-only formats:
+   operator-input categories (POSIX `export`, inline `# comment`,
+   quoted `#`) may be skipped with one-line rationale.
+4. **Confidence-pattern check:** has any "are you confident?"-style
+   question received "yes" + a subsequent finding in this run? If
+   yes, run **one more probe before F0**, regardless of how many
+   probes already passed (asymptote heuristic — see
+   `references/confidence-anti-patterns.md`).
+
+**Stopping rule.** Declare exhausted only when the most recent probe
+returned no finding AND all applicable categories are covered AND no
+yes-then-bug pattern has fired in this run.
+
+**Override Classes:** Mandatory at medium+, Safety-enforced at small
+with `touches_io_boundary`, Advisory otherwise. Skip rules per
+Override Classes (only skippable with explicit risk acknowledgment
+in the iterate ADR when Safety-enforced applies).
 
 ### Step 8: Full Code Review (conditional)
 See `references/iteration-reviews.md` for trigger rules.
@@ -620,6 +662,7 @@ Same steps as FEATURE, with these differences:
 - Step 2: see below — same `extend vs new` framing as FEATURE, biased toward extending the existing FR
 - Step 6: Update existing tests to reflect new expected behavior, then implement
 - Step 6a: Boundary Probe applies identically — when `touches_io_boundary` fires, run the round-trip + 8-probe checklist before commit
+- Step 7.5: Confidence Calibration applies identically — mandatory at medium+, also at small with `touches_io_boundary` (see Path A Step 7.5)
 
 ### Step 2: Spec Update (always — CHANGE)
 1. Identify which spec file(s) cover the affected area.
@@ -674,6 +717,7 @@ See `references/iteration-planning.md`.
 3. Run reproducing test to verify it passes
 4. Run related tests to verify no regressions
 5. **Boundary Probe (when `touches_io_boundary` is set)** — same Path A Step 6a sub-step applies. When the bug touches a serialized format, the fix is incomplete without a producer→file→consumer round-trip test that fails before the fix and passes after.
+6. **Confidence Calibration (Step 7.5 in Path A)** applies identically to BUG fixes — mandatory at medium+, also at small with `touches_io_boundary`. Populate the spec's Confidence Calibration section before F0.
 
 ### Step 6-14: Same as FEATURE (self-review, code review, testing, escalation, finalize)
 Follow the Phase Matrix to determine which steps run for the assessed complexity.
@@ -787,6 +831,7 @@ Large is a "soft boundary" — force-continue supported with mandatory review + 
 | Build (TDD) | always | always | always | — |
 | Boundary Probe | skip | if `touches_io_boundary` | if `touches_io_boundary` | — |
 | Self-Review | always | always | always | — |
+| Confidence Calibration | skip | if `touches_io_boundary` | always | always |
 | Full Code Review | only if risk flags | only if risk flags | always | — |
 | Browser Verify | if UI | if UI | if UI | — |
 | Smoke Test | if server up | if server up | if server up | — |

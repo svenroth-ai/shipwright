@@ -1,12 +1,12 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-03-skill-hardening-a-boundary-tests",
+    "run_id": "iterate-2026-05-03-skill-hardening-b-confidence-calibration",
     "date": "2026-05-03",
     "unit": {
       "status": "passed",
-      "passed": 126,
-      "total": 126,
-      "scope": "plugins/shipwright-iterate/tests/ — 87 baseline + 39 new (test_boundary_detection.py: 19, test_boundary_probes_doc.py: 11, test_classify_complexity.py::TestTouchesIoBoundary: 8, test_classify_complexity.py existing: 1 unchanged)"
+      "passed": 146,
+      "total": 146,
+      "scope": "plugins/shipwright-iterate/tests/ — 126 from Sub-Iterate A + 20 new (test_confidence_anti_patterns_doc.py: 9, test_skill_phase_matrix.py: 11)"
     },
     "integration": {
       "status": "skipped",
@@ -32,7 +32,7 @@
       "status": "skipped"
     },
     "degraded": [
-      "Test scope narrowed to plugins/shipwright-iterate/tests/ — sub-iterate change is contained to classify_complexity.py + iterate references + iterate skill. No other plugin touched.",
+      "Test scope narrowed to plugins/shipwright-iterate/tests/ — sub-iterate B change is contained to iterate skill markdown + new drift-protection tests. No Python code paths changed.",
       "Pre-existing test failures unrelated to this iterate (carried from earlier degraded notes): shipwright-deploy::test_validate_without_token, shipwright-security::test_explicit_name_not_in_registry."
     ]
   }
