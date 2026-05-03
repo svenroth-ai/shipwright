@@ -118,7 +118,7 @@ If a file does not exist, skip it silently.
 ### D. Run Setup Script
 
 ```bash
-uv run {plugin_root}/scripts/checks/setup_implementation_session.py \
+uv run "{plugin_root}/scripts/checks/setup_implementation_session.py" \
   --file "{section_file_path}" \
   --plugin-root "{plugin_root}" \
   --session-id "{SHIPWRIGHT_SESSION_ID}"
@@ -136,7 +136,7 @@ Ensure `.env.local` exists with the required variable placeholders, then validat
 #### D2a. Initialize .env.local
 
 ```bash
-uv run {shared_root}/scripts/validate_env.py \
+uv run "{shared_root}/scripts/validate_env.py" \
   --project-root "{project_root}" \
   --phase build \
   --init
@@ -161,7 +161,7 @@ Parse the JSON output:
 #### D2b. Validate Environment
 
 ```bash
-uv run {shared_root}/scripts/validate_env.py \
+uv run "{shared_root}/scripts/validate_env.py" \
   --project-root "{project_root}" \
   --phase build
 ```
@@ -260,7 +260,7 @@ by the SessionStart hook), you are part of an active `/shipwright-run` pipeline.
 Parse `phaseTaskId` from that block and run as your very first action:
 
 ```bash
-uv run ${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.py \
+uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.py" \
   --phase-task-id <phaseTaskId-from-context>
 ```
 
@@ -298,7 +298,7 @@ If prerequisites reference other sections, verify those are complete
 
 **Dashboard update:**
 ```bash
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "$(pwd)" --section "{section_name}" --step 1 --detail "Reading section spec" --session-id "{SHIPWRIGHT_SESSION_ID}"
 ```
 
@@ -390,7 +390,7 @@ If this section adds new user-facing routes/pages or modifies existing user flow
 
 **Dashboard update:**
 ```bash
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "$(pwd)" --section "{section_name}" --step 3 --detail "Tests written (red phase)" --session-id "{SHIPWRIGHT_SESSION_ID}"
 ```
 
@@ -475,10 +475,10 @@ supabase test db
 
 **Dashboard update + context pressure check:**
 ```bash
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "$(pwd)" --section "{section_name}" --step 4 --detail "Implementation complete (green phase)" --session-id "{SHIPWRIGHT_SESSION_ID}"
 
-uv run {shared_root}/scripts/tools/estimate_context_pressure.py \
+uv run "{shared_root}/scripts/tools/estimate_context_pressure.py" \
   --counter-file "$(pwd)/.shipwright/toolcall_count" --threshold 120
 ```
 If `recommend_checkpoint` is true AND section is not yet complete:
@@ -501,7 +501,7 @@ not a skip trigger.
 **Skip this step ONLY if:**
 - The diff touches no frontend file extensions. Run the detector:
 ```bash
-uv run {shared_root}/scripts/lib/detect_frontend_changes.py \
+uv run "{shared_root}/scripts/lib/detect_frontend_changes.py" \
   --cwd {project_root} --since "$(git merge-base HEAD {branch_name})"
 ```
 If `has_frontend_changes == false`, skip. Otherwise Browser Verify is mandatory.
@@ -516,18 +516,18 @@ If `has_frontend_changes == false`, skip. Otherwise Browser Verify is mandatory.
 
 1. **Ensure Playwright is set up:**
 ```bash
-uv run {shared_root}/scripts/playwright_setup.py --cwd {project_root}
+uv run "{shared_root}/scripts/playwright_setup.py" --cwd {project_root}
 ```
 
 2. **Start dev server** (if not already running):
 ```bash
-uv run {shared_root}/scripts/dev_server.py start --profile {profile} --cwd {project_root}
+uv run "{shared_root}/scripts/dev_server.py" start --profile {profile} --cwd {project_root}
 ```
 If profile has no `dev_server` config: check `shipwright_build_config.json` for `dev_url` and start on that port. Then fall through to autodetect before escalating.
 
 3. **Run browser verify:**
 ```bash
-uv run {shared_root}/scripts/browser_verify.py --cwd {project_root}
+uv run "{shared_root}/scripts/browser_verify.py" --cwd {project_root}
 ```
 
 4. **Evaluate result:**
@@ -623,7 +623,7 @@ Present findings to user via AskUserQuestion:
 
 **Dashboard update:**
 ```bash
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "$(pwd)" --section "{section_name}" --step 6 --detail "Code review" --session-id "{SHIPWRIGHT_SESSION_ID}"
 ```
 
@@ -672,7 +672,7 @@ sent.
 
 2. Run the external review:
 ```bash
-uv run {shared_root}/scripts/tools/external_review.py \
+uv run "{shared_root}/scripts/tools/external_review.py" \
   --mode code \
   --diff-file /tmp/shipwright-review-diff.txt \
   --spec-file "{section_spec_path}" \
@@ -688,7 +688,7 @@ remains required for CLI shape parity with plan/iterate modes.)
 
 4. Write the review marker:
 ```bash
-uv run {shared_root}/scripts/checks/mark-review-state.py \
+uv run "{shared_root}/scripts/checks/mark-review-state.py" \
   --planning-dir "{planning_dir}" \
   --review-type code \
   --status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
@@ -782,10 +782,10 @@ git push -u origin {branch_name}
 
 **Dashboard update + context pressure check:**
 ```bash
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "$(pwd)" --section "{section_name}" --step 8 --detail "Committed" --session-id "{SHIPWRIGHT_SESSION_ID}"
 
-uv run {shared_root}/scripts/tools/estimate_context_pressure.py \
+uv run "{shared_root}/scripts/tools/estimate_context_pressure.py" \
   --counter-file "$(pwd)/.shipwright/toolcall_count" --threshold 120
 ```
 If `recommend_checkpoint` is true: follow the same checkpoint procedure as Step 4.
@@ -801,7 +801,7 @@ See [section-doc-update.md](references/section-doc-update.md) for details.
 If `.shipwright/agent_docs/decision_log.md` exists, log each significant decision using the shared tool:
 
 ```bash
-uv run {plugin_root}/../../shared/scripts/tools/write_decision_log.py \
+uv run "{plugin_root}/../../shared/scripts/tools/write_decision_log.py" \
   --section "Build — {section_name}" \
   --commit "$(git rev-parse HEAD)" \
   --title "{short title for the decision}" \
@@ -825,7 +825,7 @@ Run once per decision. Decisions to log:
 **Goal:** Mark section as complete in config with test results and review findings.
 
 ```bash
-uv run {plugin_root}/scripts/tools/update_section_state.py \
+uv run "{plugin_root}/scripts/tools/update_section_state.py" \
   --section "{section_name}" \
   --status "complete" \
   --commit "$(git rev-parse HEAD)" \
@@ -845,7 +845,7 @@ Where:
 > **CRITICAL:** Call `record_event.py` immediately after each section completes. Do NOT batch multiple sections in a loop with `--deduplicate-by-commit` using the same commit hash — dedup checks (section, commit) but batching with identical commits from a different context will collapse events. Each section has its own commit from Step 8.
 
 ```bash
-uv run {shared_root}/scripts/tools/record_event.py \
+uv run "{shared_root}/scripts/tools/record_event.py" \
   --project-root "$(pwd)" \
   --type work_completed --source build \
   --split "{current_split}" --section "{section_name}" \
@@ -861,13 +861,13 @@ Where `{comma_separated_FRs}` is the list of FRs from the section spec that this
 
 **Dashboard update:**
 ```bash
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "$(pwd)" --section "{section_name}" --step 10 --status complete --session-id "{SHIPWRIGHT_SESSION_ID}"
 ```
 
 **Check if all sections are complete (phase-complete trigger):**
 ```bash
-uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+uv run "{plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py" \
   get-build-progress --project-root "$(pwd)"
 ```
 
@@ -891,7 +891,7 @@ If `split_done == true` (either final split or split-loop), run the
 export SHIPWRIGHT_RUN_ID
 
 # C3 — Canon-marked session handoff (one per split completion).
-uv run {shared_root}/scripts/tools/generate_session_handoff.py \
+uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
   --project-root "$(pwd)" --canon-marker --phase build \
   --reason "build phase complete: {current_split}, {N} sections"
 
@@ -910,7 +910,7 @@ for section in {completed_sections_of_current_split}; do
     refactor) category=Changed ;;
     *) category=Added ;;
   esac
-  uv run {shared_root}/scripts/tools/append_changelog_entry.py \
+  uv run "{shared_root}/scripts/tools/append_changelog_entry.py" \
     --project-root "$(pwd)" \
     --category "$category" \
     --entry "Build: {current_split}/{section_name} complete ({tests_passed}/{tests_total} tests)"
@@ -919,7 +919,7 @@ done
 # phase_history — audit trail with per-section sub-entries.
 # Serialize completed sections from build_config as a JSON array.
 sections_json=$(jq -c '{split: .current_split, sections: [.sections[] | select(.status == "complete") | {id: .name, status: .status, commit: .commit, tests_passed: .tests_passed, tests_total: .tests_total}]}' shipwright_build_config.json)
-uv run {shared_root}/scripts/tools/append_phase_history.py \
+uv run "{shared_root}/scripts/tools/append_phase_history.py" \
   --project-root "$(pwd)" --phase build --run-id "$SHIPWRIGHT_RUN_ID" \
   --entry-json "$sections_json"
 ```
@@ -938,7 +938,7 @@ If `split_done == true AND all_done == true` (final split complete):
    preventive checks. Missing artifacts or test-file drift blocks
    this call via ask-level issues.
 ```bash
-uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+uv run "{plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py" \
   update-step --project-root "$(pwd)" --step build --status complete
 ```
 3. Push feature branch to remote:
@@ -947,14 +947,14 @@ git push -u origin "$(git branch --show-current)"
 ```
 4. Update delivery dashboard with pipeline status:
 ```bash
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "$(pwd)" --phase build --session-id "{SHIPWRIGHT_SESSION_ID}"
 ```
 
 If `split_done == true AND all_done == false` (more splits remain):
 1. **Archive completed split** (moves sections to `split_NN_sections`, updates `current_split`):
 ```bash
-uv run {shared_root}/scripts/tools/archive_split.py \
+uv run "{shared_root}/scripts/tools/archive_split.py" \
   --project-root "$(pwd)" --next-split "{next_split_name}"
 ```
 2. Push feature branch to remote:
@@ -964,12 +964,12 @@ git push -u origin "$(git branch --show-current)"
 3. Print: "Split {current_split} complete. Archived to split_{prefix}_sections. Continuing to plan + build for next split. Test/changelog/deploy run once after all splits."
 4. Update delivery dashboard:
 ```bash
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "$(pwd)" --section "{section_name}" --status complete --session-id "{SHIPWRIGHT_SESSION_ID}"
 ```
 5. **Mark build phase complete** for this split (pipeline continues to test → changelog → deploy, then orchestrator loops back to plan for next split):
 ```bash
-uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+uv run "{plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py" \
   update-step --project-root "$(pwd)" --step build --status complete
 ```
 
@@ -994,7 +994,7 @@ Apply the reflection protocol (`references/reflection.md`):
 If the conversation is getting long (many tool calls, large context):
 
 ```bash
-uv run {shared_root}/scripts/tools/generate_session_handoff.py \
+uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
   --project-root "$(pwd)" \
   --reason "mid-build handoff: section {section_name} {complete|in_progress}"
 ```
@@ -1028,7 +1028,7 @@ export SHIPWRIGHT_LOOP_ID=""  # set after init
 
 2. **Initialize loop state:**
 ```bash
-uv run {shared_root}/scripts/lib/autonomous_loop.py init \
+uv run "{shared_root}/scripts/lib/autonomous_loop.py" init \
   --state .shipwright/loop_state.json \
   --kind section \
   --units-from shipwright_build_config.json \

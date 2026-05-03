@@ -21,6 +21,11 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 - Keep files under 300 lines; split larger modules.
 - Tests live alongside implementation with `.test.*` / `_test.*` suffix OR in a `tests/` directory — whichever is consistent with the rest of the codebase.
 
+## Learnings
+
+- **Always quote `uv run <placeholder>` path arguments in shell snippets.** Any documented or installed shell command of the shape `uv run ${CLAUDE_PLUGIN_ROOT}/...`, `uv run {plugin_root}/...`, `uv run {shared_root}/...`, etc. must wrap the path in double quotes: `uv run "${CLAUDE_PLUGIN_ROOT}/..."`. Without quoting, target projects on paths containing spaces (OneDrive-synced "AI Backup - Documents", Windows usernames with spaces, paths under "Program Files") get word-split by the shell and uv exits non-zero. For the suggest_iterate UserPromptSubmit hook this exit non-zero blocks every user prompt. Same risk class for the documentation snippets the agent renders into shell at runtime. Add `--no-project` to `uv run` for hook commands so a corrupt target-project `.venv` cannot stall uv on resolution. Out of scope for this rule (today): `plugins/*/hooks/hooks.json` between-phase commands — different blast radius (only fail when the *plugin install path* contains spaces, which today only happens on Windows usernames with spaces). See ADR-020.
+- **Hook-installer-style code that detects "already-present" must also upgrade legacy forms in place, not just refuse to add a duplicate.** Recognition without rewrite leaves an already-broken installation broken on re-run. Tests should assert the canonical literal after run, not just absence of duplicates. When BOTH the carrier shape (Shape A vs Shape B per ADR-019) and the command literal can be wrong, the upgrade must fix both — recognizing one without rewriting the other still produces a broken hook. Surface the rewrite via an `upgraded: true` field in the return dict so callers/telemetry can observe that re-running adopt actually fixed something.
+
 ---
 
 ## Imported from `CONTRIBUTING.md`
@@ -297,3 +302,5 @@ Thanks for contributing! If anything in this guide is unclear, please open an is
 - **ADR-018** (2026-05-02): Adopt plugin: drift detection, test-fixture filter, compliance fallback fix
 
 - **ADR-019** (2026-05-02): Hook installer writes canonical matcher-group shape
+
+- **ADR-020** (2026-05-03): Quote uv-run path placeholders + upgrade legacy hook entries (Shape + command) in place

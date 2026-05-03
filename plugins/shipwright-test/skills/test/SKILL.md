@@ -150,7 +150,7 @@ by the SessionStart hook), you are part of an active `/shipwright-run` pipeline.
 Parse `phaseTaskId` from that block and run as your very first action:
 
 ```bash
-uv run ${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.py \
+uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.py" \
   --phase-task-id <phaseTaskId-from-context>
 ```
 
@@ -166,7 +166,7 @@ continue with Step 1 below as normal.
 ## Step 1: Run Unit Tests
 
 ```bash
-uv run {plugin_root}/scripts/lib/test_runner.py \
+uv run "{plugin_root}/scripts/lib/test_runner.py" \
   --profile "{profile}" \
   --layer unit
 ```
@@ -206,7 +206,7 @@ npx vitest run --config vitest.integration.config.ts
 
 Or via runner script:
 ```bash
-uv run {plugin_root}/scripts/lib/test_runner.py \
+uv run "{plugin_root}/scripts/lib/test_runner.py" \
   --profile "{profile}" \
   --layer integration \
   --cwd {project_root} \
@@ -253,7 +253,7 @@ supabase test db
 
 Or via runner script:
 ```bash
-uv run {plugin_root}/scripts/lib/test_runner.py \
+uv run "{plugin_root}/scripts/lib/test_runner.py" \
   --profile "{profile}" \
   --layer pgtap \
   --cwd {project_root} \
@@ -271,7 +271,7 @@ uv run {plugin_root}/scripts/lib/test_runner.py \
 ## Step 2: Run Smoke Test (if DEV URL available)
 
 ```bash
-uv run {shared_root}/scripts/smoke_test.py \
+uv run "{shared_root}/scripts/smoke_test.py" \
   --url "{dev_url}" \
   --timeout 10 \
   --health-path "/api/health"
@@ -377,17 +377,17 @@ e2e/
 
 1. **Ensure Playwright is set up:**
 ```bash
-uv run {plugin_root}/../../shared/scripts/playwright_setup.py --cwd {project_root}
+uv run "{plugin_root}/../../shared/scripts/playwright_setup.py" --cwd {project_root}
 ```
 
 2. **Ensure dev server is running:**
 ```bash
-uv run {plugin_root}/../../shared/scripts/dev_server.py start --profile {profile} --cwd {project_root}
+uv run "{plugin_root}/../../shared/scripts/dev_server.py" start --profile {profile} --cwd {project_root}
 ```
 
 3. **Run E2E tests:**
 ```bash
-uv run {plugin_root}/scripts/lib/playwright_runner.py --cwd {project_root}
+uv run "{plugin_root}/scripts/lib/playwright_runner.py" --cwd {project_root}
 ```
 
 4. **Evaluate results:**
@@ -464,7 +464,7 @@ miscounts from setup projects, retries, or skipped tests.
 
 **1. Run consistency analysis:**
 ```bash
-uv run {plugin_root}/scripts/lib/ui_consistency_check.py \
+uv run "{plugin_root}/scripts/lib/ui_consistency_check.py" \
   --cwd "{project_root}" \
   --guidelines ".shipwright/designs/visual-guidelines.md"
 ```
@@ -516,7 +516,7 @@ e. If same issue persists after 3 attempts: park with diagnosis
 
 **1. Run structural extraction:**
 ```bash
-uv run {plugin_root}/scripts/lib/design_fidelity_check.py \
+uv run "{plugin_root}/scripts/lib/design_fidelity_check.py" \
   --cwd "{project_root}"
 ```
 
@@ -606,7 +606,7 @@ that dep on first invocation.
 
 **1. Run the performance check:**
 ```bash
-uv run {plugin_root}/scripts/lib/performance_check.py \
+uv run "{plugin_root}/scripts/lib/performance_check.py" \
   --cwd "{project_root}" \
   --profile-path "{shared_root}/profiles/{profile}.json" \
   --dev-url "{dev_url}" \
@@ -695,7 +695,7 @@ CI runners parsing the step list MUST treat this section as a `finally`
 clause analogous to a shell `trap`.
 
 ```bash
-uv run {plugin_root}/../../shared/scripts/dev_server.py stop --cwd {project_root}
+uv run "{plugin_root}/../../shared/scripts/dev_server.py" stop --cwd {project_root}
 ```
 
 ---
@@ -818,7 +818,7 @@ If none: skip.
 
 **Record test_run event** (always, even on failure — captures layer results):
 ```bash
-uv run {shared_root}/scripts/tools/record_event.py \
+uv run "{shared_root}/scripts/tools/record_event.py" \
   --project-root "$(pwd)" \
   --type test_run \
   --trigger "pipeline" \
@@ -849,17 +849,17 @@ export SHIPWRIGHT_RUN_ID
 # C1 — test_run event already recorded above.
 # (The event-type is `test_run`, not `phase_completed`, but also emit
 # a phase_completed event so the generic C1 verifier matches uniformly.)
-uv run {shared_root}/scripts/tools/record_event.py \
+uv run "{shared_root}/scripts/tools/record_event.py" \
   --project-root "$(pwd)" --type phase_completed --phase test \
   --detail "{unit_passed}/{unit_total} unit, {e2e_passed}/{e2e_total} e2e"
 
 # C2 — delivery dashboard
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "$(pwd)" --phase test --detail "{passed}/{total} passing" \
   --session-id "{SHIPWRIGHT_SESSION_ID}"
 
 # C3 (NEW 12.4) — canon-marker handoff
-uv run {shared_root}/scripts/tools/generate_session_handoff.py \
+uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
   --project-root "$(pwd)" --canon-marker --phase test \
   --reason "test complete: {unit_passed}/{unit_total} unit, {e2e_passed}/{e2e_total} e2e, smoke {smoke_status}"
 
@@ -868,7 +868,7 @@ uv run {shared_root}/scripts/tools/generate_session_handoff.py \
 #      not CHANGELOG).
 
 # phase_history (NEW 12.4) — audit trail
-uv run {shared_root}/scripts/tools/append_phase_history.py \
+uv run "{shared_root}/scripts/tools/append_phase_history.py" \
   --project-root "$(pwd)" --phase test --run-id "$SHIPWRIGHT_RUN_ID" \
   --entry-json '{"unit":"{unit_passed}/{unit_total}","e2e":"{e2e_passed}/{e2e_total}","smoke":"{smoke_status}","outcome":"passed"}'
 
@@ -876,7 +876,7 @@ uv run {shared_root}/scripts/tools/append_phase_history.py \
 # _validate_test() now runs the modular test_checks verifier (canon
 # C1/C2/C3 + phase_history) in addition to the existing results-layer
 # completion gate.
-uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+uv run "{plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py" \
   update-step --project-root "$(pwd)" --step test --status complete
 ```
 

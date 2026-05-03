@@ -55,7 +55,7 @@ Before starting the project interview:
 
 5. Read the user's choice from the AskUserQuestion tool_result.
 6. **If "Full Pipeline"**:
-   - Run the plugin script: `uv run {plugin_root}/scripts/write_run_config.py --project-root {project_path}`
+   - Run the plugin script: `uv run "{plugin_root}/scripts/write_run_config.py" --project-root {project_path}`
    - This writes `shipwright_run_config.json` with `status="pending"`, `profile=detected`, `created_at=now`.
    - Then proceed with the normal interview flow.
 7. **If "Standalone Spec"**:
@@ -185,7 +185,7 @@ Parse the JSON output.
 
 **Early config:** After setup succeeds, write a minimal project config for phase tracking (enables session handoff and phase detection if user stops early):
 ```bash
-uv run {plugin_root}/scripts/checks/write-project-config.py \
+uv run "{plugin_root}/scripts/checks/write-project-config.py" \
   --planning-dir "{planning_dir}" --profile "detecting" --scope "{scope}" \
   --status in_progress
 ```
@@ -229,7 +229,7 @@ by the SessionStart hook), you are part of an active `/shipwright-run` pipeline.
 Parse `phaseTaskId` from that block and run as your very first action:
 
 ```bash
-uv run ${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.py \
+uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.py" \
   --phase-task-id <phaseTaskId-from-context>
 ```
 
@@ -332,7 +332,7 @@ See [project-manifest.md](references/project-manifest.md) for manifest format.
 
 Run the directory creation script:
 ```bash
-uv run {plugin_root}/scripts/checks/create-split-dirs.py --planning-dir "{planning_dir}"
+uv run "{plugin_root}/scripts/checks/create-split-dirs.py" --planning-dir "{planning_dir}"
 ```
 
 **Checkpoint:** Directory existence. Resume from Step 6 if directories exist.
@@ -396,19 +396,34 @@ Ensure the `UserPromptSubmit` hook for `suggest_iterate.py` is present:
   "hooks": {
     "UserPromptSubmit": [
       {
-        "type": "command",
-        "command": "uv run {plugin_root}/../../shared/scripts/hooks/suggest_iterate.py"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/suggest_iterate.py\""
+          }
+        ]
       }
     ]
   }
 }
 ```
 
+The outer entry is a matcher group (Claude Code's canonical hook
+shape — see ADR-019); the actual command sits in its inner `hooks`
+array. UserPromptSubmit takes no tool matcher, so the `matcher` key
+is omitted. The path is wrapped in double quotes so projects on paths
+containing spaces (e.g. OneDrive-synced "AI Backup - Documents")
+don't have the shell split the hook command and block every
+UserPromptSubmit. `--no-project` keeps uv from trying to resolve a
+project context from the target project's CWD — important because a
+corrupt project `.venv` would otherwise stall the hook on resolution
+and again block prompts (see ADR-020).
+
 If `.claude/settings.json` already has other hooks, merge — do not overwrite existing entries.
 
 **Write config:**
 ```bash
-uv run {plugin_root}/scripts/checks/write-project-config.py \
+uv run "{plugin_root}/scripts/checks/write-project-config.py" \
   --planning-dir "{planning_dir}" \
   --profile "{profile_name}" \
   --scope "{scope}"
@@ -421,7 +436,7 @@ After scaffolding, extract all project-level decisions made during the interview
 log each one using the shared tool:
 
 ```bash
-uv run {plugin_root}/../../shared/scripts/tools/write_decision_log.py \
+uv run "{plugin_root}/../../shared/scripts/tools/write_decision_log.py" \
   --section "Project Interview" \
   --commit "n/a" \
   --context "{why the decision came up}" \
@@ -500,19 +515,19 @@ C3 (inline session_handoff) + C5 (CHANGELOG [Unreleased] entry) +
 
 ```bash
 # C1 — Record phase completion event (idempotent — skips if already recorded)
-uv run {shared_root}/scripts/tools/record_event.py \
+uv run "{shared_root}/scripts/tools/record_event.py" \
   --project-root "$(pwd)" --type phase_completed --phase project \
   --detail "{N} splits created"
 
 # C2 — Update delivery dashboard
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "$(pwd)" --phase project --detail "{N} splits created" \
   --session-id "{SHIPWRIGHT_SESSION_ID}"
 
 # C3 (NEW 12.1) — Canon-marked session handoff. Requires SHIPWRIGHT_RUN_ID
 # env var; without it the marker is dropped with a warning (safe degrade)
 # and the Stop hook will regenerate a generic handoff at turn end.
-uv run {shared_root}/scripts/tools/generate_session_handoff.py \
+uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
   --project-root "$(pwd)" --canon-marker --phase project \
   --reason "project scaffolding complete: {scope}, {N} splits"
 
@@ -521,14 +536,14 @@ uv run {shared_root}/scripts/tools/generate_session_handoff.py \
 
 # C5 (NEW 12.1) — append CHANGELOG [Unreleased] entry via helper
 # (Keep-a-Changelog, dedupe, atomic). Category "Added" per canon policy.
-uv run {shared_root}/scripts/tools/append_changelog_entry.py \
+uv run "{shared_root}/scripts/tools/append_changelog_entry.py" \
   --project-root "$(pwd)" \
   --category Added \
   --entry "Project initialized: {name} ({N} splits, profile {profile})"
 
 # phase_history append (NEW 12.1) — audit trail entry in
 # shipwright_run_config.json::phase_history[project].
-uv run {shared_root}/scripts/tools/append_phase_history.py \
+uv run "{shared_root}/scripts/tools/append_phase_history.py" \
   --project-root "$(pwd)" --phase project --run-id "{SHIPWRIGHT_RUN_ID}" \
   --entry-json '{"outcome":"scaffolded","splits":{N},"profile":"{profile}"}'
 
@@ -536,7 +551,7 @@ uv run {shared_root}/scripts/tools/append_phase_history.py \
 # The orchestrator's phase validator now runs the modular project_checks
 # verifier — if C1/C2/C3/C5 or phase_history is missing, this call blocks
 # on an ask-level issue rather than silently advancing.
-uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+uv run "{plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py" \
   update-step --project-root "$(pwd)" --step project --status complete
 ```
 Where `{shared_root}` = `{plugin_root}/../../shared`.

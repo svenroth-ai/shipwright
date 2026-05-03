@@ -15,7 +15,7 @@ Before marking a section as complete:
 ## Section State Update
 
 ```bash
-uv run {plugin_root}/scripts/tools/update_section_state.py \
+uv run "{plugin_root}/scripts/tools/update_section_state.py" \
   --section "{section_name}" \
   --status "complete" \
   --commit "$(git rev-parse HEAD)" \

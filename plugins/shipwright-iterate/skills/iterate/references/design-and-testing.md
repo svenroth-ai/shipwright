@@ -143,12 +143,12 @@ UI changes at any complexity level.
 ### Protocol
 1. Start dev server via wrapper script:
    ```bash
-   uv run {shared_root}/scripts/dev_server.py start --profile {profile} --cwd {project_root}
+   uv run "{shared_root}/scripts/dev_server.py" start --profile {profile} --cwd {project_root}
    ```
 2. Run health check:
    ```bash
-   uv run {shared_root}/scripts/playwright_setup.py --cwd {project_root}
-   uv run {shared_root}/scripts/browser_verify.py --cwd {project_root}
+   uv run "{shared_root}/scripts/playwright_setup.py" --cwd {project_root}
+   uv run "{shared_root}/scripts/browser_verify.py" --cwd {project_root}
    ```
 3. If JS errors: read screenshot, diagnose, fix (max 3 retries)
 3b. If UI change: compare screenshot against .shipwright/designs/screens/{affected}.html
@@ -181,7 +181,7 @@ Yes — if a route returns non-200, stop and investigate before proceeding.
 ### Step 1: Structural Extraction
 Run the design fidelity helper to get automated check results:
 ```bash
-uv run {test_plugin_root}/scripts/lib/design_fidelity_check.py \
+uv run "{test_plugin_root}/scripts/lib/design_fidelity_check.py" \
   --cwd "{project_root}" --screen {affected_screen1} --screen {affected_screen2}
 ```
 
@@ -230,7 +230,7 @@ After design fidelity analysis, verify no new cross-page inconsistencies introdu
 
 1. **Run scoped check:**
 ```bash
-uv run {test_plugin_root}/scripts/lib/ui_consistency_check.py \
+uv run "{test_plugin_root}/scripts/lib/ui_consistency_check.py" \
   --cwd "{project_root}" --files {changed_files}
 ```
 
@@ -273,5 +273,5 @@ Features at any complexity that change user-visible behavior (new routes, modifi
 
 Always stop the dev server when done with UI verification:
 ```bash
-uv run {shared_root}/scripts/dev_server.py stop --cwd {project_root}
+uv run "{shared_root}/scripts/dev_server.py" stop --cwd {project_root}
 ```

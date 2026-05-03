@@ -42,7 +42,7 @@ Check if `shipwright_build_config.json` exists in the project root and has at le
 Run the shared environment validator:
 
 ```bash
-uv run ${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/validate_env.py \
+uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/validate_env.py" \
   --project-root ${SHIPWRIGHT_PROJECT_ROOT} \
   --phase build
 ```
@@ -54,7 +54,7 @@ uv run ${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/validate_env.py \
 Check if the dev server is already running:
 
 ```bash
-uv run ${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/dev_server.py \
+uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/dev_server.py" \
   status --cwd ${SHIPWRIGHT_PROJECT_ROOT}
 ```
 
@@ -65,7 +65,7 @@ Parse the JSON output. If `"running": true`, skip to Step 5.
 Start the dev server using the stack profile:
 
 ```bash
-uv run ${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/dev_server.py \
+uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/dev_server.py" \
   start --profile supabase-nextjs --cwd ${SHIPWRIGHT_PROJECT_ROOT}
 ```
 
@@ -95,7 +95,7 @@ The port comes from the dev server status output (default: 3000 for supabase-nex
 The user can ask to stop the preview at any time in chat (e.g., "stop preview", "kill the server"). When asked:
 
 ```bash
-uv run ${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/dev_server.py \
+uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/dev_server.py" \
   stop --cwd ${SHIPWRIGHT_PROJECT_ROOT}
 ```
 

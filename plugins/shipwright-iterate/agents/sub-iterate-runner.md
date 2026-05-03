@@ -36,7 +36,7 @@ You receive these parameters in the prompt:
 ### Step 2: Classify Complexity
 
 ```bash
-uv run {plugin_root}/scripts/lib/classify_complexity.py \
+uv run "{plugin_root}/scripts/lib/classify_complexity.py" \
   --project-root "{project_root}" --description "$(cat {sub_iterate_spec})"
 ```
 
@@ -69,7 +69,7 @@ Run the standard iterate finalization steps:
 
   1. Detect frontend changes since the iterate branch start:
      ```bash
-     uv run {shared_root}/scripts/lib/detect_frontend_changes.py \
+     uv run "{shared_root}/scripts/lib/detect_frontend_changes.py" \
        --cwd {project_root} --since "$(git merge-base HEAD {branch_name})"
      ```
      If `has_frontend_changes == false`, skip to F3.
@@ -80,9 +80,9 @@ Run the standard iterate finalization steps:
 
   3. Run:
      ```bash
-     uv run {shared_root}/scripts/dev_server.py start --profile {profile} --cwd {project_root}
-     uv run {shared_root}/scripts/playwright_setup.py --cwd {project_root}
-     uv run {shared_root}/scripts/browser_verify.py --cwd {project_root}
+     uv run "{shared_root}/scripts/dev_server.py" start --profile {profile} --cwd {project_root}
+     uv run "{shared_root}/scripts/playwright_setup.py" --cwd {project_root}
+     uv run "{shared_root}/scripts/browser_verify.py" --cwd {project_root}
      ```
 
   4. On JS errors: inline retry loop (this agent has no Agent tool, so no

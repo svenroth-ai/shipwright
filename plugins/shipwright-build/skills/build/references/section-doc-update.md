@@ -5,7 +5,7 @@
 After code review interview, write each decision to `.shipwright/agent_docs/decision_log.md` using the shared ADR tool (one call per decision):
 
 ```bash
-uv run {plugin_root}/../../shared/scripts/tools/write_decision_log.py \
+uv run "{plugin_root}/../../shared/scripts/tools/write_decision_log.py" \
   --section "Build — {section_name}" \
   --commit "$(git rev-parse HEAD)" \
   --context "Needed simpler state management with better devtools" \
@@ -31,7 +31,7 @@ uv run {plugin_root}/../../shared/scripts/tools/write_decision_log.py \
 Before context limits, generate handoff:
 
 ```bash
-uv run {shared_root}/scripts/tools/generate_session_handoff.py \
+uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
   --project-root "$(pwd)" \
   --reason "mid-build handoff: section {section_name}"
 ```

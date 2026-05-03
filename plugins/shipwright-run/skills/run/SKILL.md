@@ -86,7 +86,7 @@ Ask 1-3 clarifying questions if the description is vague:
 See [inference-rules.md](references/inference-rules.md) for logic.
 
 ```bash
-uv run {plugin_root}/scripts/lib/inference.py \
+uv run "{plugin_root}/scripts/lib/inference.py" \
   --description "{user_description}"
 ```
 
@@ -134,7 +134,7 @@ AskUserQuestion:
 ## Step 4: Write Pipeline Spec
 
 ```bash
-uv run {plugin_root}/scripts/lib/orchestrator.py write-config \
+uv run "{plugin_root}/scripts/lib/orchestrator.py" write-config \
   --scope "{scope}" \
   --profile "{profile}" \
   --autonomy "{autonomy}" \
@@ -174,15 +174,27 @@ Check if `.claude/settings.json` in the project root already contains the
   "hooks": {
     "UserPromptSubmit": [
       {
-        "type": "command",
-        "command": "uv run {shared_root}/scripts/hooks/suggest_iterate.py"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/suggest_iterate.py\""
+          }
+        ]
       }
     ]
   }
 }
 ```
 
-Where `{shared_root}` = `{plugin_root}/../../shared`.
+The outer entry is a matcher group (Claude Code's canonical hook
+shape — see ADR-019); the actual command sits in its inner `hooks`
+array. `${CLAUDE_PLUGIN_ROOT}` is wrapped in double quotes so projects
+on paths containing spaces (e.g. OneDrive-synced "AI Backup -
+Documents") don't have the shell split the hook command and block
+every UserPromptSubmit. `--no-project` keeps uv from trying to resolve
+a project context from the target project's CWD — important because a
+corrupt project `.venv` would otherwise stall the hook on resolution
+and block prompts the same way (see ADR-020).
 
 ---
 

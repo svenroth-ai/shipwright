@@ -5,7 +5,7 @@ Browser Verify must run. Skip only when no frontend file changed; missing
 dev_server config is a resolution concern, not a skip trigger.
 
 Usage:
-    uv run {shared_root}/scripts/lib/detect_frontend_changes.py \\
+    uv run "{shared_root}/scripts/lib/detect_frontend_changes.py" \\
       --cwd {project_root} [--since <rev>]
 
 Default --since: merge-base between HEAD and origin/main (falls back to

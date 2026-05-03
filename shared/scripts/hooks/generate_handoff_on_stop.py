@@ -9,7 +9,7 @@ config (e.g., standalone /shipwright-build without /shipwright-run), and
 triggers the compliance update as a fallback.
 
 Usage (from hooks.json):
-    uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py
+    uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py"
 """
 
 from __future__ import annotations

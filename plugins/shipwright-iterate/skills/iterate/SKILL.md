@@ -89,7 +89,7 @@ Before starting fresh, check if a previous iterate run was interrupted:
 1. Enumerate + classify existing `iterate/*` branches via the
    dedicated helper (read-only; exits 1 only on hard git failures):
    ```bash
-   uv run {shared_root}/scripts/tools/list_iterate_branches.py --project-root . --main "$DEFAULT_BRANCH"
+   uv run "{shared_root}/scripts/tools/list_iterate_branches.py" --project-root . --main "$DEFAULT_BRANCH"
    ```
    The JSON output (schema v1) has per-branch metadata plus
    backward-compat arrays `active` / `stale` / `locked`. Use the
@@ -207,7 +207,7 @@ These rules apply to the **Parallel** option in B1 and to any manual worktree-ba
 - **One PR per iterate, one changelog entry per iterate.** Conventional-Commit sort is merge-order-independent. Rebase per PR is expected when multiple are open against the default branch.
 - **WARNING — race on adopted target projects:** on any project with `shipwright_run_config.json`, parallel iterates produce a merge conflict in `iterate_history[]`. Use this workflow today only if manual conflict resolution is acceptable. Structural fix tracked as `iterate-history-file-per-iterate` (must land before `/shipwright-adopt` on the shipwright monorepo itself).
 - **WARNING — CHANGELOG.md `[Unreleased]` is a merge hotspot today.** F4 appends to `[Unreleased]` for every iterate. Two parallel iterates conflict on merge — the second PR must rebase and resolve the bullet merge manually. Structural fix bundled with the iterate_history refactor as a `CHANGELOG-unreleased.d/` drop pattern.
-- **Cleanup:** `git worktree remove .worktrees/<slug>` removes the worktree but **not** the branch. After PR merge: also `git branch -D iterate/<slug>`. Use the helper (`uv run {shared_root}/scripts/tools/list_iterate_branches.py`) to see which branches are in `locked` (active in another worktree) vs `stale` (safe to delete).
+- **Cleanup:** `git worktree remove .worktrees/<slug>` removes the worktree but **not** the branch. After PR merge: also `git branch -D iterate/<slug>`. Use the helper (`uv run "{shared_root}/scripts/tools/list_iterate_branches.py"`) to see which branches are in `locked` (active in another worktree) vs `stale` (safe to delete).
 
 See also: `docs/guide.md` chapter "Parallel Development with Worktrees" for the full walkthrough.
 
@@ -244,7 +244,7 @@ This ID is propagated through ALL artifacts: iterate spec, mini-plan, ADR, event
 2. **Hook context:** Parse `[Shipwright] Detected: FEATURE|CHANGE|BUG` from additionalContext
 3. **Auto-classify:** Run the classifier:
 ```bash
-uv run {plugin_root}/scripts/lib/classify_intent.py \
+uv run "{plugin_root}/scripts/lib/classify_intent.py" \
   --message "{user_message}" \
   --sync-config "{project_root}/shipwright_sync_config.json"
 ```
@@ -259,7 +259,7 @@ uv run {plugin_root}/scripts/lib/classify_intent.py \
 #### Stage 1: Quick Estimate
 
 ```bash
-uv run {plugin_root}/scripts/lib/classify_complexity.py \
+uv run "{plugin_root}/scripts/lib/classify_complexity.py" \
   --message "{user_message}" \
   --sync-config "{project_root}/shipwright_sync_config.json"
 ```
@@ -652,7 +652,7 @@ If campaign directory doesn't exist yet:
 2. Together, decompose into sub-iterates (each should be trivial–medium complexity)
 3. Initialize campaign structure:
 ```bash
-uv run {plugin_root}/scripts/tools/campaign_init.py \
+uv run "{plugin_root}/scripts/tools/campaign_init.py" \
   --project-root "$(pwd)" \
   --campaign-slug "{slug}" \
   --intent "{user_intent}" \
@@ -673,10 +673,10 @@ export SHIPWRIGHT_LOOP_ID=""  # set after init
 
 2. **Generate units file and initialize loop:**
 ```bash
-uv run {plugin_root}/scripts/tools/campaign_progress.py list-units \
+uv run "{plugin_root}/scripts/tools/campaign_progress.py" list-units \
   --campaign-dir ".shipwright/planning/iterate/campaigns/{slug}" > /tmp/campaign_units.json
 
-uv run {shared_root}/scripts/lib/autonomous_loop.py init \
+uv run "{shared_root}/scripts/lib/autonomous_loop.py" init \
   --state .shipwright/loop_state.json \
   --kind sub_iterate \
   --units-from /tmp/campaign_units.json \
@@ -706,7 +706,7 @@ Extract `loop_id` from stdout. Then: `export SHIPWRIGHT_LOOP_ID="{loop_id}"`.
     → exit 3 = failure/escalation → go to step 4 (strict-stop)
 
 3g. Update campaign status.json:
-    uv run {plugin_root}/scripts/tools/campaign_progress.py update-status \
+    uv run "{plugin_root}/scripts/tools/campaign_progress.py" update-status \
       --campaign-dir ".shipwright/planning/iterate/campaigns/{slug}" \
       --sub-iterate-id {id} --status complete --commit {commit} --branch {branch}
 
@@ -842,7 +842,7 @@ Do not proceed to F1 with failing tests.
 ### F1: Drift Check
 
 ```bash
-uv run {shared_root}/scripts/artifact_sync.py \
+uv run "{shared_root}/scripts/artifact_sync.py" \
   --project-root "{project_root}" --ref "HEAD~1..HEAD"
 ```
 
@@ -864,7 +864,7 @@ If yes: update `architecture.md` to reflect the new state (Data Flow section for
 ### F3: Decision Log (ADR)
 
 ```bash
-uv run {shared_root}/scripts/tools/write_decision_log.py \
+uv run "{shared_root}/scripts/tools/write_decision_log.py" \
   --section "Iterate — {type}: {short_description}" \
   --commit "$(git rev-parse HEAD)" \
   --title "{short title}" \
@@ -893,7 +893,7 @@ Apply the reflection protocol (`references/reflection.md`):
 Write one bullet per acceptance-criteria-level change via the drop tool:
 
 ```bash
-uv run {shared_root}/scripts/tools/write_changelog_drop.py \
+uv run "{shared_root}/scripts/tools/write_changelog_drop.py" \
   --project-root "{project_root}" \
   --run-id "{run_id}" \
   --category "{Added|Changed|Deprecated|Removed|Fixed|Security}" \
@@ -947,7 +947,7 @@ Write latest-run state to `shipwright_test_results.json`:
 Run **one** script that handles compliance, dashboard, and handoff:
 
 ```bash
-uv run {shared_root}/scripts/tools/finalize_iterate.py \
+uv run "{shared_root}/scripts/tools/finalize_iterate.py" \
   --project-root "{project_root}" \
   --run-id "{run_id}" \
   --reason "iterate: {short_description}"
@@ -969,7 +969,7 @@ migration (if this project still carries an `iterate_history` array in
 quarantined legacy rows for operator review:
 
 ```bash
-uv run {shared_root}/scripts/tools/append_iterate_entry.py \
+uv run "{shared_root}/scripts/tools/append_iterate_entry.py" \
   --project-root "{project_root}" \
   --run-id "{run_id}" \
   --entry-json '{
@@ -1053,7 +1053,7 @@ only to `shipwright_events.jsonl` (gitignored in every Shipwright profile),
 so running it post-commit produces no tracked-file drift.
 
 ```bash
-uv run {shared_root}/scripts/tools/record_event.py \
+uv run "{shared_root}/scripts/tools/record_event.py" \
   --project-root "{project_root}" \
   --type work_completed --source iterate \
   --intent {feature|change|bug} \
@@ -1079,7 +1079,7 @@ git push origin "$main_branch"
 so the handoff shows what caused the regeneration instead of the default
 `context compaction` (iterate 11.3):
 ```bash
-uv run {shared_root}/scripts/tools/generate_session_handoff.py \
+uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
   --project-root "{project_root}" \
   --reason "iterate completion: {run_id}"
 ```
@@ -1092,7 +1092,7 @@ grep "$(git rev-parse HEAD)" "{project_root}/shipwright_events.jsonl" > /dev/nul
 **Iterate 11 — deterministic verifier.** After the gate check, run the
 finalization verifier and fail the iterate run on red:
 ```bash
-uv run {shared_root}/scripts/tools/verify_iterate_finalization.py \
+uv run "{shared_root}/scripts/tools/verify_iterate_finalization.py" \
   --run-id "{run_id}" \
   --project-root "{project_root}" \
   --commit "$(git rev-parse HEAD)"

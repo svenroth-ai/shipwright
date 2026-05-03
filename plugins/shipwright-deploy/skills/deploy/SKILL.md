@@ -44,7 +44,7 @@ Environments:
 ### B. Validate Credentials
 
 ```bash
-uv run {plugin_root}/scripts/checks/validate-deploy.py
+uv run "{plugin_root}/scripts/checks/validate-deploy.py"
 ```
 
 Checks for:
@@ -77,7 +77,7 @@ Store the detected mode in a variable `invocation_mode` = `"pipeline"` | `"stand
 Check that required deploy environment variables from the stack profile are available.
 
 ```bash
-uv run {shared_root}/scripts/validate_env.py \
+uv run "{shared_root}/scripts/validate_env.py" \
   --project-root "{project_root}" \
   --phase deploy
 ```
@@ -143,7 +143,7 @@ by the SessionStart hook), you are part of an active `/shipwright-run` pipeline.
 Parse `phaseTaskId` from that block and run as your very first action:
 
 ```bash
-uv run ${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.py \
+uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.py" \
   --phase-task-id <phaseTaskId-from-context>
 ```
 
@@ -198,7 +198,7 @@ Present dry-run output to user (note: dry-run output format varies by stack — 
 After `apply_cmd` succeeds, run the migration verifier against the migrations that were just applied. The verifier parses `-- VERIFY:` comments from each migration and runs them via `psql`. A failed verification triggers the same rollback path as a smoke-test failure (see Step 5 → "Smoke Test Failed → Rollback").
 
 ```bash
-uv run {plugin_root}/scripts/lib/migration_verifier.py \
+uv run "{plugin_root}/scripts/lib/migration_verifier.py" \
   --migration {applied_migration_path_1} \
   [--migration {applied_migration_path_N}] \
   --db-url "{prod_db_url_or_pooled_url}" \
@@ -224,7 +224,7 @@ Check `migrations.post_apply_manual_steps` from the stack profile. For each entr
 **Goal:** Create a rollback point before deploying to PROD.
 
 ```bash
-uv run {plugin_root}/scripts/lib/jelastic_client.py clone-env \
+uv run "{plugin_root}/scripts/lib/jelastic_client.py" clone-env \
   --env-name "{prod_env}" \
   --clone-name "{prod_env}-backup"
 ```
@@ -247,7 +247,7 @@ AskUserQuestion:
 ## Step 3: Deploy
 
 ```bash
-uv run {plugin_root}/scripts/lib/jelastic_client.py deploy \
+uv run "{plugin_root}/scripts/lib/jelastic_client.py" deploy \
   --env-name "{env_name}" \
   --branch "{branch}"
 ```
@@ -261,7 +261,7 @@ If environment doesn't exist yet: create it first via `create-env`.
 ## Step 4: Smoke Test
 
 ```bash
-uv run {shared_root}/scripts/smoke_test.py \
+uv run "{shared_root}/scripts/smoke_test.py" \
   --url "https://{env_name}.jpc.infomaniak.com" \
   --timeout 30 \
   --health-path "/api/health"
@@ -287,7 +287,7 @@ Migrations: {applied | skipped | N/A}
 
 **Record deploy event** (captures deployed URL for downstream consumers):
 ```bash
-uv run {shared_root}/scripts/tools/record_event.py \
+uv run "{shared_root}/scripts/tools/record_event.py" \
   --project-root "$(pwd)" \
   --type phase_completed \
   --phase deploy \
@@ -312,12 +312,12 @@ export SHIPWRIGHT_RUN_ID
 # C1 — already emitted as the phase_completed event above.
 
 # C2 — delivery dashboard
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "$(pwd)" --phase deploy --detail "Deployed to {url}" \
   --session-id "{SHIPWRIGHT_SESSION_ID}"
 
 # C3 (NEW 12.4) — canon-marker handoff
-uv run {shared_root}/scripts/tools/generate_session_handoff.py \
+uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
   --project-root "$(pwd)" --canon-marker --phase deploy \
   --reason "deploy to {env_name}: {status}"
 
@@ -326,14 +326,14 @@ uv run {shared_root}/scripts/tools/generate_session_handoff.py \
 #      release narrative belongs to the changelog plugin).
 
 # phase_history (NEW 12.4)
-uv run {shared_root}/scripts/tools/append_phase_history.py \
+uv run "{shared_root}/scripts/tools/append_phase_history.py" \
   --project-root "$(pwd)" --phase deploy --run-id "$SHIPWRIGHT_RUN_ID" \
   --entry-json '{"target":"{env_name}","url":"{url}","version":"v{version}","outcome":"success"}'
 
 # Mark deploy phase complete (triggers compliance update automatically).
 # _validate_deploy() (new in 12.4) runs the test-gate pre-condition
 # plus the deploy_checks verifier (C1/C2/C3 + phase_history).
-uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+uv run "{plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py" \
   update-step --project-root "$(pwd)" --step deploy --status complete
 ```
 
@@ -354,7 +354,7 @@ If none: skip.
 
 **DEV:** Git-based rollback
 ```bash
-uv run {plugin_root}/scripts/lib/rollback.py \
+uv run "{plugin_root}/scripts/lib/rollback.py" \
   --env-name "{env_name}" \
   --strategy git \
   --target-ref "{last_known_good_tag}"
@@ -362,7 +362,7 @@ uv run {plugin_root}/scripts/lib/rollback.py \
 
 **PROD:** Restore from clone
 ```bash
-uv run {plugin_root}/scripts/lib/rollback.py \
+uv run "{plugin_root}/scripts/lib/rollback.py" \
   --env-name "{env_name}" \
   --strategy clone \
   --clone-name "{prod_env}-backup"

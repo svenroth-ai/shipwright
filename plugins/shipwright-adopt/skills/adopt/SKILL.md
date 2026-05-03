@@ -53,7 +53,7 @@ behaves like a natively-built Shipwright project and all other skills
 Run:
 
 ```bash
-uv run ${CLAUDE_PLUGIN_ROOT}/scripts/checks/setup_adopt.py \
+uv run "${CLAUDE_PLUGIN_ROOT}/scripts/checks/setup_adopt.py" \
   --project-root <cwd> \
   [--exclude-path <p>]...
 ```
@@ -86,7 +86,7 @@ user can review every change via the `.preserved` files afterward).
 Run:
 
 ```bash
-uv run ${CLAUDE_PLUGIN_ROOT}/scripts/tools/analyze_codebase.py \
+uv run "${CLAUDE_PLUGIN_ROOT}/scripts/tools/analyze_codebase.py" \
   --project-root <cwd> \
   [--exclude-path <p>]... \
   [--profile-hint <name>] \
@@ -130,7 +130,7 @@ authoritative. It knows what to start (single-service via `dev_server`
 block, or multi-service via `services: [...]` array). Run:
 
 ```bash
-uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py start \
+uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py" start \
   --cwd <cwd> --profile <matched>
 ```
 
@@ -158,7 +158,7 @@ SERVICES_JSON='[
    "host":"localhost","scheme":"http","ready_path":"/"},
   ...
 ]'
-uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py start \
+uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py" start \
   --cwd <cwd> --services-json "$SERVICES_JSON"
 ```
 
@@ -166,7 +166,7 @@ uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py start \
 whatever profile matched (`generic` if nothing else):
 
 ```bash
-uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py start \
+uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py" start \
   --cwd <cwd> --profile <matched-or-generic>
 ```
 
@@ -187,20 +187,20 @@ MULTI_SERVICE_JSON='{"detected":true,"services":[<services-array-from-snapshot>]
 # CONFIG_DIR = primary frontend service root (the entry with primary:true,
 # else the entry named "frontend"/"client"/"web", else services[0]).
 
-uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/playwright_setup.py \
+uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/playwright_setup.py" \
   --cwd <cwd> --profile <matched> \
   [--multi-service-json "$MULTI_SERVICE_JSON"]   # only when multi-service detected
 
 # (start command from one of the three branches above)
 
-uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/route_crawler.py \
+uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/route_crawler.py" \
   --cwd <cwd> --base-url <primary_url_from_dev_server_start_output> \
   --max-depth 3 --max-pages 50 \
   --output <cwd>/.shipwright/adopt/routes.json \
   --screenshots <cwd>/.shipwright/adopt/screenshots/ \
   [--config-dir <cwd>/<primary-frontend-root>]   # only when multi-service detected
 
-uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py stop --cwd <cwd>
+uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py" stop --cwd <cwd>
 ```
 
 The `--base-url` is read from the `url` field in `dev_server.py
@@ -215,7 +215,7 @@ project that uses such a profile, set non-default ports in the
 subprocess env BEFORE `dev_server.py start`:
 
 ```bash
-PORT=3848 VITE_PORT=5174 uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py start \
+PORT=3848 VITE_PORT=5174 uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/dev_server.py" start \
   --cwd <cwd> --profile <matched>
 ```
 
@@ -337,7 +337,7 @@ print the report. Exit 0.
 Run:
 
 ```bash
-uv run ${CLAUDE_PLUGIN_ROOT}/scripts/tools/generate_adoption_artifacts.py \
+uv run "${CLAUDE_PLUGIN_ROOT}/scripts/tools/generate_adoption_artifacts.py" \
   --project-root <cwd> \
   [--no-sync] [--no-backfill-events] \
   [--scope <full_app|library|cli>] \
@@ -503,7 +503,7 @@ a `**GITIGNORED OUTPUTS**` block in the handoff and ask the user via
 Run:
 
 ```bash
-uv run ${CLAUDE_PLUGIN_ROOT}/scripts/tools/seed_adopt_compliance.py \
+uv run "${CLAUDE_PLUGIN_ROOT}/scripts/tools/seed_adopt_compliance.py" \
   --project-root <cwd>
 ```
 
@@ -528,7 +528,7 @@ contradictions, **AskUserQuestion**: `fix (re-run enrichment)` /
 1. Validate:
 
 ```bash
-uv run ${CLAUDE_PLUGIN_ROOT}/scripts/checks/validate_adoption.py \
+uv run "${CLAUDE_PLUGIN_ROOT}/scripts/checks/validate_adoption.py" \
   --project-root <cwd>
 ```
 

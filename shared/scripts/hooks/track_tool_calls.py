@@ -7,7 +7,7 @@ Used by estimate_context_pressure.py to detect when context window
 is getting full.
 
 Usage (from hooks.json):
-    uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/track_tool_calls.py
+    uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/track_tool_calls.py"
 """
 
 import json
