@@ -1,36 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-03-suggest-iterate-quoted-path"
+run_id: "iterate-2026-05-03-adopt-env-local-scaffold"
 phase: "iterate"
-reason: "iterate: suggest_iterate quoted-path + Shape A→B upgrade-in-place"
-timestamp: "2026-05-03T12:25:18.922560+00:00"
+reason: "iterate: adopt scaffolds .env.local from validate_env framework set"
+timestamp: "2026-05-03T14:11:43.709137+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-03 12:25:18 UTC
+> Auto-generated 2026-05-03 14:11:43 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-03 12:25:18 UTC
-- **Reason**: iterate: suggest_iterate quoted-path + Shape A→B upgrade-in-place
+- **Timestamp**: 2026-05-03 14:11:43 UTC
+- **Reason**: iterate: adopt scaffolds .env.local from validate_env framework set
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-02-adopt-prior-art-and-noise-fixes
-- **Date**: 2026-05-02T19:06:52.731942Z
-- **Type**: change
+- **Run ID**: iterate-2026-05-03-suggest-iterate-quoted-path
+- **Date**: 2026-05-03T12:25:22.988305Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/adopt-prior-art-and-noise-fixes
-- **ADR**: ADR-018
+- **Branch**: iterate/suggest-quoted-path-v2
+- **ADR**: ADR-020
 - **Tests passed**: True
-- **Spec**: ~/.claude/plans/du-hast-ein-memory-magical-hippo.md
+- **Spec**: .shipwright/planning/iterate/2026-05-03-suggest-iterate-quoted-path.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/suggest-quoted-path-v2
-- **External Review Marker**: missing
+- **Branch**: iterate/adopt-env-local-scaffold
+- **Run ID**: iterate-2026-05-03-adopt-env-local-scaffold
+- **Spec**: .shipwright/planning/iterate/2026-05-03-adopt-env-local-scaffold.md
+- **Complexity**: medium
+- **External Review Marker**: completed (iterate-2026-05-03-adopt-env-local-scaffold-external-review.json @ 2026-05-03T13:00:00)
 
 ### Mandatory replay on Resume
 
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/suggest-quoted-path-v2
-- **Last Commit**: 449aacf chore(compliance): refresh artifacts post-rebase + record event for ADR-019
+- **Branch**: iterate/adopt-env-local-scaffold
+- **Last Commit**: a462487 Merge iterate/suggest-quoted-path-v2: suggest_iterate hook quoted-path + Shape A/B upgrade-in-place (ADR-020, layers on ADR-019)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,6 +68,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-b0b9c422 | work_completed | iterate (suggest_iterate hook quoted-path + Shape A/B upgrade-in-place) | 2026-05-03 |
 | evt-6c637864 | work_completed | iterate (fix hook_installer Shape A -> B) | 2026-05-03 |
 | evt-273bbb54 | work_completed | iterate (shipwright-adopt durable fixes (Sub-2A drift detection, 2B test-fixture filter, 2C compliance_bridge sys.path)) | 2026-05-02 |
 | evt-e3d2949e | work_completed | iterate (post-adoption framework cleanup (Sub-1A through 1D)) | 2026-05-02 |
@@ -73,13 +77,13 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 0 phases completed
-- **Total work events**: 3
-- **Last iterate**: bug — fix hook_installer Shape A -> B (2026-05-03)
+- **Total work events**: 4
+- **Last iterate**: bug — suggest_iterate hook quoted-path + Shape A/B upgrade-in-place (2026-05-03)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
 
-### ADR-020: Quote uv-run path placeholders + upgrade legacy hook entries (Shape + command) in place
+### ADR-021: Adopt scaffolds .env.local with profile + framework keys (Layer-3 SSoT)
 - **Date:** 2026-05-03
-- **Section:** Iterate — bug: suggest_iterate quoted-path + Shape A→B upgrade-in-place
-- **Context:** On Windows projects whose path contains spaces (OneDrive-synced "AI Backup - Documents", Windows usernames with spaces, paths under "Program Files"), the suggest_iterate UserPromptSubmit hook installed by /shipwright-adopt and /shipwright-project emitted an unquoted shell command. 
+- **Section:** Iterate — feature: adopt scaffolds .env.local from validate_env framework set
+- **Context:** Brownfield onboarding via /shipwright-adopt never wrote a .env.local even though the framework reads from it (load_shipwright_env in shared/scripts/lib/env.py, which external_review.py and check-external-review-keys.py both depend on). Operators had to invent the file by hand and the Step H 

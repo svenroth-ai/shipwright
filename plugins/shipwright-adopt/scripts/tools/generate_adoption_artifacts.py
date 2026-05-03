@@ -29,6 +29,45 @@ def _load_lib() -> None:
     sys.path.insert(0, str(lib_dir))
 
 
+def _scaffold_env_local(project_root: Path) -> dict[str, Any]:
+    """Invoke ``shared/scripts/validate_env.init_env_file`` for this project.
+
+    Returns the rich result dict from ``init_env_file`` (action, path,
+    vars, framework_keys, missing_keys, …) — caller stores it under
+    ``results["env_local"]``. On import failure (corrupted shared
+    tree), returns an action=skipped record rather than crashing the
+    whole adopt run; subsequent steps continue.
+    """
+    # Repo layout:
+    #   plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py
+    #   ↑[0]tools  ↑[1]scripts  ↑[2]shipwright-adopt  ↑[3]plugins  ↑[4]repo-root
+    repo_root = Path(__file__).resolve().parents[4]
+    profile_dir = repo_root / "shared" / "profiles"
+
+    # Make `shared.scripts.validate_env` importable. We add the repo root so
+    # the existing test-suite import path (`from shared.scripts.validate_env
+    # import ...`) keeps working in the same process.
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    try:
+        from shared.scripts.validate_env import init_env_file  # type: ignore
+    except ImportError as exc:
+        return {
+            "action": "skipped",
+            "reason": "validate_env_import_failed",
+            "error": str(exc),
+            "path": str(project_root / ".env.local"),
+        }
+
+    return init_env_file(
+        project_root,
+        "all",
+        profile_dir,
+        include_framework=True,
+    )
+
+
 def _read_json(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
@@ -430,6 +469,23 @@ def generate(
         write_sync=write_sync,
     ):
         results["written"].append(str(p))
+
+    # Step E.5 — .env.local scaffold. Runs AFTER write_all so
+    # shipwright_run_config.json exists (validate_env reads `profile`
+    # from it). Idempotent: never overwrites an existing .env.local;
+    # the first run creates the file, subsequent runs append missing
+    # keys only. Framework keys (OPENROUTER/GEMINI/OPENAI) are merged
+    # in regardless of profile so external review keys land in every
+    # adopted repo. The result rides on results["env_local"] which
+    # the SKILL.md Step H banner renders.
+    results["env_local"] = _scaffold_env_local(project_root)
+    if results["env_local"].get("path") and Path(results["env_local"]["path"]).exists():
+        # Track .env.local as a written artifact so the gitignore_report
+        # below catches it. (.env.local is gitignored by design — it
+        # SHOULD show up in the gitignored list, that's the safety
+        # invariant, and the user already opted in to "keep going" via
+        # the existing majority_gitignored prompt above.)
+        results["written"].append(results["env_local"]["path"])
 
     # Events
     events_path = project_root / "shipwright_events.jsonl"

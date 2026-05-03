@@ -1,0 +1,1 @@
+shared/scripts/validate_env: init_env_file gains include_framework=False kwarg (preserves --init CLI semantics) and a rich return contract (path, vars, framework_keys, missing_keys). parse_env_file now tolerates POSIX-style 'export KEY=' prefix.
