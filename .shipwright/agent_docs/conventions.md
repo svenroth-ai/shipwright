@@ -304,3 +304,5 @@ Thanks for contributing! If anything in this guide is unclear, please open an is
 - **ADR-019** (2026-05-02): Hook installer writes canonical matcher-group shape
 
 - **ADR-020** (2026-05-03): Quote uv-run path placeholders + upgrade legacy hook entries (Shape + command) in place
+
+- **ADR-022** (2026-05-03): Quote ${CLAUDE_PLUGIN_ROOT} in plugins/*/hooks/hooks.json _(ADR-021 reserved for parallel iterate `iterate/adopt-env-local-scaffold` — env.local scaffolding)_

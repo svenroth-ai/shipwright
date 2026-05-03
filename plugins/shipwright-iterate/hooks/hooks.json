@@ -4,15 +4,15 @@
       "hooks": [
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/capture_session_id.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/capture_session_id.py\""
         },
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_drift.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_drift.py\""
         },
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_artifact_drift.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_artifact_drift.py\""
         }
       ]
     }
@@ -22,15 +22,15 @@
       "hooks": [
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/iterate_stop_finalize.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/iterate_stop_finalize.py\""
         },
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_phase_quality_on_stop.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_phase_quality_on_stop.py\""
         },
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/write_terminal_marker.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/write_terminal_marker.py\""
         }
       ]
     }

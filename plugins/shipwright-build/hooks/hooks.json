@@ -4,19 +4,19 @@
       "hooks": [
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/capture_session_id.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/capture_session_id.py\""
         },
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/phase_session_start.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/phase_session_start.py\""
         },
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_drift.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_drift.py\""
         },
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_artifact_drift.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_artifact_drift.py\""
         }
       ]
     }
@@ -26,7 +26,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/phase_user_prompt_validate.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/phase_user_prompt_validate.py\""
         }
       ]
     }
@@ -37,7 +37,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/validate_command.sh"
+          "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/validate_command.sh\""
         }
       ]
     }
@@ -48,15 +48,15 @@
       "hooks": [
         {
           "type": "command",
-          "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check_destructive_migration.sh"
+          "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check_destructive_migration.sh\""
         },
         {
           "type": "command",
-          "command": "bash ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_secrets.sh"
+          "command": "bash \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_secrets.sh\""
         },
         {
           "type": "command",
-          "command": "bash ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_file_size.sh"
+          "command": "bash \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_file_size.sh\""
         }
       ]
     },
@@ -64,7 +64,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/track_tool_calls.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/track_tool_calls.py\""
         }
       ]
     }
@@ -74,23 +74,23 @@
       "hooks": [
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/phase_session_stop.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/phase_session_stop.py\""
         },
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_phase_quality_on_stop.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_phase_quality_on_stop.py\""
         },
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/generate_handoff_on_stop.py\""
         },
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check_documentation.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check_documentation.py\""
         },
         {
           "type": "command",
-          "command": "uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/write_terminal_marker.py"
+          "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/write_terminal_marker.py\""
         }
       ]
     }

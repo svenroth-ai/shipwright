@@ -387,3 +387,21 @@ shipwright/
 - **Rationale:** External code review (Gemini + GPT via OpenRouter) flagged that recognition-without-rewrite leaves bugs latent on re-run; empirical 12-combination round-trip (Shape A/B × 6 legacy commands) confirms full upgrade-in-place coverage. Layers cleanly on ADR-019 — the carrier shape and command literal are independent failure modes, both must be fixed.
 - **Consequences:** Already-adopted projects are fixed by re-running /shipwright-adopt regardless of whether they had the pre-ADR-019 Shape A entry, the post-ADR-019 Shape B entry with unquoted command, or any partial fix. Documentation snippets the LLM agent renders into shell now teach the right pattern. New project convention: any uv-run shell command with a placeholder path argument must be double-quoted; hook commands installed into target projects must additionally pass --no-project.
 - **Rejected:** Generating the hook command via shlex.quote with the resolved plugin path embedded literally — would hard-code the version-numbered cache path and break on plugin upgrade. The ${CLAUDE_PLUGIN_ROOT} indirection is what lets plugin upgrades work without re-running adopt. Also rejected: sweeping plugins/*/hooks/hooks.json between-phase commands — different blast radius (only fails when the plugin install path contains spaces, today only on Windows usernames with spaces); follow-up.
+
+---
+
+### ADR-022: Quote ${CLAUDE_PLUGIN_ROOT} in plugins/*/hooks/hooks.json
+
+> Parallel-iterate note: ADR-021 is reserved for Sven's
+> `iterate/adopt-env-local-scaffold` (env.local scaffolding, in flight
+> in a parallel session). Renumbered from auto-assigned 021 → 022 here
+> to avoid the merge collision since this iterate landed second.
+
+- **Date:** 2026-05-03
+- **Section:** Iterate — bug: hooks.json quoting (deferred from ADR-020)
+- **Context:** Every plugins/*/hooks/hooks.json embeds uv-run/bash with unquoted ${CLAUDE_PLUGIN_ROOT}. Same shell word-splitting bug as ADR-020 (suggest_iterate UserPromptSubmit hook), but trigger is the plugin-install-path containing spaces — today only fires for users whose Windows username has a space (e.g. 'John Doe' → ~/.claude/plugins/cache/shipwright/... = C:\Users\John Doe\...). Empirically reproduced via end-to-end shell test: unquoted path → uv exits 2 with 'Failed to spawn: c:\Users\SvenRoth\dinovo'. Deferred from ADR-020 with explicit out-of-scope marker; closed here.
+- **Decision:** Repo-wide sweep of plugins/*/hooks/hooks.json (12 files, ~78 command strings): wrap ${CLAUDE_PLUGIN_ROOT}/path/to/script in escaped double quotes inside the JSON value. Add shared/tests/test_hooks_json_quoting.py as parametrized regression that walks every plugin's hooks.json and asserts the AC-1 invariant — future hooks added without quoting fail the test, not the user's machine. NOT adding --no-project: between-phase hooks need uv to resolve plugin-local pyproject.toml deps.
+- **Commit:** pending
+- **Rationale:** Empirical: end-to-end test reproduces the exact failure (exit 2 + 'Failed to spawn: c:\Users\SvenRoth\dinovo') and verifies the canonical fix (exit 0). Same as ADR-020 TEST 1, applied to the between-phase hooks.
+- **Consequences:** Users with Windows usernames containing spaces (or anyone with a non-default plugin install path containing spaces) get functional Stop/SessionStart/PreToolUse/UserPromptSubmit hooks. Test prevents regression. Diff is purely text — no behavior change for users on space-free install paths.
+- **Rejected:** Adding --no-project to between-phase hooks: rejected because they need pyproject.toml resolution for plugin-local deps. Rejected: 'wait until a user reports it' — 5-min mechanical fix with regression test, low risk.

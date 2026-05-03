@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-05-03T12:25:18Z
-Total commits: 544
+Generated: 2026-05-03T15:40:31Z
+Total commits: 546
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 200
-    "fix" : 145
+    "fix" : 146
     "docs" : 87
-    "chore" : 61
+    "chore" : 62
     "refactor" : 32
     "test" : 12
     "other" : 7
@@ -223,10 +223,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 145 commits
+### Fixes (fix) — 146 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-03 | adopt | quote suggest_iterate hook path + upgrade legacy entries (Shape + command) in place | b24f804b1d89 |
 | 2026-05-02 | adopt | write canonical matcher-group shape for UserPromptSubmit hook | 1ddf9ae549c2 |
 | 2026-05-02 | adopt | drift detection, test-fixture filter, compliance fallback (Iterate 2 of 2) | cffe191e793c |
 | 2026-05-02 | adopt | brownfield ADR numbering + H3 canon for parser round-trip | 63352ff7e3ff |
@@ -465,10 +466,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Chores (chore) — 61 commits
+### Chores (chore) — 62 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-03 | iterate-quoted-path | post-F6 housekeeping (F7 event for ADR-020) | d93ea0ac547e |
 | 2026-05-03 | compliance | refresh artifacts post-rebase + record event for ADR-019 | 449aacfd1ab5 |
 | 2026-05-02 | iterate-2 | post-F6 housekeeping (F7 event + ADR-018 conventions append) | eefae4699231 |
 | 2026-05-02 | compliance | refresh dashboard timestamps + change-history after v0.14.0 | 87dbf72a8614 |
@@ -601,7 +603,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 544 |
+| Total commits | 546 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 544 |
+| Human-authored commits | 546 |
 
