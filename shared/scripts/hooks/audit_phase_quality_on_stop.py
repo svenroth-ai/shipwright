@@ -20,7 +20,7 @@ Contract (plan § 5):
 
 Usage (from a plugin's ``hooks.json``):
 
-    uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_phase_quality_on_stop.py
+    uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_phase_quality_on_stop.py"
 """
 
 from __future__ import annotations

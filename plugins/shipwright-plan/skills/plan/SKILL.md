@@ -136,7 +136,7 @@ Check for session-specific overrides in `{planning_dir}/shipwright_plan_config.j
 
 **Early config:** Write a minimal plan config for phase tracking (enables session handoff if user stops early):
 ```bash
-uv run {plugin_root}/scripts/checks/write-plan-config.py \
+uv run "{plugin_root}/scripts/checks/write-plan-config.py" \
   --project-root "$(pwd)" --status in_progress
 ```
 This will be overwritten with the full config at Step 9 (completion).
@@ -165,7 +165,7 @@ by the SessionStart hook), you are part of an active `/shipwright-run` pipeline.
 Parse `phaseTaskId` from that block and run as your very first action:
 
 ```bash
-uv run ${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.py \
+uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.py" \
   --phase-task-id <phaseTaskId-from-context>
 ```
 
@@ -213,7 +213,7 @@ After the interview, extract all architecture/design decisions made (e.g., UUID 
 component style, auth callback behavior, state management choice) and log each one:
 
 ```bash
-uv run {plugin_root}/../../shared/scripts/tools/write_decision_log.py \
+uv run "{plugin_root}/../../shared/scripts/tools/write_decision_log.py" \
   --section "Plan Interview — {split_name}" \
   --commit "n/a" \
   --context "{why the question arose}" \
@@ -297,7 +297,7 @@ This runs Gemini and OpenAI reviews **in parallel** via ThreadPoolExecutor (Open
 
 **Write each finding to decision_log.md** via:
 ```bash
-uv run {plugin_root}/../../shared/scripts/tools/write_decision_log.py \
+uv run "{plugin_root}/../../shared/scripts/tools/write_decision_log.py" \
   --section "External Review — {split_name}" \
   --commit "n/a" \
   --context "External LLM review finding: {finding summary}" \
@@ -481,21 +481,21 @@ and `phase_history` entry share one id. Missing env var → safe degrade
 export SHIPWRIGHT_RUN_ID="plan-$(date +%Y%m%d-%H%M%S)-{split_name}"
 
 # Update plan config to complete
-uv run {plugin_root}/scripts/checks/write-plan-config.py \
+uv run "{plugin_root}/scripts/checks/write-plan-config.py" \
   --project-root "$(pwd)" --status complete --split "{split_name}" --sections {N}
 
 # C1 — Record phase completion event (idempotent — skips if recorded).
-uv run {shared_root}/scripts/tools/record_event.py \
+uv run "{shared_root}/scripts/tools/record_event.py" \
   --project-root "$(pwd)" --type phase_completed --phase plan \
   --detail "{N} sections for {split_name}"
 
 # C2 — Update delivery dashboard.
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "$(pwd)" --phase plan --detail "{N} sections for {split_name}" \
   --session-id "{SHIPWRIGHT_SESSION_ID}"
 
 # C3 (NEW 12.2) — Canon-marked session handoff.
-uv run {shared_root}/scripts/tools/generate_session_handoff.py \
+uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
   --project-root "$(pwd)" --canon-marker --phase plan \
   --reason "plan complete: {split_name}, {N} sections"
 
@@ -505,7 +505,7 @@ uv run {shared_root}/scripts/tools/generate_session_handoff.py \
 # C5 — SKIPPED by policy (plan is internal decomposition, not user-facing).
 
 # phase_history (NEW 12.2) — audit trail entry.
-uv run {shared_root}/scripts/tools/append_phase_history.py \
+uv run "{shared_root}/scripts/tools/append_phase_history.py" \
   --project-root "$(pwd)" --phase plan --run-id "{SHIPWRIGHT_RUN_ID}" \
   --entry-json '{"split":"{split_name}","sections":{N},"outcome":"sectioned"}'
 
@@ -513,7 +513,7 @@ uv run {shared_root}/scripts/tools/append_phase_history.py \
 # plan_checks verifier (plan_config status, section files, FR orphans,
 # section id validity, canon, phase_history) — missing artifacts or
 # drift blocks this call via ask-level issues.
-uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+uv run "{plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py" \
   update-step --project-root "$(pwd)" --step plan --status complete
 ```
 Where `{shared_root}` = `{plugin_root}/../../shared`.

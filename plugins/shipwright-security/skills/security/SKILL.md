@@ -93,7 +93,7 @@ See `references/setup-guide.md` for Aikido setup.
 
 ### D. Check Prerequisites
 
-Run: `uv run {plugin_root}/scripts/checks/validate_security.py`
+Run: `uv run "{plugin_root}/scripts/checks/validate_security.py"`
 
 If prerequisites missing → print setup instructions and stop.
 
@@ -106,7 +106,7 @@ by the SessionStart hook), you are part of an active `/shipwright-run` pipeline.
 Parse `phaseTaskId` from that block and run as your very first action:
 
 ```bash
-uv run ${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.py \
+uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.py" \
   --phase-task-id <phaseTaskId-from-context>
 ```
 
@@ -261,7 +261,7 @@ For accepted findings → run security-fixer subagent → re-run tests.
 Run the wrapper. It handles scan + redaction + report + history archiving + best-effort `.gitignore`:
 
 ```bash
-uv run {plugin_root}/scripts/tools/run_scan_and_report.py --project-root {project_root} --repo {repo}
+uv run "{plugin_root}/scripts/tools/run_scan_and_report.py" --project-root {project_root} --repo {repo}
 ```
 
 Output:

@@ -110,13 +110,13 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
 1. Compute `external_review_status` via the shared helper (same detector
    used by /shipwright-plan, behavior is identical):
    ```bash
-   uv run {shared_root}/scripts/checks/check-external-review-keys.py
+   uv run "{shared_root}/scripts/checks/check-external-review-keys.py"
    ```
    Parse the JSON output. One of: `available`, `missing_keys`, `user_disabled`.
 
 2. **Branch A — `available`:** run external review as today.
    ```bash
-   uv run {shared_root}/scripts/tools/external_review.py \
+   uv run "{shared_root}/scripts/tools/external_review.py" \
      --mode iterate \
      --spec-file "{iterate_spec_path}" \
      --plan-file "{miniplan_path}" \
@@ -153,7 +153,7 @@ Mirrors `/shipwright-plan` Step 5 Branch A / B / C flow.
 5. **Write the marker** (all branches) so downstream phases and compliance
    can see the decision:
    ```bash
-   uv run {shared_root}/scripts/checks/mark-review-state.py \
+   uv run "{shared_root}/scripts/checks/mark-review-state.py" \
      --planning-dir "{iterate_planning_dir}" \
      --status "{completed | skipped_user_opt_out | skipped_config_disabled}" \
      --provider "{openrouter | null}" \

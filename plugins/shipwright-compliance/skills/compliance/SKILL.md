@@ -69,7 +69,7 @@ Accept these flags (pass through to `run_audit.py`):
 ## Step 2: Run the Audit
 
 ```bash
-uv run {plugin_root}/scripts/audit/run_audit.py \
+uv run "{plugin_root}/scripts/audit/run_audit.py" \
   --project-root "$(pwd)" \
   [--fix] [--only {groups}] [--format {format}]
 ```

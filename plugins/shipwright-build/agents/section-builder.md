@@ -44,7 +44,7 @@ Execute these steps **in order**. Do NOT skip steps.
 8. Read `{project_root}/shipwright_build_config.json` for existing config
 5. Run setup script:
 ```bash
-uv run {plugin_root}/scripts/checks/setup_implementation_session.py \
+uv run "{plugin_root}/scripts/checks/setup_implementation_session.py" \
   --file "{section_file}" --plugin-root "{plugin_root}" --session-id "{session_id}"
 ```
 6. Parse JSON output. If `mode == "resume"`, skip to `resume_from_step`.
@@ -58,8 +58,8 @@ git checkout -b {branch_name} 2>/dev/null || git checkout {branch_name}
 ### Step 3: Environment Validation
 
 ```bash
-uv run {shared_root}/scripts/validate_env.py --project-root "{project_root}" --phase build --init
-uv run {shared_root}/scripts/validate_env.py --project-root "{project_root}" --phase build
+uv run "{shared_root}/scripts/validate_env.py" --project-root "{project_root}" --phase build --init
+uv run "{shared_root}/scripts/validate_env.py" --project-root "{project_root}" --phase build
 ```
 
 If `success == false` (missing required vars): note in result JSON but continue — autonomous mode does not block on env vars.
@@ -67,7 +67,7 @@ If `success == false` (missing required vars): note in result JSON but continue 
 ### Step 4: Dashboard — Reading Spec
 
 ```bash
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "{project_root}" --section "{section_name}" --step 1 --detail "Reading section spec" --session-id "{session_id}"
 ```
 
@@ -86,7 +86,7 @@ Do NOT commit yet.
 
 **Dashboard update:**
 ```bash
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "{project_root}" --section "{section_name}" --step 3 --detail "Tests written (red phase)" --session-id "{session_id}"
 ```
 
@@ -193,7 +193,7 @@ supabase test db
 
 **Dashboard update:**
 ```bash
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "{project_root}" --section "{section_name}" --step 4 --detail "Implementation complete (green phase)" --session-id "{session_id}"
 ```
 
@@ -210,7 +210,7 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
 
 **1. Run structural extraction:**
 ```bash
-uv run {shared_root}/../plugins/shipwright-test/scripts/lib/design_fidelity_check.py \
+uv run "{shared_root}/../plugins/shipwright-test/scripts/lib/design_fidelity_check.py" \
   --cwd {project_root} --screen {screen1} --screen {screen2}
 ```
 
@@ -244,7 +244,7 @@ not a skip trigger.
 
 **1. Detect frontend changes:**
 ```bash
-uv run {shared_root}/scripts/lib/detect_frontend_changes.py \
+uv run "{shared_root}/scripts/lib/detect_frontend_changes.py" \
   --cwd {project_root} --since "$(git merge-base HEAD {branch_name})"
 ```
 Parse the JSON: if `has_frontend_changes == false`, skip this step. Otherwise continue.
@@ -258,9 +258,9 @@ Parse the JSON: if `has_frontend_changes == false`, skip this step. Otherwise co
 
 **3. Run verification:**
 ```bash
-uv run {shared_root}/scripts/playwright_setup.py --cwd {project_root}
-uv run {shared_root}/scripts/dev_server.py start --profile {profile} --cwd {project_root}
-uv run {shared_root}/scripts/browser_verify.py --cwd {project_root}
+uv run "{shared_root}/scripts/playwright_setup.py" --cwd {project_root}
+uv run "{shared_root}/scripts/dev_server.py" start --profile {profile} --cwd {project_root}
+uv run "{shared_root}/scripts/browser_verify.py" --cwd {project_root}
 ```
 
 If JS errors: read screenshot at `{project_root}/e2e/screenshots/browser-verify.png`,
@@ -321,7 +321,7 @@ If destructive operation detected without `down.sql`: generate the `down.sql`.
 
 **Dashboard update:**
 ```bash
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "{project_root}" --section "{section_name}" --step 6 --detail "Code review complete" --session-id "{session_id}"
 ```
 
@@ -341,7 +341,7 @@ Scope: section name without number (e.g., `01-auth` → `auth`)
 
 **Dashboard update:**
 ```bash
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "{project_root}" --section "{section_name}" --step 8 --detail "Committed" --session-id "{session_id}"
 ```
 
@@ -359,7 +359,7 @@ If `.shipwright/agent_docs/decision_log.md` exists, log significant decisions. F
 - `none` — no impact on architecture or conventions (default)
 
 ```bash
-uv run {shared_root}/scripts/tools/write_decision_log.py \
+uv run "{shared_root}/scripts/tools/write_decision_log.py" \
   --section "Build — {section_name}" \
   --commit "$(git rev-parse HEAD)" \
   --title "{title}" --context "{context}" --decision "{decision}" \
@@ -385,7 +385,7 @@ Note: Claude Code Memory is not available to subagents. Record learnings in conv
 Determine `review_type`: If Step 11 (Full Code Review) was performed, use `full-review`. If only Step 10 (Self-Review) was done, use `self-review`.
 
 ```bash
-uv run {plugin_root}/scripts/tools/update_section_state.py \
+uv run "{plugin_root}/scripts/tools/update_section_state.py" \
   --section "{section_name}" --status "complete" \
   --commit "$(git rev-parse HEAD)" \
   --tests-passed {tests_passed} --tests-total {tests_total} \
@@ -403,7 +403,7 @@ If `update_section_state.py` fails: log ERROR and mark the section as incomplete
 
 **Dashboard update:**
 ```bash
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "{project_root}" --section "{section_name}" --step 10 --status complete --session-id "{session_id}"
 ```
 
@@ -412,7 +412,7 @@ uv run {shared_root}/scripts/tools/update_build_dashboard.py \
 **CRITICAL — call this immediately per section, do NOT batch across sections.**
 
 ```bash
-uv run {shared_root}/scripts/tools/record_event.py \
+uv run "{shared_root}/scripts/tools/record_event.py" \
   --project-root "{project_root}" \
   --type work_completed --source build \
   --split "{current_split}" --section "{section_name}" \

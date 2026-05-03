@@ -40,3 +40,59 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 Acceptance criteria per FR are placeholders (`TBD`) — refine them with explicit behavior expectations as features evolve via `/shipwright-iterate`.
 
 The auto-generated E2E baseline at `e2e/flows/adopted-baseline.spec.ts` (if Playwright crawl succeeded) covers mechanical rendering / visibility checks, not semantic behavior.
+
+### FR-01.13 — `/shipwright-adopt` (suggest_iterate hook installer)
+
+Refined by `iterate-2026-05-03-suggest-iterate-quoted-path` (see
+`.shipwright/planning/iterate/2026-05-03-suggest-iterate-quoted-path.md`).
+Extends the carrier-shape AC introduced by ADR-019 with quoting +
+`--no-project` + upgrade-in-place semantics from ADR-020.
+
+- (E) Given a target project at any path containing one or more spaces
+  (e.g. OneDrive-synced "AI Backup - Documents", Windows usernames
+  with spaces, paths under "Program Files"), when `/shipwright-adopt`
+  installs the `UserPromptSubmit` hook into `.claude/settings.json`,
+  then the resulting `command` string must wrap the
+  `${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/suggest_iterate.py`
+  path in double quotes and prefix `uv run` with `--no-project`. This
+  prevents the shell from word-splitting the resolved path AND prevents
+  uv from stalling resolution on a corrupt project `.venv`. Both
+  failure modes exit non-zero, and per Claude Code's hook contract a
+  non-zero `UserPromptSubmit` blocks the user prompt entirely.
+- (E) Given a target project whose `.claude/settings.json` already
+  contains any of the known legacy `suggest_iterate.py` hook command
+  forms (unquoted `${CLAUDE_PLUGIN_ROOT}`, unquoted legacy
+  `{plugin_root}`, partially-fixed forms with `--no-project` or
+  quoting alone), in either Shape A (bare `{type, command}`) or Shape
+  B (matcher-group `{hooks: [{type, command}]}`) carrier, when
+  `/shipwright-adopt` runs again, then the installer must (a)
+  recognize the legacy row instead of appending a duplicate, AND (b)
+  rewrite that row to canonical Shape B carrier with the canonical
+  quoted + `--no-project` command. Recognition without rewrite is
+  insufficient: an already-adopted project on a path with spaces
+  stays blocked unless both the carrier shape (per ADR-019) AND the
+  command literal (per ADR-020) are upgraded. The installer signals
+  the rewrite via an `upgraded: true` field in its return dict.
+- (E) Given a target project whose `.claude/settings.json` already
+  contains the canonical form (Shape B + canonical command), when
+  `/shipwright-adopt` runs again, then the installer must be a true
+  no-op: returns `installed: false`, `already_present: true`,
+  `upgraded: false`, and does not pointlessly rewrite the file.
+
+### FR-01.02 — `/shipwright-project` (documentation parity)
+
+- (E) The `.claude/settings.json` JSON snippet documented in
+  `plugins/shipwright-project/skills/project/SKILL.md` for the
+  `UserPromptSubmit` `suggest_iterate.py` hook must use the
+  matcher-group Shape B carrier + quoted-path + `--no-project` form.
+  Operators copy-pasting from the docs must get a snippet that both
+  parses in Claude Code (Shape B) AND survives target-project paths
+  containing spaces (quoted + `--no-project`).
+
+### FR-01.01 — `/shipwright-run` (documentation parity)
+
+- (E) The `.claude/settings.json` JSON snippet documented in
+  `plugins/shipwright-run/skills/run/SKILL.md` Step 4.5 for the
+  `UserPromptSubmit` `suggest_iterate.py` hook must use the same
+  matcher-group Shape B carrier + quoted-path + `--no-project` form
+  as FR-01.02.

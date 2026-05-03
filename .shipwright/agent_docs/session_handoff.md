@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-02-fix-hook-installer-shape"
+run_id: "iterate-2026-05-03-suggest-iterate-quoted-path"
 phase: "iterate"
-reason: "iterate: fix hook_installer Shape A -> B (post-rebase, ADR-019)"
-timestamp: "2026-05-03T08:10:28.056605+00:00"
+reason: "iterate: suggest_iterate quoted-path + Shape A→B upgrade-in-place"
+timestamp: "2026-05-03T12:25:18.922560+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-03 08:10:28 UTC
+> Auto-generated 2026-05-03 12:25:18 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-03 08:10:28 UTC
-- **Reason**: iterate: fix hook_installer Shape A -> B (post-rebase, ADR-019)
+- **Timestamp**: 2026-05-03 12:25:18 UTC
+- **Reason**: iterate: suggest_iterate quoted-path + Shape A→B upgrade-in-place
 
 ## Last Iterate
 
@@ -29,7 +29,7 @@ timestamp: "2026-05-03T08:10:28.056605+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fix-hook-installer-shape
+- **Branch**: iterate/suggest-quoted-path-v2
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fix-hook-installer-shape
-- **Last Commit**: 1ddf9ae fix(adopt): write canonical matcher-group shape for UserPromptSubmit hook
+- **Branch**: iterate/suggest-quoted-path-v2
+- **Last Commit**: 449aacf chore(compliance): refresh artifacts post-rebase + record event for ADR-019
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,6 +65,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-6c637864 | work_completed | iterate (fix hook_installer Shape A -> B) | 2026-05-03 |
 | evt-273bbb54 | work_completed | iterate (shipwright-adopt durable fixes (Sub-2A drift detection, 2B test-fixture filter, 2C compliance_bridge sys.path)) | 2026-05-02 |
 | evt-e3d2949e | work_completed | iterate (post-adoption framework cleanup (Sub-1A through 1D)) | 2026-05-02 |
 | — | adopted | — | — |
@@ -72,13 +73,13 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 0 phases completed
-- **Total work events**: 2
-- **Last iterate**: change — shipwright-adopt durable fixes (Sub-2A drift detection, 2B test-fixture filter, 2C compliance_bridge sys.path) (2026-05-02)
+- **Total work events**: 3
+- **Last iterate**: bug — fix hook_installer Shape A -> B (2026-05-03)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
 
-### ADR-019: Hook installer writes canonical matcher-group shape
-- **Date:** 2026-05-02
-- **Section:** Iterate — bug: hook-installer-shape
-- **Context:** /shipwright-adopt installed the UserPromptSubmit hook in the legacy bare-command shape (top-level type/command keys); Claude Code's parser requires the canonical matcher-group shape with an inner hooks array. The shipwright monorepo's self-adopt produced a settings.json that Claude Code rejected with 'Expected array, but received undefined', killing al
+### ADR-020: Quote uv-run path placeholders + upgrade legacy hook entries (Shape + command) in place
+- **Date:** 2026-05-03
+- **Section:** Iterate — bug: suggest_iterate quoted-path + Shape A→B upgrade-in-place
+- **Context:** On Windows projects whose path contains spaces (OneDrive-synced "AI Backup - Documents", Windows usernames with spaces, paths under "Program Files"), the suggest_iterate UserPromptSubmit hook installed by /shipwright-adopt and /shipwright-project emitted an unquoted shell command. 

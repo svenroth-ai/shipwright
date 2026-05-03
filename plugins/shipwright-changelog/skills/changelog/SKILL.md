@@ -63,7 +63,7 @@ Store the detected mode in a variable `invocation_mode` = `"pipeline"` | `"stand
 ### D. Run Setup Script
 
 ```bash
-uv run {plugin_root}/scripts/checks/setup-changelog.py \
+uv run "{plugin_root}/scripts/checks/setup-changelog.py" \
   --plugin-root "{plugin_root}"
 ```
 
@@ -78,7 +78,7 @@ by the SessionStart hook), you are part of an active `/shipwright-run` pipeline.
 Parse `phaseTaskId` from that block and run as your very first action:
 
 ```bash
-uv run ${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.py \
+uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.py" \
   --phase-task-id <phaseTaskId-from-context>
 ```
 
@@ -111,7 +111,7 @@ See [conventional-commits.md](references/conventional-commits.md) for parsing ru
 **Goal:** Parse each commit message into type, scope, and description.
 
 ```bash
-uv run {plugin_root}/scripts/lib/git_utils.py parse-commits \
+uv run "{plugin_root}/scripts/lib/git_utils.py" parse-commits \
   --since "{last_tag}" \
   --format json
 ```
@@ -163,7 +163,7 @@ corrupt the `# Changelog` title), and deletes only the drop files that
 were actually aggregated.
 
 ```bash
-uv run {shared_root}/scripts/tools/aggregate_changelog.py \
+uv run "{shared_root}/scripts/tools/aggregate_changelog.py" \
   --project-root "{project_root}" \
   --version "{version}" \
   [--release-date "{YYYY-MM-DD}"] \
@@ -257,7 +257,7 @@ git push --tags origin main
 
 **Record changelog event** (captures version and PR URL for downstream consumers):
 ```bash
-uv run {shared_root}/scripts/tools/record_event.py \
+uv run "{shared_root}/scripts/tools/record_event.py" \
   --project-root "$(pwd)" \
   --type phase_completed \
   --phase changelog \
@@ -283,11 +283,11 @@ export SHIPWRIGHT_RUN_ID
 # C1 — already emitted as the phase_completed event above.
 
 # C2 — delivery dashboard
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "$(pwd)" --phase changelog --session-id "{SHIPWRIGHT_SESSION_ID}"
 
 # C3 (NEW 12.4) — canon-marker handoff
-uv run {shared_root}/scripts/tools/generate_session_handoff.py \
+uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
   --project-root "$(pwd)" --canon-marker --phase changelog \
   --reason "release v{version}"
 
@@ -296,7 +296,7 @@ uv run {shared_root}/scripts/tools/generate_session_handoff.py \
 #      new [Unreleased] bullet would collide with the next release).
 
 # phase_history (NEW 12.4)
-uv run {shared_root}/scripts/tools/append_phase_history.py \
+uv run "{shared_root}/scripts/tools/append_phase_history.py" \
   --project-root "$(pwd)" --phase changelog --run-id "$SHIPWRIGHT_RUN_ID" \
   --entry-json '{"version":"v{version}","outcome":"tagged"}'
 
@@ -304,7 +304,7 @@ uv run {shared_root}/scripts/tools/append_phase_history.py \
 # _validate_changelog() now runs test_checks + the new check_git_tag_exists
 # and check_changelog_version_matches_tag Sonder-Checks, so a broken tag
 # push or a CHANGELOG drift blocks this call.
-uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+uv run "{plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py" \
   update-step --project-root "$(pwd)" --step changelog --status complete
 ```
 

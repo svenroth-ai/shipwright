@@ -133,7 +133,7 @@ to opt out at the project level (one-time switch — falls into Branch C
 ```bash
 git diff HEAD > /tmp/shipwright-review-diff.txt
 
-uv run {shared_root}/scripts/tools/external_review.py \
+uv run "{shared_root}/scripts/tools/external_review.py" \
   --mode code \
   --diff-file /tmp/shipwright-review-diff.txt \
   --spec-file "{iterate_spec_path}" \
@@ -183,7 +183,7 @@ cascade on, and vice versa.
 ### Write the cascade marker (all branches)
 
 ```bash
-uv run {shared_root}/scripts/checks/mark-review-state.py \
+uv run "{shared_root}/scripts/checks/mark-review-state.py" \
   --planning-dir "{iterate_planning_dir}" \
   --review-type code \
   --status "{completed | skipped_user_opt_out | skipped_config_disabled}" \

@@ -112,7 +112,7 @@ by the SessionStart hook), you are part of an active `/shipwright-run` pipeline.
 Parse `phaseTaskId` from that block and run as your very first action:
 
 ```bash
-uv run ${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.py \
+uv run "${SHIPWRIGHT_PLUGIN_ROOT}/../../shared/scripts/tools/get_phase_context.py" \
   --phase-task-id <phaseTaskId-from-context>
 ```
 
@@ -583,17 +583,17 @@ degrade — the Stop hook then regenerates normally at turn end).
 export SHIPWRIGHT_RUN_ID="design-$(date +%Y%m%d-%H%M%S)"
 
 # C1 — Record phase completion event (idempotent — skips if recorded).
-uv run {shared_root}/scripts/tools/record_event.py \
+uv run "{shared_root}/scripts/tools/record_event.py" \
   --project-root "$(pwd)" --type phase_completed --phase design \
   --detail "{N} screens, {M} flows"
 
 # C2 — Update delivery dashboard.
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "$(pwd)" --phase design --detail "{N} screens, {M} flows" \
   --session-id "{SHIPWRIGHT_SESSION_ID}"
 
 # C3 — Canon-marked session handoff (iterate 12.1 conditional stop-hook skip).
-uv run {shared_root}/scripts/tools/generate_session_handoff.py \
+uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
   --project-root "$(pwd)" --canon-marker --phase design \
   --reason "design complete: {N} screens, {M} flows"
 
@@ -601,20 +601,20 @@ uv run {shared_root}/scripts/tools/generate_session_handoff.py \
 
 # C5 — Append CHANGELOG [Unreleased] entry via helper (Keep-a-Changelog,
 # dedupe, atomic). Category "Added" — designs are user-visible artifacts.
-uv run {shared_root}/scripts/tools/append_changelog_entry.py \
+uv run "{shared_root}/scripts/tools/append_changelog_entry.py" \
   --project-root "$(pwd)" \
   --category Added \
   --entry "Design: {N} screens + {M} flows added"
 
 # phase_history — audit trail in shipwright_run_config.json::phase_history[design]
-uv run {shared_root}/scripts/tools/append_phase_history.py \
+uv run "{shared_root}/scripts/tools/append_phase_history.py" \
   --project-root "$(pwd)" --phase design --run-id "{SHIPWRIGHT_RUN_ID}" \
   --entry-json '{"screens":{N},"flows":{M},"outcome":"approved"}'
 
 # Mark design phase complete. _validate_design() now runs the modular
 # design_checks verifier (manifest screens exist, FR coverage, canon,
 # phase_history) — missing artifacts block this call via ask-level issues.
-uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+uv run "{plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py" \
   update-step --project-root "$(pwd)" --step design --status complete
 ```
 

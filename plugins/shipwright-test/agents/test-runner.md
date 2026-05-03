@@ -32,7 +32,7 @@ Execute these steps **in order**.
 ### Step 2: Run Unit Tests
 
 ```bash
-uv run {plugin_root}/scripts/lib/test_runner.py \
+uv run "{plugin_root}/scripts/lib/test_runner.py" \
   --profile "{profile}" --layer unit
 ```
 
@@ -69,7 +69,7 @@ npx vitest run --config vitest.integration.config.ts
 
 Or via runner script:
 ```bash
-uv run {plugin_root}/scripts/lib/test_runner.py \
+uv run "{plugin_root}/scripts/lib/test_runner.py" \
   --profile "{profile}" \
   --layer integration \
   --cwd {project_root} \
@@ -116,7 +116,7 @@ supabase test db
 
 Or via runner script:
 ```bash
-uv run {plugin_root}/scripts/lib/test_runner.py \
+uv run "{plugin_root}/scripts/lib/test_runner.py" \
   --profile "{profile}" \
   --layer pgtap \
   --cwd {project_root} \
@@ -135,7 +135,7 @@ Same structured debugging as integration tests.
 **Skip if:** No DEV URL available or app not running.
 
 ```bash
-uv run {shared_root}/scripts/smoke_test.py \
+uv run "{shared_root}/scripts/smoke_test.py" \
   --url "{dev_url}" --timeout 10 --health-path "/api/health"
 ```
 
@@ -169,17 +169,17 @@ uv run {shared_root}/scripts/smoke_test.py \
 
 1. **Ensure Playwright is set up:**
 ```bash
-uv run {shared_root}/scripts/playwright_setup.py --cwd {project_root}
+uv run "{shared_root}/scripts/playwright_setup.py" --cwd {project_root}
 ```
 
 2. **Ensure dev server is running:**
 ```bash
-uv run {shared_root}/scripts/dev_server.py start --profile {profile} --cwd {project_root}
+uv run "{shared_root}/scripts/dev_server.py" start --profile {profile} --cwd {project_root}
 ```
 
 3. **Run E2E tests:**
 ```bash
-uv run {plugin_root}/scripts/lib/playwright_runner.py --cwd {project_root}
+uv run "{plugin_root}/scripts/lib/playwright_runner.py" --cwd {project_root}
 ```
 
 4. **Parse results** from JSON output: passed, failed, skipped, failure details.
@@ -205,7 +205,7 @@ uv run {plugin_root}/scripts/lib/playwright_runner.py --cwd {project_root}
 
 6. **Stop dev server:**
 ```bash
-uv run {shared_root}/scripts/dev_server.py stop --cwd {project_root}
+uv run "{shared_root}/scripts/dev_server.py" stop --cwd {project_root}
 ```
 
 **Record results:**
@@ -240,7 +240,7 @@ When diagnosing E2E failures, analyze:
 
 **Run consistency analysis:**
 ```bash
-uv run {plugin_root}/scripts/lib/ui_consistency_check.py \
+uv run "{plugin_root}/scripts/lib/ui_consistency_check.py" \
   --cwd "{project_root}" \
   --guidelines ".shipwright/designs/visual-guidelines.md"
 ```

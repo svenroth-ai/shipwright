@@ -66,15 +66,15 @@ AskUserQuestion:
 3. **Phase complete — update pipeline state:**
 ```bash
 # Mark design phase complete (triggers compliance update automatically)
-uv run {plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py \
+uv run "{plugin_root}/../../plugins/shipwright-run/scripts/lib/orchestrator.py" \
   update-step --project-root "$(pwd)" --step design --status complete
 
 # Update delivery dashboard
-uv run {shared_root}/scripts/tools/update_build_dashboard.py \
+uv run "{shared_root}/scripts/tools/update_build_dashboard.py" \
   --project-root "$(pwd)" --phase design --session-id "{SHIPWRIGHT_SESSION_ID}"
 
 # Record phase completion event (idempotent — skips if already recorded)
-uv run {shared_root}/scripts/tools/record_event.py \
+uv run "{shared_root}/scripts/tools/record_event.py" \
   --project-root "$(pwd)" --type phase_completed --phase design \
   --detail "{N} screens, {M} flows"
 ```
