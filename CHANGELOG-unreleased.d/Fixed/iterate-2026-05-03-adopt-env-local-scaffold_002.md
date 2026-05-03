@@ -1,0 +1,1 @@
+shared/scripts/lib/env.py + shared/scripts/validate_env.py: parse_env_file now strips inline '# comment' from unquoted values (POSIX/dotenv convention). Pre-existing latent bug since 2026-03-30 became user-visible after ADR-021 wired the scaffold into adopt; load_shipwright_env was reading the description text as part of the API key value.
