@@ -72,7 +72,13 @@ def parse_env_file(env_path: Path) -> dict[str, str]:
     if not env_path.exists():
         return env_vars
 
-    for line in env_path.read_text(encoding="utf-8").splitlines():
+    # ``utf-8-sig`` strips a leading UTF-8 BOM (Windows Notepad writes one
+    # when saving as UTF-8). Without this the first key on a BOM-prefixed
+    # file gets a ``﻿`` prefix and the runtime can't find it. See
+    # iterate-2026-05-03-adopt-env-local-scaffold for the empirical catch.
+    text = env_path.read_text(encoding="utf-8-sig")
+
+    for line in text.splitlines():
         line = line.strip()
         if not line or line.startswith("#"):
             continue

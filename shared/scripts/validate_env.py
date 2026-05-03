@@ -78,7 +78,13 @@ def parse_env_file(env_path: Path) -> dict[str, str]:
     if not env_path.exists():
         return env_vars
 
-    for line in env_path.read_text(encoding="utf-8").splitlines():
+    # Strip a UTF-8 BOM at the start of the file. Notepad on Windows adds one
+    # when saving as UTF-8 by default; without this, the first key gets a
+    # ``﻿`` prefix and ``os.environ.get(KEY)`` returns None even though
+    # the user thinks they filled in the value.
+    text = env_path.read_text(encoding="utf-8-sig")
+
+    for line in text.splitlines():
         line = line.strip()
         if not line or line.startswith("#"):
             continue

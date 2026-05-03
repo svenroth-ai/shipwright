@@ -728,6 +728,55 @@ class TestInlineCommentParsing:
         assert os.environ.get("GEMINI_API_KEY") == "AIza-real-67890"
 
 
+class TestBOMHandling:
+    """Windows Notepad writes a UTF-8 BOM by default. Without explicit
+    handling, the first key gets a ``\\ufeff`` prefix and the runtime
+    can't find it via ``os.environ.get(KEY)``. The user sees a filled
+    .env.local and the framework reports "missing key" — silent
+    producer-consumer mismatch.
+
+    Caught empirically on iterate-2026-05-03-adopt-env-local-scaffold:
+    edge-case test after the inline-comment fix surfaced a second
+    Windows-specific BOM bug in the same parser.
+    """
+
+    @pytest.fixture
+    def both_parsers(self):
+        from pathlib import Path as _P
+        sys.path.insert(0, str(_P(__file__).resolve().parent.parent / "lib"))
+        from env import parse_env_file as parse_lib  # type: ignore
+        return parse_env_file, parse_lib
+
+    def test_validate_env_parser_strips_bom(self, tmp_path):
+        env_file = tmp_path / ".env.local"
+        env_file.write_bytes(b"\xef\xbb\xbf" + b"OPENROUTER_API_KEY=sk-bom-test\n")
+        result = parse_env_file(env_file)
+        assert result == {"OPENROUTER_API_KEY": "sk-bom-test"}, (
+            f"BOM not stripped — first key has ufeff prefix: {result}"
+        )
+
+    def test_lib_parser_strips_bom(self, both_parsers, tmp_path):
+        _, parse_lib = both_parsers
+        env_file = tmp_path / ".env.local"
+        env_file.write_bytes(b"\xef\xbb\xbf" + b"OPENROUTER_API_KEY=sk-bom-test\n")
+        assert parse_lib(env_file) == {"OPENROUTER_API_KEY": "sk-bom-test"}
+
+    def test_load_shipwright_env_handles_bom(self, tmp_path, monkeypatch):
+        """End-to-end: a BOM-prefixed .env.local from Notepad must still
+        propagate through to os.environ via load_shipwright_env."""
+        env_file = tmp_path / ".env.local"
+        env_file.write_bytes(
+            b"\xef\xbb\xbf"
+            + b"OPENROUTER_API_KEY=sk-bom-real-12345 # OpenRouter\n"
+        )
+        monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+        from pathlib import Path as _P
+        sys.path.insert(0, str(_P(__file__).resolve().parent.parent / "lib"))
+        from env import load_shipwright_env  # type: ignore
+        load_shipwright_env(tmp_path)
+        assert os.environ.get("OPENROUTER_API_KEY") == "sk-bom-real-12345"
+
+
 class TestParseEnvFileLibCopy:
     """``shared/scripts/lib/env.py`` carries a parallel ``parse_env_file`` so
     ``load_shipwright_env`` can be imported by plugins without pulling in
@@ -759,6 +808,8 @@ class TestParseEnvFileLibCopy:
         'NOTE="value with # hash"\n',
         "KEY=\n",
         "# full line comment\nKEY=value\n",
+        "TEST_PASSWORD=Paß-wört-1!\n",  # non-ASCII value
+        "KEY=value\r\nKEY2=other\r\n",  # CRLF line endings
     ])
     def test_two_copies_produce_identical_output(self, both_parsers, tmp_path, content):
         validate_env_parser, lib_parser = both_parsers
@@ -767,6 +818,14 @@ class TestParseEnvFileLibCopy:
         assert validate_env_parser(env_file) == lib_parser(env_file), (
             f"parse_env_file copies drifted on input: {content!r}"
         )
+
+    def test_two_copies_agree_on_bom_input(self, both_parsers, tmp_path):
+        """BOM is encoded as bytes; needs separate test from the text
+        parametrize above (which uses write_text)."""
+        validate_env_parser, lib_parser = both_parsers
+        env_file = tmp_path / ".env.local"
+        env_file.write_bytes(b"\xef\xbb\xbfOPENROUTER_API_KEY=sk-bom\n")
+        assert validate_env_parser(env_file) == lib_parser(env_file)
 
 
 class TestMissingKeysActiveBlankValues:
