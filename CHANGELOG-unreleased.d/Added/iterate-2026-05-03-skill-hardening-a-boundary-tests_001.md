@@ -1,0 +1,1 @@
+iterate skill: boundary tests foundation — touches_io_boundary risk flag, is_io_boundary_change helper, references/boundary-probes.md (8 edge-case categories), references/round-trip-tests.md (producer→file→consumer pattern), 7th Self-Review item Affected Boundaries, Boundary Probe sub-step in Build TDD (ADR-024)

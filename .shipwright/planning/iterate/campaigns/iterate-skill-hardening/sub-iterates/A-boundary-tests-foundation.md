@@ -183,20 +183,72 @@ prose edits, strict enough to catch accidental category drops.
 ## Confidence Calibration
 
 (B fills in this section as a real phase. Until then, runner manually
-populates before F0:)
+populates before F0.)
 
-- **Boundaries touched:** see "Affected Boundaries" above.
-- **Empirical probes run:** _to be filled by runner_
-  (at minimum: re-run `classify_complexity.py` end-to-end against a
-  fixture path containing each `IO_BOUNDARY_FILE_PATTERN` and assert
-  the flag fires).
-- **Edge cases NOT probed + why acceptable:** _to be filled by runner_
-  (likely candidates: AST-pair detection — explicitly deferred per
-  Implementation Plan; cross-platform CRLF in markdown reference docs —
-  not load-bearing because docs are markdown, not parsed as data).
-- **Confidence-pattern check:** before declaring confident, ask
-  "what would my round-trip probe miss?" and run one more probe if
-  any answer is non-trivial.
+- **Boundaries touched:** see "Affected Boundaries" above. The most
+  important is `classify_complexity.py::risk_flags[]` ↔ SKILL.md's
+  Repo Scout consumer — the new `touches_io_boundary` string must
+  match exactly between producer and consumer site.
+
+- **Empirical probes run (all PASS):**
+  1. **Positive path-match probe.** Manually invoked
+     `is_io_boundary_change([example])` against one representative path
+     for each of the 5 `IO_BOUNDARY_FILE_PATTERNS` regexes
+     (`.env.local`, `plugins/foo/hooks/hooks.json`,
+     `.claude/settings.json`, `shipwright_run_config.json`,
+     `.shipwright/loop_state.json`). All 5 returned True.
+  2. **Negative probe.** Same helper against non-boundary paths
+     (`src/components/Button.tsx`, `README.md`, `package.json`,
+     `data/config.json` without `_` prefix). All 4 returned False —
+     confirms the regex anchors are tight enough.
+  3. **Edge probe.** Windows path separators (`plugins\foo\hooks\hooks.json`)
+     normalize correctly; nested `a/b/c/settings.json` matches; empty
+     list returns False; `None` input returns False (safety guard in
+     helper).
+  4. **Markdown drift-protection probe.** `pytest
+     test_boundary_probes_doc.py` parses the new `boundary-probes.md`
+     and asserts all 8 canonical category keywords appear as headings.
+     11 tests green.
+  5. **Risk-flag taxonomy probe.** New `TestTouchesIoBoundary` class in
+     `test_classify_complexity.py` asserts `touches_io_boundary` is in
+     the taxonomy, has `min_complexity == "small"`, enforces
+     `round_trip_test`, and fires on the expected prompt keywords. 8
+     tests green.
+  6. **Pyright probe.** `uvx pyright classify_complexity.py` — 0 errors,
+     0 warnings.
+  7. **Full plugin suite probe.** `pytest plugins/shipwright-iterate/tests/` —
+     126 tests green (87 baseline + 39 new), no regressions.
+
+- **Edge cases NOT probed + why acceptable:**
+  - **AST-pair detection (writer + reader in different .py files in
+    same diff).** Explicitly deferred per Implementation Plan #1.
+    Path-match catches the env-iterate motivating example and every
+    other known real-world boundary bug. Documented as future
+    enhancement in `classify_complexity.py` docstring AND
+    `references/round-trip-tests.md` Section 3.
+  - **CRLF normalization in markdown reference docs.** Not
+    load-bearing — docs are read as prose by humans + parsed as
+    headings by `test_boundary_probes_doc.py` (which uses
+    `splitlines()`, CRLF-safe). Docs are NOT data files.
+  - **Cross-process round-trip of the `risk_flags[]` JSON output.**
+    The producer writes JSON via `json.dumps`; consumers read it as
+    JSON. Standard library round-trip is well-tested upstream. The
+    string-equality of the `touches_io_boundary` flag name is
+    asserted in `test_touches_io_boundary_in_taxonomy`.
+
+- **Confidence-pattern check.** Asked "what would my round-trip probe
+  miss?":
+  - Answer 1: A user message that contains an `IO_BOUNDARY_FILE_PATTERNS`
+    file path BUT none of the keyword regexes — the keyword detector
+    misses it. Mitigated: `is_io_boundary_change(changed_files)` is the
+    diff-driven path that catches this case (same shape as
+    `touches_build_files()`). Both pathways are documented in the
+    SKILL.md risk taxonomy row.
+  - Answer 2: Producer in file X, consumer in file Y, neither file
+    matches `IO_BOUNDARY_FILE_PATTERNS`, no boundary keywords in user
+    message. This is the AST-pair gap, explicitly deferred above.
+  No additional probes warranted — the gaps are documented and the
+  expected real-world case (env-iterate-class bugs) is fully covered.
 
 ## Runner Overrides
 

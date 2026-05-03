@@ -59,6 +59,18 @@ Is the code consistent with the existing codebase?
 - No single file exceeds 300 lines (split if needed)
 - Variable/function names follow existing patterns
 
+### 7. Affected Boundaries
+Were producer and consumer of any changed serialized format identified,
+AND was a real round-trip probe run? See `references/round-trip-tests.md`.
+- For every changed serialized format: producer + consumer pair listed
+- Round-trip test (producer→file-on-disk→consumer) exists and passes
+- For user-edited formats: all 8 probe categories from
+  `references/boundary-probes.md` checked
+- If `touches_io_boundary` risk flag fired: round-trip test is mandatory
+  (Safety-enforced in Override Classes — skippable only with explicit
+  risk acknowledgment in the iterate ADR)
+- If no boundaries touched: mark `n/a` with one-line justification
+
 ### Output Format
 ```
 Self-Review:
@@ -68,6 +80,7 @@ Self-Review:
   4. Test Quality:       [pass/fail] {explanation}
   5. Performance Basics: [pass/fail] {explanation}
   6. Naming & Structure: [pass/fail] {explanation}
+  7. Affected Boundaries:[pass/fail/n/a] {explanation}
 
 Action: {Fix items X, Y before commit / All clear, proceed to commit}
 ```

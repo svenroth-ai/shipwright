@@ -1,35 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-03-changelog-msys-linter"
+run_id: "iterate-skill-hardening-A"
 phase: "iterate"
-reason: "iterate: changelog MSYS path-mangling linter"
-timestamp: "2026-05-03T18:14:57.614691+00:00"
+reason: "iterate: boundary tests foundation (campaign Sub-Iterate A)"
+timestamp: "2026-05-03T20:01:00.276950+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-03 18:14:57 UTC
+> Auto-generated 2026-05-03 20:01:00 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-03 18:14:57 UTC
-- **Reason**: iterate: changelog MSYS path-mangling linter
+- **Timestamp**: 2026-05-03 20:01:00 UTC
+- **Reason**: iterate: boundary tests foundation (campaign Sub-Iterate A)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-03-hooks-json-quoting
-- **Date**: 2026-05-03T15:40:35.711132Z
+- **Run ID**: iterate-2026-05-03-changelog-msys-linter
+- **Date**: 2026-05-03T18:14:58.160136Z
 - **Type**: bug
 - **Complexity**: small
-- **Branch**: iterate/hooks-json-quoting
-- **ADR**: ADR-022
+- **Branch**: iterate/changelog-msys-linter
+- **ADR**: ADR-023
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-03-hooks-json-quoting.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/changelog-msys-linter
+- **Branch**: iterate/skill-hardening-A-boundary-tests-foundation
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/changelog-msys-linter
-- **Last Commit**: ed4b076 chore(release): post-tag canon completion for v0.15.0
+- **Branch**: iterate/skill-hardening-A-boundary-tests-foundation
+- **Last Commit**: 70682f9 chore(campaign): init iterate-skill-hardening
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,22 +64,23 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-530b0980 | work_completed | iterate (changelog MSYS path-mangling linter) | 2026-05-03 |
 | evt-e67c7be3 | phase_completed | changelog | 2026-05-03 |
 | evt-ca7b7d64 | work_completed | iterate (hooks.json quoting (deferred from ADR-020)) | 2026-05-03 |
 | evt-baaf4b0e | work_completed | iterate (iterate fix: parse_env_file inline-comment stripping + lib copy sync) | 2026-05-03 |
 | evt-aab7ddbd | work_completed | iterate (iterate: adopt scaffolds .env.local with profile + framework keys (ADR-021)) | 2026-05-03 |
-| evt-b0b9c422 | work_completed | iterate (suggest_iterate hook quoted-path + Shape A/B upgrade-in-place) | 2026-05-03 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 7
-- **Last iterate**: bug — hooks.json quoting (deferred from ADR-020) (2026-05-03)
+- **Total work events**: 8
+- **Last iterate**: bug — changelog MSYS path-mangling linter (2026-05-03)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
 
-### ADR-023: Detect Git-Bash MSYS path-mangling in changelog drop bullets
+### ADR-024: Boundary Tests Foundation
 - **Date:** 2026-05-03
-- **Section:** Iterate — bug: changelog MSYS path-mangling linter
-- **Context:** During v0.15.0 release prep, an Added bullet appeared as 'C:/Program Files/Git/shipwright-adopt now scaffolds ...' instead of '/shipwright-adopt now scaffolds ...'. Caught at dry-run by hand. Root cause: Git-Bash on Windows auto-converts a leading-slash argv arg into the Bash install root before the receiving Python script sees 
+- **Section:** Iterate — feature: boundary tests foundation (campaign iterate-skill-hardening Sub-Iterate A)
+- **Context:** The 2026-05-03 env-iterate shipped two latent producer/consumer bugs (UTF-8 BOM + inline-comment stripping) that survived 47 unit tests AND two external LLM reviews. Each side's tests passed against a stub representation; drift between sides was invisible until a real round-trip probe surfaced it.
+- **Decision:** Encode 

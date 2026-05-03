@@ -89,6 +89,32 @@ RISK_TAXONOMY = {
         "min_complexity": "small",
         "enforces": ["performance_test_layer"],
     },
+    "touches_io_boundary": {
+        # Triggers Boundary Probe sub-step in Build TDD (see SKILL.md
+        # Path A Step 6 + Phase Matrix). Catches producer/consumer
+        # round-trip bugs where unit tests of each side pass but the
+        # serialized format on disk drifts (motivating example: env
+        # iterate's BOM + inline-comment bugs that survived 47 unit tests
+        # AND two external reviews). Diff-driven detection uses
+        # IO_BOUNDARY_FILE_PATTERNS via is_io_boundary_change().
+        # Prompt keywords cover the common verbs operators use when
+        # describing producer/consumer changes.
+        "patterns": [
+            r"\.env",
+            r"parse_env",
+            r"hooks\.json",
+            r"settings\.json",
+            r"_config\.json",
+            r"_state\.json",
+            r"json\.dump", r"json\.load",
+            r"yaml\.dump", r"yaml\.safe_load",
+            r"write_text", r"read_text",
+            r"\bdump\b", r"\bserialize\b",
+            r"parse_", r"load_", r"write_",
+        ],
+        "min_complexity": "small",
+        "enforces": ["round_trip_test"],
+    },
 }
 
 # File-glob patterns for diff-driven touches_build detection (basename match).
@@ -116,6 +142,50 @@ def touches_build_files(changed_files: list[str]) -> bool:
         name = path.replace("\\", "/").rsplit("/", 1)[-1]
         if name in TOUCHES_BUILD_FILE_PATTERNS:
             return True
+    return False
+
+
+# Regex patterns (anchored on basename) for diff-driven
+# touches_io_boundary detection. Used by is_io_boundary_change() —
+# producer/consumer round-trip bugs typically surface in these file
+# shapes:
+#   - .env / .env.local / .env.* — env-iterate motivating example
+#   - hooks.json / settings.json — hook chain config
+#   - <name>_config.json — shipwright_*_config.json family
+#   - <name>_state.json — loop_state.json, external_review_state.json, ...
+# The path-match path covers the producer/consumer-in-same-diff case for
+# all known real-world examples. AST-pair detection (producer + consumer
+# living in different .py files in the same diff) is explicitly deferred
+# per Sub-Iterate A spec — file paths cover 90%+ of cases empirically.
+IO_BOUNDARY_FILE_PATTERNS = (
+    r"(^|/)\.env(\..+)?$",
+    r"(^|/)hooks\.json$",
+    r"(^|/)settings\.json$",
+    r"(^|/)[^/]*_config\.json$",
+    r"(^|/)[^/]*_state\.json$",
+)
+
+
+def is_io_boundary_change(changed_files: list[str] | None) -> bool:
+    """Return True if any changed file matches an IO boundary pattern.
+
+    Diff-driven detection — caller passes `git diff --name-only` output.
+    Path normalization handles Windows backslashes.
+
+    Note: Only path-match detection is implemented in this iterate.
+    AST-pair detection (writer + reader living in different files)
+    is documented as a future enhancement in classify_complexity.py and
+    in references/round-trip-tests.md. Empirically, path-match catches
+    every known real-world boundary bug (the env-iterate BOM/comment
+    bugs both touched .env files in the diff).
+    """
+    if not changed_files:
+        return False
+    for path in changed_files:
+        normalized = path.replace("\\", "/")
+        for pattern in IO_BOUNDARY_FILE_PATTERNS:
+            if re.search(pattern, normalized):
+                return True
     return False
 
 

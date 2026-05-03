@@ -210,3 +210,43 @@ class TestRiskTaxonomy:
 
     def test_cross_split_has_no_patterns(self):
         assert RISK_TAXONOMY["cross_split"]["patterns"] == []
+
+
+# --- touches_io_boundary risk flag (Sub-Iterate A — Boundary Tests Foundation) ---
+
+
+class TestTouchesIoBoundary:
+    def test_touches_io_boundary_in_taxonomy(self):
+        assert "touches_io_boundary" in RISK_TAXONOMY
+
+    def test_touches_io_boundary_min_complexity_small(self):
+        assert RISK_TAXONOMY["touches_io_boundary"]["min_complexity"] == "small"
+
+    def test_touches_io_boundary_enforces_round_trip_test(self):
+        enforces = RISK_TAXONOMY["touches_io_boundary"]["enforces"]
+        assert "round_trip_test" in enforces
+
+    def test_touches_io_boundary_flag_detection_dotenv(self):
+        flags = detect_risk_flags("update parse_env to handle BOM and inline comments")
+        names = [f["flag"] for f in flags]
+        assert "touches_io_boundary" in names
+
+    def test_touches_io_boundary_flag_detection_hooks_json(self):
+        flags = detect_risk_flags("add new entry to hooks.json for stop hook")
+        names = [f["flag"] for f in flags]
+        assert "touches_io_boundary" in names
+
+    def test_touches_io_boundary_flag_detection_serializer(self):
+        flags = detect_risk_flags("write_text the run config and parse_ it back later")
+        names = [f["flag"] for f in flags]
+        assert "touches_io_boundary" in names
+
+    def test_touches_io_boundary_flag_detection_settings(self):
+        flags = detect_risk_flags("modify settings.json schema and load_ it")
+        names = [f["flag"] for f in flags]
+        assert "touches_io_boundary" in names
+
+    def test_touches_io_boundary_not_fired_for_unrelated(self):
+        flags = detect_risk_flags("fix button color on the dashboard")
+        names = [f["flag"] for f in flags]
+        assert "touches_io_boundary" not in names

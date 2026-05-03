@@ -27,12 +27,14 @@ Detects intent (feature, change, bug), assesses complexity, runs the right amoun
 ## Phase Index
 
 ```
-Repo Scout, Mini-Plan, Escape Hatch  → references/iteration-planning.md
-Self-Review, Full Review, Handoff     → references/iteration-reviews.md
-Design Check, Testing, Visual, E2E    → references/design-and-testing.md
-Reflection Protocol                   → references/reflection.md
-Risk Taxonomy, Override Classes       → this file (inline)
-Phase Matrix                          → this file (Section 6, NORMATIVE)
+Repo Scout, Mini-Plan, Escape Hatch   → references/iteration-planning.md
+Self-Review, Full Review, Handoff      → references/iteration-reviews.md
+Design Check, Testing, Visual, E2E     → references/design-and-testing.md
+Reflection Protocol                    → references/reflection.md
+Boundary Probe — edge-case checklist   → references/boundary-probes.md
+Boundary Probe — round-trip patterns   → references/round-trip-tests.md
+Risk Taxonomy, Override Classes        → this file (inline)
+Phase Matrix                           → this file (Section 6, NORMATIVE)
 ```
 
 ---
@@ -374,6 +376,7 @@ One authoritative list, referenced everywhere in this skill.
 | `cross_split` | changes span 2+ planning splits | medium | full review + full test suite |
 | `touches_public_api` | API route handlers, exported types | small | mandatory review |
 | `touches_build` | `package.json`, `*-lock.*`, `next.config.*`, `vite.config.*`, `tailwind.config.*`, `webpack.config.*`, `rollup.config.*`, `tsconfig.json` | small | performance test layer (Lighthouse + bundle gate via /shipwright-test Step 3.8) |
+| `touches_io_boundary` | `.env*`, `hooks.json`, `settings.json`, `*_config.json`, `*_state.json`; or producer/consumer keywords (`parse_`, `load_`, `write_`, `json.dump`, `yaml.dump`) | small | round-trip test (Boundary Probe sub-step in Build TDD — see `references/boundary-probes.md` + `references/round-trip-tests.md`) |
 
 Note: "touches_db" (ordinary query/model edits without schema changes) is NOT a risk flag.
 
@@ -389,7 +392,7 @@ Lighthouse, no build artifacts → skip bundle).
 | Category | Phases | User can skip? |
 |---|---|---|
 | **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON, iterate_history | Never skippable |
-| **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations) | Only with explicit risk acknowledgment |
+| **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations), Boundary Probe (when `touches_io_boundary`) | Only with explicit risk acknowledgment |
 | **Advisory** | Design check, mini-plan, design fidelity, E2E update, external LLM review, release prompt | Freely skippable |
 | **Complexity-gated** | Iterate spec, context scan depth | Adjustable via "make it medium/small" |
 
@@ -462,6 +465,28 @@ Create `.shipwright/planning/iterate/{date}-{short-description}.md` using this t
  - Design tokens applied (colors, spacing, typography)
  - New vs modified components
  - Deviations from visual guidelines with justification}
+
+## Affected Boundaries
+{Producer/consumer pairs for any changed serialized format.
+ Triggers Boundary Probe sub-step in Build TDD when `touches_io_boundary`
+ risk flag fires (or when any IO_BOUNDARY_FILE_PATTERNS match the diff).
+
+| Producer (writes) | Consumer (reads) | Format |
+|---|---|---|
+| {file:fn} | {file:fn} | {env / JSON / YAML / ...} |
+
+If no boundaries touched: write `n/a` with one-line justification.}
+
+## Confidence Calibration
+{Empirical probes run before declaring the iterate ready for F0.
+ Future iterates (campaign iterate-skill-hardening Sub-Iterate B) will
+ expand this section with the full Calibration phase. Today, the
+ minimum bar is:
+ - Boundaries touched: see "Affected Boundaries" above
+ - Empirical probes run: {list of probes — round-trip, BOM, CRLF, ...}
+ - Edge cases NOT probed + why acceptable: {one-line justifications}
+ - Confidence-pattern check: ask "what would my round-trip probe miss?"
+   and run one more probe if any answer is non-trivial}
 ```
 
 ### Step 2: Spec Update (always)
@@ -515,6 +540,21 @@ See `references/design-and-testing.md` for 2-tier protocol.
 4. **GREEN — Implement** minimum code until tests pass
 5. Run tests after each significant change
 6. **Verify wiring** — would the test fail if the wiring (onClick → handler → API) is missing? If not: improve the test
+6a. **Boundary Probe (when `touches_io_boundary` is set)** — mandatory sub-step
+    when the risk flag fires (either via prompt keywords or via
+    `is_io_boundary_change(changed_files)` against the diff). Skip rules
+    follow Override Classes (Safety-enforced — only skippable with explicit
+    risk acknowledgment in the iterate ADR).
+    - Identify producer + consumer pair(s) for every changed serialized format
+    - Write a real producer→file-on-disk→consumer round-trip test
+      (`references/round-trip-tests.md` Section 1)
+    - For user-edited formats (env, JSON config operators inspect by hand),
+      run all 8 probe categories from `references/boundary-probes.md`
+    - For machine-only formats: round-trip test only; operator-input
+      categories may be skipped with a one-line justification in Self-Review
+    - When the same parser/serializer exists in N places, add the
+      duplicated-consumer drift-protection parametrized test
+      (`references/round-trip-tests.md` Section 2)
 **Migration apply** (if migration files were created during build):
 
 Read `migrations` config from the stack profile (loaded in Step B2).
@@ -579,6 +619,7 @@ Go to **Finalization** below.
 Same steps as FEATURE, with these differences:
 - Step 2: see below — same `extend vs new` framing as FEATURE, biased toward extending the existing FR
 - Step 6: Update existing tests to reflect new expected behavior, then implement
+- Step 6a: Boundary Probe applies identically — when `touches_io_boundary` fires, run the round-trip + 8-probe checklist before commit
 
 ### Step 2: Spec Update (always — CHANGE)
 1. Identify which spec file(s) cover the affected area.
@@ -632,6 +673,7 @@ See `references/iteration-planning.md`.
 2. **Fix the root cause** — targeted change, minimal scope. Do not fix symptoms.
 3. Run reproducing test to verify it passes
 4. Run related tests to verify no regressions
+5. **Boundary Probe (when `touches_io_boundary` is set)** — same Path A Step 6a sub-step applies. When the bug touches a serialized format, the fix is incomplete without a producer→file→consumer round-trip test that fails before the fix and passes after.
 
 ### Step 6-14: Same as FEATURE (self-review, code review, testing, escalation, finalize)
 Follow the Phase Matrix to determine which steps run for the assessed complexity.
@@ -743,6 +785,7 @@ Large is a "soft boundary" — force-continue supported with mandatory review + 
 | External LLM Review | skip | skip | auto | — |
 | Design Check | skip | Tier 1 (text) | Tier 2 (markdown) | — |
 | Build (TDD) | always | always | always | — |
+| Boundary Probe | skip | if `touches_io_boundary` | if `touches_io_boundary` | — |
 | Self-Review | always | always | always | — |
 | Full Code Review | only if risk flags | only if risk flags | always | — |
 | Browser Verify | if UI | if UI | if UI | — |

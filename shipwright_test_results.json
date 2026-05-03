@@ -1,12 +1,12 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-03-changelog-msys-linter",
+    "run_id": "iterate-2026-05-03-skill-hardening-a-boundary-tests",
     "date": "2026-05-03",
     "unit": {
       "status": "passed",
-      "passed": 19,
-      "total": 19,
-      "scope": "shared/tests/test_aggregate_changelog.py (7 new) + shared/tests/test_write_changelog_drop.py (12 existing, no regression)"
+      "passed": 126,
+      "total": 126,
+      "scope": "plugins/shipwright-iterate/tests/ — 87 baseline + 39 new (test_boundary_detection.py: 19, test_boundary_probes_doc.py: 11, test_classify_complexity.py::TestTouchesIoBoundary: 8, test_classify_complexity.py existing: 1 unchanged)"
     },
     "integration": {
       "status": "skipped",
@@ -32,7 +32,7 @@
       "status": "skipped"
     },
     "degraded": [
-      "Test scope narrowed to changelog-tooling tests only — change is contained to shared/scripts/tools/{aggregate_changelog,write_changelog_drop}.py + new shared/tests/test_aggregate_changelog.py; no other module touched. Bug class also empirically reproduced in this iterate (`python -c \"print(sys.argv[1])\" /shipwright-adopt` → `C:/Program Files/Git/shipwright-adopt`).",
+      "Test scope narrowed to plugins/shipwright-iterate/tests/ — sub-iterate change is contained to classify_complexity.py + iterate references + iterate skill. No other plugin touched.",
       "Pre-existing test failures unrelated to this iterate (carried from earlier degraded notes): shipwright-deploy::test_validate_without_token, shipwright-security::test_explicit_name_not_in_registry."
     ]
   }
