@@ -198,6 +198,54 @@ Decision guide:
 
 **If no in-progress run detected:** Continue to B2 normally.
 
+### B1c. Session Role Detection (parallel-iterate guard)
+
+When two Claude Code sessions run against the same repo (one in main
+repo, one in `.worktrees/<slug>/`), one must be designated **canonical**
+for cleanup/push. The non-canonical session must NOT race the canonical
+one with commits/pushes — see `feedback_parallel_session_source_of_truth.md`.
+
+1. Scan for active session-role markers:
+   ```bash
+   uv run python -c "
+   from pathlib import Path; import sys
+   sys.path.insert(0, 'shared/scripts/lib')
+   from session_role import detect_parallel_sessions
+   import json; print(json.dumps(detect_parallel_sessions('.'), indent=2))
+   "
+   ```
+   The helper reads `.shipwright/iterate_session_role.json` in the main
+   repo plus every `.worktrees/<slug>/.shipwright/iterate_session_role.json`.
+
+2. **0 markers** → fresh single-session run; no action.
+
+3. **1 marker** that names the current `cwd` as `worktree_path` →
+   resume role; no prompt.
+
+4. **2+ markers** OR a marker that names a DIFFERENT `worktree_path` →
+   parallel sessions detected. Print the markers, then ask the user:
+   > "Detected parallel sessions: {list}. Is this session canonical or
+   > secondary? (canonical = pushes for the repo; secondary = does not
+   > push without explicit auth.)"
+
+5. Persist the answer:
+   ```bash
+   uv run python -c "
+   from pathlib import Path; import sys
+   sys.path.insert(0, 'shared/scripts/lib')
+   from session_role import write_role
+   import os
+   write_role('.', role='<choice>',
+              session_id=os.environ.get('SHIPWRIGHT_SESSION_ID', ''),
+              worktree_path=str(Path.cwd().resolve()),
+              notes='<optional>')
+   "
+   ```
+
+The marker's role is consulted at F11 by `check_session_role.py` —
+secondary sessions are blocked from pushing unless
+`SHIPWRIGHT_SECONDARY_PUSH_AUTH=1` is set in the env.
+
 ### B1a. Parallel Iterate Conventions
 
 These rules apply to the **Parallel** option in B1 and to any manual worktree-based parallel iterate work. They keep PRs independent and avoid merge conflicts.
@@ -211,6 +259,16 @@ These rules apply to the **Parallel** option in B1 and to any manual worktree-ba
 - **WARNING — race on adopted target projects:** on any project with `shipwright_run_config.json`, parallel iterates produce a merge conflict in `iterate_history[]`. Use this workflow today only if manual conflict resolution is acceptable. Structural fix tracked as `iterate-history-file-per-iterate` (must land before `/shipwright-adopt` on the shipwright monorepo itself).
 - **WARNING — CHANGELOG.md `[Unreleased]` is a merge hotspot today.** F4 appends to `[Unreleased]` for every iterate. Two parallel iterates conflict on merge — the second PR must rebase and resolve the bullet merge manually. Structural fix bundled with the iterate_history refactor as a `CHANGELOG-unreleased.d/` drop pattern.
 - **Cleanup:** `git worktree remove .worktrees/<slug>` removes the worktree but **not** the branch. After PR merge: also `git branch -D iterate/<slug>`. Use the helper (`uv run "{shared_root}/scripts/tools/list_iterate_branches.py"`) to see which branches are in `locked` (active in another worktree) vs `stale` (safe to delete).
+
+> **Session roles (canonical vs secondary).** If a canonical session has
+> already been declared elsewhere (visible via `detect_parallel_sessions`
+> in B1c), this session is **secondary by default**. Secondary sessions
+> DO NOT `git commit` or `git push` artifacts that would race the
+> canonical side without explicit user auth. The push-guard
+> `shared/scripts/checks/check_session_role.py` enforces this at F11
+> (exit 1 unless role is `canonical` or `SHIPWRIGHT_SECONDARY_PUSH_AUTH=1`
+> is set). To designate a role, use `session_role.write_role()` (see
+> B1c step 5).
 
 See also: `docs/guide.md` chapter "Parallel Development with Worktrees" for the full walkthrough.
 
@@ -1155,6 +1213,12 @@ uv run "{shared_root}/scripts/tools/record_event.py" \
 ```
 
 ### F11: Merge, Push & Verify
+
+**Pre-push session-role check** (parallel-iterate guard — see B1a/B1c):
+run `check_session_role.py` first; non-zero → STOP.
+```bash
+uv run "{shared_root}/scripts/checks/check_session_role.py" --project-root "{project_root}"
+```
 
 ```bash
 main_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "master")

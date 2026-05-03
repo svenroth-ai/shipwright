@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-03-skill-hardening-c-multi-session-discipline",
+  "date": "2026-05-03T20:29:41.914655Z",
+  "type": "feature",
+  "complexity": "small",
+  "branch": "iterate/skill-hardening-C-multi-session-discipline",
+  "spec": ".shipwright/planning/iterate/campaigns/iterate-skill-hardening/sub-iterates/C-multi-session-discipline.md",
+  "tests_passed": true,
+  "adr": "ADR-026"
+}

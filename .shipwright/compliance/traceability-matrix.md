@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-03T20:13:42Z
+Generated: 2026-05-03T20:29:28Z
 
 ## Verification Timeline
 
@@ -15,6 +15,7 @@ Generated: 2026-05-03T20:13:42Z
 | hooks.json quoting (deferred from ADR-020) | iterate | bug | FR-01.01, FR-01.02, FR-01.03 +10 | 13/13 | 6ca369d | 2026-05-03 |
 | changelog MSYS path-mangling linter | iterate | bug |  | 19/19 | a13fd64 | 2026-05-03 |
 | Sub-Iterate A: Boundary Tests Foundation (campaign iterate-skill-hardening) | iterate | feature |  | 126/126 | ba98745 | 2026-05-03 |
+| iterate skill: confidence calibration phase (Sub-Iterate B, campaign iterate-skill-hardening) | iterate | feature |  | 146/146 | f273766 | 2026-05-03 |
 
 ## Coverage Summary
 
@@ -22,7 +23,7 @@ Generated: 2026-05-03T20:13:42Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 9 |
+| Iterate changes | 10 |
 | Total review findings | 0 |
 | Unresolved findings | 0 |
 

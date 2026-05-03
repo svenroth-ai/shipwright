@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-05-03T20:13:42Z
-Total commits: 560
+Generated: 2026-05-03T20:29:28Z
+Total commits: 561
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 202
+    "feat" : 203
     "fix" : 150
     "docs" : 87
     "chore" : 70
@@ -18,10 +18,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 202 commits
+### Features (feat) — 203 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-03 | iterate | confidence calibration phase (ADR-025) | f27376626fda |
 | 2026-05-03 | iterate | boundary tests foundation (ADR-024) | ba9874506700 |
 | 2026-05-03 | adopt | scaffold .env.local with profile + framework keys (ADR-021) | 995300862e93 |
 | 2026-05-02 | adopt | expand CLAUDE.md "Ongoing Changes" with iterate-workflow bullets | 8da26f338b05 |
@@ -617,7 +618,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 560 |
+| Total commits | 561 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 560 |
+| Human-authored commits | 561 |
 

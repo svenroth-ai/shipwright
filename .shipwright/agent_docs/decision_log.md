@@ -452,3 +452,15 @@ shipwright/
 - **Rationale:** The 'are you confident?' question is unfalsifiable — same brain that wrote the bug being asked if it sees the bug. Replacing the question with named probes converts confidence-attestation into evidence-of-exhaustion at constant marginal cost (one probe ~5min vs hotfix cost).
 - **Consequences:** Iterate runs at medium+ now have a structural calibration gate before F0. Self-attestation ('yes I'm confident') replaced by 4 named probes + findings in the iterate spec. Drift-protection tests (test_confidence_anti_patterns_doc.py + test_skill_phase_matrix.py) catch accidental section/row removal.
 - **Rejected:** Generic 'review checklist' addition — too soft, no asymptote enforcement. Hard mandatory at all complexity levels — too heavy for trivial markdown edits where no producer/consumer pair exists.
+
+---
+
+### ADR-026: Multi-Session Discipline (ADR-026)
+- **Date:** 2026-05-03
+- **Section:** Iterate — feature: multi-session discipline (campaign iterate-skill-hardening Sub-Iterate C)
+- **Context:** Two Claude Code sessions running in parallel against the same repo (main + .worktrees/<slug>) can race commits/pushes. The 2026-05-03 env-iterate demonstrated this: a non-canonical commit was created locally even though the canonical side had already announced it would integrate the fix. Phrasing read as open invitation, was actually zustimmung-check.
+- **Decision:** Add session-role machinery: shared/scripts/lib/session_role.py (read/write/detect, atomic idempotent writes), shared/scripts/checks/check_session_role.py (push guardrail, exit 1 for secondary without SHIPWRIGHT_SECONDARY_PUSH_AUTH=1), SKILL.md B1c phase (parallel-session detection + designation prompt), B1a session-role addendum (secondary-by-default rule), F11 push gate (one-line check).
+- **Commit:** PENDING
+- **Rationale:** Session-role marker is a JSON producer/consumer boundary by ADR-024 taxonomy — round-trip tests + edge-case probes are mandatory. Atomic write (tmp.replace) mirrors autonomous_loop.py. Idempotent rewrite (same role + worktree → no-op) preserves audit trail set_at + set_by_session_id from the original write. Default permissive on missing marker reflects industry pattern for opt-in guardrails.
+- **Consequences:** Future parallel iterates structurally avoid the race: secondary sessions get exit-code-1 at F11 push unless explicitly authorised. Default permissive on missing marker preserves single-session UX (most projects). 29 new tests in shared/tests/ cover round-trip + 8 boundary probe categories that apply to JSON markers (BOM, CRLF, non-ASCII, empty, idempotency, garbage bytes, unknown role, exit-code matrix).
+- **Rejected:** File locking (concurrent writes from two processes): out of scope; the discipline IS the locking story (canonical writes, secondary reads). Hard-fail on missing marker: would gate every single-session project unnecessarily. Read role from env var instead of file: file persists across session restarts, env vars do not.
