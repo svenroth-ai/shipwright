@@ -231,7 +231,7 @@ def _render_boundaries_table(boundaries: Iterable[Boundary]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# scan_specs — walk planning/iterate/**
+# scan_specs — walk .shipwright/planning/iterate/**
 # ---------------------------------------------------------------------------
 
 
