@@ -57,11 +57,11 @@
       "id": "F",
       "slug": "runner-contract-mandates-reviews",
       "spec_path": ".shipwright\\planning\\iterate\\campaigns\\iterate-skill-hardening\\sub-iterates\\F-runner-contract-mandates-reviews.md",
-      "status": "pending",
-      "commit": null,
-      "branch": null,
-      "tests_passed": null,
-      "tests_total": null
+      "status": "complete",
+      "commit": "f6a14fc7fcc7460c3738f241b3ec2333cb568516",
+      "branch": "iterate/skill-hardening-F-runner-contract-mandates-reviews",
+      "tests_passed": 188,
+      "tests_total": 188
     }
   ]
 }

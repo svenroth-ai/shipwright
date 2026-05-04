@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-03-skill-hardening-e-review-driven-hardening"
+run_id: "iterate-2026-05-04-skill-hardening-F-runner-contract-mandates-reviews"
 phase: "iterate"
-reason: "iterate: review-driven hardening (ADR-028)"
-timestamp: "2026-05-04T05:41:33.539045+00:00"
+reason: "iterate: F runner contract mandates reviews (ADR-029)"
+timestamp: "2026-05-04T06:02:37.128170+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-04 05:41:33 UTC
+> Auto-generated 2026-05-04 06:02:37 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-04 05:41:33 UTC
-- **Reason**: iterate: review-driven hardening (ADR-028)
+- **Timestamp**: 2026-05-04 06:02:37 UTC
+- **Reason**: iterate: F runner contract mandates reviews (ADR-029)
 
 ## Last Iterate
 
@@ -29,7 +29,7 @@ timestamp: "2026-05-04T05:41:33.539045+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/skill-hardening-E-review-driven-hardening
+- **Branch**: iterate/skill-hardening-F-runner-contract-mandates-reviews
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/skill-hardening-E-review-driven-hardening
-- **Last Commit**: 07d4ab7 chore(campaign): extend iterate-skill-hardening with E + F specs
+- **Branch**: iterate/skill-hardening-F-runner-contract-mandates-reviews
+- **Last Commit**: 5415ed6 fix(iterate): review-driven hardening (ADR-028)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,22 +65,22 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-8ee80d97 | work_completed | iterate (iterate: review-driven hardening (ADR-028 / campaign iterate-skill-hardening Sub-Iterate E)) | 2026-05-04 |
 | evt-c4ae8ef7 | work_completed | iterate (test plugin: boundary coverage report (campaign iterate-skill-hardening Sub-Iterate D, ADR-027)) | 2026-05-03 |
 | evt-530b0980 | work_completed | iterate (changelog MSYS path-mangling linter) | 2026-05-03 |
 | evt-e67c7be3 | phase_completed | changelog | 2026-05-03 |
 | evt-ca7b7d64 | work_completed | iterate (hooks.json quoting (deferred from ADR-020)) | 2026-05-03 |
-| evt-baaf4b0e | work_completed | iterate (iterate fix: parse_env_file inline-comment stripping + lib copy sync) | 2026-05-03 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 9
-- **Last iterate**: feature — test plugin: boundary coverage report (campaign iterate-skill-hardening Sub-Iterate D, ADR-027) (2026-05-03)
+- **Total work events**: 10
+- **Last iterate**: bug — iterate: review-driven hardening (ADR-028 / campaign iterate-skill-hardening Sub-Iterate E) (2026-05-04)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
 
-### ADR-028: Review-Driven Hardening (campaign iterate-skill-hardening Sub-Iterate E)
-- **Date:** 2026-05-03
-- **Section:** Iterate / Test / Shared — fix: 6 HIGH + 6 MEDIUM findings from per-sub-iterate code reviews + external_review.py + holistic external review on the campaign
-- **Context:** After A/B/C/D shipped locally, retroactive code-reviewer subagents (4×) + `external_review.py --mode code` (4×) + 1 holistic external review surfaced 6 HIGH findings (4 empirically verified by reading shipped code
+### ADR-029: ADR-029: sub-iterate-runner contract mandates Step 3.5 (External Plan Review) and Step 3.7 (Code Review Cascade)
+- **Date:** 2026-05-04
+- **Section:** Iterate — feature: Runner Contract Mandates Reviews (Sub-Iterate F)
+- **Context:** Campaign iterate-skill-hardening A/B/C/D shipped without external plan review or code review cascade firing. The sub-iterate-runner agent contract jumped Step 3 (Build) directly to Step 4 (Finalization), skipping SKILL.md Step 4 (External LLM Review, mandatory 
