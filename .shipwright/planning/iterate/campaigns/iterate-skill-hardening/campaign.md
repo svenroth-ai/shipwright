@@ -14,7 +14,21 @@ Harden iterate skill with boundary-tests (A), confidence-calibration (B), multi-
 
 | ID | Slug | Title | Status |
 |---|---|---|---|
-| A | boundary-tests-foundation | Boundary Tests Foundation | pending |
-| B | confidence-calibration-phase | Confidence Calibration Phase | pending |
-| C | multi-session-discipline | Multi-Session Discipline | pending |
-| D | boundary-coverage-report | shipwright-test Boundary-Coverage-Report | pending |
+| A | boundary-tests-foundation | Boundary Tests Foundation | complete |
+| B | confidence-calibration-phase | Confidence Calibration Phase | complete |
+| C | multi-session-discipline | Multi-Session Discipline | complete |
+| D | boundary-coverage-report | shipwright-test Boundary-Coverage-Report | complete |
+| E | review-driven-hardening | Review-Driven Hardening (HIGH+critical-MEDIUM fixes from post-D code+external review) | pending |
+| F | runner-contract-mandates-reviews | Runner Contract Mandates Reviews (closes the meta-loop) | pending |
+
+## Review pass (between D and E)
+
+After D shipped locally, we ran the reviews the runner contract should
+have triggered automatically:
+- 4× code-reviewer subagents (one per A/B/C/D)
+- 4× `external_review.py --mode code` (OpenRouter dual-LLM Gemini+OpenAI)
+- 1× holistic `external_review.py` over the campaign-level diff
+
+Result: 6 HIGH findings (4 empirically verified by reading shipped code)
+and ~12 MEDIUMs. Sub-Iterate E addresses these. Sub-Iterate F patches
+the runner contract so future campaigns trigger reviews automatically.

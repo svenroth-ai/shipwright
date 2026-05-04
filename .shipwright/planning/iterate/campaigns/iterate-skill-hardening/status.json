@@ -42,6 +42,26 @@
       "branch": "iterate/skill-hardening-D-boundary-coverage-report",
       "tests_passed": 1505,
       "tests_total": 1505
+    },
+    {
+      "id": "E",
+      "slug": "review-driven-hardening",
+      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\iterate-skill-hardening\\sub-iterates\\E-review-driven-hardening.md",
+      "status": "pending",
+      "commit": null,
+      "branch": null,
+      "tests_passed": null,
+      "tests_total": null
+    },
+    {
+      "id": "F",
+      "slug": "runner-contract-mandates-reviews",
+      "spec_path": ".shipwright\\planning\\iterate\\campaigns\\iterate-skill-hardening\\sub-iterates\\F-runner-contract-mandates-reviews.md",
+      "status": "pending",
+      "commit": null,
+      "branch": null,
+      "tests_passed": null,
+      "tests_total": null
     }
   ]
 }
