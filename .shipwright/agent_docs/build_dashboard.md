@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-04 06:02 UTC | Session: unknown
+> Updated: 2026-05-04 17:07 UTC | Session: unknown
 
-## Recent Changes (10 iterations)
+## Recent Changes (11 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | F runner contract mandates reviews (ADR-029) | 188/188 | f6a14fc | FR-01.11 | 2026-05-04 |
 | bug | iterate: review-driven hardening (ADR-028 / campaign iterate-skill-hardening Sub-Iterate E) | 1539/1539 | 5415ed6 |  | 2026-05-04 |
 | feature | test plugin: boundary coverage report (campaign iterate-skill-hardening Sub-Iterate D, ADR-027) | +19 new, 19/19 | 216f8b3 |  | 2026-05-03 |
 | bug | changelog MSYS path-mangling linter | 19/19 | a13fd64 |  | 2026-05-03 |

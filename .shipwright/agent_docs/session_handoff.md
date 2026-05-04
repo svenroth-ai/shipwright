@@ -1,41 +1,23 @@
----
-canon_generated: true
-run_id: "iterate-2026-05-04-skill-hardening-F-runner-contract-mandates-reviews"
-phase: "iterate"
-reason: "iterate: F runner contract mandates reviews (ADR-029)"
-timestamp: "2026-05-04T06:02:37.128170+00:00"
----
-
 # Session Handoff
 
-> Auto-generated 2026-05-04 06:02:37 UTC
+> Auto-generated 2026-05-04 17:07:23 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-04 06:02:37 UTC
-- **Reason**: iterate: F runner contract mandates reviews (ADR-029)
+- **Timestamp**: 2026-05-04 17:07:23 UTC
+- **Reason**: release v0.16.0
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-03-skill-hardening-e-review-driven-hardening
-- **Date**: 2026-05-04T05:41:15.140511Z
-- **Type**: bug
-- **Complexity**: medium
-- **Branch**: iterate/skill-hardening-E-review-driven-hardening
-- **ADR**: ADR-028
-- **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/iterate-skill-hardening/sub-iterates/E-review-driven-hardening.md
-
-## Current Iterate Progress
-
+- **Run ID**: iterate-2026-05-04-skill-hardening-f-runner-contract-mandates-reviews
+- **Date**: 2026-05-04T06:03:30.229325Z
+- **Type**: feature
+- **Complexity**: small
 - **Branch**: iterate/skill-hardening-F-runner-contract-mandates-reviews
-- **External Review Marker**: missing
-
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Finalization (F0–F11) after all mandatory phases pass
+- **ADR**: ADR-029
+- **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/campaigns/iterate-skill-hardening/sub-iterates/F-runner-contract-mandates-reviews.md
 
 ## Legacy build state
 
@@ -48,8 +30,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/skill-hardening-F-runner-contract-mandates-reviews
-- **Last Commit**: 5415ed6 fix(iterate): review-driven hardening (ADR-028)
+- **Branch**: main
+- **Last Commit**: e18f58a chore(release): v0.16.0
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +47,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-da156299 | work_completed | iterate (F runner contract mandates reviews (ADR-029)) | 2026-05-04 |
 | evt-8ee80d97 | work_completed | iterate (iterate: review-driven hardening (ADR-028 / campaign iterate-skill-hardening Sub-Iterate E)) | 2026-05-04 |
 | evt-c4ae8ef7 | work_completed | iterate (test plugin: boundary coverage report (campaign iterate-skill-hardening Sub-Iterate D, ADR-027)) | 2026-05-03 |
 | evt-530b0980 | work_completed | iterate (changelog MSYS path-mangling linter) | 2026-05-03 |
 | evt-e67c7be3 | phase_completed | changelog | 2026-05-03 |
-| evt-ca7b7d64 | work_completed | iterate (hooks.json quoting (deferred from ADR-020)) | 2026-05-03 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 10
-- **Last iterate**: bug — iterate: review-driven hardening (ADR-028 / campaign iterate-skill-hardening Sub-Iterate E) (2026-05-04)
+- **Total work events**: 11
+- **Last iterate**: feature — F runner contract mandates reviews (ADR-029) (2026-05-04)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
