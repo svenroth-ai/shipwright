@@ -1,1 +1,0 @@
-iterate: Confidence Calibration phase (Step 7.5) replaces unfalsifiable 'are you confident?' question with empirical probes + asymptote heuristic; mandatory at medium+, Safety-enforced at small with touches_io_boundary (ADR-025)

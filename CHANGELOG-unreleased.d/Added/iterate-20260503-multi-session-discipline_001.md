@@ -1,1 +1,0 @@
-iterate: Multi-Session Discipline -- session-role marker (.shipwright/iterate_session_role.json), push guardrail (check_session_role.py), B1c phase + B1a addendum + F11 push gate in SKILL.md. Default permissive on missing marker; secondary sessions blocked from pushing unless SHIPWRIGHT_SECONDARY_PUSH_AUTH=1 (ADR-026)
