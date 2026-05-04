@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-03T20:29:28Z
+Generated: 2026-05-04T05:41:33Z
 
 ## Verification Timeline
 
@@ -14,8 +14,7 @@ Generated: 2026-05-03T20:29:28Z
 | iterate fix: parse_env_file inline-comment stripping + lib copy sync | iterate | fix |  | 53/53 | 1a9c7f4 | 2026-05-03 |
 | hooks.json quoting (deferred from ADR-020) | iterate | bug | FR-01.01, FR-01.02, FR-01.03 +10 | 13/13 | 6ca369d | 2026-05-03 |
 | changelog MSYS path-mangling linter | iterate | bug |  | 19/19 | a13fd64 | 2026-05-03 |
-| Sub-Iterate A: Boundary Tests Foundation (campaign iterate-skill-hardening) | iterate | feature |  | 126/126 | ba98745 | 2026-05-03 |
-| iterate skill: confidence calibration phase (Sub-Iterate B, campaign iterate-skill-hardening) | iterate | feature |  | 146/146 | f273766 | 2026-05-03 |
+| test plugin: boundary coverage report (campaign iterate-skill-hardening Sub-Iterate D, ADR-027) | iterate | feature |  | 19/19 | 216f8b3 | 2026-05-03 |
 
 ## Coverage Summary
 
@@ -23,7 +22,7 @@ Generated: 2026-05-03T20:29:28Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 10 |
+| Iterate changes | 9 |
 | Total review findings | 0 |
 | Unresolved findings | 0 |
 

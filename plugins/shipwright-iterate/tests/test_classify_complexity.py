@@ -237,12 +237,18 @@ class TestTouchesIoBoundary:
         assert "touches_io_boundary" in names
 
     def test_touches_io_boundary_flag_detection_serializer(self):
-        flags = detect_risk_flags("write_text the run config and parse_ it back later")
+        # E MEDIUM-A1: bare `write_text`/`parse_` are too loose. Use the
+        # tightened `json.dumps` pattern instead — same intent (a real
+        # producer/consumer change), now anchored.
+        flags = detect_risk_flags(
+            "switch the run config writer from json.dumps to a stricter encoder"
+        )
         names = [f["flag"] for f in flags]
         assert "touches_io_boundary" in names
 
     def test_touches_io_boundary_flag_detection_settings(self):
-        flags = detect_risk_flags("modify settings.json schema and load_ it")
+        # E MEDIUM-A1: bare `load_` dropped. settings.json still triggers.
+        flags = detect_risk_flags("modify settings.json schema and json.load it")
         names = [f["flag"] for f in flags]
         assert "touches_io_boundary" in names
 
@@ -250,3 +256,63 @@ class TestTouchesIoBoundary:
         flags = detect_risk_flags("fix button color on the dashboard")
         names = [f["flag"] for f in flags]
         assert "touches_io_boundary" not in names
+
+    # E spec MEDIUM-A1 — anchored patterns must NOT fire on unrelated prompts.
+
+    def test_touches_io_boundary_not_fired_for_load_user_route(self):
+        """`load_user` is a route name, not an IO boundary verb."""
+        flags = detect_risk_flags("rewrite the load_user route to use sessions")
+        names = [f["flag"] for f in flags]
+        assert "touches_io_boundary" not in names, (
+            f"loose 'load_' pattern must not fire on route names, got {names!r}"
+        )
+
+    def test_touches_io_boundary_not_fired_for_dump_utility_prompt(self):
+        """Bare `dump` should not fire — only `json.dump(s)` / `yaml.dump`."""
+        flags = detect_risk_flags("improve dump utility for stack traces")
+        names = [f["flag"] for f in flags]
+        assert "touches_io_boundary" not in names, (
+            f"bare 'dump' pattern must not fire, got {names!r}"
+        )
+
+    def test_touches_io_boundary_not_fired_for_parse_query_helper(self):
+        """`parse_query` is a request helper, not env parsing."""
+        flags = detect_risk_flags("add parse_query helper for URL params")
+        names = [f["flag"] for f in flags]
+        assert "touches_io_boundary" not in names, (
+            f"loose 'parse_' pattern must not fire on URL helpers, got {names!r}"
+        )
+
+    def test_touches_io_boundary_not_fired_for_serialize_method(self):
+        """`serialize` as a method name is too generic to fire the flag."""
+        flags = detect_risk_flags("add serialize method to the Cart model")
+        names = [f["flag"] for f in flags]
+        assert "touches_io_boundary" not in names, (
+            f"bare 'serialize' must not fire on model method names, got {names!r}"
+        )
+
+    def test_touches_io_boundary_not_fired_for_write_text_in_ui_prompt(self):
+        """write_text must not fire when used as a UI label, not a method."""
+        flags = detect_risk_flags("rewrite the page header text")
+        names = [f["flag"] for f in flags]
+        assert "touches_io_boundary" not in names, (
+            f"'rewrite' / 'write_text' substring must not fire, got {names!r}"
+        )
+
+    def test_touches_io_boundary_still_fires_for_parse_env(self):
+        """Specific anchored pattern `parse_env` still fires (positive control)."""
+        flags = detect_risk_flags("update parse_env to handle BOM and inline comments")
+        names = [f["flag"] for f in flags]
+        assert "touches_io_boundary" in names
+
+    def test_touches_io_boundary_still_fires_for_json_dump(self):
+        """Specific anchored pattern `json.dump` still fires."""
+        flags = detect_risk_flags("switch from json.dumps to ujson for speed")
+        names = [f["flag"] for f in flags]
+        assert "touches_io_boundary" in names
+
+    def test_touches_io_boundary_still_fires_for_hooks_json(self):
+        """`hooks.json` still fires (not loosened)."""
+        flags = detect_risk_flags("add new entry to hooks.json for stop hook")
+        names = [f["flag"] for f in flags]
+        assert "touches_io_boundary" in names

@@ -368,3 +368,103 @@ class TestConfigReadEvents:
         events = config_read_events(project)
         assert len(events) == 1
         assert events[0]["id"] == "evt-cfg01"
+
+
+# ---------------------------------------------------------------------------
+# E spec MEDIUM-D1 — --changed-files support
+# ---------------------------------------------------------------------------
+
+
+class TestChangedFiles:
+    """`--changed-files` records the files actually changed in the commit.
+
+    Required by D's drift-detection (`is_io_boundary_change`) and HIGH-5's
+    round-trip heuristic scoping. Without this field, downstream tools
+    fall back to weaker text heuristics.
+    """
+
+    def test_comma_separated_changed_files(self, project):
+        rc = record_main([
+            "--project-root", str(project),
+            "--type", "work_completed",
+            "--source", "iterate", "--commit", "abc1234",
+            "--description", "Test changed-files",
+            "--changed-files", ".env,shipwright_run_config.json,src/x.py",
+        ])
+        assert rc == 0
+        events = read_events(project)
+        assert len(events) == 1
+        assert events[0]["changed_files"] == [
+            ".env", "shipwright_run_config.json", "src/x.py",
+        ]
+
+    def test_json_array_changed_files(self, project):
+        rc = record_main([
+            "--project-root", str(project),
+            "--type", "work_completed",
+            "--source", "iterate", "--commit", "abc1235",
+            "--changed-files", '[".env", "src/y.py"]',
+        ])
+        assert rc == 0
+        events = read_events(project)
+        assert events[0]["changed_files"] == [".env", "src/y.py"]
+
+    def test_changed_files_normalizes_backslashes(self, project):
+        """Windows path output from `git diff` may use backslashes — normalize."""
+        rc = record_main([
+            "--project-root", str(project),
+            "--type", "work_completed",
+            "--source", "build", "--commit", "abc1236",
+            "--changed-files", "src\\foo.py,tests\\bar.py",
+        ])
+        assert rc == 0
+        events = read_events(project)
+        assert events[0]["changed_files"] == ["src/foo.py", "tests/bar.py"]
+
+    def test_changed_files_empty_handled(self, project):
+        """Empty string → no `changed_files` key on the event."""
+        rc = record_main([
+            "--project-root", str(project),
+            "--type", "work_completed",
+            "--source", "iterate", "--commit", "abc1237",
+        ])
+        assert rc == 0
+        events = read_events(project)
+        assert "changed_files" not in events[0]
+
+    def test_changed_files_omitted_argument(self, project):
+        """Argument absent → field absent (backwards compat)."""
+        rc = record_main([
+            "--project-root", str(project),
+            "--type", "work_completed",
+            "--source", "build", "--commit", "abc1238",
+            "--description", "no flag passed",
+        ])
+        assert rc == 0
+        events = read_events(project)
+        assert "changed_files" not in events[0]
+
+    def test_changed_files_round_trip_with_is_io_boundary_change(self, project):
+        """The field is consumable by `is_io_boundary_change` (full chain)."""
+        rc = record_main([
+            "--project-root", str(project),
+            "--type", "work_completed",
+            "--source", "iterate", "--commit", "abc1239",
+            "--changed-files", ".env.local,src/parser.py",
+        ])
+        assert rc == 0
+        events = read_events(project)
+        files = events[0]["changed_files"]
+
+        # Import is_io_boundary_change from the iterate plugin.
+        from importlib.util import spec_from_file_location, module_from_spec
+        repo_root = Path(__file__).resolve().parents[4]
+        cc_path = (
+            repo_root / "plugins" / "shipwright-iterate"
+            / "scripts" / "lib" / "classify_complexity.py"
+        )
+        spec = spec_from_file_location("classify_complexity", cc_path)
+        mod = module_from_spec(spec)
+        spec.loader.exec_module(mod)
+
+        assert mod.is_io_boundary_change(files) is True

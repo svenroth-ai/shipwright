@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-03-skill-hardening-e-review-driven-hardening",
+  "date": "2026-05-04T05:41:15.140511Z",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/skill-hardening-E-review-driven-hardening",
+  "spec": ".shipwright/planning/iterate/campaigns/iterate-skill-hardening/sub-iterates/E-review-driven-hardening.md",
+  "tests_passed": true,
+  "adr": "ADR-028"
+}

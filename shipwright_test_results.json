@@ -1,12 +1,12 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-03-skill-hardening-c-multi-session-discipline",
+    "run_id": "iterate-2026-05-03-skill-hardening-e-review-driven-hardening",
     "date": "2026-05-03",
     "unit": {
       "status": "passed",
-      "passed": 175,
-      "total": 175,
-      "scope": "plugins/shipwright-iterate/tests/ (146) + shared/tests/test_session_role.py (18) + shared/tests/test_check_session_role.py (11) — Sub-Iterate C adds 29 new boundary + exit-code matrix tests against the new session_role module"
+      "passed": 1539,
+      "total": 1539,
+      "scope": "plugins/shipwright-iterate/tests/ (163) + plugins/shipwright-test/tests/ (136) + shared/tests/ (1240, excluding 9 pre-existing test_artifact_path_canon/test_gitignore_canon failures and 34 pre-existing test_phase_plugin_hooks_consistency.py failures). +30 new tests added by E across the three suites (iterate +17, test plugin +14, shared +3 session_role_cli +6 record_event ChangedFiles + 2 session_role HIGH-2/MEDIUM-C2 regression)."
     },
     "integration": {
       "status": "skipped",
@@ -32,7 +32,8 @@
       "status": "skipped"
     },
     "degraded": [
-      "Test scope reported here is for the iterate-touched files (plugins/shipwright-iterate/tests/ + shared/tests/test_session_role.py + shared/tests/test_check_session_role.py). Full shared/tests/ run shows 1237 passed / 34 failed / 10 skipped — all 34 failures pre-existing on base branch (test_phase_plugin_hooks_consistency.py — phase_session_stop.py rollout incomplete in upstream plugins, tracked separately).",
+      "9 pre-existing failures in shared/tests/test_artifact_path_canon.py + test_gitignore_canon.py — predate this campaign (verified on base iterate/skill-hardening-D-boundary-coverage-report HEAD); not in E's scope per spec 'What's NOT in scope'.",
+      "34 pre-existing failures in shared/tests/test_phase_plugin_hooks_consistency.py — predate this campaign per spec; not in scope.",
       "Pre-existing test failures unrelated to this iterate (carried from earlier degraded notes): shipwright-deploy::test_validate_without_token, shipwright-security::test_explicit_name_not_in_registry."
     ]
   }

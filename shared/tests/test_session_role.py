@@ -23,6 +23,7 @@ Categories deliberately skipped + why (machine-only-ish JSON):
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -316,6 +317,138 @@ def test_detect_parallel_sessions_skips_worktrees_without_marker(tmp_project):
 
 def test_detect_parallel_sessions_no_markers_anywhere(tmp_project):
     assert detect_parallel_sessions(tmp_project) == []
+
+
+# ---------------------------------------------------------------------------
+# E HIGH-2 — worktree-blindness regression test
+# ---------------------------------------------------------------------------
+
+
+def _git_available() -> bool:
+    try:
+        subprocess.run(
+            ["git", "--version"],
+            check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        return True
+    except (OSError, subprocess.CalledProcessError):
+        return False
+
+
+@pytest.mark.skipif(not _git_available(), reason="git not on PATH")
+def test_detect_from_worktree_cwd_sees_main_and_worktree(tmp_project):
+    """Calling detect_parallel_sessions from a worktree path must see BOTH
+    markers (main repo + worktree).
+
+    This is the dog-food self-failure C admitted to in its Confidence
+    Calibration "Edge cases NOT probed" list — the original implementation
+    only scanned the cwd's own `.worktrees/` and missed the main repo
+    when invoked from a worktree directory.
+    """
+    # Initialize a real git repo + commit an initial file so worktree-add works.
+    subprocess.run(["git", "init", "-q", str(tmp_project)], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_project), "config", "user.email", "test@example.com"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_project), "config", "user.name", "Test"],
+        check=True,
+    )
+    (tmp_project / "README.md").write_text("seed", encoding="utf-8")
+    subprocess.run(
+        ["git", "-C", str(tmp_project), "add", "README.md"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_project), "commit", "-q", "-m", "seed"],
+        check=True,
+    )
+
+    # Write canonical marker in the main repo.
+    write_role(
+        tmp_project,
+        role="canonical",
+        session_id="main-sess",
+        worktree_path=str(tmp_project),
+    )
+
+    # Add a real git worktree under .worktrees/feature-x and write a
+    # secondary marker in it.
+    wt_path = tmp_project / ".worktrees" / "feature-x"
+    subprocess.run(
+        [
+            "git", "-C", str(tmp_project), "worktree", "add", "-b",
+            "feature-x", str(wt_path),
+        ],
+        check=True,
+    )
+    write_role(
+        wt_path,
+        role="secondary",
+        session_id="wt-sess",
+        worktree_path=str(wt_path),
+    )
+
+    # The bug: invoking detect_parallel_sessions FROM the worktree path
+    # should still see BOTH markers, because git-rev-parse can resolve the
+    # canonical repo root via --git-common-dir.
+    found = detect_parallel_sessions(wt_path)
+    roles = {entry["role"] for entry in found}
+    assert roles == {"canonical", "secondary"}, (
+        f"Expected to see both markers from worktree cwd, got roles {roles!r} "
+        f"(entries: {found})"
+    )
+    assert len(found) == 2
+
+
+# ---------------------------------------------------------------------------
+# E MEDIUM-C2 — race-safe tmp file naming
+# ---------------------------------------------------------------------------
+
+
+def test_write_role_uses_unique_tmp_name(tmp_project, monkeypatch):
+    """write_role must use a unique tmp name per call so two near-concurrent
+    writes don't clobber each other's tmp file.
+
+    We can't easily simulate true concurrency in a unit test, but we can
+    verify the pattern is race-safe by construction: capture the tmp paths
+    that are created and assert they differ across two interleaved invocations.
+    """
+    import tempfile as _tempfile
+    captured_names: list[str] = []
+    real_named_tmp = _tempfile.NamedTemporaryFile
+
+    def spy(*args, **kwargs):
+        h = real_named_tmp(*args, **kwargs)
+        captured_names.append(h.name)
+        return h
+
+    # Patch in the session_role module's tempfile reference.
+    import lib.session_role as session_role_mod  # type: ignore
+    monkeypatch.setattr(
+        session_role_mod, "tempfile", _tempfile, raising=False
+    )
+    monkeypatch.setattr(
+        session_role_mod.tempfile, "NamedTemporaryFile", spy
+    )
+
+    write_role(
+        tmp_project, role="canonical",
+        session_id="s1", worktree_path=str(tmp_project),
+    )
+    # Force a fresh write (different role triggers non-idempotent path).
+    write_role(
+        tmp_project, role="secondary",
+        session_id="s2", worktree_path=str(tmp_project),
+    )
+
+    assert len(captured_names) == 2, (
+        f"Expected 2 NamedTemporaryFile calls, got {captured_names!r}"
+    )
+    assert captured_names[0] != captured_names[1], (
+        f"Two writes produced the same tmp name: {captured_names!r}"
+    )
 
 
 # ---------------------------------------------------------------------------

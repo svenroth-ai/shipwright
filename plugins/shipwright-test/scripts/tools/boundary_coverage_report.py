@@ -90,10 +90,22 @@ class SpecBoundaries:
 
 @dataclass
 class BoundaryResult:
-    """A boundary plus detected round-trip-test status."""
+    """A boundary plus detected round-trip-test status.
+
+    `round_trip_tested` semantics (E spec HIGH-5):
+    - True: a test file in the matched commit's `changed_files` mentions
+      the producer.
+    - False: the matched commit's `changed_files` are present, but no
+      test file in that intersection mentions the producer.
+    - "unknown": the matched commit lacks a `changed_files` field on the
+      event (legacy events from before MEDIUM-D1). Falls back to the
+      old full-walk heuristic for the value, but exposes "unknown" so
+      consumers can distinguish "we don't have evidence either way"
+      from "we looked and found nothing".
+    """
 
     boundary: Boundary
-    round_trip_tested: bool
+    round_trip_tested: bool | str  # True | False | "unknown"
 
     def to_dict(self) -> dict:
         return {
@@ -267,6 +279,24 @@ def _spec_slug(spec_path: Path) -> str:
     return spec_path.stem.lower()
 
 
+def _slug_matches_description(slug: str, description: str) -> bool:
+    """Return True iff `slug` is a meaningful match in `description`.
+
+    E spec HIGH-6: short slugs (e.g. `A.md`, `r1.md`) cause false-positive
+    matches against arbitrary commit descriptions. Apply a length-based
+    rule:
+    - len(slug) >= 8 → plain substring match (high specificity already).
+    - len(slug) <  8 → require `\\b{slug}\\b` word-boundary regex.
+    """
+    if not slug:
+        return False
+    desc = description.lower()
+    if len(slug) >= 8:
+        return slug in desc
+    pattern = r"\b" + re.escape(slug) + r"\b"
+    return re.search(pattern, desc) is not None
+
+
 def _producer_bare_name(producer: str) -> str:
     """Strip backticks, ::method suffix, .py extension; return bare token."""
     s = producer.strip("`").strip()
@@ -302,6 +332,39 @@ def _scan_test_files_for_producer(project_root: Path, producer_token: str) -> bo
     return False
 
 
+def _scan_changed_test_files_for_producer(
+    project_root: Path,
+    changed_files: list[str],
+    producer_token: str,
+) -> bool:
+    """E spec HIGH-5: scoped variant of `_scan_test_files_for_producer`.
+
+    Only inspects test files that appear in `changed_files`. This avoids
+    false positives where an old unrelated test mentions the producer
+    name in a comment but was not added/modified by the matched commit.
+    """
+    if not producer_token or len(producer_token) < 3:
+        return False
+    if not changed_files:
+        return False
+    for raw_path in changed_files:
+        normalized = raw_path.replace("\\", "/")
+        # Only consider test files (test_*.py or *_test.py under tests/).
+        name = normalized.rsplit("/", 1)[-1]
+        if not (name.startswith("test_") and name.endswith(".py")):
+            continue
+        candidate = project_root / normalized
+        if not candidate.exists():
+            continue
+        try:
+            content = candidate.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        if producer_token in content:
+            return True
+    return False
+
+
 def correlate_with_commits(
     specs: list[SpecBoundaries],
     events_jsonl: Path,
@@ -314,17 +377,24 @@ def correlate_with_commits(
 
     for spec in specs:
         # Match commits by description containing the spec slug (best-effort).
+        # E spec HIGH-6: short slugs require word-boundary match.
         slug = _spec_slug(spec.spec_path)
         matched = []
         all_changed_files: list[str] = []
+        any_matched_event_lacks_changed_files = False
         for evt in events:
-            desc = (evt.get("description") or "").lower()
+            desc = evt.get("description") or ""
             commit = evt.get("commit") or ""
-            if slug and slug in desc:
-                matched.append(commit)
-                cf = evt.get("changed_files") or []
-                if isinstance(cf, list):
-                    all_changed_files.extend(cf)
+            if not _slug_matches_description(slug, desc):
+                continue
+            matched.append(commit)
+            cf = evt.get("changed_files")
+            if isinstance(cf, list) and cf:
+                all_changed_files.extend(cf)
+            else:
+                # E spec HIGH-5 fallback: at least one matched event has
+                # no changed_files → use "unknown" marker for tested status.
+                any_matched_event_lacks_changed_files = True
 
         # Drift signal: spec has no boundaries declared, but at least one
         # matched commit touches IO files.
@@ -362,7 +432,30 @@ def correlate_with_commits(
         boundary_results = []
         for b in spec.boundaries:
             token = _producer_bare_name(b.producer)
-            tested = _scan_test_files_for_producer(project_root, token) if project_root else False
+            # E spec HIGH-5: scope round-trip evidence to test files in
+            # the matched commit's changed_files. If we have those, only
+            # those count. If we DON'T (legacy events), fall back to the
+            # full-walk and mark the result "unknown" so consumers know
+            # the audit signal is degraded.
+            if matched and all_changed_files:
+                tested: bool | str = _scan_changed_test_files_for_producer(
+                    project_root, all_changed_files, token
+                ) if project_root else False
+            elif matched and any_matched_event_lacks_changed_files:
+                # Fallback path. Run the legacy full-walk for the value
+                # but expose the result as "unknown" rather than False.
+                _ = (
+                    _scan_test_files_for_producer(project_root, token)
+                    if project_root else False
+                )
+                tested = "unknown"
+            else:
+                # No matched commits at all (or no project_root) — old
+                # behavior: full-walk.
+                tested = (
+                    _scan_test_files_for_producer(project_root, token)
+                    if project_root else False
+                )
             boundary_results.append(BoundaryResult(boundary=b, round_trip_tested=tested))
 
         rows.append(CoverageRow(
@@ -382,8 +475,15 @@ def correlate_with_commits(
 
 def render_json(rows: list[CoverageRow]) -> dict:
     total_boundaries = sum(len(r.boundary_results) for r in rows)
+    # E spec HIGH-5: round_trip_tested may be True/False/"unknown".
+    # Only count strictly-True for the headline tested counter.
     tested_boundaries = sum(
-        1 for r in rows for br in r.boundary_results if br.round_trip_tested
+        1 for r in rows for br in r.boundary_results
+        if br.round_trip_tested is True
+    )
+    unknown_boundaries = sum(
+        1 for r in rows for br in r.boundary_results
+        if br.round_trip_tested == "unknown"
     )
     drift_count = sum(1 for r in rows if r.drift_signal)
     return {
@@ -392,6 +492,7 @@ def render_json(rows: list[CoverageRow]) -> dict:
             "specs_with_boundaries": sum(1 for r in rows if r.boundary_results),
             "total_boundaries": total_boundaries,
             "round_trip_tested": tested_boundaries,
+            "round_trip_unknown": unknown_boundaries,
             "drift_signals": drift_count,
         },
         "rows": [r.to_dict() for r in rows],
@@ -418,10 +519,18 @@ def render_markdown(rows: list[CoverageRow]) -> str:
     for r in rows:
         spec_name = r.spec_path.name
         bcount = len(r.boundary_results)
-        tested = sum(1 for br in r.boundary_results if br.round_trip_tested)
+        tested = sum(1 for br in r.boundary_results if br.round_trip_tested is True)
+        unknown = sum(
+            1 for br in r.boundary_results if br.round_trip_tested == "unknown"
+        )
         commit_short = ", ".join(c[:7] for c in r.commits[:3]) if r.commits else "—"
         drift_marker = "DRIFT" if r.drift_signal else ""
-        out.append(f"| `{spec_name}` | {bcount} | {tested}/{bcount} | {commit_short} | {drift_marker} |")
+        tested_cell = f"{tested}/{bcount}"
+        if unknown:
+            tested_cell += f" ({unknown} unknown)"
+        out.append(
+            f"| `{spec_name}` | {bcount} | {tested_cell} | {commit_short} | {drift_marker} |"
+        )
     out.append("")
 
     drift_rows = [r for r in rows if r.drift_signal]
@@ -448,7 +557,12 @@ def render_markdown(rows: list[CoverageRow]) -> str:
         out.append("| Producer | Consumer | Format | Round-trip Tested |")
         out.append("|---|---|---|---|")
         for br in r.boundary_results:
-            tested_str = "yes" if br.round_trip_tested else "no"
+            if br.round_trip_tested is True:
+                tested_str = "yes"
+            elif br.round_trip_tested == "unknown":
+                tested_str = "unknown"
+            else:
+                tested_str = "no"
             out.append(
                 f"| {br.boundary.producer} | {br.boundary.consumer} | "
                 f"{br.boundary.format} | {tested_str} |"
@@ -460,6 +574,36 @@ def render_markdown(rows: list[CoverageRow]) -> str:
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
+
+def merge_into_test_results(
+    json_obj: dict,
+    target_path: Path,
+) -> None:
+    """Atomically merge the report JSON into shipwright_test_results.json.
+
+    Reads the existing file (if any), sets the
+    `boundary_coverage_report` key to `json_obj`, and writes back via
+    `tmp.replace(target)` for atomicity. Other top-level keys are
+    preserved.
+
+    E spec HIGH-4: callers can use this in lieu of the standalone
+    `merge_boundary_coverage.py` helper.
+    """
+    if target_path.exists():
+        try:
+            existing = json.loads(target_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            existing = {}
+    else:
+        existing = {}
+    if not isinstance(existing, dict):
+        existing = {}
+    existing["boundary_coverage_report"] = json_obj
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = target_path.with_suffix(target_path.suffix + ".tmp")
+    tmp_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
+    tmp_path.replace(target_path)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -478,6 +622,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Print JSON to stdout (in addition to or instead of file output).",
     )
+    parser.add_argument(
+        "--merge-into",
+        type=Path,
+        default=None,
+        help="Atomically merge the JSON report into the given file under the "
+             "'boundary_coverage_report' key. Other top-level keys are "
+             "preserved. Typical target: shipwright_test_results.json.",
+    )
     args = parser.parse_args(argv)
 
     project_root = args.project_root.resolve()
@@ -494,7 +646,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.output_json:
         args.output_json.parent.mkdir(parents=True, exist_ok=True)
         args.output_json.write_text(json.dumps(json_obj, indent=2), encoding="utf-8")
-    if args.print_json or (not args.output_markdown and not args.output_json):
+    if args.merge_into:
+        merge_into_test_results(json_obj, args.merge_into)
+    if args.print_json or (
+        not args.output_markdown
+        and not args.output_json
+        and not args.merge_into
+    ):
         print(json.dumps(json_obj, indent=2))
     return 0
 

@@ -32,7 +32,8 @@ Design notes:
 from __future__ import annotations
 
 import json
-import re
+import subprocess
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -130,13 +131,64 @@ def write_role(
     }
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(
-        json.dumps(payload, indent=2, ensure_ascii=False),
+    # Race-safe tmp file: use NamedTemporaryFile with delete=False so two
+    # near-concurrent writes (e.g. canonical session + probe-script run)
+    # cannot clobber each other's tmp file. Pattern is race-safe by
+    # construction — each call gets a unique tmp name in the same dir.
+    # See E spec MEDIUM-C2 for the original fixed-name issue.
+    tmp_handle = tempfile.NamedTemporaryFile(
+        delete=False,
+        dir=str(path.parent),
+        prefix=".iterate_session_role.",
+        suffix=".tmp",
+        mode="w",
         encoding="utf-8",
     )
-    tmp.replace(path)
+    try:
+        json.dump(payload, tmp_handle, indent=2, ensure_ascii=False)
+        tmp_handle.flush()
+    finally:
+        tmp_handle.close()
+    Path(tmp_handle.name).replace(path)
     return payload
+
+
+def _resolve_main_repo_root(project_root: Path) -> Path:
+    """Resolve the canonical main-repo root for `project_root`.
+
+    When `project_root` is a worktree directory, `.git` is a *file*
+    pointing at `<main>/.git/worktrees/<slug>`. `git rev-parse
+    --git-common-dir` consistently returns the main `.git` directory —
+    its parent is the main repo root. When `project_root` is already
+    the main repo (or git is unavailable), returns `project_root`
+    unchanged so the existing single-repo behavior is preserved.
+
+    See E spec HIGH-2 for the worktree-blindness bug this fixes.
+    """
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            cwd=str(project_root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except (OSError, ValueError):
+        return project_root
+    if proc.returncode != 0:
+        return project_root
+    common_dir = proc.stdout.strip()
+    if not common_dir:
+        return project_root
+    common_path = Path(common_dir)
+    if not common_path.is_absolute():
+        common_path = (project_root / common_path).resolve()
+    # `--git-common-dir` returns the .git directory of the main repo.
+    # Its parent is the main repo root. Defensive guard: if the path
+    # exists and ends with ".git", return its parent; else fall back.
+    if common_path.name == ".git":
+        return common_path.parent
+    return project_root
 
 
 def detect_parallel_sessions(
@@ -144,9 +196,15 @@ def detect_parallel_sessions(
 ) -> list[dict[str, Any]]:
     """Return all session-role markers visible from `project_root`.
 
-    Scans:
-    1. `<project_root>/.shipwright/iterate_session_role.json` (main repo)
-    2. `<project_root>/.worktrees/*/.shipwright/iterate_session_role.json`
+    Resolves the canonical main-repo root via `git rev-parse
+    --git-common-dir` first, so callers from inside a worktree see
+    BOTH the main repo's marker AND every sibling-worktree marker.
+    Falls back to treating `project_root` as the main repo if git is
+    unavailable or returns no common-dir.
+
+    Scans (anchored on the resolved main repo root):
+    1. `<main>/.shipwright/iterate_session_role.json` (main repo)
+    2. `<main>/.worktrees/*/.shipwright/iterate_session_role.json`
        (per-worktree)
 
     Each entry is the marker dict augmented with a synthetic
@@ -157,19 +215,23 @@ def detect_parallel_sessions(
     designation prompt.
     """
     project_root = Path(project_root)
+    # E HIGH-2: resolve canonical repo root so worktree-cwd callers see
+    # the main marker, not just their own.
+    main_root = _resolve_main_repo_root(project_root)
+
     found: list[dict[str, Any]] = []
 
-    # Main repo marker.
-    main = read_role(project_root)
+    # Main repo marker (anchored on resolved main root).
+    main = read_role(main_root)
     if main is not None:
         entry = dict(main)
         entry["_marker_path"] = (
-            (project_root / MARKER_RELPATH).resolve().as_posix()
+            (main_root / MARKER_RELPATH).resolve().as_posix()
         )
         found.append(entry)
 
     # Worktree markers — `.worktrees/<slug>/.shipwright/...`.
-    worktrees_dir = project_root / ".worktrees"
+    worktrees_dir = main_root / ".worktrees"
     if worktrees_dir.is_dir():
         for sub in sorted(worktrees_dir.iterdir()):
             if not sub.is_dir():

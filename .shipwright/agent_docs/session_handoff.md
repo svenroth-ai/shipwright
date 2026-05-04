@@ -1,35 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-03-skill-hardening-c-multi-session-discipline"
+run_id: "iterate-2026-05-03-skill-hardening-e-review-driven-hardening"
 phase: "iterate"
-reason: "iterate: multi-session discipline (ADR-026)"
-timestamp: "2026-05-03T20:29:28.543673+00:00"
+reason: "iterate: review-driven hardening (ADR-028)"
+timestamp: "2026-05-04T05:41:33.539045+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-03 20:29:28 UTC
+> Auto-generated 2026-05-04 05:41:33 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-03 20:29:28 UTC
-- **Reason**: iterate: multi-session discipline (ADR-026)
+- **Timestamp**: 2026-05-04 05:41:33 UTC
+- **Reason**: iterate: review-driven hardening (ADR-028)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-03-skill-hardening-b-confidence-calibration
-- **Date**: 2026-05-03T20:13:52.417214Z
-- **Type**: feature
-- **Complexity**: small
-- **Branch**: iterate/skill-hardening-B-confidence-calibration
-- **ADR**: ADR-025
+- **Run ID**: iterate-2026-05-03-skill-hardening-e-review-driven-hardening
+- **Date**: 2026-05-04T05:41:15.140511Z
+- **Type**: bug
+- **Complexity**: medium
+- **Branch**: iterate/skill-hardening-E-review-driven-hardening
+- **ADR**: ADR-028
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/iterate-skill-hardening/sub-iterates/B-confidence-calibration-phase.md
+- **Spec**: .shipwright/planning/iterate/campaigns/iterate-skill-hardening/sub-iterates/E-review-driven-hardening.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/skill-hardening-C-multi-session-discipline
+- **Branch**: iterate/skill-hardening-E-review-driven-hardening
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/skill-hardening-C-multi-session-discipline
-- **Last Commit**: f273766 feat(iterate): confidence calibration phase (ADR-025)
+- **Branch**: iterate/skill-hardening-E-review-driven-hardening
+- **Last Commit**: 07d4ab7 chore(campaign): extend iterate-skill-hardening with E + F specs
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,22 +65,22 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-09f2f42c | work_completed | iterate (iterate skill: confidence calibration phase (Sub-Iterate B, campaign iterate-skill-hardening)) | 2026-05-03 |
-| evt-0d5519f0 | work_completed | iterate (Sub-Iterate A: Boundary Tests Foundation (campaign iterate-skill-hardening)) | 2026-05-03 |
+| evt-c4ae8ef7 | work_completed | iterate (test plugin: boundary coverage report (campaign iterate-skill-hardening Sub-Iterate D, ADR-027)) | 2026-05-03 |
 | evt-530b0980 | work_completed | iterate (changelog MSYS path-mangling linter) | 2026-05-03 |
 | evt-e67c7be3 | phase_completed | changelog | 2026-05-03 |
 | evt-ca7b7d64 | work_completed | iterate (hooks.json quoting (deferred from ADR-020)) | 2026-05-03 |
+| evt-baaf4b0e | work_completed | iterate (iterate fix: parse_env_file inline-comment stripping + lib copy sync) | 2026-05-03 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 10
-- **Last iterate**: feature — iterate skill: confidence calibration phase (Sub-Iterate B, campaign iterate-skill-hardening) (2026-05-03)
+- **Total work events**: 9
+- **Last iterate**: feature — test plugin: boundary coverage report (campaign iterate-skill-hardening Sub-Iterate D, ADR-027) (2026-05-03)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
 
-### ADR-026: Multi-Session Discipline (ADR-026)
+### ADR-028: Review-Driven Hardening (campaign iterate-skill-hardening Sub-Iterate E)
 - **Date:** 2026-05-03
-- **Section:** Iterate — feature: multi-session discipline (campaign iterate-skill-hardening Sub-Iterate C)
-- **Context:** Two Claude Code sessions running in parallel against the same repo (main + .worktrees/<slug>) can race commits/pushes. The 2026-05-03 env-iterate demonstrated this: a non-canonical commit was created locally even though the canonical side had already announced it would integrate the fix. Phrasing read as open inv
+- **Section:** Iterate / Test / Shared — fix: 6 HIGH + 6 MEDIUM findings from per-sub-iterate code reviews + external_review.py + holistic external review on the campaign
+- **Context:** After A/B/C/D shipped locally, retroactive code-reviewer subagents (4×) + `external_review.py --mode code` (4×) + 1 holistic external review surfaced 6 HIGH findings (4 empirically verified by reading shipped code

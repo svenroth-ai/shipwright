@@ -97,20 +97,30 @@ RISK_TAXONOMY = {
         # iterate's BOM + inline-comment bugs that survived 47 unit tests
         # AND two external reviews). Diff-driven detection uses
         # IO_BOUNDARY_FILE_PATTERNS via is_io_boundary_change().
-        # Prompt keywords cover the common verbs operators use when
-        # describing producer/consumer changes.
+        #
+        # E spec MEDIUM-A1: anchored / specific patterns only. The original
+        # bare verb prefixes (`parse_`, `load_`, `write_`, `\bdump\b`,
+        # `serialize`, `write_text`, `read_text`) fired on unrelated
+        # prompts ("rewrite the load_user route", "improve dump utility",
+        # "add parse_query helper", "rewrite the page header"). Replaced
+        # with anchored function names + stdlib calls + concrete file
+        # patterns. The diff-driven `is_io_boundary_change()` path-match
+        # remains the primary detection — these patterns only cover
+        # prompt-text classification.
         "patterns": [
-            r"\.env",
-            r"parse_env",
-            r"hooks\.json",
-            r"settings\.json",
+            # Concrete file patterns (still tight).
+            r"\.env\b",
+            r"\bhooks\.json\b",
+            r"\bsettings\.json\b",
             r"_config\.json",
             r"_state\.json",
-            r"json\.dump", r"json\.load",
-            r"yaml\.dump", r"yaml\.safe_load",
-            r"write_text", r"read_text",
-            r"\bdump\b", r"\bserialize\b",
-            r"parse_", r"load_", r"write_",
+            # Anchored function names (specific, not verb prefixes).
+            r"\bparse_env\b",
+            # Specific stdlib calls (require the module qualifier).
+            r"\bjson\.dump(s)?\b",
+            r"\bjson\.loads?\b",
+            r"\byaml\.dump\b",
+            r"\byaml\.safe_load\b",
         ],
         "min_complexity": "small",
         "enforces": ["round_trip_test"],
@@ -172,12 +182,17 @@ def is_io_boundary_change(changed_files: list[str] | None) -> bool:
     Diff-driven detection — caller passes `git diff --name-only` output.
     Path normalization handles Windows backslashes.
 
-    Note: Only path-match detection is implemented in this iterate.
-    AST-pair detection (writer + reader living in different files)
-    is documented as a future enhancement in classify_complexity.py and
-    in references/round-trip-tests.md. Empirically, path-match catches
-    every known real-world boundary bug (the env-iterate BOM/comment
-    bugs both touched .env files in the diff).
+    # DEFERRED — AST-pair detection (writer + reader living in different
+    # .py files within the same diff) is intentionally NOT implemented.
+    # See `.shipwright/planning/iterate/campaigns/iterate-skill-hardening/
+    # sub-iterates/A-boundary-tests-foundation.md` Acceptance Criteria
+    # line 53-60: the original AC text read this as required, but the
+    # Implementation Plan allowed deferral. Per E spec HIGH-1, A's spec
+    # was relabeled `(deferred)` with this rationale: path-match catches
+    # every known real-world boundary bug (the env-iterate BOM + inline-
+    # comment bugs both touched `.env` files in the diff), so the
+    # additional complexity of AST-pair scanning is not justified
+    # empirically. Reactivate when a real-world bug emerges that needs it.
     """
     if not changed_files:
         return False

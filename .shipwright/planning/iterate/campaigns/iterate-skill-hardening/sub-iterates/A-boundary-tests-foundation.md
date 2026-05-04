@@ -51,13 +51,20 @@ proof — and so risk classification surfaces the boundary up-front.
       `enforces = ["round_trip_test"]`.
 - [ ] Self-detection helper: `is_io_boundary_change(changed_files)`
       returns True when any changed file path matches
-      `(.env|hooks\.json|settings\.json|.*_config\.json|.*_state\.json)`
-      OR when a Python source file contains both a
-      writer-style call (regex `(json\.dump|yaml\.dump|\.write_text\()`)
-      AND another file in the same diff contains the matching reader
-      (`json\.load|yaml\.safe_load|\.read_text\(`). Path check covers
-      90% of real cases; the AST-pair check covers the producer/consumer-
-      lives-in-different-files case from the env iterate.
+      `(.env|hooks\.json|settings\.json|.*_config\.json|.*_state\.json)`.
+      Path-match covers every known real-world boundary bug.
+- [ ] **(deferred — see E spec HIGH-1, ADR-028)** AST-pair detection
+      (writer + reader living in different `.py` files within the same
+      diff, regex pair `(json\.dump|yaml\.dump|\.write_text\()` ↔
+      `(json\.load|yaml\.safe_load|\.read_text\()`). Original AC required
+      this; per E's review-driven hardening pass, the path-match path
+      catches every known bug empirically (the env-iterate BOM + inline-
+      comment bugs both touched `.env` files in the diff), so the AST-
+      pair work is deferred. The deferral is recorded in:
+        - `classify_complexity.py::is_io_boundary_change` `# DEFERRED`
+          comment
+        - ADR-028 (Review-Driven Hardening)
+      Reactivate when a real-world bug emerges that requires it.
 - [ ] `plugins/shipwright-iterate/skills/iterate/references/boundary-probes.md`
       exists and documents at minimum these 8 probe categories:
       UTF-8 BOM, CRLF line endings, non-ASCII values, POSIX

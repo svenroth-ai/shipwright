@@ -50,8 +50,16 @@ section is itself a finding).
       - `correlate_with_commits(specs, events_jsonl) -> list[CoverageRow]`
         — joins each spec to commits + test files added.
       - `render_markdown(rows) -> str` + `render_json(rows) -> dict`.
-      - CLI:
-        `uv run boundary_coverage_report.py --project-root . --output {file|json}`.
+      - CLI (shipped, **richer than the original AC** per E spec HIGH-3):
+        `uv run boundary_coverage_report.py --project-root . \
+            [--output-markdown PATH] [--output-json PATH] [--print-json] \
+            [--merge-into PATH]`.
+        The original `--output {file|json}` mode-selector idea was
+        superseded by separate `--output-markdown` / `--output-json`
+        flags (less ambiguous; supports writing both at once) plus
+        `--print-json` for pipe-friendly stdout. E added `--merge-into`
+        for the single-step merge into `shipwright_test_results.json`
+        (HIGH-4).
 - [ ] `plugins/shipwright-test/skills/test/SKILL.md` (or whichever
       file holds the test skill's flag list) gains
       `--report-boundary-coverage` flag documentation pointing at the

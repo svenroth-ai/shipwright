@@ -412,3 +412,334 @@ class TestCLI:
         assert "rows" in data
         assert any(b["producer"] == "`producer_a.py::write`"
                    for r in data["rows"] for b in r["boundaries"])
+
+
+# ---------------------------------------------------------------------------
+# E spec HIGH-6 — slug correlation collision protection
+# ---------------------------------------------------------------------------
+
+
+class TestSlugCollisionProtection:
+    """Short stems (`r1.md`, `A.md`) must not match arbitrary commit text."""
+
+    def test_short_stem_does_not_collide_with_unrelated_commit(self, tmp_path):
+        """A spec named `r1.md` must NOT match commits where 'r1' appears
+        only as a substring (e.g. inside a hash, version string, or path).
+        """
+        planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
+        planning_root.mkdir(parents=True)
+        spec_text = """\
+# r1
+## Affected Boundaries
+
+| Producer | Consumer | Format |
+|---|---|---|
+| my_producer | my_consumer | JSON |
+"""
+        _write_spec(planning_root, "r1.md", spec_text)
+        events_path = _make_events_file(tmp_path, [
+            {
+                "v": 1,
+                "id": "evt-1",
+                "type": "work_completed",
+                "source": "iterate",
+                "commit": "deadbeef",
+                # Description contains "r1" as substring of "fetchr1" — pure collision.
+                "description": "tweak hashr1 helper for migration",
+                "changed_files": ["src/parser.py"],
+            }
+        ])
+        specs = bcr.scan_specs(tmp_path)
+        rows = bcr.correlate_with_commits(specs, events_path, project_root=tmp_path)
+        # Find the r1.md row.
+        r1_row = next(r for r in rows if r.spec_path.name == "r1.md")
+        # The spec must NOT have falsely matched the unrelated commit.
+        assert "deadbeef" not in r1_row.commits, (
+            f"Short slug 'r1' falsely matched unrelated commit "
+            f"description that only contains it as a substring. "
+            f"matched={r1_row.commits!r}"
+        )
+
+    def test_short_stem_matches_with_word_boundary(self, tmp_path):
+        """A spec named `r1.md` matches commit 'iterate r1: do X' (word boundary)."""
+        planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
+        planning_root.mkdir(parents=True)
+        spec_text = """\
+# r1
+## Affected Boundaries
+
+| Producer | Consumer | Format |
+|---|---|---|
+| my_producer | my_consumer | JSON |
+"""
+        _write_spec(planning_root, "r1.md", spec_text)
+        events_path = _make_events_file(tmp_path, [
+            {
+                "v": 1,
+                "id": "evt-1",
+                "type": "work_completed",
+                "source": "iterate",
+                "commit": "cafebabe",
+                "description": "iterate r1: do X",
+                "changed_files": ["src/x.py"],
+            }
+        ])
+        specs = bcr.scan_specs(tmp_path)
+        rows = bcr.correlate_with_commits(specs, events_path, project_root=tmp_path)
+        r1_row = next(r for r in rows if r.spec_path.name == "r1.md")
+        assert "cafebabe" in r1_row.commits, (
+            "Short slug should match when surrounded by word boundaries"
+        )
+
+    def test_long_stem_keeps_substring_behavior(self, tmp_path):
+        """For len >= 8, plain substring still works (high specificity)."""
+        planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
+        planning_root.mkdir(parents=True)
+        spec_text = """\
+# very-specific-feature-name
+## Affected Boundaries
+
+| Producer | Consumer | Format |
+|---|---|---|
+| p | c | JSON |
+"""
+        _write_spec(planning_root, "very-specific-feature-name.md", spec_text)
+        events_path = _make_events_file(tmp_path, [
+            {
+                "v": 1,
+                "id": "evt-1",
+                "type": "work_completed",
+                "commit": "abc1234",
+                # Embed the slug inside a longer description.
+                "description": "Wired very-specific-feature-name end-to-end",
+                "changed_files": [],
+            }
+        ])
+        specs = bcr.scan_specs(tmp_path)
+        rows = bcr.correlate_with_commits(specs, events_path, project_root=tmp_path)
+        long_row = next(
+            r for r in rows if r.spec_path.name == "very-specific-feature-name.md"
+        )
+        assert "abc1234" in long_row.commits
+
+
+# ---------------------------------------------------------------------------
+# E spec HIGH-5 — round-trip heuristic scoping
+# ---------------------------------------------------------------------------
+
+
+class TestRoundTripScoping:
+    """Old unrelated tests mentioning a producer name must NOT mark the
+    boundary `tested=True`. The heuristic should scope to the test files
+    that actually appeared in the matched commit's `changed_files`.
+    """
+
+    def test_unrelated_old_test_does_not_count_as_evidence(self, tmp_path):
+        """An old test from a different feature that happens to mention
+        the producer name must NOT mark `round_trip_tested=True` once we
+        have `changed_files` for the matched commit.
+        """
+        planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
+        planning_root.mkdir(parents=True)
+        spec_text = """\
+# narrow-iterate
+## Affected Boundaries
+
+| Producer | Consumer | Format |
+|---|---|---|
+| my_producer | my_consumer | JSON |
+"""
+        _write_spec(planning_root, "narrow-iterate-feature.md", spec_text)
+
+        # Old unrelated test that happens to mention the producer name
+        # but was NOT added in the matched commit.
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "test_old_unrelated.py").write_text(
+            "# my_producer is mentioned here\n"
+            "def test_unrelated(): pass\n",
+            encoding="utf-8",
+        )
+
+        # Matched commit only changed an unrelated test file.
+        events_path = _make_events_file(tmp_path, [
+            {
+                "v": 1,
+                "id": "evt-1",
+                "type": "work_completed",
+                "commit": "deadbeef",
+                "description": "narrow-iterate-feature commit",
+                "changed_files": ["tests/test_some_other.py"],
+            }
+        ])
+
+        specs = bcr.scan_specs(tmp_path)
+        rows = bcr.correlate_with_commits(specs, events_path, project_root=tmp_path)
+        narrow_row = next(
+            r for r in rows if r.spec_path.name == "narrow-iterate-feature.md"
+        )
+        # The unrelated old test must not count.
+        assert all(
+            not br.round_trip_tested for br in narrow_row.boundary_results
+        ), "Unrelated old test must not mark round_trip_tested=True"
+
+    def test_relevant_changed_test_does_count_as_evidence(self, tmp_path):
+        """A test file that IS in `changed_files` and mentions the
+        producer should count.
+        """
+        planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
+        planning_root.mkdir(parents=True)
+        spec_text = """\
+# narrow-iterate
+## Affected Boundaries
+
+| Producer | Consumer | Format |
+|---|---|---|
+| my_producer | my_consumer | JSON |
+"""
+        _write_spec(planning_root, "narrow-iterate-feature.md", spec_text)
+
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "test_my_producer.py").write_text(
+            "def test_producer_round_trip():\n"
+            "    from x import my_producer\n"
+            "    assert True\n",
+            encoding="utf-8",
+        )
+
+        events_path = _make_events_file(tmp_path, [
+            {
+                "v": 1,
+                "id": "evt-1",
+                "type": "work_completed",
+                "commit": "cafebabe",
+                "description": "narrow-iterate-feature: add round-trip",
+                "changed_files": ["tests/test_my_producer.py"],
+            }
+        ])
+
+        specs = bcr.scan_specs(tmp_path)
+        rows = bcr.correlate_with_commits(specs, events_path, project_root=tmp_path)
+        narrow_row = next(
+            r for r in rows if r.spec_path.name == "narrow-iterate-feature.md"
+        )
+        assert any(
+            br.round_trip_tested for br in narrow_row.boundary_results
+        ), "Relevant changed test should mark round_trip_tested=True"
+
+    def test_missing_changed_files_falls_back_to_unknown_marker(self, tmp_path):
+        """When `changed_files` is missing on the event, the heuristic
+        falls back to the full-walk AND marks the row's tested status
+        as `unknown` to preserve the audit signal.
+        """
+        planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
+        planning_root.mkdir(parents=True)
+        spec_text = """\
+# narrow-iterate-feature
+## Affected Boundaries
+
+| Producer | Consumer | Format |
+|---|---|---|
+| my_producer | my_consumer | JSON |
+"""
+        _write_spec(planning_root, "narrow-iterate-feature.md", spec_text)
+
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "test_old.py").write_text(
+            "# mentions my_producer\n", encoding="utf-8",
+        )
+
+        # Event with NO changed_files key.
+        events_path = _make_events_file(tmp_path, [
+            {
+                "v": 1,
+                "id": "evt-1",
+                "type": "work_completed",
+                "commit": "deadbeef",
+                "description": "narrow-iterate-feature legacy commit",
+            }
+        ])
+
+        specs = bcr.scan_specs(tmp_path)
+        rows = bcr.correlate_with_commits(specs, events_path, project_root=tmp_path)
+        narrow_row = next(
+            r for r in rows if r.spec_path.name == "narrow-iterate-feature.md"
+        )
+        # The render layer must expose this as 'unknown' rather than False.
+        # We accept either a literal "unknown" string or a sentinel; the
+        # CoverageRow.to_dict() output must distinguish unknown from False.
+        d = narrow_row.boundary_results[0].to_dict()
+        assert d.get("round_trip_tested") in ("unknown", None) or d.get("round_trip_tested_unknown"), (
+            f"Missing changed_files must produce 'unknown' marker, got {d!r}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# E spec HIGH-4 — merge_boundary_coverage helper
+# ---------------------------------------------------------------------------
+
+
+class TestMergeIntoFlag:
+    """`boundary_coverage_report.py --merge-into <test_results.json>` merges
+    the JSON output into shipwright_test_results.json#boundary_coverage_report.
+    """
+
+    def test_merge_into_creates_key_in_existing_file(self, tmp_path):
+        planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
+        planning_root.mkdir(parents=True)
+        _write_spec(planning_root, "spec.md", SPEC_WITH_BOUNDARIES)
+
+        # Pre-existing test results file.
+        results_path = tmp_path / "shipwright_test_results.json"
+        results_path.write_text(
+            json.dumps({"existing_key": "preserved"}, indent=2),
+            encoding="utf-8",
+        )
+
+        rc = bcr.main([
+            "--project-root", str(tmp_path),
+            "--merge-into", str(results_path),
+        ])
+        assert rc == 0
+        merged = json.loads(results_path.read_text(encoding="utf-8"))
+        assert merged.get("existing_key") == "preserved"
+        assert "boundary_coverage_report" in merged
+        assert "rows" in merged["boundary_coverage_report"]
+
+    def test_merge_into_creates_file_if_missing(self, tmp_path):
+        planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
+        planning_root.mkdir(parents=True)
+        _write_spec(planning_root, "spec.md", SPEC_WITH_BOUNDARIES)
+
+        results_path = tmp_path / "shipwright_test_results.json"
+        # Note: file does not exist yet.
+
+        rc = bcr.main([
+            "--project-root", str(tmp_path),
+            "--merge-into", str(results_path),
+        ])
+        assert rc == 0
+        assert results_path.exists()
+        merged = json.loads(results_path.read_text(encoding="utf-8"))
+        assert "boundary_coverage_report" in merged
+
+    def test_merge_into_idempotent(self, tmp_path):
+        """Running twice produces the same final shape (last write wins)."""
+        planning_root = tmp_path / ".shipwright" / "planning" / "iterate"
+        planning_root.mkdir(parents=True)
+        _write_spec(planning_root, "spec.md", SPEC_WITH_BOUNDARIES)
+
+        results_path = tmp_path / "shipwright_test_results.json"
+        bcr.main([
+            "--project-root", str(tmp_path),
+            "--merge-into", str(results_path),
+        ])
+        first = json.loads(results_path.read_text(encoding="utf-8"))
+        bcr.main([
+            "--project-root", str(tmp_path),
+            "--merge-into", str(results_path),
+        ])
+        second = json.loads(results_path.read_text(encoding="utf-8"))
+        assert first["boundary_coverage_report"] == second["boundary_coverage_report"]

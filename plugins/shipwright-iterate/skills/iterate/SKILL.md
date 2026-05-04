@@ -207,15 +207,13 @@ one with commits/pushes — see `feedback_parallel_session_source_of_truth.md`.
 
 1. Scan for active session-role markers:
    ```bash
-   uv run python -c "
-   from pathlib import Path; import sys
-   sys.path.insert(0, 'shared/scripts/lib')
-   from session_role import detect_parallel_sessions
-   import json; print(json.dumps(detect_parallel_sessions('.'), indent=2))
-   "
+   uv run "{shared_root}/scripts/tools/detect_parallel_sessions.py" \
+     --project-root .
    ```
    The helper reads `.shipwright/iterate_session_role.json` in the main
    repo plus every `.worktrees/<slug>/.shipwright/iterate_session_role.json`.
+   It resolves the canonical main-repo root via `git rev-parse
+   --git-common-dir` first, so it is safe to invoke from a worktree.
 
 2. **0 markers** → fresh single-session run; no action.
 
@@ -230,16 +228,12 @@ one with commits/pushes — see `feedback_parallel_session_source_of_truth.md`.
 
 5. Persist the answer:
    ```bash
-   uv run python -c "
-   from pathlib import Path; import sys
-   sys.path.insert(0, 'shared/scripts/lib')
-   from session_role import write_role
-   import os
-   write_role('.', role='<choice>',
-              session_id=os.environ.get('SHIPWRIGHT_SESSION_ID', ''),
-              worktree_path=str(Path.cwd().resolve()),
-              notes='<optional>')
-   "
+   uv run "{shared_root}/scripts/tools/write_session_role.py" \
+     --project-root . \
+     --role <canonical|secondary> \
+     --session-id "$SHIPWRIGHT_SESSION_ID" \
+     --worktree-path "$(pwd)" \
+     --notes "<optional>"
    ```
 
 The marker's role is consulted at F11 by `check_session_role.py` —
@@ -435,7 +429,7 @@ One authoritative list, referenced everywhere in this skill.
 | `cross_split` | changes span 2+ planning splits | medium | full review + full test suite |
 | `touches_public_api` | API route handlers, exported types | small | mandatory review |
 | `touches_build` | `package.json`, `*-lock.*`, `next.config.*`, `vite.config.*`, `tailwind.config.*`, `webpack.config.*`, `rollup.config.*`, `tsconfig.json` | small | performance test layer (Lighthouse + bundle gate via /shipwright-test Step 3.8) |
-| `touches_io_boundary` | `.env*`, `hooks.json`, `settings.json`, `*_config.json`, `*_state.json`; or producer/consumer keywords (`parse_`, `load_`, `write_`, `json.dump`, `yaml.dump`) | small | round-trip test (Boundary Probe sub-step in Build TDD — see `references/boundary-probes.md` + `references/round-trip-tests.md`) |
+| `touches_io_boundary` | `.env*`, `hooks.json`, `settings.json`, `*_config.json`, `*_state.json`; or anchored producer/consumer keywords (`parse_env`, `json.dump(s)?`, `json.load(s)?`, `yaml.dump`, `yaml.safe_load`) | small | round-trip test (Boundary Probe sub-step in Build TDD — see `references/boundary-probes.md` + `references/round-trip-tests.md`) |
 
 Note: "touches_db" (ordinary query/model edits without schema changes) is NOT a risk flag.
 
@@ -452,7 +446,7 @@ Lighthouse, no build artifacts → skip bundle).
 |---|---|---|
 | **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON, iterate_history, Confidence Calibration (medium+) | Never skippable |
 | **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations), Boundary Probe (when `touches_io_boundary`), Confidence Calibration (small with `touches_io_boundary`) | Only with explicit risk acknowledgment |
-| **Advisory** | Design check, mini-plan, design fidelity, E2E update, external LLM review, release prompt | Freely skippable |
+| **Advisory** | Design check, mini-plan, design fidelity, E2E update, external LLM review, release prompt, Confidence Calibration (trivial / small without `touches_io_boundary`) | Freely skippable |
 | **Complexity-gated** | Iterate spec, context scan depth | Adjustable via "make it medium/small" |
 
 ---
@@ -1199,12 +1193,20 @@ only to `shipwright_events.jsonl` (gitignored in every Shipwright profile),
 so running it post-commit produces no tracked-file drift.
 
 ```bash
+# Compute changed_files for the new commit (vs the merge base) so D's
+# boundary drift detection (`is_io_boundary_change`) and HIGH-5's
+# round-trip heuristic scoping have a real list to consume.
+# E spec MEDIUM-D1: every work_completed event SHOULD record this field.
+prev=$(git merge-base HEAD "$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo main)")
+changed=$(git diff --name-only "${prev}..HEAD" | tr '\n' ',' | sed 's/,$//')
+
 uv run "{shared_root}/scripts/tools/record_event.py" \
   --project-root "{project_root}" \
   --type work_completed --source iterate \
   --intent {feature|change|bug} \
   --description "{short_description}" \
   --commit "$(git rev-parse HEAD)" \
+  --changed-files "${changed}" \
   --affected-frs "{comma_separated_FRs}" \
   --tests-passed {N} --tests-total {N} \
   --e2e-run {true|false} \

@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-05-03T20:29:28Z
-Total commits: 561
+Generated: 2026-05-04T05:41:33Z
+Total commits: 565
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 203
+    "feat" : 205
     "fix" : 150
     "docs" : 87
-    "chore" : 70
+    "chore" : 72
     "refactor" : 32
     "test" : 12
     "other" : 7
@@ -18,10 +18,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 203 commits
+### Features (feat) — 205 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-03 | test | boundary coverage report (ADR-027) | 216f8b3f5f2b |
+| 2026-05-03 | iterate | multi-session discipline (ADR-026) | 41cef18d6171 |
 | 2026-05-03 | iterate | confidence calibration phase (ADR-025) | f27376626fda |
 | 2026-05-03 | iterate | boundary tests foundation (ADR-024) | ba9874506700 |
 | 2026-05-03 | adopt | scaffold .env.local with profile + framework keys (ADR-021) | 995300862e93 |
@@ -473,10 +475,12 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Chores (chore) — 70 commits
+### Chores (chore) — 72 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-04 | campaign | extend iterate-skill-hardening with E + F specs | 07d4ab7e7fe2 |
+| 2026-05-03 | campaign | finalize iterate-skill-hardening status + event log | ed61254a65aa |
 | 2026-05-03 | campaign | init iterate-skill-hardening | 70682f99cd3c |
 | 2026-05-03 | iterate-msys-linter | post-F6 housekeeping (F7 event for ADR-023) | dd100c05b830 |
 | 2026-05-03 | release | post-tag canon completion for v0.15.0 | ed4b076571b4 |
@@ -618,7 +622,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 561 |
+| Total commits | 565 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 561 |
+| Human-authored commits | 565 |
 

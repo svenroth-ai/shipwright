@@ -87,6 +87,45 @@ def generate_event_id() -> str:
     return f"evt-{uuid4().hex[:8]}"
 
 
+def _parse_changed_files(raw: str) -> list[str]:
+    """Parse the `--changed-files` argument.
+
+    Accepts either:
+      - A JSON array literal:  '["a.py","b.py"]'
+      - A comma-separated list: 'a.py,b.py'
+      - A newline-separated list (e.g. from `git diff --name-only` piped
+        through `tr '\\n' ','`): one path per line.
+
+    Empty / whitespace-only entries are dropped. Backslashes are
+    normalized to forward slashes so cross-platform consumers
+    (`is_io_boundary_change`) see a uniform shape.
+    """
+    if not raw:
+        return []
+    raw = raw.strip()
+    # JSON-array form.
+    if raw.startswith("[") and raw.endswith("]"):
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, list):
+                return [
+                    str(p).replace("\\", "/").strip()
+                    for p in parsed
+                    if str(p).strip()
+                ]
+        except json.JSONDecodeError:
+            # Fall through to comma-split below.
+            pass
+    # Comma- or newline-separated.
+    parts: list[str] = []
+    for line in raw.replace("\r", "").splitlines():
+        for chunk in line.split(","):
+            chunk = chunk.strip()
+            if chunk:
+                parts.append(chunk.replace("\\", "/"))
+    return parts
+
+
 def read_events(project_root: Path) -> list[dict]:
     """Tolerant reader — skips corrupt lines instead of crashing."""
     path = project_root / EVENT_FILE
@@ -194,6 +233,11 @@ def build_event(args: argparse.Namespace) -> dict:
             event["spec_updated"] = args.spec_updated
         if args.adr_id:
             event["adr_id"] = args.adr_id
+        # E spec MEDIUM-D1: changed_files is required by D's drift detection
+        # (`is_io_boundary_change`) and HIGH-5's round-trip heuristic
+        # scoping. Accept either a comma-separated string or a JSON array.
+        if args.changed_files:
+            event["changed_files"] = _parse_changed_files(args.changed_files)
 
     elif args.type in ("phase_started", "phase_completed"):
         event["phase"] = args.phase
@@ -294,6 +338,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--new-frs", help="Comma-separated new FR IDs")
     p.add_argument("--spec-updated", help="Path to updated spec file")
     p.add_argument("--adr-id", help="ADR reference (e.g. ADR-055)")
+    p.add_argument(
+        "--changed-files",
+        help=(
+            "Files actually changed in this commit. Required by D's "
+            "boundary drift detection (E spec MEDIUM-D1). Accepts a JSON "
+            "array literal, comma-separated list, or newline-separated "
+            "list. Typical source: `git diff --name-only ${prev}..${commit}`."
+        ),
+    )
 
     # Tests
     p.add_argument("--tests-passed", type=int, help="Tests passed count")
