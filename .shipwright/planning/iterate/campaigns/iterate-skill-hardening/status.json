@@ -47,11 +47,11 @@
       "id": "E",
       "slug": "review-driven-hardening",
       "spec_path": ".shipwright\\planning\\iterate\\campaigns\\iterate-skill-hardening\\sub-iterates\\E-review-driven-hardening.md",
-      "status": "pending",
-      "commit": null,
-      "branch": null,
-      "tests_passed": null,
-      "tests_total": null
+      "status": "complete",
+      "commit": "5415ed68584d615fc74877507d15865df078be90",
+      "branch": "iterate/skill-hardening-E-review-driven-hardening",
+      "tests_passed": 1539,
+      "tests_total": 1539
     },
     {
       "id": "F",

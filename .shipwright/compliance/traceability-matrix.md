@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-04T05:41:33Z
+Generated: 2026-05-04T06:02:37Z
 
 ## Verification Timeline
 
@@ -15,6 +15,7 @@ Generated: 2026-05-04T05:41:33Z
 | hooks.json quoting (deferred from ADR-020) | iterate | bug | FR-01.01, FR-01.02, FR-01.03 +10 | 13/13 | 6ca369d | 2026-05-03 |
 | changelog MSYS path-mangling linter | iterate | bug |  | 19/19 | a13fd64 | 2026-05-03 |
 | test plugin: boundary coverage report (campaign iterate-skill-hardening Sub-Iterate D, ADR-027) | iterate | feature |  | 19/19 | 216f8b3 | 2026-05-03 |
+| iterate: review-driven hardening (ADR-028 / campaign iterate-skill-hardening Sub-Iterate E) | iterate | bug |  | 1539/1539 | 5415ed6 | 2026-05-04 |
 
 ## Coverage Summary
 
@@ -22,7 +23,7 @@ Generated: 2026-05-04T05:41:33Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 9 |
+| Iterate changes | 10 |
 | Total review findings | 0 |
 | Unresolved findings | 0 |
 

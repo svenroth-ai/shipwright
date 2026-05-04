@@ -31,6 +31,71 @@
               "rationale": { "type": "string" }
             }
           }
+        },
+        "adr": { "type": "string" },
+        "reviews": {
+          "type": "object",
+          "description": "Review-cascade record per ADR-029. Optional for backwards-compat with pre-ADR-029 result.json files; required for runners under the post-ADR-029 contract.",
+          "properties": {
+            "plan": {
+              "type": "object",
+              "description": "External Plan Review (Step 3.5 of sub-iterate-runner contract). Maps to references/iteration-planning.md Step 4.",
+              "required": ["status"],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "skipped_complexity_below_threshold",
+                    "skipped_user_opt_out",
+                    "skipped_config_disabled",
+                    "missing_keys"
+                  ]
+                },
+                "provider": { "type": ["string", "null"] },
+                "findings_count": { "type": "integer", "minimum": 0 },
+                "reason": { "type": "string" }
+              }
+            },
+            "code": {
+              "type": "object",
+              "description": "Internal code-reviewer subagent (Step 3.7a). Runner has no Agent tool, so the subagent is delegated to the orchestrator (campaign mode) or to the parent SKILL.md lifecycle (standalone iterate mode).",
+              "required": ["status"],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "delegated_to_orchestrator",
+                    "delegated_to_skill",
+                    "skipped_diff_below_threshold"
+                  ]
+                },
+                "findings_count": { "type": "integer", "minimum": 0 },
+                "reason": { "type": "string" }
+              }
+            },
+            "external_code": {
+              "type": "object",
+              "description": "External LLM code review cascade (Step 3.7b). Maps to references/iteration-reviews.md 'External Code-Review Cascade'.",
+              "required": ["status"],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "skipped_diff_below_threshold",
+                    "skipped_user_opt_out",
+                    "skipped_config_disabled",
+                    "missing_keys"
+                  ]
+                },
+                "provider": { "type": ["string", "null"] },
+                "findings_count": { "type": "integer", "minimum": 0 },
+                "reason": { "type": "string" }
+              }
+            }
+          }
         }
       },
       "additionalProperties": false

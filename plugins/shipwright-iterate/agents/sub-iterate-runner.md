@@ -58,6 +58,130 @@ Execute the iterate build steps as defined in the sub-iterate spec:
 3. Run tests — all must pass
 4. If tests fail after 3 retries: return failure result
 
+### Step 3.5: External Plan Review (mandatory medium+, ADR-029)
+
+After Build and before Finalization, run the external LLM plan review
+that the SKILL.md Step 4 (External LLM Review) gate requires for
+medium+ iterates. Mirror of `references/iteration-planning.md` Step 4
+flow with Branch A / Branch B / Branch C semantics.
+
+**Skip** when complexity is `trivial` or `small` AND no risk flag from
+the canonical taxonomy is set. Trivial/small without flag are below the
+gate.
+
+**Run** when complexity is `medium` or higher. Procedure:
+
+```bash
+uv run "{shared_root}/scripts/checks/check-external-review-keys.py"
+```
+
+Parse the JSON. Then:
+
+- **Branch A — `available`** (keys present, not user-disabled):
+
+  ```bash
+  uv run "{shared_root}/scripts/tools/external_review.py" \
+    --mode iterate \
+    --plan-file "{mini_plan_path}" \
+    --spec-file "{sub_iterate_spec}" \
+    --plugin-root "{plugin_root}"
+  ```
+
+  Parse `reviews.gemini.feedback` + `reviews.openai.feedback`. Merge
+  high/medium-severity findings into the iterate ADR's
+  `External-Plan-Review-Findings` table. Address before proceeding to
+  Finalization, OR explicitly mark each as `accepted-and-fixed` /
+  `rejected-with-reason` in the ADR.
+
+- **Branch B — `missing_keys`:** runner is autonomous; cannot prompt
+  the operator. Log the gap and proceed; record the opt-out in the
+  iterate ADR with reason `missing_keys`. The campaign orchestrator
+  surfaces this back to the user at campaign-end.
+
+- **Branch C — `user_disabled`:** `shipwright_iterate_config.json` →
+  `external_review.feedback_iterations: 0`. Print a notice and skip.
+  Record `skipped_config_disabled` in the iterate ADR.
+
+Always write the marker via:
+
+```bash
+uv run "{shared_root}/scripts/checks/mark-review-state.py" \
+  --planning-dir "{iterate_planning_dir}" \
+  --review-type iterate \
+  --status "{completed | skipped_user_opt_out | skipped_config_disabled | skipped_complexity_below_threshold}" \
+  --provider "{openrouter | null}" \
+  --findings-count {N}
+```
+
+The `reviews.plan` field in the result-JSON contract (Step 6 / Output)
+records what fired and what was deferred.
+
+### Step 3.7: Code Review Cascade (mandatory medium+ OR risk flag OR diff > 100 LOC, ADR-029)
+
+After Step 3.5 and before Finalization. Mirror of
+`references/iteration-reviews.md` Section "External Code-Review
+Cascade".
+
+**Trigger conditions** (cascade fires if ANY hold):
+
+- Complexity is `medium` or higher, OR
+- Any canonical risk flag is set (`touches_io_boundary`, `touches_auth`,
+  `touches_rls`, `touches_migrations`, `touches_billing`,
+  `touches_shared_infra`, `touches_public_api`, `touches_build`,
+  `cross_split`), OR
+- Diff size > 100 lines (`git diff HEAD~1 | wc -l`).
+
+**Skip** when none of the above hold. Trivial/small + no risk flag +
+diff < 100 LOC may skip the cascade. Self-Review remains the only
+review for those.
+
+**Procedure** when triggered:
+
+1. Internal code-reviewer subagent. The runner has `Read, Write, Edit,
+   Bash, Glob, Grep` tools — no `Agent` tool — so the runner CANNOT
+   spawn the `shipwright-build:code-reviewer` subagent itself. Two
+   options:
+   - **Option A (campaign mode):** the campaign orchestrator spawns
+     the code-reviewer in parallel with the runner, after Build
+     completes; the orchestrator merges findings back into the iterate
+     ADR.
+   - **Option B (standalone iterate mode):** the parent SKILL.md
+     lifecycle Step 8 spawns the code-reviewer.
+   In either case, the runner records `reviews.code` status as
+   `delegated_to_orchestrator` (Option A) or `delegated_to_skill`
+   (Option B) — never `skipped_silently`.
+
+2. External LLM code review:
+
+   ```bash
+   git diff HEAD~1 > /tmp/shipwright-review-diff.txt
+
+   uv run "{shared_root}/scripts/tools/external_review.py" \
+     --mode code \
+     --diff-file /tmp/shipwright-review-diff.txt \
+     --spec-file "{sub_iterate_spec}" \
+     --plugin-root "{plugin_root}"
+   ```
+
+   Parse feedback. Apply high/medium findings before commit, OR mark
+   each `accepted-and-fixed` / `rejected-with-reason` in the iterate
+   ADR's `External-Code-Review-Findings` table. Same disposition
+   pattern as Step 3.5.
+
+3. Write the cascade marker:
+
+   ```bash
+   uv run "{shared_root}/scripts/checks/mark-review-state.py" \
+     --planning-dir "{iterate_planning_dir}" \
+     --review-type code \
+     --status "{completed | skipped_user_opt_out | skipped_config_disabled | skipped_diff_below_threshold}" \
+     --provider "{openrouter | null}" \
+     --findings-count {N}
+   ```
+
+The `reviews.code` and `reviews.external_code` fields in the
+result-JSON contract record what fired and what was deferred.
+
 ### Step 4: Finalization (F0–F7)
 
 Run the standard iterate finalization steps:
@@ -131,9 +255,21 @@ Success:
   "changelog_bullet": "feat(auth): add MFA support",
   "decisions": [
     {"title": "Use TOTP for MFA", "rationale": "Industry standard, no SMS costs"}
-  ]
+  ],
+  "reviews": {
+    "plan": {"status": "completed | skipped_complexity_below_threshold | skipped_user_opt_out | skipped_config_disabled | missing_keys", "provider": "openrouter | null", "findings_count": 0},
+    "code": {"status": "completed | delegated_to_orchestrator | delegated_to_skill | skipped_diff_below_threshold", "findings_count": 0},
+    "external_code": {"status": "completed | skipped_diff_below_threshold | skipped_user_opt_out | skipped_config_disabled | missing_keys", "provider": "openrouter | null", "findings_count": 0}
+  }
 }
 ```
+
+The `reviews` field is **optional** for backwards-compat with
+historical result.json files (A/B/C/D/E in campaign
+`iterate-skill-hardening`), but **required** for any result produced
+under the post-ADR-029 contract: a runner that skipped Step 3.5 / 3.7
+silently is contract-violating, not feature-flagged. Use the explicit
+`skipped_*` values to record what fired and what was deferred.
 
 Failure:
 ```json

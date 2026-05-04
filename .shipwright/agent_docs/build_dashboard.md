@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-04 05:41 UTC | Session: unknown
+> Updated: 2026-05-04 06:02 UTC | Session: unknown
 
-## Recent Changes (9 iterations)
+## Recent Changes (10 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | iterate: review-driven hardening (ADR-028 / campaign iterate-skill-hardening Sub-Iterate E) | 1539/1539 | 5415ed6 |  | 2026-05-04 |
 | feature | test plugin: boundary coverage report (campaign iterate-skill-hardening Sub-Iterate D, ADR-027) | +19 new, 19/19 | 216f8b3 |  | 2026-05-03 |
 | bug | changelog MSYS path-mangling linter | 19/19 | a13fd64 |  | 2026-05-03 |
 | bug | hooks.json quoting (deferred from ADR-020) | 13/13 | 6ca369d | FR-01.01, FR-01.02, FR-01.03 | 2026-05-03 |
@@ -16,7 +17,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-03 | Unit: 1539/1539 | Smoke: skipped | (iterate)
+Last run: 2026-05-04 | Unit: 188/188 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

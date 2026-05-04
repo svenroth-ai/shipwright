@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-05-04T05:41:33Z
-Total commits: 565
+Generated: 2026-05-04T06:02:37Z
+Total commits: 566
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 205
-    "fix" : 150
+    "fix" : 151
     "docs" : 87
     "chore" : 72
     "refactor" : 32
@@ -228,10 +228,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 150 commits
+### Fixes (fix) — 151 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-04 | iterate | review-driven hardening (ADR-028) | 5415ed68584d |
 | 2026-05-03 | changelog | detect Git-Bash MSYS path-mangling in drop bullets (ADR-023) | a13fd64294f3 |
 | 2026-05-03 | env | strip UTF-8 BOM in parse_env_file (Windows Notepad scenario, ADR-021) | 71c47c350763 |
 | 2026-05-03 | hooks | quote ${CLAUDE_PLUGIN_ROOT} in plugins/*/hooks/hooks.json | 6ca369d948c0 |
@@ -622,7 +623,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 565 |
+| Total commits | 566 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 565 |
+| Human-authored commits | 566 |
 

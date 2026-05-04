@@ -782,6 +782,19 @@ When invoked with `--campaign <slug>` and `--autonomous`, run multiple sub-itera
 
 **Flags:** `/shipwright-iterate --campaign <slug> [--autonomous]`
 
+> **Review steps in autonomous-loop briefing (ADR-029).** When briefing a
+> sub-iterate-runner under `--autonomous`, include a reminder that the
+> runner contract mandates **Step 3.5 (External Plan Review)** and
+> **Step 3.7 (Code Review Cascade)** between Build and Finalization for
+> medium+ iterates (Step 3.5) and for medium+ / risk-flag / >100-LOC
+> iterates (Step 3.7). The runner has no `Agent` tool, so the internal
+> code-reviewer subagent is delegated back to the orchestrator (campaign
+> mode) — the orchestrator spawns it in parallel with the runner after
+> Build, then merges findings into the iterate ADR. Skipping these
+> review steps silently is a contract violation under ADR-029; the
+> runner must record `reviews.{plan,code,external_code}.status` in its
+> result-JSON with an explicit `skipped_*` value when applicable.
+
 ### Campaign Setup (interactive, once)
 
 If campaign directory doesn't exist yet:

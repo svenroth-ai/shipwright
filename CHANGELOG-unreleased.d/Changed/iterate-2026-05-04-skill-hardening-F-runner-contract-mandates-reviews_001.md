@@ -1,0 +1,1 @@
+iterate skill: sub-iterate-runner contract now mandates Step 3.5 (External Plan Review, medium+) and Step 3.7 (Code Review Cascade, medium+ OR risk flag OR diff > 100 LOC) between Build and Finalization. Result-JSON gains optional reviews.{plan,code,external_code} field with explicit skipped_* values. Drift-protection test freezes contract structure (ADR-029).
