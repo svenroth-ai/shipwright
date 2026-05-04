@@ -116,6 +116,34 @@ uv run "{shared_root}/scripts/checks/mark-review-state.py" \
 The `reviews.plan` field in the result-JSON contract (Step 6 / Output)
 records what fired and what was deferred.
 
+### Step 3.6: Self-Review (always, ADR-029 follow-up)
+
+After Step 3.5 (External Plan Review) and before Step 3.7 (Code Review
+Cascade). Mirror of `references/iteration-reviews.md` Section
+"Self-Review Checklist".
+
+**Always runs** — independent of complexity. Trivial changes hide
+trivial mistakes; small iterates accumulate.
+
+**Procedure:** walk the canonical 7-item checklist from
+`references/iteration-reviews.md`:
+
+1. Spec Compliance
+2. Error Handling
+3. Security Basics
+4. Test Quality
+5. Performance Basics
+6. Naming & Structure
+7. **Affected Boundaries** (per ADR-024 — were producer/consumer of any
+   changed serialized format identified, AND was a real round-trip
+   probe run? See `references/round-trip-tests.md`.)
+
+For each item: pass or fail + 1-sentence explanation. Fix all failures
+before proceeding to Step 3.7. Output the 7-item block in the iterate
+ADR's "Self-Review" section using the format from
+`references/iteration-reviews.md`. The `reviews.self_review` field in
+the result-JSON contract records what fired.
+
 ### Step 3.7: Code Review Cascade (mandatory medium+ OR risk flag OR diff > 100 LOC, ADR-029)
 
 After Step 3.5 and before Finalization. Mirror of
@@ -181,6 +209,56 @@ review for those.
 
 The `reviews.code` and `reviews.external_code` fields in the
 result-JSON contract record what fired and what was deferred.
+
+### Step 3.8: Confidence Calibration (mandatory medium+ OR touches_io_boundary, ADR-029 follow-up)
+
+After Step 3.7 (Code Review Cascade) and before Step 4 (Finalization).
+Mirror of SKILL.md Step 7.5 — but where SKILL.md Step 7.5 only says
+"populate the spec's Confidence Calibration section", Step 3.8 in the
+runner contract requires **empirical probes**, not just section
+population. The pattern is from
+`references/confidence-anti-patterns.md`: the "are you confident?"
+question is unfalsifiable as written, but answerable as
+"run a probe and report the finding".
+
+**Trigger conditions** (Step 3.8 fires if ANY hold):
+
+- Complexity is `medium` or higher, OR
+- Risk flag `touches_io_boundary` is set, OR
+- The user (or orchestrator) explicitly invokes a calibration probe
+  (e.g. answers "are you confident?" → runner runs probes, never
+  answers "yes" without an empirical anchor).
+
+**Skip** when none of the above hold. Trivial/small + no
+`touches_io_boundary` may skip — Self-Review (Step 3.6) is the only
+review for those.
+
+**Procedure** when triggered:
+
+1. Identify boundaries touched (cross-reference to the iterate-spec's
+   `## Affected Boundaries` section per ADR-024).
+
+2. Run an empirical probe per boundary. Probes must be REAL:
+   - Round-trip probe (producer→file→consumer), per
+     `references/round-trip-tests.md`.
+   - For human-edited formats: BOM, CRLF, non-ASCII, inline-comment,
+     empty value probes per `references/boundary-probes.md`.
+
+3. Apply the asymptote heuristic from
+   `references/confidence-anti-patterns.md`:
+   - If a probe finds a bug → fix → run another probe.
+   - Two consecutive probes with no findings → exhausted; declare
+     the boundary calibrated.
+   - One probe finding a bug + zero further probes is contract
+     violation — the asymptote is not yet reached.
+
+4. Record results in the iterate ADR's "Confidence Calibration"
+   section: probes-run list, findings list, edge-cases-not-probed +
+   why each is acceptable.
+
+The `reviews.confidence_calibration` field in the result-JSON contract
+records what fired, the number of probes, and whether the asymptote
+was reached.
 
 ### Step 4: Finalization (F0–F7)
 
@@ -258,8 +336,10 @@ Success:
   ],
   "reviews": {
     "plan": {"status": "completed | skipped_complexity_below_threshold | skipped_user_opt_out | skipped_config_disabled | missing_keys", "provider": "openrouter | null", "findings_count": 0},
+    "self_review": {"status": "completed", "items_failed": 0, "items_passed": 7},
     "code": {"status": "completed | delegated_to_orchestrator | delegated_to_skill | skipped_diff_below_threshold", "findings_count": 0},
-    "external_code": {"status": "completed | skipped_diff_below_threshold | skipped_user_opt_out | skipped_config_disabled | missing_keys", "provider": "openrouter | null", "findings_count": 0}
+    "external_code": {"status": "completed | skipped_diff_below_threshold | skipped_user_opt_out | skipped_config_disabled | missing_keys", "provider": "openrouter | null", "findings_count": 0},
+    "confidence_calibration": {"status": "completed | skipped_complexity_and_no_io_boundary", "probes_run": 0, "probes_with_findings": 0, "asymptote_reached": true}
   }
 }
 ```

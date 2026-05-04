@@ -57,6 +57,20 @@
                 "reason": { "type": "string" }
               }
             },
+            "self_review": {
+              "type": "object",
+              "description": "Self-Review (Step 3.6 of sub-iterate-runner contract, post-ADR-029 follow-up). Mandatory at every complexity. Maps to references/iteration-reviews.md 7-item Self-Review Checklist (item 7 'Affected Boundaries' from ADR-024).",
+              "required": ["status"],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["completed"]
+                },
+                "items_failed": { "type": "integer", "minimum": 0, "maximum": 7 },
+                "items_passed": { "type": "integer", "minimum": 0, "maximum": 7 },
+                "reason": { "type": "string" }
+              }
+            },
             "code": {
               "type": "object",
               "description": "Internal code-reviewer subagent (Step 3.7a). Runner has no Agent tool, so the subagent is delegated to the orchestrator (campaign mode) or to the parent SKILL.md lifecycle (standalone iterate mode).",
@@ -92,6 +106,24 @@
                 },
                 "provider": { "type": ["string", "null"] },
                 "findings_count": { "type": "integer", "minimum": 0 },
+                "reason": { "type": "string" }
+              }
+            },
+            "confidence_calibration": {
+              "type": "object",
+              "description": "Confidence Calibration (Step 3.8 of sub-iterate-runner contract, post-ADR-029 follow-up). Empirical-probe phase mirroring SKILL.md Step 7.5 + references/confidence-anti-patterns.md asymptote heuristic. Mandatory at medium+ OR when touches_io_boundary is set OR when the user/orchestrator explicitly invokes a calibration probe (e.g. 'are you confident?').",
+              "required": ["status"],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "skipped_complexity_and_no_io_boundary"
+                  ]
+                },
+                "probes_run": { "type": "integer", "minimum": 0 },
+                "probes_with_findings": { "type": "integer", "minimum": 0 },
+                "asymptote_reached": { "type": "boolean" },
                 "reason": { "type": "string" }
               }
             }

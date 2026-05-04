@@ -98,6 +98,38 @@ def test_step_3_5_complexity_gating_documented():
 
 
 # ---------------------------------------------------------------------------
+# Step 3.6: Self-Review (post-ADR-029 follow-up)
+# ---------------------------------------------------------------------------
+
+
+def test_step_3_6_heading_present():
+    text = _load_runner_text()
+    assert "Step 3.6" in text, (
+        "Step 3.6 heading missing — the runner contract must document "
+        "Self-Review explicitly (ADR-029 follow-up). Implicit-only "
+        "Self-Review is the same gap class that ADR-029 closed for "
+        "external review."
+    )
+
+
+def test_step_3_6_self_review_label():
+    text = _load_runner_text().lower()
+    assert "self-review" in text or "self review" in text, (
+        "Step 3.6 must be labeled 'Self-Review' to match "
+        "references/iteration-reviews.md Section 'Self-Review Checklist'."
+    )
+
+
+def test_step_3_6_seven_item_checklist_referenced():
+    text = _load_runner_text().lower()
+    assert "iteration-reviews.md" in text, (
+        "Step 3.6 must point at references/iteration-reviews.md so the "
+        "runner picks up the canonical 7-item Self-Review checklist "
+        "(including A's 7th item 'Affected Boundaries')."
+    )
+
+
+# ---------------------------------------------------------------------------
 # Step 3.7: Code Review Cascade
 # ---------------------------------------------------------------------------
 
@@ -139,6 +171,70 @@ def test_step_3_7_diff_threshold_documented():
 
 
 # ---------------------------------------------------------------------------
+# Step 3.8: Confidence Calibration (empirical-probe phase, post-ADR-029)
+# ---------------------------------------------------------------------------
+
+
+def test_step_3_8_heading_present():
+    text = _load_runner_text()
+    assert "Step 3.8" in text, (
+        "Step 3.8 heading missing — the runner contract must document "
+        "Confidence Calibration as an EMPIRICAL probe phase (ADR-029 "
+        "follow-up). Without it, an 'are you confident?' question from "
+        "the user has no contracted action — same anti-pattern that "
+        "B's references/confidence-anti-patterns.md warns about."
+    )
+
+
+def test_step_3_8_confidence_calibration_label():
+    text = _load_runner_text().lower()
+    assert "confidence calibration" in text, (
+        "Step 3.8 must be labeled 'Confidence Calibration' to match "
+        "SKILL.md Step 7.5 and references/confidence-anti-patterns.md."
+    )
+
+
+def test_step_3_8_references_anti_patterns_doc():
+    text = _load_runner_text()
+    assert "confidence-anti-patterns.md" in text, (
+        "Step 3.8 must reference references/confidence-anti-patterns.md "
+        "so the runner picks up the asymptote heuristic + are-you-confident "
+        "anti-pattern."
+    )
+
+
+def test_step_3_8_empirical_probe_language():
+    text = _load_runner_text().lower()
+    # Step 3.8 must require ACTUAL probes, not just spec-section population.
+    # Look for at least one of: "empirical probe", "run a probe", "probe(s) ran".
+    has_empirical = any(
+        phrase in text for phrase in (
+            "empirical probe",
+            "run a probe",
+            "real probe",
+            "probe ran",
+            "probes ran",
+            "probes run",
+            "round-trip probe",
+        )
+    )
+    assert has_empirical, (
+        "Step 3.8 must require empirical probes (not just iterate-spec "
+        "section population). Phrase 'empirical probe' / 'real probe' / "
+        "'round-trip probe' must appear in the step body."
+    )
+
+
+def test_step_3_8_asymptote_heuristic_documented():
+    text = _load_runner_text().lower()
+    assert "asymptote" in text, (
+        "Step 3.8 must document the asymptote heuristic (a probe finding "
+        "a bug triggers another probe; consecutive no-finding probes "
+        "exhaust the area)."
+    )
+
+
+# ---------------------------------------------------------------------------
 # Result-JSON reviews field
 # ---------------------------------------------------------------------------
 
@@ -152,7 +248,8 @@ def test_result_json_documents_reviews_field():
 
 
 @pytest.mark.parametrize(
-    "subkey", ["plan", "code", "external_code"]
+    "subkey",
+    ["plan", "code", "external_code", "self_review", "confidence_calibration"],
 )
 def test_result_json_documents_reviews_subkeys(subkey):
     text = _load_runner_text()
@@ -178,7 +275,10 @@ def test_schema_has_reviews_property():
     )
 
 
-@pytest.mark.parametrize("subkey", ["plan", "code", "external_code"])
+@pytest.mark.parametrize(
+    "subkey",
+    ["plan", "code", "external_code", "self_review", "confidence_calibration"],
+)
 def test_schema_reviews_has_subkey(subkey):
     props = _success_props()
     reviews = props["reviews"]
