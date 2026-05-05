@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-05 22:10 UTC | Session: unknown
+> Updated: 2026-05-05 22:11 UTC | Session: unknown
 
-## Recent Changes (16 iterations)
+## Recent Changes (17 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | loader deep-merges per-project shipwright_iterate_config.json + cascade helper | 34/34 | 49eca25 |  | 2026-05-05 |
 | bug | verifier accepts drop-dir entries + dashboard short-SHAs | 32/32 | f1f0447 |  | 2026-05-05 |
 | bug | adopt writes shipwright_iterate_config.json with documented opt-out schema | 241/241 | f4f7229 |  | 2026-05-05 |
 | bug | FR-table parser accepts 5-col adopt format + drift protection | 1594/1628 | 656f96f | FR-01.10, FR-01.13 | 2026-05-05 |

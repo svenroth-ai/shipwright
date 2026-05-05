@@ -2,28 +2,28 @@
 canon_generated: true
 run_id: "iterate-2026-05-06-iterate-config-loader"
 phase: "iterate"
-reason: "iterate: external_review_config per-project deep-merge (ADR-034)"
-timestamp: "2026-05-05T22:10:02.710317+00:00"
+reason: "iterate: refresh dashboard post-F7 (ADR-034)"
+timestamp: "2026-05-05T22:11:37.421080+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-05 22:10:02 UTC
+> Auto-generated 2026-05-05 22:11:37 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-05 22:10:02 UTC
-- **Reason**: iterate: external_review_config per-project deep-merge (ADR-034)
+- **Timestamp**: 2026-05-05 22:11:37 UTC
+- **Reason**: iterate: refresh dashboard post-F7 (ADR-034)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-05-finalization-verifier-drop-dir
-- **Date**: 2026-05-05T21:57:56.832763Z
+- **Run ID**: iterate-2026-05-06-iterate-config-loader
+- **Date**: 2026-05-05T22:10:03.518970Z
 - **Type**: bug
 - **Complexity**: small
 - **Branch**: main
-- **ADR**: ADR-033
+- **ADR**: ADR-034
 - **Tests passed**: True
 
 ## Legacy build state
@@ -38,7 +38,7 @@ timestamp: "2026-05-05T22:10:02.710317+00:00"
 ## Git State
 
 - **Branch**: main
-- **Last Commit**: 6d0ff01 chore(iterate): refresh dashboard + handoff post-F7 (ADR-033)
+- **Last Commit**: 6338989 chore(iterate): F7 event for ADR-034 loader deep-merge
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -54,17 +54,17 @@ timestamp: "2026-05-05T22:10:02.710317+00:00"
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-1d597008 | work_completed | iterate (loader deep-merges per-project shipwright_iterate_config.json + cascade helper) | 2026-05-05 |
 | evt-82fa35ff | work_completed | iterate (verifier accepts drop-dir entries + dashboard short-SHAs) | 2026-05-05 |
 | evt-ee5c8fd8 | work_completed | iterate (adopt writes shipwright_iterate_config.json with documented opt-out schema) | 2026-05-05 |
 | evt-30338dac | work_completed | iterate (FR-table parser accepts 5-col adopt format + drift protection) | 2026-05-05 |
 | evt-678e254b | compliance_update_failed | changelog | 2026-05-05 |
-| evt-30f5113f | work_completed | iterate (post-F7 housekeeping + AC-13 P5 fix (active install path) for plugin-hook-registration) | 2026-05-05 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 16
-- **Last iterate**: bug — verifier accepts drop-dir entries + dashboard short-SHAs (2026-05-05)
+- **Total work events**: 17
+- **Last iterate**: bug — loader deep-merges per-project shipwright_iterate_config.json + cascade helper (2026-05-05)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
