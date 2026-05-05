@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-05 21:00 UTC | Session: unknown
+> Updated: 2026-05-05 21:39 UTC | Session: unknown
 
-## Recent Changes (13 iterations)
+## Recent Changes (14 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | FR-table parser accepts 5-col adopt format + drift protection | 1594/1628 | 656f96f | FR-01.10, FR-01.13 | 2026-05-05 |
 | bug | post-F7 housekeeping + AC-13 P5 fix (active install path) for plugin-hook-registration | 12/12 | afb3b63 | FR-01.11 | 2026-05-05 |
 | bug | plugin-owned suggest_iterate hook (ADR-030); retired hook_installer + 7 SKILL.md stanzas + A6 verifier | 1691/1716 | a05ff22 | FR-01.11, FR-01.13, FR-01.02 | 2026-05-05 |
 | feature | F runner contract mandates reviews (ADR-029) | 188/188 | f6a14fc | FR-01.11 | 2026-05-04 |
@@ -20,7 +21,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-05 | Unit: 1594/1628 | Integration: 45/45 | Smoke: passed | (iterate)
+Last run: 2026-05-05 | Unit: 241/241 | Integration: 1347/1347 | Smoke: passed | (iterate)
 
 ## Pipeline
 

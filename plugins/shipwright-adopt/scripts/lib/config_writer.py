@@ -1,7 +1,10 @@
-"""Write the 6 shipwright_*_config.json files for an adopted project.
+"""Write the 7 shipwright_*_config.json files for an adopted project.
 
 Order matters: `shipwright_run_config.json` is written LAST so the
 audit-on-Stop hook doesn't see a half-formed Shipwright project.
+
+Configs (in write order):
+  project → plan → build → iterate → compliance → sync (optional) → run
 """
 
 from __future__ import annotations
@@ -96,6 +99,36 @@ def write_build_config(
         "updated_at": _utc_now_iso(),
     }
     path = project_root / "shipwright_build_config.json"
+    _write_json(path, config)
+    return path
+
+
+def write_iterate_config(project_root: Path) -> Path:
+    """Write shipwright_iterate_config.json with the documented opt-out schema.
+
+    Schema (per plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md
+    and plugins/shipwright-iterate/agents/sub-iterate-runner.md):
+
+      - external_review.feedback_iterations: controls plan/iterate-mode external
+        LLM review. 0 = user_disabled (Branch C). Default 0 here mirrors the
+        flat key in write_plan_config — adopted projects opt out of plan/iterate-
+        mode review until the operator flips it on.
+      - external_code_review.enabled: controls the code-review CASCADE (an
+        independent gate per iteration-reviews.md:191-194). Default true so
+        the cascade runs by default; user flips to false at project level
+        to opt out of diff exfiltration.
+    """
+    config = {
+        "external_review": {
+            "feedback_iterations": 0,
+        },
+        "external_code_review": {
+            "enabled": True,
+        },
+        "seeded_by_adopt": True,
+        "updated_at": _utc_now_iso(),
+    }
+    path = project_root / "shipwright_iterate_config.json"
     _write_json(path, config)
     return path
 
@@ -230,9 +263,9 @@ def write_all(
     write_sync: bool = True,
     completed_steps: list[str] | None = None,
 ) -> list[Path]:
-    """Write all six configs in the safe order. Returns paths in write order.
+    """Write all seven configs in the safe order. Returns paths in write order.
 
-    Ordering: project → plan → build → compliance → sync → run (last).
+    Ordering: project → plan → build → iterate → compliance → sync → run (last).
     """
     if completed_steps is None:
         completed_steps = ["project", "plan", "build", "test"]
@@ -247,6 +280,7 @@ def write_all(
         project_root, profile=profile,
         dev_url=dev_url, test_cmd=test_cmd, commit_sha=commit_sha,
     ))
+    paths.append(write_iterate_config(project_root))
     paths.append(write_compliance_config(project_root))
     if write_sync:
         paths.append(write_sync_config(project_root))

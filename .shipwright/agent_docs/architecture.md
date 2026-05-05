@@ -31,7 +31,8 @@
 | Target project                                           |
 |   CLAUDE.md                                              |
 |   shipwright_*_config.json (run, project, plan, build,   |
-|                             compliance, sync, ...)       |
+|                             iterate, compliance, sync,   |
+|                             ...)                         |
 |   shipwright_events.jsonl                                |
 |   .shipwright/                                           |
 |     agent_docs/  planning/  compliance/  designs/        |
@@ -77,3 +78,5 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - **ADR-021** (2026-05-03): Adopt scaffolds .env.local with profile + framework keys (Layer-3 SSoT)
 - **ADR-024** (2026-05-03): Boundary Tests Foundation — `touches_io_boundary` risk flag + Boundary Probe sub-step in iterate Build TDD (Sub-Iterate A of campaign iterate-skill-hardening). New helper `is_io_boundary_change(changed_files)` in `plugins/shipwright-iterate/scripts/lib/classify_complexity.py`; new reference docs `references/boundary-probes.md` (8 edge-case categories) and `references/round-trip-tests.md` (producer→file→consumer test pattern). 7th Self-Review item ("Affected Boundaries") added.
 - **ADR-030** (2026-05-05): suggest_iterate UserPromptSubmit hook is plugin-owned, not project-installed. Convention shift: `${CLAUDE_PLUGIN_ROOT}` is reserved for plugin-context hooks (the variable does not expand in project-level `.claude/settings.json`); any hook command that references it MUST be registered in a plugin's own `hooks/hooks.json`. Retired `plugins/shipwright-adopt/scripts/lib/hook_installer.py` + `check_a6_hook_installed` verifier + `validate_adoption._validate_hook` + the per-project-install snippets in `shipwright-{run,project}` SKILL.md and the auto-install stanzas in seven phase-plugin SKILL.md files. New canonical registration lives in `plugins/shipwright-iterate/hooks/hooks.json` under `UserPromptSubmit`. ADRs 019 and 020 (Shape B carrier + quoted path + `--no-project`) survive verbatim inside the plugin registration.
+
+- **ADR-032** (2026-05-05): Adopt writes shipwright_iterate_config.json with documented opt-out schema

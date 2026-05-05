@@ -1,17 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-05-rtm-fr-parser-multicolumn",
+    "run_id": "iterate-2026-05-05-adopt-iterate-config",
     "date": "2026-05-05",
     "unit": {
       "status": "passed",
-      "passed": 1594,
-      "total": 1628,
-      "note": "1594 = shared/tests (1244 minus the canon/hooks-consistency suites with pre-existing failures) + 305 compliance + 45 integration. 34 pre-existing failures unrelated to this change (test_phase_plugin_hooks_consistency, test_artifact_path_canon[agent_docs/compliance], test_gitignore_canon)."
+      "passed": 241,
+      "total": 241,
+      "note": "shipwright-adopt plugin suite (241/241). 6 new tests in test_config_writer + test_dry_run_reporter cover write_iterate_config existence, schema, round-trip producer/consumer, type fidelity, idempotency."
     },
     "integration": {
       "status": "passed",
-      "passed": 45,
-      "total": 45
+      "passed": 1347,
+      "total": 1347,
+      "note": "Full integration-tests/ + shared/tests/ suite passes 1347 (excl. 34 pre-existing failures unrelated to this iterate)."
     },
     "pgtap": {
       "status": "not_run",
@@ -30,20 +31,14 @@
     },
     "smoke": {
       "status": "passed",
-      "note": "Real-spec round-trip probe (test_*_real_adopted_spec) runs both parsers against the live .shipwright/planning/01-adopted/spec.md and asserts FR-01.10 + FR-01.13 + 13-FR floor extracted."
+      "note": "Real-project boundary probe: ran write_iterate_config(Path('.')) on shipwright self-adopted root, file appeared with correct content (cat verified all keys + types)."
     },
     "degraded": [
       {
-        "scope": "shared/tests/test_phase_plugin_hooks_consistency.py",
-        "failures": 25,
+        "scope": "shared/tests/test_phase_plugin_hooks_consistency.py + test_artifact_path_canon + test_gitignore_canon",
+        "failures": 34,
         "category": "pre-existing",
-        "note": "Pre-existing failures inherited from main; my diff does not touch hooks.json or master_stop_check.py. Tracked for a separate cleanup iterate. Same backlog flagged in iterate-20260505-plugin-hook-registration."
-      },
-      {
-        "scope": "shared/tests/test_artifact_path_canon.py + test_gitignore_canon.py",
-        "failures": 9,
-        "category": "pre-existing",
-        "note": "Layer-1 canon legacy-line-marker backlog from the 2026-04-27..29 .shipwright/<artifact>/ migrations. Diagrams + change-history references to legacy paths need inline `# artifact-path-canon: legacy` markers. Out of scope for this regex-only bug fix."
+        "note": "Verified pre-existing on main (git stash; pytest still fails). Out of scope for this BUG iterate — concerns SessionStart/Stop hook ordering and legacy-line-marker backlog from earlier .shipwright/<artifact>/ migrations. Tracked for a separate cleanup iterate."
       }
     ]
   }

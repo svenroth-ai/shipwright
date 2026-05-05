@@ -19,6 +19,7 @@ def test_standard_writes_lists_all_expected(tmp_path: Path) -> None:
     assert ".shipwright/planning/01-adopted/spec.md" in paths
     assert "shipwright_run_config.json" in paths
     assert "shipwright_sync_config.json" in paths
+    assert "shipwright_iterate_config.json" in paths
     assert "e2e/flows/adopted-baseline.spec.ts" in paths
     # .claude/settings.json is NOT written — hook is plugin-owned now.
     assert ".claude/settings.json" not in paths

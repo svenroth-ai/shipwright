@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-05T21:00:22Z
+Generated: 2026-05-05T21:39:09Z
 
 ## Requirements Coverage
 
@@ -15,10 +15,10 @@ Generated: 2026-05-05T21:00:22Z
 | [FR-01.07](../../.shipwright/planning/01-adopted/spec.md#fr-0107) | Security scanning chain (Aikido + Semgrep + Trivy + Gitleaks... | Must | evt-e3d2949e, evt-ca7b7d64 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
 | [FR-01.08](../../.shipwright/planning/01-adopted/spec.md#fr-0108) | Deploy to configured targets with smoke testing and rollback... | Should | evt-e3d2949e, evt-ca7b7d64 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
 | [FR-01.09](../../.shipwright/planning/01-adopted/spec.md#fr-0109) | Parse Conventional Commits from git history, generate Keep-a... | Must | evt-e3d2949e, evt-ca7b7d64 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
-| [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110) | Generate audit-ready compliance documentation (RTM, test evi... | Must | evt-e3d2949e, evt-ca7b7d64 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
+| [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110) | Generate audit-ready compliance documentation (RTM, test evi... | Must | evt-e3d2949e, evt-ca7b7d64, evt-30338dac | 225/225 → 1594/1628 | 2026-05-05 (iter) | FAIL |
 | [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111) | Complexity-adaptive SDLC for ongoing changes — auto-detects ... | Must | evt-e3d2949e, evt-ca7b7d64, evt-da156299, evt-7620210f +1 | 225/225 → 12/12 | 2026-05-05 (iter) | FAIL |
 | [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112) | Local browser preview — start dev server for the target proj... | May | evt-e3d2949e, evt-ca7b7d64 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
-| [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113) | Onboard an existing (brownfield) repository into the Shipwri... | Must | evt-e3d2949e, evt-273bbb54, evt-b0b9c422, evt-ca7b7d64 +1 | 225/225 → 1691/1716 | 2026-05-05 (iter) | FAIL |
+| [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113) | Onboard an existing (brownfield) repository into the Shipwri... | Must | evt-e3d2949e, evt-273bbb54, evt-b0b9c422, evt-ca7b7d64 +2 | 225/225 → 1594/1628 | 2026-05-05 (iter) | FAIL |
 
 ## Verification Timeline
 
@@ -37,6 +37,7 @@ Generated: 2026-05-05T21:00:22Z
 | F runner contract mandates reviews (ADR-029) | iterate | feature | FR-01.11 | 188/188 | f6a14fc | 2026-05-04 |
 | plugin-owned suggest_iterate hook (ADR-030); retired hook_installer + 7 SKILL.md stanzas + A6 verifier | iterate | bug | FR-01.11, FR-01.13, FR-01.02 +1 | 1691/1716 | a05ff22 | 2026-05-05 |
 | post-F7 housekeeping + AC-13 P5 fix (active install path) for plugin-hook-registration | iterate | bug | FR-01.11 | 12/12 | afb3b63 | 2026-05-05 |
+| FR-table parser accepts 5-col adopt format + drift protection | iterate | bug | FR-01.10, FR-01.13 | 1594/1628 | 656f96f | 2026-05-05 |
 
 ## Coverage Summary
 
@@ -44,7 +45,7 @@ Generated: 2026-05-05T21:00:22Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 13 |
+| Iterate changes | 14 |
 | Requirements total | 13 |
 | Requirements verified | 13/13 |
 | Must-have verified | 10/10 |
