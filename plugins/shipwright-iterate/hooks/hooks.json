@@ -17,6 +17,16 @@
       ]
     }
   ],
+  "UserPromptSubmit": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/suggest_iterate.py\""
+        }
+      ]
+    }
+  ],
   "Stop": [
     {
       "hooks": [

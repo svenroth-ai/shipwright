@@ -4,9 +4,11 @@ description: |
   Onboards an EXISTING repository (brownfield) into the Shipwright SDLC.
   Analyzes the codebase (stack, routes, conventions, git history), generates
   CLAUDE.md + .shipwright/agent_docs + planning specs + compliance artifacts + all six
-  shipwright_*_config.json, installs the suggest_iterate hook, and writes
-  a baseline E2E suite from a Playwright crawl when possible. After
-  completion, /shipwright-iterate takes over for all future changes.
+  shipwright_*_config.json, and writes a baseline E2E suite from a
+  Playwright crawl when possible. After completion, /shipwright-iterate
+  takes over for all future changes. The phase-router UserPromptSubmit
+  hook is plugin-owned (registered in shipwright-iterate's own
+  hooks.json); no project-level install is performed.
 
   TRIGGER when: user wants to onboard a brownfield repo, add Shipwright to
   an existing project, run /shipwright-adopt, import a legacy codebase, or
@@ -353,8 +355,14 @@ Writes — **in order**:
    `--no-sync`), and **`shipwright_run_config.json` LAST**.
 5. `shipwright_events.jsonl` with one `adopted` event + optional
    backfill.
-6. `.claude/settings.json` with the `suggest_iterate` UserPromptSubmit
-   hook (idempotent merge).
+6. (No project-level hook write.) The `suggest_iterate` UserPromptSubmit
+   hook is plugin-owned, registered in
+   `plugins/shipwright-iterate/hooks/hooks.json`. If the target project
+   carries a legacy `${CLAUDE_PLUGIN_ROOT}` entry from a pre-2026-05-05
+   adopt run, the user must remove it manually from
+   `.claude/settings.json` to silence the Claude Code "hook is not
+   associated with a plugin" red-banner error. The plugin-registered
+   hook fires regardless.
 7. `e2e/flows/adopted-baseline.spec.ts` if routes.json exists.
 8. **Visual frontend documentation (Tier 5).** Three artifacts at
    canonical paths so /shipwright-design / /shipwright-iterate consume

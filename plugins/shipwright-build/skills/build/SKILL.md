@@ -88,8 +88,6 @@ Determine if running within the pipeline or standalone:
    - Warn: `"Pipeline is in progress at step {current_step}. Running /shipwright-build out of sequence may cause issues."`
    - Ask user before continuing.
 
-**Hook auto-install**: If `shipwright_run_config.json` exists but `.claude/settings.json` does not contain the `UserPromptSubmit` hook for `suggest_iterate.py`, install it now (one-time, idempotent).
-
 Store the detected mode in a variable `invocation_mode` = `"pipeline"` | `"standalone"` for use in later steps.
 
 ### D. Discover Plugin Root

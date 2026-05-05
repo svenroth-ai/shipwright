@@ -3,6 +3,15 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.egg-info/
+
+# Windows env-var-resolution failure dir: uv on Windows without
+# SystemDrive/LOCALAPPDATA set creates a literal "%SystemDrive%"
+# directory under CWD as it tries to compute its data dir path.
+# Defensive ignore — the round-trip test in
+# plugins/shipwright-iterate/tests/test_hooks_json_registration.py
+# has been hardened to forward these vars so the dir should not
+# reappear, but belt+suspenders.
+%SystemDrive%/
 dist/
 /build/
 .eggs/

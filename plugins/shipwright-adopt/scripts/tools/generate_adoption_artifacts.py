@@ -7,7 +7,9 @@ This is the deterministic artifact-production step. It:
   3. Writes CLAUDE.md + .shipwright/agent_docs/* + .shipwright/planning/<split>/spec.md
   4. Writes all 6 shipwright_*_config.json in safe order
   5. Seeds shipwright_events.jsonl (adopted + optional backfill)
-  6. Installs .claude/settings.json UserPromptSubmit hook
+  6. (No-op slot — suggest_iterate UserPromptSubmit hook is plugin-
+     registered in plugins/shipwright-iterate/hooks/hooks.json since
+     iterate-20260505-plugin-hook-registration; no per-project install.)
   7. Generates e2e/flows/adopted-baseline.spec.ts from routes.json (if present)
 
 Layer-3 review and compliance seeding are separate tools.
@@ -216,7 +218,9 @@ def generate(
     from config_writer import write_all  # type: ignore
     from artifact_writer import write_agent_docs, write_claude_md, write_spec  # type: ignore
     from event_seeder import seed_adopted_event, seed_backfill_events  # type: ignore
-    from hook_installer import install_suggest_iterate_hook  # type: ignore
+    # suggest_iterate hook is plugin-owned (registered in
+    # plugins/shipwright-iterate/hooks/hooks.json under UserPromptSubmit);
+    # no project-level installation is performed here.
     from e2e_baseline_generator import write_baseline_spec  # type: ignore
     from enrichment_schema import (  # type: ignore
         EnrichmentValidationError,
@@ -501,10 +505,19 @@ def generate(
         seed_backfill_events(events_path, git.get("major_refactor_commits", []))
     results["written"].append(str(events_path))
 
-    # Hook
-    settings = project_root / ".claude" / "settings.json"
-    hook_result = install_suggest_iterate_hook(settings)
-    results["hook_install"] = hook_result
+    # Hook is plugin-owned (registered in plugins/shipwright-iterate/hooks/hooks.json);
+    # no per-project install. Result key kept so that any external tool that
+    # introspects the JSON output keeps working — but reduced to a minimal
+    # shape that fails LOUDLY (KeyError on legacy fields) for any caller
+    # branching on the old installer schema, instead of silently mis-reading.
+    results["hook_install"] = {
+        "plugin_owned": True,
+        "note": (
+            "suggest_iterate UserPromptSubmit hook is registered in "
+            "plugins/shipwright-iterate/hooks/hooks.json since "
+            "iterate-20260505-plugin-hook-registration; no per-project install."
+        ),
+    }
 
     # E2E baseline (if routes.json present)
     if routes:

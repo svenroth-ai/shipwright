@@ -6,8 +6,11 @@ Runs after all artifacts are written. Verifies:
   - .shipwright/agent_docs/{architecture, conventions, decision_log, build_dashboard}.md exist
   - .shipwright/planning/*/spec.md exists and has >= 1 FR-NN.MM reference
   - shipwright_events.jsonl has exactly 1 "adopted" event
-  - .claude/settings.json has the UserPromptSubmit hook
   - .shipwright/adopt/review.md exists (skip-reason is acceptable)
+
+The .claude/settings.json UserPromptSubmit hook check was retired
+2026-05-05 (iterate-20260505-plugin-hook-registration) — the hook is
+now plugin-owned (plugins/shipwright-iterate/hooks/hooks.json).
 
 Exit 0 on success, non-zero with error list otherwise.
 """
@@ -96,33 +99,11 @@ def _validate_events(project_root: Path) -> list[str]:
     return []
 
 
-def _validate_hook(project_root: Path) -> list[str]:
-    settings = project_root / ".claude" / "settings.json"
-    if not settings.exists():
-        return ["missing: .claude/settings.json"]
-    try:
-        data = json.loads(settings.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return ["invalid JSON: .claude/settings.json"]
-    hooks = data.get("hooks", {}).get("UserPromptSubmit", [])
-
-    def _has_suggest_iterate(entries: list) -> bool:
-        for e in entries:
-            if not isinstance(e, dict):
-                continue
-            cmd = e.get("command", "")
-            if "suggest_iterate" in cmd:
-                return True
-            nested = e.get("hooks", [])
-            if isinstance(nested, list):
-                for sub in nested:
-                    if isinstance(sub, dict) and "suggest_iterate" in sub.get("command", ""):
-                        return True
-        return False
-
-    if not _has_suggest_iterate(hooks):
-        return [".claude/settings.json: UserPromptSubmit hook suggest_iterate not installed"]
-    return []
+# _validate_hook retired 2026-05-05 (iterate-20260505-plugin-hook-registration):
+# the suggest_iterate UserPromptSubmit hook is now plugin-owned (registered
+# in plugins/shipwright-iterate/hooks/hooks.json). Claude Code surfaces
+# disabled-plugin state at session start; an adopt-side validation would
+# only drift.
 
 
 def _validate_review(project_root: Path) -> list[str]:
@@ -184,7 +165,6 @@ def validate(project_root: Path) -> dict:
     errors.extend(_validate_agent_docs(project_root))
     errors.extend(_validate_spec(project_root))
     errors.extend(_validate_events(project_root))
-    errors.extend(_validate_hook(project_root))
     errors.extend(_validate_review(project_root))
 
     warnings: list[str] = []

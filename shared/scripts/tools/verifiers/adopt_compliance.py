@@ -1,9 +1,19 @@
 """Adopt-phase workflow compliance checks (Phase-Quality integration).
 
-Implements A1–A8 canon checks for /shipwright-adopt. A1–A3, A6, A7 are
-Tier-1 ERROR on FAIL (but the Stop-hook is non-blocking by default so
-failures just surface as ``additionalContext`` next session). A4, A5,
-A8 are Tier-2 heuristics that never block.
+Implements A1–A8 canon checks for /shipwright-adopt (A6 retired
+2026-05-05 — see ADR for iterate-20260505-plugin-hook-registration).
+A1–A3, A7 are Tier-1 ERROR on FAIL (but the Stop-hook is non-blocking
+by default so failures just surface as ``additionalContext`` next
+session). A4, A5, A8 are Tier-2 heuristics that never block.
+
+Retired check:
+- A6 ``check_a6_hook_installed`` asserted a project-level
+  ``UserPromptSubmit`` ``suggest_iterate`` entry in
+  ``.claude/settings.json``. That installation channel was retired —
+  the hook is now plugin-owned (registered in
+  ``plugins/shipwright-iterate/hooks/hooks.json``). Claude Code itself
+  enforces plugin-enablement; a duplicated repo-side check would only
+  drift.
 """
 
 from __future__ import annotations
@@ -189,43 +199,6 @@ def check_a5_review_present(project_root: Path) -> dict[str, Any]:
     )
 
 
-def check_a6_hook_installed(project_root: Path) -> dict[str, Any]:
-    """A6 (Tier-1): .claude/settings.json has suggest_iterate UserPromptSubmit hook."""
-    name = "A6 UserPromptSubmit suggest_iterate hook installed"
-    settings = project_root / ".claude" / "settings.json"
-    if not settings.exists():
-        return make_finding("A6", STATUS_FAIL, "missing .claude/settings.json",
-                            name=name, provenance="adopt_hook_check")
-    try:
-        data = json.loads(settings.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
-        return make_finding("A6", STATUS_FAIL, f"invalid JSON: {e!r}",
-                            name=name, provenance="adopt_hook_check")
-    entries = data.get("hooks", {}).get("UserPromptSubmit", [])
-
-    def _has_suggest_iterate(items: list[Any]) -> bool:
-        for e in items:
-            if not isinstance(e, dict):
-                continue
-            if "suggest_iterate" in e.get("command", ""):
-                return True
-            nested = e.get("hooks", [])
-            if isinstance(nested, list) and _has_suggest_iterate(nested):
-                return True
-        return False
-
-    if _has_suggest_iterate(entries):
-        return make_finding("A6", STATUS_PASS, "suggest_iterate hook present",
-                            name=name, provenance="adopt_hook_check")
-    return make_finding(
-        "A6", STATUS_FAIL,
-        ".claude/settings.json UserPromptSubmit missing suggest_iterate hook",
-        name=name,
-        remediation="Re-run /shipwright-adopt or run hook_installer.install_suggest_iterate_hook",
-        provenance="adopt_hook_check",
-    )
-
-
 def check_a7_adopted_event(project_root: Path) -> dict[str, Any]:
     """A7 (Tier-1): shipwright_events.jsonl has exactly 1 'adopted' event."""
     name = "A7 shipwright_events.jsonl has exactly 1 'adopted' event"
@@ -286,14 +259,19 @@ def check_a8_e2e_baseline(project_root: Path) -> dict[str, Any]:
 
 
 def run(project_root: Path, run_id: str) -> list[dict[str, Any]]:
-    """Return adopt-phase canon findings."""
+    """Return adopt-phase canon findings.
+
+    Note: A6 ``check_a6_hook_installed`` was retired 2026-05-05 —
+    the suggest_iterate hook is now plugin-owned (registered in
+    plugins/shipwright-iterate/hooks/hooks.json) and Claude Code
+    enforces plugin-enablement directly.
+    """
     return [
         check_a1_configs_present(project_root),
         check_a2_spec_has_frs(project_root),
         check_a3_adoption_adr(project_root),
         check_a4_backfill_quality(project_root),
         check_a5_review_present(project_root),
-        check_a6_hook_installed(project_root),
         check_a7_adopted_event(project_root),
         check_a8_e2e_baseline(project_root),
     ]
@@ -305,7 +283,6 @@ __all__ = [
     "check_a3_adoption_adr",
     "check_a4_backfill_quality",
     "check_a5_review_present",
-    "check_a6_hook_installed",
     "check_a7_adopted_event",
     "check_a8_e2e_baseline",
     "run",

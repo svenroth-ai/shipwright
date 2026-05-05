@@ -496,3 +496,15 @@ shipwright/
 - **Rationale:** The campaign's own teachings (Boundary Tests, Confidence Calibration, Multi-Session, Coverage Report) cannot defend against contract gaps that the lifecycle itself permits. Closing the meta-loop.
 - **Consequences:** Future campaign-spawned runners cannot silently skip plan-review or code-review cascade; gaps must be recorded explicitly. Drift-protection test (test_sub_iterate_runner_contract.py, 25 tests) freezes the contract structure. Internal code-reviewer subagent is delegated to orchestrator (campaign mode) since the runner has no Agent tool — runner records delegated_to_orchestrator status.
 - **Rejected:** (a) Add Agent tool to runner so it can spawn code-reviewer itself — rejected because the runner already has Bash/Edit/Write and Agent would double-spend tokens. (b) Move review steps into Finalization F-phases — rejected because reviews must run before commit, not after.
+
+---
+
+### ADR-030: suggest_iterate hook is plugin-registered, not project-installed (retire hook_installer)
+- **Date:** 2026-05-05
+- **Section:** Iterate — bug: plugin-owned UserPromptSubmit hook
+- **Context:** After ADR-019/020 fixed the carrier-shape and command-literal of the project-level installer, Claude Code surfaced an explicit error 'Hook command references ${CLAUDE_PLUGIN_ROOT} but the hook is not associated with a plugin' for every UserPromptSubmit on adopted projects. The variable only expands in plugin-context hooks; the install-into-settings.json model was structurally wrong.
+- **Decision:** Register suggest_iterate.py in plugins/shipwright-iterate/hooks/hooks.json under UserPromptSubmit (Shape B + quoted + --no-project preserved verbatim). Retire hook_installer.py, check_a6_hook_installed verifier, validate_adoption._validate_hook, and seven SKILL.md auto-install stanzas. Spec FR-01.13/02/01 ACs realigned; FR-01.11 gains plugin-hook-ownership AC.
+- **Commit:** PENDING
+- **Rationale:** Strategy A (plugin-hook registration) avoids duplicating suggest_iterate.py + classify_intent.py into every adopted project (Strategy B) and uses the only Claude-Code-supported channel for ${CLAUDE_PLUGIN_ROOT}. Empirically validated by 5 pre-build probes + 11 round-trip tests + 1 cache-layout invariant.
+- **Consequences:** Adopted projects no longer write .claude/settings.json on adopt. The hook fires from the plugin cache when shipwright-iterate@shipwright is enabled. Legacy adopted projects still carry the broken project-level entry until manual cleanup; SKILL.md replacement notes ship the cleanup snippet.
+- **Rejected:** Strategy B (${CLAUDE_PROJECT_DIR} variable + per-project script copy): code duplication, staleness on plugin upgrades, plus suggest_iterate.py imports classify_intent.py via path arithmetic that only resolves inside the monorepo/cache layout — would have required copying that lib too.

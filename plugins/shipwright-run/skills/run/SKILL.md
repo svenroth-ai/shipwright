@@ -159,42 +159,26 @@ Capture the parsed JSON output — Step 5 reads `phase_tasks[0]` from it.
 
 ---
 
-## Step 4.5: Install Phase-Router Hook
+## Step 4.5: Phase-Router Hook (no install step needed)
 
-The `suggest_iterate.py` hook routes post-pipeline user prompts to
-`/shipwright-iterate` instead of re-running the master. Because the master
-never re-runs after completion under multi-session, install the hook **now**,
-right after writing the spec — not at completion.
+The `suggest_iterate.py` UserPromptSubmit hook is registered in
+`shipwright-iterate` plugin's own `hooks/hooks.json`; no project-level
+`.claude/settings.json` install is performed. Once the user enables
+the `shipwright-iterate@shipwright` plugin (default in marketplace
+installs), the hook fires automatically for every prompt in any
+project carrying `shipwright_run_config.json`. ADRs 019/020 (carrier-
+shape Shape B + quoted path + `--no-project`) survive verbatim in the
+plugin registration.
 
-Check if `.claude/settings.json` in the project root already contains the
-`UserPromptSubmit` hook for `suggest_iterate.py`. If not, add it:
-
-```json
-{
-  "hooks": {
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/suggest_iterate.py\""
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-The outer entry is a matcher group (Claude Code's canonical hook
-shape — see ADR-019); the actual command sits in its inner `hooks`
-array. `${CLAUDE_PLUGIN_ROOT}` is wrapped in double quotes so projects
-on paths containing spaces (e.g. OneDrive-synced "AI Backup -
-Documents") don't have the shell split the hook command and block
-every UserPromptSubmit. `--no-project` keeps uv from trying to resolve
-a project context from the target project's CWD — important because a
-corrupt project `.venv` would otherwise stall the hook on resolution
-and block prompts the same way (see ADR-020).
+**If the target project was adopted under a previous Shipwright
+version** and `.claude/settings.json` carries a legacy
+`UserPromptSubmit` entry referencing
+`${CLAUDE_PLUGIN_ROOT}/.../suggest_iterate.py`, Claude Code surfaces a
+"hook is not associated with a plugin" red-banner error because that
+variable only expands in plugin context. One-time manual cleanup:
+open `.claude/settings.json`, drop the `hooks.UserPromptSubmit` entry
+whose command contains `suggest_iterate.py`, leave any other hooks
+intact. The plugin-registered hook still fires.
 
 ---
 

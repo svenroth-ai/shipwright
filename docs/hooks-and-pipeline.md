@@ -765,9 +765,9 @@ Non-pipeline skill — onboards a **brownfield** repo into the Shipwright SDLC. 
 
 Reads: `package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `composer.json`, `Gemfile`, `tsconfig.json`, `.eslintrc*`, `.prettierrc*`, `.editorconfig`, `README.md`, `.github/workflows/`, git log, plus route/page files for AST feature inference; optionally the running dev-server via Playwright BFS crawl.
 
-Writes: `CLAUDE.md`, `.shipwright/agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `.shipwright/planning/<split>/spec.md`, all six `shipwright_*_config.json` (run-config LAST), `shipwright_events.jsonl` (one `adopted` event + optional backfill), `.claude/settings.json` (merges the `suggest_iterate` UserPromptSubmit hook), `e2e/flows/adopted-baseline.spec.ts` when a Playwright crawl succeeded, `.shipwright/adopt/{snapshot,enrichment,routes}.json`, `.shipwright/adopt/review.md`, and seeds the five `.shipwright/compliance/*.md` via the existing compliance generators.
+Writes: `CLAUDE.md`, `.shipwright/agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `.shipwright/planning/<split>/spec.md`, all six `shipwright_*_config.json` (run-config LAST), `shipwright_events.jsonl` (one `adopted` event + optional backfill), `e2e/flows/adopted-baseline.spec.ts` when a Playwright crawl succeeded, `.shipwright/adopt/{snapshot,enrichment,routes}.json`, `.shipwright/adopt/review.md`, and seeds the five `.shipwright/compliance/*.md` via the existing compliance generators. The `suggest_iterate` UserPromptSubmit hook is plugin-owned (registered in `plugins/shipwright-iterate/hooks/hooks.json`); no project-level `.claude/settings.json` install is performed.
 
-Phase-Quality integration: registered as phase `adopt` in `PLUGIN_TO_PHASE`, `C4_PHASES`, and `_WORKFLOW_PHASE_DISPATCH`. The verifier module `shared/scripts/tools/verifiers/adopt_compliance.py` runs A1–A8 canon checks on every Stop hook after adoption completes. A4, A5, A8 are Tier-2 (heuristic, non-blocking); A1–A3, A6, A7 are Tier-1 ERROR on FAIL.
+Phase-Quality integration: registered as phase `adopt` in `PLUGIN_TO_PHASE`, `C4_PHASES`, and `_WORKFLOW_PHASE_DISPATCH`. The verifier module `shared/scripts/tools/verifiers/adopt_compliance.py` runs A1–A5, A7, A8 canon checks on every Stop hook after adoption completes (A6 retired 2026-05-05 per iterate-20260505-plugin-hook-registration — Claude Code itself enforces the plugin-enabled invariant the check used to assert). A4, A5, A8 are Tier-2 (heuristic, non-blocking); A1–A3, A7 are Tier-1 ERROR on FAIL.
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
@@ -775,13 +775,33 @@ Phase-Quality integration: registered as phase `adopt` in `PLUGIN_TO_PHASE`, `C4
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Runs A1–A8 canon via `adopt_compliance.run()` |
 | Stop | — | `generate_handoff_on_stop.py` (shared) | Session handoff |
 
-### Project-installed (not a plugin hook)
+### Plugin-registered (shipwright-iterate)
 
-`shared/scripts/hooks/suggest_iterate.py` is installed into the **target project's** `.claude/settings.json` by `/shipwright-project`, `/shipwright-run`, `/shipwright-adopt`, and every phase skill (auto-install, idempotent). It fires on `UserPromptSubmit` inside any directory containing `shipwright_run_config.json`.
+`shared/scripts/hooks/suggest_iterate.py` is registered in
+`plugins/shipwright-iterate/hooks/hooks.json` under `UserPromptSubmit`
+(retired the project-level installer model on 2026-05-05 — see
+iterate-20260505-plugin-hook-registration). It fires for every
+non-slash-command UserPromptSubmit when `shipwright-iterate@shipwright`
+is enabled, and short-circuits silently in any directory that does not
+contain `shipwright_run_config.json`.
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|
 | UserPromptSubmit | — | `suggest_iterate.py` | Multilingual (en/de) phase router: maps free-text prompts to the right Shipwright phase, falls back to `/shipwright-iterate` for post-test code changes |
+
+> **Migration note.** Prior to 2026-05-05 this hook was installed
+> per-project into `.claude/settings.json` by `/shipwright-adopt`,
+> `/shipwright-project`, and `/shipwright-run` via
+> `plugins/shipwright-adopt/scripts/lib/hook_installer.py`. The
+> installer wrote `${CLAUDE_PLUGIN_ROOT}/...` into project-level
+> settings.json, but Claude Code only expands that variable inside
+> plugin-context hooks — so the hook silently failed (then loudly
+> failed once Claude Code added an explicit error). Plugin
+> registration is the structurally correct distribution channel.
+> Adopted projects from before the cutover may still carry the
+> legacy entry; see the cleanup note in the iterate
+> `/shipwright-run` and `/shipwright-project` SKILL.md files for
+> the precise edit.
 
 **Routing logic** (`shared/scripts/hooks/suggest_iterate.py`):
 

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-04T06:02:37Z
+Generated: 2026-05-05T16:13:40Z
 
 ## Verification Timeline
 
@@ -16,6 +16,7 @@ Generated: 2026-05-04T06:02:37Z
 | changelog MSYS path-mangling linter | iterate | bug |  | 19/19 | a13fd64 | 2026-05-03 |
 | test plugin: boundary coverage report (campaign iterate-skill-hardening Sub-Iterate D, ADR-027) | iterate | feature |  | 19/19 | 216f8b3 | 2026-05-03 |
 | iterate: review-driven hardening (ADR-028 / campaign iterate-skill-hardening Sub-Iterate E) | iterate | bug |  | 1539/1539 | 5415ed6 | 2026-05-04 |
+| F runner contract mandates reviews (ADR-029) | iterate | feature | FR-01.11 | 188/188 | f6a14fc | 2026-05-04 |
 
 ## Coverage Summary
 
@@ -23,7 +24,7 @@ Generated: 2026-05-04T06:02:37Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 10 |
+| Iterate changes | 11 |
 | Total review findings | 0 |
 | Unresolved findings | 0 |
 

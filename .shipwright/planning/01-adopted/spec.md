@@ -41,58 +41,55 @@ Acceptance criteria per FR are placeholders (`TBD`) — refine them with explici
 
 The auto-generated E2E baseline at `e2e/flows/adopted-baseline.spec.ts` (if Playwright crawl succeeded) covers mechanical rendering / visibility checks, not semantic behavior.
 
-### FR-01.13 — `/shipwright-adopt` (suggest_iterate hook installer)
+### FR-01.11 — `/shipwright-iterate` (UserPromptSubmit hook ownership)
 
-Refined by `iterate-2026-05-03-suggest-iterate-quoted-path` (see
-`.shipwright/planning/iterate/2026-05-03-suggest-iterate-quoted-path.md`).
-Extends the carrier-shape AC introduced by ADR-019 with quoting +
-`--no-project` + upgrade-in-place semantics from ADR-020.
+Refined by `iterate-20260505-plugin-hook-registration` (see
+`.shipwright/planning/iterate/2026-05-05-plugin-hook-registration.md`).
+Closes the deferred follow-up to ADR-019 / ADR-020.
 
-- (E) Given a target project at any path containing one or more spaces
-  (e.g. OneDrive-synced "AI Backup - Documents", Windows usernames
-  with spaces, paths under "Program Files"), when `/shipwright-adopt`
-  installs the `UserPromptSubmit` hook into `.claude/settings.json`,
-  then the resulting `command` string must wrap the
-  `${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/suggest_iterate.py`
-  path in double quotes and prefix `uv run` with `--no-project`. This
-  prevents the shell from word-splitting the resolved path AND prevents
-  uv from stalling resolution on a corrupt project `.venv`. Both
-  failure modes exit non-zero, and per Claude Code's hook contract a
-  non-zero `UserPromptSubmit` blocks the user prompt entirely.
-- (E) Given a target project whose `.claude/settings.json` already
-  contains any of the known legacy `suggest_iterate.py` hook command
-  forms (unquoted `${CLAUDE_PLUGIN_ROOT}`, unquoted legacy
-  `{plugin_root}`, partially-fixed forms with `--no-project` or
-  quoting alone), in either Shape A (bare `{type, command}`) or Shape
-  B (matcher-group `{hooks: [{type, command}]}`) carrier, when
-  `/shipwright-adopt` runs again, then the installer must (a)
-  recognize the legacy row instead of appending a duplicate, AND (b)
-  rewrite that row to canonical Shape B carrier with the canonical
-  quoted + `--no-project` command. Recognition without rewrite is
-  insufficient: an already-adopted project on a path with spaces
-  stays blocked unless both the carrier shape (per ADR-019) AND the
-  command literal (per ADR-020) are upgraded. The installer signals
-  the rewrite via an `upgraded: true` field in its return dict.
-- (E) Given a target project whose `.claude/settings.json` already
-  contains the canonical form (Shape B + canonical command), when
-  `/shipwright-adopt` runs again, then the installer must be a true
-  no-op: returns `installed: false`, `already_present: true`,
-  `upgraded: false`, and does not pointlessly rewrite the file.
+- (E) Given any project where `shipwright-iterate@shipwright` is enabled
+  in the user's `~/.claude/settings.json::enabledPlugins`, when a user
+  submits a non-slash UserPromptSubmit prompt, then the
+  `suggest_iterate.py` hook fires from
+  `plugins/shipwright-iterate/hooks/hooks.json` (registered as Shape B
+  matcher-group + quoted-path + `--no-project`). Claude Code expands
+  `${CLAUDE_PLUGIN_ROOT}` correctly inside plugin context. No project-
+  level `.claude/settings.json` install is required.
+- (E) Given a project that does NOT carry `shipwright_run_config.json`
+  in its CWD, when the plugin hook fires, then the script's Guard 1
+  short-circuits with `sys.exit(0)` and produces no stdout — the hook
+  is a no-op outside Shipwright projects.
 
-### FR-01.02 — `/shipwright-project` (documentation parity)
+### FR-01.13 — `/shipwright-adopt` (no project-level hook install)
 
-- (E) The `.claude/settings.json` JSON snippet documented in
-  `plugins/shipwright-project/skills/project/SKILL.md` for the
-  `UserPromptSubmit` `suggest_iterate.py` hook must use the
-  matcher-group Shape B carrier + quoted-path + `--no-project` form.
-  Operators copy-pasting from the docs must get a snippet that both
-  parses in Claude Code (Shape B) AND survives target-project paths
-  containing spaces (quoted + `--no-project`).
+Refined by `iterate-20260505-plugin-hook-registration`. Supersedes
+the ADR-019 / ADR-020 carrier-shape + quoted-path ACs (the project-
+level installer model is retired entirely; the carrier-shape and
+command-literal mandates survive verbatim inside the plugin
+hooks.json registration owned by FR-01.11).
 
-### FR-01.01 — `/shipwright-run` (documentation parity)
+- (E) Given a fresh adopt run on a previously-clean target project,
+  when `/shipwright-adopt` completes, then no `UserPromptSubmit`
+  entry referencing `suggest_iterate.py` is written to that project's
+  `.claude/settings.json`. The hook is plugin-owned per FR-01.11.
 
-- (E) The `.claude/settings.json` JSON snippet documented in
-  `plugins/shipwright-run/skills/run/SKILL.md` Step 4.5 for the
-  `UserPromptSubmit` `suggest_iterate.py` hook must use the same
-  matcher-group Shape B carrier + quoted-path + `--no-project` form
-  as FR-01.02.
+### FR-01.02 — `/shipwright-project` (no project-level hook install)
+
+Refined by `iterate-20260505-plugin-hook-registration`. Supersedes
+the ADR-020 documentation-parity AC.
+
+- (E) The `plugins/shipwright-project/skills/project/SKILL.md` no
+  longer documents a project-level `UserPromptSubmit` install
+  snippet. The phase-router hook is plugin-owned per FR-01.11; the
+  SKILL.md replacement note describes manual cleanup of any pre-
+  2026-05-05 legacy entry users may still carry.
+
+### FR-01.01 — `/shipwright-run` (no project-level hook install)
+
+Refined by `iterate-20260505-plugin-hook-registration`. Supersedes
+the ADR-020 documentation-parity AC.
+
+- (E) `plugins/shipwright-run/skills/run/SKILL.md` Step 4.5 no
+  longer instructs users to install the `UserPromptSubmit` hook
+  into `.claude/settings.json`. Same plugin-owned model + manual-
+  cleanup note as FR-01.02.

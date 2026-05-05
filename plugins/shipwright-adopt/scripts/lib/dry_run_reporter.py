@@ -87,7 +87,10 @@ def plan_standard_writes(
         ProposedWrite("shipwright_compliance_config.json", "create", "seeded_by_adopt=true"),
         ProposedWrite("shipwright_run_config.json", "create", "status=complete, written LAST"),
         ProposedWrite("shipwright_events.jsonl", "create", "1x adopted event + backfilled commits"),
-        ProposedWrite(".claude/settings.json", "modify", "merge UserPromptSubmit hook, idempotent"),
+        # NB: .claude/settings.json is NOT written — the suggest_iterate
+        # UserPromptSubmit hook is plugin-owned (registered in
+        # plugins/shipwright-iterate/hooks/hooks.json). Retired
+        # 2026-05-05 per iterate-20260505-plugin-hook-registration.
     ]
     if write_sync:
         writes.append(ProposedWrite("shipwright_sync_config.json", "create", "empty file_to_fr_map"))

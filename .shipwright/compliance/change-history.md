@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-05-04T06:02:37Z
-Total commits: 566
+Generated: 2026-05-05T16:13:40Z
+Total commits: 572
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 205
-    "fix" : 151
+    "feat" : 206
+    "fix" : 153
     "docs" : 87
-    "chore" : 72
+    "chore" : 75
     "refactor" : 32
     "test" : 12
     "other" : 7
@@ -18,10 +18,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 205 commits
+### Features (feat) — 206 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-04 | iterate | runner contract mandates reviews (ADR-029) | f6a14fc7fcc7 |
 | 2026-05-03 | test | boundary coverage report (ADR-027) | 216f8b3f5f2b |
 | 2026-05-03 | iterate | multi-session discipline (ADR-026) | 41cef18d6171 |
 | 2026-05-03 | iterate | confidence calibration phase (ADR-025) | f27376626fda |
@@ -228,10 +229,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 151 commits
+### Fixes (fix) — 153 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-04 | iterate | runner contract mandates self-review + calibration (extends ADR-029) | fb466b0aeafa |
+| 2026-05-04 | test | scan_specs comment uses canonical .shipwright/planning path | 932d7bd17ec5 |
 | 2026-05-04 | iterate | review-driven hardening (ADR-028) | 5415ed68584d |
 | 2026-05-03 | changelog | detect Git-Bash MSYS path-mangling in drop bullets (ADR-023) | a13fd64294f3 |
 | 2026-05-03 | env | strip UTF-8 BOM in parse_env_file (Windows Notepad scenario, ADR-021) | 71c47c350763 |
@@ -476,10 +479,13 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Chores (chore) — 72 commits
+### Chores (chore) — 75 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-04 | release | post-tag canon completion for v0.16.0 | 34ce8dc1d631 |
+| 2026-05-04 | release | v0.16.0 | e18f58aac468 |
+| 2026-05-04 | campaign | finalize iterate-skill-hardening F (post-F7 housekeeping) | a657921952b2 |
 | 2026-05-04 | campaign | extend iterate-skill-hardening with E + F specs | 07d4ab7e7fe2 |
 | 2026-05-03 | campaign | finalize iterate-skill-hardening status + event log | ed61254a65aa |
 | 2026-05-03 | campaign | init iterate-skill-hardening | 70682f99cd3c |
@@ -623,7 +629,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 566 |
+| Total commits | 572 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 566 |
+| Human-authored commits | 572 |
 

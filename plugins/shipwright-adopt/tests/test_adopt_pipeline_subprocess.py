@@ -123,7 +123,11 @@ def test_full_pipeline_e2e_via_subprocess(tmp_path: Path) -> None:
     assert (tmp_path / ".shipwright" / "agent_docs" / "architecture.md").exists()
     assert (tmp_path / "shipwright_run_config.json").exists()
     assert (tmp_path / "shipwright_events.jsonl").exists()
-    assert (tmp_path / ".claude" / "settings.json").exists()
+    # .claude/settings.json is NO LONGER written by adopt — the
+    # suggest_iterate hook is plugin-owned (registered in
+    # plugins/shipwright-iterate/hooks/hooks.json). See
+    # iterate-20260505-plugin-hook-registration.
+    assert not (tmp_path / ".claude" / "settings.json").exists()
     assert (tmp_path / ".shipwright" / "planning" / "01-adopted" / "spec.md").exists()
 
     # Tier-5 visual docs were produced (fixture has client/components + tailwind)

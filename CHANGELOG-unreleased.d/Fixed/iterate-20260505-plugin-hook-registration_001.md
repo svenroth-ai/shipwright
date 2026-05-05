@@ -1,0 +1,1 @@
+suggest_iterate UserPromptSubmit hook is now plugin-registered (plugins/shipwright-iterate/hooks/hooks.json) instead of installed per-project — Claude Code's 'hook is not associated with a plugin' error on adopted projects no longer fires. Retired hook_installer.py + check_a6 verifier + 7 SKILL.md auto-install stanzas. ADR-030.

@@ -1,12 +1,20 @@
+---
+canon_generated: true
+run_id: "iterate-20260505-plugin-hook-registration"
+phase: "iterate"
+reason: "iterate: plugin-owned UserPromptSubmit hook (ADR-030)"
+timestamp: "2026-05-05T16:13:40.671118+00:00"
+---
+
 # Session Handoff
 
-> Auto-generated 2026-05-04 17:07:23 UTC
+> Auto-generated 2026-05-05 16:13:40 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-04 17:07:23 UTC
-- **Reason**: release v0.16.0
+- **Timestamp**: 2026-05-05 16:13:40 UTC
+- **Reason**: iterate: plugin-owned UserPromptSubmit hook (ADR-030)
 
 ## Last Iterate
 
@@ -19,6 +27,19 @@
 - **Tests passed**: True
 - **Spec**: .shipwright/planning/iterate/campaigns/iterate-skill-hardening/sub-iterates/F-runner-contract-mandates-reviews.md
 
+## Current Iterate Progress
+
+- **Branch**: iterate/plugin-hook-registration
+- **Run ID**: iterate-20260505-plugin-hook-registration
+- **Spec**: .shipwright/planning/iterate/2026-05-05-plugin-hook-registration.md
+- **Complexity**: medium (manual override — wide-area refactor across 8
+- **External Review Marker**: missing
+
+### Mandatory replay on Resume
+
+Before dispatching to the handoff's Remaining phase, run these if missing:
+- Finalization (F0–F11) after all mandatory phases pass
+
 ## Legacy build state
 
 - **Phase**: design
@@ -30,8 +51,8 @@
 
 ## Git State
 
-- **Branch**: main
-- **Last Commit**: e18f58a chore(release): v0.16.0
+- **Branch**: iterate/plugin-hook-registration
+- **Last Commit**: 34ce8dc chore(release): post-tag canon completion for v0.16.0
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -62,7 +83,7 @@
 
 ## Recent Decisions
 
-### ADR-029: ADR-029: sub-iterate-runner contract mandates Step 3.5 (External Plan Review) and Step 3.7 (Code Review Cascade)
-- **Date:** 2026-05-04
-- **Section:** Iterate — feature: Runner Contract Mandates Reviews (Sub-Iterate F)
-- **Context:** Campaign iterate-skill-hardening A/B/C/D shipped without external plan review or code review cascade firing. The sub-iterate-runner agent contract jumped Step 3 (Build) directly to Step 4 (Finalization), skipping SKILL.md Step 4 (External LLM Review, mandatory 
+### ADR-030: suggest_iterate hook is plugin-registered, not project-installed (retire hook_installer)
+- **Date:** 2026-05-05
+- **Section:** Iterate — bug: plugin-owned UserPromptSubmit hook
+- **Context:** After ADR-019/020 fixed the carrier-shape and command-literal of the project-level installer, Claude Code surfaced an explicit error 'Hook command references ${CLAUDE_PLUGIN_ROOT} but the hook is not associated with a plugin' for every UserPromptSubmit on adopted projects. The variable only expands in 

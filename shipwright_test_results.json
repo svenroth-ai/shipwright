@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-04-skill-hardening-F-runner-contract-mandates-reviews",
-    "date": "2026-05-04",
+    "run_id": "iterate-20260505-plugin-hook-registration",
+    "date": "2026-05-05",
     "unit": {
       "status": "passed",
-      "passed": 188,
-      "total": 188
+      "passed": 1691,
+      "total": 1716
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 66,
+      "total": 66
     },
     "pgtap": {
       "status": "not_run",
@@ -28,8 +28,21 @@
       "total": 0
     },
     "smoke": {
-      "status": "not_run"
+      "status": "passed",
+      "note": "Manual session smoke replaced by 5 round-trip subprocess tests in test_hooks_json_registration.py (uv run with fake-cache fixture + tightly-controlled env). Reproducible, env-controlled, covers 4 negative paths (non-Shipwright project, slash command, short prompt, malformed stdin) plus 1 positive path."
     },
-    "degraded": []
+    "degraded": [
+      {
+        "scope": "shared/tests/test_phase_plugin_hooks_consistency.py",
+        "failures": 25,
+        "category": "pre-existing",
+        "note": "Pre-existing failures on main (verified via git stash + re-test on clean main). Not caused by this iterate. The 8 phase plugins have drifted from the test's expected hook chain (phase_session_start.py + phase_user_prompt_validate.py + phase_session_stop.py registrations). Out of scope for iterate-20260505-plugin-hook-registration; tracked for a separate cleanup iterate."
+      },
+      {
+        "scope": "plugins/shipwright-iterate/tests/test_hooks_json_registration.py::test_cache_hooks_json_registers_canonical_userpromptsubmit",
+        "category": "skip-by-design",
+        "note": "Skipped pre-push: cache hooks.json bytes differ from source until git push + bash scripts/update-marketplace.sh runs. Hard-asserts post-sync. AC-13 (M3 fix from external code review)."
+      }
+    ]
   }
 }

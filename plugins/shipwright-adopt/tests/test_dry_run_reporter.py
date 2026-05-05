@@ -20,7 +20,8 @@ def test_standard_writes_lists_all_expected(tmp_path: Path) -> None:
     assert "shipwright_run_config.json" in paths
     assert "shipwright_sync_config.json" in paths
     assert "e2e/flows/adopted-baseline.spec.ts" in paths
-    assert ".claude/settings.json" in [w.path for w in report.writes if w.action == "modify"]
+    # .claude/settings.json is NOT written — hook is plugin-owned now.
+    assert ".claude/settings.json" not in paths
 
 
 def test_no_sync_no_crawl(tmp_path: Path) -> None:

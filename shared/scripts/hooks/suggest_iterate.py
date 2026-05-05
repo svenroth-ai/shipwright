@@ -2,7 +2,10 @@
 """UserPromptSubmit hook: phase-aware skill router for Shipwright projects.
 
 Detects user intent and suggests the appropriate Shipwright skill.
-Installed in project .claude/settings.json by /shipwright-project or /shipwright-run.
+Registered in plugins/shipwright-iterate/hooks/hooks.json (UserPromptSubmit)
+since iterate-20260505-plugin-hook-registration. Fires for every prompt
+in any project carrying shipwright_run_config.json when the
+shipwright-iterate@shipwright plugin is enabled.
 
 Routing logic:
 - For completed pipelines: matches phase-specific keywords first (test, deploy, etc.),
