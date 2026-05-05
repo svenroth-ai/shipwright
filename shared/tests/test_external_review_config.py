@@ -13,6 +13,7 @@ import pytest
 
 from lib.external_review_config import (
     get_external_review_status,
+    is_external_code_review_enabled,
     is_external_review_enabled,
     load_review_config,
     resolve_model,
@@ -77,6 +78,148 @@ def test_load_review_config_explicit_path(sample_config_path, sample_config_dict
 def test_load_review_config_missing_returns_empty(tmp_path):
     config = load_review_config(tmp_path / "nonexistent.json")
     assert config == {}
+
+
+# ---- per-project shipwright_iterate_config.json deep-merge -----------
+
+def _seed_project(tmp_path, iterate_config: dict | None = None):
+    """Seed a tmp directory with a shipwright_run_config.json marker
+    (so auto-discovery finds it) and optionally a per-project iterate
+    config. Returns the project root path.
+    """
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    (proj / "shipwright_run_config.json").write_text("{}", encoding="utf-8")
+    if iterate_config is not None:
+        (proj / "shipwright_iterate_config.json").write_text(
+            json.dumps(iterate_config), encoding="utf-8",
+        )
+    return proj
+
+
+def test_load_review_config_explicit_project_root_overrides_feedback_iterations(
+    sample_config_path, sample_config_dict, tmp_path,
+):
+    """Per-project shipwright_iterate_config.json overrides
+    external_review.feedback_iterations from the shared default.
+    """
+    proj = _seed_project(tmp_path, {"external_review": {"feedback_iterations": 0}})
+    merged = load_review_config(sample_config_path, project_root=proj)
+    assert merged["external_review"]["feedback_iterations"] == 0
+    # Sibling keys in the same sub-dict survive the deep-merge (NOT replaced)
+    assert merged["external_review"]["alert_if_missing"] is True
+    # Top-level untouched keys survive
+    assert merged["models"] == sample_config_dict["models"]
+
+
+def test_load_review_config_project_root_adds_external_code_review_field(
+    sample_config_path, tmp_path,
+):
+    """The per-project file can introduce external_code_review.enabled,
+    which is absent from the shared default.
+    """
+    proj = _seed_project(tmp_path, {"external_code_review": {"enabled": False}})
+    merged = load_review_config(sample_config_path, project_root=proj)
+    assert merged["external_code_review"]["enabled"] is False
+
+
+def test_load_review_config_no_per_project_file_returns_default(
+    sample_config_path, sample_config_dict, tmp_path,
+):
+    """If shipwright_iterate_config.json is absent, the shared default is
+    returned unchanged.
+    """
+    proj = _seed_project(tmp_path, iterate_config=None)
+    merged = load_review_config(sample_config_path, project_root=proj)
+    assert merged == sample_config_dict
+
+
+def test_load_review_config_round_trip_per_project_overrides(
+    sample_config_path, tmp_path,
+):
+    """Boundary probe: write the per-project file with the schema produced
+    by config_writer.write_iterate_config (adopt), read it through
+    load_review_config, assert the loaded values match the file. Closes
+    the producer→file→consumer chain that ADR-032 added to the producer
+    side and this iterate adds to the consumer side.
+    """
+    iterate_cfg = {
+        "external_review": {"feedback_iterations": 0},
+        "external_code_review": {"enabled": True},
+        "seeded_by_adopt": True,
+        "updated_at": "2026-05-06T00:00:00+00:00",
+    }
+    proj = _seed_project(tmp_path, iterate_cfg)
+
+    # Re-read raw file from disk to confirm what we wrote
+    raw = (proj / "shipwright_iterate_config.json").read_text(encoding="utf-8")
+    on_disk = json.loads(raw)
+    assert on_disk == iterate_cfg
+
+    merged = load_review_config(sample_config_path, project_root=proj)
+    # Type fidelity round-trip
+    assert isinstance(merged["external_review"]["feedback_iterations"], int)
+    assert isinstance(merged["external_code_review"]["enabled"], bool)
+    assert merged["external_review"]["feedback_iterations"] == 0
+    assert merged["external_code_review"]["enabled"] is True
+
+
+def test_load_review_config_malformed_per_project_file_logs_and_falls_back(
+    sample_config_path, sample_config_dict, tmp_path, capsys,
+):
+    """A malformed per-project file must NOT crash the loader. The shared
+    default returns unchanged and the loader emits a stderr warning so
+    operators see why their override didn't take effect.
+    """
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    (proj / "shipwright_run_config.json").write_text("{}", encoding="utf-8")
+    (proj / "shipwright_iterate_config.json").write_text("{not-json", encoding="utf-8")
+    merged = load_review_config(sample_config_path, project_root=proj)
+    assert merged == sample_config_dict
+    captured = capsys.readouterr()
+    assert "shipwright_iterate_config.json" in captured.err
+
+
+# ---- is_external_code_review_enabled ----
+
+def test_is_external_code_review_enabled_default_true(clean_review_env):
+    """Cascade defaults to enabled when the field is absent — matches the
+    Branch C documentation in iteration-reviews.md (cascade ON unless
+    explicitly opted out).
+    """
+    assert is_external_code_review_enabled({}) is True
+    assert is_external_code_review_enabled({"external_review": {"feedback_iterations": 1}}) is True
+
+
+def test_is_external_code_review_enabled_explicit_false(clean_review_env):
+    """external_code_review.enabled: false disables the cascade."""
+    config = {"external_code_review": {"enabled": False}}
+    assert is_external_code_review_enabled(config) is False
+
+
+def test_is_external_code_review_enabled_explicit_true(clean_review_env):
+    config = {"external_code_review": {"enabled": True}}
+    assert is_external_code_review_enabled(config) is True
+
+
+def test_is_external_code_review_independent_of_feedback_iterations(clean_review_env):
+    """Per iteration-reviews.md:191-194: the cascade gate is independent
+    of plan/iterate-mode external_review.feedback_iterations. A user
+    can disable plan/iterate review while keeping the cascade on, and
+    vice versa.
+    """
+    config = {
+        "external_review": {"feedback_iterations": 0},  # plan/iterate disabled
+        "external_code_review": {"enabled": True},      # cascade still on
+    }
+    assert is_external_code_review_enabled(config) is True
+
+    config2 = {
+        "external_review": {"feedback_iterations": 1},   # plan/iterate enabled
+        "external_code_review": {"enabled": False},      # cascade explicitly off
+    }
+    assert is_external_code_review_enabled(config2) is False
 
 
 # ---- is_external_review_enabled ----

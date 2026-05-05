@@ -1,32 +1,32 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-05-finalization-verifier-drop-dir",
-    "date": "2026-05-05",
+    "run_id": "iterate-2026-05-06-iterate-config-loader",
+    "date": "2026-05-06",
     "unit": {
       "status": "passed",
-      "passed": 32,
-      "total": 32,
-      "note": "shared/tests/test_verify_iterate_finalization.py: 26 existing + 6 new tests covering drop-directory CHANGELOG check, gitkeep-only ignored, run_id specificity, dashboard short-SHA fallback, end-to-end run_all_checks under drop-dir model."
+      "passed": 34,
+      "total": 34,
+      "note": "shared/tests/test_external_review_config.py: 24 existing + 10 new tests covering project_root deep-merge, sub-dict preservation, missing-file fallback, malformed-JSON fallback (with stderr), round-trip, cascade-helper defaults + independence from feedback_iterations."
     },
     "integration": {
       "status": "passed",
-      "passed": 1252,
-      "total": 1252,
-      "note": "Full shared/tests/ suite (excluding 3 pre-existing fail suites unrelated to this iterate)."
+      "passed": 1261,
+      "total": 1261,
+      "note": "Full shared/tests/ suite (excluding 3 pre-existing fail suites). Up from 1252 because of 9 new external_review_config tests beyond the 1 existing baseline change."
     },
     "pgtap": {"status": "not_run", "passed": 0, "total": 0},
     "e2e": {"status": "not_run", "passed": 0, "total": 0},
     "design_fidelity": {"status": "not_run", "passed": 0, "total": 0},
     "smoke": {
       "status": "passed",
-      "note": "Re-ran verify_iterate_finalization on the previous iterate (commit f4f7229) — output went from 1 FAIL + 1 WARN to 5 OK (only session_handoff age WARN remains, which is time-dependent and not a real bug)."
+      "note": "Empirical end-to-end probe on shipwright self-adopted root: load_review_config(project_root='.') reads shipwright_iterate_config.json (written in ADR-032), returns merged config with feedback_iterations=0 (override), external_code_review.enabled=True (added). is_external_code_review_enabled = True; get_external_review_status = user_disabled. Confirms producer/consumer loop closed."
     },
     "degraded": [
       {
         "scope": "shared/tests/test_phase_plugin_hooks_consistency.py + test_artifact_path_canon + test_gitignore_canon",
         "failures": 34,
         "category": "pre-existing",
-        "note": "Pre-existing on main (verified by stash). Same backlog flagged in iterate-2026-05-05-adopt-iterate-config; out of scope for this verifier-fix iterate."
+        "note": "Pre-existing on main, same as iterate-2026-05-05-finalization-verifier-drop-dir and iterate-2026-05-05-adopt-iterate-config. Out of scope."
       }
     ]
   }

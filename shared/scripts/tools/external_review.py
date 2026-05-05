@@ -276,6 +276,15 @@ def main() -> int:
             "or 'code' (code diff vs section/iterate spec)."
         ),
     )
+    parser.add_argument(
+        "--project-root",
+        default=".",
+        help=(
+            "Project directory used to load shipwright_iterate_config.json "
+            "as a per-project override over shared/config/external_review.json. "
+            "Defaults to cwd."
+        ),
+    )
     args = parser.parse_args()
 
     # Mode-specific argument validation.
@@ -322,7 +331,7 @@ def main() -> int:
         }, indent=2))
         return 0
 
-    config = load_review_config()
+    config = load_review_config(project_root=Path(args.project_root).resolve())
 
     # Load mode-specific prompts.
     if args.mode == "iterate":

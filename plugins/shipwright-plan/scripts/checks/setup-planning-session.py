@@ -116,6 +116,15 @@ def main() -> int:
     parser.add_argument("--file", required=True, help="Path to spec .md file")
     parser.add_argument("--plugin-root", required=True, help="Path to plugin root")
     parser.add_argument("--session-id", help="Session ID from hook context")
+    parser.add_argument(
+        "--project-root",
+        default=".",
+        help=(
+            "Project directory used to load shipwright_iterate_config.json "
+            "as a per-project override over shared/config/external_review.json. "
+            "Defaults to cwd."
+        ),
+    )
     args = parser.parse_args()
 
     valid, error = validate_spec_file(args.file)
@@ -150,7 +159,7 @@ def main() -> int:
     # - plan-local config for capabilities (e2e_test_plan, vertex_ai, context)
     # - shared review config for external-review status (models, llm_client, external_review)
     global_config = load_global_config(args.plugin_root)
-    review_config = load_review_config()
+    review_config = load_review_config(project_root=Path(args.project_root).resolve())
     review_status = get_external_review_status(review_config)
 
     result = {

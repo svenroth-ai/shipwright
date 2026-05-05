@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-05T21:57:56Z
+Generated: 2026-05-05T22:10:02Z
 
 ## Requirements Coverage
 
@@ -39,6 +39,7 @@ Generated: 2026-05-05T21:57:56Z
 | post-F7 housekeeping + AC-13 P5 fix (active install path) for plugin-hook-registration | iterate | bug | FR-01.11 | 12/12 | afb3b63 | 2026-05-05 |
 | FR-table parser accepts 5-col adopt format + drift protection | iterate | bug | FR-01.10, FR-01.13 | 1594/1628 | 656f96f | 2026-05-05 |
 | adopt writes shipwright_iterate_config.json with documented opt-out schema | iterate | bug |  | 241/241 | f4f7229 | 2026-05-05 |
+| verifier accepts drop-dir entries + dashboard short-SHAs | iterate | bug |  | 32/32 | f1f0447 | 2026-05-05 |
 
 ## Coverage Summary
 
@@ -46,7 +47,7 @@ Generated: 2026-05-05T21:57:56Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 15 |
+| Iterate changes | 16 |
 | Requirements total | 13 |
 | Requirements verified | 13/13 |
 | Must-have verified | 10/10 |

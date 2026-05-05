@@ -6,9 +6,10 @@ API key to ``.env.local`` in response to the "missing_keys" prompt. Returns a
 small JSON blob the LLM can parse without touching the env file.
 
 Usage:
-    uv run shared/scripts/checks/check-external-review-keys.py
+    uv run shared/scripts/checks/check-external-review-keys.py [--project-root .]
 """
 
+import argparse
 import json
 import os
 import sys
@@ -22,12 +23,26 @@ if str(_SHARED_LIB) not in sys.path:
 
 from external_review_config import (  # noqa: E402
     get_external_review_status,
+    is_external_code_review_enabled,
     load_review_config,
 )
 
 
 def main() -> int:
-    config = load_review_config()
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument(
+        "--project-root",
+        default=".",
+        help=(
+            "Project directory used to load shipwright_iterate_config.json "
+            "as a per-project override over shared/config/external_review.json. "
+            "Defaults to the current working directory."
+        ),
+    )
+    args = parser.parse_args()
+
+    project_root = Path(args.project_root).resolve()
+    config = load_review_config(project_root=project_root)
     status = get_external_review_status(config)
 
     providers = {
@@ -40,6 +55,7 @@ def main() -> int:
         "available": status == "available",
         "status": status,
         "providers": providers,
+        "code_review_cascade_enabled": is_external_code_review_enabled(config),
     }, indent=2))
     return 0
 

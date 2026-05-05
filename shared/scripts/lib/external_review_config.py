@@ -1,10 +1,21 @@
 """External review configuration loader (shared across all SDLC plugins).
 
 Provides:
-- ``load_review_config(path=None)`` — load shared/config/external_review.json
+- ``load_review_config(path=None, project_root=None)`` — load shared/config/external_review.json,
+  optionally deep-merging ``<project_root>/shipwright_iterate_config.json`` over it
 - ``is_external_review_enabled(config)`` — True iff feedback_iterations > 0 and a key is set
+- ``is_external_code_review_enabled(config)`` — True iff external_code_review.enabled (default True)
 - ``get_external_review_status(config)`` — three-way status: user_disabled | available | missing_keys
 - ``resolve_model(config, model_key)`` — resolve a model name with env-var override
+
+Per-project override:
+``shipwright_iterate_config.json`` at the project root carries the documented
+opt-out fields ``external_review.feedback_iterations`` (controls plan/iterate-mode
+review) and ``external_code_review.enabled`` (controls the code-review cascade
+gate, independent per iteration-reviews.md:191-194). When ``project_root`` is
+passed explicitly, values from this file deep-merge over the shared default.
+The merge is opt-in — callers without project context (e.g. unit tests of the
+loader) get the unchanged shared default.
 
 Env-var override pattern: ``SHIPWRIGHT_REVIEW_MODEL_<KEY_UPPER>`` overrides
 ``config['models'][key]``. Empty/whitespace-only values fall back to the config
@@ -45,15 +56,75 @@ _VALID_MODEL_KEYS: set[str] = {
 _ENV_OVERRIDE_PREFIX = "SHIPWRIGHT_REVIEW_MODEL_"
 
 
-def load_review_config(config_path: Path | str | None = None) -> dict[str, Any]:
-    """Load shared external-review config.
+_PROJECT_ITERATE_CONFIG_NAME = "shipwright_iterate_config.json"
 
-    Returns ``{}`` if the file doesn't exist (graceful degradation).
+
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    """Recursive dict merge — ``override`` wins per key. Returns a new dict.
+
+    Sub-dicts are merged recursively so an override of one key inside
+    ``external_review`` does NOT replace the whole sub-dict (and lose
+    sibling keys like ``alert_if_missing``).
+    """
+    out: dict[str, Any] = dict(base)
+    for k, v in override.items():
+        if k in out and isinstance(out[k], dict) and isinstance(v, dict):
+            out[k] = _deep_merge(out[k], v)
+        else:
+            out[k] = v
+    return out
+
+
+def _load_project_iterate_config(project_root: Path) -> dict[str, Any]:
+    """Read ``<project_root>/shipwright_iterate_config.json`` defensively.
+
+    Returns ``{}`` if the file doesn't exist or is malformed. Malformed
+    JSON emits a stderr warning so operators see why their override
+    didn't take effect rather than silently being ignored.
+    """
+    path = project_root / _PROJECT_ITERATE_CONFIG_NAME
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        sys.stderr.write(
+            f"warning: malformed {_PROJECT_ITERATE_CONFIG_NAME} at {path} "
+            f"({exc.msg} line {exc.lineno}); falling back to shared default\n"
+        )
+        return {}
+
+
+def load_review_config(
+    config_path: Path | str | None = None,
+    project_root: Path | str | None = None,
+) -> dict[str, Any]:
+    """Load shared external-review config, optionally deep-merging
+    a per-project override from ``shipwright_iterate_config.json``.
+
+    Returns ``{}`` if the shared file doesn't exist (graceful degradation).
+
+    Per-project merge is **opt-in**: callers must pass ``project_root``
+    explicitly. We deliberately do NOT auto-discover from cwd because
+    walking up to find a Shipwright project would pollute callers
+    (and tests) that just want the shared default. CLI tools that wrap
+    this function should accept ``--project-root`` (or default to
+    ``Path.cwd()``) and pass the value through here.
     """
     path = Path(config_path) if config_path is not None else _DEFAULT_CONFIG_PATH
     if not path.exists():
-        return {}
-    return json.loads(path.read_text(encoding="utf-8"))
+        base: dict[str, Any] = {}
+    else:
+        base = json.loads(path.read_text(encoding="utf-8"))
+
+    if project_root is None:
+        return base
+
+    project_root = Path(project_root)
+    overrides = _load_project_iterate_config(project_root)
+    if not overrides:
+        return base
+    return _deep_merge(base, overrides)
 
 
 def is_external_review_enabled(config: dict[str, Any]) -> bool:
@@ -74,6 +145,18 @@ def is_external_review_enabled(config: dict[str, Any]) -> bool:
     has_openai = bool(os.environ.get("OPENAI_API_KEY"))
 
     return has_openrouter or has_gemini or has_openai
+
+
+def is_external_code_review_enabled(config: dict[str, Any]) -> bool:
+    """Check the project-level cascade opt-out gate.
+
+    Per iteration-reviews.md:191-194 the cascade is an INDEPENDENT gate
+    from plan/iterate-mode review (``external_review.feedback_iterations``).
+    Default ``True`` so the cascade runs by default; operators flip
+    ``external_code_review.enabled: false`` in
+    ``shipwright_iterate_config.json`` to opt out at project level.
+    """
+    return bool(config.get("external_code_review", {}).get("enabled", True))
 
 
 def get_external_review_status(config: dict[str, Any]) -> str:

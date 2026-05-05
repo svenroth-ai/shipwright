@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-05-finalization-verifier-drop-dir"
+run_id: "iterate-2026-05-06-iterate-config-loader"
 phase: "iterate"
-reason: "iterate: refresh dashboard post-F7 (ADR-033)"
-timestamp: "2026-05-05T21:59:09.658571+00:00"
+reason: "iterate: external_review_config per-project deep-merge (ADR-034)"
+timestamp: "2026-05-05T22:10:02.710317+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-05 21:59:09 UTC
+> Auto-generated 2026-05-05 22:10:02 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-05 21:59:09 UTC
-- **Reason**: iterate: refresh dashboard post-F7 (ADR-033)
+- **Timestamp**: 2026-05-05 22:10:02 UTC
+- **Reason**: iterate: external_review_config per-project deep-merge (ADR-034)
 
 ## Last Iterate
 
@@ -38,7 +38,7 @@ timestamp: "2026-05-05T21:59:09.658571+00:00"
 ## Git State
 
 - **Branch**: main
-- **Last Commit**: a8af83c chore(iterate): F7 event for ADR-033 verifier drop-dir
+- **Last Commit**: 6d0ff01 chore(iterate): refresh dashboard + handoff post-F7 (ADR-033)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,7 +69,7 @@ timestamp: "2026-05-05T21:59:09.658571+00:00"
 
 ## Recent Decisions
 
-### ADR-033: Verifier accepts CHANGELOG-unreleased.d entries and dashboard short-SHAs
-- **Date:** 2026-05-05
-- **Section:** Iterate — bug: finalization verifier drop-dir + dashboard commit-hash fallback
-- **Context:** verify_iterate_finalization.py reported FAIL on CHANGELOG.md [Unreleased] empty + WARN on build_dashboard run_id missing for every iterate since the drop-directory CHANGELOG refactor. Both checks predate post-refactor file shapes — drop files live in CHANGELOG-unreleased.d/<category>/<run_
+### ADR-034: load_review_config deep-merges per-project override; cascade helper added
+- **Date:** 2026-05-06
+- **Section:** Iterate — bug: external_review_config loads per-project shipwright_iterate_config.json
+- **Context:** shipwright_iterate_config.json was documented as the project-level opt-out for external_review.feedback_iterations and external_code_review.enabled (iteration-reviews.md, sub-iterate-runner.md) but the loader external_review_config.py read only shared/config/external_review.json. 
