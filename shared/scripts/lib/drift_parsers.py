@@ -290,8 +290,16 @@ def read_package_scripts(package_json_path: str | os.PathLike[str]) -> dict[str,
 # FR table parser (from .shipwright/planning/*/spec.md)
 # ---------------------------------------------------------------------------
 
+# Accepts both the 3-data-column Greenfield format
+#   | FR-01.01 | login | Must |
+# and the 5-data-column /shipwright-adopt format
+#   | FR-01.01 | /shipwright-run | Must | Orchestrate ... | enrichment.json |
+# Capture groups (always present): 1=ID, 2=col2 (Text or Name), 3=Priority.
+# Optional groups (5-col only): 4=Description, 5=Source.
+# The semantic FR body is group(4) when present, else group(2). See ADR-031.
 _FR_TABLE_RE = re.compile(
-    r"^\| (FR-[\d.]+)\s*\|\s*(.+?)\s*\|\s*(Must|Should|May)\s*\|$"
+    r"^\|\s*(FR-[\d.]+)\s*\|\s*([^|]+?)\s*\|\s*(Must|Should|May)\s*\|"
+    r"(?:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|)?\s*$"
 )
 
 
@@ -316,9 +324,12 @@ def parse_fr_table(content: str, split: str, spec_path: str) -> list[FunctionalR
         m = _FR_TABLE_RE.match(line)
         if not m:
             continue
+        # 5-col format puts the FR body in the Description column (4);
+        # 3-col puts it in the Text column (2). See ADR-031.
+        body = (m.group(4) or m.group(2)).strip()
         out.append(FunctionalRequirement(
             id=m.group(1),
-            text=m.group(2).strip(),
+            text=body,
             priority=m.group(3),
             split=split,
             spec_path=spec_path,

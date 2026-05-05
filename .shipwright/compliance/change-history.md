@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-05-05T16:13:40Z
-Total commits: 572
+Generated: 2026-05-05T21:00:22Z
+Total commits: 576
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 206
-    "fix" : 153
+    "fix" : 154
     "docs" : 87
-    "chore" : 75
+    "chore" : 78
     "refactor" : 32
     "test" : 12
     "other" : 7
@@ -229,10 +229,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 153 commits
+### Fixes (fix) — 154 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-05 | iterate | suggest_iterate hook is plugin-owned, retire hook_installer (ADR-030) | a05ff22ccc6b |
 | 2026-05-04 | iterate | runner contract mandates self-review + calibration (extends ADR-029) | fb466b0aeafa |
 | 2026-05-04 | test | scan_specs comment uses canonical .shipwright/planning path | 932d7bd17ec5 |
 | 2026-05-04 | iterate | review-driven hardening (ADR-028) | 5415ed68584d |
@@ -479,10 +480,13 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Chores (chore) — 75 commits
+### Chores (chore) — 78 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-05 | release | post-tag canon completion for v0.16.1 | 389266ea332f |
+| 2026-05-05 | release | v0.16.1 | 337113d59411 |
+| 2026-05-05 | iterate | post-F7 housekeeping + AC-13 P5 fix (active install path) | afb3b6361a01 |
 | 2026-05-04 | release | post-tag canon completion for v0.16.0 | 34ce8dc1d631 |
 | 2026-05-04 | release | v0.16.0 | e18f58aac468 |
 | 2026-05-04 | campaign | finalize iterate-skill-hardening F (post-F7 housekeeping) | a657921952b2 |
@@ -629,7 +633,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 572 |
+| Total commits | 576 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 572 |
+| Human-authored commits | 576 |
 

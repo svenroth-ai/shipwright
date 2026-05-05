@@ -1,16 +1,17 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-20260505-plugin-hook-registration",
+    "run_id": "iterate-2026-05-05-rtm-fr-parser-multicolumn",
     "date": "2026-05-05",
     "unit": {
       "status": "passed",
-      "passed": 1691,
-      "total": 1716
+      "passed": 1594,
+      "total": 1628,
+      "note": "1594 = shared/tests (1244 minus the canon/hooks-consistency suites with pre-existing failures) + 305 compliance + 45 integration. 34 pre-existing failures unrelated to this change (test_phase_plugin_hooks_consistency, test_artifact_path_canon[agent_docs/compliance], test_gitignore_canon)."
     },
     "integration": {
       "status": "passed",
-      "passed": 66,
-      "total": 66
+      "passed": 45,
+      "total": 45
     },
     "pgtap": {
       "status": "not_run",
@@ -29,19 +30,20 @@
     },
     "smoke": {
       "status": "passed",
-      "note": "Manual session smoke replaced by 5 round-trip subprocess tests in test_hooks_json_registration.py (uv run with fake-cache fixture + tightly-controlled env). Reproducible, env-controlled, covers 4 negative paths (non-Shipwright project, slash command, short prompt, malformed stdin) plus 1 positive path."
+      "note": "Real-spec round-trip probe (test_*_real_adopted_spec) runs both parsers against the live .shipwright/planning/01-adopted/spec.md and asserts FR-01.10 + FR-01.13 + 13-FR floor extracted."
     },
     "degraded": [
       {
         "scope": "shared/tests/test_phase_plugin_hooks_consistency.py",
         "failures": 25,
         "category": "pre-existing",
-        "note": "Pre-existing failures on main (verified via git stash + re-test on clean main). Not caused by this iterate. The 8 phase plugins have drifted from the test's expected hook chain (phase_session_start.py + phase_user_prompt_validate.py + phase_session_stop.py registrations). Out of scope for iterate-20260505-plugin-hook-registration; tracked for a separate cleanup iterate."
+        "note": "Pre-existing failures inherited from main; my diff does not touch hooks.json or master_stop_check.py. Tracked for a separate cleanup iterate. Same backlog flagged in iterate-20260505-plugin-hook-registration."
       },
       {
-        "scope": "plugins/shipwright-iterate/tests/test_hooks_json_registration.py::test_cache_hooks_json_registers_canonical_userpromptsubmit",
-        "category": "skip-by-design",
-        "note": "Skipped pre-push: cache hooks.json bytes differ from source until git push + bash scripts/update-marketplace.sh runs. Hard-asserts post-sync. AC-13 (M3 fix from external code review)."
+        "scope": "shared/tests/test_artifact_path_canon.py + test_gitignore_canon.py",
+        "failures": 9,
+        "category": "pre-existing",
+        "note": "Layer-1 canon legacy-line-marker backlog from the 2026-04-27..29 .shipwright/<artifact>/ migrations. Diagrams + change-history references to legacy paths need inline `# artifact-path-canon: legacy` markers. Out of scope for this regex-only bug fix."
       }
     ]
   }

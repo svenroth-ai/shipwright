@@ -754,8 +754,16 @@ def collect_test_results(project_root: Path) -> TestResults | None:
 # Requirements
 # ---------------------------------------------------------------------------
 
+# Accepts both the 3-data-column Greenfield format
+#   | FR-01.01 | login | Must |
+# and the 5-data-column /shipwright-adopt format
+#   | FR-01.01 | /shipwright-run | Must | Orchestrate ... | enrichment.json |
+# Capture groups (always present): 1=ID, 2=col2 (Text or Name), 3=Priority.
+# Optional groups (5-col only): 4=Description, 5=Source.
+# The semantic FR body is group(4) when present, else group(2). See ADR-031.
 _FR_TABLE_RE = re.compile(
-    r"^\| (FR-[\d.]+)\s*\|\s*(.+?)\s*\|\s*(Must|Should|May)\s*\|$"
+    r"^\|\s*(FR-[\d.]+)\s*\|\s*([^|]+?)\s*\|\s*(Must|Should|May)\s*\|"
+    r"(?:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|)?\s*$"
 )
 
 
@@ -781,9 +789,12 @@ def collect_requirements(project_root: Path) -> list[RequirementInfo]:
         for line in content.splitlines():
             match = _FR_TABLE_RE.match(line)
             if match:
+                # 5-col format puts the FR body in the Description column
+                # (4); 3-col puts it in the Text column (2). See ADR-031.
+                body = (match.group(4) or match.group(2)).strip()
                 requirements.append(RequirementInfo(
                     id=match.group(1),
-                    text=match.group(2).strip(),
+                    text=body,
                     priority=match.group(3),
                     split=split_name,
                     spec_path=rel_spec,

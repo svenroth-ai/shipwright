@@ -9,6 +9,7 @@ from scripts.lib.data_collector import (
     ComplianceData,
     DecisionEntry,
     ExternalReviewState,
+    RequirementInfo,
     SectionInfo,
     SplitInfo,
     collect_all,
@@ -16,6 +17,7 @@ from scripts.lib.data_collector import (
     collect_decision_log,
     collect_dependencies,
     collect_external_review_states,
+    collect_requirements,
     collect_sections,
     collect_splits,
 )
@@ -276,3 +278,77 @@ class TestCollectAll:
         assert data.sections == []
         assert data.decisions == []
         assert data.dependencies == []
+
+
+class TestCollectRequirementsAdoptFiveCol:
+    """Coverage for FR tables produced by /shipwright-adopt (5-data-column).
+
+    Greenfield specs use ``| ID | Text | Priority |`` (3 data columns).
+    Adopt specs use ``| ID | Name | Priority | Description | Source |`` (5).
+    The compliance RTM consumer must extract from both — the 5-col semantic
+    body is the Description column, not the Name column. See ADR-031.
+    """
+
+    ADOPT_SPEC_BODY = (
+        "# Specification — adopted\n\n"
+        "## Functional Requirements\n\n"
+        "| ID | Name | Priority | Description | Source |\n"
+        "|----|------|----------|-------------|--------|\n"
+        "| FR-01.01 | /shipwright-run | Must | Orchestrate the full Shipwright SDLC pipeline. | enrichment.json |\n"
+        "| FR-01.10 | /shipwright-compliance | Must | Generate audit-ready compliance documentation. | enrichment.json |\n"
+        "| FR-01.13 | /shipwright-adopt | Should | Onboard an existing repository into the Shipwright SDLC. | enrichment.json |\n"
+    )
+
+    def test_collect_requirements_extracts_all_5col_rows(self, tmp_path: Path):
+        planning = tmp_path / ".shipwright" / "planning" / "01-adopted"
+        planning.mkdir(parents=True)
+        (planning / "spec.md").write_text(self.ADOPT_SPEC_BODY, encoding="utf-8")
+
+        reqs = collect_requirements(tmp_path)
+
+        ids = {r.id for r in reqs}
+        assert ids == {"FR-01.01", "FR-01.10", "FR-01.13"}
+        first = next(r for r in reqs if r.id == "FR-01.01")
+        # Description (col 4), not Name (col 2)
+        assert first.text == "Orchestrate the full Shipwright SDLC pipeline."
+        assert first.priority == "Must"
+        assert first.split == "01-adopted"
+        assert first.spec_path == ".shipwright/planning/01-adopted/spec.md"
+        assert isinstance(first, RequirementInfo)
+
+    def test_collect_requirements_real_adopted_spec(self):
+        """Round-trip probe against the actual /shipwright-adopt output.
+
+        Ensures the consumer agrees with the producer on every FR in the
+        repo's own ``.shipwright/planning/01-adopted/spec.md``.
+        """
+        repo_root = Path(__file__).resolve().parents[3]
+        spec = repo_root / ".shipwright" / "planning" / "01-adopted" / "spec.md"
+        if not spec.exists():
+            import pytest
+            pytest.skip("01-adopted/spec.md not present in this checkout")
+
+        # collect_requirements walks {project_root}/.shipwright/planning/*/spec.md
+        reqs = collect_requirements(repo_root)
+        ids = {r.id for r in reqs}
+        assert "FR-01.10" in ids, f"FR-01.10 missing from {sorted(ids)}"
+        assert "FR-01.13" in ids, f"FR-01.13 missing from {sorted(ids)}"
+        assert len(reqs) >= 13, f"expected >=13 FRs, got {len(reqs)}: {sorted(ids)}"
+
+    def test_collect_requirements_3col_greenfield_still_works(self, tmp_path: Path):
+        """Backward-compatibility: existing 3-col Greenfield specs unaffected."""
+        planning = tmp_path / ".shipwright" / "planning" / "01-auth"
+        planning.mkdir(parents=True)
+        (planning / "spec.md").write_text(
+            "| ID | Text | Priority |\n"
+            "|----|------|----------|\n"
+            "| FR-01.01 | User can log in | Must |\n"
+            "| FR-01.02 | User can log out | Should |\n",
+            encoding="utf-8",
+        )
+
+        reqs = collect_requirements(tmp_path)
+        assert {r.id for r in reqs} == {"FR-01.01", "FR-01.02"}
+        first = next(r for r in reqs if r.id == "FR-01.01")
+        assert first.text == "User can log in"
+        assert first.priority == "Must"

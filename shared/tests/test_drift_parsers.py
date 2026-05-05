@@ -13,6 +13,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 
 from lib.drift_parsers import (
     ADRHeader,
@@ -203,6 +204,93 @@ def test_collect_requirements_from_planning_walks_splits(tmp_path):
 
 def test_collect_requirements_no_planning_returns_empty(tmp_path):
     assert collect_requirements_from_planning(tmp_path) == []
+
+
+# ---------------------------------------------------------------------------
+# FR table parser — adopted (5-data-column) format
+# ---------------------------------------------------------------------------
+#
+# /shipwright-adopt produces FR rows with five data columns:
+#   | ID | Name | Priority | Description | Source |
+# whereas /shipwright-project (Greenfield) produces three:
+#   | ID | Text | Priority |
+# Both must parse cleanly. For the 5-col format, the FR's `text`
+# is the Description column (col 4) — the Name column is a slug
+# like "/shipwright-run" and is not the FR's semantic body.
+# Producer/consumer markdown drift; see ADR-031.
+
+ADOPT_FIVE_COL_FIXTURE = (
+    "| ID | Name | Priority | Description | Source |\n"
+    "|----|------|----------|-------------|--------|\n"
+    "| FR-01.01 | /shipwright-run | Must | Orchestrate the full Shipwright SDLC pipeline. | enrichment.json |\n"
+    "| FR-01.10 | /shipwright-compliance | Must | Generate audit-ready compliance documentation. | enrichment.json |\n"
+    "| FR-01.13 | /shipwright-adopt | Should | Onboard an existing repository into the Shipwright SDLC. | enrichment.json |\n"
+)
+
+
+def test_parse_fr_table_extracts_rows_from_adopt_5col_format():
+    frs = parse_fr_table(
+        ADOPT_FIVE_COL_FIXTURE,
+        split="01-adopted",
+        spec_path=".shipwright/planning/01-adopted/spec.md",
+    )
+    assert len(frs) == 3
+    assert frs[0].id == "FR-01.01"
+    assert frs[0].priority == "Must"
+    # Description (col 4), not Name (col 2)
+    assert frs[0].text == "Orchestrate the full Shipwright SDLC pipeline."
+    assert frs[2].id == "FR-01.13"
+    assert frs[2].priority == "Should"
+    assert frs[2].text == "Onboard an existing repository into the Shipwright SDLC."
+
+
+def test_parse_fr_table_3col_and_5col_both_match_in_one_doc():
+    """A doc that mixes 3-col and 5-col rows still parses every row."""
+    md = (
+        "| ID | Text | Priority |\n"
+        "|----|------|----------|\n"
+        "| FR-01.01 | greenfield row | Must |\n"
+        "\n"
+        "| ID | Name | Priority | Description | Source |\n"
+        "|----|------|----------|-------------|--------|\n"
+        "| FR-02.01 | /adopted | Should | adopted row description | enrichment.json |\n"
+    )
+    frs = parse_fr_table(md, split="mixed", spec_path="x")
+    assert {f.id: f.text for f in frs} == {
+        "FR-01.01": "greenfield row",
+        "FR-02.01": "adopted row description",
+    }
+
+
+def test_collect_requirements_walks_5col_adopt_split(tmp_path):
+    planning = tmp_path / ".shipwright" / "planning" / "01-adopted"
+    planning.mkdir(parents=True)
+    (planning / "spec.md").write_text(ADOPT_FIVE_COL_FIXTURE, encoding="utf-8")
+    frs = collect_requirements_from_planning(tmp_path)
+    assert {f.id for f in frs} == {"FR-01.01", "FR-01.10", "FR-01.13"}
+
+
+def test_parse_fr_table_real_adopted_spec_extracts_all_frs():
+    """Round-trip probe (`references/round-trip-tests.md` Section 1):
+    feed the actual file `/shipwright-adopt` produced into the consumer.
+    Catches the producer/consumer markdown boundary drift this iterate fixes.
+    """
+    repo_root = Path(__file__).resolve().parents[2]
+    spec = repo_root / ".shipwright" / "planning" / "01-adopted" / "spec.md"
+    if not spec.exists():
+        pytest.skip("01-adopted/spec.md not present in this checkout")
+    content = spec.read_text(encoding="utf-8")
+    frs = parse_fr_table(
+        content,
+        split="01-adopted",
+        spec_path=".shipwright/planning/01-adopted/spec.md",
+    )
+    ids = {f.id for f in frs}
+    # Spec ships 13 FRs (FR-01.01 through FR-01.13). Probe for the
+    # FRs this iterate names explicitly + the broader floor.
+    assert "FR-01.10" in ids, f"FR-01.10 missing from {sorted(ids)}"
+    assert "FR-01.13" in ids, f"FR-01.13 missing from {sorted(ids)}"
+    assert len(frs) >= 13, f"expected >=13 FRs, got {len(frs)}: {sorted(ids)}"
 
 
 # ---------------------------------------------------------------------------
