@@ -2,28 +2,28 @@
 canon_generated: true
 run_id: "iterate-2026-05-05-finalization-verifier-drop-dir"
 phase: "iterate"
-reason: "iterate: finalization verifier drop-dir + dashboard fallback (ADR-033)"
-timestamp: "2026-05-05T21:57:56.390883+00:00"
+reason: "iterate: refresh dashboard post-F7 (ADR-033)"
+timestamp: "2026-05-05T21:59:09.658571+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-05 21:57:56 UTC
+> Auto-generated 2026-05-05 21:59:09 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-05 21:57:56 UTC
-- **Reason**: iterate: finalization verifier drop-dir + dashboard fallback (ADR-033)
+- **Timestamp**: 2026-05-05 21:59:09 UTC
+- **Reason**: iterate: refresh dashboard post-F7 (ADR-033)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-05-adopt-iterate-config
-- **Date**: 2026-05-05T21:39:21.195093Z
+- **Run ID**: iterate-2026-05-05-finalization-verifier-drop-dir
+- **Date**: 2026-05-05T21:57:56.832763Z
 - **Type**: bug
 - **Complexity**: small
 - **Branch**: main
-- **ADR**: ADR-032
+- **ADR**: ADR-033
 - **Tests passed**: True
 
 ## Legacy build state
@@ -38,7 +38,7 @@ timestamp: "2026-05-05T21:57:56.390883+00:00"
 ## Git State
 
 - **Branch**: main
-- **Last Commit**: 2b5a885 chore(iterate): refresh dashboard + handoff post-F7 (ADR-032)
+- **Last Commit**: a8af83c chore(iterate): F7 event for ADR-033 verifier drop-dir
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -54,17 +54,17 @@ timestamp: "2026-05-05T21:57:56.390883+00:00"
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-82fa35ff | work_completed | iterate (verifier accepts drop-dir entries + dashboard short-SHAs) | 2026-05-05 |
 | evt-ee5c8fd8 | work_completed | iterate (adopt writes shipwright_iterate_config.json with documented opt-out schema) | 2026-05-05 |
 | evt-30338dac | work_completed | iterate (FR-table parser accepts 5-col adopt format + drift protection) | 2026-05-05 |
 | evt-678e254b | compliance_update_failed | changelog | 2026-05-05 |
 | evt-30f5113f | work_completed | iterate (post-F7 housekeeping + AC-13 P5 fix (active install path) for plugin-hook-registration) | 2026-05-05 |
-| evt-7620210f | work_completed | iterate (plugin-owned suggest_iterate hook (ADR-030); retired hook_installer + 7 SKILL.md stanzas + A6 verifier) | 2026-05-05 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 15
-- **Last iterate**: bug — adopt writes shipwright_iterate_config.json with documented opt-out schema (2026-05-05)
+- **Total work events**: 16
+- **Last iterate**: bug — verifier accepts drop-dir entries + dashboard short-SHAs (2026-05-05)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
