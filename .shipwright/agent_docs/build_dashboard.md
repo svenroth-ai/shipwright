@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-05 21:39 UTC | Session: unknown
+> Updated: 2026-05-05 21:43 UTC | Session: unknown
 
-## Recent Changes (14 iterations)
+## Recent Changes (15 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | adopt writes shipwright_iterate_config.json with documented opt-out schema | 241/241 | f4f7229 |  | 2026-05-05 |
 | bug | FR-table parser accepts 5-col adopt format + drift protection | 1594/1628 | 656f96f | FR-01.10, FR-01.13 | 2026-05-05 |
 | bug | post-F7 housekeeping + AC-13 P5 fix (active install path) for plugin-hook-registration | 12/12 | afb3b63 | FR-01.11 | 2026-05-05 |
 | bug | plugin-owned suggest_iterate hook (ADR-030); retired hook_installer + 7 SKILL.md stanzas + A6 verifier | 1691/1716 | a05ff22 | FR-01.11, FR-01.13, FR-01.02 | 2026-05-05 |
