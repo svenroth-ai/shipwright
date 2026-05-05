@@ -79,6 +79,12 @@
         "date": "2026-05-04",
         "version": "v0.16.0",
         "outcome": "tagged"
+      },
+      {
+        "run_id": "changelog-v0.16.1-20260505-220813",
+        "date": "2026-05-05",
+        "version": "v0.16.1",
+        "outcome": "tagged"
       }
     ]
   },
@@ -87,7 +93,7 @@
   "_iterate_migration_ts": "2026-05-02T18:37:57.870696+00:00",
   "_iterate_migration_quarantined_count": 0,
   "created_at": "2026-05-02T18:37:57.870696+00:00",
-  "updated_at": "2026-05-04T17:07:24.637219+00:00",
+  "updated_at": "2026-05-05T20:08:29.736179+00:00",
   "last_compliance_update": {
     "phase": "changelog",
     "reports": [

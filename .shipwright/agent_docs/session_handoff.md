@@ -1,44 +1,23 @@
----
-canon_generated: true
-run_id: "iterate-20260505-plugin-hook-registration"
-phase: "iterate"
-reason: "iterate: plugin-owned UserPromptSubmit hook (ADR-030)"
-timestamp: "2026-05-05T16:13:40.671118+00:00"
----
-
 # Session Handoff
 
-> Auto-generated 2026-05-05 16:13:40 UTC
+> Auto-generated 2026-05-05 20:08:13 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-05 16:13:40 UTC
-- **Reason**: iterate: plugin-owned UserPromptSubmit hook (ADR-030)
+- **Timestamp**: 2026-05-05 20:08:13 UTC
+- **Reason**: release v0.16.1
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-04-skill-hardening-f-runner-contract-mandates-reviews
-- **Date**: 2026-05-04T06:03:30.229325Z
-- **Type**: feature
-- **Complexity**: small
-- **Branch**: iterate/skill-hardening-F-runner-contract-mandates-reviews
-- **ADR**: ADR-029
-- **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/iterate-skill-hardening/sub-iterates/F-runner-contract-mandates-reviews.md
-
-## Current Iterate Progress
-
+- **Run ID**: iterate-2026-05-05-plugin-hook-registration
+- **Date**: 2026-05-05T16:14:33.428669Z
+- **Type**: bug
+- **Complexity**: medium
 - **Branch**: iterate/plugin-hook-registration
-- **Run ID**: iterate-20260505-plugin-hook-registration
+- **ADR**: ADR-030
+- **Tests passed**: True
 - **Spec**: .shipwright/planning/iterate/2026-05-05-plugin-hook-registration.md
-- **Complexity**: medium (manual override — wide-area refactor across 8
-- **External Review Marker**: missing
-
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
 
@@ -51,8 +30,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/plugin-hook-registration
-- **Last Commit**: 34ce8dc chore(release): post-tag canon completion for v0.16.0
+- **Branch**: main
+- **Last Commit**: 337113d chore(release): v0.16.1
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +47,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-30f5113f | work_completed | iterate (post-F7 housekeeping + AC-13 P5 fix (active install path) for plugin-hook-registration) | 2026-05-05 |
+| evt-7620210f | work_completed | iterate (plugin-owned suggest_iterate hook (ADR-030); retired hook_installer + 7 SKILL.md stanzas + A6 verifier) | 2026-05-05 |
 | evt-da156299 | work_completed | iterate (F runner contract mandates reviews (ADR-029)) | 2026-05-04 |
 | evt-8ee80d97 | work_completed | iterate (iterate: review-driven hardening (ADR-028 / campaign iterate-skill-hardening Sub-Iterate E)) | 2026-05-04 |
 | evt-c4ae8ef7 | work_completed | iterate (test plugin: boundary coverage report (campaign iterate-skill-hardening Sub-Iterate D, ADR-027)) | 2026-05-03 |
-| evt-530b0980 | work_completed | iterate (changelog MSYS path-mangling linter) | 2026-05-03 |
-| evt-e67c7be3 | phase_completed | changelog | 2026-05-03 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 11
-- **Last iterate**: feature — F runner contract mandates reviews (ADR-029) (2026-05-04)
+- **Total work events**: 13
+- **Last iterate**: bug — post-F7 housekeeping + AC-13 P5 fix (active install path) for plugin-hook-registration (2026-05-05)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
