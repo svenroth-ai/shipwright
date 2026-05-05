@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-05T21:39:09Z
+Generated: 2026-05-05T21:57:56Z
 
 ## Requirements Coverage
 
@@ -38,6 +38,7 @@ Generated: 2026-05-05T21:39:09Z
 | plugin-owned suggest_iterate hook (ADR-030); retired hook_installer + 7 SKILL.md stanzas + A6 verifier | iterate | bug | FR-01.11, FR-01.13, FR-01.02 +1 | 1691/1716 | a05ff22 | 2026-05-05 |
 | post-F7 housekeeping + AC-13 P5 fix (active install path) for plugin-hook-registration | iterate | bug | FR-01.11 | 12/12 | afb3b63 | 2026-05-05 |
 | FR-table parser accepts 5-col adopt format + drift protection | iterate | bug | FR-01.10, FR-01.13 | 1594/1628 | 656f96f | 2026-05-05 |
+| adopt writes shipwright_iterate_config.json with documented opt-out schema | iterate | bug |  | 241/241 | f4f7229 | 2026-05-05 |
 
 ## Coverage Summary
 
@@ -45,7 +46,7 @@ Generated: 2026-05-05T21:39:09Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 14 |
+| Iterate changes | 15 |
 | Requirements total | 13 |
 | Requirements verified | 13/13 |
 | Must-have verified | 10/10 |

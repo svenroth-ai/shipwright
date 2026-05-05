@@ -1,0 +1,1 @@
+verify_iterate_finalization.py now recognizes CHANGELOG-unreleased.d/<category>/<run_id>_NNN.md drop files and accepts short commit SHAs in build_dashboard.md as proof of inclusion. Eliminates two false-positive checks (1 FAIL + 1 WARN) that have fired on every iterate since the drop-directory CHANGELOG refactor (ADR-033).

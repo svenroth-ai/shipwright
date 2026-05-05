@@ -1,5 +1,5 @@
 # Project Activity Dashboard
-> Updated: 2026-05-05 21:43 UTC | Session: unknown
+> Updated: 2026-05-05 21:57 UTC | Session: unknown
 
 ## Recent Changes (15 iterations)
 
@@ -22,7 +22,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-05 | Unit: 241/241 | Integration: 1347/1347 | Smoke: passed | (iterate)
+Last run: 2026-05-05 | Unit: 32/32 | Integration: 1252/1252 | Smoke: passed | (iterate)
 
 ## Pipeline
 

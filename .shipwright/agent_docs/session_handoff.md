@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-05-adopt-iterate-config"
+run_id: "iterate-2026-05-05-finalization-verifier-drop-dir"
 phase: "iterate"
-reason: "iterate: adopt writes shipwright_iterate_config.json (ADR-032)"
-timestamp: "2026-05-05T21:43:41.759133+00:00"
+reason: "iterate: finalization verifier drop-dir + dashboard fallback (ADR-033)"
+timestamp: "2026-05-05T21:57:56.390883+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-05 21:43:41 UTC
+> Auto-generated 2026-05-05 21:57:56 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-05 21:43:41 UTC
-- **Reason**: iterate: adopt writes shipwright_iterate_config.json (ADR-032)
+- **Timestamp**: 2026-05-05 21:57:56 UTC
+- **Reason**: iterate: finalization verifier drop-dir + dashboard fallback (ADR-033)
 
 ## Last Iterate
 
@@ -38,7 +38,7 @@ timestamp: "2026-05-05T21:43:41.759133+00:00"
 ## Git State
 
 - **Branch**: main
-- **Last Commit**: 1d34d7e chore(iterate): F7 event for ADR-032 adopt iterate-config
+- **Last Commit**: 2b5a885 chore(iterate): refresh dashboard + handoff post-F7 (ADR-032)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,7 +69,7 @@ timestamp: "2026-05-05T21:43:41.759133+00:00"
 
 ## Recent Decisions
 
-### ADR-032: Adopt writes shipwright_iterate_config.json with documented opt-out schema
+### ADR-033: Verifier accepts CHANGELOG-unreleased.d entries and dashboard short-SHAs
 - **Date:** 2026-05-05
-- **Section:** Iterate — bug: adopt writes shipwright_iterate_config.json
-- **Context:** shipwright-adopt wrote 6 of 7 documented config files. shipwright_iterate_config.json was missing — the documented opt-out surface for external_review.feedback_iterations and external_code_review.enabled (per iteration-reviews.md:140 and sub-iterate-runner.md:101). Reproduced on the self-adopted shipwright 
+- **Section:** Iterate — bug: finalization verifier drop-dir + dashboard commit-hash fallback
+- **Context:** verify_iterate_finalization.py reported FAIL on CHANGELOG.md [Unreleased] empty + WARN on build_dashboard run_id missing for every iterate since the drop-directory CHANGELOG refactor. Both checks predate post-refactor file shapes — drop files live in CHANGELOG-unreleased.d/<category>/<run_

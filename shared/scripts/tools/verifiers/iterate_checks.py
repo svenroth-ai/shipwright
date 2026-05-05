@@ -95,14 +95,62 @@ def check_adr_in_iterate_history(project_root: Path, run_id: str) -> CheckResult
     return CheckResult(name, False, f"{adr_id} NOT found in decision_log.md")
 
 
-def check_changelog_unreleased(project_root: Path) -> CheckResult:
-    """F4 check — ``CHANGELOG.md [Unreleased]`` has at least one bullet.
+def _find_changelog_drop_files(
+    base_dir: Path,
+    run_id: str | None,
+) -> list[Path]:
+    """Return drop files in ``CHANGELOG-unreleased.d/<category>/`` matching
+    ``run_id`` (if given), else all non-``.gitkeep`` ``.md`` files. The
+    drop-directory layout is owned by ``write_changelog_drop.py`` and
+    aggregated into ``CHANGELOG.md`` at release time.
+    """
+    drop_root = base_dir / "CHANGELOG-unreleased.d"
+    if not drop_root.is_dir():
+        return []
+    pattern = f"{run_id}_*.md" if run_id else "*.md"
+    found: list[Path] = []
+    for category_dir in sorted(p for p in drop_root.iterdir() if p.is_dir()):
+        for f in category_dir.glob(pattern):
+            if f.name == ".gitkeep":
+                continue
+            found.append(f)
+    return found
 
-    CHANGELOG.md lives at the monorepo root (one level above
-    ``project_root`` for ``webui``, same level for standalone projects).
-    Try both locations.
+
+def check_changelog_unreleased(
+    project_root: Path,
+    run_id: str | None = None,
+) -> CheckResult:
+    """F4 check — the iterate's changelog entry exists.
+
+    Recognizes both the legacy ``CHANGELOG.md [Unreleased]`` model and
+    the drop-directory model introduced by ``aggregate_changelog.py``:
+    entries land in ``CHANGELOG-unreleased.d/<category>/<run_id>_NNN.md``
+    between releases and are merged into the dated section at release time.
+
+    Pass conditions (any of):
+      1. A drop file matching ``run_id`` exists (when ``run_id`` is given).
+      2. Any non-``.gitkeep`` drop file exists (when ``run_id`` omitted —
+         legacy callers).
+      3. ``CHANGELOG.md [Unreleased]`` has at least one bullet
+         (pre-drop-dir behaviour, kept for backward compat).
     """
     name = "CHANGELOG.md [Unreleased] has entries"
+
+    # Drop-dir layout sits next to CHANGELOG.md, which lives at project_root
+    # for standalone projects and at project_root.parent for monorepo-nested
+    # ones (e.g. webui). Probe both bases.
+    drop_bases = [project_root, project_root.parent]
+    for base in drop_bases:
+        drop_files = _find_changelog_drop_files(base, run_id)
+        if drop_files:
+            label = f"run_id={run_id}" if run_id else "any iterate"
+            return CheckResult(
+                name, True,
+                f"{len(drop_files)} drop file(s) in CHANGELOG-unreleased.d for {label}",
+            )
+
+    # Fallback: legacy CHANGELOG.md [Unreleased] check
     candidates = [project_root / "CHANGELOG.md", project_root.parent / "CHANGELOG.md"]
     changelog = next((c for c in candidates if c.exists()), None)
     if not changelog:
@@ -114,10 +162,6 @@ def check_changelog_unreleased(project_root: Path) -> CheckResult:
         )
     content = changelog.read_text(encoding="utf-8", errors="ignore")
 
-    # Match the [Unreleased] section up to the next `## [version]` heading
-    # (Keep-a-Changelog convention). The previous regex used `\s*\n`, which
-    # could cross an empty section boundary and leak bullets from the
-    # following version section — this form is stricter.
     match = re.search(
         r"## \[Unreleased\][^\n]*\n(.*?)(?=\n## \[|\Z)",
         content,
@@ -167,10 +211,21 @@ def check_session_handoff_fresh(
 def check_build_dashboard_has_run_id(
     project_root: Path,
     run_id: str,
+    commit_hash: str | None = None,
 ) -> CheckResult:
-    """C2 check — ``build_dashboard.md`` references the current run_id.
+    """C2 check — ``build_dashboard.md`` reflects the current iterate run.
 
-    Was defined in the Canon spec but never implemented until iterate 14.8.
+    The dashboard is rendered by ``update_build_dashboard.py`` from
+    ``shipwright_events.jsonl``; since the file-per-iterate refactor it
+    contains the truncated commit hash (first 7 chars) in the Recent
+    Changes table, NOT the run_id literal. The check accepts either:
+
+      1. ``run_id`` literal in the dashboard (legacy / customized
+         dashboards that embed run_id explicitly), or
+      2. the short SHA prefix of ``commit_hash`` in the dashboard
+         (canonical post-refactor format).
+
+    Either match is sufficient — both signal that the iterate row landed.
     """
     name = "build_dashboard has run_id"
     dashboard = project_root / ".shipwright" / "agent_docs" / "build_dashboard.md"
@@ -182,6 +237,13 @@ def check_build_dashboard_has_run_id(
     content = dashboard.read_text(encoding="utf-8", errors="ignore")
     if run_id and run_id in content:
         return CheckResult(name, True, f"run_id={run_id} present")
+    if commit_hash:
+        short_sha = commit_hash[:7]
+        if short_sha and short_sha in content:
+            return CheckResult(
+                name, True,
+                f"commit={short_sha} present (run_id={run_id} not embedded)",
+            )
     return CheckResult(
         name, False,
         f"run_id={run_id} not found in build_dashboard.md",
@@ -346,9 +408,9 @@ def run_all_checks(
             "events.jsonl has commit", True, "skipped (no --commit supplied)"
         ),
         check_adr_in_iterate_history(project_root, run_id),
-        check_changelog_unreleased(project_root),
+        check_changelog_unreleased(project_root, run_id=run_id),
         check_session_handoff_fresh(project_root),
-        check_build_dashboard_has_run_id(project_root, run_id),
+        check_build_dashboard_has_run_id(project_root, run_id, commit_hash=commit_hash or None),
     ]
 
 

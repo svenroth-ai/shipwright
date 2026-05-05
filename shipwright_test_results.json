@@ -1,44 +1,32 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-05-adopt-iterate-config",
+    "run_id": "iterate-2026-05-05-finalization-verifier-drop-dir",
     "date": "2026-05-05",
     "unit": {
       "status": "passed",
-      "passed": 241,
-      "total": 241,
-      "note": "shipwright-adopt plugin suite (241/241). 6 new tests in test_config_writer + test_dry_run_reporter cover write_iterate_config existence, schema, round-trip producer/consumer, type fidelity, idempotency."
+      "passed": 32,
+      "total": 32,
+      "note": "shared/tests/test_verify_iterate_finalization.py: 26 existing + 6 new tests covering drop-directory CHANGELOG check, gitkeep-only ignored, run_id specificity, dashboard short-SHA fallback, end-to-end run_all_checks under drop-dir model."
     },
     "integration": {
       "status": "passed",
-      "passed": 1347,
-      "total": 1347,
-      "note": "Full integration-tests/ + shared/tests/ suite passes 1347 (excl. 34 pre-existing failures unrelated to this iterate)."
+      "passed": 1252,
+      "total": 1252,
+      "note": "Full shared/tests/ suite (excluding 3 pre-existing fail suites unrelated to this iterate)."
     },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
+    "pgtap": {"status": "not_run", "passed": 0, "total": 0},
+    "e2e": {"status": "not_run", "passed": 0, "total": 0},
+    "design_fidelity": {"status": "not_run", "passed": 0, "total": 0},
     "smoke": {
       "status": "passed",
-      "note": "Real-project boundary probe: ran write_iterate_config(Path('.')) on shipwright self-adopted root, file appeared with correct content (cat verified all keys + types)."
+      "note": "Re-ran verify_iterate_finalization on the previous iterate (commit f4f7229) — output went from 1 FAIL + 1 WARN to 5 OK (only session_handoff age WARN remains, which is time-dependent and not a real bug)."
     },
     "degraded": [
       {
         "scope": "shared/tests/test_phase_plugin_hooks_consistency.py + test_artifact_path_canon + test_gitignore_canon",
         "failures": 34,
         "category": "pre-existing",
-        "note": "Verified pre-existing on main (git stash; pytest still fails). Out of scope for this BUG iterate — concerns SessionStart/Stop hook ordering and legacy-line-marker backlog from earlier .shipwright/<artifact>/ migrations. Tracked for a separate cleanup iterate."
+        "note": "Pre-existing on main (verified by stash). Same backlog flagged in iterate-2026-05-05-adopt-iterate-config; out of scope for this verifier-fix iterate."
       }
     ]
   }
