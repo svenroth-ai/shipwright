@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.16.1] - 2026-05-05
+
+### Fixed
+
+- suggest_iterate UserPromptSubmit hook is now plugin-registered (plugins/shipwright-iterate/hooks/hooks.json) instead of installed per-project — Claude Code's 'hook is not associated with a plugin' error on adopted projects no longer fires. Retired hook_installer.py + check_a6 verifier + 7 SKILL.md auto-install stanzas. ADR-030.
+
 ## [v0.16.0] - 2026-05-04
 
 ### Added
