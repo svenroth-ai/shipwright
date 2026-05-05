@@ -387,20 +387,39 @@ def test_cache_layout_resolves_canonical_command_target():
 
 
 
+def _active_iterate_plugin_install_path() -> Path | None:
+    """Look up the ACTIVE shipwright-iterate plugin install path from
+    ``~/.claude/plugins/installed_plugins.json``. The active version is
+    what ``update-marketplace.sh`` syncs (it writes to the path stored
+    there, not whatever happens to be alphabetically last in the cache
+    directory). Picking the wrong version made AC-13 never fire — see
+    P5 finding in the merge-gate probes."""
+    ip_path = Path.home() / ".claude" / "plugins" / "installed_plugins.json"
+    if not ip_path.is_file():
+        return None
+    try:
+        data = json.loads(ip_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+    entries = (
+        data.get("plugins", {}).get("shipwright-iterate@shipwright") or []
+    )
+    if not entries:
+        return None
+    install = entries[0].get("installPath")
+    if not install:
+        return None
+    return Path(install)
+
+
 def _cache_hooks_json_in_sync_with_source() -> tuple[bool, Path | None]:
     """True when the cached plugin install carries the same hooks.json
     bytes as the source tree — meaning ``update-marketplace.sh`` has
-    propagated the most recent push.
-    """
-    cache_versions = sorted(
-        (_CLAUDE_USER_HOME / "shipwright-iterate").glob("*"),
-        key=lambda p: p.name,
-        reverse=True,
-    )
-    cache_versions = [v for v in cache_versions if v.is_dir()]
-    if not cache_versions:
+    propagated the most recent push to the *active* install path."""
+    install = _active_iterate_plugin_install_path()
+    if install is None or not install.is_dir():
         return False, None
-    candidate = cache_versions[0] / "hooks" / "hooks.json"
+    candidate = install / "hooks" / "hooks.json"
     if not candidate.is_file():
         return False, candidate
     try:
