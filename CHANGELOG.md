@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-05-06
+
+### Added
+
+- Empirical test backfill for F0.5 End-to-End Verification Gate (ADR-038): drift-schutz between Phase Matrix / F0.5 / design-and-testing.md (14 tests in `test_skill_e2e_gate_consistency.py`), real-pytest round-trip + greedy-filter trap + retry-cap probes via actual subprocesses (4 tests added to `test_surface_verification.py`), and CLI-level audit chain through `verify_iterate_finalization.py` (9 tests in `test_audit_e2e_integration.py`). +27 tests total; F0.5 ran against this iterate without `--tests-run` override (84 tests parsed from real pytest stdout).
+- F0.5 End-to-End Verification Gate to iterate skill — single normative chokepoint between F0 and F1 with surface taxonomy (web/cli/api/none), 3-retry orchestrator (`shared/scripts/surface_verification.py`), schema-enforced evidence in `shipwright_test_results.json.iterate_latest.surface_verification`, and post-commit audit (`check_surface_verification` in `iterate_checks.py`). Backend-affects-Frontend rule: at medium+, file-path-agnostic — `always` in the Phase Matrix subsumes detection. ADR-037.
+
 ## [v0.16.2] - 2026-05-06
 
 ### Fixed
