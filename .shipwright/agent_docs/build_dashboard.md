@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-06 05:33 UTC | Session: unknown
+> Updated: 2026-05-06 05:35 UTC | Session: unknown
 
-## Recent Changes (18 iterations)
+## Recent Changes (19 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | hooks-consistency parser handles quoted commands — 27/27 green | 1297/1297 | c5e6cb3 |  | 2026-05-06 |
 | bug | post-migration canon cleanup — 9 tests green | 1270/1270 | 7383c18 |  | 2026-05-06 |
 | bug | loader deep-merges per-project shipwright_iterate_config.json + cascade helper | 34/34 | 49eca25 |  | 2026-05-05 |
 | bug | verifier accepts drop-dir entries + dashboard short-SHAs | 32/32 | f1f0447 |  | 2026-05-05 |
