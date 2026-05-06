@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-06-hooks-consistency-parser"
+run_id: "iterate-2026-05-06-e2e-verification-gate"
 phase: "iterate"
-reason: "iterate: refresh dashboard post-F7 (ADR-036)"
-timestamp: "2026-05-06T05:35:02.379232+00:00"
+reason: "iterate: F0.5 End-to-End Verification Gate"
+timestamp: "2026-05-06T06:34:09.941481+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-06 05:35:02 UTC
+> Auto-generated 2026-05-06 06:34:10 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-06 05:35:02 UTC
-- **Reason**: iterate: refresh dashboard post-F7 (ADR-036)
+- **Timestamp**: 2026-05-06 06:34:10 UTC
+- **Reason**: iterate: F0.5 End-to-End Verification Gate
 
 ## Last Iterate
 
@@ -25,6 +25,19 @@ timestamp: "2026-05-06T05:35:02.379232+00:00"
 - **Branch**: main
 - **ADR**: ADR-036
 - **Tests passed**: True
+
+## Current Iterate Progress
+
+- **Branch**: iterate/e2e-verification-gate
+- **Run ID**: iterate-2026-05-06-e2e-verification-gate
+- **Spec**: .shipwright/planning/iterate/2026-05-06-e2e-verification-gate.md
+- **Complexity**: medium (autonomous, plan-driven)
+- **External Review Marker**: missing
+
+### Mandatory replay on Resume
+
+Before dispatching to the handoff's Remaining phase, run these if missing:
+- Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
 
@@ -37,8 +50,8 @@ timestamp: "2026-05-06T05:35:02.379232+00:00"
 
 ## Git State
 
-- **Branch**: main
-- **Last Commit**: a7e8091 chore(iterate): F7 event for ADR-036 hooks-consistency parser
+- **Branch**: iterate/e2e-verification-gate
+- **Last Commit**: e2e4a75 docs: sync hooks-and-pipeline + guide + browser-fixer with F0.5
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,7 +82,8 @@ timestamp: "2026-05-06T05:35:02.379232+00:00"
 
 ## Recent Decisions
 
-### ADR-036: _hook_commands uses shlex.split to handle quoted-path commands
+### ADR-037: F0.5 End-to-End Verification Gate (surface taxonomy + schema-enforced evidence)
 - **Date:** 2026-05-06
-- **Section:** Iterate — bug: hooks-consistency parser handles quoted commands
-- **Context:** test_phase_plugin_hooks_consistency.py reported 25 failures suggesting plugins were missing capture_session_id/phase_session_start/phase_session_stop hooks. Investigation showed all 8 phase plugins DO register the full chain in their hooks.json — the test's _hook_commands() helper used cmd.split() (whitespace) whi
+- **Section:** Iterate — feature: e2e-verification-gate
+- **Context:** Iterate skill at medium+ silently let backend-only diffs ship without empirical Surface verification. The 2026-04 webui regression hit production because file-path-gated browser verify (touches client/**) didn't fire for backend changes that affected the UI; spec-only authoring of E2E tests counted as a test run.
+- **De

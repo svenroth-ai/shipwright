@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-05-06T05:35:02Z
-Total commits: 591
+Generated: 2026-05-06T06:34:09Z
+Total commits: 599
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 206
+    "feat" : 208
     "fix" : 160
-    "chore" : 87
-    "docs" : 87
+    "docs" : 91
+    "chore" : 89
     "refactor" : 32
     "test" : 12
     "other" : 7
@@ -18,10 +18,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 206 commits
+### Features (feat) — 208 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-06 | iterate | add F0.5 surface_verification audit to iterate_checks | 17c8f9f945db |
+| 2026-05-06 | iterate | add surface_verification.py F0.5 orchestrator | fb70a460e262 |
 | 2026-05-04 | iterate | runner contract mandates reviews (ADR-029) | f6a14fc7fcc7 |
 | 2026-05-03 | test | boundary coverage report (ADR-027) | 216f8b3f5f2b |
 | 2026-05-03 | iterate | multi-session discipline (ADR-026) | 41cef18d6171 |
@@ -394,102 +396,14 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 87 commits
+### Documentation (docs) — 91 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-05-06 | iterate | F7 event for ADR-036 hooks-consistency parser | a7e80915fae1 |
-| 2026-05-06 | iterate | refresh dashboard + handoff post-F7 (ADR-035) | 0e33f0e605ec |
-| 2026-05-06 | iterate | F7 event for ADR-035 canon cleanup | 50b7127df018 |
-| 2026-05-06 | iterate | refresh dashboard + handoff post-F7 (ADR-034) | 50067e125513 |
-| 2026-05-06 | iterate | F7 event for ADR-034 loader deep-merge | 6338989246c9 |
-| 2026-05-05 | iterate | refresh dashboard + handoff post-F7 (ADR-033) | 6d0ff0128861 |
-| 2026-05-05 | iterate | F7 event for ADR-033 verifier drop-dir | a8af83c4a04a |
-| 2026-05-05 | iterate | refresh dashboard + handoff post-F7 (ADR-032) | 2b5a885e7d24 |
-| 2026-05-05 | iterate | F7 event for ADR-032 adopt iterate-config | 1d34d7ee60ec |
-| 2026-05-05 | release | post-tag canon completion for v0.16.1 | 389266ea332f |
-| 2026-05-05 | release | v0.16.1 | 337113d59411 |
-| 2026-05-05 | iterate | post-F7 housekeeping + AC-13 P5 fix (active install path) | afb3b6361a01 |
-| 2026-05-04 | release | post-tag canon completion for v0.16.0 | 34ce8dc1d631 |
-| 2026-05-04 | release | v0.16.0 | e18f58aac468 |
-| 2026-05-04 | campaign | finalize iterate-skill-hardening F (post-F7 housekeeping) | a657921952b2 |
-| 2026-05-04 | campaign | extend iterate-skill-hardening with E + F specs | 07d4ab7e7fe2 |
-| 2026-05-03 | campaign | finalize iterate-skill-hardening status + event log | ed61254a65aa |
-| 2026-05-03 | campaign | init iterate-skill-hardening | 70682f99cd3c |
-| 2026-05-03 | iterate-msys-linter | post-F6 housekeeping (F7 event for ADR-023) | dd100c05b830 |
-| 2026-05-03 | release | post-tag canon completion for v0.15.0 | ed4b076571b4 |
-| 2026-05-03 | release | v0.15.0 | 7b144fa52871 |
-| 2026-05-03 | post-merge | regenerate compliance + dashboard + handoff for merged state | 566260f0a899 |
-| 2026-05-03 | iterate-hooks-json | post-F6 housekeeping (F7 event for ADR-022) | 3476ce2245be |
-| 2026-05-03 | iterate-env-local | F4 + F7 for inline-comment fix | 3409c601c597 |
-| 2026-05-03 | iterate-env-local | post-F6 housekeeping (F7 event for ADR-021 + post-merge handoff regenerate) | 95e6f2ca921b |
-| 2026-05-03 | iterate-quoted-path | post-F6 housekeeping (F7 event for ADR-020) | d93ea0ac547e |
-| 2026-05-03 | compliance | refresh artifacts post-rebase + record event for ADR-019 | 449aacfd1ab5 |
-| 2026-05-02 | iterate-2 | post-F6 housekeeping (F7 event + ADR-018 conventions append) | eefae4699231 |
-| 2026-05-02 | compliance | refresh dashboard timestamps + change-history after v0.14.0 | 87dbf72a8614 |
-| 2026-05-02 | release | v0.14.0 | 57bc7928765d |
-| 2026-05-02 | shipwright | adopt repository into Shipwright SDLC | bf59b217f576 |
-| 2026-05-02 | adopt | prepare shipwright monorepo for self-adoption | 2116996e34bf |
-| 2026-05-01 | release | v0.13.0 | 0811f2818b88 |
-| 2026-05-01 | release | v0.12.0 | be8521ee7480 |
-| 2026-05-01 | release | v0.11.0 | 4e8e8e3ce79a |
-| 2026-04-29 | release | v0.10.1 | daaddffc30e3 |
-| 2026-04-29 | release | v0.10.0 | 3f32dcb3ff0f |
-| 2026-04-29 | migration | flip compliance to status=migrated | f5372f33b2cf |
-| 2026-04-29 | migration | retain compliance/ in .gitignore with legacy comment block | b20956641061 |
-| 2026-04-29 | migration | activate compliance migration (status=in_progress) + agent_docs allowlist hot-fix | 61728f03fb5a |
-| 2026-04-28 | release | v0.9.1 | 803f45767c29 |
-| 2026-04-28 | release | v0.9.0 | 0ed24a87b3a9 |
-| 2026-04-28 | migration | flip agent_docs to status=migrated | 1bf4af637f58 |
-| 2026-04-28 | migration | retain agent_docs/ in .gitignore with legacy comment | 95d2c5cef9ce |
-| 2026-04-27 | migration | activate agent_docs artifact migration (status=in_progress) | 81cef64e9810 |
-| 2026-04-27 | release | v0.8.0 | 3f9c95daf4e4 |
-| 2026-04-27 | migration | hard-cutover designs to .shipwright/designs (status=migrated) | af64a2689e11 |
-| 2026-04-27 | migration | activate designs artifact migration (status=in_progress) | 01b493a4ac2a |
-| 2026-04-27 | release | v0.7.0 | ae3ef063a9ca |
-| 2026-04-26 | release | v0.6.0 | e6a38f02fc00 |
-| 2026-04-25 | changelog | add unreleased drop for adopt crawl-gate fix | b6ea9d2bcdc7 |
-| 2026-04-25 | release | v0.5.0 | 3aa67435b90d |
-| 2026-04-25 | changelog | add unreleased drop for code-review-mode iterate | b1f0a333d809 |
-| 2026-04-25 | — | untrack agent_docs/iterates/*.json (gitignore mismatch) | 240c853acdcc |
-| 2026-04-25 | docs | remove ADR-001 from repo, keep only as local agent_docs entry | ca890b2d4a09 |
-| 2026-04-24 | — | persist CHANGELOG-unreleased.d/ category dirs via .gitkeep | eae63b59abf4 |
-| 2026-04-24 | release | v0.3.2 — parallel-worktree safety + stale-branch automation | 6564e674c6e5 |
-| 2026-04-24 | release | changelog drops + iterate entry for stale-branch-filter | 81cd17faa772 |
-| 2026-04-24 | — | changelog drops + iterate entry for test-and-doc-gaps | 7195a9e76f83 |
-| 2026-04-24 | release | changelog drops + iterate entry for worktree-hardening | 6f9296ebd515 |
-| 2026-04-24 | release | v0.3.1 — WebUI live-test improvements | adf511648f82 |
-| 2026-04-24 | webui | finalize iterate webui-status-padding-pills | 62e75f991c62 |
-| 2026-04-24 | release | v0.3.0 + fix: aggregator respects [Unreleased] top-of-stack | 4a286225be49 |
-| 2026-04-23 | release | v0.2.2 | 705cef17d94b |
-| 2026-04-23 | release | v0.2.1 | 2891ee836fad |
-| 2026-04-23 | release | v0.2.0 | 604246f55fb8 |
-| 2026-04-22 | — | commit stragglers — plugin uv.locks + assistant-ui review tool | 70c487009097 |
-| 2026-04-20 | marketplace | register shipwright-adopt in marketplace.json | 7e583b0253c9 |
-| 2026-04-19 | webui | server sweep + docs (Plan D'' Sub-iterate 3) | daccc7d9012a |
-| 2026-04-18 | webui/chat | re-remove deprecated components accidentally restored in a752083 | b3b7fd52b96a |
-| 2026-04-13 | webui | untrack shipwright_test_results.json | 7b993f877b77 |
-| 2026-04-13 | webui | block pipeline artifacts and untrack e2e-results | 63103672685a |
-| 2026-04-13 | — | bump shipwright-run lock to 0.2.0, tweak TaskHeader spacing | 89eba82f9fba |
-| 2026-04-12 | webui | retroactive iterate backfill for v0.1 triage (3 themes) | a1b3f28d9f2d |
-| 2026-04-12 | repo | early-access readiness — community files, dormant CI, dependabot | 4107a6b70bb9 |
-| 2026-04-12 | release | v0.1.1 — v0.1 triage (task lifecycle, interactive chat, chat rendering) | b475a78f725f |
-| 2026-04-12 | release | v0.1.0 | ebe91b0905d0 |
-| 2026-04-11 | — | add generated test/cache directories to .gitignore | 020f4a067678 |
-| 2026-04-11 | test | add missing test prerequisites and design artifacts | 3c6148820a18 |
-| 2026-04-11 | client | scaffold Vite 6 + React 19 project with TailwindCSS 4 | 6b9319b6d14a |
-| 2026-04-09 | — | update uv.lock files and gitignore .claude/ | 2674a42ae4bc |
-| 2026-04-06 | — | sync versions across all plugins and add preview pyproject.toml | 20f1ff31dbe2 |
-| 2026-03-31 | — | add .shipwright_toolcall_count to .gitignore | 539b0ab25114 |
-| 2026-03-30 | build | track uv.lock for dependency reproducibility | f925121dc6c7 |
-| 2026-03-29 | — | add Spec/ to .gitignore | 77c2b1dc7fd6 |
-| 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
-| 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
-
-### Documentation (docs) — 87 commits
-
-| Date | Scope | Description | Commit |
-|------|-------|-------------|--------|
+| 2026-05-06 | — | sync hooks-and-pipeline + guide + browser-fixer with F0.5 | e2e4a7517887 |
+| 2026-05-06 | iterate | add F0.5 AC-shape rules to iteration-planning + conventions | 79e6de10f347 |
+| 2026-05-06 | iterate | tighten SKILL.md around F0.5 (Phase Matrix, Step 9/11, template) | 8bca6d227c7c |
+| 2026-05-06 | iterate | land F0.5 End-to-End Verification Gate spec | 3112e5b41ad4 |
 | 2026-05-02 | changelog | add Added/Changed/Fixed fragments for self-adoption iterate | 38f35c9285df |
 | 2026-05-02 | changelog | add Fixed fragments for adopt brownfield ADR + H3 canon | 3f52f7938741 |
 | 2026-05-01 | changelog | record compliance Sub-Iterate C drop (F4 backfill) | 12814ea67cf6 |
@@ -578,6 +492,100 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
+### Chores (chore) — 89 commits
+
+| Date | Scope | Description | Commit |
+|------|-------|-------------|--------|
+| 2026-05-06 | release | v0.16.2 | b41eb32192c3 |
+| 2026-05-06 | iterate | refresh dashboard + handoff post-F7 (ADR-036) | 078351b10b70 |
+| 2026-05-06 | iterate | F7 event for ADR-036 hooks-consistency parser | a7e80915fae1 |
+| 2026-05-06 | iterate | refresh dashboard + handoff post-F7 (ADR-035) | 0e33f0e605ec |
+| 2026-05-06 | iterate | F7 event for ADR-035 canon cleanup | 50b7127df018 |
+| 2026-05-06 | iterate | refresh dashboard + handoff post-F7 (ADR-034) | 50067e125513 |
+| 2026-05-06 | iterate | F7 event for ADR-034 loader deep-merge | 6338989246c9 |
+| 2026-05-05 | iterate | refresh dashboard + handoff post-F7 (ADR-033) | 6d0ff0128861 |
+| 2026-05-05 | iterate | F7 event for ADR-033 verifier drop-dir | a8af83c4a04a |
+| 2026-05-05 | iterate | refresh dashboard + handoff post-F7 (ADR-032) | 2b5a885e7d24 |
+| 2026-05-05 | iterate | F7 event for ADR-032 adopt iterate-config | 1d34d7ee60ec |
+| 2026-05-05 | release | post-tag canon completion for v0.16.1 | 389266ea332f |
+| 2026-05-05 | release | v0.16.1 | 337113d59411 |
+| 2026-05-05 | iterate | post-F7 housekeeping + AC-13 P5 fix (active install path) | afb3b6361a01 |
+| 2026-05-04 | release | post-tag canon completion for v0.16.0 | 34ce8dc1d631 |
+| 2026-05-04 | release | v0.16.0 | e18f58aac468 |
+| 2026-05-04 | campaign | finalize iterate-skill-hardening F (post-F7 housekeeping) | a657921952b2 |
+| 2026-05-04 | campaign | extend iterate-skill-hardening with E + F specs | 07d4ab7e7fe2 |
+| 2026-05-03 | campaign | finalize iterate-skill-hardening status + event log | ed61254a65aa |
+| 2026-05-03 | campaign | init iterate-skill-hardening | 70682f99cd3c |
+| 2026-05-03 | iterate-msys-linter | post-F6 housekeeping (F7 event for ADR-023) | dd100c05b830 |
+| 2026-05-03 | release | post-tag canon completion for v0.15.0 | ed4b076571b4 |
+| 2026-05-03 | release | v0.15.0 | 7b144fa52871 |
+| 2026-05-03 | post-merge | regenerate compliance + dashboard + handoff for merged state | 566260f0a899 |
+| 2026-05-03 | iterate-hooks-json | post-F6 housekeeping (F7 event for ADR-022) | 3476ce2245be |
+| 2026-05-03 | iterate-env-local | F4 + F7 for inline-comment fix | 3409c601c597 |
+| 2026-05-03 | iterate-env-local | post-F6 housekeeping (F7 event for ADR-021 + post-merge handoff regenerate) | 95e6f2ca921b |
+| 2026-05-03 | iterate-quoted-path | post-F6 housekeeping (F7 event for ADR-020) | d93ea0ac547e |
+| 2026-05-03 | compliance | refresh artifacts post-rebase + record event for ADR-019 | 449aacfd1ab5 |
+| 2026-05-02 | iterate-2 | post-F6 housekeeping (F7 event + ADR-018 conventions append) | eefae4699231 |
+| 2026-05-02 | compliance | refresh dashboard timestamps + change-history after v0.14.0 | 87dbf72a8614 |
+| 2026-05-02 | release | v0.14.0 | 57bc7928765d |
+| 2026-05-02 | shipwright | adopt repository into Shipwright SDLC | bf59b217f576 |
+| 2026-05-02 | adopt | prepare shipwright monorepo for self-adoption | 2116996e34bf |
+| 2026-05-01 | release | v0.13.0 | 0811f2818b88 |
+| 2026-05-01 | release | v0.12.0 | be8521ee7480 |
+| 2026-05-01 | release | v0.11.0 | 4e8e8e3ce79a |
+| 2026-04-29 | release | v0.10.1 | daaddffc30e3 |
+| 2026-04-29 | release | v0.10.0 | 3f32dcb3ff0f |
+| 2026-04-29 | migration | flip compliance to status=migrated | f5372f33b2cf |
+| 2026-04-29 | migration | retain compliance/ in .gitignore with legacy comment block | b20956641061 |
+| 2026-04-29 | migration | activate compliance migration (status=in_progress) + agent_docs allowlist hot-fix | 61728f03fb5a |
+| 2026-04-28 | release | v0.9.1 | 803f45767c29 |
+| 2026-04-28 | release | v0.9.0 | 0ed24a87b3a9 |
+| 2026-04-28 | migration | flip agent_docs to status=migrated | 1bf4af637f58 |
+| 2026-04-28 | migration | retain agent_docs/ in .gitignore with legacy comment | 95d2c5cef9ce |
+| 2026-04-27 | migration | activate agent_docs artifact migration (status=in_progress) | 81cef64e9810 |
+| 2026-04-27 | release | v0.8.0 | 3f9c95daf4e4 |
+| 2026-04-27 | migration | hard-cutover designs to .shipwright/designs (status=migrated) | af64a2689e11 |
+| 2026-04-27 | migration | activate designs artifact migration (status=in_progress) | 01b493a4ac2a |
+| 2026-04-27 | release | v0.7.0 | ae3ef063a9ca |
+| 2026-04-26 | release | v0.6.0 | e6a38f02fc00 |
+| 2026-04-25 | changelog | add unreleased drop for adopt crawl-gate fix | b6ea9d2bcdc7 |
+| 2026-04-25 | release | v0.5.0 | 3aa67435b90d |
+| 2026-04-25 | changelog | add unreleased drop for code-review-mode iterate | b1f0a333d809 |
+| 2026-04-25 | — | untrack agent_docs/iterates/*.json (gitignore mismatch) | 240c853acdcc |
+| 2026-04-25 | docs | remove ADR-001 from repo, keep only as local agent_docs entry | ca890b2d4a09 |
+| 2026-04-24 | — | persist CHANGELOG-unreleased.d/ category dirs via .gitkeep | eae63b59abf4 |
+| 2026-04-24 | release | v0.3.2 — parallel-worktree safety + stale-branch automation | 6564e674c6e5 |
+| 2026-04-24 | release | changelog drops + iterate entry for stale-branch-filter | 81cd17faa772 |
+| 2026-04-24 | — | changelog drops + iterate entry for test-and-doc-gaps | 7195a9e76f83 |
+| 2026-04-24 | release | changelog drops + iterate entry for worktree-hardening | 6f9296ebd515 |
+| 2026-04-24 | release | v0.3.1 — WebUI live-test improvements | adf511648f82 |
+| 2026-04-24 | webui | finalize iterate webui-status-padding-pills | 62e75f991c62 |
+| 2026-04-24 | release | v0.3.0 + fix: aggregator respects [Unreleased] top-of-stack | 4a286225be49 |
+| 2026-04-23 | release | v0.2.2 | 705cef17d94b |
+| 2026-04-23 | release | v0.2.1 | 2891ee836fad |
+| 2026-04-23 | release | v0.2.0 | 604246f55fb8 |
+| 2026-04-22 | — | commit stragglers — plugin uv.locks + assistant-ui review tool | 70c487009097 |
+| 2026-04-20 | marketplace | register shipwright-adopt in marketplace.json | 7e583b0253c9 |
+| 2026-04-19 | webui | server sweep + docs (Plan D'' Sub-iterate 3) | daccc7d9012a |
+| 2026-04-18 | webui/chat | re-remove deprecated components accidentally restored in a752083 | b3b7fd52b96a |
+| 2026-04-13 | webui | untrack shipwright_test_results.json | 7b993f877b77 |
+| 2026-04-13 | webui | block pipeline artifacts and untrack e2e-results | 63103672685a |
+| 2026-04-13 | — | bump shipwright-run lock to 0.2.0, tweak TaskHeader spacing | 89eba82f9fba |
+| 2026-04-12 | webui | retroactive iterate backfill for v0.1 triage (3 themes) | a1b3f28d9f2d |
+| 2026-04-12 | repo | early-access readiness — community files, dormant CI, dependabot | 4107a6b70bb9 |
+| 2026-04-12 | release | v0.1.1 — v0.1 triage (task lifecycle, interactive chat, chat rendering) | b475a78f725f |
+| 2026-04-12 | release | v0.1.0 | ebe91b0905d0 |
+| 2026-04-11 | — | add generated test/cache directories to .gitignore | 020f4a067678 |
+| 2026-04-11 | test | add missing test prerequisites and design artifacts | 3c6148820a18 |
+| 2026-04-11 | client | scaffold Vite 6 + React 19 project with TailwindCSS 4 | 6b9319b6d14a |
+| 2026-04-09 | — | update uv.lock files and gitignore .claude/ | 2674a42ae4bc |
+| 2026-04-06 | — | sync versions across all plugins and add preview pyproject.toml | 20f1ff31dbe2 |
+| 2026-03-31 | — | add .shipwright_toolcall_count to .gitignore | 539b0ab25114 |
+| 2026-03-30 | build | track uv.lock for dependency reproducibility | f925121dc6c7 |
+| 2026-03-29 | — | add Spec/ to .gitignore | 77c2b1dc7fd6 |
+| 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
+| 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
+
 ### Refactoring (refactor) — 32 commits
 
 | Date | Scope | Description | Commit |
@@ -648,7 +656,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 591 |
+| Total commits | 599 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 591 |
+| Human-authored commits | 599 |
 
