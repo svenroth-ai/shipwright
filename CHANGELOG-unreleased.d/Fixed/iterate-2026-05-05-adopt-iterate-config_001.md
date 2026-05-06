@@ -1,1 +1,0 @@
-shipwright-adopt now writes shipwright_iterate_config.json with the documented opt-out schema (external_review.feedback_iterations, external_code_review.enabled). Backfill helper documented in plugins/shipwright-adopt/skills/adopt/SKILL.md (ADR-032).

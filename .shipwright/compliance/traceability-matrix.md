@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-06T05:33:45Z
+Generated: 2026-05-06T05:35:02Z
 
 ## Requirements Coverage
 
@@ -42,6 +42,7 @@ Generated: 2026-05-06T05:33:45Z
 | verifier accepts drop-dir entries + dashboard short-SHAs | iterate | bug |  | 32/32 | f1f0447 | 2026-05-05 |
 | loader deep-merges per-project shipwright_iterate_config.json + cascade helper | iterate | bug |  | 34/34 | 49eca25 | 2026-05-05 |
 | post-migration canon cleanup — 9 tests green | iterate | bug |  | 1270/1270 | 7383c18 | 2026-05-06 |
+| hooks-consistency parser handles quoted commands — 27/27 green | iterate | bug |  | 1297/1297 | c5e6cb3 | 2026-05-06 |
 
 ## Coverage Summary
 
@@ -49,7 +50,7 @@ Generated: 2026-05-06T05:33:45Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 18 |
+| Iterate changes | 19 |
 | Requirements total | 13 |
 | Requirements verified | 13/13 |
 | Must-have verified | 10/10 |

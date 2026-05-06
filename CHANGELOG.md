@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.16.2] - 2026-05-06
+
+### Fixed
+
+- shipwright-adopt now writes shipwright_iterate_config.json with the documented opt-out schema (external_review.feedback_iterations, external_code_review.enabled). Backfill helper documented in plugins/shipwright-adopt/skills/adopt/SKILL.md (ADR-032).
+- verify_iterate_finalization.py now recognizes CHANGELOG-unreleased.d/<category>/<run_id>_NNN.md drop files and accepts short commit SHAs in build_dashboard.md as proof of inclusion. Eliminates two false-positive checks (1 FAIL + 1 WARN) that have fired on every iterate since the drop-directory CHANGELOG refactor (ADR-033).
+- Compliance RTM and drift-audit FR-table parsers now accept the 5-data-column `/shipwright-adopt` format (`| ID | Name | Priority | Description | Source |`) in addition to 3-data-column Greenfield (`| ID | Text | Priority |`); per-requirement view of the RTM is no longer empty for adopted projects (ADR-031).
+- Post-migration canon cleanup: 9 previously-failing tests (4 test_artifact_path_canon + 5 test_gitignore_canon) are now green. ALLOWLIST self-adopted records (enrichment.json, architecture.md, decision_log.md, change-history.md, archived iterate plans, project_config.json), reorder gitignore comments so 'legacy path' sits adjacent to legacy entries, and let test_shipwright_dir_is_ignored handle the self-adoption case (.shipwright/ is a tracked directory in this monorepo). End-user non-self-adopted projects keep the original must-ignore rule (ADR-035).
+- test_phase_plugin_hooks_consistency: _hook_commands() now uses shlex.split so quoted commands (post-ADR-019/020 quoted-path form for Windows path-with-spaces safety) parse correctly. All 27 hooks-consistency tests green; the underlying hook wiring was correct all along — this was a test-side parser bug surfacing as 25 false positives (ADR-036).
+- external_review_config.load_review_config() now accepts project_root and deep-merges shipwright_iterate_config.json over the shared default. New is_external_code_review_enabled() helper exposes the cascade-gate opt-out (default true). Three CLIs (external_review.py, check-external-review-keys.py, setup-planning-session.py) pass project_root through. Closes the producer/consumer loop opened by ADR-032 (ADR-034).
+
 ## [v0.16.1] - 2026-05-05
 
 ### Fixed

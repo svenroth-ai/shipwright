@@ -1,1 +1,0 @@
-Compliance RTM and drift-audit FR-table parsers now accept the 5-data-column `/shipwright-adopt` format (`| ID | Name | Priority | Description | Source |`) in addition to 3-data-column Greenfield (`| ID | Text | Priority |`); per-requirement view of the RTM is no longer empty for adopted projects (ADR-031).
