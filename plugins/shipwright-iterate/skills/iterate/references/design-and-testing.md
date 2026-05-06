@@ -137,6 +137,9 @@ New migrations that add RLS policies, constraints, or database functions.
 
 ## Browser Verify
 
+> *Early-signal only at medium+. F0.5 in SKILL.md is the authoritative
+> end-to-end gate.*
+
 ### When
 UI changes at any complexity level.
 
@@ -161,6 +164,8 @@ No UI change in this iteration.
 ---
 
 ## Smoke Test
+
+> *Legacy weak probe (HTTP 200 only). Does NOT satisfy the F0.5 medium+ gate.*
 
 ### When
 Dev server is already running (browser verify or design fidelity started it).
@@ -246,26 +251,104 @@ uv run "{test_plugin_root}/scripts/lib/ui_consistency_check.py" \
 
 ---
 
-## Incremental E2E Test Update
+## End-to-End Verification — Authoring
+
+> Step 11a in SKILL.md. Produces the spec; **does not** by itself satisfy
+> F0.5. Execution is the second half — see "End-to-End Verification —
+> Execution" below.
 
 ### When
-Features at any complexity that change user-visible behavior (new routes, modified flows, new UI). Changes/bugs: medium+ with new flows.
+- Trivial / small with feature+UI
+- Medium+ always (no skip)
+- Whenever the iterate touches user-visible behavior — new routes, modified
+  flows, new UI, or a backend diff that affects the UI
 
 ### Protocol
-1. Read existing `e2e/flows/*.spec.ts` to understand current coverage
-2. For new routes/flows: **prefer creating a new spec file** (e.g., `course-search.spec.ts`)
-   - Do NOT inline-modify existing 500+ line specs (LLMs are error-prone at surgical TypeScript edits)
-3. For modified flows with simple selector changes: update inline
-4. Create new Page Object Models in `e2e/pages/` if needed
-5. Run affected E2E tests:
-   ```bash
-   npx playwright test e2e/flows/{new-or-modified-spec}.spec.ts
-   ```
+1. Read existing `e2e/flows/*.spec.ts` to understand current coverage.
+2. For new routes/flows: **prefer creating a new spec file** (e.g.,
+   `course-search.spec.ts`). Do NOT inline-modify existing 500+ line specs
+   (LLMs are error-prone at surgical TypeScript edits).
+3. For modified flows with simple selector changes: update inline.
+4. Create new Page Object Models in `e2e/pages/` if needed.
+5. Save the authored spec(s) — they will be executed in the next step.
 
-### Skip When
-- Changes/bugs at trivial/small complexity with no new flows
-- No route/flow/UI behavior changes
-- Pure logic/refactor changes
+### Skip When (TRIVIAL / SMALL ONLY)
+- Trivial / small with no new flows
+- Pure logic / refactor changes at trivial / small
+
+**Medium+ does not skip.** A backend-only diff that affects user-visible
+behavior authors a fresh spec covering the AC. Spec-only authorship without
+execution counts as no test (see F0.5).
+
+## End-to-End Verification — Execution
+
+> Step 11b in SKILL.md. Authoritative gate runs in F0.5 via
+> `shared/scripts/surface_verification.py`, which orchestrates the per-surface
+> runners below.
+
+### When
+- Always at medium+
+- Whenever a spec was authored (regardless of complexity)
+
+### Per-Surface Runner
+
+**Web (default for web profiles):**
+
+```bash
+uv run "{shared_root}/scripts/dev_server.py" start --profile {profile} --cwd {project_root}
+uv run "{shared_root}/scripts/playwright_setup.py" --cwd {project_root}
+npx playwright test {touched_or_authored_specs}
+# OR if no spec selector available: full suite
+npx playwright test
+```
+
+**CLI / Skill (skill or CLI iterates without UI):**
+
+```bash
+# Run plugin tests against changed files
+uv run pytest {plugin_tests_path} -v
+
+# OR for CLI-binary iterates: invoke the binary against a fixture and assert
+{cli_binary} {fixture_args} > actual.txt
+diff -u expected.txt actual.txt
+```
+
+**API (server-only, no UI):**
+
+```bash
+uv run "{shared_root}/scripts/dev_server.py" start --profile {profile} --cwd {project_root}
+curl -sf -o response.json "http://localhost:{port}/{route}"
+# Assert response.json shape against AC (jq, Python, or schema validator)
+```
+
+**None (surfaceless iterates):**
+
+`surface_verification.py --surface none --justification "<reason>"`. The
+justification is recorded in the iterate ADR; the audit in
+`verify_iterate_finalization.py` will fail without it.
+
+### Failure Handling
+
+Inherits browser-fixer's 3-retry pattern from build (Step 4.5):
+
+1. On failure: read screenshot/output, diagnose, fix.
+2. Max 3 retries per root cause.
+3. After retry cap: **fail-closed** — F0.5 records `exit_code != 0`, F6
+   blocks via `surface_verification.py` non-zero exit.
+
+### Zero-Test Trap
+
+Playwright with `--grep` or path selector that matches no specs exits 0.
+The runner MUST verify `tests_run > 0` before declaring success. F0.5's
+schema gate enforces this.
+
+### Evidence
+
+Each run writes raw output to
+`{project_root}/.shipwright/runs/{run_id}/surface_verification.json`. F5
+consolidates this into `shipwright_test_results.json` per the F0.5 schema.
+`evidence_path` points to `playwright-report/index.html`, pytest log file,
+or curl response file — whichever the runner produced.
 
 ---
 

@@ -992,6 +992,92 @@ Do not proceed to F1 with failing tests.
   Preview URL: {dev_url from shipwright_build_config.json}
 ```
 
+### F0.5: End-to-End Verification Gate
+
+**Mandatory at medium+. Safety-enforced at small with `touches_io_boundary` or UI.
+Advisory at trivial.**
+
+This is the single authoritative gate verifying that the user-erlebbare Surface
+was empirically driven through a running stack. Steps 9 and 11 produce early
+signal; F0.5 is what F6 commits against. A non-zero exit from F0.5 is **STOP** —
+do not proceed to F1.
+
+**Step 1 — Determine Behavior Surface.** Pick exactly one (or `none` with
+justification):
+
+- `web` — Playwright against `dev_server.py` (default for web profiles)
+- `cli` — scripted CLI / skill / pytest invocation against fixture
+- `api` — HTTP probe against running server (API-only changes, no UI)
+- `none` — no startable surface; `justification` is mandatory and the
+  reason is referenced in the iterate ADR
+
+**Step 2 — Run the Surface Runner.** See `references/design-and-testing.md` →
+"End-to-End Verification — Execution" for the per-surface protocol. Inherits
+the 3-retry browser-fixer pattern from build's Step 4.5; cap at 3, fail-closed
+after.
+
+```bash
+uv run "{shared_root}/scripts/surface_verification.py" \
+  --project-root "{project_root}" \
+  --run-id "{run_id}" \
+  --surface "{web|cli|api|none}" \
+  [--justification "..."]   # required when surface=none
+```
+
+The orchestrator writes raw evidence to
+`{project_root}/.shipwright/runs/{run_id}/surface_verification.json`.
+
+**Step 3 — Stage Evidence for F5.** F5 (Test Results JSON) consolidates the
+F0.5 raw output into `shipwright_test_results.json.iterate_latest.surface_verification`:
+
+```json
+"iterate_latest": {
+  ...,
+  "e2e": { ... },                  // existing, unchanged
+  "surface_verification": {        // NEW
+    "surface": "web|cli|api|none",
+    "runner": "<command that ran>",
+    "exit_code": 0,
+    "tests_run": 0,                // > 0 unless surface=none
+    "evidence_path": "<path to log/screenshot/playwright-report>",
+    "timestamp": "<ISO8601>",
+    "justification": "<required when surface=none>"
+  }
+}
+```
+
+Backwards-compat: existing readers (compliance `data_collector.py`,
+`test_evidence.py`) only see the new key when they read it — old readers do
+not break.
+
+**Fail-closed conditions.** `surface_verification.py` exits non-zero on any of:
+
+1. `surface != "none"` AND `tests_run == 0` (greedy filter matched zero specs —
+   critical Playwright failure mode where `--grep` mismatch still returns
+   exit 0).
+2. `exit_code != 0` from the runner after the 3-retry cap.
+3. `surface == "none"` without a `justification`.
+4. The `surface_verification` block is missing entirely at medium+ when no
+   `surface: none` opt-out is recorded (post-commit audit in
+   `verify_iterate_finalization.py`; runtime mitigation: F0.5 is mandatory at
+   medium+, so reaching F1 without the block requires explicit prose-violation
+   by the agent).
+
+A non-zero exit at F0.5 means STOP — do **not** proceed to F1. F0.5 is the
+production-time chokepoint; the post-commit audit in
+`verify_iterate_finalization.py` is the second layer.
+
+**Backend-affects-Frontend rule.** If the diff touches API routes, store
+mutations, SSE / WS handlers, message contracts, or any code consumed by the
+UI — `surface = web` is mandatory even when no `client/**` file changed. The
+`always` cell in the Phase Matrix subsumes detection: at medium+, the gate
+runs regardless of file paths.
+
+**Spec-only authorship is regression-equivalent to no test.** Authoring a
+Playwright / pytest / curl spec without executing it counts as `tests_run = 0`
+and fails the gate. The "always" semantics in the matrix mean
+**author AND run**, not author OR run.
+
 ### F1: Drift Check
 
 ```bash
