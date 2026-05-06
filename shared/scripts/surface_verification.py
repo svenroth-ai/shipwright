@@ -1,0 +1,415 @@
+"""End-to-End Verification Gate orchestrator (F0.5 of the iterate skill).
+
+Single chokepoint that proves the user-erlebbare Surface was empirically
+driven through a running stack. Writes evidence JSON to
+``{project_root}/.shipwright/runs/{run_id}/surface_verification.json`` and
+exits non-zero on any of the four fail-closed conditions:
+
+    1  unknown surface or invalid arguments
+    2  tests_run == 0 (greedy filter mismatch — Playwright's silent killer)
+    3  exit_code != 0 after the 3-retry cap
+    4  surface == "none" without --justification
+
+A non-zero exit is STOP — F1+ of the iterate finalization MUST NOT proceed.
+The post-commit audit in ``shared/scripts/tools/verifiers/iterate_checks.py``
+provides a second layer that reads the consolidated block from
+``shipwright_test_results.json`` and fails the verifier on the same
+conditions.
+
+Usage::
+
+    uv run shared/scripts/surface_verification.py \\
+        --project-root . \\
+        --run-id iterate-2026-05-06-foo \\
+        --surface cli \\
+        --runner "uv run pytest plugins/shipwright-iterate/tests/ -v"
+
+For ``surface=none`` (no startable surface) a justification is mandatory::
+
+    uv run shared/scripts/surface_verification.py \\
+        --project-root . \\
+        --run-id iterate-2026-05-06-bar \\
+        --surface none \\
+        --justification "pure type-hint rename; no runtime path exercised"
+
+The orchestrator deliberately does NOT manage the dev_server lifecycle for
+``web`` / ``api`` surfaces — callers (the iterate skill prose, or a wrapping
+script) are expected to start ``dev_server.py`` first and stop it after.
+This keeps the orchestrator stateless and testable.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import shlex
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+# Exit codes — line-up 1:1 with the four fail-closed conditions documented in
+# SKILL.md F0.5. Tests in shared/tests/test_surface_verification.py rely on
+# this mapping; do not renumber without updating both sides.
+EXIT_OK = 0
+EXIT_INVALID_ARGS = 1
+EXIT_ZERO_TESTS = 2
+EXIT_RUNNER_FAILED = 3
+EXIT_NONE_WITHOUT_JUSTIFICATION = 4
+
+VALID_SURFACES = ("web", "cli", "api", "none")
+DEFAULT_RETRY_CAP = 3
+
+
+def _now_iso() -> str:
+    """Canonical ISO-8601 UTC timestamp (`...Z`) for the evidence block."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
+
+def parse_tests_run(stdout: str, surface: str) -> int:
+    """Best-effort extraction of how many tests actually executed.
+
+    The greedy-filter trap (Playwright `--grep` matching zero specs but
+    exit 0) is the failure mode this exists to detect, so the parser
+    leans pessimistic: when no signal is found we return 0 and let the
+    caller surface a fail-closed.
+
+    Surface-specific heuristics — order matters within each block:
+
+    - **cli (pytest)**: ``"N passed"``, ``"N failed"`` in the trailing
+      summary line (``=== 5 passed in 0.32s ===``). Sum passed + failed.
+    - **web (playwright)**: ``"N passed"``, ``"N failed"`` in the
+      Playwright reporter's final line (same shape as pytest).
+    - **api**: number of non-empty lines in stdout (caller is expected
+      to print one line per assertion); tests can override with
+      ``--tests-run`` for full determinism.
+
+    Callers may always pass ``--tests-run N`` to bypass this parser.
+    """
+    if not stdout:
+        return 0
+
+    if surface in ("cli", "web"):
+        passed = 0
+        failed = 0
+        # Match e.g. "5 passed", "1 failed" — anchor on whole-word number to
+        # avoid grabbing "passed in 0.32" or test names containing "passed".
+        for match in re.finditer(r"\b(\d+)\s+passed\b", stdout):
+            passed = max(passed, int(match.group(1)))
+        for match in re.finditer(r"\b(\d+)\s+failed\b", stdout):
+            failed = max(failed, int(match.group(1)))
+        return passed + failed
+
+    if surface == "api":
+        return sum(1 for line in stdout.splitlines() if line.strip())
+
+    return 0
+
+
+def _tokenize(cmd: list[str] | str) -> list[str]:
+    """Convert ``cmd`` to a list usable with ``subprocess.run(..., shell=False)``.
+
+    On Windows we use ``posix=False`` so backslashes in paths
+    (``C:\\\\Users\\\\...\\\\python.exe``) survive shlex-splitting.
+    On POSIX we keep the default mode so single-quoted args and
+    embedded shell metacharacters parse the way users expect.
+    """
+    if isinstance(cmd, list):
+        return cmd
+    return shlex.split(cmd, posix=(os.name != "nt"))
+
+
+def run_with_retries(
+    cmd: list[str] | str,
+    cwd: Path,
+    retry_cap: int = DEFAULT_RETRY_CAP,
+) -> tuple[int, str, int]:
+    """Run ``cmd`` up to ``retry_cap`` times until exit code 0.
+
+    Returns ``(final_exit_code, combined_stdout, attempts)``. Each retry
+    re-runs from scratch (no incremental state); the runner is expected
+    to be idempotent. Stdout/stderr from every attempt is concatenated
+    with separator banners so the evidence file shows the failure trail.
+
+    ``cmd`` is normalised to a list (no shell) — paths with spaces and
+    backslashes survive without cmd.exe quote-eating them.
+    """
+    cmd_list = _tokenize(cmd)
+    display = " ".join(cmd_list)
+    chunks: list[str] = []
+    last_exit = 0
+
+    for attempt in range(1, retry_cap + 1):
+        chunks.append(f"=== attempt {attempt}/{retry_cap}: {display} ===")
+        try:
+            result = subprocess.run(
+                cmd_list,
+                cwd=str(cwd),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except FileNotFoundError as exc:
+            chunks.append(f"[orchestrator] command not found: {exc}")
+            last_exit = 127
+            return last_exit, "\n".join(chunks), attempt
+
+        chunks.append(result.stdout or "")
+        if result.stderr:
+            chunks.append("--- stderr ---")
+            chunks.append(result.stderr)
+
+        last_exit = result.returncode
+        if last_exit == 0:
+            return last_exit, "\n".join(chunks), attempt
+
+        # Tiny sleep between retries — gives transient races (port binding,
+        # filesystem flush) a chance to settle without slowing the happy path.
+        if attempt < retry_cap:
+            time.sleep(0.5)
+
+    return last_exit, "\n".join(chunks), retry_cap
+
+
+def write_evidence(
+    project_root: Path,
+    run_id: str,
+    block: dict,
+) -> Path:
+    """Persist the evidence block under ``.shipwright/runs/{run_id}/``.
+
+    The path is shared with the autonomous-loop runner output dir, so
+    F5 (Test Results JSON) can find it deterministically. Returns the
+    path so the caller can include it in commit-stage output.
+    """
+    runs_dir = project_root / ".shipwright" / "runs" / run_id
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    evidence_path = runs_dir / "surface_verification.json"
+    evidence_path.write_text(
+        json.dumps(block, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    return evidence_path
+
+
+def build_block(
+    *,
+    surface: str,
+    runner: str,
+    exit_code: int,
+    tests_run: int,
+    evidence_path: str,
+    justification: str | None,
+    attempts: int,
+) -> dict:
+    """Construct the schema-compliant evidence block.
+
+    Schema is documented in SKILL.md F0.5 Step 3. Keys are stable —
+    callers (finalize_iterate.py, iterate_checks.py, compliance
+    data_collector.py) read them by name. Backwards-compat note:
+    only readers that look up the new key see it; older readers
+    ignore it.
+    """
+    block: dict = {
+        "surface": surface,
+        "runner": runner,
+        "exit_code": exit_code,
+        "tests_run": tests_run,
+        "evidence_path": evidence_path,
+        "timestamp": _now_iso(),
+        "attempts": attempts,
+    }
+    if justification is not None:
+        block["justification"] = justification
+    return block
+
+
+def verify_surface(
+    *,
+    project_root: Path,
+    run_id: str,
+    surface: str,
+    runner: str | list[str] | None,
+    justification: str | None,
+    tests_run_override: int | None,
+    retry_cap: int = DEFAULT_RETRY_CAP,
+) -> tuple[int, dict]:
+    """Run the gate. Returns ``(exit_code, evidence_block)``.
+
+    The block is written to disk before this function returns so callers
+    that hard-fail mid-flow still leave a partial evidence trail for the
+    audit. Callers should consult the returned ``exit_code`` rather than
+    raising — this keeps the CLI deterministic and tests cheap.
+    """
+    if surface not in VALID_SURFACES:
+        block = build_block(
+            surface=surface,
+            runner=runner or "",
+            exit_code=EXIT_INVALID_ARGS,
+            tests_run=0,
+            evidence_path="",
+            justification=justification,
+            attempts=0,
+        )
+        return EXIT_INVALID_ARGS, block
+
+    if surface == "none":
+        if not justification or not justification.strip():
+            block = build_block(
+                surface=surface,
+                runner="",
+                exit_code=EXIT_NONE_WITHOUT_JUSTIFICATION,
+                tests_run=0,
+                evidence_path="",
+                justification=justification,
+                attempts=0,
+            )
+            return EXIT_NONE_WITHOUT_JUSTIFICATION, block
+
+        block = build_block(
+            surface=surface,
+            runner="",
+            exit_code=0,
+            tests_run=0,
+            evidence_path="",
+            justification=justification.strip(),
+            attempts=0,
+        )
+        return EXIT_OK, block
+
+    runner_repr: str
+    if isinstance(runner, list):
+        if not runner:
+            block = build_block(
+                surface=surface, runner="", exit_code=EXIT_INVALID_ARGS,
+                tests_run=0, evidence_path="", justification=justification,
+                attempts=0,
+            )
+            return EXIT_INVALID_ARGS, block
+        runner_arg: list[str] | str = runner
+        runner_repr = " ".join(runner)
+    else:
+        if not runner or not runner.strip():
+            block = build_block(
+                surface=surface, runner=runner or "",
+                exit_code=EXIT_INVALID_ARGS, tests_run=0,
+                evidence_path="", justification=justification, attempts=0,
+            )
+            return EXIT_INVALID_ARGS, block
+        runner_arg = runner.strip()
+        runner_repr = runner.strip()
+
+    final_exit, combined_output, attempts = run_with_retries(
+        runner_arg, project_root, retry_cap=retry_cap
+    )
+
+    runs_dir = project_root / ".shipwright" / "runs" / run_id
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    log_path = runs_dir / "surface_verification.log"
+    log_path.write_text(combined_output, encoding="utf-8")
+
+    if tests_run_override is not None:
+        tests_run = tests_run_override
+    else:
+        tests_run = parse_tests_run(combined_output, surface)
+
+    if final_exit != 0:
+        block = build_block(
+            surface=surface,
+            runner=runner_repr,
+            exit_code=final_exit,
+            tests_run=tests_run,
+            evidence_path=str(log_path),
+            justification=justification,
+            attempts=attempts,
+        )
+        return EXIT_RUNNER_FAILED, block
+
+    if tests_run == 0:
+        block = build_block(
+            surface=surface,
+            runner=runner_repr,
+            exit_code=final_exit,
+            tests_run=0,
+            evidence_path=str(log_path),
+            justification=justification,
+            attempts=attempts,
+        )
+        return EXIT_ZERO_TESTS, block
+
+    block = build_block(
+        surface=surface,
+        runner=runner_repr,
+        exit_code=final_exit,
+        tests_run=tests_run,
+        evidence_path=str(log_path),
+        justification=justification,
+        attempts=attempts,
+    )
+    return EXIT_OK, block
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="F0.5 End-to-End Verification Gate orchestrator."
+    )
+    parser.add_argument("--project-root", type=Path, required=True)
+    parser.add_argument("--run-id", required=True)
+    parser.add_argument(
+        "--surface",
+        required=True,
+        choices=VALID_SURFACES,
+        help="Behavior surface: web (Playwright) | cli (pytest/CLI) | api (HTTP) | none",
+    )
+    parser.add_argument(
+        "--runner",
+        default=None,
+        help="Shell command to execute (required unless --surface=none).",
+    )
+    parser.add_argument(
+        "--justification",
+        default=None,
+        help="Required when --surface=none.",
+    )
+    parser.add_argument(
+        "--tests-run",
+        type=int,
+        default=None,
+        help="Override tests_run count (skip stdout parsing).",
+    )
+    parser.add_argument(
+        "--retry-cap",
+        type=int,
+        default=DEFAULT_RETRY_CAP,
+    )
+    args = parser.parse_args(argv)
+
+    project_root = args.project_root.resolve()
+
+    exit_code, block = verify_surface(
+        project_root=project_root,
+        run_id=args.run_id,
+        surface=args.surface,
+        runner=args.runner,
+        justification=args.justification,
+        tests_run_override=args.tests_run,
+        retry_cap=args.retry_cap,
+    )
+
+    evidence_path = write_evidence(project_root, args.run_id, block)
+
+    summary = {
+        "exit_code": exit_code,
+        "surface": block.get("surface"),
+        "tests_run": block.get("tests_run"),
+        "evidence_block": str(evidence_path),
+    }
+    print(json.dumps(summary, indent=2, ensure_ascii=False))
+    return exit_code
+
+
+if __name__ == "__main__":
+    sys.exit(main())
