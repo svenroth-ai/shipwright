@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-06 06:34 UTC | Session: unknown
+> Updated: 2026-05-06 07:24 UTC | Session: unknown
 
-## Recent Changes (19 iterations)
+## Recent Changes (20 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | F0.5 End-to-End Verification Gate | 1548/1548 | 88f3398 |  | 2026-05-06 |
 | bug | hooks-consistency parser handles quoted commands — 27/27 green | 1297/1297 | c5e6cb3 |  | 2026-05-06 |
 | bug | post-migration canon cleanup — 9 tests green | 1270/1270 | 7383c18 |  | 2026-05-06 |
 | bug | loader deep-merges per-project shipwright_iterate_config.json + cascade helper | 34/34 | 49eca25 |  | 2026-05-05 |
@@ -26,7 +27,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-06 | Unit: 212/212 | Integration: 1336/1336 | Smoke: passed | (iterate)
+Last run: 2026-05-06 | Unit: 226/226 | Integration: 1349/1349 | Smoke: passed | (iterate)
 
 ## Pipeline
 
