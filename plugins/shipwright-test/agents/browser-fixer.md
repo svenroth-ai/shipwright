@@ -1,6 +1,6 @@
 ---
 model: sonnet
-description: Analyzes browser screenshots and console errors to diagnose and fix UI issues. Used by shipwright-build (browser verify) and shipwright-test (E2E fix mode).
+description: Analyzes browser screenshots and console errors to diagnose and fix UI issues. Used by shipwright-build (browser verify), shipwright-test (E2E fix mode), and shipwright-iterate (F0.5 web runner).
 ---
 
 # Browser Fixer Agent

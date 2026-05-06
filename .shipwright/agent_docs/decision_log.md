@@ -580,3 +580,15 @@ shipwright/
 - **Rationale:** shlex.split is the right tool for shell-style tokenization including quotes. The fallback to whitespace split is defensive: if a hook command is so malformed shlex raises, we still want to surface SOME basename rather than zero (which previously caused the false alarm that motivated this iterate).
 - **Consequences:** All 27 hooks-consistency tests now green (was 25 failed + 2 passed). No production code changed — this was purely a test-side parser bug introduced by the quoted-path migration in ADR-019/020. The underlying hook wiring was correct all along.
 - **Rejected:** Stripping quotes manually (rejected — shlex handles edge cases like escaped quotes and nested quotes correctly). Updating hooks.json to remove the quotes (rejected — quoting is required by ADR-019/020 for paths-with-spaces on Windows; the test must adapt to production reality).
+
+---
+
+### ADR-037: F0.5 End-to-End Verification Gate (surface taxonomy + schema-enforced evidence)
+- **Date:** 2026-05-06
+- **Section:** Iterate — feature: e2e-verification-gate
+- **Context:** Iterate skill at medium+ silently let backend-only diffs ship without empirical Surface verification. The 2026-04 webui regression hit production because file-path-gated browser verify (touches client/**) didn't fire for backend changes that affected the UI; spec-only authoring of E2E tests counted as a test run.
+- **Decision:** Add a single normative gate F0.5 between F0 and F1 of iterate finalization. Surface taxonomy (web/cli/api/none) + production-time orchestrator surface_verification.py + post-commit audit check_surface_verification in iterate_checks.py. Schema-enforced evidence in shipwright_test_results.json.iterate_latest.surface_verification with four fail-closed conditions: missing block, tests_run==0, exit_code!=0 after 3 retries, surface=none without justification.
+- **Commit:** e2e4a7517887a0637a6431769f560aef77b096fa
+- **Rationale:** Single chokepoint avoids hooks-detection-spread. Two-layer validation (orchestrator non-zero exit + post-commit auditor) covers both prose-violation and silent skip. finalize_iterate.py is intentionally NOT extended because its best-effort contract would be broken by hard-failing.
+- **Consequences:** F6 commit is now blocked at medium+ unless Surface was empirically driven through a running stack OR surface=none is explicitly justified in the iterate ADR. Step 11 split into 11a (Author) + 11b (Execute); spec-only authoring is regression-equivalent to no test. Phase Matrix E2E row renamed to 'E2E Verification (author + execute)' with 'always' at medium+ subsuming file-path detection — Backend-affects-Frontend rule.
+- **Rejected:** (1) Behavior-Surface auto-detection — multi-week sidequest; matrix=always at medium+ subsumes the problem. (2) Skill-Iterate-Fixture-Project — deferred; skill iterates use surface=cli with pytest plugins/<plugin>/tests/. (3) /shipwright-test as Live-Smoke-Owner — dependency-inversion risk. (4) Build-phase integration — F0.5 in iterate is the SSoT for E2E gate at iterate-time.

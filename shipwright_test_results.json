@@ -1,25 +1,31 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-06-hooks-consistency-parser",
+    "run_id": "iterate-2026-05-06-e2e-verification-gate",
     "date": "2026-05-06",
     "unit": {
       "status": "passed",
-      "passed": 27,
-      "total": 27,
-      "note": "shared/tests/test_phase_plugin_hooks_consistency.py: all 27 tests now green (was 25 failed + 2 passed). Production hook wiring untouched — fix was purely a test-side parser bug that missed .py basenames hidden inside ADR-019/020 quoted-path tokens."
+      "passed": 212,
+      "total": 212,
+      "note": "plugins/shipwright-iterate/tests/ — F0 fresh full suite green."
     },
     "integration": {
       "status": "passed",
-      "passed": 1297,
-      "total": 1297,
-      "note": "Full shared/tests/ now 1297 passing, 0 failures. All 34 pre-existing failures (canon + hooks-consistency) closed across iterates 2026-05-06-canon-cleanup + 2026-05-06-hooks-consistency-parser."
+      "passed": 1336,
+      "total": 1336,
+      "note": "shared/tests/ — full suite green (1336 passed, 10 skipped). Includes 26 new tests for surface_verification.py + 12 new tests for check_surface_verification audit."
     },
     "pgtap": {"status": "not_run", "passed": 0, "total": 0},
-    "e2e": {"status": "not_run", "passed": 0, "total": 0},
+    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "iterate-skill iterate; no UI to E2E-test. F0.5 surface=cli ran the python test suite as the empirical surface."},
     "design_fidelity": {"status": "not_run", "passed": 0, "total": 0},
-    "smoke": {
-      "status": "passed",
-      "note": "Verified by reading actual hooks.json for shipwright-project: all required scripts (capture_session_id.py, phase_session_start.py, phase_session_stop.py, audit_phase_quality_on_stop.py, generate_handoff_on_stop.py) are present in the wired chain. Test parser was the bug, not the hooks."
+    "smoke": {"status": "passed", "note": "F0.5 orchestrator smoke-tested via direct CLI invocation against own changes (surface=cli, runner=pytest plugins/shipwright-iterate/tests/, exit_code=0, tests_run=212)."},
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "uv run pytest plugins/shipwright-iterate/tests/ -q --no-header",
+      "exit_code": 0,
+      "tests_run": 212,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-06-e2e-verification-gate/surface_verification.log",
+      "timestamp": "2026-05-06T06:31:42.933Z",
+      "attempts": 1
     },
     "degraded": []
   }

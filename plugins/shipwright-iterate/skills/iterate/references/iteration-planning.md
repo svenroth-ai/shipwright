@@ -40,7 +40,43 @@ Create BEFORE mini-plan. Status lifecycle:
 - `implemented` → set during finalization when ACs checked off
 - `superseded` → if escalated to full pipeline
 
-Template: See SKILL.md Path A Step 1 (inline template).
+Template: See SKILL.md Path A Step 1 (inline template). The template
+includes a `## Verification (medium+)` section that pins surface +
+runner + evidence path for the F0.5 gate.
+
+### Acceptance Criteria — Verification Shape (medium+)
+
+ACs in iterate specs MUST be assertion-shaped, not story-shaped — so
+the F0.5 runner can verify them mechanically. Story-shaped ACs cannot
+be empirically driven through the surface and silently degrade F0.5
+to spec-only authorship (counts as no test).
+
+**Story-shaped (do NOT use):**
+
+- "User can save the form"
+- "Settings persist across reloads"
+- "API endpoint works"
+
+**Assertion-shaped (use these):**
+
+- "POST /api/forms with valid payload returns 200; subsequent GET
+  returns the saved record with `status = 'submitted'`"
+- "After clicking Save and reloading, the input
+  `[data-testid='form-name']` still contains the entered value"
+- "GET /api/health returns 200 with `{ status: 'ok' }` body"
+
+### Two ACs at medium+
+
+For each user-visible behavior, write two ACs:
+
+- **AC-N-agent (mandatory).** Live E2E run by the agent before F6.
+  Recorded in `shipwright_test_results.json.iterate_latest.surface_verification`.
+  F6 blocks without it.
+- **AC-N-user (optional).** User UAT walk-through before merge. Does
+  NOT gate iterate finalization — it's a sanity check, not a
+  blocker. Helpful for changes whose visual or interaction quality
+  the agent can't fully assess (animation timing, perceived
+  responsiveness, copy tone).
 
 ---
 

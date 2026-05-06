@@ -1064,7 +1064,7 @@ When a phase detects missing prerequisite artifacts, it should attempt to derive
 | **Test** (Step B3) | `visual-guidelines.md`, `screen-routes.json`, `claude-plan-e2e.md`, `dev_url`, `playwright.config.ts` |
 | **Plan** (Step 8) | `claude-plan-e2e.md` (if UI project, default enabled) |
 
-### Browser Verify Gate Semantics (Build Step 8 / 4.5 and Iterate F2)
+### Browser Verify + End-to-End Verification Gate Semantics (Build Step 8 / 4.5, Iterate Step 9 + F0.5)
 
 Browser Verify is **mandatory** whenever the section/iterate diff touches any
 frontend file, regardless of whether the run is a formal section build or a
@@ -1072,7 +1072,19 @@ remediation task. Missing `dev_server` in the profile is a resolution concern
 (fall back to `shipwright_build_config.json#dev_url` → `package.json` autodetect
 → escalate), not a skip trigger. Frontend detection is performed by
 `shared/scripts/lib/detect_frontend_changes.py` and is the single source of
-truth across build and iterate.
+truth across build and iterate **at trivial / small complexity**.
+
+**At medium+ in iterate, the authoritative gate is F0.5
+(End-to-End Verification Gate).** F0.5 is **file-path-agnostic** — the
+Phase Matrix marks E2E Verification as `always` at medium+, which subsumes
+file-path detection. A backend-only diff that affects user-visible behavior
+triggers `surface = web` even when no `client/**` file changed. Step 9
+(Browser Verify) at iterate-time is now **early signal** at medium+; the
+production-time chokepoint is `shared/scripts/surface_verification.py`,
+and the post-commit audit is `check_surface_verification` in
+`shared/scripts/tools/verifiers/iterate_checks.py`. Both layers fail-closed
+on the same four conditions: missing block, `tests_run == 0`,
+`exit_code != 0` after retry cap, `surface == "none"` without justification.
 
 ### Scripts Supporting Self-Healing
 
