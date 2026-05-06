@@ -1280,7 +1280,7 @@ The result is one of four levels:
 |------------|----------|-----------|
 | **Trivial** | 1 FR, 1-2 files, no risk flags | spec update → build → self-review → unit test (`--related`) → finalize |
 | **Small** | 1-2 FRs, 3-5 files, or risk flags present | + confirmation question, design text (if UI), mini-plan (features), conditional full review |
-| **Medium** | 2-4 FRs, 5-10 files, or cross-split | + scoping interview (2-3 Qs), iterate spec file, mini-plan with work breakdown, user approval gate, external LLM review (mini-plan), full code review, **external LLM code-review cascade** (default on, Branch A/B/C opt-out), full test suite, E2E update |
+| **Medium** | 2-4 FRs, 5-10 files, or cross-split | + scoping interview (2-3 Qs), iterate spec file, mini-plan with work breakdown, user approval gate, external LLM review (mini-plan), full code review, **external LLM code-review cascade** (default on, Branch A/B/C opt-out), full test suite, **E2E Verification (author + execute)** |
 | **Large** | 4+ FRs, 10+ files, cross-split + risk flags | **Escape hatch** -- recommends switching to the full pipeline |
 
 Users can override complexity (`--complexity medium`) and adjust phases before execution ("skip design", "make it small"). However, safety floors enforced by risk flags cannot be bypassed without explicit acknowledgment.
@@ -1348,9 +1348,9 @@ Not all phases can be skipped. Iterate defines three categories:
 
 | Category | Includes | User Can Skip? |
 |----------|----------|----------------|
-| **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON | Never |
-| **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations) | Only with explicit risk acknowledgment |
-| **Advisory** | Design check, mini-plan, design fidelity, E2E update, external LLM review | Freely skippable |
+| **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON, **E2E Verification at medium+** (F0.5 — author + execute) | Never |
+| **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations), **E2E Verification at small with `touches_io_boundary` or UI** | Only with explicit risk acknowledgment |
+| **Advisory** | Design check, mini-plan, design fidelity, external LLM review | Freely skippable |
 
 ### Escape Hatch and Escalation
 
@@ -1362,6 +1362,8 @@ Not all phases can be skipped. Iterate defines three categories:
 
 Every iterate run -- regardless of complexity -- ends with the same mandatory finalization sequence. All artifact producers run **before** the commit so a single atomic F6 stages everything and no `git commit --amend` is ever needed:
 
+0. **Fresh verification (F0)** -- run the full unit/type/integration test suite; non-zero exit means STOP, do not enter F0.5 with failing tests.
+0.5. **End-to-End Verification (F0.5; medium+)** -- run the surface runner (`web` / `cli` / `api`, or `none` with justification) against the user-erlebbare Surface via `shared/scripts/surface_verification.py`. Produces the `surface_verification` block in `shipwright_test_results.json.iterate_latest`. Non-zero exit blocks the rest of finalization; the post-commit audit `check_surface_verification` in `iterate_checks.py` is the second layer.
 1. **Drift check** -- verify specs match implementation
 2. **Architecture update** -- update `architecture.md` if structural changes were made
 3. **ADR** -- record the decision in `decision_log.md`
