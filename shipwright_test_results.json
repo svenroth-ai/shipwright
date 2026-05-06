@@ -1,33 +1,26 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-06-canon-cleanup",
+    "run_id": "iterate-2026-05-06-hooks-consistency-parser",
     "date": "2026-05-06",
     "unit": {
       "status": "passed",
-      "passed": 13,
-      "total": 13,
-      "note": "shared/tests/test_artifact_path_canon.py + test_gitignore_canon.py: 9 previously-red tests now green (4 path canon + 5 gitignore canon — incl. the previously-failing test_shipwright_dir_is_ignored). 4 test_legacy_entry_present_during_in_progress are skipped (correctly — no in-progress migrations)."
+      "passed": 27,
+      "total": 27,
+      "note": "shared/tests/test_phase_plugin_hooks_consistency.py: all 27 tests now green (was 25 failed + 2 passed). Production hook wiring untouched — fix was purely a test-side parser bug that missed .py basenames hidden inside ADR-019/020 quoted-path tokens."
     },
     "integration": {
       "status": "passed",
-      "passed": 1270,
-      "total": 1270,
-      "note": "Full shared/tests/ now 1270 passing (up from 1252). Only the unrelated test_phase_plugin_hooks_consistency suite stays red (separate iterate)."
+      "passed": 1297,
+      "total": 1297,
+      "note": "Full shared/tests/ now 1297 passing, 0 failures. All 34 pre-existing failures (canon + hooks-consistency) closed across iterates 2026-05-06-canon-cleanup + 2026-05-06-hooks-consistency-parser."
     },
     "pgtap": {"status": "not_run", "passed": 0, "total": 0},
     "e2e": {"status": "not_run", "passed": 0, "total": 0},
     "design_fidelity": {"status": "not_run", "passed": 0, "total": 0},
     "smoke": {
       "status": "passed",
-      "note": "Asymmetry verified: _shipwright_dir_is_self_adopted() returns True on this repo (`git ls-files .shipwright/` returns tracked content), so test_shipwright_dir_is_ignored asserts .shipwright/ is NOT a top-level ignore. End-user projects (no tracked .shipwright/ content) hit the original must-ignore branch."
+      "note": "Verified by reading actual hooks.json for shipwright-project: all required scripts (capture_session_id.py, phase_session_start.py, phase_session_stop.py, audit_phase_quality_on_stop.py, generate_handoff_on_stop.py) are present in the wired chain. Test parser was the bug, not the hooks."
     },
-    "degraded": [
-      {
-        "scope": "shared/tests/test_phase_plugin_hooks_consistency.py",
-        "failures": 25,
-        "category": "pre-existing",
-        "note": "Out of scope for this canon-cleanup iterate. Separate fix iterate needed (decision: hooks nachziehen vs. test relaxen)."
-      }
-    ]
+    "degraded": []
   }
 }

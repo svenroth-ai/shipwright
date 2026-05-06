@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-06-canon-cleanup"
+run_id: "iterate-2026-05-06-hooks-consistency-parser"
 phase: "iterate"
-reason: "iterate: refresh dashboard post-F7 (ADR-035)"
-timestamp: "2026-05-06T05:27:43.759949+00:00"
+reason: "iterate: hooks-consistency parser fix (ADR-036)"
+timestamp: "2026-05-06T05:33:45.664617+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-06 05:27:43 UTC
+> Auto-generated 2026-05-06 05:33:45 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-06 05:27:43 UTC
-- **Reason**: iterate: refresh dashboard post-F7 (ADR-035)
+- **Timestamp**: 2026-05-06 05:33:45 UTC
+- **Reason**: iterate: hooks-consistency parser fix (ADR-036)
 
 ## Last Iterate
 
@@ -38,7 +38,7 @@ timestamp: "2026-05-06T05:27:43.759949+00:00"
 ## Git State
 
 - **Branch**: main
-- **Last Commit**: 50b7127 chore(iterate): F7 event for ADR-035 canon cleanup
+- **Last Commit**: 0e33f0e chore(iterate): refresh dashboard + handoff post-F7 (ADR-035)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,7 +69,7 @@ timestamp: "2026-05-06T05:27:43.759949+00:00"
 
 ## Recent Decisions
 
-### ADR-035: Drift-canon cleanup: ALLOWLIST self-adopted records, gitignore proximity, .shipwright/ self-adopt exception
+### ADR-036: _hook_commands uses shlex.split to handle quoted-path commands
 - **Date:** 2026-05-06
-- **Section:** Iterate — bug: post-migration canon cleanup
-- **Context:** After the .shipwright/<artifact>/ migrations (2026-04-26..29) and self-adoption (2026-05-02), 9 canon tests stayed red on every run. Three classes of false positives: (a) self-adopted records (.shipwright/{adopt,agent_docs,compliance,planning}/...) referencing legacy paths in archived ADRs
+- **Section:** Iterate — bug: hooks-consistency parser handles quoted commands
+- **Context:** test_phase_plugin_hooks_consistency.py reported 25 failures suggesting plugins were missing capture_session_id/phase_session_start/phase_session_stop hooks. Investigation showed all 8 phase plugins DO register the full chain in their hooks.json — the test's _hook_commands() helper used cmd.split() (whitespace) whi

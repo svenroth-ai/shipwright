@@ -1,0 +1,1 @@
+test_phase_plugin_hooks_consistency: _hook_commands() now uses shlex.split so quoted commands (post-ADR-019/020 quoted-path form for Windows path-with-spaces safety) parse correctly. All 27 hooks-consistency tests green; the underlying hook wiring was correct all along — this was a test-side parser bug surfacing as 25 false positives (ADR-036).

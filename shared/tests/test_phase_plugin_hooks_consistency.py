@@ -12,6 +12,7 @@ plugin without updating the others.
 from __future__ import annotations
 
 import json
+import shlex
 from pathlib import Path
 
 import pytest
@@ -25,15 +26,31 @@ PHASE_PLUGINS = [
 
 
 def _hook_commands(hook_block: list[dict]) -> list[str]:
-    """Flatten one event's hook chain into a list of script basenames."""
+    """Flatten one event's hook chain into a list of script basenames.
+
+    Uses ``shlex.split`` so quoted commands like
+    ``uv run "${CLAUDE_PLUGIN_ROOT}/.../foo.py"`` (the post-ADR-019/020
+    quoted-path form for Windows path-with-spaces safety) parse the
+    same as plain unquoted ones. Both Windows ``\\`` and POSIX ``/``
+    separators are accepted in the path; the basename is the final
+    segment.
+    """
     out: list[str] = []
     for entry in hook_block:
         for hook in entry.get("hooks", []):
             cmd = hook.get("command", "")
-            # Take the basename of the script — strip 'uv run' / 'bash' wrappers
-            for token in cmd.split():
-                if token.endswith(".py") or token.endswith(".sh"):
-                    out.append(token.rsplit("/", 1)[-1])
+            try:
+                tokens = shlex.split(cmd, posix=True)
+            except ValueError:
+                # Fall back to whitespace split if the command is not
+                # shell-quoted cleanly — better to over-collect basenames
+                # than miss a hook entirely.
+                tokens = cmd.split()
+            for token in tokens:
+                # Path may use either separator on Windows; rsplit on both.
+                last = token.replace("\\", "/").rsplit("/", 1)[-1]
+                if last.endswith(".py") or last.endswith(".sh"):
+                    out.append(last)
                     break
     return out
 
