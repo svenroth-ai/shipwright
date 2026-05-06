@@ -323,6 +323,150 @@ def test_main_writes_evidence_and_returns_exit_code(tmp_path, capsys):
     assert Path(summary["evidence_block"]).exists()
 
 
+# ---------------------------------------------------------------------------
+# Real-pytest empirical probes (no --tests-run override)
+# ---------------------------------------------------------------------------
+#
+# The previous iterate landed F0.5 with strong unit-test coverage but used
+# --tests-run overrides everywhere — meaning parse_tests_run never ran on
+# real subprocess output. These tests exercise the full pipe end-to-end:
+# write a fixture pytest file → run it via verify_surface → assert the
+# parser extracted the count from real stdout.
+
+
+def _write_fixture_pytest(tmp: Path, n_passing: int) -> Path:
+    """Create a tiny pytest module with N passing tests. Returns the path."""
+    body = "\n".join(f"def test_passing_{i}():\n    assert True" for i in range(n_passing))
+    fixture = tmp / "fixture_test.py"
+    fixture.write_text(body, encoding="utf-8")
+    # pyproject not strictly needed but keeps pytest's discovery clean
+    (tmp / "pyproject.toml").write_text(
+        "[tool.pytest.ini_options]\ntestpaths = ['.']\n", encoding="utf-8"
+    )
+    return fixture
+
+
+def test_real_pytest_round_trip_three_passing(tmp_path):
+    """3 real passing pytest tests → parse_tests_run reads '3 passed' from
+    actual stdout, verify_surface returns EXIT_OK with tests_run=3.
+
+    No --tests-run override. The parser is on the critical path."""
+    _write_fixture_pytest(tmp_path, n_passing=3)
+    code, block = verify_surface(
+        project_root=tmp_path,
+        run_id="iterate-2026-05-06-roundtrip",
+        surface="cli",
+        runner=[sys.executable, "-m", "pytest", str(tmp_path), "-q", "--no-header"],
+        justification=None,
+        tests_run_override=None,
+    )
+    assert code == EXIT_OK, f"unexpected exit; block={block!r}"
+    assert block["tests_run"] == 3, (
+        f"parser must read 3 passed from real pytest output; got {block['tests_run']}"
+    )
+    assert block["exit_code"] == 0
+
+
+def test_real_pytest_greedy_filter_zero_tests_trap(tmp_path):
+    """Real reproduction of the greedy-filter trap: pytest -k matches no
+    tests, exits 0 (with exit code 5 actually — "no tests collected" — but
+    we treat exit != 0 as failure, so this also exercises the runner-failure
+    path WHEN pytest's exit code 5 surfaces).
+
+    Wait — actually pytest -k with no matches exits 5 ("no tests collected").
+    Earlier pytest versions exited 0. We assert the orchestrator notices
+    EITHER way: it must NOT silently report success."""
+    _write_fixture_pytest(tmp_path, n_passing=2)
+    code, block = verify_surface(
+        project_root=tmp_path,
+        run_id="iterate-2026-05-06-greedy",
+        surface="cli",
+        runner=[
+            sys.executable, "-m", "pytest", str(tmp_path),
+            "-q", "--no-header",
+            "-k", "definitely_no_test_matches_this_pattern",
+        ],
+        justification=None,
+        tests_run_override=None,
+        retry_cap=2,
+    )
+    # Either path is acceptable — orchestrator must not declare success:
+    #   - exit 5 from pytest → EXIT_RUNNER_FAILED (3)
+    #   - exit 0 with "0 passed" → EXIT_ZERO_TESTS (2)
+    assert code in (EXIT_ZERO_TESTS, EXIT_RUNNER_FAILED), (
+        f"greedy-filter trap must fail-closed; got code={code} block={block!r}"
+    )
+    assert block["tests_run"] == 0, block
+
+
+def test_real_pytest_failed_test_surfaces_exit_3(tmp_path):
+    """A pytest fixture with one failing test → verify_surface returns
+    EXIT_RUNNER_FAILED (3) after retry-cap exhaustion. tests_run still
+    reflects the actual count (passed + failed) so the audit can see
+    'tests ran but the runner failed', not 'tests didn't run at all'."""
+    fixture = tmp_path / "fixture_test.py"
+    fixture.write_text(
+        "def test_passing():\n    assert True\n"
+        "def test_failing():\n    assert False, 'intentional fail'\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.pytest.ini_options]\ntestpaths = ['.']\n", encoding="utf-8"
+    )
+    code, block = verify_surface(
+        project_root=tmp_path,
+        run_id="iterate-2026-05-06-failure",
+        surface="cli",
+        runner=[sys.executable, "-m", "pytest", str(tmp_path), "-q", "--no-header"],
+        justification=None,
+        tests_run_override=None,
+        retry_cap=2,
+    )
+    assert code == EXIT_RUNNER_FAILED, (
+        f"failed test must surface EXIT_RUNNER_FAILED; got {code}"
+    )
+    # Parser sums passed + failed so the audit can distinguish
+    # "ran but failed" from "didn't run"
+    assert block["tests_run"] >= 2, (
+        f"tests_run must reflect actual run count even on failure; got {block['tests_run']}"
+    )
+    assert block["attempts"] == 2, (
+        f"runner should retry until cap; got attempts={block['attempts']}"
+    )
+
+
+def test_real_subprocess_retry_cap_with_slow_failure(tmp_path):
+    """Retry-cap probe with a runner that takes time + always fails. Exercises
+    the cumulative-attempt path against a real subprocess (not just an
+    in-process exception). Mirror of plan §V.3 'dev-server kill mid-run'
+    intent — we don't kill mid-run, we just verify the cap fires after N
+    real failed launches."""
+    runner_script = tmp_path / "slow_fail.py"
+    runner_script.write_text(
+        "import sys, time\n"
+        "time.sleep(0.05)  # simulate work\n"
+        "print('attempting...')\n"
+        "sys.exit(7)\n",
+        encoding="utf-8",
+    )
+    code, block = verify_surface(
+        project_root=tmp_path,
+        run_id="iterate-2026-05-06-retry",
+        surface="cli",
+        runner=[sys.executable, str(runner_script)],
+        justification=None,
+        tests_run_override=None,
+        retry_cap=3,
+    )
+    assert code == EXIT_RUNNER_FAILED
+    assert block["attempts"] == 3, (
+        f"retry-cap should be reached at 3; got {block['attempts']}"
+    )
+    assert block["exit_code"] == 7, (
+        f"final exit code should propagate through; got {block['exit_code']}"
+    )
+
+
 def test_main_propagates_zero_tests_exit(tmp_path):
     """Use a runner script on disk so we don't depend on cross-platform
     shlex quoting of sys.executable paths with spaces/backslashes."""
