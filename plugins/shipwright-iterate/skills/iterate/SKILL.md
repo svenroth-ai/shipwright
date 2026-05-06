@@ -546,6 +546,19 @@ If no boundaries touched: write `n/a` with one-line justification.}
 - **Confidence-pattern check:** {has any "are you confident?"-style
   question already produced "yes" + a subsequent finding in this
   run? If yes, run one more probe before F0 — asymptote heuristic}}
+
+## Verification (medium+)
+{Mandatory at medium+. The runner that will produce the F0.5
+ surface_verification block.
+
+- **Surface:** web | cli | api | none
+- **Runner command:** {exact command F0.5 will execute, e.g.
+  `npx playwright test e2e/flows/foo.spec.ts` or
+  `uv run pytest plugins/shipwright-iterate/tests/ -v`}
+- **Evidence path:** {where output lands, e.g. `playwright-report/index.html`,
+  pytest log file, or curl response file}
+- **Justification (only if surface=none):** {one line — why no startable
+  surface exists for this change. Referenced in iterate ADR.}}
 ```
 
 ### Step 2: Spec Update (always)
@@ -555,6 +568,13 @@ If no boundaries touched: write `n/a` with one-line justification.}
    - **New FR** (typical for new endpoints, new pages, new user-visible flows): append a new table row + acceptance-criteria block.
    - **Skipping because "additive" is NOT an option.** The Phase Matrix marks this step as `always` for FEATURE — that is load-bearing. "Additive" is a reason the update is *small*, not a reason to skip.
 3. If `shipwright_sync_config.json` exists, add mappings for new files.
+
+> **AC shape (medium+).** ACs MUST be assertion-shaped (mechanically
+> verifiable by the F0.5 runner), not story-shaped. Story: "user can save
+> the form". Assertion: "POST /api/forms returns 200; subsequent GET
+> returns the saved record". Story-shaped ACs cannot be empirically
+> driven through the surface runner and silently degrade F0.5 to
+> spec-only authorship.
 
 ### Step 3: Mini-Plan (small: inline, medium: persisted)
 See `references/iteration-planning.md` for protocol.
@@ -685,8 +705,10 @@ in the iterate ADR when Safety-enforced applies).
 ### Step 8: Full Code Review (conditional)
 See `references/iteration-reviews.md` for trigger rules.
 
-### Step 9: Browser Verify + Smoke Test (if UI)
-See `references/design-and-testing.md`.
+### Step 9: Browser Verify + Smoke Test (early signal — see F0.5 for authoritative gate)
+See `references/design-and-testing.md`. At medium+, F0.5 is the authoritative
+end-to-end gate; Step 9 produces early signal during build but does not
+satisfy the gate on its own.
 
 ### Step 10: Testing
 - Trivial/small: `npx vitest --related $(git diff --name-only HEAD) --run`
@@ -694,8 +716,14 @@ See `references/design-and-testing.md`.
 - Safety floor paths → always full suite
 See `references/design-and-testing.md` for details.
 
-### Step 11: E2E Update (features that change user-visible behavior + medium+ changes with new flows)
-See `references/design-and-testing.md`.
+### Step 11a: Author E2E Spec (always at medium+; if feature+UI at trivial/small)
+See `references/design-and-testing.md` § "End-to-End Verification — Authoring".
+
+### Step 11b: Execute E2E Spec against Dev Stack (always at medium+)
+See `references/design-and-testing.md` § "End-to-End Verification — Execution".
+**Spec-only authoring without execution is forbidden at medium+.** Execution
+is verified at F0.5; the production-time chokepoint is
+`shared/scripts/surface_verification.py`.
 
 ### Step 12: Design Fidelity (if structural UI)
 See `references/design-and-testing.md` for structural extraction + agent deep analysis protocol.
@@ -903,7 +931,7 @@ Large is a "soft boundary" — force-continue supported with mandatory review + 
 | Unit Test | `--related` | `--related` | full suite | — |
 | Integration Test | if CRUD | if CRUD | full suite | — |
 | pgTAP DB Test | if new RLS | if new RLS | full suite | — |
-| E2E Update | if feature+UI | if feature+UI | always | — |
+| E2E Verification (author + execute) | if feature+UI | if feature+UI or `touches_io_boundary` | always | — |
 | Design Fidelity | skip | if structural UI | if UI | — |
 | Performance Budget | if `touches_build` | if `touches_build` | if `touches_build` OR if UI | — |
 | architecture.md | if structural impact | if structural impact | if structural impact | — |
@@ -911,6 +939,11 @@ Large is a "soft boundary" — force-continue supported with mandatory review + 
 | run_config iterate_history | always | always | always | — |
 | Session Handoff | skip | if needed | if needed | — |
 | Release Prompt | always | always | always | — |
+
+> **Note (E2E Verification).** "Always" at medium+ means **author AND
+> run**, not author OR run. Spec-only authorship counts as no test (see
+> F0.5). Large iterates route to the escape-hatch pipeline, which has
+> its own E2E gates.
 
 ---
 
@@ -962,7 +995,12 @@ See `references/iteration-planning.md` for full protocol including handoff file 
 
 **CRITICAL: Steps F0–F11 (including F3a, F5a, F5b, F5c) are MANDATORY. Do NOT skip any step.**
 
-> **Order matters.** F3/F3a/F4/F5/F5a/F5b/F5c all write tracked artifacts and MUST run before F6 so a single atomic commit stages them. F7 is the only step that legitimately runs after F6 (it needs the commit hash and writes only to a gitignored event log). Do not reorder.
+> **Order matters.** F0.5/F3/F3a/F4/F5/F5a/F5b/F5c all write tracked
+> artifacts and MUST run before F6 so a single atomic commit stages them.
+> F0.5 is the production-time E2E gate — a non-zero exit there blocks the
+> entire flow at the verification step, before any artifact is written.
+> F7 is the only step that legitimately runs after F6 (it needs the commit
+> hash and writes only to a gitignored event log). Do not reorder.
 
 ### F0: Fresh Verification Gate
 
