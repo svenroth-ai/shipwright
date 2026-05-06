@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-05-06T06:34:09Z
-Total commits: 599
+Generated: 2026-05-06T07:24:01Z
+Total commits: 601
 
 ## Commit Distribution
 
@@ -10,9 +10,9 @@ pie title Commit Types
     "feat" : 208
     "fix" : 160
     "docs" : 91
-    "chore" : 89
+    "chore" : 90
     "refactor" : 32
-    "test" : 12
+    "test" : 13
     "other" : 7
 ```
 
@@ -492,10 +492,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Chores (chore) — 89 commits
+### Chores (chore) — 90 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-06 | iterate | finalize iterate-2026-05-06-e2e-verification-gate (ADR-037) | 88f339868636 |
 | 2026-05-06 | release | v0.16.2 | b41eb32192c3 |
 | 2026-05-06 | iterate | refresh dashboard + handoff post-F7 (ADR-036) | 078351b10b70 |
 | 2026-05-06 | iterate | F7 event for ADR-036 hooks-consistency parser | a7e80915fae1 |
@@ -623,10 +624,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 12 commits
+### Tests (test) — 13 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-06 | iterate | backfill F0.5 empirical-test coverage (plan §V follow-up) | 531171c61fad |
 | 2026-04-30 | adopt | tighten 3 confidence gaps from self-review | 230f3d28abcb |
 | 2026-04-29 | plugins | migrate compliance/rtm.md mock fixture to canonical path | 50d1d866b113 |
 | 2026-04-28 | security | tighten smoke-test skip semantics + clarify gitignore-snippet scope (H.E review-fix) | eb43c26f82e4 |
@@ -656,7 +658,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 599 |
+| Total commits | 601 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 599 |
+| Human-authored commits | 601 |
 

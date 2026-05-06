@@ -329,3 +329,5 @@ Thanks for contributing! If anything in this guide is unclear, please open an is
 - **ADR-031** (2026-05-05): FR-table parser accepts 5-col adopt format + drift protection
 
 - **ADR-037** (2026-05-06): F0.5 End-to-End Verification Gate (surface taxonomy + schema-enforced evidence)
+
+- **ADR-038** (2026-05-06): F0.5 empirical-test backfill: drift-schutz + real subprocess probes + CLI audit chain

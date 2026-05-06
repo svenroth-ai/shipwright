@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-05-06T06:34:09Z
+Generated: 2026-05-06T07:24:01Z
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -10,17 +10,17 @@ Scope: library
 |--------|-------|--------|
 | Pipeline phases completed | 1/7 | WARN |
 | Work events (build) | 0 sections | WARN |
-| Work events (iterate) | 19 changes | INFO |
-| All unit tests passing | 1297/1297 | PASS |
+| Work events (iterate) | 20 changes | INFO |
+| All unit tests passing | 1548/1548 | PASS |
 | All sections reviewed | 0/0 | WARN |
-| Architecture decisions | 37 ADRs | INFO |
-| Iterate tests passing | 19/19 iterations tested | PASS |
+| Architecture decisions | 38 ADRs | INFO |
+| Iterate tests passing | 20/20 iterations tested | PASS |
 | Dependencies | 5 packages | INFO |
 | Copyleft risk | 0 | PASS |
 
 ## Project Velocity
 
-- Iterate: 19 changes (2026-05-02 → 2026-05-06)
+- Iterate: 20 changes (2026-05-02 → 2026-05-06)
 - Last activity: 2026-05-06
 
 ## External LLM Review Evidence
