@@ -532,7 +532,7 @@ What gets written:
   `OPENAI_API_KEY` (in that order — mirroring the fallback chain in
   `external_review_config.py`). These appear regardless of which
   stack profile is matched, because external review is framework-level
-  and runs in every plugin's planning/iterate gate.
+  and runs in every plugin's planning/iterate gate. <!-- artifact-path-canon: legacy -->
 
 Behavior contract:
 

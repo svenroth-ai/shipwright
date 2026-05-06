@@ -1,32 +1,32 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-06-iterate-config-loader",
+    "run_id": "iterate-2026-05-06-canon-cleanup",
     "date": "2026-05-06",
     "unit": {
       "status": "passed",
-      "passed": 34,
-      "total": 34,
-      "note": "shared/tests/test_external_review_config.py: 24 existing + 10 new tests covering project_root deep-merge, sub-dict preservation, missing-file fallback, malformed-JSON fallback (with stderr), round-trip, cascade-helper defaults + independence from feedback_iterations."
+      "passed": 13,
+      "total": 13,
+      "note": "shared/tests/test_artifact_path_canon.py + test_gitignore_canon.py: 9 previously-red tests now green (4 path canon + 5 gitignore canon — incl. the previously-failing test_shipwright_dir_is_ignored). 4 test_legacy_entry_present_during_in_progress are skipped (correctly — no in-progress migrations)."
     },
     "integration": {
       "status": "passed",
-      "passed": 1261,
-      "total": 1261,
-      "note": "Full shared/tests/ suite (excluding 3 pre-existing fail suites). Up from 1252 because of 9 new external_review_config tests beyond the 1 existing baseline change."
+      "passed": 1270,
+      "total": 1270,
+      "note": "Full shared/tests/ now 1270 passing (up from 1252). Only the unrelated test_phase_plugin_hooks_consistency suite stays red (separate iterate)."
     },
     "pgtap": {"status": "not_run", "passed": 0, "total": 0},
     "e2e": {"status": "not_run", "passed": 0, "total": 0},
     "design_fidelity": {"status": "not_run", "passed": 0, "total": 0},
     "smoke": {
       "status": "passed",
-      "note": "Empirical end-to-end probe on shipwright self-adopted root: load_review_config(project_root='.') reads shipwright_iterate_config.json (written in ADR-032), returns merged config with feedback_iterations=0 (override), external_code_review.enabled=True (added). is_external_code_review_enabled = True; get_external_review_status = user_disabled. Confirms producer/consumer loop closed."
+      "note": "Asymmetry verified: _shipwright_dir_is_self_adopted() returns True on this repo (`git ls-files .shipwright/` returns tracked content), so test_shipwright_dir_is_ignored asserts .shipwright/ is NOT a top-level ignore. End-user projects (no tracked .shipwright/ content) hit the original must-ignore branch."
     },
     "degraded": [
       {
-        "scope": "shared/tests/test_phase_plugin_hooks_consistency.py + test_artifact_path_canon + test_gitignore_canon",
-        "failures": 34,
+        "scope": "shared/tests/test_phase_plugin_hooks_consistency.py",
+        "failures": 25,
         "category": "pre-existing",
-        "note": "Pre-existing on main, same as iterate-2026-05-05-finalization-verifier-drop-dir and iterate-2026-05-05-adopt-iterate-config. Out of scope."
+        "note": "Out of scope for this canon-cleanup iterate. Separate fix iterate needed (decision: hooks nachziehen vs. test relaxen)."
       }
     ]
   }

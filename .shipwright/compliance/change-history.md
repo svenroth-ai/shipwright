@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-05-05T22:10:02Z
-Total commits: 583
+Generated: 2026-05-06T05:26:34Z
+Total commits: 586
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 206
-    "fix" : 157
+    "fix" : 158
     "docs" : 87
-    "chore" : 82
+    "chore" : 84
     "refactor" : 32
     "test" : 12
     "other" : 7
@@ -229,10 +229,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 157 commits
+### Fixes (fix) — 158 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-06 | loader | external_review_config deep-merges per-project iterate config | 49eca252153b |
 | 2026-05-05 | verifier | accept drop-directory entries and dashboard short-SHAs | f1f04478d613 |
 | 2026-05-05 | adopt | write shipwright_iterate_config.json during onboarding | f4f7229a5d37 |
 | 2026-05-05 | compliance | FR-table parser accepts 5-col adopt format (ADR-031) | 656f96f2fe0e |
@@ -483,10 +484,12 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Chores (chore) — 82 commits
+### Chores (chore) — 84 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-06 | iterate | refresh dashboard + handoff post-F7 (ADR-034) | 50067e125513 |
+| 2026-05-06 | iterate | F7 event for ADR-034 loader deep-merge | 6338989246c9 |
 | 2026-05-05 | iterate | refresh dashboard + handoff post-F7 (ADR-033) | 6d0ff0128861 |
 | 2026-05-05 | iterate | F7 event for ADR-033 verifier drop-dir | a8af83c4a04a |
 | 2026-05-05 | iterate | refresh dashboard + handoff post-F7 (ADR-032) | 2b5a885e7d24 |
@@ -640,7 +643,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 583 |
+| Total commits | 586 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 583 |
+| Human-authored commits | 586 |
 

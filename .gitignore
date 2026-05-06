@@ -69,28 +69,28 @@ shipwright_events.jsonl.lock
 # Exception: root-level event log from the framework's own self-adoption.
 !/shipwright_events.jsonl
 # Canonical agent_docs home is .shipwright/agent_docs/.
-# legacy path - do not remove. Sub-Iterate F of agent_docs migration (2026-04-28).
 # Anchored to root since 2026-05-02 self-adoption to allow .shipwright/agent_docs/.
 # See docs/migrations/.shipwright-agent_docs-relocation.md.
+# legacy path - do not remove. Sub-Iterate F of agent_docs migration (2026-04-28).
 /agent_docs/
 # Canonical designs home is .shipwright/designs/.
-# legacy path - do not remove. Sub-Iterate F of designs migration (2026-04-27).
 # Anchored to root since 2026-05-02 self-adoption to allow .shipwright/designs/.
 # See docs/migrations/.shipwright-designs-relocation.md.
+# legacy path - do not remove. Sub-Iterate F of designs migration (2026-04-27).
 /designs/
 # Canonical planning home is .shipwright/planning/.
-# legacy path - do not remove. Sub-Iterate F (2026-04-27).
 # Kept as a safety net against re-tracked legacy files.
 # Anchored to root since 2026-05-02 self-adoption to allow .shipwright/planning/.
 # See docs/migrations/.shipwright-relocation.md.
+# legacy path - do not remove. Sub-Iterate F (2026-04-27).
 /planning/
 # Canonical tool-call counter is .shipwright/toolcall_count.
 # legacy path - do not remove. Renamed 2026-04-29 (drive-by, no migration).
 .shipwright_toolcall_count
 # Canonical compliance home is .shipwright/compliance/.
-# legacy path - do not remove. Sub-Iterate F of compliance migration (2026-04-29).
 # Anchored to root since 2026-05-02 self-adoption to allow .shipwright/compliance/.
 # See docs/migrations/.shipwright-compliance-relocation.md.
+# legacy path - do not remove. Sub-Iterate F of compliance migration (2026-04-29).
 /compliance/
 
 # UV

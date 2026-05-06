@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-05T22:10:02Z
+Generated: 2026-05-06T05:26:34Z
 
 ## Requirements Coverage
 
@@ -40,6 +40,7 @@ Generated: 2026-05-05T22:10:02Z
 | FR-table parser accepts 5-col adopt format + drift protection | iterate | bug | FR-01.10, FR-01.13 | 1594/1628 | 656f96f | 2026-05-05 |
 | adopt writes shipwright_iterate_config.json with documented opt-out schema | iterate | bug |  | 241/241 | f4f7229 | 2026-05-05 |
 | verifier accepts drop-dir entries + dashboard short-SHAs | iterate | bug |  | 32/32 | f1f0447 | 2026-05-05 |
+| loader deep-merges per-project shipwright_iterate_config.json + cascade helper | iterate | bug |  | 34/34 | 49eca25 | 2026-05-05 |
 
 ## Coverage Summary
 
@@ -47,7 +48,7 @@ Generated: 2026-05-05T22:10:02Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 16 |
+| Iterate changes | 17 |
 | Requirements total | 13 |
 | Requirements verified | 13/13 |
 | Must-have verified | 10/10 |

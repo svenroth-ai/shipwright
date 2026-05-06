@@ -121,6 +121,16 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/tests/test_gitignore_canon.py",
         "shared/tests/test_constants_match_manifest.py",
         "shared/tests/test_path_canon_windows.py",
+        # Self-adopted shipwright records (historical / write-once data
+        # files). JSON has no comment syntax (per INLINE_MARKER docs);
+        # change-history.md by design records past commits referencing
+        # legacy paths; archived iterate plans are write-once descriptions
+        # of work done at that point in time.
+        ".shipwright/adopt/enrichment.json",
+        ".shipwright/agent_docs/architecture.md",
+        ".shipwright/agent_docs/decision_log.md",
+        ".shipwright/compliance/change-history.md",
+        ".shipwright/planning/iterate/**.md",
         # Layer 2 setup-contract test — intentionally asserts that the legacy
         # path is NOT created. Must reference legacy by name to do so.
         "shared/tests/test_setup_writes_canonical.py",
@@ -173,6 +183,12 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/tests/test_gitignore_canon.py",
         "shared/tests/test_constants_match_manifest.py",
         "shared/tests/test_path_canon_windows.py",
+        # Self-adopted shipwright records — see "planning" entry above.
+        ".shipwright/adopt/enrichment.json",
+        ".shipwright/agent_docs/architecture.md",
+        ".shipwright/agent_docs/decision_log.md",
+        ".shipwright/compliance/change-history.md",
+        ".shipwright/planning/iterate/**.md",
         # Layer-2 setup-contract test references both paths by design
         "shared/tests/test_setup_writes_canonical.py",
         # Migration tooling (CLI + helpers) takes artifact name as argument
@@ -216,6 +232,15 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/tests/test_gitignore_canon.py",
         "shared/tests/test_constants_match_manifest.py",
         "shared/tests/test_path_canon_windows.py",
+        # Self-adopted shipwright records — see "planning" entry above.
+        # shipwright_project_config.json carries `"agent_docs": true` as a
+        # feature-flag dict key (not a path); regex matches the JSON value.
+        ".shipwright/adopt/enrichment.json",
+        ".shipwright/agent_docs/architecture.md",
+        ".shipwright/agent_docs/decision_log.md",
+        ".shipwright/compliance/change-history.md",
+        ".shipwright/planning/iterate/**.md",
+        "shipwright_project_config.json",
         # Layer-2 setup-contract test references both paths by design
         "shared/tests/test_setup_writes_canonical.py",
         # Edge-case test file that intentionally references both paths (introduced in designs migration)
@@ -294,6 +319,12 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/tests/test_gitignore_canon.py",
         "shared/tests/test_constants_match_manifest.py",
         "shared/tests/test_path_canon_windows.py",
+        # Self-adopted shipwright records — see "planning" entry above.
+        ".shipwright/adopt/enrichment.json",
+        ".shipwright/agent_docs/architecture.md",
+        ".shipwright/agent_docs/decision_log.md",
+        ".shipwright/compliance/change-history.md",
+        ".shipwright/planning/iterate/**.md",
         # Layer-2 setup-contract test references both paths by design
         "shared/tests/test_setup_writes_canonical.py",
         # Edge-case test file that intentionally references both paths (introduced in designs migration)

@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-06-iterate-config-loader"
+run_id: "iterate-2026-05-06-canon-cleanup"
 phase: "iterate"
-reason: "iterate: refresh dashboard post-F7 (ADR-034)"
-timestamp: "2026-05-05T22:11:37.421080+00:00"
+reason: "iterate: post-migration canon cleanup (ADR-035)"
+timestamp: "2026-05-06T05:26:34.446667+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-05 22:11:37 UTC
+> Auto-generated 2026-05-06 05:26:34 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-05 22:11:37 UTC
-- **Reason**: iterate: refresh dashboard post-F7 (ADR-034)
+- **Timestamp**: 2026-05-06 05:26:34 UTC
+- **Reason**: iterate: post-migration canon cleanup (ADR-035)
 
 ## Last Iterate
 
@@ -38,7 +38,7 @@ timestamp: "2026-05-05T22:11:37.421080+00:00"
 ## Git State
 
 - **Branch**: main
-- **Last Commit**: 6338989 chore(iterate): F7 event for ADR-034 loader deep-merge
+- **Last Commit**: 50067e1 chore(iterate): refresh dashboard + handoff post-F7 (ADR-034)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,7 +69,7 @@ timestamp: "2026-05-05T22:11:37.421080+00:00"
 
 ## Recent Decisions
 
-### ADR-034: load_review_config deep-merges per-project override; cascade helper added
+### ADR-035: Drift-canon cleanup: ALLOWLIST self-adopted records, gitignore proximity, .shipwright/ self-adopt exception
 - **Date:** 2026-05-06
-- **Section:** Iterate — bug: external_review_config loads per-project shipwright_iterate_config.json
-- **Context:** shipwright_iterate_config.json was documented as the project-level opt-out for external_review.feedback_iterations and external_code_review.enabled (iteration-reviews.md, sub-iterate-runner.md) but the loader external_review_config.py read only shared/config/external_review.json. 
+- **Section:** Iterate — bug: post-migration canon cleanup
+- **Context:** After the .shipwright/<artifact>/ migrations (2026-04-26..29) and self-adoption (2026-05-02), 9 canon tests stayed red on every run. Three classes of false positives: (a) self-adopted records (.shipwright/{adopt,agent_docs,compliance,planning}/...) referencing legacy paths in archived ADRs

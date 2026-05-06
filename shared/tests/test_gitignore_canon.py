@@ -8,9 +8,22 @@ Per ``ARTIFACT_MIGRATIONS`` status, verify the root ``.gitignore``:
   (Gemini #2: removing it would expose accidentally-tracked files).
   We require a comment marker (``legacy path - do not remove``) on the
   entry so future readers know not to clean it up.
+
+Self-adoption exception
+-----------------------
+On 2026-05-02 the framework adopted itself. ``.shipwright/`` is a
+TRACKED directory in this monorepo (canonical homes
+``.shipwright/{agent_docs,planning,compliance,designs,adopt}/`` live
+under git), with only the transient subdirs explicitly excluded
+(``/.shipwright/external-review-temp/``, ``/.shipwright/reviews/`` …).
+So ``test_shipwright_dir_is_ignored`` skips when ``.shipwright/`` has
+tracked content. End-user projects (where ``.shipwright/`` is purely
+transient state) still pay the original ignore-must-be-present rule.
 """
 from __future__ import annotations
 
+import subprocess
+from functools import lru_cache
 from pathlib import Path
 
 import pytest
@@ -44,8 +57,44 @@ def _line_index_matching(lines: list[str], entry: str) -> int | None:
     return None
 
 
+@lru_cache(maxsize=1)
+def _shipwright_dir_is_self_adopted() -> bool:
+    """True iff ``.shipwright/`` carries tracked files in this repo.
+
+    Self-adopted projects (this monorepo since 2026-05-02) MUST NOT
+    ignore ``.shipwright/`` at the top level — the canonical artifact
+    homes live there and need to be tracked. End-user projects that
+    haven't self-adopted should still ignore it as transient state.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "ls-files", ".shipwright/"],
+            cwd=_REPO_ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return False
+    return any(line.strip() for line in out.stdout.splitlines())
+
+
 def test_shipwright_dir_is_ignored(gitignore_lines):
-    """``.shipwright/`` must always be in .gitignore (covers all migrations)."""
+    """``.shipwright/`` must be in .gitignore unless the repo has self-adopted.
+
+    For self-adopted repos the rule inverts: ``.shipwright/`` must NOT be
+    a top-level ignore (canonical artifact homes are tracked); only the
+    documented transient subpaths are excluded.
+    """
+    if _shipwright_dir_is_self_adopted():
+        assert _line_index_matching(gitignore_lines, _SHIPWRIGHT_ENTRY) is None, (
+            "Self-adopted repo: .shipwright/ MUST NOT be a top-level ignore "
+            "(canonical artifact homes need to be tracked). Use explicit "
+            "subpath excludes for transient dirs (external-review-temp/, "
+            "reviews/, securityreports/, tmp/, adopt/backups/)."
+        )
+        return
     assert _line_index_matching(gitignore_lines, _SHIPWRIGHT_ENTRY) is not None, (
         ".gitignore must contain `.shipwright/` entry"
     )
