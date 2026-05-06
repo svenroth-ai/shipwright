@@ -33,6 +33,7 @@ from tools.verifiers.iterate_checks import (
     check_build_dashboard_has_run_id,
     check_architecture_reviewed,
     check_conventions_reviewed,
+    check_surface_verification,
 )
 
 
@@ -518,3 +519,175 @@ def test_architecture_passes_when_fresh(tmp_path):
     (proj / ".shipwright" / "agent_docs" / "architecture.md").write_text("fresh arch")
     result = check_architecture_reviewed(proj, "r1")
     assert result.ok is True
+
+
+# ──────────────────────────────────────────────────────────────────────
+# check_surface_verification (F0.5 audit)
+# ──────────────────────────────────────────────────────────────────────
+
+
+def _seed_iterate_entry(proj: Path, run_id: str, complexity: str) -> None:
+    proj.mkdir(parents=True, exist_ok=True)
+    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (proj / "shipwright_run_config.json").write_text(json.dumps({
+        "iterate_history": [
+            {"run_id": run_id, "complexity": complexity, "type": "feature"},
+        ],
+    }))
+
+
+def _write_test_results(proj: Path, block: dict | None) -> None:
+    payload: dict = {"iterate_latest": {}}
+    if block is not None:
+        payload["iterate_latest"]["surface_verification"] = block
+    (proj / "shipwright_test_results.json").write_text(
+        json.dumps(payload, indent=2), encoding="utf-8"
+    )
+
+
+def test_surface_verification_skipped_for_trivial(tmp_path):
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "trivial")
+    _write_test_results(proj, None)  # block intentionally absent
+    result = check_surface_verification(proj, "r1")
+    assert result.is_skipped
+    assert "trivial" in result.detail
+
+
+def test_surface_verification_skipped_for_small(tmp_path):
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "small")
+    result = check_surface_verification(proj, "r1")
+    assert result.is_skipped
+
+
+def test_surface_verification_fails_when_results_missing_at_medium(tmp_path):
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    result = check_surface_verification(proj, "r1")
+    assert result.ok is False
+    assert "shipwright_test_results.json" in result.detail
+
+
+def test_surface_verification_fails_when_block_missing_at_medium(tmp_path):
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    _write_test_results(proj, None)
+    result = check_surface_verification(proj, "r1")
+    assert result.ok is False
+    assert "missing" in result.detail.lower()
+
+
+def test_surface_verification_fails_for_unknown_surface(tmp_path):
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    _write_test_results(proj, {
+        "surface": "wat", "runner": "x", "exit_code": 0,
+        "tests_run": 1, "evidence_path": "x", "timestamp": "now",
+    })
+    result = check_surface_verification(proj, "r1")
+    assert result.ok is False
+    assert "not one of" in result.detail
+
+
+def test_surface_verification_passes_for_none_with_justification(tmp_path):
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    _write_test_results(proj, {
+        "surface": "none",
+        "runner": "",
+        "exit_code": 0,
+        "tests_run": 0,
+        "evidence_path": "",
+        "timestamp": "now",
+        "justification": "pure type-hint rename; no runtime path exercised",
+    })
+    result = check_surface_verification(proj, "r1")
+    assert result.ok is True
+    assert "justification" in result.detail
+
+
+def test_surface_verification_fails_for_none_without_justification(tmp_path):
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    _write_test_results(proj, {
+        "surface": "none", "runner": "", "exit_code": 0,
+        "tests_run": 0, "evidence_path": "", "timestamp": "now",
+    })
+    result = check_surface_verification(proj, "r1")
+    assert result.ok is False
+    assert "justification" in result.detail
+
+
+def test_surface_verification_fails_for_blank_justification(tmp_path):
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    _write_test_results(proj, {
+        "surface": "none", "runner": "", "exit_code": 0,
+        "tests_run": 0, "evidence_path": "", "timestamp": "now",
+        "justification": "   ",
+    })
+    result = check_surface_verification(proj, "r1")
+    assert result.ok is False
+
+
+def test_surface_verification_fails_when_tests_run_zero(tmp_path):
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    _write_test_results(proj, {
+        "surface": "cli", "runner": "pytest -q", "exit_code": 0,
+        "tests_run": 0, "evidence_path": "log.txt", "timestamp": "now",
+    })
+    result = check_surface_verification(proj, "r1")
+    assert result.ok is False
+    assert "tests_run" in result.detail
+
+
+def test_surface_verification_fails_when_runner_failed(tmp_path):
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    _write_test_results(proj, {
+        "surface": "web", "runner": "playwright test", "exit_code": 1,
+        "tests_run": 5, "evidence_path": "report.html", "timestamp": "now",
+    })
+    result = check_surface_verification(proj, "r1")
+    assert result.ok is False
+    assert "exit_code" in result.detail
+
+
+def test_surface_verification_passes_for_happy_path(tmp_path):
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    _write_test_results(proj, {
+        "surface": "cli", "runner": "pytest -q", "exit_code": 0,
+        "tests_run": 5, "evidence_path": "log.txt", "timestamp": "now",
+    })
+    result = check_surface_verification(proj, "r1")
+    assert result.ok is True
+    assert "tests_run=5" in result.detail
+    assert "exit_code=0" in result.detail
+
+
+def test_surface_verification_fails_when_test_results_malformed(tmp_path):
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    (proj / "shipwright_test_results.json").write_text("{not valid json", encoding="utf-8")
+    result = check_surface_verification(proj, "r1")
+    assert result.ok is False
+    assert "malformed" in result.detail.lower()
+
+
+def test_surface_verification_run_all_checks_includes_f05(tmp_path):
+    """Drift guard — run_all_checks must list the F0.5 audit so a future
+    refactor can't silently drop it."""
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    _write_test_results(proj, {
+        "surface": "cli", "runner": "pytest", "exit_code": 0,
+        "tests_run": 1, "evidence_path": "x", "timestamp": "now",
+    })
+    results = run_all_checks(proj, "r1")
+    names = [r.name for r in results]
+    assert any("F0.5 surface_verification" in n for n in names), (
+        f"F0.5 check missing from run_all_checks; got: {names}"
+    )

@@ -365,6 +365,95 @@ def check_conventions_reviewed(
     )
 
 
+def check_surface_verification(project_root: Path, run_id: str) -> CheckResult:
+    """F0.5 audit — ``shipwright_test_results.json.iterate_latest`` carries a
+    well-formed ``surface_verification`` block.
+
+    The post-commit second layer behind the production-time gate in
+    ``shared/scripts/surface_verification.py``. Skipped at trivial/small
+    complexity (the gate's safety floor enforces those at the prose level).
+    Severity ERROR — fails ``--strict`` and default both.
+
+    Fail-closed conditions (mirror of SKILL.md F0.5):
+
+    1. medium+ iterate but no ``surface_verification`` block (silent regression).
+    2. ``surface != "none"`` and ``tests_run == 0`` (greedy-filter trap).
+    3. ``surface != "none"`` and ``exit_code != 0`` (runner failed after retries).
+    4. ``surface == "none"`` with empty / missing ``justification``.
+
+    A missing or malformed ``shipwright_test_results.json`` at medium+ is
+    itself a failure — the F5 step is mandatory and produces the file.
+    """
+    name = "F0.5 surface_verification block valid"
+
+    entry = find_entry_by_run_id(project_root, run_id)
+    complexity = (entry or {}).get("complexity", "")
+    if complexity not in ("medium", "large"):
+        return CheckResult(
+            name, True,
+            f"skipped (complexity={complexity or 'unknown'})",
+            severity=Severity.SKIPPED.value,
+        )
+
+    results_path = project_root / "shipwright_test_results.json"
+    if not results_path.exists():
+        return CheckResult(
+            name, False,
+            "shipwright_test_results.json missing — F5 did not run",
+        )
+    try:
+        results = json.loads(results_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        return CheckResult(
+            name, False,
+            f"shipwright_test_results.json malformed: {exc}",
+        )
+
+    iterate_latest = (results or {}).get("iterate_latest", {})
+    block = iterate_latest.get("surface_verification") if isinstance(iterate_latest, dict) else None
+    if not isinstance(block, dict):
+        return CheckResult(
+            name, False,
+            "iterate_latest.surface_verification missing for medium+ iterate",
+        )
+
+    surface = block.get("surface")
+    if surface not in ("web", "cli", "api", "none"):
+        return CheckResult(
+            name, False,
+            f"surface={surface!r} not one of web/cli/api/none",
+        )
+
+    if surface == "none":
+        justification = (block.get("justification") or "").strip()
+        if not justification:
+            return CheckResult(
+                name, False,
+                "surface=none requires non-empty justification",
+            )
+        return CheckResult(
+            name, True,
+            f"surface=none, justification recorded ({len(justification)} chars)",
+        )
+
+    exit_code = block.get("exit_code")
+    tests_run = block.get("tests_run")
+    if not isinstance(tests_run, int) or tests_run <= 0:
+        return CheckResult(
+            name, False,
+            f"surface={surface}, tests_run={tests_run!r} (must be > 0)",
+        )
+    if exit_code != 0:
+        return CheckResult(
+            name, False,
+            f"surface={surface}, exit_code={exit_code!r} (runner failed after retries)",
+        )
+    return CheckResult(
+        name, True,
+        f"surface={surface}, tests_run={tests_run}, exit_code=0",
+    )
+
+
 def check_migration_quarantine_empty(project_root: Path) -> CheckResult:
     """Advisory warn — flag if iterate_history migration quarantined any entries.
 
@@ -411,6 +500,7 @@ def run_all_checks(
         check_changelog_unreleased(project_root, run_id=run_id),
         check_session_handoff_fresh(project_root),
         check_build_dashboard_has_run_id(project_root, run_id, commit_hash=commit_hash or None),
+        check_surface_verification(project_root, run_id),
     ]
 
 
