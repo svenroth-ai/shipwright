@@ -178,27 +178,123 @@ Aligned with the five domains of Anthropic's [Claude Certified Architect](https:
 
 ## 2. Prerequisites and Installation
 
-### Required Tools
+### 2.1 Fresh-machine baseline
 
-| Tool | Version | Purpose | Install |
-|------|---------|---------|---------|
-| Claude Code | Latest | AI agent runtime (CLI or VSCode Extension) | [docs.anthropic.com](https://docs.anthropic.com/en/docs/claude-code) -- requires Pro or Max subscription |
-| Python | 3.11+ | Plugin scripts | Managed by uv (installed automatically) |
-| uv | Latest | Python package manager | `curl -LsSf https://astral.sh/uv/install.sh \| sh` (macOS/Linux) or `winget install astral-sh.uv` (Windows) |
-| Git | 2.x+ | Version control | [git-scm.com](https://git-scm.com) |
+Pick the block matching your OS, paste it into a terminal, then continue with §2.3 (Marketplace install). Each block installs the runtimes Shipwright needs and points you at Anthropic's installer for Claude Code itself.
 
-### Optional Tools
+**Windows 11 (PowerShell, no admin needed):**
 
-| Tool | Needed For | Install |
-|------|-----------|---------|
-| GitHub CLI (`gh`) | PR creation, changelog | `brew install gh` or `winget install GitHub.cli` |
-| Node.js 22.x | supabase-nextjs profile | [nodejs.org](https://nodejs.org) or `nvm install 22` |
-| Supabase CLI | Database migrations | `npm install -g supabase` |
-| Mermaid Preview (VSCode) | Rendering compliance Mermaid diagrams | VSCode Extensions: "Markdown Preview Mermaid Support" |
+```powershell
+winget install OpenJS.NodeJS.LTS
+winget install Python.Python.3.13
+winget install astral-sh.uv
+winget install GitHub.cli            # optional, for /shipwright-changelog
+# Install Claude Code from https://docs.anthropic.com/en/docs/claude-code
+# (Anthropic's installer drops claude.exe in ~/.local/bin/ — not on PATH yet.)
 
-### Installation Option A: `scripts/install.sh` (Recommended)
+# Add ~/.local/bin (claude) and ~/AppData/Roaming/npm (npm-global) to User PATH:
+[Environment]::SetEnvironmentVariable(
+  'Path',
+  ([Environment]::GetEnvironmentVariable('Path','User').TrimEnd(';') +
+   ";$env:USERPROFILE\.local\bin;$env:APPDATA\npm"),
+  'User'
+)
+# Restart your terminal so PATH takes effect, then verify:
+node --version; python --version; uv --version; claude --version
+```
 
-The fastest path -- one script installs everything (Python deps, WebUI deps, shell alias, verification).
+Claude Code itself runs natively under PowerShell — Git Bash is no longer required. If you prefer a Linux-style shell on Windows, WSL2 also works (use the Linux block below from inside the WSL distro).
+
+**macOS:**
+
+```bash
+brew install git gh node python uv
+# Install Claude Code from https://docs.anthropic.com/en/docs/claude-code
+```
+
+Xcode Command Line Tools are needed for git on a fresh macOS install: `xcode-select --install`.
+
+**Linux:**
+
+```bash
+sudo apt install nodejs npm python3 git           # adapt to your distro
+curl -LsSf https://astral.sh/uv/install.sh | sh
+# Install Claude Code from https://docs.anthropic.com/en/docs/claude-code
+```
+
+Some distros ship Python older than 3.11 — check `python3 --version` and use your distro's deadsnakes/`pyenv`/`uv python install 3.13` path if needed. uv manages per-project venvs, but it does not install system Python on Linux.
+
+### 2.2 Required tools reference
+
+The baseline above already installed everything in this table. It stays here as a "what and why" reference if you are auditing an existing machine.
+
+| Tool | Version | Purpose |
+|------|---------|---------|
+| Claude Code | 2.1.132+ | AI agent runtime (CLI or VSCode Extension) |
+| Python | 3.11+ | Plugin scripts (run via uv) |
+| uv | Latest | Python package manager + venv |
+| Node.js | 18+ | Command Center WebUI; required for `npm install -g <claude>` if you went the npm route |
+| Git | 2.x+ | Version control |
+
+| Optional | Needed for |
+|----------|------------|
+| GitHub CLI (`gh`) | PR creation, changelog |
+| Supabase CLI | Supabase migrations |
+| Mermaid Preview (VSCode) | Rendering compliance Mermaid diagrams |
+
+### 2.3 Plugin install — Option A: Marketplace via `claude plugin` CLI (recommended, cross-platform)
+
+This is the modern, idiomatic path. It works identically on Windows PowerShell, macOS, Linux, and inside the VSCode Extension's terminal.
+
+```bash
+# End-users: install from GitHub
+claude plugin marketplace add svenroth-ai/shipwright
+
+# OR — developers / offline / pinned-version: install from a local clone
+git clone https://github.com/svenroth-ai/shipwright.git ~/shipwright
+claude plugin marketplace add ~/shipwright
+```
+
+Install all 13 plugins. Use the snippet for your shell:
+
+**bash / zsh / Git Bash:**
+
+```bash
+for p in shipwright-run shipwright-project shipwright-design shipwright-plan \
+         shipwright-build shipwright-test shipwright-deploy shipwright-changelog \
+         shipwright-compliance shipwright-security shipwright-iterate \
+         shipwright-preview shipwright-adopt; do
+  claude plugin install "${p}@shipwright"
+done
+```
+
+**PowerShell:**
+
+```powershell
+foreach ($p in @('shipwright-run','shipwright-project','shipwright-design',
+                 'shipwright-plan','shipwright-build','shipwright-test',
+                 'shipwright-deploy','shipwright-changelog','shipwright-compliance',
+                 'shipwright-security','shipwright-iterate','shipwright-preview',
+                 'shipwright-adopt')) {
+  claude plugin install "$($p)@shipwright"
+}
+```
+
+Verify:
+
+```bash
+claude plugin list
+```
+
+All entries should show `✔ enabled`. If any show `✘ failed to load` with `expected record, received undefined at path ["hooks"]`, you have an outdated `hooks.json` schema — file an issue at [github.com/svenroth-ai/shipwright](https://github.com/svenroth-ai/shipwright).
+
+> **Important — restart Claude Code.** Freshly installed plugins only activate in a NEW Claude Code session. Close and reopen the VSCode Extension or restart the CLI before invoking `/shipwright-*` commands.
+
+### 2.4 Plugin install — Option B: `scripts/install.sh` (macOS, Linux, Git Bash on Windows)
+
+> **PowerShell users on Windows:** this script is bash-only and modifies `~/.bashrc` / `~/.zshrc`. Use Option A (Marketplace via `claude plugin` CLI) instead — it works natively in PowerShell.
+
+The all-in-one bash installer — one script installs Python deps, WebUI deps, a shell alias, and runs verification.
 
 ```bash
 git clone https://github.com/svenroth-ai/shipwright.git ~/shipwright
@@ -215,26 +311,59 @@ cd ~/shipwright
 
 Once done, type `shipwright` in any terminal and go.
 
-#### Start the Command Center
+### 2.5 Plugin install — Option C: Manual `--plugin-dir` shell alias (CLI-only)
 
-Since **v0.4.0** the Command Center WebUI lives in its own repo:
-[shipwright-webui](https://github.com/svenroth-ai/shipwright-webui).
-Clone it separately and follow its README:
+If you prefer not to register a marketplace, define a shell alias that loads all plugins from a local clone.
+
+**bash / zsh** — add to `~/.bashrc` or `~/.zshrc`:
 
 ```bash
-git clone https://github.com/svenroth-ai/shipwright-webui.git ~/shipwright-webui
-cd ~/shipwright-webui && make install
-make dev-server    # Terminal 1 — Hono :3847
-make dev-client    # Terminal 2 — Vite :5173
+shipwright() {
+  claude \
+    --plugin-dir ~/shipwright/plugins/shipwright-run \
+    --plugin-dir ~/shipwright/plugins/shipwright-project \
+    --plugin-dir ~/shipwright/plugins/shipwright-design \
+    --plugin-dir ~/shipwright/plugins/shipwright-iterate \
+    --plugin-dir ~/shipwright/plugins/shipwright-plan \
+    --plugin-dir ~/shipwright/plugins/shipwright-build \
+    --plugin-dir ~/shipwright/plugins/shipwright-test \
+    --plugin-dir ~/shipwright/plugins/shipwright-security \
+    --plugin-dir ~/shipwright/plugins/shipwright-deploy \
+    --plugin-dir ~/shipwright/plugins/shipwright-changelog \
+    --plugin-dir ~/shipwright/plugins/shipwright-compliance \
+    --plugin-dir ~/shipwright/plugins/shipwright-preview \
+    --plugin-dir ~/shipwright/plugins/shipwright-adopt \
+    "$@"
+}
 ```
 
-Autostart on Windows, port overrides for parallel worktrees, and the
-`SHIPWRIGHT_PROFILES_DIR` / `SHIPWRIGHT_MONOREPO_PATH` profile cascade
-are documented in the new repo's README + CLAUDE.md.
+**PowerShell** — add to `$PROFILE`:
 
-### Installation Option B: Marketplace (VSCode Extension)
+```powershell
+function shipwright {
+  claude `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-run `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-project `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-design `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-iterate `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-plan `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-build `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-test `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-security `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-deploy `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-changelog `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-compliance `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-preview `
+    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-adopt `
+    @args
+}
+```
 
-The marketplace approach works in both the VSCode Extension and the CLI. Add the following to `~/.claude/settings.json`:
+### 2.6 Plugin install — Option D: Manual `settings.json` edit (advanced)
+
+> Most users should prefer Option A (CLI). This manual approach is useful if you cannot run the `claude` CLI for some reason (e.g. you only use the VSCode Extension and never open a terminal), or if you are scripting a `settings.json` deployment across many machines.
+
+Add the following to `~/.claude/settings.json`:
 
 ```json
 {
@@ -273,73 +402,38 @@ git clone https://github.com/svenroth-ai/shipwright.git ~/shipwright
 cd ~/shipwright && uv sync
 ```
 
-### Installation Option C: Shell Alias (CLI Only, Manual)
-
-If you prefer not to register a marketplace, define a shell alias that loads all plugins.
-
-**bash / zsh** -- add to `~/.bashrc` or `~/.zshrc`:
+### 2.7 Verification
 
 ```bash
-shipwright() {
-  claude \
-    --plugin-dir ~/shipwright/plugins/shipwright-run \
-    --plugin-dir ~/shipwright/plugins/shipwright-project \
-    --plugin-dir ~/shipwright/plugins/shipwright-design \
-    --plugin-dir ~/shipwright/plugins/shipwright-iterate \
-    --plugin-dir ~/shipwright/plugins/shipwright-plan \
-    --plugin-dir ~/shipwright/plugins/shipwright-build \
-    --plugin-dir ~/shipwright/plugins/shipwright-test \
-    --plugin-dir ~/shipwright/plugins/shipwright-security \
-    --plugin-dir ~/shipwright/plugins/shipwright-deploy \
-    --plugin-dir ~/shipwright/plugins/shipwright-changelog \
-    --plugin-dir ~/shipwright/plugins/shipwright-compliance \
-    --plugin-dir ~/shipwright/plugins/shipwright-preview \
-    --plugin-dir ~/shipwright/plugins/shipwright-adopt \
-    "$@"
-}
+claude plugin list
 ```
 
-**PowerShell** -- add to `$PROFILE`:
-
-```powershell
-function shipwright {
-  claude `
-    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-run `
-    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-project `
-    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-design `
-    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-iterate `
-    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-plan `
-    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-build `
-    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-test `
-    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-security `
-    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-deploy `
-    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-changelog `
-    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-compliance `
-    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-preview `
-    --plugin-dir $env:USERPROFILE\shipwright\plugins\shipwright-adopt `
-    @args
-}
-```
-
-### Platform Notes
-
-**Windows:** Claude Code uses bash (Git Bash). Ensure [Git for Windows](https://gitforwindows.org/) is installed. Use the PowerShell alias or run from Git Bash. uv works natively: `winget install astral-sh.uv`.
-
-**macOS:** Install prerequisites via Homebrew: `brew install git gh node uv`. Xcode Command Line Tools needed: `xcode-select --install`.
-
-**Linux:** Most straightforward setup. All tools available via package managers. Ensure Python 3.11+ (some distros ship older versions).
-
-**WSL:** Alternative to native Windows. All Unix commands work natively in WSL2. Recommended if you prefer a Linux workflow on Windows.
-
-### Verification
-
-Open Claude Code and type:
+All 13 shipwright plugins should show `✔ enabled`. Then in Claude Code (NEW session — restart if you just installed):
 
 ```
 /shipwright-run
 ```
 
-You should see the SHIPWRIGHT-RUN banner. If you get "Plugin not found", check that your shell alias is loaded (`type shipwright`) or that your `settings.json` paths are correct.
+You should see the SHIPWRIGHT-RUN banner.
+
+**Common failure modes:**
+
+- **"Plugin not found" / `/shipwright-*` autocomplete missing** → you are still in the pre-install Claude Code session. Restart it.
+- **`✘ failed to load: expected record, received undefined at path ["hooks"]`** → outdated `hooks.json` schema. Open an issue.
+- **"command not found: claude" in PowerShell** → `~/.local/bin` is not on User-PATH. See the PATH-fix snippet in §2.1.
+
+### 2.8 Command Center WebUI
+
+Since **v0.4.0** the Command Center WebUI lives in its own repo: [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui). Clone it separately and follow its README:
+
+```bash
+git clone https://github.com/svenroth-ai/shipwright-webui.git ~/shipwright-webui
+cd ~/shipwright-webui && make install
+make dev-server    # Terminal 1 — Hono :3847
+make dev-client    # Terminal 2 — Vite :5173
+```
+
+Autostart on Windows, port overrides for parallel worktrees, and the `SHIPWRIGHT_PROFILES_DIR` / `SHIPWRIGHT_MONOREPO_PATH` profile cascade are documented in the new repo's README + CLAUDE.md.
 
 ---
 
