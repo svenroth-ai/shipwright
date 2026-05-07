@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-05-07T06:35:04Z
-Total commits: 605
+Generated: 2026-05-07T08:25:37Z
+Total commits: 608
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 208
-    "fix" : 161
-    "chore" : 92
-    "docs" : 91
+    "fix" : 162
+    "chore" : 93
+    "docs" : 92
     "refactor" : 32
     "test" : 14
     "other" : 7
@@ -231,11 +231,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 161 commits
+### Fixes (fix) — 162 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-05-07 | plugins | wrap hooks.json under top-level hooks key for Claude Code 2.1.132+ schema | 1820ea92bf2d |
+| 2026-05-07 | plugins | convert PreToolUse/PostToolUse matcher to string form for Claude Code 2.1.132+ schema | 99fc87bdb26f |
+| 2026-05-07 | plugins | wrap hooks.json under top-level hooks key for Claude Code 2.1.132+ schema | 276e8f650a40 |
 | 2026-05-06 | test | hooks-consistency parser handles quoted-path commands | c5e6cb30c428 |
 | 2026-05-06 | canon | post-migration cleanup — 9 canon tests now green | 7383c185a35c |
 | 2026-05-06 | loader | external_review_config deep-merges per-project iterate config | 49eca252153b |
@@ -397,10 +398,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 92 commits
+### Chores (chore) — 93 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-07 | iterate | finalize iterate-2026-05-07-hooks-json-claude-2-1-132-schema (ADR-039) | f1023705d15e |
 | 2026-05-06 | release | v0.17.0 | 4d6134b14312 |
 | 2026-05-06 | iterate | finalize iterate-2026-05-06-e2e-gate-empirical-tests (ADR-038) | 0df63f2a78b6 |
 | 2026-05-06 | iterate | finalize iterate-2026-05-06-e2e-verification-gate (ADR-037) | 88f339868636 |
@@ -494,10 +496,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 91 commits
+### Documentation (docs) — 92 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-07 | guide | modernize Chapter 2 install section — marketplace CLI first, fresh-machine baseline per platform, restart-Claude-Code hint | c1ad0d2005c3 |
 | 2026-05-06 | — | sync hooks-and-pipeline + guide + browser-fixer with F0.5 | e2e4a7517887 |
 | 2026-05-06 | iterate | add F0.5 AC-shape rules to iteration-planning + conventions | 79e6de10f347 |
 | 2026-05-06 | iterate | tighten SKILL.md around F0.5 (Phase Matrix, Step 9/11, template) | 8bca6d227c7c |
@@ -631,7 +634,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-05-07 | hooks | unwrap top-level hooks key in tests that read plugin hooks.json | 686e7cca5c88 |
+| 2026-05-07 | hooks | unwrap top-level hooks key in tests that read plugin hooks.json | c58e112027cd |
 | 2026-05-06 | iterate | backfill F0.5 empirical-test coverage (plan §V follow-up) | 531171c61fad |
 | 2026-04-30 | adopt | tighten 3 confidence gaps from self-review | 230f3d28abcb |
 | 2026-04-29 | plugins | migrate compliance/rtm.md mock fixture to canonical path | 50d1d866b113 |
@@ -662,7 +665,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 605 |
+| Total commits | 608 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 605 |
+| Human-authored commits | 608 |
 

@@ -85,6 +85,36 @@ def test_hooks_json_has_top_level_hooks_wrapper(hooks_path: Path) -> None:
     )
 
 
+@pytest.mark.parametrize("hooks_path", _hook_files(), ids=lambda p: p.parent.parent.name)
+def test_pre_post_tool_use_matchers_are_strings(hooks_path: Path) -> None:
+    """ADR-040 follow-up: Claude Code 2.1.132+ requires ``PreToolUse``
+    / ``PostToolUse`` matcher fields to be strings (single tool name
+    like ``"Bash"``, regex alternation like ``"Write|Edit"``, or
+    ``"*"`` for all tools). The legacy object form
+    ``{"tools": [...]}`` triggers ``Invalid input: expected string,
+    received object`` and the plugin fails to load entirely. This
+    test catches that drift at test time, not at user install time.
+    """
+    raw = json.loads(hooks_path.read_text(encoding="utf-8"))
+    inner = raw.get("hooks") if isinstance(raw.get("hooks"), dict) else raw
+
+    rel = hooks_path.relative_to(REPO_ROOT)
+
+    for event in ("PreToolUse", "PostToolUse"):
+        for i, group in enumerate(inner.get(event, []) or []):
+            if "matcher" not in group:
+                # Catch-all matcher group (no filter) — allowed.
+                continue
+            matcher = group["matcher"]
+            assert isinstance(matcher, str), (
+                f"{rel}: {event}[{i}].matcher is "
+                f"{type(matcher).__name__} ({matcher!r}); Claude Code "
+                f"2.1.132+ requires a string. Use \"Bash\" for a single "
+                f"tool, \"Write|Edit\" for an alternation, or \"*\" for "
+                f"all tools."
+            )
+
+
 def test_no_hooks_json_uses_legacy_top_level_shape() -> None:
     """AC-1 negative form: explicitly catch the pre-2.1.132 shape where
     event names sit at the JSON document root with no wrapper. This is

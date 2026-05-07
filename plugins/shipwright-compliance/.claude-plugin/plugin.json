@@ -1,7 +1,7 @@
 {
   "name": "shipwright-compliance",
   "description": "Generate audit-ready compliance documentation from Shipwright pipeline data (RTM, test evidence, change history, SBOM)",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "author": {
     "name": "Sven Roth",
     "url": "https://github.com/svenroth-ai"

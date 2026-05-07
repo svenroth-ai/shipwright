@@ -1,38 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-07-hooks-json-claude-2-1-132-schema"
+run_id: "iterate-2026-05-07-hooks-json-matcher-string-form"
 phase: "iterate"
-reason: "Wrap plugins/*/hooks/hooks.json under top-level hooks key for Claude Code 2.1.132+ schema (ADR-039) + test-side schema unwrap"
-timestamp: "2026-05-07T06:35:04.876405+00:00"
+reason: "Convert PreToolUse/PostToolUse matcher to string form for Claude Code 2.1.132+ schema (ADR-040)"
+timestamp: "2026-05-07T08:25:37.334307+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-07 06:35:04 UTC
+> Auto-generated 2026-05-07 08:25:37 UTC
 
 ## Session Info
 
 - **Session ID**: unknown
-- **Timestamp**: 2026-05-07 06:35:04 UTC
-- **Reason**: Wrap plugins/*/hooks/hooks.json under top-level hooks key for Claude Code 2.1.132+ schema (ADR-039) + test-side schema unwrap
+- **Timestamp**: 2026-05-07 08:25:37 UTC
+- **Reason**: Convert PreToolUse/PostToolUse matcher to string form for Claude Code 2.1.132+ schema (ADR-040)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-07-hooks-json-claude-2-1-132-schema
+- **Run ID**: iterate-2026-05-07-hooks-json-matcher-string-form
 - **Date**: 2026-05-07T00:00:00Z
 - **Type**: bug
-- **Complexity**: small
-- **Branch**: iterate/hooks-json-claude-2-1-132-schema
-- **ADR**: ADR-039
+- **Complexity**: trivial
+- **Branch**: iterate/hooks-json-matcher-string-form
+- **ADR**: ADR-040
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-07-hooks-json-claude-2-1-132-schema.md
+- **Spec**: .shipwright/planning/iterate/2026-05-07-hooks-json-matcher-string-form.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/hooks-json-claude-2-1-132-schema
-- **Run ID**: iterate-2026-05-07-hooks-json-claude-2-1-132-schema
-- **Spec**: .shipwright/planning/iterate/2026-05-07-hooks-json-claude-2-1-132-schema.md
-- **Complexity**: small (mechanical sweep across 12 files + 12 plugin.json version bumps; structural rewrap, no logic change)
+- **Branch**: iterate/hooks-json-matcher-string-form
+- **Run ID**: iterate-2026-05-07-hooks-json-matcher-string-form
+- **Spec**: .shipwright/planning/iterate/2026-05-07-hooks-json-matcher-string-form.md
+- **Complexity**: trivial (3 string edits across 2 files + 1 test extension + 2 version bumps)
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/hooks-json-claude-2-1-132-schema
-- **Last Commit**: 686e7cc test(hooks): unwrap top-level hooks key in tests that read plugin hooks.json
+- **Branch**: iterate/hooks-json-matcher-string-form
+- **Last Commit**: 99fc87b fix(plugins): convert PreToolUse/PostToolUse matcher to string form for Claude Code 2.1.132+ schema
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,22 +68,22 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-f66286bf | work_completed | iterate (—) | 2026-05-07 |
 | evt-623a29ad | work_completed | iterate (—) | 2026-05-07 |
 | evt-40c653f7 | work_completed | iterate (F0.5 empirical-test backfill) | 2026-05-06 |
 | evt-510b8df3 | work_completed | iterate (F0.5 End-to-End Verification Gate) | 2026-05-06 |
 | evt-4dcdd82a | work_completed | iterate (hooks-consistency parser handles quoted commands — 27/27 green) | 2026-05-06 |
-| evt-28541d92 | work_completed | iterate (post-migration canon cleanup — 9 tests green) | 2026-05-06 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 22
+- **Total work events**: 23
 - **Last iterate**: change — — (2026-05-07)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
 
-### ADR-039: Wrap plugins/*/hooks/hooks.json under top-level `hooks` key for Claude Code 2.1.132+
+### ADR-040: PreToolUse / PostToolUse matcher must be a string under Claude Code 2.1.132+
 - **Date:** 2026-05-07
-- **Section:** Iterate — bug: hooks.json schema migration to Claude Code 2.1.132+
-- **Context:** Claude Code 2.1.132 tightened plugin schema validation. `plugins/*/hooks/hooks.json` is now expected to wrap its event-name dict under a top-level `"hooks"` key. Existing files (post-ADR-019/020, all 12 plugins through v0.17.0) place event names at the document root. Result: plugin load fa
+- **Section:** Iterate — bug: hooks.json matcher schema (follow-up to ADR-039)
+- **Context:** After ADR-039 wrapped event names under `"hooks"`, `claude plugin list` against the post-merge cache surfaced a SECOND schema tightening: `PreToolUse` / `PostToolUse` matcher fields must now be strings, not the legacy object form `{"tools": ["Bash"]}`. `shipwright-build` reproduces empirically as ✘ f

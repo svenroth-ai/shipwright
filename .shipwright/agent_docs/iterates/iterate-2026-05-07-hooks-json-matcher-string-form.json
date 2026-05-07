@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-07-hooks-json-matcher-string-form",
+  "date": "2026-05-07T00:00:00Z",
+  "type": "bug",
+  "complexity": "trivial",
+  "branch": "iterate/hooks-json-matcher-string-form",
+  "spec": ".shipwright/planning/iterate/2026-05-07-hooks-json-matcher-string-form.md",
+  "tests_passed": true,
+  "adr": "ADR-040"
+}
