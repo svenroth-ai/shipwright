@@ -56,8 +56,23 @@ def _hook_commands(hook_block: list[dict]) -> list[str]:
 
 
 def _load_hooks(plugin: str) -> dict:
+    """Return the event-name → event-config-list mapping for a plugin.
+
+    Claude Code 2.1.132+ requires the file's top-level value to wrap the
+    event-name dict under a ``"hooks"`` key (see ADR-039). This helper
+    unwraps that so the rest of the test only deals with the inner
+    event mapping. The wrapper itself is asserted by
+    ``test_hooks_json_wrapper.py`` — duplicating that assertion here
+    would just produce noisier failures, so we tolerate either shape
+    and fall back to legacy unwrapped form for forward-compatibility
+    with any future schema flip.
+    """
     path = REPO_ROOT / "plugins" / plugin / "hooks" / "hooks.json"
-    return json.loads(path.read_text(encoding="utf-8"))
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    inner = raw.get("hooks")
+    if isinstance(inner, dict):
+        return inner
+    return raw
 
 
 @pytest.mark.parametrize("plugin", PHASE_PLUGINS)

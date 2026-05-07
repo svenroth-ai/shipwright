@@ -444,10 +444,19 @@ def test_hook_output_contains_phase_quality_tag(shipwright_project: Path):
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+def _load_plugin_hooks(plugin: str) -> dict:
+    """Read plugin hooks.json and unwrap the Claude Code 2.1.132+
+    top-level ``hooks`` wrapper (ADR-039) so callers see the inner
+    event-name dict regardless of which schema shape the file uses."""
+    hooks_file = _REPO_ROOT / "plugins" / plugin / "hooks" / "hooks.json"
+    raw = json.loads(hooks_file.read_text(encoding="utf-8"))
+    inner = raw.get("hooks")
+    return inner if isinstance(inner, dict) else raw
+
+
 @pytest.mark.parametrize("plugin", sorted(pq.PLUGIN_TO_PHASE))
 def test_plugin_hooks_json_registers_audit_hook(plugin: str):
-    hooks_file = _REPO_ROOT / "plugins" / plugin / "hooks" / "hooks.json"
-    data = json.loads(hooks_file.read_text(encoding="utf-8"))
+    data = _load_plugin_hooks(plugin)
     stop = data.get("Stop") or []
     commands = [
         h["command"]
@@ -462,8 +471,7 @@ def test_plugin_hooks_json_registers_audit_hook(plugin: str):
 
 def test_iterate_plugin_orders_audit_after_finalize():
     """Iterate Sonderfall (plan § 5.1): finalize → audit → terminal_marker."""
-    hooks_file = _REPO_ROOT / "plugins" / "shipwright-iterate" / "hooks" / "hooks.json"
-    data = json.loads(hooks_file.read_text(encoding="utf-8"))
+    data = _load_plugin_hooks("shipwright-iterate")
     stop_hooks = data["Stop"][0]["hooks"]
     commands = [h["command"] for h in stop_hooks]
     idx_finalize = next(i for i, c in enumerate(commands) if "iterate_stop_finalize" in c)
@@ -477,8 +485,7 @@ def test_nine_plugins_order_audit_before_handoff():
     for plugin in ("shipwright-project", "shipwright-design", "shipwright-plan",
                    "shipwright-build", "shipwright-test", "shipwright-security",
                    "shipwright-deploy", "shipwright-changelog", "shipwright-compliance"):
-        hooks_file = _REPO_ROOT / "plugins" / plugin / "hooks" / "hooks.json"
-        data = json.loads(hooks_file.read_text(encoding="utf-8"))
+        data = _load_plugin_hooks(plugin)
         commands = [
             h["command"]
             for entry in data.get("Stop", [])
