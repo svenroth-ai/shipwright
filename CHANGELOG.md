@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.1] - 2026-05-07
+
+### Fixed
+
+- **all plugins:** every `plugins/*/hooks/hooks.json` now wraps its event-name dict under a top-level `"hooks"` key, conforming to the schema enforced by Claude Code 2.1.132+. Without the wrapper, the harness rejects every plugin with `Hook load failed: expected record, received undefined at path ["hooks"]` and NO `SessionStart` / `UserPromptSubmit` / `Stop` / `PreToolUse` / `PostToolUse` / `SubagentStop` hooks fire — silently breaks the SDLC pipeline for every Shipwright user on the supported Claude Code floor. Per-plugin `version` bumped (10 × `0.2.0`→`0.2.1`, `shipwright-iterate` `0.4.0`→`0.4.1`, `shipwright-plan` `0.3.0`→`0.3.1`) so existing installs pull the fix via `claude plugin update`. Adds `shared/tests/test_hooks_json_wrapper.py` regression test that catches future regressions to the legacy shape at test time. ADR-039.
+- **shipwright-build / shipwright-compliance:** `PreToolUse` and `PostToolUse` matcher fields are now strings (`"Bash"`, `"Write|Edit"`) instead of the legacy object form `{"tools": [...]}`. Claude Code 2.1.132+ rejects the object form with `Invalid input: expected string, received object` and the plugin fails to load entirely. Caught empirically by `claude plugin list` post-ADR-039 (`shipwright-build` ✘ failed to load); `shipwright-compliance` carried the same broken shape pre-emptively patched. Plugin versions bumped (`shipwright-build` `0.2.1`→`0.2.2`, `shipwright-compliance` `0.2.1`→`0.2.2`). Regression test in `shared/tests/test_hooks_json_wrapper.py` extended with `test_pre_post_tool_use_matchers_are_strings` (12 parametrized cases) — catches reintroduction at test time. ADR-040.
+
 ## [0.17.0] - 2026-05-06
 
 ### Added
