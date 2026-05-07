@@ -1,7 +1,7 @@
 {
   "name": "shipwright-design",
   "description": "Generate UI mockups from IREB specs — standalone HTML screens and user flows",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": {
     "name": "Sven Roth",
     "url": "https://github.com/svenroth-ai"

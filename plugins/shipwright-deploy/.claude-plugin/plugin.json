@@ -1,7 +1,7 @@
 {
   "name": "shipwright-deploy",
   "description": "Deploy to configured targets with smoke testing and rollback — Jelastic as first flavor",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": {
     "name": "Sven Roth",
     "url": "https://github.com/svenroth-ai"
