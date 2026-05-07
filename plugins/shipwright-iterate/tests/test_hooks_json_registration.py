@@ -49,7 +49,15 @@ _CANONICAL_COMMAND = (
 
 
 def _load_hooks_json() -> dict:
-    return json.loads(_PLUGIN_HOOKS_JSON.read_text(encoding="utf-8"))
+    """Return the event-name → matcher-list mapping for the
+    shipwright-iterate plugin, transparently unwrapping the Claude
+    Code 2.1.132+ top-level ``hooks`` key (ADR-039). The wrapper
+    invariant itself is asserted in
+    ``shared/tests/test_hooks_json_wrapper.py`` — duplicating it here
+    would just produce noisier failures, so we tolerate either shape."""
+    raw = json.loads(_PLUGIN_HOOKS_JSON.read_text(encoding="utf-8"))
+    inner = raw.get("hooks")
+    return inner if isinstance(inner, dict) else raw
 
 
 def test_user_prompt_submit_entry_exists():
@@ -451,7 +459,10 @@ def test_cache_hooks_json_registers_canonical_userpromptsubmit():
     update-marketplace.sh."""
     _, cached_hooks_json = _cache_hooks_json_in_sync_with_source()
     assert cached_hooks_json is not None and cached_hooks_json.is_file()
-    cache_data = json.loads(cached_hooks_json.read_text(encoding="utf-8"))
+    cache_raw = json.loads(cached_hooks_json.read_text(encoding="utf-8"))
+    # Unwrap the Claude Code 2.1.132+ top-level "hooks" key (ADR-039);
+    # tolerate either shape so the test stays useful through schema flips.
+    cache_data = cache_raw.get("hooks") if isinstance(cache_raw.get("hooks"), dict) else cache_raw
     cache_user_prompt_cmds: list[str] = []
     for matcher in cache_data.get("UserPromptSubmit", []):
         if isinstance(matcher, dict):

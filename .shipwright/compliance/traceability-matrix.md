@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-06T07:24:01Z
+Generated: 2026-05-07T06:35:04Z
 
 ## Requirements Coverage
 
@@ -44,6 +44,7 @@ Generated: 2026-05-06T07:24:01Z
 | post-migration canon cleanup — 9 tests green | iterate | bug |  | 1270/1270 | 7383c18 | 2026-05-06 |
 | hooks-consistency parser handles quoted commands — 27/27 green | iterate | bug |  | 1297/1297 | c5e6cb3 | 2026-05-06 |
 | F0.5 End-to-End Verification Gate | iterate | feature |  | 1548/1548 | 88f3398 | 2026-05-06 |
+| F0.5 empirical-test backfill | iterate | change |  | 1575/1575 | 0df63f2 | 2026-05-06 |
 
 ## Coverage Summary
 
@@ -51,7 +52,7 @@ Generated: 2026-05-06T07:24:01Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 20 |
+| Iterate changes | 21 |
 | Requirements total | 13 |
 | Requirements verified | 13/13 |
 | Must-have verified | 10/10 |
