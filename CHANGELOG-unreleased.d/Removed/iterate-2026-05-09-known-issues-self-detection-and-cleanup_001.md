@@ -1,0 +1,1 @@
+shipwright-plan: `save_session_config()` and its self-only test (`test_session_config_roundtrip`). The function had zero production callsites; `load_session_config` + `get_merged_config` remain. ADR-041.

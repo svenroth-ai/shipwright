@@ -1,0 +1,9 @@
+{
+  "status": "completed",
+  "timestamp": "2026-05-09T07:56:21.330003+00:00",
+  "provider": null,
+  "findings_count": 0,
+  "self_review_fallback_ran": false,
+  "reason": null,
+  "review_mode": "code"
+}
