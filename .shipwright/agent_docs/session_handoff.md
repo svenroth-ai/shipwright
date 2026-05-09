@@ -2,30 +2,30 @@
 canon_generated: true
 run_id: "iterate-2026-05-09-known-issues-self-detection-and-cleanup"
 phase: "iterate"
-reason: "iterate: known_issues scanner self-detection + cleanup"
-timestamp: "2026-05-09T07:59:45.375350+00:00"
+reason: "iterate post-F7 dashboard refresh"
+timestamp: "2026-05-09T08:03:18.403367+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-09 07:59:45 UTC
+> Auto-generated 2026-05-09 08:03:18 UTC
 
 ## Session Info
 
 - **Session ID**: ef6d2ae1-cf77-4229-8751-c0227b1c9dc2
-- **Timestamp**: 2026-05-09 07:59:45 UTC
-- **Reason**: iterate: known_issues scanner self-detection + cleanup
+- **Timestamp**: 2026-05-09 08:03:18 UTC
+- **Reason**: iterate post-F7 dashboard refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-07-hooks-json-matcher-string-form
-- **Date**: 2026-05-07T00:00:00Z
+- **Run ID**: iterate-2026-05-09-known-issues-self-detection-and-cleanup
+- **Date**: 2026-05-09T07:59:52.087216Z
 - **Type**: bug
-- **Complexity**: trivial
-- **Branch**: iterate/hooks-json-matcher-string-form
-- **ADR**: ADR-040
+- **Complexity**: medium
+- **Branch**: iterate/known-issues-self-detection-and-cleanup
+- **ADR**: ADR-041
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-07-hooks-json-matcher-string-form.md
+- **Spec**: .shipwright/planning/iterate/2026-05-09-known-issues-self-detection-and-cleanup.md
 
 ## Current Iterate Progress
 
@@ -52,7 +52,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/known-issues-self-detection-and-cleanup
-- **Last Commit**: 22a317c Merge pull request #22 from svenroth-ai/chore/changelog-0.17.1
+- **Last Commit**: f8d44da fix(adopt): scanner requires comment-context; remove dead save_session_config
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-c8a57331 | work_completed | iterate (known_issues scanner requires comment context; remove dead save_session_config — 16/16 green) | 2026-05-09 |
 | evt-f66286bf | work_completed | iterate (—) | 2026-05-07 |
 | evt-623a29ad | work_completed | iterate (—) | 2026-05-07 |
 | evt-40c653f7 | work_completed | iterate (F0.5 empirical-test backfill) | 2026-05-06 |
 | evt-510b8df3 | work_completed | iterate (F0.5 End-to-End Verification Gate) | 2026-05-06 |
-| evt-4dcdd82a | work_completed | iterate (hooks-consistency parser handles quoted commands — 27/27 green) | 2026-05-06 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 23
-- **Last iterate**: change — — (2026-05-07)
+- **Total work events**: 24
+- **Last iterate**: bug — known_issues scanner requires comment context; remove dead save_session_config — 16/16 green (2026-05-09)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

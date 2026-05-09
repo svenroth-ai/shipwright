@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-09T07:59:45Z
+Generated: 2026-05-09T08:03:18Z
 
 ## Requirements Coverage
 
@@ -47,6 +47,7 @@ Generated: 2026-05-09T07:59:45Z
 | F0.5 empirical-test backfill | iterate | change |  | 1575/1575 | 0df63f2 | 2026-05-06 |
 | evt-623a29ad | iterate | change |  | — | 686e7cc | 2026-05-07 |
 | evt-f66286bf | iterate | change |  | — | 99fc87b | 2026-05-07 |
+| known_issues scanner requires comment context; remove dead save_session_config — 16/16 green | iterate | bug |  | 16/16 | f8d44da | 2026-05-09 |
 
 ## Coverage Summary
 
@@ -54,7 +55,7 @@ Generated: 2026-05-09T07:59:45Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 23 |
+| Iterate changes | 24 |
 | Requirements total | 13 |
 | Requirements verified | 13/13 |
 | Must-have verified | 10/10 |

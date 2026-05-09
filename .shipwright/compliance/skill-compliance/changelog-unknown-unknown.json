@@ -1,0 +1,62 @@
+{
+  "phase": "changelog",
+  "run_id": "unknown",
+  "session_id": "unknown",
+  "audited_at": "2026-05-09T06:15:34+00:00",
+  "source": "orchestrator",
+  "canon": [
+    {
+      "id": "C1",
+      "name": "C1 record_event phase_completed[changelog]",
+      "status": "PASS",
+      "evidence": "found event @ ?",
+      "remediation": "Run record_event.py --type phase_completed --source <phase>"
+    },
+    {
+      "id": "C2",
+      "name": "C2 build_dashboard mentions changelog",
+      "status": "PASS",
+      "evidence": "'changelog' found in build_dashboard.md",
+      "remediation": "Run update_build_dashboard.py --phase <phase>"
+    },
+    {
+      "id": "C3",
+      "name": "C3 session_handoff.md fresh",
+      "status": "PASS",
+      "evidence": "mtime age 0s",
+      "remediation": "Regenerate session_handoff.md via generate_session_handoff.py --reason '<phase>: ...'"
+    },
+    {
+      "id": "C4",
+      "name": "C4 decision_log has changelog ADR",
+      "status": "SKIP",
+      "evidence": "not applicable for phase=changelog"
+    },
+    {
+      "id": "C5",
+      "name": "C5 CHANGELOG [Unreleased] has entry",
+      "status": "SKIP",
+      "evidence": "not applicable for phase=changelog"
+    }
+  ],
+  "workflow": [
+    {
+      "id": "W6",
+      "name": "W6 git tag for released version",
+      "status": "PASS",
+      "evidence": "v0.17.1 present in git"
+    }
+  ],
+  "infrastructure": [
+    {
+      "id": "I3",
+      "name": "I3 change-history.md fresh after phase_started",
+      "status": "SKIP",
+      "evidence": "no phase_started event for phase=changelog \u2014 freshness not verifiable yet",
+      "provenance": "unverified_marker"
+    }
+  ],
+  "traceability": [],
+  "quality": [],
+  "spec": []
+}

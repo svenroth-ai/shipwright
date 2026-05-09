@@ -1,0 +1,63 @@
+{
+  "phase": "test",
+  "run_id": "unknown",
+  "session_id": "unknown",
+  "audited_at": "2026-05-09T06:15:34+00:00",
+  "source": "orchestrator",
+  "canon": [
+    {
+      "id": "C1",
+      "name": "C1 record_event phase_completed[test]",
+      "status": "FAIL",
+      "evidence": "no phase_completed event for phase=test",
+      "remediation": "Run record_event.py --type phase_completed --source <phase>"
+    },
+    {
+      "id": "C2",
+      "name": "C2 build_dashboard mentions test",
+      "status": "PASS",
+      "evidence": "'test' found in build_dashboard.md",
+      "remediation": "Run update_build_dashboard.py --phase <phase>"
+    },
+    {
+      "id": "C3",
+      "name": "C3 session_handoff.md fresh",
+      "status": "PASS",
+      "evidence": "mtime age 0s",
+      "remediation": "Regenerate session_handoff.md via generate_session_handoff.py --reason '<phase>: ...'"
+    },
+    {
+      "id": "C4",
+      "name": "C4 decision_log has test ADR",
+      "status": "SKIP",
+      "evidence": "not applicable for phase=test"
+    },
+    {
+      "id": "C5",
+      "name": "C5 CHANGELOG [Unreleased] has entry",
+      "status": "SKIP",
+      "evidence": "not applicable for phase=test"
+    }
+  ],
+  "workflow": [
+    {
+      "id": "W4",
+      "name": "W4 coverage meets threshold",
+      "status": "SKIP",
+      "evidence": "coverage.total missing or non-numeric \u2014 coverage unverifiable",
+      "remediation": "Re-run the test phase; add tests until coverage.total >= threshold (configured in shipwright_test_config.json.coverage.min)."
+    }
+  ],
+  "infrastructure": [
+    {
+      "id": "I2",
+      "name": "I2 test-evidence.md fresh after phase_started",
+      "status": "SKIP",
+      "evidence": "no phase_started event for phase=test \u2014 freshness not verifiable yet",
+      "provenance": "unverified_marker"
+    }
+  ],
+  "traceability": [],
+  "quality": [],
+  "spec": []
+}

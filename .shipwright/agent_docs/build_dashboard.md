@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-09 07:59 UTC | Session: ef6d2ae1-cf77-4229-8751-c0227b1c9dc2
+> Updated: 2026-05-09 08:03 UTC | Session: ef6d2ae1-cf77-4229-8751-c0227b1c9dc2
 
-## Recent Changes (23 iterations)
+## Recent Changes (24 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | known_issues scanner requires comment context; remove dead save_session_config — 16/16 green | 16/16 | f8d44da |  | 2026-05-09 |
 | change | — | 0/0 | 99fc87b |  | 2026-05-07 |
 | change | — | 0/0 | 686e7cc |  | 2026-05-07 |
 | change | F0.5 empirical-test backfill | 1575/1575 | 0df63f2 |  | 2026-05-06 |
