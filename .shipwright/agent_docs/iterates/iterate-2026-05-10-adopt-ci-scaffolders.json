@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-10-adopt-ci-scaffolders",
+  "date": "2026-05-10T22:26:32.703599Z",
+  "type": "feature",
+  "complexity": "large",
+  "branch": "iterate/adopt-ci-scaffolders",
+  "spec": ".shipwright/planning/iterate/2026-05-10-adopt-ci-scaffolders.md",
+  "tests_passed": true,
+  "adr": "ADR-043"
+}

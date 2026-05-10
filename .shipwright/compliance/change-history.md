@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-05-10T18:38:25Z
-Total commits: 613
+Generated: 2026-05-10T22:26:46Z
+Total commits: 614
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 208
-    "fix" : 163
+    "fix" : 164
     "chore" : 97
     "docs" : 92
     "refactor" : 32
@@ -231,10 +231,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 163 commits
+### Fixes (fix) — 164 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-10 | hooks | Stop and SubagentStop hooks emit schema-compliant stdout | 9c8f9aa16770 |
 | 2026-05-09 | adopt | scanner requires comment-context; remove dead save_session_config | f8d44da5da28 |
 | 2026-05-07 | plugins | convert PreToolUse/PostToolUse matcher to string form for Claude Code 2.1.132+ schema | 99fc87bdb26f |
 | 2026-05-07 | plugins | wrap hooks.json under top-level hooks key for Claude Code 2.1.132+ schema | 276e8f650a40 |
@@ -670,7 +671,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 613 |
+| Total commits | 614 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 613 |
+| Human-authored commits | 614 |
 

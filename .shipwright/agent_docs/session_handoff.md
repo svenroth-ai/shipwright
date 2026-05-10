@@ -1,44 +1,43 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-10-stop-hook-schema-fix"
+run_id: "iterate-2026-05-10-adopt-ci-scaffolders"
 phase: "iterate"
-reason: "iterate: Stop hook schema fix"
-timestamp: "2026-05-10T18:38:25.495674+00:00"
+reason: "iterate: adopt-ci-scaffolders (cross-platform CI matrix + path-helpers template)"
+timestamp: "2026-05-10T22:26:46.451743+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-10 18:38:25 UTC
+> Auto-generated 2026-05-10 22:26:46 UTC
 
 ## Session Info
 
-- **Session ID**: 55dd57e4-71d2-49e5-b085-5f39e54a1020
-- **Timestamp**: 2026-05-10 18:38:25 UTC
-- **Reason**: iterate: Stop hook schema fix
+- **Session ID**: 9a596117-da9d-4f37-b700-27c6eb420943
+- **Timestamp**: 2026-05-10 22:26:46 UTC
+- **Reason**: iterate: adopt-ci-scaffolders (cross-platform CI matrix + path-helpers template)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-09-known-issues-self-detection-and-cleanup
-- **Date**: 2026-05-09T07:59:52.087216Z
-- **Type**: bug
-- **Complexity**: medium
-- **Branch**: iterate/known-issues-self-detection-and-cleanup
-- **ADR**: ADR-041
+- **Run ID**: iterate-2026-05-10-adopt-ci-scaffolders
+- **Date**: 2026-05-10T22:26:32.703599Z
+- **Type**: feature
+- **Complexity**: large
+- **Branch**: iterate/adopt-ci-scaffolders
+- **ADR**: ADR-043
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-09-known-issues-self-detection-and-cleanup.md
+- **Spec**: .shipwright/planning/iterate/2026-05-10-adopt-ci-scaffolders.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/stop-hook-schema-fix
-- **Run ID**: iterate-2026-05-10-stop-hook-schema-fix
-- **Spec**: .shipwright/planning/iterate/2026-05-10-stop-hook-schema-fix.md
-- **Complexity**: medium
+- **Branch**: iterate/adopt-ci-scaffolders
+- **Run ID**: iterate-2026-05-10-adopt-ci-scaffolders
+- **Spec**: .shipwright/planning/iterate/2026-05-10-adopt-ci-scaffolders.md
+- **Complexity**: large (force-continue per user choice; safety floor: mandatory full review + full test suite)
 - **External Review Marker**: stale (predates spec (2026-05-09T07:45:15))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/stop-hook-schema-fix
-- **Last Commit**: 050982e Merge pull request #23 from svenroth-ai/iterate/known-issues-self-detection-and-cleanup
+- **Branch**: iterate/adopt-ci-scaffolders
+- **Last Commit**: 616044b Merge iterate/stop-hook-schema-fix (ADR-042)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -84,7 +83,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Recent Decisions
 
-### ADR-042: Stop and SubagentStop hooks emit schema-compliant stdout
-- **Date:** 2026-05-10
-- **Section:** Iterate — bug: Stop-hook schema compliance
-- **Context:** Claude Code surfaced 'Hook JSON output validation failed — (root): Invalid input' for all 35 Stop hooks at every session end. The Stop and SubagentStop schemas only permit 'hookEventName' inside 'hookSpecificOutput'; the existing hook scripts were emitting 'additionalContext' on stdout, which is valid only for SessionStart/PreToolUse/PostTo
+### ADR-043: Adopt scaffolds profile-aware CI + Claude-Review workflows with cross-platform matrix default
+- **Date:** 2026-05-11
+- **Section:** Iterate — feature: adopt-ci-scaffolders
+- **Context:** Two GitHub Actions templates (ci-nextjs.yml.template + claude-review.yml.template) authored in v0.1.0-era commits c3a6d2f + 8aac61d were never wired into adopt — only security.yml.template got scaffolded (May 2026). shipwright-webui v0.8.5+ has been CI-red for 9 push-runs on main because its hand-written ci

@@ -512,8 +512,9 @@ If those are true, `/shipwright-adopt` is the right entry point. `/shipwright-pr
 3. **Layer 2 — Claude Code semantic enrichment.** Inline with the skill, Claude reads the snapshot + sample files + screenshots and writes `enrichment.json` with a product description, FR labels, architecture prose, conventions prose, and retroactive ADR drafts.
 4. **Artifact generation.** Writes `CLAUDE.md`, `.shipwright/agent_docs/{architecture,conventions,decision_log,build_dashboard}.md`, `.shipwright/planning/01-adopted/spec.md`, the six `shipwright_*_config.json` files, `shipwright_events.jsonl`, and `e2e/flows/adopted-baseline.spec.ts` (regression guard from the crawl).
 5. **Compliance seeding.** Generates `.shipwright/compliance/{sbom,change-history,traceability-matrix,test-evidence,dashboard}.md` via the existing compliance infrastructure.
-6. **Layer 3 — external LLM review.** Runs `llm_review.py` over the generated artifacts to flag hallucinations or contradictions (skipped gracefully if no API key is set).
-7. **Validation + commit.** Runs `validate_adoption.py`, then a single Conventional Commit `chore(shipwright): adopt repository into Shipwright SDLC`.
+6. **Workflow scaffolding (CI + Security + Claude-Review).** Lands three dormant GitHub Actions workflows in `.github/workflows/`: profile-specific `ci.yml` (with the cross-platform OS matrix `ubuntu-latest` + `windows-latest` as the default), `security.yml` (Semgrep + Trivy + Gitleaks scanner chain), and `claude-review.yml` (independent Claude Code review on PRs). All three are byte-equal idempotent — pre-existing workflow files are preserved bit-for-bit. CI + Security ship dormant (`workflow_dispatch:` only); Claude-Review fires on `pull_request` by design.
+7. **Layer 3 — external LLM review.** Runs `llm_review.py` over the generated artifacts to flag hallucinations or contradictions (skipped gracefully if no API key is set).
+8. **Validation + commit.** Runs `validate_adoption.py`, then a single Conventional Commit `chore(shipwright): adopt repository into Shipwright SDLC`.
 
 ### Usage
 

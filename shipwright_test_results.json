@@ -1,26 +1,27 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-10-stop-hook-schema-fix",
-    "date": "2026-05-10",
+    "run_id": "iterate-2026-05-10-adopt-ci-scaffolders",
+    "date": "2026-05-11",
     "unit": {
       "status": "passed",
-      "passed": 1456,
-      "total": 1462,
-      "note": "shared/tests: 159 (test_hook_output_schema_compliance new + test_audit_phase_quality + test_generate_handoff_on_stop updated). plugins/shipwright-iterate: 226. plugins/shipwright-plan: 30. plugins/shipwright-adopt: 248. plugins/shipwright-compliance: 305. 6 pre-existing bash-on-Windows failures in shared/tests/test_hooks.py (TestCheckSecrets + TestCheckFileSize) carried over from main — verified pre-existing by stash/restore probe."
+      "passed": 1488,
+      "total": 1494,
+      "note": "shared/tests: 1488 passed incl. 32 new in test_ci_workflow_convention.py + 1 new in test_path_helpers_template_vitest.py. 6 pre-existing bash-on-Windows failures in test_hooks.py (TestCheckSecrets + TestCheckFileSize) unchanged from main — verified by git diff confirming this iterate touches zero scripts/hooks/. Adopt suite: 268/268 incl. 18 new in test_ci_workflow_scaffold.py + 2 new tests in test_adopt_pipeline_subprocess.py. Iterate: 226/226. Plan: 30/30. Compliance: 305/305. Changelog: 23/23. Design: 12/12. Run (with pytest-mock): 172/172. Security: 305/308 (3 skipped). Preview: 10/10. Project: 43/43. Build: 43/46 (3 pre-existing bash-on-Windows failures unchanged). Deploy: 25/26 (1 pre-existing JELASTIC_TOKEN test unchanged). Test plugin: 136/136."
     },
-    "integration": {"status": "passed", "passed": 2, "total": 2, "note": "integration-tests/test_compliance_enforcement.py::TestStructuredErrorsInPipeline updated for SubagentStop decision:block contract."},
-    "pgtap": {"status": "not_run", "passed": 0, "total": 0},
-    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "internal-tooling iterate; F0.5 surface=cli is the empirical driver."},
-    "design_fidelity": {"status": "not_run", "passed": 0, "total": 0},
-    "smoke": {"status": "passed", "note": "F0.5 surface=cli ran 88 tests against test_hook_output_schema_compliance.py, exit 0."},
+    "integration": {"status": "passed", "passed": 101, "total": 101, "note": "All 101 integration tests green incl. test_compliance_enforcement.py, test_multi_session_pipeline.py, test_parallel_iterates_no_merge_conflict.py."},
+    "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes in this iterate."},
+    "e2e": {"status": "passed", "passed": 33, "total": 33, "note": "F0.5 surface=cli ran 33 tests via .shipwright/runs/iterate-2026-05-10-adopt-ci-scaffolders/runner.sh (chained pytest sessions across shared + plugins/shipwright-adopt to avoid conftest collision). All drift + scaffolder + subprocess + Vitest-empirical assertions green."},
+    "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI changes in this iterate."},
+    "smoke": {"status": "passed", "note": "Local Windows runner spawned real npm install + npx vitest run against path-helpers templates; 18 Vitest cases passed in 6.51s. Confirms the cross-platform-path heuristic empirically, not just structurally."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_hook_output_schema_compliance.py --no-header -q",
+      "runner": "bash .shipwright/runs/iterate-2026-05-10-adopt-ci-scaffolders/runner.sh",
       "exit_code": 0,
-      "tests_run": 88,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-10-stop-hook-schema-fix/surface_verification.json",
-      "timestamp": "2026-05-10T18:30:00Z",
-      "attempts": 1
+      "tests_run": 33,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-10-adopt-ci-scaffolders/surface_verification.json",
+      "timestamp": "2026-05-11T08:00:00Z",
+      "attempts": 1,
+      "evidence_log": ".shipwright/runs/iterate-2026-05-10-adopt-ci-scaffolders/surface_verification.log"
     },
     "degraded": []
   }

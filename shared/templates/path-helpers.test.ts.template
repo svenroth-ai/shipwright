@@ -1,0 +1,118 @@
+// Vitest tests for pickPathModule — verify behavior on BOTH platforms.
+//
+// These tests run identically on Linux + Windows runners because we assert
+// directly against `path.win32` and `path.posix` references rather than the
+// runner-native `path` default. That's the whole point of the helper:
+// platform-independent path-shape classification.
+
+import { describe, expect, test } from "vitest";
+import nodePath from "node:path";
+import { pickPathModule } from "./path-helpers";
+
+describe("pickPathModule", () => {
+  describe("Windows-shaped inputs → path.win32", () => {
+    test("absolute Windows path with backslashes", () => {
+      const p = pickPathModule("C:\\Users\\Test\\.local\\bin\\claude.exe");
+      expect(p).toBe(nodePath.win32);
+      // Spot-check: win32.dirname does what we want for this input.
+      expect(p.dirname("C:\\Users\\Test\\.local\\bin\\claude.exe")).toBe(
+        "C:\\Users\\Test\\.local\\bin",
+      );
+    });
+
+    test("absolute Windows path with forward slashes", () => {
+      // Some installers normalize backslash → forward but keep drive letter.
+      const p = pickPathModule("C:/Users/Test/.local/bin");
+      expect(p).toBe(nodePath.win32);
+    });
+
+    test("drive letter only (relative within drive)", () => {
+      const p = pickPathModule("C:foo\\bar");
+      expect(p).toBe(nodePath.win32);
+    });
+
+    test("UNC path (\\\\server\\share)", () => {
+      // External-review #O9 — UNC paths.
+      const p = pickPathModule("\\\\fileserver\\shared\\bin\\claude.exe");
+      expect(p).toBe(nodePath.win32);
+    });
+
+    test("relative path with backslash separator", () => {
+      const p = pickPathModule("..\\..\\foo\\bar");
+      expect(p).toBe(nodePath.win32);
+    });
+
+    test("lowercase drive letter", () => {
+      const p = pickPathModule("d:\\projects");
+      expect(p).toBe(nodePath.win32);
+    });
+
+    test("mixed separators (\\ first then /)", () => {
+      const p = pickPathModule("foo\\bar/baz");
+      expect(p).toBe(nodePath.win32);
+    });
+  });
+
+  describe("POSIX-shaped inputs → path.posix", () => {
+    test("absolute POSIX path", () => {
+      const p = pickPathModule("/usr/local/bin/claude");
+      expect(p).toBe(nodePath.posix);
+      expect(p.dirname("/usr/local/bin/claude")).toBe("/usr/local/bin");
+    });
+
+    test("home-relative POSIX path", () => {
+      const p = pickPathModule("~/.local/bin/claude");
+      expect(p).toBe(nodePath.posix);
+    });
+
+    test("simple relative POSIX path", () => {
+      const p = pickPathModule("./foo/bar");
+      expect(p).toBe(nodePath.posix);
+    });
+
+    test("bare filename", () => {
+      // No separator at all — default to POSIX (safer choice).
+      const p = pickPathModule("claude");
+      expect(p).toBe(nodePath.posix);
+    });
+
+    test("dotfile path", () => {
+      const p = pickPathModule(".env.local");
+      expect(p).toBe(nodePath.posix);
+    });
+  });
+
+  describe("edge cases default to path.posix", () => {
+    // External-review #O9 — empty/whitespace edge cases.
+    test("empty string", () => {
+      expect(pickPathModule("")).toBe(nodePath.posix);
+    });
+
+    test("whitespace-only", () => {
+      expect(pickPathModule("   ")).toBe(nodePath.posix);
+    });
+
+    test("undefined defensive guard", () => {
+      // @ts-expect-error — defensive runtime guard for non-TS callers.
+      expect(pickPathModule(undefined)).toBe(nodePath.posix);
+    });
+
+    test("null defensive guard", () => {
+      // @ts-expect-error — defensive runtime guard for non-TS callers.
+      expect(pickPathModule(null)).toBe(nodePath.posix);
+    });
+  });
+
+  describe("regression: the bug that motivated this helper", () => {
+    // The shipwright-webui v0.8.5 case: cli-compat path-self-heal test
+    // mocked a Windows path string under POSIX `path.dirname` and got
+    // "." back instead of the parent dir.
+    test("Windows path → win32.dirname returns parent, not '.'", () => {
+      const input = "C:\\Users\\Test\\.local\\bin\\claude.exe";
+      const p = pickPathModule(input);
+      const parent = p.dirname(input);
+      expect(parent).not.toBe(".");
+      expect(parent).toBe("C:\\Users\\Test\\.local\\bin");
+    });
+  });
+});

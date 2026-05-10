@@ -185,6 +185,135 @@ def test_full_pipeline_e2e_via_subprocess(tmp_path: Path) -> None:
     gi = (tmp_path / ".gitignore").read_text(encoding="utf-8")
     assert ".env.local" in gi
 
+    # Step E.14 — CI workflow scaffold landed (fixture uses vite-hono profile).
+    ci_wf = tmp_path / ".github" / "workflows" / "ci.yml"
+    assert ci_wf.exists(), "Step E.14 did not scaffold .github/workflows/ci.yml"
+    ci_payload = payload["ci_workflow"]
+    assert ci_payload["wrote"] is True
+    assert ci_payload["reason"] == "scaffolded"
+    # Content sanity — the cross-platform matrix block must be present in
+    # the scaffolded file (the whole point of this iterate).
+    ci_text = ci_wf.read_text(encoding="utf-8")
+    assert "matrix:" in ci_text and "ubuntu-latest" in ci_text and "windows-latest" in ci_text
+    assert "fail-fast: false" in ci_text
+    assert "client-checks" in ci_text  # vite-hono template has 2 jobs
+
+    # Step E.15 — Claude-Review workflow scaffold landed (profile-agnostic).
+    cr_wf = tmp_path / ".github" / "workflows" / "claude-review.yml"
+    assert cr_wf.exists(), "Step E.15 did not scaffold .github/workflows/claude-review.yml"
+    cr_payload = payload["claude_review_workflow"]
+    assert cr_payload["wrote"] is True
+    assert cr_payload["reason"] == "scaffolded"
+
+
+def test_pipeline_ci_scaffold_supabase_nextjs_profile(tmp_path: Path) -> None:
+    """External-review #O7: parametrize subprocess coverage across profiles.
+
+    The vite-hono case is covered by test_full_pipeline_e2e_via_subprocess.
+    This test exercises supabase-nextjs end-to-end so the rename
+    (ci-nextjs.yml.template → ci-supabase-nextjs.yml.template) and the
+    profile→template lookup are wired correctly for that profile too.
+    """
+    _git_init(tmp_path)
+    # Synthesize a supabase-nextjs profile snapshot.
+    snap_dir = tmp_path / ".shipwright" / "adopt"
+    snap_dir.mkdir(parents=True)
+    (snap_dir / "snapshot.json").write_text(json.dumps({
+        "stack": {
+            "primary_language": "typescript",
+            "frontend": {"next": "^16.2.0", "react": "^19.2.4"},
+            "backend": {"supabase-js": "@supabase/supabase-js@^2.99.3"},
+        },
+        "profile": {"matched": "supabase-nextjs"},
+        "commands": {"dev": None, "build": None, "test": "npx vitest run"},
+        "features": [
+            {"route": "/api/health", "source_file": "src/app/api/health/route.ts",
+             "framework": "nextjs", "method": "GET"},
+        ],
+        "git": {"commits_total": 25, "contributors_total": 1, "major_refactor_commits": []},
+        "folders": {
+            "layers": [{"name": "presentation", "paths": ["src/app"]}],
+            "loc_by_layer": {"presentation": 500},
+        },
+        "conventions": {"linter": "eslint", "formatter": "prettier", "tsconfig_strict": True},
+        "ci_pipeline": {"provider": "github-actions"},
+        "excludes": [],
+    }), encoding="utf-8")
+    (snap_dir / "routes.json").write_text("[]", encoding="utf-8")
+
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+
+    r = subprocess.run(
+        ["uv", "run", "python", str(SCRIPT), "--project-root", str(tmp_path)],
+        capture_output=True, text=True, env=env, timeout=120, check=False,
+    )
+    assert r.returncode == 0, (
+        f"supabase-nextjs adopt subprocess failed: rc={r.returncode}\n"
+        f"stderr: {r.stderr[-1500:]}"
+    )
+
+    payload = json.loads(r.stdout[r.stdout.find("{"):])
+
+    ci_wf = tmp_path / ".github" / "workflows" / "ci.yml"
+    assert ci_wf.exists()
+    assert payload["ci_workflow"]["wrote"] is True
+    assert payload["ci_workflow"]["reason"] == "scaffolded"
+    # Sanity-check it's the supabase-nextjs template (single `test` job).
+    ci_text = ci_wf.read_text(encoding="utf-8")
+    assert "supabase-nextjs profile" in ci_text
+    assert "windows-latest" in ci_text
+
+
+def test_pipeline_ci_scaffold_python_monorepo_profile(tmp_path: Path) -> None:
+    """Cross-platform matrix for the python-plugin-monorepo profile.
+
+    This is the profile that the shipwright monorepo itself uses. Test
+    proves end-to-end that adopt against a Python repo lands the
+    cross-platform CI template with the setup-uv step (external-review #G1).
+    """
+    _git_init(tmp_path)
+    snap_dir = tmp_path / ".shipwright" / "adopt"
+    snap_dir.mkdir(parents=True)
+    (snap_dir / "snapshot.json").write_text(json.dumps({
+        "stack": {
+            "primary_language": "python",
+            "backend": {"python": ">=3.11"},
+        },
+        "profile": {"matched": "python-plugin-monorepo"},
+        "commands": {"dev": None, "build": None, "test": "uv run pytest"},
+        "features": [],
+        "git": {"commits_total": 50, "contributors_total": 1, "major_refactor_commits": []},
+        "folders": {"layers": [], "loc_by_layer": {}},
+        "conventions": {"linter": "ruff", "formatter": "ruff", "tsconfig_strict": False},
+        "ci_pipeline": {"provider": "github-actions"},
+        "excludes": [],
+    }), encoding="utf-8")
+    (snap_dir / "routes.json").write_text("[]", encoding="utf-8")
+
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+
+    r = subprocess.run(
+        ["uv", "run", "python", str(SCRIPT), "--project-root", str(tmp_path)],
+        capture_output=True, text=True, env=env, timeout=120, check=False,
+    )
+    assert r.returncode == 0, (
+        f"python-plugin-monorepo adopt subprocess failed: rc={r.returncode}\n"
+        f"stderr: {r.stderr[-1500:]}"
+    )
+    payload = json.loads(r.stdout[r.stdout.find("{"):])
+
+    ci_wf = tmp_path / ".github" / "workflows" / "ci.yml"
+    assert ci_wf.exists()
+    assert payload["ci_workflow"]["wrote"] is True
+    ci_text = ci_wf.read_text(encoding="utf-8")
+    assert "python-plugin-monorepo profile" in ci_text
+    # setup-uv@v3 is the external-review #G1 fix that makes the template
+    # actually run on a fresh GitHub Actions runner.
+    assert "astral-sh/setup-uv@v3" in ci_text
+    assert "windows-latest" in ci_text
+
 
 def test_pipeline_env_local_idempotent_on_rerun(tmp_path: Path) -> None:
     """Second adopt run on the same project must leave `.env.local` byte-equal
