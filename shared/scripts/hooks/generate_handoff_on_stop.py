@@ -236,14 +236,11 @@ def main() -> int:
         # which the iterate 12 verifier would then flag as missing C3.
         skip, skip_reason = _should_skip_regeneration(handoff_path)
         if skip:
-            print(json.dumps({
-                "hookSpecificOutput": {
-                    "hookEventName": "Stop",
-                    "additionalContext": (
-                        f"Session handoff regeneration skipped: {skip_reason}"
-                    ),
-                }
-            }))
+            # Stop hookSpecificOutput cannot carry additionalContext; emit
+            # to stderr instead. See ADR-042.
+            sys.stderr.write(
+                f"[shipwright:handoff] regeneration skipped: {skip_reason}\n"
+            )
             return 0
 
         session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
@@ -326,20 +323,14 @@ def main() -> int:
             pass  # Phase-completion fallback is best-effort
 
         relative_path = handoff_path.relative_to(project_root) if handoff_path.is_relative_to(project_root) else handoff_path
-        print(json.dumps({
-            "hookSpecificOutput": {
-                "hookEventName": "Stop",
-                "additionalContext": f"Session handoff generated at {relative_path}",
-            }
-        }))
+        sys.stderr.write(
+            f"[shipwright:handoff] generated at {relative_path}\n"
+        )
     except Exception as e:
-        # Never block session end — report failure as info
-        print(json.dumps({
-            "hookSpecificOutput": {
-                "hookEventName": "Stop",
-                "additionalContext": f"Session handoff generation skipped: {e}",
-            }
-        }))
+        # Never block session end — report failure to stderr.
+        sys.stderr.write(
+            f"[shipwright:handoff] generation skipped: {type(e).__name__}: {e}\n"
+        )
 
     return 0
 

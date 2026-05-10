@@ -34,12 +34,13 @@ def main() -> int:
     marker_dir.mkdir(parents=True, exist_ok=True)
     (marker_dir / "DONE").write_text("", encoding="utf-8")
 
-    print(json.dumps({
-        "hookSpecificOutput": {
-            "hookEventName": "Stop",
-            "additionalContext": f"Terminal marker written: .shipwright/runs/{loop_id}/{unit_id}/DONE",
-        }
-    }))
+    # The DONE file on disk is the actual signal the loop polls for.
+    # Stop hookSpecificOutput cannot carry additionalContext (ADR-042);
+    # log diagnostic to stderr.
+    sys.stderr.write(
+        f"[shipwright:loop] terminal marker written: "
+        f".shipwright/runs/{loop_id}/{unit_id}/DONE\n"
+    )
     return 0
 
 

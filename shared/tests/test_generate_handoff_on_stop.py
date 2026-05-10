@@ -37,8 +37,9 @@ def test_exits_zero_when_not_shipwright_project(tmp_path):
     """Hook silently exits 0 when no config or agent_docs exist."""
     result = run_hook(tmp_path)
     assert result.returncode == 0
-    # No output expected — guard clause skips generation
-    assert "hookSpecificOutput" not in result.stdout or "skipped" in result.stdout.lower()
+    # No output expected — guard clause skips generation. Post ADR-042
+    # the hook does not emit hookSpecificOutput on stdout for any path.
+    assert "hookSpecificOutput" not in result.stdout
 
 
 def test_generates_handoff_with_run_config(tmp_project):
@@ -74,15 +75,24 @@ def test_generates_handoff_with_only_agent_docs(tmp_project):
     assert "not_started" in content
 
 
-def test_outputs_valid_json_with_hook_context(tmp_project):
-    """Hook outputs valid JSON with hookSpecificOutput."""
+def test_stop_hook_does_not_emit_invalid_stdout_json(tmp_project):
+    """Post-ADR-042: Stop hooks must not emit hookSpecificOutput on stdout.
+
+    Claude Code's Stop event schema only permits `hookEventName` inside
+    `hookSpecificOutput`; `additionalContext` (formerly used here) is
+    schema-invalid and triggers
+    "Hook JSON output validation failed — (root): Invalid input" at every
+    session end. Diagnostic moved to stderr.
+    """
     result = run_hook(tmp_project)
 
     assert result.returncode == 0
-    output = json.loads(result.stdout)
-    assert "hookSpecificOutput" in output
-    assert output["hookSpecificOutput"]["hookEventName"] == "Stop"
-    assert "session_handoff.md" in output["hookSpecificOutput"]["additionalContext"]
+    assert "hookSpecificOutput" not in result.stdout, (
+        f"Stop schema violation: stdout = {result.stdout!r}"
+    )
+    # Stderr carries the relocation diagnostic.
+    assert "[shipwright:handoff]" in result.stderr
+    assert "session_handoff.md" in result.stderr or "generated" in result.stderr
 
 
 def test_idempotent(tmp_project):
@@ -159,9 +169,9 @@ def test_canon_marker_same_run_id_skips_regeneration(tmp_project):
     assert result.returncode == 0
     # Body must still contain the original canon content — not regenerated.
     assert handoff.read_text(encoding="utf-8") == canon_body
-    # Output should mention the skip.
-    output = json.loads(result.stdout)
-    assert "skipped" in output["hookSpecificOutput"]["additionalContext"].lower()
+    # Skip diagnostic surfaced on stderr (Post-ADR-042; never on stdout).
+    assert "hookSpecificOutput" not in result.stdout
+    assert "skipped" in result.stderr.lower()
 
 
 def test_canon_marker_different_run_id_regenerates(tmp_project):

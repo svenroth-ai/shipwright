@@ -35,12 +35,11 @@ def main() -> int:
             warnings.append(".shipwright/agent_docs/session_handoff.md not found — consider generating before ending session")
 
     if warnings:
-        print(json.dumps({
-            "hookSpecificOutput": {
-                "hookEventName": "Stop",
-                "additionalContext": "Documentation check: " + "; ".join(warnings),
-            }
-        }))
+        # Stop hookSpecificOutput cannot carry additionalContext (ADR-042);
+        # surface the documentation warnings on stderr.
+        sys.stderr.write(
+            "[shipwright:doc-check] " + "; ".join(warnings) + "\n"
+        )
 
     return 0
 

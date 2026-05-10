@@ -1,25 +1,25 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-09-known-issues-self-detection-and-cleanup",
-    "date": "2026-05-09",
+    "run_id": "iterate-2026-05-10-stop-hook-schema-fix",
+    "date": "2026-05-10",
     "unit": {
       "status": "passed",
-      "passed": 278,
-      "total": 278,
-      "note": "plugins/shipwright-adopt (248) + plugins/shipwright-plan (30) — affected plugins; full per-plugin pytest passes. test_known_issues_inventory.py grew from 7 → 14 (added 7 regression tests for comment-context predicate, JSDoc inline-asterisk negative, markdown bullet single-dash, self-reference skip, docstring exclusion, bare-marker-string with comparator). test_known_issues_test_fixture_filter.py: 1 assertion adjusted from >=4 to ==3 (Python docstring fixture no longer matches — string literal is not a comment context). test_config.py: 6 → 5 (test_session_config_roundtrip removed alongside save_session_config)."
+      "passed": 1456,
+      "total": 1462,
+      "note": "shared/tests: 159 (test_hook_output_schema_compliance new + test_audit_phase_quality + test_generate_handoff_on_stop updated). plugins/shipwright-iterate: 226. plugins/shipwright-plan: 30. plugins/shipwright-adopt: 248. plugins/shipwright-compliance: 305. 6 pre-existing bash-on-Windows failures in shared/tests/test_hooks.py (TestCheckSecrets + TestCheckFileSize) carried over from main — verified pre-existing by stash/restore probe."
     },
-    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "internal-scanner-only diff; no integration surface."},
+    "integration": {"status": "passed", "passed": 2, "total": 2, "note": "integration-tests/test_compliance_enforcement.py::TestStructuredErrorsInPipeline updated for SubagentStop decision:block contract."},
     "pgtap": {"status": "not_run", "passed": 0, "total": 0},
-    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "test-only iterate; F0.5 surface=cli is the empirical driver."},
+    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "internal-tooling iterate; F0.5 surface=cli is the empirical driver."},
     "design_fidelity": {"status": "not_run", "passed": 0, "total": 0},
-    "smoke": {"status": "passed", "note": "F0.5 surface=cli ran 16 tests (test_known_issues_inventory + test_known_issues_test_fixture_filter), exit 0, attempts 1."},
+    "smoke": {"status": "passed", "note": "F0.5 surface=cli ran 88 tests against test_hook_output_schema_compliance.py, exit 0."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --project plugins/shipwright-adopt pytest plugins/shipwright-adopt/tests/test_known_issues_inventory.py plugins/shipwright-adopt/tests/test_known_issues_test_fixture_filter.py -v",
+      "runner": "uv run pytest shared/tests/test_hook_output_schema_compliance.py --no-header -q",
       "exit_code": 0,
-      "tests_run": 16,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-09-known-issues-self-detection-and-cleanup/surface_verification.log",
-      "timestamp": "2026-05-09T07:57:53.570Z",
+      "tests_run": 88,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-10-stop-hook-schema-fix/surface_verification.json",
+      "timestamp": "2026-05-10T18:30:00Z",
       "attempts": 1
     },
     "degraded": []
