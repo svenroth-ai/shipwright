@@ -35,6 +35,38 @@ PER_BULLET_CHAR_CAP = 200
 _MARKER_RE = re.compile(r"\b(TODO|FIXME|HACK|XXX|DEPRECATED)\b:?\s*(.*)")
 _MARKERS = ("TODO", "FIXME", "HACK", "XXX", "DEPRECATED")
 
+# Recognised comment-opener forms that may precede a marker on the same line.
+# The pattern is anchored at end-of-prefix so it works for both leading-
+# position comments (`# TODO`) AND inline comments after code
+# (`x = 1  # TODO`). The `(?:^|\s)` boundary prevents partial matches inside
+# identifiers or numeric literals.
+#
+#   #            Python / shell / Ruby line comment
+#   //           JS / TS / Java / Go / Rust line comment
+#   /*           C-style block-comment opener (single-line form `/* TODO */`)
+#   <!--         HTML / XML comment opener
+#
+# SQL/Lua/Haskell `--` is intentionally NOT here because no `.sql`/`.lua`/`.hs`
+# extension is in `_SOURCE_SUFFIXES`. Markdown headings (`#`) and bare
+# `--- TODO` horizontal rules are also intentionally rejected.
+_COMMENT_CONTEXT_RE = re.compile(r"(?:^|\s)(?:#|//|/\*+|<!--)\s*$")
+
+# JSDoc / Javadoc continuation line: `^\s*\*\s*` (asterisk anchored at start
+# of line). Inline `*` is NOT a JSDoc continuation — it is almost always
+# multiplication (`a * b`), so the asterisk branch must not be combined with
+# the inline-comment recogniser above.
+_JSDOC_CONTINUATION_RE = re.compile(r"^\s*\*\s*$")
+
+# Markdown list bullet at start of line: `^\s*-\s+`. Strict single-dash form
+# rejects horizontal rules (`---`) and dash sequences from the predicate.
+_MARKDOWN_BULLET_RE = re.compile(r"^\s*-\s+$")
+
+# Limitation (documented, accepted as out-of-scope): markers inside multi-line
+# block comments where the marker line itself has only whitespace prefix (no
+# leading `*` continuation) are NOT detected — the predicate is line-local
+# and cannot see the `/*` opener on a previous line. Authors using this style
+# should add a `*` continuation per JSDoc convention.
+
 _SOURCE_SUFFIXES = (
     ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs",
     ".py",
@@ -66,6 +98,60 @@ _SKIP_DIRS = {
 def _is_skipped_path(rel: str) -> bool:
     parts = rel.replace("\\", "/").split("/")
     return any(p in _SKIP_DIRS for p in parts)
+
+
+# Hardcoded fallback (used when `Path(__file__).relative_to(project_root)`
+# raises — i.e. the scanner is invoked from outside its source tree). The
+# dynamic resolution in `_self_reference_skip()` below is the primary
+# defence; this constant covers the edge case.
+_SELF_REFERENCE_FALLBACK = (
+    "plugins/shipwright-adopt/scripts/lib/known_issues_inventory.py"
+)
+
+
+def _self_reference_skip(project_root: Path) -> set[str]:
+    """Return the relative path of this scanner module under project_root,
+    so it is excluded from the scan. The scanner's own source by definition
+    contains the marker tuple as data, plus regex literals and rendered
+    output strings — every match against itself is a false positive.
+    """
+    try:
+        rel = Path(__file__).resolve().relative_to(project_root.resolve()).as_posix()
+        return {rel}
+    except ValueError:
+        # __file__ is outside project_root (e.g. tests using tmp_path).
+        # The hardcoded fallback handles repos that mirror the canonical
+        # source layout; tests that don't mirror it correctly produce no
+        # match and the test fixture path is responsible for skip behaviour.
+        return {_SELF_REFERENCE_FALLBACK}
+
+
+def _is_marker_in_comment_context(line: str, match_start: int) -> bool:
+    """Return True if the marker at ``match_start`` is in a recognised
+    comment context.
+
+    Three acceptance forms:
+    1. The line prefix (before ``match_start``) ends with a comment opener
+       — see ``_COMMENT_CONTEXT_RE``. Covers both leading-position comments
+       (`# TODO`) and inline comments after code (`x = 1  # TODO`).
+    2. The line prefix is a JSDoc / Javadoc continuation (`^\\s*\\*\\s*`).
+       Asterisk is anchored at start of line; inline `*` between code
+       tokens (`a * b TODO`) is rejected because it is multiplication,
+       not a comment context.
+    3. The line prefix is a markdown list bullet (`^\\s*-\\s+`). Covers
+       single-dash bullets in source-embedded markdown (e.g. inside Vue /
+       Svelte / Astro template strings). Triple-dash horizontal rules are
+       rejected because they require `\\s+` after the dash, which fails on
+       `---`.
+    """
+    prefix = line[:match_start]
+    if _COMMENT_CONTEXT_RE.search(prefix):
+        return True
+    if _JSDOC_CONTINUATION_RE.match(prefix):
+        return True
+    if _MARKDOWN_BULLET_RE.match(prefix):
+        return True
+    return False
 
 
 def _is_test_fixture_path(rel: str) -> bool:
@@ -136,7 +222,13 @@ def _collect_source_files(
     (`tests/`-anywhere, `test_*.py`, `*_test.py`, `*.test.ts`/`*.spec.ts`
     and `tsx`/`js`/`jsx` siblings) are skipped — see `_is_test_fixture_path`
     rationale.
+
+    Always skips this scanner's own source file (`_self_reference_skip`)
+    because its source by definition contains the marker tuple, regex
+    literals, and rendered output strings — every match against itself is
+    a false positive.
     """
+    self_skip = _self_reference_skip(project_root)
     out: list[Path] = []
     for child in project_root.rglob("*"):
         if not child.is_file():
@@ -151,12 +243,20 @@ def _collect_source_files(
             continue
         if not scan_tests and _is_test_fixture_path(rel):
             continue
+        if rel in self_skip:
+            continue
         out.append(child)
     return out
 
 
 def _scan_file(path: Path, rel: str) -> list[dict[str, Any]]:
-    """Return marker entries from a single file."""
+    """Return marker entries from a single file.
+
+    A marker is only counted when it appears in a recognised comment
+    context (see ``_is_marker_in_comment_context``). Bare marker strings
+    in source code (regex literals, tuple elements, rendered output) are
+    rejected — they were the dominant false-positive source pre-fix.
+    """
     try:
         body = path.read_text(encoding="utf-8", errors="ignore")
     except OSError:
@@ -165,6 +265,8 @@ def _scan_file(path: Path, rel: str) -> list[dict[str, Any]]:
     for lineno, line in enumerate(body.splitlines(), start=1):
         m = _MARKER_RE.search(line)
         if not m:
+            continue
+        if not _is_marker_in_comment_context(line, m.start()):
             continue
         marker = m.group(1)
         text = (m.group(2) or "").strip()

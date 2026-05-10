@@ -1,10 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-05-07 08:25 UTC | Session: unknown
+> Updated: 2026-05-09 08:03 UTC | Session: ef6d2ae1-cf77-4229-8751-c0227b1c9dc2
 
-## Recent Changes (22 iterations)
+## Recent Changes (24 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | known_issues scanner requires comment context; remove dead save_session_config — 16/16 green | 16/16 | f8d44da |  | 2026-05-09 |
+| change | — | 0/0 | 99fc87b |  | 2026-05-07 |
 | change | — | 0/0 | 686e7cc |  | 2026-05-07 |
 | change | F0.5 empirical-test backfill | 1575/1575 | 0df63f2 |  | 2026-05-06 |
 | feature | F0.5 End-to-End Verification Gate | 1548/1548 | 88f3398 |  | 2026-05-06 |
@@ -29,7 +31,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-06 | Unit: 226/226 | Integration: 1349/1349 | Smoke: passed | (iterate)
+Last run: 2026-05-09 | Unit: 278/278 | Smoke: passed | (iterate)
 
 ## Pipeline
 

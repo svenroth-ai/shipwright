@@ -71,14 +71,21 @@ def test_default_skips_test_fixtures(tmp_path: Path) -> None:
 
 
 def test_scan_tests_includes_fixtures(tmp_path: Path) -> None:
+    # Note (iterate-2026-05-09): the comment-context predicate landed in
+    # `_scan_file` excludes Python docstrings (a triple-quoted string
+    # literal is not a comment context). The `tests/test_foo.py` fixture
+    # writes its TODO inside a docstring, so it is NOT counted post-fix
+    # even when `scan_tests=True`. The remaining 3 TODO sources are real
+    # comments: src/feature.py (# TODO), feature.spec.ts (// TODO),
+    # module_test.py (# TODO).
     """With scan_tests=True, fixture entries must come back."""
     root = _setup_project(tmp_path)
     result = write_known_issues_inventory(root, scan_tests=True)
     by_marker = result["by_marker"]
-    # 1 source + 4 fixture TODOs (test_foo, test_inventory FIXME, spec.ts, test.ts HACK, module_test.py)
-    # Counts: TODO from src + tests/test_foo + spec.ts + module_test.py = 4 TODO total
-    # FIXME from test_inventory.py = 1
-    # HACK from feature.test.ts = 1
-    assert by_marker.get("TODO", 0) >= 4, by_marker
+    # 1 source + 2 fixture TODOs in real comments (excluding the docstring
+    # fixture in tests/test_foo.py, which is not a comment context).
+    # FIXME from test_inventory.py = 1 (`# FIXME: ...`).
+    # HACK from feature.test.ts = 1 (`// HACK: ...`).
+    assert by_marker.get("TODO", 0) == 3, by_marker
     assert by_marker.get("FIXME", 0) == 1, by_marker
     assert by_marker.get("HACK", 0) == 1, by_marker

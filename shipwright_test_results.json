@@ -1,30 +1,25 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-06-e2e-gate-empirical-tests",
-    "date": "2026-05-06",
+    "run_id": "iterate-2026-05-09-known-issues-self-detection-and-cleanup",
+    "date": "2026-05-09",
     "unit": {
       "status": "passed",
-      "passed": 226,
-      "total": 226,
-      "note": "plugins/shipwright-iterate/tests/ — F0 fresh full suite green (was 212; +14 in test_skill_e2e_gate_consistency.py)."
+      "passed": 278,
+      "total": 278,
+      "note": "plugins/shipwright-adopt (248) + plugins/shipwright-plan (30) — affected plugins; full per-plugin pytest passes. test_known_issues_inventory.py grew from 7 → 14 (added 7 regression tests for comment-context predicate, JSDoc inline-asterisk negative, markdown bullet single-dash, self-reference skip, docstring exclusion, bare-marker-string with comparator). test_known_issues_test_fixture_filter.py: 1 assertion adjusted from >=4 to ==3 (Python docstring fixture no longer matches — string literal is not a comment context). test_config.py: 6 → 5 (test_session_config_roundtrip removed alongside save_session_config)."
     },
-    "integration": {
-      "status": "passed",
-      "passed": 1349,
-      "total": 1349,
-      "note": "shared/tests/ — full suite green (was 1336; +13 split across test_surface_verification.py +4, test_audit_e2e_integration.py +9)."
-    },
+    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "internal-scanner-only diff; no integration surface."},
     "pgtap": {"status": "not_run", "passed": 0, "total": 0},
-    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "test-only iterate; surface=cli ran F0.5's own empirical surface."},
+    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "test-only iterate; F0.5 surface=cli is the empirical driver."},
     "design_fidelity": {"status": "not_run", "passed": 0, "total": 0},
-    "smoke": {"status": "passed", "note": "F0.5 against this iterate: 84 tests parsed from REAL pytest stdout (no --tests-run override), exit_code=0, attempts=1. First time the parser is exercised end-to-end since landing."},
+    "smoke": {"status": "passed", "note": "F0.5 surface=cli ran 16 tests (test_known_issues_inventory + test_known_issues_test_fixture_filter), exit 0, attempts 1."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_audit_e2e_integration.py shared/tests/test_surface_verification.py shared/tests/test_verify_iterate_finalization.py -q --no-header",
+      "runner": "uv run --project plugins/shipwright-adopt pytest plugins/shipwright-adopt/tests/test_known_issues_inventory.py plugins/shipwright-adopt/tests/test_known_issues_test_fixture_filter.py -v",
       "exit_code": 0,
-      "tests_run": 84,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-06-e2e-gate-empirical-tests/surface_verification.log",
-      "timestamp": "2026-05-06T07:22:11.641Z",
+      "tests_run": 16,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-09-known-issues-self-detection-and-cleanup/surface_verification.log",
+      "timestamp": "2026-05-09T07:57:53.570Z",
       "attempts": 1
     },
     "degraded": []

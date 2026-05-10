@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-05-07T08:25:37Z
-Total commits: 608
+Generated: 2026-05-09T08:03:18Z
+Total commits: 611
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 208
-    "fix" : 162
-    "chore" : 93
+    "fix" : 163
+    "chore" : 95
     "docs" : 92
     "refactor" : 32
     "test" : 14
@@ -231,10 +231,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 162 commits
+### Fixes (fix) — 163 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-09 | adopt | scanner requires comment-context; remove dead save_session_config | f8d44da5da28 |
 | 2026-05-07 | plugins | convert PreToolUse/PostToolUse matcher to string form for Claude Code 2.1.132+ schema | 99fc87bdb26f |
 | 2026-05-07 | plugins | wrap hooks.json under top-level hooks key for Claude Code 2.1.132+ schema | 276e8f650a40 |
 | 2026-05-06 | test | hooks-consistency parser handles quoted-path commands | c5e6cb30c428 |
@@ -398,10 +399,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 93 commits
+### Chores (chore) — 95 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-07 | changelog | aggregate 0.17.1 — hooks.json schema migration (ADR-039 + ADR-040) | 8249a742392a |
+| 2026-05-07 | iterate | finalize iterate-2026-05-07-hooks-json-matcher-string-form (ADR-040) | 1ec1c452f75f |
 | 2026-05-07 | iterate | finalize iterate-2026-05-07-hooks-json-claude-2-1-132-schema (ADR-039) | f1023705d15e |
 | 2026-05-06 | release | v0.17.0 | 4d6134b14312 |
 | 2026-05-06 | iterate | finalize iterate-2026-05-06-e2e-gate-empirical-tests (ADR-038) | 0df63f2a78b6 |
@@ -665,7 +668,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 608 |
+| Total commits | 611 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 608 |
+| Human-authored commits | 611 |
 

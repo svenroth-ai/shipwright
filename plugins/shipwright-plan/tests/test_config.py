@@ -9,8 +9,6 @@ from lib.config import (
     _deep_merge,
     is_e2e_enabled,
     load_global_config,
-    load_session_config,
-    save_session_config,
 )
 
 
@@ -28,12 +26,6 @@ def test_load_global_config(plugin_root):
 def test_load_missing_config(tmp_path):
     config = load_global_config(tmp_path / "nonexistent")
     assert config == {}
-
-
-def test_session_config_roundtrip(tmp_planning):
-    save_session_config(tmp_planning, {"test": "value"})
-    loaded = load_session_config(tmp_planning)
-    assert loaded["test"] == "value"
 
 
 def test_deep_merge():

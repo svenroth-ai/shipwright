@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-07-hooks-json-matcher-string-form"
+run_id: "iterate-2026-05-09-known-issues-self-detection-and-cleanup"
 phase: "iterate"
-reason: "Convert PreToolUse/PostToolUse matcher to string form for Claude Code 2.1.132+ schema (ADR-040)"
-timestamp: "2026-05-07T08:25:37.334307+00:00"
+reason: "iterate post-F7 dashboard refresh"
+timestamp: "2026-05-09T08:03:18.403367+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-07 08:25:37 UTC
+> Auto-generated 2026-05-09 08:03:18 UTC
 
 ## Session Info
 
-- **Session ID**: unknown
-- **Timestamp**: 2026-05-07 08:25:37 UTC
-- **Reason**: Convert PreToolUse/PostToolUse matcher to string form for Claude Code 2.1.132+ schema (ADR-040)
+- **Session ID**: ef6d2ae1-cf77-4229-8751-c0227b1c9dc2
+- **Timestamp**: 2026-05-09 08:03:18 UTC
+- **Reason**: iterate post-F7 dashboard refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-07-hooks-json-matcher-string-form
-- **Date**: 2026-05-07T00:00:00Z
+- **Run ID**: iterate-2026-05-09-known-issues-self-detection-and-cleanup
+- **Date**: 2026-05-09T07:59:52.087216Z
 - **Type**: bug
-- **Complexity**: trivial
-- **Branch**: iterate/hooks-json-matcher-string-form
-- **ADR**: ADR-040
+- **Complexity**: medium
+- **Branch**: iterate/known-issues-self-detection-and-cleanup
+- **ADR**: ADR-041
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-07-hooks-json-matcher-string-form.md
+- **Spec**: .shipwright/planning/iterate/2026-05-09-known-issues-self-detection-and-cleanup.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/hooks-json-matcher-string-form
-- **Run ID**: iterate-2026-05-07-hooks-json-matcher-string-form
-- **Spec**: .shipwright/planning/iterate/2026-05-07-hooks-json-matcher-string-form.md
-- **Complexity**: trivial (3 string edits across 2 files + 1 test extension + 2 version bumps)
-- **External Review Marker**: missing
+- **Branch**: iterate/known-issues-self-detection-and-cleanup
+- **Run ID**: iterate-2026-05-09-known-issues-self-detection-and-cleanup
+- **Spec**: .shipwright/planning/iterate/2026-05-09-known-issues-self-detection-and-cleanup.md
+- **Complexity**: medium (scanner regex change has subtle correctness concerns; bundles two collateral cleanups; external review requested)
+- **External Review Marker**: stale (predates spec (2026-05-09T07:45:15))
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/hooks-json-matcher-string-form
-- **Last Commit**: 99fc87b fix(plugins): convert PreToolUse/PostToolUse matcher to string form for Claude Code 2.1.132+ schema
+- **Branch**: iterate/known-issues-self-detection-and-cleanup
+- **Last Commit**: f8d44da fix(adopt): scanner requires comment-context; remove dead save_session_config
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,22 +68,22 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-c8a57331 | work_completed | iterate (known_issues scanner requires comment context; remove dead save_session_config — 16/16 green) | 2026-05-09 |
 | evt-f66286bf | work_completed | iterate (—) | 2026-05-07 |
 | evt-623a29ad | work_completed | iterate (—) | 2026-05-07 |
 | evt-40c653f7 | work_completed | iterate (F0.5 empirical-test backfill) | 2026-05-06 |
 | evt-510b8df3 | work_completed | iterate (F0.5 End-to-End Verification Gate) | 2026-05-06 |
-| evt-4dcdd82a | work_completed | iterate (hooks-consistency parser handles quoted commands — 27/27 green) | 2026-05-06 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 23
-- **Last iterate**: change — — (2026-05-07)
+- **Total work events**: 24
+- **Last iterate**: bug — known_issues scanner requires comment context; remove dead save_session_config — 16/16 green (2026-05-09)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
 
-### ADR-040: PreToolUse / PostToolUse matcher must be a string under Claude Code 2.1.132+
-- **Date:** 2026-05-07
-- **Section:** Iterate — bug: hooks.json matcher schema (follow-up to ADR-039)
-- **Context:** After ADR-039 wrapped event names under `"hooks"`, `claude plugin list` against the post-merge cache surfaced a SECOND schema tightening: `PreToolUse` / `PostToolUse` matcher fields must now be strings, not the legacy object form `{"tools": ["Bash"]}`. `shipwright-build` reproduces empirically as ✘ f
+### ADR-041: known-issues scanner requires comment-context; remove dead save_session_config
+- **Date:** 2026-05-09
+- **Section:** Iterate — bug: known-issues scanner self-detection + cleanup
+- **Context:** The TODO/FIXME inventory scanner (.shipwright/agent_docs/known_issues.md) self-matched its own marker tuple and regex pattern, drowning real markers. The on-disk file was also stale and showed 28 markers, mostly fixture noise. shipwright-plan also carried a deprecated save_session_config function with
