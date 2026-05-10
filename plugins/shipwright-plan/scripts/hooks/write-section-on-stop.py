@@ -32,28 +32,41 @@ def _hook_error(
     partial_results: dict[str, Any] | None = None,
     alternatives: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Build hookSpecificOutput with structured error context."""
-    error_detail = {
-        "what_failed": what_failed,
-        "what_was_attempted": what_was_attempted,
-        "error_category": error_category,
-        "is_retryable": is_retryable,
-        "partial_results": partial_results or {},
-        "alternatives": alternatives or [],
-    }
+    """Build a SubagentStop blocking response.
+
+    SubagentStop hookSpecificOutput permits only `hookEventName` per the
+    Claude Code schema (https://code.claude.com/docs/en/hooks). To still
+    halt the subagent run on transcript-extraction failure, return a
+    top-level `decision: "block"` payload — that shape IS valid and
+    is the documented way to surface a failure to Claude Code from a
+    SubagentStop hook (see ADR-042).
+
+    Diagnostic detail (file paths, retry state, alternatives) is written
+    to stderr — visible to the operator without polluting the protocol.
+    """
     alt_text = ""
     if alternatives:
         alt_text = " Alternatives: " + "; ".join(alternatives)
-    return {
-        "hookSpecificOutput": {
-            "hookEventName": "SubagentStop",
-            "additionalContext": (
-                f"ERROR [{error_category}]: {what_failed}. "
-                f"Attempted: {what_was_attempted}.{alt_text}"
-            ),
-            "structuredError": error_detail,
-        }
-    }
+    summary = (
+        f"ERROR [{error_category}]: {what_failed}. "
+        f"Attempted: {what_was_attempted}.{alt_text}"
+    )
+    # Stderr carries the structured detail for the operator/log.
+    detail_blob = json.dumps(
+        {
+            "what_failed": what_failed,
+            "what_was_attempted": what_was_attempted,
+            "error_category": error_category,
+            "is_retryable": is_retryable,
+            "partial_results": partial_results or {},
+            "alternatives": alternatives or [],
+        },
+        ensure_ascii=False,
+    )
+    sys.stderr.write(f"[shipwright:plan-section] {summary}\n")
+    sys.stderr.write(f"[shipwright:plan-section] detail={detail_blob}\n")
+    # Returned payload is valid for SubagentStop AND halts the run.
+    return {"decision": "block", "reason": summary}
 
 
 def read_transcript_with_retry(transcript_path: str, max_retries: int = 4) -> list[dict]:
@@ -221,13 +234,9 @@ def main() -> int:
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(section_content)
 
-    print(json.dumps({
-        "hookSpecificOutput": {
-            "hookEventName": "SubagentStop",
-            "additionalContext": f"Section written: {output_path}",
-        }
-    }))
-
+    # SubagentStop success: empty stdout (schema-compliant), diagnostic on
+    # stderr. additionalContext is not permitted for SubagentStop. ADR-042.
+    sys.stderr.write(f"[shipwright:plan-section] written: {output_path}\n")
     return 0
 
 

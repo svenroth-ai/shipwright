@@ -392,7 +392,9 @@ def test_hook_is_idempotent(shipwright_project: Path):
     time.sleep(0.05)
     r2 = _run_hook(shipwright_project)
     assert r2.returncode == 0
-    assert "already audited" in r2.stdout
+    # Post-ADR-042: idempotency diagnostic surfaces on stderr (Stop schema
+    # rejects hookSpecificOutput.additionalContext on stdout).
+    assert "already audited" in r2.stderr
     second_mtime = next(finding_dir.glob("*.json")).stat().st_mtime
     assert first_mtime == second_mtime
 
@@ -427,14 +429,25 @@ def test_hook_iterate_plugin_root_maps_to_iterate_phase(shipwright_project: Path
 
 
 def test_hook_output_contains_phase_quality_tag(shipwright_project: Path):
-    """R22 — output is labeled so downstream filters can route it."""
+    """R22 — output is labeled so downstream filters can route it.
+
+    Post ADR-042: Stop hooks must not emit hookSpecificOutput.additionalContext
+    on stdout (schema-rejected by Claude Code). Diagnostic text is written
+    to stderr instead — still surfaced to the user by the Claude Code
+    harness, but no longer violating the Stop event schema.
+    """
     result = _run_hook(shipwright_project)
     assert result.returncode == 0
-    # hookSpecificOutput is valid JSON on stdout
-    parsed = json.loads(result.stdout.splitlines()[-1])
-    context = parsed["hookSpecificOutput"]["additionalContext"]
-    assert "[phase-quality]" in context
-    assert "phase=build" in context
+    # stdout must NOT carry hookSpecificOutput for Stop (post-ADR-042).
+    assert "hookSpecificOutput" not in result.stdout, (
+        f"Stop hooks must not emit hookSpecificOutput on stdout. "
+        f"stdout: {result.stdout!r}"
+    )
+    # stderr carries the routable diagnostic.
+    assert "[phase-quality]" in result.stderr, (
+        f"phase-quality tag missing from stderr: {result.stderr!r}"
+    )
+    assert "phase=build" in result.stderr
 
 
 # ---------------------------------------------------------------------------

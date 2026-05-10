@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-09-known-issues-self-detection-and-cleanup"
+run_id: "iterate-2026-05-10-stop-hook-schema-fix"
 phase: "iterate"
-reason: "iterate post-F7 dashboard refresh"
-timestamp: "2026-05-09T08:03:18.403367+00:00"
+reason: "iterate: Stop hook schema fix"
+timestamp: "2026-05-10T18:38:25.495674+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-09 08:03:18 UTC
+> Auto-generated 2026-05-10 18:38:25 UTC
 
 ## Session Info
 
-- **Session ID**: ef6d2ae1-cf77-4229-8751-c0227b1c9dc2
-- **Timestamp**: 2026-05-09 08:03:18 UTC
-- **Reason**: iterate post-F7 dashboard refresh
+- **Session ID**: 55dd57e4-71d2-49e5-b085-5f39e54a1020
+- **Timestamp**: 2026-05-10 18:38:25 UTC
+- **Reason**: iterate: Stop hook schema fix
 
 ## Last Iterate
 
@@ -29,15 +29,16 @@ timestamp: "2026-05-09T08:03:18.403367+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/known-issues-self-detection-and-cleanup
-- **Run ID**: iterate-2026-05-09-known-issues-self-detection-and-cleanup
-- **Spec**: .shipwright/planning/iterate/2026-05-09-known-issues-self-detection-and-cleanup.md
-- **Complexity**: medium (scanner regex change has subtle correctness concerns; bundles two collateral cleanups; external review requested)
+- **Branch**: iterate/stop-hook-schema-fix
+- **Run ID**: iterate-2026-05-10-stop-hook-schema-fix
+- **Spec**: .shipwright/planning/iterate/2026-05-10-stop-hook-schema-fix.md
+- **Complexity**: medium
 - **External Review Marker**: stale (predates spec (2026-05-09T07:45:15))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -51,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/known-issues-self-detection-and-cleanup
-- **Last Commit**: f8d44da fix(adopt): scanner requires comment-context; remove dead save_session_config
+- **Branch**: iterate/stop-hook-schema-fix
+- **Last Commit**: 050982e Merge pull request #23 from svenroth-ai/iterate/known-issues-self-detection-and-cleanup
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -83,7 +84,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Recent Decisions
 
-### ADR-041: known-issues scanner requires comment-context; remove dead save_session_config
-- **Date:** 2026-05-09
-- **Section:** Iterate — bug: known-issues scanner self-detection + cleanup
-- **Context:** The TODO/FIXME inventory scanner (.shipwright/agent_docs/known_issues.md) self-matched its own marker tuple and regex pattern, drowning real markers. The on-disk file was also stale and showed 28 markers, mostly fixture noise. shipwright-plan also carried a deprecated save_session_config function with
+### ADR-042: Stop and SubagentStop hooks emit schema-compliant stdout
+- **Date:** 2026-05-10
+- **Section:** Iterate — bug: Stop-hook schema compliance
+- **Context:** Claude Code surfaced 'Hook JSON output validation failed — (root): Invalid input' for all 35 Stop hooks at every session end. The Stop and SubagentStop schemas only permit 'hookEventName' inside 'hookSpecificOutput'; the existing hook scripts were emitting 'additionalContext' on stdout, which is valid only for SessionStart/PreToolUse/PostTo

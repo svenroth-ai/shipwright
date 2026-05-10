@@ -245,26 +245,36 @@ class TestComplianceEnforcementInPipeline:
 
 
 class TestStructuredErrorsInPipeline:
-    """Test that migrated scripts produce structured errors."""
+    """SubagentStop hooks halt the run via top-level `decision: "block"`.
+
+    Pre-ADR-042 these tests asserted on stdout `hookSpecificOutput.additionalContext`
+    + `structuredError`. The Claude Code SubagentStop schema does not permit
+    those fields, so the hook now emits a top-level decision payload (which
+    DOES halt the subagent run) and writes the structured detail to stderr
+    for the operator.
+    """
 
     def test_write_section_on_stop_invalid_payload(self):
-        """Hook should return structured error for invalid JSON input."""
+        """Invalid stdin payload halts the subagent via decision:block."""
         result = subprocess.run(
             [sys.executable, str(PLAN_PLUGIN / "scripts" / "hooks" / "write-section-on-stop.py")],
             input="not valid json",
             capture_output=True,
             text=True,
         )
-        # Should not crash (exit 0) but output structured error
+        # Should not crash (exit 0) but output a SubagentStop-valid block.
         assert result.returncode == 0
         output = json.loads(result.stdout)
-        assert "hookSpecificOutput" in output
-        ctx = output["hookSpecificOutput"]["additionalContext"]
-        assert "ERROR [validation]" in ctx
-        assert "Parse hook stdin payload" in ctx
+        assert output.get("decision") == "block"
+        assert "Parse hook stdin payload" in output.get("reason", "")
+        # Structured detail surfaces on stderr (post-ADR-042).
+        assert "ERROR [validation]" in result.stderr
+        assert "Parse hook stdin payload" in result.stderr
+        assert '"error_category": "validation"' in result.stderr
 
     def test_write_section_on_stop_missing_transcript(self):
-        """Hook should return structured error when transcript doesn't exist."""
+        """Missing transcript halts the subagent via decision:block; structured
+        detail on stderr."""
         payload = {"transcript_path": "/nonexistent/path/transcript.jsonl"}
         result = subprocess.run(
             [sys.executable, str(PLAN_PLUGIN / "scripts" / "hooks" / "write-section-on-stop.py")],
@@ -274,6 +284,7 @@ class TestStructuredErrorsInPipeline:
         )
         assert result.returncode == 0
         output = json.loads(result.stdout)
-        structured = output["hookSpecificOutput"].get("structuredError", {})
-        assert structured.get("error_category") == "transient"
-        assert structured.get("is_retryable") is True
+        assert output.get("decision") == "block"
+        # Stderr carries the structured-detail blob.
+        assert '"error_category": "transient"' in result.stderr
+        assert '"is_retryable": true' in result.stderr

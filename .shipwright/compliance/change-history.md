@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-05-09T08:03:18Z
-Total commits: 611
+Generated: 2026-05-10T18:38:25Z
+Total commits: 613
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 611
 pie title Commit Types
     "feat" : 208
     "fix" : 163
-    "chore" : 95
+    "chore" : 97
     "docs" : 92
     "refactor" : 32
     "test" : 14
@@ -399,10 +399,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 95 commits
+### Chores (chore) — 97 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-09 | iterate | unstage stray skill-compliance/* files from finalize commit | d228b9bbaff1 |
+| 2026-05-09 | iterate | finalize iterate-2026-05-09-known-issues-self-detection-and-cleanup | 9f21af37c21f |
 | 2026-05-07 | changelog | aggregate 0.17.1 — hooks.json schema migration (ADR-039 + ADR-040) | 8249a742392a |
 | 2026-05-07 | iterate | finalize iterate-2026-05-07-hooks-json-matcher-string-form (ADR-040) | 1ec1c452f75f |
 | 2026-05-07 | iterate | finalize iterate-2026-05-07-hooks-json-claude-2-1-132-schema (ADR-039) | f1023705d15e |
@@ -668,7 +670,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 611 |
+| Total commits | 613 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 611 |
+| Human-authored commits | 613 |
 

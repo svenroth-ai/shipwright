@@ -47,11 +47,18 @@ def _resolve_project_root() -> Path:
 
 
 def _emit_hook_output(payload: dict[str, object]) -> None:
-    try:
-        sys.stdout.write(json.dumps({"hookSpecificOutput": payload}))
-        sys.stdout.write("\n")
-    except Exception:  # noqa: BLE001
-        pass
+    # Stop hookSpecificOutput accepts only `hookEventName`; `additionalContext`
+    # is not permitted (validates rejected by Claude Code with
+    # "Hook JSON output validation failed — (root): Invalid input").
+    # Route the diagnostic message to stderr — Claude Code surfaces hook
+    # stderr to the user, so visibility is preserved without violating the
+    # Stop schema. See iterate-2026-05-10-stop-hook-schema-fix + ADR-042.
+    message = payload.get("additionalContext")
+    if message:
+        try:
+            sys.stderr.write(f"{message}\n")
+        except Exception:  # noqa: BLE001
+            pass
 
 
 def _consume_stdin() -> None:
