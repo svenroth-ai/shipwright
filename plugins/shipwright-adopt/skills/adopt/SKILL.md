@@ -475,6 +475,53 @@ Writes — **in order**:
     `{wrote, path, reason}` so the Step H handoff banner can show
     "installed (dormant)" vs "preserved" without re-stat'ing the file.
 
+14. **CI workflow scaffold (profile-aware).** Adopt picks the CI
+    template that matches the stack profile detected earlier in the
+    pipeline (`snapshot.profile.matched`) and writes it to
+    `<root>/.github/workflows/ci.yml`. Three profiles ship templates
+    today:
+    - `supabase-nextjs` → `ci-supabase-nextjs.yml.template` (single
+      `test` job, security + deploy chained, Node 22.x)
+    - `vite-hono` → `ci-vite-hono.yml.template` (two-workspace:
+      `client-checks` + `server-checks`, both matrixed)
+    - `python-plugin-monorepo` → `ci-python-plugin-monorepo.yml.template`
+      (uv-driven, ruff + pyright + plugin-tests + integration-tests)
+
+    Every template ships with the **cross-platform OS matrix**
+    (`ubuntu-latest` + `windows-latest`, `fail-fast: false`) so
+    OS-coupled portability bugs surface at PR time instead of leaking
+    through to runtime. Originating regression: `shipwright-webui`
+    v0.8.5 — 4 path-self-heal tests silently passed on the Windows dev
+    machine and silently failed on Linux CI for 9 push-runs because
+    the hand-written `ci.yml` only ran on `ubuntu-latest`.
+
+    Same idempotency contract as Security CI: dormant default
+    (`workflow_dispatch:` only), pre-existing `ci.yml` files are
+    preserved bit-for-bit. Distinct reason codes
+    (`profile_unresolved` vs `no_template_for_profile`) surface
+    snapshot-parsing failures upstream rather than masking them as
+    "no template available".
+
+    The convention lock at `shared/scripts/lib/ci_workflow.py` is the
+    SSoT for the profile→template map, deployed paths, and the
+    cross-platform-matrix invariant. Drift test at
+    `shared/tests/test_ci_workflow_convention.py` pins every template
+    against those constants. The scaffolder result lands in
+    `results.ci_workflow` as `{wrote, path, reason}`.
+
+15. **Claude-Review workflow scaffold.** Adopt writes the independent
+    Claude-Code-review workflow to `<root>/.github/workflows/claude-review.yml`.
+    Profile-agnostic — single template, no profile branching.
+
+    Unlike CI + Security, this workflow is **NOT dormant by default**:
+    `on: pull_request` is the active trigger because firing on PR
+    events is the workflow's entire purpose. Same byte-equal idempotency
+    contract (pre-existing files preserved). Result lands in
+    `results.claude_review_workflow`.
+
+    Origin: commit `8aac61d` (Anthropic Architect Certification best
+    practice — "write in one session, review in a different one").
+
 **Vite DX templates (offer-only, NEVER auto-applied).** If
 `package.json` lists `vite` as a dependency (any Vite-based stack), the
 adoption handoff includes a one-line opt-in note pointing to:
@@ -486,6 +533,14 @@ adoption handoff includes a one-line opt-in note pointing to:
   `dev-banner.tsx.template` — drop-in dev-mode React components for
   runtime-error modals and a visible dev-mode pill. Both are
   `import.meta.env.DEV`-gated so they no-op in prod.
+- `shared/templates/path-helpers.ts.template` +
+  `path-helpers.test.ts.template` — `pickPathModule(input)` heuristic
+  for cross-platform path classification (returns `path.win32` or
+  `path.posix` based on input shape). Drop into any Node project that
+  needs to parse path strings whose platform-origin differs from the
+  runner's native `path` module. The empirical Vitest suite covers
+  Windows + POSIX + UNC + edge cases; passes identically on both OSes.
+  Origin: `shipwright-webui` v0.8.5 cross-platform regression.
 
 **Existing `vite.config.ts` is NEVER overwritten.** The handoff lists
 the templates so the user can copy/adapt them at their own pace; adopt

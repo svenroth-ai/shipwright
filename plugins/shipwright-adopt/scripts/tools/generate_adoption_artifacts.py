@@ -539,6 +539,38 @@ def generate(
     if security_ci_result["wrote"]:
         results["written"].append(security_ci_result["path"])
 
+    # Step E.14 — CI workflow scaffold (profile-aware). Adopt picks the
+    # right CI template per stack profile (vite-hono, supabase-nextjs,
+    # python-plugin-monorepo) and lands a cross-platform-matrix template
+    # at .github/workflows/ci.yml. Closes the gap that the shipwright-webui
+    # v0.8.5 regression exposed: hand-written CI without a Windows runner
+    # silently hid path-portability bugs.
+    #
+    # Profile name comes from snapshot.profile.matched (set by adopt's
+    # stack detection earlier in the pipeline). Distinct reason codes
+    # surface profile-detection failures upstream rather than masking
+    # them as "no template available".
+    from ci_workflow_scaffolder import scaffold_ci_workflow  # type: ignore
+    profile_name = (snapshot.get("profile") or {}).get("matched")
+    ci_result = scaffold_ci_workflow(project_root, profile_name=profile_name)
+    results["ci_workflow"] = ci_result
+    if ci_result["wrote"]:
+        results["written"].append(ci_result["path"])
+
+    # Step E.15 — Claude-Review workflow scaffold. Independent Claude Code
+    # review-in-a-different-session pass on PRs — Anthropic Architect
+    # Certification best practice (commit `8aac61d`). Profile-agnostic;
+    # single template lands at .github/workflows/claude-review.yml. Not
+    # dormant: fires on pull_request by design — that's the workflow's
+    # entire purpose.
+    from claude_review_workflow_scaffolder import (  # type: ignore
+        scaffold_claude_review_workflow,
+    )
+    claude_review_result = scaffold_claude_review_workflow(project_root)
+    results["claude_review_workflow"] = claude_review_result
+    if claude_review_result["wrote"]:
+        results["written"].append(claude_review_result["path"])
+
     # Tier 5 — Visual frontend documentation. Opt-in via signal: any
     # frontend hint in the snapshot (multi-service frontend service, or
     # frontend.* in stack). Backend-only profiles get wrote_docs=false

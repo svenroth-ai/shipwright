@@ -1,0 +1,59 @@
+// Cross-platform path module picker — opt-in Shipwright helper.
+//
+// Why this exists: Node's built-in `path` module is `path.posix` on Linux
+// and `path.win32` on Windows. Tests that mock platform-specific input
+// strings (e.g. `C:\Users\…` Windows paths) need the matching platform
+// helper REGARDLESS of which OS the test is running on. Using the
+// runner-native `path` defaults silently produces wrong answers — e.g.
+// `path.dirname("C:\\Users\\Test\\.local\\bin\\claude.exe")` returns `"."`
+// on Linux (the entire string is treated as a single basename because
+// `\` is not a separator in POSIX) but `"C:\\Users\\Test\\.local\\bin"`
+// on Windows.
+//
+// `pickPathModule(input)` inspects the input string and returns
+// `path.win32` if it looks Windows-shaped (drive letter or backslash
+// separator), `path.posix` otherwise. This is a pragmatic heuristic for
+// test fixtures and runtime path parsing, NOT a universal path classifier.
+// Empty/whitespace-only strings default to POSIX.
+//
+// Usage:
+//   import { pickPathModule } from "./path-helpers";
+//   const p = pickPathModule(input);
+//   const parentDir = p.dirname(input);
+//
+// Origin: shipwright-webui v0.8.5 regression — 4 tests in
+// `cli-compat.path-self-heal.test.ts` silently passed on Windows + silently
+// failed on Linux CI for 9 push-runs because `path.dirname` was called
+// on a mocked Windows path under the runner-native POSIX `path` module.
+
+import nodePath from "node:path";
+
+type PathModule = typeof nodePath;
+
+const DRIVE_LETTER_RE = /^[A-Za-z]:/;
+const BACKSLASH_RE = /\\/;
+
+/**
+ * Return `path.win32` if the input looks Windows-shaped, `path.posix` otherwise.
+ *
+ * Heuristic: any of
+ *   - starts with a drive letter (`C:`, `D:`, `c:\…`)
+ *   - contains a backslash separator
+ *   - is a UNC path (`\\server\share`)
+ *
+ * Empty / whitespace-only strings default to POSIX — the safe choice for
+ * mocked fixtures.
+ */
+export function pickPathModule(input: string): PathModule {
+  if (input === undefined || input === null) {
+    return nodePath.posix;
+  }
+  const trimmed = input.trim();
+  if (trimmed.length === 0) {
+    return nodePath.posix;
+  }
+  if (DRIVE_LETTER_RE.test(trimmed) || BACKSLASH_RE.test(trimmed)) {
+    return nodePath.win32;
+  }
+  return nodePath.posix;
+}
