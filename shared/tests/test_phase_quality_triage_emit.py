@@ -209,3 +209,45 @@ def test_empty_findings_no_op(project: Path) -> None:
     )
     assert appended == 0
     assert read_all_items(project) == []
+
+
+def test_arbitrary_tier1_code_emitted(project: Path) -> None:
+    """Spec policy is 'all Tier-1 FAIL', not a fixed C1/C5/W3 allow-list
+    (MED-2/MED-7 from code review — clarifies the policy is rule-based).
+
+    A NEW Tier-1 code (e.g. "X9", "T1") that didn't exist when the spec
+    was written must still emit. Otherwise the spec is brittle to
+    future Phase-Quality additions.
+    """
+    findings = {
+        "traceability": [
+            _make_finding("T1", name="T1 traceability gap"),
+            _make_finding("X9", name="X9 hypothetical future check"),
+        ],
+    }
+    appended = audit_hook._emit_tier1_fails_to_triage(
+        project, phase="iterate", run_id="r1",
+        findings=findings, finding_path=None,
+    )
+    assert appended == 2
+    keys = {it["dedupKey"] for it in read_all_items(project)}
+    assert keys == {"iterate:T1", "iterate:X9"}
+
+
+def test_empty_commit_fallback_emits(project: Path) -> None:
+    """`_git_head_sha` returns "" on git failure; downstream
+    append_triage_item_idempotent must accept the empty-string commit
+    without raising (MED-3 from code review).
+    """
+    # Call the helper directly with commit="" (the documented fallback)
+    from triage import append_triage_item_idempotent
+    item_id = append_triage_item_idempotent(
+        project,
+        source="phaseQuality", severity="high", kind="bug",
+        title="finding without git", detail="d",
+        dedup_key="iterate:C1", commit="",
+    )
+    assert item_id is not None
+    [item] = read_all_items(project)
+    assert item["commit"] == ""
+    assert item["dedupKey"] == "iterate:C1"

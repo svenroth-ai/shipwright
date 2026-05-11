@@ -277,13 +277,19 @@ def run_all(
         report.groups_run.append(letter)
 
     if emit_to_triage:
-        # Best-effort — never block the audit on triage failure.
+        # Best-effort — never block the audit on triage failure, but
+        # surface the error on stderr so silent breakage is visible
+        # (MED-5 from external code review).
         try:
             mirror_findings_to_triage(
                 project_root, report, run_id=run_id, commit=commit,
             )
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:  # noqa: BLE001
+            import sys
+            sys.stderr.write(
+                f"[audit_detector] triage emission failed: "
+                f"{type(exc).__name__}: {exc}\n"
+            )
 
     return report
 
@@ -381,6 +387,9 @@ def mirror_findings_to_triage(
                 run_id=run_id,
                 commit=commit,
                 match_commit=False,
+                window_seconds=None,  # cross-session indefinite dedup
+                                      # while item stays in `triage` state
+                                      # (Gemini HIGH from code review)
             )
             if new_id is not None:
                 appended += 1

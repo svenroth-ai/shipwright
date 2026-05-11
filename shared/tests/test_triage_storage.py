@@ -498,3 +498,72 @@ def test_idempotent_match_commit_false_dedups_across_commits(project: Path) -> N
     )
     assert a is not None
     assert b is None  # different commit but match_commit=False → dedup
+
+
+def test_idempotent_window_none_dedups_across_age(project: Path) -> None:
+    """window_seconds=None → no age check; any open match suppresses.
+
+    Compliance producer relies on this: a finding stays as one triage item
+    indefinitely as long as the item's status is `triage`, regardless of
+    how long ago it was appended (Gemini HIGH from code review — the
+    default 24h window would re-emit compliance findings on day 2).
+    """
+    from triage import _triage_path, append_triage_item_idempotent
+
+    first = append_triage_item_idempotent(
+        project, source="compliance", severity="high", kind="compliance",
+        title="t", detail="d", dedup_key="A1",
+        match_commit=False, window_seconds=None,
+    )
+    assert first is not None
+
+    # Backdate the originalTs so a 24h window would expire — for a
+    # window_seconds=None caller, the dedup should still suppress.
+    path = _triage_path(project)
+    text = path.read_text(encoding="utf-8")
+    text = text.replace(
+        '"originalTs":"2026',  # match this year's timestamp prefix
+        '"originalTs":"2020',  # 6 years old → far older than 24h
+    )
+    path.write_text(text, encoding="utf-8")
+
+    second = append_triage_item_idempotent(
+        project, source="compliance", severity="high", kind="compliance",
+        title="t", detail="d", dedup_key="A1",
+        match_commit=False, window_seconds=None,
+    )
+    assert second is None  # age-independent dedup still fires
+
+
+def test_idempotent_concurrency_under_lock(project: Path) -> None:
+    """HIGH-1 from code review: dedup-scan + append are atomic under lock.
+
+    Spawn 8 threads with identical (source, dedup_key, commit). All
+    threads race to append; lock serializes them; only ONE should win.
+    Pre-fix, the dedup-scan happened before the lock and all 8 could
+    pass the check and all 8 would append.
+    """
+    from triage import append_triage_item_idempotent
+
+    def _attempt(_i: int) -> str | None:
+        return append_triage_item_idempotent(
+            project,
+            source="phaseQuality", severity="high", kind="bug",
+            title="contended-finding", detail="d",
+            dedup_key="C1", commit="abc",
+        )
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+        results = list(ex.map(_attempt, range(8)))
+
+    # Exactly one append, seven dedup-skips
+    appended = [r for r in results if r is not None]
+    skipped = [r for r in results if r is None]
+    assert len(appended) == 1, (
+        f"expected exactly 1 append, got {len(appended)}: {results}"
+    )
+    assert len(skipped) == 7
+    # And only one item visible on disk
+    items = read_all_items(project)
+    matching = [it for it in items if it.get("dedupKey") == "C1"]
+    assert len(matching) == 1

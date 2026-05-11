@@ -189,10 +189,22 @@ def _gc_best_effort(project_root: Path) -> None:
         pass
 
 
-def _git_head_sha(project_root: Path) -> str | None:
-    """Return the current HEAD sha; works on dirty trees, returns None on
-    any failure (no-git, no-repo, timeout)."""
+_GIT_WARN_EMITTED = False  # process-local one-shot guard
+
+
+def _git_head_sha(project_root: Path) -> str:
+    """Return the current HEAD sha. Works on dirty trees.
+
+    Returns ``""`` (empty string, never ``None``) on any failure
+    (no-git binary, not a repo, timeout) and emits a one-shot stderr
+    warning per process so downstream dedup keys stay shaped
+    consistently. The empty-string fallback is the documented spec
+    contract (see locked decision "Commit on dirty tree" in
+    iterate-2026-05-11-triage-inbox-1a.md).
+    """
     import subprocess
+
+    global _GIT_WARN_EMITTED
     try:
         out = subprocess.run(
             ["git", "rev-parse", "HEAD"],
@@ -202,11 +214,20 @@ def _git_head_sha(project_root: Path) -> str | None:
             timeout=5,
         )
         if out.returncode == 0:
-            sha = out.stdout.strip()
-            return sha or None
+            return out.stdout.strip()
     except Exception:  # noqa: BLE001
-        return None
-    return None
+        pass
+
+    if not _GIT_WARN_EMITTED:
+        _GIT_WARN_EMITTED = True
+        try:
+            sys.stderr.write(
+                "[phase-quality] git rev-parse HEAD failed; using empty "
+                "commit fallback for triage dedup keys\n"
+            )
+        except Exception:  # noqa: BLE001
+            pass
+    return ""
 
 
 def _emit_tier1_fails_to_triage(
@@ -238,7 +259,7 @@ def _emit_tier1_fails_to_triage(
         )
         return 0
 
-    commit = _git_head_sha(project_root)
+    commit = _git_head_sha(project_root)  # "" on failure (spec contract)
     evidence_rel: str | None = None
     if finding_path is not None:
         try:

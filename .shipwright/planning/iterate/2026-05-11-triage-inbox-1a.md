@@ -204,16 +204,89 @@ Machine-only-format opt-outs (justified): POSIX `export` prefix, inline
 
 ## Confidence Calibration
 
-Mandatory at medium (per Phase Matrix). Run before F0.
+Mandatory at medium (per Phase Matrix). Populated post-build, pre-F0.
 
-- **Boundaries touched:** see "Affected Boundaries" table above (6 pairs
-  across JSONL + Markdown).
-- **Empirical probes run:** populate at Self-Review (Step 7.5). The 8
-  probes above are the floor; format-specific probes added as needed.
-- **Edge cases NOT probed + why acceptable:** operator-input probes
-  (POSIX `export`, inline `# comment`, quoted `#`) skipped — JSONL is
-  machine-only.
-- **Confidence-pattern check:** populate at Self-Review.
+- **Boundaries touched:** all 6 producer/consumer pairs from the
+  "Affected Boundaries" table landed exactly as specified. New
+  producer/consumer pair added during AC-4 build: `dedupKey` field
+  carries the producer-supplied stable identifier (e.g. `iterate:C1`,
+  `A2`) across the JSONL boundary — covered by
+  `test_triage_storage::test_idempotent_append_*` (6 cases).
+- **Empirical probes run (file-on-disk round-trip, not "I re-read the
+  diff"):**
+  1. *Round-trip every field* — `test_round_trip_all_fields` writes a
+     full-field item via the producer API, reads via the consumer API,
+     asserts each of 13 fields back. PASS.
+  2. *Empty-file* — `test_read_missing_file_returns_empty` /
+     `test_empty_project_yields_empty_skeleton`. PASS — aggregator
+     produces the empty skeleton without crash.
+  3. *Mixed-status* — `test_mixed_statuses_all_returned` +
+     `test_only_triage_status_shown`. PASS — read-all returns all,
+     aggregator filters to triage.
+  4. *Corrupt-line* — `test_corrupt_line_skipped` +
+     `test_corrupt_line_then_status_event_still_resolves`. PASS — the
+     reader skips JSONDecodeError lines, status resolution still
+     works for the surviving valid lines.
+  5. *In-process contention* (8 threads via ThreadPoolExecutor) —
+     `test_concurrent_appends_thread_pool`. PASS — no torn writes,
+     all 8 ids visible.
+  6. *Cross-process contention* (subprocess) —
+     `test_concurrent_appends_subprocess`. PASS — both subprocess
+     writes visible.
+  7. *Stale-lock recovery* — `test_stale_lockfile_does_not_block`.
+     PASS — leftover `.lock` file from a killed process doesn't block
+     the next writer.
+  8. *Status-history-by-file-order* — `test_last_status_wins_by_file_order`
+     + `test_original_ts_preserved_across_status_changes`. PASS —
+     resolution is by physical line order, not by `ts`. originalTs
+     stays pinned to the first append even after status flips.
+  9. *Unicode + path-with-spaces (OneDrive shape)* —
+     `test_unicode_and_path_with_spaces` (path = "AI Backup - Documents",
+     title = "Üñîçōdé title ✓ 中文", detail with `\n` newlines).
+     PASS.
+  10. *Producer dedup boundary* — `test_phase_quality_triage_emit::*`
+      (9 cases) + `test_compliance_audit_triage_emit::*` (9 cases).
+      PASS — phaseQuality dedup uses (phase, code, commit) 24h window
+      with `match_commit=True`; compliance dedup uses (source,
+      dedup_key) cross-commit with `match_commit=False`.
+  11. *Markdown render boundary* — `test_markdown_escaping_pipe` +
+      `test_markdown_truncation` + `test_internal_fields_not_rendered`.
+      PASS — `|`, ``` ``` ```, leading `#`, newlines, and long fields
+      handled; `statusBy`/`statusReason`/`originalTs` filtered from
+      human-facing render.
+  12. *Stop-hook schema compliance* —
+      `test_hook_output_schema_compliance.py` auto-discovered the new
+      `aggregate_triage_on_stop` hook, drove it with realistic stdin +
+      env, and validated stdout against the Stop schema (ADR-042: no
+      `additionalContext`). PASS after the stdout→stderr fix in
+      aggregate_triage.main().
+  13. *Scaffolder idempotency* — `test_full_idempotency`. PASS —
+      two consecutive runs produce byte-identical state across all 3
+      writers.
+- **Edge cases NOT probed + why acceptable:**
+  - *POSIX `export` prefix / inline `# comment` / quoted `#`* —
+    machine-only format; JSONL never operator-edited by hand. Per
+    references/boundary-probes.md these 3 categories are documented
+    skips for non-env formats.
+  - *File-system-full / disk-quota mid-write* — out of scope; the
+    file-lock ensures atomicity of the append but disk-full is a
+    system-level failure mode all producers share.
+  - *Truly malicious dedupKey values* (e.g. SQL injection,
+    XSS-shaped) — the dedupKey is a producer-supplied opaque string
+    and only used for equality comparison + markdown rendering, where
+    `_escape_md` neutralizes it.
+- **Confidence-pattern check:** no "are you confident?"-style question
+  produced "yes" + a subsequent finding in this run. Each AC was
+  driven by red→green TDD and the producers were probed against the
+  helper functions directly (not through self-attestation). External
+  LLM review surfaced 14 findings that became the spec's "Locked
+  Decisions" section — all HIGH/MED were folded back into the code
+  before AC-4 build started.
+
+**Stopping rule satisfied:** the most recent probe returned no
+finding AND all 8 boundary-probe categories applicable to a machine-
+only JSONL format have been covered AND no yes-then-bug pattern has
+fired in this run.
 
 ## Verification (medium+ — F0.5)
 

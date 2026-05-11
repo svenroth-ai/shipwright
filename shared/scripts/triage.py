@@ -323,61 +323,110 @@ def append_triage_item_idempotent(
     run_id: str | None = None,
     commit: str | None = None,
     match_commit: bool = True,
-    window_seconds: int = 24 * 3600,
+    window_seconds: int | None = 24 * 3600,
 ) -> str | None:
-    """Append a triage item only if no matching item was added recently.
+    """Append a triage item only if no matching item is currently open.
 
     Match = same `source` + `dedup_key` + (optionally) `commit` AND
-    appended within `window_seconds` of now AND status is `triage`
-    (items already promoted / dismissed / snoozed are not re-evaluated).
+    status is `triage` (items already promoted / dismissed / snoozed
+    are not re-evaluated — operators get them back if the underlying
+    issue re-fires under a new id).
 
-    Returns the new item id, or `None` if a recent duplicate was
-    found and the append was skipped.
+    `window_seconds` controls the recency horizon:
 
-    Producers (Phase-Quality, Compliance) call this instead of
-    `append_triage_item` when they re-run on every Stop hook and don't
-    want to flood the inbox with the same finding across sessions.
+    - ``int``  — only items appended within that many seconds count as
+      duplicates. Re-firing after the window appends a new item.
+      Phase-Quality producer uses 24h to deliberately re-flag stale
+      issues daily.
+    - ``None`` — no window check; any open `triage` item with the same
+      key suppresses the append, regardless of age. Compliance
+      producer uses this because the same finding code is the same
+      issue indefinitely until the operator resolves it.
+
+    Returns the new item id, or `None` if a duplicate was found and
+    the append was skipped.
+
+    **Atomicity:** the dedup scan and append happen inside the same
+    file-lock critical section. Two concurrent producers with the same
+    `(source, dedup_key, commit)` cannot both pass the dedup check and
+    both append (HIGH-1 from external code review).
     """
     if not dedup_key:
         raise ValueError("dedup_key is required for idempotent append")
 
-    now_dt = datetime.now(timezone.utc)
-    cutoff = now_dt.timestamp() - window_seconds
+    cutoff: float | None
+    if window_seconds is None:
+        cutoff = None
+    else:
+        cutoff = datetime.now(timezone.utc).timestamp() - window_seconds
 
-    for existing in read_all_items(project_root):
-        if existing.get("status") != "triage":
-            continue
-        if existing.get("source") != source:
-            continue
-        if existing.get("dedupKey") != dedup_key:
-            continue
-        if match_commit and existing.get("commit") != commit:
-            continue
-        # Compare original-append timestamp (not the latest event ts —
-        # see spec MED-9).
-        original_ts = existing.get("originalTs") or existing.get("ts") or ""
-        try:
-            existing_dt = datetime.fromisoformat(
-                original_ts.replace("Z", "+00:00")
-            )
-            if existing_dt.timestamp() >= cutoff:
-                return None  # recent duplicate — skip
-        except ValueError:
-            # malformed ts → conservative: treat as recent, skip
-            return None
+    # Build the new event payload up front so the critical section is
+    # tight — only the read + decision + write happen under lock.
+    if severity not in SEVERITIES:
+        raise ValueError(
+            f"unknown severity {severity!r}; expected one of {SEVERITIES}"
+        )
+    if kind not in KINDS:
+        raise ValueError(f"unknown kind {kind!r}; expected one of {KINDS}")
+    if not isinstance(title, str) or not title.strip():
+        raise ValueError("title must be a non-empty string")
 
-    return append_triage_item(
-        project_root,
-        source=source,
-        severity=severity,
-        kind=kind,
-        title=title,
-        detail=detail,
-        evidence_path=evidence_path,
-        run_id=run_id,
-        commit=commit,
-        dedup_key=dedup_key,
-    )
+    new_id = _generate_id()
+    ts = _now_z()
+    new_event = {
+        "event": "append",
+        "id": new_id,
+        "ts": ts,
+        "originalTs": ts,
+        "source": source,
+        "severity": severity,
+        "kind": kind,
+        "title": title,
+        "detail": detail,
+        "evidencePath": evidence_path,
+        "runId": run_id,
+        "commit": commit,
+        "dedupKey": dedup_key,
+        "status": "triage",
+        "suggestedPriority": suggest_priority_from_severity(severity),
+        "suggestedDomain": suggest_domain_from_source(source),
+    }
+    new_line = json.dumps(new_event, ensure_ascii=False, separators=(",", ":")) + "\n"
+
+    with _FileLock(_lock_path(project_root)):
+        _ensure_header(project_root)
+        # Dedup-scan under the same lock — readers see the merged view.
+        for existing in read_all_items(project_root):
+            if existing.get("status") != "triage":
+                continue
+            if existing.get("source") != source:
+                continue
+            if existing.get("dedupKey") != dedup_key:
+                continue
+            if match_commit and existing.get("commit") != commit:
+                continue
+            if cutoff is None:
+                # Window-less dedup — any open match suppresses.
+                return None
+            original_ts = existing.get("originalTs") or existing.get("ts") or ""
+            try:
+                existing_dt = datetime.fromisoformat(
+                    original_ts.replace("Z", "+00:00")
+                )
+                if existing_dt.timestamp() >= cutoff:
+                    return None
+            except ValueError:
+                # Malformed ts → conservative: treat as recent, skip.
+                return None
+
+        # No duplicate — append.
+        path = _triage_path(project_root)
+        with open(path, "a", encoding="utf-8") as fp:
+            fp.write(new_line)
+            fp.flush()
+            os.fsync(fp.fileno())
+
+    return new_id
 
 
 # ---------------------------------------------------------------------------
