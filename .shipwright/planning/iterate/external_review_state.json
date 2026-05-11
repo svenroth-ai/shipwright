@@ -1,9 +1,10 @@
 {
   "status": "completed",
-  "timestamp": "2026-05-09T07:45:15.671844+00:00",
-  "provider": null,
-  "findings_count": 0,
+  "timestamp": "2026-05-11T13:45:00.000000+00:00",
+  "provider": "openrouter",
+  "findings_count": 19,
   "self_review_fallback_ran": false,
-  "reason": null,
-  "review_mode": "plan"
+  "reason": "Iterate 1a - Triage Inbox; Gemini + OpenAI both succeeded via OpenRouter. 3 HIGH + 11 MED + 5 LOW findings. Branch A (Address): all HIGH/MED applied to spec under 'Locked Decisions'; explicit out-of-scope for compaction, branch-aware dismiss, read-lock. Raw findings JSON: iterate-2026-05-11-triage-inbox-1a-external-review.json.",
+  "review_mode": "iterate",
+  "run_id": "iterate-2026-05-11-triage-inbox-1a"
 }
