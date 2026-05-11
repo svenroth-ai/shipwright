@@ -22,18 +22,36 @@ from __future__ import annotations
 
 import json
 import shutil
+import os
 import subprocess
 from pathlib import Path
 
 import pytest
 
-# Skip the whole module when Node tooling is unavailable.
+
+def _ci_truthy() -> bool:
+    """Canonical CI-truthy check — see test_silent_skip_ci_discipline.py."""
+    return os.environ.get("CI", "").lower() in ("true", "1")
+
+
+# CI-discipline gate (iterate-2026-05-11-test-hygiene-and-skill-rules AC-3):
+# - Local dev (CI unset / "false"): skip the module as before.
+# - CI (CI=truthy): hard-fail the module so missing toolchain is loud.
+#
+# Module-level pytest.fail() is undocumented but works in practice: it
+# raises _pytest.outcomes.Failed which pytest treats as a collection
+# error and reports as a failure with the message. The exit code is
+# non-zero and the test job fails — which is the intent.
 if shutil.which("npx") is None:
-    pytest.skip(
-        "npx not on PATH — Vitest template verification requires Node 22+ "
-        "(install via setup-node@v4 in CI; see ci-*.yml.template).",
-        allow_module_level=True,
+    _msg = (
+        "npx not on PATH — Vitest template verification requires Node 22+. "
+        "Install in CI via actions/setup-node@v4 (see "
+        "shared/templates/github-actions/ci-*.yml.template)."
     )
+    if _ci_truthy():
+        # Module-level fail = collection error (non-zero exit). Acceptable.
+        pytest.fail(_msg, pytrace=False)
+    pytest.skip(_msg, allow_module_level=True)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE_DIR = REPO_ROOT / "shared" / "templates"
@@ -96,10 +114,18 @@ def vitest_project(tmp_path_factory: pytest.TempPathFactory) -> Path:
         shell=True,  # Windows: npm.cmd shim resolves via shell PATH
     )
     if install.returncode != 0:
-        pytest.skip(
+        # AC-3: npm install failures are real errors. Local dev: skip so
+        # broken dev setups don't block local pytest. CI: hard-fail so
+        # environment regressions surface in the PR run.
+        _fail_msg = (
             f"npm install failed (exit {install.returncode}); "
-            f"stderr tail: {install.stderr[-500:]!r}"
+            f"stderr tail: {install.stderr[-500:]!r}. In CI: this is a "
+            f"real environment regression — check the cache step and the "
+            f"setup-node@v4 action versions in ci-*.yml.template."
         )
+        if _ci_truthy():
+            pytest.fail(_fail_msg, pytrace=False)
+        pytest.skip(_fail_msg)
 
     return project
 

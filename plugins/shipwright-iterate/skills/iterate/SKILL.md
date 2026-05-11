@@ -615,6 +615,37 @@ See `references/design-and-testing.md` for 2-tier protocol.
    - **API calls:** correct endpoint, correct parameters, error case handled
    - **Data persistence:** create/update/delete triggers the correct DB/API call
    - No tests that always pass regardless of implementation
+   - **Test-Update-Klausel** — when an iterate changes **test infrastructure
+     itself** (skip semantics, hygiene rules, test conventions, the
+     iterate skill's own checklist), the iterate MUST update the
+     skill's reference rules in the same diff. Test fixes that don't
+     codify the underlying rule re-introduce the same anti-pattern on
+     the next iterate. Concretely: if you tighten a skip rule in
+     tests, document the rule here in Step 6, not only in the test
+     file's comments. Origin: ADR (this iterate),
+     iterate-2026-05-11-test-hygiene-and-skill-rules AC-5.
+   - **Registry-driven SSoT meta-test rule** — when a registry (dict /
+     list / map of strings) in `shared/scripts/lib/*` references files
+     or identifiers on disk, **both directions** of drift protection
+     MUST exist: (a) forward — every registry value resolves to a
+     real file; (b) reverse — every file matching the registry's
+     namespace pattern has a registry entry. Canonical example:
+     `shared/tests/test_ci_workflow_convention.py` (forward) +
+     `shared/tests/test_ci_template_registry_completeness.py` (reverse,
+     added in this iterate). Without the reverse test, orphan files
+     accumulate undetected — see ADR-043 / iterate-2026-05-10 for the
+     two zero-caller orphans that motivated this rule.
+   - **Silent-skip CI-discipline rule** — `pytest.skip(...)` on
+     missing-binary or cross-plugin sys.path-pollution / ImportError
+     paths MUST hard-fail in CI with an actionable install hint.
+     Pattern: `if os.environ.get("CI", "").lower() in ("true", "1"): pytest.fail(...)`
+     guarding the skip. The install-hint must name a concrete remediation
+     (`actions/setup-node@v4`, `astral-sh/setup-uv@v3`, plugin-session
+     invocation, etc.). Local dev keeps the skip so single-plugin
+     pytest sessions don't blow up. Drift protection lives in
+     `shared/tests/test_silent_skip_ci_discipline.py` (added in this
+     iterate). Origin: iterate-2026-05-11 — silent skips were
+     systematically hiding tooling-absence in CI runs.
 3. Run tests — they **MUST fail** (if they pass: you're testing the wrong thing or it's already implemented)
 4. **GREEN — Implement** minimum code until tests pass
 5. Run tests after each significant change

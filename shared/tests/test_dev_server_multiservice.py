@@ -358,6 +358,16 @@ def test_wait_for_service_child_died_fails_fast(tmp_path):
     assert elapsed < 5  # NOT the full 30s
 
 
+@pytest.mark.skip(
+    reason=(
+        "no-op stub — `_wait_for_service` is not reached when port is held "
+        "before our Popen() runs; the port-busy + no-PID branch is handled "
+        "at cmd_start level by `_already_running_owned`. Behavior coverage "
+        "lives in test_start_port_busy_no_state_errors_no_kill (cmd_start "
+        "layer). Removing the stub would lose the docstring rationale; "
+        "skipping rather than passing keeps the green count honest."
+    )
+)
 @patch("dev_server._is_port_in_use_for_host", return_value=True)
 def test_wait_for_service_port_held_by_external_process_no_pid(mock_port, tmp_path):
     """Port open BEFORE we Popened — but our PID never started.

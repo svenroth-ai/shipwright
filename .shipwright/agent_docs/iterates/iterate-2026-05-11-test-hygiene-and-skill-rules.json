@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-11-test-hygiene-and-skill-rules",
+  "date": "2026-05-11T08:56:07.041319Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/test-hygiene-and-skill-rules",
+  "spec": ".shipwright/planning/iterate/2026-05-11-test-hygiene-and-skill-rules.md",
+  "tests_passed": true,
+  "adr": "ADR-044"
+}

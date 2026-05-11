@@ -1,28 +1,55 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-10-adopt-ci-scaffolders",
+    "run_id": "iterate-2026-05-11-test-hygiene-and-skill-rules",
     "date": "2026-05-11",
     "unit": {
       "status": "passed",
-      "passed": 1488,
-      "total": 1494,
-      "note": "shared/tests: 1488 passed incl. 32 new in test_ci_workflow_convention.py + 1 new in test_path_helpers_template_vitest.py. 6 pre-existing bash-on-Windows failures in test_hooks.py (TestCheckSecrets + TestCheckFileSize) unchanged from main — verified by git diff confirming this iterate touches zero scripts/hooks/. Adopt suite: 268/268 incl. 18 new in test_ci_workflow_scaffold.py + 2 new tests in test_adopt_pipeline_subprocess.py. Iterate: 226/226. Plan: 30/30. Compliance: 305/305. Changelog: 23/23. Design: 12/12. Run (with pytest-mock): 172/172. Security: 305/308 (3 skipped). Preview: 10/10. Project: 43/43. Build: 43/46 (3 pre-existing bash-on-Windows failures unchanged). Deploy: 25/26 (1 pre-existing JELASTIC_TOKEN test unchanged). Test plugin: 136/136."
+      "passed": 230,
+      "total": 234,
+      "note": "shared/tests F0 re-run: 224 passed, 4 skipped (oss smoke binaries absent locally — semgrep/gitleaks/trivy + 1 cross-plugin import) + 1 deselected. test_skill_step_6_rules_present.py (separate session per ADR-043 conftest-collision pattern): 6/6 passed. Pre-existing bash-on-Windows failures elsewhere unchanged — this iterate touches zero scripts/hooks/."
     },
-    "integration": {"status": "passed", "passed": 101, "total": 101, "note": "All 101 integration tests green incl. test_compliance_enforcement.py, test_multi_session_pipeline.py, test_parallel_iterates_no_merge_conflict.py."},
-    "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes in this iterate."},
-    "e2e": {"status": "passed", "passed": 33, "total": 33, "note": "F0.5 surface=cli ran 33 tests via .shipwright/runs/iterate-2026-05-10-adopt-ci-scaffolders/runner.sh (chained pytest sessions across shared + plugins/shipwright-adopt to avoid conftest collision). All drift + scaffolder + subprocess + Vitest-empirical assertions green."},
-    "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI changes in this iterate."},
-    "smoke": {"status": "passed", "note": "Local Windows runner spawned real npm install + npx vitest run against path-helpers templates; 18 Vitest cases passed in 6.51s. Confirms the cross-platform-path heuristic empirically, not just structurally."},
+    "integration": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0,
+      "note": "No cross-plugin integration paths touched in this iterate."
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0,
+      "note": "No SQL/RLS changes."
+    },
+    "e2e": {
+      "status": "passed",
+      "passed": 50,
+      "total": 50,
+      "note": "F0.5 surface=cli ran 50 tests across the 5 affected shared/tests files. All AC-1..AC-5 + DR-1 + DR-2 assertions green. AC-2 CI=true round-trip empirically verified out-of-band (test_compliance_generators hard-fails with plugin-session hint when CI=true is set)."
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0,
+      "note": "No UI changes."
+    },
+    "smoke": {
+      "status": "not_run",
+      "note": "No browser surface in this iterate."
+    },
     "surface_verification": {
       "surface": "cli",
-      "runner": "bash .shipwright/runs/iterate-2026-05-10-adopt-ci-scaffolders/runner.sh",
+      "runner": "uv run pytest shared/tests/test_dev_server_multiservice.py shared/tests/test_setup_writes_canonical.py shared/tests/test_ci_template_registry_completeness.py shared/tests/test_silent_skip_ci_discipline.py shared/tests/test_path_helpers_template_vitest.py -v --no-header",
       "exit_code": 0,
-      "tests_run": 33,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-10-adopt-ci-scaffolders/surface_verification.json",
-      "timestamp": "2026-05-11T08:00:00Z",
-      "attempts": 1,
-      "evidence_log": ".shipwright/runs/iterate-2026-05-10-adopt-ci-scaffolders/surface_verification.log"
+      "tests_run": 50,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-11-test-hygiene-and-skill-rules/surface_verification.log",
+      "timestamp": "2026-05-11T08:53:48.070Z"
     },
-    "degraded": []
+    "degraded": [
+      {
+        "kind": "environmental",
+        "what": "OneDrive-stuck uv cache during F0/F1",
+        "note": "Mid-iterate the shipwright-security plugin's local .venv hit OneDrive hardlink-failure on certifi, blocking every Bash call. Resolved out-of-band by `uv cache clean` + branch re-checkout. Work itself was uncompromised; verification gates ran cleanly afterward. Recommend setting UV_LINK_MODE=copy permanently on OneDrive-synced Windows hosts (captured in conventions.md learnings)."
+      }
+    ]
   }
 }
