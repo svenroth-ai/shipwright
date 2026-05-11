@@ -89,7 +89,20 @@ jobs:
 
       - name: Upload SARIF to GitHub Security
         if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        uses: github/codeql-action/upload-sarif@v3
+        # `continue-on-error: true` so this step never gates the workflow:
+        # - Public repos: Code Scanning is free and on by default → uploads
+        #   land in the Security tab as expected.
+        # - Private repos without GitHub Advanced Security: the API returns
+        #   "Advanced Security must be enabled for this repository to use
+        #   code scanning" and the step fails. The findings still live in
+        #   `findings.json` + `prompt_risks.json` + the SARIF artifact
+        #   (uploaded below via actions/upload-artifact) + the critical-
+        #   gate downstream — none of which require GHAS. So a Private-
+        #   no-GHAS repo still gets the value of the scan; only the
+        #   Security-tab integration is missing.
+        # - v4 of the action (v3 deprecation lands 2026-12).
+        uses: github/codeql-action/upload-sarif@v4
+        continue-on-error: true
         with:
           sarif_file: sarif
           category: shipwright-security

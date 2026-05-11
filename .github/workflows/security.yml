@@ -124,7 +124,14 @@ jobs:
 
       - name: Upload SARIF to GitHub Security
         if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        uses: github/codeql-action/upload-sarif@v3
+        # `continue-on-error: true` so this step never gates the workflow on
+        # private repos without GitHub Advanced Security (the API returns
+        # "Advanced Security must be enabled" and would otherwise fail-close
+        # the run). Findings still land in findings.json + the SARIF
+        # artifact + the critical-gate. v4 of the action (v3 deprecation
+        # lands 2026-12). Mirrors shared/templates/github-actions/security.yml.template.
+        uses: github/codeql-action/upload-sarif@v4
+        continue-on-error: true
         with:
           sarif_file: ${{ github.workspace }}/sarif
           category: shipwright-security
