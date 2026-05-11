@@ -1,18 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-11-test-hygiene-and-skill-rules",
+    "run_id": "iterate-2026-05-11-test-hygiene-helper-and-self-review-wiring",
     "date": "2026-05-11",
     "unit": {
       "status": "passed",
-      "passed": 230,
-      "total": 234,
-      "note": "shared/tests F0 re-run: 224 passed, 4 skipped (oss smoke binaries absent locally — semgrep/gitleaks/trivy + 1 cross-plugin import) + 1 deselected. test_skill_step_6_rules_present.py (separate session per ADR-043 conftest-collision pattern): 6/6 passed. Pre-existing bash-on-Windows failures elsewhere unchanged — this iterate touches zero scripts/hooks/."
+      "passed": 279,
+      "total": 284,
+      "note": "shared/tests F0 sweep: 268 passed, 4 skipped (oss smoke binaries absent locally — semgrep/gitleaks/trivy + 1 plugin-name parametrize), 1 deselected. shipwright-iterate plugin session (Step 6 + Section 8 probes): 11/11. shipwright-security session (test_aikido_client + test_oss_backend_smoke) collected cleanly across both — the pre-iterate path-conflict regression (verified by code-review HIGH-2) is empirically resolved by moving test_hygiene.py out of the lib/ namespace."
     },
     "integration": {
       "status": "not_run",
       "passed": 0,
       "total": 0,
-      "note": "No cross-plugin integration paths touched in this iterate."
+      "note": "No cross-plugin integration paths touched."
     },
     "pgtap": {
       "status": "not_run",
@@ -22,9 +22,9 @@
     },
     "e2e": {
       "status": "passed",
-      "passed": 50,
-      "total": 50,
-      "note": "F0.5 surface=cli ran 50 tests across the 5 affected shared/tests files. All AC-1..AC-5 + DR-1 + DR-2 assertions green. AC-2 CI=true round-trip empirically verified out-of-band (test_compliance_generators hard-fails with plugin-session hint when CI=true is set)."
+      "passed": 92,
+      "total": 92,
+      "note": "F0.5 surface=cli executed the 5 affected shared/tests files end-to-end. All AC-1..AC-5 + the new lib's 31 unit tests green. Plugin-session-collection probe (separate invocation) verifies the path-conflict fix."
     },
     "design_fidelity": {
       "status": "not_run",
@@ -33,23 +33,17 @@
       "note": "No UI changes."
     },
     "smoke": {
-      "status": "not_run",
-      "note": "No browser surface in this iterate."
+      "status": "passed",
+      "note": "CLI smoke: scan_test_hygiene.py invoked in 3 modes (--files, --files --json, --diff with default-branch fallback). All produced expected output + exit codes."
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_dev_server_multiservice.py shared/tests/test_setup_writes_canonical.py shared/tests/test_ci_template_registry_completeness.py shared/tests/test_silent_skip_ci_discipline.py shared/tests/test_path_helpers_template_vitest.py -v --no-header",
+      "runner": "uv run pytest shared/tests/test_test_hygiene.py shared/tests/test_silent_skip_ci_discipline.py shared/tests/test_setup_writes_canonical.py shared/tests/test_path_helpers_template_vitest.py shared/tests/test_hook_output_schema_compliance.py -v --no-header",
       "exit_code": 0,
-      "tests_run": 50,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-11-test-hygiene-and-skill-rules/surface_verification.log",
-      "timestamp": "2026-05-11T08:53:48.070Z"
+      "tests_run": 92,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-11-test-hygiene-helper-and-self-review-wiring/surface_verification.log",
+      "timestamp": "2026-05-11T10:00:00Z"
     },
-    "degraded": [
-      {
-        "kind": "environmental",
-        "what": "OneDrive-stuck uv cache during F0/F1",
-        "note": "Mid-iterate the shipwright-security plugin's local .venv hit OneDrive hardlink-failure on certifi, blocking every Bash call. Resolved out-of-band by `uv cache clean` + branch re-checkout. Work itself was uncompromised; verification gates ran cleanly afterward. Recommend setting UV_LINK_MODE=copy permanently on OneDrive-synced Windows hosts (captured in conventions.md learnings)."
-      }
-    ]
+    "degraded": []
   }
 }

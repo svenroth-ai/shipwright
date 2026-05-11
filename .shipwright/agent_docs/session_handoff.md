@@ -1,37 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-11-test-hygiene-and-skill-rules"
+run_id: "iterate-2026-05-11-test-hygiene-helper-and-self-review-wiring"
 phase: "iterate"
-reason: "iterate: test-hygiene-and-skill-rules"
-timestamp: "2026-05-11T08:55:59.110405+00:00"
+reason: "iterate: test-hygiene-helper-and-self-review-wiring"
+timestamp: "2026-05-11T11:33:17.465184+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-11 08:55:59 UTC
+> Auto-generated 2026-05-11 11:33:17 UTC
 
 ## Session Info
 
 - **Session ID**: 9f3ead4d-f083-49fe-b5d6-d943bed48c4e
-- **Timestamp**: 2026-05-11 08:55:59 UTC
-- **Reason**: iterate: test-hygiene-and-skill-rules
+- **Timestamp**: 2026-05-11 11:33:17 UTC
+- **Reason**: iterate: test-hygiene-helper-and-self-review-wiring
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-10-adopt-ci-scaffolders
-- **Date**: 2026-05-10T22:26:32.703599Z
-- **Type**: feature
-- **Complexity**: large
-- **Branch**: iterate/adopt-ci-scaffolders
-- **ADR**: ADR-043
+- **Run ID**: iterate-2026-05-11-test-hygiene-and-skill-rules
+- **Date**: 2026-05-11T08:56:07.041319Z
+- **Type**: change
+- **Complexity**: medium
+- **Branch**: iterate/test-hygiene-and-skill-rules
+- **ADR**: ADR-044
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-10-adopt-ci-scaffolders.md
+- **Spec**: .shipwright/planning/iterate/2026-05-11-test-hygiene-and-skill-rules.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/test-hygiene-and-skill-rules
-- **Run ID**: iterate-2026-05-11-test-hygiene-and-skill-rules
-- **Spec**: .shipwright/planning/iterate/2026-05-11-test-hygiene-and-skill-rules.md
+- **Branch**: iterate/test-hygiene-helper-and-self-review-wiring
+- **Run ID**: iterate-2026-05-11-test-hygiene-helper-and-self-review-wiring
+- **Spec**: .shipwright/planning/iterate/2026-05-11-test-hygiene-helper-and-self-review-wiring.md
 - **Complexity**: medium
 - **External Review Marker**: stale (predates spec (2026-05-09T07:45:15))
 
@@ -52,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/test-hygiene-and-skill-rules
-- **Last Commit**: ad739c1 Merge pull request #24 from svenroth-ai/iterate/adopt-ci-scaffolders
+- **Branch**: iterate/test-hygiene-helper-and-self-review-wiring
+- **Last Commit**: 1a52f4c Merge pull request #26 from svenroth-ai/iterate/test-hygiene-and-skill-rules
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -84,8 +84,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Recent Decisions
 
-### ADR-044: Silent skips loud-fail in CI + Step 6 governance rules
+### ADR-045: Centralize CI-discipline helpers + Self-Review § 8 static probe
 - **Date:** 2026-05-11
-- **Section:** Iterate — change: test-hygiene-and-skill-rules
-- **Context:** Six binary-skip sites + 7 cross-plugin import-skip sites in shared/tests + iterate plugin tests were silently masking missing toolchains and sys.path collisions; no SKILL.md rule existed to prevent recurrence. Test infra was greening on no-op tests and missing-binary skips.
-- **Decision:** Convert all silent skips to a CI-gated hard-fail 
+- **Section:** Iterate — change: test-hygiene-helper-and-self-review-wiring
+- **Context:** PR #26 / ADR-044 deferred AC-6 (helper centralization) pending SKILL.md rule maturity. After one release with the inline-helper duplication + DR-1 enforcing parity, the rules stabilized and centralization is now safe.
+- **Decision:** Move helpers to shared/scripts/test_hygiene.py (top-level under shared/scripts/, NO

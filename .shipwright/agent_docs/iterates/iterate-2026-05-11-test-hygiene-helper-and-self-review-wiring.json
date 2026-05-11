@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-11-test-hygiene-helper-and-self-review-wiring",
+  "date": "2026-05-11T11:33:17.601246Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/test-hygiene-helper-and-self-review-wiring",
+  "spec": ".shipwright/planning/iterate/2026-05-11-test-hygiene-helper-and-self-review-wiring.md",
+  "tests_passed": true,
+  "adr": "ADR-045"
+}

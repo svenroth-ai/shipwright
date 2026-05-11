@@ -21,7 +21,8 @@ critic's eye before committing.
 ## Self-Review Checklist
 
 Run AFTER implementation, BEFORE commit. All change types, all complexity levels.
-For each item: pass or fail + 1-sentence explanation. Fix all failures before committing.
+This is the 8-point checklist; for each item: pass or fail + 1-sentence
+explanation. Fix all failures before committing.
 
 ### 1. Spec Compliance
 Does the code implement what was specified?
@@ -71,6 +72,26 @@ AND was a real round-trip probe run? See `references/round-trip-tests.md`.
   risk acknowledgment in the iterate ADR)
 - If no boundaries touched: mark `n/a` with one-line justification
 
+### 8. Test Hygiene Probe
+Run the static probe against changed test files and resolve any findings.
+The probe surfaces silent-skip patterns that mask CI tooling absence or
+collection-time-only `@pytest.mark.skipif` decorators that can't carry a
+CI gate structurally. See ADR-044 + ADR-045.
+
+```bash
+uv run shared/scripts/tools/scan_test_hygiene.py --diff
+```
+
+- **Mandatory at medium+**
+- Advisory at trivial / small
+- Skip rules: an explicit `# test-hygiene: allow-silent-skip — <rationale>`
+  marker comment on the offending line (or in a contiguous comment block
+  immediately above it) suppresses a finding. The rationale must
+  describe a setup-condition or upstream-state gate (not a binary-on-PATH
+  gate, which is exactly what the rule catches).
+- Exit code: `0` = no findings (pass); `1` = findings present (fail —
+  either fix or document with the marker); `2` = usage error.
+
 ### Output Format
 ```
 Self-Review:
@@ -81,6 +102,7 @@ Self-Review:
   5. Performance Basics: [pass/fail] {explanation}
   6. Naming & Structure: [pass/fail] {explanation}
   7. Affected Boundaries:[pass/fail/n/a] {explanation}
+  8. Test Hygiene Probe: [pass/fail/n/a] {explanation}
 
 Action: {Fix items X, Y before commit / All clear, proceed to commit}
 ```

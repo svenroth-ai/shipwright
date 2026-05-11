@@ -30,32 +30,16 @@ from pathlib import Path
 
 import pytest
 
-
-def _ci_truthy() -> bool:
-    """Canonical CI-truthy check — see test_silent_skip_ci_discipline.py."""
-    return os.environ.get("CI", "").lower() in ("true", "1")
-
-
-def _skip_or_fail_on_missing_binary(binary: str, install_hint: str) -> None:
-    """AC-3 CI-discipline: local-skip vs CI-fail for missing scanner binaries.
-
-    Each OSS smoke test calls this at the top of its body — replacing the
-    pre-iterate ``@pytest.mark.skipif`` decorator. The conversion is safe
-    because the smoke tests take only ``synthetic_repo`` + ``monkeypatch``
-    fixtures, neither of which invokes the missing binary.
-    """
-    if shutil.which(binary) is not None:
-        return  # binary available — proceed with test
-    msg = f"{binary} not on PATH. {install_hint}"
-    if _ci_truthy():
-        pytest.fail(msg, pytrace=False)
-    pytest.skip(msg)
-
-# Ensure scripts/lib is on path
+# Ensure both this plugin's lib AND shared/scripts/ are on path.
+# Plugin lib: for `oss_backend`. Shared scripts: for `lib.test_hygiene`
+# (centralized CI-discipline helpers — see ADR-044/045).
 PLUGIN_ROOT = Path(__file__).parent.parent
+REPO_ROOT = PLUGIN_ROOT.parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
+sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
-from oss_backend import _run_gitleaks, _run_semgrep, _run_trivy
+from test_hygiene import skip_or_fail_on_missing_binary  # noqa: E402
+from oss_backend import _run_gitleaks, _run_semgrep, _run_trivy  # noqa: E402
 
 
 # --- Synthetic credential helpers ------------------------------------------
@@ -159,7 +143,7 @@ def test_semgrep_scans_shipwright_dir_after_refactor(
     """Semgrep wrapper must walk into ``.shipwright/agent_docs/`` and
     must NOT walk into ``node_modules/`` (Semgrep's own .semgrepignore
     handles that)."""
-    _skip_or_fail_on_missing_binary(
+    skip_or_fail_on_missing_binary(
         "semgrep",
         "Install via `pip install semgrep` locally; in CI install via "
         "the security workflow's setup step (see security.yml.template).",
@@ -175,6 +159,11 @@ def test_semgrep_scans_shipwright_dir_after_refactor(
     # and we cannot validate exclusion behavior in this run — skip with a
     # clear reason rather than risk a false-positive pass.
     if not any("main_key.pem" in p for p in paths):
+        # Positive-control fixture must be found before we can validate the
+        # exclusion contract; absence indicates a Semgrep registry/rule
+        # issue, not a CI-vs-local condition. Hard-failing in CI here
+        # would punish PRs for upstream rule churn.
+        # test-hygiene: allow-silent-skip — positive-control gate, see rationale above.
         pytest.skip(
             f"Semgrep did not find the positive-control fixture file "
             f"(src/main_key.pem) — likely a registry fetch failure or "
@@ -198,7 +187,7 @@ def test_gitleaks_detect_scans_committed_shipwright_dir(
 ) -> None:
     """Gitleaks ``detect`` (history mode) must find committed secrets in
     ``.shipwright/agent_docs/`` and must NOT report ``node_modules/``."""
-    _skip_or_fail_on_missing_binary(
+    skip_or_fail_on_missing_binary(
         "gitleaks",
         "Install via `winget install Gitleaks.Gitleaks` (Windows), "
         "`brew install gitleaks` (macOS), or the GitHub release binary "
@@ -213,6 +202,10 @@ def test_gitleaks_detect_scans_committed_shipwright_dir(
     # cannot find it, the binary itself is misbehaving on this fixture
     # and we cannot validate the exclusion contract.
     if not any("main_key.pem" in p for p in paths):
+        # Positive-control fixture must be found before we can validate the
+        # exclusion contract; absence indicates a Gitleaks ruleset/binary
+        # mismatch, not a CI-vs-local condition.
+        # test-hygiene: allow-silent-skip — positive-control gate, see rationale above.
         pytest.skip(
             f"Gitleaks did not find the positive-control fixture file "
             f"(src/main_key.pem) — likely a binary/ruleset mismatch on "
@@ -240,7 +233,7 @@ def test_trivy_scans_shipwright_dir_after_refactor(
     invoked command (via subprocess capture) rather than counting
     findings — Trivy SCA on a tree with no manifests legitimately
     returns zero findings."""
-    _skip_or_fail_on_missing_binary(
+    skip_or_fail_on_missing_binary(
         "trivy",
         "Install via `winget install AquaSecurity.Trivy` (Windows), "
         "`brew install trivy` (macOS), or the GitHub release binary on "

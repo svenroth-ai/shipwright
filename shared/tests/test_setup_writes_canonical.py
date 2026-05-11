@@ -18,55 +18,14 @@ Plugins covered:
 """
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
-from typing import NoReturn
 
 import pytest
 
+from test_hygiene import import_or_fail_in_ci
 
 _REPO = Path(__file__).resolve().parents[2]
-
-
-def _ci_truthy() -> bool:
-    """Canonical CI-truthy check (see test_silent_skip_ci_discipline.py).
-
-    Accepts ``CI=true``, ``CI=True``, ``CI=TRUE``, ``CI=1``. Rejects
-    unset / ``false`` / ``0`` / anything else. AC-6 deferred — when the
-    helper centralizes into ``shared/scripts/lib/``, replace this copy
-    with the shared import.
-    """
-    return os.environ.get("CI", "").lower() in ("true", "1")
-
-
-def _import_or_fail_in_ci(plugin_name: str, exc: BaseException) -> NoReturn:
-    """Convert a cross-plugin sys.path-pollution ImportError into either a
-    local-skip or a CI hard-fail with an actionable hint.
-
-    Per-site failure hint names the owning plugin so the operator knows
-    exactly which plugin's pytest session covers the import (external
-    review #O4). The cross-plugin ``lib``/``tools`` namespace collision
-    is structural — every plugin defines its own ``lib/`` package — and
-    cannot be cleanly fixed at sys.path level. AC-2 chose approach (b)
-    (loud-fail in CI) over a runtime module-isolation rewrite.
-    """
-    plugin_session_hint = (
-        f"cd plugins/{plugin_name} && uv run pytest tests/ -v"
-    )
-    if _ci_truthy():
-        pytest.fail(
-            f"cross-plugin sys.path pollution prevented importing "
-            f"{plugin_name} module: {exc!r}. In CI, run the test under "
-            f"its plugin's pytest session instead of from shared/tests/. "
-            f"Recommended invocation: {plugin_session_hint}. "
-            f"Iterate context: AC-2 of "
-            f"iterate-2026-05-11-test-hygiene-and-skill-rules."
-        )
-    pytest.skip(
-        f"cross-plugin sys.path pollution: {exc!r} (run "
-        f"{plugin_session_hint!r} locally to exercise this test)"
-    )
 
 
 def _add_plugin_to_path(plugin_name: str) -> None:
@@ -110,8 +69,8 @@ def test_adopt_artifact_writer_writes_under_dot_shipwright(tmp_path: Path) -> No
     try:
         from artifact_writer import write_spec  # type: ignore
     except (ImportError, ModuleNotFoundError) as exc:
-        _import_or_fail_in_ci("shipwright-adopt", exc)
-        # _import_or_fail_in_ci is annotated NoReturn; pyright will flag a
+        import_or_fail_in_ci("shipwright-adopt", exc)
+        # import_or_fail_in_ci is annotated NoReturn; pyright will flag a
         # path that elides this terminal call. No `return` needed.
 
     spec_path = write_spec(
@@ -137,8 +96,8 @@ def test_adopt_config_writer_emits_canonical_planning_dir(tmp_path: Path) -> Non
     try:
         from config_writer import write_project_config  # type: ignore
     except (ImportError, ModuleNotFoundError) as exc:
-        _import_or_fail_in_ci("shipwright-adopt", exc)
-        # _import_or_fail_in_ci is annotated NoReturn; pyright will flag a
+        import_or_fail_in_ci("shipwright-adopt", exc)
+        # import_or_fail_in_ci is annotated NoReturn; pyright will flag a
         # path that elides this terminal call. No `return` needed.
 
     config_path = write_project_config(
@@ -167,8 +126,8 @@ def test_iterate_campaign_init_writes_under_dot_shipwright(tmp_path: Path) -> No
     try:
         from campaign_init import init_campaign  # type: ignore
     except (ImportError, ModuleNotFoundError) as exc:
-        _import_or_fail_in_ci("shipwright-iterate", exc)
-        # _import_or_fail_in_ci is annotated NoReturn; pyright will flag a
+        import_or_fail_in_ci("shipwright-iterate", exc)
+        # import_or_fail_in_ci is annotated NoReturn; pyright will flag a
         # path that elides this terminal call. No `return` needed.
 
     result = init_campaign(
@@ -267,8 +226,8 @@ def test_compliance_collect_requirements_reads_canonical(tmp_path: Path) -> None
     try:
         from data_collector import collect_requirements  # type: ignore
     except (ImportError, ModuleNotFoundError) as exc:
-        _import_or_fail_in_ci("shipwright-compliance", exc)
-        # _import_or_fail_in_ci is annotated NoReturn; pyright will flag a
+        import_or_fail_in_ci("shipwright-compliance", exc)
+        # import_or_fail_in_ci is annotated NoReturn; pyright will flag a
         # path that elides this terminal call. No `return` needed.
 
     canonical = tmp_path / ".shipwright" / "planning" / "01-auth"
@@ -327,6 +286,8 @@ def test_no_legacy_path_construction_in_plugin_source(plugin: str) -> None:
     """
     plug_dir = _REPO / "plugins" / plugin / "scripts"
     if not plug_dir.is_dir():
+        # test-hygiene: allow-silent-skip — parametrized over plugin names; skip when a
+        # plugin is absent from this checkout. Not a CI-vs-local condition.
         pytest.skip(f"plugin {plugin} has no scripts/ directory")
     forbidden = 'project_root / "planning"'
     offenders: list[str] = []
@@ -350,6 +311,8 @@ def test_no_legacy_designs_path_construction_in_plugin_source(plugin: str) -> No
     """
     plug_dir = _REPO / "plugins" / plugin / "scripts"
     if not plug_dir.is_dir():
+        # test-hygiene: allow-silent-skip — parametrized over plugin names; skip when a
+        # plugin is absent from this checkout. Not a CI-vs-local condition.
         pytest.skip(f"plugin {plugin} has no scripts/ directory")
     forbidden = 'project_root / "designs"'
     offenders: list[str] = []
@@ -377,8 +340,8 @@ def test_adopt_write_agent_docs_writes_under_dot_shipwright(tmp_path: Path) -> N
     try:
         from artifact_writer import write_agent_docs  # type: ignore
     except (ImportError, ModuleNotFoundError) as exc:
-        _import_or_fail_in_ci("shipwright-adopt", exc)
-        # _import_or_fail_in_ci is annotated NoReturn; pyright will flag a
+        import_or_fail_in_ci("shipwright-adopt", exc)
+        # import_or_fail_in_ci is annotated NoReturn; pyright will flag a
         # path that elides this terminal call. No `return` needed.
 
     paths = write_agent_docs(
@@ -429,6 +392,8 @@ def test_no_legacy_agent_docs_path_construction_in_plugin_source(plugin: str) ->
     """
     plug_dir = _REPO / "plugins" / plugin / "scripts"
     if not plug_dir.is_dir():
+        # test-hygiene: allow-silent-skip — parametrized over plugin names; skip when a
+        # plugin is absent from this checkout. Not a CI-vs-local condition.
         pytest.skip(f"plugin {plugin} has no scripts/ directory")
     forbidden = 'project_root / "agent_docs"'
     offenders: list[str] = []
@@ -452,12 +417,12 @@ def test_compliance_generators_write_under_dot_shipwright(tmp_path: Path) -> Non
     .shipwright/compliance/, never compliance/ at project root."""
     # Replaces pytest.importorskip — that decorator can't carry the
     # CI-discipline gate. Manually attempt the import + delegate to
-    # _import_or_fail_in_ci which respects the CI=truthy convention.
+    # import_or_fail_in_ci which respects the CI=truthy convention.
     try:
         import scripts.lib.compliance_report  # type: ignore  # noqa: F401
     except (ImportError, ModuleNotFoundError) as exc:
-        _import_or_fail_in_ci("shipwright-compliance", exc)
-        # _import_or_fail_in_ci is annotated NoReturn; pyright will flag a
+        import_or_fail_in_ci("shipwright-compliance", exc)
+        # import_or_fail_in_ci is annotated NoReturn; pyright will flag a
         # path that elides this terminal call. No `return` needed.
     _add_plugin_to_path("shipwright-compliance")
 
@@ -471,8 +436,8 @@ def test_compliance_generators_write_under_dot_shipwright(tmp_path: Path) -> Non
     try:
         from scripts.lib.compliance_report import COMPLIANCE_DIR  # type: ignore
     except ImportError as exc:
-        _import_or_fail_in_ci("shipwright-compliance", exc)
-        # _import_or_fail_in_ci is annotated NoReturn; pyright will flag a
+        import_or_fail_in_ci("shipwright-compliance", exc)
+        # import_or_fail_in_ci is annotated NoReturn; pyright will flag a
         # path that elides this terminal call. No `return` needed.
 
     canonical = project_root / COMPLIANCE_DIR
@@ -503,6 +468,8 @@ def test_no_legacy_compliance_path_construction_in_plugin_source(plugin: str) ->
     """
     plug_dir = _REPO / "plugins" / plugin / "scripts"
     if not plug_dir.is_dir():
+        # test-hygiene: allow-silent-skip — parametrized over plugin names; skip when a
+        # plugin is absent from this checkout. Not a CI-vs-local condition.
         pytest.skip(f"plugin {plugin} has no scripts/ directory")
     forbidden = 'project_root / "compliance"'
     offenders: list[str] = []
