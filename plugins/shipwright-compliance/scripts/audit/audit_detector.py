@@ -214,6 +214,9 @@ def run_all(
     data: Any = None,
     run_gate: bool = True,
     fix: bool = False,
+    emit_to_triage: bool = True,
+    run_id: str | None = None,
+    commit: str | None = None,
 ) -> AuditReport:
     """Run every registered group against ``project_root``.
 
@@ -227,6 +230,15 @@ def run_all(
         fix: If True, enable Group E auto-regeneration of stale docs.
             Each rewritten doc is appended to ``report.fixes_applied``.
             Other groups ignore the flag.
+        emit_to_triage: If True (default), mirror this run's findings
+            into ``.shipwright/triage.jsonl`` and auto-dismiss compliance
+            items whose check_id is no longer in this run. See
+            :func:`mirror_findings_to_triage`. Disable for unit tests
+            that only exercise detection.
+        run_id: Optional run identifier recorded on emitted triage items.
+        commit: Optional commit hash recorded on emitted triage items.
+            Compliance dedup uses ``match_commit=False``, so this is
+            informational only.
     """
     report = AuditReport()
 
@@ -264,4 +276,138 @@ def run_all(
         report.findings.extend(findings)
         report.groups_run.append(letter)
 
+    if emit_to_triage:
+        # Best-effort — never block the audit on triage failure.
+        try:
+            mirror_findings_to_triage(
+                project_root, report, run_id=run_id, commit=commit,
+            )
+        except Exception:  # noqa: BLE001
+            pass
+
     return report
+
+
+# ---------------------------------------------------------------------------
+# AC-5 of iterate-2026-05-11-triage-inbox-1a: triage emission
+# ---------------------------------------------------------------------------
+
+_SEVERITY_MAP: dict[str, str] = {
+    "CRITICAL": "critical",
+    "HIGH": "high",
+    "MEDIUM": "medium",
+    "LOW": "low",
+    "INFO": "info",
+}
+
+
+def _import_triage_api():
+    """Lazy import of the triage helpers (avoids perturbing existing module
+    import order — the audit_detector skeleton must keep importing cleanly
+    in environments where ``shared/scripts/`` isn't on sys.path).
+
+    Returns ``(append_idempotent, mark_status, read_all_items)`` on success
+    or ``(None, None, None)`` on import failure.
+    """
+    import sys
+
+    shared_scripts = Path(__file__).resolve().parents[4] / "shared" / "scripts"
+    if str(shared_scripts) not in sys.path:
+        sys.path.insert(0, str(shared_scripts))
+    try:
+        from triage import (  # noqa: PLC0415
+            append_triage_item_idempotent,
+            mark_status,
+            read_all_items,
+        )
+        return append_triage_item_idempotent, mark_status, read_all_items
+    except ImportError:
+        return None, None, None
+
+
+def mirror_findings_to_triage(
+    project_root: Path,
+    report: AuditReport,
+    *,
+    run_id: str | None = None,
+    commit: str | None = None,
+) -> dict[str, int]:
+    """Mirror audit findings to ``.shipwright/triage.jsonl``.
+
+    For each ``Finding`` with ``status == "fail"``: append a triage item
+    via ``append_triage_item_idempotent`` with ``source="compliance"``,
+    ``dedup_key=check_id``, ``match_commit=False``. Idempotent across
+    sessions — the same finding code on the same project stays as a
+    single triage item until the operator promotes or dismisses it.
+
+    For currently-``triage`` items with ``source=="compliance"`` whose
+    ``dedupKey`` is NOT in this run's failed findings: mark ``dismissed``
+    with ``reason="auditResolved"`` (HIGH-2 from external review:
+    auto-dismiss applies only to currently-``triage`` items; items
+    previously promoted or dismissed stay terminal).
+
+    Best-effort: per-item errors are swallowed. Returns
+    ``{"appended": N, "dismissed": N}`` so callers can log telemetry.
+    """
+    append_idempotent, mark_status_fn, read_all_items = _import_triage_api()
+    if append_idempotent is None:
+        return {"appended": 0, "dismissed": 0}
+
+    fail_findings = [f for f in report.findings if f.status == "fail"]
+    current_codes = {f.check_id for f in fail_findings}
+
+    appended = 0
+    for f in fail_findings:
+        sev = _SEVERITY_MAP.get(f.severity.upper(), "medium")
+        title = f"{f.group}/{f.check_id}: {f.name}"[:160]
+        detail_parts: list[str] = []
+        if f.detail:
+            detail_parts.append(f.detail)
+        if f.evidence:
+            detail_parts.append("evidence: " + "; ".join(str(e) for e in f.evidence))
+        if f.suggested_iterate_cmd:
+            detail_parts.append(f"hint: {f.suggested_iterate_cmd}")
+        detail = " | ".join(detail_parts) or f.name
+
+        try:
+            new_id = append_idempotent(
+                project_root,
+                source="compliance",
+                severity=sev,
+                kind="compliance",
+                title=title,
+                detail=detail,
+                dedup_key=f.check_id,
+                run_id=run_id,
+                commit=commit,
+                match_commit=False,
+            )
+            if new_id is not None:
+                appended += 1
+        except Exception:  # noqa: BLE001
+            continue
+
+    dismissed = 0
+    try:
+        for item in read_all_items(project_root):
+            if item.get("source") != "compliance":
+                continue
+            if item.get("status") != "triage":
+                continue
+            dk = item.get("dedupKey")
+            if dk and dk not in current_codes:
+                try:
+                    mark_status_fn(
+                        project_root,
+                        item["id"],
+                        new_status="dismissed",
+                        by="auditDetector",
+                        reason="auditResolved",
+                    )
+                    dismissed += 1
+                except Exception:  # noqa: BLE001
+                    continue
+    except Exception:  # noqa: BLE001
+        pass
+
+    return {"appended": appended, "dismissed": dismissed}
