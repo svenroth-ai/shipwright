@@ -32,7 +32,8 @@ if str(_SCRIPTS_DIR) not in sys.path:
 from triage import SCHEMA_VERSION, TRIAGE_FILE, _ensure_header  # noqa: E402
 from tools.aggregate_triage import render_markdown  # noqa: E402
 
-TRIAGE_MD_REL = Path(".shipwright") / "agent_docs" / "triage_inbox.md"
+_AGENT_DOCS_DIRNAME = ".shipwright/agent_docs"
+TRIAGE_MD_REL = Path(_AGENT_DOCS_DIRNAME) / "triage_inbox.md"
 GITIGNORE_LINES = (
     ".shipwright/triage.jsonl",
     ".shipwright/triage.jsonl.lock",

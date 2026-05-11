@@ -34,7 +34,8 @@ from triage import (  # noqa: E402
     suggest_priority_from_severity,
 )
 
-TRIAGE_MD_REL = Path(".shipwright") / "agent_docs" / "triage_inbox.md"
+_AGENT_DOCS_DIRNAME = ".shipwright/agent_docs"
+TRIAGE_MD_REL = Path(_AGENT_DOCS_DIRNAME) / "triage_inbox.md"
 
 TOP_N = 50
 FIELD_TRUNCATE_AT = 120

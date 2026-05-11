@@ -131,6 +131,14 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/agent_docs/decision_log.md",
         ".shipwright/compliance/change-history.md",
         ".shipwright/planning/iterate/**.md",
+        # External-review JSON captures (e.g. iterate-2026-05-11-triage-
+        # inbox-1a-{external,code}-review.json). These files store LLM
+        # feedback that legitimately mentions legacy paths verbatim. JSON
+        # has no comment syntax so inline `artifact-path-canon: legacy`
+        # markers can't be applied. Added in iterate-2026-05-11-triage-
+        # inbox-1a after external/code review captures landed under
+        # .shipwright/planning/iterate/.
+        ".shipwright/planning/iterate/**.json",
         # Layer 2 setup-contract test — intentionally asserts that the legacy
         # path is NOT created. Must reference legacy by name to do so.
         "shared/tests/test_setup_writes_canonical.py",
@@ -189,6 +197,14 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/agent_docs/decision_log.md",
         ".shipwright/compliance/change-history.md",
         ".shipwright/planning/iterate/**.md",
+        # External-review JSON captures (e.g. iterate-2026-05-11-triage-
+        # inbox-1a-{external,code}-review.json). These files store LLM
+        # feedback that legitimately mentions legacy paths verbatim. JSON
+        # has no comment syntax so inline `artifact-path-canon: legacy`
+        # markers can't be applied. Added in iterate-2026-05-11-triage-
+        # inbox-1a after external/code review captures landed under
+        # .shipwright/planning/iterate/.
+        ".shipwright/planning/iterate/**.json",
         # Layer-2 setup-contract test references both paths by design
         "shared/tests/test_setup_writes_canonical.py",
         # Migration tooling (CLI + helpers) takes artifact name as argument
@@ -240,6 +256,14 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/agent_docs/decision_log.md",
         ".shipwright/compliance/change-history.md",
         ".shipwright/planning/iterate/**.md",
+        # External-review JSON captures (e.g. iterate-2026-05-11-triage-
+        # inbox-1a-{external,code}-review.json). These files store LLM
+        # feedback that legitimately mentions legacy paths verbatim. JSON
+        # has no comment syntax so inline `artifact-path-canon: legacy`
+        # markers can't be applied. Added in iterate-2026-05-11-triage-
+        # inbox-1a after external/code review captures landed under
+        # .shipwright/planning/iterate/.
+        ".shipwright/planning/iterate/**.json",
         "shipwright_project_config.json",
         # Layer-2 setup-contract test references both paths by design
         "shared/tests/test_setup_writes_canonical.py",
@@ -325,6 +349,14 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/agent_docs/decision_log.md",
         ".shipwright/compliance/change-history.md",
         ".shipwright/planning/iterate/**.md",
+        # External-review JSON captures (e.g. iterate-2026-05-11-triage-
+        # inbox-1a-{external,code}-review.json). These files store LLM
+        # feedback that legitimately mentions legacy paths verbatim. JSON
+        # has no comment syntax so inline `artifact-path-canon: legacy`
+        # markers can't be applied. Added in iterate-2026-05-11-triage-
+        # inbox-1a after external/code review captures landed under
+        # .shipwright/planning/iterate/.
+        ".shipwright/planning/iterate/**.json",
         # Layer-2 setup-contract test references both paths by design
         "shared/tests/test_setup_writes_canonical.py",
         # Edge-case test file that intentionally references both paths (introduced in designs migration)
@@ -365,6 +397,16 @@ ALLOWLIST: dict[str, list[str]] = {
         # `skill-compliance/` subdir under .shipwright/compliance/ is the dominant text).
         "plugins/shipwright-run/scripts/lib/orchestrator.py",
         "plugins/shipwright-run/scripts/lib/phase_validators.py",
+        # Triage Inbox (iterate-2026-05-11-triage-inbox-1a) — uses
+        # "compliance" as an ENUM value (kind, source, suggestedDomain),
+        # not as a path reference. audit_detector.py's added
+        # mirror_findings_to_triage uses `source="compliance"` /
+        # `kind="compliance"` for the wire format. The docs file
+        # references `plugins/shipwright-compliance/...` plugin paths
+        # in explanatory tables.
+        "shared/scripts/triage.py",
+        "plugins/shipwright-compliance/scripts/audit/audit_detector.py",
+        "docs/triage-inbox.md",
         # Tests (narrowed in B+C as files migrate)
         "shared/tests/**",
         "shared/scripts/tests/**",
