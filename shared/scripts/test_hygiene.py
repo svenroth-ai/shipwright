@@ -46,7 +46,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, NoReturn
 
-import pytest
+# NOTE: pytest is imported LAZILY inside `import_or_fail_in_ci` and
+# `skip_or_fail_on_missing_binary` so that the CLI entrypoint
+# (`shared/scripts/tools/scan_test_hygiene.py`) does not require pytest
+# on the importing interpreter — the static probe only needs ast +
+# tokenize. Eager `import pytest` here would crash the Self-Review § 8
+# invocation in any environment without pytest installed (caught
+# empirically during the iterate's asymptote-heuristic probe — the
+# "confident?" question is unfalsifiable, so the answer was: run more
+# probes).
 
 __all__ = [
     "Finding",
@@ -84,6 +92,8 @@ def import_or_fail_in_ci(plugin_name: str, exc: BaseException) -> NoReturn:
     fixed at sys.path level. Approach (b) from ADR-044: loud-fail in
     CI rather than runtime module isolation.
     """
+    import pytest  # local import — see module-top NOTE
+
     plugin_session_hint = f"cd plugins/{plugin_name} && uv run pytest tests/ -v"
     if is_ci():
         pytest.fail(
@@ -108,6 +118,8 @@ def skip_or_fail_on_missing_binary(binary: str, install_hint: str) -> None:
     (CI=truthy). The install hint must point to a concrete remediation
     (``actions/setup-uv@v3``, ``pip install semgrep``, ``winget install``).
     """
+    import pytest  # local import — see module-top NOTE
+
     if shutil.which(binary) is not None:
         return
     msg = f"{binary} not on PATH. {install_hint}"
