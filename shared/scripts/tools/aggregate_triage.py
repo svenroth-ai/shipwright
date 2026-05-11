@@ -227,8 +227,14 @@ def main(argv: list[str] | None = None) -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(md, encoding="utf-8")
 
-    print(f"wrote {out_path} ({len(items)} items, "
-          f"{sum(1 for it in items if it.get('status') == 'triage')} triage)")
+    # Status line goes to stderr so the CLI is safe to invoke from a
+    # Stop-hook (ADR-042: Stop accepts only JSON or empty on stdout).
+    # When run interactively, operators still see this because the harness
+    # surfaces stderr.
+    sys.stderr.write(
+        f"wrote {out_path} ({len(items)} items, "
+        f"{sum(1 for it in items if it.get('status') == 'triage')} triage)\n"
+    )
     return 0
 
 

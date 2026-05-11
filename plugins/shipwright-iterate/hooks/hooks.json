@@ -42,6 +42,10 @@
           {
             "type": "command",
             "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/write_terminal_marker.py\""
+          },
+          {
+            "type": "command",
+            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/aggregate_triage_on_stop.py\""
           }
         ]
       }
