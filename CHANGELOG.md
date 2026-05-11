@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.18.0] - 2026-05-11
+
+### Added
+
+- **/shipwright-adopt now scaffolds profile-aware CI + Claude-Review workflows.** New Step E.14 picks a CI template per stack profile (supabase-nextjs / vite-hono / python-plugin-monorepo) and writes `.github/workflows/ci.yml`; new Step E.15 writes `.github/workflows/claude-review.yml` for independent Claude Code review on PRs. Every CI template ships with the **cross-platform OS matrix** (`ubuntu-latest` + `windows-latest`, `fail-fast: false`) as the convention-locked default — closes the test-portability footgun that hit `shipwright-webui` v0.8.5 (9 push-runs red on `main` because path-self-heal tests mock Windows paths but ran only on Linux). Mirror of the established `security_workflow_scaffolder.py` pattern; same idempotency contract (never overwrite existing files); dormant triggers (`workflow_dispatch:` only) so adopted repos can Phase-B activate deliberately. Distinct reason codes `profile_unresolved` vs `no_template_for_profile` surface snapshot-parsing failures upstream rather than masking them. New constants module `shared/scripts/lib/ci_workflow.py` is the SSoT (TEMPLATE_BY_PROFILE, MATRIX_OS_VALUES, MATRIX_FAIL_FAST); drift test `shared/tests/test_ci_workflow_convention.py` pins every template against those constants with 32 parametrized assertions. Shared `workflow_scaffold_helper.copy_template_if_absent()` extracted for the new scaffolders (security_workflow_scaffolder.py NOT migrated to it in this iterate; separate diff). External LLM review (Gemini + GPT via OpenRouter) applied 14 of 15 findings pre-build — `setup-uv@v3` for python-monorepo CI, explicit `permissions: contents: read` floor on every workflow, drift-test ABSENT-not-commented semantics, parametrized subprocess tests across all 3 profiles. ADR-043.
+- **Opt-in Tier-2 template `shared/templates/path-helpers.ts.template` + `path-helpers.test.ts.template`** — `pickPathModule(input)` heuristic returns `path.win32` for inputs containing a drive letter or backslash (incl. UNC paths) and `path.posix` otherwise. Codifies the cross-platform path-classification pattern adopted Node projects need when mocking Windows paths in tests run on Linux CI. Empirically verified via 18-case Vitest suite (covers Windows-shaped, POSIX-shaped, UNC, empty, undefined, null, mixed-separators, regression case). Not auto-scaffolded — listed in adopt's Tier-2 opt-in templates block alongside the Vite DX bundle.
+- shared/tests/test_ci_template_registry_completeness.py — reverse-direction drift test asserting every ci-*.yml.template on disk has a matching TEMPLATE_BY_PROFILE entry (ADR-044)
+- Three governance rules in iterate SKILL.md Step 6: Test-Update-Klausel, Registry-driven SSoT meta-test rule, Silent-skip CI-discipline rule (ADR-044)
+- shared/scripts/test_hygiene.py + shared/scripts/tools/scan_test_hygiene.py — centralized CI-discipline helpers (is_ci, import_or_fail_in_ci, skip_or_fail_on_missing_binary) + AST/tokenize-based static probe for silent-skip detection. Self-Review § 8 wires this into the iterate skill (mandatory at medium+) (ADR-045)
+
+### Changed
+
+- Silent pytest.skip on missing binary or cross-plugin import paths now hard-fail in CI via _ci_truthy() gate; local dev keeps the skip. Six binary-skip + seven import-skip sites converted (ADR-044)
+- Four test files (test_setup_writes_canonical.py, test_path_helpers_template_vitest.py, test_hook_output_schema_compliance.py, test_oss_backend_smoke.py) drop their inline _ci_truthy/_import_or_fail_in_ci/_skip_or_fail_on_missing_binary helpers and import from the shared test_hygiene module instead. DR-1 flipped to enforce centralization (ADR-045)
+
+### Removed
+
+- shipwright-plan: `save_session_config()` and its self-only test (`test_session_config_roundtrip`). The function had zero production callsites; `load_session_config` + `get_merged_config` remain. ADR-041.
+
+### Fixed
+
+- known_issues scanner now requires comment context (`#`, `//`, `/*`, `<!--`, JSDoc `*`, or markdown bullet `- `) — bare marker strings in source code (regex patterns, tuple elements, docstrings, inline math like `a * TODO`) are no longer false-positives. .shipwright/agent_docs/known_issues.md regenerated (28 → 0 markers). ADR-041.
+- Stop and SubagentStop hooks no longer emit invalid hookSpecificOutput.additionalContext on stdout (eliminates 35 "Hook JSON output validation failed" errors at every session end). Diagnostics route to stderr; SubagentStop error sites halt the subagent via top-level decision:block. New regression test (shared/tests/test_hook_output_schema_compliance.py) audits 88 hook-script combinations across 7 event types. (ADR-042)
+- test_wait_for_service_port_held_by_external_process_no_pid annotated @pytest.mark.skip — was greening on a no-op body that asserted nothing (ADR-044)
+
 ## [0.17.1] - 2026-05-07
 
 ### Fixed
