@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-11-test-hygiene-helper-and-self-review-wiring"
+run_id: "iterate-2026-05-11-triage-inbox-1a"
 phase: "iterate"
-reason: "iterate: test-hygiene-helper-and-self-review-wiring"
-timestamp: "2026-05-11T11:33:17.465184+00:00"
+reason: "iterate: triage-inbox-1a (Triage Inbox pattern + 2 producers + scaffolder + promote CLI)"
+timestamp: "2026-05-11T12:29:55.556882+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-11 11:33:17 UTC
+> Auto-generated 2026-05-11 12:29:55 UTC
 
 ## Session Info
 
-- **Session ID**: 9f3ead4d-f083-49fe-b5d6-d943bed48c4e
-- **Timestamp**: 2026-05-11 11:33:17 UTC
-- **Reason**: iterate: test-hygiene-helper-and-self-review-wiring
+- **Session ID**: 5742b30d-9d02-415f-b333-9f4367bc0754
+- **Timestamp**: 2026-05-11 12:29:55 UTC
+- **Reason**: iterate: triage-inbox-1a (Triage Inbox pattern + 2 producers + scaffolder + promote CLI)
 
 ## Last Iterate
 
@@ -29,16 +29,15 @@ timestamp: "2026-05-11T11:33:17.465184+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/test-hygiene-helper-and-self-review-wiring
-- **Run ID**: iterate-2026-05-11-test-hygiene-helper-and-self-review-wiring
-- **Spec**: .shipwright/planning/iterate/2026-05-11-test-hygiene-helper-and-self-review-wiring.md
+- **Branch**: iterate/triage-inbox-1a
+- **Run ID**: iterate-2026-05-11-triage-inbox-1a
+- **Spec**: .shipwright/planning/iterate/2026-05-11-triage-inbox-1a.md
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-05-09T07:45:15))
+- **External Review Marker**: unknown (iterate-2026-05-11-triage-inbox-1a-external-review.json)
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/test-hygiene-helper-and-self-review-wiring
-- **Last Commit**: 1a52f4c Merge pull request #26 from svenroth-ai/iterate/test-hygiene-and-skill-rules
+- **Branch**: iterate/triage-inbox-1a
+- **Last Commit**: a74ae59 fix(triage): path-canon allowlist + use _AGENT_DOCS_DIRNAME constant
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -84,8 +83,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Recent Decisions
 
-### ADR-045: Centralize CI-discipline helpers + Self-Review § 8 static probe
+### ADR-045: Triage Inbox Pattern (Iterate 1a): pre-backlog JSONL intake + 2 producers + promote bridge
 - **Date:** 2026-05-11
-- **Section:** Iterate — change: test-hygiene-helper-and-self-review-wiring
-- **Context:** PR #26 / ADR-044 deferred AC-6 (helper centralization) pending SKILL.md rule maturity. After one release with the inline-helper duplication + DR-1 enforcing parity, the rules stabilized and centralization is now safe.
-- **Decision:** Move helpers to shared/scripts/test_hygiene.py (top-level under shared/scripts/, NO
+- **Section:** Iterate — feature: triage-inbox-1a
+- **Context:** Findings from hooks/scans/audits flooded the WebUI ExternalTask backlog (sdk-sessions.json) every session because there was no pre-backlog buffer. C1/C5/W3 Phase-Quality FAILs and Compliance audit findings re-fired on every Stop without dedup. The triage and backlog stores need different lifecycles (raw findings vs

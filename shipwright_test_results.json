@@ -1,18 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-11-test-hygiene-helper-and-self-review-wiring",
+    "run_id": "iterate-2026-05-11-triage-inbox-1a",
     "date": "2026-05-11",
     "unit": {
       "status": "passed",
-      "passed": 279,
-      "total": 284,
-      "note": "shared/tests F0 sweep: 268 passed, 4 skipped (oss smoke binaries absent locally — semgrep/gitleaks/trivy + 1 plugin-name parametrize), 1 deselected. shipwright-iterate plugin session (Step 6 + Section 8 probes): 11/11. shipwright-security session (test_aikido_client + test_oss_backend_smoke) collected cleanly across both — the pre-iterate path-conflict regression (verified by code-review HIGH-2) is empirically resolved by moving test_hygiene.py out of the lib/ namespace."
+      "passed": 1642,
+      "total": 1649,
+      "note": "F0 full shared/tests/ suite: 1642 passed, 7 pre-existing baseline failures (5 bash-on-Windows secret-detection scripts + 1 file-size script + 1 path-canon conventions.md L42 mention). Zero NEW failures introduced by this iterate. 224 of the 1642 passing tests are new in this iterate (AC-1/AC-8/AC-2/AC-3/AC-4/AC-5/AC-6/AC-7 coverage)."
     },
     "integration": {
       "status": "not_run",
       "passed": 0,
       "total": 0,
-      "note": "No cross-plugin integration paths touched."
+      "note": "No cross-plugin integration paths required by AC scope."
     },
     "pgtap": {
       "status": "not_run",
@@ -22,9 +22,9 @@
     },
     "e2e": {
       "status": "passed",
-      "passed": 92,
-      "total": 92,
-      "note": "F0.5 surface=cli executed the 5 affected shared/tests files end-to-end. All AC-1..AC-5 + the new lib's 31 unit tests green. Plugin-session-collection probe (separate invocation) verifies the path-conflict fix."
+      "passed": 132,
+      "total": 132,
+      "note": "F0.5 surface=cli ran 132 tests across the 8 triage-relevant shared/tests files. Covers AC-1 storage API (61 cases incl. concurrency, subprocess contention, idempotent helper, window-None dedup, file-bootstrap), AC-2 aggregator (11), AC-3 stop-hook (schema compliance auto-discovered), AC-4 PhaseQuality producer (12 incl. Tier-1-arbitrary-code + empty-commit fallback), AC-5 Compliance producer (9 incl. auto-dismiss + dismissed-stays-terminal + promoted-stays-terminal), AC-6 scaffolder (11 incl. CLI + idempotency), AC-7 promote CLI (21 incl. sanitize matrix + all 4 exit codes)."
     },
     "design_fidelity": {
       "status": "not_run",
@@ -33,17 +33,23 @@
       "note": "No UI changes."
     },
     "smoke": {
-      "status": "passed",
-      "note": "CLI smoke: scan_test_hygiene.py invoked in 3 modes (--files, --files --json, --diff with default-branch fallback). All produced expected output + exit codes."
+      "status": "not_run",
+      "note": "No browser surface in this iterate."
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_test_hygiene.py shared/tests/test_silent_skip_ci_discipline.py shared/tests/test_setup_writes_canonical.py shared/tests/test_path_helpers_template_vitest.py shared/tests/test_hook_output_schema_compliance.py -v --no-header",
+      "runner": "uv run pytest shared/tests/test_triage_mapping.py shared/tests/test_triage_schema.py shared/tests/test_triage_storage.py shared/tests/test_triage_aggregator.py shared/tests/test_triage_scaffold.py shared/tests/test_triage_promote.py shared/tests/test_phase_quality_triage_emit.py shared/tests/test_compliance_audit_triage_emit.py -v",
       "exit_code": 0,
-      "tests_run": 92,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-11-test-hygiene-helper-and-self-review-wiring/surface_verification.log",
-      "timestamp": "2026-05-11T10:00:00Z"
+      "tests_run": 132,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-11-triage-inbox-1a/surface_verification.json",
+      "timestamp": "2026-05-11T14:50:00.000Z"
     },
-    "degraded": []
+    "degraded": [
+      {
+        "kind": "environmental",
+        "what": "OneDrive uv hardlink-failure on worktree venv creation",
+        "note": "Fresh worktree's `uv sync` failed on certifi hardlink (os error 396). Permanent fix per conventions.md learning: UV_LINK_MODE=copy. Captured as recovery pattern: `rm .venv && UV_LINK_MODE=copy uv sync --directory <worktree>`. No impact on test correctness; reproducible on every fresh worktree on OneDrive-synced Windows hosts."
+      }
+    ]
   }
 }

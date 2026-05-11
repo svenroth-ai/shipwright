@@ -210,7 +210,7 @@ cross-process contention are covered (see
 ## References
 
 - Spec: `.shipwright/planning/iterate/2026-05-11-triage-inbox-1a.md`
-- ADR: see decision log for ADR-046 (Triage Inbox Pattern, Iterate 1a)
+- ADR: see decision log for ADR-046 (Triage Inbox Pattern, Iterate 1a). The sibling ADR-045 landed first and covers the `lib/` namespace rule that motivates placing `triage.py` outside `shared/scripts/lib/`.
 - Leadwright ExternalTask extension:
   `leadwright/docs/specs/phase-1-external-task-extension.md`
 - ADR-045: cross-plugin import constraint behind the

@@ -3,7 +3,7 @@
 - **Run ID:** iterate-2026-05-11-triage-inbox-1a
 - **Type:** feature
 - **Complexity:** medium
-- **Status:** draft
+- **Status:** implemented
 
 ## Goal
 

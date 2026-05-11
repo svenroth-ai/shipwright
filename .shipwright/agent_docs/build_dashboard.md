@@ -1,5 +1,5 @@
 # Project Activity Dashboard
-> Updated: 2026-05-11 11:33 UTC | Session: 9f3ead4d-f083-49fe-b5d6-d943bed48c4e
+> Updated: 2026-05-11 12:29 UTC | Session: 5742b30d-9d02-415f-b333-9f4367bc0754
 
 ## Recent Changes (24 iterations)
 
@@ -31,7 +31,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-11 | Unit: 279/284 | E2E: 92/92 | Smoke: passed | (iterate)
+Last run: 2026-05-11 | Unit: 1642/1649 | E2E: 132/132 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

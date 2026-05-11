@@ -1,27 +1,34 @@
 # Commit Change Log
 
-Generated: 2026-05-11T08:55:59Z
-Total commits: 615
+Generated: 2026-05-11T12:29:55Z
+Total commits: 628
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 209
-    "fix" : 164
-    "chore" : 97
-    "docs" : 92
-    "refactor" : 32
+    "feat" : 216
+    "fix" : 166
+    "chore" : 98
+    "docs" : 94
+    "refactor" : 33
     "test" : 14
     "other" : 7
 ```
 
 ## Changes by Type
 
-### Features (feat) — 209 commits
+### Features (feat) — 216 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-11 | triage | promote CLI for non-webui repos (AC-7) | 2f1724b75a56 |
+| 2026-05-11 | triage | adopt-time scaffolder + Step E.16 in adopt skill (AC-6) | 096bf1a6f899 |
+| 2026-05-11 | triage | emit Compliance audit findings to triage + auto-dismiss (AC-5) | 3f1b7296ff57 |
+| 2026-05-11 | triage | emit Phase-Quality Tier-1 FAILs to triage inbox (AC-4) | b801270962e1 |
+| 2026-05-11 | triage | wire aggregate_triage Stop-hook (AC-3) | 15eda613b749 |
+| 2026-05-11 | triage | add aggregator + markdown renderer (AC-2) | ab0934d51c56 |
+| 2026-05-11 | triage | add storage API + mapping helpers + drift tests (AC-1, AC-8) | f5e7a2538d9a |
 | 2026-05-11 | adopt | scaffold profile-aware CI + Claude-Review workflows with cross-platform matrix default | 17feb1c05af4 |
 | 2026-05-06 | iterate | add F0.5 surface_verification audit to iterate_checks | 17c8f9f945db |
 | 2026-05-06 | iterate | add surface_verification.py F0.5 orchestrator | fb70a460e262 |
@@ -232,10 +239,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 164 commits
+### Fixes (fix) — 166 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-11 | triage | path-canon allowlist + use _AGENT_DOCS_DIRNAME constant | a74ae59818ac |
+| 2026-05-11 | triage | address external code review HIGH + MED findings | dabba796b3e5 |
 | 2026-05-10 | hooks | Stop and SubagentStop hooks emit schema-compliant stdout | 9c8f9aa16770 |
 | 2026-05-09 | adopt | scanner requires comment-context; remove dead save_session_config | f8d44da5da28 |
 | 2026-05-07 | plugins | convert PreToolUse/PostToolUse matcher to string form for Claude Code 2.1.132+ schema | 99fc87bdb26f |
@@ -401,10 +410,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 97 commits
+### Chores (chore) — 98 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-11 | security | bump codeql-action to v4 + continue-on-error on private repos | 33097b807982 |
 | 2026-05-09 | iterate | unstage stray skill-compliance/* files from finalize commit | d228b9bbaff1 |
 | 2026-05-09 | iterate | finalize iterate-2026-05-09-known-issues-self-detection-and-cleanup | 9f21af37c21f |
 | 2026-05-07 | changelog | aggregate 0.17.1 — hooks.json schema migration (ADR-039 + ADR-040) | 8249a742392a |
@@ -503,10 +513,12 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 92 commits
+### Documentation (docs) — 94 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-11 | triage | 1-pager + guide.md ch4.11 + hooks-and-pipeline registration (AC-9) | 2eea918390eb |
+| 2026-05-11 | triage | plan iterate 1a (spec + mini-plan + external review) | da8c5d67cfa5 |
 | 2026-05-07 | guide | modernize Chapter 2 install section — marketplace CLI first, fresh-machine baseline per platform, restart-Claude-Code hint | c1ad0d2005c3 |
 | 2026-05-06 | — | sync hooks-and-pipeline + guide + browser-fixer with F0.5 | e2e4a7517887 |
 | 2026-05-06 | iterate | add F0.5 AC-shape rules to iteration-planning + conventions | 79e6de10f347 |
@@ -600,10 +612,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 32 commits
+### Refactoring (refactor) — 33 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-11 | tests | hard-fail silent skips in CI + add Step 6 governance rules | 20c2e48e7bea |
 | 2026-05-02 | repo | post-adoption framework cleanup (Sub-1A through 1D) | 3db485b24305 |
 | 2026-04-29 | toolcall-counter | rename .shipwright_toolcall_count to .shipwright/toolcall_count | 1b2d6f0ab9b7 |
 | 2026-04-29 | shared | add compliance to drift_parsers HIDDEN_DIR_DEFAULTS marker | 57c11809fd67 |
@@ -672,7 +685,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 615 |
+| Total commits | 628 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 615 |
+| Human-authored commits | 628 |
 
