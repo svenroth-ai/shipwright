@@ -53,10 +53,7 @@ from typing import Any
 
 import pytest
 
-
-def _ci_truthy() -> bool:
-    """Canonical CI-truthy check — see test_silent_skip_ci_discipline.py."""
-    return os.environ.get("CI", "").lower() in ("true", "1")
+from test_hygiene import is_ci
 
 
 # ---------------------------------------------------------------------------
@@ -353,6 +350,11 @@ def _validate_stdout(event_name: str, stdout: str) -> list[str]:
 # Tests
 # ---------------------------------------------------------------------------
 
+# Rationale: gates the entire parametrized run when the discovery pass at
+# module load found zero hook commands in plugins/*/hooks.json. That's a
+# startup-condition gate, not a CI-vs-local-binary issue; converting to a
+# body-level CI guard would require restructuring the parametrize itself.
+# test-hygiene: allow-silent-skip — see rationale above.
 @pytest.mark.skipif(
     not _HOOK_COMMANDS,
     reason="no hook commands discovered — check plugins/*/hooks/hooks.json",
@@ -376,7 +378,7 @@ def test_hook_stdout_matches_event_schema(triple: tuple[str, str, str], tmp_path
                 "Install via astral-sh/setup-uv@v3 in CI; locally see "
                 "https://docs.astral.sh/uv/getting-started/installation/."
             )
-            if _ci_truthy():
+            if is_ci():
                 pytest.fail(_msg, pytrace=False)
             pytest.skip(_msg)
 

@@ -1,0 +1,1 @@
+Four test files (test_setup_writes_canonical.py, test_path_helpers_template_vitest.py, test_hook_output_schema_compliance.py, test_oss_backend_smoke.py) drop their inline _ci_truthy/_import_or_fail_in_ci/_skip_or_fail_on_missing_binary helpers and import from the shared test_hygiene module instead. DR-1 flipped to enforce centralization (ADR-045)
