@@ -379,3 +379,122 @@ def test_module_constants_present() -> None:
     assert hasattr(triage, "SCHEMA_VERSION")
     assert hasattr(triage, "TRIAGE_FILE")
     assert triage.TRIAGE_FILE == "triage.jsonl"
+
+
+# --- Idempotent append (producer dedup) ---------------------------------
+
+def test_idempotent_append_skips_recent_duplicate(project: Path) -> None:
+    """Same source + dedup_key + commit within window → 2nd call returns None."""
+    from triage import append_triage_item_idempotent
+
+    first = append_triage_item_idempotent(
+        project,
+        source="phaseQuality",
+        severity="high",
+        kind="bug",
+        title="C1 phase event missing",
+        detail="phase=iterate",
+        dedup_key="C1",
+        commit="abc123",
+    )
+    second = append_triage_item_idempotent(
+        project,
+        source="phaseQuality",
+        severity="high",
+        kind="bug",
+        title="C1 phase event missing",
+        detail="phase=iterate",
+        dedup_key="C1",
+        commit="abc123",
+    )
+    assert first is not None
+    assert second is None  # deduplicated
+
+    # Resolved view still has only one item
+    items = read_all_items(project)
+    assert len(items) == 1
+    assert items[0]["dedupKey"] == "C1"
+
+
+def test_idempotent_append_different_commit_creates_new(project: Path) -> None:
+    """Different commit → not deduplicated (issue may recur per commit)."""
+    from triage import append_triage_item_idempotent
+
+    a = append_triage_item_idempotent(
+        project, source="phaseQuality", severity="high", kind="bug",
+        title="C1", detail="d", dedup_key="C1", commit="abc",
+    )
+    b = append_triage_item_idempotent(
+        project, source="phaseQuality", severity="high", kind="bug",
+        title="C1", detail="d", dedup_key="C1", commit="def",
+    )
+    assert a is not None
+    assert b is not None
+    assert a != b
+
+
+def test_idempotent_append_different_source_creates_new(project: Path) -> None:
+    """Same dedup_key but different source → two distinct items."""
+    from triage import append_triage_item_idempotent
+
+    a = append_triage_item_idempotent(
+        project, source="phaseQuality", severity="high", kind="bug",
+        title="t", detail="d", dedup_key="X", commit="abc",
+    )
+    b = append_triage_item_idempotent(
+        project, source="compliance", severity="high", kind="compliance",
+        title="t", detail="d", dedup_key="X", commit="abc",
+    )
+    assert a is not None
+    assert b is not None
+    assert a != b
+
+
+def test_idempotent_skips_only_when_status_triage(project: Path) -> None:
+    """If a duplicate exists but status is dismissed/promoted, append goes through."""
+    from triage import append_triage_item_idempotent
+
+    first = append_triage_item_idempotent(
+        project, source="phaseQuality", severity="high", kind="bug",
+        title="t", detail="d", dedup_key="C1", commit="abc",
+    )
+    assert first is not None
+    mark_status(project, first, new_status="dismissed", by="user",
+                reason="not-actionable")
+
+    # The dismissed-item should NOT count as a duplicate that suppresses
+    # future reports.
+    second = append_triage_item_idempotent(
+        project, source="phaseQuality", severity="high", kind="bug",
+        title="t", detail="d", dedup_key="C1", commit="abc",
+    )
+    assert second is not None
+    assert second != first
+
+
+def test_idempotent_requires_dedup_key(project: Path) -> None:
+    from triage import append_triage_item_idempotent
+
+    with pytest.raises(ValueError, match="dedup_key"):
+        append_triage_item_idempotent(
+            project, source="phaseQuality", severity="high", kind="bug",
+            title="t", detail="d", dedup_key="", commit="abc",
+        )
+
+
+def test_idempotent_match_commit_false_dedups_across_commits(project: Path) -> None:
+    """match_commit=False → dedup on (source, key) only (compliance-style)."""
+    from triage import append_triage_item_idempotent
+
+    a = append_triage_item_idempotent(
+        project, source="compliance", severity="medium", kind="compliance",
+        title="t", detail="d", dedup_key="RLS-MISSING-X", commit="abc",
+        match_commit=False,
+    )
+    b = append_triage_item_idempotent(
+        project, source="compliance", severity="medium", kind="compliance",
+        title="t", detail="d", dedup_key="RLS-MISSING-X", commit="def",
+        match_commit=False,
+    )
+    assert a is not None
+    assert b is None  # different commit but match_commit=False → dedup

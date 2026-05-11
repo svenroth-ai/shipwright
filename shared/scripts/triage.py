@@ -248,6 +248,7 @@ def append_triage_item(
     evidence_path: str | None = None,
     run_id: str | None = None,
     commit: str | None = None,
+    dedup_key: str | None = None,
 ) -> str:
     """Append a new triage item. Returns the new `trg-<8hex>` id.
 
@@ -259,6 +260,13 @@ def append_triage_item(
     ValueError on unknown values. `source` is free-form (open vocab —
     new producers don't need code changes here), but
     `suggest_domain_from_source` only special-cases `compliance`.
+
+    `dedup_key` is an optional producer-supplied stable identifier
+    (e.g. Phase-Quality check id `C1`, compliance finding code
+    `RLS-MISSING-X`). It does NOT enforce uniqueness on the wire — see
+    `append_triage_item_idempotent` for the deduplicated path. The
+    field is preserved so the aggregator and downstream tooling can
+    correlate items across runs.
     """
     if severity not in SEVERITIES:
         raise ValueError(
@@ -284,6 +292,7 @@ def append_triage_item(
         "evidencePath": evidence_path,
         "runId": run_id,
         "commit": commit,
+        "dedupKey": dedup_key,
         "status": "triage",
         "suggestedPriority": suggest_priority_from_severity(severity),
         "suggestedDomain": suggest_domain_from_source(source),
@@ -299,6 +308,76 @@ def append_triage_item(
             os.fsync(fp.fileno())
 
     return item_id
+
+
+def append_triage_item_idempotent(
+    project_root: Path | str,
+    *,
+    source: str,
+    severity: str,
+    kind: str,
+    title: str,
+    detail: str,
+    dedup_key: str,
+    evidence_path: str | None = None,
+    run_id: str | None = None,
+    commit: str | None = None,
+    match_commit: bool = True,
+    window_seconds: int = 24 * 3600,
+) -> str | None:
+    """Append a triage item only if no matching item was added recently.
+
+    Match = same `source` + `dedup_key` + (optionally) `commit` AND
+    appended within `window_seconds` of now AND status is `triage`
+    (items already promoted / dismissed / snoozed are not re-evaluated).
+
+    Returns the new item id, or `None` if a recent duplicate was
+    found and the append was skipped.
+
+    Producers (Phase-Quality, Compliance) call this instead of
+    `append_triage_item` when they re-run on every Stop hook and don't
+    want to flood the inbox with the same finding across sessions.
+    """
+    if not dedup_key:
+        raise ValueError("dedup_key is required for idempotent append")
+
+    now_dt = datetime.now(timezone.utc)
+    cutoff = now_dt.timestamp() - window_seconds
+
+    for existing in read_all_items(project_root):
+        if existing.get("status") != "triage":
+            continue
+        if existing.get("source") != source:
+            continue
+        if existing.get("dedupKey") != dedup_key:
+            continue
+        if match_commit and existing.get("commit") != commit:
+            continue
+        # Compare original-append timestamp (not the latest event ts —
+        # see spec MED-9).
+        original_ts = existing.get("originalTs") or existing.get("ts") or ""
+        try:
+            existing_dt = datetime.fromisoformat(
+                original_ts.replace("Z", "+00:00")
+            )
+            if existing_dt.timestamp() >= cutoff:
+                return None  # recent duplicate — skip
+        except ValueError:
+            # malformed ts → conservative: treat as recent, skip
+            return None
+
+    return append_triage_item(
+        project_root,
+        source=source,
+        severity=severity,
+        kind=kind,
+        title=title,
+        detail=detail,
+        evidence_path=evidence_path,
+        run_id=run_id,
+        commit=commit,
+        dedup_key=dedup_key,
+    )
 
 
 # ---------------------------------------------------------------------------

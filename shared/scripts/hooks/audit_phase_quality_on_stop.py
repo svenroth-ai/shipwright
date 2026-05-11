@@ -128,6 +128,14 @@ def main() -> int:
         pq.regenerate_all_aggregates(project_root)
         _gc_best_effort(project_root)
 
+        # AC-4 of iterate-2026-05-11-triage-inbox-1a: mirror Tier-1 FAILs
+        # into .shipwright/triage.jsonl with (phase, code, commit) dedup
+        # so the same finding doesn't flood the inbox across sessions.
+        # Best-effort — never blocks the Stop chain.
+        _emit_tier1_fails_to_triage(
+            project_root, phase, run_id, findings, finding_path,
+        )
+
         totals = _roll_up(findings)
         elapsed_ms = int((time.monotonic() - started) * 1000)
 
@@ -179,6 +187,102 @@ def _gc_best_effort(project_root: Path) -> None:
         pq.gc_old_findings(project_root)
     except Exception:  # noqa: BLE001
         pass
+
+
+def _git_head_sha(project_root: Path) -> str | None:
+    """Return the current HEAD sha; works on dirty trees, returns None on
+    any failure (no-git, no-repo, timeout)."""
+    import subprocess
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=str(project_root),
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if out.returncode == 0:
+            sha = out.stdout.strip()
+            return sha or None
+    except Exception:  # noqa: BLE001
+        return None
+    return None
+
+
+def _emit_tier1_fails_to_triage(
+    project_root: Path,
+    phase: str,
+    run_id: str,
+    findings: dict[str, list[dict]],
+    finding_path: Path | None,
+) -> int:
+    """Append Tier-1 FAIL findings to .shipwright/triage.jsonl with dedup.
+
+    Best-effort: errors are logged to stderr and swallowed. Returns the
+    number of NEW triage items appended (dedup-skipped items not counted).
+
+    Tier-1 FAIL is defined as ``status == "FAIL" AND tier != 2``. Tier-2
+    findings are heuristic and intentionally excluded from triage.
+
+    Dedup key = ``f"{phase}:{code}"``. Window: 24h. ``match_commit=True``
+    means the same finding on a new commit re-fires (different commit
+    is a different "occurrence" — operator can decide whether to
+    promote, dismiss, or batch-snooze).
+    """
+    try:
+        from triage import append_triage_item_idempotent  # noqa: PLC0415
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(
+            f"[phase-quality] triage import failed: "
+            f"{type(exc).__name__}: {exc}\n"
+        )
+        return 0
+
+    commit = _git_head_sha(project_root)
+    evidence_rel: str | None = None
+    if finding_path is not None:
+        try:
+            evidence_rel = str(finding_path.relative_to(project_root))
+        except ValueError:
+            evidence_rel = str(finding_path)
+
+    appended = 0
+    for category, items in findings.items():
+        for f in items or []:
+            if f.get("status") != pq.STATUS_FAIL:
+                continue
+            if f.get("tier") == 2:
+                continue  # Tier-2 = heuristic, not actionable
+            code = str(f.get("id") or f.get("name") or category)
+            name = str(f.get("name") or code)
+            title = f"{phase} {code}: {name}"[:160]
+            detail_parts: list[str] = []
+            if f.get("evidence"):
+                detail_parts.append(str(f["evidence"]))
+            if f.get("remediation"):
+                detail_parts.append(f"remediation: {f['remediation']}")
+            detail = " ".join(detail_parts) or f"{phase} {code} failed"
+            try:
+                new_id = append_triage_item_idempotent(
+                    project_root,
+                    source="phaseQuality",
+                    severity="high",  # Tier-1 FAIL maps to high → P1
+                    kind="bug",
+                    title=title,
+                    detail=detail,
+                    dedup_key=f"{phase}:{code}",
+                    evidence_path=evidence_rel,
+                    run_id=run_id,
+                    commit=commit,
+                )
+                if new_id is not None:
+                    appended += 1
+            except Exception as exc:  # noqa: BLE001
+                sys.stderr.write(
+                    f"[phase-quality] triage emit failed for {code}: "
+                    f"{type(exc).__name__}: {exc}\n"
+                )
+    return appended
 
 
 if __name__ == "__main__":

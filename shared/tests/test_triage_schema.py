@@ -45,7 +45,7 @@ REQUIRED_APPEND_KEYS = {
     "suggestedDomain",
 }
 
-OPTIONAL_APPEND_KEYS = {"evidencePath", "runId", "commit"}
+OPTIONAL_APPEND_KEYS = {"evidencePath", "runId", "commit", "dedupKey"}
 
 REQUIRED_STATUS_KEYS = {"event", "id", "ts", "newStatus", "by"}
 OPTIONAL_STATUS_KEYS = {"reason", "promotedTaskId"}
