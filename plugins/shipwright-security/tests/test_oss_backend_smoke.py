@@ -30,6 +30,27 @@ from pathlib import Path
 
 import pytest
 
+
+def _ci_truthy() -> bool:
+    """Canonical CI-truthy check — see test_silent_skip_ci_discipline.py."""
+    return os.environ.get("CI", "").lower() in ("true", "1")
+
+
+def _skip_or_fail_on_missing_binary(binary: str, install_hint: str) -> None:
+    """AC-3 CI-discipline: local-skip vs CI-fail for missing scanner binaries.
+
+    Each OSS smoke test calls this at the top of its body — replacing the
+    pre-iterate ``@pytest.mark.skipif`` decorator. The conversion is safe
+    because the smoke tests take only ``synthetic_repo`` + ``monkeypatch``
+    fixtures, neither of which invokes the missing binary.
+    """
+    if shutil.which(binary) is not None:
+        return  # binary available — proceed with test
+    msg = f"{binary} not on PATH. {install_hint}"
+    if _ci_truthy():
+        pytest.fail(msg, pytrace=False)
+    pytest.skip(msg)
+
 # Ensure scripts/lib is on path
 PLUGIN_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
@@ -132,13 +153,17 @@ def _git_init_and_commit(repo: Path) -> None:
 # --- Tests ----------------------------------------------------------------
 
 @pytest.mark.smoke
-@pytest.mark.skipif(not shutil.which("semgrep"), reason="semgrep not on PATH")
 def test_semgrep_scans_shipwright_dir_after_refactor(
     synthetic_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Semgrep wrapper must walk into ``.shipwright/agent_docs/`` and
     must NOT walk into ``node_modules/`` (Semgrep's own .semgrepignore
     handles that)."""
+    _skip_or_fail_on_missing_binary(
+        "semgrep",
+        "Install via `pip install semgrep` locally; in CI install via "
+        "the security workflow's setup step (see security.yml.template).",
+    )
     monkeypatch.delenv("SHIPWRIGHT_SCAN_EXCLUDES", raising=False)
     findings = _run_semgrep(str(synthetic_repo))
     paths = [_finding_path(f) for f in findings or []]
@@ -168,12 +193,17 @@ def test_semgrep_scans_shipwright_dir_after_refactor(
 
 
 @pytest.mark.smoke
-@pytest.mark.skipif(not shutil.which("gitleaks"), reason="gitleaks not on PATH")
 def test_gitleaks_detect_scans_committed_shipwright_dir(
     synthetic_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Gitleaks ``detect`` (history mode) must find committed secrets in
     ``.shipwright/agent_docs/`` and must NOT report ``node_modules/``."""
+    _skip_or_fail_on_missing_binary(
+        "gitleaks",
+        "Install via `winget install Gitleaks.Gitleaks` (Windows), "
+        "`brew install gitleaks` (macOS), or the GitHub release binary "
+        "on Linux; in CI use gitleaks/gitleaks-action@v2.",
+    )
     monkeypatch.delenv("SHIPWRIGHT_SCAN_EXCLUDES", raising=False)
     findings = _run_gitleaks(str(synthetic_repo))
     paths = [_finding_path(f) for f in findings or []]
@@ -201,7 +231,6 @@ def test_gitleaks_detect_scans_committed_shipwright_dir(
 
 
 @pytest.mark.smoke
-@pytest.mark.skipif(not shutil.which("trivy"), reason="trivy not on PATH")
 def test_trivy_scans_shipwright_dir_after_refactor(
     synthetic_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -211,6 +240,12 @@ def test_trivy_scans_shipwright_dir_after_refactor(
     invoked command (via subprocess capture) rather than counting
     findings — Trivy SCA on a tree with no manifests legitimately
     returns zero findings."""
+    _skip_or_fail_on_missing_binary(
+        "trivy",
+        "Install via `winget install AquaSecurity.Trivy` (Windows), "
+        "`brew install trivy` (macOS), or the GitHub release binary on "
+        "Linux; in CI use aquasecurity/trivy-action@master.",
+    )
     monkeypatch.delenv("SHIPWRIGHT_SCAN_EXCLUDES", raising=False)
     cmd_seen: list[str] = []
 

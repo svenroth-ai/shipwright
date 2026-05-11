@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-05-10T22:26:46Z
-Total commits: 614
+Generated: 2026-05-11T08:55:59Z
+Total commits: 615
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 208
+    "feat" : 209
     "fix" : 164
     "chore" : 97
     "docs" : 92
@@ -18,10 +18,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 208 commits
+### Features (feat) — 209 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-11 | adopt | scaffold profile-aware CI + Claude-Review workflows with cross-platform matrix default | 17feb1c05af4 |
 | 2026-05-06 | iterate | add F0.5 surface_verification audit to iterate_checks | 17c8f9f945db |
 | 2026-05-06 | iterate | add surface_verification.py F0.5 orchestrator | fb70a460e262 |
 | 2026-05-04 | iterate | runner contract mandates reviews (ADR-029) | f6a14fc7fcc7 |
@@ -671,7 +672,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 614 |
+| Total commits | 615 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 614 |
+| Human-authored commits | 615 |
 

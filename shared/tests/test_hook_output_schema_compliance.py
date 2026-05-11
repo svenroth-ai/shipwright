@@ -54,6 +54,11 @@ from typing import Any
 import pytest
 
 
+def _ci_truthy() -> bool:
+    """Canonical CI-truthy check — see test_silent_skip_ci_discipline.py."""
+    return os.environ.get("CI", "").lower() in ("true", "1")
+
+
 # ---------------------------------------------------------------------------
 # Schema
 # ---------------------------------------------------------------------------
@@ -362,10 +367,18 @@ def test_hook_stdout_matches_event_schema(triple: tuple[str, str, str], tmp_path
     # Treat 'uv run --no-project' the same as 'uv run' — both must resolve.
     # The first arg must exist as an executable on PATH for the test to run.
     if cmd_argv[0] == "uv":
-        # 'uv' must be on PATH for the test to be meaningful
+        # 'uv' must be on PATH for the test to be meaningful.
+        # AC-3: local-skip / CI-fail per the canonical convention.
         import shutil as _shutil
         if _shutil.which("uv") is None:
-            pytest.skip("uv not on PATH; cannot exercise hook commands")
+            _msg = (
+                "uv not on PATH; cannot exercise hook commands. "
+                "Install via astral-sh/setup-uv@v3 in CI; locally see "
+                "https://docs.astral.sh/uv/getting-started/installation/."
+            )
+            if _ci_truthy():
+                pytest.fail(_msg, pytrace=False)
+            pytest.skip(_msg)
 
     _seed_shipwright_cwd(tmp_path)
     stdin = _stdin_for_event(event_name, tmp_path)
