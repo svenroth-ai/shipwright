@@ -1052,6 +1052,20 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 **Auto-background mode:** Unchanged. Still fires after every `/shipwright-run` phase. If the compliance plugin is missing, the orchestrator now **loud-fails** — stderr JSON warning + `compliance_update_failed` event — so a broken install is visible rather than silently skipped (plan v7 Step 1).
 
 **Standalone usage:** Yes. You can run `/shipwright-compliance` at any point during or after the pipeline. The detective audit works against whatever data is present — missing inputs surface as skipped findings with a concrete reason rather than fabricating passes.
+
+### 4.11 Triage Inbox (cross-cutting intake)
+
+Pre-backlog buffer for findings emitted by hooks, scans, and audits. Triage and the backlog (`ExternalTask` in [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui)) are separate stores; **promote** is the explicit bridge between them.
+
+- **Store:** `.shipwright/triage.jsonl` (per project, gitignored, append-only with history events).
+- **Producers (Iterate 1a):** `audit_phase_quality_on_stop` (Tier-1 FAILs with 24h dedup) and `audit_detector.mirror_findings_to_triage` (compliance findings + auto-dismiss when resolved). More producers (security / CI / performance / F0.5 / drift) land in Iterate 2.
+- **Consumer:** the Stop hook `aggregate_triage_on_stop` regenerates `.shipwright/agent_docs/triage_inbox.md` after every iterate finalize.
+- **Promote (CLI):** `uv run shared/scripts/tools/triage_promote.py --id trg-XXXXXXXX --task-ref "EXT:linear-ENG-7"`. The WebUI Triage tab + one-click promote land in Iterate 3.
+
+Mapping is mechanical: `critical→P0 / high→P1 / medium→P2 / low→P3 / info→P3` for severity; `compliance→compliance / else→engineering` for source domain. Both values are recorded on the triage record as `suggestedPriority` + `suggestedDomain` so the promote step doesn't have to recompute them — the mapping matches the `leadwright` ExternalTask extension (see [`leadwright/docs/specs/phase-1-external-task-extension.md`](https://github.com/svenroth-ai/leadwright)).
+
+See [docs/triage-inbox.md](triage-inbox.md) for the full pattern (storage shape, producer rules, promote flow, operating caveats).
+
 ## 5. Stack Profiles
 
 A **stack profile** is a JSON file that defines everything about your technology stack in one place: runtime versions, frontend and backend libraries, UI component library, testing frameworks, deployment target, folder structure, CI pipeline, and architecture rules. Profiles are stored in `~/shipwright/shared/profiles/`.
