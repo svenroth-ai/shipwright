@@ -1,1 +1,0 @@
-known_issues scanner now requires comment context (`#`, `//`, `/*`, `<!--`, JSDoc `*`, or markdown bullet `- `) — bare marker strings in source code (regex patterns, tuple elements, docstrings, inline math like `a * TODO`) are no longer false-positives. .shipwright/agent_docs/known_issues.md regenerated (28 → 0 markers). ADR-041.

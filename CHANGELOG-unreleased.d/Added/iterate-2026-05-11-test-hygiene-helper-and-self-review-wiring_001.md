@@ -1,1 +1,0 @@
-shared/scripts/test_hygiene.py + shared/scripts/tools/scan_test_hygiene.py — centralized CI-discipline helpers (is_ci, import_or_fail_in_ci, skip_or_fail_on_missing_binary) + AST/tokenize-based static probe for silent-skip detection. Self-Review § 8 wires this into the iterate skill (mandatory at medium+) (ADR-045)
