@@ -2,44 +2,30 @@
 canon_generated: true
 run_id: "iterate-2026-05-14-triage-producers-2"
 phase: "iterate"
-reason: "iterate: triage producers 2 (security + performance + F0.5 + drift)"
-timestamp: "2026-05-14T21:10:26.834898+00:00"
+reason: "iterate: triage producers 2 — post-F7 dashboard refresh"
+timestamp: "2026-05-14T21:13:36.922994+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-14 21:10:26 UTC
+> Auto-generated 2026-05-14 21:13:36 UTC
 
 ## Session Info
 
 - **Session ID**: 6d38543a-e9c7-4b15-adf1-0b1a92c768ff
-- **Timestamp**: 2026-05-14 21:10:26 UTC
-- **Reason**: iterate: triage producers 2 (security + performance + F0.5 + drift)
+- **Timestamp**: 2026-05-14 21:13:36 UTC
+- **Reason**: iterate: triage producers 2 — post-F7 dashboard refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-11-triage-inbox-1a
-- **Date**: 2026-05-11T12:30:13.231230Z
+- **Run ID**: iterate-2026-05-14-triage-producers-2
+- **Date**: 2026-05-14T21:10:29.206417Z
 - **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/triage-inbox-1a
-- **ADR**: ADR-046
-- **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-11-triage-inbox-1a.md
-
-## Current Iterate Progress
-
 - **Branch**: iterate/triage-producers-2
-- **Run ID**: iterate-2026-05-14-triage-producers-2
+- **ADR**: ADR-047
+- **Tests passed**: True
 - **Spec**: .shipwright/planning/iterate/2026-05-14-triage-producers-2.md
-- **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-05-14T20:55:44))
-
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
-- Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
 
@@ -52,8 +38,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-producers-2
-- **Last Commit**: f9ae340 Merge pull request #28 from svenroth-ai/chore/changelog-0.18.0
+- **Branch**: main
+- **Last Commit**: 2f55b21 chore(triage): append F7 work_completed event for iterate-2 commit
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +55,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-84dbdf5e | work_completed | iterate (Triage Inbox Iterate 2: 4 additional producers (security + performance + F0.5 + drift) wired into append_triage_item_idempotent. CI producer DEFERRED. ADR-047.) | 2026-05-14 |
 | evt-32f2f1f4 | work_completed | iterate (Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI (rebased onto post-test-hygiene main; ADR renumbered 045→046)) | 2026-05-11 |
 | evt-3f488ddc | work_completed | iterate (Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI) | 2026-05-11 |
 | evt-c8a57331 | work_completed | iterate (known_issues scanner requires comment context; remove dead save_session_config — 16/16 green) | 2026-05-09 |
 | evt-f66286bf | work_completed | iterate (—) | 2026-05-07 |
-| evt-623a29ad | work_completed | iterate (—) | 2026-05-07 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 26
-- **Last iterate**: feature — Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI (rebased onto post-test-hygiene main; ADR renumbered 045→046) (2026-05-11)
+- **Total work events**: 27
+- **Last iterate**: feature — Triage Inbox Iterate 2: 4 additional producers (security + performance + F0.5 + drift) wired into append_triage_item_idempotent. CI producer DEFERRED. ADR-047. (2026-05-14)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

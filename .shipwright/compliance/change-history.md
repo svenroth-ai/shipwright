@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-05-14T21:10:26Z
-Total commits: 633
+Generated: 2026-05-14T21:13:36Z
+Total commits: 636
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 216
+    "feat" : 217
     "fix" : 167
-    "chore" : 101
+    "chore" : 103
     "docs" : 94
     "refactor" : 34
     "test" : 14
@@ -18,10 +18,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 216 commits
+### Features (feat) — 217 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-14 | triage | producers iterate 2 — security + performance + F0.5 + drift wiring | aab9bd7dafb7 |
 | 2026-05-11 | triage | promote CLI for non-webui repos (AC-7) | 7f131f9d940d |
 | 2026-05-11 | triage | adopt-time scaffolder + Step E.16 in adopt skill (AC-6) | 719790d3e777 |
 | 2026-05-11 | triage | emit Compliance audit findings to triage + auto-dismiss (AC-5) | d5b26710dfd9 |
@@ -411,10 +412,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 101 commits
+### Chores (chore) — 103 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-14 | triage | append F7 work_completed event for iterate-2 commit | 2f55b21975f6 |
+| 2026-05-14 | triage | finalize ADR-047 commit SHA after F6 commit | f7b5d84da9b2 |
 | 2026-05-11 | release | v0.18.0 | cbfce82d5e64 |
 | 2026-05-11 | triage | append F7 work_completed event for rebased commit | 4eca545906f1 |
 | 2026-05-11 | triage | finalize iterate 1a (ADR-045, architecture, compliance, handoff) | f6389086f00d |
@@ -690,7 +693,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 633 |
+| Total commits | 636 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 633 |
+| Human-authored commits | 636 |
 

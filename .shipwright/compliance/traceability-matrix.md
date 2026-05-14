@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-14T21:10:26Z
+Generated: 2026-05-14T21:13:36Z
 
 ## Requirements Coverage
 
@@ -50,6 +50,7 @@ Generated: 2026-05-14T21:10:26Z
 | known_issues scanner requires comment context; remove dead save_session_config — 16/16 green | iterate | bug |  | 16/16 | f8d44da | 2026-05-09 |
 | Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI | iterate | feature |  | 1642/1649 | 6ba7df1 | 2026-05-11 |
 | Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI (rebased onto post-test-hygiene main; ADR renumbered 045→046) | iterate | feature |  | 1642/1649 | f638908 | 2026-05-11 |
+| Triage Inbox Iterate 2: 4 additional producers (security + performance + F0.5 + drift) wired into append_triage_item_idempotent. CI producer DEFERRED. ADR-047. | iterate | feature |  | 40/40 | aab9bd7 | 2026-05-14 |
 
 ## Coverage Summary
 
@@ -57,7 +58,7 @@ Generated: 2026-05-14T21:10:26Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 26 |
+| Iterate changes | 27 |
 | Requirements total | 13 |
 | Requirements verified | 13/13 |
 | Must-have verified | 10/10 |

@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-14 21:10 UTC | Session: 6d38543a-e9c7-4b15-adf1-0b1a92c768ff
+> Updated: 2026-05-14 21:13 UTC | Session: 6d38543a-e9c7-4b15-adf1-0b1a92c768ff
 
-## Recent Changes (26 iterations)
+## Recent Changes (27 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | Triage Inbox Iterate 2: 4 additional producers (security + performance + F0.5 + drift) wired into append_triage_item_idempotent. CI producer DEFERRED. ADR-047. | 40/40 | aab9bd7 |  | 2026-05-14 |
 | feature | Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI (rebased onto post-test-hygiene main; ADR renumbered 045→046) | 1642/1649 | f638908 |  | 2026-05-11 |
 | feature | Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI | 1642/1649 | 6ba7df1 |  | 2026-05-11 |
 | bug | known_issues scanner requires comment context; remove dead save_session_config — 16/16 green | 16/16 | f8d44da |  | 2026-05-09 |
