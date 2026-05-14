@@ -1,12 +1,12 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-11-triage-inbox-1a",
-    "date": "2026-05-11",
+    "run_id": "iterate-2026-05-14-triage-producers-2",
+    "date": "2026-05-14",
     "unit": {
       "status": "passed",
-      "passed": 1642,
-      "total": 1649,
-      "note": "F0 full shared/tests/ suite: 1642 passed, 7 pre-existing baseline failures (5 bash-on-Windows secret-detection scripts + 1 file-size script + 1 path-canon conventions.md L42 mention). Zero NEW failures introduced by this iterate. 224 of the 1642 passing tests are new in this iterate (AC-1/AC-8/AC-2/AC-3/AC-4/AC-5/AC-6/AC-7 coverage)."
+      "passed": 1726,
+      "total": 1733,
+      "note": "F0 full shared/tests/ suite: 1726 passed, 7 pre-existing baseline failures (5 bash-on-Windows secret-detection scripts + 1 file-size script + 1 path-canon conventions.md L42 mention) — same baseline as iterate-1a. Zero NEW failures introduced. 40 of the 1726 passing tests are new in this iterate (AC-6 coverage of the 4 new producers)."
     },
     "integration": {
       "status": "not_run",
@@ -22,9 +22,9 @@
     },
     "e2e": {
       "status": "passed",
-      "passed": 132,
-      "total": 132,
-      "note": "F0.5 surface=cli ran 132 tests across the 8 triage-relevant shared/tests files. Covers AC-1 storage API (61 cases incl. concurrency, subprocess contention, idempotent helper, window-None dedup, file-bootstrap), AC-2 aggregator (11), AC-3 stop-hook (schema compliance auto-discovered), AC-4 PhaseQuality producer (12 incl. Tier-1-arbitrary-code + empty-commit fallback), AC-5 Compliance producer (9 incl. auto-dismiss + dismissed-stays-terminal + promoted-stays-terminal), AC-6 scaffolder (11 incl. CLI + idempotency), AC-7 promote CLI (21 incl. sanitize matrix + all 4 exit codes)."
+      "passed": 40,
+      "total": 40,
+      "note": "F0.5 surface=cli ran 40 tests across the 4 new producer-emit test files (test_security_triage_emit, test_performance_triage_emit, test_f0_5_triage_emit, test_drift_triage_emit). Each test calls the emit helper with synthetic findings + asserts on read_all_items contents, mirroring iterate-1a's producer test pattern."
     },
     "design_fidelity": {
       "status": "not_run",
@@ -38,18 +38,15 @@
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_triage_mapping.py shared/tests/test_triage_schema.py shared/tests/test_triage_storage.py shared/tests/test_triage_aggregator.py shared/tests/test_triage_scaffold.py shared/tests/test_triage_promote.py shared/tests/test_phase_quality_triage_emit.py shared/tests/test_compliance_audit_triage_emit.py -v",
+      "runner": "uv run pytest shared/tests/test_security_triage_emit.py shared/tests/test_performance_triage_emit.py shared/tests/test_f0_5_triage_emit.py shared/tests/test_drift_triage_emit.py -v",
       "exit_code": 0,
-      "tests_run": 132,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-11-triage-inbox-1a/surface_verification.json",
-      "timestamp": "2026-05-11T14:50:00.000Z"
+      "tests_run": 40,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-14-triage-producers-2/surface_verification.json",
+      "timestamp": "2026-05-14T21:08:46.291Z",
+      "attempts": 1
     },
     "degraded": [
-      {
-        "kind": "environmental",
-        "what": "OneDrive uv hardlink-failure on worktree venv creation",
-        "note": "Fresh worktree's `uv sync` failed on certifi hardlink (os error 396). Permanent fix per conventions.md learning: UV_LINK_MODE=copy. Captured as recovery pattern: `rm .venv && UV_LINK_MODE=copy uv sync --directory <worktree>`. No impact on test correctness; reproducible on every fresh worktree on OneDrive-synced Windows hosts."
-      }
+      "external-review-plan-time: skipped per project config (feedback_iterations=0). Post-build external code review remains enabled."
     ]
   }
 }

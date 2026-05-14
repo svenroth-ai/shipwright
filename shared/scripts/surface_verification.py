@@ -352,6 +352,107 @@ def verify_surface(
     return EXIT_OK, block
 
 
+# ── AC-4 of iterate-2026-05-14-triage-producers-2: triage emission ───────
+
+# Maps surface_verification.py's runtime-fail exit codes to the canonical
+# condition string the iterate-2 spec locks in. EXIT_INVALID_ARGS (1) is
+# intentionally NOT mapped — it's a config error (unknown surface name),
+# not a substantive F0.5 fail-closed. The fourth condition "missing_block"
+# is detected POST-COMMIT in `iterate_checks.py` (which audits the
+# `shipwright_test_results.json.iterate_latest.surface_verification`
+# block) — out of scope for THIS file since it IS the writer of the block.
+_EXIT_TO_CONDITION = {
+    EXIT_ZERO_TESTS: "tests_zero",
+    EXIT_RUNNER_FAILED: "exit_nonzero",
+    EXIT_NONE_WITHOUT_JUSTIFICATION: "surface_none_no_just",
+}
+
+
+def _emit_failure_to_triage(
+    project_root: Path,
+    *,
+    run_id: str,
+    surface: str,
+    condition: str,
+    detail: str,
+    evidence_path: str | None,
+    commit: str | None = None,
+) -> str | None:
+    """Append a single F0.5 fail-closed item to ``.shipwright/triage.jsonl``.
+
+    Best-effort. Returns the new triage id, ``None`` on dedup, and never
+    raises (top-level exceptions are caught + logged to stderr — F0.5
+    must STOP via its own exit_code regardless of triage state).
+
+    ``dedup_key=f"f0.5:{run_id}:{surface}:{condition}"``, ``match_commit=True``,
+    ``window_seconds=24*3600`` — daily re-flag until the operator
+    promotes/dismisses.
+    """
+    try:
+        shared_scripts = Path(__file__).resolve().parent
+        if str(shared_scripts) not in sys.path:
+            sys.path.insert(0, str(shared_scripts))
+        from triage import append_triage_item_idempotent  # noqa: PLC0415
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(
+            f"[f0.5] triage import failed: {type(exc).__name__}: {exc}\n"
+        )
+        return None
+
+    title = f"F0.5 {condition} on surface={surface}"[:160]
+    try:
+        return append_triage_item_idempotent(
+            project_root,
+            source="f0.5",
+            severity="critical",
+            kind="bug",
+            title=title,
+            detail=detail or title,
+            dedup_key=f"f0.5:{run_id}:{surface}:{condition}",
+            evidence_path=evidence_path,
+            run_id=run_id,
+            commit=commit,
+            match_commit=True,
+            window_seconds=24 * 3600,
+        )
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(
+            f"[f0.5] triage emit failed for {condition}: "
+            f"{type(exc).__name__}: {exc}\n"
+        )
+        return None
+
+
+def _detail_for_condition(
+    condition: str,
+    block: dict,
+) -> str:
+    """Compose a human-actionable detail string from the evidence block."""
+    surface = block.get("surface", "<unknown>")
+    runner = block.get("runner", "")
+    tests_run = block.get("tests_run", "?")
+    exit_code = block.get("exit_code", "?")
+    if condition == "tests_zero":
+        return (
+            f"surface={surface} runner={runner!r} executed but matched zero "
+            f"tests (tests_run=0). Likely Playwright --grep / pytest filter "
+            f"mismatch. Verify the runner command actually targets the "
+            f"newly-authored spec."
+        )
+    if condition == "exit_nonzero":
+        return (
+            f"surface={surface} runner={runner!r} exit_code={exit_code} "
+            f"after retry cap (tests_run={tests_run}). See evidence log for "
+            f"failure trail."
+        )
+    if condition == "surface_none_no_just":
+        return (
+            "surface=none was selected but no --justification was provided. "
+            "F0.5 requires a one-line rationale when no surface is exercised."
+        )
+    return f"unknown F0.5 condition {condition!r}"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="F0.5 End-to-End Verification Gate orchestrator."
@@ -400,6 +501,31 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     evidence_path = write_evidence(project_root, args.run_id, block)
+
+    # Iterate-2 AC-4: mirror fail-closed conditions into
+    # .shipwright/triage.jsonl BEFORE we return the exit code. Best-effort —
+    # emission errors never change the exit semantics (F0.5 still STOPs
+    # the iterate via its own exit_code).
+    condition = _EXIT_TO_CONDITION.get(exit_code)
+    if condition is not None:
+        try:
+            log_path = (
+                project_root / ".shipwright" / "runs" / args.run_id
+                / "surface_verification.log"
+            )
+            _emit_failure_to_triage(
+                project_root,
+                run_id=args.run_id,
+                surface=str(block.get("surface", "")),
+                condition=condition,
+                detail=_detail_for_condition(condition, block),
+                evidence_path=str(log_path) if log_path.exists() else None,
+            )
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write(
+                f"[f0.5] triage emission top-level failed: "
+                f"{type(exc).__name__}: {exc}\n"
+            )
 
     summary = {
         "exit_code": exit_code,

@@ -11,6 +11,73 @@ import sys
 from pathlib import Path
 
 
+# ---------------------------------------------------------------------------
+# AC-5 of iterate-2026-05-14-triage-producers-2: triage emission
+# ---------------------------------------------------------------------------
+
+
+def _emit_drift_to_triage(project_root, affected: list[dict]) -> int:
+    """Append artifact-drift findings to ``.shipwright/triage.jsonl``.
+
+    One triage item per affected mapping (an entry from ``detect_drift()``'s
+    ``affected`` list — a sync_config pattern whose changed_files intersect
+    with `git diff`). ``source="drift"``, severity="medium",
+    kind="maintenance", ``dedup_key=f"drift:{pattern}:artifact"``.
+    ``match_commit=False`` + ``window_seconds=None`` mirrors the
+    check_drift.py producer (same semantics, different detection site).
+
+    Best-effort: per-item errors logged to stderr, swallowed. Returns the
+    number of NEW items appended.
+    """
+    if not affected:
+        return 0
+
+    try:
+        scripts_dir = str(Path(__file__).resolve().parent)
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        from triage import append_triage_item_idempotent  # noqa: PLC0415
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(
+            f"[drift] artifact_sync triage import failed: "
+            f"{type(exc).__name__}: {exc}\n"
+        )
+        return 0
+
+    appended = 0
+    for mapping in affected:
+        try:
+            pattern = str(mapping.get("pattern") or "unknown")
+            changed = mapping.get("changed_files") or []
+            artifacts = mapping.get("artifacts") or []
+            frs = mapping.get("frs") or []
+            title = f"Drift: code in {pattern} changed without artifact update"[:160]
+            detail = (
+                f"changed_files: {', '.join(str(c) for c in changed)} | "
+                f"affected_artifacts: {', '.join(str(a) for a in artifacts) or 'n/a'} | "
+                f"affected_FRs: {', '.join(str(f) for f in frs) or 'n/a'}"
+            )
+            new_id = append_triage_item_idempotent(
+                project_root,
+                source="drift",
+                severity="medium",
+                kind="maintenance",
+                title=title,
+                detail=detail,
+                dedup_key=f"drift:{pattern}:artifact",
+                match_commit=False,
+                window_seconds=None,
+            )
+            if new_id is not None:
+                appended += 1
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write(
+                f"[drift] artifact triage emit failed: "
+                f"{type(exc).__name__}: {exc}\n"
+            )
+    return appended
+
+
 def detect_drift(project_root: str, ref: str = "HEAD~1..HEAD") -> dict:
     """Detect artifact drift by comparing git diff against sync config."""
     root = Path(project_root)
@@ -59,6 +126,17 @@ def detect_drift(project_root: str, ref: str = "HEAD~1..HEAD") -> dict:
                 "frs": mapping.get("frs", []),
                 "category": mapping.get("category", "unknown"),
             })
+
+    if affected:
+        # Iterate-2 AC-5: mirror drift findings into .shipwright/triage.jsonl.
+        # Best-effort — never changes the return shape or raises.
+        try:
+            _emit_drift_to_triage(root, affected)
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write(
+                f"[drift] artifact_sync top-level triage emission failed: "
+                f"{type(exc).__name__}: {exc}\n"
+            )
 
     return {
         "drift_detected": len(affected) > 0,

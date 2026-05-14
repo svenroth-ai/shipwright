@@ -60,6 +60,8 @@ KNOWN_SOURCES = (
     "ci",
     "iterate",
     "manual",
+    "f0.5",
+    "drift",
 )
 
 SEVERITY_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}

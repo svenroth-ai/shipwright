@@ -244,6 +244,185 @@ def measure_bundle(build_dir: Path) -> dict[str, Any]:
 
 # ── Gate evaluation ──────────────────────────────────────────────────────────
 
+# ── AC-2 of iterate-2026-05-14-triage-producers-2: triage emission ───────
+
+def _emit_failures_to_triage(
+    project_root: Path,
+    *,
+    results: dict[str, Any],
+    gate: str,
+    dev_url: str,
+    run_id: str | None = None,
+    commit: str | None = None,
+) -> int:
+    """Append failed performance sub-checks to ``.shipwright/triage.jsonl``.
+
+    One triage item per failed metric (Lighthouse score, Lighthouse LCP,
+    bundle size). Skipped or passing sub-checks emit nothing. Severity is
+    ``"high"`` when the metric is more than 10% over budget, else
+    ``"medium"``. Dedup key is ``f"perf:{metric}:{page}"`` keyed on the
+    relative path of ``dev_url`` for Lighthouse metrics, ``"global"`` for
+    bundle. ``match_commit=True`` with 24h window mirrors the security
+    + Phase-Quality cadence.
+
+    Returns the number of NEW items appended. Per-metric errors are
+    logged to stderr and swallowed — emission never blocks the gate.
+    """
+    try:
+        shared_scripts = (
+            Path(__file__).resolve().parents[4] / "shared" / "scripts"
+        )
+        if str(shared_scripts) not in sys.path:
+            sys.path.insert(0, str(shared_scripts))
+        from triage import append_triage_item_idempotent  # noqa: PLC0415
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(
+            f"[performance] triage import failed: "
+            f"{type(exc).__name__}: {exc}\n"
+        )
+        return 0
+
+    appended = 0
+
+    # Resolve the page slug once. Empty / invalid dev_url → "/" fallback
+    # (bundle still uses "global" regardless).
+    try:
+        parsed = urllib.parse.urlparse(dev_url) if dev_url else None
+        page = (parsed.path or "/") if parsed else "/"
+    except Exception:  # noqa: BLE001
+        page = "/"
+
+    lh = results.get("lighthouse") or {}
+    if lh.get("ran") and not lh.get("skipped"):
+        # Lighthouse SCORE failure (higher is better; budget is min_score)
+        if lh.get("score_passed") is False:
+            score = lh.get("score")
+            budget = lh.get("score_budget")
+            overage = _score_overage(score, budget)
+            severity = "high" if overage > 0.10 else "medium"
+            detail = (
+                f"Lighthouse performance score {score} below budget {budget} "
+                f"({int(overage * 100)}% under) on {page}"
+            )
+            try:
+                new_id = append_triage_item_idempotent(
+                    project_root,
+                    source="performance",
+                    severity=severity,
+                    kind="improvement",
+                    title=f"[performance] score below budget on {page}"[:160],
+                    detail=detail,
+                    dedup_key=f"perf:score:{page}",
+                    run_id=run_id,
+                    commit=commit,
+                    match_commit=True,
+                    window_seconds=24 * 3600,
+                )
+                if new_id is not None:
+                    appended += 1
+            except Exception as exc:  # noqa: BLE001
+                sys.stderr.write(
+                    f"[performance] triage emit failed (score): "
+                    f"{type(exc).__name__}: {exc}\n"
+                )
+
+        # Lighthouse LCP failure (lower is better; budget is lcp_max_ms)
+        if lh.get("lcp_passed") is False:
+            lcp = lh.get("lcp_ms")
+            budget = lh.get("lcp_budget_ms")
+            overage = _over_budget_ratio(lcp, budget)
+            severity = "high" if overage > 0.10 else "medium"
+            detail = (
+                f"Largest Contentful Paint {lcp}ms exceeds budget {budget}ms "
+                f"({int(overage * 100)}% over) on {page}"
+            )
+            try:
+                new_id = append_triage_item_idempotent(
+                    project_root,
+                    source="performance",
+                    severity=severity,
+                    kind="improvement",
+                    title=f"[performance] LCP over budget on {page}"[:160],
+                    detail=detail,
+                    dedup_key=f"perf:lcp:{page}",
+                    run_id=run_id,
+                    commit=commit,
+                    match_commit=True,
+                    window_seconds=24 * 3600,
+                )
+                if new_id is not None:
+                    appended += 1
+            except Exception as exc:  # noqa: BLE001
+                sys.stderr.write(
+                    f"[performance] triage emit failed (lcp): "
+                    f"{type(exc).__name__}: {exc}\n"
+                )
+
+    bundle = results.get("bundle") or {}
+    if bundle.get("ran") and not bundle.get("skipped") and \
+            bundle.get("passed") is False:
+        total = bundle.get("total_kb_gz")
+        budget = bundle.get("budget_kb_gz")
+        overage = _over_budget_ratio(total, budget)
+        severity = "high" if overage > 0.10 else "medium"
+        files_n = bundle.get("files_measured", 0)
+        detail = (
+            f"Bundle size {total}KB gz exceeds budget {budget}KB "
+            f"({int(overage * 100)}% over, {files_n} files measured)"
+        )
+        try:
+            new_id = append_triage_item_idempotent(
+                project_root,
+                source="performance",
+                severity=severity,
+                kind="improvement",
+                title="[performance] bundle size over budget"[:160],
+                detail=detail,
+                dedup_key="perf:bundle:global",
+                run_id=run_id,
+                commit=commit,
+                match_commit=True,
+                window_seconds=24 * 3600,
+            )
+            if new_id is not None:
+                appended += 1
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write(
+                f"[performance] triage emit failed (bundle): "
+                f"{type(exc).__name__}: {exc}\n"
+            )
+
+    return appended
+
+
+def _score_overage(score: Any, budget: Any) -> float:
+    """For min_score budget (higher better): under-budget ratio.
+
+    Returns a non-negative float. ``0.0`` means at or above budget.
+    """
+    if not isinstance(score, (int, float)) or not isinstance(budget, (int, float)):
+        return 0.0
+    if budget <= 0:
+        return 0.0
+    if score >= budget:
+        return 0.0
+    return (budget - score) / budget
+
+
+def _over_budget_ratio(actual: Any, budget: Any) -> float:
+    """For max-budget metrics (lower better): over-budget ratio.
+
+    Returns a non-negative float. ``0.0`` means at or below budget.
+    """
+    if not isinstance(actual, (int, float)) or not isinstance(budget, (int, float)):
+        return 0.0
+    if budget <= 0:
+        return 0.0
+    if actual <= budget:
+        return 0.0
+    return (actual - budget) / budget
+
+
 def evaluate_gate(results: dict[str, Any], gate: str) -> bool:
     """Return overall success.
 
@@ -573,6 +752,31 @@ def main() -> int:
 
     results = {"lighthouse": lh, "bundle": bundle}
     success = evaluate_gate(results, cfg["gate"])
+
+    # Iterate-2 AC-2: mirror failed sub-checks into .shipwright/triage.jsonl
+    # before printing the result. Best-effort — never affects exit code.
+    if not success or any(
+        (results.get(k) or {}).get("ran")
+        and not (results.get(k) or {}).get("skipped")
+        and (
+            ((results.get(k) or {}).get("score_passed") is False)
+            or ((results.get(k) or {}).get("lcp_passed") is False)
+            or ((results.get(k) or {}).get("passed") is False)
+        )
+        for k in ("lighthouse", "bundle")
+    ):
+        try:
+            _emit_failures_to_triage(
+                project_root,
+                results=results,
+                gate=cfg["gate"],
+                dev_url=args.dev_url or "",
+            )
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write(
+                f"[performance] triage emission top-level failed: "
+                f"{type(exc).__name__}: {exc}\n"
+            )
 
     out = {
         "success": success,
