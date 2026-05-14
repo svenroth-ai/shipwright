@@ -66,15 +66,30 @@ The enum is intentionally simpler than `ExternalTask.state` (which has
 `awaiting_external_start` / `active` / `done`). Triage doesn't track
 execution — that's the backlog's job after promote.
 
-## Producers (Iterate 1a)
+## Producers (Iterate 1a + Iterate 2)
 
 | Producer | Trigger | Source | What it appends |
 |---|---|---|---|
 | `shared/scripts/hooks/audit_phase_quality_on_stop.py` | Stop hook, every session | `phaseQuality` | Tier-1 FAILs (C1/C5/W3/…), dedup by `(phase, code, commit)` within 24h |
 | `plugins/shipwright-compliance/scripts/audit/audit_detector.py::mirror_findings_to_triage` | `run_all(emit_to_triage=True)` (default) | `compliance` | Every `Finding.status == "fail"`, dedup by `check_id` cross-commit. Findings absent from the current run → auto-dismissed with `reason="auditResolved"` |
+| `plugins/shipwright-security/scripts/tools/generate_security_report.py::_emit_findings_to_triage` | Every security-report run (after scan + prompt-injection consolidation) | `security` | One item per finding, severity inherited from scanner, dedup by `(tool, check_id, file, line)` within 24h |
+| `plugins/shipwright-test/scripts/lib/performance_check.py::_emit_failures_to_triage` | Every perf-gate run (after `evaluate_gate`) | `performance` | One item per failed sub-check (Lighthouse score, LCP, bundle), severity `high` if >10% over budget else `medium`, dedup by `(metric, page)` within 24h |
+| `shared/scripts/surface_verification.py::_emit_failure_to_triage` | F0.5 fail-closed exits (3 of 4 — see below) | `f0.5` | One item per non-zero exit, severity `critical`, dedup by `(run_id, surface, condition)` within 24h |
+| `shared/scripts/hooks/check_drift.py::_emit_drift_to_triage` | SessionStart hook on any timestamp / content drift in CLAUDE.md | `drift` | One item per file:kind (`timestamp` or `content`), severity `medium`, dedup by `(file, kind)` cross-session indefinite |
+| `shared/scripts/artifact_sync.py::_emit_drift_to_triage` | F1 (post-commit) drift check on changed_files vs sync_config | `drift` | One item per affected mapping pattern (`kind=artifact`), severity `medium`, dedup by `(pattern, kind)` cross-session indefinite |
 
-Out-of-scope for Iterate 1a (deferred): Security/CI/Performance/F0.5/Drift
-producers — see Iterate 2.
+### Deferred producers
+
+- **CI failure producer** — deferred indefinitely. CI runs on GitHub
+  Actions; there is no autonomous local data source for CI state today.
+  Wiring a webhook receiver is out of scope. Tracked as future work.
+- **F0.5 `missing_block` producer** — the condition `"missing_block"`
+  in the F0.5 dedup-key enum is reserved for a future audit-side
+  producer in `shared/scripts/tools/verifiers/iterate_checks.py`. That
+  detection happens post-commit (the file IS the writer of the block,
+  so it cannot detect its own absence). The 3 runtime-fail producers
+  ship in Iterate 2; the 4th audit-side producer ships in a later
+  iterate.
 
 ## Consumer (Iterate 1a)
 

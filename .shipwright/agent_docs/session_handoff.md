@@ -1,43 +1,44 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-11-triage-inbox-1a"
+run_id: "iterate-2026-05-14-triage-producers-2"
 phase: "iterate"
-reason: "iterate: triage-inbox-1a (Triage Inbox pattern + 2 producers + scaffolder + promote CLI)"
-timestamp: "2026-05-11T12:29:55.556882+00:00"
+reason: "iterate: triage producers 2 (security + performance + F0.5 + drift)"
+timestamp: "2026-05-14T21:10:26.834898+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-11 12:29:55 UTC
+> Auto-generated 2026-05-14 21:10:26 UTC
 
 ## Session Info
 
-- **Session ID**: 5742b30d-9d02-415f-b333-9f4367bc0754
-- **Timestamp**: 2026-05-11 12:29:55 UTC
-- **Reason**: iterate: triage-inbox-1a (Triage Inbox pattern + 2 producers + scaffolder + promote CLI)
+- **Session ID**: 6d38543a-e9c7-4b15-adf1-0b1a92c768ff
+- **Timestamp**: 2026-05-14 21:10:26 UTC
+- **Reason**: iterate: triage producers 2 (security + performance + F0.5 + drift)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-11-test-hygiene-and-skill-rules
-- **Date**: 2026-05-11T08:56:07.041319Z
-- **Type**: change
+- **Run ID**: iterate-2026-05-11-triage-inbox-1a
+- **Date**: 2026-05-11T12:30:13.231230Z
+- **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/test-hygiene-and-skill-rules
-- **ADR**: ADR-044
+- **Branch**: iterate/triage-inbox-1a
+- **ADR**: ADR-046
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-11-test-hygiene-and-skill-rules.md
+- **Spec**: .shipwright/planning/iterate/2026-05-11-triage-inbox-1a.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/triage-inbox-1a
-- **Run ID**: iterate-2026-05-11-triage-inbox-1a
-- **Spec**: .shipwright/planning/iterate/2026-05-11-triage-inbox-1a.md
+- **Branch**: iterate/triage-producers-2
+- **Run ID**: iterate-2026-05-14-triage-producers-2
+- **Spec**: .shipwright/planning/iterate/2026-05-14-triage-producers-2.md
 - **Complexity**: medium
-- **External Review Marker**: unknown (iterate-2026-05-11-triage-inbox-1a-external-review.json)
+- **External Review Marker**: stale (predates spec (2026-05-14T20:55:44))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -51,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-inbox-1a
-- **Last Commit**: a74ae59 fix(triage): path-canon allowlist + use _AGENT_DOCS_DIRNAME constant
+- **Branch**: iterate/triage-producers-2
+- **Last Commit**: f9ae340 Merge pull request #28 from svenroth-ai/chore/changelog-0.18.0
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,22 +69,23 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-32f2f1f4 | work_completed | iterate (Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI (rebased onto post-test-hygiene main; ADR renumbered 045→046)) | 2026-05-11 |
+| evt-3f488ddc | work_completed | iterate (Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI) | 2026-05-11 |
 | evt-c8a57331 | work_completed | iterate (known_issues scanner requires comment context; remove dead save_session_config — 16/16 green) | 2026-05-09 |
 | evt-f66286bf | work_completed | iterate (—) | 2026-05-07 |
 | evt-623a29ad | work_completed | iterate (—) | 2026-05-07 |
-| evt-40c653f7 | work_completed | iterate (F0.5 empirical-test backfill) | 2026-05-06 |
-| evt-510b8df3 | work_completed | iterate (F0.5 End-to-End Verification Gate) | 2026-05-06 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 24
-- **Last iterate**: bug — known_issues scanner requires comment context; remove dead save_session_config — 16/16 green (2026-05-09)
+- **Total work events**: 26
+- **Last iterate**: feature — Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI (rebased onto post-test-hygiene main; ADR renumbered 045→046) (2026-05-11)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
 
-### ADR-045: Triage Inbox Pattern (Iterate 1a): pre-backlog JSONL intake + 2 producers + promote bridge
-- **Date:** 2026-05-11
-- **Section:** Iterate — feature: triage-inbox-1a
-- **Context:** Findings from hooks/scans/audits flooded the WebUI ExternalTask backlog (sdk-sessions.json) every session because there was no pre-backlog buffer. C1/C5/W3 Phase-Quality FAILs and Compliance audit findings re-fired on every Stop without dedup. The triage and backlog stores need different lifecycles (raw findings vs
+### ADR-047: Triage producers iterate 2: security + performance + F0.5 + drift wiring
+- **Date:** 2026-05-14
+- **Section:** Iterate — feature: triage producers iterate 2 (security + performance + F0.5 + drift)
+- **Context:** Iterate 1a (ADR-046) established the triage inbox storage API and 2 producers (Phase-Quality, Compliance). The roadmap listed 5 more producers; this iterate ships 4 of them and explicitly defers the 5th.
+- **Decision:** Wire 4 thin `_emit_*_to_triage` helpers calling `append_triage_

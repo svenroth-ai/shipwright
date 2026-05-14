@@ -1,10 +1,9 @@
 {
-  "status": "completed",
-  "timestamp": "2026-05-11T13:45:00.000000+00:00",
-  "provider": "openrouter",
-  "findings_count": 19,
-  "self_review_fallback_ran": false,
-  "reason": "Iterate 1a - Triage Inbox; Gemini + OpenAI both succeeded via OpenRouter. 3 HIGH + 11 MED + 5 LOW findings. Branch A (Address): all HIGH/MED applied to spec under 'Locked Decisions'; explicit out-of-scope for compaction, branch-aware dismiss, read-lock. Raw findings JSON: iterate-2026-05-11-triage-inbox-1a-external-review.json.",
-  "review_mode": "iterate",
-  "run_id": "iterate-2026-05-11-triage-inbox-1a"
+  "status": "skipped_user_opt_out",
+  "timestamp": "2026-05-14T20:55:44.324583+00:00",
+  "provider": null,
+  "findings_count": 0,
+  "self_review_fallback_ran": true,
+  "reason": "feedback_iterations=0 in shipwright_iterate_config.json (project-level opt-out, set 2026-05-05). Iterate proceeds with mandatory self-review fallback; post-build external code review remains enabled per external_code_review.enabled=true.",
+  "review_mode": "iterate"
 }

@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-05-11T12:29:55Z
-Total commits: 628
+Generated: 2026-05-14T21:10:26Z
+Total commits: 633
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 216
-    "fix" : 166
-    "chore" : 98
+    "fix" : 167
+    "chore" : 101
     "docs" : 94
-    "refactor" : 33
+    "refactor" : 34
     "test" : 14
     "other" : 7
 ```
@@ -22,13 +22,13 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-05-11 | triage | promote CLI for non-webui repos (AC-7) | 2f1724b75a56 |
-| 2026-05-11 | triage | adopt-time scaffolder + Step E.16 in adopt skill (AC-6) | 096bf1a6f899 |
-| 2026-05-11 | triage | emit Compliance audit findings to triage + auto-dismiss (AC-5) | 3f1b7296ff57 |
-| 2026-05-11 | triage | emit Phase-Quality Tier-1 FAILs to triage inbox (AC-4) | b801270962e1 |
-| 2026-05-11 | triage | wire aggregate_triage Stop-hook (AC-3) | 15eda613b749 |
-| 2026-05-11 | triage | add aggregator + markdown renderer (AC-2) | ab0934d51c56 |
-| 2026-05-11 | triage | add storage API + mapping helpers + drift tests (AC-1, AC-8) | f5e7a2538d9a |
+| 2026-05-11 | triage | promote CLI for non-webui repos (AC-7) | 7f131f9d940d |
+| 2026-05-11 | triage | adopt-time scaffolder + Step E.16 in adopt skill (AC-6) | 719790d3e777 |
+| 2026-05-11 | triage | emit Compliance audit findings to triage + auto-dismiss (AC-5) | d5b26710dfd9 |
+| 2026-05-11 | triage | emit Phase-Quality Tier-1 FAILs to triage inbox (AC-4) | e78bb6b1179b |
+| 2026-05-11 | triage | wire aggregate_triage Stop-hook (AC-3) | ca3b2b27849c |
+| 2026-05-11 | triage | add aggregator + markdown renderer (AC-2) | d4c155162611 |
+| 2026-05-11 | triage | add storage API + mapping helpers + drift tests (AC-1, AC-8) | 3a3b9a9edca8 |
 | 2026-05-11 | adopt | scaffold profile-aware CI + Claude-Review workflows with cross-platform matrix default | 17feb1c05af4 |
 | 2026-05-06 | iterate | add F0.5 surface_verification audit to iterate_checks | 17c8f9f945db |
 | 2026-05-06 | iterate | add surface_verification.py F0.5 orchestrator | fb70a460e262 |
@@ -239,12 +239,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 166 commits
+### Fixes (fix) — 167 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-05-11 | triage | path-canon allowlist + use _AGENT_DOCS_DIRNAME constant | a74ae59818ac |
-| 2026-05-11 | triage | address external code review HIGH + MED findings | dabba796b3e5 |
+| 2026-05-11 | triage | path-canon allowlist + use _AGENT_DOCS_DIRNAME constant | 734bba94d211 |
+| 2026-05-11 | triage | address external code review HIGH + MED findings | 0229b4c3b9f2 |
+| 2026-05-11 | test-hygiene | lazy pytest import so CLI runs without pytest installed | 905bbde7788c |
 | 2026-05-10 | hooks | Stop and SubagentStop hooks emit schema-compliant stdout | 9c8f9aa16770 |
 | 2026-05-09 | adopt | scanner requires comment-context; remove dead save_session_config | f8d44da5da28 |
 | 2026-05-07 | plugins | convert PreToolUse/PostToolUse matcher to string form for Claude Code 2.1.132+ schema | 99fc87bdb26f |
@@ -410,10 +411,13 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 98 commits
+### Chores (chore) — 101 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-11 | release | v0.18.0 | cbfce82d5e64 |
+| 2026-05-11 | triage | append F7 work_completed event for rebased commit | 4eca545906f1 |
+| 2026-05-11 | triage | finalize iterate 1a (ADR-045, architecture, compliance, handoff) | f6389086f00d |
 | 2026-05-11 | security | bump codeql-action to v4 + continue-on-error on private repos | 33097b807982 |
 | 2026-05-09 | iterate | unstage stray skill-compliance/* files from finalize commit | d228b9bbaff1 |
 | 2026-05-09 | iterate | finalize iterate-2026-05-09-known-issues-self-detection-and-cleanup | 9f21af37c21f |
@@ -517,8 +521,8 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-05-11 | triage | 1-pager + guide.md ch4.11 + hooks-and-pipeline registration (AC-9) | 2eea918390eb |
-| 2026-05-11 | triage | plan iterate 1a (spec + mini-plan + external review) | da8c5d67cfa5 |
+| 2026-05-11 | triage | 1-pager + guide.md ch4.11 + hooks-and-pipeline registration (AC-9) | 3088691237f7 |
+| 2026-05-11 | triage | plan iterate 1a (spec + mini-plan + external review) | 70bf312eabf7 |
 | 2026-05-07 | guide | modernize Chapter 2 install section — marketplace CLI first, fresh-machine baseline per platform, restart-Claude-Code hint | c1ad0d2005c3 |
 | 2026-05-06 | — | sync hooks-and-pipeline + guide + browser-fixer with F0.5 | e2e4a7517887 |
 | 2026-05-06 | iterate | add F0.5 AC-shape rules to iteration-planning + conventions | 79e6de10f347 |
@@ -612,10 +616,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 33 commits
+### Refactoring (refactor) — 34 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-11 | tests | centralize CI-discipline helpers + Self-Review § 8 probe | 16618252250b |
 | 2026-05-11 | tests | hard-fail silent skips in CI + add Step 6 governance rules | 20c2e48e7bea |
 | 2026-05-02 | repo | post-adoption framework cleanup (Sub-1A through 1D) | 3db485b24305 |
 | 2026-04-29 | toolcall-counter | rename .shipwright_toolcall_count to .shipwright/toolcall_count | 1b2d6f0ab9b7 |
@@ -685,7 +690,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 628 |
+| Total commits | 633 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 628 |
+| Human-authored commits | 633 |
 

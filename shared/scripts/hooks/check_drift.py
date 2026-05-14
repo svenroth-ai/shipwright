@@ -307,6 +307,103 @@ def _find_claude_md_files(root: str) -> list[str]:
     return out
 
 
+# ---------------------------------------------------------------------------
+# AC-5 of iterate-2026-05-14-triage-producers-2: triage emission
+# ---------------------------------------------------------------------------
+
+
+def _emit_drift_to_triage(
+    project_root,
+    timestamp_drifted: list[str],
+    content_findings: list[str],
+) -> int:
+    """Append drift findings to ``.shipwright/triage.jsonl``.
+
+    One triage item per finding. ``source="drift"``, ``severity="medium"``,
+    ``kind="maintenance"``. Dedup key shape: ``f"drift:{file}:{kind}"`` with
+    ``kind ∈ {"timestamp", "content"}``. ``match_commit=False`` +
+    ``window_seconds=None`` means a given drift finding stays as ONE item
+    indefinitely until it resolves or the operator dismisses it (same
+    cross-session shape as the compliance producer).
+
+    Best-effort: per-item errors logged to stderr and swallowed. The
+    SessionStart hook MUST always exit 0 (informational), so emission
+    failure can never block.
+    """
+    if not timestamp_drifted and not content_findings:
+        return 0
+
+    try:
+        scripts_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), os.pardir,
+        )
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        from triage import append_triage_item_idempotent  # noqa: PLC0415
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(
+            f"[drift] triage import failed: {type(exc).__name__}: {exc}\n"
+        )
+        return 0
+
+    appended = 0
+    for fname in timestamp_drifted:
+        try:
+            title = f"Drift: {fname} mtime newer than CLAUDE.md"[:160]
+            detail = (
+                f"Timestamp drift: {fname} was modified more recently than "
+                f"CLAUDE.md. Re-read CLAUDE.md or refresh it before making "
+                f"architectural decisions."
+            )
+            new_id = append_triage_item_idempotent(
+                project_root,
+                source="drift",
+                severity="medium",
+                kind="maintenance",
+                title=title,
+                detail=detail,
+                dedup_key=f"drift:{fname}:timestamp",
+                match_commit=False,
+                window_seconds=None,
+            )
+            if new_id is not None:
+                appended += 1
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write(
+                f"[drift] timestamp triage emit failed for {fname}: "
+                f"{type(exc).__name__}: {exc}\n"
+            )
+
+    for finding in content_findings:
+        try:
+            # Best-effort path extraction: every content finding starts with
+            # `<path>: <human description>` per check_structure_drift /
+            # check_command_drift. The path before the first ': ' is the
+            # stable anchor.
+            anchor = finding.split(": ", 1)[0].strip() or "CLAUDE.md"
+            title = f"Drift: {finding[:120]}"[:160]
+            new_id = append_triage_item_idempotent(
+                project_root,
+                source="drift",
+                severity="medium",
+                kind="maintenance",
+                title=title,
+                detail=finding,
+                dedup_key=f"drift:{anchor}:content",
+                match_commit=False,
+                window_seconds=None,
+            )
+            if new_id is not None:
+                appended += 1
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write(
+                f"[drift] content triage emit failed: "
+                f"{type(exc).__name__}: {exc}\n"
+            )
+
+    return appended
+
+
 def main() -> int:
     try:
         scripts_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir)
@@ -334,6 +431,16 @@ def main() -> int:
     if content_findings:
         warnings.append(
             "Content drift in CLAUDE.md:\n  - " + "\n  - ".join(content_findings)
+        )
+
+    # Iterate-2 AC-5: mirror drift findings into .shipwright/triage.jsonl.
+    # Best-effort — must NOT change the hook's always-0 exit semantics.
+    try:
+        _emit_drift_to_triage(project_root, timestamp_drifted, content_findings)
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(
+            f"[drift] triage emission top-level failed: "
+            f"{type(exc).__name__}: {exc}\n"
         )
 
     if warnings:

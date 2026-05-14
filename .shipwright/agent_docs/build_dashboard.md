@@ -1,10 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-05-11 12:29 UTC | Session: 5742b30d-9d02-415f-b333-9f4367bc0754
+> Updated: 2026-05-14 21:10 UTC | Session: 6d38543a-e9c7-4b15-adf1-0b1a92c768ff
 
-## Recent Changes (24 iterations)
+## Recent Changes (26 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI (rebased onto post-test-hygiene main; ADR renumbered 045→046) | 1642/1649 | f638908 |  | 2026-05-11 |
+| feature | Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI | 1642/1649 | 6ba7df1 |  | 2026-05-11 |
 | bug | known_issues scanner requires comment context; remove dead save_session_config — 16/16 green | 16/16 | f8d44da |  | 2026-05-09 |
 | change | — | 0/0 | 99fc87b |  | 2026-05-07 |
 | change | — | 0/0 | 686e7cc |  | 2026-05-07 |
@@ -31,7 +33,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-11 | Unit: 1642/1649 | E2E: 132/132 | Smoke: not_run | (iterate)
+Last run: 2026-05-14 | Unit: 1726/1733 | E2E: 40/40 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

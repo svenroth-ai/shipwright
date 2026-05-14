@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-11T12:29:55Z
+Generated: 2026-05-14T21:10:26Z
 
 ## Requirements Coverage
 
@@ -48,6 +48,8 @@ Generated: 2026-05-11T12:29:55Z
 | evt-623a29ad | iterate | change |  | — | 686e7cc | 2026-05-07 |
 | evt-f66286bf | iterate | change |  | — | 99fc87b | 2026-05-07 |
 | known_issues scanner requires comment context; remove dead save_session_config — 16/16 green | iterate | bug |  | 16/16 | f8d44da | 2026-05-09 |
+| Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI | iterate | feature |  | 1642/1649 | 6ba7df1 | 2026-05-11 |
+| Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI (rebased onto post-test-hygiene main; ADR renumbered 045→046) | iterate | feature |  | 1642/1649 | f638908 | 2026-05-11 |
 
 ## Coverage Summary
 
@@ -55,7 +57,7 @@ Generated: 2026-05-11T12:29:55Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 24 |
+| Iterate changes | 26 |
 | Requirements total | 13 |
 | Requirements verified | 13/13 |
 | Must-have verified | 10/10 |
