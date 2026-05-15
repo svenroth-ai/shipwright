@@ -1,0 +1,1 @@
+shipwright-compliance: RTM data collection resolves shipwright_events.jsonl via the git common dir. /shipwright-iterate finalization run inside a git worktree now reads the main repo's (gitignored) event log instead of an empty one — fixes the false 'Traceability coverage 0%' that the check_rtm_coverage pre-commit hook soft-blocked on adopted projects.

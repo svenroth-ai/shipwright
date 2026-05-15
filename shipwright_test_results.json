@@ -1,18 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-14-triage-producers-2",
-    "date": "2026-05-14",
+    "run_id": "iterate-2026-05-15-rtm-adopt-worktree-fix",
+    "date": "2026-05-15",
     "unit": {
       "status": "passed",
-      "passed": 1726,
-      "total": 1733,
-      "note": "F0 full shared/tests/ suite: 1726 passed, 7 pre-existing baseline failures (5 bash-on-Windows secret-detection scripts + 1 file-size script + 1 path-canon conventions.md L42 mention) — same baseline as iterate-1a. Zero NEW failures introduced. 40 of the 1726 passing tests are new in this iterate (AC-6 coverage of the 4 new producers)."
+      "passed": 312,
+      "total": 312,
+      "note": "F0 full shipwright-compliance plugin suite: 312 passed, 0 failed. 7 tests new in this iterate (TestCollectRequirementsSixCol x2, TestCollectRequirementsColumnWidths x1, TestEventLogWorktreeResolution x3, TestRtmAdoptedProjectWorktree x1). ruff clean on all 3 changed files."
     },
     "integration": {
       "status": "not_run",
       "passed": 0,
       "total": 0,
-      "note": "No cross-plugin integration paths required by AC scope."
+      "note": "No cross-plugin integration paths in scope; change is contained to shipwright-compliance/scripts/lib/data_collector.py."
     },
     "pgtap": {
       "status": "not_run",
@@ -22,9 +22,9 @@
     },
     "e2e": {
       "status": "passed",
-      "passed": 40,
-      "total": 40,
-      "note": "F0.5 surface=cli ran 40 tests across the 4 new producer-emit test files (test_security_triage_emit, test_performance_triage_emit, test_f0_5_triage_emit, test_drift_triage_emit). Each test calls the emit helper with synthetic findings + asserts on read_all_items contents, mirroring iterate-1a's producer test pattern."
+      "passed": 7,
+      "total": 7,
+      "note": "F0.5 surface=cli ran the 4 new test classes end-to-end, including TestRtmAdoptedProjectWorktree which builds a real git worktree of an adopted project and asserts the generated RTM shows real event-sourced coverage instead of a false 'Traceability coverage 0%'."
     },
     "design_fidelity": {
       "status": "not_run",
@@ -38,15 +38,13 @@
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_security_triage_emit.py shared/tests/test_performance_triage_emit.py shared/tests/test_f0_5_triage_emit.py shared/tests/test_drift_triage_emit.py -v",
+      "runner": "uv run --directory plugins/shipwright-compliance --extra dev python -m pytest tests/test_data_collector.py::TestCollectRequirementsSixCol tests/test_data_collector.py::TestCollectRequirementsColumnWidths tests/test_data_collector.py::TestEventLogWorktreeResolution tests/test_rtm_generator.py::TestRtmAdoptedProjectWorktree -q --color=no",
       "exit_code": 0,
-      "tests_run": 40,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-14-triage-producers-2/surface_verification.json",
-      "timestamp": "2026-05-14T21:08:46.291Z",
+      "tests_run": 7,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-15-rtm-adopt-worktree-fix/surface_verification.json",
+      "timestamp": "2026-05-15T07:25:16.906Z",
       "attempts": 1
     },
-    "degraded": [
-      "external-review-plan-time: skipped per project config (feedback_iterations=0). Post-build external code review remains enabled."
-    ]
+    "degraded": []
   }
 }

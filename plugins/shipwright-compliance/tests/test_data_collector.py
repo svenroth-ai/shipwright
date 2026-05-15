@@ -3,24 +3,34 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 from scripts.lib.data_collector import (
+    EVENT_FILE,
     ComplianceData,
     DecisionEntry,
-    ExternalReviewState,
     RequirementInfo,
     SectionInfo,
     SplitInfo,
+    _resolve_events_path,
     collect_all,
     collect_configs,
     collect_decision_log,
     collect_dependencies,
+    collect_events,
     collect_external_review_states,
     collect_requirements,
     collect_sections,
     collect_splits,
 )
+
+
+def _git(args: list[str], cwd: Path) -> None:
+    """Run a git command in ``cwd``, raising on failure."""
+    subprocess.run(
+        ["git", *args], cwd=str(cwd), check=True, capture_output=True, text=True
+    )
 
 
 class TestCollectConfigs:
@@ -352,3 +362,173 @@ class TestCollectRequirementsAdoptFiveCol:
         first = next(r for r in reqs if r.id == "FR-01.01")
         assert first.text == "User can log in"
         assert first.priority == "Must"
+
+
+class TestCollectRequirementsSixCol:
+    """Coverage for 6-column FR tables (adopt specs with a trailing column).
+
+    Some /shipwright-adopt outputs append a sixth column (e.g. an inference
+    Confidence score) after Source. Before the BUG-A fix the FR-table regex
+    demanded end-of-line right after the Description+Source pair, so every
+    6-column row silently failed to parse — collapsing RTM coverage to 0%.
+    The consumer must parse every FR row regardless of trailing columns; the
+    semantic body stays the Description column (group 4). See ADR-031 for the
+    3-/5-column lineage.
+    """
+
+    SIX_COL_BODY = (
+        "# Specification — adopted\n\n"
+        "## Functional Requirements\n\n"
+        "| ID | Name | Priority | Description | Source | Confidence |\n"
+        "|----|------|----------|-------------|--------|------------|\n"
+        "| FR-01.01 | dashboard | Must | User views active projects. | src/app/dashboard/page.tsx | 0.82 |\n"
+        "| FR-01.02 | login | Must | User authenticates via magic link. | src/app/login/page.tsx | 0.91 |\n"
+        "| FR-01.03 | settings | Should | User edits profile preferences. | src/app/settings/page.tsx | 0.55 |\n"
+    )
+
+    def test_collect_requirements_extracts_all_6col_rows(self, tmp_path: Path):
+        planning = tmp_path / ".shipwright" / "planning" / "01-adopted"
+        planning.mkdir(parents=True)
+        (planning / "spec.md").write_text(self.SIX_COL_BODY, encoding="utf-8")
+
+        reqs = collect_requirements(tmp_path)
+
+        ids = {r.id for r in reqs}
+        assert ids == {"FR-01.01", "FR-01.02", "FR-01.03"}
+        first = next(r for r in reqs if r.id == "FR-01.01")
+        # Body is the Description column (4) — not Name (2), not Confidence (6).
+        assert first.text == "User views active projects."
+        assert first.priority == "Must"
+        assert first.split == "01-adopted"
+        assert isinstance(first, RequirementInfo)
+
+    def test_six_col_ignores_trailing_columns(self, tmp_path: Path):
+        """A 7+-column row still parses; columns past Source are ignored."""
+        planning = tmp_path / ".shipwright" / "planning" / "01-adopted"
+        planning.mkdir(parents=True)
+        (planning / "spec.md").write_text(
+            "| ID | Name | Priority | Description | Source | Confidence | Notes |\n"
+            "|----|------|----------|-------------|--------|------------|-------|\n"
+            "| FR-01.01 | dashboard | Must | User views active projects. | src/x.tsx | 0.82 | n/a |\n",
+            encoding="utf-8",
+        )
+        reqs = collect_requirements(tmp_path)
+        assert len(reqs) == 1
+        assert reqs[0].text == "User views active projects."
+        assert reqs[0].priority == "Must"
+
+
+class TestCollectRequirementsColumnWidths:
+    """Consolidated probe: 3-, 5-, and 6-column FR tables all parse.
+
+    Directly covers the BUG-A regression — a single collection run across
+    three split dirs, one per supported table width, asserting every FR row
+    surfaces with the correct semantic body.
+    """
+
+    def test_all_column_widths_parse(self, tmp_path: Path):
+        specs = {
+            "01-three-col": (
+                "| ID | Text | Priority |\n"
+                "|----|------|----------|\n"
+                "| FR-01.01 | User can log in | Must |\n"
+            ),
+            "02-five-col": (
+                "| ID | Name | Priority | Description | Source |\n"
+                "|----|------|----------|-------------|--------|\n"
+                "| FR-02.01 | run | Must | Orchestrate the pipeline. | enrichment.json |\n"
+            ),
+            "03-six-col": (
+                "| ID | Name | Priority | Description | Source | Confidence |\n"
+                "|----|------|----------|-------------|--------|------------|\n"
+                "| FR-03.01 | adopt | Should | Onboard an existing repo. | enrichment.json | 0.6 |\n"
+            ),
+        }
+        for split_name, body in specs.items():
+            planning = tmp_path / ".shipwright" / "planning" / split_name
+            planning.mkdir(parents=True)
+            (planning / "spec.md").write_text(body, encoding="utf-8")
+
+        reqs = collect_requirements(tmp_path)
+        by_id = {r.id: r for r in reqs}
+
+        # Every FR row across all three table widths parsed.
+        assert set(by_id) == {"FR-01.01", "FR-02.01", "FR-03.01"}
+        # 3-col body = Text column (group 2).
+        assert by_id["FR-01.01"].text == "User can log in"
+        # 5-col body = Description column (group 4).
+        assert by_id["FR-02.01"].text == "Orchestrate the pipeline."
+        # 6-col body = Description column (group 4); trailing Confidence ignored.
+        assert by_id["FR-03.01"].text == "Onboard an existing repo."
+
+
+class TestEventLogWorktreeResolution:
+    """BUG B: event-log resolution must be git-worktree-aware.
+
+    shipwright_events.jsonl is gitignored, so a fresh ``git worktree`` does
+    not contain it. data_collector must resolve the log via the git common
+    dir and read the *main* repo's canonical log — otherwise worktree-based
+    finalization (e.g. /shipwright-iterate F5b) sees an empty event log,
+    rtm_generator falls back to the legacy section-count path, and an
+    adopted project with 0 build sections collapses RTM coverage to a
+    false 0%.
+    """
+
+    EVENT_LINE = json.dumps({
+        "id": "evt-test-0001",
+        "type": "work_completed",
+        "source": "iterate",
+        "ts": "2026-05-15T12:00:00Z",
+        "commit": "abc123",
+        "affected_frs": ["FR-01.01"],
+        "tests": {"passed": 3, "total": 3},
+    })
+
+    def _init_repo(self, root: Path) -> None:
+        """Create a git repo with one commit (required for `worktree add`)."""
+        root.mkdir(parents=True, exist_ok=True)
+        _git(["init"], root)
+        _git(["config", "user.email", "test@example.com"], root)
+        _git(["config", "user.name", "Test"], root)
+        (root / "README.md").write_text("seed\n", encoding="utf-8")
+        _git(["add", "README.md"], root)
+        _git(["commit", "-m", "seed"], root)
+
+    def test_worktree_reads_main_repo_event_log(self, tmp_path: Path):
+        """Collection from inside a worktree finds the main repo's events."""
+        main = tmp_path / "main-repo"
+        self._init_repo(main)
+        # Event log lives in the main repo, untracked (mirrors gitignored).
+        (main / EVENT_FILE).write_text(self.EVENT_LINE + "\n", encoding="utf-8")
+
+        worktree = tmp_path / "wt"
+        _git(["worktree", "add", str(worktree)], main)
+
+        # Sanity: the worktree checkout itself carries no event log.
+        assert not (worktree / EVENT_FILE).exists()
+
+        work_events, _, _ = collect_events(worktree)
+        assert len(work_events) == 1
+        assert work_events[0].id == "evt-test-0001"
+        assert work_events[0].affected_frs == ["FR-01.01"]
+
+    def test_main_repo_reads_own_event_log(self, tmp_path: Path):
+        """Non-worktree (plain repo) behavior is unchanged: reads its own log."""
+        main = tmp_path / "main-repo"
+        self._init_repo(main)
+        (main / EVENT_FILE).write_text(self.EVENT_LINE + "\n", encoding="utf-8")
+
+        assert _resolve_events_path(main) == main / EVENT_FILE
+        work_events, _, _ = collect_events(main)
+        assert len(work_events) == 1
+        assert work_events[0].id == "evt-test-0001"
+
+    def test_non_git_dir_falls_back_to_project_root(self, tmp_path: Path):
+        """Outside any git repo, resolution falls back to project_root/EVENT_FILE."""
+        proj = tmp_path / "plain"
+        proj.mkdir()
+        (proj / EVENT_FILE).write_text(self.EVENT_LINE + "\n", encoding="utf-8")
+
+        assert _resolve_events_path(proj) == proj / EVENT_FILE
+        work_events, _, _ = collect_events(proj)
+        assert len(work_events) == 1
