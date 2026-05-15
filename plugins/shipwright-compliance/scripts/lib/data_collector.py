@@ -754,16 +754,21 @@ def collect_test_results(project_root: Path) -> TestResults | None:
 # Requirements
 # ---------------------------------------------------------------------------
 
-# Accepts both the 3-data-column Greenfield format
+# Accepts the 3-data-column Greenfield format
 #   | FR-01.01 | login | Must |
-# and the 5-data-column /shipwright-adopt format
+# the 5-data-column /shipwright-adopt format
 #   | FR-01.01 | /shipwright-run | Must | Orchestrate ... | enrichment.json |
+# and 6+-column adopt specs that append further columns (e.g. an inference
+# Confidence score) after Source:
+#   | FR-01.01 | /shipwright-run | Must | Orchestrate ... | enrichment.json | 0.82 |
 # Capture groups (always present): 1=ID, 2=col2 (Text or Name), 3=Priority.
-# Optional groups (5-col only): 4=Description, 5=Source.
+# Optional groups (5-col+ only): 4=Description, 5=Source.
+# Any columns beyond Source are matched and discarded.
 # The semantic FR body is group(4) when present, else group(2). See ADR-031.
 _FR_TABLE_RE = re.compile(
     r"^\|\s*(FR-[\d.]+)\s*\|\s*([^|]+?)\s*\|\s*(Must|Should|May)\s*\|"
-    r"(?:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|)?\s*$"
+    r"(?:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|)?"  # optional Description (4) + Source (5)
+    r"(?:\s*[^|]*?\s*\|)*\s*$"                # any number of further columns, ignored
 )
 
 
@@ -899,11 +904,57 @@ def collect_test_files(project_root: Path) -> dict[str, list[str]]:
 EVENT_FILE = "shipwright_events.jsonl"
 
 
+def _resolve_events_path(project_root: Path) -> Path:
+    """Resolve the path to ``shipwright_events.jsonl``, git-worktree-aware.
+
+    The event log is gitignored, so a fresh ``git worktree`` checkout does
+    not contain it. ``git rev-parse --git-common-dir`` consistently returns
+    the *main* repo's ``.git`` directory even from inside a worktree — its
+    parent is the canonical project root that owns the event log. When
+    ``project_root`` is already the main repo (or git is unavailable), the
+    resolved path is identical to ``project_root / EVENT_FILE``, so
+    single-repo behavior is unchanged.
+
+    Mirrors ``shared/scripts/lib/session_role._resolve_main_repo_root``.
+    Without this, worktree-based finalization (/shipwright-iterate F5b) reads
+    an empty log and collapses RTM coverage to a false 0%.
+    """
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            cwd=str(project_root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except (OSError, ValueError):
+        return project_root / EVENT_FILE
+    if proc.returncode != 0:
+        return project_root / EVENT_FILE
+    common_dir = proc.stdout.strip()
+    if not common_dir:
+        return project_root / EVENT_FILE
+    common_path = Path(common_dir)
+    if not common_path.is_absolute():
+        common_path = (project_root / common_path).resolve()
+    # `--git-common-dir` returns the .git directory of the main repo; its
+    # parent is the main repo root. Defensive guard: only trust the result
+    # when the path actually ends with ".git", else fall back.
+    if common_path.name == ".git":
+        return common_path.parent / EVENT_FILE
+    return project_root / EVENT_FILE
+
+
 def _read_event_log(project_root: Path) -> list[dict]:
-    """Read and parse shipwright_events.jsonl. Tolerant of corrupt lines."""
+    """Read and parse shipwright_events.jsonl. Tolerant of corrupt lines.
+
+    Resolves the log via the git common dir (see ``_resolve_events_path``) so
+    that collection runs from inside a git worktree read the main repo's
+    canonical event log instead of an empty one.
+    """
     import warnings
 
-    path = project_root / EVENT_FILE
+    path = _resolve_events_path(project_root)
     if not path.exists():
         return []
     events: list[dict] = []

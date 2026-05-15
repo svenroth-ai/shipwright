@@ -2,12 +2,21 @@
 
 from __future__ import annotations
 
+import json
+import subprocess
 from pathlib import Path
 
 from scripts.lib.data_collector import (
-    ComplianceData, KnownFailure, RequirementInfo, SectionInfo, SplitInfo, WorkEvent, collect_all,
+    ComplianceData, RequirementInfo, WorkEvent, collect_all,
 )
 from scripts.lib.rtm_generator import generate, generate_file
+
+
+def _git(args: list[str], cwd: Path) -> None:
+    """Run a git command in ``cwd``, raising on failure."""
+    subprocess.run(
+        ["git", *args], cwd=str(cwd), check=True, capture_output=True, text=True
+    )
 
 
 class TestGenerate:
@@ -102,6 +111,88 @@ class TestKnownFailures:
         result = generate(data)
         assert "COVERED" in result
         assert "baseline" not in result
+
+
+class TestRtmAdoptedProjectWorktree:
+    """F0.5 end-to-end: RTM generation from a git worktree of an adopted project.
+
+    Reproduces both bugs together:
+      * Bug A — the adopted spec uses a 6-column FR table.
+      * Bug B — shipwright_events.jsonl is untracked, so a fresh worktree
+        checkout does not carry it.
+    Before the fixes, RTM generation from the worktree saw zero FRs and
+    zero events, fell back to the legacy section-count path, and an adopted
+    project (0 build sections) emitted "| Traceability coverage | 0% |" —
+    which the check_rtm_coverage pre-commit hook soft-blocks. After the
+    fixes the RTM shows real, event-sourced FR coverage.
+    """
+
+    SIX_COL_SPEC = (
+        "# Specification - adopted\n\n"
+        "## Functional Requirements\n\n"
+        "| ID | Name | Priority | Description | Source | Confidence |\n"
+        "|----|------|----------|-------------|--------|------------|\n"
+        "| FR-01.01 | dashboard | Must | User views active projects. | src/app/dashboard/page.tsx | 0.82 |\n"
+        "| FR-01.02 | login | Must | User authenticates via magic link. | src/app/login/page.tsx | 0.91 |\n"
+        "| FR-01.03 | settings | Should | User edits profile preferences. | src/app/settings/page.tsx | 0.55 |\n"
+    )
+
+    def _build_adopted_project(self, root: Path) -> None:
+        """Create a completed adopted project: 1 planning split, 0 build sections."""
+        root.mkdir(parents=True, exist_ok=True)
+        _git(["init"], root)
+        _git(["config", "user.email", "test@example.com"], root)
+        _git(["config", "user.name", "Test"], root)
+
+        (root / "shipwright_run_config.json").write_text(
+            json.dumps({"status": "complete", "profile": "supabase-nextjs"}),
+            encoding="utf-8",
+        )
+        (root / "shipwright_project_config.json").write_text(
+            json.dumps({"splits": [{"name": "01-adopted", "status": "complete"}]}),
+            encoding="utf-8",
+        )
+        planning = root / ".shipwright" / "planning" / "01-adopted"
+        planning.mkdir(parents=True)
+        (planning / "spec.md").write_text(self.SIX_COL_SPEC, encoding="utf-8")
+
+        # Tracked artifacts go into the commit so the worktree carries them.
+        _git(["add", "-A"], root)
+        _git(["commit", "-m", "adopt baseline"], root)
+
+        # The event log is untracked (mirrors gitignored) and written AFTER
+        # the commit — a fresh worktree must NOT receive it.
+        events = [{
+            "id": "evt-adopt-1", "type": "work_completed", "source": "iterate",
+            "ts": "2026-05-15T10:00:00Z", "commit": "deadbeef",
+            "affected_frs": ["FR-01.01", "FR-01.02", "FR-01.03"],
+            "tests": {"passed": 12, "total": 12},
+        }]
+        (root / "shipwright_events.jsonl").write_text(
+            "\n".join(json.dumps(e) for e in events) + "\n", encoding="utf-8"
+        )
+
+    def test_rtm_from_worktree_shows_real_coverage(self, tmp_path: Path):
+        main = tmp_path / "adopted-main"
+        self._build_adopted_project(main)
+
+        worktree = tmp_path / "wt"
+        _git(["worktree", "add", str(worktree)], main)
+        # The worktree carries the committed spec but NOT the untracked log.
+        assert (worktree / ".shipwright" / "planning" / "01-adopted" / "spec.md").exists()
+        assert not (worktree / "shipwright_events.jsonl").exists()
+
+        rtm_path = generate_file(worktree)
+        rtm = rtm_path.read_text(encoding="utf-8")
+
+        # Bug B regression guard: the legacy 0%-coverage path is NOT taken.
+        assert "| Traceability coverage | 0% |" not in rtm
+        # Bug A: all three 6-column FR rows surfaced.
+        for fr in ("FR-01.01", "FR-01.02", "FR-01.03"):
+            assert fr in rtm
+        # Event-sourced coverage summary present with real counts.
+        assert "| Requirements verified | 3/3 |" in rtm
+        assert "COVERED" in rtm
 
 
 class TestGenerateFile:

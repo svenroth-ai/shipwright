@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-14-triage-producers-2"
+run_id: "iterate-2026-05-15-rtm-adopt-worktree-fix"
 phase: "iterate"
-reason: "iterate: triage producers 2 — post-F7 dashboard refresh"
-timestamp: "2026-05-14T21:13:36.922994+00:00"
+reason: "iterate: RTM 6-column spec + worktree event-log fixes"
+timestamp: "2026-05-15T07:30:26.766617+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-14 21:13:36 UTC
+> Auto-generated 2026-05-15 07:30:26 UTC
 
 ## Session Info
 
-- **Session ID**: 6d38543a-e9c7-4b15-adf1-0b1a92c768ff
-- **Timestamp**: 2026-05-14 21:13:36 UTC
-- **Reason**: iterate: triage producers 2 — post-F7 dashboard refresh
+- **Session ID**: a7c9e3d8-779f-4c65-a517-28d368670787
+- **Timestamp**: 2026-05-15 07:30:26 UTC
+- **Reason**: iterate: RTM 6-column spec + worktree event-log fixes
 
 ## Last Iterate
 
@@ -27,6 +27,16 @@ timestamp: "2026-05-14T21:13:36.922994+00:00"
 - **Tests passed**: True
 - **Spec**: .shipwright/planning/iterate/2026-05-14-triage-producers-2.md
 
+## Current Iterate Progress
+
+- **Branch**: iterate/fix-rtm-adopt-worktree
+- **External Review Marker**: skipped_user_opt_out (external_review_state.json @ 2026-05-14T20:55:44)
+
+### Mandatory replay on Resume
+
+Before dispatching to the handoff's Remaining phase, run these if missing:
+- Finalization (F0–F11) after all mandatory phases pass
+
 ## Legacy build state
 
 - **Phase**: design
@@ -38,8 +48,8 @@ timestamp: "2026-05-14T21:13:36.922994+00:00"
 
 ## Git State
 
-- **Branch**: main
-- **Last Commit**: 2f55b21 chore(triage): append F7 work_completed event for iterate-2 commit
+- **Branch**: iterate/fix-rtm-adopt-worktree
+- **Last Commit**: 9f17372 chore(triage): post-F7 refresh of build_dashboard + compliance + handoff
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -70,8 +80,7 @@ timestamp: "2026-05-14T21:13:36.922994+00:00"
 
 ## Recent Decisions
 
-### ADR-047: Triage producers iterate 2: security + performance + F0.5 + drift wiring
-- **Date:** 2026-05-14
-- **Section:** Iterate — feature: triage producers iterate 2 (security + performance + F0.5 + drift)
-- **Context:** Iterate 1a (ADR-046) established the triage inbox storage API and 2 producers (Phase-Quality, Compliance). The roadmap listed 5 more producers; this iterate ships 4 of them and explicitly defers the 5th.
-- **Decision:** Wire 4 thin `_emit_*_to_triage` helpers calling `append_triage_
+### ADR-048: Worktree-aware RTM data collection: 6-column FR tables + git-common-dir event log
+- **Date:** 2026-05-15
+- **Section:** Iterate — bug: RTM 6-column spec + worktree event-log fixes
+- **Context:** Running /shipwright-iterate on a brownfield project adopted via /shipwright-adopt produced an RTM showing a false 'Traceability coverage 0%', which the check_rtm_coverage pre-commit hook soft-blocked. Two shipwright-compliance bugs: (A) the FR-table regex parsed only 3- and 5-column tables, never th
