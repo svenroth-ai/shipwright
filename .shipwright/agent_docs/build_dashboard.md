@@ -1,10 +1,13 @@
 # Project Activity Dashboard
-> Updated: 2026-05-16 12:53 UTC | Session: fb04bce5-41b0-4629-baf5-bf3854659e19 | Run: iterate-2026-05-16-fix-adopt-review-config
+> Updated: 2026-05-16 15:52 UTC | Session: 52fec252-6976-48ba-8aca-a8b17c175d0a | Run: iterate-2026-05-16-fix-triage-dedup-resolve
 
-## Recent Changes (29 iterations)
+## Recent Changes (32 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | spec-impact classification gate: enforce ADD/MODIFY/REMOVE/NONE on every feature/change iterate (F7 record_event + F11 verifier gates, Group D5 audit, Removed Requirements convention) | 140/140 | c16d711 | FR-01.11, FR-01.10, FR-01.02 | 2026-05-16 |
+| bug | triage detector dedup + auto-resolve | 1776/1783 | 931e6b5 |  | 2026-05-16 |
+| bug | fix adopt external-review config defaults | 304/304 | 3f5777d |  | 2026-05-16 |
 | bug | events.jsonl worktree-awareness: F7/verifier/dashboard resolve the log via git-common-dir; leak-guard exempts it; dashboard embeds run_id | 2519/2526 | 34a7987 | FR-01.11 | 2026-05-16 |
 | bug | RTM data collection: parse 6-column adopt FR tables + resolve shipwright_events.jsonl via git-common-dir for worktree finalization; fixes false 'Traceability coverage 0%' on adopted projects | 312/312 | ea24bf4 | FR-01.10 | 2026-05-15 |
 | feature | Triage Inbox Iterate 2: 4 additional producers (security + performance + F0.5 + drift) wired into append_triage_item_idempotent. CI producer DEFERRED. ADR-047. | 40/40 | aab9bd7 |  | 2026-05-14 |
@@ -36,7 +39,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-16 | Unit: 304/304 | E2E: 8/8 | Smoke: not_run | (iterate)
+Last run: 2026-05-16 | Unit: 1776/1783 | E2E: 94/94 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
