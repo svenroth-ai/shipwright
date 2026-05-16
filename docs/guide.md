@@ -57,7 +57,7 @@ Shipwright is for engineers, BAs, architects, and tech leads who work with Claud
 
 ### Discipline Layer — the Harness around AI Coding
 
-Shipwright positions itself as a **discipline layer for AI coding**, not a stack framework. The two stack profiles (`supabase-nextjs`, `vite-hono`) and the Jelastic deploy target are reference implementations, not the product. The product is the discipline: IREB-aligned specs, ADRs, RTM, phase-gates, living traceability, compliance artifacts.
+Shipwright positions itself as a **discipline layer for AI coding**, not a stack framework. The three stack profiles (`supabase-nextjs`, `vite-hono`, `python-plugin-monorepo`) and the Jelastic deploy target are reference implementations, not the product. The product is the discipline: IREB-aligned specs, ADRs, RTM, phase-gates, living traceability, compliance artifacts.
 
 > **Sidenote.** What Shipwright builds, the wider AI engineering field is starting to call *harness engineering* (Martin Fowler, 2026). The harness is the surrounding system of guides (Specs, Conventions, Architecture docs) and sensors (Linters, Tests, Reviews, Scanners) that steers and corrects AI output before and after generation.
 
@@ -105,7 +105,7 @@ User Description
   SHIPWRIGHT-CHANGELOG ..... Parse Commits --> Changelog --> Version Tag --> PR
       |
       v
-  SHIPWRIGHT-DEPLOY ........ Jelastic (Infomaniak) --> Smoke Test --> Rollback on Failure
+  SHIPWRIGHT-DEPLOY ........ Profile-driven deploy (Jelastic ref.) --> Smoke Test --> Rollback
 
   After initial build, ongoing changes use /shipwright-iterate:
   SHIPWRIGHT-ITERATE ....... Classify Intent --> Assess Complexity --> Adaptive Pipeline

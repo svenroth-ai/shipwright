@@ -74,7 +74,7 @@ User Description
 └─────────────┬──────────────┘
               ▼
 ┌────────────────────────────┐
-│ shipwright-deploy          │  Jelastic (Infomaniak) → Smoke Test → Rollback on Failure
+│ shipwright-deploy          │  Profile-driven deploy (Jelastic verified) → Smoke Test → Rollback
 └────────────────────────────┘
 
 The orchestrator runs 7 phases: project → design → plan → build → test
