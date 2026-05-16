@@ -15,14 +15,15 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 | FR-01.03 | /shipwright-plan | Must | AI-assisted deep planning with research, optional interview, external dual-LLM review (Gemini + GPT in parallel), TDD-first approach; produces section files consumable by /shipwright-build. | enrichment.json |
 | FR-01.04 | /shipwright-design | Should | Generate UI mockups from IREB specs as standalone HTML screens and user flows; iteratable via chat. | enrichment.json |
 | FR-01.05 | /shipwright-build | Must | Implement code from /shipwright-plan sections with TDD (red-green-refactor), code review, Conventional Commits, feature-branch git workflow. | enrichment.json |
-| FR-01.06 | /shipwright-test | Must | Run unit tests, E2E tests (Playwright), smoke tests, and security scans for Shipwright projects. | enrichment.json |
+| FR-01.06 | /shipwright-test | Must | Run unit tests, E2E tests (Playwright), smoke tests, and security scans for Shipwright projects; emit a boundary-coverage report flagging serialized-format producer/consumer pairs that lack a round-trip test. | enrichment.json |
 | FR-01.07 | /shipwright-security | Must | Security scanning chain (Aikido + Semgrep + Trivy + Gitleaks) with automated remediation loop and per-scanner exclude lists. | enrichment.json |
 | FR-01.08 | /shipwright-deploy | Should | Deploy to configured targets with smoke testing and rollback; Jelastic (Infomaniak) shipped, Vercel + compose-VPS profiles documented as stubs. | enrichment.json |
 | FR-01.09 | /shipwright-changelog | Must | Parse Conventional Commits from git history, generate Keep-a-Changelog entries, create version tags, open release PRs. | enrichment.json |
 | FR-01.10 | /shipwright-compliance | Must | Generate audit-ready compliance documentation (RTM, test evidence, change history, SBOM) and run on-demand cross-artifact detective audit. | enrichment.json |
 | FR-01.11 | /shipwright-iterate | Must | Complexity-adaptive SDLC for ongoing changes — auto-detects intent and complexity, scales from quick fix to structured feature with specs, plans, reviews, tests; every feature/change classifies its spec impact (ADD/MODIFY/REMOVE/NONE), enforced at finalization. | enrichment.json |
 | FR-01.12 | /shipwright-preview | May | Local browser preview — start dev server for the target project and show the URL. | enrichment.json |
-| FR-01.13 | /shipwright-adopt | Must | Onboard an existing (brownfield) repository into the Shipwright SDLC; analyzes codebase, generates CLAUDE.md, agent_docs, planning specs, compliance artifacts, suggest_iterate hook, and an E2E baseline. | enrichment.json |
+| FR-01.13 | /shipwright-adopt | Must | Onboard an existing (brownfield) repository into the Shipwright SDLC; analyzes codebase, generates CLAUDE.md, agent_docs, planning specs, compliance artifacts, suggest_iterate hook, and an E2E baseline; scaffolds `.env.local` with the profile's framework keys. | enrichment.json |
+| FR-01.14 | Triage Inbox | Must | Pre-backlog triage buffer — hook/scan/audit findings land in a per-project `.shipwright/triage.jsonl` store via idempotent producers and surface in the Command Center WebUI Triage tab with operator-driven promote/dismiss, keeping the ExternalTask list curated instead of flooded. | backfill |
 
 
 ## Quality Requirements
@@ -74,6 +75,15 @@ Refined by `iterate-2026-05-16-spec-impact-gate` (spec-impact classification
   verifier runs `check_spec_impact_recorded`, then the run FAILS unless
   the F7 event recorded `spec_impact=none` with a non-empty justification.
 
+Refined by `iterate-2026-05-16-backfill-historical-frs` (backfill — F0.5
+End-to-End Verification Gate; historical events evt-510b8df3 + evt-40c653f7):
+
+- (E) Given a medium+ iterate at finalization, when F0.5 (End-to-End
+  Verification Gate) runs, then the user-erlebbare surface (web | cli |
+  api, or `none` with a recorded justification) is empirically driven
+  through a running stack via `surface_verification.py`; spec-only
+  authorship (`tests_run == 0`) counts as no test and fails the gate.
+
 ### FR-01.13 — `/shipwright-adopt` (no project-level hook install)
 
 Refined by `iterate-20260505-plugin-hook-registration`. Supersedes
@@ -86,6 +96,14 @@ hooks.json registration owned by FR-01.11).
   when `/shipwright-adopt` completes, then no `UserPromptSubmit`
   entry referencing `suggest_iterate.py` is written to that project's
   `.claude/settings.json`. The hook is plugin-owned per FR-01.11.
+
+Refined by `iterate-2026-05-16-backfill-historical-frs` (backfill —
+`.env.local` scaffolding; historical event evt-aab7ddbd):
+
+- (E) Given an adopt run, when scaffolding completes, then `.env.local`
+  is created with the profile's framework keys, and `.gitignore` is
+  enforced to match it BEFORE the write — if enforcement fails the write
+  is aborted so no secrets are staged.
 
 ### FR-01.02 — `/shipwright-project` (no project-level hook install)
 
@@ -127,3 +145,32 @@ Refined by `iterate-2026-05-16-spec-impact-gate`.
   that recorded no `spec_impact=none`, when the detective audit runs,
   then Group D check D5 ("Iterate feature/change events link an FR")
   reports it as a MEDIUM finding with a suggested remediation command.
+
+### FR-01.06 — `/shipwright-test` (boundary coverage report)
+
+Backfilled by `iterate-2026-05-16-backfill-historical-frs` from historical
+event evt-c4ae8ef7 (campaign iterate-skill-hardening Sub-Iterate D).
+
+- (E) Given a project whose code crosses serialized-format boundaries,
+  when `/shipwright-test` runs, then it emits a boundary-coverage report
+  enumerating producer/consumer pairs and flagging every pair that lacks
+  a producer→file→consumer round-trip test.
+
+### FR-01.14 — Triage Inbox
+
+Backfilled by `iterate-2026-05-16-backfill-historical-frs` from historical
+events evt-3f488ddc + evt-32f2f1f4 (Iterate 1a) and evt-84dbdf5e (Iterate 2).
+
+- (E) Given a hook, scan, or audit finding, when a producer calls
+  `append_triage_item_idempotent`, then the item is written to the
+  per-project `.shipwright/triage.jsonl` store exactly once per
+  `dedup_key` — the dedup-scan and the append run inside one lock so
+  concurrent producers cannot double-write.
+- (E) Given triage items exist, when the operator opens the Command
+  Center WebUI Triage tab, then open items are listed and each can be
+  promoted into an ExternalTask or dismissed; a promoted item leaves the
+  triage buffer.
+- (E) Producers wired: storage API + aggregator + 2 producers + scaffolder
+  + promote CLI (Iterate 1a), plus 4 further producers — security,
+  performance, F0.5, and drift (Iterate 2). The CI producer is explicitly
+  deferred.
