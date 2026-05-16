@@ -8,9 +8,21 @@ and the verifier is the guard that prevents "I forgot that step" regressions.
 """
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
+
+
+def _add_worktree(work: Path, slug: str) -> Path:
+    """Create a linked worktree under <work>/.worktrees/<slug> from main."""
+    wt = work / ".worktrees" / slug
+    subprocess.run(
+        ["git", "-C", str(work), "worktree", "add", str(wt),
+         "-b", f"iterate/{slug}", "main"],
+        capture_output=True, text=True, check=True,
+    )
+    return wt
 
 
 def _agent_docs_root(tmp: Path) -> Path:
@@ -131,6 +143,38 @@ def test_events_fails_when_file_missing(tmp_path):
     proj.mkdir()
     result = check_events_has_commit(proj, "abcd1234")
     assert result.ok is False
+
+
+def test_events_check_resolves_main_log_from_worktree(git_origin_repo):
+    """check_events_has_commit run from inside an iterate worktree must read
+    the MAIN repo's event log — that is where F7 records the commit."""
+    work, _ = git_origin_repo
+    (work / "shipwright_events.jsonl").write_text(
+        json.dumps({"type": "work_completed", "commit": "ma1nc0m"}) + "\n",
+        encoding="utf-8",
+    )
+    wt = _add_worktree(work, "probe")
+    result = check_events_has_commit(wt, "ma1nc0m")
+    assert result.ok is True
+
+
+def test_boundary_roundtrip_worktree_producer_to_verifier(git_origin_repo):
+    """AC-6 boundary round-trip: an event WRITTEN from a worktree via
+    record_event is READ BACK by the F11 verifier from that same worktree —
+    both resolve the one canonical main-repo log. This pins producer and
+    consumer to the same path."""
+    from tools.record_event import append_event
+
+    work, _ = git_origin_repo
+    wt = _add_worktree(work, "probe")
+    append_event(wt, {"v": 1, "id": "evt-rt000001", "ts": "T",
+                      "type": "work_completed", "source": "iterate",
+                      "commit": "r0undtr1p"})
+    # Producer wrote the MAIN log, not the throwaway worktree copy...
+    assert (work / "shipwright_events.jsonl").exists()
+    assert not (wt / "shipwright_events.jsonl").exists()
+    # ...and the consumer (verifier) reads it back from the worktree.
+    assert check_events_has_commit(wt, "r0undtr1p").ok is True
 
 
 # ──────────────────────────────────────────────────────────────────────

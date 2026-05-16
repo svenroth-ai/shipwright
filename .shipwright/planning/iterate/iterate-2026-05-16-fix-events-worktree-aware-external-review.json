@@ -1,0 +1,27 @@
+{
+  "run_id": "iterate-2026-05-16-fix-events-worktree-aware",
+  "mode": "iterate",
+  "provider": "openrouter",
+  "models": [
+    "openai/gpt-5.4",
+    "google/gemini-3.1-pro-preview"
+  ],
+  "timestamp": "2026-05-16T09:46:59Z",
+  "findings_total": 17,
+  "adopted": [
+    "gemini#2: drop --path-format=absolute (Git 2.31+ dep) -> plain --git-common-dir + Python resolve",
+    "gemini#1/openai#10: subprocess hygiene cwd=project_root, timeout, shell=False",
+    "openai#4 (HIGH): warnings.warn diagnostic on git-failure fallback branch (no silent data loss)",
+    "openai#7/gemini#4: drop 600s mtime heuristic -> deterministic run_id embed in dashboard header",
+    "openai#6/gemini#5: leak-guard exemption is EXACT root-relative match, subdir same-name still flagged",
+    "openai#1: parity test resolve_events_path vs data_collector._resolve_events_path",
+    "openai#3/#5/#9/#12: tests - both invocation modes, two-worktree concurrent append, real git worktree, config.py",
+    "openai#8: config.py read_events firmly in scope",
+    "openai#11: ADR documents tracked-events repo dirties main tree (chore follow-up commit pattern)"
+  ],
+  "rejected": [
+    "gemini#3 stale-lock-bypass code change: _FileLock uses OS advisory locks (crash-safe); gold-plating. Covered by concurrency test + ADR note.",
+    "openai#1 (data_collector consumes shared helper): cross-plugin import architecture change, out of scope (decided at approval). Parity test covers drift."
+  ],
+  "overall": "Both models: core direction sound. Adopted refinements applied to spec + mini-plan before build."
+}

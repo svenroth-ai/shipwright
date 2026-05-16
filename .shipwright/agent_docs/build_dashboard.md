@@ -1,5 +1,5 @@
 # Project Activity Dashboard
-> Updated: 2026-05-16 08:29 UTC | Session: 8e60b80c-b748-453b-ab62-bc5e7b4659b8
+> Updated: 2026-05-16 10:46 UTC | Session: 386ec9ab-a0c6-4796-a4e8-206d042a644e | Run: iterate-2026-05-16-fix-events-worktree-aware
 
 ## Recent Changes (28 iterations)
 
@@ -35,7 +35,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-16 | Unit: 2282/2289 | Integration: 107/107 | E2E: 6/6 | Smoke: not_run | (iterate)
+Last run: 2026-05-16 | Unit: 2519/2526 | Integration: 110/110 | E2E: 81/81 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

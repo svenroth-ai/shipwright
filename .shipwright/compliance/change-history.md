@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-05-16T08:29:21Z
-Total commits: 639
+Generated: 2026-05-16T10:46:57Z
+Total commits: 644
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 217
+    "feat" : 218
     "fix" : 168
     "chore" : 105
-    "docs" : 94
+    "docs" : 98
     "refactor" : 34
     "test" : 14
     "other" : 7
@@ -18,10 +18,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 217 commits
+### Features (feat) — 218 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-16 | iterate | unconditional worktree isolation for /shipwright-iterate | 42e65d7e0032 |
 | 2026-05-14 | triage | producers iterate 2 — security + performance + F0.5 + drift wiring | aab9bd7dafb7 |
 | 2026-05-11 | triage | promote CLI for non-webui repos (AC-7) | 7f131f9d940d |
 | 2026-05-11 | triage | adopt-time scaffolder + Step E.16 in adopt skill (AC-6) | 719790d3e777 |
@@ -523,10 +524,14 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 94 commits
+### Documentation (docs) — 98 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-16 | — | align ASCII pipeline diagrams with profile-driven deploy | bd5a0b955ef1 |
+| 2026-05-16 | — | document performance budgets + honest deploy-target framing | c9a442e0c28e |
+| 2026-05-16 | — | document the python-plugin-monorepo stack profile | 2e1f1fcec211 |
+| 2026-05-16 | — | sync guide/README/CLAUDE.md — embedded terminal + recent commits | deab17166c93 |
 | 2026-05-11 | triage | 1-pager + guide.md ch4.11 + hooks-and-pipeline registration (AC-9) | 3088691237f7 |
 | 2026-05-11 | triage | plan iterate 1a (spec + mini-plan + external review) | 70bf312eabf7 |
 | 2026-05-07 | guide | modernize Chapter 2 install section — marketplace CLI first, fresh-machine baseline per platform, restart-Claude-Code hint | c1ad0d2005c3 |
@@ -696,7 +701,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 639 |
+| Total commits | 644 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 639 |
+| Human-authored commits | 644 |
 

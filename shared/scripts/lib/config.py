@@ -16,6 +16,8 @@ import warnings
 from pathlib import Path
 from typing import Any
 
+from .events_log import resolve_events_path
+
 CONFIG_FILES = {
     "run": "shipwright_run_config.json",
     "project": "shipwright_project_config.json",
@@ -130,8 +132,14 @@ def collect_all_build_sections(project_root: str | Path) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 def read_events(project_root: str | Path) -> list[dict[str, Any]]:
-    """Read all events from the JSONL log. Tolerant — skips corrupt lines."""
-    path = Path(project_root) / EVENT_FILE
+    """Read all events from the JSONL log. Tolerant — skips corrupt lines.
+
+    Worktree-aware: resolves the canonical (main-repo) event log via
+    ``resolve_events_path`` so the build dashboard renderer, run from inside
+    a ``/shipwright-iterate`` worktree at F5b, reads the full event history
+    rather than an absent/empty worktree-local copy.
+    """
+    path = resolve_events_path(project_root)
     if not path.exists():
         return []
     events: list[dict[str, Any]] = []

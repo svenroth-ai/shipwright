@@ -182,7 +182,7 @@ machinery are gone — they were a workaround for isolation that was
 
 Run this BEFORE B2 and before writing ANY artifact, as soon as the slug is
 known. Derive `<slug>` as a short kebab-case description of the change and
-`<run_id>` as `iterate-{YYYYMMDD}-{slug}` (Step C formalizes the same
+`<run_id>` as `iterate-{YYYY-MM-DD}-{slug}` (Step C formalizes the same
 values):
 
 ```bash
@@ -256,8 +256,12 @@ If a file does not exist, skip it but print WARNING: "Operating with incomplete 
 
 ### C. Generate Run ID
 
-Generate `run_id`: `iterate-{YYYYMMDD}-{short-description}`
-Example: `iterate-20260405-course-search`
+Generate `run_id`: `iterate-{YYYY-MM-DD}-{short-description}`
+Example: `iterate-2026-04-05-course-search`
+
+The dashed-date form is the canonical run_id shape — `RUN_ID_STRICT` in
+`shared/scripts/lib/iterate_entry.py` and `append_iterate_entry.py` (F5c)
+enforce it; every historical run_id uses it.
 
 This ID is propagated through ALL artifacts: iterate spec, mini-plan, ADR, event log, iterate_history, session handoff.
 
@@ -1418,10 +1422,14 @@ uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
   --reason "iterate completion: {run_id}"
 ```
 
-**Gate check:** Verify F7 (Record Event) was executed:
-```bash
-grep "$(git -C "{project_root}" rev-parse HEAD)" "{project_root}/shipwright_events.jsonl" > /dev/null 2>&1
-```
+**Gate check:** F7 (Record Event) writes the `work_completed` event into
+the worktree-aware-resolved event log — the MAIN repo's
+`shipwright_events.jsonl`, not the worktree copy (see
+`events_log.resolve_events_path`). The deterministic verifier below checks
+this authoritatively via `check_events_has_commit` (also worktree-aware), so
+no separate grep is needed. A literal
+`grep "{project_root}/shipwright_events.jsonl"` would false-negative — that
+worktree path is not where F7 writes.
 
 **Deterministic verifier.** After the gate check, run the finalization
 verifier and fail the iterate run on red:

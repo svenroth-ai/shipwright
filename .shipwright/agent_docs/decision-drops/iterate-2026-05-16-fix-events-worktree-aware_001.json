@@ -1,0 +1,13 @@
+{
+  "run_id": "iterate-2026-05-16-fix-events-worktree-aware",
+  "date": "2026-05-16",
+  "section": "Iterate — bug: events.jsonl worktree-awareness + dashboard run_id WARN",
+  "title": "Worktree-aware event-log resolution",
+  "context": "Under /shipwright-iterate worktree isolation, F7 recorded its work_completed event at the literal --project-root (the ephemeral worktree), so the event was discarded on `git worktree remove` and never reached the main repo's shipwright_events.jsonl. The F11 verifier's check_events_has_commit read the same empty worktree copy. Separately, the dashboard run_id check WARNed every iterate because F5b renders build_dashboard.md before the F6 commit SHA exists.",
+  "decision": "Added shared SSoT helper events_log.resolve_events_path (git rev-parse --git-common-dir) and wired the worktree-reachable accessors to it: record_event.py (F7 read/append + lock path), verifiers/iterate_checks.check_events_has_commit (F11), config.read_events (F5b dashboard). The F0/F11 leak-guard (worktree_isolation.py) exempts shipwright_events.jsonl(.lock) as a designed main-tree write. F5b embeds the iterate run_id in the dashboard header so the verifier passes deterministically.",
+  "consequences": "F7 events now reach the main repo's event log and the F11 verifier finds them; the dashboard WARN is gone. Tracked-events repos (the Shipwright monorepo itself) get an uncommitted 'M shipwright_events.jsonl' in the main tree post-F7 — the existing chore-commit pattern captures it. A drift meta-test (test_events_log_ssot.py, forward+reverse) guards the SSoT. Self-Review: 7-point pass; 2629 tests green + 0 regressions (7 pre-existing baseline verified on origin/main); external + code review findings applied.",
+  "rationale": "Models compliance's data_collector._resolve_events_path but hardens it: drops --path-format=absolute (a Git 2.31+ dependency that would silently fall back on older git) and emits a warnings.warn diagnostic on the git-failure fallback so silent data loss is visible; strips GIT_DIR/GIT_COMMON_DIR/GIT_WORK_TREE so resolution stays pinned to project_root. The deterministic run_id embed replaces a brittle mtime heuristic.",
+  "rejected": "mtime-600s dashboard freshness heuristic (brittle to clock skew/slow CI — external review). Re-rendering the dashboard between F7 and F11 (leaves build_dashboard.md dirty post-commit, never in the PR — fights atomic-F6). Stale-lock bypass for the centralized .lock (gold-plating — _FileLock uses crash-safe OS advisory locks). Migrating data_collector to the shared helper (cross-plugin import architecture change, out of scope; a parity test guards drift instead).",
+  "commit": "",
+  "architecture_impact": "convention"
+}

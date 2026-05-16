@@ -1457,7 +1457,7 @@ Before execution begins, iterate prints a summary of what will run:
 
 ```
 SHIPWRIGHT-ITERATE: Session Plan
-  Run ID:      iterate-20260405-course-search
+  Run ID:      iterate-2026-04-05-course-search
   Intent:      FEATURE
   Complexity:  Small (1 FR, ~4 files, risk: touches_migrations)
   Phases:      spec → design text → build (TDD) → self-review → scoped test → finalize
@@ -1770,7 +1770,7 @@ uv run shared/scripts/tools/verify_phase.py --project-root . --phase plan --stri
 
 # Iterate finalization (requires --run-id + --commit)
 uv run shared/scripts/tools/verify_iterate_finalization.py \
-  --run-id iterate-20260414-xxx --commit $(git rev-parse HEAD)
+  --run-id iterate-2026-04-14-xxx --commit $(git rev-parse HEAD)
 ```
 
 `--strict` treats warnings as errors. The exit code is 0 for green (or warnings-only without `--strict`) and 1 for any error.

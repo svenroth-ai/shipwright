@@ -127,6 +127,70 @@ def test_detect_leak_tolerates_preexisting(git_origin_repo):
     assert new == []
 
 
+def test_detect_leak_ignores_untracked_event_log(git_origin_repo):
+    """F7 writes shipwright_events.jsonl into the MAIN tree by design (the
+    event log is a repo-scoped journal). The leak-guard must NOT flag it —
+    nor its .lock mutex — even when untracked."""
+    work, _ = git_origin_repo
+    write_snapshot(work, "run-a")
+    (work / "shipwright_events.jsonl").write_text("{}\n", encoding="utf-8")
+    (work / "shipwright_events.jsonl.lock").write_text("", encoding="utf-8")
+    clean, new = detect_leak(work, "run-a")
+    assert clean is True
+    assert new == []
+
+
+def test_detect_leak_ignores_tracked_event_log(git_origin_repo):
+    """Same exemption when shipwright_events.jsonl is TRACKED — the
+    Shipwright monorepo tracks it, so an F7 append shows as `M` not `??`."""
+    work, _ = git_origin_repo
+    (work / "shipwright_events.jsonl").write_text("{}\n", encoding="utf-8")
+    subprocess.run(
+        ["git", "-C", str(work), "add", "shipwright_events.jsonl"],
+        capture_output=True, text=True, check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(work), "-c", "user.name=t",
+         "-c", "user.email=t@t.invalid", "commit", "-m", "track event log"],
+        capture_output=True, text=True, check=True,
+    )
+    write_snapshot(work, "run-b")  # clean snapshot
+    (work / "shipwright_events.jsonl").write_text(
+        '{}\n{"x":1}\n', encoding="utf-8"
+    )  # F7 appends → tracked file now modified
+    clean, new = detect_leak(work, "run-b")
+    assert clean is True
+    assert new == []
+
+
+def test_detect_leak_still_flags_event_log_in_subdir(git_origin_repo):
+    """The exemption is an EXACT root-relative match: a same-named file in
+    a subdirectory is NOT the canonical event log and is still a leak.
+
+    `nested/` is committed first so git does not collapse the untracked
+    directory into a single `nested/` status entry — the new file then
+    surfaces as its own porcelain path.
+    """
+    work, _ = git_origin_repo
+    nested = work / "nested"
+    nested.mkdir()
+    (nested / "keep.txt").write_text("x", encoding="utf-8")
+    subprocess.run(
+        ["git", "-C", str(work), "add", "nested/keep.txt"],
+        capture_output=True, text=True, check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(work), "-c", "user.name=t",
+         "-c", "user.email=t@t.invalid", "commit", "-m", "track nested/"],
+        capture_output=True, text=True, check=True,
+    )
+    write_snapshot(work, "run-c")
+    (nested / "shipwright_events.jsonl").write_text("{}\n", encoding="utf-8")
+    clean, new = detect_leak(work, "run-c")
+    assert clean is False
+    assert "nested/shipwright_events.jsonl" in new
+
+
 def test_run_pointer_round_trip(git_origin_repo):
     work, _ = git_origin_repo
     write_run_pointer(

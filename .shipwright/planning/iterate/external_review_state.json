@@ -1,9 +1,10 @@
 {
-  "status": "skipped_user_opt_out",
-  "timestamp": "2026-05-14T20:55:44.324583+00:00",
-  "provider": null,
-  "findings_count": 0,
-  "self_review_fallback_ran": true,
-  "reason": "feedback_iterations=0 in shipwright_iterate_config.json (project-level opt-out, set 2026-05-05). Iterate proceeds with mandatory self-review fallback; post-build external code review remains enabled per external_code_review.enabled=true.",
-  "review_mode": "iterate"
+  "split": "iterate",
+  "run_id": "iterate-2026-05-16-fix-events-worktree-aware",
+  "status": "completed",
+  "provider": "openrouter",
+  "findings_count": 17,
+  "self_review_fallback_ran": false,
+  "reason": "external LLM iterate review ran (openrouter: gpt-5.4 + gemini-3.1-pro) on iterate spec + mini-plan",
+  "timestamp": "2026-05-16T09:46:59Z"
 }

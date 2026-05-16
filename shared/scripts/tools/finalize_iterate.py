@@ -28,12 +28,20 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
 
-def _update_dashboard(project_root: Path, session_id: str) -> str | None:
-    """Update build_dashboard.md. Returns written path or None."""
+def _update_dashboard(project_root: Path, session_id: str, run_id: str) -> str | None:
+    """Update build_dashboard.md. Returns written path or None.
+
+    ``run_id`` is embedded in the dashboard header so the F11 finalization
+    verifier (check_build_dashboard_has_run_id) has a deterministic marker:
+    F5b renders this dashboard BEFORE the F6 commit + F7 event, so the new
+    commit SHA cannot yet be in it.
+    """
     try:
         from tools.update_build_dashboard import generate_dashboard
 
-        content = generate_dashboard(project_root, phase="iterate", session_id=session_id)
+        content = generate_dashboard(
+            project_root, phase="iterate", session_id=session_id, run_id=run_id
+        )
         out_path = project_root / ".shipwright" / "agent_docs" / "build_dashboard.md"
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(content, encoding="utf-8")
@@ -129,7 +137,7 @@ def run(
     session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
     result: dict = {"steps": {}, "project_root": str(project_root)}
 
-    dashboard_path = _update_dashboard(project_root, session_id)
+    dashboard_path = _update_dashboard(project_root, session_id, run_id)
     result["steps"]["dashboard"] = {"written": dashboard_path} if dashboard_path else {"skipped": True}
 
     compliance_paths = _update_compliance(project_root)

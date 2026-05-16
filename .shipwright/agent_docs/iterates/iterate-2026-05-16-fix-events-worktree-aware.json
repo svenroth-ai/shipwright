@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-16-fix-events-worktree-aware",
+  "date": "2026-05-16T10:47:06.669217Z",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/fix-events-worktree-aware",
+  "spec": ".shipwright/planning/iterate/2026-05-16-fix-events-worktree-aware.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-05-16-fix-events-worktree-aware"
+}

@@ -29,6 +29,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.events_log import EVENT_FILE  # noqa: E402
 from lib.iterate_entry import sanitize_run_id_for_filename  # noqa: E402
 
 
@@ -54,6 +55,18 @@ _RUN_INFRA_PREFIXES = (
     f".shipwright/{ACTIVE_POINTER_DIRNAME}",
     f"{WORKTREES_DIRNAME}/",
     f"{WORKTREES_DIRNAME}",
+)
+
+# The event log is a REPO-scoped append-only journal: /shipwright-iterate F7
+# records the run's work_completed event into the MAIN repo's log (post-F6,
+# by design — see record_event.resolve_events_path). That deliberate write,
+# and its `.lock` mutex, is never a branch-scoped "leak", so the leak-guard
+# must ignore it — exactly as it ignores run scaffolding above. Matched as an
+# EXACT root-relative path: a same-named file in a subdirectory is NOT the
+# canonical log and stays flagged.
+_MAIN_TREE_WRITE_EXEMPT = (
+    EVENT_FILE,
+    EVENT_FILE + ".lock",
 )
 
 
@@ -262,7 +275,7 @@ def _scan_porcelain(out: str) -> tuple[set[str], bool]:
         if norm.rstrip("/") == ".shipwright":
             saw_bare_shipwright = True
             continue
-        if not _is_run_infra(norm):
+        if not _is_run_infra(norm) and norm not in _MAIN_TREE_WRITE_EXEMPT:
             paths.add(norm)
     return paths, saw_bare_shipwright
 
