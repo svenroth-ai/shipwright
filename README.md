@@ -134,6 +134,7 @@ Profiles define the entire stack: versions, folder structure, deploy target, tes
 |---------|-------|--------|
 | `supabase-nextjs` | Next.js 16 · Supabase · Tailwind 4 · shadcn/ui · Zustand · Vitest · Playwright | Jelastic (Infomaniak) |
 | `vite-hono` | Vite + React (frontend) · Hono (backend) · multi-service dev server · Vitest · Playwright | — |
+| `python-plugin-monorepo` | Python `uv` workspace · pytest · ruff · no web server | — |
 
 **Custom profiles.** Drop a new JSON file into `shared/profiles/` to define your own stack — versions, folder layout, deploy target, test strategy, linting, CI, and architecture rules. Shipwright picks it up automatically and `/shipwright-run` can infer it from your project description.
 

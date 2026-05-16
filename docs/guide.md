@@ -1072,14 +1072,15 @@ A **stack profile** is a JSON file that defines everything about your technology
 
 When you run `/shipwright-run`, Shipwright infers the correct profile from your project description (or asks you to confirm). Every downstream skill -- project decomposition, planning, build, test, deploy -- reads the profile to make consistent decisions without you repeating configuration.
 
-Two profiles ship out-of-the-box:
+Three profiles ship out-of-the-box:
 
 | Profile | Layout | When to use |
 |---------|--------|-------------|
 | `supabase-nextjs` (default) | Single-service Next.js + Supabase | Standard SaaS: Next.js full-stack with Supabase as backend |
 | `vite-hono` | Multi-service: Vite (frontend) + Hono (backend) | Split frontend/backend with a separate API server (or any project that wants the Vite dev-experience) |
+| `python-plugin-monorepo` | Python `uv` workspace — no web server | Libraries, frameworks, or CLI / plugin monorepos with no deployable frontend (pytest + ruff, no dev server, no deploy target) |
 
-The `vite-hono` profile uses the multi-service `services: [...]` declaration documented in Section 7.3 (topo-ordered start, `depends_on` between services, partial-failure rollback). Legacy single-service profiles continue to use `dev_server: {...}`.
+The `vite-hono` profile uses the multi-service `services: [...]` declaration documented in Section 7.3 (topo-ordered start, `depends_on` between services, partial-failure rollback). Legacy single-service profiles continue to use `dev_server: {...}`. The `python-plugin-monorepo` profile sets `dev_server: null` and `deploy: null` — `/shipwright-preview` and `/shipwright-deploy` skip cleanly for projects that have nothing to serve or ship. (The Shipwright monorepo itself uses this profile.)
 
 **Sibling concept -- Deploy Profiles.** Where stack profiles describe the build-and-run shape of a project, **deploy profiles** describe the deploy-target shape (auth, environments, smoke test, rollback discipline). They live at `shared/profiles/deploy/<target_id>.json`, are validated against `shared/profiles/deploy-profile.schema.json`, and are introduced in Section 4.9. Three reference deploy profiles ship today: `jelastic` (full implementation), `vercel` (declarative stub), `compose-vps` (declarative stub). The validator at `shared/scripts/tools/validate_deploy_profile.py --all` enforces both JSON-Schema structure and a layer of cross-field semantic checks.
 
