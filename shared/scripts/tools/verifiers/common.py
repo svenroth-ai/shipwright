@@ -312,6 +312,25 @@ def check_c4_decision_log_has_phase_adr(
     stricter pattern.
     """
     name = f"C4 decision_log has {phase} ADR"
+    phase_lc = phase.lower()
+
+    # Iterate decision-drop pattern (H): F3 writes the ADR as a JSON drop
+    # under decision-drops/ keyed by run_id; the sequential ADR-NNN lands in
+    # decision_log.md only at /shipwright-changelog aggregation. A pending
+    # drop satisfies C4 — the decision was taken and recorded.
+    if phase_lc == "iterate":
+        drop_dir = project_root / ".shipwright" / "agent_docs" / "decision-drops"
+        if drop_dir.is_dir():
+            drops = [
+                p for p in drop_dir.glob("*.json")
+                if not p.name.startswith("_")
+            ]
+            if drops:
+                return CheckResult(
+                    name, True,
+                    f"{len(drops)} decision-drop(s) pending aggregation",
+                )
+
     log = read_decision_log(project_root)
     if not log:
         return CheckResult(name, False, "decision_log.md missing or empty")
@@ -320,7 +339,6 @@ def check_c4_decision_log_has_phase_adr(
     if not headers:
         return CheckResult(name, False, "no ADR headers parsed")
 
-    phase_lc = phase.lower()
     hits = [
         h for h in headers
         if phase_lc in h.title.lower()

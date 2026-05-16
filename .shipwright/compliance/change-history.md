@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-05-15T07:30:26Z
-Total commits: 637
+Generated: 2026-05-16T08:29:21Z
+Total commits: 639
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 217
-    "fix" : 167
-    "chore" : 104
+    "fix" : 168
+    "chore" : 105
     "docs" : 94
     "refactor" : 34
     "test" : 14
@@ -240,10 +240,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 167 commits
+### Fixes (fix) — 168 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-15 | compliance | worktree-aware RTM data collection | ea24bf4284d2 |
 | 2026-05-11 | triage | path-canon allowlist + use _AGENT_DOCS_DIRNAME constant | 734bba94d211 |
 | 2026-05-11 | triage | address external code review HIGH + MED findings | 0229b4c3b9f2 |
 | 2026-05-11 | test-hygiene | lazy pytest import so CLI runs without pytest installed | 905bbde7788c |
@@ -412,10 +413,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 104 commits
+### Chores (chore) — 105 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-15 | compliance | record F7 work_completed event for ea24bf4 | fd68dd347db7 |
 | 2026-05-14 | triage | post-F7 refresh of build_dashboard + compliance + handoff | 9f17372f5889 |
 | 2026-05-14 | triage | append F7 work_completed event for iterate-2 commit | 2f55b21975f6 |
 | 2026-05-14 | triage | finalize ADR-047 commit SHA after F6 commit | f7b5d84da9b2 |
@@ -694,7 +696,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 637 |
+| Total commits | 639 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 637 |
+| Human-authored commits | 639 |
 

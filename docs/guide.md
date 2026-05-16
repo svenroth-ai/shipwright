@@ -1555,98 +1555,110 @@ Shipwright runs a CLAUDE.md drift check automatically at every session start (vi
 
 ## 8.5 Parallel Development with Worktrees
 
-**When you want this:** you are mid-iterate on one topic and an unrelated fix or feature surfaces. Blocking the new work until the current iterate ships is wasteful; creating a second branch in the same working tree requires stashing uncommitted work. Git worktrees give you a second checkout of the same repo, on a different branch, in a sibling directory — same git history, isolated files.
+**Worktree isolation is automatic and unconditional.** Since v0.5.0 every
+`/shipwright-iterate` run executes in its own git worktree + branch + PR —
+you do not set this up by hand, and there is no "parallel mode" to opt
+into. Git worktrees give each run a second checkout of the same repo, on
+its own branch, in a sibling directory: shared git history, isolated files.
 
-Shipwright embeds the conventions for this directly in `/shipwright-iterate` B1 (the "Parallel" option) and in `/shipwright-build` Step E. This chapter is the hands-on walkthrough and pitfall reference.
+The skill's B1a step (`setup_iterate_worktree.py`) creates the worktree;
+the F0/F11 leak-guard (`check_iterate_isolation.py`) fails the run closed
+if isolation is ever violated. This chapter is the model plus the few
+things you still do manually.
 
 ### Mental model
 
-- A worktree is a second working directory bound to the same `.git`. Commits, branches, tags, remotes are shared.
-- Each worktree has its own checked-out branch. Two worktrees cannot share a branch.
-- `.worktrees/<slug>/` inside the repo is the Shipwright convention (the folder is `.gitignore`'d so it never gets committed).
-- Branches for parallel iterates always start from the project's **default branch** (resolved dynamically via `git symbolic-ref refs/remotes/origin/HEAD`, fallback `main`), never from another `iterate/*`.
+- A worktree is a second working directory bound to the same `.git`.
+  Commits, branches, tags, and remotes are shared; the checked-out files
+  are isolated.
+- Every iterate run lives in `.worktrees/<slug>/` on branch
+  `iterate/<slug>` (the `.worktrees/` folder is `.gitignore`'d). B1a cuts
+  the branch from a freshly-fetched `origin/<default>` — never local
+  `main`, never another `iterate/*`.
+- The session process stays in the main repo; only the skill's working
+  paths point into the worktree, so webui session discovery is unaffected.
+- One iterate = one worktree = one branch = one PR. The run finalizes by
+  pushing the branch and opening a PR (F11) — it never merges the default
+  branch itself.
 
-### Setup walkthrough
+### Running iterates — including in parallel
 
-Run this from the main repo root:
+There is nothing to set up. Run `/shipwright-iterate` and B1a creates the
+worktree. To run a SECOND iterate in parallel, just open another Claude
+Code session against the same repo and run `/shipwright-iterate` with the
+new request — it gets its own worktree automatically. The two runs cannot
+share a working tree, race a `git checkout`, or cross-write each other's
+files.
 
-```bash
-# Resolve default branch (no hardcoded `main`):
-DEFAULT_BRANCH=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@' || echo main)
+The former "Parallel" menu option and the canonical/secondary
+session-role machinery are gone — they were a workaround for isolation
+that used to be conditional. Isolation is now structural.
 
-# Check preconditions:
-SLUG=parallel-fix-xyz
-git worktree list | grep -q ".worktrees/$SLUG" && { echo "worktree exists"; exit 1; }
-git branch --list "iterate/$SLUG" | grep -q . && { echo "branch exists"; exit 1; }
+A worktree carries tracked files only — neither `.env*` nor
+`node_modules`/`.venv` transfer. Re-hydrate after creation: copy `.env*`
+from the main repo and run the project's install command (`npm install`,
+`uv sync`). This per-run overhead is accepted by design.
 
-# Create worktree + branch from default:
-git worktree add ".worktrees/$SLUG" -b "iterate/$SLUG" "$DEFAULT_BRANCH"
-cd ".worktrees/$SLUG"
+### Resuming an interrupted iterate
 
-# Re-hydrate ENVs and dependencies (worktrees carry neither):
-[ -f ../../.env.local ]          && cp ../../.env.local .env.local
-[ -f ../../.env ]                && cp ../../.env .env
-[ -f package.json ]              && npm install
-[ -f pyproject.toml ]            && uv sync
-```
-
-Open a new Claude Code session (or editor window) inside `.worktrees/$SLUG` and run `/shipwright-iterate` fresh. B1 will detect the original iterate branch, but since you are now on `iterate/$SLUG` inside the worktree, the Resume/Parallel prompt resolves cleanly (self-exclusion via `git rev-parse --show-toplevel`).
-
-### Dev-server workflow (Command Center)
-
-Since **v0.4.0** the Command Center WebUI lives in its own repo:
-[shipwright-webui](https://github.com/svenroth-ai/shipwright-webui).
-Parallel-worktree `PORT` / `VITE_PORT` overrides, the `strictPort` and
-Hono bind-error-handler mechanics, and the `dev:fresh` helper are now
-documented there (see the new repo's `CLAUDE.md` "Dev-server
-troubleshooting" section). Nothing in this guide depends on the WebUI
-being present — iterate work is driven entirely from your Claude
-terminal + the plugins in this repo.
-
-### Pitfalls
-
-1. **CHANGELOG.md `[Unreleased]` merge hotspot.** Every iterate's F4 step appends to the same section. Two parallel iterates → merge conflict on the second PR. Workflow today: the second PR rebases and resolves the bullet merge manually (usually trivial). Structural fix (`CHANGELOG-unreleased.d/` drop pattern) is tracked under the iterate_history refactor.
-2. **`iterate_history[]` merge conflict on adopted projects.** `shipwright_run_config.json` has an `iterate_history` array that the finalize hook appends to. Parallel iterates produce a merge conflict here too. Use the parallel workflow on adopted projects only if you accept manual resolution. Structural fix (file-per-iterate) must land before adopting the shipwright monorepo itself.
-3. **`shipwright_run_config.json` is not multi-writer safe.** Several phase configs write to this file. Avoid concurrent writes on the same target project from parallel worktrees.
-4. **`.env*` and `node_modules` do not transfer.** Worktrees carry tracked files only. The setup snippet above re-hydrates both — do not skip it.
-5. **Editor / VSCode.** Open the worktree as a separate workspace window, not as a subfolder of the main repo workspace. File-watcher noise and project-wide search behave poorly on nested worktrees.
-6. **Hot-module-reload (HMR).** Vite's HMR uses the same port as the dev server by default; two instances with different `VITE_PORT` values each get their own HMR port automatically. Do **not** pin `server.hmr.port` explicitly — that would force both instances onto one HMR port and create the exact collision this chapter aims to avoid.
-7. **Stale iterate branches.** `/shipwright-iterate` B1 calls `shared/scripts/tools/list_iterate_branches.py` (added in v0.3.2) to enumerate `iterate/*` branches and classify them as `active`, `stale`, or `locked`. The helper is read-only; it reports, the operator deletes. Known limitations: (a) squash-merged branches stay `active` until manual `git branch -D iterate/<slug>` — no reliable local detection without PR metadata; (b) if both `main` AND `master` exist locally, pass `--main <name>` explicitly to resolve the ambiguity.
-8. **Marketplace plugin cache is shared across worktrees.** Claude Code executes `~/.claude/plugins/cache/shipwright/` at runtime, which is a single directory shared between every worktree of this repo. Plugin-side edits (`plugins/*`, `shared/scripts/*`, any `SKILL.md`) in one worktree do **not** reach the other until `bash scripts/update-marketplace.sh` runs from main. When iterating on plugin internals in parallel, run the sync after each commit that touches plugin-side files — not only at release time. See the repo-root `CLAUDE.md` "When editing plugin-side files" section.
+If a previous run's worktree still exists, B1 detects it and offers
+**Resume** / **Abandon** / **Complete**. Resume `cd`s back into that
+worktree and continues; Abandon removes the worktree + branch.
 
 ### Cleanup
 
-Worktree removal does **not** delete the branch. Both steps are needed after PR merge:
+Worktree removal does **not** delete the branch. After a PR merges, run
+both — from the main repo, not from inside the worktree:
 
 ```bash
-# From the main repo (not from inside the worktree):
-git worktree remove .worktrees/parallel-fix-xyz
-git branch -D iterate/parallel-fix-xyz
+git worktree remove .worktrees/<slug>
+git branch -D iterate/<slug>
 ```
 
-For an unmerged worktree you want to discard:
+For an unmerged worktree you want to discard, add `--force` to the remove.
+`git worktree prune` clears stale entries left behind by a deleted
+worktree directory.
 
-```bash
-git worktree remove --force .worktrees/parallel-fix-xyz
-git branch -D iterate/parallel-fix-xyz
-```
+### Pitfalls
 
-For a dormant worktree that is no longer listed but leaves a stale entry in `git worktree list`:
-
-```bash
-git worktree prune
-```
+1. **Common artifacts are conflict-free by design.** Changelog entries
+   (`CHANGELOG-unreleased.d/` drop files), `iterate_history`
+   (file-per-iterate under `.shipwright/agent_docs/iterates/`), and ADRs
+   (decision-drops under `.shipwright/agent_docs/decision-drops/`) are all
+   per-run files — two parallel iterates never collide on them. A PR only
+   conflicts if it touches the same SOURCE files; rebase the second PR
+   onto the updated `origin/<default>` to resolve.
+2. **`shipwright_run_config.json` is not multi-writer safe.** Several
+   phase configs write to this file. Avoid concurrent *pipeline* writes on
+   the same target project; iterate runs no longer touch
+   `iterate_history` in it (file-per-iterate).
+3. **Editor / VSCode.** Open the worktree as a separate workspace window,
+   not as a subfolder of the main repo workspace — nested-worktree
+   file-watching and project-wide search behave poorly.
+4. **Stale iterate branches.** B1 calls
+   `shared/scripts/tools/list_iterate_branches.py` to classify `iterate/*`
+   branches as `active`, `stale`, or `locked`. The helper is read-only —
+   it reports, the operator deletes. Limitations: (a) squash-merged
+   branches stay `active` until manual `git branch -D iterate/<slug>`;
+   (b) if both `main` AND `master` exist locally, pass `--main <name>`.
+5. **Marketplace plugin cache is shared across worktrees.** Claude Code
+   runs `~/.claude/plugins/cache/shipwright/`, a single directory shared
+   by every worktree. Plugin-side edits (`plugins/*`, `shared/scripts/*`,
+   any `SKILL.md`) do not reach runtime until
+   `bash scripts/update-marketplace.sh` runs from main. See the repo-root
+   `CLAUDE.md` "When editing plugin-side files" section.
 
 ### When to use which approach
 
 | Situation | Approach |
 |-----------|----------|
-| Unrelated fix that blocks nothing | Parallel worktree — keep the original iterate running |
+| Unrelated fix that blocks nothing | Second `/shipwright-iterate` session — its own worktree, automatically |
 | Related follow-up on the same topic | Stay in the current iterate; add a sub-task |
 | Conflicting change on the same files | Serialize — parallelize only disjoint file scopes |
-| Quick one-line doc fix | Commit directly on the current branch or a tiny standalone branch; worktree overhead not worth it |
+| Quick one-line doc fix | Still goes through `/shipwright-iterate`; the worktree overhead is automatic now |
 
-See also: the embedded conventions in `plugins/shipwright-iterate/skills/iterate/SKILL.md` section **B1a**, and `plugins/shipwright-build/skills/build/SKILL.md` section **E** for the skill-level enforcement.
+See also the skill-level enforcement in
+`plugins/shipwright-iterate/skills/iterate/SKILL.md` section **B1a**.
 
 ---
 

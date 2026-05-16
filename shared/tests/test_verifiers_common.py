@@ -185,6 +185,28 @@ def test_c4_fails_when_no_matching_adr(tmp_path):
     assert r.ok is False
 
 
+def test_c4_passes_for_iterate_with_pending_decision_drop(tmp_path):
+    """H decision-drop pattern: an iterate's ADR lives as a JSON drop until
+    /shipwright-changelog aggregation. A pending drop satisfies C4 even
+    before decision_log.md carries the numbered ADR."""
+    drops = tmp_path / ".shipwright" / "agent_docs" / "decision-drops"
+    drops.mkdir(parents=True)
+    (drops / "iterate-20260515-x_001.json").write_text("{}")
+    r = check_c4_decision_log_has_phase_adr(tmp_path, "iterate")
+    assert r.ok is True
+    assert "decision-drop" in r.detail
+
+
+def test_c4_non_iterate_phase_ignores_decision_drops(tmp_path):
+    """The decision-drop fast-path is iterate-only — other phases still
+    require their ADR in decision_log.md."""
+    drops = tmp_path / ".shipwright" / "agent_docs" / "decision-drops"
+    drops.mkdir(parents=True)
+    (drops / "iterate-x_001.json").write_text("{}")
+    r = check_c4_decision_log_has_phase_adr(tmp_path, "project")
+    assert r.ok is False
+
+
 def test_c5_passes_when_unreleased_category_has_bullet(tmp_path):
     (tmp_path / "CHANGELOG.md").write_text(
         "# Changelog\n\n## [Unreleased]\n\n### Added\n- New project\n"

@@ -33,6 +33,7 @@ from lib.iterate_entry import (  # noqa: E402
     MIGRATION_QUARANTINED_COUNT_KEY,
     find_entry_by_run_id,
     read_iterate_entries,
+    sanitize_run_id_for_filename,
 )
 
 from .common import CheckResult, Severity  # noqa: E402
@@ -73,7 +74,15 @@ def check_events_has_commit(project_root: Path, commit_hash: str) -> CheckResult
 
 def check_adr_in_iterate_history(project_root: Path, run_id: str) -> CheckResult:
     """F3 + F5c consistency — the entry for ``run_id`` carries an ``adr`` field
-    that points at an ADR actually present in ``decision_log.md``.
+    that resolves to a real ADR.
+
+    Two ADR-identity shapes are accepted:
+
+    - ``ADR-NNN`` — a numbered ADR; must be a heading in ``decision_log.md``
+      (the direct-append path used by non-iterate phases).
+    - a run-id — the iterate decision-drop pattern (H). Pre-aggregation the
+      ADR lives as a JSON drop under ``decision-drops/``; post-aggregation it
+      has been folded into ``decision_log.md`` with a ``Run-ID:`` line.
 
     Entry lookup goes through the merged reader so new-format projects
     without any legacy array still resolve cleanly.
@@ -87,9 +96,34 @@ def check_adr_in_iterate_history(project_root: Path, run_id: str) -> CheckResult
         return CheckResult(name, False, f"iterate_history[{run_id}].adr missing")
 
     log = project_root / ".shipwright" / "agent_docs" / "decision_log.md"
+    log_content = (
+        log.read_text(encoding="utf-8", errors="ignore") if log.exists() else ""
+    )
+
+    # Run-id ADR identity — the H decision-drop pattern. fullmatch (not
+    # match) so a run-id that merely starts with "adr-" is not misread as a
+    # numbered ADR.
+    if not re.fullmatch(r"(?i)ADR-\d+", adr_id.strip()):
+        drop_dir = project_root / ".shipwright" / "agent_docs" / "decision-drops"
+        if drop_dir.is_dir():
+            safe = sanitize_run_id_for_filename(adr_id)
+            if any(p.name.startswith(f"{safe}_") for p in drop_dir.glob("*.json")):
+                return CheckResult(
+                    name, True, f"{adr_id}: decision-drop pending aggregation"
+                )
+        if log_content and re.search(
+            rf"\*\*Run-ID:\*\*\s*{re.escape(adr_id)}\b", log_content
+        ):
+            return CheckResult(
+                name, True, f"{adr_id}: ADR aggregated into decision_log.md"
+            )
+        return CheckResult(
+            name, False, f"{adr_id}: no decision-drop and not in decision_log.md"
+        )
+
+    # Numbered ADR — heading must be present in decision_log.md.
     if not log.exists():
         return CheckResult(name, False, f"missing {log.name}")
-    log_content = log.read_text(encoding="utf-8", errors="ignore")
     if re.search(rf"### {re.escape(adr_id)}[: ]", log_content):
         return CheckResult(name, True, f"{adr_id} present in decision_log.md")
     return CheckResult(name, False, f"{adr_id} NOT found in decision_log.md")

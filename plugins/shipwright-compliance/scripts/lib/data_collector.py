@@ -915,7 +915,6 @@ def _resolve_events_path(project_root: Path) -> Path:
     resolved path is identical to ``project_root / EVENT_FILE``, so
     single-repo behavior is unchanged.
 
-    Mirrors ``shared/scripts/lib/session_role._resolve_main_repo_root``.
     Without this, worktree-based finalization (/shipwright-iterate F5b) reads
     an empty log and collapses RTM coverage to a false 0%.
     """

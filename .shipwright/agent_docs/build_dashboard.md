@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-15 07:30 UTC | Session: a7c9e3d8-779f-4c65-a517-28d368670787
+> Updated: 2026-05-16 08:29 UTC | Session: 8e60b80c-b748-453b-ab62-bc5e7b4659b8
 
-## Recent Changes (27 iterations)
+## Recent Changes (28 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | RTM data collection: parse 6-column adopt FR tables + resolve shipwright_events.jsonl via git-common-dir for worktree finalization; fixes false 'Traceability coverage 0%' on adopted projects | 312/312 | ea24bf4 | FR-01.10 | 2026-05-15 |
 | feature | Triage Inbox Iterate 2: 4 additional producers (security + performance + F0.5 + drift) wired into append_triage_item_idempotent. CI producer DEFERRED. ADR-047. | 40/40 | aab9bd7 |  | 2026-05-14 |
 | feature | Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI (rebased onto post-test-hygiene main; ADR renumbered 045→046) | 1642/1649 | f638908 |  | 2026-05-11 |
 | feature | Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI | 1642/1649 | 6ba7df1 |  | 2026-05-11 |
@@ -34,7 +35,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-15 | Unit: 312/312 | E2E: 7/7 | Smoke: not_run | (iterate)
+Last run: 2026-05-16 | Unit: 2282/2289 | Integration: 107/107 | E2E: 6/6 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
