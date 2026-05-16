@@ -20,7 +20,7 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 | FR-01.08 | /shipwright-deploy | Should | Deploy to configured targets with smoke testing and rollback; Jelastic (Infomaniak) shipped, Vercel + compose-VPS profiles documented as stubs. | enrichment.json |
 | FR-01.09 | /shipwright-changelog | Must | Parse Conventional Commits from git history, generate Keep-a-Changelog entries, create version tags, open release PRs. | enrichment.json |
 | FR-01.10 | /shipwright-compliance | Must | Generate audit-ready compliance documentation (RTM, test evidence, change history, SBOM) and run on-demand cross-artifact detective audit. | enrichment.json |
-| FR-01.11 | /shipwright-iterate | Must | Complexity-adaptive SDLC for ongoing changes — auto-detects intent and complexity, scales from quick fix to structured feature with specs, plans, reviews, tests. | enrichment.json |
+| FR-01.11 | /shipwright-iterate | Must | Complexity-adaptive SDLC for ongoing changes — auto-detects intent and complexity, scales from quick fix to structured feature with specs, plans, reviews, tests; every feature/change classifies its spec impact (ADD/MODIFY/REMOVE/NONE), enforced at finalization. | enrichment.json |
 | FR-01.12 | /shipwright-preview | May | Local browser preview — start dev server for the target project and show the URL. | enrichment.json |
 | FR-01.13 | /shipwright-adopt | Must | Onboard an existing (brownfield) repository into the Shipwright SDLC; analyzes codebase, generates CLAUDE.md, agent_docs, planning specs, compliance artifacts, suggest_iterate hook, and an E2E baseline. | enrichment.json |
 
@@ -60,6 +60,20 @@ Closes the deferred follow-up to ADR-019 / ADR-020.
   short-circuits with `sys.exit(0)` and produces no stdout — the hook
   is a no-op outside Shipwright projects.
 
+Refined by `iterate-2026-05-16-spec-impact-gate` (spec-impact classification
++ finalization gate):
+
+- (E) Given a FEATURE or CHANGE `/shipwright-iterate` run, when it reaches
+  Step 2, then it classifies the spec impact as ADD / MODIFY / REMOVE /
+  NONE and the F7 `record_event.py` call records that classification
+  (`--spec-impact`); `record_event.py` exits 1 (nothing written) for a
+  feature/change iterate event that names no FR and gives no
+  `spec_impact=none` justification.
+- (E) Given a FEATURE/CHANGE iterate whose commit touched no
+  `.shipwright/planning/**/spec.md` file, when the F11 finalization
+  verifier runs `check_spec_impact_recorded`, then the run FAILS unless
+  the F7 event recorded `spec_impact=none` with a non-empty justification.
+
 ### FR-01.13 — `/shipwright-adopt` (no project-level hook install)
 
 Refined by `iterate-20260505-plugin-hook-registration`. Supersedes
@@ -84,6 +98,16 @@ the ADR-020 documentation-parity AC.
   SKILL.md replacement note describes manual cleanup of any pre-
   2026-05-05 legacy entry users may still carry.
 
+Refined by `iterate-2026-05-16-spec-impact-gate`:
+
+- (E) Given `/shipwright-project` generates a `spec.md`, when a later
+  REMOVE-classified iterate retires an FR, then the FR row moves into a
+  `### Removed Requirements` subsection carrying the run_id and the
+  literal `status: deprecated`; the FR parsers (`drift_parsers.parse_fr_table`,
+  `data_collector.collect_requirements`) exclude that subsection from
+  live-requirement coverage. Convention documented in
+  `plugins/shipwright-project/skills/project/references/spec-generation.md`.
+
 ### FR-01.01 — `/shipwright-run` (no project-level hook install)
 
 Refined by `iterate-20260505-plugin-hook-registration`. Supersedes
@@ -93,3 +117,13 @@ the ADR-020 documentation-parity AC.
   longer instructs users to install the `UserPromptSubmit` hook
   into `.claude/settings.json`. Same plugin-owned model + manual-
   cleanup note as FR-01.02.
+
+### FR-01.10 — `/shipwright-compliance` (spec-impact inverse-drift audit)
+
+Refined by `iterate-2026-05-16-spec-impact-gate`.
+
+- (E) Given an iterate `work_completed` event with `intent` in
+  (feature, change) whose `affected_frs` and `new_frs` are both empty and
+  that recorded no `spec_impact=none`, when the detective audit runs,
+  then Group D check D5 ("Iterate feature/change events link an FR")
+  reports it as a MEDIUM finding with a suggested remediation command.

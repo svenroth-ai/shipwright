@@ -498,6 +498,151 @@ def check_surface_verification(project_root: Path, run_id: str) -> CheckResult:
     )
 
 
+# ---------------------------------------------------------------------------
+# Spec-impact gate — a FEATURE/CHANGE iterate must change the spec or
+# explicitly justify why not (iterate-2026-05-16-spec-impact-gate)
+# ---------------------------------------------------------------------------
+
+def _run_git(project_root: Path, *args: str) -> tuple[int, str, str]:
+    """Run ``git -C <project_root> <args>``; never raises. Returns (rc, out, err)."""
+    import subprocess
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(project_root), *args],
+            capture_output=True, text=True,
+        )
+        return proc.returncode, proc.stdout, proc.stderr
+    except (OSError, ValueError):
+        return 1, "", ""
+
+
+def _git_available(project_root: Path) -> bool:
+    rc, _, _ = _run_git(project_root, "rev-parse", "--is-inside-work-tree")
+    return rc == 0
+
+
+def _commit_changed_paths(project_root: Path, commit: str) -> list[str] | None:
+    """Return the repo-relative paths a commit touched, or None on git failure."""
+    rc, out, _ = _run_git(
+        project_root, "show", "--name-only", "--pretty=format:", commit
+    )
+    if rc != 0:
+        return None
+    return [ln.strip() for ln in out.splitlines() if ln.strip()]
+
+
+def _is_planning_spec(path: str) -> bool:
+    """True for a ``.shipwright/planning/<split>/spec.md`` path (any separator)."""
+    norm = path.replace("\\", "/")
+    return norm.startswith(".shipwright/planning/") and norm.endswith("/spec.md")
+
+
+def _find_work_event_by_commit(project_root: Path, commit_hash: str) -> dict | None:
+    """Return the ``work_completed`` event for ``commit_hash``, or None.
+
+    Worktree-aware via ``resolve_events_path`` — reads the same canonical
+    log F7 appended to.
+    """
+    if not commit_hash:
+        return None
+    events_path = resolve_events_path(project_root)
+    if not events_path.exists():
+        return None
+    for line in events_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            evt = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if evt.get("type") == "work_completed" and evt.get("commit") == commit_hash:
+            return evt
+    return None
+
+
+def check_spec_impact_recorded(
+    project_root: Path,
+    run_id: str,
+    commit_hash: str,
+) -> CheckResult:
+    """Spec-impact gate — a FEATURE/CHANGE iterate must change the spec or
+    explicitly record ``spec_impact=none`` with a justification.
+
+    Two sources of truth, checked in order:
+
+    1. The F7 ``work_completed`` event's ``spec_impact`` classification.
+       ``none`` + a justification → PASS; ``none`` without one → FAIL.
+    2. Otherwise (``add``/``modify``/``remove`` or a legacy event with no
+       ``spec_impact``): the commit MUST have touched a
+       ``.shipwright/planning/**/spec.md`` file. If it did → PASS, else FAIL.
+
+    BUG iterates, intent-less entries, and runs whose entry is absent are
+    SKIPPED — a bug fix need not touch the spec. Git-unavailable is SKIPPED.
+    Severity ERROR on failure (blocks default exit and ``--strict``).
+    Origin: iterate-2026-05-16-spec-impact-gate.
+    """
+    name = "spec impact recorded (feature/change)"
+
+    entry = find_entry_by_run_id(project_root, run_id)
+    if not entry:
+        return CheckResult(
+            name, True, f"skipped (run_id={run_id} not in history)",
+            severity=Severity.SKIPPED.value,
+        )
+    intent = entry.get("intent", entry.get("type", ""))
+    if intent not in ("feature", "change"):
+        return CheckResult(
+            name, True, f"skipped (intent={intent or 'unknown'})",
+            severity=Severity.SKIPPED.value,
+        )
+
+    event = _find_work_event_by_commit(project_root, commit_hash)
+    spec_impact = str((event or {}).get("spec_impact", "")).lower()
+
+    if spec_impact == "none":
+        justification = str((event or {}).get("spec_impact_justification", "")).strip()
+        if justification:
+            return CheckResult(
+                name, True,
+                f"spec_impact=none, justified ({len(justification)} chars)",
+            )
+        return CheckResult(
+            name, False,
+            "spec_impact=none recorded WITHOUT a justification — a "
+            "feature/change iterate claiming no spec impact must justify it",
+        )
+
+    # spec_impact add|modify|remove, or a legacy event with no spec_impact:
+    # the commit itself must have touched a planning spec.md.
+    if not _git_available(project_root):
+        return CheckResult(
+            name, True, "skipped (git unavailable — cannot inspect commit)",
+            severity=Severity.SKIPPED.value,
+        )
+    changed = _commit_changed_paths(project_root, commit_hash)
+    if changed is None:
+        return CheckResult(
+            name, True,
+            f"skipped (could not read commit {commit_hash[:8]})",
+            severity=Severity.SKIPPED.value,
+        )
+    spec_files = [p for p in changed if _is_planning_spec(p)]
+    if spec_files:
+        return CheckResult(
+            name, True,
+            f"spec_impact={spec_impact or 'unrecorded'}; commit touched "
+            f"{len(spec_files)} planning spec.md file(s)",
+        )
+    return CheckResult(
+        name, False,
+        f"intent={intent} iterate but commit {commit_hash[:8]} touched no "
+        ".shipwright/planning/**/spec.md and recorded no spec_impact=none — "
+        "classify the spec impact (ADD/MODIFY/REMOVE) or record "
+        "spec_impact=none with a justification",
+    )
+
+
 def check_migration_quarantine_empty(project_root: Path) -> CheckResult:
     """Advisory warn — flag if iterate_history migration quarantined any entries.
 
@@ -545,6 +690,10 @@ def run_all_checks(
         check_session_handoff_fresh(project_root),
         check_build_dashboard_has_run_id(project_root, run_id, commit_hash=commit_hash or None),
         check_surface_verification(project_root, run_id),
+        check_spec_impact_recorded(project_root, run_id, commit_hash) if commit_hash else CheckResult(
+            "spec impact recorded (feature/change)", True,
+            "skipped (no --commit supplied)", severity=Severity.SKIPPED.value,
+        ),
     ]
 
 

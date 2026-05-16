@@ -480,8 +480,14 @@ Create `.shipwright/planning/iterate/{date}-{short-description}.md` using this t
 - [ ] {AC from interview — concrete, testable}
 - [ ] {AC 2}
 
-## Affected FRs
-- {FR-XX.YY}: {what changes or is added}
+## Spec Impact
+{Classify how this iterate changes the FR spec — see Step 2.}
+- **Classification:** {add | modify | remove | none — one or more}
+- **ADD** (new FR appended): {FR-XX.YY — short title, or `none`}
+- **MODIFY** (existing FR changed): {FR-XX.YY — what changed, or `none`}
+- **REMOVE** (FR retired → `## Removed Requirements`): {FR-XX.YY, or `none`}
+- **NONE justification:** {required only when Classification is solely
+  `none` — why this feature/change touches no FR}
 
 ## Out of Scope
 - {from interview answer — what explicitly will NOT be done}
@@ -535,13 +541,38 @@ If no boundaries touched: write `n/a` with one-line justification.}
   surface exists for this change. Referenced in iterate ADR.}}
 ```
 
-### Step 2: Spec Update (always)
+### Step 2: Spec Update — classify the Spec Impact (always)
 1. Identify which spec file(s) cover the affected area.
-2. Decide: does the change extend an EXISTING FR, or warrant a NEW FR?
-   - **Extend existing** (typical for additive side-effects on an existing endpoint — e.g. POST starts writing a new file): update the FR table-row description + append new `- (E) Given … when … then …` acceptance-criteria lines covering the new behavior + any idempotency / no-op guarantees. Reference the run_id + ADR.
-   - **New FR** (typical for new endpoints, new pages, new user-visible flows): append a new table row + acceptance-criteria block.
-   - **Skipping because "additive" is NOT an option.** The Phase Matrix marks this step as `always` for FEATURE — that is load-bearing. "Additive" is a reason the update is *small*, not a reason to skip.
-3. If `shipwright_sync_config.json` exists, add mappings for new files.
+2. **Classify the spec impact** as one or more of ADD / MODIFY / REMOVE,
+   or NONE. Record it in the iterate spec's `## Spec Impact` section
+   (medium+) and carry the same FR IDs into F7 (`--spec-impact`,
+   `--affected-frs`, `--new-frs`).
+   - **ADD** — a new endpoint, page, flow, or user-visible capability:
+     append a new FR table row + an acceptance-criteria block. The new
+     FR ID goes to F7 `--new-frs` (and `--affected-frs`).
+   - **MODIFY** — an additive side-effect or changed behavior of an
+     existing FR: update the FR table-row description + append new
+     `- (E) Given … when … then …` acceptance-criteria lines covering
+     the new behavior + any idempotency / no-op guarantees. The FR ID
+     goes to F7 `--affected-frs`. Reference the run_id + ADR.
+   - **REMOVE** — the change deletes a user-visible capability: move the
+     FR row out of `## 2. Functional Requirements` into a
+     `### Removed Requirements` subsection — never silently delete it.
+     The moved row keeps its ID + text + priority and adds the run_id and
+     the literal `status: deprecated`. See
+     `plugins/shipwright-project/skills/project/references/spec-generation.md`.
+   - **NONE** — a behavior-preserving internal refactor with no
+     user-visible change. Record a one-line justification; it is passed
+     to F7 as `--spec-impact none --spec-impact-justification "..."`.
+3. **NONE is a classification that must be *justified*, not a default.**
+   The Phase Matrix marks this step `always` for FEATURE — that is
+   load-bearing. "Additive" or "small" is a reason the update is *small*,
+   not a reason to skip it. The F11 finalization verifier
+   (`check_spec_impact_recorded`) FAILS a feature/change iterate whose
+   commit touched no `spec.md` unless `spec_impact=none` + a justification
+   was recorded at F7.
+4. If `shipwright_sync_config.json` exists, add/update mappings for the
+   affected files.
 
 > **AC shape (medium+).** ACs MUST be assertion-shaped (mechanically
 > verifiable by the F0.5 runner), not story-shaped. Story: "user can save
@@ -747,18 +778,39 @@ Go to **Finalization** below.
 ## Path B: CHANGE (modify existing behavior)
 
 Same steps as FEATURE, with these differences:
-- Step 2: see below — same `extend vs new` framing as FEATURE, biased toward extending the existing FR
+- Step 2: see below — same ADD/MODIFY/REMOVE/NONE classification as FEATURE; the default for CHANGE is MODIFY
 - Step 6: Update existing tests to reflect new expected behavior, then implement
 - Step 6a: Boundary Probe applies identically — when `touches_io_boundary` fires, run the round-trip + 8-probe checklist before commit
 - Step 7.5: Confidence Calibration applies identically — mandatory at medium+, also at small with `touches_io_boundary` (see Path A Step 7.5)
 
-### Step 2: Spec Update (always — CHANGE)
+### Step 2: Spec Update — classify the Spec Impact (always — CHANGE)
 1. Identify which spec file(s) cover the affected area.
-2. Decide: does the change extend an EXISTING FR, or carve out a NEW FR?
-   - **Extend existing** (default for CHANGE — modifying behavior of an existing endpoint, page, or component): update the FR table-row description to reflect the new behavior + append new `- (E) Given … when … then …` acceptance-criteria lines covering the modified behavior + any backwards-compatibility / migration guarantees. Reference the run_id + ADR.
-   - **New FR** (rare for CHANGE — only when the modification carves out a new user-visible capability alongside the old one): append a new table row + acceptance-criteria block.
-   - **Skipping because the change is "small" or "additive" is NOT an option.** The Phase Matrix marks this step as `always` for CHANGE — that is load-bearing. Scope size is a reason the update is *small*, not a reason to skip.
-3. If `shipwright_sync_config.json` exists, update mappings to reflect any file moves or renames.
+2. **Classify the spec impact** as one or more of ADD / MODIFY / REMOVE,
+   or NONE — same four cases as FEATURE Step 2. For CHANGE the default
+   is **MODIFY**.
+   - **MODIFY** (default for CHANGE) — modifying behavior of an existing
+     endpoint, page, or component: update the FR table-row description to
+     reflect the new behavior + append new `- (E) Given … when … then …`
+     acceptance-criteria lines covering the modified behavior + any
+     backwards-compatibility / migration guarantees. The FR ID goes to F7
+     `--affected-frs`. Reference the run_id + ADR.
+   - **ADD** (rare for CHANGE) — only when the modification carves out a
+     new user-visible capability alongside the old one: append a new FR
+     table row + an acceptance-criteria block; the new FR ID goes to F7
+     `--new-frs`.
+   - **REMOVE** — the change deletes a user-visible capability: move the
+     FR row into a `### Removed Requirements` subsection with the run_id
+     and the literal `status: deprecated` (never silently delete).
+   - **NONE** — a behavior-preserving internal refactor: record a
+     one-line justification, passed to F7 as `--spec-impact none
+     --spec-impact-justification "..."`.
+3. **NONE must be *justified*, not assumed.** The Phase Matrix marks this
+   step `always` for CHANGE — that is load-bearing. Scope size is a
+   reason the update is *small*, not a reason to skip it. The F11
+   verifier (`check_spec_impact_recorded`) FAILS a feature/change iterate
+   whose commit touched no `spec.md` without a recorded `spec_impact=none`.
+4. If `shipwright_sync_config.json` exists, update mappings to reflect any
+   file moves or renames.
 
 ---
 
@@ -767,8 +819,18 @@ Same steps as FEATURE, with these differences:
 ### Step 1: Iterate Spec (medium+ only)
 Same as FEATURE Step 1.
 
-### Step 2: Spec Update (only if spec was wrong or behavior changes)
-Check if the spec itself was incorrect. If yes, update. If no, skip.
+### Step 2: Spec Update — classify the Spec Impact (BUG)
+A bug fix usually restores intended behavior, so the spec impact is
+typically NONE. Classify it anyway:
+- **MODIFY** — the spec itself was wrong: correct the FR row / ACs.
+- **REMOVE** — the spec described behavior the fix removed: move the FR
+  into `### Removed Requirements` with `status: deprecated`.
+- **NONE** (default) — the fix restores behavior the spec already
+  describes correctly. No FR change.
+
+BUG iterates are NOT gated by the F11 spec-impact verifier — a bug fix
+need not touch the spec. Record the classification in the iterate ADR;
+ADD does not apply to bug fixes.
 
 ### Step 3: Investigate & Reproduce
 
@@ -926,7 +988,7 @@ Large is a "soft boundary" — force-continue supported with mandatory review + 
 | Repo Scout | quick | quick | thorough | → escape hatch |
 | Interview | skip | 1 confirmation Q | FEATURE: 2-3 Q, CHANGE: 1-2 Q | → escape hatch |
 | Iterate Spec | skip | skip | own file in `.shipwright/planning/iterate/` | — |
-| Spec Update (existing FRs) | always (BUG: only if spec wrong) | always (BUG: only if spec wrong) | always (BUG: only if spec wrong) | — |
+| Spec Impact (ADD/MODIFY/REMOVE/NONE) | always (BUG: classify; NONE default) | always (BUG: classify; NONE default) | always (BUG: classify; NONE default) | — |
 | Mini-Plan | skip | FEATURE only | yes + alternative (all types) | — |
 | User Approval | skip | skip | before build | — |
 | External LLM Review | skip | skip | auto | — |
@@ -993,8 +1055,9 @@ See `references/iteration-planning.md` for full protocol including handoff file 
 
 | Artifact | Owns | Do NOT duplicate here |
 |---|---|---|
-| **Iterate spec** (`.shipwright/planning/iterate/`) | Intent, ACs, scope, out-of-scope | Rationale (→ ADR), structure (→ architecture) |
-| **spec.md** (existing FRs) | Normative FR changes | Why (→ ADR), approach (→ mini-plan) |
+| **Iterate spec** (`.shipwright/planning/iterate/`) | Intent, ACs, scope, out-of-scope, Spec-Impact classification | Rationale (→ ADR), structure (→ architecture) |
+| **spec.md** (FR table + `## Removed Requirements`) | Normative FR changes — ADD/MODIFY in the FR table, REMOVE into the Removed Requirements section | Why (→ ADR), approach (→ mini-plan) |
+| **`shipwright_events.jsonl`** (F7 event) | Machine-of-record `spec_impact` classification (enforced by `check_spec_impact_recorded`) | Narrative (→ ADR), FR text (→ spec) |
 | **ADR** (`decision_log.md`) | Rationale, alternatives, consequences | Full ACs (→ spec), structure (→ architecture) |
 | **architecture.md** | Current structural state | Decisions (→ ADR), requirements (→ spec) |
 | **Mini-plan** (`.shipwright/planning/iterate/`) | Approach, files, test strategy | Requirements (→ spec), decisions (→ ADR) |
@@ -1375,12 +1438,23 @@ uv run "{shared_root}/scripts/tools/record_event.py" \
   --description "{short_description}" \
   --commit "$(git rev-parse HEAD)" \
   --changed-files "${changed}" \
-  --affected-frs "{comma_separated_FRs}" \
+  --spec-impact {add|modify|remove|none} \
+  --affected-frs "{FR IDs from Step 2 — ADD ∪ MODIFY ∪ REMOVE}" \
+  --new-frs "{FR IDs from Step 2 — ADD only}" \
   --tests-passed {N} --tests-total {N} \
   --e2e-run {true|false} \
   --adr-id "{run_id}" \
   --deduplicate-by-commit
 ```
+
+> **Spec-impact arguments are DERIVED from Step 2, not invented here.**
+> `--spec-impact` is the Step 2 classification; `--affected-frs` /
+> `--new-frs` are the FR IDs Step 2 touched. For a FEATURE/CHANGE iterate,
+> `record_event.py` exits 1 (nothing written) unless either `--affected-frs`
+> / `--new-frs` is non-empty OR `--spec-impact none` is paired with
+> `--spec-impact-justification "..."`. BUG iterates may omit all three.
+> Use `--spec-impact none --spec-impact-justification "..."` for a
+> behavior-preserving refactor that genuinely touches no FR.
 
 ### F11: Push Branch, Open PR & Verify
 

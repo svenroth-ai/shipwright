@@ -294,6 +294,62 @@ def test_parse_fr_table_real_adopted_spec_extracts_all_frs():
 
 
 # ---------------------------------------------------------------------------
+# FR table parser — `## Removed Requirements` section exclusion
+# ---------------------------------------------------------------------------
+#
+# A REMOVE-classified iterate moves a deprecated FR row out of the live
+# `## Functional Requirements` table into a `## Removed Requirements` (or
+# `### Removed Requirements`) section. Those rows still look like FR table
+# rows, but parse_fr_table MUST NOT return them as live requirements — they
+# would otherwise resurface in RTM coverage and drift checks forever.
+# Mirrored in data_collector.collect_requirements (same fixture probed in
+# plugins/shipwright-compliance/tests/test_data_collector.py).
+
+REMOVED_REQ_FIXTURE = (
+    "## 2. Functional Requirements\n"
+    "\n"
+    "| ID | Text | Priority |\n"
+    "|----|------|----------|\n"
+    "| FR-01.01 | live requirement | Must |\n"
+    "\n"
+    "### Removed Requirements\n"
+    "\n"
+    "| ID | Requirement | Priority | Removed by | status |\n"
+    "|----|-------------|----------|------------|--------|\n"
+    "| FR-01.99 | obsolete flow | Must | iterate-20260516-x | status: deprecated |\n"
+    "\n"
+    "## 3. Quality Requirements\n"
+    "\n"
+    "| FR-01.02 | another live requirement | Should |\n"
+)
+
+
+def test_parse_fr_table_excludes_removed_requirements_section():
+    frs = parse_fr_table(REMOVED_REQ_FIXTURE, split="01", spec_path="x")
+    ids = {f.id for f in frs}
+    assert ids == {"FR-01.01", "FR-01.02"}
+    assert "FR-01.99" not in ids
+
+
+def test_parse_fr_table_resumes_after_removed_section_closes():
+    """A heading at the Removed section's level-or-shallower closes it, so
+    a live FR table further down the spec still parses."""
+    frs = parse_fr_table(REMOVED_REQ_FIXTURE, split="01", spec_path="x")
+    assert any(f.id == "FR-01.02" for f in frs)
+
+
+def test_parse_fr_table_h2_removed_requirements_also_excluded():
+    """`## Removed Requirements` (h2) excludes its rows just like the h3 form."""
+    md = (
+        "| FR-01.01 | live | Must |\n"
+        "## Removed Requirements\n"
+        "| FR-01.99 | dead | Must |\n"
+    )
+    frs = parse_fr_table(md, split="01", spec_path="x")
+    assert {f.id for f in frs} == {"FR-01.01"}
+
+
+# ---------------------------------------------------------------------------
 # ADR parser
 # ---------------------------------------------------------------------------
 

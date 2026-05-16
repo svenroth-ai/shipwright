@@ -1,36 +1,36 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-16-fix-triage-dedup-resolve",
+    "run_id": "iterate-2026-05-16-spec-impact-gate",
     "date": "2026-05-16",
     "unit": {
       "status": "passed",
-      "passed": 1776,
-      "total": 1783,
-      "note": "F0 fresh full run of shared/tests/ (the suite consuming the changed shared/scripts modules): 1776 passed, 11 skipped, 18 deselected. The 7 failures (test_hooks.py TestCheckSecrets x5 + TestCheckFileSize x1, test_artifact_path_canon.py compliance-migrated x1) are the documented pre-existing baseline on origin/main — identical test IDs, none in this iterate's diff. 0 regressions. The other plugin test packages are no-op-affected (the changed modules are not imported by them)."
+      "passed": 3385,
+      "total": 3398,
+      "note": "F0 fresh full run, per-suite (separate 'tests' packages run separately): shared 1821, compliance 320, iterate 237, project 43, build 42, test 136, changelog 23, deploy 25, security 305, run 144, adopt 267, design 12, preview 10. The 13 failures (shared test_hooks TestCheckSecrets x5 + TestCheckFileSize x1 + test_artifact_path_canon compliance-migrated x1; build test_hooks x2 + test_section_builder_contract x1 + 1 more; deploy test_validate_without_token x1; adopt test_nested_project_detector x1) reproduce identically on base origin/main@333baab — verified via git-stash on the clean base. Pre-existing Windows-environment baseline (bash hooks, env tokens, path detection); 0 regressions from this iterate."
     },
-    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "No CRUD/DB changes; small BUG iterate. integration-tests/ unaffected."},
-    "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
-    "e2e": {
+    "integration": {
       "status": "passed",
-      "passed": 94,
-      "total": 94,
-      "note": "F0.5 surface=cli — pytest over shared/tests/{test_drift_triage_emit,test_f0_5_triage_emit,test_triage_storage,test_surface_verification}.py. Drives both bugs' producer -> triage.jsonl -> consumer round-trip plus the surface_verification main() resolve wiring end-to-end."
+      "passed": 110,
+      "total": 110,
+      "note": "integration-tests/ all green incl. test_fr_table_drift_protection.py (FR-table parser drift). 2 deselected (slow marker)."
     },
+    "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
+    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web/Playwright surface — library/framework repo. F0.5 ran the cli surface; see surface_verification."},
     "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI — library/framework repo."},
     "smoke": {"status": "not_run", "note": "No browser/server surface."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_drift_triage_emit.py shared/tests/test_f0_5_triage_emit.py shared/tests/test_triage_storage.py shared/tests/test_surface_verification.py -p no:cacheprovider --color=no",
+      "runner": "uv run python -m pytest shared/scripts/tools/tests/test_record_event.py shared/tests/test_verify_iterate_finalization.py shared/tests/test_drift_parsers.py -q",
       "exit_code": 0,
-      "tests_run": 94,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-16-fix-triage-dedup-resolve/surface_verification.json",
-      "timestamp": "2026-05-16T12:59:11Z",
+      "tests_run": 140,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-16-spec-impact-gate/surface_verification.json",
+      "timestamp": "2026-05-16T00:00:00Z",
       "attempts": 1,
-      "note": "Single shared/tests package — avoids the cross-tests-package collection collision; --color=no per ADR-048 so the N-passed parse is not eaten by ANSI escapes."
+      "note": "Single shared/tests-scope pytest invocation (avoids the cross-tests-package conftest collision). Drives the spec-impact gate end-to-end: record_event.py write-time gate, the F11 check_spec_impact_recorded verifier (incl. real git-commit fixtures), and the Removed-Requirements FR-parser exclusion."
     },
     "degraded": [
-      "7 pre-existing baseline test failures on origin/main (test_hooks.py TestCheckSecrets x5 + TestCheckFileSize x1, test_artifact_path_canon.py compliance-migrated x1) — same test IDs documented in the prior iterate's baseline note; NOT introduced by this iterate, 0 regressions.",
-      "check_drift.py (553 lines) and surface_verification.py (644 lines) exceed the 300-line file-size guideline; both were already over (464/542) before this iterate and check_file_size is WARN-only — splitting is a separate refactor, out of scope for a 2-bug fix (recorded in the iterate ADR)."
+      "13 pre-existing baseline test failures on origin/main@333baab (shared test_hooks/test_artifact_path_canon x7, build x4, deploy x1, adopt x1) — verified identical on the clean base via git-stash; Windows-environment failures (bash hooks, env tokens, path detection), NOT introduced by this iterate.",
+      "Group D5 audit will flag ~5 historical feature events with empty affected_frs (Triage Inbox, F0.5 gate, etc.) — expected backlog; user backfills FR prose in a separate session."
     ]
   }
 }

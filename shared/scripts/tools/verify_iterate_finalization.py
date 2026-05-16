@@ -47,6 +47,7 @@ from tools.verifiers.iterate_checks import (  # noqa: E402,F401
     check_events_has_commit,
     check_iterate_history_has_run_id,
     check_session_handoff_fresh,
+    check_spec_impact_recorded,
     run_all_checks,
 )
 

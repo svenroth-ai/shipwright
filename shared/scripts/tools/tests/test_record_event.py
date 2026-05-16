@@ -610,3 +610,139 @@ class TestWorktreeAwareLog:
         spec.loader.exec_module(mod)
 
         assert mod.is_io_boundary_change(files) is True
+
+
+# ---------------------------------------------------------------------------
+# Spec-impact classification gate (iterate-2026-05-16-spec-impact-gate)
+#
+# Every FEATURE/CHANGE iterate work_completed event must name the FRs it
+# touched (--affected-frs / --new-frs) OR record --spec-impact none with a
+# justification. record_event.py fails closed (exit 1) otherwise. Build
+# events and intent-less / bug-intent iterate events are unaffected.
+# ---------------------------------------------------------------------------
+
+
+class TestSpecImpactField:
+    """build_event records the spec_impact classification onto the event."""
+
+    def test_spec_impact_and_justification_recorded(self):
+        args = parse_args([
+            "--project-root", "/tmp",
+            "--type", "work_completed",
+            "--source", "iterate", "--intent", "change", "--commit", "c1",
+            "--description", "refactor internals",
+            "--spec-impact", "none",
+            "--spec-impact-justification", "behavior-preserving internal refactor",
+        ])
+        event = build_event(args)
+        assert event["spec_impact"] == "none"
+        assert event["spec_impact_justification"] == (
+            "behavior-preserving internal refactor"
+        )
+
+    def test_spec_impact_absent_when_not_passed(self):
+        args = parse_args([
+            "--project-root", "/tmp",
+            "--type", "work_completed",
+            "--source", "build", "--commit", "c2",
+        ])
+        event = build_event(args)
+        assert "spec_impact" not in event
+        assert "spec_impact_justification" not in event
+
+
+class TestSpecImpactGate:
+    """record_event.main fails closed on an unclassified feature/change iterate."""
+
+    def test_feature_with_affected_frs_passes(self, project):
+        rc = record_main([
+            "--project-root", str(project),
+            "--type", "work_completed",
+            "--source", "iterate", "--intent", "feature", "--commit", "g1",
+            "--description", "add endpoint",
+            "--spec-impact", "add", "--affected-frs", "FR-01.05",
+        ])
+        assert rc == 0
+        assert len(read_events(project)) == 1
+
+    def test_feature_with_new_frs_only_passes(self, project):
+        rc = record_main([
+            "--project-root", str(project),
+            "--type", "work_completed",
+            "--source", "iterate", "--intent", "feature", "--commit", "g2",
+            "--description", "add endpoint",
+            "--spec-impact", "add", "--new-frs", "FR-01.06",
+        ])
+        assert rc == 0
+
+    def test_feature_without_frs_fails(self, project):
+        rc = record_main([
+            "--project-root", str(project),
+            "--type", "work_completed",
+            "--source", "iterate", "--intent", "feature", "--commit", "g3",
+            "--description", "add endpoint, forgot the FR",
+        ])
+        assert rc == 1
+        assert read_events(project) == []  # fail-closed: nothing written
+
+    def test_change_without_frs_fails(self, project):
+        rc = record_main([
+            "--project-root", str(project),
+            "--type", "work_completed",
+            "--source", "iterate", "--intent", "change", "--commit", "g4",
+            "--description", "modify behavior",
+            "--spec-impact", "modify",
+        ])
+        assert rc == 1
+
+    def test_spec_impact_none_without_justification_fails(self, project):
+        rc = record_main([
+            "--project-root", str(project),
+            "--type", "work_completed",
+            "--source", "iterate", "--intent", "feature", "--commit", "g5",
+            "--description", "claims no spec impact",
+            "--spec-impact", "none",
+        ])
+        assert rc == 1
+        assert read_events(project) == []
+
+    def test_spec_impact_none_with_justification_passes(self, project):
+        rc = record_main([
+            "--project-root", str(project),
+            "--type", "work_completed",
+            "--source", "iterate", "--intent", "change", "--commit", "g6",
+            "--description", "internal refactor",
+            "--spec-impact", "none",
+            "--spec-impact-justification", "no user-visible behavior change",
+        ])
+        assert rc == 0
+        assert len(read_events(project)) == 1
+
+    def test_build_event_without_frs_unaffected(self, project):
+        """Build events are NOT gated — only iterate feature/change."""
+        rc = record_main([
+            "--project-root", str(project),
+            "--type", "work_completed",
+            "--source", "build", "--commit", "g7", "--section", "01-x",
+        ])
+        assert rc == 0
+
+    def test_bug_intent_without_frs_unaffected(self, project):
+        """BUG iterates are not gated — a bug fix need not touch the spec."""
+        rc = record_main([
+            "--project-root", str(project),
+            "--type", "work_completed",
+            "--source", "iterate", "--intent", "bug", "--commit", "g8",
+            "--description", "fix crash",
+        ])
+        assert rc == 0
+
+    def test_intentless_iterate_event_unaffected(self, project):
+        """An iterate event with no --intent is not gated (backwards compat)."""
+        rc = record_main([
+            "--project-root", str(project),
+            "--type", "work_completed",
+            "--source", "iterate", "--commit", "g9",
+            "--description", "legacy-style event",
+        ])
+        assert rc == 0

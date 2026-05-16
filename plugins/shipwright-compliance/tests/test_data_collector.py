@@ -418,6 +418,56 @@ class TestCollectRequirementsSixCol:
         assert reqs[0].priority == "Must"
 
 
+class TestCollectRequirementsRemovedSection:
+    """A `## Removed Requirements` section is excluded from RTM coverage.
+
+    A REMOVE-classified iterate moves a deprecated FR row into a
+    `## Removed Requirements` (or `### Removed Requirements`) section. Those
+    rows still look like FR table rows, but collect_requirements MUST NOT
+    return them — otherwise the RTM keeps reporting a deleted capability as
+    an uncovered/failing requirement. Mirrors the parse_fr_table exclusion
+    in shared/scripts/lib/drift_parsers.py (same fixture, same expectations).
+    """
+
+    REMOVED_REQ_BODY = (
+        "# Specification — adopted\n\n"
+        "## 2. Functional Requirements\n\n"
+        "| ID | Text | Priority |\n"
+        "|----|------|----------|\n"
+        "| FR-01.01 | live requirement | Must |\n\n"
+        "### Removed Requirements\n\n"
+        "| ID | Requirement | Priority | Removed by | status |\n"
+        "|----|-------------|----------|------------|--------|\n"
+        "| FR-01.99 | obsolete flow | Must | iterate-20260516-x | status: deprecated |\n\n"
+        "## 3. Quality Requirements\n\n"
+        "| FR-01.02 | another live requirement | Should |\n"
+    )
+
+    def test_removed_requirements_rows_excluded(self, tmp_path: Path):
+        planning = tmp_path / ".shipwright" / "planning" / "01-adopted"
+        planning.mkdir(parents=True)
+        (planning / "spec.md").write_text(self.REMOVED_REQ_BODY, encoding="utf-8")
+
+        reqs = collect_requirements(tmp_path)
+
+        ids = {r.id for r in reqs}
+        assert ids == {"FR-01.01", "FR-01.02"}
+        assert "FR-01.99" not in ids
+
+    def test_h2_removed_requirements_excluded(self, tmp_path: Path):
+        planning = tmp_path / ".shipwright" / "planning" / "01-adopted"
+        planning.mkdir(parents=True)
+        (planning / "spec.md").write_text(
+            "| FR-01.01 | live | Must |\n"
+            "## Removed Requirements\n"
+            "| FR-01.99 | dead | Must |\n",
+            encoding="utf-8",
+        )
+
+        reqs = collect_requirements(tmp_path)
+        assert {r.id for r in reqs} == {"FR-01.01"}
+
+
 class TestCollectRequirementsColumnWidths:
     """Consolidated probe: 3-, 5-, and 6-column FR tables all parse.
 

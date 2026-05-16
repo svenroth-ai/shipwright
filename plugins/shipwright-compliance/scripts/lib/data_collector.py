@@ -771,6 +771,15 @@ _FR_TABLE_RE = re.compile(
     r"(?:\s*[^|]*?\s*\|)*\s*$"                # any number of further columns, ignored
 )
 
+# Rows inside a `## Removed Requirements` / `### Removed Requirements`
+# section are FR rows a REMOVE-classified iterate retired. They must NOT
+# count as live requirements — otherwise the RTM keeps reporting a deleted
+# capability as uncovered/failing. The shared FR parser
+# (shared/scripts/lib/drift_parsers.py:parse_fr_table) carries the SAME
+# exclusion loop; keep the two in sync.
+# Origin: iterate-2026-05-16-spec-impact-gate.
+_MD_HEADING_RE = re.compile(r"^(#{1,6})\s+(\S.*?)\s*$")
+
 
 def collect_requirements(project_root: Path) -> list[RequirementInfo]:
     """Parse functional requirements from .shipwright/planning/*/spec.md files."""
@@ -791,7 +800,19 @@ def collect_requirements(project_root: Path) -> list[RequirementInfo]:
         rel_spec = f".shipwright/planning/{split_name}/spec.md"
         content = spec_path.read_text(encoding="utf-8")
 
+        in_removed = False
+        removed_level = 0
         for line in content.splitlines():
+            heading = _MD_HEADING_RE.match(line)
+            if heading:
+                level = len(heading.group(1))
+                if heading.group(2).strip().lower().startswith("removed requirements"):
+                    in_removed, removed_level = True, level
+                    continue
+                if in_removed and level <= removed_level:
+                    in_removed = False
+            if in_removed:
+                continue
             match = _FR_TABLE_RE.match(line)
             if match:
                 # 5-col format puts the FR body in the Description column
