@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-15-iterate-worktree-isolation",
+  "date": "2026-05-16T08:26:54.760323Z",
+  "type": "change",
+  "complexity": "large",
+  "branch": "iterate/iterate-worktree-isolation",
+  "spec": ".shipwright/planning/iterate/2026-05-15-iterate-worktree-isolation.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-05-15-iterate-worktree-isolation"
+}

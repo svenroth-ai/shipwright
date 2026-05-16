@@ -1,36 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-15-rtm-adopt-worktree-fix"
+run_id: "iterate-2026-05-15-iterate-worktree-isolation"
 phase: "iterate"
-reason: "iterate: RTM 6-column spec + worktree event-log fixes"
-timestamp: "2026-05-15T07:30:26.766617+00:00"
+reason: "iterate: unconditional worktree isolation"
+timestamp: "2026-05-16T08:29:21.629732+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-15 07:30:26 UTC
+> Auto-generated 2026-05-16 08:29:21 UTC
 
 ## Session Info
 
-- **Session ID**: a7c9e3d8-779f-4c65-a517-28d368670787
-- **Timestamp**: 2026-05-15 07:30:26 UTC
-- **Reason**: iterate: RTM 6-column spec + worktree event-log fixes
+- **Session ID**: 8e60b80c-b748-453b-ab62-bc5e7b4659b8
+- **Timestamp**: 2026-05-16 08:29:21 UTC
+- **Reason**: iterate: unconditional worktree isolation
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-14-triage-producers-2
-- **Date**: 2026-05-14T21:10:29.206417Z
-- **Type**: feature
-- **Complexity**: medium
-- **Branch**: iterate/triage-producers-2
-- **ADR**: ADR-047
+- **Run ID**: iterate-2026-05-15-iterate-worktree-isolation
+- **Date**: 2026-05-16T08:26:54.760323Z
+- **Type**: change
+- **Complexity**: large
+- **Branch**: iterate/iterate-worktree-isolation
+- **ADR**: iterate-2026-05-15-iterate-worktree-isolation
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-14-triage-producers-2.md
+- **Spec**: .shipwright/planning/iterate/2026-05-15-iterate-worktree-isolation.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fix-rtm-adopt-worktree
-- **External Review Marker**: skipped_user_opt_out (external_review_state.json @ 2026-05-14T20:55:44)
+- **Branch**: iterate/iterate-worktree-isolation
+- **Run ID**: iterate-2026-05-15-iterate-worktree-isolation
+- **Spec**: .shipwright/planning/iterate/2026-05-15-iterate-worktree-isolation.md
+- **Complexity**: large (escape-hatch option 2 — force iterate; user-acknowledged over-threshold scope)
+- **External Review Marker**: stale (predates spec (2026-05-14T20:55:44))
 
 ### Mandatory replay on Resume
 
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fix-rtm-adopt-worktree
-- **Last Commit**: 9f17372 chore(triage): post-F7 refresh of build_dashboard + compliance + handoff
+- **Branch**: iterate/iterate-worktree-isolation
+- **Last Commit**: bcb4f37 Merge iterate/fix-rtm-adopt-worktree: worktree-aware RTM data collection
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-a3888caf | work_completed | iterate (RTM data collection: parse 6-column adopt FR tables + resolve shipwright_events.jsonl via git-common-dir for worktree finalization; fixes false 'Traceability coverage 0%' on adopted projects) | 2026-05-15 |
 | evt-84dbdf5e | work_completed | iterate (Triage Inbox Iterate 2: 4 additional producers (security + performance + F0.5 + drift) wired into append_triage_item_idempotent. CI producer DEFERRED. ADR-047.) | 2026-05-14 |
 | evt-32f2f1f4 | work_completed | iterate (Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI (rebased onto post-test-hygiene main; ADR renumbered 045→046)) | 2026-05-11 |
 | evt-3f488ddc | work_completed | iterate (Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI) | 2026-05-11 |
 | evt-c8a57331 | work_completed | iterate (known_issues scanner requires comment context; remove dead save_session_config — 16/16 green) | 2026-05-09 |
-| evt-f66286bf | work_completed | iterate (—) | 2026-05-07 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 27
-- **Last iterate**: feature — Triage Inbox Iterate 2: 4 additional producers (security + performance + F0.5 + drift) wired into append_triage_item_idempotent. CI producer DEFERRED. ADR-047. (2026-05-14)
+- **Total work events**: 28
+- **Last iterate**: bug — RTM data collection: parse 6-column adopt FR tables + resolve shipwright_events.jsonl via git-common-dir for worktree finalization; fixes false 'Traceability coverage 0%' on adopted projects (2026-05-15)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

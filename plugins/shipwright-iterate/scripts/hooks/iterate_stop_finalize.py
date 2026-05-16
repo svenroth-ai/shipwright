@@ -17,7 +17,21 @@ import os
 import sys
 from pathlib import Path
 
-_SHARED_SCRIPTS = Path(__file__).resolve().parents[4] / "shared" / "scripts"
+def _find_shared_scripts() -> Path:
+    """Locate shared/scripts/ by walking up — robust to plugin-layout depth.
+
+    Replaces a hardcoded ``parents[4]`` that silently broke on any change to
+    the plugin directory nesting.
+    """
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        candidate = parent / "shared" / "scripts"
+        if candidate.is_dir():
+            return candidate
+    return here.parents[4] / "shared" / "scripts"  # historical fallback
+
+
+_SHARED_SCRIPTS = _find_shared_scripts()
 sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 
@@ -52,10 +66,47 @@ def _dashboard_reflects_run_id(project_root: Path, run_id: str) -> bool:
         return False
 
 
+def _active_worktree_root(cwd: Path, session_id: str) -> Path | None:
+    """Worktree path of this session's active iterate run, or None.
+
+    The Stop hook runs with cwd at the main repo; an iterate run executes in
+    a linked worktree under ``.worktrees/<slug>/``. The per-session run
+    pointer written by ``setup_iterate_worktree.py`` maps session_id →
+    worktree. Without this, a fallback finalize here would write into the
+    main tree — and the leak-guard of any concurrent iterate run would then
+    flag a false leak. Best-effort: returns None on any resolution failure.
+    """
+    if not session_id:
+        return None
+    try:
+        from lib.worktree_isolation import main_repo_root, read_run_pointer
+
+        pointer = read_run_pointer(main_repo_root(cwd), session_id)
+    except Exception:
+        return None
+    if not pointer:
+        return None
+    worktree = Path(pointer.get("worktree_path", ""))
+    return worktree if worktree.is_dir() else None
+
+
 def main() -> int:
     # Consume stdin (hook protocol)
     try:
         json.load(sys.stdin)
+    except Exception:
+        pass
+
+    # 0. Worktree-aware finalization. Point every downstream resolver at the
+    #    active iterate worktree (if any) so a fallback finalize never
+    #    dirties the main tree. SHIPWRIGHT_PROJECT_ROOT is honored by
+    #    lib.project_root.resolve_project_root.
+    try:
+        worktree = _active_worktree_root(
+            Path.cwd(), os.environ.get("SHIPWRIGHT_SESSION_ID", "")
+        )
+        if worktree is not None:
+            os.environ["SHIPWRIGHT_PROJECT_ROOT"] = str(worktree)
     except Exception:
         pass
 

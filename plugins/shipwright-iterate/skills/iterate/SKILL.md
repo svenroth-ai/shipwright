@@ -85,64 +85,61 @@ For initial builds, use: /shipwright-run
 ```
 **Stop and wait.**
 
-### B1. Check for In-Progress Iterate Run
+### B1. Check for a Resumable Iterate Run
 
-Before starting fresh, check if a previous iterate run was interrupted:
+Every iterate run lives in its own git worktree under `.worktrees/<slug>/`
+(created unconditionally by **Worktree Isolation**, B1a below). Before
+starting fresh, check whether a previous run was interrupted and is
+resumable:
 
-1. Enumerate + classify existing `iterate/*` branches via the
-   dedicated helper (read-only; exits 1 only on hard git failures):
+1. **Already inside a worktree?** If `git rev-parse --git-common-dir`
+   resolves to a `.git` directory ABOVE the cwd, the skill is already
+   running inside a worktree — THIS is the run. Read
+   `.shipwright/agent_docs/session_handoff.md`, treat the cwd as
+   `{project_root}`, and resume in place. Skip the rest of B1 and skip
+   B1a (the worktree already exists).
+2. Otherwise enumerate `iterate/*` branches + their worktrees (read-only;
+   exits 1 only on hard git failures):
    ```bash
-   uv run "{shared_root}/scripts/tools/list_iterate_branches.py" --project-root . --main "$DEFAULT_BRANCH"
+   uv run "{shared_root}/scripts/tools/list_iterate_branches.py" --project-root .
    ```
-   The JSON output (schema v1) has per-branch metadata plus
-   backward-compat arrays `active` / `stale` / `locked`. Use the
-   `active` list for the resume-candidate menu. For every branch in
-   `stale`, print a one-line housekeeping hint:
-   `stale iterate branch iterate/X found; run "git branch -D iterate/X" to remove`.
-   For every branch in `locked`, print:
-   `iterate/X locked in worktree <path>; continue there or kill the other worktree first`.
+   - `locked` = a branch live in an existing `.worktrees/<slug>/` — a
+     resumable run; surface it as a resume candidate.
+   - `stale` = merged; print a housekeeping hint:
+     `git branch -D iterate/X` (and `git worktree remove .worktrees/X` if a
+     worktree lingers).
+   - If `main` AND `master` both exist, pass `--main <name>` explicitly.
+3. Check `.shipwright/agent_docs/session_handoff.md` for a referenced run_id.
 
-   Known limitations (surfaced in the helper output `errors[]`):
-   - Squash-merged branches stay in `active` until manual `git branch -D`;
-     the helper cannot reliably detect them locally.
-   - Both `main` AND `master` present without `--main` → `main: null`
-     + ambiguity error. Pass `--main <name>` explicitly.
-2. Check if `.shipwright/agent_docs/session_handoff.md` exists and references an iterate run_id
-3. Check current git branch — if already on an `iterate/` branch
-4. **Worktree self-exclusion:** if running inside a secondary worktree
-   (`git rev-parse --show-toplevel` differs from the main repo path), exclude the
-   current branch from the candidate list — otherwise B1 would always offer
-   "Parallel" on the current branch, creating an infinite loop.
-
-**If an in-progress run is detected (any of 1–3 matches after filtering):**
+**If a resumable run is detected:**
 
 ```
 ================================================================================
-SHIPWRIGHT-ITERATE: Previous Run Detected
+SHIPWRIGHT-ITERATE: Resumable Run Detected
 ================================================================================
 Run ID:     {run_id from handoff or branch name}
-Branch:     {branch name}
+Branch:     iterate/{slug}
+Worktree:   .worktrees/{slug}/
 Phase:      {last phase from handoff, or "unknown"}
-Files:      {modified files count from git status}
 
 Options:
-  1. Resume   — continue from where we left off
-  2. Abandon  — discard and start fresh (branch will be deleted)
-  3. Complete — skip to finalization (F1-F11)
-  4. Parallel — start different work alongside the current run
-                (new worktree, current run stays untouched)
+  1. Resume   — continue in that worktree
+  2. Abandon  — discard it (worktree + branch removed)
+  3. Complete — skip to finalization (F0-F12) in that worktree
 
-Decision guide:
-  - Continue the same topic?           → Resume
-  - Completely different topic now?    → Parallel
-  - Discard current and start over?    → Abandon
-  - Finalize the current run?          → Complete
+To start UNRELATED work, just describe it — a fresh, separate worktree is
+created automatically. Parallel iterate runs need NO special mode:
+isolation is structural (see B1a).
 ================================================================================
 ```
 
 **Wait for user choice.**
 
-- **Resume:** Read `.shipwright/agent_docs/session_handoff.md` for full state (completed phases, remaining work, test status, blocked items). Skip Steps C-G (Run ID, Intent, Complexity, Summary, Interview). Reuse the existing run_id, branch, and iterate spec.
+- **Resume:** `cd` into `.worktrees/{slug}/` and treat that path as
+  `{project_root}` for the rest of the run. Read
+  `.shipwright/agent_docs/session_handoff.md` for full state (completed
+  phases, remaining work, test status, blocked items). Skip Steps C-G and
+  skip B1a — reuse the existing run_id, branch, worktree, and iterate spec.
 
   **Mandatory replay check (BEFORE dispatching to the Remaining phase).**
   Mandatory phases are not skippable just because a previous session advanced
@@ -164,111 +161,84 @@ Decision guide:
   Only after both checks pass, dispatch to the phase listed under "Remaining"
   in the handoff (fall back to Build if no Remaining section is present — the
   current handoff generator does not write one).
-- **Abandon:** Delete the iterate branch (`git branch -D iterate/{name}`), remove `.shipwright/agent_docs/session_handoff.md`, proceed with fresh run from Step B2.
-- **Complete:** Read handoff for context, skip to Finalization (F1-F11) to commit, record event, and merge what's already been built. **Same replay check applies** — run External Review / Self-Review first if markers are missing, before F1.
-- **Parallel:** Leave the detected run completely untouched. Exit this session with status `parallel_setup` (not `abandoned` or `failed` — no work is lost). Print the worktree setup commands below and stop. The new iterate is started in a **new Claude Code session inside the worktree**, not in this session.
+- **Abandon:** `git worktree remove --force .worktrees/{slug}` then
+  `git branch -D iterate/{slug}`; remove `.shipwright/agent_docs/session_handoff.md`
+  if it referenced that run. Proceed with a fresh run (continue to B1a).
+- **Complete:** `cd` into `.worktrees/{slug}/`, treat it as `{project_root}`,
+  skip to Finalization (F0-F12). **Same replay check applies** — run External
+  Review / Self-Review first if markers are missing, before F0.
 
-  ```bash
-  # Resolve default branch dynamically (do NOT hardcode `main`):
-  DEFAULT_BRANCH=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@' || echo main)
+**If no resumable run is detected:** continue to B1a (Worktree Isolation).
 
-  # Precondition checks — refuse if worktree/branch already exists:
-  git worktree list | grep -q ".worktrees/<slug>" && { echo "Worktree already exists"; exit 1; }
-  git branch --list iterate/<slug> | grep -q . && { echo "Branch already exists — pick a different slug or clean up first"; exit 1; }
+### B1a. Worktree Isolation (unconditional)
 
-  # Create worktree inside repo (so .gitignore applies):
-  git worktree add .worktrees/<slug> -b iterate/<slug> "$DEFAULT_BRANCH"
-  cd .worktrees/<slug>
+**Every iterate run executes in its own git worktree + branch + PR — always,
+structurally, with no opt-in and no detection.** This is the one mechanism
+that makes parallel iterate runs safe: two runs can never share a working
+tree, race a `git checkout -b`, or cross-write each other's changes. The
+former "Parallel" menu option and the canonical/secondary session-role
+machinery are gone — they were a workaround for isolation that was
+*conditional* instead of *structural*.
 
-  # Re-hydrate dependencies + env — worktrees copy neither node_modules nor .env files.
-  # Emit ONLY the lines whose precondition matches the target project's shape:
-  [ -f ../../.env.local ]          && cp ../../.env.local .env.local
-  [ -f ../../.env ]                && cp ../../.env .env
-  [ -f package.json ]              && npm install
-  [ -f webui/package.json ]        && (cd webui && npm install)
-  [ -f webui/client/package.json ] && (cd webui/client && npm install)
-  [ -f webui/server/package.json ] && (cd webui/server && npm install)
-  [ -f client/package.json ]       && (cd client && npm install)
-  [ -f pyproject.toml ]            && uv sync
+Run this BEFORE B2 and before writing ANY artifact, as soon as the slug is
+known. Derive `<slug>` as a short kebab-case description of the change and
+`<run_id>` as `iterate-{YYYYMMDD}-{slug}` (Step C formalizes the same
+values):
 
-  # Then: open a new Claude Code session in .worktrees/<slug> and run /shipwright-iterate fresh.
-  ```
+```bash
+uv run "{shared_root}/scripts/tools/setup_iterate_worktree.py" \
+  --project-root . --slug "<slug>" --run-id "<run_id>"
+```
 
-  **Skill guidance:** probe file existence before emitting each install line — print only what applies to the target project's shape. A Python-only project should not see `npm install`, a repo without `webui/` should not see the webui lines.
+The helper detects main-repo vs. worktree:
 
-**If no in-progress run detected:** Continue to B2 normally.
+- **Main repo** → `git fetch origin`, then
+  `git worktree add .worktrees/<slug> -b iterate/<slug> origin/<default>`.
+  The branch base is ALWAYS freshly-fetched `origin/<default>` — never local
+  `main`, never another `iterate/*`. It also snapshots the main tree (for the
+  F0/F11 leak-guard) and writes a per-session run pointer.
+- **Already inside a worktree** → no-op.
 
-### B1c. Session Role Detection (parallel-iterate guard)
+Parse the JSON on stdout. **For the entire rest of this run, `{project_root}`
+is the `project_root` field of that JSON** — the new worktree path on a fresh
+run. Also `cd` the shell into it (belt-and-suspenders). From here on EVERY
+file / git / test / build operation is rooted at `{project_root}`: use
+`git -C`, absolute paths, `npm --prefix`, `uv run --directory` — never
+`cd <subdir> && …`.
 
-When two Claude Code sessions run against the same repo (one in main
-repo, one in `.worktrees/<slug>/`), one must be designated **canonical**
-for cleanup/push. The non-canonical session must NOT race the canonical
-one with commits/pushes — see `feedback_parallel_session_source_of_truth.md`.
+> **The session process cwd does NOT move.** It stays at the project root so
+> webui session-JSONL discovery is unaffected. Only `{project_root}` (this
+> skill's path variable) and the Bash shell cwd point into the worktree.
 
-1. Scan for active session-role markers:
-   ```bash
-   uv run "{shared_root}/scripts/tools/detect_parallel_sessions.py" \
-     --project-root .
-   ```
-   The helper reads `.shipwright/iterate_session_role.json` in the main
-   repo plus every `.worktrees/<slug>/.shipwright/iterate_session_role.json`.
-   It resolves the canonical main-repo root via `git rev-parse
-   --git-common-dir` first, so it is safe to invoke from a worktree.
+**Exit codes:** `0` ok · `2` slug collision — pick a different slug or clean
+up the existing `.worktrees/<slug>` / `iterate/<slug>` · `3` `git fetch`
+failed — **STOP**, unless the operator deliberately sets
+`SHIPWRIGHT_ITERATE_NO_FETCH=1` for offline use (the run may then start from
+a stale base — the deliberate trade-off).
 
-2. **0 markers** → fresh single-session run; no action.
+**Worktree conventions:**
 
-3. **1 marker** that names the current `cwd` as `worktree_path` →
-   resume role; no prompt.
+- One iterate = one worktree = one branch = one PR.
+- `.worktrees/<slug>` lives inside the repo and is `.gitignore`'d.
+- Worktrees carry neither `node_modules`/`.venv` nor `.env*`. Re-hydrate as
+  the project shape requires: copy `.env*` from the main repo, then run the
+  install commands that apply (`npm install`, `uv sync`, …). Probe file
+  existence first — a Python-only project gets no `npm install`.
+- Disjoint file scopes still matter: if two concurrent iterates touch the
+  same file they will conflict at PR-merge time. Rebase-per-PR against
+  current `origin/<default>` is expected when multiple PRs are open.
+- Cleanup after the PR merges: `git worktree remove .worktrees/<slug>` then
+  `git branch -D iterate/<slug>`. The `list_iterate_branches.py` helper shows
+  which branches are `locked` (live in a worktree) vs `stale` (safe to delete).
 
-4. **2+ markers** OR a marker that names a DIFFERENT `worktree_path` →
-   parallel sessions detected. Print the markers, then ask the user:
-   > "Detected parallel sessions: {list}. Is this session canonical or
-   > secondary? (canonical = pushes for the repo; secondary = does not
-   > push without explicit auth.)"
-
-5. Persist the answer:
-   ```bash
-   uv run "{shared_root}/scripts/tools/write_session_role.py" \
-     --project-root . \
-     --role <canonical|secondary> \
-     --session-id "$SHIPWRIGHT_SESSION_ID" \
-     --worktree-path "$(pwd)" \
-     --notes "<optional>"
-   ```
-
-The marker's role is consulted at F11 by `check_session_role.py` —
-secondary sessions are blocked from pushing unless
-`SHIPWRIGHT_SECONDARY_PUSH_AUTH=1` is set in the env.
-
-### B1a. Parallel Iterate Conventions
-
-These rules apply to the **Parallel** option in B1 and to any manual worktree-based parallel iterate work. They keep PRs independent and avoid merge conflicts.
-
-- **Branch base:** always the project's default branch (resolved via `git symbolic-ref refs/remotes/origin/HEAD`, fallback `main`). **Never** branch from another `iterate/*` — chains iterates and muddles the PR/changelog.
-- **Worktree path:** `.worktrees/<slug>` **inside the repo** (hidden folder, `.gitignore`'d). Verify with `git check-ignore .worktrees/`.
-- **Worktree init:** git-worktrees do NOT carry `node_modules` or `.env*`. The Parallel setup snippet above copies env files and runs the project's install commands — adapt for the project shape.
-- **Disjoint file scopes:** if two iterates touch the same file, serialize rather than parallelize. Overlap = manual merge conflicts.
-- **Dev server:** default is one at a time. Parallel worktrees require explicit port overrides (e.g. `PORT` for Hono + `VITE_PORT` for Vite in the Shipwright webui). Use intentionally, not as a default.
-- **One PR per iterate, one changelog entry per iterate.** Conventional-Commit sort is merge-order-independent. Rebase per PR is expected when multiple are open against the default branch.
-- **WARNING — race on adopted target projects:** on any project with `shipwright_run_config.json`, parallel iterates produce a merge conflict in `iterate_history[]`. Use this workflow today only if manual conflict resolution is acceptable. Structural fix tracked as `iterate-history-file-per-iterate` (must land before `/shipwright-adopt` on the shipwright monorepo itself).
-- **WARNING — CHANGELOG.md `[Unreleased]` is a merge hotspot today.** F4 appends to `[Unreleased]` for every iterate. Two parallel iterates conflict on merge — the second PR must rebase and resolve the bullet merge manually. Structural fix bundled with the iterate_history refactor as a `CHANGELOG-unreleased.d/` drop pattern.
-- **Cleanup:** `git worktree remove .worktrees/<slug>` removes the worktree but **not** the branch. After PR merge: also `git branch -D iterate/<slug>`. Use the helper (`uv run "{shared_root}/scripts/tools/list_iterate_branches.py"`) to see which branches are in `locked` (active in another worktree) vs `stale` (safe to delete).
-
-> **Session roles (canonical vs secondary).** If a canonical session has
-> already been declared elsewhere (visible via `detect_parallel_sessions`
-> in B1c), this session is **secondary by default**. Secondary sessions
-> DO NOT `git commit` or `git push` artifacts that would race the
-> canonical side without explicit user auth. The push-guard
-> `shared/scripts/checks/check_session_role.py` enforces this at F11
-> (exit 1 unless role is `canonical` or `SHIPWRIGHT_SECONDARY_PUSH_AUTH=1`
-> is set). To designate a role, use `session_role.write_role()` (see
-> B1c step 5).
-
-See also: `docs/guide.md` chapter "Parallel Development with Worktrees" for the full walkthrough.
+See `docs/guide.md` chapter "Parallel Development with Worktrees".
 
 ### B2. Load Project Context (MANDATORY)
 
 **Read ALL of these files NOW before proceeding.** This context is required for accurate intent classification, complexity assessment, and interview questions. Do NOT skip this step.
+
+> All paths below are under `{project_root}` — the worktree created in B1a.
+> Read from the worktree (fresh from `origin/<default>`), not the main repo.
 
 1. `CLAUDE.md` — stack, conventions, commands
 2. `.shipwright/agent_docs/conventions.md` — coding standards, naming, patterns
@@ -606,7 +576,10 @@ See `references/iteration-planning.md` for invocation.
 See `references/design-and-testing.md` for 2-tier protocol.
 
 ### Step 6: Build (TDD — Red-Green-Refactor)
-1. Create feature branch `iterate/{short-description}` **branched from the project's default branch** (resolved via `git symbolic-ref refs/remotes/origin/HEAD`, fallback `main`). Never from another `iterate/*` branch — chains iterates and muddles the PR/changelog. See B1a for parallel-iterate conventions.
+1. The worktree and branch `iterate/<slug>` already exist — created
+   unconditionally in B1a (Worktree Isolation) from freshly-fetched
+   `origin/<default>`. Do NOT run `git checkout -b`. All build work happens
+   in `{project_root}` (the worktree); use `git -C "{project_root}"`.
 2. **RED — Write failing tests first**, at minimum one test per Acceptance Criteria:
    - Tests assert on **outcomes, not internal state**
    - At least one **happy-path AND one error-path** test per AC
@@ -823,7 +796,9 @@ If yes → escalate to Mid-Flight Escalation (Section 7).
 See `references/iteration-planning.md`.
 
 ### Step 5: Fix
-1. Create feature branch `iterate/fix-{short-description}` **branched from the project's default branch** (resolved via `git symbolic-ref refs/remotes/origin/HEAD`, fallback `main`). Never from another `iterate/*` branch — chains iterates and muddles the PR/changelog. See B1a for parallel-iterate conventions.
+1. The worktree and branch `iterate/<slug>` already exist — created
+   unconditionally in B1a (for a bug the slug carries a `fix-` prefix). Do
+   NOT run `git checkout -b`. Fix in `{project_root}` (the worktree).
 2. **Fix the root cause** — targeted change, minimal scope. Do not fix symptoms.
 3. Run reproducing test to verify it passes
 4. Run related tests to verify no regressions
@@ -1035,6 +1010,16 @@ See `references/iteration-planning.md` for full protocol including handoff file 
 
 ### F0: Fresh Verification Gate
 
+**Leak-guard first.** Confirm the run is still isolated — `{project_root}`
+is an iterate worktree and nothing leaked into the main repo working tree:
+```bash
+uv run "{shared_root}/scripts/checks/check_iterate_isolation.py" \
+  --project-root "{project_root}" --run-id "{run_id}" --stage f0
+```
+Non-zero exit = **STOP**: either the run is not executing in a worktree, or
+it wrote into the main tree (compared against the B1a Step-1 snapshot).
+Investigate and revert before continuing.
+
 Run the full test suite NOW — do not rely on earlier results:
 ```bash
 npx vitest run
@@ -1169,21 +1154,32 @@ Check ANY of:
 
 If yes: update `architecture.md` to reflect the new state (Data Flow section for surfaces; State / Component / Convention sections for the rest), AND pass `--architecture-impact component|data-flow|convention` flag to `write_decision_log.py` in F3.
 
-### F3: Decision Log (ADR)
+### F3: Decision Log (ADR — decision-drop)
+
+Iterate runs do NOT append to `decision_log.md` directly — two parallel
+iterates would each compute `max(ADR)+1` in their own worktree and collide
+on the number. Write a decision-DROP keyed by `run_id`; the sequential
+`ADR-NNN` is assigned at exactly one serialized point —
+`/shipwright-changelog` release time (`aggregate_decisions.py`):
 
 ```bash
-uv run "{shared_root}/scripts/tools/write_decision_log.py" \
+uv run "{shared_root}/scripts/tools/write_decision_drop.py" \
+  --project-root "{project_root}" \
+  --run-id "{run_id}" \
   --section "Iterate — {type}: {short_description}" \
-  --commit "$(git rev-parse HEAD)" \
   --title "{short title}" \
   --context "{why}" --decision "{what}" --consequences "{impact}" \
   --rationale "{reasoning}" --rejected "{alternatives}" \
-  --project-root "{project_root}"
+  [--architecture-impact component|data-flow|convention]
 ```
 
-Reference iterate spec and run_id in the ADR body.
+The ADR's identity for this run is the **run_id** — there is no `ADR-NNN`
+yet. F5c and F7 record `run_id` as the `adr` value; the finalization
+verifier accepts run-id ADR identity and resolves it (decision-drop now,
+`Run-ID:` line in `decision_log.md` post-aggregation). Reference the iterate
+spec and run_id in the ADR body fields.
 
-**Length budget (forward-only, applies to new ADRs).** Each field — `--context`, `--decision`, `--consequences`, `--rationale`, `--rejected` — should be **1-3 sentences, max ~500 characters**. `decision_log.md` is always-loaded Layer-1 context: every new iterate run pays for every verbose ADR in tokens. Keep entries self-contained but terse. Include rationale only if the decision isn't self-explanatory. `write_decision_log.py` will print a non-blocking stderr warning if a field exceeds 500 characters; it will still append the entry. Do NOT retroactively shorten existing ADRs — git churn for historical detail isn't worth it.
+**Length budget (forward-only, applies to new ADRs).** Each field — `--context`, `--decision`, `--consequences`, `--rationale`, `--rejected` — should be **1-3 sentences, max ~500 characters**. `decision_log.md` is always-loaded Layer-1 context: every new iterate run pays for every verbose ADR in tokens. Keep entries self-contained but terse. Include rationale only if the decision isn't self-explanatory. `aggregate_decisions.py` renders drops verbatim, so keep each field within ~500 characters at authoring time. Do NOT retroactively shorten existing ADRs — git churn for historical detail isn't worth it.
 
 ### F3a: Reflection — Capture Learnings
 
@@ -1286,7 +1282,7 @@ uv run "{shared_root}/scripts/tools/append_iterate_entry.py" \
     "branch": "iterate/{short-description}",
     "spec": "{path to iterate spec or null}",
     "tests_passed": true,
-    "adr": "{ADR-NNN or null}"
+    "adr": "{run_id}"
   }'
 ```
 
@@ -1327,7 +1323,7 @@ git add <test files added/modified in build>
 
 # Finalization artifacts (always)
 git add {project_root}/CHANGELOG-unreleased.d/       # F4 drop files (one or more)
-git add {project_root}/.shipwright/agent_docs/decision_log.md
+git add {project_root}/.shipwright/agent_docs/decision-drops/        # F3 decision-drop (one or more)
 git add {project_root}/.shipwright/agent_docs/build_dashboard.md
 git add {project_root}/.shipwright/agent_docs/iterates/          # F5c entry + any migration quarantine
 git add {project_root}/shipwright_test_results.json
@@ -1378,28 +1374,44 @@ uv run "{shared_root}/scripts/tools/record_event.py" \
   --affected-frs "{comma_separated_FRs}" \
   --tests-passed {N} --tests-total {N} \
   --e2e-run {true|false} \
-  --adr-id "ADR-{NNN}" \
+  --adr-id "{run_id}" \
   --deduplicate-by-commit
 ```
 
-### F11: Merge, Push & Verify
+### F11: Push Branch, Open PR & Verify
 
-**Pre-push session-role check** (parallel-iterate guard — see B1a/B1c):
-run `check_session_role.py` first; non-zero → STOP.
+**Leak-guard first** — confirm the run never touched the main repo working
+tree (snapshot-and-diff against the B1a Step-1 snapshot):
 ```bash
-uv run "{shared_root}/scripts/checks/check_session_role.py" --project-root "{project_root}"
+uv run "{shared_root}/scripts/checks/check_iterate_isolation.py" \
+  --project-root "{project_root}" --run-id "{run_id}" --stage f11
 ```
+Non-zero exit = **STOP**.
 
+**Push the iterate branch and open a PR.** An iterate run NEVER checks out,
+merges, or pushes the default branch — that races every other parallel
+iterate. One iterate = one branch = one PR.
 ```bash
-main_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "master")
-git checkout "$main_branch"
-git merge iterate/{short-description}
-git push origin "$main_branch"
+default_branch=$(git -C "{project_root}" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo main)
+git -C "{project_root}" push -u origin "iterate/{slug}"
+# gh has no `-C` analog — it acts on the cwd's repo. cd into the worktree
+# so gh can never operate on the main repo even if the shell cwd drifted.
+cd "{project_root}"
+gh pr create --base "$default_branch" --head "iterate/{slug}" \
+  --title "<type>(<scope>): <description>" \
+  --body "<summary>
+
+Run-ID: {run_id}"
 ```
+If `iterate/{slug}` has diverged from `origin/<default>` since B1a fetched it
+(another iterate merged meanwhile), rebase onto current `origin/<default>`
+and resolve conflicts BEFORE `gh pr create` — that rebase is the deliberate,
+single conflict point. The PR is then left **open for review**: this run
+STOPS here. Merging the PR is a separate, human-gated step.
 
 **Update session handoff** to reflect completed state. Pass `--reason`
 so the handoff shows what caused the regeneration instead of the default
-`context compaction` (iterate 11.3):
+`context compaction`:
 ```bash
 uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
   --project-root "{project_root}" \
@@ -1408,30 +1420,31 @@ uv run "{shared_root}/scripts/tools/generate_session_handoff.py" \
 
 **Gate check:** Verify F7 (Record Event) was executed:
 ```bash
-grep "$(git rev-parse HEAD)" "{project_root}/shipwright_events.jsonl" > /dev/null 2>&1
+grep "$(git -C "{project_root}" rev-parse HEAD)" "{project_root}/shipwright_events.jsonl" > /dev/null 2>&1
 ```
 
-**Iterate 11 — deterministic verifier.** After the gate check, run the
-finalization verifier and fail the iterate run on red:
+**Deterministic verifier.** After the gate check, run the finalization
+verifier and fail the iterate run on red:
 ```bash
 uv run "{shared_root}/scripts/tools/verify_iterate_finalization.py" \
   --run-id "{run_id}" \
   --project-root "{project_root}" \
-  --commit "$(git rev-parse HEAD)"
+  --commit "$(git -C "{project_root}" rev-parse HEAD)"
 ```
 Exit 0 = green (or warnings only), exit 1 = at least one required
 artifact missing. Add `--strict` to treat warnings as errors.
 
 ### F12: Release Prompt
 
-After pushing to main, check if `CHANGELOG.md` has entries under `[Unreleased]`:
+After opening the PR, count the pending changelog drop files — `*.md` under
+`{project_root}/CHANGELOG-unreleased.d/` (excluding `.gitkeep`). If > 0:
 
-Count the `- ` lines between `## [Unreleased]` and the next `## [v` heading. If > 0:
+> "{N} unreleased changelog drop(s) pending. Once this PR merges, run
+> /shipwright-changelog — it aggregates the changelog drops + the ADR
+> decision-drops and tags the release."
 
-> "{N} unreleased changelog entries found. Run /shipwright-changelog to tag a release?"
-
-- If **yes**: invoke `/shipwright-changelog` (handles version bump, tagging, push — respects project autonomy mode)
-- If **no**: proceed to summary (entries stay under `[Unreleased]`)
+`/shipwright-changelog` runs against the default branch AFTER the PR
+merges, not now — the drops are not on `origin/<default>` yet.
 
 Print summary:
 ```
@@ -1441,16 +1454,15 @@ SHIPWRIGHT-ITERATE COMPLETE
 Run ID:     {run_id}
 Type:       {FEATURE | CHANGE | BUG}
 Complexity: {level}
-Branch:     iterate/{short-description}
+Worktree:   .worktrees/{slug}/
+Branch:     iterate/{slug}
 Commit:     {hash}
 Tests:      {N} passing (unit: {N}, e2e: {N|skipped}, design_fidelity: {N|skipped})
 Specs:      {iterate spec path | FR update only | no changes}
-ADR:        Logged in decision_log.md
-CHANGELOG:  Updated ([Unreleased])
-Release:    {version tag | "deferred (N unreleased entries)"}
+ADR:        decision-drop {run_id} (ADR-NNN assigned at changelog release)
+CHANGELOG:  drop file(s) under CHANGELOG-unreleased.d/
 Compliance: Updated
-Merged:     {main_branch} ← iterate/{short-description}
-Pushed:     origin/{main_branch}
+PR:         {pr_url} — open for review
 ================================================================================
 ```
 

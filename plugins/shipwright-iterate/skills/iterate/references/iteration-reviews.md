@@ -284,4 +284,4 @@ Write to `.shipwright/agent_docs/session_handoff.md`:
 - Include enough context for next session to resume without re-reading all files
 
 ### How Resume Works (Step B1 in SKILL.md)
-When a new session starts, Step B1 checks for existing `iterate/*` branches and `session_handoff.md`. If found, it offers three options: Resume (skip to remaining phase), Abandon (delete branch, start fresh), or Complete (skip to finalization). The handoff file is the primary source of truth for what was done and what remains.
+When a new session starts, Step B1 checks for existing `iterate/*` worktrees and `session_handoff.md`. If found, it offers three options: Resume (`cd` into the worktree, skip to the remaining phase), Abandon (remove the worktree + branch, start fresh), or Complete (skip to finalization). The handoff file is the primary source of truth for what was done and what remains.

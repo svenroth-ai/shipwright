@@ -44,6 +44,15 @@ def _truncate_title(text: str, max_len: int = 60) -> str:
 # ~1-3 sentences — enough to be self-contained without bloating the budget.
 ADR_FIELD_MAX_CHARS = 500
 
+# Header written when decision_log.md does not yet exist. Shared with
+# aggregate_decisions.py so the iterate decision-drop path and the direct
+# append path emit the identical header.
+DECISION_LOG_HEADER = (
+    "# Decision Log\n\n"
+    "> Project-specific decisions only. Profile-level decisions are "
+    "implicit in the stack profile.\n"
+)
+
 
 def check_field_length(field_name: str, value: str, max_chars: int = ADR_FIELD_MAX_CHARS) -> str | None:
     """Return a warning string if `value` exceeds the budget, else None.
@@ -98,9 +107,18 @@ def format_entry(
     rejected: str = "",
     title: str = "",
     rationale: str = "",
+    entry_date: str | None = None,
+    run_id: str = "",
 ) -> str:
-    """Format a single ADR entry in compact format."""
-    today = date.today().isoformat()
+    """Format a single ADR entry in compact format.
+
+    ``entry_date`` overrides the date stamp — ``aggregate_decisions.py`` passes
+    the drop's authoring date so an ADR aggregated weeks later still carries
+    the date it was decided. ``run_id``, when given, adds a ``Run-ID:`` line:
+    the iterate decision-drop pattern keys ADRs by run_id, and the finalization
+    verifier resolves run_id ↔ ADR-NNN through that line.
+    """
+    today = entry_date or date.today().isoformat()
     display_title = title or _truncate_title(decision)
 
     lines = [
@@ -110,6 +128,10 @@ def format_entry(
         f"### ADR-{number:03d}: {display_title}",
         f"- **Date:** {today}",
         f"- **Section:** {section_ref}",
+    ]
+    if run_id:
+        lines.append(f"- **Run-ID:** {run_id}")
+    lines += [
         f"- **Context:** {context}",
         f"- **Decision:** {decision}",
         f"- **Commit:** {commit_hash}",
@@ -133,6 +155,7 @@ def _append_architecture_update(
     adr_number: int,
     impact_type: str,
     summary: str,
+    entry_date: str | None = None,
 ) -> str | None:
     """Append an update note to architecture.md or conventions.md.
 
@@ -154,7 +177,7 @@ def _append_architecture_update(
     if section_header not in content:
         content = content.rstrip() + f"\n\n{section_header}\n"
 
-    today = date.today().isoformat()
+    today = entry_date or date.today().isoformat()
     update_line = f"\n- **ADR-{adr_number:03d}** ({today}): {summary}\n"
     content += update_line
     target.write_text(content, encoding="utf-8")
@@ -173,6 +196,8 @@ def append_decision(
     rationale: str = "",
     status: str = "Accepted",  # kept for backwards compat, not used in compact format
     architecture_impact: str = "none",  # "component" | "data-flow" | "convention" | "none"
+    entry_date: str | None = None,
+    run_id: str = "",
 ) -> int:
     """Append a decision entry to the decision log. Returns the ADR number."""
     project_root = Path(project_root)
@@ -185,10 +210,13 @@ def append_decision(
     if log_path.exists():
         content = log_path.read_text(encoding="utf-8")
     else:
-        content = "# Decision Log\n\n> Project-specific decisions only. Profile-level decisions are implicit in the stack profile.\n"
+        content = DECISION_LOG_HEADER
 
     number = get_next_adr_number(content)
-    entry = format_entry(number, section_ref, commit_hash, context, decision, consequences, rejected, title, rationale)
+    entry = format_entry(
+        number, section_ref, commit_hash, context, decision, consequences,
+        rejected, title, rationale, entry_date=entry_date, run_id=run_id,
+    )
     content += entry
 
     log_path.write_text(content, encoding="utf-8")

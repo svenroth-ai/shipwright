@@ -175,6 +175,60 @@ def test_adr_check_fails_when_iterate_history_has_no_adr_for_run(tmp_path):
     assert result.ok is False
 
 
+# ----- H decision-drop pattern: run-id ADR identity ------------------
+
+def test_adr_check_passes_with_pending_decision_drop(tmp_path):
+    """entry.adr is a run-id; the ADR lives as a decision-drop awaiting
+    aggregation at /shipwright-changelog time."""
+    proj = tmp_path / "webui"
+    proj.mkdir()
+    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (proj / "shipwright_run_config.json").write_text(json.dumps({
+        "iterate_history": [
+            {"run_id": "iterate-20260515-x", "adr": "iterate-20260515-x"},
+        ],
+    }))
+    drops = proj / ".shipwright" / "agent_docs" / "decision-drops"
+    drops.mkdir(parents=True)
+    (drops / "iterate-20260515-x_001.json").write_text("{}")
+    result = check_adr_in_iterate_history(proj, "iterate-20260515-x")
+    assert result.ok is True
+    assert "decision-drop" in result.detail
+
+
+def test_adr_check_passes_when_runid_aggregated_into_log(tmp_path):
+    """Post-aggregation: the ADR is in decision_log.md with a Run-ID: line
+    linking it to the run-id used as entry.adr."""
+    proj = tmp_path / "webui"
+    proj.mkdir()
+    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (proj / "shipwright_run_config.json").write_text(json.dumps({
+        "iterate_history": [
+            {"run_id": "iterate-20260515-x", "adr": "iterate-20260515-x"},
+        ],
+    }))
+    (proj / ".shipwright" / "agent_docs" / "decision_log.md").write_text(
+        "# Decision Log\n\n### ADR-050: A decision\n"
+        "- **Date:** 2026-05-15\n- **Run-ID:** iterate-20260515-x\n"
+    )
+    result = check_adr_in_iterate_history(proj, "iterate-20260515-x")
+    assert result.ok is True
+
+
+def test_adr_check_fails_when_runid_has_no_drop_and_not_in_log(tmp_path):
+    proj = tmp_path / "webui"
+    proj.mkdir()
+    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    (proj / "shipwright_run_config.json").write_text(json.dumps({
+        "iterate_history": [
+            {"run_id": "iterate-20260515-x", "adr": "iterate-20260515-x"},
+        ],
+    }))
+    (proj / ".shipwright" / "agent_docs" / "decision_log.md").write_text("# Decision Log\n")
+    result = check_adr_in_iterate_history(proj, "iterate-20260515-x")
+    assert result.ok is False
+
+
 # ──────────────────────────────────────────────────────────────────────
 # check_changelog_unreleased
 # ──────────────────────────────────────────────────────────────────────

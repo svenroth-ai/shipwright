@@ -696,17 +696,27 @@ phase to load explicitly.
 |-------|---------|--------|--------------|
 | SessionStart | — | `capture_session_id.py` (shared) | See Shared Hook section above |
 | SessionStart | — | `check_drift.py` | Timestamp + content drift (catches Shipwright-repo self-drift when iterating on Shipwright itself) |
-| Stop | — | `iterate_stop_finalize.py` | Shared handoff + fallback `finalize_iterate.py` (compliance, dashboard, handoff). Freshness-gated: skips if `finalize_iterate.py` already ran. |
+| Stop | — | `iterate_stop_finalize.py` | Shared handoff + fallback `finalize_iterate.py` (compliance, dashboard, handoff). Worktree-aware: resolves the session's active iterate worktree via the run pointer so a fallback finalize never dirties the main tree. Freshness-gated: skips if `finalize_iterate.py` already ran. |
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W2/W3 iterate workflow + I1-I4 infrastructure + T1/T2 traceability + Q1 ADR substance + S2 iterate-spec for medium+ + S3 miniplan Tier-2 + S4 FR-preservation Tier-2 + S5 FR-coherence Tier-2 + S9 README-freshness Tier-2 + S10 CLAUDE.md-sync Tier-2) — runs **after** finalize so F5a/F5b/F7/F11 evidence is on disk. **Producer side-effect (Iterate 1a):** Tier-1 FAILs mirrored into `.shipwright/triage.jsonl` via `triage.append_triage_item_idempotent`, dedup_key=`f"{phase}:{code}"`, match_commit=True, window=24h. See [triage-inbox.md](triage-inbox.md). |
 | Stop | — | `write_terminal_marker.py` | Writes `.shipwright/runs/<loop_id>/<unit_id>/DONE` (no-op without loop env vars) |
 | Stop | — | `aggregate_triage_on_stop.py` (shared) | **Iterate 1a:** Regenerates `.shipwright/agent_docs/triage_inbox.md` from `.shipwright/triage.jsonl`. Schema-compliant Stop output (ADR-042: NO `additionalContext`; aggregator status goes to stderr). Registered **last** in the Stop chain so it observes all producer writes from the same chain. Greenfield-safe (no-op on non-Shipwright projects). |
 
-**B1 parallel-iterate detection (2026-04-23):** `/shipwright-iterate` reads git metadata at startup to decide whether to offer the Parallel option:
-(1) `git branch --list "iterate/*"` for candidate branches,
-(2) `git symbolic-ref refs/remotes/origin/HEAD` for the project's default branch,
-(3) `git merge-base --is-ancestor` to filter already-merged stale branches (surface as cleanup hint, not in-progress run),
-(4) `git rev-parse --show-toplevel` + worktree-path check to exclude the current branch when running inside a secondary worktree (prevents infinite Parallel-prompt loop).
-No new hook is registered; detection runs as part of B1. Corresponding conventions live in SKILL.md B1a. `/shipwright-build` Step E picked up the same default-branch anchor via conditional `git show-ref --quiet` bifurcation (Resume path unchanged).
+**B1a Worktree Isolation (unconditional, 2026-05):** every `/shipwright-iterate`
+run executes in its own git worktree + branch + PR — structurally, not by
+detection. At skill startup, before any artifact write,
+`shared/scripts/tools/setup_iterate_worktree.py` detects main-repo vs.
+worktree; from the main repo it runs `git fetch origin` then
+`git worktree add .worktrees/<slug> -b iterate/<slug> origin/<default>`,
+snapshots the main tree, and writes a per-session run pointer
+(`.shipwright/iterate_active/<session-id>.json`). The F0/F11 leak-guard
+`shared/scripts/checks/check_iterate_isolation.py` fails closed if the run
+is not in a worktree or leaked changes into the main tree (snapshot-diff).
+No hook is registered — setup + leak-guard run inline in the skill. The
+former canonical/secondary session-role machinery (`session_role.py`,
+`check_session_role.py`, `detect_parallel_sessions.py`,
+`write_session_role.py`) was deleted: unconditional isolation makes it
+unnecessary. B1 still classifies `iterate/*` branches via
+`list_iterate_branches.py` (`stale`/`locked`) for the resume menu.
 
 ### shipwright-changelog
 
@@ -957,7 +967,7 @@ Each plugin reads project context at startup to ensure consistency. This table s
 |----------|-----------|-----------|
 | `CLAUDE.md` | project | — |
 | `conventions.md` | project | write_decision_log.py (convention impact), reflection protocol (build, test, deploy, iterate) |
-| `decision_log.md` | project (init) | plan, build, deploy, iterate (via write_decision_log.py) |
+| `decision_log.md` | project (init) | plan, build, deploy (via write_decision_log.py); iterate writes a per-run drop under `.shipwright/agent_docs/decision-drops/` (write_decision_drop.py) → folded into `decision_log.md` at `/shipwright-changelog` via `aggregate_decisions.py` |
 | `architecture.md` | project | write_decision_log.py (architecture impact) |
 | `build_dashboard.md` | update_build_dashboard.py | build, test, changelog, deploy, iterate, **Stop hook** (all plugins) |
 | `session_handoff.md` | generate_handoff_on_stop.py | all plugins (Stop hook), **finalize_iterate.py** (iterate) |

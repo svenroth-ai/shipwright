@@ -118,3 +118,8 @@ Spec/
 /.shipwright/securityreports/
 /.shipwright/tmp/
 /.shipwright/adopt/backups/
+# Iterate worktree-isolation transient state — the main-tree snapshot and
+# per-session run pointer (see /shipwright-iterate B1a). Never tracked: the
+# leak-guard would otherwise flag its own scaffolding as a main-tree change.
+/.shipwright/runs/
+/.shipwright/iterate_active/

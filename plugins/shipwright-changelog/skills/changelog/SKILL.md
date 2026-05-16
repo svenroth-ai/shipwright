@@ -176,6 +176,26 @@ Those bullets are NOT migrated automatically — the operator chooses
 whether to fold them into the new version manually or accept the
 split-brain.
 
+### ADR decision-drops
+
+Iterate F3 no longer appends ADRs directly to `decision_log.md`. Since
+the unconditional-worktree refactor it writes one JSON drop per ADR
+under `.shipwright/agent_docs/decision-drops/`, keyed by run_id. Release
+time is the ONE serialized point that assigns the sequential `ADR-NNN`,
+so two parallel iterates can never claim the same number:
+
+```bash
+uv run "{shared_root}/scripts/tools/aggregate_decisions.py" \
+  --project-root "{project_root}" \
+  [--dry-run]
+```
+
+It renders each drop into `decision_log.md` (continuing the ADR
+numbering), embeds a `Run-ID:` line for run-id ↔ ADR traceability, and
+deletes only the drops it aggregated. Run with `--dry-run` first to
+preview the numbers that will be assigned. Drops written after the
+snapshot survive into the next release.
+
 Fallback for non-iterate commits: if this release includes bullets that
 weren't produced through iterate F4 (rare — e.g. a cherry-pick from an
 unrelated branch), write them with `append_changelog_entry.py` BEFORE

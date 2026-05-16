@@ -1,50 +1,41 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-15-rtm-adopt-worktree-fix",
-    "date": "2026-05-15",
+    "run_id": "iterate-2026-05-15-iterate-worktree-isolation",
+    "date": "2026-05-16",
     "unit": {
       "status": "passed",
-      "passed": 312,
-      "total": 312,
-      "note": "F0 full shipwright-compliance plugin suite: 312 passed, 0 failed. 7 tests new in this iterate (TestCollectRequirementsSixCol x2, TestCollectRequirementsColumnWidths x1, TestEventLogWorktreeResolution x3, TestRtmAdoptedProjectWorktree x1). ruff clean on all 3 changed files."
+      "passed": 2282,
+      "total": 2289,
+      "note": "Per-suite F0 (shared/scripts/tests and plugins/*/tests are separate 'tests' packages, run separately): shared/tests 1739, shared/scripts/tests 169, shared/scripts/tools/tests 30, plugins/shipwright-iterate/tests 237, integration-tests 107. The 7 failures (test_hooks.py secrets/filesize, test_artifact_path_canon.py) reproduce identically on base origin/main - pre-existing, 0 regressions from this iterate."
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0,
-      "note": "No cross-plugin integration paths in scope; change is contained to shipwright-compliance/scripts/lib/data_collector.py."
+      "status": "passed",
+      "passed": 107,
+      "total": 107,
+      "note": "integration-tests/ incl. new test_parallel_iterate_isolation.py (6: two parallel worktree setups, no cross-tree write, clean main tree, slug-collision rejected, leak caught)."
     },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0,
-      "note": "No SQL/RLS changes."
-    },
+    "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
     "e2e": {
       "status": "passed",
-      "passed": 7,
-      "total": 7,
-      "note": "F0.5 surface=cli ran the 4 new test classes end-to-end, including TestRtmAdoptedProjectWorktree which builds a real git worktree of an adopted project and asserts the generated RTM shows real event-sourced coverage instead of a false 'Traceability coverage 0%'."
+      "passed": 6,
+      "total": 6,
+      "note": "F0.5 surface=cli: test_parallel_iterate_isolation.py drives setup_iterate_worktree.py + check_iterate_isolation.py end-to-end through two simulated concurrent iterate runs."
     },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0,
-      "note": "No UI changes."
-    },
-    "smoke": {
-      "status": "not_run",
-      "note": "No browser surface in this iterate."
-    },
+    "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI changes."},
+    "smoke": {"status": "not_run", "note": "No browser surface in this iterate."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --directory plugins/shipwright-compliance --extra dev python -m pytest tests/test_data_collector.py::TestCollectRequirementsSixCol tests/test_data_collector.py::TestCollectRequirementsColumnWidths tests/test_data_collector.py::TestEventLogWorktreeResolution tests/test_rtm_generator.py::TestRtmAdoptedProjectWorktree -q --color=no",
+      "runner": "uv run --extra dev pytest shared/tests/test_worktree_isolation_lib.py shared/tests/test_setup_iterate_worktree.py shared/tests/test_check_iterate_isolation.py shared/tests/test_write_decision_drop.py shared/tests/test_aggregate_decisions.py shared/tests/test_verify_iterate_finalization.py shared/tests/test_verifiers_common.py integration-tests/test_parallel_iterate_isolation.py",
       "exit_code": 0,
-      "tests_run": 7,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-15-rtm-adopt-worktree-fix/surface_verification.json",
-      "timestamp": "2026-05-15T07:25:16.906Z",
-      "attempts": 1
+      "tests_run": 128,
+      "evidence_path": ".shipwright/planning/iterate/2026-05-15-iterate-worktree-isolation.md",
+      "timestamp": "2026-05-16T08:30:00Z",
+      "attempts": 1,
+      "note": "The iterate's own cli surface (new scripts + leak-guard + decision-drop + verifier + the two-parallel-runs integration test) - 128/128 green after the code-review fixes."
     },
-    "degraded": []
+    "degraded": [
+      "F0/F11 leak-guard not run for this bootstrap iterate: its worktree was created manually before setup_iterate_worktree.py existed, so no Step-1 snapshot exists. Leak-guard correctness is instead proven by test_check_iterate_isolation.py (6 tests) + the integration test; the main tree was confirmed unchanged from session start.",
+      "7 pre-existing baseline test failures on origin/main (test_hooks.py secrets/filesize, test_artifact_path_canon.py) - verified identical on base, not introduced by this iterate."
+    ]
   }
 }

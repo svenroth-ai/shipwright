@@ -1,7 +1,9 @@
 """Shared test fixtures."""
 
 import json
+import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -84,3 +86,53 @@ def project_with_configs(tmp_project):
         (tmp_project / name).write_text(json.dumps(data, indent=2), encoding="utf-8")
 
     return tmp_project
+
+
+@pytest.fixture
+def git_origin_repo(tmp_path):
+    """A git working clone with a local bare 'origin' remote + one commit.
+
+    Returns ``(work, origin)`` Paths. ``work`` is the MAIN repo working tree
+    for worktree-isolation tests; ``.worktrees/<slug>`` children are created
+    under it. ``origin`` is a local bare repo so ``git fetch origin`` works
+    fully offline.
+
+    ``.shipwright/`` is committed (``.gitkeep``) so the repo mirrors a real
+    Shipwright project — where ``.shipwright/`` always carries tracked content.
+    Without that, git collapses an untracked ``.shipwright/`` into a single
+    ``?? .shipwright/`` status entry and the leak-guard's run-infra exclusion
+    (which keys on ``.shipwright/runs/`` etc.) cannot see inside it.
+    """
+    env = os.environ.copy()
+    env.update(
+        {
+            "GIT_AUTHOR_NAME": "Iso Test",
+            "GIT_AUTHOR_EMAIL": "iso@test.invalid",
+            "GIT_COMMITTER_NAME": "Iso Test",
+            "GIT_COMMITTER_EMAIL": "iso@test.invalid",
+        }
+    )
+
+    def _git(cwd, *args):
+        return subprocess.run(
+            ["git", *args],
+            cwd=str(cwd),
+            env=env,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+    origin = tmp_path / "origin.git"
+    work = tmp_path / "work"
+    _git(tmp_path, "init", "--bare", "-b", "main", str(origin))
+    _git(tmp_path, "clone", str(origin), str(work))
+    (work / "README.md").write_text("hello\n", encoding="utf-8")
+    shipwright_dir = work / ".shipwright"
+    shipwright_dir.mkdir()
+    (shipwright_dir / ".gitkeep").write_text("", encoding="utf-8")
+    _git(work, "add", "-A")
+    _git(work, "commit", "-m", "init")
+    _git(work, "push", "origin", "main")
+    _git(work, "remote", "set-head", "origin", "main")
+    return work, origin
