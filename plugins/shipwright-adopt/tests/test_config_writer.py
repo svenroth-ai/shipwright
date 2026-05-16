@@ -1,9 +1,27 @@
 """Unit tests for config_writer.write_all."""
 
+import importlib.util
 import json
 from pathlib import Path
 
-from lib.config_writer import write_all, write_iterate_config
+from lib.config_writer import write_all, write_iterate_config, write_plan_config
+
+
+def _load_shared_resolver():
+    """Load shared/scripts/lib/external_review_config.py by file path.
+
+    Importing it as ``lib.external_review_config`` would collide with the
+    adopt plugin's own ``lib`` namespace package already pinned in
+    sys.modules by ``from lib.config_writer import ...`` (see ADR-045).
+    Loading by explicit file path side-steps the ``lib`` namespace entirely.
+    """
+    repo_root = Path(__file__).resolve().parents[3]
+    mod_path = repo_root / "shared" / "scripts" / "lib" / "external_review_config.py"
+    spec = importlib.util.spec_from_file_location("external_review_config", mod_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_writes_all_configs_in_order(tmp_path: Path) -> None:
@@ -88,8 +106,9 @@ def test_no_sync_skips_sync_config(tmp_path: Path) -> None:
 def test_iterate_config_written_with_documented_schema(tmp_path: Path) -> None:
     """write_all must emit shipwright_iterate_config.json with the schema
     documented in iteration-reviews.md (external_review.feedback_iterations
-    + external_code_review.enabled). Defaults are conservative:
-    feedback_iterations=0 (matches plan-config opt-out), code-review
+    + external_code_review.enabled). Defaults match the framework:
+    feedback_iterations=1 (consistent with the shared default and what
+    greenfield /shipwright-project seeds — External Review on), code-review
     cascade enabled=true (cascade runs, user can flip off).
     """
     write_all(
@@ -104,9 +123,10 @@ def test_iterate_config_written_with_documented_schema(tmp_path: Path) -> None:
 
     iterate = json.loads(iterate_path.read_text(encoding="utf-8"))
 
-    # Schema: external_review.feedback_iterations (controls plan/iterate-mode review)
+    # Schema: external_review.feedback_iterations (controls plan/iterate-mode review).
+    # Seeded to 1 — consistent with the shared default and greenfield projects.
     assert "external_review" in iterate
-    assert iterate["external_review"]["feedback_iterations"] == 0
+    assert iterate["external_review"]["feedback_iterations"] == 1
 
     # Schema: external_code_review.enabled (controls code-review cascade — independent gate)
     assert "external_code_review" in iterate
@@ -162,6 +182,51 @@ def test_iterate_config_idempotent_overwrite(tmp_path: Path) -> None:
     assert first["external_review"] == second["external_review"]
     assert first["external_code_review"] == second["external_code_review"]
     assert first["seeded_by_adopt"] == second["seeded_by_adopt"]
+
+
+def test_iterate_config_external_review_not_user_disabled(tmp_path: Path) -> None:
+    """Boundary Probe (producer -> file on disk -> shared resolver consumer).
+
+    Defect-1 regression guard. write_iterate_config seeds
+    external_review.feedback_iterations; the shared resolver
+    (get_external_review_status) maps that to a three-way status. A seed of
+    0 resolves to "user_disabled" -> External Review is silently skipped — a
+    disguised opt-out the operator never chose. The adopt-seeded value MUST
+    resolve to a non-disabled status, consistent with the shared default
+    (shared/config/external_review.json) and greenfield /shipwright-project.
+    """
+    resolver = _load_shared_resolver()
+
+    # Producer -> file on disk.
+    write_iterate_config(tmp_path)
+
+    # Consumer: deep-merge the adopt-written config over the shared default.
+    merged = resolver.load_review_config(project_root=tmp_path)
+
+    # The seeded value is the enabled default (1), not the 0 opt-out.
+    assert merged["external_review"]["feedback_iterations"] == 1
+
+    # The resolver must NOT classify this as an explicit user opt-out.
+    status = resolver.get_external_review_status(merged)
+    assert status != "user_disabled", (
+        f"adopt-seeded iterate config resolves to {status!r} — a disguised "
+        "opt-out; expected 'available' or 'missing_keys'"
+    )
+    assert status in ("available", "missing_keys")
+
+
+def test_plan_config_omits_dead_external_review_key(tmp_path: Path) -> None:
+    """Defect-2 regression guard. write_plan_config used to emit a flat
+    "external_review_feedback_iterations" key into shipwright_plan_config.json.
+    The shared resolver only reads the nested external_review.feedback_iterations
+    from shipwright_iterate_config.json — the flat key had zero readers
+    repo-wide. It must not be written.
+    """
+    path = write_plan_config(tmp_path, split_name="01-adopted")
+    plan = json.loads(path.read_text(encoding="utf-8"))
+    assert "external_review_feedback_iterations" not in plan
+    # Defensive: no nested external_review block snuck in as a replacement either.
+    assert "external_review" not in plan
 
 
 def test_custom_completed_steps(tmp_path: Path) -> None:

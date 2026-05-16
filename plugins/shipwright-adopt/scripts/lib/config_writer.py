@@ -67,7 +67,6 @@ def write_plan_config(project_root: Path, *, split_name: str) -> Path:
             "has no planned sections — existing code is treated as retroactively complete. "
             "Use /shipwright-iterate for all future changes."
         ),
-        "external_review_feedback_iterations": 0,
         "updated_at": _utc_now_iso(),
     }
     path = project_root / "shipwright_plan_config.json"
@@ -104,15 +103,20 @@ def write_build_config(
 
 
 def write_iterate_config(project_root: Path) -> Path:
-    """Write shipwright_iterate_config.json with the documented opt-out schema.
+    """Write shipwright_iterate_config.json with the documented review schema.
 
     Schema (per plugins/shipwright-iterate/skills/iterate/references/iteration-reviews.md
     and plugins/shipwright-iterate/agents/sub-iterate-runner.md):
 
       - external_review.feedback_iterations: controls plan/iterate-mode external
-        LLM review. 0 = user_disabled (Branch C). Default 0 here mirrors the
-        flat key in write_plan_config — adopted projects opt out of plan/iterate-
-        mode review until the operator flips it on.
+        LLM review. Seeded to 1 — consistent with the shared default in
+        shared/config/external_review.json and with what /shipwright-project
+        seeds for greenfield projects (External Review on by default). Adopt
+        does NOT pre-emptively opt out: when no API key is set, the shared
+        resolver (get_external_review_status) returns "missing_keys", which
+        triggers an interactive prompt — the no-key case is already handled
+        correctly without a silent opt-out. A seed of 0 would instead resolve
+        to "user_disabled", a disguised opt-out the operator never chose.
       - external_code_review.enabled: controls the code-review CASCADE (an
         independent gate per iteration-reviews.md:191-194). Default true so
         the cascade runs by default; user flips to false at project level
@@ -120,7 +124,7 @@ def write_iterate_config(project_root: Path) -> Path:
     """
     config = {
         "external_review": {
-            "feedback_iterations": 0,
+            "feedback_iterations": 1,
         },
         "external_code_review": {
             "enabled": True,

@@ -783,7 +783,7 @@ write_iterate_config(Path('.'))
 ```
 
 This writes the config with the documented defaults
-(`external_review.feedback_iterations: 0`,
+(`external_review.feedback_iterations: 1`,
 `external_code_review.enabled: true`). Both fields are operator opt-out
 knobs — flip after the file exists, no re-adopt needed. The framework
 ignores the file's absence (defaults stay in effect), so this is purely

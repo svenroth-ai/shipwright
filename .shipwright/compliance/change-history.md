@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-05-16T10:46:57Z
-Total commits: 644
+Generated: 2026-05-16T12:53:40Z
+Total commits: 648
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 218
-    "fix" : 168
-    "chore" : 105
-    "docs" : 98
+    "fix" : 169
+    "chore" : 107
+    "docs" : 99
     "refactor" : 34
     "test" : 14
     "other" : 7
@@ -241,10 +241,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 168 commits
+### Fixes (fix) — 169 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-16 | iterate | worktree-aware event-log resolution | 34a79879a54d |
 | 2026-05-15 | compliance | worktree-aware RTM data collection | ea24bf4284d2 |
 | 2026-05-11 | triage | path-canon allowlist + use _AGENT_DOCS_DIRNAME constant | 734bba94d211 |
 | 2026-05-11 | triage | address external code review HIGH + MED findings | 0229b4c3b9f2 |
@@ -414,10 +415,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 105 commits
+### Chores (chore) — 107 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-16 | iterate | record F7 work_completed event for 34a7987 | 2a2c6fd182c8 |
+| 2026-05-16 | release | v0.19.0 | 333baab12f49 |
 | 2026-05-15 | compliance | record F7 work_completed event for ea24bf4 | fd68dd347db7 |
 | 2026-05-14 | triage | post-F7 refresh of build_dashboard + compliance + handoff | 9f17372f5889 |
 | 2026-05-14 | triage | append F7 work_completed event for iterate-2 commit | 2f55b21975f6 |
@@ -524,10 +527,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 98 commits
+### Documentation (docs) — 99 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-16 | iterate | fix SKILL.md run_id format + stale F11 events.jsonl grep | 70f52f49f207 |
 | 2026-05-16 | — | align ASCII pipeline diagrams with profile-driven deploy | bd5a0b955ef1 |
 | 2026-05-16 | — | document performance budgets + honest deploy-target framing | c9a442e0c28e |
 | 2026-05-16 | — | document the python-plugin-monorepo stack profile | 2e1f1fcec211 |
@@ -701,7 +705,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 644 |
+| Total commits | 648 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 644 |
+| Human-authored commits | 648 |
 

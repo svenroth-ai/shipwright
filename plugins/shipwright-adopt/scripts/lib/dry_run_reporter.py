@@ -84,7 +84,7 @@ def plan_standard_writes(
         ProposedWrite("shipwright_project_config.json", "create", "splits + requirements"),
         ProposedWrite("shipwright_plan_config.json", "create", "adopted, empty sections"),
         ProposedWrite("shipwright_build_config.json", "create", "adopted-baseline section"),
-        ProposedWrite("shipwright_iterate_config.json", "create", "external_review.feedback_iterations=0, external_code_review.enabled=true"),
+        ProposedWrite("shipwright_iterate_config.json", "create", "external_review.feedback_iterations=1, external_code_review.enabled=true"),
         ProposedWrite("shipwright_compliance_config.json", "create", "seeded_by_adopt=true"),
         ProposedWrite("shipwright_run_config.json", "create", "status=complete, written LAST"),
         ProposedWrite("shipwright_events.jsonl", "create", "1x adopted event + backfilled commits"),
