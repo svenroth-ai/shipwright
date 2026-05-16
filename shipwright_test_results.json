@@ -1,36 +1,36 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-16-fix-adopt-review-config",
+    "run_id": "iterate-2026-05-16-fix-triage-dedup-resolve",
     "date": "2026-05-16",
     "unit": {
       "status": "passed",
-      "passed": 304,
-      "total": 304,
-      "note": "Full plugins/shipwright-adopt suite (270) + shared/tests/test_external_review_config.py resolver suite (34) — the producer and consumer halves of the changed shipwright_iterate_config.json boundary. 0 regressions."
+      "passed": 1776,
+      "total": 1783,
+      "note": "F0 fresh full run of shared/tests/ (the suite consuming the changed shared/scripts modules): 1776 passed, 11 skipped, 18 deselected. The 7 failures (test_hooks.py TestCheckSecrets x5 + TestCheckFileSize x1, test_artifact_path_canon.py compliance-migrated x1) are the documented pre-existing baseline on origin/main — identical test IDs, none in this iterate's diff. 0 regressions. The other plugin test packages are no-op-affected (the changed modules are not imported by them)."
     },
-    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "No CRUD/DB changes — config-writer default-value bugfix."},
+    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "No CRUD/DB changes; small BUG iterate. integration-tests/ unaffected."},
     "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
     "e2e": {
       "status": "passed",
-      "passed": 8,
-      "total": 8,
-      "note": "F0.5 surface=cli — pytest over plugins/shipwright-adopt/tests/test_config_writer.py. Includes test_iterate_config_external_review_not_user_disabled, the producer (write_iterate_config) -> file -> shared resolver (get_external_review_status) round-trip that drives the fixed boundary end-to-end."
+      "passed": 94,
+      "total": 94,
+      "note": "F0.5 surface=cli — pytest over shared/tests/{test_drift_triage_emit,test_f0_5_triage_emit,test_triage_storage,test_surface_verification}.py. Drives both bugs' producer -> triage.jsonl -> consumer round-trip plus the surface_verification main() resolve wiring end-to-end."
     },
-    "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI — Claude Code plugin monorepo."},
+    "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI — library/framework repo."},
     "smoke": {"status": "not_run", "note": "No browser/server surface."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --directory plugins/shipwright-adopt --extra dev pytest tests/test_config_writer.py --color=no",
+      "runner": "uv run --extra dev pytest shared/tests/test_drift_triage_emit.py shared/tests/test_f0_5_triage_emit.py shared/tests/test_triage_storage.py shared/tests/test_surface_verification.py -p no:cacheprovider --color=no",
       "exit_code": 0,
-      "tests_run": 8,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-16-fix-adopt-review-config/surface_verification.log",
-      "timestamp": "2026-05-16T12:50:31.402Z",
+      "tests_run": 94,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-16-fix-triage-dedup-resolve/surface_verification.json",
+      "timestamp": "2026-05-16T12:59:11Z",
       "attempts": 1,
-      "note": "Boundary Probe (touches_io_boundary): the round-trip test feeds real write_iterate_config output through the real shared external_review_config resolver and asserts status != 'user_disabled'."
+      "note": "Single shared/tests package — avoids the cross-tests-package collection collision; --color=no per ADR-048 so the N-passed parse is not eaten by ANSI escapes."
     },
     "degraded": [
-      "Pre-existing ruff F401 (unused typing.Any import) at plugins/shipwright-adopt/scripts/lib/dry_run_reporter.py:7 — present on base origin/main, NOT introduced by this iterate; left untouched to keep the bugfix diff focused.",
-      "test_nested_project_detector::test_detects_nested_shipwright_subproject failed initially in the fresh worktree: its fixture plugins/shipwright-adopt/tests/fixtures/nested-shipwright/webui/shipwright_run_config.json is gitignored (shipwright_*_config.json rule) and not carried into worktrees. Re-hydrated per SKILL B1a; full adopt suite then 270/270. See conventions.md Learnings."
+      "7 pre-existing baseline test failures on origin/main (test_hooks.py TestCheckSecrets x5 + TestCheckFileSize x1, test_artifact_path_canon.py compliance-migrated x1) — same test IDs documented in the prior iterate's baseline note; NOT introduced by this iterate, 0 regressions.",
+      "check_drift.py (553 lines) and surface_verification.py (644 lines) exceed the 300-line file-size guideline; both were already over (464/542) before this iterate and check_file_size is WARN-only — splitting is a separate refactor, out of scope for a 2-bug fix (recorded in the iterate ADR)."
     ]
   }
 }

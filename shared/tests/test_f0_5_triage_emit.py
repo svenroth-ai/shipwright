@@ -160,3 +160,140 @@ def test_evidence_path_none_is_accepted(project: Path) -> None:
     )
     [item] = read_all_items(project)
     assert item["evidencePath"] is None
+
+
+# --- Bug 2: resolve pass auto-dismisses cleared F0.5 items ---------------
+
+def test_f05_dedup_key_shape(project: Path) -> None:
+    """The dedup-key helper produces the exact wire shape the producer
+    emits — one definition guards producer/resolver drift."""
+    assert sv._f05_dedup_key("r1", "web", "tests_zero") == "f0.5:r1:web:tests_zero"
+    sv._emit_failure_to_triage(
+        project, run_id="r1", surface="web",
+        condition="tests_zero", detail="d", evidence_path=None,
+    )
+    [item] = read_all_items(project)
+    assert item["dedupKey"] == sv._f05_dedup_key("r1", "web", "tests_zero")
+
+
+def test_resolve_dismisses_item_when_condition_clears(project: Path) -> None:
+    """Bug 2: an F0.5 item whose condition cleared on a green re-run of the
+    same run_id flips to dismissed with reason=f05Resolved.
+
+    Mirrors the observed bug: a P0 item from a runner that failed with
+    exit 127 was never retracted when the SAME run re-ran green.
+    """
+    sv._emit_failure_to_triage(
+        project, run_id="r1", surface="web",
+        condition="exit_nonzero", detail="exit 127", evidence_path=None,
+    )
+    [item] = read_all_items(project)
+    assert item["status"] == "triage"
+
+    # Re-run of r1 passed — empty finding set.
+    dismissed = sv._resolve_stale_f05_items(
+        project, run_id="r1", surface="web", current_keys=set(),
+    )
+    assert dismissed == 1
+    [item] = read_all_items(project)
+    assert item["status"] == "dismissed"
+    assert item["statusReason"] == "f05Resolved"
+    assert item["statusBy"] == "f05Detector"
+
+
+def test_resolve_keeps_item_when_condition_persists(project: Path) -> None:
+    """An F0.5 item whose condition is still in the current finding set
+    stays open."""
+    sv._emit_failure_to_triage(
+        project, run_id="r1", surface="web",
+        condition="tests_zero", detail="d", evidence_path=None,
+    )
+    key = sv._f05_dedup_key("r1", "web", "tests_zero")
+    dismissed = sv._resolve_stale_f05_items(
+        project, run_id="r1", surface="web", current_keys={key},
+    )
+    assert dismissed == 0
+    [item] = read_all_items(project)
+    assert item["status"] == "triage"
+
+
+def test_resolve_scoped_to_run_id(project: Path) -> None:
+    """Resolving run r2 must NOT dismiss an open item from run r1 — a
+    later iterate's pass says nothing about an earlier iterate's failure.
+    """
+    sv._emit_failure_to_triage(
+        project, run_id="r1", surface="cli",
+        condition="exit_nonzero", detail="d", evidence_path=None,
+    )
+    dismissed = sv._resolve_stale_f05_items(
+        project, run_id="r2", surface="cli", current_keys=set(),
+    )
+    assert dismissed == 0
+    [item] = read_all_items(project)
+    assert item["status"] == "triage"
+
+
+def test_resolve_scoped_to_surface(project: Path) -> None:
+    """A re-run of the same run_id on a DIFFERENT surface must NOT dismiss
+    a genuine still-open failure from the original surface."""
+    sv._emit_failure_to_triage(
+        project, run_id="r1", surface="web",
+        condition="exit_nonzero", detail="web broke", evidence_path=None,
+    )
+    dismissed = sv._resolve_stale_f05_items(
+        project, run_id="r1", surface="cli", current_keys=set(),
+    )
+    assert dismissed == 0
+    [item] = read_all_items(project)
+    assert item["status"] == "triage"
+    assert item["dedupKey"] == sv._f05_dedup_key("r1", "web", "exit_nonzero")
+
+
+def test_resolve_dismisses_old_condition_keeps_new(project: Path) -> None:
+    """Same run_id re-fails on a different condition: the old item is
+    retracted, the new one stays open."""
+    sv._emit_failure_to_triage(
+        project, run_id="r1", surface="web",
+        condition="tests_zero", detail="d", evidence_path=None,
+    )
+    sv._emit_failure_to_triage(
+        project, run_id="r1", surface="web",
+        condition="exit_nonzero", detail="d", evidence_path=None,
+    )
+    new_key = sv._f05_dedup_key("r1", "web", "exit_nonzero")
+    dismissed = sv._resolve_stale_f05_items(
+        project, run_id="r1", surface="web", current_keys={new_key},
+    )
+    assert dismissed == 1
+    by_key = {it["dedupKey"]: it for it in read_all_items(project)}
+    old_key = sv._f05_dedup_key("r1", "web", "tests_zero")
+    assert by_key[old_key]["status"] == "dismissed"
+    assert by_key[new_key]["status"] == "triage"
+
+
+def test_resolve_leaves_terminal_items(project: Path) -> None:
+    """Operator-promoted F0.5 items stay terminal — resolve only touches
+    status=='triage' items."""
+    from triage import mark_status
+
+    sv._emit_failure_to_triage(
+        project, run_id="r1", surface="cli",
+        condition="tests_zero", detail="d", evidence_path=None,
+    )
+    [item] = read_all_items(project)
+    mark_status(project, item["id"], new_status="promoted", by="operator",
+                promoted_task_id="EXT:1")
+    dismissed = sv._resolve_stale_f05_items(
+        project, run_id="r1", surface="cli", current_keys=set(),
+    )
+    assert dismissed == 0
+    [item] = read_all_items(project)
+    assert item["status"] == "promoted"
+
+
+def test_resolve_no_items_no_op(project: Path) -> None:
+    """Resolve pass on an empty/missing triage store is a clean no-op."""
+    assert sv._resolve_stale_f05_items(
+        project, run_id="r1", surface="web", current_keys=set(),
+    ) == 0
+    assert read_all_items(project) == []
