@@ -29,6 +29,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.events_log import resolve_events_path  # noqa: E402
 from lib.iterate_entry import (  # noqa: E402
     MIGRATION_QUARANTINED_COUNT_KEY,
     find_entry_by_run_id,
@@ -61,9 +62,15 @@ def check_iterate_history_has_run_id(project_root: Path, run_id: str) -> CheckRe
 
 
 def check_events_has_commit(project_root: Path, commit_hash: str) -> CheckResult:
-    """F7 check — record_event wrote the commit to events.jsonl."""
+    """F7 check — record_event wrote the commit to events.jsonl.
+
+    Worktree-aware: resolves the canonical (main-repo) event log via
+    ``resolve_events_path`` so the F11 verifier, run from inside a
+    ``/shipwright-iterate`` worktree, reads the log F7 actually appended
+    to — not an empty worktree-local copy.
+    """
     name = "events.jsonl has commit"
-    events = project_root / "shipwright_events.jsonl"
+    events = resolve_events_path(project_root)
     if not events.exists():
         return CheckResult(name, False, f"missing {events.name}")
     content = events.read_text(encoding="utf-8", errors="ignore")
@@ -249,15 +256,18 @@ def check_build_dashboard_has_run_id(
 ) -> CheckResult:
     """C2 check — ``build_dashboard.md`` reflects the current iterate run.
 
-    The dashboard is rendered by ``update_build_dashboard.py`` from
-    ``shipwright_events.jsonl``; since the file-per-iterate refactor it
-    contains the truncated commit hash (first 7 chars) in the Recent
-    Changes table, NOT the run_id literal. The check accepts either:
+    The dashboard is rendered by ``finalize_iterate.py`` (F5b) via
+    ``update_build_dashboard.py``. F5b runs BEFORE the F6 commit and the
+    F7 event, so the dashboard at F11-verify time structurally cannot
+    contain the new commit SHA. F5b therefore embeds the iterate
+    ``run_id`` in the dashboard header (``| Run: {run_id}``) as the
+    deterministic, timing-independent marker. The check accepts either:
 
-      1. ``run_id`` literal in the dashboard (legacy / customized
-         dashboards that embed run_id explicitly), or
-      2. the short SHA prefix of ``commit_hash`` in the dashboard
-         (canonical post-refactor format).
+      1. the ``run_id`` literal in the dashboard — the canonical signal,
+         embedded by F5b (see ``update_build_dashboard.generate_dashboard``).
+      2. the short SHA prefix of ``commit_hash`` — for build-phase
+         dashboards and post-F7 re-renders where the commit predates the
+         render.
 
     Either match is sufficient — both signal that the iterate row landed.
     """

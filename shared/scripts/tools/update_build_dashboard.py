@@ -21,6 +21,22 @@ STEP_LABELS = {
 PIPELINE_PHASES = ["project", "design", "plan", "build", "test", "changelog", "compliance", "deploy"]
 
 
+def _dashboard_header(now: str, sid: str, run_id: str | None) -> str:
+    """The `> Updated: ... | Session: ...` banner line.
+
+    When an iterate run_id is supplied (finalize_iterate F5b) it is
+    appended as `| Run: {run_id}`. F5b renders the dashboard BEFORE the
+    F6 commit + F7 event, so the new commit SHA cannot be in it — the
+    run_id is the deterministic marker the finalization verifier
+    (check_build_dashboard_has_run_id) keys on. Other callers (Stop hook,
+    non-iterate phases) pass run_id=None and the line is unchanged.
+    """
+    line = f"> Updated: {now} | Session: {sid}"
+    if run_id:
+        line += f" | Run: {run_id}"
+    return line
+
+
 def format_status(section: dict, current_section: str | None, current_step: int | None, detail: str | None) -> str:
     """Format a section's status for the dashboard table."""
     name, status = section.get("name", "?"), section.get("status", "pending")
@@ -120,10 +136,17 @@ def generate_dashboard(
     project_root: Path, phase: str | None = None, section: str | None = None,
     step: int | None = None, detail: str | None = None,
     status: str | None = None, session_id: str | None = None,
+    run_id: str | None = None,
 ) -> str:
-    """Generate dashboard markdown content. Uses events if available."""
+    """Generate dashboard markdown content. Uses events if available.
+
+    ``run_id`` (optional) is embedded in the header by iterate finalization
+    (F5b) so the finalization verifier has a deterministic marker.
+    """
     # Try event-based generation first
-    event_dashboard = _generate_from_events(project_root, session_id, section, step, detail)
+    event_dashboard = _generate_from_events(
+        project_root, session_id, section, step, detail, run_id
+    )
     if event_dashboard is not None:
         return event_dashboard
 
@@ -141,7 +164,7 @@ def generate_dashboard(
     sid = session_id or os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
     completed_steps = set(run_config.get("completed_steps", [])) if run_config else set()
 
-    lines = ["# Shipwright Build Dashboard", f"> Updated: {now} | Session: {sid}", ""]
+    lines = ["# Shipwright Build Dashboard", _dashboard_header(now, sid, run_id), ""]
     if run_config:
         lines.extend(generate_pipeline_table(run_config, total_all, completed_all))
     if phase and detail:
@@ -267,7 +290,8 @@ def _test_status_from_iterate(project_root: Path, latest_event: dict) -> list[st
 
 def _generate_from_events(project_root: Path, session_id: str | None = None,
                           section: str | None = None, step: int | None = None,
-                          detail: str | None = None) -> str | None:
+                          detail: str | None = None,
+                          run_id: str | None = None) -> str | None:
     """Generate dashboard from event log. Returns None if no events exist."""
     events = read_events(project_root)
     if not events:
@@ -282,7 +306,7 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
     phase_events = [e for e in events if e.get("type") == "phase_completed"]
     test_runs = [e for e in events if e.get("type") == "test_run"]
 
-    lines = ["# Project Activity Dashboard", f"> Updated: {now} | Session: {sid}", ""]
+    lines = ["# Project Activity Dashboard", _dashboard_header(now, sid, run_id), ""]
 
     # --- Recent Changes (iterate events, newest first) ---
     if iterate_events:
@@ -411,10 +435,12 @@ def main() -> int:
     p.add_argument("--detail")
     p.add_argument("--status", choices=["in_progress", "complete", "paused", "failed"])
     p.add_argument("--session-id")
+    p.add_argument("--run-id", help="Iterate run id — embedded in the dashboard header (F5b)")
     a = p.parse_args()
     project_root = Path(a.project_root).resolve()
     content = generate_dashboard(project_root, phase=a.phase, section=a.section,
-                                 step=a.step, detail=a.detail, status=a.status, session_id=a.session_id)
+                                 step=a.step, detail=a.detail, status=a.status,
+                                 session_id=a.session_id, run_id=a.run_id)
     agent_docs = project_root / ".shipwright" / "agent_docs"
     agent_docs.mkdir(parents=True, exist_ok=True)
     (agent_docs / "build_dashboard.md").write_text(content, encoding="utf-8")

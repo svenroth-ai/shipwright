@@ -28,6 +28,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
+# Wire up shared/scripts so `lib.events_log` resolves whether this file is
+# run as a script (`uv run .../record_event.py`) or imported as a module
+# (`tools.record_event` via finalize_iterate, `scripts.tools.record_event`
+# via tests) — both invocation paths are exercised in CI.
+_SCRIPTS_ROOT = Path(__file__).resolve().parents[1]  # shared/scripts
+if str(_SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_ROOT))
+
+from lib.events_log import resolve_events_path  # noqa: E402
+
 SCHEMA_VERSION = 1
 EVENT_FILE = "shipwright_events.jsonl"
 
@@ -127,8 +137,13 @@ def _parse_changed_files(raw: str) -> list[str]:
 
 
 def read_events(project_root: Path) -> list[dict]:
-    """Tolerant reader — skips corrupt lines instead of crashing."""
-    path = project_root / EVENT_FILE
+    """Tolerant reader — skips corrupt lines instead of crashing.
+
+    Worktree-aware: resolves the canonical (main-repo) event log via
+    ``resolve_events_path`` so a read from inside a ``/shipwright-iterate``
+    worktree sees the real log, not an empty throwaway copy.
+    """
+    path = resolve_events_path(project_root)
     if not path.exists():
         return []
     events: list[dict] = []
@@ -297,9 +312,16 @@ def build_event(args: argparse.Namespace) -> dict:
 
 
 def append_event(project_root: Path, event: dict) -> str:
-    """Atomically append an event to the JSONL log. Returns the event ID."""
-    path = project_root / EVENT_FILE
-    lock_path = project_root / (EVENT_FILE + ".lock")
+    """Atomically append an event to the JSONL log. Returns the event ID.
+
+    Worktree-aware: resolves the canonical (main-repo) event log via
+    ``resolve_events_path`` so an append from inside a ``/shipwright-iterate``
+    worktree lands in the real log — and survives ``git worktree remove`` —
+    instead of a throwaway worktree copy. The ``.lock`` mutex is derived
+    from the resolved path so it guards the same (main-repo) log.
+    """
+    path = resolve_events_path(project_root)
+    lock_path = path.with_name(path.name + ".lock")
     line = json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
 
     with _FileLock(lock_path):

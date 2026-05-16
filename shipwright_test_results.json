@@ -1,41 +1,41 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-15-iterate-worktree-isolation",
+    "run_id": "iterate-2026-05-16-fix-events-worktree-aware",
     "date": "2026-05-16",
     "unit": {
       "status": "passed",
-      "passed": 2282,
-      "total": 2289,
-      "note": "Per-suite F0 (shared/scripts/tests and plugins/*/tests are separate 'tests' packages, run separately): shared/tests 1739, shared/scripts/tests 169, shared/scripts/tools/tests 30, plugins/shipwright-iterate/tests 237, integration-tests 107. The 7 failures (test_hooks.py secrets/filesize, test_artifact_path_canon.py) reproduce identically on base origin/main - pre-existing, 0 regressions from this iterate."
+      "passed": 2519,
+      "total": 2526,
+      "note": "F0 fresh full run, per-suite (separate 'tests' packages run separately): shared/tests 1760, shared/scripts/tests 172, shared/scripts/tools/tests 38, plugins/shipwright-iterate/tests 237, plugins/shipwright-compliance/tests 312. The 7 failures (test_hooks.py TestCheckSecrets x5 + TestCheckFileSize x1, test_artifact_path_canon.py compliance-migrated x1) reproduce identically on base origin/main — pre-existing baseline, 0 regressions from this iterate. F0 scope = the suites that consume the changed shared/scripts modules; the other 9 phase-plugin suites are no-op-affected (worktree-aware resolution is identity outside a worktree)."
     },
     "integration": {
       "status": "passed",
-      "passed": 107,
-      "total": 107,
-      "note": "integration-tests/ incl. new test_parallel_iterate_isolation.py (6: two parallel worktree setups, no cross-tree write, clean main tree, slug-collision rejected, leak caught)."
+      "passed": 110,
+      "total": 110,
+      "note": "integration-tests/ incl. new test_events_log_parity.py (3: shared resolver vs compliance data_collector agree on main/worktree/non-git). 2 deselected (slow marker)."
     },
     "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
     "e2e": {
       "status": "passed",
-      "passed": 6,
-      "total": 6,
-      "note": "F0.5 surface=cli: test_parallel_iterate_isolation.py drives setup_iterate_worktree.py + check_iterate_isolation.py end-to-end through two simulated concurrent iterate runs."
+      "passed": 81,
+      "total": 81,
+      "note": "F0.5 surface=cli — pytest over shared/tests/{test_events_log,test_events_log_ssot,test_verify_iterate_finalization,test_worktree_isolation_lib}.py. The boundary round-trip test inside test_verify_iterate_finalization.py drives producer record_event -> main log -> consumer verifier end-to-end."
     },
-    "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI changes."},
-    "smoke": {"status": "not_run", "note": "No browser surface in this iterate."},
+    "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI — library/framework repo."},
+    "smoke": {"status": "not_run", "note": "No browser/server surface."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_worktree_isolation_lib.py shared/tests/test_setup_iterate_worktree.py shared/tests/test_check_iterate_isolation.py shared/tests/test_write_decision_drop.py shared/tests/test_aggregate_decisions.py shared/tests/test_verify_iterate_finalization.py shared/tests/test_verifiers_common.py integration-tests/test_parallel_iterate_isolation.py",
+      "runner": "uv run --extra dev pytest shared/tests/test_events_log.py shared/tests/test_events_log_ssot.py shared/tests/test_verify_iterate_finalization.py shared/tests/test_worktree_isolation_lib.py -p no:cacheprovider",
       "exit_code": 0,
-      "tests_run": 128,
-      "evidence_path": ".shipwright/planning/iterate/2026-05-15-iterate-worktree-isolation.md",
-      "timestamp": "2026-05-16T08:30:00Z",
+      "tests_run": 81,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-16-fix-events-worktree-aware/surface_verification.json",
+      "timestamp": "2026-05-16T10:36:07Z",
       "attempts": 1,
-      "note": "The iterate's own cli surface (new scripts + leak-guard + decision-drop + verifier + the two-parallel-runs integration test) - 128/128 green after the code-review fixes."
+      "note": "Single shared/tests package — avoids the cross-tests-package collection collision; covers the worktree-aware helper, the drift meta-test, the F11 verifier worktree path + producer->consumer round-trip, and the leak-guard event-log exemption."
     },
     "degraded": [
-      "F0/F11 leak-guard not run for this bootstrap iterate: its worktree was created manually before setup_iterate_worktree.py existed, so no Step-1 snapshot exists. Leak-guard correctness is instead proven by test_check_iterate_isolation.py (6 tests) + the integration test; the main tree was confirmed unchanged from session start.",
-      "7 pre-existing baseline test failures on origin/main (test_hooks.py secrets/filesize, test_artifact_path_canon.py) - verified identical on base, not introduced by this iterate."
+      "7 pre-existing baseline test failures on origin/main (test_hooks.py TestCheckSecrets x5 + TestCheckFileSize x1, test_artifact_path_canon.py compliance-migrated x1) — verified identical on the base commit, NOT introduced by this iterate.",
+      "External LLM review required enabling: shipwright_iterate_config.json carried the adopt-seeded external_review.feedback_iterations: 0 (opt-out); flipped to 1 (user-approved) so the medium-complexity external review could run."
     ]
   }
 }

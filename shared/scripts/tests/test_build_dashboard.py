@@ -355,3 +355,38 @@ class TestStepLabels:
     def test_all_steps_have_labels(self):
         for i in range(1, 13):
             assert i in STEP_LABELS
+
+
+class TestRunIdEmbed:
+    """F5b renders the iterate run_id into the dashboard header so the
+    finalization verifier (check_build_dashboard_has_run_id) passes
+    deterministically — the F6 commit SHA cannot be in an F5b dashboard
+    (F5b precedes the F6 commit and the F7 event)."""
+
+    def test_run_id_embedded_in_header_when_provided(self, tmp_project):
+        content = generate_dashboard(
+            tmp_project, phase="iterate", session_id="s",
+            run_id="iterate-20260516-foo",
+        )
+        assert "| Run: iterate-20260516-foo" in content
+
+    def test_no_run_id_line_when_absent(self, tmp_project):
+        """Stop hook / non-iterate phases pass no run_id — header unchanged."""
+        content = generate_dashboard(tmp_project, session_id="s")
+        assert "| Run:" not in content
+
+    def test_run_id_embedded_in_event_based_dashboard(self, tmp_project):
+        """The event-sourced dashboard path also embeds the run_id."""
+        (tmp_project / "shipwright_events.jsonl").write_text(
+            json.dumps({"v": 1, "id": "evt-x", "ts": "2026-05-16T00:00:00Z",
+                        "type": "work_completed", "source": "iterate",
+                        "commit": "abc1234", "intent": "bug",
+                        "description": "x"}) + "\n",
+            encoding="utf-8",
+        )
+        content = generate_dashboard(
+            tmp_project, phase="iterate", session_id="s",
+            run_id="iterate-20260516-bar",
+        )
+        assert "| Run: iterate-20260516-bar" in content
+        assert "Recent Changes" in content  # confirms the event path was taken

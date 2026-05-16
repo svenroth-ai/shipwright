@@ -432,6 +432,148 @@ class TestChangedFiles:
         events = read_events(project)
         assert "changed_files" not in events[0]
 
+
+# ---------------------------------------------------------------------------
+# Worktree-aware event-log resolution
+#
+# Under /shipwright-iterate worktree isolation the event log is a
+# repo-scoped journal. A literal project_root/EVENT_FILE from inside an
+# ephemeral worktree writes a throwaway copy discarded on `git worktree
+# remove` — record_event must resolve the MAIN repo's log instead.
+# ---------------------------------------------------------------------------
+
+_GIT_ENV = {
+    **os.environ,
+    "GIT_AUTHOR_NAME": "T", "GIT_AUTHOR_EMAIL": "t@t.invalid",
+    "GIT_COMMITTER_NAME": "T", "GIT_COMMITTER_EMAIL": "t@t.invalid",
+}
+
+
+def _git(cwd: Path, *args: str) -> None:
+    import subprocess
+    subprocess.run(
+        ["git", *args], cwd=str(cwd), env=_GIT_ENV,
+        capture_output=True, text=True, check=True,
+    )
+
+
+def _init_main_repo(tmp_path: Path) -> Path:
+    """A git repo with one commit. Returns the main working tree."""
+    main = tmp_path / "main"
+    main.mkdir()
+    _git(main, "init", "-b", "main")
+    (main / "README.md").write_text("x\n", encoding="utf-8")
+    _git(main, "add", "-A")
+    _git(main, "commit", "-m", "init")
+    return main
+
+
+def _add_worktree(main: Path, slug: str) -> Path:
+    """Add a linked worktree under <main>/.worktrees/<slug>."""
+    wt = main / ".worktrees" / slug
+    _git(main, "worktree", "add", str(wt), "-b", f"iterate/{slug}", "main")
+    return wt
+
+
+class TestWorktreeAwareLog:
+    """record_event + config.read_events resolve the MAIN repo's event log
+    from inside a linked git worktree."""
+
+    def test_append_event_from_worktree_lands_in_main_log(self, tmp_path):
+        main = _init_main_repo(tmp_path)
+        wt = _add_worktree(main, "wt1")
+        append_event(wt, {"v": 1, "id": "evt-wt000001", "ts": "T",
+                           "type": "work_completed", "source": "iterate",
+                           "commit": "c0ffee0"})
+        # Lands in the MAIN repo's log — survives `git worktree remove`.
+        assert (main / "shipwright_events.jsonl").exists()
+        assert not (wt / "shipwright_events.jsonl").exists()
+        assert [e["id"] for e in read_events(main)] == ["evt-wt000001"]
+
+    def test_read_events_from_worktree_reads_main_log(self, tmp_path):
+        main = _init_main_repo(tmp_path)
+        wt = _add_worktree(main, "wt1")
+        append_event(main, {"v": 1, "id": "evt-main00001", "ts": "T",
+                            "type": "phase_started", "phase": "build"})
+        assert [e["id"] for e in read_events(wt)] == ["evt-main00001"]
+
+    def test_lock_file_sits_next_to_main_log(self, tmp_path):
+        main = _init_main_repo(tmp_path)
+        wt = _add_worktree(main, "wt1")
+        append_event(wt, {"v": 1, "id": "evt-lock00001", "ts": "T",
+                          "type": "phase_started", "phase": "build"})
+        # The mutex must guard the main log, not a throwaway worktree lock.
+        assert (main / "shipwright_events.jsonl.lock").exists()
+        assert not (wt / "shipwright_events.jsonl.lock").exists()
+
+    def test_has_commit_dedup_sees_main_log_from_worktree(self, tmp_path):
+        main = _init_main_repo(tmp_path)
+        wt = _add_worktree(main, "wt1")
+        append_event(main, {"v": 1, "id": "evt-dd000001", "ts": "T",
+                            "type": "work_completed", "source": "iterate",
+                            "commit": "deadbee"})
+        assert has_commit(wt, "deadbee") is True
+        assert has_commit(wt, "absent0") is False
+
+    def test_script_invocation_from_worktree_lands_in_main_log(self, tmp_path):
+        """The argparse CLI path (record_main) is worktree-aware too —
+        covers script-mode invocation, not only in-process import."""
+        main = _init_main_repo(tmp_path)
+        wt = _add_worktree(main, "wt1")
+        rc = record_main([
+            "--project-root", str(wt),
+            "--type", "work_completed",
+            "--source", "iterate", "--commit", "5cr1pt0",
+            "--description", "from worktree via CLI",
+        ])
+        assert rc == 0
+        assert [e["commit"] for e in read_events(main)] == ["5cr1pt0"]
+        assert not (wt / "shipwright_events.jsonl").exists()
+
+    def test_two_worktrees_concurrent_append_share_one_main_log(self, tmp_path):
+        """Two worktrees appending concurrently funnel into ONE main log;
+        the centralized lock serializes them with no data loss."""
+        main = _init_main_repo(tmp_path)
+        wt_a = _add_worktree(main, "wt-a")
+        wt_b = _add_worktree(main, "wt-b")
+
+        def write_batch(wt: Path, tag: str) -> None:
+            for i in range(25):
+                append_event(wt, {
+                    "v": 1, "id": generate_event_id(), "ts": "T",
+                    "type": "work_completed", "source": "iterate",
+                    "commit": f"{tag}-{i:02d}",
+                })
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(write_batch, wt_a, "a"),
+                       pool.submit(write_batch, wt_b, "b")]
+            for f in futures:
+                f.result()
+
+        events = read_events(main)
+        assert len(events) == 50
+        assert len({e["id"] for e in events}) == 50
+        assert not (wt_a / "shipwright_events.jsonl").exists()
+        assert not (wt_b / "shipwright_events.jsonl").exists()
+
+    def test_config_read_events_from_worktree_reads_main_log(self, tmp_path):
+        """config.read_events (the dashboard's event source) is worktree-aware."""
+        main = _init_main_repo(tmp_path)
+        wt = _add_worktree(main, "wt1")
+        append_event(main, {"v": 1, "id": "evt-cfgwt001", "ts": "T",
+                            "type": "work_completed", "source": "iterate",
+                            "commit": "x"})
+        assert [e["id"] for e in config_read_events(wt)] == ["evt-cfgwt001"]
+
+    def test_non_git_dir_behavior_unchanged(self, tmp_path):
+        """Regression guard: in a non-git dir the log stays at
+        project_root/EVENT_FILE — no behavior change for plain projects."""
+        append_event(tmp_path, {"v": 1, "id": "evt-plain0001", "ts": "T",
+                                "type": "phase_started", "phase": "build"})
+        assert (tmp_path / "shipwright_events.jsonl").exists()
+        assert read_events(tmp_path)[0]["id"] == "evt-plain0001"
+
     def test_changed_files_omitted_argument(self, project):
         """Argument absent → field absent (backwards compat)."""
         rc = record_main([
