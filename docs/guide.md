@@ -788,7 +788,7 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 **Standalone usage.** Yes. Run `/shipwright-build @sections/01-auth.md` for any section file. When used standalone, you manage the section order yourself. When used within the pipeline, the orchestrator feeds sections in dependency order and handles split transitions automatically.
 ### 4.6 Testing -- /shipwright-test
 
-**Purpose:** Runs your project's full test suite across multiple layers -- unit tests, integration tests (real DB), pgTAP database tests, smoke tests, end-to-end (E2E) browser tests, cross-page UI consistency checks, and design fidelity verification -- to catch bugs before deployment. It is profile-aware, meaning it automatically picks the right test runners and URLs based on your stack.
+**Purpose:** Runs your project's full test suite across multiple layers -- unit tests, integration tests (real DB), pgTAP database tests, smoke tests, end-to-end (E2E) browser tests, cross-page UI consistency checks, design fidelity verification, and performance budgets -- to catch bugs before deployment. It is profile-aware, meaning it automatically picks the right test runners and URLs based on your stack.
 
 **Command & Arguments:**
 
@@ -816,6 +816,7 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 - `playwright-report/index.html` -- interactive HTML report with screenshots, linked from compliance reports
 - Design fidelity verification results (code-level comparison of implementation vs mockup HTML)
 - Design fidelity triage results in `shipwright_test_results.json` (regressions, persistent failures, resolved screens)
+- Performance budget results in `shipwright_test_results.json.performance` (Lighthouse score + LCP, gzipped bundle size, pass/warn/fail per budget) -- when the profile or `shipwright_test_config.json` opts in
 - Updated `.shipwright/agent_docs/conventions.md` with test learnings (when flaky patterns or infra quirks discovered)
 - A summary report printed to the terminal
 
@@ -829,10 +830,11 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 6. If E2E test plans exist from `/shipwright-plan` but no `.spec.ts` files have been written yet, it generates Playwright specs from the plans using the Page Object Model pattern.
 7. Runs Playwright E2E tests (starts and stops the dev server automatically). Failed tests can be debugged with a browser-fixer subagent that reads screenshots and error messages.
 8. Runs design fidelity verification as a **regressions-only safety net**. Reads `design-fidelity-report.json` (what the build phase already verified) and triages each screen: regressions (was passing in build, now failing), persistent failures (build gave up), and unchecked screens (never verified). Only fixes regressions and persistent failures -- resolved screens are skipped. Uses code-level structural comparison (no screenshots) with agent deep analysis for flagged screens.
-9. Runs an E2E results verification step: compares `shipwright_test_results.json` against Playwright's authoritative `e2e-results.json` to catch count discrepancies (e.g., setup project tests being counted as E2E tests). If numbers diverge, the pipeline corrects `shipwright_test_results.json` and documents the reason.
-10. Produces a structured results summary with explicit status for every layer.
+9. Runs a performance budget check when the stack profile or `shipwright_test_config.json` opts in: a Lighthouse score + LCP measurement (through the project's existing Playwright Chromium -- no extra browser install) and a gzipped bundle-size budget. The `warn` gate (default) logs missed budgets without blocking; the opt-in `block` gate fails the phase.
+10. Runs an E2E results verification step: compares `shipwright_test_results.json` against Playwright's authoritative `e2e-results.json` to catch count discrepancies (e.g., setup project tests being counted as E2E tests). If numbers diverge, the pipeline corrects `shipwright_test_results.json` and documents the reason.
+11. Produces a structured results summary with explicit status for every layer.
 
-**The seven test layers and enforcement rules** are central to how the pipeline decides whether to continue:
+**The eight test layers and enforcement rules** are central to how the pipeline decides whether to continue:
 
 | Layer | On Failure | Rationale |
 |-------|-----------|-----------|
@@ -843,6 +845,7 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 | E2E tests | Warning only (non-blocking) | E2E tests can be flaky; failures are logged but do not block |
 | Cross-page consistency | Warning only (advisory) | Cross-page UI inconsistencies are logged but do not block deployment |
 | Design fidelity | Warning only (advisory) | Fidelity mismatches are logged but do not block deployment |
+| Performance budget | Warning only by default; blocking under the opt-in `block` gate | Lighthouse score / LCP + gzipped bundle budget; `warn` ships an honest signal without breaking flow, `block` once budgets are calibrated |
 
 Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason}`) before the phase is considered complete. If any layer has no result, the phase stays in `incomplete` status.
 
@@ -950,7 +953,17 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 
 ### 4.9 Deployment -- /shipwright-deploy
 
-**Purpose:** Deploys your application to Jelastic Cloud (hosted by Infomaniak in Switzerland) with automatic smoke test verification and rollback support. It also handles Supabase database migrations when applicable.
+**Purpose:** Deploys your application with automatic smoke test verification and rollback support, and applies Supabase database migrations when applicable. Deployment is **profile-driven** -- a *deploy profile* declares the target's shape (auth, environments, smoke test, rollback mechanic) so the same deploy discipline holds across mechanically different platforms.
+
+**Deploy targets -- honest status.** Three deploy profiles ship today, and they are **not** equal in maturity:
+
+| Target | Profile | Status |
+|--------|---------|--------|
+| **Jelastic** (Infomaniak, Switzerland) | `jelastic` | **Verified** (`confidence: verified`) -- the full end-to-end implementation, and the only target the `/shipwright-deploy` flow is actually exercised against. |
+| **Vercel** | `vercel` | **Declarative stub** (`confidence: documented`) -- the profile captures the atomic-immutable deploy + deploy-ID rollback mechanic, but the executable flow is not implemented. |
+| **Compose-VPS** | `compose-vps` | **Declarative stub** (`confidence: documented`) -- captures the image-tag rollback mechanic; executable flow not implemented. |
+
+The two stubs exist to keep the deploy-profile schema honest across genuinely different rollback mechanics -- they are a design contract, not a shippable path. **In practice, deploying today means deploying to Jelastic.** Adding a real target means implementing the executable flow behind its profile (3-step checklist in `plugins/shipwright-deploy/skills/deploy/references/rollback-discipline.md`). The rest of this section describes the **Jelastic reference flow**.
 
 **Command & Arguments:**
 
@@ -960,7 +973,7 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 /shipwright-deploy --rollback       # restore PROD from last backup clone
 ```
 
-**What it needs:**
+**What it needs (Jelastic):**
 
 - `JELASTIC_TOKEN` environment variable (Jelastic API access)
 - Optionally: `SUPABASE_ACCESS_TOKEN` (if your project uses Supabase migrations)
@@ -975,7 +988,7 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 - Applied database migrations (if Supabase migration files exist)
 - Updated `.shipwright/agent_docs/conventions.md` with deployment learnings (when infra gotchas or config quirks discovered)
 
-**How it works:**
+**How it works (the Jelastic reference flow):**
 
 1. Validates credentials and required environment variables. Missing variables are flagged, and you are prompted to set them before continuing.
 2. If Supabase migration files exist in `supabase/migrations/`, they are applied. For DEV, this happens automatically. For PROD, a dry-run is shown first and you must explicitly confirm before applying. Destructive changes always require confirmation regardless of target.
@@ -986,7 +999,7 @@ Every layer must report an explicit result (`pass`, `fail`, or `skipped: {reason
 
 **DEV vs. PROD -- the key difference:** DEV deployments are fully automatic with no confirmation required and use git-based rollback on failure (reverting to the last known good tag). PROD deployments require explicit user confirmation, create a backup clone beforehand, and restore from that clone if anything goes wrong. You can also trigger a manual rollback at any time with `--rollback`, which lists available backup clones and lets you choose which one to restore.
 
-**Universal rollback discipline.** Three patterns apply to any deploy target -- revertable deploys, recorded provenance, documented procedure -- regardless of platform. Jelastic is one reference implementation; the discipline itself is encoded as Deploy Profiles (declarative JSON descriptors validated by a JSON Schema) at `shared/profiles/deploy/`. Three reference profiles ship today: `jelastic` (full implementation), `vercel` (declarative stub, atomic-immutable mechanic), and `compose-vps` (declarative stub, image-tag-rollback mechanic). The two stubs exist to keep the schema honest across mechanically different targets. See `plugins/shipwright-deploy/skills/deploy/references/rollback-discipline.md` for the per-pattern mapping and the 3-step checklist to add a new target.
+**Universal rollback discipline.** Whatever the target, three patterns hold -- revertable deploys, recorded provenance, documented procedure. They are encoded in the deploy-profile schema (`shared/profiles/deploy-profile.schema.json`; the profiles themselves live in `shared/profiles/deploy/`), so any new target is forced to declare how it satisfies each one. `validate_deploy_profile.py` enforces both the JSON-Schema structure and a layer of cross-field semantic checks. See `plugins/shipwright-deploy/skills/deploy/references/rollback-discipline.md` for the per-pattern mapping across Jelastic / Vercel / Compose-VPS and the 3-step checklist to add a new target.
 
 **Standalone usage:** Yes. You can run `/shipwright-deploy` independently to deploy any project configured for Jelastic. It validates its own prerequisites and does not depend on prior pipeline phases, though it works best after testing has passed.
 
@@ -1250,6 +1263,30 @@ AIKIDO_CLIENT_SECRET=your-client-secret
 **Backend selection** is automatic: **OSS is the default and actively maintained path.** Aikido is selected if `AIKIDO_CLIENT_*` is set but its API path has not been re-verified end-to-end since v0.3. Override with `SHIPWRIGHT_SCANNER_BACKEND=oss|aikido` in your environment.
 
 `/shipwright-security` only runs when at least one backend is available; if neither is configured it prints setup instructions and stops.
+
+### Performance Budgets
+
+`/shipwright-test` runs a performance budget check when the stack profile sets `testing.performance.enabled: true`, or when the project opts in through `shipwright_test_config.json`. It measures two things:
+
+- **Lighthouse** -- performance score and Largest Contentful Paint (LCP), run through the project's existing Playwright Chromium (no extra browser install).
+- **Bundle size** -- total gzipped `*.js` / `*.css` under the build output directory.
+
+Opt in and tune the budgets in `shipwright_test_config.json`:
+
+```json
+{
+  "performance": {
+    "enabled": true,
+    "gate": "block",
+    "lighthouse": { "min_score": 90, "lcp_max_ms": 2500 },
+    "bundle": { "max_kb_gz": 300, "build_output_dir": "dist" }
+  }
+}
+```
+
+Override precedence, most specific wins: `--gate` CLI flag -> `shipwright_test_config.json` -> stack profile -> built-in defaults (`min_score` 85, `lcp_max_ms` 2500, `max_kb_gz` 250, `gate` `warn`). Settings are deep-merged, so a project can override one budget and inherit the rest.
+
+The `gate` decides what a missed budget does: `warn` (default) logs it without blocking the test phase; `block` fails the phase. Start on `warn` and switch to `block` once your budgets are calibrated. The bundle sub-check needs `build_output_dir` set plus a prior production build -- without it the bundle check is skipped while Lighthouse still runs.
 
 ### Validating Your Setup
 
@@ -2067,7 +2104,7 @@ If you encountered an unfamiliar term in this guide, this is the fast way in. Ea
 | `/shipwright-test` | -- | `--fix` | Run test suite: unit tests (Vitest), integration tests (real DB), pgTAP (RLS), smoke test (HTTP), E2E (Playwright). The `--fix` flag enables auto-repair of failing tests. |
 | `/shipwright-security` | -- | -- | **Out-of-band** — not part of `PIPELINE_STEPS`. Run security scan (OSS backend by default; Aikido optional/legacy). Classifies findings, runs remediation loop with security-fixer subagent, generates report. Runs when any scanner backend is available. CI activation steps and the GitHub Actions workflow shape live at [docs/security-ci-setup.md](security-ci-setup.md). |
 | `/shipwright-changelog` | -- | -- | Parse Conventional Commits from git history, generate Keep-a-Changelog entries, suggest semver bump, create version tag, and open a pull request. |
-| `/shipwright-deploy` | -- | `--env prod` | Deploy to Jelastic (Infomaniak). DEV deploys automatically; PROD requires `--env prod` flag and explicit confirmation. Runs smoke test after deploy, rolls back on failure. |
+| `/shipwright-deploy` | -- | `--prod`, `--rollback` | Deploy via the project's deploy profile (Jelastic is the verified reference target; Vercel / Compose-VPS ship as declarative stubs). DEV deploys automatically; PROD requires `--prod` and explicit confirmation. Runs a smoke test after deploy, rolls back on failure. |
 | `/shipwright-compliance` | -- | `--fix`, `--only <groups>`, `--format md\|json\|both` | **Out-of-band** — detective cross-artifact audit (Groups C + F shipped; A/B/D/E/G planned). Also fires as auto-background subprocess after every completed pipeline phase via `update_compliance.py --phase <name>` (no manual flag needed). |
 | `/shipwright-adopt` | -- | `--dry-run`, `--profile <name>`, `--scope full_app\|library\|cli`, `--include-nested`, `--exclude-path <p>`, `--skip-crawl`, `--crawl-base-url <url>`, `--crawl-auth-token <tok>`, `--crawl-max-depth <n>`, `--crawl-max-pages <n>`, `--no-backfill-events`, `--no-sync`, `--planning-split <name>` | Onboard an existing (brownfield) repo into Shipwright. Analyzes stack + routes + conventions + git history, writes CLAUDE.md + .shipwright/agent_docs + configs + compliance reports + an E2E baseline. Not a pipeline phase — runs once per repo. |
 
