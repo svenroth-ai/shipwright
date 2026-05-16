@@ -1,41 +1,36 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-16-fix-events-worktree-aware",
+    "run_id": "iterate-2026-05-16-fix-adopt-review-config",
     "date": "2026-05-16",
     "unit": {
       "status": "passed",
-      "passed": 2519,
-      "total": 2526,
-      "note": "F0 fresh full run, per-suite (separate 'tests' packages run separately): shared/tests 1760, shared/scripts/tests 172, shared/scripts/tools/tests 38, plugins/shipwright-iterate/tests 237, plugins/shipwright-compliance/tests 312. The 7 failures (test_hooks.py TestCheckSecrets x5 + TestCheckFileSize x1, test_artifact_path_canon.py compliance-migrated x1) reproduce identically on base origin/main — pre-existing baseline, 0 regressions from this iterate. F0 scope = the suites that consume the changed shared/scripts modules; the other 9 phase-plugin suites are no-op-affected (worktree-aware resolution is identity outside a worktree)."
+      "passed": 304,
+      "total": 304,
+      "note": "Full plugins/shipwright-adopt suite (270) + shared/tests/test_external_review_config.py resolver suite (34) — the producer and consumer halves of the changed shipwright_iterate_config.json boundary. 0 regressions."
     },
-    "integration": {
-      "status": "passed",
-      "passed": 110,
-      "total": 110,
-      "note": "integration-tests/ incl. new test_events_log_parity.py (3: shared resolver vs compliance data_collector agree on main/worktree/non-git). 2 deselected (slow marker)."
-    },
+    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "No CRUD/DB changes — config-writer default-value bugfix."},
     "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
     "e2e": {
       "status": "passed",
-      "passed": 81,
-      "total": 81,
-      "note": "F0.5 surface=cli — pytest over shared/tests/{test_events_log,test_events_log_ssot,test_verify_iterate_finalization,test_worktree_isolation_lib}.py. The boundary round-trip test inside test_verify_iterate_finalization.py drives producer record_event -> main log -> consumer verifier end-to-end."
+      "passed": 8,
+      "total": 8,
+      "note": "F0.5 surface=cli — pytest over plugins/shipwright-adopt/tests/test_config_writer.py. Includes test_iterate_config_external_review_not_user_disabled, the producer (write_iterate_config) -> file -> shared resolver (get_external_review_status) round-trip that drives the fixed boundary end-to-end."
     },
-    "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI — library/framework repo."},
+    "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI — Claude Code plugin monorepo."},
     "smoke": {"status": "not_run", "note": "No browser/server surface."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_events_log.py shared/tests/test_events_log_ssot.py shared/tests/test_verify_iterate_finalization.py shared/tests/test_worktree_isolation_lib.py -p no:cacheprovider",
+      "runner": "uv run --directory plugins/shipwright-adopt --extra dev pytest tests/test_config_writer.py --color=no",
       "exit_code": 0,
-      "tests_run": 81,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-16-fix-events-worktree-aware/surface_verification.json",
-      "timestamp": "2026-05-16T10:36:07Z",
+      "tests_run": 8,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-16-fix-adopt-review-config/surface_verification.log",
+      "timestamp": "2026-05-16T12:50:31.402Z",
       "attempts": 1,
-      "note": "Single shared/tests package — avoids the cross-tests-package collection collision; covers the worktree-aware helper, the drift meta-test, the F11 verifier worktree path + producer->consumer round-trip, and the leak-guard event-log exemption."
+      "note": "Boundary Probe (touches_io_boundary): the round-trip test feeds real write_iterate_config output through the real shared external_review_config resolver and asserts status != 'user_disabled'."
     },
     "degraded": [
-      "7 pre-existing baseline test failures on origin/main (test_hooks.py TestCheckSecrets x5 + TestCheckFileSize x1, test_artifact_path_canon.py compliance-migrated x1) — verified identical on the base commit, NOT introduced by this iterate.",
-      "External LLM review required enabling: shipwright_iterate_config.json carried the adopt-seeded external_review.feedback_iterations: 0 (opt-out); flipped to 1 (user-approved) so the medium-complexity external review could run."
+      "Pre-existing ruff F401 (unused typing.Any import) at plugins/shipwright-adopt/scripts/lib/dry_run_reporter.py:7 — present on base origin/main, NOT introduced by this iterate; left untouched to keep the bugfix diff focused.",
+      "test_nested_project_detector::test_detects_nested_shipwright_subproject failed initially in the fresh worktree: its fixture plugins/shipwright-adopt/tests/fixtures/nested-shipwright/webui/shipwright_run_config.json is gitignored (shipwright_*_config.json rule) and not carried into worktrees. Re-hydrated per SKILL B1a; full adopt suite then 270/270. See conventions.md Learnings."
     ]
   }
 }

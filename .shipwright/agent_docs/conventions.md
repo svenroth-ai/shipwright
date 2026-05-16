@@ -69,6 +69,8 @@ Python 3.11+ with uv as package manager. All scripts are invoked via uv run. Hoo
 
 - **Cross-session dedup needs an explicit "no window" mode.** A default time-based window (e.g. 24h) silently mis-fires for producers whose findings persist across sessions for weeks/months. Compliance audit findings stay valid until resolved — re-emitting on day 2 would create N copies of the same finding. Support `window_seconds=None` for indefinite dedup against currently-`triage` items; document the choice per producer. See ADR-046 + Gemini HIGH finding in iterate-2026-05-11-triage-inbox-1a code review.
 
+- **Gitignored test fixtures are absent in fresh worktrees/clones.** Fixture files whose names match a repo-wide gitignore pattern are untracked — e.g. `plugins/shipwright-adopt/tests/fixtures/nested-shipwright/webui/shipwright_run_config.json` is ignored by the `shipwright_*_config.json` rule. Such a file survives in a long-lived working copy but is NOT carried into a freshly-created `git worktree` (nor a fresh `git clone` / CI checkout). `test_nested_project_detector::test_detects_nested_shipwright_subproject` consequently fails in every iterate worktree until the fixture is re-hydrated (copy from the main repo, per the SKILL B1a re-hydration rule). Surfaced in iterate-2026-05-16-fix-adopt-review-config. Proper fix (out of scope there): force-track the fixture with `git add -f`, or rename it so the ignore rule misses it.
+
 ---
 
 ## Imported from `CONTRIBUTING.md`
