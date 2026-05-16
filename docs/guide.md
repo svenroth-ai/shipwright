@@ -1432,6 +1432,17 @@ The result is one of four levels:
 
 Users can override complexity (`--complexity medium`) and adjust phases before execution ("skip design", "make it small"). However, safety floors enforced by risk flags cannot be bypassed without explicit acknowledgment.
 
+### Spec Impact Classification
+
+Every FEATURE and CHANGE iterate must classify how it changes the requirement spec -- this is the "spec update" step the complexity table lists, and it is **enforced**, not advisory:
+
+- **ADD** -- a new endpoint, page, or user-visible capability: a new FR row is appended to `spec.md`.
+- **MODIFY** -- an existing FR's behavior changed: its row + acceptance criteria are updated.
+- **REMOVE** -- a capability was deleted: the FR row moves into a `### Removed Requirements` section (never silently dropped).
+- **NONE** -- a behavior-preserving internal refactor: recorded with a one-line justification.
+
+Two layers enforce it. At finalization `record_event.py` refuses (exit 1) a feature/change iterate that names no FR and gives no `spec_impact=none` justification; and the F11 verifier fails the run if its commit touched no `spec.md` without a recorded `spec_impact=none`. The on-demand `/shipwright-compliance` detective audit (Group D, check D5) additionally surfaces any historical feature/change events that landed with no FR linkage. BUG iterates are exempt -- a fix need not change the spec.
+
 ### Risk Taxonomy
 
 Eight canonical risk flags trigger safety minimums regardless of complexity level:

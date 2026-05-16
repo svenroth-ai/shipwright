@@ -57,6 +57,27 @@ Examples for Split 01:
 - Use checkbox format: `- [ ] {criterion}`
 - 2-5 criteria per requirement (not more)
 
+### Removed Requirements
+
+When an iterate REMOVES a user-visible capability, its FR is **never silently
+deleted** — `/shipwright-iterate` moves the row into a `### Removed
+Requirements` subsection placed last under `## 2. Functional Requirements`.
+This preserves traceability: the FR id keeps a home, and the RTM stops
+reporting the retired capability as an uncovered/failing requirement.
+
+Rules:
+- Each row keeps the original FR id, requirement text, and priority, and adds
+  the run_id that removed it plus a `status` cell whose value is the literal
+  string `status: deprecated`.
+- The literal `status: deprecated` is **mandatory**: the Phase-Quality
+  Stop-hook check S4 (`check_s4_fr_preservation`) scans for it within a few
+  lines of any FR id that disappeared from the live table. Omitting it raises
+  a spurious "removed FR without status=deprecated" warning.
+- The FR parsers (`shared/scripts/lib/drift_parsers.py:parse_fr_table` and
+  the compliance `data_collector.collect_requirements`) skip this whole
+  subsection — removed FRs do not count as live requirements.
+- Omit the subsection entirely while no FR has been removed.
+
 ### Writing Guidelines
 
 - **Self-contained:** Each spec should stand alone for /shipwright-plan
@@ -102,6 +123,15 @@ Examples for Split 01:
 **FR-{NN}.02: {Short name}**
 - [ ] {Testable criterion 1}
 - [ ] ...
+
+### Removed Requirements
+
+{Only present once a REMOVE-classified iterate has retired an FR.
+Omit this subsection entirely while empty.}
+
+| ID | Requirement | Priority | Removed by | status |
+|----|-------------|----------|------------|--------|
+| FR-{NN}.{YY} | {original requirement text} | {Must/Should/May} | {run_id} | status: deprecated |
 
 ## 3. Quality Requirements
 
@@ -222,6 +252,12 @@ application. Users can sign up, log in, and access features based on their role.
 - [ ] Admin can access all routes
 - [ ] Member cannot access /admin/* routes
 - [ ] Unauthenticated users are redirected to /login
+
+### Removed Requirements
+
+| ID | Requirement | Priority | Removed by | status |
+|----|-------------|----------|------------|--------|
+| FR-01.07 | The system SHALL support social login via Google OAuth | Should | iterate-20260120-drop-oauth | status: deprecated |
 
 ## 3. Quality Requirements
 

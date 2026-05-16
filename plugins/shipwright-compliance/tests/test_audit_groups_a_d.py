@@ -645,6 +645,81 @@ def test_d4_flags_fr_last_touched_in_failing_build(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# Group D — D5: feature/change iterate events with no FR linkage
+# (iterate-2026-05-16-spec-impact-gate)
+# ---------------------------------------------------------------------------
+
+
+def test_d5_passes_when_feature_iterate_links_an_fr(tmp_path):
+    _events(tmp_path / "shipwright_events.jsonl", [
+        {"type": "work_completed", "source": "iterate", "intent": "feature",
+         "ts": "2026-04-01T00:00:00+00:00", "commit": "a1",
+         "affected_frs": ["FR-01.01"]},
+    ])
+    findings = group_d.run(tmp_path, _default_config(), None)
+    d5 = next(f for f in findings if f.check_id == "D5")
+    assert d5.status == "pass"
+
+
+def test_d5_passes_when_feature_iterate_records_new_fr(tmp_path):
+    _events(tmp_path / "shipwright_events.jsonl", [
+        {"type": "work_completed", "source": "iterate", "intent": "feature",
+         "ts": "2026-04-01T00:00:00+00:00", "commit": "a2",
+         "new_frs": ["FR-01.09"]},
+    ])
+    findings = group_d.run(tmp_path, _default_config(), None)
+    d5 = next(f for f in findings if f.check_id == "D5")
+    assert d5.status == "pass"
+
+
+def test_d5_flags_feature_iterate_with_no_fr(tmp_path):
+    """The inverse-drift signal: a feature landed without producing an FR."""
+    _events(tmp_path / "shipwright_events.jsonl", [
+        {"type": "work_completed", "source": "iterate", "intent": "feature",
+         "ts": "2026-04-01T00:00:00+00:00", "commit": "deadbee1",
+         "description": "Triage Inbox subsystem"},
+    ])
+    findings = group_d.run(tmp_path, _default_config(), None)
+    d5 = next(f for f in findings if f.check_id == "D5")
+    assert d5.status == "fail"
+    assert d5.severity == "MEDIUM"
+    assert "deadbee1" in d5.detail
+    assert d5.suggested_iterate_cmd is not None
+
+
+def test_d5_exempts_event_with_spec_impact_none(tmp_path):
+    """An event explicitly recording spec_impact=none is a justified no-op."""
+    _events(tmp_path / "shipwright_events.jsonl", [
+        {"type": "work_completed", "source": "iterate", "intent": "change",
+         "ts": "2026-04-01T00:00:00+00:00", "commit": "c1",
+         "spec_impact": "none",
+         "spec_impact_justification": "behavior-preserving internal refactor"},
+    ])
+    findings = group_d.run(tmp_path, _default_config(), None)
+    d5 = next(f for f in findings if f.check_id == "D5")
+    assert d5.status == "pass"
+
+
+def test_d5_ignores_bug_and_build_events(tmp_path):
+    """BUG iterates and build events are not feature/change iterates."""
+    _events(tmp_path / "shipwright_events.jsonl", [
+        {"type": "work_completed", "source": "iterate", "intent": "bug",
+         "ts": "2026-04-01T00:00:00+00:00", "commit": "b1"},
+        {"type": "work_completed", "source": "build",
+         "ts": "2026-04-02T00:00:00+00:00", "commit": "b2"},
+    ])
+    findings = group_d.run(tmp_path, _default_config(), None)
+    d5 = next(f for f in findings if f.check_id == "D5")
+    assert d5.status == "skip"
+
+
+def test_d5_skips_when_no_event_log(tmp_path):
+    findings = group_d.run(tmp_path, _default_config(), None)
+    d5 = next(f for f in findings if f.check_id == "D5")
+    assert d5.status == "skip"
+
+
+# ---------------------------------------------------------------------------
 # End-to-end through the detector + registry
 # ---------------------------------------------------------------------------
 

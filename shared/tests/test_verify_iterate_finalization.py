@@ -34,6 +34,7 @@ def _agent_docs_root(tmp: Path) -> Path:
 
 from tools.verify_iterate_finalization import (
     CheckResult,
+    Severity,
     check_adr_in_iterate_history,
     check_changelog_unreleased,
     check_events_has_commit,
@@ -45,6 +46,7 @@ from tools.verifiers.iterate_checks import (
     check_build_dashboard_has_run_id,
     check_architecture_reviewed,
     check_conventions_reviewed,
+    check_spec_impact_recorded,
     check_surface_verification,
 )
 
@@ -788,4 +790,144 @@ def test_surface_verification_run_all_checks_includes_f05(tmp_path):
     names = [r.name for r in results]
     assert any("F0.5 surface_verification" in n for n in names), (
         f"F0.5 check missing from run_all_checks; got: {names}"
+    )
+
+
+# ──────────────────────────────────────────────────────────────────────
+# check_spec_impact_recorded — spec-impact gate
+# (iterate-2026-05-16-spec-impact-gate)
+# ──────────────────────────────────────────────────────────────────────
+
+def _seed_entry_with_intent(proj: Path, run_id: str, intent: str) -> None:
+    """Seed an iterate_history entry with a chosen intent/type."""
+    proj.mkdir(parents=True, exist_ok=True)
+    (proj / "shipwright_run_config.json").write_text(json.dumps({
+        "iterate_history": [
+            {"run_id": run_id, "complexity": "medium", "type": intent},
+        ],
+    }))
+
+
+def _write_work_event(proj: Path, commit: str, **fields) -> None:
+    """Write a single work_completed event referencing `commit`."""
+    evt = {"type": "work_completed", "source": "iterate", "commit": commit}
+    evt.update(fields)
+    (proj / "shipwright_events.jsonl").write_text(
+        json.dumps(evt) + "\n", encoding="utf-8"
+    )
+
+
+def _git_commit(repo: Path, files: dict[str, str], message: str) -> str:
+    """Init a git repo (if needed), write `files`, commit, return the SHA."""
+    repo.mkdir(parents=True, exist_ok=True)
+
+    def _g(*a: str) -> None:
+        subprocess.run(["git", "-C", str(repo), *a],
+                       check=True, capture_output=True, text=True)
+
+    if not (repo / ".git").exists():
+        _g("init", "-b", "main")
+    for rel, content in files.items():
+        fp = repo / rel
+        fp.parent.mkdir(parents=True, exist_ok=True)
+        fp.write_text(content, encoding="utf-8")
+    _g("add", "-A")
+    _g("-c", "user.name=T", "-c", "user.email=t@t.invalid",
+       "commit", "-m", message)
+    out = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"],
+                         check=True, capture_output=True, text=True)
+    return out.stdout.strip()
+
+
+def test_spec_impact_skipped_when_run_id_missing(tmp_path):
+    proj = tmp_path / "p"
+    proj.mkdir()
+    result = check_spec_impact_recorded(proj, "absent", "abc1234")
+    assert result.ok is True
+    assert result.severity == Severity.SKIPPED.value
+
+
+def test_spec_impact_skipped_for_bug_intent(tmp_path):
+    """A BUG iterate need not touch the spec — the gate skips it."""
+    proj = tmp_path / "p"
+    _seed_entry_with_intent(proj, "r1", "bug")
+    result = check_spec_impact_recorded(proj, "r1", "abc1234")
+    assert result.ok is True
+    assert result.severity == Severity.SKIPPED.value
+
+
+def test_spec_impact_none_with_justification_passes(tmp_path):
+    proj = tmp_path / "p"
+    _seed_entry_with_intent(proj, "r1", "feature")
+    _write_work_event(proj, "abc1234", intent="feature",
+                      spec_impact="none",
+                      spec_impact_justification="behavior-preserving refactor")
+    result = check_spec_impact_recorded(proj, "r1", "abc1234")
+    assert result.ok is True
+
+
+def test_spec_impact_none_without_justification_fails(tmp_path):
+    proj = tmp_path / "p"
+    _seed_entry_with_intent(proj, "r1", "change")
+    _write_work_event(proj, "abc1234", intent="change", spec_impact="none")
+    result = check_spec_impact_recorded(proj, "r1", "abc1234")
+    assert result.ok is False
+    assert result.severity == Severity.ERROR.value
+
+
+def test_spec_impact_passes_when_commit_touches_spec(tmp_path):
+    proj = tmp_path / "p"
+    commit = _git_commit(proj, {
+        ".shipwright/planning/01-x/spec.md": "| FR-01.01 | x | Must |\n",
+        "src/app.py": "x = 1\n",
+    }, "feat: add FR")
+    _seed_entry_with_intent(proj, "r1", "feature")
+    _write_work_event(proj, commit, intent="feature", spec_impact="modify")
+    result = check_spec_impact_recorded(proj, "r1", commit)
+    assert result.ok is True
+
+
+def test_spec_impact_fails_when_commit_misses_spec(tmp_path):
+    """spec_impact=modify recorded, but the commit touched no planning spec."""
+    proj = tmp_path / "p"
+    commit = _git_commit(proj, {"src/app.py": "x = 1\n"}, "feat: code only")
+    _seed_entry_with_intent(proj, "r1", "feature")
+    _write_work_event(proj, commit, intent="feature", spec_impact="modify")
+    result = check_spec_impact_recorded(proj, "r1", commit)
+    assert result.ok is False
+    assert result.severity == Severity.ERROR.value
+
+
+def test_spec_impact_legacy_event_passes_via_commit_diff(tmp_path):
+    """A legacy event with no spec_impact still passes if the commit
+    actually touched a planning spec.md (fallthrough path)."""
+    proj = tmp_path / "p"
+    commit = _git_commit(
+        proj, {".shipwright/planning/01-x/spec.md": "x\n"}, "spec change"
+    )
+    _seed_entry_with_intent(proj, "r1", "feature")
+    _write_work_event(proj, commit, intent="feature")  # no spec_impact
+    result = check_spec_impact_recorded(proj, "r1", commit)
+    assert result.ok is True
+
+
+def test_spec_impact_skipped_when_git_unavailable(tmp_path):
+    """Non-git dir + no spec_impact=none → SKIPPED (cannot inspect commit)."""
+    proj = tmp_path / "p"
+    _seed_entry_with_intent(proj, "r1", "feature")
+    _write_work_event(proj, "abc1234", intent="feature")
+    result = check_spec_impact_recorded(proj, "r1", "abc1234")
+    assert result.ok is True
+    assert result.severity == Severity.SKIPPED.value
+
+
+def test_spec_impact_in_run_all_checks(tmp_path):
+    """Drift guard — run_all_checks must list the spec-impact gate so a
+    future refactor can't silently drop it."""
+    proj = tmp_path / "p"
+    _seed_entry_with_intent(proj, "r1", "feature")
+    results = run_all_checks(proj, "r1", commit_hash="abc1234")
+    names = [r.name for r in results]
+    assert any("spec impact" in n.lower() for n in names), (
+        f"spec-impact check missing from run_all_checks; got: {names}"
     )

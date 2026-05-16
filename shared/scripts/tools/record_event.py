@@ -246,6 +246,12 @@ def build_event(args: argparse.Namespace) -> dict:
             event["new_frs"] = [fr.strip() for fr in args.new_frs.split(",") if fr.strip()]
         if args.spec_updated:
             event["spec_updated"] = args.spec_updated
+        # Spec-impact classification (iterate-2026-05-16-spec-impact-gate).
+        # Enforced for feature/change iterates by _spec_impact_gate_error.
+        if args.spec_impact:
+            event["spec_impact"] = args.spec_impact
+        if args.spec_impact_justification:
+            event["spec_impact_justification"] = args.spec_impact_justification
         if args.adr_id:
             event["adr_id"] = args.adr_id
         # E spec MEDIUM-D1: changed_files is required by D's drift detection
@@ -359,6 +365,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--affected-frs", help="Comma-separated FR IDs")
     p.add_argument("--new-frs", help="Comma-separated new FR IDs")
     p.add_argument("--spec-updated", help="Path to updated spec file")
+    p.add_argument("--spec-impact", choices=["add", "modify", "remove", "none"],
+                   help="Iterate spec-impact classification (feature/change): "
+                        "add=new FR appended, modify=existing FR changed, "
+                        "remove=FR retired, none=no spec change (then "
+                        "--spec-impact-justification is required).")
+    p.add_argument("--spec-impact-justification",
+                   help="Why a feature/change iterate touches no FR. "
+                        "Required when --spec-impact is none.")
     p.add_argument("--adr-id", help="ADR reference (e.g. ADR-055)")
     p.add_argument(
         "--changed-files",
@@ -405,6 +419,45 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return p.parse_args(argv)
 
 
+def _spec_impact_gate_error(event: dict) -> dict | None:
+    """Return an error payload if a feature/change iterate work event is not
+    spec-impact-classified, else None.
+
+    Every FEATURE/CHANGE iterate either names the FRs it touched
+    (``affected_frs`` or ``new_frs``) or records ``spec_impact == "none"``
+    with a justification. Build events (``source != "iterate"``),
+    intent-less events, and BUG iterates are exempt — a bug fix need not
+    touch the spec. Origin: iterate-2026-05-16-spec-impact-gate.
+    """
+    if event.get("type") != "work_completed":
+        return None
+    if event.get("source") != "iterate":
+        return None
+    if str(event.get("intent", "")).lower() not in ("feature", "change"):
+        return None
+    if str(event.get("spec_impact", "")).lower() == "none":
+        if not event.get("spec_impact_justification"):
+            return {
+                "error": "spec_impact_none_requires_justification",
+                "detail": (
+                    "A feature/change iterate recording --spec-impact none "
+                    "must also pass --spec-impact-justification."
+                ),
+            }
+        return None
+    if not event.get("affected_frs") and not event.get("new_frs"):
+        return {
+            "error": "spec_impact_unclassified",
+            "detail": (
+                "A feature/change iterate work_completed event must record "
+                "--affected-frs or --new-frs (the FRs it added or modified), "
+                "or --spec-impact none with a --spec-impact-justification. "
+                "See SKILL.md Step 2 (ADD/MODIFY/REMOVE/NONE)."
+            ),
+        }
+    return None
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     project_root = Path(args.project_root).resolve()
@@ -426,6 +479,15 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
     event = build_event(args)
+
+    # Spec-impact gate: a FEATURE/CHANGE iterate must name the FRs it touched
+    # or explicitly record --spec-impact none with a justification. Fail
+    # closed (exit 1, nothing written) otherwise.
+    gate_error = _spec_impact_gate_error(event)
+    if gate_error is not None:
+        print(json.dumps({"success": False, **gate_error}, indent=2))
+        return 1
+
     event_id = append_event(project_root, event)
 
     result = {"success": True, "id": event_id, "type": args.type}

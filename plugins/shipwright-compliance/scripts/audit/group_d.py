@@ -17,6 +17,11 @@ Canon gate cannot see them, only a holistic events × spec scan can.
 - D4 — Latest covering event has failing tests. The most recent event
   covering an FR has ``tests.passed < tests.total`` — the FR sits in a
   partially-broken state. Severity LOW.
+- D5 — FEATURE/CHANGE iterate event with no FR linkage. The inverse of
+  D1: a ``work_completed`` event with ``source=iterate`` and
+  ``intent`` in (feature, change) whose ``affected_frs`` and ``new_frs``
+  are both empty and that did not record ``spec_impact=none`` — a
+  capability that landed without producing a requirement. Severity MEDIUM.
 
 **Epoch floor (D1 + D2 only):** the most recent event carrying a
 ``spec_updated`` field is treated as a watermark. Older events are
@@ -338,6 +343,66 @@ def _check_d4(
 
 
 # ---------------------------------------------------------------------------
+# D5 — FEATURE/CHANGE iterate event with no FR linkage (inverse drift)
+# ---------------------------------------------------------------------------
+
+
+def _check_d5(
+    events: list[dict] | None,
+) -> tuple[str, str, str, list[str]]:
+    """Returns (status, severity, detail, evidence).
+
+    The inverse of D1: D1 finds spec FRs with no covering event; D5 finds
+    FEATURE/CHANGE iterate ``work_completed`` events that touched no FR at
+    all — a new capability that never produced a requirement. An event is
+    exempt when it explicitly recorded ``spec_impact == "none"`` (a
+    justified no-op). BUG iterates and build events are out of scope.
+    Time-invariant — no epoch-floor watermark (like D3/D4).
+    """
+    if events is None:
+        return "skip", "MEDIUM", "shipwright_events.jsonl not present", []
+
+    iterate_changes = [
+        ev for ev in events
+        if ev.get("type") == "work_completed"
+        and ev.get("source") == "iterate"
+        and str(ev.get("intent", "")).lower() in ("feature", "change")
+    ]
+    if not iterate_changes:
+        return "skip", "MEDIUM", "no feature/change iterate events recorded", []
+
+    unlinked: list[dict] = []
+    for ev in iterate_changes:
+        affected = [f for f in (ev.get("affected_frs") or []) if isinstance(f, str)]
+        new = [f for f in (ev.get("new_frs") or []) if isinstance(f, str)]
+        if affected or new:
+            continue
+        if str(ev.get("spec_impact", "")).lower() == "none":
+            continue  # explicit, justified no-op
+        unlinked.append(ev)
+
+    if not unlinked:
+        return "pass", "MEDIUM", "every feature/change iterate event links an FR", []
+
+    def _label(ev: dict) -> str:
+        commit = str(ev.get("commit", ""))[:8] or "?"
+        desc = str(ev.get("description", "")).strip()
+        if len(desc) > 60:
+            desc = desc[:57] + "…"
+        return f"{ev.get('intent', '?')} {commit}: {desc or '(no description)'}"
+
+    head = "; ".join(_label(ev) for ev in unlinked[:3])
+    if len(unlinked) > 3:
+        head += f", … (+{len(unlinked) - 3})"
+    detail = (
+        f"{len(unlinked)} feature/change iterate event(s) with no FR linkage "
+        f"and no spec_impact=none — {head}"
+    )
+    evidence = [_label(ev) for ev in unlinked]
+    return "fail", "MEDIUM", detail, evidence
+
+
+# ---------------------------------------------------------------------------
 # Top-level run()
 # ---------------------------------------------------------------------------
 
@@ -347,6 +412,7 @@ _NAME_BY_CHECK = {
     "D2": "Event FR-refs exist in spec",
     "D3": "Promised FRs delivered",
     "D4": "Latest covering event passed tests",
+    "D5": "Iterate feature/change events link an FR",
 }
 
 
@@ -364,6 +430,7 @@ def run(
         ("D2", lambda: _check_d2(spec_frs, events)),
         ("D3", lambda: _check_d3(events)),
         ("D4", lambda: _check_d4(spec_frs, events)),
+        ("D5", lambda: _check_d5(events)),
     ]
 
     out: list[Finding] = []

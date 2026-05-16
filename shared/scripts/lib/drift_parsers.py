@@ -302,6 +302,15 @@ _FR_TABLE_RE = re.compile(
     r"(?:\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|)?\s*$"
 )
 
+# A spec.md may carry a `## Removed Requirements` (or `### Removed
+# Requirements`) section holding FR rows that a REMOVE-classified iterate
+# retired. Those rows are still valid-looking FR table rows, so the FR
+# parser MUST skip the whole section — otherwise a deleted capability
+# resurfaces in drift checks and RTM coverage forever. The compliance
+# `data_collector.collect_requirements` carries the SAME exclusion loop;
+# keep the two in sync. Origin: iterate-2026-05-16-spec-impact-gate.
+_MD_HEADING_RE = re.compile(r"^(#{1,6})\s+(\S.*?)\s*$")
+
 
 @dataclass(frozen=True)
 class FunctionalRequirement:
@@ -313,14 +322,31 @@ class FunctionalRequirement:
 
 
 def parse_fr_table(content: str, split: str, spec_path: str) -> list[FunctionalRequirement]:
-    """Parse a spec.md body and return all FR rows.
+    """Parse a spec.md body and return all *live* FR rows.
 
     A FR row is a pipe-delimited line of shape
     ``| FR-XX.YY | text... | Must|Should|May |``. Non-matching lines are
     ignored, so callers can pass the full file contents.
+
+    Rows inside a ``## Removed Requirements`` / ``### Removed Requirements``
+    section are skipped: a REMOVE-classified iterate moves retired FRs there
+    and they must not count as live requirements. The section ends at the
+    next heading of the same or shallower level.
     """
     out: list[FunctionalRequirement] = []
+    in_removed = False
+    removed_level = 0
     for line in content.splitlines():
+        heading = _MD_HEADING_RE.match(line)
+        if heading:
+            level = len(heading.group(1))
+            if heading.group(2).strip().lower().startswith("removed requirements"):
+                in_removed, removed_level = True, level
+                continue
+            if in_removed and level <= removed_level:
+                in_removed = False
+        if in_removed:
+            continue
         m = _FR_TABLE_RE.match(line)
         if not m:
             continue

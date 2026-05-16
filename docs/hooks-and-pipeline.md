@@ -1108,6 +1108,18 @@ and the post-commit audit is `check_surface_verification` in
 on the same four conditions: missing block, `tests_run == 0`,
 `exit_code != 0` after retry cap, `surface == "none"` without justification.
 
+**Spec-impact gate (iterate).** Every FEATURE/CHANGE `/shipwright-iterate`
+run classifies its spec impact at Step 2 as ADD / MODIFY / REMOVE / NONE.
+Two layers enforce it: `record_event.py` fails closed (exit 1) at F7 when a
+feature/change iterate `work_completed` event names no FR
+(`--affected-frs` / `--new-frs` both empty) and records no
+`--spec-impact none --spec-impact-justification`; and the post-commit audit
+`check_spec_impact_recorded` in `iterate_checks.py` FAILS the F11 verifier
+when the commit touched no `.shipwright/planning/**/spec.md` and no
+`spec_impact=none` was recorded. The compliance detective audit adds Group D
+check **D5** — feature/change events that landed with no FR linkage.
+Origin: iterate-2026-05-16-spec-impact-gate.
+
 ### Scripts Supporting Self-Healing
 
 | Script | Self-Healing | Details |
@@ -1267,7 +1279,7 @@ shared/scripts/tools/
   verifiers/
     __init__.py
     common.py                      # CheckResult, readers, generic C1–C5, ADR F1/F2/F3
-    iterate_checks.py              # 5 existing iterate checks (migrated 1:1)    — 12.0
+    iterate_checks.py              # iterate finalization checks (5 @12.0 + F0.5 surface + spec-impact gate)
     runtime_checks.py              # Zombie-task replay check                     — 12.0b
     project_checks.py              # Project phase-own + canon + phase_history   — 12.1
     design_checks.py               # Design phase-own + canon (skip C4)          — 12.2
