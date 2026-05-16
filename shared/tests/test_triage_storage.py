@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import concurrent.futures
 import json
-import os
 import subprocess
 import sys
 import textwrap
@@ -567,3 +566,35 @@ def test_idempotent_concurrency_under_lock(project: Path) -> None:
     items = read_all_items(project)
     matching = [it for it in items if it.get("dedupKey") == "C1"]
     assert len(matching) == 1
+
+
+# --- Dedup-key matching is case-sensitive (producer-side canon contract) -
+
+def test_idempotent_append_dedup_key_is_case_sensitive(project: Path) -> None:
+    """Storage-layer dedup is an EXACT string match — `c:\\…` and `C:\\…`
+    are DISTINCT keys.
+
+    This is intentional and load-bearing: append_triage_item_idempotent
+    also dedups non-path keys (compliance check codes `A5.0`, `B7`, `E1`,
+    `G2`) which must never be case-folded. Path canonicalization for the
+    drift producer is therefore the PRODUCER's responsibility
+    (check_drift._canonical_anchor), NOT the storage layer's. This test
+    guards against a well-intentioned "fix" that lowercases keys inside
+    triage.py — which would silently merge distinct compliance findings.
+    """
+    from triage import append_triage_item_idempotent
+
+    a = append_triage_item_idempotent(
+        project, source="drift", severity="medium", kind="maintenance",
+        title="t", detail="d", dedup_key="drift:c:\\X\\CLAUDE.md:content",
+        match_commit=False, window_seconds=None,
+    )
+    b = append_triage_item_idempotent(
+        project, source="drift", severity="medium", kind="maintenance",
+        title="t", detail="d", dedup_key="drift:C:\\X\\CLAUDE.md:content",
+        match_commit=False, window_seconds=None,
+    )
+    assert a is not None
+    assert b is not None  # different-cased key → NOT deduplicated
+    assert a != b
+    assert len(read_all_items(project)) == 2

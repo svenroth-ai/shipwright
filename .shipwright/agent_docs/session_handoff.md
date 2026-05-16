@@ -1,35 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-16-fix-adopt-review-config"
+run_id: "iterate-2026-05-16-fix-triage-dedup-resolve"
 phase: "iterate"
-reason: "iterate: fix adopt external-review config defaults"
-timestamp: "2026-05-16T12:53:40.836265+00:00"
+reason: "post-rebase refresh after #31 merge"
+timestamp: "2026-05-16T15:52:54.939058+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-16 12:53:40 UTC
+> Auto-generated 2026-05-16 15:52:54 UTC
 
 ## Session Info
 
-- **Session ID**: fb04bce5-41b0-4629-baf5-bf3854659e19
-- **Timestamp**: 2026-05-16 12:53:40 UTC
-- **Reason**: iterate: fix adopt external-review config defaults
+- **Session ID**: 52fec252-6976-48ba-8aca-a8b17c175d0a
+- **Timestamp**: 2026-05-16 15:52:54 UTC
+- **Reason**: post-rebase refresh after #31 merge
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-16-fix-events-worktree-aware
-- **Date**: 2026-05-16T10:47:06.669217Z
+- **Run ID**: iterate-2026-05-16-fix-triage-dedup-resolve
+- **Date**: 2026-05-16T13:03:12.269152Z
 - **Type**: bug
-- **Complexity**: medium
-- **Branch**: iterate/fix-events-worktree-aware
-- **ADR**: iterate-2026-05-16-fix-events-worktree-aware
+- **Complexity**: small
+- **Branch**: iterate/fix-triage-dedup-resolve
+- **ADR**: iterate-2026-05-16-fix-triage-dedup-resolve
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-16-fix-events-worktree-aware.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fix-adopt-review-config
+- **Branch**: iterate/fix-triage-dedup-resolve
 - **External Review Marker**: completed (external_review_state.json @ 2026-05-16T09:46:59)
 
 ### Mandatory replay on Resume
@@ -48,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fix-adopt-review-config
-- **Last Commit**: 2a2c6fd chore(iterate): record F7 work_completed event for 34a7987
+- **Branch**: iterate/fix-triage-dedup-resolve
+- **Last Commit**: 2f6794b fix(triage): canonical drift dedup keys + drift/F0.5 auto-resolve
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-8659999c | work_completed | iterate (spec-impact classification gate: enforce ADD/MODIFY/REMOVE/NONE on every feature/change iterate (F7 record_event + F11 verifier gates, Group D5 audit, Removed Requirements convention)) | 2026-05-16 |
+| evt-e14e5f26 | work_completed | iterate (triage detector dedup + auto-resolve) | 2026-05-16 |
+| evt-38e36ac6 | work_completed | iterate (fix adopt external-review config defaults) | 2026-05-16 |
 | evt-d57cc8ce | work_completed | iterate (events.jsonl worktree-awareness: F7/verifier/dashboard resolve the log via git-common-dir; leak-guard exempts it; dashboard embeds run_id) | 2026-05-16 |
 | evt-a3888caf | work_completed | iterate (RTM data collection: parse 6-column adopt FR tables + resolve shipwright_events.jsonl via git-common-dir for worktree finalization; fixes false 'Traceability coverage 0%' on adopted projects) | 2026-05-15 |
-| evt-84dbdf5e | work_completed | iterate (Triage Inbox Iterate 2: 4 additional producers (security + performance + F0.5 + drift) wired into append_triage_item_idempotent. CI producer DEFERRED. ADR-047.) | 2026-05-14 |
-| evt-32f2f1f4 | work_completed | iterate (Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI (rebased onto post-test-hygiene main; ADR renumbered 045→046)) | 2026-05-11 |
-| evt-3f488ddc | work_completed | iterate (Triage Inbox Iterate 1a: storage API + aggregator + 2 producers + scaffolder + promote CLI) | 2026-05-11 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 29
-- **Last iterate**: bug — events.jsonl worktree-awareness: F7/verifier/dashboard resolve the log via git-common-dir; leak-guard exempts it; dashboard embeds run_id (2026-05-16)
+- **Total work events**: 32
+- **Last iterate**: feature — spec-impact classification gate: enforce ADD/MODIFY/REMOVE/NONE on every feature/change iterate (F7 record_event + F11 verifier gates, Group D5 audit, Removed Requirements convention) (2026-05-16)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

@@ -312,39 +312,99 @@ def _find_claude_md_files(root: str) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
+def _canonical_anchor(anchor: str) -> str:
+    """Canonicalize a filesystem path for use as part of a triage dedup key.
+
+    Content-drift findings carry absolute paths, and ``os.path.abspath``
+    does NOT canonicalize the Windows drive-letter case — the same file
+    resolves as ``c:\\…`` on one run and ``C:\\…`` on another. A raw path
+    therefore yields two distinct dedup keys, the idempotent append misses,
+    and a SECOND triage item is created for one logical drift.
+
+    ``os.path.realpath`` resolves symlinks + ``..`` and ``os.path.normcase``
+    canonicalizes case + separators on Windows (a no-op on POSIX). Together
+    they give exactly one stable key per logical file. Only the dedup key
+    is canonicalized — the human-readable title/detail keep the
+    original-case path.
+
+    ``realpath`` rarely raises — plain non-existent paths resolve fine;
+    the ``except`` guards exotic inputs (embedded NULs, invalid Windows
+    path characters) so emission stays best-effort.
+    """
+    try:
+        return os.path.normcase(os.path.realpath(anchor))
+    except (OSError, ValueError):  # defensive only
+        return os.path.normcase(anchor)
+
+
+def _content_anchor(finding: str) -> str:
+    """Extract + canonicalize the stable path anchor of a content finding.
+
+    Every content finding is shaped ``<path>: <human description>`` per
+    :func:`check_structure_drift` / :func:`check_command_drift`; the path
+    before the first ``': '`` is the anchor. Canonicalizing it here means
+    the append loop and the resolve pass agree on the exact dedup key.
+    """
+    raw = finding.split(": ", 1)[0].strip() or "CLAUDE.md"
+    return _canonical_anchor(raw)
+
+
 def _emit_drift_to_triage(
     project_root,
     timestamp_drifted: list[str],
     content_findings: list[str],
 ) -> int:
-    """Append drift findings to ``.shipwright/triage.jsonl``.
+    """Append drift findings to ``.shipwright/triage.jsonl`` and resolve
+    stale ones.
 
     One triage item per finding. ``source="drift"``, ``severity="medium"``,
     ``kind="maintenance"``. Dedup key shape: ``f"drift:{file}:{kind}"`` with
     ``kind ∈ {"timestamp", "content"}``. ``match_commit=False`` +
     ``window_seconds=None`` means a given drift finding stays as ONE item
     indefinitely until it resolves or the operator dismisses it (same
-    cross-session shape as the compliance producer).
+    cross-session shape as the compliance producer). The ``content`` key's
+    path is canonicalized via :func:`_canonical_anchor` so drive-letter
+    casing can't split one drift across two items (Bug 1 fix).
+
+    **Resolve pass (Bug 2 fix):** after appending, every still-open
+    (``status == "triage"``) ``source="drift"`` item produced by THIS
+    detector whose dedup key is absent from the current finding set flips
+    to ``dismissed`` with ``reason="driftResolved"`` — mirrors
+    ``audit_detector.py``'s ``auditResolved`` pattern. Scope is narrowed
+    to keys ending ``:timestamp`` / ``:content``: ``artifact_sync.py``
+    also emits ``source="drift"`` (with ``:artifact`` keys) and owns its
+    own surface — this detector must never retract another producer's
+    items.
 
     Best-effort: per-item errors logged to stderr and swallowed. The
     SessionStart hook MUST always exit 0 (informational), so emission
-    failure can never block.
+    failure can never block. Returns the count of NEW items appended.
     """
-    if not timestamp_drifted and not content_findings:
-        return 0
-
     try:
         scripts_dir = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), os.pardir,
         )
         if scripts_dir not in sys.path:
             sys.path.insert(0, scripts_dir)
-        from triage import append_triage_item_idempotent  # noqa: PLC0415
+        from triage import (  # noqa: PLC0415
+            append_triage_item_idempotent,
+            mark_status,
+            read_all_items,
+        )
     except Exception as exc:  # noqa: BLE001
         sys.stderr.write(
             f"[drift] triage import failed: {type(exc).__name__}: {exc}\n"
         )
         return 0
+
+    # The full set of dedup keys this run produced — drives BOTH the
+    # idempotent append and the resolve pass below.
+    current_keys = {
+        f"drift:{fname}:timestamp" for fname in timestamp_drifted
+    }
+    current_keys |= {
+        f"drift:{_content_anchor(f)}:content" for f in content_findings
+    }
 
     appended = 0
     for fname in timestamp_drifted:
@@ -376,11 +436,9 @@ def _emit_drift_to_triage(
 
     for finding in content_findings:
         try:
-            # Best-effort path extraction: every content finding starts with
-            # `<path>: <human description>` per check_structure_drift /
-            # check_command_drift. The path before the first ': ' is the
-            # stable anchor.
-            anchor = finding.split(": ", 1)[0].strip() or "CLAUDE.md"
+            # The title/detail keep the original-case path for the human
+            # reader; only the dedup key is canonicalized (Bug 1 fix —
+            # drive-letter casing must not split one drift across two items).
             title = f"Drift: {finding[:120]}"[:160]
             new_id = append_triage_item_idempotent(
                 project_root,
@@ -389,7 +447,7 @@ def _emit_drift_to_triage(
                 kind="maintenance",
                 title=title,
                 detail=finding,
-                dedup_key=f"drift:{anchor}:content",
+                dedup_key=f"drift:{_content_anchor(finding)}:content",
                 match_commit=False,
                 window_seconds=None,
             )
@@ -400,6 +458,39 @@ def _emit_drift_to_triage(
                 f"[drift] content triage emit failed: "
                 f"{type(exc).__name__}: {exc}\n"
             )
+
+    # Resolve pass (Bug 2 fix) — dismiss this detector's own stale items
+    # whose drift condition has cleared (key no longer in current_keys).
+    try:
+        for item in read_all_items(project_root):
+            if item.get("source") != "drift":
+                continue
+            if item.get("status") != "triage":
+                continue
+            dk = item.get("dedupKey") or ""
+            # Only keys THIS detector owns — artifact_sync.py shares
+            # source="drift" with `:artifact` keys that must not be touched.
+            if not (dk.endswith(":timestamp") or dk.endswith(":content")):
+                continue
+            if dk in current_keys:
+                continue
+            try:
+                mark_status(
+                    project_root,
+                    item["id"],
+                    new_status="dismissed",
+                    by="driftDetector",
+                    reason="driftResolved",
+                )
+            except Exception as exc:  # noqa: BLE001
+                sys.stderr.write(
+                    f"[drift] resolve mark_status failed for "
+                    f"{item.get('id')}: {type(exc).__name__}: {exc}\n"
+                )
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(
+            f"[drift] resolve pass failed: {type(exc).__name__}: {exc}\n"
+        )
 
     return appended
 

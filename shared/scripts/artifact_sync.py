@@ -64,6 +64,12 @@ def _emit_drift_to_triage(project_root, affected: list[dict]) -> int:
                 kind="maintenance",
                 title=title,
                 detail=detail,
+                # CONTRACT: the `:artifact` suffix is load-bearing. This
+                # producer shares source="drift" with
+                # `check_drift.py::_emit_drift_to_triage`, whose resolve
+                # pass scopes itself to `:timestamp`/`:content` keys so it
+                # never retracts THIS producer's items. Changing this
+                # suffix would silently break that cross-producer contract.
                 dedup_key=f"drift:{pattern}:artifact",
                 match_commit=False,
                 window_seconds=None,

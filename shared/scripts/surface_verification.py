@@ -368,6 +368,16 @@ _EXIT_TO_CONDITION = {
 }
 
 
+def _f05_dedup_key(run_id: str, surface: str, condition: str) -> str:
+    """Canonical F0.5 triage dedup key.
+
+    Defined once so the producer (:func:`_emit_failure_to_triage`) and the
+    resolve pass (:func:`_resolve_stale_f05_items`) cannot drift apart on
+    the key shape.
+    """
+    return f"f0.5:{run_id}:{surface}:{condition}"
+
+
 def _emit_failure_to_triage(
     project_root: Path,
     *,
@@ -408,7 +418,7 @@ def _emit_failure_to_triage(
             kind="bug",
             title=title,
             detail=detail or title,
-            dedup_key=f"f0.5:{run_id}:{surface}:{condition}",
+            dedup_key=_f05_dedup_key(run_id, surface, condition),
             evidence_path=evidence_path,
             run_id=run_id,
             commit=commit,
@@ -451,6 +461,80 @@ def _detail_for_condition(
             "F0.5 requires a one-line rationale when no surface is exercised."
         )
     return f"unknown F0.5 condition {condition!r}"
+
+
+def _resolve_stale_f05_items(
+    project_root: Path,
+    *,
+    run_id: str,
+    surface: str,
+    current_keys: set[str],
+) -> int:
+    """Dismiss still-open F0.5 items for ``(run_id, surface)`` whose
+    condition cleared.
+
+    Mirrors ``audit_detector.mirror_findings_to_triage``'s auto-dismiss:
+    any ``source="f0.5"`` item still in ``triage`` status whose dedup key
+    is absent from ``current_keys`` flips to ``dismissed`` with
+    ``reason="f05Resolved"``.
+
+    Scoped to ``(run_id, surface)`` (dedup-key prefix
+    ``f0.5:{run_id}:{surface}:``). Two reasons the scope is this tight:
+    a later iterate's surface check says nothing about an earlier
+    iterate's failure (different ``run_id``); and a re-run of the SAME
+    ``run_id`` on a DIFFERENT surface must not retract a genuine
+    still-open failure from the original surface. This fixes the observed
+    bug where an F0.5 P0 item from a runner that failed with exit 127 was
+    never retracted when the SAME run + surface re-ran green minutes
+    later. Operator-promoted / operator-dismissed items stay terminal
+    (``status != "triage"`` is skipped).
+
+    Best-effort — never raises; returns the number of items dismissed.
+    """
+    try:
+        shared_scripts = Path(__file__).resolve().parent
+        if str(shared_scripts) not in sys.path:
+            sys.path.insert(0, str(shared_scripts))
+        from triage import mark_status, read_all_items  # noqa: PLC0415
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(
+            f"[f0.5] triage import failed (resolve): "
+            f"{type(exc).__name__}: {exc}\n"
+        )
+        return 0
+
+    prefix = f"f0.5:{run_id}:{surface}:"
+    dismissed = 0
+    try:
+        for item in read_all_items(project_root):
+            if item.get("source") != "f0.5":
+                continue
+            if item.get("status") != "triage":
+                continue
+            dk = item.get("dedupKey") or ""
+            if not dk.startswith(prefix):
+                continue
+            if dk in current_keys:
+                continue
+            try:
+                mark_status(
+                    project_root,
+                    item["id"],
+                    new_status="dismissed",
+                    by="f05Detector",
+                    reason="f05Resolved",
+                )
+                dismissed += 1
+            except Exception as exc:  # noqa: BLE001
+                sys.stderr.write(
+                    f"[f0.5] resolve mark_status failed for "
+                    f"{item.get('id')}: {type(exc).__name__}: {exc}\n"
+                )
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(
+            f"[f0.5] resolve pass failed: {type(exc).__name__}: {exc}\n"
+        )
+    return dismissed
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -524,6 +608,32 @@ def main(argv: list[str] | None = None) -> int:
         except Exception as exc:  # noqa: BLE001
             sys.stderr.write(
                 f"[f0.5] triage emission top-level failed: "
+                f"{type(exc).__name__}: {exc}\n"
+            )
+
+    # Iterate-2026-05-16 Bug 2 fix: resolve pass — a green (or
+    # differently-failing) re-run of the SAME run_id + surface retracts
+    # stale F0.5 items. EXIT_INVALID_ARGS is a config error (unknown
+    # surface name), not a verdict on the surface, so it never resolves
+    # anything — a stale item can survive one mistyped-surface run and is
+    # then cleared by the next valid run.
+    if exit_code != EXIT_INVALID_ARGS:
+        try:
+            surface_repr = str(block.get("surface", ""))
+            current_keys: set[str] = set()
+            if condition is not None:
+                current_keys.add(
+                    _f05_dedup_key(args.run_id, surface_repr, condition)
+                )
+            _resolve_stale_f05_items(
+                project_root,
+                run_id=args.run_id,
+                surface=surface_repr,
+                current_keys=current_keys,
+            )
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write(
+                f"[f0.5] resolve pass top-level failed: "
                 f"{type(exc).__name__}: {exc}\n"
             )
 
