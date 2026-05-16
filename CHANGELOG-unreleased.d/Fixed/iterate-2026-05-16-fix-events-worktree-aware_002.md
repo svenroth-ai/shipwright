@@ -1,1 +1,0 @@
-The iterate finalization verifier no longer emits a spurious 'build_dashboard has run_id' WARN on every run — F5b now embeds the iterate run_id in the build_dashboard.md header, giving the verifier a deterministic marker (the F6 commit SHA cannot exist when F5b renders).

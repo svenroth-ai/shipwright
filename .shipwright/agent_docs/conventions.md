@@ -369,3 +369,7 @@ Thanks for contributing! If anything in this guide is unclear, please open an is
 - **ADR-042** (2026-05-10): Stop and SubagentStop hooks emit schema-compliant stdout
 
 - **ADR-043** (2026-05-11): Adopt scaffolds profile-aware CI + Claude-Review workflows with cross-platform OS matrix default
+
+- **ADR-049** (2026-05-16): Unconditional worktree isolation for /shipwright-iterate
+
+- **ADR-050** (2026-05-16): Worktree-aware event-log resolution

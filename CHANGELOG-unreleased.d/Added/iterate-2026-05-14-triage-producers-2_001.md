@@ -1,1 +1,0 @@
-Triage producers: security findings, performance budget failures, F0.5 fail-closed exits (3 of 4 conditions), and drift detection (timestamp + content + artifact) now emit into the per-project triage inbox via append_triage_item_idempotent (ADR-047).

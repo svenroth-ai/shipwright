@@ -1,1 +1,0 @@
-shipwright-compliance: 6-column /shipwright-adopt FR tables are now parsed by the RTM data collector. The FR-table regex previously matched only 3- and 5-column tables, so requirements in adopted specs with a trailing column were silently dropped from the traceability matrix.

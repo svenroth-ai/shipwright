@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.19.0] - 2026-05-16
+
+### Added
+
+- Triage Inbox pattern (Iterate 1a): per-project `.shipwright/triage.jsonl` pre-backlog store with append-only history events, 2 producers (Phase-Quality Tier-1 FAILs + Compliance audit findings with auto-dismiss), Stop-hook aggregator (`.shipwright/agent_docs/triage_inbox.md` regen), adopt-time scaffolder (Step E.16), and manual `triage_promote.py` CLI bridge to backlog ExternalTask. camelCase wire format matches shipwright-webui + leadwright extension. See `docs/triage-inbox.md` + ADR-045.
+- Triage producers: security findings, performance budget failures, F0.5 fail-closed exits (3 of 4 conditions), and drift detection (timestamp + content + artifact) now emit into the per-project triage inbox via append_triage_item_idempotent (ADR-047).
+
+### Changed
+
+- /shipwright-iterate now runs every iteration in its own git worktree + branch + PR unconditionally; the F0/F11 leak-guard fails closed if a run touches the main working tree
+- Iterate ADRs are written as run-id-keyed decision-drops and numbered at /shipwright-changelog release time, ending the parallel-iterate ADR-number collision
+
+### Removed
+
+- Opt-in parallel-iterate mode and the canonical/secondary session-role machinery (detect_parallel_sessions, write_session_role, check_session_role, session_role) - isolation is now structural
+
+### Fixed
+
+- shipwright-compliance: 6-column /shipwright-adopt FR tables are now parsed by the RTM data collector. The FR-table regex previously matched only 3- and 5-column tables, so requirements in adopted specs with a trailing column were silently dropped from the traceability matrix.
+- shipwright-compliance: RTM data collection resolves shipwright_events.jsonl via the git common dir. /shipwright-iterate finalization run inside a git worktree now reads the main repo's (gitignored) event log instead of an empty one — fixes the false 'Traceability coverage 0%' that the check_rtm_coverage pre-commit hook soft-blocked on adopted projects.
+- Iterate (F7) work_completed events now reach the main repo's shipwright_events.jsonl under /shipwright-iterate worktree isolation — a new worktree-aware resolver (events_log.resolve_events_path, via git-common-dir) replaces the literal project_root join that wrote a throwaway worktree copy discarded on `git worktree remove`. The F11 finalization verifier and the F5b dashboard event source resolve the log the same way.
+- The iterate finalization verifier no longer emits a spurious 'build_dashboard has run_id' WARN on every run — F5b now embeds the iterate run_id in the build_dashboard.md header, giving the verifier a deterministic marker (the F6 commit SHA cannot exist when F5b renders).
+- /shipwright-iterate SKILL.md corrections: the run_id template (Step C + B1a) now shows the canonical dashed form iterate-{YYYY-MM-DD}-{slug} — matching RUN_ID_STRICT / append_iterate_entry.py, which reject the previous iterate-{YYYYMMDD} example; and the F11 gate-check defers to the worktree-aware deterministic verifier instead of grepping the worktree-local event-log copy that F7 (now worktree-aware) no longer writes.
+
 ## [v0.18.0] - 2026-05-11
 
 ### Added

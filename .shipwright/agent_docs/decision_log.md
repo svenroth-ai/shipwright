@@ -724,3 +724,29 @@ shipwright/
 - **Rationale:** Trailing-column tolerance keeps the existing capture groups (body stays group 4), so 3/5-col behavior is provably unchanged (old-vs-new regex probe: identical on 13 cases). Reusing the established git-common-dir pattern keeps the worktree fix consistent with session_role and detect_parallel_sessions.
 - **Consequences:** Adopted/brownfield projects now get accurate event-sourced RTM coverage; worktree-based iterate finalization no longer false-blocks commits. 3-/5-column parsing and non-worktree event-log reads are byte-identical to before. 312 compliance tests pass; F0.5 cli surface verified.
 - **Rejected:** Importing session_role._resolve_main_repo_root cross-plugin (fragile sys.path coupling to a private shared function; ~15-line duplication is cheaper). Touching the check_rtm_coverage hook (the hook is correct — it read bad input).
+
+---
+
+### ADR-049: Unconditional worktree isolation for /shipwright-iterate
+- **Date:** 2026-05-16
+- **Section:** Iterate - change: unconditional worktree isolation
+- **Run-ID:** iterate-2026-05-15-iterate-worktree-isolation
+- **Context:** Parallel /shipwright-iterate sessions shared one working tree; each ran git checkout -b without committing, so three change-sets mixed uncommitted in one tree. Worktree isolation was opt-in (a detected Parallel menu only); branch base was stale local main; F11 merged in the shared tree; ADR-number, CHANGELOG and iterate_history were merge/race hotspots. Incident 2026-05-15.
+- **Decision:** Every iterate run is unconditionally and structurally isolated. New B1a step setup_iterate_worktree.py always creates .worktrees/<slug> plus branch iterate/<slug> from freshly-fetched origin/<default>. F0/F11 check_iterate_isolation.py leak-guard fails closed on a main-tree leak. F11 pushes the branch and opens a PR (no merge-to-main). F3 writes a run-id-keyed decision-drop; aggregate_decisions.py assigns ADR-NNN at the serialized changelog step. The session-role machinery (4 scripts) is deleted.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Isolation must be structural, not detected: a session that stalls before writing a marker is invisible to marker-based detection. Logic lives wholly in the skill plus its tool scripts so every launcher (webui, VS Code, CLI) gets byte-identical behavior.
+- **Consequences:** Parallel iterates can no longer cross-write or collide on ADR numbers, CHANGELOG or iterate_history. Each run pays worktree rehydration cost (npm install / uv sync). Iterate runs never touch the main tree. C4 canon check and the finalization verifier are now decision-drop/run-id aware; the iterate Stop hook is worktree-aware. Self-review plus a full code review (7 findings, all addressed) completed.
+- **Rejected:** Conditional Parallel mode plus session-role markers (the prior design, itself a race). A merge-time ADR-renumber git hook for H (launcher/infra logic, not deterministically unit-testable) in favor of the decision-drop pattern mirroring the proven F4 changelog-drop.
+
+---
+
+### ADR-050: Worktree-aware event-log resolution
+- **Date:** 2026-05-16
+- **Section:** Iterate — bug: events.jsonl worktree-awareness + dashboard run_id WARN
+- **Run-ID:** iterate-2026-05-16-fix-events-worktree-aware
+- **Context:** Under /shipwright-iterate worktree isolation, F7 recorded its work_completed event at the literal --project-root (the ephemeral worktree), so the event was discarded on `git worktree remove` and never reached the main repo's shipwright_events.jsonl. The F11 verifier's check_events_has_commit read the same empty worktree copy. Separately, the dashboard run_id check WARNed every iterate because F5b renders build_dashboard.md before the F6 commit SHA exists.
+- **Decision:** Added shared SSoT helper events_log.resolve_events_path (git rev-parse --git-common-dir) and wired the worktree-reachable accessors to it: record_event.py (F7 read/append + lock path), verifiers/iterate_checks.check_events_has_commit (F11), config.read_events (F5b dashboard). The F0/F11 leak-guard (worktree_isolation.py) exempts shipwright_events.jsonl(.lock) as a designed main-tree write. F5b embeds the iterate run_id in the dashboard header so the verifier passes deterministically.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Models compliance's data_collector._resolve_events_path but hardens it: drops --path-format=absolute (a Git 2.31+ dependency that would silently fall back on older git) and emits a warnings.warn diagnostic on the git-failure fallback so silent data loss is visible; strips GIT_DIR/GIT_COMMON_DIR/GIT_WORK_TREE so resolution stays pinned to project_root. The deterministic run_id embed replaces a brittle mtime heuristic.
+- **Consequences:** F7 events now reach the main repo's event log and the F11 verifier finds them; the dashboard WARN is gone. Tracked-events repos (the Shipwright monorepo itself) get an uncommitted 'M shipwright_events.jsonl' in the main tree post-F7 — the existing chore-commit pattern captures it. A drift meta-test (test_events_log_ssot.py, forward+reverse) guards the SSoT. Self-Review: 7-point pass; 2629 tests green + 0 regressions (7 pre-existing baseline verified on origin/main); external + code review findings applied.
+- **Rejected:** mtime-600s dashboard freshness heuristic (brittle to clock skew/slow CI — external review). Re-rendering the dashboard between F7 and F11 (leaves build_dashboard.md dirty post-commit, never in the PR — fights atomic-F6). Stale-lock bypass for the centralized .lock (gold-plating — _FileLock uses crash-safe OS advisory locks). Migrating data_collector to the shared helper (cross-plugin import architecture change, out of scope; a parity test guards drift instead).
