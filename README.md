@@ -28,7 +28,7 @@ From one-line description to deployed, tested, secured app — via a cleanly orc
 </tr>
 </table>
 
-The Command Center is the browser surface for the same skills you run in the terminal or VS Code Extension. Instead of keeping 4 terminal windows or VS Code sessions open for 4 projects, you get one kanban board, one inbox for agent questions, and one place to launch a new pipeline or iterate. Claude still runs in your own terminal or VS Code Extension — the Command Center generates a ready-to-paste command when you launch, then follows the session live. Installs automatically with `scripts/install.sh` — see [Getting Started](#getting-started).
+The Command Center is the browser surface for the same skills you run in the terminal or VS Code Extension. Instead of keeping 4 terminal windows or VS Code sessions open for 4 projects, you get one kanban board, one inbox for agent questions, and one place to launch a new pipeline or iterate. When you launch, the `claude` command runs in an embedded terminal on the task page — or your own terminal / VS Code Extension if you prefer — and the Command Center follows the session live. It lives in its own repo — see [Start the Command Center](#start-the-command-center).
 
 ## Why Shipwright?
 
@@ -70,20 +70,21 @@ User Description
 └─────────────┬──────────────┘
               ▼
 ┌────────────────────────────┐
-│ shipwright-security        │  Scanner Chain → Classify → Remediation Loop → Report
-└─────────────┬──────────────┘
-              ▼
-┌────────────────────────────┐
-│ shipwright-deploy          │  Jelastic (Infomaniak) → Smoke Test → Rollback on Failure
-└─────────────┬──────────────┘
-              ▼
-┌────────────────────────────┐
 │ shipwright-changelog       │  Parse Commits → Changelog → Version Tag → PR
 └─────────────┬──────────────┘
               ▼
 ┌────────────────────────────┐
-│ shipwright-compliance      │  Traceability → Test Evidence → Change History → SBOM → Dashboard
+│ shipwright-deploy          │  Jelastic (Infomaniak) → Smoke Test → Rollback on Failure
 └────────────────────────────┘
+
+The orchestrator runs 7 phases: project → design → plan → build → test
+→ changelog → deploy. Two more skills run out-of-band — not orchestrator
+phases:
+
+  shipwright-security    Semgrep + Trivy + Gitleaks → Classify → Remediation → Report
+                         — run manually after test, or via CI workflow
+  shipwright-compliance  Traceability → Test Evidence → Change History → SBOM → Dashboard
+                         — auto-background after every phase + on-demand audit
 ```
 
 After the initial build, day-to-day changes run through `/shipwright-iterate` — complexity-adaptive, keeps every artifact in sync.
@@ -101,7 +102,7 @@ After the initial build, day-to-day changes run through `/shipwright-iterate` �
 
 **From the Shipwright Command Center**
 
-Multi-project kanban across every Shipwright task you touch. Click a task for its live transcript; click **Launch** to start a new pipeline or iterate. The Command Center hands you the exact `claude` command to paste in your terminal or VS Code Extension — Claude runs there, the Command Center follows along. Same skills, same events, same compliance artifacts as running directly. What you gain is the overview: 3+ projects, 8+ tasks, one board instead of a pile of windows and VS Code sessions.
+Multi-project kanban across every Shipwright task you touch. Click a task for its live transcript; click **Launch** to start a new pipeline or iterate — the `claude` command auto-runs in an embedded terminal on the task page (or copy it into your own terminal / VS Code Extension if you prefer). The Command Center never spawns Claude itself; it follows the session live. Same skills, same events, same compliance artifacts as running directly. What you gain is the overview: 3+ projects, 8+ tasks, one board instead of a pile of windows and VS Code sessions.
 
 **Standalone skills on any project**
 
@@ -132,6 +133,7 @@ Profiles define the entire stack: versions, folder structure, deploy target, tes
 | Profile | Stack | Deploy |
 |---------|-------|--------|
 | `supabase-nextjs` | Next.js 16 · Supabase · Tailwind 4 · shadcn/ui · Zustand · Vitest · Playwright | Jelastic (Infomaniak) |
+| `vite-hono` | Vite + React (frontend) · Hono (backend) · multi-service dev server · Vitest · Playwright | — |
 
 **Custom profiles.** Drop a new JSON file into `shared/profiles/` to define your own stack — versions, folder layout, deploy target, test strategy, linting, CI, and architecture rules. Shipwright picks it up automatically and `/shipwright-run` can infer it from your project description.
 
@@ -173,8 +175,9 @@ make dev-server    # Terminal 1 — backend on :3847
 make dev-client    # Terminal 2 — frontend on :5173
 ```
 
-The Command Center observes your running Claude sessions via their JSONL
-transcripts — it spawns no Claude process itself. Full install,
+The Command Center never spawns Claude itself — **Launch** runs the
+`claude` command in an embedded terminal (or your own terminal, if you
+prefer) and watches its JSONL transcript. Full install,
 parallel-worktree tips, Windows autostart, and custom actions for your
 own slash skills are documented in the WebUI repo's
 **[docs/guide.md](https://github.com/svenroth-ai/shipwright-webui/blob/main/docs/guide.md)**.

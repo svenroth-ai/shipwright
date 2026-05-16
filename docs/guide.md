@@ -20,7 +20,7 @@ After the initial build, daily work happens through `/shipwright-iterate` -- com
 
 Every phase emits events into an append-only log. That log is the single source of truth -- and the raw material for audit-ready compliance documentation (traceability matrix, test evidence, SBOM, change history), regenerated automatically as a side effect of every phase completion. Drift that accumulates between sessions (manual edits, force-pushes, content rot that passes mtime checks) is caught on demand via `/shipwright-compliance` — a cross-artifact detective audit across 7 check groups. You get the compliance paperwork that usually costs weeks of manual work as a byproduct of just building the software.
 
-You can drive all of this from the Claude Code VSCode Extension or CLI terminal, or through the **Shipwright Command Center** — a local web UI with a kanban board across every Shipwright task, live transcripts per task, and a global inbox for agent questions. Instead of hunting through terminal windows or VS Code sessions, one place shows where everything stands. When you launch a new pipeline or iterate from the Command Center, it hands you the `claude` command to paste in your own terminal or VS Code Extension. Claude runs there; the Command Center follows the session live.
+You can drive all of this from the Claude Code VSCode Extension or CLI terminal, or through the **Shipwright Command Center** — a local web UI with a kanban board across every Shipwright task, live transcripts per task, and a global inbox for agent questions. Instead of hunting through terminal windows or VS Code sessions, one place shows where everything stands. When you launch a new pipeline or iterate from the Command Center, the `claude` command runs in an embedded terminal right on the task page — or you copy it into your own terminal or VS Code Extension if you prefer. Either way the Command Center never spawns Claude itself; it follows the session transcript live.
 
 ### Three ways to use it
 
@@ -28,7 +28,7 @@ You can drive all of this from the Claude Code VSCode Extension or CLI terminal,
 - **Daily iteration** -- `/shipwright-iterate "..."` for every change after the first deploy. Classifies intent, assesses complexity, runs the right amount of process.
 - **Single skill** -- `/shipwright-plan`, `/shipwright-test`, `/shipwright-security`, or any other skill on its own -- even on projects that never used Shipwright before.
 
-All three work from the Claude Code VSCode Extension or CLI terminal directly. The Command Center WebUI layers a multi-project kanban on top — you still run Claude in your own terminal or VS Code Extension, you just stop juggling windows and VS Code sessions to see what's where.
+All three work from the Claude Code VSCode Extension or CLI terminal directly. The Command Center WebUI layers a multi-project kanban on top — Claude runs in an embedded terminal on the task page (or your own terminal / VS Code Extension if you prefer), you just stop juggling windows and VS Code sessions to see what's where.
 
 ### Who is Shipwright for?
 
@@ -233,7 +233,7 @@ The baseline above already installed everything in this table. It stays here as 
 | Claude Code | 2.1.132+ | AI agent runtime (CLI or VSCode Extension) |
 | Python | 3.11+ | Plugin scripts (run via uv) |
 | uv | Latest | Python package manager + venv |
-| Node.js | 18+ | Command Center WebUI; required for `npm install -g <claude>` if you went the npm route |
+| Node.js | 20+ | Command Center WebUI; required for `npm install -g <claude>` if you went the npm route |
 | Git | 2.x+ | Version control |
 
 | Optional | Needed for |
@@ -826,11 +826,11 @@ If a session start finds a legacy top-level `planning/` directory, the drift det
 3. Runs integration tests against a real (localhost) Supabase instance (`npx vitest run --config vitest.integration.config.ts`). These verify CRUD operations, RLS policies, and complex queries with no mocks. Uses cascade-delete cleanup via test users. Fast-fails on infrastructure errors (ECONNREFUSED). Skipped if profile has no `testing.integration` config or `tests/integration/` directory does not exist.
 4. Runs pgTAP database tests (`supabase test db`) if `supabase/tests/database/` exists. These verify RLS policies and constraints at the schema level.
 5. Runs a smoke test against your dev URL (checking for HTTP 200 on `/api/health`). If the server is not running, it attempts to diagnose and fix the issue before skipping.
-4. If E2E test plans exist from `/shipwright-plan` but no `.spec.ts` files have been written yet, it generates Playwright specs from the plans using the Page Object Model pattern.
-5. Runs Playwright E2E tests (starts and stops the dev server automatically). Failed tests can be debugged with a browser-fixer subagent that reads screenshots and error messages.
-6. Runs design fidelity verification as a **regressions-only safety net**. Reads `design-fidelity-report.json` (what the build phase already verified) and triages each screen: regressions (was passing in build, now failing), persistent failures (build gave up), and unchecked screens (never verified). Only fixes regressions and persistent failures -- resolved screens are skipped. Uses code-level structural comparison (no screenshots) with agent deep analysis for flagged screens.
-7. Runs an E2E results verification step: compares `shipwright_test_results.json` against Playwright's authoritative `e2e-results.json` to catch count discrepancies (e.g., setup project tests being counted as E2E tests). If numbers diverge, the pipeline corrects `shipwright_test_results.json` and documents the reason.
-8. Produces a structured results summary with explicit status for every layer.
+6. If E2E test plans exist from `/shipwright-plan` but no `.spec.ts` files have been written yet, it generates Playwright specs from the plans using the Page Object Model pattern.
+7. Runs Playwright E2E tests (starts and stops the dev server automatically). Failed tests can be debugged with a browser-fixer subagent that reads screenshots and error messages.
+8. Runs design fidelity verification as a **regressions-only safety net**. Reads `design-fidelity-report.json` (what the build phase already verified) and triages each screen: regressions (was passing in build, now failing), persistent failures (build gave up), and unchecked screens (never verified). Only fixes regressions and persistent failures -- resolved screens are skipped. Uses code-level structural comparison (no screenshots) with agent deep analysis for flagged screens.
+9. Runs an E2E results verification step: compares `shipwright_test_results.json` against Playwright's authoritative `e2e-results.json` to catch count discrepancies (e.g., setup project tests being counted as E2E tests). If numbers diverge, the pipeline corrects `shipwright_test_results.json` and documents the reason.
+10. Produces a structured results summary with explicit status for every layer.
 
 **The seven test layers and enforcement rules** are central to how the pipeline decides whether to continue:
 
@@ -1058,9 +1058,9 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 Pre-backlog buffer for findings emitted by hooks, scans, and audits. Triage and the backlog (`ExternalTask` in [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui)) are separate stores; **promote** is the explicit bridge between them.
 
 - **Store:** `.shipwright/triage.jsonl` (per project, gitignored, append-only with history events).
-- **Producers (Iterate 1a):** `audit_phase_quality_on_stop` (Tier-1 FAILs with 24h dedup) and `audit_detector.mirror_findings_to_triage` (compliance findings + auto-dismiss when resolved). More producers (security / CI / performance / F0.5 / drift) land in Iterate 2.
+- **Producers:** `audit_phase_quality_on_stop` (Tier-1 FAILs, 24h dedup) and `audit_detector.mirror_findings_to_triage` (compliance findings + auto-dismiss when resolved) shipped first; the security-report, performance-gate, F0.5 surface-verification, and drift (`check_drift` + `artifact_sync`) producers followed. See [docs/triage-inbox.md](triage-inbox.md) for the full producer table.
 - **Consumer:** the Stop hook `aggregate_triage_on_stop` regenerates `.shipwright/agent_docs/triage_inbox.md` after every iterate finalize.
-- **Promote (CLI):** `uv run shared/scripts/tools/triage_promote.py --id trg-XXXXXXXX --task-ref "EXT:linear-ENG-7"`. The WebUI Triage tab + one-click promote land in Iterate 3.
+- **Promote:** from the CLI — `uv run shared/scripts/tools/triage_promote.py --id trg-XXXXXXXX --task-ref "EXT:linear-ENG-7"` — or one-click from the Triage tab in [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui).
 
 Mapping is mechanical: `critical→P0 / high→P1 / medium→P2 / low→P3 / info→P3` for severity; `compliance→compliance / else→engineering` for source domain. Both values are recorded on the triage record as `suggestedPriority` + `suggestedDomain` so the promote step doesn't have to recompute them — the mapping matches the `leadwright` ExternalTask extension (see [`leadwright/docs/specs/phase-1-external-task-extension.md`](https://github.com/svenroth-ai/leadwright)).
 
@@ -1507,7 +1507,7 @@ Shipwright runs a CLAUDE.md drift check automatically at every session start (vi
 | | /shipwright-run | /shipwright-iterate |
 |---|---|---|
 | **When** | New project or major extension | Daily changes, bug fixes, features of any size |
-| **Pipeline** | Full 8-phase SDLC | Complexity-adaptive (trivial → medium, or escape to full pipeline) |
+| **Pipeline** | Full 7-phase SDLC | Complexity-adaptive (trivial → medium, or escape to full pipeline) |
 | **Complexity** | Always full | Auto-assessed: trivial, small, medium, large |
 | **Duration** | Hours | Minutes (trivial/small) to ~1 hour (medium) |
 | **Risk detection** | Implicit in phase structure | Explicit: 8 canonical risk flags with safety floors |
@@ -1974,6 +1974,44 @@ Or read `CHANGELOG.md` in the repository root for release notes.
 
 ---
 
+## 13. Command Center (WebUI)
+
+Running more than one Shipwright project at once? The **Shipwright
+Command Center** is an optional local web application that gives you
+**one Kanban board across every project**, a live transcript per task,
+and a global inbox for every "Claude needs permission to..." prompt —
+so you stop hunting between VS Code windows to see where
+everything stands.
+
+The web server never spawns Claude itself. When you hit **Launch** on a
+task, the `claude` command auto-runs in an embedded terminal pane on the
+task detail page — the embedded terminal hosts a shell, Claude runs
+inside it. Prefer your own setup? The same command is available to copy
+into your terminal or the VS Code Extension. Either way the Command
+Center watches the resulting session transcript live — fire and forget:
+the dashboard updates while you keep coding.
+
+The Command Center lives in its own repo:
+**[shipwright-webui](https://github.com/svenroth-ai/shipwright-webui)**.
+
+### Quick start
+
+```bash
+git clone https://github.com/svenroth-ai/shipwright-webui.git ~/shipwright-webui
+cd ~/shipwright-webui
+make install       # npm install in server/ + client/
+make dev-server    # Terminal 1 — backend on :3847
+make dev-client    # Terminal 2 — frontend on :5173
+```
+
+Then open <http://localhost:5173>. The full user guide — installation,
+daily workflow, recommended terminal setup, custom actions for your
+own slash skills, Windows autostart — lives at
+**[docs/guide.md](https://github.com/svenroth-ai/shipwright-webui/blob/main/docs/guide.md)**
+in the WebUI repo.
+
+---
+
 ## Appendix A: Glossary
 
 ### Plain-Language Index
@@ -2009,44 +2047,9 @@ If you encountered an unfamiliar term in this guide, this is the fast way in. Ea
 | **Conventional Commits** | A commit message format (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`) that enables automated changelog generation and semantic versioning. |
 | **IREB** | International Requirements Engineering Board. Shipwright aligns its requirements specs with IREB practices: structured requirements with acceptance criteria that map directly to tests. |
 | **Agent Docs** | The `.shipwright/agent_docs/` directory containing architecture, conventions, decision log, sprint status, and session handoff documents. These files provide context for AI agents working on the project. |
-| **Feature Branch** | A Git branch (`feature/{name}`) created during the build phase. Each split is built on its own feature branch, merged to `main` via PR during the changelog phase. |
+| **Feature Branch** | A Git branch created during the build phase (`{project-slug}/NN-name`, one per section) or by an iterate (`iterate/<slug>`), merged to `main` via PR. |
 | **Context Pressure** | A measure of how full Claude Code's context window is. Shipwright monitors tool call counts and estimates remaining capacity. When pressure is high, it triggers a session handoff. |
 | **Session Handoff** | An auto-generated document (`.shipwright/agent_docs/session_handoff.md`) containing current state, completed work, and next steps. Written before context compaction so a new session can resume seamlessly. |
-
----
-
-## 11. Command Center (WebUI)
-
-Running more than one Shipwright project at once? The **Shipwright
-Command Center** is an optional local web application that gives you
-**one Kanban board across every project**, a live transcript per task,
-and a global inbox for every "Claude needs permission to..." prompt —
-so you stop hunting between VS Code windows to see where
-everything stands.
-
-It spawns no Claude itself — you launch Claude in your own terminal or
-the VS Code Extension, and the Command Center watches the resulting
-session transcript live. Fire and forget: the dashboard updates while
-you keep coding.
-
-The Command Center lives in its own repo:
-**[shipwright-webui](https://github.com/svenroth-ai/shipwright-webui)**.
-
-### Quick start
-
-```bash
-git clone https://github.com/svenroth-ai/shipwright-webui.git ~/shipwright-webui
-cd ~/shipwright-webui
-make install       # npm install in server/ + client/
-make dev-server    # Terminal 1 — backend on :3847
-make dev-client    # Terminal 2 — frontend on :5173
-```
-
-Then open <http://localhost:5173>. The full user guide — installation,
-daily workflow, recommended terminal setup, custom actions for your
-own slash skills, Windows autostart — lives at
-**[docs/guide.md](https://github.com/svenroth-ai/shipwright-webui/blob/main/docs/guide.md)**
-in the WebUI repo.
 
 ---
 

@@ -20,15 +20,21 @@ plugins/                    # Claude Code plugins (one per SDLC phase)
   shipwright-compliance/    # IREB traceability, RTM, SBOM, dashboard
   shipwright-iterate/       # Daily iteration (complexity-adaptive)
   shipwright-preview/       # Local browser preview
+  shipwright-adopt/         # Brownfield onboarding (analyze an existing repo)
 # Command Center WebUI lives at github.com/svenroth-ai/shipwright-webui since v0.4.0
 shared/                     # Shared across all plugins
-  profiles/                 # Stack profile definitions (JSON)
+  profiles/                 # Stack profile definitions (JSON) + deploy profiles
   templates/                # CLAUDE.md, .shipwright/agent_docs, CI templates
+  prompts/                  # Shared subagent prompts (code_reviewer, iterate_reviewer)
+  schemas/                  # JSON schemas (run_config v2)
+  config/                   # Shared config (external_review.json)
   scripts/                  # Shared Python utilities
   tests/                    # Tests for shared scripts and hooks
+  constitution.md           # ALWAYS / ASK FIRST / NEVER rules for all agents
 scripts/                    # Top-level scripts (install.sh, verify-setup.sh)
 docs/                       # User-facing docs (guide.md, hooks-and-pipeline.md)
 integration-tests/          # Cross-plugin integration tests
+CHANGELOG-unreleased.d/     # Pending changelog drop files (aggregated at release)
 ```
 
 ## HOW
