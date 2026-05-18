@@ -1,17 +1,13 @@
 name: Security Scan
 
-# DORMANT: Auto-triggers are disabled until Phase B (Go-Live).
-# When activated:
-#   - Uncomment pull_request and schedule below.
-#   - Fork PRs: SARIF upload + PR comment are skipped via repo-equality guard.
-#   - SARIF from all three OSS scanners uploads to GitHub Security tab
-#     (category: shipwright-security).
-# To activate: uncomment the pull_request and schedule triggers below.
+# Fork PRs: SARIF upload + PR comment are skipped via a repo-equality guard.
+# SARIF from all three OSS scanners uploads to the GitHub Security tab
+# (category: shipwright-security).
 on:
-  # pull_request:
-  #   branches: [main]
-  # schedule:
-  #   - cron: '0 6 * * 1'  # Monday 06:00 UTC — weekly full scan
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'  # Monday 06:00 UTC — weekly full scan
   workflow_dispatch:
 
 permissions:
