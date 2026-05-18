@@ -40,14 +40,17 @@ jobs:
           for plugin in plugins/*/; do
             if [ -f "$plugin/pyproject.toml" ] && [ -d "$plugin/tests" ]; then
               echo "--- Running tests in $plugin ---"
-              (cd "$plugin" && uv sync && uv run pytest tests/ -v)
+              # Plugins declare pytest as an optional `dev` extra (or not at
+              # all), so a plain `uv sync` does not install it. `uv run --with`
+              # provisions pytest + pytest-mock on top of the plugin's own env.
+              (cd "$plugin" && uv run --with pytest --with pytest-mock pytest tests/ -v)
             fi
           done
 
       - name: Run integration tests
         run: |
           if [ -d integration-tests ]; then
-            uv run pytest integration-tests/ -v || true
+            uv run --with pytest --with pytest-mock pytest integration-tests/ -v || true
           fi
 
   # WebUI client + server checks moved to

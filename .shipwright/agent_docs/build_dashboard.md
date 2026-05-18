@@ -1,5 +1,5 @@
 # Project Activity Dashboard
-> Updated: 2026-05-18 15:29 UTC | Session: unknown
+> Updated: 2026-05-18 18:52 UTC | Session: f6f5e65b-ff7c-47c3-ac60-dafb9abeada3 | Run: iterate-2026-05-18-fix-launch-blocker-tests
 
 ## Recent Changes (33 iterations)
 
@@ -40,7 +40,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-16 | Unit: 3385/3398 | Integration: 110/110 | Smoke: not_run | (iterate)
+Last run: 2026-05-18 | Unit: 1602/1602 | Integration: 1905/1905 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

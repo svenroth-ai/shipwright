@@ -44,7 +44,11 @@ def test_validate_without_token(monkeypatch):
     output = json.loads(result.stdout)
     assert output["success"] is False
     assert output["jelastic_token"] is False
-    assert any("JELASTIC_TOKEN" in w for w in output["warnings"])
+    # A missing JELASTIC_TOKEN is a hard error (deployment will fail), not a
+    # warning — validate-deploy.py appends it to `errors`, and `success` is
+    # `len(errors) == 0`. The earlier `output["warnings"]` check contradicted
+    # the `success is False` assertion above.
+    assert any("JELASTIC_TOKEN" in e for e in output["errors"])
 
 
 def test_validate_result_structure(monkeypatch):

@@ -8,3 +8,8 @@ __pycache__/
 tests/fixtures/*/.shipwright/
 # Lockfiles generated inside adopt test fixtures by local uv runs
 tests/fixtures/*/uv.lock
+# The nested-shipwright fixture deliberately ships a shipwright_run_config.json
+# as a nested-project detector marker. Re-include it past the repo-wide
+# `shipwright_*_config.json` ignore so fresh clones / CI checkouts / iterate
+# worktrees carry it — test_nested_project_detector needs it on disk.
+!tests/fixtures/nested-shipwright/webui/shipwright_run_config.json
