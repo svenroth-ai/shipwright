@@ -286,7 +286,6 @@ ALLOWLIST: dict[str, list[str]] = {
         # constructing legacy paths are removed from the allowlist.
         "shared/scripts/hooks/generate_handoff_on_stop.py",
         "shared/scripts/hooks/check_secrets.sh",
-        "shared/scripts/hooks/check_file_size.sh",
         "shared/scripts/lib/spec_parser.py",
         "shared/scripts/lib/external_review_config.py",
         "shared/scripts/tools/verifiers/common.py",

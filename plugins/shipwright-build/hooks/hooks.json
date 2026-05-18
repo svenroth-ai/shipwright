@@ -57,7 +57,7 @@
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_file_size.sh\""
+            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/check_file_size.py\""
           }
         ]
       },
