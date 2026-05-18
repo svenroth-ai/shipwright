@@ -328,10 +328,10 @@ Shipwright enforces quality through mechanical hooks — not advisory prose. Hoo
 | Dangerous Command Guard | `git push --force` to main, `rm -rf /`, `DROP DATABASE` |
 | Secret Scanning | API keys, tokens, passwords, PEM keys in source code |
 | Destructive Migration Scan | `DROP TABLE` / `DROP COLUMN` without rollback SQL |
-| File Size Guard | Source files exceeding 300 lines |
+| File Size Nudge | An edit pushing a source file past the line guideline (advisory, non-blocking) |
 | Drift Detection | Stale CLAUDE.md when source files changed |
 
-All hooks use exit code 2 (soft-block): you can override, but the override is logged. See **[docs/guide.md](docs/guide.md)** for details on the constitution, TDD workflow, code review, and migration safety.
+Blocking hooks use exit code 2 (soft-block): you can override, but the override is logged. Advisory hooks (file-size nudge, drift detection) never block — they only surface a note. See **[docs/guide.md](docs/guide.md)** for details on the constitution, TDD workflow, code review, and migration safety.
 
 ## Contributing
 

@@ -1688,7 +1688,7 @@ Hooks are Python and shell scripts that fire on specific Claude Code events. The
 | `validate_command.sh` | PreToolUse Bash | Blocks `git push --force` to main, `rm -rf /`, `DROP DATABASE` |
 | `check_secrets.sh` | PostToolUse Write/Edit | Detects API keys (`sk-...`, `AKIA...`, `ghp_...`), PEM keys, passwords, connection strings |
 | `check_destructive_migration.sh` | PostToolUse Write/Edit on .sql | Warns on `DROP TABLE`, `DROP COLUMN`, `TRUNCATE` without a matching `down.sql` |
-| `check_file_size.sh` | PostToolUse Write/Edit | Warns when source files exceed 300 lines |
+| `check_file_size.py` | PostToolUse Write/Edit | Non-blocking nudge when an edit pushes a source file past the line guideline (default 300); silent on edits to files already over the limit |
 
 **Multi-session lifecycle (orchestrator-driven phases):**
 

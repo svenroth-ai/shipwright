@@ -199,61 +199,141 @@ class TestCheckSecrets:
 
 
 class TestCheckFileSize:
-    """Tests for file size guard hook."""
+    """Tests for the file-size nudge hook (non-blocking, crossing-only)."""
 
-    def _make_payload(self, file_path: str) -> str:
-        return json.dumps({"tool_input": {"file_path": file_path}})
+    @staticmethod
+    def _lines(n: int) -> str:
+        """File content with exactly ``n`` newline bytes."""
+        return "x\n" * n
 
-    def test_allows_small_file(self, tmp_path):
-        f = tmp_path / "small.py"
-        f.write_text("\n".join(f"line {i}" for i in range(50)))
-        result = run_hook("check_file_size.sh", self._make_payload(str(f)))
+    def _edit_payload(
+        self, file_path: str, old: str = "x", new: str = "x",
+        replace_all: bool = False,
+    ) -> str:
+        return json.dumps({
+            "tool_name": "Edit",
+            "tool_input": {
+                "file_path": file_path,
+                "old_string": old,
+                "new_string": new,
+                "replace_all": replace_all,
+            },
+        })
+
+    def _write_payload(self, file_path: str, content: str = "") -> str:
+        return json.dumps({
+            "tool_name": "Write",
+            "tool_input": {"file_path": file_path, "content": content},
+        })
+
+    def test_never_blocks_even_when_over_limit(self, tmp_path):
+        """Crossing the limit emits a nudge but must never exit 2 / block."""
+        f = tmp_path / "big.py"
+        f.write_text(self._lines(900))
+        # before = 900 - 700 = 200 -> this edit crossed the threshold.
+        payload = self._edit_payload(str(f), old="x", new="x" + "\n" * 700)
+        result = run_python_hook("check_file_size.py", payload, cwd=str(tmp_path))
         assert result.returncode == 0
+        assert "blocked" not in result.stdout
 
-    def test_blocks_large_file(self, tmp_path):
-        f = tmp_path / "large.py"
-        # 401 items joined by \n = 400 lines (wc -l counts newlines)
-        f.write_text("\n".join(f"line {i}" for i in range(401)))
-        result = run_hook("check_file_size.sh", self._make_payload(str(f)))
-        assert result.returncode == 2
-        assert "400" in result.stdout
+    def test_small_file_no_nudge(self, tmp_path):
+        f = tmp_path / "small.py"
+        f.write_text(self._lines(50))
+        result = run_python_hook(
+            "check_file_size.py", self._edit_payload(str(f)), cwd=str(tmp_path),
+        )
+        assert result.returncode == 0
+        assert result.stdout.strip() == ""
+
+    def test_exact_threshold_no_nudge(self, tmp_path):
+        f = tmp_path / "exact.py"
+        f.write_text(self._lines(300))
+        result = run_python_hook(
+            "check_file_size.py", self._edit_payload(str(f)), cwd=str(tmp_path),
+        )
+        assert result.returncode == 0
+        assert result.stdout.strip() == ""
+
+    def test_edit_crossing_threshold_nudges(self, tmp_path):
+        """Edit that grows a file from <=300 to >300 fires the nudge."""
+        f = tmp_path / "grown.py"
+        f.write_text(self._lines(305))
+        # old has 0 newlines, new has 10 -> delta +10 -> before = 295.
+        payload = self._edit_payload(str(f), old="x", new="x" + "\n" * 10)
+        result = run_python_hook("check_file_size.py", payload, cwd=str(tmp_path))
+        assert result.returncode == 0
+        assert "305" in result.stdout
         assert "300" in result.stdout
 
-    def test_allows_exact_threshold(self, tmp_path):
-        f = tmp_path / "exact.py"
-        f.write_text("\n".join(f"line {i}" for i in range(300)))
-        result = run_hook("check_file_size.sh", self._make_payload(str(f)))
+    def test_edit_on_already_large_file_silent(self, tmp_path):
+        """The key de-noising case: a net-zero edit to an already-oversized file."""
+        f = tmp_path / "legacy.py"
+        f.write_text(self._lines(420))
+        payload = self._edit_payload(str(f), old="a", new="b")  # delta 0
+        result = run_python_hook("check_file_size.py", payload, cwd=str(tmp_path))
         assert result.returncode == 0
+        assert result.stdout.strip() == ""
+
+    def test_edit_growing_already_large_file_silent(self, tmp_path):
+        """Growing an already-oversized file further still doesn't re-fire."""
+        f = tmp_path / "legacy.py"
+        f.write_text(self._lines(420))
+        # before = 420 - 5 = 415, already over the limit.
+        payload = self._edit_payload(str(f), old="x", new="x" + "\n" * 5)
+        result = run_python_hook("check_file_size.py", payload, cwd=str(tmp_path))
+        assert result.returncode == 0
+        assert result.stdout.strip() == ""
+
+    def test_write_oversized_file_nudges(self, tmp_path):
+        """A Write producing an oversized file nudges when git can't prove
+        it was already large (tmp_path is not a git repo)."""
+        f = tmp_path / "fresh.py"
+        f.write_text(self._lines(360))
+        result = run_python_hook(
+            "check_file_size.py", self._write_payload(str(f)), cwd=str(tmp_path),
+        )
+        assert result.returncode == 0
+        assert "360" in result.stdout
 
     def test_skips_markdown(self, tmp_path):
         f = tmp_path / "docs.md"
-        f.write_text("\n".join(f"line {i}" for i in range(500)))
-        result = run_hook("check_file_size.sh", self._make_payload(str(f)))
+        f.write_text(self._lines(500))
+        payload = self._edit_payload(str(f), old="x", new="x" + "\n" * 400)
+        result = run_python_hook("check_file_size.py", payload, cwd=str(tmp_path))
         assert result.returncode == 0
-
-    def test_skips_json(self, tmp_path):
-        f = tmp_path / "package.json"
-        f.write_text("\n".join(f'"line_{i}": {i}' for i in range(500)))
-        result = run_hook("check_file_size.sh", self._make_payload(str(f)))
-        assert result.returncode == 0
+        assert result.stdout.strip() == ""
 
     def test_skips_lock_file(self, tmp_path):
         f = tmp_path / "package-lock.json"
-        f.write_text("\n".join(f"line {i}" for i in range(5000)))
-        result = run_hook("check_file_size.sh", self._make_payload(str(f)))
+        f.write_text(self._lines(5000))
+        payload = self._edit_payload(str(f), old="x", new="x" + "\n" * 4000)
+        result = run_python_hook("check_file_size.py", payload, cwd=str(tmp_path))
         assert result.returncode == 0
+        assert result.stdout.strip() == ""
 
     def test_skips_migration_sql(self, tmp_path):
         migration_dir = tmp_path / "migrations"
         migration_dir.mkdir()
         f = migration_dir / "001_big.sql"
-        f.write_text("\n".join(f"INSERT INTO t VALUES ({i});" for i in range(500)))
-        result = run_hook("check_file_size.sh", self._make_payload(str(f)))
+        f.write_text(self._lines(500))
+        payload = self._edit_payload(str(f), old="x", new="x" + "\n" * 400)
+        result = run_python_hook("check_file_size.py", payload, cwd=str(tmp_path))
         assert result.returncode == 0
+        assert result.stdout.strip() == ""
+
+    def test_missing_file_no_nudge(self, tmp_path):
+        result = run_python_hook(
+            "check_file_size.py",
+            self._edit_payload(str(tmp_path / "nope.py")),
+            cwd=str(tmp_path),
+        )
+        assert result.returncode == 0
+        assert result.stdout.strip() == ""
 
     def test_empty_payload(self):
-        result = run_hook("check_file_size.sh", "{}")
+        result = run_python_hook("check_file_size.py", "{}")
         assert result.returncode == 0
+        assert result.stdout.strip() == ""
 
 
 class TestCheckDrift:

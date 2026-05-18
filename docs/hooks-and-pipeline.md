@@ -675,7 +675,7 @@ phase to load explicitly.
 | PreToolUse | `{"tools": ["Bash"]}` | `validate_command.sh` | Blocks dangerous shell commands (rm -rf, force push, etc.) |
 | PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_destructive_migration.sh` | Warns on DROP/DELETE in .sql files without down.sql |
 | PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_secrets.sh` | Scans written files for API keys, tokens, passwords |
-| PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_file_size.sh` | Warns if file exceeds size limit |
+| PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_file_size.py` | Non-blocking nudge when an edit *crosses* the line guideline (default 300); silent on edits to already-oversized files (exit 0 always) |
 | PostToolUse | — (catch-all) | `track_tool_calls.py` | Increments tool call counter for context pressure detection |
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W1 TDD-order Tier-2 + I1-I4 infrastructure freshness + Q1/Q2 quality) |
 | Stop | — | `generate-handoff.py` | Session handoff (namespaced to `.shipwright/planning/handoffs/<loop_id>/` when `SHIPWRIGHT_LOOP_ID` set) |
