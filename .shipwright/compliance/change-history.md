@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-05-18T19:48:16Z
-Total commits: 660
+Generated: 2026-05-18T20:12:15Z
+Total commits: 661
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 660
 pie title Commit Types
     "feat" : 220
     "fix" : 172
-    "chore" : 113
+    "chore" : 114
     "docs" : 99
     "refactor" : 34
     "test" : 14
@@ -421,10 +421,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 113 commits
+### Chores (chore) — 114 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-18 | compliance | regenerate artefacts after launch-blocker fix iterate | a12455cc3128 |
 | 2026-05-18 | — | add CODE_OF_CONDUCT and activate CI workflows for public launch | 2671c69b9155 |
 | 2026-05-18 | — | scrub local identifiers for public release | b9d1d8564074 |
 | 2026-05-18 | — | track triage inbox, preview lockfile, and agent-doc updates | 1e4df72ef6cb |
@@ -723,7 +724,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 660 |
+| Total commits | 661 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 660 |
+| Human-authored commits | 661 |
 

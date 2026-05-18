@@ -36,6 +36,13 @@ jobs:
         uses: github/codeql-action/autobuild@v3
 
       - name: Perform analysis
+        # continue-on-error: a private repo without GitHub code scanning
+        # (Advanced Security) fails the SARIF upload with "Advanced Security
+        # must be enabled for this repository". The QL analysis still runs;
+        # once the repo is public, code scanning is available for free and
+        # this step succeeds normally. Mirrors the guard security.yml carries
+        # on its upload-sarif step.
         uses: github/codeql-action/analyze@v3
+        continue-on-error: true
         with:
           category: "/language:${{ matrix.language }}"

@@ -111,9 +111,23 @@ class TestCheckSecurityAvailable:
 
 class TestGetBackend:
 
-    def test_explicit_name_not_in_registry(self):
-        with pytest.raises(RuntimeError, match="No security scanner backend"):
-            get_backend("nonexistent_backend_xyz")
+    @patch.dict("os.environ", {}, clear=True)
+    @patch("shutil.which", return_value=None)
+    def test_explicit_name_not_in_registry(self, mock_which):
+        # Isolate the environment so an explicit name that is not in the
+        # registry deterministically falls through to the "No security
+        # scanner backend" error. Without this the test is non-hermetic: a
+        # host with semgrep/trivy/gitleaks installed (CI runner after the
+        # scanner-install step, or a dev box) auto-detects the OSS backend
+        # and get_backend() returns it instead of raising. Mirrors the
+        # isolation of test_no_backend_raises below.
+        saved = dict(BACKEND_REGISTRY)
+        BACKEND_REGISTRY.clear()
+        try:
+            with pytest.raises(RuntimeError, match="No security scanner backend"):
+                get_backend("nonexistent_backend_xyz")
+        finally:
+            BACKEND_REGISTRY.update(saved)
 
     @patch.dict("os.environ", {}, clear=True)
     @patch("shutil.which", return_value=None)
