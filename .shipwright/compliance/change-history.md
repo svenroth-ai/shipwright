@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-05-18T18:52:59Z
-Total commits: 659
+Generated: 2026-05-18T19:48:16Z
+Total commits: 660
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 220
-    "fix" : 171
+    "fix" : 172
     "chore" : 113
     "docs" : 99
     "refactor" : 34
@@ -244,10 +244,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 171 commits
+### Fixes (fix) — 172 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-18 | hooks | resolve a real Python interpreter + fix 17 launch-blocker test failures | 21cef22325f6 |
 | 2026-05-16 | triage | canonical drift dedup keys + drift/F0.5 auto-resolve | 2f6794b8af53 |
 | 2026-05-16 | adopt | seed External Review on; drop dead plan-config key | 3f5777d8b94f |
 | 2026-05-16 | iterate | worktree-aware event-log resolution | 34a79879a54d |
@@ -722,7 +723,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 659 |
+| Total commits | 660 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 659 |
+| Human-authored commits | 660 |
 
