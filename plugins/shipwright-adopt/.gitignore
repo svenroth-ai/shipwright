@@ -6,3 +6,5 @@ __pycache__/
 *.pyc
 # Fixture contamination from local analyze runs
 tests/fixtures/*/.shipwright/
+# Lockfiles generated inside adopt test fixtures by local uv runs
+tests/fixtures/*/uv.lock
