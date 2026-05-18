@@ -1,10 +1,9 @@
 {
-  "split": "iterate",
-  "run_id": "iterate-2026-05-16-fix-events-worktree-aware",
-  "status": "completed",
-  "provider": "openrouter",
-  "findings_count": 17,
-  "self_review_fallback_ran": false,
-  "reason": "external LLM iterate review ran (openrouter: gpt-5.4 + gemini-3.1-pro) on iterate spec + mini-plan",
-  "timestamp": "2026-05-16T09:46:59Z"
+  "status": "skipped_user_opt_out",
+  "timestamp": "2026-05-18T20:58:58.485732+00:00",
+  "provider": null,
+  "findings_count": 0,
+  "self_review_fallback_ran": true,
+  "reason": "No external review API keys available (openrouter/gemini/openai all absent); operator authorised autonomous run. Degraded Branch B Option 2 \u2014 mandatory self-review + internal code-reviewer subagent cascade used instead",
+  "review_mode": "iterate"
 }

@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-18 20:12 UTC | Session: f6f5e65b-ff7c-47c3-ac60-dafb9abeada3 | Run: iterate-2026-05-18-fix-ci-workflows
+> Updated: 2026-05-18 21:25 UTC | Session: f8244de8-e9ec-4eaa-8cc6-ba9a8c6b636c | Run: iterate-2026-05-18-phase-quality-check-fixes
 
-## Recent Changes (34 iterations)
+## Recent Changes (35 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | harden activated CI workflows: scanners, CI-aware test, CodeQL guard | 337/340 | d85210f |  | 2026-05-18 |
 | bug | fix 17 launch-blocker test failures (Windows python3 stub + 6 smaller groups) | 3507/3507 | 21cef22 |  | 2026-05-18 |
 | bug | triage detector dedup + auto-resolve (rebased onto #31) | 1776/1783 | cd957a0 |  | 2026-05-16 |
 | feature | spec-impact classification gate: enforce ADD/MODIFY/REMOVE/NONE on every feature/change iterate (F7 record_event + F11 verifier gates, Group D5 audit, Removed Requirements convention) | 140/140 | c16d711 | FR-01.11, FR-01.10, FR-01.02 | 2026-05-16 |
@@ -41,7 +42,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-18 | Unit: 337/340 | Smoke: not_run | (iterate)
+Last run: 2026-05-18 | Unit: 1817/1817 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

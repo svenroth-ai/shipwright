@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-18T20:12:15Z
+Generated: 2026-05-18T21:25:12Z
 
 ## Requirements Coverage
 
@@ -59,6 +59,7 @@ Generated: 2026-05-18T20:12:15Z
 | spec-impact classification gate: enforce ADD/MODIFY/REMOVE/NONE on every feature/change iterate (F7 record_event + F11 verifier gates, Group D5 audit, Removed Requirements convention) | iterate | feature | FR-01.11, FR-01.10, FR-01.02 | 140/140 | c16d711 | 2026-05-16 |
 | triage detector dedup + auto-resolve (rebased onto #31) | iterate | bug |  | 1776/1783 | cd957a0 | 2026-05-16 |
 | fix 17 launch-blocker test failures (Windows python3 stub + 6 smaller groups) | iterate | bug |  | 3507/3507 | 21cef22 | 2026-05-18 |
+| harden activated CI workflows: scanners, CI-aware test, CodeQL guard | iterate | bug |  | 337/340 | d85210f | 2026-05-18 |
 
 ## Coverage Summary
 
@@ -66,7 +67,7 @@ Generated: 2026-05-18T20:12:15Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 34 |
+| Iterate changes | 35 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

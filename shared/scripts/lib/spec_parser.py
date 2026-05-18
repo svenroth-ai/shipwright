@@ -198,14 +198,33 @@ def count_fr_headings(content: str) -> int:
 # ---------------------------------------------------------------------------
 
 def read_top_level_spec(project_root: Path) -> str | None:
-    """Return the text of ``.shipwright/agent_docs/spec.md`` or ``None`` when missing."""
+    """Return the text of the project's top-level spec, or ``None``.
+
+    Reads ``.shipwright/agent_docs/spec.md`` — the greenfield canonical
+    location written by ``/shipwright-project``. When that file is absent,
+    falls back to the per-split spec that ``/shipwright-adopt`` writes
+    instead: the first deterministically-sorted match of
+    ``.shipwright/planning/*/spec.md``. Returns ``None`` only when neither
+    location has a spec.
+
+    The fallback fixes S1 — and every S-check sharing this reader (S4,
+    ``top_level_spec_is_non_empty``) — for adopted (brownfield) projects,
+    whose spec never lives under ``agent_docs/``.
+    """
     path = project_root / _AGENT_DOCS_DIRNAME / "spec.md"
-    if not path.exists():
-        return None
-    try:
-        return path.read_text(encoding="utf-8", errors="ignore")
-    except OSError:
-        return None
+    if path.exists():
+        try:
+            return path.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            return None
+    # Adopt layout: the spec lives under a planning split, not agent_docs.
+    planning = project_root / _PLANNING_DIRNAME
+    for candidate in sorted(planning.glob("*/spec.md")):
+        try:
+            return candidate.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+    return None
 
 
 def top_level_spec_is_non_empty(project_root: Path) -> bool:

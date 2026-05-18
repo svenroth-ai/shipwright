@@ -131,6 +131,109 @@ def test_c1_fails_when_no_event(tmp_path):
     assert r.ok is False
 
 
+# --- C1 fallbacks: iterate work_completed / decision-drop / phase_history ---
+
+def test_c1_passes_for_iterate_with_work_completed_event(tmp_path):
+    """Iterate records work_completed (per-change), not phase_completed —
+    a work_completed event with source=iterate satisfies C1."""
+    (tmp_path / "shipwright_events.jsonl").write_text(
+        json.dumps({
+            "type": "work_completed", "source": "iterate",
+            "ts": "2026-05-18T10:00:00Z",
+        }) + "\n"
+    )
+    r = check_c1_phase_event_recorded(tmp_path, "iterate")
+    assert r.ok is True
+    assert "work_completed" in r.detail
+
+
+def test_c1_iterate_work_completed_requires_iterate_source(tmp_path):
+    """A work_completed event from another source does not satisfy C1."""
+    (tmp_path / "shipwright_events.jsonl").write_text(
+        json.dumps({"type": "work_completed", "source": "build"}) + "\n"
+    )
+    r = check_c1_phase_event_recorded(tmp_path, "iterate")
+    assert r.ok is False
+
+
+def test_c1_passes_for_iterate_with_pending_decision_drop(tmp_path):
+    """A pending decision-drop satisfies C1 for iterate (mirrors C4) —
+    reachable even with no event log at all."""
+    drops = tmp_path / ".shipwright" / "agent_docs" / "decision-drops"
+    drops.mkdir(parents=True)
+    (drops / "iterate-20260518-x_001.json").write_text("{}")
+    r = check_c1_phase_event_recorded(tmp_path, "iterate")
+    assert r.ok is True
+    assert "decision-drop" in r.detail
+
+
+def test_c1_iterate_decision_drop_ignores_underscore_prefixed(tmp_path):
+    """Underscore-prefixed files under decision-drops/ are not pending ADRs."""
+    drops = tmp_path / ".shipwright" / "agent_docs" / "decision-drops"
+    drops.mkdir(parents=True)
+    (drops / "_index.json").write_text("{}")
+    r = check_c1_phase_event_recorded(tmp_path, "iterate")
+    assert r.ok is False
+
+
+def test_c1_passes_via_phase_history_terminal_outcome(tmp_path):
+    """Adopt records completed phases in run_config.phase_history with a
+    terminal outcome instead of emitting a phase_completed event."""
+    (tmp_path / "shipwright_events.jsonl").write_text(
+        json.dumps({"type": "task_created"}) + "\n"
+    )
+    (tmp_path / "shipwright_run_config.json").write_text(
+        json.dumps({"phase_history": {
+            "build": [{"run_id": "adopt-x", "outcome": "adopted"}],
+        }})
+    )
+    r = check_c1_phase_event_recorded(tmp_path, "build")
+    assert r.ok is True
+    assert "phase_history" in r.detail
+
+
+def test_c1_phase_history_accepts_adopted_skipped(tmp_path):
+    """`adopted-skipped` — adopt's outcome for a phase with nothing to run —
+    is a terminal phase_history outcome."""
+    (tmp_path / "shipwright_run_config.json").write_text(
+        json.dumps({"phase_history": {
+            "test": [{"run_id": "adopt-x", "outcome": "adopted-skipped"}],
+        }})
+    )
+    r = check_c1_phase_event_recorded(tmp_path, "test")
+    assert r.ok is True
+
+
+def test_c1_phase_history_fallback_works_with_empty_event_log(tmp_path):
+    """The phase_history fallback must run even when shipwright_events.jsonl
+    is entirely absent — adopted projects record no events."""
+    # No shipwright_events.jsonl written at all.
+    (tmp_path / "shipwright_run_config.json").write_text(
+        json.dumps({"phase_history": {
+            "changelog": [{"run_id": "cl-x", "outcome": "tagged"}],
+        }})
+    )
+    r = check_c1_phase_event_recorded(tmp_path, "changelog")
+    assert r.ok is True
+
+
+def test_c1_phase_history_non_terminal_outcome_still_fails(tmp_path):
+    """A non-terminal phase_history outcome does not satisfy C1."""
+    (tmp_path / "shipwright_run_config.json").write_text(
+        json.dumps({"phase_history": {
+            "build": [{"run_id": "x", "outcome": "in_progress"}],
+        }})
+    )
+    r = check_c1_phase_event_recorded(tmp_path, "build")
+    assert r.ok is False
+
+
+def test_c1_still_fails_with_no_evidence(tmp_path):
+    """No event, no iterate fallback, no terminal phase_history → FAIL."""
+    r = check_c1_phase_event_recorded(tmp_path, "build")
+    assert r.ok is False
+
+
 def test_c2_passes_when_dashboard_mentions_phase(tmp_path):
     (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     (tmp_path / ".shipwright" / "agent_docs" / "build_dashboard.md").write_text(
@@ -227,6 +330,77 @@ def test_c5_warns_when_changelog_missing(tmp_path):
     r = check_c5_changelog_unreleased_has_phase_entry(tmp_path, "project", "Added")
     assert r.ok is False
     assert r.severity == Severity.WARNING.value
+
+
+# --- C5 drop-directory model (write_changelog_drop.py) ---
+
+def _make_changelog_drop(tmp_path, category: str, filename: str) -> None:
+    """Stage a CHANGELOG-unreleased.d/<category>/<filename> drop file."""
+    d = tmp_path / "CHANGELOG-unreleased.d" / category
+    d.mkdir(parents=True, exist_ok=True)
+    (d / filename).write_text("- a staged changelog bullet\n", encoding="utf-8")
+
+
+def test_c5_passes_via_changelog_drop_directory(tmp_path):
+    """Drop-directory model: [Unreleased] empty between releases, entries
+    staged as files under CHANGELOG-unreleased.d/<category>/."""
+    (tmp_path / "CHANGELOG.md").write_text(
+        "# Changelog\n\n## [Unreleased]\n\n### Added\n\n"
+    )
+    _make_changelog_drop(tmp_path, "Added", "iterate-x_001.md")
+    r = check_c5_changelog_unreleased_has_phase_entry(tmp_path, "iterate", "Added")
+    assert r.ok is True
+    assert "drop file" in r.detail
+
+
+def test_c5_drop_directory_is_category_agnostic(tmp_path):
+    """A drop in a different category than the one C5 was called with still
+    satisfies C5 — a bug-only iterate writes only a Fixed/ drop."""
+    (tmp_path / "CHANGELOG.md").write_text(
+        "# Changelog\n\n## [Unreleased]\n\n### Added\n\n"
+    )
+    _make_changelog_drop(tmp_path, "Fixed", "iterate-x_001.md")
+    r = check_c5_changelog_unreleased_has_phase_entry(tmp_path, "iterate", "Added")
+    assert r.ok is True
+
+
+def test_c5_drop_directory_works_when_changelog_absent(tmp_path):
+    """The drop directory is authoritative independent of CHANGELOG.md state."""
+    _make_changelog_drop(tmp_path, "Added", "iterate-x_001.md")
+    r = check_c5_changelog_unreleased_has_phase_entry(tmp_path, "iterate", "Added")
+    assert r.ok is True
+
+
+def test_c5_inline_bullets_win_without_drop_directory(tmp_path):
+    """Existing behaviour preserved: an inline bullet satisfies C5 with no
+    drop directory present."""
+    (tmp_path / "CHANGELOG.md").write_text(
+        "# Changelog\n\n## [Unreleased]\n\n### Added\n- New project\n"
+    )
+    r = check_c5_changelog_unreleased_has_phase_entry(tmp_path, "project", "Added")
+    assert r.ok is True
+    assert "bullet" in r.detail
+
+
+def test_c5_ignores_gitkeep_in_drop_directory(tmp_path):
+    """A drop dir containing only a .gitkeep placeholder does not satisfy C5."""
+    (tmp_path / "CHANGELOG.md").write_text(
+        "# Changelog\n\n## [Unreleased]\n\n### Added\n\n"
+    )
+    d = tmp_path / "CHANGELOG-unreleased.d" / "Added"
+    d.mkdir(parents=True)
+    (d / ".gitkeep").write_text("")
+    r = check_c5_changelog_unreleased_has_phase_entry(tmp_path, "iterate", "Added")
+    assert r.ok is False
+
+
+def test_c5_fails_when_neither_inline_nor_drops(tmp_path):
+    """No inline bullet in the target category and no drop file → FAIL."""
+    (tmp_path / "CHANGELOG.md").write_text(
+        "# Changelog\n\n## [Unreleased]\n\n### Fixed\n- bug\n"
+    )
+    r = check_c5_changelog_unreleased_has_phase_entry(tmp_path, "project", "Added")
+    assert r.ok is False
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,1 @@
+Phase-quality auditor no longer emits false-negative FAILs on adopted or drop-directory projects: C5 recognises CHANGELOG-unreleased.d/ drop files, S1's spec reader falls back to the .shipwright/planning/*/spec.md adopted layout, and C1 accepts iterate work_completed events and phase_history completion outcomes.
