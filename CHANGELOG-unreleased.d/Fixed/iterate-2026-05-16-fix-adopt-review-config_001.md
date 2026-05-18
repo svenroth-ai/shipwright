@@ -1,1 +1,0 @@
-shipwright-adopt no longer silently disables External Review for onboarded repos — shipwright_iterate_config.json is now seeded with external_review.feedback_iterations: 1, matching the shared default and greenfield projects

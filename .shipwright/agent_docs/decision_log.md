@@ -750,3 +750,42 @@ shipwright/
 - **Rationale:** Models compliance's data_collector._resolve_events_path but hardens it: drops --path-format=absolute (a Git 2.31+ dependency that would silently fall back on older git) and emits a warnings.warn diagnostic on the git-failure fallback so silent data loss is visible; strips GIT_DIR/GIT_COMMON_DIR/GIT_WORK_TREE so resolution stays pinned to project_root. The deterministic run_id embed replaces a brittle mtime heuristic.
 - **Consequences:** F7 events now reach the main repo's event log and the F11 verifier finds them; the dashboard WARN is gone. Tracked-events repos (the Shipwright monorepo itself) get an uncommitted 'M shipwright_events.jsonl' in the main tree post-F7 — the existing chore-commit pattern captures it. A drift meta-test (test_events_log_ssot.py, forward+reverse) guards the SSoT. Self-Review: 7-point pass; 2629 tests green + 0 regressions (7 pre-existing baseline verified on origin/main); external + code review findings applied.
 - **Rejected:** mtime-600s dashboard freshness heuristic (brittle to clock skew/slow CI — external review). Re-rendering the dashboard between F7 and F11 (leaves build_dashboard.md dirty post-commit, never in the PR — fights atomic-F6). Stale-lock bypass for the centralized .lock (gold-plating — _FileLock uses crash-safe OS advisory locks). Migrating data_collector to the shared helper (cross-plugin import architecture change, out of scope; a parity test guards drift instead).
+
+---
+
+### ADR-051: Adopt seeds External Review on; drops dead plan-config key
+- **Date:** 2026-05-16
+- **Section:** Iterate — bug: adopt external-review config defaults
+- **Run-ID:** iterate-2026-05-16-fix-adopt-review-config
+- **Context:** shipwright-adopt's config_writer seeded shipwright_iterate_config.json with external_review.feedback_iterations: 0, which the shared resolver maps to status 'user_disabled' — External Review silently skipped for every onboarded repo. It also wrote a flat 'external_review_feedback_iterations' key into shipwright_plan_config.json that had zero readers repo-wide.
+- **Decision:** write_iterate_config now seeds feedback_iterations: 1, consistent with the shared default (shared/config/external_review.json) and greenfield /shipwright-project. write_plan_config no longer writes the dead flat key. Stale '=0' descriptions in dry_run_reporter.py and the adopt SKILL.md were corrected; the residual dead key was removed from the monorepo's own shipwright_plan_config.json.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A 0 seed claimed the user opted out when Adopt did so unilaterally and unannounced; brownfield code is higher-risk and benefits more from review. The flat plan-config key was never read — making plan-phase review project-steerable would require extending the resolver, deliberately out of scope for this bugfix.
+- **Consequences:** Adopted (brownfield) repos get External Review enabled by default, like greenfield. The no-API-key case is handled by the resolver's 'missing_keys' -> interactive prompt (Branch B), not a silent opt-out. Two regression tests guard both defects (producer->file->resolver round-trip; plan-config dead-key absence).
+- **Rejected:** Keep feedback_iterations: 0 (disguised opt-out, contradicts greenfield default). Extend the resolver to read a plan-config key (scope expansion — only dead-key removal was in scope).
+
+---
+
+### ADR-052: Triage detectors: canonical drift dedup keys + drift/F0.5 auto-resolve
+- **Date:** 2026-05-16
+- **Section:** Iterate — bug: triage detector dedup + auto-resolve
+- **Run-ID:** iterate-2026-05-16-fix-triage-dedup-resolve
+- **Context:** The drift SessionStart detector built triage dedup keys from raw filesystem paths. os.path.abspath does not canonicalize Windows drive-letter case, so the same CLAUDE.md produced c:\... and C:\... keys across runs and the exact-string match in append_triage_item_idempotent appended a duplicate item. Separately, check_drift.py and surface_verification.py only ever appended: once a drift cleared or an F0.5 surface check passed on retry, the stale triage item lingered forever as noise.
+- **Decision:** Canonicalize the content-drift dedup-key path in the producer via os.path.normcase(os.path.realpath()), in a new _canonical_anchor helper; triage.py is left untouched. Add a resolve pass to check_drift.py and surface_verification.py modeled on the auditResolved pattern in audit_detector.py: each run dismisses still-open items from that producer whose dedup key left the current finding set, with reason driftResolved or f05Resolved. The drift resolve is scoped to :timestamp and :content keys because artifact_sync.py shares source=drift; the F0.5 resolve is scoped to the (run_id, surface) key prefix.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Path canonicalization belongs in the producer, not in triage.py, because the storage layer also dedups non-path compliance codes (A5.0, B7, E1, G2) that must never be case-folded. The resolve pass mirrors the established auditResolved pattern for framework consistency. source=drift is shared by two producers, so the drift resolve scopes by dedup-key suffix; F0.5 keys embed run_id and surface so a re-run on a different surface cannot retract another surface genuine failure.
+- **Consequences:** Drift no longer double-reports one CLAUDE.md across drive-letter casings, and cleared drift plus recovered F0.5 checks self-retract their triage items. Pre-fix duplicates and stale items auto-dismiss on the next detector run rather than being retroactively merged. check_drift._emit_drift_to_triage lost its empty-findings early return, so every SessionStart now runs a read_all_items scan: acceptable, since triage.jsonl is small and not yet compacted.
+- **Rejected:** (1) normcase inside append_triage_item_idempotent: would case-fold non-path compliance keys. (2) Retroactively merging already-written duplicates: out of scope; the resolve pass dismisses them as stale instead. (3) A generic resolve helper in triage.py: audit_detector.py keeps its resolve inline, so per-producer inline keeps the pattern consistent. (4) check_drift resolving every source=drift item: would wrongly dismiss artifact_sync.py :artifact items.
+
+---
+
+### ADR-053: Enforce spec-impact classification on every feature/change iterate
+- **Date:** 2026-05-16
+- **Section:** Iterate — feature: spec-impact gate
+- **Run-ID:** iterate-2026-05-16-spec-impact-gate
+- **Context:** The iterate 'Step 2: Spec Update (always)' contract was prose-only and unenforced — empirically ~27 of 28 iterates never touched spec.md, so whole subsystems (Triage Inbox, F0.5 gate) landed with no FR and the build dashboard showed feature rows with an empty FRs column.
+- **Decision:** Every FEATURE/CHANGE iterate classifies spec impact as ADD/MODIFY/REMOVE/NONE. Two enforcement layers: record_event.py exits 1 for a feature/change iterate event naming no FR without a spec_impact=none justification; the F11 verifier check_spec_impact_recorded fails a run whose commit touched no planning spec.md. Group D5 audits the historical backlog. Removed FRs move to a Removed Requirements section the FR parsers exclude.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A soft contract violated 27/28 times is not a contract. The verifier tolerates legacy events (no spec_impact) by falling through to a git-diff check, so it composes with un-migrated history.
+- **Consequences:** Feature/change iterates fail-closed at F7/F11 unless they touch a spec.md or justify spec_impact=none. BUG iterates are exempt. SKILL.md Step 2 restructured; F7 gains --spec-impact. The ~5 pre-existing feature events with no FR linkage now surface as Group D5 findings — expected backlog, backfilled separately.
+- **Rejected:** A Status column on the FR table (rejected — needs migrating every spec + the RTM parser; a separate Removed Requirements section needs neither). Leaving Step 2 as prose (rejected — that is the failed status quo).

@@ -1,1 +1,0 @@
-Spec-impact gate: every feature/change /shipwright-iterate run classifies its spec impact as ADD/MODIFY/REMOVE/NONE, enforced by record_event.py (exit 1 on an unclassified event) and the F11 verifier check_spec_impact_recorded

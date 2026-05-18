@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.20.0] - 2026-05-18
+
+### Added
+
+- Spec-impact gate: every feature/change /shipwright-iterate run classifies its spec impact as ADD/MODIFY/REMOVE/NONE, enforced by record_event.py (exit 1 on an unclassified event) and the F11 verifier check_spec_impact_recorded
+- Compliance detective audit Group D5 flags feature/change iterate events that landed with no FR linkage
+- Removed Requirements spec convention: retired FRs move to a '## Removed Requirements' section (excluded from RTM coverage and drift checks) instead of being silently deleted
+
+### Fixed
+
+- shipwright-adopt no longer silently disables External Review for onboarded repos — shipwright_iterate_config.json is now seeded with external_review.feedback_iterations: 1, matching the shared default and greenfield projects
+- shipwright-adopt no longer writes the unused external_review_feedback_iterations key into adopt-generated shipwright_plan_config.json
+- Drift detector no longer emits duplicate triage items for one CLAUDE.md when its path resolves with different Windows drive-letter casing across runs (dedup key is now path-canonicalized)
+- Drift and F0.5 surface-verification detectors now auto-dismiss their own stale triage items once the drift is fixed or a surface check passes on retry, instead of leaving them open as noise
+
 ## [v0.19.0] - 2026-05-16
 
 ### Added
