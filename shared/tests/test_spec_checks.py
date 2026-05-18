@@ -167,6 +167,79 @@ def test_compute_fr_coherence_empty_on_greenfield(tmp_path: Path):
 
 
 # ---------------------------------------------------------------------------
+# spec_parser — read_top_level_spec (adopt spec-path fallback)
+# ---------------------------------------------------------------------------
+
+
+def test_read_top_level_spec_canonical(proj: Path):
+    """Greenfield canonical location: .shipwright/agent_docs/spec.md."""
+    _write_top_spec(proj, "## FR-1: canonical\n")
+    text = spec_parser.read_top_level_spec(proj)
+    assert text is not None and "canonical" in text
+
+
+def test_read_top_level_spec_planning_fallback(proj: Path):
+    """/shipwright-adopt places the spec under a planning split, not
+    agent_docs — read_top_level_spec must fall back to it."""
+    split = proj / ".shipwright" / "planning" / "01-adopted"
+    split.mkdir(parents=True)
+    (split / "spec.md").write_text("## FR-1: adopted\n", encoding="utf-8")
+    text = spec_parser.read_top_level_spec(proj)
+    assert text is not None and "adopted" in text
+
+
+def test_read_top_level_spec_planning_fallback_is_deterministic(proj: Path):
+    """Multiple planning splits → the first deterministically-sorted match
+    (01- before 02-) wins, regardless of directory creation order."""
+    planning = proj / ".shipwright" / "planning"
+    for name, body in (("02-second", "second"), ("01-first", "first")):
+        d = planning / name
+        d.mkdir(parents=True)
+        (d / "spec.md").write_text(f"## FR-1: {body}\n", encoding="utf-8")
+    text = spec_parser.read_top_level_spec(proj)
+    assert text is not None and "first" in text and "second" not in text
+
+
+def test_read_top_level_spec_canonical_wins_over_split(proj: Path):
+    """When both exist, the agent_docs canonical spec is returned and the
+    split-level spec is not consulted."""
+    _write_top_spec(proj, "## FR-1: canonical\n")
+    split = proj / ".shipwright" / "planning" / "01-adopted"
+    split.mkdir(parents=True)
+    (split / "spec.md").write_text("## FR-1: splitlevel\n", encoding="utf-8")
+    text = spec_parser.read_top_level_spec(proj)
+    assert text is not None and "canonical" in text and "splitlevel" not in text
+
+
+def test_read_top_level_spec_none_when_neither(proj: Path):
+    assert spec_parser.read_top_level_spec(proj) is None
+
+
+def test_read_top_level_spec_empty_canonical_does_not_fall_through(proj: Path):
+    """An empty agent_docs/spec.md returns "" — it does NOT fall through to
+    a split-level spec. S1 then correctly reports 'empty' rather than
+    masking it with the split content."""
+    _write_top_spec(proj, "")  # empty canonical spec
+    split = proj / ".shipwright" / "planning" / "01-adopted"
+    split.mkdir(parents=True)
+    (split / "spec.md").write_text("## FR-1: splitlevel\n", encoding="utf-8")
+    assert spec_parser.read_top_level_spec(proj) == ""
+
+
+def test_s1_passes_on_adopted_project_layout(proj: Path):
+    """End-to-end: S1 PASSes on the adopt layout — no agent_docs/spec.md,
+    spec at .shipwright/planning/<split>/spec.md."""
+    split = proj / ".shipwright" / "planning" / "01-adopted"
+    split.mkdir(parents=True)
+    (split / "spec.md").write_text(
+        "## FR-01.01: a\n**Description:** x\n**Acceptance Criteria:** y\n",
+        encoding="utf-8",
+    )
+    f = sc.check_s1_top_level_spec(proj)
+    assert f["status"] == pq.STATUS_PASS
+
+
+# ---------------------------------------------------------------------------
 # S1 — top-level spec
 # ---------------------------------------------------------------------------
 

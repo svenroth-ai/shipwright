@@ -1,18 +1,18 @@
 # Commit Change Log
 
-Generated: 2026-05-18T20:12:15Z
-Total commits: 661
+Generated: 2026-05-18T21:25:12Z
+Total commits: 663
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 220
-    "fix" : 172
+    "fix" : 173
     "chore" : 114
     "docs" : 99
     "refactor" : 34
-    "test" : 14
+    "test" : 15
     "other" : 7
     "build" : 1
 ```
@@ -244,10 +244,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 172 commits
+### Fixes (fix) — 173 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-18 | ci | harden activated workflows — scanners, CI-aware test, CodeQL guard | d85210f9cc36 |
 | 2026-05-18 | hooks | resolve a real Python interpreter + fix 17 launch-blocker test failures | 21cef22325f6 |
 | 2026-05-16 | triage | canonical drift dedup keys + drift/F0.5 auto-resolve | 2f6794b8af53 |
 | 2026-05-16 | adopt | seed External Review on; drop dead plan-config key | 3f5777d8b94f |
@@ -683,10 +684,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 14 commits
+### Tests (test) — 15 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-18 | security | make test_explicit_name_not_in_registry hermetic | 77bcc9803039 |
 | 2026-05-07 | hooks | unwrap top-level hooks key in tests that read plugin hooks.json | c58e112027cd |
 | 2026-05-06 | iterate | backfill F0.5 empirical-test coverage (plan §V follow-up) | 531171c61fad |
 | 2026-04-30 | adopt | tighten 3 confidence gaps from self-review | 230f3d28abcb |
@@ -724,7 +726,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 661 |
+| Total commits | 663 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 661 |
+| Human-authored commits | 663 |
 

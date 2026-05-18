@@ -1,28 +1,30 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-18-fix-ci-workflows",
+    "run_id": "iterate-2026-05-18-phase-quality-check-fixes",
     "date": "2026-05-18",
     "unit": {
       "status": "passed",
-      "passed": 337,
-      "total": 340,
-      "note": "Related-scope run for the CI-hardening change (small bug iterate, Phase Matrix Unit Test = --related): shipwright-security plugin suite 305 passed (+3 skipped) and shared/tests/test_ci_workflow_convention.py 32 passed. 0 failed. test_run_scan_and_report.py verified additionally under CI=true (21 passed) to confirm the CI-aware fix flips the previously-red test green."
+      "passed": 1817,
+      "total": 1817,
+      "note": "Full shared/tests/ suite (F0) — medium iterate, shared-infra change to the phase-quality verifier layer. 1817 passed, 11 skipped, 0 failed. The two changed-behavior files contribute 107 tests (test_verifiers_common.py + test_spec_checks.py), of which 17 are new for this run."
     },
-    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "Small bug iterate — related-scope unit run only."},
+    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "No CRUD/DB changes — pure check-side Python."},
     "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
-    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web/Playwright surface — library/framework repo."},
+    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web/Playwright surface — library/framework repo. The cli surface is verified below (surface_verification)."},
     "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI."},
     "smoke": {"status": "not_run", "note": "No browser/server surface."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest --with pytest-mock pytest plugins/shipwright-security/tests/ -q --color=no + shared/tests/test_ci_workflow_convention.py; test_run_scan_and_report.py re-run under CI=true",
+      "runner": "uv run --with pytest --with pytest-mock pytest shared/tests/test_verifiers_common.py shared/tests/test_spec_checks.py -q --color=no",
       "exit_code": 0,
-      "tests_run": 337,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-18-fix-ci-workflows/",
-      "timestamp": "2026-05-18T00:00:00Z",
+      "tests_run": 107,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-18-phase-quality-check-fixes/surface_verification.json",
+      "timestamp": "2026-05-18T21:22:37.897Z",
       "attempts": 1,
-      "note": "The CI-aware test fix is verified locally under CI=true (test_run_scan_and_report.py 21 passed). The ci.yml scanner-install and codeql.yml continue-on-error are GitHub-Actions config — not locally executable; they are verified by the post-PR CI run."
+      "note": "F0.5 cli surface — the two changed-behavior test files (107 tests, exit 0). Confidence-Calibration probes (14, all PASS) additionally round-tripped C1/C5/S1 against this repo's real adopted artifacts; evidence at .shipwright/runs/iterate-2026-05-18-phase-quality-check-fixes/probe_output.txt."
     },
-    "degraded": ["ci.yml + codeql.yml workflow changes can only be fully verified by an actual GitHub Actions run after the PR is pushed; YAML validity confirmed locally."]
+    "degraded": [
+      "External LLM review skipped — no API keys (openrouter/gemini/openai all absent). Degraded Branch B Option 2: mandatory self-review (7/7) + internal code-reviewer subagent cascade used instead; 4 review findings (MEDIUM-1/2, LOW-3/4) addressed before commit."
+    ]
   }
 }

@@ -1158,6 +1158,31 @@ not a canon target.
 | **C4** | `.shipwright/agent_docs/decision_log.md` has a new ADR referencing the phase | `shared/scripts/tools/write_decision_log.py --title …` | **ERROR** (only for decision-taking phases) |
 | **C5** | `CHANGELOG.md [Unreleased]` has a bullet under the right Keep-a-Changelog category | `shared/scripts/tools/append_changelog_entry.py --category <Added\|Changed\|Fixed\|…> --entry "…"` | **ERROR** (only for user-facing phases) |
 
+### C1 Evidence Sources — Events, Drops, and `phase_history`
+
+A `phase_completed` event is the canonical C1 signal, but two phases
+record completion differently, and `check_c1_phase_event_recorded`
+accepts their conventions before failing:
+
+- **`iterate`** emits `work_completed` (per-change), never
+  `phase_completed`. A `work_completed` event with `source: iterate`
+  satisfies C1. An iterate's ADR also lands as a JSON decision-drop under
+  `.shipwright/agent_docs/decision-drops/` until `/shipwright-changelog`
+  aggregation — a pending drop equally satisfies C1 (mirrors the C4
+  decision-drop special-case).
+- **`adopt`** records the phases it onboards in
+  `shipwright_run_config.json::phase_history[<phase>]` with a terminal
+  `outcome`, not as an event. The `phase_history` fallback is not
+  phase-gated — a `phase_history` entry whose `outcome` is terminal
+  (`adopted`, `adopted-skipped`, or `tagged`) satisfies C1 for any phase
+  — but in practice it only changes the result for adopt-onboarded
+  phases and `changelog`: orchestrated phases write a `phase_completed`
+  event and pass via the primary path. (`completed` is also accepted, as
+  a forward-compatible generic terminal outcome; no phase emits it
+  today.) The fallback is reachable even when `shipwright_events.jsonl`
+  is empty or absent — the normal state of a freshly-adopted project
+  that has run no iterates yet.
+
 ### C4 Skip Criteria — Who Gets an ADR
 
 ADRs are for **actual architectural decisions**, not routine phase
@@ -1194,6 +1219,21 @@ C5 is **skipped** for:
 - `changelog` — this phase *owns* CHANGELOG prepends; writing to
   [Unreleased] would collide with the release tagging flow
 - `compliance` — derived artifact, not a user-facing change
+
+### C5 Drop-Directory Model
+
+`check_c5_changelog_unreleased_has_phase_entry` first inspects the inline
+`## [Unreleased]` → `### <category>` bullets. Projects on the
+drop-directory model (`write_changelog_drop.py` / `aggregate_changelog.py`)
+keep `[Unreleased]` empty between releases and stage each entry as a
+`CHANGELOG-unreleased.d/<category>/<run_id>_NNN.md` file. When the inline
+category sub-section is missing or carries no bullets, C5 falls back to
+counting staged drop files. The count is **category-agnostic** — any
+`*.md` under `CHANGELOG-unreleased.d/` (recursively, `.gitkeep` excluded):
+a bug-only iterate stages only a `Fixed/` drop, so requiring a drop in the
+caller's nominal category (`Added` for the iterate phase) would
+re-introduce the false-negative the fallback exists to remove. `≥ 1` drop
+file → PASS.
 
 ### Helper Scripts
 

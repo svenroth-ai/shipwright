@@ -234,15 +234,123 @@ def get_latest_phase_completed_event(
 # caller, not here.
 
 
+# Terminal phase_history outcomes that satisfy C1. A phase recorded in
+# shipwright_run_config.json::phase_history[<phase>] with any of these has
+# reached a terminal state: /shipwright-adopt writes ``adopted`` (and
+# ``adopted-skipped`` for a phase with nothing to run); /shipwright-changelog
+# writes ``tagged``. ``completed`` is accepted as a generic terminal outcome
+# for forward-compatibility — no phase emits it today (orchestrated phases
+# write phase-specific outcomes AND a ``phase_completed`` event, so they
+# already satisfy C1 via the event path; this phase_history fallback only
+# changes the result for adopt-onboarded and changelog phases).
+_C1_TERMINAL_PHASE_HISTORY_OUTCOMES: frozenset[str] = frozenset({
+    "adopted", "adopted-skipped", "completed", "tagged",
+})
+
+
+def _phase_history_terminal_outcome(project_root: Path, phase: str) -> str | None:
+    """Return a terminal ``phase_history[phase]`` outcome, or ``None``.
+
+    Reads ``shipwright_run_config.json::phase_history[<phase>]`` and
+    returns the first entry's ``outcome`` when it is terminal (see
+    ``_C1_TERMINAL_PHASE_HISTORY_OUTCOMES``). ``None`` when run config is
+    missing/malformed, the bucket is absent, or no entry is terminal.
+    """
+    history = read_run_config(project_root).get("phase_history")
+    if not isinstance(history, dict):
+        return None
+    entries = history.get(phase)
+    if not isinstance(entries, list):
+        return None
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        outcome = entry.get("outcome")
+        if (isinstance(outcome, str)
+                and outcome.strip().lower() in _C1_TERMINAL_PHASE_HISTORY_OUTCOMES):
+            return outcome
+    return None
+
+
 def check_c1_phase_event_recorded(project_root: Path, phase: str) -> CheckResult:
+    """C1 — the phase recorded a completion signal.
+
+    Primary evidence is a ``phase_completed`` event in
+    ``shipwright_events.jsonl``. Three fallbacks recognise completion
+    conventions the original strict check predates:
+
+    - **iterate** records ``work_completed`` (per-change), never
+      ``phase_completed`` — a ``work_completed`` event with
+      ``source == "iterate"`` satisfies C1.
+    - **iterate** ADRs land as JSON decision-drops until
+      ``/shipwright-changelog`` aggregation — a pending drop under
+      ``.shipwright/agent_docs/decision-drops/`` satisfies C1 (mirrors the
+      ``check_c4_decision_log_has_phase_adr`` iterate special-case).
+    - **adopt** records its onboarded phases in
+      ``shipwright_run_config.json::phase_history[<phase>]`` with a
+      terminal ``outcome`` instead of emitting an event. The
+      ``phase_history`` fallback is not phase-gated — a terminal
+      ``phase_history`` entry satisfies C1 for any phase — but in
+      practice it only changes the result for adopt-onboarded phases
+      (``adopted`` / ``adopted-skipped``) and ``changelog`` (``tagged``):
+      orchestrated phases write a ``phase_completed`` event and pass via
+      the primary path. Reachable even when ``shipwright_events.jsonl``
+      is empty or absent — the normal state of a freshly-adopted project.
+    """
     name = f"C1 record_event phase_completed[{phase}]"
     events = read_events_jsonl(project_root)
-    if not events:
-        return CheckResult(name, False, "shipwright_events.jsonl empty or missing")
+
     hit = get_latest_phase_completed_event(events, phase)
-    if hit is None:
-        return CheckResult(name, False, f"no phase_completed event for phase={phase}")
-    return CheckResult(name, True, f"found event @ {hit.get('timestamp', '?')}")
+    if hit is not None:
+        return CheckResult(name, True, f"found event @ {hit.get('timestamp', '?')}")
+
+    # Iterate fallback: work_completed event, or a pending decision-drop.
+    if phase == "iterate":
+        wc = next(
+            (e for e in events
+             if e.get("type") == "work_completed"
+             and e.get("source") == "iterate"),
+            None,
+        )
+        if wc is not None:
+            stamp = wc.get("ts") or wc.get("timestamp") or "?"
+            return CheckResult(
+                name, True,
+                f"work_completed[source=iterate] event @ {stamp}",
+            )
+        drop_dir = project_root / _AGENT_DOCS_DIRNAME / "decision-drops"
+        if drop_dir.is_dir():
+            drops = [
+                p for p in drop_dir.glob("*.json")
+                if not p.name.startswith("_")
+            ]
+            if drops:
+                return CheckResult(
+                    name, True,
+                    f"{len(drops)} decision-drop(s) pending aggregation",
+                )
+
+    # phase_history fallback (any phase) — adopt/changelog record a terminal
+    # outcome here instead of emitting a phase_completed event.
+    terminal = _phase_history_terminal_outcome(project_root, phase)
+    if terminal is not None:
+        return CheckResult(
+            name, True,
+            f"phase_history[{phase}] entry with terminal outcome={terminal!r}",
+        )
+
+    if not events:
+        return CheckResult(
+            name, False,
+            f"no phase_completed event for phase={phase} "
+            "(shipwright_events.jsonl empty or missing; "
+            "no terminal phase_history entry)",
+        )
+    return CheckResult(
+        name, False,
+        f"no phase_completed event for phase={phase} "
+        "(no work_completed / decision-drop / phase_history evidence)",
+    )
 
 
 def check_c2_dashboard_reflects_phase(project_root: Path, phase: str) -> CheckResult:
@@ -395,13 +503,58 @@ def check_c5_changelog_unreleased_has_phase_entry(
     phase: str,
     category: str = "Added",
 ) -> CheckResult:
-    """C5 — ``[Unreleased]`` has a bullet in the target Keep-a-Changelog
-    category. The phase name is accepted for symmetry but not matched —
-    the canon only requires that *some* entry exists in the right bucket,
-    because the ``append_changelog_entry.py`` helper deduplicates.
+    """C5 — the phase recorded a changelog entry.
+
+    Primary evidence is a bullet in ``CHANGELOG.md``'s ``## [Unreleased]``
+    → ``### <category>`` sub-section (the legacy inline model — the
+    ``append_changelog_entry.py`` helper deduplicates).
+
+    **Drop-directory fallback.** Projects on the ``write_changelog_drop.py``
+    / ``aggregate_changelog.py`` model keep ``[Unreleased]`` empty between
+    releases and stage each entry as a
+    ``CHANGELOG-unreleased.d/<category>/<run_id>_NNN.md`` file. When the
+    inline category sub-section is missing or carries no bullets, C5 also
+    counts staged drop files. The count is **category-agnostic**: a
+    bug-only iterate writes only a ``Fixed/`` drop, so requiring a drop in
+    the caller's nominal category (``Added`` for the iterate phase) would
+    re-introduce the very false-negative this fallback removes. ``≥ 1``
+    drop file → PASS.
+
+    The phase name is accepted for API symmetry but not matched — the
+    canon only requires that *some* entry exists.
     """
     del phase  # accepted for API symmetry
     name = f"C5 CHANGELOG [Unreleased] has {category} entry"
+
+    inline = _check_inline_unreleased_category(project_root, name, category)
+    if inline.ok:
+        return inline
+
+    # Drop-directory model — [Unreleased] stays empty between releases.
+    drop_count = _count_changelog_drop_files(project_root)
+    if drop_count > 0:
+        return CheckResult(
+            name, True,
+            f"{drop_count} changelog drop file(s) staged under "
+            f"CHANGELOG-unreleased.d/ (inline [Unreleased]/{category}: "
+            f"{inline.detail})",
+        )
+    return inline
+
+
+def _check_inline_unreleased_category(
+    project_root: Path,
+    name: str,
+    category: str,
+) -> CheckResult:
+    """Inspect the inline ``[Unreleased]`` → ``### <category>`` bullets.
+
+    Returns a passing ``CheckResult`` when the sub-section carries ≥ 1
+    bullet, otherwise a failing ``CheckResult`` whose detail (and
+    severity) names the specific gap — no CHANGELOG, no ``[Unreleased]``,
+    no sub-section, or no bullets. C5 falls back to the drop directory on
+    failure.
+    """
     changelog = find_changelog(project_root)
     if changelog is None:
         return CheckResult(name, False, "CHANGELOG.md not found",
@@ -422,6 +575,32 @@ def check_c5_changelog_unreleased_has_phase_entry(
     if bullets == 0:
         return CheckResult(name, False, f"[Unreleased]/{category} has no bullets")
     return CheckResult(name, True, f"{bullets} bullet(s) in [Unreleased]/{category}")
+
+
+def _count_changelog_drop_files(project_root: Path) -> int:
+    """Count staged Keep-a-Changelog drop files under ``CHANGELOG-unreleased.d/``.
+
+    The drop-directory model (``write_changelog_drop.py``) stages each
+    entry as a ``CHANGELOG-unreleased.d/<category>/<run_id>_NNN.md`` file;
+    ``aggregate_changelog.py`` folds them into a versioned section at
+    release time. Counts ``*.md`` files exactly one level deep —
+    ``<category>/<file>.md`` — across every category sub-dir
+    (category-agnostic), excluding ``.gitkeep`` placeholders. The
+    single-level ``*/*.md`` glob matches the ``write_changelog_drop.py``
+    layout exactly and ignores any stray top-level or deeply-nested
+    ``.md`` file. Mirrors ``find_changelog``'s monorepo dual-location
+    probe (``project_root`` then its parent).
+    """
+    for base in (
+        project_root / "CHANGELOG-unreleased.d",
+        project_root.parent / "CHANGELOG-unreleased.d",
+    ):
+        if base.is_dir():
+            return sum(
+                1 for p in base.glob("*/*.md")
+                if p.is_file() and p.name != ".gitkeep"
+            )
+    return 0
 
 
 _UNRELEASED_RE = re.compile(
