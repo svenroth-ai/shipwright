@@ -4,7 +4,7 @@
 - **Type:** feature
 - **Complexity:** medium (autonomous, plan-driven)
 - **Status:** in_progress
-- **Source plan:** `C:\Users\SvenRoth\.claude\plans\ich-m-chte-am-iterate-polished-puffin.md` (approved)
+- **Source plan:** `C:\Users\you\.claude\plans\ich-m-chte-am-iterate-polished-puffin.md` (approved)
 
 ## Goal
 

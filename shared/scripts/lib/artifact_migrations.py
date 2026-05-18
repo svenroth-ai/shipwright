@@ -149,8 +149,8 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/tests/test_migrate_artifact_dir.py",
         "shared/tests/test_print_next_migration_prompt.py",
         # Plan files (this migration's own design docs)
-        "C:/Users/SvenRoth/.claude/plans/iterate-shipwright-relocation-*.md",
-        "C:/Users/SvenRoth/.claude/plans/ich-bin-am-berarbeiten-glittery-sun.md",
+        "C:/Users/you/.claude/plans/iterate-shipwright-relocation-*.md",
+        "C:/Users/you/.claude/plans/ich-bin-am-berarbeiten-glittery-sun.md",
         # Historical changelog & migration docs (must not be rewritten)
         "CHANGELOG.md",
         "CHANGELOG-unreleased.d/**",
@@ -213,7 +213,7 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/tests/test_migrate_artifact_dir.py",
         "shared/tests/test_print_next_migration_prompt.py",
         # Plan files (this migration's own design docs)
-        "C:/Users/SvenRoth/.claude/plans/iterate-shipwright-relocation-designs-*.md",
+        "C:/Users/you/.claude/plans/iterate-shipwright-relocation-designs-*.md",
         # Historical changelog & migration docs (must not be rewritten)
         "CHANGELOG.md",
         "CHANGELOG-unreleased.d/**",
@@ -275,7 +275,7 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/tests/test_migrate_artifact_dir.py",
         "shared/tests/test_print_next_migration_prompt.py",
         # Plan files (this migration's own design docs)
-        "C:/Users/SvenRoth/.claude/plans/iterate-shipwright-relocation-agent_docs-*.md",
+        "C:/Users/you/.claude/plans/iterate-shipwright-relocation-agent_docs-*.md",
         # Historical changelog & migration docs (must not be rewritten)
         "CHANGELOG.md",
         "CHANGELOG-unreleased.d/**",
@@ -367,7 +367,7 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/tests/test_migrate_artifact_dir.py",
         "shared/tests/test_print_next_migration_prompt.py",
         # Plan files (this migration's own design docs)
-        "C:/Users/SvenRoth/.claude/plans/iterate-shipwright-relocation-compliance-*.md",
+        "C:/Users/you/.claude/plans/iterate-shipwright-relocation-compliance-*.md",
         # Historical changelog & migration docs (must not be rewritten)
         "CHANGELOG.md",
         "CHANGELOG-unreleased.d/**",

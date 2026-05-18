@@ -81,7 +81,7 @@ def render_prompt(manifest: list[dict]) -> str:
         f"Pattern-memory to consult: feedback_artifact_migration_pattern.md\n"
         f"Reference doc: docs/migrations/artifact-migration-reference.md\n"
         f"Plan-file template: re-use the iterate-shipwright-relocation-A..G-*.md "
-        f"shape from C:/Users/SvenRoth/.claude/plans/.\n\n"
+        f"shape from C:/Users/you/.claude/plans/.\n\n"
         f"Other pending artifacts (after {next_one['name']}): {others_line}\n"
     )
 

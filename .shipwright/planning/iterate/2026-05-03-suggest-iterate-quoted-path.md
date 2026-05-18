@@ -37,10 +37,10 @@ uv run ${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/suggest_iterate.py
 ```
 
 Claude Code expands `${CLAUDE_PLUGIN_ROOT}` and runs the result through
-a shell. On a project at `C:\Users\SvenRoth\dinovo GmbH\AI Backup -
-Documents\03 Development\shipwright` the expansion contains spaces and
+a shell. On a project at `C:\Users\you\My Projects\shipwright` the
+expansion contains spaces and
 the shell splits the path. uv reports `Failed to spawn:
-C:\Users\…\dinovo, exit 2`. Per Claude Code's hook contract, a non-zero
+C:\Users\…\My, exit 2`. Per Claude Code's hook contract, a non-zero
 exit on `UserPromptSubmit` blocks the user prompt — symptom is "Claude
 is dead, no error visible." The same broken snippet is also documented
 at `plugins/shipwright-project/skills/project/SKILL.md` Step 4.5 and

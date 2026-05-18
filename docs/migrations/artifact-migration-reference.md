@@ -23,7 +23,7 @@ migration. Replace the three placeholders, then paste:
 > migration.
 >
 > **Before doing anything else, read these in order:**
-> 1. `~/.claude/projects/c--Users-SvenRoth-dinovo-GmbH-AI-Backup---Documents-03-Development-shipwright/memory/feedback_artifact_migration_pattern.md`
+> 1. `~/.claude/projects/c--Users-you-My-Projects-shipwright/memory/feedback_artifact_migration_pattern.md`
 >    -- the always-read-first pattern memory
 > 2. `docs/migrations/artifact-migration-reference.md` -- full SSoT
 >    (12 sections incl. Architecture, Touchpoint Discovery, Sub-Iterate
@@ -439,8 +439,8 @@ ALLOWLIST = {
         "shared/tests/test_path_canon_windows.py",
         "shared/tests/test_setup_writes_canonical.py",  # Layer-2 asserts legacy NOT created
         # Plan files (this migration's own design docs)
-        "C:/Users/SvenRoth/.claude/plans/iterate-shipwright-relocation-*.md",
-        "C:/Users/SvenRoth/.claude/plans/ich-bin-am-berarbeiten-glittery-sun.md",
+        "C:/Users/you/.claude/plans/iterate-shipwright-relocation-*.md",
+        "C:/Users/you/.claude/plans/ich-bin-am-berarbeiten-glittery-sun.md",
         # Historical docs that must not be rewritten
         "CHANGELOG.md",
         "CHANGELOG-unreleased.d/**",
@@ -516,7 +516,7 @@ Run command:
 ```bash
 uv run shared/scripts/tools/external_review.py \
   --mode plan \
-  --plan-file C:/Users/SvenRoth/.claude/plans/<plan>.md \
+  --plan-file C:/Users/you/.claude/plans/<plan>.md \
   --spec-file CLAUDE.md \
   --plugin-root plugins/shipwright-plan
 ```
