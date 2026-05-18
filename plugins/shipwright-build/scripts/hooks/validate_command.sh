@@ -11,11 +11,28 @@
 
 set -euo pipefail
 
+# Resolve a working Python interpreter. On Windows `python3` is frequently the
+# Microsoft Store App-Execution-Alias stub: it prints "Python was not found"
+# and exits non-zero without running anything. Probe each candidate by
+# actually executing it so the stub is rejected.
+_resolve_python() {
+    local candidate
+    for candidate in python3 python py; do
+        if command -v "$candidate" >/dev/null 2>&1 \
+           && "$candidate" -c "import sys" >/dev/null 2>&1; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+PYTHON=$(_resolve_python) || exit 0  # no interpreter -> cannot inspect -> allow
+
 # Read the tool input from stdin
 INPUT=$(cat)
 
 # Extract the command from the JSON payload
-COMMAND=$(echo "$INPUT" | python3 -c "
+COMMAND=$(echo "$INPUT" | "$PYTHON" -c "
 import json, sys
 try:
     data = json.load(sys.stdin)
@@ -24,7 +41,7 @@ try:
     print(cmd)
 except:
     print('')
-" 2>/dev/null || echo "")
+" 2>/dev/null | tr -d '\r' || echo "")
 
 if [ -z "$COMMAND" ]; then
     exit 0  # No command found, allow

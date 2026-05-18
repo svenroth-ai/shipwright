@@ -1,18 +1,18 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-16-spec-impact-gate",
-    "date": "2026-05-16",
+    "run_id": "iterate-2026-05-18-fix-launch-blocker-tests",
+    "date": "2026-05-18",
     "unit": {
       "status": "passed",
-      "passed": 3385,
-      "total": 3398,
-      "note": "F0 fresh full run, per-suite (separate 'tests' packages run separately): shared 1821, compliance 320, iterate 237, project 43, build 42, test 136, changelog 23, deploy 25, security 305, run 144, adopt 267, design 12, preview 10. The 13 failures (shared test_hooks TestCheckSecrets x5 + TestCheckFileSize x1 + test_artifact_path_canon compliance-migrated x1; build test_hooks x2 + test_section_builder_contract x1 + 1 more; deploy test_validate_without_token x1; adopt test_nested_project_detector x1) reproduce identically on base origin/main@333baab — verified via git-stash on the clean base. Pre-existing Windows-environment baseline (bash hooks, env tokens, path detection); 0 regressions from this iterate."
+      "passed": 1602,
+      "total": 1602,
+      "note": "F0 fresh per-plugin run in the iterate worktree: adopt 270, build 46, changelog 23, compliance 320, deploy 26, design 12, iterate 237, plan 30, preview 10, project 43, run 144, security 305 (+3 skipped), test 136. 0 failed. All 17 launch-blocker failures fixed — the 13 that iterate-2026-05-16-spec-impact-gate documented as a pre-existing Windows-environment baseline (root cause: python3 = Microsoft Store alias stub), plus 4 more (surface_verification x2, security workflow-shape x3 minus overlap, adopt nested-project fixture)."
     },
     "integration": {
       "status": "passed",
-      "passed": 110,
-      "total": 110,
-      "note": "integration-tests/ all green incl. test_fr_table_drift_protection.py (FR-table parser drift). 2 deselected (slow marker)."
+      "passed": 1905,
+      "total": 1905,
+      "note": "shared/tests/ + integration-tests/ run together in the F0 sweep: 1905 passed, 11 skipped, 20 deselected, 0 failed. Includes the canon, hook-subprocess and surface_verification suites that this iterate fixed."
     },
     "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
     "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web/Playwright surface — library/framework repo. F0.5 ran the cli surface; see surface_verification."},
@@ -20,17 +20,14 @@
     "smoke": {"status": "not_run", "note": "No browser/server surface."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run python -m pytest shared/scripts/tools/tests/test_record_event.py shared/tests/test_verify_iterate_finalization.py shared/tests/test_drift_parsers.py -q",
+      "runner": "uv run --with pytest --with pytest-mock pytest shared/tests/test_hooks.py shared/tests/test_surface_verification.py shared/tests/test_artifact_path_canon.py -q --color=no",
       "exit_code": 0,
-      "tests_run": 140,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-16-spec-impact-gate/surface_verification.json",
-      "timestamp": "2026-05-16T00:00:00Z",
+      "tests_run": 66,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-18-fix-launch-blocker-tests/surface_verification.json",
+      "timestamp": "2026-05-18T00:00:00Z",
       "attempts": 1,
-      "note": "Single shared/tests-scope pytest invocation (avoids the cross-tests-package conftest collision). Drives the spec-impact gate end-to-end: record_event.py write-time gate, the F11 check_spec_impact_recorded verifier (incl. real git-commit fixtures), and the Removed-Requirements FR-parser exclusion."
+      "note": "Drives the three core shared fixes end-to-end: the hook-subprocess tests (G1 python3 resolver), test_surface_verification (G3 ANSI strip — the ANSI-robust parser correctly counted 66 colour-wrapped results), and test_artifact_path_canon (G4 allowlist)."
     },
-    "degraded": [
-      "13 pre-existing baseline test failures on origin/main@333baab (shared test_hooks/test_artifact_path_canon x7, build x4, deploy x1, adopt x1) — verified identical on the clean base via git-stash; Windows-environment failures (bash hooks, env tokens, path detection), NOT introduced by this iterate.",
-      "Group D5 audit will flag ~5 historical feature events with empty affected_frs (Triage Inbox, F0.5 gate, etc.) — expected backlog; user backfills FR prose in a separate session."
-    ]
+    "degraded": []
   }
 }

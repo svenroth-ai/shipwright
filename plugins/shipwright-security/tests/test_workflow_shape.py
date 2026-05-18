@@ -1,9 +1,9 @@
 """Snapshot test for .github/workflows/security.yml invariants.
 
-Iterate 2 (`sec-ci-activation`) deliberately leaves auto-triggers DORMANT —
-only `workflow_dispatch` is active. This test guards against accidental
-uncommenting in future edits, and verifies the SARIF + fork-guard +
-permission contract baked into the workflow.
+Since the public launch (Phase B / Go-Live) the security workflow runs
+automatically on `pull_request` plus a weekly `schedule`. This test guards
+against a regression back to dormant (commented-out) triggers, and verifies
+the SARIF + fork-guard + permission contract baked into the workflow.
 
 Text-regex based (no PyYAML dep) — the goal is to catch drift on a small
 set of invariants, not to validate the full YAML structure.
@@ -27,36 +27,38 @@ def workflow_text() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Triggers — must remain DORMANT until Phase B (Go-Live)
+# Triggers — ACTIVE since Phase B (Go-Live / public launch)
 # ---------------------------------------------------------------------------
 
-class TestDormantTriggers:
+class TestActiveTriggers:
+    """Since the public launch the security workflow runs automatically.
+    These tests guard against an accidental regression back to dormant
+    (commented-out) triggers."""
 
-    def test_pull_request_trigger_is_commented(self, workflow_text):
-        # Match an UNCOMMENTED `pull_request:` at the top of the `on:` block.
-        # Allowed: `# pull_request:` lines (commented).
-        # Forbidden: a bare `pull_request:` line at indent level 2 (inside `on:`).
-        for line in workflow_text.splitlines():
-            stripped = line.lstrip()
-            if stripped.startswith("#"):
-                continue
-            if stripped.startswith("pull_request:"):
-                pytest.fail(
-                    "pull_request trigger appears UNCOMMENTED in security.yml. "
-                    "Iterate 2 (`sec-ci-activation`) keeps triggers dormant — "
-                    "user activates them manually at Phase B / Go-Live."
-                )
+    def test_pull_request_trigger_is_active(self, workflow_text):
+        # An UNCOMMENTED `pull_request:` line at the top of the `on:` block.
+        # A `pull_request` token inside an `if:` condition is quoted/mid-line,
+        # so `startswith("pull_request:")` is specific to the trigger.
+        active = any(
+            line.lstrip().startswith("pull_request:")
+            and not line.lstrip().startswith("#")
+            for line in workflow_text.splitlines()
+        )
+        assert active, (
+            "pull_request trigger is not active in security.yml — the "
+            "workflow must run on PRs since the public launch (Go-Live)."
+        )
 
-    def test_schedule_trigger_is_commented(self, workflow_text):
-        for line in workflow_text.splitlines():
-            stripped = line.lstrip()
-            if stripped.startswith("#"):
-                continue
-            if stripped.startswith("schedule:"):
-                pytest.fail(
-                    "schedule trigger appears UNCOMMENTED in security.yml. "
-                    "Iterate 2 (`sec-ci-activation`) keeps triggers dormant."
-                )
+    def test_schedule_trigger_is_active(self, workflow_text):
+        active = any(
+            line.lstrip().startswith("schedule:")
+            and not line.lstrip().startswith("#")
+            for line in workflow_text.splitlines()
+        )
+        assert active, (
+            "schedule trigger is not active in security.yml — the weekly "
+            "scan must run since the public launch (Go-Live)."
+        )
 
     def test_workflow_dispatch_is_active(self, workflow_text):
         # workflow_dispatch must remain active so the user can trigger manually.
@@ -67,10 +69,12 @@ class TestDormantTriggers:
         )
         assert active_dispatch, "workflow_dispatch trigger missing from security.yml"
 
-    def test_dormant_banner_present(self, workflow_text):
-        # The banner is what tells humans (and future-Claude) why triggers
-        # look weird — keep it intact.
-        assert "DORMANT" in workflow_text
+    def test_dormant_banner_absent(self, workflow_text):
+        # The pre-launch DORMANT banner must be gone now that triggers are live.
+        assert "DORMANT" not in workflow_text, (
+            "stale DORMANT banner still present in security.yml — triggers "
+            "are active since Go-Live; remove the banner."
+        )
 
 
 # ---------------------------------------------------------------------------

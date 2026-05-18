@@ -347,6 +347,12 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/adopt/enrichment.json",
         ".shipwright/agent_docs/architecture.md",
         ".shipwright/agent_docs/decision_log.md",
+        # conventions.md accumulates Learnings prose that mentions "compliance"
+        # as a phase name, the `shipwright-compliance` plugin dir, or a triage
+        # `source=` enum value — never as a legacy artifact path. Same class as
+        # architecture.md / decision_log.md above; it was simply missed when
+        # those sibling agent_docs were allowlisted.
+        ".shipwright/agent_docs/conventions.md",
         ".shipwright/compliance/change-history.md",
         ".shipwright/planning/iterate/**.md",
         # External-review JSON captures (e.g. iterate-2026-05-11-triage-

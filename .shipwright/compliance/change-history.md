@@ -1,27 +1,30 @@
 # Commit Change Log
 
-Generated: 2026-05-16T15:52:54Z
-Total commits: 650
+Generated: 2026-05-18T18:52:59Z
+Total commits: 659
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 218
+    "feat" : 220
     "fix" : 171
-    "chore" : 107
+    "chore" : 113
     "docs" : 99
     "refactor" : 34
     "test" : 14
     "other" : 7
+    "build" : 1
 ```
 
 ## Changes by Type
 
-### Features (feat) — 218 commits
+### Features (feat) — 220 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-16 | spec | backfill FR-01.14 (Triage Inbox) + link 7 historical feature events | 805d268a9dc3 |
+| 2026-05-16 | iterate | enforce spec-impact classification on every feature/change iterate | 5544ea3b6e38 |
 | 2026-05-16 | iterate | unconditional worktree isolation for /shipwright-iterate | 42e65d7e0032 |
 | 2026-05-14 | triage | producers iterate 2 — security + performance + F0.5 + drift wiring | aab9bd7dafb7 |
 | 2026-05-11 | triage | promote CLI for non-webui repos (AC-7) | 7f131f9d940d |
@@ -417,10 +420,16 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 107 commits
+### Chores (chore) — 113 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-18 | — | add CODE_OF_CONDUCT and activate CI workflows for public launch | 2671c69b9155 |
+| 2026-05-18 | — | scrub local identifiers for public release | b9d1d8564074 |
+| 2026-05-18 | — | track triage inbox, preview lockfile, and agent-doc updates | 1e4df72ef6cb |
+| 2026-05-18 | release | v0.20.0 | ddaedc76b157 |
+| 2026-05-16 | — | catch up event log + command-center screenshot | b97086672e9e |
+| 2026-05-16 | triage | refresh finalization artifacts after rebase onto #31 | cd957a013b00 |
 | 2026-05-16 | iterate | record F7 work_completed event for 34a7987 | 2a2c6fd182c8 |
 | 2026-05-16 | release | v0.19.0 | 333baab12f49 |
 | 2026-05-15 | compliance | record F7 work_completed event for ea24bf4 | fd68dd347db7 |
@@ -703,11 +712,17 @@ pie title Commit Types
 | 2026-04-04 | — | Revert "fix: rename skill dirs to full plugin name for clean slash-command display" | 1545b4b2c522 |
 | 2026-03-21 | — | revert: restore full skill names in SKILL.md frontmatter | 05c0d5ce7566 |
 
+### Build (build) — 1 commits
+
+| Date | Scope | Description | Commit |
+|------|-------|-------------|--------|
+| 2026-05-18 | gitignore | .shipwright artefact whitelist for public launch | f732c4969b55 |
+
 ## AI Attribution
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 650 |
+| Total commits | 659 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 650 |
+| Human-authored commits | 659 |
 

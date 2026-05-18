@@ -63,6 +63,12 @@ EXIT_NONE_WITHOUT_JUSTIFICATION = 4
 VALID_SURFACES = ("web", "cli", "api", "none")
 DEFAULT_RETRY_CAP = 3
 
+# Matches ANSI CSI escape sequences (SGR colour, cursor moves). pytest and
+# playwright colour their summary line even when stdout is captured (no TTY);
+# the escape bytes break the `\b`...`\d` word-boundary anchors in the summary
+# parser below. See ADR-048 (conventions.md).
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+
 
 def _now_iso() -> str:
     """Canonical ISO-8601 UTC timestamp (`...Z`) for the evidence block."""
@@ -91,6 +97,11 @@ def parse_tests_run(stdout: str, surface: str) -> int:
     """
     if not stdout:
         return 0
+
+    # Strip ANSI escapes first — pytest/playwright colour the summary line
+    # ("\x1b[1m5 passed\x1b[0m") even with stdout captured, and the escape
+    # bytes destroy the `\b` word boundary before the digit. See ADR-048.
+    stdout = _ANSI_RE.sub("", stdout)
 
     if surface in ("cli", "web"):
         passed = 0
