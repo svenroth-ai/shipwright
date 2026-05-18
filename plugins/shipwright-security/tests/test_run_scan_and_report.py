@@ -143,7 +143,12 @@ class TestHappyPath:
             if finding.get("description"):
                 assert "sk-live-1234567890abcdef" not in finding["description"]
 
-    def test_full_evidence_retains_raw_secret_fields(self, stub_oss_backend, tmp_path: Path):
+    def test_full_evidence_retains_raw_secret_fields(self, stub_oss_backend, tmp_path: Path, monkeypatch):
+        # Exercises the non-CI full-evidence path: raw secrets are retained
+        # only when NOT in CI. test_full_evidence_refused_in_ci covers the CI
+        # path. Clear CI so this test is correct under `CI=true` (GitHub
+        # Actions sets it) as well as locally.
+        monkeypatch.delenv("CI", raising=False)
         run_scan_and_report.run(project_root=tmp_path, repo="test/repo", full_evidence=True)
 
         payload = json.loads((tmp_path / ".shipwright" / "securityreports" / "latest.json").read_text(encoding="utf-8"))
