@@ -136,3 +136,37 @@ def git_origin_repo(tmp_path):
     _git(work, "push", "origin", "main")
     _git(work, "remote", "set-head", "origin", "main")
     return work, origin
+
+
+@pytest.fixture
+def make_worktree():
+    """Factory: ``make_worktree(work, slug)`` adds a linked git worktree.
+
+    Creates ``<work>/.worktrees/<slug>`` on branch ``iterate/<slug>`` from
+    ``main`` and returns its path. Shared by every worktree-isolation test
+    (events-log resolution, decision-drop resolution, finalization checks)
+    so the ``git worktree add`` invocation lives in exactly one place.
+    """
+    def _make(work: Path, slug: str) -> Path:
+        wt = work / ".worktrees" / slug
+        subprocess.run(
+            ["git", "-C", str(work), "worktree", "add", str(wt),
+             "-b", f"iterate/{slug}", "main"],
+            capture_output=True, text=True, check=True,
+        )
+        return wt
+
+    return _make
+
+
+@pytest.fixture
+def remove_worktree():
+    """Factory: ``remove_worktree(work, wt)`` tears a linked worktree down
+    the way iterate F11 cleanup (``git worktree remove --force``) does."""
+    def _remove(work: Path, wt: Path) -> None:
+        subprocess.run(
+            ["git", "-C", str(work), "worktree", "remove", "--force", str(wt)],
+            capture_output=True, text=True, check=True,
+        )
+
+    return _remove

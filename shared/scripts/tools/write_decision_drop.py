@@ -43,6 +43,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.events_log import resolve_main_repo_root  # noqa: E402
 from lib.iterate_entry import sanitize_run_id_for_filename  # noqa: E402
 
 DROP_DIRNAME = "decision-drops"  # under .shipwright/agent_docs/
@@ -55,7 +56,21 @@ class DecisionDropError(RuntimeError):
 
 
 def drop_dir(project_root: Path) -> Path:
-    return project_root / ".shipwright" / "agent_docs" / DROP_DIRNAME
+    """Resolve ``.shipwright/agent_docs/decision-drops/``, git-worktree-aware.
+
+    Iterate F3 runs inside an ephemeral worktree (unconditional isolation).
+    The worktree's drop dir is destroyed by ``git worktree remove`` before
+    ``/shipwright-changelog``'s ``aggregate_decisions.py`` can fold the drop
+    into ``decision_log.md`` — so the drop MUST be written next to the MAIN
+    repo, the directory the aggregator reads. In a plain checkout (or when
+    git is unavailable) this is identical to
+    ``project_root/.shipwright/agent_docs/decision-drops`` — behavior
+    unchanged. Mirrors ``lib.events_log.resolve_events_path``; kept in lock
+    step with ``aggregate_decisions.drop_dir`` (drift = silently lost ADRs).
+    """
+    project_root = Path(project_root)
+    root = resolve_main_repo_root(project_root) or project_root
+    return root / ".shipwright" / "agent_docs" / DROP_DIRNAME
 
 
 def _atomic_exclusive_write(target: Path, content: str) -> None:
@@ -177,7 +192,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
-    print(str(path.relative_to(Path(args.project_root).resolve())))
+    # The drop is written next to the MAIN repo (worktree-aware drop_dir),
+    # which is ABOVE --project-root when F3 runs inside an iterate worktree —
+    # `relative_to` would then raise ValueError. Show the path relative to
+    # --project-root when it is genuinely below it, else the absolute path.
+    try:
+        display = path.relative_to(Path(args.project_root).resolve())
+    except ValueError:
+        display = path
+    print(str(display))
     print(
         f"decision-drop written for run_id={args.run_id} — ADR-NNN assigned "
         "at /shipwright-changelog release time.",

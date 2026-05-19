@@ -34,6 +34,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.events_log import resolve_main_repo_root  # noqa: E402
 from lib.file_lock import LockTimeout, file_lock  # noqa: E402
 from tools.write_decision_log import (  # noqa: E402
     DECISION_LOG_HEADER,
@@ -51,7 +52,18 @@ class DecisionAggregatorError(RuntimeError):
 
 
 def drop_dir(project_root: Path) -> Path:
-    return project_root / ".shipwright" / "agent_docs" / DROP_DIRNAME
+    """Resolve ``.shipwright/agent_docs/decision-drops/``, git-worktree-aware.
+
+    Symmetric with ``write_decision_drop.drop_dir`` — the producer (iterate
+    F3) and the consumer (this aggregator) MUST agree on where the drop
+    files live, or aggregation silently misses them. See that function for
+    the worktree rationale. ``/shipwright-changelog`` runs the aggregator on
+    the main repo, so this resolves to ``project_root`` itself there; the
+    worktree-awareness keeps producer/consumer in lock step regardless.
+    """
+    project_root = Path(project_root)
+    root = resolve_main_repo_root(project_root) or project_root
+    return root / ".shipwright" / "agent_docs" / DROP_DIRNAME
 
 
 def _snapshot_drops(dd: Path) -> list[Path]:
@@ -93,6 +105,15 @@ def aggregate(
 ) -> dict:
     """Fold every decision-drop into ``decision_log.md``. Returns a summary."""
     project_root = Path(project_root).resolve()
+    # Deliberate asymmetry: ``dd`` (the gitignored decision-drop STAGING dir)
+    # is repo-scoped and resolved worktree-aware, exactly like the event log
+    # — a drop written from an iterate worktree lives next to the main repo.
+    # ``log_path`` (and architecture.md, via _append_architecture_update) is
+    # a TRACKED, committed artifact and stays ``project_root``-relative: it
+    # belongs to whichever checkout the aggregator is invoked on.
+    # ``/shipwright-changelog`` runs the aggregator on the main repo, so the
+    # two resolve to the same root in practice — but the distinction is
+    # load-bearing if the aggregator is ever invoked elsewhere.
     log_path = project_root / ".shipwright" / "agent_docs" / "decision_log.md"
     dd = drop_dir(project_root)
 

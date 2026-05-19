@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from tools.aggregate_decisions import aggregate
+from tools.aggregate_decisions import aggregate, drop_dir
 from tools.write_decision_drop import write_decision_drop
 
 
@@ -111,3 +111,14 @@ def test_architecture_impact_updates_architecture_md(tmp_path):
     _drop(tmp_path, "iterate-20260515-aaa", architecture_impact="component")
     aggregate(tmp_path)
     assert "ADR-001" in arch.read_text(encoding="utf-8")
+
+
+def test_drop_dir_resolves_main_repo_from_worktree(git_origin_repo, make_worktree):
+    """aggregate_decisions.drop_dir is worktree-aware — symmetric with
+    write_decision_drop.drop_dir, so the producer and the consumer never
+    disagree on where the drop files live."""
+    work, _ = git_origin_repo
+    wt = make_worktree(work, "agg-wt")
+    assert drop_dir(wt).resolve() == (
+        work / ".shipwright" / "agent_docs" / "decision-drops"
+    ).resolve()

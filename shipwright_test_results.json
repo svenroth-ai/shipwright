@@ -1,30 +1,33 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-19-github-triage-importer",
+    "run_id": "iterate-2026-05-19-fix-decision-drop-worktree",
     "date": "2026-05-19",
     "unit": {
       "status": "passed",
-      "passed": 1856,
-      "total": 1856,
-      "note": "Full shared/tests/ suite (F0) — medium FEATURE, GitHub findings triage producer. 1856 passed, 11 skipped, 0 failed. 34 new tests in test_github_triage.py. The run also fixed a pre-existing F0 failure inherited from origin/main (test_no_legacy_artifact_paths[planning-migrated]) — a self-referential canon-lint trip on conventions.md from iterate-2026-05-18; conventions.md added to ALLOWLIST in artifact_migrations.py."
+      "passed": 1983,
+      "total": 1983,
+      "note": "Combined F0 suite (shared/tests/ + integration-tests/) — 1983 passed, 11 skipped, 20 slow deselected, 0 failed. touches_shared_infra risk flag enforced the full suite. New tests: 5 resolve_main_repo_root cases, 7 decision-drop worktree/round-trip/parity cases, 1 verifier worktree case, 3 SSoT meta-tests."
     },
-    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "No CRUD/DB changes — pure Python producer + hook."},
-    "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
+    "integration": {
+      "status": "passed",
+      "passed": 0,
+      "total": 0,
+      "note": "integration-tests/ ran within the combined F0 unit run above and are all green — incl. test_events_log_parity.py (cross-plugin resolver parity, the drift-guard for the refactored resolve_events_path). Not counted separately."
+    },
+    "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes — Python framework repo."},
     "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web/Playwright surface — library/framework repo. The cli surface is verified below (surface_verification)."},
     "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI."},
     "smoke": {"status": "not_run", "note": "No browser/server surface."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest pytest shared/tests/test_github_triage.py -q --color=no",
+      "runner": "uv run --extra dev pytest shared/tests/test_write_decision_drop.py shared/tests/test_aggregate_decisions.py shared/tests/test_events_log.py shared/tests/test_decision_drop_ssot.py shared/tests/test_verify_iterate_finalization.py -q",
       "exit_code": 0,
-      "tests_run": 34,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-19-github-triage-importer/surface_verification.log",
-      "timestamp": "2026-05-19T09:02:25.640Z",
+      "tests_run": 100,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-19-fix-decision-drop-worktree/surface_verification.log",
+      "timestamp": "2026-05-19T18:56:09.888Z",
       "attempts": 1,
-      "note": "F0.5 cli surface — 34 tests for the GitHub triage importer (github_api + github_triage + the SessionStart hook), exit 0."
+      "note": "F0.5 cli surface — 100 tests driving the producer->file->consumer->verifier chain through real git worktrees (write_decision_drop from a worktree -> drop in the main repo -> aggregate_decisions folds it -> check_adr_in_iterate_history finds it), exit 0."
     },
-    "degraded": [
-      "External LLM review skipped — no API keys (openrouter/gemini/openai absent). Degraded Branch B Option 2: mandatory self-review (7/7) + internal code-reviewer subagent used instead; 5 review findings (MEDIUM-1/2/3, LOW-4/5) addressed before commit."
-    ]
+    "degraded": []
   }
 }

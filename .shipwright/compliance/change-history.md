@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-05-19T09:08:25Z
-Total commits: 665
+Generated: 2026-05-19T19:00:56Z
+Total commits: 667
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 220
+    "feat" : 221
     "fix" : 175
-    "chore" : 114
+    "chore" : 115
     "docs" : 99
     "refactor" : 34
     "test" : 15
@@ -19,10 +19,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 220 commits
+### Features (feat) — 221 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-19 | triage | import GitHub findings into the triage inbox | ff51a8cc80f1 |
 | 2026-05-16 | spec | backfill FR-01.14 (Triage Inbox) + link 7 historical feature events | 805d268a9dc3 |
 | 2026-05-16 | iterate | enforce spec-impact classification on every feature/change iterate | 5544ea3b6e38 |
 | 2026-05-16 | iterate | unconditional worktree isolation for /shipwright-iterate | 42e65d7e0032 |
@@ -424,10 +425,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 114 commits
+### Chores (chore) — 115 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-19 | — | remove gitignore entry for deleted triage handoff doc | 90af09980d93 |
 | 2026-05-18 | compliance | regenerate artefacts after launch-blocker fix iterate | a12455cc3128 |
 | 2026-05-18 | — | add CODE_OF_CONDUCT and activate CI workflows for public launch | 2671c69b9155 |
 | 2026-05-18 | — | scrub local identifiers for public release | b9d1d8564074 |
@@ -728,7 +730,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 665 |
+| Total commits | 667 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 665 |
+| Human-authored commits | 667 |
 

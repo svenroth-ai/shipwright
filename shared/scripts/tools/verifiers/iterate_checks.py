@@ -29,7 +29,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
-from lib.events_log import resolve_events_path  # noqa: E402
+from lib.events_log import resolve_events_path, resolve_main_repo_root  # noqa: E402
 from lib.iterate_entry import (  # noqa: E402
     MIGRATION_QUARANTINED_COUNT_KEY,
     find_entry_by_run_id,
@@ -111,7 +111,13 @@ def check_adr_in_iterate_history(project_root: Path, run_id: str) -> CheckResult
     # match) so a run-id that merely starts with "adr-" is not misread as a
     # numbered ADR.
     if not re.fullmatch(r"(?i)ADR-\d+", adr_id.strip()):
-        drop_dir = project_root / ".shipwright" / "agent_docs" / "decision-drops"
+        # Worktree-aware: iterate F3 writes the decision-drop next to the
+        # MAIN repo (write_decision_drop.drop_dir), but this verifier runs
+        # at F11 with project_root = the iterate worktree. Resolve the drop
+        # dir against the main repo, or the pending-drop branch never
+        # matches and a freshly-written ADR is reported missing.
+        drop_root = resolve_main_repo_root(project_root) or project_root
+        drop_dir = drop_root / ".shipwright" / "agent_docs" / "decision-drops"
         if drop_dir.is_dir():
             safe = sanitize_run_id_for_filename(adr_id)
             if any(p.name.startswith(f"{safe}_") for p in drop_dir.glob("*.json")):

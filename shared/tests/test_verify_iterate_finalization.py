@@ -14,15 +14,8 @@ from pathlib import Path
 import pytest
 
 
-def _add_worktree(work: Path, slug: str) -> Path:
-    """Create a linked worktree under <work>/.worktrees/<slug> from main."""
-    wt = work / ".worktrees" / slug
-    subprocess.run(
-        ["git", "-C", str(work), "worktree", "add", str(wt),
-         "-b", f"iterate/{slug}", "main"],
-        capture_output=True, text=True, check=True,
-    )
-    return wt
+# Linked worktrees come from the shared ``make_worktree`` fixture
+# (shared/tests/conftest.py).
 
 
 def _agent_docs_root(tmp: Path) -> Path:
@@ -147,7 +140,7 @@ def test_events_fails_when_file_missing(tmp_path):
     assert result.ok is False
 
 
-def test_events_check_resolves_main_log_from_worktree(git_origin_repo):
+def test_events_check_resolves_main_log_from_worktree(git_origin_repo, make_worktree):
     """check_events_has_commit run from inside an iterate worktree must read
     the MAIN repo's event log — that is where F7 records the commit."""
     work, _ = git_origin_repo
@@ -155,12 +148,12 @@ def test_events_check_resolves_main_log_from_worktree(git_origin_repo):
         json.dumps({"type": "work_completed", "commit": "ma1nc0m"}) + "\n",
         encoding="utf-8",
     )
-    wt = _add_worktree(work, "probe")
+    wt = make_worktree(work, "probe")
     result = check_events_has_commit(wt, "ma1nc0m")
     assert result.ok is True
 
 
-def test_boundary_roundtrip_worktree_producer_to_verifier(git_origin_repo):
+def test_boundary_roundtrip_worktree_producer_to_verifier(git_origin_repo, make_worktree):
     """AC-6 boundary round-trip: an event WRITTEN from a worktree via
     record_event is READ BACK by the F11 verifier from that same worktree —
     both resolve the one canonical main-repo log. This pins producer and
@@ -168,7 +161,7 @@ def test_boundary_roundtrip_worktree_producer_to_verifier(git_origin_repo):
     from tools.record_event import append_event
 
     work, _ = git_origin_repo
-    wt = _add_worktree(work, "probe")
+    wt = make_worktree(work, "probe")
     append_event(wt, {"v": 1, "id": "evt-rt000001", "ts": "T",
                       "type": "work_completed", "source": "iterate",
                       "commit": "r0undtr1p"})
@@ -238,6 +231,34 @@ def test_adr_check_passes_with_pending_decision_drop(tmp_path):
     drops.mkdir(parents=True)
     (drops / "iterate-20260515-x_001.json").write_text("{}")
     result = check_adr_in_iterate_history(proj, "iterate-20260515-x")
+    assert result.ok is True
+    assert "decision-drop" in result.detail
+
+
+def test_adr_check_finds_decision_drop_in_main_repo_from_worktree(
+    git_origin_repo, make_worktree
+):
+    """F11 reality: check_adr_in_iterate_history runs with project_root = the
+    iterate worktree, but write_decision_drop writes the drop next to the
+    MAIN repo. The verifier must resolve the drop dir against the main repo
+    too — otherwise a freshly-written ADR is reported missing at F11."""
+    from tools.write_decision_drop import write_decision_drop
+
+    work, _ = git_origin_repo
+    run_id = "iterate-20260519-wt-adr"
+    wt = make_worktree(work, "wt-adr")
+    (wt / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
+    # F5c writes the iterate_history entry into the worktree (project_root).
+    (wt / "shipwright_run_config.json").write_text(
+        json.dumps({"iterate_history": [{"run_id": run_id, "adr": run_id}]}),
+        encoding="utf-8",
+    )
+    # F3 writes the decision-drop — worktree-aware, lands next to the MAIN repo.
+    write_decision_drop(
+        wt, run_id=run_id, section="Iterate — bug: x", title="x",
+        context="c", decision="d", consequences="k",
+    )
+    result = check_adr_in_iterate_history(wt, run_id)
     assert result.ok is True
     assert "decision-drop" in result.detail
 
