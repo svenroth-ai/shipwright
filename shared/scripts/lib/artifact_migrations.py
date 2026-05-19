@@ -129,6 +129,7 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/adopt/enrichment.json",
         ".shipwright/agent_docs/architecture.md",
         ".shipwright/agent_docs/decision_log.md",
+        ".shipwright/agent_docs/conventions.md",
         ".shipwright/compliance/change-history.md",
         ".shipwright/planning/iterate/**.md",
         # External-review JSON captures (e.g. iterate-2026-05-11-triage-
@@ -195,6 +196,7 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/adopt/enrichment.json",
         ".shipwright/agent_docs/architecture.md",
         ".shipwright/agent_docs/decision_log.md",
+        ".shipwright/agent_docs/conventions.md",
         ".shipwright/compliance/change-history.md",
         ".shipwright/planning/iterate/**.md",
         # External-review JSON captures (e.g. iterate-2026-05-11-triage-
@@ -254,6 +256,7 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/adopt/enrichment.json",
         ".shipwright/agent_docs/architecture.md",
         ".shipwright/agent_docs/decision_log.md",
+        ".shipwright/agent_docs/conventions.md",
         ".shipwright/compliance/change-history.md",
         ".shipwright/planning/iterate/**.md",
         # External-review JSON captures (e.g. iterate-2026-05-11-triage-

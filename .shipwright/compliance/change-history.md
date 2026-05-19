@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-05-18T21:25:12Z
-Total commits: 663
+Generated: 2026-05-19T09:08:25Z
+Total commits: 665
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 220
-    "fix" : 173
+    "fix" : 175
     "chore" : 114
     "docs" : 99
     "refactor" : 34
@@ -244,10 +244,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 173 commits
+### Fixes (fix) — 175 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-19 | hooks | make file-size guard a non-blocking crossing-only nudge | c76c9bec8451 |
+| 2026-05-18 | verifiers | recognise drop-dir changelog, adopted spec path, iterate/adopt completion evidence | 40599dee30bf |
 | 2026-05-18 | ci | harden activated workflows — scanners, CI-aware test, CodeQL guard | d85210f9cc36 |
 | 2026-05-18 | hooks | resolve a real Python interpreter + fix 17 launch-blocker test failures | 21cef22325f6 |
 | 2026-05-16 | triage | canonical drift dedup keys + drift/F0.5 auto-resolve | 2f6794b8af53 |
@@ -726,7 +728,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 663 |
+| Total commits | 665 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 663 |
+| Human-authored commits | 665 |
 

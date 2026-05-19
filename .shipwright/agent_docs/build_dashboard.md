@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-18 21:25 UTC | Session: f8244de8-e9ec-4eaa-8cc6-ba9a8c6b636c | Run: iterate-2026-05-18-phase-quality-check-fixes
+> Updated: 2026-05-19 09:08 UTC | Session: 20d4584e-8a2e-48f1-9448-b325b5b63c7d | Run: iterate-2026-05-19-github-triage-importer
 
-## Recent Changes (35 iterations)
+## Recent Changes (36 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | phase-quality auditor recognises drop-dir changelog, adopted spec path, and iterate/adopt completion evidence (C1/C5/S1 check-side fixes) | 1817/1817 | 40599de |  | 2026-05-18 |
 | bug | harden activated CI workflows: scanners, CI-aware test, CodeQL guard | 337/340 | d85210f |  | 2026-05-18 |
 | bug | fix 17 launch-blocker test failures (Windows python3 stub + 6 smaller groups) | 3507/3507 | 21cef22 |  | 2026-05-18 |
 | bug | triage detector dedup + auto-resolve (rebased onto #31) | 1776/1783 | cd957a0 |  | 2026-05-16 |
@@ -42,7 +43,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-18 | Unit: 1817/1817 | Smoke: not_run | (iterate)
+Last run: 2026-05-19 | Unit: 1856/1856 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
