@@ -77,12 +77,16 @@ execution — that's the backlog's job after promote.
 | `shared/scripts/surface_verification.py::_emit_failure_to_triage` | F0.5 fail-closed exits (3 of 4 — see below) | `f0.5` | One item per non-zero exit, severity `critical`, dedup by `(run_id, surface, condition)` within 24h. Items for the same `(run_id, surface)` whose condition cleared on a green re-run → auto-dismissed with `reason="f05Resolved"` |
 | `shared/scripts/hooks/check_drift.py::_emit_drift_to_triage` | SessionStart hook on any timestamp / content drift in CLAUDE.md | `drift` | One item per file:kind (`timestamp` or `content`), severity `medium`, dedup by `(canonical file path, kind)` cross-session indefinite — the `content` path is `normcase`+`realpath`-canonicalized so Windows drive-letter casing can't split one drift across two items. Findings absent from the current run → auto-dismissed with `reason="driftResolved"` (this detector's own `timestamp`/`content` keys only — `artifact_sync.py`'s `:artifact` keys are left alone) |
 | `shared/scripts/artifact_sync.py::_emit_drift_to_triage` | F1 (post-commit) drift check on changed_files vs sync_config | `drift` | One item per affected mapping pattern (`kind=artifact`), severity `medium`, dedup by `(pattern, kind)` cross-session indefinite |
+| `shared/scripts/hooks/import_github_findings.py` | SessionStart hook, throttled (default 6h, configurable) | `github` | GitHub code-scanning / Dependabot / secret-scanning alerts + the latest failed default-branch CI run per workflow, pulled via `gh api`. Dedup keys `github:{code-scanning,dependabot,secret-scanning}:<number>` + `github-ci:<workflow>:<sha>`, `match_commit=False`, `window=None`. Auto-resolve scoped to those four key prefixes (`reason="githubResolved"`), only for sources whose fetch succeeded — a failed fetch never mass-resolves. Throttle state in `.shipwright/github_import_state.json`; fail-soft (never blocks SessionStart). A secret-scanning alert's raw `secret` value is never persisted. |
 
 ### Deferred producers
 
-- **CI failure producer** — deferred indefinitely. CI runs on GitHub
-  Actions; there is no autonomous local data source for CI state today.
-  Wiring a webhook receiver is out of scope. Tracked as future work.
+> The CI-failure producer — deferred under ADR-047 because a webhook
+> receiver was out of scope — shipped in 2026-05 as part of the
+> `github` producer above (`import_github_findings.py`). It is
+> pull-based via `gh api`, not a webhook receiver, so the original
+> "no autonomous local data source" objection no longer applies.
+
 - **F0.5 `missing_block` producer** — the condition `"missing_block"`
   in the F0.5 dedup-key enum is reserved for a future audit-side
   producer in `shared/scripts/tools/verifiers/iterate_checks.py`. That
@@ -171,7 +175,7 @@ The full table is in `shared/scripts/triage.py` (`PRIORITY_FROM_SEVERITY`,
 the imports, not duplicated literals.
 
 The mapping matches `leadwright`'s expectation: severity `critical → P0`,
-`info → P3-or-skip`, source `security/performance/ci/phaseQuality/iterate
+`info → P3-or-skip`, source `security/performance/ci/github/phaseQuality/iterate
 → engineering`, source `compliance → compliance`.
 
 ## Storage API

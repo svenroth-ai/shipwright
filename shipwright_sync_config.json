@@ -1,6 +1,23 @@
 {
-  "mappings": [],
-  "file_to_fr_map": {},
-  "note": "Empty by default. Populated incrementally by /shipwright-iterate as file changes get mapped to FRs.",
-  "updated_at": "2026-05-02T18:37:57.869057+00:00"
+  "mappings": [
+    {
+      "pattern": "shared/scripts/github_*.py",
+      "artifacts": [".shipwright/planning/01-adopted/spec.md"],
+      "frs": ["FR-01.14"],
+      "category": "triage"
+    },
+    {
+      "pattern": "shared/scripts/hooks/import_github_findings.py",
+      "artifacts": [".shipwright/planning/01-adopted/spec.md"],
+      "frs": ["FR-01.14"],
+      "category": "triage"
+    }
+  ],
+  "file_to_fr_map": {
+    "shared/scripts/github_api.py": "FR-01.14",
+    "shared/scripts/github_triage.py": "FR-01.14",
+    "shared/scripts/hooks/import_github_findings.py": "FR-01.14"
+  },
+  "note": "Populated incrementally by /shipwright-iterate as file changes get mapped to FRs.",
+  "updated_at": "2026-05-19T12:00:00+00:00"
 }

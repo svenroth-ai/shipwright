@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-19-github-triage-importer",
+  "date": "2026-05-19T09:08:25.909304Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/github-triage-importer",
+  "spec": ".shipwright/planning/iterate/2026-05-19-github-triage-importer.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-05-19-github-triage-importer"
+}

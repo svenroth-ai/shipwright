@@ -1,36 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-18-phase-quality-check-fixes"
+run_id: "iterate-2026-05-19-github-triage-importer"
 phase: "iterate"
-reason: "iterate: phase-quality-check-fixes"
-timestamp: "2026-05-18T21:25:12.557001+00:00"
+reason: "iterate: github-triage-importer"
+timestamp: "2026-05-19T09:08:25.731447+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-18 21:25:12 UTC
+> Auto-generated 2026-05-19 09:08:25 UTC
 
 ## Session Info
 
-- **Session ID**: f8244de8-e9ec-4eaa-8cc6-ba9a8c6b636c
-- **Timestamp**: 2026-05-18 21:25:12 UTC
-- **Reason**: iterate: phase-quality-check-fixes
+- **Session ID**: 20d4584e-8a2e-48f1-9448-b325b5b63c7d
+- **Timestamp**: 2026-05-19 09:08:25 UTC
+- **Reason**: iterate: github-triage-importer
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-18-fix-ci-workflows
-- **Date**: 2026-05-18T20:12:16.120437Z
-- **Type**: bug
-- **Complexity**: small
-- **Branch**: iterate/fix-ci-workflows
-- **ADR**: iterate-2026-05-18-fix-ci-workflows
+- **Run ID**: iterate-2026-05-18-phase-quality-check-fixes
+- **Date**: 2026-05-18T21:25:20.770866Z
+- **Type**: change
+- **Complexity**: medium
+- **Branch**: iterate/phase-quality-check-fixes
+- **ADR**: iterate-2026-05-18-phase-quality-check-fixes
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-05-18-phase-quality-check-fixes.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/phase-quality-check-fixes
-- **Run ID**: iterate-2026-05-18-phase-quality-check-fixes
-- **Spec**: .shipwright/planning/iterate/2026-05-18-phase-quality-check-fixes.md
+- **Branch**: iterate/github-triage-importer
+- **Run ID**: iterate-2026-05-19-github-triage-importer
+- **Spec**: .shipwright/planning/iterate/2026-05-19-github-triage-importer.md
 - **Complexity**: medium
 - **External Review Marker**: stale (predates spec (2026-05-18T20:58:58))
 
@@ -51,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/phase-quality-check-fixes
-- **Last Commit**: 502d821 Merge pull request #36 from svenroth-ai/iterate/fix-ci-workflows
+- **Branch**: iterate/github-triage-importer
+- **Last Commit**: 4b50b75 Merge pull request #37 from svenroth-ai/iterate/phase-quality-check-fixes
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-9355640f | work_completed | iterate (phase-quality auditor recognises drop-dir changelog, adopted spec path, and iterate/adopt completion evidence (C1/C5/S1 check-side fixes)) | 2026-05-18 |
 | evt-51590a74 | work_completed | iterate (harden activated CI workflows: scanners, CI-aware test, CodeQL guard) | 2026-05-18 |
 | evt-7078b787 | work_completed | iterate (fix 17 launch-blocker test failures (Windows python3 stub + 6 smaller groups)) | 2026-05-18 |
 | evt-16154172 | work_completed | iterate (triage detector dedup + auto-resolve (rebased onto #31)) | 2026-05-16 |
 | evt-8659999c | work_completed | iterate (spec-impact classification gate: enforce ADD/MODIFY/REMOVE/NONE on every feature/change iterate (F7 record_event + F11 verifier gates, Group D5 audit, Removed Requirements convention)) | 2026-05-16 |
-| evt-e14e5f26 | work_completed | iterate (triage detector dedup + auto-resolve) | 2026-05-16 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 35
-- **Last iterate**: bug — harden activated CI workflows: scanners, CI-aware test, CodeQL guard (2026-05-18)
+- **Total work events**: 36
+- **Last iterate**: change — phase-quality auditor recognises drop-dir changelog, adopted spec path, and iterate/adopt completion evidence (C1/C5/S1 check-side fixes) (2026-05-18)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

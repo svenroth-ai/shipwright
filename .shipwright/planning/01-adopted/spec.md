@@ -23,7 +23,7 @@ Shipwright is an AI-powered SDLC framework built on Claude Code. It is structure
 | FR-01.11 | /shipwright-iterate | Must | Complexity-adaptive SDLC for ongoing changes — auto-detects intent and complexity, scales from quick fix to structured feature with specs, plans, reviews, tests; every feature/change classifies its spec impact (ADD/MODIFY/REMOVE/NONE), enforced at finalization. | enrichment.json |
 | FR-01.12 | /shipwright-preview | May | Local browser preview — start dev server for the target project and show the URL. | enrichment.json |
 | FR-01.13 | /shipwright-adopt | Must | Onboard an existing (brownfield) repository into the Shipwright SDLC; analyzes codebase, generates CLAUDE.md, agent_docs, planning specs, compliance artifacts, suggest_iterate hook, and an E2E baseline; scaffolds `.env.local` with the profile's framework keys. | enrichment.json |
-| FR-01.14 | Triage Inbox | Must | Pre-backlog triage buffer — hook/scan/audit findings land in a per-project `.shipwright/triage.jsonl` store via idempotent producers and surface in the Command Center WebUI Triage tab with operator-driven promote/dismiss, keeping the ExternalTask list curated instead of flooded. | backfill |
+| FR-01.14 | Triage Inbox | Must | Pre-backlog triage buffer — findings from local hooks/scans/audits and from GitHub's automated runs (code-scanning, Dependabot, secret-scanning alerts, failed CI runs) land in a per-project `.shipwright/triage.jsonl` store via idempotent producers and surface in the Command Center WebUI Triage tab with operator-driven promote/dismiss, keeping the ExternalTask list curated instead of flooded. | backfill |
 
 
 ## Quality Requirements
@@ -172,5 +172,24 @@ events evt-3f488ddc + evt-32f2f1f4 (Iterate 1a) and evt-84dbdf5e (Iterate 2).
   triage buffer.
 - (E) Producers wired: storage API + aggregator + 2 producers + scaffolder
   + promote CLI (Iterate 1a), plus 4 further producers — security,
-  performance, F0.5, and drift (Iterate 2). The CI producer is explicitly
-  deferred.
+  performance, F0.5, and drift (Iterate 2), plus the GitHub findings
+  producer (iterate-2026-05-19-github-triage-importer).
+
+Refined by `iterate-2026-05-19-github-triage-importer` (GitHub findings
+producer — un-defers the CI producer deferred under ADR-047):
+
+- (E) Given the `gh` CLI is installed and authenticated, when the throttled
+  `import_github_findings.py` SessionStart hook runs (default once per 6h),
+  then open GitHub code-scanning, Dependabot, and secret-scanning alerts and
+  the latest failed default-branch CI run per workflow are imported into
+  `.shipwright/triage.jsonl` with `source="github"` and stable namespaced
+  dedup keys, exactly once per finding.
+- (E) Given a previously-imported GitHub finding no longer appears in a
+  successful fetch, when the importer next runs, then its open triage item
+  is auto-dismissed with `reason="githubResolved"` — scoped to the four
+  `github:` / `github-ci:` key prefixes, and only for sources whose fetch
+  succeeded (a failed fetch never mass-resolves).
+- (E) Given a secret-scanning alert, when it is imported, then the raw
+  `secret` value from the API is never written to `.shipwright/triage.jsonl`.
+- (E) Given `gh` is absent or unauthenticated, when the SessionStart hook
+  fires, then it exits 0 without blocking the session (fail-soft).

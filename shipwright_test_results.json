@@ -1,30 +1,30 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-18-phase-quality-check-fixes",
-    "date": "2026-05-18",
+    "run_id": "iterate-2026-05-19-github-triage-importer",
+    "date": "2026-05-19",
     "unit": {
       "status": "passed",
-      "passed": 1817,
-      "total": 1817,
-      "note": "Full shared/tests/ suite (F0) — medium iterate, shared-infra change to the phase-quality verifier layer. 1817 passed, 11 skipped, 0 failed. The two changed-behavior files contribute 107 tests (test_verifiers_common.py + test_spec_checks.py), of which 17 are new for this run."
+      "passed": 1856,
+      "total": 1856,
+      "note": "Full shared/tests/ suite (F0) — medium FEATURE, GitHub findings triage producer. 1856 passed, 11 skipped, 0 failed. 34 new tests in test_github_triage.py. The run also fixed a pre-existing F0 failure inherited from origin/main (test_no_legacy_artifact_paths[planning-migrated]) — a self-referential canon-lint trip on conventions.md from iterate-2026-05-18; conventions.md added to ALLOWLIST in artifact_migrations.py."
     },
-    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "No CRUD/DB changes — pure check-side Python."},
+    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "No CRUD/DB changes — pure Python producer + hook."},
     "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
     "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web/Playwright surface — library/framework repo. The cli surface is verified below (surface_verification)."},
     "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI."},
     "smoke": {"status": "not_run", "note": "No browser/server surface."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest --with pytest-mock pytest shared/tests/test_verifiers_common.py shared/tests/test_spec_checks.py -q --color=no",
+      "runner": "uv run --with pytest pytest shared/tests/test_github_triage.py -q --color=no",
       "exit_code": 0,
-      "tests_run": 107,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-18-phase-quality-check-fixes/surface_verification.json",
-      "timestamp": "2026-05-18T21:22:37.897Z",
+      "tests_run": 34,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-19-github-triage-importer/surface_verification.log",
+      "timestamp": "2026-05-19T09:02:25.640Z",
       "attempts": 1,
-      "note": "F0.5 cli surface — the two changed-behavior test files (107 tests, exit 0). Confidence-Calibration probes (14, all PASS) additionally round-tripped C1/C5/S1 against this repo's real adopted artifacts; evidence at .shipwright/runs/iterate-2026-05-18-phase-quality-check-fixes/probe_output.txt."
+      "note": "F0.5 cli surface — 34 tests for the GitHub triage importer (github_api + github_triage + the SessionStart hook), exit 0."
     },
     "degraded": [
-      "External LLM review skipped — no API keys (openrouter/gemini/openai all absent). Degraded Branch B Option 2: mandatory self-review (7/7) + internal code-reviewer subagent cascade used instead; 4 review findings (MEDIUM-1/2, LOW-3/4) addressed before commit."
+      "External LLM review skipped — no API keys (openrouter/gemini/openai absent). Degraded Branch B Option 2: mandatory self-review (7/7) + internal code-reviewer subagent used instead; 5 review findings (MEDIUM-1/2/3, LOW-4/5) addressed before commit."
     ]
   }
 }
