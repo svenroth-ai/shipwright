@@ -1,33 +1,38 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-19-fix-decision-drop-worktree",
-    "date": "2026-05-19",
+    "run_id": "iterate-2026-05-20-triage-launch-surface",
+    "date": "2026-05-20",
     "unit": {
       "status": "passed",
-      "passed": 1983,
-      "total": 1983,
-      "note": "Combined F0 suite (shared/tests/ + integration-tests/) — 1983 passed, 11 skipped, 20 slow deselected, 0 failed. touches_shared_infra risk flag enforced the full suite. New tests: 5 resolve_main_repo_root cases, 7 decision-drop worktree/round-trip/parity cases, 1 verifier worktree case, 3 SSoT meta-tests."
+      "passed": 1985,
+      "total": 1985,
+      "note": "Full shared/tests/ suite — 1985 passed, 11 skipped, 18 deselected, 0 failed. touches_shared_infra risk flag enforced the full run. New tests added in this iterate: 22 action-unit (security/secrets/ci + per-source-gated legacy migration + symmetric emit/resolve gate), 14 CLI subcommand + parity, 28 launch_payload schema round-trip (incl. parametrized across all 10 KNOWN_SOURCES), 26 owner_repo resolution matrix (12 valid + 8 invalid + drift-protection no-gh-api), 6 aggregator fence + loud-failure + control-char strip, 15 dismiss helper + sanitize_reason + promote-reason hardening. Total touched-module surface: 228 tests, all green."
     },
     "integration": {
-      "status": "passed",
+      "status": "not_run",
       "passed": 0,
       "total": 0,
-      "note": "integration-tests/ ran within the combined F0 unit run above and are all green — incl. test_events_log_parity.py (cross-plugin resolver parity, the drift-guard for the refactored resolve_events_path). Not counted separately."
+      "note": "Integration-tests/ not relevant to this iterate (no cross-plugin contracts changed). Shared/tests/ covers the action-unit + schema + CLI surfaces empirically."
     },
     "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes — Python framework repo."},
-    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web/Playwright surface — library/framework repo. The cli surface is verified below (surface_verification)."},
+    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web/Playwright surface — library/framework repo. CLI surface verified below."},
     "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI."},
     "smoke": {"status": "not_run", "note": "No browser/server surface."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_write_decision_drop.py shared/tests/test_aggregate_decisions.py shared/tests/test_events_log.py shared/tests/test_decision_drop_ssot.py shared/tests/test_verify_iterate_finalization.py -q",
+      "runner": "uv run --extra dev pytest shared/tests/test_github_triage.py shared/tests/test_github_triage_action_units.py shared/tests/test_github_api.py shared/tests/test_triage_storage.py shared/tests/test_triage_schema.py shared/tests/test_triage_launch_payload.py shared/tests/test_triage_aggregator.py shared/tests/test_triage_promote.py shared/tests/test_triage_cli.py -v --color=no",
       "exit_code": 0,
-      "tests_run": 100,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-19-fix-decision-drop-worktree/surface_verification.log",
-      "timestamp": "2026-05-19T18:56:09.888Z",
+      "tests_run": 228,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-20-triage-launch-surface/surface_verification.log",
+      "timestamp": "2026-05-20T09:22:10.169Z",
       "attempts": 1,
-      "note": "F0.5 cli surface — 100 tests driving the producer->file->consumer->verifier chain through real git worktrees (write_decision_drop from a worktree -> drop in the main repo -> aggregate_decisions folds it -> check_adr_in_iterate_history finds it), exit 0."
+      "note": "F0.5 cli surface — 228 tests driving the producer→file→consumer→CLI chain through real subprocess invocations + round-trips. Includes the per-source-gated legacy migration matrix, the secret-scanning whitelist hygiene boundary, the owner_repo resolution matrix, and the CLI parity contract with triage_promote.py. Exit 0, single attempt."
     },
-    "degraded": []
+    "degraded": [
+      {
+        "condition": "external_review_partial",
+        "detail": "Gemini returned status=success with feedback=null; OpenAI (GPT-5) returned 14 substantive findings (2 HIGH, 9 MEDIUM, 3 LOW). All HIGH+MEDIUM integrated into spec + miniplan + tests before build. Sufficient coverage — no rerun needed."
+      }
+    ]
   }
 }

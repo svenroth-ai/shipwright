@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-19T19:00:56Z
+Generated: 2026-05-20T09:25:08Z
 
 ## Requirements Coverage
 
@@ -62,6 +62,7 @@ Generated: 2026-05-19T19:00:56Z
 | harden activated CI workflows: scanners, CI-aware test, CodeQL guard | iterate | bug |  | 337/340 | d85210f | 2026-05-18 |
 | phase-quality auditor recognises drop-dir changelog, adopted spec path, and iterate/adopt completion evidence (C1/C5/S1 check-side fixes) | iterate | change |  | 1817/1817 | 40599de | 2026-05-18 |
 | github-triage-importer | iterate | feature | FR-01.14 | 1856/1856 | ff51a8c | 2026-05-19 |
+| fix write_decision_drop.py worktree-awareness — decision-drops resolved against the main repo so iterate ADRs survive worktree cleanup | iterate | bug |  | 1983/1983 | 0d4d3d6 | 2026-05-19 |
 
 ## Coverage Summary
 
@@ -69,7 +70,7 @@ Generated: 2026-05-19T19:00:56Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 37 |
+| Iterate changes | 38 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

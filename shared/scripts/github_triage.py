@@ -1,26 +1,43 @@
 #!/usr/bin/env python3
 """GitHub findings -> triage inbox importer.
 
-Maps GitHub-reported findings into ``.shipwright/triage.jsonl`` via the
-idempotent triage producer API:
+**Action-unit model** (iterate-2026-05-20-triage-launch-surface, supersedes
+the per-finding mapping shipped in iterate-2026-05-19): GitHub findings
+collapse into a tiny number of operator-actionable items rather than one
+triage item per upstream finding. GitHub itself is the per-finding store —
+this importer's job is to emit "there is work here, here is how to start
+it", not to mirror that database.
 
-  - code-scanning alerts   -> github:code-scanning:<number>
-  - Dependabot alerts      -> github:dependabot:<number>
-  - secret-scanning alerts -> github:secret-scanning:<number>
-  - failed CI workflow runs -> github-ci:<workflow>:<head_sha>
+  - code-scanning + Dependabot  -> ``gh-security:{owner}/{repo}`` (one unit
+    per repo; ``launchPayload`` starts with ``/shipwright-security``).
+  - secret-scanning             -> ``gh-secrets:{owner}/{repo}`` (one unit
+    per repo; ``launchPayload`` is a whitelist-only rotation checklist —
+    no slash command, no alert content, secret rotation is manual).
+  - failed default-branch CI    -> ``gh-ci:{workflow_id}`` (one unit per
+    failing workflow; dedup key drops the ``head_sha`` so the payload is
+    stable across reruns and links to the workflow PAGE URL, not a single
+    run).
 
-Dedup keys are stable, namespaced, and indefinite (``match_commit=False``,
-``window_seconds=None`` — same shape as the drift/compliance producers), so
-a finding stays exactly one inbox item until it clears.
+Dedup keys remain stable and namespaced; ``match_commit=False`` +
+``window_seconds=None`` so a finding stays exactly one open inbox item
+until it clears.
 
 Auto-resolve mirrors ADR-052: a stale open item whose key left the current
 finding set is dismissed with ``reason="githubResolved"`` — scoped strictly
-to the four owned key prefixes, and ONLY for sources whose fetch actually
-succeeded (a failed fetch must never mass-resolve).
+to the three owned key prefixes, and ONLY for sources whose fetch actually
+succeeded.
+
+**Legacy migration** (one-shot): if a project's ``triage.jsonl`` predates
+this iterate it carries per-finding items with prefixes
+``github:code-scanning:`` / ``github:dependabot:`` /
+``github:secret-scanning:`` / ``github-ci:{wf}:{sha}``. The first
+successful per-source fetch dismisses the corresponding open legacy items
+with ``reason="schemaMigration"`` — gated PER ORIGINAL SOURCE, never
+inferred from another source's success (preserves the ADR-052 fail-soft
+invariant; review finding #3).
 
 See sibling ``github_api`` for the `gh` client and the throttled
 SessionStart entry point ``hooks/import_github_findings.py``.
-Part of iterate-2026-05-19-github-triage-importer.
 """
 
 from __future__ import annotations
@@ -32,7 +49,12 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import github_api
-from triage import append_triage_item_idempotent, mark_status, read_all_items
+from triage import (
+    SEVERITY_RANK,
+    append_triage_item_idempotent,
+    mark_status,
+    read_all_items,
+)
 
 SOURCE = "github"
 STATE_FILENAME = "github_import_state.json"
@@ -53,21 +75,34 @@ _GH_SEVERITY_TO_TRIAGE = {
 }
 
 # Workflow-run conclusions that count as a failure worth triaging.
-# `cancelled` is excluded — an operator cancelled it; it is not a defect.
 _FAILED_CONCLUSIONS = frozenset({"failure", "startup_failure", "timed_out"})
 
-# The dedup-key prefixes this producer owns — the auto-resolve pass is
-# scoped strictly to these (ADR-052: never resolve by `source` alone).
-_OWNED_PREFIXES = (
-    "github:code-scanning:",
-    "github:dependabot:",
-    "github:secret-scanning:",
-    "github-ci:",
+# Action-unit dedup-key prefixes this producer owns. The auto-resolve pass
+# is scoped strictly to these (ADR-052).
+PREFIX_SECURITY = "gh-security:"
+PREFIX_SECRETS = "gh-secrets:"
+PREFIX_CI = "gh-ci:"
+_OWNED_PREFIXES = (PREFIX_SECURITY, PREFIX_SECRETS, PREFIX_CI)
+
+# Legacy per-finding prefixes from iterate-2026-05-19. Migrated on the
+# first successful fetch of the corresponding source; never resolved from
+# a failed fetch (review finding #3).
+_LEGACY_CODE_SCANNING = "github:code-scanning:"
+_LEGACY_DEPENDABOT = "github:dependabot:"
+_LEGACY_SECRET_SCANNING = "github:secret-scanning:"
+_LEGACY_CI = "github-ci:"
+
+# Map: which legacy prefix gets migrated when which producer source succeeds.
+_LEGACY_MIGRATIONS: tuple[tuple[str, str], ...] = (
+    ("code_scanning", _LEGACY_CODE_SCANNING),
+    ("dependabot", _LEGACY_DEPENDABOT),
+    ("secret_scanning", _LEGACY_SECRET_SCANNING),
+    ("runs", _LEGACY_CI),
 )
 
 
 # ---------------------------------------------------------------------------
-# Pure mapping helpers
+# Severity helpers
 # ---------------------------------------------------------------------------
 
 def triage_severity(gh_value: str | None) -> str:
@@ -80,106 +115,235 @@ def triage_severity(gh_value: str | None) -> str:
 
 
 def _kind_for(severity: str) -> str:
-    """critical/high findings are bugs; lower severities are improvements
-    (mirrors the security producer's kind rule)."""
+    """critical/high findings are bugs; lower severities are improvements."""
     return "bug" if severity in ("critical", "high") else "improvement"
 
 
-def code_scanning_item(alert: dict) -> dict | None:
-    """Map a code-scanning alert to triage-item kwargs (None if unusable)."""
-    number = alert.get("number")
-    if number is None:
-        return None
-    rule = alert.get("rule") or {}
-    severity = triage_severity(
-        rule.get("security_severity_level") or rule.get("severity")
-    )
-    rule_id = rule.get("id") or rule.get("name") or "code-scanning"
-    desc = rule.get("description") or rule.get("name") or rule_id
-    location = (alert.get("most_recent_instance") or {}).get("location") or {}
-    path = location.get("path") or "?"
-    line = location.get("start_line") or "?"
-    url = alert.get("html_url") or ""
-    return {
-        "severity": severity,
-        "kind": _kind_for(severity),
-        "title": f"[code-scanning] {rule_id}: {desc}"[:160],
-        "detail": f"{path}:{line} | {desc} | {url}",
-        "dedup_key": f"github:code-scanning:{number}",
-    }
+def _max_severity(severities: list[str]) -> str:
+    """Pick the most severe of a list (lowest SEVERITY_RANK wins).
 
-
-def dependabot_item(alert: dict) -> dict | None:
-    """Map a Dependabot alert to triage-item kwargs (None if unusable)."""
-    number = alert.get("number")
-    if number is None:
-        return None
-    advisory = alert.get("security_advisory") or {}
-    severity = triage_severity(advisory.get("severity"))
-    summary = advisory.get("summary") or "dependency vulnerability"
-    package = (
-        ((alert.get("dependency") or {}).get("package") or {}).get("name") or "?"
-    )
-    url = alert.get("html_url") or ""
-    return {
-        "severity": severity,
-        "kind": _kind_for(severity),
-        "title": f"[dependabot] {package}: {summary}"[:160],
-        "detail": f"{summary} | package: {package} | {url}",
-        "dedup_key": f"github:dependabot:{number}",
-    }
-
-
-def secret_scanning_item(alert: dict) -> dict | None:
-    """Map a secret-scanning alert to triage-item kwargs (None if unusable).
-
-    A leaked credential is always ``critical``. The raw ``secret`` value on
-    the API object is deliberately NEVER read — only the type display name
-    and the alert URL are persisted (AC8 / secret hygiene).
+    Returns ``"medium"`` for an empty list — a defensive default so an
+    accidentally-empty caller never gets a crash.
     """
-    number = alert.get("number")
-    if number is None:
+    if not severities:
+        return "medium"
+    return min(severities, key=lambda s: SEVERITY_RANK.get(s, 99))
+
+
+def _security_url(owner_repo: str) -> str:
+    return f"https://github.com/{owner_repo}/security"
+
+
+def _secret_scanning_url(owner_repo: str) -> str:
+    return f"https://github.com/{owner_repo}/security/secret-scanning"
+
+
+def _workflow_page_url(owner_repo: str, workflow_id) -> str:
+    return f"https://github.com/{owner_repo}/actions/workflows/{workflow_id}"
+
+
+# ---------------------------------------------------------------------------
+# Action-unit mappers
+# ---------------------------------------------------------------------------
+
+def _severity_breakdown(alerts: list[dict], extract_severity) -> dict[str, int]:
+    """Count alerts per canonical triage severity.
+
+    ``extract_severity`` is per-feed (code-scanning reads
+    ``rule.security_severity_level``; dependabot reads
+    ``security_advisory.severity``).
+    """
+    counts: dict[str, int] = {s: 0 for s in ("critical", "high", "medium", "low")}
+    for alert in alerts:
+        sev = triage_severity(extract_severity(alert))
+        if sev in counts:
+            counts[sev] += 1
+        else:
+            counts["medium"] += 1
+    return counts
+
+
+def _cs_extract_severity(alert: dict) -> str | None:
+    rule = alert.get("rule") or {}
+    return rule.get("security_severity_level") or rule.get("severity")
+
+
+def _db_extract_severity(alert: dict) -> str | None:
+    return (alert.get("security_advisory") or {}).get("severity")
+
+
+def _format_breakdown(counts: dict[str, int]) -> str:
+    """Render a severity breakdown as a stable, comma-separated string.
+
+    Always iterates in fixed severity order (critical → low) so the same
+    counts produce byte-identical output. Empty severities are omitted to
+    keep the line concise; the total is always present in the caller.
+    """
+    parts = [f"{n} {sev}" for sev, n in counts.items() if n > 0]
+    return ", ".join(parts) if parts else "0"
+
+
+def security_action_unit(
+    *,
+    code_scanning: list[dict],
+    dependabot: list[dict],
+    owner_repo: str | None,
+) -> dict | None:
+    """Collapse code-scanning + dependabot into one action-unit per repo.
+
+    Returns ``None`` when both feeds are empty (nothing to triage) or
+    when ``owner_repo`` is ``None`` (can't form a stable dedup key —
+    review finding #4).
+    """
+    if owner_repo is None:
         return None
-    display = (
-        alert.get("secret_type_display_name")
-        or alert.get("secret_type")
-        or "undisclosed credential"
+    cs_count = len(code_scanning)
+    db_count = len(dependabot)
+    if cs_count == 0 and db_count == 0:
+        return None
+
+    cs_breakdown = _severity_breakdown(code_scanning, _cs_extract_severity)
+    db_breakdown = _severity_breakdown(dependabot, _db_extract_severity)
+
+    all_severities = [
+        triage_severity(_cs_extract_severity(a)) for a in code_scanning
+    ] + [
+        triage_severity(_db_extract_severity(a)) for a in dependabot
+    ]
+    severity = _max_severity(all_severities)
+    url = _security_url(owner_repo)
+
+    title = (
+        f"GitHub security: {cs_count} code-scanning + "
+        f"{db_count} Dependabot ({severity})"
     )
-    url = alert.get("html_url") or ""
+    detail = (
+        f"Repo {owner_repo} | "
+        f"code-scanning: {_format_breakdown(cs_breakdown)} | "
+        f"dependabot: {_format_breakdown(db_breakdown)} | "
+        f"see {url}"
+    )
+    payload = (
+        f"/shipwright-security\n"
+        f"\n"
+        f"Context: GitHub reports {cs_count} open code-scanning finding(s) and "
+        f"{db_count} open Dependabot alert(s) for {owner_repo}.\n"
+        f"Severity breakdown — code-scanning: {_format_breakdown(cs_breakdown)}; "
+        f"dependabot: {_format_breakdown(db_breakdown)}.\n"
+        f"Live state: {url}\n"
+        f"Source: triage item gh-security:{owner_repo}"
+    )
+    return {
+        "severity": severity,
+        "kind": _kind_for(severity),
+        "title": title[:160],
+        "detail": detail,
+        "dedup_key": f"{PREFIX_SECURITY}{owner_repo}",
+        "launch_payload": payload,
+    }
+
+
+def secrets_action_unit(
+    *,
+    secret_scanning: list[dict],
+    owner_repo: str | None,
+) -> dict | None:
+    """Collapse secret-scanning into one action-unit per repo.
+
+    Whitelist-only ``launchPayload`` — no slash command, no alert content,
+    no per-alert URLs (review finding #9: hygiene boundary). Secret
+    rotation is manual by design.
+
+    Returns ``None`` when no alerts or when ``owner_repo`` is ``None``.
+    """
+    if owner_repo is None or not secret_scanning:
+        return None
+    count = len(secret_scanning)
+    url = _secret_scanning_url(owner_repo)
+    title = f"GitHub secret-scanning: {count} active credential(s) to rotate"
+    # Detail intentionally does NOT carry per-alert content.
+    detail = (
+        f"Repo {owner_repo} | {count} open secret-scanning alert(s). "
+        f"Rotate via the GitHub secret-scanning tab."
+    )
+    payload = (
+        f"# Manual credential rotation\n"
+        f"\n"
+        f"GitHub secret-scanning has flagged {count} active credential(s) "
+        f"in {owner_repo}.\n"
+        f"Rotation is manual — do NOT run a Shipwright skill.\n"
+        f"\n"
+        f"Checklist:\n"
+        f"  1. Open the GitHub secret-scanning tab: {url}\n"
+        f"  2. For each alert: identify the secret type and rotate it at "
+        f"the issuer (cloud provider, OAuth app, package registry, etc.).\n"
+        f"  3. Revoke the leaked credential.\n"
+        f"  4. Mark the alert resolved on GitHub (revoked / used in tests / "
+        f"false positive).\n"
+        f"  5. Audit access logs for unauthorized use during the exposure "
+        f"window.\n"
+        f"\n"
+        f"Source: triage item gh-secrets:{owner_repo}"
+    )
     return {
         "severity": "critical",
         "kind": _kind_for("critical"),
-        "title": f"[secret-scanning] {display}"[:160],
-        "detail": f"Credential type: {display} | location: {url}",
-        "dedup_key": f"github:secret-scanning:{number}",
+        "title": title[:160],
+        "detail": detail,
+        "dedup_key": f"{PREFIX_SECRETS}{owner_repo}",
+        "launch_payload": payload,
     }
 
 
 def _workflow_identity(run: dict):
     """Stable workflow identity — the immutable ``workflow_id`` when present,
-    else the display ``name``. Used for BOTH run grouping and the dedup key
-    so the two can never disagree about which workflow a run belongs to."""
+    else the display ``name``. Used for the dedup key (no sha component in
+    the action-unit model)."""
     return run.get("workflow_id") or run.get("name") or "workflow"
 
 
-def ci_item(run: dict) -> dict | None:
-    """Map a failed workflow run to triage-item kwargs (None if unusable)."""
-    head_sha = run.get("head_sha") or ""
-    if not head_sha:
+def ci_action_unit(run: dict, *, owner_repo: str | None) -> dict | None:
+    """One action-unit per failed default-branch workflow.
+
+    Dedup key is ``gh-ci:{workflow_identity}`` — the head_sha is dropped
+    (review finding #7) so the persisted ``launchPayload`` stays meaningful
+    across reruns of the same workflow. The payload links to the workflow
+    PAGE URL (stable), NOT the per-run URL (would be stale by the next
+    failure).
+
+    Returns ``None`` when ``owner_repo`` is unresolvable (the workflow-page
+    URL is repo-scoped — review finding #4).
+    """
+    if owner_repo is None:
         return None
+    workflow_id = _workflow_identity(run)
     name = run.get("name") or run.get("display_title") or "workflow"
     branch = run.get("head_branch") or "?"
     conclusion = run.get("conclusion") or "failure"
-    url = run.get("html_url") or ""
+    head_sha = run.get("head_sha") or ""
+    page_url = _workflow_page_url(owner_repo, workflow_id)
+    run_url = run.get("html_url") or ""
+    title = f"[ci] {name} failing on {branch}"
+    detail = (
+        f"Workflow '{name}' last concluded '{conclusion}' on "
+        f"{branch}@{head_sha[:7]} | latest run: {run_url}"
+    )
+    payload = (
+        f"/shipwright-iterate --type bug\n"
+        f"\n"
+        f"Context: GitHub Actions workflow '{name}' is failing on the "
+        f"default branch ({branch}) in {owner_repo}.\n"
+        f"Last conclusion: {conclusion}.\n"
+        f"Live workflow history: {page_url}\n"
+        f"Source: triage item gh-ci:{workflow_id}"
+    )
     return {
         "severity": "high",
         "kind": _kind_for("high"),
-        "title": f"[ci] {name} failed on {branch}"[:160],
-        "detail": (
-            f"Workflow '{name}' concluded '{conclusion}' on "
-            f"{branch}@{head_sha[:7]} | {url}"
-        ),
-        "dedup_key": f"github-ci:{_workflow_identity(run)}:{head_sha}",
+        "title": title[:160],
+        "detail": detail,
+        "dedup_key": f"{PREFIX_CI}{workflow_id}",
+        "launch_payload": payload,
     }
 
 
@@ -188,14 +352,16 @@ def latest_failed_ci_runs(runs: list[dict]) -> list[dict]:
     per workflow, keeping only those whose conclusion is a failure.
 
     In-progress runs (``conclusion is None``) are skipped so a pending run
-    never hides a workflow's last real result.
+    never hides a workflow's last real result. Branch scope is set by the
+    caller — the producer calls ``fetch_workflow_runs(default_branch())``
+    so this helper sees only default-branch runs by construction.
     """
     seen: set = set()
     failed: list[dict] = []
     for run in runs:
         conclusion = run.get("conclusion")
         if conclusion is None:
-            continue  # still running / queued — not yet concluded
+            continue
         workflow = _workflow_identity(run)
         if workflow in seen:
             continue
@@ -250,12 +416,7 @@ def throttle_hours(project_root) -> float:
 
 
 def read_last_import(project_root) -> datetime | None:
-    """Last-import timestamp from the state file; ``None`` if absent/malformed.
-
-    The result is always timezone-aware (UTC): a naive timestamp from a
-    hand-edited state file is normalised, so callers can compare it against
-    ``datetime.now(timezone.utc)`` without a naive/aware ``TypeError``.
-    """
+    """Last-import timestamp from the state file; ``None`` if absent/malformed."""
     try:
         raw = _state_path(project_root).read_text(encoding="utf-8")
         stored = json.loads(raw).get("lastImport")
@@ -277,8 +438,7 @@ def write_last_import(project_root, when: datetime) -> None:
 
 def is_due(project_root, *, now: datetime | None = None) -> bool:
     """True if an import is due — no prior state, or the throttle interval
-    has elapsed since the last import. A malformed state file reads as
-    ``None`` (conservative: due)."""
+    has elapsed since the last import."""
     now = now or datetime.now(timezone.utc)
     last = read_last_import(project_root)
     if last is None:
@@ -287,18 +447,21 @@ def is_due(project_root, *, now: datetime | None = None) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Orchestration
+# Auto-resolve + legacy migration
 # ---------------------------------------------------------------------------
 
 def _resolve_stale(
-    project_root, resolvable_prefixes: set[str], current_keys: set[str]
+    project_root,
+    resolvable_prefixes: set[str],
+    current_keys: set[str],
 ) -> int:
-    """Dismiss this producer's stale open items.
+    """Dismiss this producer's stale OPEN action-unit items.
 
-    An item is stale when its dedup key belongs to one of the four owned
-    prefixes, that prefix's fetch SUCCEEDED this run (``resolvable_prefixes``),
-    and the key is absent from ``current_keys``. Scoped per ADR-052 — items
-    from other producers, and prefixes whose fetch failed, are left alone.
+    An item is stale when its dedup key belongs to one of the three owned
+    action-unit prefixes, that prefix's fetch SUCCEEDED this run, and the
+    key is absent from ``current_keys``. Scoped per ADR-052 — items from
+    other producers and prefixes whose fetch failed are left alone.
+    Legacy items are handled separately by ``_migrate_legacy_items``.
     """
     resolved = 0
     for item in read_all_items(project_root):
@@ -329,90 +492,216 @@ def _resolve_stale(
     return resolved
 
 
+def _migrate_legacy_items(
+    project_root,
+    fetch_succeeded: dict[str, bool],
+) -> int:
+    """Dismiss legacy per-finding items whose original source fetch succeeded.
+
+    One-shot migration from the per-finding model (iterate-2026-05-19) to
+    the action-unit model (iterate-2026-05-20). Per-source-gated — a failed
+    fetch for source X leaves source-X legacy items UNTOUCHED, even if
+    other sources succeeded (review finding #3).
+
+    Idempotent: items already at status ``dismissed`` / ``promoted`` /
+    ``snoozed`` are skipped (review finding #12) — only items whose
+    current resolved status is ``triage`` get a fresh ``schemaMigration``
+    event.
+    """
+    migrated = 0
+    for item in read_all_items(project_root):
+        if item.get("source") != SOURCE or item.get("status") != "triage":
+            continue
+        dedup_key = item.get("dedupKey") or ""
+        for source_name, legacy_prefix in _LEGACY_MIGRATIONS:
+            if not dedup_key.startswith(legacy_prefix):
+                continue
+            if not fetch_succeeded.get(source_name):
+                # Per-source-gating — that source's fetch failed; leave
+                # the item alone so a transient outage never mass-resolves.
+                break
+            try:
+                mark_status(
+                    project_root,
+                    item["id"],
+                    new_status="dismissed",
+                    by="githubImporter",
+                    reason="schemaMigration",
+                )
+                migrated += 1
+            except Exception as exc:  # noqa: BLE001
+                sys.stderr.write(
+                    f"[github-triage] legacy migration failed for "
+                    f"{item.get('id')}: {type(exc).__name__}: {exc}\n"
+                )
+            break  # one prefix per item
+    return migrated
+
+
+# ---------------------------------------------------------------------------
+# Orchestration
+# ---------------------------------------------------------------------------
+
 def import_findings(project_root) -> dict:
-    """Import all GitHub findings into the triage inbox.
+    """Import all GitHub findings into the triage inbox as action-units.
 
     Returns ``{"gh_available": bool, "appended": int, "resolved": int,
-    "by_source": {prefix: int | None}}``. A ``None`` per-source count means
-    that fetch failed — its items are deliberately left untouched by the
-    resolve pass.
+    "migrated": int, "by_source": {prefix: int | None}}``. ``migrated``
+    counts the one-shot legacy items dismissed this run; ``resolved``
+    counts current-model items dismissed because their key left the
+    finding set (mirror of #39's behavior).
     """
     if not github_api.gh_available():
         return {
             "gh_available": False,
             "appended": 0,
             "resolved": 0,
+            "migrated": 0,
             "by_source": {},
         }
+
+    owner_repo = github_api.owner_repo(project_root)
 
     raw_runs = github_api.fetch_workflow_runs(github_api.default_branch())
     ci_runs = None if raw_runs is None else latest_failed_ci_runs(raw_runs)
 
-    # (owned prefix, raw fetch result | None, mapper)
-    plan = [
-        (
-            "github:code-scanning:",
-            github_api.fetch_code_scanning_alerts(),
-            code_scanning_item,
-        ),
-        ("github:dependabot:", github_api.fetch_dependabot_alerts(), dependabot_item),
-        (
-            "github:secret-scanning:",
-            github_api.fetch_secret_scanning_alerts(),
-            secret_scanning_item,
-        ),
-        ("github-ci:", ci_runs, ci_item),
-    ]
+    cs_alerts = github_api.fetch_code_scanning_alerts()
+    db_alerts = github_api.fetch_dependabot_alerts()
+    ss_alerts = github_api.fetch_secret_scanning_alerts()
 
-    appended = 0
-    current_keys: set[str] = set()
+    fetch_succeeded = {
+        "code_scanning": cs_alerts is not None,
+        "dependabot": db_alerts is not None,
+        "secret_scanning": ss_alerts is not None,
+        "runs": ci_runs is not None,
+    }
+
+    # Run the legacy-migration sweep FIRST so it never races against the
+    # action-unit append loop and never misclassifies a freshly-appended
+    # new-prefix item.
+    try:
+        migrated = _migrate_legacy_items(project_root, fetch_succeeded)
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write(
+            f"[github-triage] legacy migration sweep failed: "
+            f"{type(exc).__name__}: {exc}\n"
+        )
+        migrated = 0
+
+    # Build action-units (None when nothing to triage or repo unresolvable).
+    # Security requires BOTH feeds succeeded — emitting on partial fetch would
+    # freeze a payload claiming "0 X alerts" when X actually failed to fetch.
+    # The auto-resolve gate has the same shape; emit and resolve are symmetric.
+    # Code review MED #1 of iterate-2026-05-20-triage-launch-surface.
+    both_security_feeds_ok = (
+        cs_alerts is not None and db_alerts is not None
+    )
+    security_unit = (
+        security_action_unit(
+            code_scanning=cs_alerts,
+            dependabot=db_alerts,
+            owner_repo=owner_repo,
+        )
+        if both_security_feeds_ok
+        else None
+    )
+    secrets_unit = (
+        secrets_action_unit(secret_scanning=ss_alerts, owner_repo=owner_repo)
+        if ss_alerts is not None
+        else None
+    )
+    ci_units = (
+        [ci_action_unit(run, owner_repo=owner_repo) for run in ci_runs]
+        if ci_runs is not None
+        else []
+    )
+
+    # The auto-resolve pass is per-action-unit-prefix. A prefix is
+    # "resolvable" when (a) the underlying fetch succeeded AND (b) at
+    # least one of the relevant action-unit mappers is willing to emit
+    # for this run (otherwise an unresolvable owner_repo would mass-
+    # resolve every gh-security: item incorrectly).
     resolvable_prefixes: set[str] = set()
+    current_keys: set[str] = set()
+
     by_source: dict = {}
 
-    for prefix, raw, mapper in plan:
-        if raw is None:
-            by_source[prefix] = None  # fetch failed — do not resolve this prefix
-            continue
-        resolvable_prefixes.add(prefix)
-        count = 0
-        for entry in raw:
-            item = mapper(entry)
-            if item is None:
-                continue
-            current_keys.add(item["dedup_key"])
-            try:
-                new_id = append_triage_item_idempotent(
-                    project_root,
-                    source=SOURCE,
-                    severity=item["severity"],
-                    kind=item["kind"],
-                    title=item["title"],
-                    detail=item["detail"],
-                    dedup_key=item["dedup_key"],
-                    match_commit=False,
-                    window_seconds=None,
-                )
-                if new_id is not None:
-                    appended += 1
-                    count += 1
-            except Exception as exc:  # noqa: BLE001 — best-effort per item
-                sys.stderr.write(
-                    f"[github-triage] append failed for "
-                    f"{item['dedup_key']}: {type(exc).__name__}: {exc}\n"
-                )
-        by_source[prefix] = count
+    def _maybe_append(unit, prefix_key):
+        nonlocal current_keys
+        if unit is None:
+            return None
+        current_keys.add(unit["dedup_key"])
+        try:
+            return append_triage_item_idempotent(
+                project_root,
+                source=SOURCE,
+                severity=unit["severity"],
+                kind=unit["kind"],
+                title=unit["title"],
+                detail=unit["detail"],
+                dedup_key=unit["dedup_key"],
+                match_commit=False,
+                window_seconds=None,
+                launch_payload=unit["launch_payload"],
+            )
+        except Exception as exc:  # noqa: BLE001 — best-effort
+            sys.stderr.write(
+                f"[github-triage] append failed for {unit['dedup_key']}: "
+                f"{type(exc).__name__}: {exc}\n"
+            )
+            return None
+
+    appended = 0
+
+    # Security — emit + resolve are gated symmetrically on BOTH feeds.
+    if both_security_feeds_ok:
+        if owner_repo is not None:
+            resolvable_prefixes.add(PREFIX_SECURITY)
+        sec_id = _maybe_append(security_unit, PREFIX_SECURITY)
+        by_source[PREFIX_SECURITY] = 1 if sec_id else 0
+        if sec_id:
+            appended += 1
+    else:
+        by_source[PREFIX_SECURITY] = None
+
+    # Secrets
+    if fetch_succeeded["secret_scanning"]:
+        if owner_repo is not None:
+            resolvable_prefixes.add(PREFIX_SECRETS)
+        secrets_id = _maybe_append(secrets_unit, PREFIX_SECRETS)
+        by_source[PREFIX_SECRETS] = 1 if secrets_id else 0
+        if secrets_id:
+            appended += 1
+    else:
+        by_source[PREFIX_SECRETS] = None
+
+    # CI
+    if fetch_succeeded["runs"]:
+        if owner_repo is not None:
+            resolvable_prefixes.add(PREFIX_CI)
+        ci_emitted = 0
+        for unit in ci_units:
+            new_id = _maybe_append(unit, PREFIX_CI)
+            if new_id:
+                ci_emitted += 1
+                appended += 1
+        by_source[PREFIX_CI] = ci_emitted
+    else:
+        by_source[PREFIX_CI] = None
 
     try:
         resolved = _resolve_stale(project_root, resolvable_prefixes, current_keys)
-    except Exception as exc:  # noqa: BLE001 — best-effort; never lose append work
+    except Exception as exc:  # noqa: BLE001
         sys.stderr.write(
             f"[github-triage] resolve pass failed: "
             f"{type(exc).__name__}: {exc}\n"
         )
         resolved = 0
+
     return {
         "gh_available": True,
         "appended": appended,
         "resolved": resolved,
+        "migrated": migrated,
         "by_source": by_source,
     }

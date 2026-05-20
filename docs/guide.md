@@ -1068,16 +1068,40 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 
 ### 4.11 Triage Inbox (cross-cutting intake)
 
-Pre-backlog buffer for findings emitted by hooks, scans, and audits. Triage and the backlog (`ExternalTask` in [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui)) are separate stores; **promote** is the explicit bridge between them.
+Pre-backlog buffer for findings emitted by hooks, scans, and audits. Triage and the backlog (`ExternalTask` in [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui)) are separate stores; **promote** is the explicit bridge between them. As of iterate-2026-05-20-triage-launch-surface the inbox is a **launch-surface**, not a finding-mirror — see § 4.11.1 below.
 
 - **Store:** `.shipwright/triage.jsonl` (per project, gitignored, append-only with history events).
-- **Producers:** `audit_phase_quality_on_stop` (Tier-1 FAILs, 24h dedup) and `audit_detector.mirror_findings_to_triage` (compliance findings + auto-dismiss when resolved) shipped first; the security-report, performance-gate, F0.5 surface-verification, and drift (`check_drift` + `artifact_sync`) producers followed. See [docs/triage-inbox.md](triage-inbox.md) for the full producer table.
-- **Consumer:** the Stop hook `aggregate_triage_on_stop` regenerates `.shipwright/agent_docs/triage_inbox.md` after every iterate finalize.
-- **Promote:** from the CLI — `uv run shared/scripts/tools/triage_promote.py --id trg-XXXXXXXX --task-ref "EXT:linear-ENG-7"` — or one-click from the Triage tab in [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui).
+- **Producers:** `audit_phase_quality_on_stop` (Tier-1 FAILs, 24h dedup) and `audit_detector.mirror_findings_to_triage` (compliance findings + auto-dismiss when resolved) shipped first; the security-report, performance-gate, F0.5 surface-verification, and drift (`check_drift` + `artifact_sync`) producers followed. The GitHub findings producer (iterate-2026-05-19) imports code-scanning, Dependabot, secret-scanning alerts and failed CI runs via the `gh` CLI; iterate-2026-05-20 collapsed those into action-units (one per repo / per failing workflow). See [docs/triage-inbox.md](triage-inbox.md) for the full producer table.
+- **Consumer:** the Stop hook `aggregate_triage_on_stop` regenerates `.shipwright/agent_docs/triage_inbox.md` after every iterate finalize. Every open item carries an optional `launchPayload` field; when present, the aggregator renders it inside a fenced markdown code block under the item header — operators copy that fence into a new Claude session to start the matching run (§ 4.11.1).
+- **Operate from CLI** (first-class — parallel to the WebUI Triage tab):
+  - `uv run shared/scripts/tools/triage_cli.py list` — list open items + their `launchPayload`.
+  - `uv run shared/scripts/tools/triage_cli.py promote trg-XXXXXXXX --task-ref "EXT:linear-ENG-7"` — promote to backlog.
+  - `uv run shared/scripts/tools/triage_cli.py dismiss trg-XXXXXXXX --reason notRelevant` — dismiss as false-positive / won't-fix.
+  - The pre-existing `triage_promote.py --id …` tool is unchanged for back-compat; the new `triage_cli.py promote` subcommand delegates to the same library helper (`triage_promote.promote`), so audit-trail shape is byte-identical (only the `by` field differs: `"cli"` vs `"manualPromote"`).
 
 Mapping is mechanical: `critical→P0 / high→P1 / medium→P2 / low→P3 / info→P3` for severity; `compliance→compliance / else→engineering` for source domain. Both values are recorded on the triage record as `suggestedPriority` + `suggestedDomain` so the promote step doesn't have to recompute them — the mapping matches the `leadwright` ExternalTask extension (see [`leadwright/docs/specs/phase-1-external-task-extension.md`](https://github.com/svenroth-ai/leadwright)).
 
 See [docs/triage-inbox.md](triage-inbox.md) for the full pattern (storage shape, producer rules, promote flow, operating caveats).
+
+#### 4.11.1 Triage as Launch-Surface
+
+A triage item represents **one handling**, not one finding. GitHub already has a per-finding store (Security tab, Dependabot tab, secret-scanning tab); mirroring it 1:1 would flood the operator. Instead, the GitHub producer collapses findings into a small set of **action-units**:
+
+| Source                                | Action-unit dedup key             | Maps to                                                       |
+|---------------------------------------|-----------------------------------|---------------------------------------------------------------|
+| code-scanning + Dependabot (combined) | `gh-security:{owner}/{repo}`      | `/shipwright-security`                                        |
+| secret-scanning                       | `gh-secrets:{owner}/{repo}`       | Manual rotation (no slash command — secret rotation is manual)|
+| failed default-branch CI per workflow | `gh-ci:{workflow_id}`             | `/shipwright-iterate --type bug`                              |
+
+Each action-unit carries a `launchPayload` — a ready-to-paste block containing the slash command + context + the relevant GitHub URL. The payload is **frozen at first append** (subsequent imports with the same key are deduplicated and the persisted payload is unchanged); live counts in `detail` are best-effort, so operators click through the GitHub URL for current state.
+
+Operator flow has three verbs:
+
+- **Fix now** — open `.shipwright/agent_docs/triage_inbox.md` (or run `triage_cli.py list`), copy the `launchPayload` fence into a new Claude session. The matching slash command auto-fires and the run resolves the item via the existing lifecycle hooks.
+- **Promote** — `triage_cli.py promote <id> --task-ref EXT:<ref>` creates a backlog task for deferred work; the item flips to `promoted`.
+- **Dismiss** — `triage_cli.py dismiss <id> --reason <reason>` for false-positives / won't-fix. (Per-finding false-positives are dismissed on GitHub at SARIF level, not in the triage inbox.)
+
+Legacy producers (phase-quality, drift, compliance, security, performance, F0.5) stay finding-granular; they MAY emit `launch_payload=None` and the renderer falls back to the historical bullet layout. Only the GitHub action-unit emitter populates `launchPayload` today; the WebUI Triage-tab redesign in `shipwright-webui` (Iterate B, separate) will be a thin wrapper over the same library helpers so the CLI is the single source of truth.
 
 ## 5. Stack Profiles
 

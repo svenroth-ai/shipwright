@@ -17,8 +17,11 @@ Part of iterate-2026-05-19-github-triage-importer. Sibling module:
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
+import sys
+from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
@@ -98,6 +101,109 @@ def fetch_dependabot_alerts() -> list[dict] | None:
 def fetch_secret_scanning_alerts() -> list[dict] | None:
     """Open secret-scanning alerts."""
     return _fetch_alert_list("secret-scanning/alerts")
+
+
+# ---------------------------------------------------------------------------
+# owner_repo() — local-first repository identity resolution
+# Added in iterate-2026-05-20-triage-launch-surface for the github action-unit
+# producers. NEVER calls `gh api` (gh expects owner/repo to be passed
+# IN — chicken-and-egg). Pure git-remote parse.
+# ---------------------------------------------------------------------------
+
+# Capture group 1 = owner, group 2 = repo. Anchored at end so trailing
+# ``.git`` (optional) and a single trailing slash are tolerated. Accepts
+# `github.com` and any `github.*` host (GitHub Enterprise).
+_GITHUB_HOST_RE = re.compile(
+    r"^(?:https?://(?:[^@/]+@)?|ssh://(?:git@)?|git@)"
+    r"(github(?:\.[a-zA-Z0-9.-]+)+)"
+    r"[:/]"
+    r"([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?)"
+    r"/"
+    r"([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?)"
+    r"(?:\.git)?/?$"
+)
+
+
+def parse_github_remote(remote_url: str | None) -> str | None:
+    """Parse a git remote URL into ``"{owner}/{repo}"``, or ``None`` if unrecognised.
+
+    Accepts the common forms produced by ``git remote get-url``:
+
+    - ``https://github.com/owner/repo[.git][/]``
+    - ``https://x-access-token:TOKEN@github.com/owner/repo[.git]``
+    - ``git@github.com:owner/repo[.git]``
+    - ``ssh://git@github.com/owner/repo[.git]``
+    - GitHub Enterprise variants (``github.example.com``)
+
+    Anything else (gitlab, bitbucket, file://, malformed, empty) returns
+    ``None``. The match accepts hyphens / dots / underscores in owner +
+    repo segments but rejects single-segment paths (no owner, or no repo).
+    """
+    if not isinstance(remote_url, str) or not remote_url.strip():
+        return None
+    match = _GITHUB_HOST_RE.match(remote_url.strip())
+    if match is None:
+        return None
+    owner = match.group(2)
+    repo = match.group(3)
+    # The repo segment may greedily include a trailing ``.git`` because
+    # ``.`` is a valid mid-segment character (e.g. ``my.tool.js``). Strip
+    # it explicitly — the trailing ``(?:\.git)?`` group in the regex only
+    # fires when the greedy class didn't already eat it.
+    if repo.endswith(".git"):
+        repo = repo[: -len(".git")]
+    return f"{owner}/{repo}"
+
+
+def _git_remote_origin(project_root: Path | str) -> str | None:
+    """Return the ``origin`` remote URL via ``git remote get-url``, or ``None``.
+
+    Isolated as a thin shim so tests can monkeypatch it without touching the
+    parser. Captures stderr; never raises.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(project_root), "remote", "get-url", "origin"],
+            capture_output=True,
+            text=True,
+            timeout=_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode != 0:
+        return None
+    url = result.stdout.strip()
+    return url or None
+
+
+def owner_repo(project_root: Path | str) -> str | None:
+    """Return ``"{owner}/{repo}"`` for the project's ``origin`` remote.
+
+    Local-first: parses ``git remote get-url origin``. Never calls ``gh api``
+    because ``gh api repos/{owner}/{repo}`` requires owner/repo to already
+    be known (the very value this helper is trying to produce).
+
+    On any failure (no remote, malformed URL, non-GitHub host) returns
+    ``None`` and writes a single concise warning to stderr so producers
+    can skip emission of repo-scoped action-units without emitting
+    malformed dedup keys like ``gh-security:`` (review finding #4 of
+    iterate-2026-05-20-triage-launch-surface).
+    """
+    remote_url = _git_remote_origin(project_root)
+    if remote_url is None:
+        sys.stderr.write(
+            "[github-api] owner_repo: no `origin` remote configured "
+            f"in {project_root}; skipping repo-scoped action-units.\n"
+        )
+        return None
+    parsed = parse_github_remote(remote_url)
+    if parsed is None:
+        sys.stderr.write(
+            f"[github-api] owner_repo: remote {remote_url!r} is not a "
+            "recognised GitHub URL; skipping repo-scoped action-units.\n"
+        )
+        return None
+    return parsed
 
 
 def fetch_workflow_runs(branch: str) -> list[dict] | None:

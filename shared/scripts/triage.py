@@ -252,6 +252,7 @@ def append_triage_item(
     run_id: str | None = None,
     commit: str | None = None,
     dedup_key: str | None = None,
+    launch_payload: str | None = None,
 ) -> str:
     """Append a new triage item. Returns the new `trg-<8hex>` id.
 
@@ -270,6 +271,17 @@ def append_triage_item(
     `append_triage_item_idempotent` for the deduplicated path. The
     field is preserved so the aggregator and downstream tooling can
     correlate items across runs.
+
+    `launch_payload` (iterate-2026-05-20-triage-launch-surface) is an
+    optional producer-generated, ready-to-paste block — typically a
+    slash command + context — that the operator copies from the inbox
+    view into a new Claude session to start the matching run. Stored
+    verbatim under the wire key `launchPayload` and ALWAYS persisted
+    (as `null` when omitted) so consumers can read it without a
+    `.get()`-with-default. The producer freezes the payload at first
+    append; subsequent idempotent calls leave the on-disk value
+    unchanged (AC-8). Legacy producers may keep omitting this kwarg —
+    null is the wire default.
     """
     if severity not in SEVERITIES:
         raise ValueError(
@@ -296,6 +308,7 @@ def append_triage_item(
         "runId": run_id,
         "commit": commit,
         "dedupKey": dedup_key,
+        "launchPayload": launch_payload,
         "status": "triage",
         "suggestedPriority": suggest_priority_from_severity(severity),
         "suggestedDomain": suggest_domain_from_source(source),
@@ -327,6 +340,7 @@ def append_triage_item_idempotent(
     commit: str | None = None,
     match_commit: bool = True,
     window_seconds: int | None = 24 * 3600,
+    launch_payload: str | None = None,
 ) -> str | None:
     """Append a triage item only if no matching item is currently open.
 
@@ -390,6 +404,7 @@ def append_triage_item_idempotent(
         "runId": run_id,
         "commit": commit,
         "dedupKey": dedup_key,
+        "launchPayload": launch_payload,
         "status": "triage",
         "suggestedPriority": suggest_priority_from_severity(severity),
         "suggestedDomain": suggest_domain_from_source(source),

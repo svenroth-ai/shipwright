@@ -1,0 +1,1 @@
+Pre-iterate legacy per-finding triage items (github:code-scanning:*, github:dependabot:*, github:secret-scanning:*, github-ci:{wf}:{sha}) auto-migrate to dismissed reason=schemaMigration on the first successful run of their original source (per-source-gated; never on a failed fetch).

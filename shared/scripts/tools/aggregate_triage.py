@@ -79,6 +79,73 @@ def _truncate(text: str, limit: int = FIELD_TRUNCATE_AT) -> str:
     return text[: limit - 1].rstrip() + "…"
 
 
+def _fence_opener(payload: str) -> str:
+    """Pick a backtick-fence opener long enough to contain ``payload``.
+
+    Standard markdown idiom: if the payload contains a run of N backticks,
+    the fence must use at least N+1 backticks so the payload can never
+    accidentally close the fence. Minimum 3 (the usual ``` ``` ```` opener).
+    """
+    longest = 0
+    run = 0
+    for ch in payload:
+        if ch == "`":
+            run += 1
+            if run > longest:
+                longest = run
+        else:
+            run = 0
+    return "`" * max(3, longest + 1)
+
+
+def _strip_control_chars(text: str) -> str:
+    """Strip terminal control sequences (preserving newlines and tabs).
+
+    Mirrors the helper in ``triage_cli.py``. Centralized here per code-
+    review LOW #6 of iterate-2026-05-20-triage-launch-surface — operators
+    who ``cat .shipwright/agent_docs/triage_inbox.md`` in a TTY pager
+    (``less``, ``cat``) would otherwise interpret embedded ESC / BEL /
+    DEL even though markdown viewers ignore them.
+    """
+    return "".join(
+        ch for ch in text
+        if ch in ("\n", "\t") or (0x20 <= ord(ch) < 0x7F) or ord(ch) >= 0x80
+    )
+
+
+def _render_launch_payload(item: dict) -> list[str]:
+    """Render the ``launchPayload`` block for one item, if applicable.
+
+    Three cases (iterate-2026-05-20-triage-launch-surface):
+
+    - Non-empty string → emit fenced code block (operator copy-pastes
+      the fence content into a new Claude session). Terminal control
+      chars are stripped before rendering (review finding #10 + LOW #6).
+    - Source ``"github"`` AND payload empty/null → visible loud-failure
+      placeholder (review finding #13: a github action-unit MUST carry
+      a payload; missing one is a producer regression that should
+      surface, not silently degrade).
+    - Anything else (legacy producer omitting the kwarg) → no fence,
+      no placeholder. Render exactly as today.
+    """
+    payload = item.get("launchPayload")
+    source = item.get("source", "")
+    if isinstance(payload, str) and payload.strip():
+        clean = _strip_control_chars(payload)
+        fence = _fence_opener(clean)
+        return [
+            f"  - Launch payload (copy into a new Claude session):",
+            f"    {fence}text",
+            *(f"    {line}" for line in clean.splitlines()),
+            f"    {fence}",
+        ]
+    if source == "github":
+        return [
+            "  - > [no launch payload — producer bug; please report]",
+        ]
+    return []
+
+
 def _render_item(item: dict) -> list[str]:
     """Render a single triage item as a markdown bullet group."""
     item_id = item.get("id", "")
@@ -99,6 +166,7 @@ def _render_item(item: dict) -> list[str]:
     ]
     if evidence:
         lines.append(f"  - Evidence: `{evidence}`")
+    lines.extend(_render_launch_payload(item))
     lines.append(
         f"  - Promote: `triage_promote.py --id {item_id} --task-ref EXT:<ref>`"
     )
