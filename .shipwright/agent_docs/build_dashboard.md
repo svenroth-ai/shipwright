@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-19 09:08 UTC | Session: 20d4584e-8a2e-48f1-9448-b325b5b63c7d | Run: iterate-2026-05-19-github-triage-importer
+> Updated: 2026-05-19 19:00 UTC | Session: d827c8c6-8c58-4f61-8cfe-cce6f9b7d878 | Run: iterate-2026-05-19-fix-decision-drop-worktree
 
-## Recent Changes (36 iterations)
+## Recent Changes (37 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | github-triage-importer | 1856/1856 | ff51a8c | FR-01.14 | 2026-05-19 |
 | change | phase-quality auditor recognises drop-dir changelog, adopted spec path, and iterate/adopt completion evidence (C1/C5/S1 check-side fixes) | 1817/1817 | 40599de |  | 2026-05-18 |
 | bug | harden activated CI workflows: scanners, CI-aware test, CodeQL guard | 337/340 | d85210f |  | 2026-05-18 |
 | bug | fix 17 launch-blocker test failures (Windows python3 stub + 6 smaller groups) | 3507/3507 | 21cef22 |  | 2026-05-18 |
@@ -43,7 +44,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-19 | Unit: 1856/1856 | Smoke: not_run | (iterate)
+Last run: 2026-05-19 | Unit: 1983/1983 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-19T09:08:25Z
+Generated: 2026-05-19T19:00:56Z
 
 ## Requirements Coverage
 
@@ -19,7 +19,7 @@ Generated: 2026-05-19T09:08:25Z
 | [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111) | Complexity-adaptive SDLC for ongoing changes — auto-detects ... | Must | evt-e3d2949e, evt-ca7b7d64, evt-da156299, evt-7620210f +5 | 225/225 → 140/140 | 2026-05-16 (iter) | FAIL |
 | [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112) | Local browser preview — start dev server for the target proj... | May | evt-e3d2949e, evt-ca7b7d64 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
 | [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113) | Onboard an existing (brownfield) repository into the Shipwri... | Must | evt-e3d2949e, evt-273bbb54, evt-b0b9c422, evt-aab7ddbd +3 | 225/225 → 1594/1628 | 2026-05-05 (iter) | FAIL |
-| [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114) | Pre-backlog triage buffer — findings from local hooks/scans/... | Must | evt-3f488ddc, evt-32f2f1f4, evt-84dbdf5e | 1642/1649 → 40/40 | 2026-05-14 (iter) | FAIL |
+| [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114) | Pre-backlog triage buffer — findings from local hooks/scans/... | Must | evt-3f488ddc, evt-32f2f1f4, evt-84dbdf5e, evt-c4e5298b | 1642/1649 → 1856/1856 | 2026-05-19 (iter) | FAIL |
 
 ## Verification Timeline
 
@@ -61,6 +61,7 @@ Generated: 2026-05-19T09:08:25Z
 | fix 17 launch-blocker test failures (Windows python3 stub + 6 smaller groups) | iterate | bug |  | 3507/3507 | 21cef22 | 2026-05-18 |
 | harden activated CI workflows: scanners, CI-aware test, CodeQL guard | iterate | bug |  | 337/340 | d85210f | 2026-05-18 |
 | phase-quality auditor recognises drop-dir changelog, adopted spec path, and iterate/adopt completion evidence (C1/C5/S1 check-side fixes) | iterate | change |  | 1817/1817 | 40599de | 2026-05-18 |
+| github-triage-importer | iterate | feature | FR-01.14 | 1856/1856 | ff51a8c | 2026-05-19 |
 
 ## Coverage Summary
 
@@ -68,7 +69,7 @@ Generated: 2026-05-19T09:08:25Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 36 |
+| Iterate changes | 37 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
