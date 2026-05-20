@@ -1,44 +1,43 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-20-escape-md-cells"
+run_id: "iterate-2026-05-21-security-artifact-producer"
 phase: "iterate"
-reason: "iterate: escape markdown table cells"
-timestamp: "2026-05-20T22:10:09.110568+00:00"
+reason: "iterate: security-artifact-producer (Iterate C — artifact ingestion path for gh-security action-unit)"
+timestamp: "2026-05-20T22:58:52.402420+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-20 22:10:09 UTC
+> Auto-generated 2026-05-20 22:58:52 UTC
 
 ## Session Info
 
-- **Session ID**: f990b8ca-e767-4745-861f-9a142fcc95a4
-- **Timestamp**: 2026-05-20 22:10:09 UTC
-- **Reason**: iterate: escape markdown table cells
+- **Session ID**: 004b9480-348b-4674-b913-a11cee1641d6
+- **Timestamp**: 2026-05-20 22:58:52 UTC
+- **Reason**: iterate: security-artifact-producer (Iterate C — artifact ingestion path for gh-security action-unit)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-20-triage-launch-surface
-- **Date**: 2026-05-20T09:25:16.299411Z
-- **Type**: feature
+- **Run ID**: iterate-2026-05-20-escape-md-cells
+- **Date**: 2026-05-20T22:10:15.976647Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/triage-launch-surface
-- **ADR**: iterate-2026-05-20-triage-launch-surface
+- **Branch**: iterate/escape-md-cells
+- **ADR**: iterate-2026-05-20-escape-md-cells
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-20-triage-launch-surface.md
+- **Spec**: .shipwright/planning/iterate/2026-05-20-escape-md-cells.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/escape-md-cells
-- **Run ID**: iterate-2026-05-20-escape-md-cells
-- **Spec**: .shipwright/planning/iterate/2026-05-20-escape-md-cells.md
+- **Branch**: iterate/security-artifact-producer
+- **Run ID**: iterate-2026-05-21-security-artifact-producer
+- **Spec**: .shipwright/planning/iterate/2026-05-21-security-artifact-producer.md
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-05-20T12:00:00))
+- **External Review Marker**: unknown (iterate-2026-05-21-security-artifact-producer-external-review.json @ 2026-05-21T00:00:00)
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/escape-md-cells
-- **Last Commit**: fd212b2 chore(phase-0a): backfill FRs + add change_type schema field (#42)
+- **Branch**: iterate/security-artifact-producer
+- **Last Commit**: 46b9ac4 fix(shared): escape pipe and newline in markdown table cells (#43)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-5105fa5d | work_completed | iterate (escape pipe and newline in markdown table cells) | 2026-05-20 |
 | evt-7078b787 | work_completed | iterate (fix 17 launch-blocker test failures (Windows python3 stub + 6 smaller groups)) | 2026-05-18 |
 | evt-16154172 | work_completed | iterate (triage detector dedup + auto-resolve (rebased onto #31)) | 2026-05-16 |
 | evt-8659999c | work_completed | iterate (spec-impact classification gate: enforce ADD/MODIFY/REMOVE/NONE on every feature/change iterate (F7 record_event + F11 verifier gates, Group D5 audit, Removed Requirements convention)) | 2026-05-16 |
 | evt-e14e5f26 | work_completed | iterate (triage detector dedup + auto-resolve) | 2026-05-16 |
-| evt-38e36ac6 | work_completed | iterate (fix adopt external-review config defaults) | 2026-05-16 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 34
-- **Last iterate**: bug — fix 17 launch-blocker test failures (Windows python3 stub + 6 smaller groups) (2026-05-18)
+- **Total work events**: 35
+- **Last iterate**: bug — escape pipe and newline in markdown table cells (2026-05-20)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

@@ -409,12 +409,19 @@ ALLOWLIST: dict[str, list[str]] = {
         # "compliance" as an ENUM value (kind, source, suggestedDomain),
         # not as a path reference. audit_detector.py's added
         # mirror_findings_to_triage uses `source="compliance"` /
-        # `kind="compliance"` for the wire format. The docs file
-        # references `plugins/shipwright-compliance/...` plugin paths
-        # in explanatory tables.
+        # `kind="compliance"` for the wire format.
         "shared/scripts/triage.py",
         "plugins/shipwright-compliance/scripts/audit/audit_detector.py",
-        "docs/triage-inbox.md",
+        # markdown_table.py (iterate-2026-05-20-escape-md-cells, PR #43) —
+        # docstring narrates which renderers consume the helper
+        # (`plugins/shipwright-compliance/scripts/lib/...`); the regex
+        # picks up the relative-path comma in the explanatory sentence,
+        # not a path declaration.
+        "shared/scripts/markdown_table.py",
+        # record_event.py — argparse choices=["docs", "tooling",
+        # "compliance", "infra"] enumerates change-type values; the
+        # quoted "compliance" is an enum element, not a path reference.
+        "shared/scripts/tools/record_event.py",
         # Tests (narrowed in B+C as files migrate)
         "shared/tests/**",
         "shared/scripts/tests/**",

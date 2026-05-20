@@ -1,24 +1,67 @@
-# Security CI Setup — `.github/workflows/security.yml`
+# Security Scanning Setup
 
-The Shipwright security workflow runs an OSS scanner chain (Semgrep + Trivy +
-Gitleaks) on GitHub Actions, posts a PR comment summarising findings, and
-uploads SARIF to the GitHub Security tab. It ships **DORMANT**: only
-`workflow_dispatch` (manual trigger) is active by default. You activate the
-auto-triggers explicitly when you're ready.
+Shipwright surfaces security findings from your CI into the Triage Inbox
+(visible in the [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui)
+Triage tab) regardless of GitHub's pricing tier. There are two equivalent
+paths to populate that surface:
 
-This document is the operational truth for two surfaces:
+| Path | Scanners | Cost on private repos | Where findings land |
+|---|---|---|---|
+| **A. shipwright-security workflow (default)** | Semgrep + Trivy + Gitleaks + Shipwright Prompt-Injection Scanner | Free | `findings.json` CI artifact → Triage Inbox → WebUI Triage tab |
+| **B. GitHub Advanced Security (GHAS) alternative** | CodeQL + Dependabot + Secret Scanning + (optional) SARIF re-upload from path A | **Paid** for private repos (free for public) | GitHub Security tab → Triage Inbox → WebUI Triage tab |
 
-- **Adopted projects.** `/shipwright-adopt` Step E.13 scaffolds the workflow
-  into `<project>/.github/workflows/security.yml` from the template at
-  `shared/templates/github-actions/security.yml.template`.
-- **The shipwright monorepo itself.** The workflow at
-  `.github/workflows/security.yml` exercises the same scanner chain on every
-  shipwright commit.
+Pick one. The Triage Inbox importer auto-detects which path is active.
+**Use both only if you specifically need GHAS's native Security-tab UX** —
+see "Running both" below.
 
-Both files share the same **DORMANT** invariants and Phase-B activation
-procedure described below.
+> **TL;DR for greenfield Shipwright projects on a private repo:** keep the
+> default (Path A). It's free, scans more (Prompt Injection is unique to
+> Shipwright), and lands in the same Triage Inbox surface.
 
-## Current state — DORMANT
+---
+
+## Path A — `shipwright-security` workflow (default)
+
+The Shipwright Security workflow runs an OSS scanner chain on GitHub
+Actions, posts a PR comment summarising findings, uploads SARIF
+best-effort, **and** uploads a `findings.json` artifact that the
+Triage Inbox imports automatically.
+
+It ships **DORMANT**: only `workflow_dispatch` (manual trigger) is active
+by default. Activate the auto-triggers explicitly when you're ready.
+
+### What it scans
+
+| Scanner | What it finds |
+|---|---|
+| **Semgrep** | SAST (taint analysis, security patterns, OWASP rules) |
+| **Trivy** | Dependency CVEs, container vulnerabilities |
+| **Gitleaks** | Hard-coded secrets in source + history |
+| **Shipwright Prompt-Injection Scanner** | LLM prompt-injection risks (unique to Shipwright) |
+
+The combined output lands in three places:
+
+- **PR comment** — collapsed table per scanner, posted by `github-actions[bot]`
+  (only fires on `pull_request` triggers).
+- **CI artifact** `security-scan-results` (30-day retention) — contains
+  `findings.json`, `prompt_risks.json`, `report.md`, and SARIF.
+- **GitHub Security tab** — best-effort SARIF upload via
+  `github/codeql-action/upload-sarif@v4`. On private repos without GHAS
+  this step fails silently (`continue-on-error: true`) — the other
+  outputs still land. See "Running both" if you want GHAS to consume
+  this SARIF.
+
+### Two surfaces share the same template
+
+- **Adopted projects.** `/shipwright-adopt` Step E.13 scaffolds the
+  workflow into `<project>/.github/workflows/security.yml` from the
+  template at `shared/templates/github-actions/security.yml.template`.
+- **The shipwright monorepo itself.** `.github/workflows/security.yml`
+  exercises the same scanner chain on every shipwright commit.
+
+Both files share the same DORMANT invariants and activation procedure.
+
+### Current state — DORMANT
 
 The `on:` block looks like this:
 
@@ -37,29 +80,32 @@ You can manually fire the scan today via:
 gh workflow run security.yml
 ```
 
-The full pipeline (scan → SARIF upload → PR-comment skip → critical gate →
-artifact upload) runs on every dispatch. The PR-comment step is no-op outside
-PR events; SARIF still uploads on `workflow_dispatch` and `schedule` events.
+The full pipeline (scan → SARIF upload → PR-comment skip → critical
+gate → artifact upload) runs on every dispatch. The PR-comment step is
+no-op outside PR events; SARIF still uploads on `workflow_dispatch` and
+`schedule` events.
 
-## Activation (Phase B / Go-Live)
+### Activation — turn on auto-triggers
 
-Pre-flight checklist before turning auto-triggers on — adopted repositories
-will not have these by default:
+Pre-flight checklist before flipping the auto-triggers on:
 
-1. **Enable Code Scanning** in repo *Settings → Code security and analysis*.
-   Without it, SARIF uploads succeed but findings are not displayed in the
-   Security tab.
-2. **Confirm fork-PR semantics** — see "Fork-PR degradation" below. If your
-   project receives external contributions, decide whether you accept the
-   read-only-token degradation (no SARIF upload, no PR comment) or want to
-   adopt `pull_request_target` (out of scope for the dormant template).
-3. **Run one manual dispatch** (`gh workflow run security.yml`) and confirm
-   the workflow completes green and SARIF lands in the Security tab.
-4. **Review the PR comment shape** — fire one workflow_dispatch from a
-   feature branch, then look at the rendered comment to confirm the
+1. **Run one manual dispatch first** (`gh workflow run security.yml`)
+   and confirm the workflow completes green.
+2. **Check the PR-comment shape** — fire one workflow_dispatch from a
+   feature branch, then look at the rendered comment to confirm
    formatting matches your team's expectations.
+3. **Confirm fork-PR semantics** — see "Fork-PR degradation" below.
+   If your project receives external contributions, decide whether you
+   accept the read-only-token degradation (no SARIF upload, no PR
+   comment) or want to adopt `pull_request_target` (out of scope for
+   the dormant template).
+4. **Optional — enable Code Scanning** in repo *Settings → Code
+   security and analysis* if you want SARIF findings to additionally
+   appear in the GitHub Security tab. This is Path B's gate; Path A
+   works fine without it.
 
-Then edit `security.yml` and uncomment the two auto-trigger blocks:
+Then edit `.github/workflows/security.yml` and uncomment the two
+auto-trigger blocks:
 
 ```yaml
 on:
@@ -73,26 +119,38 @@ on:
 No other code changes are needed. After the merge:
 
 - Every PR against `main` triggers a scan with a comment summary.
-- Every Monday 06:00 UTC, a full scan runs and uploads fresh SARIF.
-- The GitHub Security tab shows findings under **category:
-  shipwright-security** (separate from CodeQL's own category).
+- Every Monday 06:00 UTC, a full scan runs.
+- New findings appear in the Triage Inbox (and the WebUI Triage tab)
+  within ~6 hours on the SessionStart side (throttled — see "Triage
+  Inbox integration" below).
 
-## Trigger semantics (once activated)
+### Deactivation — turn off auto-triggers
+
+Either re-comment the two trigger blocks (keeping `workflow_dispatch`
+for manual dispatches), or delete the file entirely. The Triage Inbox
+gracefully degrades: when no successful run exists, the importer
+returns `None` and no `gh-security:` action-unit is emitted. Previously
+open items remain (they are NOT mass-resolved — a failed fetch never
+auto-resolves per ADR-052).
+
+### Trigger semantics (once activated)
 
 | Trigger | What runs | Where results land |
 |---------|-----------|--------------------|
-| `pull_request` against main | Full scan + SARIF upload + PR comment + critical gate | PR comment (replace), GitHub Security tab, `security-scan-results` artifact |
-| `schedule` (weekly) | Full scan + SARIF upload + critical gate | GitHub Security tab, artifact |
-| `workflow_dispatch` | Same as schedule (manual) | GitHub Security tab, artifact |
+| `pull_request` against main | Full scan + SARIF upload + PR comment + critical gate | PR comment (replace), GitHub Security tab (if GHAS), `security-scan-results` artifact, Triage Inbox |
+| `schedule` (weekly) | Full scan + SARIF upload + critical gate | GitHub Security tab (if GHAS), artifact, Triage Inbox |
+| `workflow_dispatch` | Same as schedule (manual) | GitHub Security tab (if GHAS), artifact, Triage Inbox |
 
-## Permissions footgun — `actions: read`
+### Operational details
 
-The workflow declares an explicit `permissions:` block. Once you do that,
-GitHub silently sets every *unlisted* permission to **none** for the run.
-`upload-sarif@v3` needs `actions: read` to attach the SARIF to the workflow
-run; without it the SARIF validates and parses fine but the final API push
-fails with `Resource not accessible by integration`. The current block
-includes:
+#### Permissions footgun — `actions: read`
+
+The workflow declares an explicit `permissions:` block. Once you do
+that, GitHub silently sets every *unlisted* permission to **none** for
+the run. `upload-sarif@v3` needs `actions: read` to attach the SARIF to
+the workflow run; without it the SARIF validates and parses fine but
+the final API push fails with `Resource not accessible by integration`.
+The current block includes:
 
 ```yaml
 permissions:
@@ -102,85 +160,234 @@ permissions:
   security-events: write   # SARIF upload to Code Scanning
 ```
 
-The convention lock at `shared/scripts/lib/security_workflow.py` declares
-`security-events: write`, `contents: read`, and `actions: read` as the
-minimum-required floor — those three together are what the SARIF upload
-flow needs. `pull-requests: write` is optional and only present when the
-PR-comment step is wired in. `/shipwright-compliance` Group A5 audits
-against this convention; missing required permissions are HIGH findings,
-missing optional permissions are INFO ("PR-comment feature inactive").
+The convention lock at `shared/scripts/lib/security_workflow.py`
+declares `security-events: write`, `contents: read`, and `actions: read`
+as the minimum-required floor. `pull-requests: write` is optional and
+only needed for the PR-comment step. `/shipwright-compliance` Group A5
+audits against this convention.
 
-If you ever extend the workflow with another action that hits a new GitHub
-API surface, double-check whether it needs an additional permission slot —
-the existing keys do not extend by default.
+If you extend the workflow with another action that hits a new GitHub
+API surface, double-check whether it needs an additional permission slot.
 
-## Fork-PR degradation
+#### Fork-PR degradation
 
 PRs from forks run with a read-only `GITHUB_TOKEN`: neither
-`security-events: write` nor `pull-requests: write` is granted by GitHub. The
-workflow handles this transparently:
+`security-events: write` nor `pull-requests: write` is granted by
+GitHub. The workflow handles this transparently:
 
-- The scan still runs against the PR branch (artifacts are uploaded).
-- The SARIF upload step **is skipped** (`if:` guard checks
-  `github.event.pull_request.head.repo.full_name == github.repository`).
+- The scan still runs against the PR branch (artifacts upload).
+- The SARIF upload step **is skipped**
+  (`if:` guard checks `github.event.pull_request.head.repo.full_name ==
+  github.repository`).
 - The PR comment step **is skipped** for the same reason.
-- The critical-finding gate still fires — fork PRs introducing critical
-  findings still fail the workflow.
+- The critical-finding gate still fires — fork PRs introducing
+  critical findings still fail the workflow.
 
-If you need full SARIF/PR-comment coverage on fork PRs, the canonical
-GitHub-recommended pattern is the `pull_request_target` event with manual
-checkout of the PR head. That is explicitly out of scope for the dormant
-template because it introduces a token-scope footgun for the maintainer.
+If you need full SARIF / PR-comment coverage on fork PRs, the canonical
+GitHub-recommended pattern is the `pull_request_target` event with
+manual checkout of the PR head. That is explicitly out of scope for the
+dormant template because it introduces a token-scope footgun for the
+maintainer.
 
-## Critical-finding gate
+#### Critical-finding gate
 
-A `jq`-based step counts findings with `severity == "critical"` (or, in the
-adopted-template variant, SARIF `properties.security-severity >= 9.0`)
-across the produced reports. If the total is non-zero, the workflow fails
-with `::error::` annotation, blocking merge. This step carries the canonical
-id `shipwright-critical-gate` so `/shipwright-compliance` Group A5 can
-verify the gate is wired without parsing free-form step names.
+A `jq`-based step counts findings with `severity == "critical"` (or, in
+the adopted-template variant, SARIF `properties.security-severity >= 9.0`)
+across the produced reports. If the total is non-zero, the workflow
+fails with `::error::` annotation, blocking merge. This step carries the
+canonical id `shipwright-critical-gate` so `/shipwright-compliance`
+Group A5 can verify the gate is wired without parsing free-form step
+names.
 
-## Local parity
+#### Local parity
 
 `run_scan_and_report.py` (the local interactive flow) produces the same
-normalised findings with the same redaction rules. The differences are purely
-in destination:
+normalised findings with the same redaction rules. The differences are
+purely in destination:
 
 | Local | CI |
 |-------|----|
 | `.shipwright/securityreports/latest.{md,json}` (gitignored, 20 retained) | `findings.json` + `report.md` artifact (30-day retention) |
 | Iterate-handoff dialog | PR comment |
-| n/a | SARIF to GitHub Security tab |
+| n/a | SARIF to GitHub Security tab (best-effort on private no-GHAS) |
+| n/a | Triage Inbox via the artifact importer |
 
-A finding fingerprint is identical between the two paths, so once SARIF is
-live, GitHub will dedup local-then-CI duplicate sightings of the same issue.
+A finding fingerprint is identical between the two paths, so once
+SARIF is live, GitHub dedups local-then-CI duplicate sightings of the
+same issue.
 
-## Convention lock
+#### Convention lock
 
-The deployed workflow path, the critical-gate step id, the minimum-required
-permissions, and the SARIF category are pinned by
-`shared/scripts/lib/security_workflow.py`. Both `/shipwright-adopt` (writes
-the template) and `/shipwright-compliance` Group A5 (audits the deployed
-file) read these constants — neither side hard-codes them.
+The deployed workflow path, the critical-gate step id, the
+minimum-required permissions, and the SARIF category are pinned by
+`shared/scripts/lib/security_workflow.py`. Both `/shipwright-adopt`
+(writes the template) and `/shipwright-compliance` Group A5 (audits
+the deployed file) read these constants — neither side hard-codes them.
 
-The drift test at `shared/tests/test_security_workflow_convention.py` parses
-the template via PyYAML and asserts every constant is present. A template
-edit that removes or renames a pinned element fails the test, so convention
-and template stay in sync without manual review.
+The drift test at
+`shared/tests/test_security_workflow_convention.py` parses the template
+via PyYAML and asserts every constant is present. A template edit that
+removes or renames a pinned element fails the test, so convention and
+template stay in sync.
 
-## Snapshot test (monorepo workflow)
+#### Snapshot test (monorepo workflow)
 
 `plugins/shipwright-security/tests/test_workflow_shape.py` asserts the
-dormant invariants on the **monorepo's own** `.github/workflows/security.yml`
-on every test run: triggers stay commented, `security-events: write` and
-`actions: read` are set, fork guards are present, SARIF category is
-`shipwright-security`. Any future edit that accidentally activates triggers
-will break those tests until either the trigger blocks are re-commented or
-the snapshot is intentionally updated.
+dormant invariants on the **monorepo's own**
+`.github/workflows/security.yml` on every test run: triggers stay
+commented, `security-events: write` and `actions: read` are set, fork
+guards are present, SARIF category is `shipwright-security`. Any future
+edit that accidentally activates triggers will break those tests until
+either the trigger blocks are re-commented or the snapshot is
+intentionally updated.
 
-The drift test (template) and the snapshot test (monorepo workflow) are
-deliberately separate because the two files are allowed to diverge: the
-monorepo workflow runs against the shipwright codebase and uses
-plugin-internal scripts (`scripts/tools/scan.py`), while the template ships
-with native scanner CLI invocations so it works in any adopted repo.
+The drift test (template) and the snapshot test (monorepo workflow)
+are deliberately separate because the two files are allowed to
+diverge: the monorepo workflow runs against the shipwright codebase
+and uses plugin-internal scripts (`scripts/tools/scan.py`), while the
+template ships with native scanner CLI invocations so it works in any
+adopted repo.
+
+---
+
+## Path B — GitHub Advanced Security (GHAS) alternative
+
+If you already pay for GHAS (or work on a public repo where GHAS is
+free), you can use GitHub's native scanners as the Triage Inbox source
+and turn off Path A.
+
+### When this makes sense
+
+- You want the GitHub-native Security tab UX (per-finding triage,
+  dismissal at SARIF level, GitHub's own dedup).
+- You're already on a GHAS plan (Enterprise / paid private repos /
+  public repos).
+- You prefer CodeQL's SAST coverage over Semgrep's (Path A's SAST
+  scanner).
+
+### Setup
+
+1. Enable Code Scanning in repo *Settings → Code security and analysis*.
+2. Enable Dependabot alerts and Secret Scanning in the same panel.
+3. Enable CodeQL default setup (or configure a custom CodeQL workflow).
+4. Disable Path A — either re-comment the `pull_request` / `schedule`
+   triggers in `.github/workflows/security.yml`, or delete the file.
+
+### Triage Inbox integration
+
+The Triage Inbox importer calls three GitHub APIs (`code-scanning/alerts`,
+`dependabot/alerts`, `secret-scanning/alerts`) and emits the same
+`gh-security:{owner}/{repo}` action-unit. No additional config needed —
+the importer auto-detects which path returned data.
+
+### Auth requirement
+
+`gh auth status` must show the `repo` and `read:org` scopes. The
+Dependabot API also requires `admin:repo_hook`; if absent, the
+importer gracefully degrades — no Dependabot findings, but
+code-scanning / secret-scanning still flow.
+
+---
+
+## Running both (not recommended)
+
+You can run Path A and Path B in parallel — the SARIF upload step in
+`.github/workflows/security.yml` will push Semgrep + Trivy findings
+into Code Scanning when GHAS is active. The Triage Inbox importer
+then preferentially uses the GHAS API path; the artifact path is
+**skipped** to avoid double-counting (`cs_alerts is None` is the gate).
+
+Trade-offs:
+
+- **Pro:** Findings appear in the GitHub Security tab AND the Triage
+  Inbox, so reviewers who prefer the native UX get it.
+- **Con:** Pay for GHAS without gaining new scanner coverage (Path A's
+  scanners SARIF-upload into the same Code Scanning surface; you're
+  paying for the surface, not the scans).
+- **Con:** Duplicate effort if you want to suppress a finding —
+  dismissing in the GitHub Security tab does NOT auto-dismiss the
+  Triage item (intentional: the Triage item is a launch-surface, not
+  a finding-mirror; see § 4.11.1 of the main guide).
+
+If you decide to disable Path A while keeping GHAS, remove or
+re-comment the auto-triggers in `.github/workflows/security.yml`. The
+critical-gate step also drops; CodeQL's gate (if configured) takes over.
+
+---
+
+## Triage Inbox integration
+
+Either path produces a `gh-security:{owner}/{repo}` action-unit in
+`.shipwright/triage.jsonl` — one item per repo, regardless of finding
+count. The item carries a `launchPayload` field with a ready-to-paste
+`/shipwright-security` invocation plus the relevant URL (GitHub
+Security tab for Path B, workflow run URL for Path A).
+
+### What appears in the Triage tab
+
+- One **GitHub security** action-unit per repo (Path A or Path B
+  source) — severity = max across scanner findings.
+- One **GitHub secret-scanning** action-unit per repo (Path B only —
+  not produced by Path A; secret-scanning belongs to GHAS).
+- One **failed CI** action-unit per failing default-branch workflow
+  (orthogonal to Path A vs B — produced by the workflow-runs importer).
+
+### Operator flow
+
+Three verbs on every action-unit (matching the launch-surface model
+from iterate-2026-05-20):
+
+- **Fix now** — copy the `launchPayload` fence into a new Claude session.
+  The matching slash command auto-fires and resolves the item via the
+  existing lifecycle hooks.
+- **Promote** — `triage_cli.py promote <id> --task-ref EXT:<ref>`
+  creates a backlog ExternalTask for deferred work.
+- **Dismiss** — `triage_cli.py dismiss <id> --reason <reason>` for
+  false-positives / won't-fix. (Per-finding false-positives are
+  dismissed on GitHub at SARIF level, not in the triage inbox.)
+
+### Freshness window (Path A only)
+
+The artifact importer treats workflow runs older than
+`SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS` days (default 14) as stale and
+skips them. If your security workflow runs less frequently than that,
+either:
+
+- Set a wider window:
+  `export SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS=60`
+- Configure a `schedule:` trigger (see "Activation" above) so a fresh
+  artifact lands at least once per cutoff window.
+
+A stale window does NOT auto-resolve open Triage items — a stale clean
+run never dismisses real findings.
+
+### Throttle
+
+The Triage Inbox SessionStart hook
+(`shared/scripts/hooks/import_github_findings.py`) runs at most once per
+`SHIPWRIGHT_GITHUB_IMPORT_THROTTLE_HOURS` hours (default 6). This
+applies to both paths and prevents one Claude session per minute from
+hammering the GitHub API.
+
+---
+
+## Prerequisites
+
+Both paths require:
+
+- **GitHub CLI (`gh`) installed and authenticated** — `gh auth status`
+  must show the active account.
+- A `git remote get-url origin` that resolves to a recognised GitHub
+  URL (`github.com` or a `github.*` enterprise host).
+
+Path A additionally requires:
+
+- The shipwright-security GitHub Action to have run at least once
+  recently (within `SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS`) and
+  produced a `security-scan-results` artifact.
+
+Path B additionally requires:
+
+- GHAS enabled on the repo (paid for private, free for public).
+- The `gh` token's scopes must include `repo` and `read:org`; the
+  Dependabot API additionally needs `admin:repo_hook`.

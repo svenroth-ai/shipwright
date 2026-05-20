@@ -1,0 +1,111 @@
+{
+  "run_id": "iterate-2026-05-21-security-artifact-producer",
+  "mode": "iterate",
+  "provider": "openrouter",
+  "timestamp": "2026-05-21T00:00:00Z",
+  "models_reviewed": ["openai", "gemini"],
+  "findings_total": 18,
+  "decisions": {
+    "must_fix_in_this_iterate": [
+      {
+        "finding_id": "openai-1+gemini-1",
+        "severity": "HIGH",
+        "category": "approach",
+        "title": "Fallback gate too strict — fire artifact path on cs_alerts is None alone, not (cs AND db) is None",
+        "rationale": "Dependabot is free and commonly enabled on private repos without GHAS; only Code Scanning (SARIF Upload) is gated by GHAS. The original gate (`cs AND db both None`) would skip the artifact path whenever Dependabot is enabled even though the SAST source is missing. The artifact is the canonical SAST replacement; fire on cs_alerts is None.",
+        "applied": "Artifact path fires when `cs_alerts is None`. The action-unit's detail renders per-source counts independently (code-scanning / dependabot / shipwright-security each as their own line) so the operator sees which sources contributed."
+      },
+      {
+        "finding_id": "openai-5",
+        "severity": "HIGH",
+        "category": "edge-case",
+        "title": "Recency / freshness — no max-age check on artifact run",
+        "rationale": "A dormant workflow's last successful run could be months old; ingesting that as 'current' would surface stale vulnerabilities or auto-resolve real ones based on a stale clean scan.",
+        "applied": "Introduce `SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS` env var (default 14). `latest_security_workflow_run` returns None when the candidate run's `created_at` is older than the cutoff. Auto-resolve is gated on freshness — a stale clean run never resolves open items."
+      },
+      {
+        "finding_id": "openai-6+openai-7+gemini-3",
+        "severity": "MEDIUM",
+        "category": "edge-case",
+        "title": "Branch filtering and discovery — pick default-branch runs only",
+        "rationale": "Without branch filter the importer could pick a feature-branch run; without explicit default-branch discovery the helper contract is ambiguous.",
+        "applied": "`latest_security_workflow_run` filters via `gh api ... runs?branch=<default>&status=success&per_page=10`. The branch is auto-resolved by the existing `github_api.default_branch()` helper — callers do NOT supply it manually."
+      },
+      {
+        "finding_id": "openai-2",
+        "severity": "HIGH",
+        "category": "risk",
+        "title": "Source-switching dedup risk — explicit tests for cross-source transitions",
+        "rationale": "Same dedup key across API and artifact paths is by design (one item per repo), but transitions can re-emit with different detail/launchPayload. Need empirical tests covering all transition orderings.",
+        "applied": "Test `test_github_triage_artifact_fallback.py` adds 4 transition cases: (a) artifact emit → later GHAS comes online → second import idempotent on existing item, (b) GHAS emit → later GHAS goes offline + artifact succeeds → second import idempotent, (c) artifact clean scan → later GHAS findings → auto-resolve precedes new emit, (d) GHAS clean → later artifact findings → auto-resolve precedes new emit. The `launchPayload` stays frozen at first append per the existing contract."
+      },
+      {
+        "finding_id": "openai-9",
+        "severity": "MEDIUM",
+        "category": "edge-case",
+        "title": "Derive counts from findings list, not the aggregate",
+        "rationale": "`total_findings` and `by_severity` are aggregate counters that could disagree with the `findings` array. Trust the SSoT (the list), not the redundant aggregate.",
+        "applied": "Mapper iterates `findings[]` and derives severity counts from each item's `severity` field. `by_severity` aggregate is ignored. Unknown severity values fall back to 'medium' (matching the existing `triage_severity` helper). A non-list `findings` value returns None (treated as malformed)."
+      },
+      {
+        "finding_id": "openai-10+gemini-4",
+        "severity": "MEDIUM",
+        "category": "security",
+        "title": "Subprocess argv hygiene",
+        "rationale": "Command injection risk if owner/repo/branch values are interpolated into shell strings.",
+        "applied": "All `gh` calls use the existing `_gh_api()` helper or follow the same pattern (argv list, no shell=True, all dynamic values pass through `urllib.parse.quote`/`shlex.quote` where applicable). The new `download_security_findings` passes the integer `run_id` as a list element and uses `tempfile.mkdtemp` for the destination."
+      },
+      {
+        "finding_id": "openai-11",
+        "severity": "MEDIUM",
+        "category": "security",
+        "title": "Treat artifact contents as untrusted",
+        "rationale": "Even though the artifact is from CI, the inputs to that CI (PR bodies, commit messages, scanner rule descriptions) could carry markdown / control chars that render badly downstream.",
+        "applied": "The action-unit `detail` and `launchPayload` contain ONLY aggregated counts, a CWE summary count, the workflow run URL, and static text. No raw finding `description` / `rule` strings are rendered. A defensive length cap (1KB) is applied to the assembled detail line."
+      },
+      {
+        "finding_id": "openai-14",
+        "severity": "MEDIUM",
+        "category": "edge-case",
+        "title": "Robust file discovery after artifact download",
+        "rationale": "`gh run download` *usually* flattens single-artifact downloads but a future change or unusual zip layout could nest the file.",
+        "applied": "After `gh run download`, the helper does `Path(tmp).rglob('findings.json')` and takes the first match. None if no match."
+      },
+      {
+        "finding_id": "openai-13",
+        "severity": "LOW",
+        "category": "risk",
+        "title": "Search for remaining triage-inbox.md references before deletion",
+        "rationale": "Documentation deletes that miss callers create broken links.",
+        "applied": "Grep `triage-inbox.md` repo-wide before the delete; remove or rewrite every match."
+      }
+    ],
+    "deferred_with_rationale": [
+      {
+        "finding_id": "gemini-2",
+        "severity": "MEDIUM",
+        "category": "dependency",
+        "title": "Drop gh CLI in favor of REST + in-memory zipfile",
+        "rationale_for_deferral": "The entire existing `github_api.py` module uses `gh api`. Consistency with the established pattern outweighs the marginal robustness gain. Adopting REST would also require token authentication handling (PAT or GITHUB_TOKEN) which `gh` abstracts. Documented `gh` as a prerequisite in security-ci-setup.md (covers openai-3 too).",
+        "follow_up": "If `gh` dependency becomes a deployment blocker (Docker minimal images, etc.), file a follow-up iterate to add a REST fallback inside `_gh_api`."
+      },
+      {
+        "finding_id": "openai-4",
+        "severity": "MEDIUM",
+        "category": "dependency",
+        "title": "Workflow identification only by path",
+        "rationale_for_deferral": "The path is locked by `shared/scripts/lib/security_workflow.py::WORKFLOW_PATH` — already a SSoT constant. /shipwright-adopt writes the workflow to that exact path. Documenting the constraint in security-ci-setup.md is sufficient for v1.",
+        "follow_up": "If user demand for custom workflow paths appears, add a `triage.github_security_workflow_path` config key with the SSoT constant as default."
+      },
+      {
+        "finding_id": "openai-12",
+        "severity": "LOW",
+        "category": "dependency",
+        "title": "by_source consumer audit",
+        "rationale_for_deferral": "Grep shows `by_source` is currently consumed only by `github_triage.py`'s own callers (the SessionStart hook prints a count summary, the tests assert on it). The new `gh-security:artifact` key is purely additive — no enumerator pattern that would break.",
+        "follow_up": "Documented in the iterate ADR; if the WebUI dashboard ever surfaces `by_source` keys, this is the place to revisit."
+      }
+    ]
+  },
+  "addressed_summary": "9 findings applied as plan revisions (HIGH: 3, MEDIUM: 5, LOW: 1). 3 findings deferred with documented rationale (MEDIUM: 2, LOW: 1). The HIGH gate-logic bug from both reviewers fundamentally reshaped the architecture: the artifact is now a third parallel source alongside cs_alerts and db_alerts rather than a binary fallback for both."
+}
