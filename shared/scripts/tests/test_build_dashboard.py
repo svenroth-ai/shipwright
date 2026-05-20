@@ -390,3 +390,51 @@ class TestRunIdEmbed:
         )
         assert "| Run: iterate-20260516-bar" in content
         assert "Recent Changes" in content  # confirms the event path was taken
+
+
+class TestFrColumnFallback:
+    """The FRs column prefers affected_frs; if absent, it falls back to the
+    change_type tag (docs/tooling/compliance/infra) so non-FR iterates show
+    their classification instead of an empty cell. See Iterate C.1."""
+
+    def test_affected_frs_takes_precedence(self, tmp_project):
+        (tmp_project / "shipwright_events.jsonl").write_text(
+            json.dumps({"v": 1, "id": "evt-a", "ts": "2026-05-20T00:00:00Z",
+                        "type": "work_completed", "source": "iterate",
+                        "commit": "abc1234", "intent": "feature",
+                        "description": "x",
+                        "affected_frs": ["FR-01.07"],
+                        "change_type": "tooling"}) + "\n",
+            encoding="utf-8",
+        )
+        content = generate_dashboard(tmp_project, phase="iterate", session_id="s")
+        # FR wins; tooling tag must NOT appear in the recent-changes row.
+        recent_block = content.split("## Recent Changes")[1].split("##")[0]
+        assert "FR-01.07" in recent_block
+        assert "| tooling |" not in recent_block
+
+    def test_change_type_used_when_no_frs(self, tmp_project):
+        (tmp_project / "shipwright_events.jsonl").write_text(
+            json.dumps({"v": 1, "id": "evt-b", "ts": "2026-05-20T00:00:00Z",
+                        "type": "work_completed", "source": "iterate",
+                        "commit": "def4567", "intent": "bug",
+                        "description": "y",
+                        "change_type": "tooling"}) + "\n",
+            encoding="utf-8",
+        )
+        content = generate_dashboard(tmp_project, phase="iterate", session_id="s")
+        recent_block = content.split("## Recent Changes")[1].split("##")[0]
+        assert "| tooling |" in recent_block
+
+    def test_empty_when_neither_set(self, tmp_project):
+        (tmp_project / "shipwright_events.jsonl").write_text(
+            json.dumps({"v": 1, "id": "evt-c", "ts": "2026-05-20T00:00:00Z",
+                        "type": "work_completed", "source": "iterate",
+                        "commit": "ghi7890", "intent": "change",
+                        "description": "z"}) + "\n",
+            encoding="utf-8",
+        )
+        content = generate_dashboard(tmp_project, phase="iterate", session_id="s")
+        recent_block = content.split("## Recent Changes")[1].split("##")[0]
+        # Row exists but FR cell is empty (whitespace between two pipes).
+        assert "| ghi7890 |  |" in recent_block

@@ -224,6 +224,41 @@ class TestBuildEvent:
         assert event["new_frs"] == ["FR-02.08"]
         assert event["adr_id"] == "ADR-055"
 
+    def test_work_completed_change_type(self):
+        """change_type and none_reason are captured when --change-type is passed."""
+        args = parse_args([
+            "--project-root", "/tmp",
+            "--type", "work_completed",
+            "--source", "iterate",
+            "--intent", "bug",
+            "--description", "Cross-platform test stub fix",
+            "--commit", "abc1234",
+            "--tests-passed", "5", "--tests-total", "5",
+            "--change-type", "tooling",
+            "--none-reason", "Test-infra fix, no FR touched",
+        ])
+        event = build_event(args)
+        assert event["change_type"] == "tooling"
+        assert event["none_reason"] == "Test-infra fix, no FR touched"
+        # No affected_frs is fine — Iterate C.1 will gate this combination.
+        assert "affected_frs" not in event
+
+    def test_work_completed_change_type_absent_by_default(self):
+        """change_type/none_reason are omitted when not passed (backward-compat)."""
+        args = parse_args([
+            "--project-root", "/tmp",
+            "--type", "work_completed",
+            "--source", "iterate",
+            "--intent", "feature",
+            "--description", "Add filtering",
+            "--commit", "def4567",
+            "--tests-passed", "47", "--tests-total", "47",
+            "--affected-frs", "FR-02.08",
+        ])
+        event = build_event(args)
+        assert "change_type" not in event
+        assert "none_reason" not in event
+
     def test_task_created_minimal(self):
         args = parse_args([
             "--project-root", "/tmp",

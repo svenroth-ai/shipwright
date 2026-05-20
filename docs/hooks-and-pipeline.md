@@ -1121,6 +1121,17 @@ when the commit touched no `.shipwright/planning/**/spec.md` and no
 check **D5** — feature/change events that landed with no FR linkage.
 Origin: iterate-2026-05-16-spec-impact-gate.
 
+**Non-FR change classification (Phase 0a prep, Iterate C.1 enforce).**
+`record_event.py` accepts two additional optional fields on `work_completed`:
+`--change-type {docs|tooling|compliance|infra}` and `--none-reason "..."`.
+Use them when an iterate touches no FR (test infra, scanner cleanup,
+build-pipeline fix, doc-only). The `build_dashboard.md` FR column renders
+the `change_type` tag as a fallback when `affected_frs` is empty, so
+non-FR iterates show their classification instead of a blank cell. Today
+these fields are read-side only — Iterate C.1 will gate finalize on
+"`affected_frs` non-empty OR `change_type+none_reason` set".
+Origin: Phase 0a of the artifact-polish plan.
+
 ### Scripts Supporting Self-Healing
 
 | Script | Self-Healing | Details |

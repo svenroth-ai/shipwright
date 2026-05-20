@@ -222,6 +222,13 @@ def build_event(args: argparse.Namespace) -> dict:
         # FRs
         if args.affected_frs:
             event["affected_frs"] = [fr.strip() for fr in args.affected_frs.split(",") if fr.strip()]
+        # Non-FR change classification (Phase 0 prep for Iterate C.1 FR-gate).
+        # Read-side only at this stage — no validation. C.1 will enforce
+        # "affected_frs OR change_type+none_reason" at finalize.
+        if args.change_type:
+            event["change_type"] = args.change_type
+        if args.none_reason:
+            event["none_reason"] = args.none_reason
         # Build-specific
         if args.split:
             event["split"] = args.split
@@ -364,6 +371,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--priority", help="Task priority: high | medium | low")
     p.add_argument("--affected-frs", help="Comma-separated FR IDs")
     p.add_argument("--new-frs", help="Comma-separated new FR IDs")
+    p.add_argument("--change-type", choices=["docs", "tooling", "compliance", "infra"],
+                   help="Non-FR change classification: docs | tooling | compliance | infra. "
+                        "Use when an iterate touches no FR (test infra, scanner fixes, build "
+                        "pipeline, doc-only). Iterate C.1 will require this OR --affected-frs "
+                        "for every iterate work_completed event.")
+    p.add_argument("--none-reason",
+                   help="One-line justification for --change-type. Required by Iterate C.1 "
+                        "FR-gate when --affected-frs is empty.")
     p.add_argument("--spec-updated", help="Path to updated spec file")
     p.add_argument("--spec-impact", choices=["add", "modify", "remove", "none"],
                    help="Iterate spec-impact classification (feature/change): "

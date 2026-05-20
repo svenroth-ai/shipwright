@@ -323,7 +323,16 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
             new_str = f"+{tests.get('new', 0)} new, " if tests.get("new") else ""
             tests_cell = f"{new_str}{tests.get('passed', 0)}/{tests.get('total', 0)}"
             commit = we.get("commit", "—")[:7]
-            frs = ", ".join(we.get("affected_frs", [])[:3])
+            # FRs column: prefer affected_frs; fall back to change_type tag
+            # (docs/tooling/compliance/infra) so non-FR iterates show their
+            # classification instead of an empty cell. See Iterate C.1.
+            affected = we.get("affected_frs", [])
+            if affected:
+                frs = ", ".join(affected[:3])
+            elif we.get("change_type"):
+                frs = we["change_type"]
+            else:
+                frs = ""
             date = we.get("ts", "")[:10]
             lines.append(f"| {intent} | {desc} | {tests_cell} | {commit} | {frs} | {date} |")
         lines.append("")
