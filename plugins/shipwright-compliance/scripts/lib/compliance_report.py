@@ -5,8 +5,17 @@ Produces .shipwright/compliance/dashboard.md — the single-page overview.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+# Cross-cutting markdown helper lives at shared/scripts/markdown_table.py
+# (outside the `lib/` namespace per ADR-045 so it can be imported here
+# without colliding with this plugin's own `lib/` regular package).
+_SHARED_SCRIPTS = Path(__file__).resolve().parents[4] / "shared" / "scripts"
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
+from markdown_table import escape_cell  # noqa: E402
 
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
@@ -169,7 +178,8 @@ def _external_review_evidence(data: ComplianceData) -> list[str]:
         fallback = "yes" if s.self_review_fallback_ran else "no"
         reason = s.reason or "—"
         lines.append(
-            f"| {s.split} | {s.status} | {provider} | {s.findings_count} | {fallback} | {reason} |"
+            f"| {escape_cell(s.split)} | {escape_cell(s.status)} | {escape_cell(provider)} "
+            f"| {s.findings_count} | {fallback} | {escape_cell(reason)} |"
         )
     lines.append("")
     return lines

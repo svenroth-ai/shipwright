@@ -1,5 +1,5 @@
 # Project Activity Dashboard
-> Updated: 2026-05-20 20:47 UTC | Session: 296a56bd-c065-4edd-8464-e48eda65add0
+> Updated: 2026-05-20 22:10 UTC | Session: f990b8ca-e767-4745-861f-9a142fcc95a4 | Run: iterate-2026-05-20-escape-md-cells
 
 ## Recent Changes (34 iterations)
 
@@ -41,7 +41,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-20 | Unit: 1985/1985 | Smoke: not_run | (iterate)
+Last run: 2026-05-20 | Unit: 2007/2008 | Integration: 110/110 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

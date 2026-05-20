@@ -1,37 +1,41 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-20-triage-launch-surface",
+    "run_id": "iterate-2026-05-20-escape-md-cells",
     "date": "2026-05-20",
     "unit": {
       "status": "passed",
-      "passed": 1985,
-      "total": 1985,
-      "note": "Full shared/tests/ suite — 1985 passed, 11 skipped, 18 deselected, 0 failed. touches_shared_infra risk flag enforced the full run. New tests added in this iterate: 22 action-unit (security/secrets/ci + per-source-gated legacy migration + symmetric emit/resolve gate), 14 CLI subcommand + parity, 28 launch_payload schema round-trip (incl. parametrized across all 10 KNOWN_SOURCES), 26 owner_repo resolution matrix (12 valid + 8 invalid + drift-protection no-gh-api), 6 aggregator fence + loud-failure + control-char strip, 15 dismiss helper + sanitize_reason + promote-reason hardening. Total touched-module surface: 228 tests, all green."
+      "passed": 2007,
+      "total": 2008,
+      "note": "Full shared/tests/ suite — 2007 passed, 11 skipped, 18 deselected, 1 pre-existing failure (see degraded.preexisting_canon_lint_failure). New tests added in this iterate: 20 markdown_table.escape_cell unit tests (8 boundary categories + table-row round-trip + None/non-string coercion) + 3 build-dashboard regression tests (the AC-4 cell-count assertion driven against the real renderer). All compliance plugin tests still green (320/320). touches_shared_infra risk flag enforced the full run."
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0,
-      "note": "Integration-tests/ not relevant to this iterate (no cross-plugin contracts changed). Shared/tests/ covers the action-unit + schema + CLI surfaces empirically."
+      "status": "passed",
+      "passed": 110,
+      "total": 110,
+      "note": "integration-tests/ green — 110/110 (2 deselected as 'slow')."
     },
-    "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes — Python framework repo."},
-    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web/Playwright surface — library/framework repo. CLI surface verified below."},
+    "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
+    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web/Playwright surface — markdown-rendering bug fix. CLI surface verified below."},
     "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI."},
     "smoke": {"status": "not_run", "note": "No browser/server surface."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_github_triage.py shared/tests/test_github_triage_action_units.py shared/tests/test_github_api.py shared/tests/test_triage_storage.py shared/tests/test_triage_schema.py shared/tests/test_triage_launch_payload.py shared/tests/test_triage_aggregator.py shared/tests/test_triage_promote.py shared/tests/test_triage_cli.py -v --color=no",
+      "runner": "uv run pytest shared/tests/test_markdown_table.py shared/tests/test_build_dashboard_md_escaping.py --color=no",
       "exit_code": 0,
-      "tests_run": 228,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-20-triage-launch-surface/surface_verification.log",
-      "timestamp": "2026-05-20T09:22:10.169Z",
+      "tests_run": 23,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-20-escape-md-cells/surface_verification.json",
+      "timestamp": "2026-05-20T12:30:00.000Z",
       "attempts": 1,
-      "note": "F0.5 cli surface — 228 tests driving the producer→file→consumer→CLI chain through real subprocess invocations + round-trips. Includes the per-source-gated legacy migration matrix, the secret-scanning whitelist hygiene boundary, the owner_repo resolution matrix, and the CLI parity contract with triage_promote.py. Exit 0, single attempt."
+      "note": "F0.5 cli surface — 23 tests (20 unit + 3 integration regression). The integration tests drive the real generate_dashboard renderer with a synthetic shipwright_events.jsonl, parse the rendered markdown row with re.split(r'(?<!\\\\)\\|', row), and assert exactly 6 data cells. Exit 0, single attempt."
     },
     "degraded": [
       {
-        "condition": "external_review_partial",
-        "detail": "Gemini returned status=success with feedback=null; OpenAI (GPT-5) returned 14 substantive findings (2 HIGH, 9 MEDIUM, 3 LOW). All HIGH+MEDIUM integrated into spec + miniplan + tests before build. Sufficient coverage — no rerun needed."
+        "condition": "external_review_missing_keys",
+        "detail": "External LLM review provider keys (OPENROUTER_API_KEY / GEMINI_API_KEY / OPENAI_API_KEY) not configured in this environment per check-external-review-keys.py. Per the iterate skill's degraded-mode rule (Branch B Option 2), fell back to the mandatory self-review + an internal code-reviewer subagent pass — the latter caught a missed wrap site in compliance_report.py::_external_review_evidence past the mini-plan's 5-file modify list and was fixed in the same iterate. Marker at .shipwright/planning/iterate/external_review_state.json."
+      },
+      {
+        "condition": "preexisting_canon_lint_failure",
+        "detail": "shared/tests/test_artifact_path_canon.py::test_no_legacy_artifact_paths[compliance-migrated] fails on shared/scripts/tools/record_event.py:374 where 'compliance' appears as a quoted argparse choice in choices=['docs','tooling','compliance','infra']. Introduced by PR #42 (fd212b2 chore(phase-0a): backfill FRs + add change_type schema field). Verified by stash-and-rerun on the base commit — fails identically on origin/main with this iterate's changes stashed. Out of scope for this iterate (markdown table escaping); a separate single-line iterate should add the inline marker '# artifact-path-canon: legacy' to that line, mirroring the precedent at shared/scripts/lib/drift_parsers.py:110 which suppresses the same word for the same reason."
       }
     ]
   }

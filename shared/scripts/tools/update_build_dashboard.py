@@ -10,6 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.config import collect_all_build_sections, read_config, read_events
+from markdown_table import escape_cell
 
 STEP_LABELS = {
     1: "Read spec", 2: "Install deps", 3: "Write tests (red)",
@@ -103,7 +104,10 @@ def _generate_build_summary(all_sections: list[dict], completed_splits: list[str
         sec_done = sum(1 for s in secs if s.get("status") == "complete")
         tp, tt = sum(s.get("tests_passed", 0) for s in secs), sum(s.get("tests_total", 0) for s in secs)
         test_str = f"{tp}/{tt}" if tt > 0 else "\u2014"
-        lines.append(f"| {split_name} | {sec_done}/{len(secs)} | {test_str} | {'complete' if sec_done == len(secs) else 'in_progress'} |")
+        lines.append(
+            f"| {escape_cell(split_name)} | {sec_done}/{len(secs)} | {escape_cell(test_str)} "
+            f"| {'complete' if sec_done == len(secs) else 'in_progress'} |"
+        )
     lines.append("")
     return lines
 
@@ -195,7 +199,11 @@ def generate_dashboard(
             lines.append("| # | Section | Status | Commit |")
             lines.append("|---|---------|--------|--------|")
             for i, sec in enumerate(sections, 1):
-                lines.append(f"| {i} | {sec.get('name', '?')} | {format_status(sec, section, step, detail)} | {sec.get('commit', '--')} |")
+                lines.append(
+                    f"| {i} | {escape_cell(sec.get('name', '?'))} "
+                    f"| {escape_cell(format_status(sec, section, step, detail))} "
+                    f"| {escape_cell(sec.get('commit', '--'))} |"
+                )
             lines.append("")
 
     if "test" in completed_steps:
@@ -334,7 +342,10 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
             else:
                 frs = ""
             date = we.get("ts", "")[:10]
-            lines.append(f"| {intent} | {desc} | {tests_cell} | {commit} | {frs} | {date} |")
+            lines.append(
+                f"| {escape_cell(intent)} | {escape_cell(desc)} | {escape_cell(tests_cell)} "
+                f"| {escape_cell(commit)} | {escape_cell(frs)} | {escape_cell(date)} |"
+            )
         lines.append("")
 
     # --- Test Status ---
@@ -418,7 +429,10 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
                 review_cell = review.get("type", "—").replace("-review", "")
                 commit = we.get("commit", "—")[:7]
                 frs = ", ".join(we.get("affected_frs", [])[:3])
-                lines.append(f"| {we.get('section', '—')} | {tests_cell} | {review_cell} | {commit} | {frs} |")
+                lines.append(
+                    f"| {escape_cell(we.get('section', '—'))} | {escape_cell(tests_cell)} "
+                    f"| {escape_cell(review_cell)} | {escape_cell(commit)} | {escape_cell(frs)} |"
+                )
             lines.append("")
 
     # --- Current Activity ---

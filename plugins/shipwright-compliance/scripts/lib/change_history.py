@@ -5,10 +5,19 @@ Produces .shipwright/compliance/change-history.md from git conventional commits.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from scripts.lib.mermaid import commit_type_pie
+
+# Cross-cutting markdown helper lives at shared/scripts/markdown_table.py
+# (outside the `lib/` namespace per ADR-045 so it can be imported here
+# without colliding with this plugin's own `lib/` regular package).
+_SHARED_SCRIPTS = Path(__file__).resolve().parents[4] / "shared" / "scripts"
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
+from markdown_table import escape_cell  # noqa: E402
 
 if TYPE_CHECKING:
     from scripts.lib.data_collector import CommitEntry, ComplianceData
@@ -73,7 +82,10 @@ def generate(data: ComplianceData) -> str:
         for c in type_commits:
             date = c.date[:10] if len(c.date) >= 10 else c.date
             scope = c.scope or "—"
-            lines.append(f"| {date} | {scope} | {c.description} | {c.hash} |")
+            lines.append(
+                f"| {escape_cell(date)} | {escape_cell(scope)} "
+                f"| {escape_cell(c.description)} | {escape_cell(c.hash)} |"
+            )
         lines.append("")
 
     # AI attribution

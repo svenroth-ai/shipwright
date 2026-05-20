@@ -6,10 +6,19 @@ test execution summary (unit/smoke/e2e), and links to specs and test files.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from scripts.lib.mermaid import testing_pyramid_diagram
+
+# Cross-cutting markdown helper lives at shared/scripts/markdown_table.py
+# (outside the `lib/` namespace per ADR-045 so it can be imported here
+# without colliding with this plugin's own `lib/` regular package).
+_SHARED_SCRIPTS = Path(__file__).resolve().parents[4] / "shared" / "scripts"
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
+from markdown_table import escape_cell  # noqa: E402
 
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
@@ -90,7 +99,7 @@ def _test_execution_summary(data: ComplianceData) -> list[str]:
         if tr.integration_skipped:
             int_status = "SKIP"
             int_detail = tr.integration_skip_reason or "skipped"
-            lines.append(f"| Integration | {int_status} | — | — | — | {int_detail} |")
+            lines.append(f"| Integration | {int_status} | — | — | — | {escape_cell(int_detail)} |")
         elif tr.integration_total > 0:
             int_status = "PASS" if tr.integration_passed == tr.integration_total else "FAIL"
             lines.append(
@@ -104,7 +113,7 @@ def _test_execution_summary(data: ComplianceData) -> list[str]:
         if tr.pgtap_skipped:
             pgtap_status = "SKIP"
             pgtap_detail = tr.pgtap_skip_reason or "skipped"
-            lines.append(f"| pgTAP | {pgtap_status} | — | — | — | {pgtap_detail} |")
+            lines.append(f"| pgTAP | {pgtap_status} | — | — | — | {escape_cell(pgtap_detail)} |")
         elif tr.pgtap_total > 0:
             pgtap_status = "PASS" if tr.pgtap_passed == tr.pgtap_total else "FAIL"
             lines.append(
@@ -118,14 +127,14 @@ def _test_execution_summary(data: ComplianceData) -> list[str]:
         if tr.smoke_response_ms:
             smoke_detail += f" ({tr.smoke_response_ms}ms)"
         lines.append(
-            f"| Smoke | {smoke_status} | — | — | — | {smoke_detail} |"
+            f"| Smoke | {smoke_status} | — | — | — | {escape_cell(smoke_detail)} |"
         )
 
         # E2E
         if tr.e2e_skipped:
             e2e_status = "SKIP"
             e2e_detail = tr.e2e_skip_reason or "skipped"
-            lines.append(f"| E2E | {e2e_status} | — | — | — | {e2e_detail} |")
+            lines.append(f"| E2E | {e2e_status} | — | — | — | {escape_cell(e2e_detail)} |")
         else:
             e2e_status = "PASS" if tr.e2e_passed == tr.e2e_total and tr.e2e_total > 0 else "FAIL"
             if tr.e2e_total == 0:
@@ -139,7 +148,7 @@ def _test_execution_summary(data: ComplianceData) -> list[str]:
         if tr.design_fidelity_skipped:
             vis_status = "SKIP"
             vis_detail = tr.design_fidelity_skip_reason or "skipped"
-            lines.append(f"| Design Fidelity | {vis_status} | — | — | — | {vis_detail} |")
+            lines.append(f"| Design Fidelity | {vis_status} | — | — | — | {escape_cell(vis_detail)} |")
         elif tr.design_fidelity_total > 0:
             vis_status = "PASS" if tr.design_fidelity_passed == tr.design_fidelity_total else "WARNING"
             vis_detail = "Code-level mockup comparison"
@@ -147,14 +156,14 @@ def _test_execution_summary(data: ComplianceData) -> list[str]:
                 vis_detail += f" ([detail](design-fidelity-report.json))"
             lines.append(
                 f"| Design Fidelity | {vis_status} | {tr.design_fidelity_passed} | {tr.design_fidelity_total} "
-                f"| — | {vis_detail} |"
+                f"| — | {escape_cell(vis_detail)} |"
             )
 
         # Consistency
         if tr.consistency_skipped:
             cons_status = "SKIP"
             cons_detail = tr.consistency_skip_reason or "skipped"
-            lines.append(f"| Consistency | {cons_status} | — | — | — | {cons_detail} |")
+            lines.append(f"| Consistency | {cons_status} | — | — | — | {escape_cell(cons_detail)} |")
         elif tr.consistency_total > 0:
             cons_status = "PASS" if tr.consistency_passed == tr.consistency_total else "WARNING"
             lines.append(
@@ -324,7 +333,8 @@ def _code_review_evidence(data: ComplianceData) -> list[str]:
         else:
             status = "OPEN"
         lines.append(
-            f"| {sec.name} | {review_label} | {sec.review_findings} | {sec.review_findings_fixed} "
+            f"| {escape_cell(sec.name)} | {escape_cell(review_label)} "
+            f"| {sec.review_findings} | {sec.review_findings_fixed} "
             f"| {deferred} | {status} |"
         )
     lines.append("")
@@ -399,7 +409,11 @@ def _test_progression(data: ComplianceData) -> list[str]:
             result = "—"
         date = we.timestamp[:10]
 
-        lines.append(f"| {i} | {name} | {source} | {new_cell} | {suite} | {result} | {date} |")
+        lines.append(
+            f"| {i} | {escape_cell(name)} | {escape_cell(source)} "
+            f"| {escape_cell(new_cell)} | {escape_cell(suite)} "
+            f"| {escape_cell(result)} | {escape_cell(date)} |"
+        )
 
     lines.append("")
     return lines
@@ -424,7 +438,10 @@ def _full_suite_runs(data: ComplianceData) -> list[str]:
         date = tr.timestamp[:10]
         trigger = tr.trigger or "—"
 
-        lines.append(f"| {i} | {trigger} | {unit} | {smoke} | {e2e} | {date} |")
+        lines.append(
+            f"| {i} | {escape_cell(trigger)} | {escape_cell(unit)} | {escape_cell(smoke)} "
+            f"| {escape_cell(e2e)} | {escape_cell(date)} |"
+        )
 
     lines.append("")
     return lines
@@ -459,7 +476,10 @@ def _code_review_evidence_events(data: ComplianceData) -> list[str]:
         else:
             status = "OPEN"
 
-        lines.append(f"| {name} | {review_label} | {we.review_findings} | {we.review_fixed} | {status} |")
+        lines.append(
+            f"| {escape_cell(name)} | {escape_cell(review_label)} "
+            f"| {we.review_findings} | {we.review_fixed} | {status} |"
+        )
 
     lines.append("")
     return lines

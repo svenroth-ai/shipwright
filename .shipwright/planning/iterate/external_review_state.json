@@ -1,9 +1,15 @@
 {
-  "status": "completed",
-  "timestamp": "2026-05-20T08:45:14.672490+00:00",
-  "provider": "openrouter",
-  "findings_count": 14,
-  "self_review_fallback_ran": false,
-  "reason": "openrouter: openai 14 findings (2 HIGH, 9 MED, 3 LOW), gemini null feedback (partial-degraded)",
-  "review_mode": null
+  "run_id": "iterate-2026-05-20-escape-md-cells",
+  "status": "skipped_missing_keys",
+  "timestamp": "2026-05-20T12:00:00+00:00",
+  "provider": null,
+  "findings_count": 0,
+  "self_review_fallback_ran": true,
+  "review_mode": "iterate",
+  "reason": "External review provider keys (OPENROUTER_API_KEY / GEMINI_API_KEY / OPENAI_API_KEY) are not configured in this environment per check-external-review-keys.py. Falling back to mandatory self-review per the iterate skill's degraded-mode rule (Branch B Option 2). Logged in iterate ADR.",
+  "providers_available": {
+    "openrouter": false,
+    "gemini": false,
+    "openai": false
+  }
 }
