@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-20-triage-launch-surface",
+  "date": "2026-05-20T09:25:16.299411Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/triage-launch-surface",
+  "spec": ".shipwright/planning/iterate/2026-05-20-triage-launch-surface.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-05-20-triage-launch-surface"
+}

@@ -1,40 +1,43 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-19-fix-decision-drop-worktree"
+run_id: "iterate-2026-05-20-triage-launch-surface"
 phase: "iterate"
-reason: "iterate: fix write_decision_drop.py worktree-awareness"
-timestamp: "2026-05-19T19:00:56.388503+00:00"
+reason: "iterate: triage as launch-surface (Iterate A — monorepo CLI + action-units + launchPayload)"
+timestamp: "2026-05-20T09:25:08.429812+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-19 19:00:56 UTC
+> Auto-generated 2026-05-20 09:25:08 UTC
 
 ## Session Info
 
-- **Session ID**: d827c8c6-8c58-4f61-8cfe-cce6f9b7d878
-- **Timestamp**: 2026-05-19 19:00:56 UTC
-- **Reason**: iterate: fix write_decision_drop.py worktree-awareness
+- **Session ID**: 40bd6950-895c-404c-8079-746a1113b64f
+- **Timestamp**: 2026-05-20 09:25:08 UTC
+- **Reason**: iterate: triage as launch-surface (Iterate A — monorepo CLI + action-units + launchPayload)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-19-github-triage-importer
-- **Date**: 2026-05-19T09:08:25.909304Z
-- **Type**: feature
-- **Complexity**: medium
-- **Branch**: iterate/github-triage-importer
-- **ADR**: iterate-2026-05-19-github-triage-importer
+- **Run ID**: iterate-2026-05-19-fix-decision-drop-worktree
+- **Date**: 2026-05-19T19:00:56.560106Z
+- **Type**: bug
+- **Complexity**: small
+- **Branch**: iterate/fix-decision-drop-worktree
+- **ADR**: iterate-2026-05-19-fix-decision-drop-worktree
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-19-github-triage-importer.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fix-decision-drop-worktree
-- **External Review Marker**: skipped_user_opt_out (external_review_state.json @ 2026-05-18T20:58:58)
+- **Branch**: iterate/triage-launch-surface
+- **Run ID**: iterate-2026-05-20-triage-launch-surface
+- **Spec**: .shipwright/planning/iterate/2026-05-20-triage-launch-surface.md
+- **Complexity**: medium
+- **External Review Marker**: stale (predates spec (2026-05-20T08:45:14))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fix-decision-drop-worktree
-- **Last Commit**: 44b28e7 Merge pull request #39 from svenroth-ai/iterate/github-triage-importer
+- **Branch**: iterate/triage-launch-surface
+- **Last Commit**: de5ff9c Merge pull request #40 from svenroth-ai/iterate/fix-decision-drop-worktree
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-afdb1133 | work_completed | iterate (fix write_decision_drop.py worktree-awareness — decision-drops resolved against the main repo so iterate ADRs survive worktree cleanup) | 2026-05-19 |
 | evt-c4e5298b | work_completed | iterate (github-triage-importer) | 2026-05-19 |
 | evt-9355640f | work_completed | iterate (phase-quality auditor recognises drop-dir changelog, adopted spec path, and iterate/adopt completion evidence (C1/C5/S1 check-side fixes)) | 2026-05-18 |
 | evt-51590a74 | work_completed | iterate (harden activated CI workflows: scanners, CI-aware test, CodeQL guard) | 2026-05-18 |
 | evt-7078b787 | work_completed | iterate (fix 17 launch-blocker test failures (Windows python3 stub + 6 smaller groups)) | 2026-05-18 |
-| evt-16154172 | work_completed | iterate (triage detector dedup + auto-resolve (rebased onto #31)) | 2026-05-16 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 37
-- **Last iterate**: feature — github-triage-importer (2026-05-19)
+- **Total work events**: 38
+- **Last iterate**: bug — fix write_decision_drop.py worktree-awareness — decision-drops resolved against the main repo so iterate ADRs survive worktree cleanup (2026-05-19)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

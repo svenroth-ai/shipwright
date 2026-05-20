@@ -77,7 +77,32 @@ execution — that's the backlog's job after promote.
 | `shared/scripts/surface_verification.py::_emit_failure_to_triage` | F0.5 fail-closed exits (3 of 4 — see below) | `f0.5` | One item per non-zero exit, severity `critical`, dedup by `(run_id, surface, condition)` within 24h. Items for the same `(run_id, surface)` whose condition cleared on a green re-run → auto-dismissed with `reason="f05Resolved"` |
 | `shared/scripts/hooks/check_drift.py::_emit_drift_to_triage` | SessionStart hook on any timestamp / content drift in CLAUDE.md | `drift` | One item per file:kind (`timestamp` or `content`), severity `medium`, dedup by `(canonical file path, kind)` cross-session indefinite — the `content` path is `normcase`+`realpath`-canonicalized so Windows drive-letter casing can't split one drift across two items. Findings absent from the current run → auto-dismissed with `reason="driftResolved"` (this detector's own `timestamp`/`content` keys only — `artifact_sync.py`'s `:artifact` keys are left alone) |
 | `shared/scripts/artifact_sync.py::_emit_drift_to_triage` | F1 (post-commit) drift check on changed_files vs sync_config | `drift` | One item per affected mapping pattern (`kind=artifact`), severity `medium`, dedup by `(pattern, kind)` cross-session indefinite |
-| `shared/scripts/hooks/import_github_findings.py` | SessionStart hook, throttled (default 6h, configurable) | `github` | GitHub code-scanning / Dependabot / secret-scanning alerts + the latest failed default-branch CI run per workflow, pulled via `gh api`. Dedup keys `github:{code-scanning,dependabot,secret-scanning}:<number>` + `github-ci:<workflow>:<sha>`, `match_commit=False`, `window=None`. Auto-resolve scoped to those four key prefixes (`reason="githubResolved"`), only for sources whose fetch succeeded — a failed fetch never mass-resolves. Throttle state in `.shipwright/github_import_state.json`; fail-soft (never blocks SessionStart). A secret-scanning alert's raw `secret` value is never persisted. |
+| `shared/scripts/hooks/import_github_findings.py` | SessionStart hook, throttled (default 6h, configurable) | `github` | GitHub code-scanning / Dependabot / secret-scanning alerts + the latest failed default-branch CI run per workflow, pulled via `gh api`. As of iterate-2026-05-20 (`triage-launch-surface`), emits **action-units** (one per repo / per workflow) rather than per-finding items — see § "Action-units (iterate-2026-05-20)" below. Dedup keys `gh-security:{owner}/{repo}`, `gh-secrets:{owner}/{repo}`, `gh-ci:{workflow_id}`; `match_commit=False`, `window=None`. Each unit carries a `launchPayload` field (frozen at first append). Auto-resolve scoped to those three key prefixes (`reason="githubResolved"`), only for sources whose fetch succeeded. One-shot legacy migration sweeps pre-iterate-2026-05-20 per-finding items into `dismissed` with `reason="schemaMigration"`, also per-source-gated. Throttle state in `.shipwright/github_import_state.json`; fail-soft (never blocks SessionStart). A secret-scanning alert's raw `secret` value is never persisted, AND the `gh-secrets` action-unit `launchPayload` is whitelist-only (static rotation checklist + secret-scanning tab URL only — no alert content, no display names, no per-alert URLs). |
+
+### Action-units (iterate-2026-05-20)
+
+The GitHub producer collapses upstream findings into **action-units** —
+one operator-actionable item per repo (security, secrets) or per
+failing workflow (CI) — rather than mirroring per-finding state. GitHub
+itself is the per-finding database; the triage inbox is a *launch
+surface*.
+
+| Action-unit              | Dedup key                       | Launch behavior                                                              |
+|--------------------------|---------------------------------|------------------------------------------------------------------------------|
+| security                 | `gh-security:{owner}/{repo}`    | `launchPayload` starts with `/shipwright-security` + GitHub security tab URL |
+| secrets                  | `gh-secrets:{owner}/{repo}`     | `launchPayload` is a whitelist-only rotation checklist (no slash command)    |
+| failed CI per workflow   | `gh-ci:{workflow_id}`           | `launchPayload` starts with `/shipwright-iterate --type bug` + workflow PAGE URL (stable across runs — the `head_sha` is intentionally NOT in the dedup key) |
+
+`launchPayload` is **frozen at first append** — idempotent dedup
+suppresses re-emission of the same key, so the payload persisted on the
+first emission survives subsequent imports unchanged. Live counts in
+`detail` are best-effort; operators click the GitHub URL in the payload
+for current state.
+
+`owner_repo` resolution is local-first (`git remote get-url origin`,
+parsed by `github_api.parse_github_remote`). When the remote is
+missing, malformed, or non-GitHub, the producer SKIPS repo-scoped
+action-units rather than emitting malformed keys like `gh-security:`.
 
 ### Deferred producers
 
@@ -124,32 +149,56 @@ audit trail closes.
 Tracked in `leadwright/docs/specs/phase-1-external-task-extension.md`
 (Iterate 1b in webui) and Iterate 3 in this monorepo.
 
-### From the CLI (Iterate 1a, available now)
+### From the CLI
 
-For non-webui repos or operators who prefer the CLI:
+The launch-surface CLI (iterate-2026-05-20) is the canonical operator
+interface, parallel to the future WebUI Triage tab. The pre-existing
+`triage_promote.py` tool stays for back-compat — both invoke the same
+library helper.
 
 ```bash
-uv run shared/scripts/tools/triage_promote.py \
-  --id trg-a1b2c3d4 \
+# List open items + their launchPayload (the "Fix now" surface)
+uv run shared/scripts/tools/triage_cli.py list
+
+# Promote to backlog (positional id)
+uv run shared/scripts/tools/triage_cli.py promote trg-a1b2c3d4 \
   --task-ref "EXT:linear-ENG-7" \
   [--reason "urgent — Q2 release"]
+
+# Dismiss (false-positive / won't-fix; positional id)
+uv run shared/scripts/tools/triage_cli.py dismiss trg-a1b2c3d4 \
+  --reason notRelevant
+
+# Legacy promote tool (back-compat — unchanged from iterate-2026-05-11)
+uv run shared/scripts/tools/triage_promote.py \
+  --id trg-a1b2c3d4 --task-ref "EXT:linear-ENG-7"
 ```
 
-Exit codes:
+Exit codes (`triage_cli.py promote|dismiss`):
 
-- `0` — promoted; triage_inbox.md will re-render on next Stop hook
-- `2` — invalid input (state already-promoted/dismissed/snoozed, or
-  `task-ref` contains control chars / is too long)
-- `3` — triage id not found
-- `4` — triage store not initialised (run `/shipwright-adopt` or the
-  scaffolder first)
+- `0` — status flipped; triage_inbox.md will re-render on next Stop hook
+- `2` — invalid input (missing required option, item id not found,
+  state already-promoted/dismissed/snoozed, or `--task-ref`/`--reason`
+  contains control chars / is too long)
+
+(The legacy `triage_promote.py` retains its richer exit-code surface:
+`2` for invalid input, `3` for unknown id, `4` for uninitialised store.
+The new CLI collapses 3/4 into 2 for simpler scripting.)
+
+**Fix-now flow.** Open `.shipwright/agent_docs/triage_inbox.md` (or run
+`triage_cli.py list`), find the item, copy the `launchPayload` fence
+into a new Claude session. The matching slash command auto-fires there.
+The existing lifecycle hooks flip the item once the run completes.
 
 `--task-ref` is sanitized: no newlines, tabs, or ASCII control
-characters; max 200 chars. Free-form otherwise — `EXT:linear-ENG-7`,
+characters; max 200 chars. `--reason` follows the same rules (max
+500 chars). Free-form otherwise — `EXT:linear-ENG-7`,
 `EXT:asana-12345`, `https://my-tracker/issues/42` — downstream consumers
-expect a human-readable token. (When the webui Triage tab lands in
-Iterate 3, it writes the actual `ExternalTask` record and sets
-`promotedTaskId` on the triage side automatically.)
+expect a human-readable token. (When the WebUI Triage tab lands in
+shipwright-webui Iterate B, it writes the actual `ExternalTask` record
+and sets `promotedTaskId` on the triage side automatically; it
+delegates to the same library helpers as the CLI so audit-trail shape
+is byte-identical.)
 
 ## Mapping rules (severity → priority, source → domain)
 

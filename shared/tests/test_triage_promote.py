@@ -24,7 +24,9 @@ if str(_SHARED_SCRIPTS) not in sys.path:
 
 from triage import append_triage_item, mark_status, read_all_items  # noqa: E402
 from tools.triage_promote import (  # noqa: E402
+    dismiss,
     promote,
+    sanitize_reason,
     sanitize_task_ref,
 )
 
@@ -226,3 +228,148 @@ def test_cli_exits_4_on_missing_file(project: Path) -> None:
     ])
     assert result.returncode == 4
     assert "not initialised" in result.stderr
+
+
+# ---------------------------------------------------------------------------
+# dismiss() library helper — added in iterate-2026-05-20-triage-launch-surface
+# Mirrors promote() shape; called by the new triage_cli.py and by future
+# WebUI Triage tab. Lives alongside promote() so the CLI parity story
+# (AC-11) holds without sys.path gymnastics.
+# ---------------------------------------------------------------------------
+
+
+# --- sanitize_reason ----------------------------------------------------
+
+def test_sanitize_reason_accepts_normal() -> None:
+    assert sanitize_reason("known false positive") == "known false positive"
+
+
+def test_sanitize_reason_strips_whitespace() -> None:
+    assert sanitize_reason("  notRelevant  ") == "notRelevant"
+
+
+def test_sanitize_reason_rejects_empty() -> None:
+    with pytest.raises(ValueError, match="empty"):
+        sanitize_reason("")
+    with pytest.raises(ValueError, match="empty"):
+        sanitize_reason("   ")
+
+
+def test_sanitize_reason_rejects_newline() -> None:
+    with pytest.raises(ValueError, match="control character"):
+        sanitize_reason("notRelevant\nmore")
+
+
+def test_sanitize_reason_rejects_too_long() -> None:
+    with pytest.raises(ValueError, match="too long"):
+        sanitize_reason("X" * 501)
+
+
+def test_sanitize_reason_accepts_at_limit() -> None:
+    # 500 chars OK (longer than task_ref since reasons can be more prose).
+    assert sanitize_reason("X" * 500) == "X" * 500
+
+
+# --- dismiss() happy path ----------------------------------------------
+
+def test_dismiss_happy_path(project: Path, triage_item: str) -> None:
+    result = dismiss(
+        project, item_id=triage_item, reason="notRelevant",
+    )
+    assert result == {
+        "id": triage_item,
+        "previousStatus": "triage",
+        "newStatus": "dismissed",
+        "reason": "notRelevant",
+    }
+
+    [item] = read_all_items(project)
+    assert item["status"] == "dismissed"
+    assert item["statusReason"] == "notRelevant"
+
+
+def test_dismiss_records_by_actor(project: Path, triage_item: str) -> None:
+    dismiss(project, item_id=triage_item, reason="known-fp", by="cli")
+    [item] = read_all_items(project)
+    assert item["statusBy"] == "cli"
+
+
+# --- dismiss() error paths ---------------------------------------------
+
+def test_dismiss_missing_item_raises_keyerror(project: Path) -> None:
+    append_triage_item(
+        project, source="phaseQuality", severity="high", kind="bug",
+        title="t", detail="d",
+    )
+    with pytest.raises(KeyError):
+        dismiss(project, item_id="trg-deadbeef", reason="x")
+
+
+def test_dismiss_missing_file_raises_filenotfound(project: Path) -> None:
+    with pytest.raises(FileNotFoundError):
+        dismiss(project, item_id="trg-12345678", reason="x")
+
+
+def test_dismiss_rejects_already_dismissed(
+    project: Path, triage_item: str,
+) -> None:
+    mark_status(project, triage_item, new_status="dismissed", by="user")
+    with pytest.raises(ValueError, match="only `triage` is"):
+        dismiss(project, item_id=triage_item, reason="x")
+
+
+def test_dismiss_rejects_promoted(project: Path, triage_item: str) -> None:
+    promote(project, item_id=triage_item, task_ref="EXT:foo")
+    with pytest.raises(ValueError, match="only `triage` is"):
+        dismiss(project, item_id=triage_item, reason="x")
+
+
+def test_dismiss_rejects_invalid_reason(
+    project: Path, triage_item: str,
+) -> None:
+    with pytest.raises(ValueError, match="control character"):
+        dismiss(project, item_id=triage_item, reason="bad\nreason")
+
+
+# --- promote() — reason sanitization (code review MED #3) ---------------
+
+def test_promote_rejects_invalid_reason(
+    project: Path, triage_item: str,
+) -> None:
+    """A control-char-bearing reason on promote must be rejected, matching
+    the dismiss path (code review MED #3 of iterate-2026-05-20)."""
+    with pytest.raises(ValueError, match="control character"):
+        promote(
+            project, item_id=triage_item,
+            task_ref="EXT:foo", reason="bad\nreason",
+        )
+
+
+def test_promote_rejects_too_long_reason(
+    project: Path, triage_item: str,
+) -> None:
+    with pytest.raises(ValueError, match="too long"):
+        promote(
+            project, item_id=triage_item,
+            task_ref="EXT:foo", reason="X" * 501,
+        )
+
+
+def test_promote_default_reason_when_none_passed(
+    project: Path, triage_item: str,
+) -> None:
+    """Backward-compat: passing reason=None still yields 'manualPromote'."""
+    promote(project, item_id=triage_item, task_ref="EXT:foo", reason=None)
+    [item] = read_all_items(project)
+    assert item["statusReason"] == "manualPromote"
+
+
+def test_promote_strips_whitespace_in_reason(
+    project: Path, triage_item: str,
+) -> None:
+    promote(
+        project, item_id=triage_item,
+        task_ref="EXT:foo", reason="  urgent — Q2 release  ",
+    )
+    [item] = read_all_items(project)
+    assert item["statusReason"] == "urgent — Q2 release"

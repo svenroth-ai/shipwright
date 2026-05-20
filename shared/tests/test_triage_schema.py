@@ -45,7 +45,13 @@ REQUIRED_APPEND_KEYS = {
     "suggestedDomain",
 }
 
-OPTIONAL_APPEND_KEYS = {"evidencePath", "runId", "commit", "dedupKey"}
+OPTIONAL_APPEND_KEYS = {
+    "evidencePath",
+    "runId",
+    "commit",
+    "dedupKey",
+    "launchPayload",  # iterate-2026-05-20-triage-launch-surface
+}
 
 REQUIRED_STATUS_KEYS = {"event", "id", "ts", "newStatus", "by"}
 OPTIONAL_STATUS_KEYS = {"reason", "promotedTaskId"}

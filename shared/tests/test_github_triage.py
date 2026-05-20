@@ -102,8 +102,14 @@ def _patch_api(
     runs=None,
     available=True,
     branch="main",
+    owner_repo="acme/foo",
 ):
-    """Patch every github_api entry point. `None` = fetch failed; `[]` = empty OK."""
+    """Patch every github_api entry point. `None` = fetch failed; `[]` = empty OK.
+
+    `owner_repo` is patched too since the action-unit producer
+    (iterate-2026-05-20-triage-launch-surface) needs it for repo-scoped
+    dedup keys; tmp_path projects have no `origin` remote.
+    """
     monkeypatch.setattr(github_api, "gh_available", lambda: available)
     monkeypatch.setattr(github_api, "default_branch", lambda: branch)
     monkeypatch.setattr(
@@ -114,6 +120,7 @@ def _patch_api(
         github_api, "fetch_secret_scanning_alerts", lambda: secret_scanning
     )
     monkeypatch.setattr(github_api, "fetch_workflow_runs", lambda branch: runs)
+    monkeypatch.setattr(github_api, "owner_repo", lambda _: owner_repo)
 
 
 def _append_events(project_root: Path) -> list[dict]:
@@ -133,44 +140,11 @@ def _append_events(project_root: Path) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# AC1-AC3, AC8 — pure alert -> triage-item mapping
+# Per-finding mappers were removed in iterate-2026-05-20-triage-launch-surface
+# (collapsed into action-units). See test_github_triage_action_units.py for
+# the new mapper coverage (security_action_unit / secrets_action_unit /
+# ci_action_unit).
 # ---------------------------------------------------------------------------
-
-def test_code_scanning_item_maps_fields():
-    item = github_triage.code_scanning_item(CS_ALERT)
-    assert item["dedup_key"] == "github:code-scanning:42"
-    assert item["severity"] == "high"  # security_severity_level wins over rule.severity
-    assert item["kind"] == "bug"
-    assert "py/sql-injection" in item["title"]
-    assert "app/db.py:88" in item["detail"]
-
-
-def test_dependabot_item_maps_fields():
-    item = github_triage.dependabot_item(DB_ALERT)
-    assert item["dedup_key"] == "github:dependabot:7"
-    assert item["severity"] == "critical"
-    assert item["kind"] == "bug"
-    assert "lodash" in item["title"]
-
-
-def test_secret_scanning_item_maps_fields_and_never_leaks_secret():
-    item = github_triage.secret_scanning_item(SS_ALERT)
-    assert item["dedup_key"] == "github:secret-scanning:3"
-    assert item["severity"] == "critical"
-    assert "GitHub Personal Access Token" in item["title"]
-    # AC8: the raw secret value must never appear in the persisted fields.
-    assert _SENTINEL not in item["title"]
-    assert _SENTINEL not in item["detail"]
-
-
-def test_ci_item_maps_fields():
-    item = github_triage.ci_item(WORKFLOW_RUNS[0])
-    # dedup key uses the stable workflow_id (1), not the display name
-    assert item["dedup_key"] == "github-ci:1:abc1234def567"
-    assert item["severity"] == "high"
-    assert item["kind"] == "bug"
-    assert "CI" in item["title"]
-
 
 @pytest.mark.parametrize(
     "gh_value,expected",
@@ -206,81 +180,68 @@ def test_latest_failed_ci_runs_skips_in_progress():
 
 
 # ---------------------------------------------------------------------------
-# AC1-AC4 — import_findings appends + idempotency
+# import_findings — integration coverage of the unchanged invariants.
+# Action-unit shape + idempotency are covered in
+# test_github_triage_action_units.py. These tests guard cross-cutting
+# behavior that survived the iterate-A redesign.
 # ---------------------------------------------------------------------------
 
-def test_import_findings_appends_items(project, monkeypatch):
-    _patch_api(
-        monkeypatch, code_scanning=[CS_ALERT], dependabot=[DB_ALERT],
-        secret_scanning=[SS_ALERT], runs=WORKFLOW_RUNS,
-    )
-    result = github_triage.import_findings(project)
-    assert result["gh_available"] is True
-    assert result["appended"] == 4  # 1 cs + 1 db + 1 ss + 1 ci
-    keys = {e["dedupKey"] for e in _append_events(project)}
-    assert keys == {
-        "github:code-scanning:42", "github:dependabot:7",
-        "github:secret-scanning:3", "github-ci:1:abc1234def567",
-    }
-    assert all(e["source"] == "github" for e in _append_events(project))
-
-
-def test_import_findings_idempotent(project, monkeypatch):
-    _patch_api(
-        monkeypatch, code_scanning=[CS_ALERT], dependabot=[], secret_scanning=[],
-        runs=[],
-    )
-    first = github_triage.import_findings(project)
-    second = github_triage.import_findings(project)
-    assert first["appended"] == 1
-    assert second["appended"] == 0  # AC4 — same alert, no duplicate
-    assert len(_append_events(project)) == 1
-
-
 def test_secret_value_never_written_to_triage_file(project, monkeypatch):
+    """End-to-end secret hygiene (AC8 of #39, preserved by iterate-A
+    AC-2): a secret-scanning alert's raw `secret` field MUST NOT appear
+    anywhere in triage.jsonl, even though the action-unit producer reads
+    the alert list."""
     _patch_api(
         monkeypatch, code_scanning=[], dependabot=[], secret_scanning=[SS_ALERT],
         runs=[],
     )
     github_triage.import_findings(project)
     raw = (project / ".shipwright" / "triage.jsonl").read_text(encoding="utf-8")
-    assert _SENTINEL not in raw  # AC8
+    assert _SENTINEL not in raw
 
 
 # ---------------------------------------------------------------------------
-# AC5 — key-shape-scoped auto-resolve
+# Key-shape-scoped auto-resolve — preserved through the action-unit
+# redesign. Once an action-unit's underlying findings are all fixed, the
+# next successful import dismisses the open unit as githubResolved.
 # ---------------------------------------------------------------------------
 
 def test_import_findings_auto_resolves_fixed_alert(project, monkeypatch):
+    """When all findings clear, the action-unit dismisses on next import."""
     _patch_api(monkeypatch, code_scanning=[CS_ALERT], dependabot=[],
                secret_scanning=[], runs=[])
     github_triage.import_findings(project)
-    # Alert 42 is now fixed on GitHub -> fetch returns [] (succeeded, empty).
+    # Findings now fixed on GitHub → both feeds return [] (succeeded, empty).
     _patch_api(monkeypatch, code_scanning=[], dependabot=[],
                secret_scanning=[], runs=[])
     result = github_triage.import_findings(project)
     assert result["resolved"] == 1
     item = next(
         i for i in read_all_items(project)
-        if i.get("dedupKey") == "github:code-scanning:42"
+        if i.get("dedupKey") == "gh-security:acme/foo"
     )
     assert item["status"] == "dismissed"
     assert item["statusReason"] == "githubResolved"
 
 
 def test_failed_fetch_does_not_resolve_items(project, monkeypatch):
-    """A fetch that FAILED (None) must not auto-resolve that prefix's items."""
+    """Per-source fetch failure must NOT auto-resolve the action-unit.
+
+    For the security action-unit, the prefix is only resolvable when BOTH
+    code-scanning AND dependabot fetches succeeded (since the unit
+    collapses both feeds; a partial fetch can't reliably show "cleared").
+    """
     _patch_api(monkeypatch, code_scanning=[CS_ALERT], dependabot=[],
                secret_scanning=[], runs=[])
     github_triage.import_findings(project)
-    # code-scanning fetch now FAILS (None) — not "empty".
+    # code-scanning fetch FAILS (None) — not "empty".
     _patch_api(monkeypatch, code_scanning=None, dependabot=[],
                secret_scanning=[], runs=[])
     result = github_triage.import_findings(project)
     assert result["resolved"] == 0
     item = next(
         i for i in read_all_items(project)
-        if i.get("dedupKey") == "github:code-scanning:42"
+        if i.get("dedupKey") == "gh-security:acme/foo"
     )
     assert item["status"] == "triage"  # still open — fetch failure != resolved
 

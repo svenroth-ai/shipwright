@@ -183,13 +183,61 @@ producer — un-defers the CI producer deferred under ADR-047):
   then open GitHub code-scanning, Dependabot, and secret-scanning alerts and
   the latest failed default-branch CI run per workflow are imported into
   `.shipwright/triage.jsonl` with `source="github"` and stable namespaced
-  dedup keys, exactly once per finding.
+  dedup keys, exactly once per finding. (Refined by
+  `iterate-2026-05-20-triage-launch-surface` — now action-unit-granular,
+  not per-finding; see below.)
 - (E) Given a previously-imported GitHub finding no longer appears in a
   successful fetch, when the importer next runs, then its open triage item
-  is auto-dismissed with `reason="githubResolved"` — scoped to the four
-  `github:` / `github-ci:` key prefixes, and only for sources whose fetch
-  succeeded (a failed fetch never mass-resolves).
+  is auto-dismissed with `reason="githubResolved"` — scoped to the action-
+  unit key prefixes (`gh-security:` / `gh-secrets:` / `gh-ci:`), and only
+  for sources whose fetch succeeded (a failed fetch never mass-resolves).
 - (E) Given a secret-scanning alert, when it is imported, then the raw
   `secret` value from the API is never written to `.shipwright/triage.jsonl`.
 - (E) Given `gh` is absent or unauthenticated, when the SessionStart hook
   fires, then it exits 0 without blocking the session (fail-soft).
+
+Refined by `iterate-2026-05-20-triage-launch-surface` (triage as launch
+surface — action-units, `launchPayload`, CLI surface; supersedes #39's
+per-finding mapping):
+
+- (E) Given a project with open GitHub code-scanning, Dependabot,
+  secret-scanning, and CI findings, when `import_findings` runs
+  successfully, then `.shipwright/triage.jsonl` contains action-unit
+  items keyed by `gh-security:{owner}/{repo}` (collapses code-scanning
+  + Dependabot), `gh-secrets:{owner}/{repo}`, and `gh-ci:{workflow_id}`
+  (one per failing default-branch workflow; sha NOT in the key) — one
+  item per action regardless of the underlying finding count. No
+  per-finding `github:code-scanning:<n>` / `github:dependabot:<n>` /
+  `github:secret-scanning:<n>` items are emitted.
+- (E) Given an action-unit is emitted, when its wire JSON is inspected,
+  then the appended event carries a non-empty deterministic
+  `launchPayload`: `gh-security` starts with `/shipwright-security` +
+  the GitHub security-tab URL; `gh-ci` starts with `/shipwright-iterate
+  --type bug` + the workflow PAGE URL (stable across runs); `gh-secrets`
+  contains a whitelist-only rotation checklist + the secret-scanning
+  tab URL — no slash command, no alert content (no display names, no
+  per-alert URLs, no secret values).
+- (E) Given action-unit items exist in `triage.jsonl`, when
+  `aggregate_triage.py` regenerates `.shipwright/agent_docs/triage_inbox.md`,
+  then each open action-unit item renders its `launchPayload` inside a
+  fenced markdown code block under the item header (operator copies the
+  fence into a new Claude session as the "Fix now" flow). A source=github
+  item missing a `launchPayload` renders a visible loud-failure
+  placeholder (producer bug surfaces, no silent degrade).
+- (E) Given `uv run shared/scripts/tools/triage_cli.py {list|promote
+  <id> --task-ref <ref>|dismiss <id> --reason <reason>}` runs against a
+  project, then the CLI is the first-class operation surface
+  (positional id; the WebUI Triage tab in `shipwright-webui` Iterate B
+  is a thin wrapper over the same `triage_promote.promote` /
+  `triage_promote.dismiss` library helpers — audit-trail status events
+  are byte-identical except for the `by` field).
+- (E) Given a `triage.jsonl` predating this iterate that contains legacy
+  per-finding items with prefixes `github:code-scanning:` /
+  `github:dependabot:` / `github:secret-scanning:` / `github-ci:{wf}:{sha}`,
+  when `import_findings` next runs, then each open legacy item is
+  dismissed exactly once with `reason="schemaMigration"` — gated PER
+  ORIGINAL SOURCE: `github:code-scanning:*` migrates only if
+  `fetch_code_scanning_alerts()` succeeded; `github:dependabot:*` only
+  if `fetch_dependabot_alerts()` succeeded; etc. A failed fetch never
+  triggers that source's legacy migration (preserves the ADR-052
+  fail-soft invariant).

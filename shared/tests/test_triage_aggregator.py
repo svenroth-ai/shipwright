@@ -78,6 +78,115 @@ def test_header_only_file_yields_empty_skeleton(tmp_path: Path) -> None:
     assert "No triage items pending" in md
 
 
+# --- launchPayload rendering (iterate-2026-05-20-triage-launch-surface) ----
+
+_PAYLOAD = (
+    "/shipwright-security\n\n"
+    "Context: 12 code-scanning findings (3 high, 7 medium, 2 low),\n"
+    "4 Dependabot alerts. See https://github.com/acme/foo/security."
+)
+
+
+def test_action_unit_renders_launch_payload_in_code_fence(tmp_path: Path) -> None:
+    """AC-3: open action-unit with launchPayload renders inside a markdown fence."""
+    append_triage_item(
+        tmp_path, source="github", severity="high", kind="bug",
+        title="GitHub security: 12 code-scanning + 4 dependabot",
+        detail="Repo acme/foo",
+        dedup_key="gh-security:acme/foo",
+        launch_payload=_PAYLOAD,
+    )
+    md = _run_aggregator(tmp_path)
+    # Triple-backtick fence present
+    assert "```text" in md, f"missing ```text fence:\n{md}"
+    # Payload first line preserved verbatim inside the fence
+    assert "/shipwright-security" in md
+    # Multi-line payload preserved (newlines not collapsed to spaces)
+    assert "Context: 12 code-scanning findings" in md
+    assert "See https://github.com/acme/foo/security." in md
+
+
+def test_legacy_item_without_payload_renders_today_format(tmp_path: Path) -> None:
+    """Legacy producer items (no launch_payload) render as today — no fence, no placeholder."""
+    append_triage_item(
+        tmp_path, source="phaseQuality", severity="high", kind="bug",
+        title="Phase-Quality C1 failure", detail="some context",
+    )
+    md = _run_aggregator(tmp_path)
+    assert "```" not in md, f"legacy item must NOT render a fence:\n{md}"
+    assert "no launch payload" not in md, "no placeholder for legacy item"
+    # Old format still present
+    assert "Phase-Quality C1 failure" in md
+    assert "Promote:" in md
+
+
+def test_github_action_unit_missing_payload_renders_visible_placeholder(
+    tmp_path: Path,
+) -> None:
+    """Review finding #13: a source=github item with no launchPayload is a
+    producer bug. Fail loud with a visible placeholder, not silent degrade."""
+    append_triage_item(
+        tmp_path, source="github", severity="high", kind="bug",
+        title="bogus", detail="d", dedup_key="gh-security:acme/foo",
+        # launch_payload omitted — simulates producer regression
+    )
+    md = _run_aggregator(tmp_path)
+    assert "[no launch payload" in md, (
+        f"expected loud-failure placeholder for github item with no payload:\n{md}"
+    )
+
+
+def test_payload_with_triple_backticks_uses_longer_fence(tmp_path: Path) -> None:
+    """Safe fence: payload containing ``` opens a 4-backtick fence."""
+    payload = "Here is code:\n```python\nprint('hi')\n```\nEnd."
+    append_triage_item(
+        tmp_path, source="github", severity="medium", kind="bug",
+        title="t", detail="d", dedup_key="gh-security:acme/foo",
+        launch_payload=payload,
+    )
+    md = _run_aggregator(tmp_path)
+    # The fence opener must be at least 4 backticks (one more than any run
+    # of backticks inside the payload). Allow leading indentation since the
+    # fence is rendered nested inside the item's bullet list.
+    assert re.search(r"^\s*````+text", md, re.MULTILINE), (
+        f"fence opener must have >=4 backticks when payload contains ```:\n{md}"
+    )
+    assert "print('hi')" in md
+
+
+def test_aggregator_strips_control_chars_from_payload(tmp_path: Path) -> None:
+    """Code review LOW #6: terminal control chars in launchPayload must not
+    survive into the rendered markdown (so `cat`/`less` of triage_inbox.md
+    can't execute them). Newlines and tabs are preserved."""
+    bad_payload = "/shipwright-security\n\x1b]2;malicious title\x07\tindented\n\x07normal text"
+    append_triage_item(
+        tmp_path, source="github", severity="high", kind="bug",
+        title="t", detail="d", dedup_key="gh-security:acme/foo",
+        launch_payload=bad_payload,
+    )
+    md = _run_aggregator(tmp_path)
+    # ESC, BEL stripped
+    assert "\x1b" not in md
+    assert "\x07" not in md
+    # Visible content preserved
+    assert "/shipwright-security" in md
+    assert "normal text" in md
+    assert "\tindented" in md  # tab preserved
+
+
+def test_payload_preserves_leading_whitespace(tmp_path: Path) -> None:
+    """Indentation inside the payload must survive (operator pastes verbatim)."""
+    payload = "/shipwright-iterate --type bug\n  - workflow: ci.yml\n  - branch: main"
+    append_triage_item(
+        tmp_path, source="github", severity="high", kind="bug",
+        title="t", detail="d", dedup_key="gh-ci:ci.yml",
+        launch_payload=payload,
+    )
+    md = _run_aggregator(tmp_path)
+    assert "  - workflow: ci.yml" in md
+    assert "  - branch: main" in md
+
+
 # --- Status filtering ----------------------------------------------------
 
 def test_only_triage_status_shown(tmp_path: Path) -> None:

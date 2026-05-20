@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-19 19:00 UTC | Session: d827c8c6-8c58-4f61-8cfe-cce6f9b7d878 | Run: iterate-2026-05-19-fix-decision-drop-worktree
+> Updated: 2026-05-20 09:25 UTC | Session: 40bd6950-895c-404c-8079-746a1113b64f | Run: iterate-2026-05-20-triage-launch-surface
 
-## Recent Changes (37 iterations)
+## Recent Changes (38 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | fix write_decision_drop.py worktree-awareness — decision-drops resolved against the main repo so iterate ADRs survive worktree cleanup | 1983/1983 | 0d4d3d6 |  | 2026-05-19 |
 | feature | github-triage-importer | 1856/1856 | ff51a8c | FR-01.14 | 2026-05-19 |
 | change | phase-quality auditor recognises drop-dir changelog, adopted spec path, and iterate/adopt completion evidence (C1/C5/S1 check-side fixes) | 1817/1817 | 40599de |  | 2026-05-18 |
 | bug | harden activated CI workflows: scanners, CI-aware test, CodeQL guard | 337/340 | d85210f |  | 2026-05-18 |
@@ -44,7 +45,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-19 | Unit: 1983/1983 | Smoke: not_run | (iterate)
+Last run: 2026-05-20 | Unit: 1985/1985 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
