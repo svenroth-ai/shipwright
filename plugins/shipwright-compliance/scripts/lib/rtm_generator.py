@@ -13,8 +13,17 @@ use ``../planning/...`` instead of ``../.shipwright/planning/...``.
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+# Cross-cutting markdown helper lives at shared/scripts/markdown_table.py
+# (outside the `lib/` namespace per ADR-045 so it can be imported here
+# without colliding with this plugin's own `lib/` regular package).
+_SHARED_SCRIPTS = Path(__file__).resolve().parents[4] / "shared" / "scripts"
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
+from markdown_table import escape_cell  # noqa: E402
 
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData, SectionInfo, WorkEvent
@@ -114,8 +123,8 @@ def _requirements_coverage(data: ComplianceData) -> list[str]:
             status = "UNLINKED"
 
         lines.append(
-            f"| {req_link} | {display_text} | {req.priority} "
-            f"| {sections_cell} | {tests_cell} | {e2e_cell} | {status} |"
+            f"| {escape_cell(req_link)} | {escape_cell(display_text)} | {req.priority} "
+            f"| {escape_cell(sections_cell)} | {tests_cell} | {e2e_cell} | {status} |"
         )
 
     lines.append("")
@@ -201,7 +210,8 @@ def _section_traceability(data: ComplianceData) -> list[str]:
             tests_cell = "—"
 
         lines.append(
-            f"| {sec.split} | {section_link} | {reqs_cell} | {commit} "
+            f"| {escape_cell(sec.split)} | {escape_cell(section_link)} "
+            f"| {escape_cell(reqs_cell)} | {escape_cell(commit)} "
             f"| {tests_cell} | {status} |"
         )
 
@@ -354,8 +364,9 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
             status = "NOT VERIFIED"
 
         lines.append(
-            f"| {req_link} | {display_text} | {req.priority} "
-            f"| {verified_cell} | {tests_cell} | {last_verified} | {status} |"
+            f"| {escape_cell(req_link)} | {escape_cell(display_text)} | {req.priority} "
+            f"| {escape_cell(verified_cell)} | {escape_cell(tests_cell)} "
+            f"| {escape_cell(last_verified)} | {status} |"
         )
 
     lines.append("")
@@ -385,7 +396,11 @@ def _verification_timeline(data: ComplianceData) -> list[str]:
         commit = we.commit[:7] if we.commit else "—"
         date = we.timestamp[:10]
 
-        lines.append(f"| {name} | {source} | {event_type} | {frs} | {tests} | {commit} | {date} |")
+        lines.append(
+            f"| {escape_cell(name)} | {escape_cell(source)} | {escape_cell(event_type)} "
+            f"| {escape_cell(frs)} | {escape_cell(tests)} | {escape_cell(commit)} "
+            f"| {escape_cell(date)} |"
+        )
 
     lines.append("")
     return lines
