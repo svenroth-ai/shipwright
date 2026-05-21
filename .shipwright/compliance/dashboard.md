@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-05-21T06:11:46Z
+Generated: 2026-05-21T12:31:00Z
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -15,7 +15,7 @@ Scope: library
 | All sections reviewed | 0/0 | WARN |
 | Architecture decisions | 53 ADRs | INFO |
 | Iterate tests passing | 35/37 iterations tested | WARN |
-| Dependencies | 5 packages | INFO |
+| Dependencies | 8 packages | INFO |
 | Copyleft risk | 0 | PASS |
 
 ## Project Velocity
@@ -28,6 +28,7 @@ Scope: library
 | Split | Status | Provider | Findings | Self-review fallback | Reason |
 |-------|--------|----------|----------|----------------------|--------|
 | 01-adopted | missing | — | 0 | no | — |
+| adr | missing | — | 0 | no | — |
 
 ## Compliance Artifacts
 
