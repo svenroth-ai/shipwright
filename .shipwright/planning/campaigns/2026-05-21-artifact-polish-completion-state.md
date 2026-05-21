@@ -8,7 +8,7 @@
 ## Status
 
 - **Started:** 2026-05-21 (this session)
-- **Current iterate:** C.2 (next)
+- **Current iterate:** C.3 (next)
 - **Baseline (campaign start, 2026-05-21):**
   - `main` HEAD: `5c06748` (canon-lint allowlist `.shipwright/planning/adr/**.md`)
   - `shared/tests/`: 2101 passed, 12 skipped, 18 deselected
@@ -83,15 +83,17 @@
 
 ### C.2 — ADR-bloat + Architecture-drift + CLAUDE.md-bloat detector
 
-- **Status:** not started
-- **Branch:** _pending_
-- **PR:** _pending_
-- **Squash commit:** _pending_
-- **Predicted ADR:** ADR-060
-- **External review findings:** _pending_
-- **External code-review findings:** _pending_
-- **Test deltas:** _pending_
-- **Deviations from handover:** _pending_
+- **Status:** merged
+- **Branch:** `iterate/c2-architecture-and-adr-drift-detector` (deleted)
+- **PR:** #61
+- **Squash commit:** `9008cf4`
+- **Predicted ADR:** ADR-060 (filed at `.shipwright/planning/adr/060-c2-doc-hygiene-detectors.md`)
+- **External review findings:** 18 (1 HIGH SHA-injection defense + 9 MED + 8 LOW). All addressed inline; disposition table in ADR-060.
+- **External code-review findings:** 5 (1 HIGH corrupt-drop surfacing + 3 MED accepted-and-fixed: F7 evidence full list, F7 regex variants test, F4 top-5 ordering test; 1 truncated/confirmed-correct).
+- **Test deltas:** compliance 411 → 428 (+17); shared 2141 maintained.
+- **Deviations from handover:**
+  - Tests landed in `test_audit_groups_c_f.py` (existing per-group test file) rather than `test_audit_detector.py` (which is the skeleton-test file). Cleaner per-group separation matches the existing pattern (test_audit_group_a5/b/e).
+  - Group F gained F4-F7 as detective-only additions alongside the existing F1-F3 preventive-rerun checks. Required updating `test_group_f_emits_finding_per_check` baseline (3 → 7 findings).
 
 ### C.3 — Plugin-cache-sync check
 

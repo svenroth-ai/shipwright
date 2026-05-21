@@ -1,9 +1,9 @@
 {
   "status": "completed",
-  "timestamp": "2026-05-21T16:03:23.464355+00:00",
+  "timestamp": "2026-05-21T16:20:59.466041+00:00",
   "provider": "openrouter",
-  "findings_count": 18,
+  "findings_count": 16,
   "self_review_fallback_ran": false,
-  "reason": "C.2 iterate review: 1 HIGH (SHA injection defense) + 9 MED + 8 LOW; addressed inline",
+  "reason": "C.3 iterate review: 2 HIGH addressed (SemVer parse + repo-only file drift), 7 MED + 7 LOW; all material findings addressed or already-correct",
   "review_mode": "iterate"
 }
