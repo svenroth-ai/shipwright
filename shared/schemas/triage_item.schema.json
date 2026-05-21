@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shipwright.local/schemas/triage_item.schema.json",
+  "title": "Shipwright Triage JSONL Wire Format",
+  "description": "Codifies the line-level wire shape of `<project>/.shipwright/triage.jsonl` — the pre-backlog triage inbox. Three event kinds share the file: a one-time header (line 1), append events (one per new triage item), and status events (one per Promote/Dismiss/Snooze). Producers go through `shared/scripts/triage.py::append_triage_item` or `::append_triage_item_idempotent`; consumers (`triage_cli.py`, `aggregate_triage.py`, WebUI Triage tab) read via `read_all_items` which collapses status events into the latest per id.",
+  "oneOf": [
+    { "$ref": "#/$defs/header" },
+    { "$ref": "#/$defs/append" },
+    { "$ref": "#/$defs/status" }
+  ],
+  "$defs": {
+    "header": {
+      "type": "object",
+      "description": "First line of every triage.jsonl. Bootstrapped by `_ensure_header` on the first append into a fresh project.",
+      "required": ["v", "schema", "created"],
+      "additionalProperties": false,
+      "properties": {
+        "v": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Schema version (currently 1). Bump on breaking wire-format changes."
+        },
+        "schema": {
+          "type": "string",
+          "const": "triage"
+        },
+        "created": {
+          "$ref": "#/$defs/_isoZ"
+        }
+      }
+    },
+    "append": {
+      "type": "object",
+      "description": "A new triage item. Emitted by a producer when something needs operator attention.",
+      "required": [
+        "event", "id", "ts", "originalTs", "source",
+        "severity", "kind", "title", "detail", "status",
+        "suggestedPriority", "suggestedDomain"
+      ],
+      "properties": {
+        "event": { "const": "append" },
+        "id": {
+          "type": "string",
+          "pattern": "^trg-[0-9a-f]{8}$",
+          "description": "Stable identifier `trg-` + 8 lower-hex (see triage._generate_id)."
+        },
+        "ts": { "$ref": "#/$defs/_isoZ" },
+        "originalTs": {
+          "$ref": "#/$defs/_isoZ",
+          "description": "Authoring timestamp — preserved on idempotent re-append so dedup-window logic operates against the first sighting."
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Free-form producer identifier. Open vocabulary (no enum) so new producers don't need a schema bump. Conventional values include: phase-quality, compliance, security, performance, surface-verify, drift, github, github-ci, github-secrets, github-security, sbom, test-evidence."
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["critical", "high", "medium", "low", "info"],
+          "description": "Triage priority — drives suggestedPriority + default CTA. See `triage.SEVERITIES`."
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["bug", "feature", "improvement", "compliance", "maintenance"],
+          "description": "Coarse category — drives suggested backlog domain on Promote. See `triage.KINDS`."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "detail": { "type": "string" },
+        "evidencePath": {
+          "type": ["string", "null"],
+          "description": "Optional path (relative to project root) to scanner output, log file, or report backing this item."
+        },
+        "runId": {
+          "type": ["string", "null"],
+          "description": "Optional iterate / pipeline run id where the producer ran. Lets consumers correlate cross-artifact."
+        },
+        "commit": {
+          "type": ["string", "null"],
+          "description": "Optional commit SHA the producer observed."
+        },
+        "dedupKey": {
+          "type": ["string", "null"],
+          "description": "Producer-supplied stable identifier for the underlying issue. Idempotent producers MUST supply one; freeform producers MAY. Convention: `<producer>:<key>` (e.g. `gh-security:owner/repo`, `phase-quality:C1`, `sbom:undeclared:server`)."
+        },
+        "launchPayload": {
+          "type": ["string", "null"],
+          "description": "Optional ready-to-paste block (typically a slash command + GitHub URL) shown by the inbox view's Fix-now CTA. Frozen at first append; idempotent re-emit leaves the on-disk value unchanged."
+        },
+        "frId": {
+          "type": ["string", "null"],
+          "description": "Optional functional-requirement id this item is rooted in (e.g. `FR-01.05`). Iterate B0 (2026-05-21) — lets the RTM renderer emit a clickable `FAIL → trg-XXX` link from the matching row directly into `triage_inbox.md`."
+        },
+        "suiteId": {
+          "type": ["string", "null"],
+          "description": "Optional test-suite identifier (e.g. `client/src/auth.test.tsx`, `pytest::shared.tests.test_x`). Same B0 use as `frId` — RTM / test-evidence cross-link."
+        },
+        "eventId": {
+          "type": ["string", "null"],
+          "description": "Optional `shipwright_events.jsonl` event id this triage item corresponds to. Lets compliance reports back-reference the originating event."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["triage", "promoted", "dismissed", "snoozed"],
+          "description": "Initial status — `triage` on every fresh append. Subsequent status events flip this via mark_status."
+        },
+        "suggestedPriority": {
+          "type": "string",
+          "enum": ["P0", "P1", "P2", "P3"],
+          "description": "Derived from severity by `suggest_priority_from_severity` — critical→P0, high→P1, medium→P2, low/info→P3."
+        },
+        "suggestedDomain": {
+          "type": "string",
+          "description": "Derived from source by `suggest_domain_from_source` (only `compliance` is special-cased today)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "status": {
+      "type": "object",
+      "description": "A status flip — Promote / Dismiss / Snooze emitted by `triage.mark_status` (via `triage_cli.py`, WebUI, or `triage_promote.py`).",
+      "required": ["event", "id", "ts", "newStatus", "by"],
+      "additionalProperties": false,
+      "properties": {
+        "event": { "const": "status" },
+        "id": { "type": "string", "pattern": "^trg-[0-9a-f]{8}$" },
+        "ts": { "$ref": "#/$defs/_isoZ" },
+        "newStatus": {
+          "type": "string",
+          "enum": ["triage", "promoted", "dismissed", "snoozed"],
+          "description": "Includes `triage` because `mark_status` accepts re-flipping to `triage` as an idempotent no-op (see `STATUSES` tuple and the test_all_statuses_accepted_by_mark_status parametrization)."
+        },
+        "by": {
+          "type": "string",
+          "description": "What surface emitted the flip: `cli` / `webui` / `auto-resolve` / `migration`."
+        },
+        "reason": {
+          "type": ["string", "null"],
+          "description": "Optional reason. Convention values used today: `notRelevant`, `flaky`, `alreadyFixed`, `schemaMigration`, `stale`."
+        },
+        "promotedTaskId": {
+          "type": ["string", "null"],
+          "description": "Set when newStatus=`promoted` — references the created ExternalTask (e.g. `EXT:foo-001`)."
+        }
+      }
+    },
+    "_isoZ": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$",
+      "description": "ISO 8601 UTC timestamp with `Z` suffix — see `triage._now_z`."
+    }
+  }
+}

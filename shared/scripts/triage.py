@@ -5,20 +5,14 @@ from hooks, scans, and audits. Triage is the pre-backlog intake; the
 backlog (ExternalTask in shipwright-webui) is a separate store reached
 via the explicit `promote` action.
 
-On-disk format (JSONL, camelCase wire keys to match webui ExternalTask):
-
-  Line 1 (header):
-    {"v":1,"schema":"triage","created":"<ISO>"}
-
-  Append event:
-    {"event":"append","id":"trg-XXXXXXXX","ts":"<ISO>","originalTs":"<ISO>",
-     "source":"phaseQuality","severity":"high","kind":"bug","title":"...",
-     "detail":"...","evidencePath":null,"runId":null,"commit":null,
-     "status":"triage","suggestedPriority":"P1","suggestedDomain":"engineering"}
-
-  Status event:
-    {"event":"status","id":"trg-XXXXXXXX","ts":"<ISO>","newStatus":"...",
-     "by":"...","reason":null,"promotedTaskId":null}
+On-disk format (JSONL, camelCase wire keys to match webui ExternalTask)
+is authoritatively codified at ``shared/schemas/triage_item.schema.json``
+(iterate-2026-05-21-triage-producer-contract / ADR-054). Three event
+kinds share the file: a one-time header (line 1), ``append`` events
+(one per new triage item), and ``status`` events (one per
+Promote / Dismiss / Snooze). See the schema for the full field list
+including optional `dedupKey`, `launchPayload`, `frId`, `suiteId`,
+`eventId`.
 
 Status resolution is by **file order** (later valid line wins); the
 reader is tolerant and skips lines that fail JSONDecodeError.
@@ -82,6 +76,21 @@ DOMAIN_FROM_SOURCE = {"compliance": "compliance"}
 # ---------------------------------------------------------------------------
 # Pure mapping helpers
 # ---------------------------------------------------------------------------
+
+def _check_optional_str(name: str, value: object) -> None:
+    """Reject non-string, non-None values for camelCase optional fields.
+
+    Iterate B0 (2026-05-21) — caught by external review (H1): producers
+    that pass `fr_id=42` (or any non-string) silently wrote an integer to
+    disk, breaking the JSON schema at validation time. This guard turns
+    that into a producer-side ValueError so misuse fails fast.
+    """
+    if value is None or isinstance(value, str):
+        return
+    raise ValueError(
+        f"{name!r} must be str or None, got {type(value).__name__}"
+    )
+
 
 def suggest_priority_from_severity(severity: str) -> str:
     """Pure: severity → P0..P3.
@@ -253,6 +262,9 @@ def append_triage_item(
     commit: str | None = None,
     dedup_key: str | None = None,
     launch_payload: str | None = None,
+    fr_id: str | None = None,
+    suite_id: str | None = None,
+    event_id: str | None = None,
 ) -> str:
     """Append a new triage item. Returns the new `trg-<8hex>` id.
 
@@ -282,6 +294,14 @@ def append_triage_item(
     append; subsequent idempotent calls leave the on-disk value
     unchanged (AC-8). Legacy producers may keep omitting this kwarg —
     null is the wire default.
+
+    `fr_id` / `suite_id` / `event_id` (iterate-2026-05-21-triage-producer-contract):
+    optional cross-artifact reference fields that consumers — primarily
+    the compliance RTM generator — use to render `FAIL → [trg-XXX](...)`
+    links from a failing FR row directly to the matching triage card.
+    Persisted under camelCase keys `frId` / `suiteId` / `eventId`. Legacy
+    producers may omit all three — null is the wire default. Schema:
+    `shared/schemas/triage_item.schema.json`.
     """
     if severity not in SEVERITIES:
         raise ValueError(
@@ -291,6 +311,9 @@ def append_triage_item(
         raise ValueError(f"unknown kind {kind!r}; expected one of {KINDS}")
     if not isinstance(title, str) or not title.strip():
         raise ValueError("title must be a non-empty string")
+    _check_optional_str("fr_id", fr_id)
+    _check_optional_str("suite_id", suite_id)
+    _check_optional_str("event_id", event_id)
 
     item_id = _generate_id()
     ts = _now_z()
@@ -309,6 +332,9 @@ def append_triage_item(
         "commit": commit,
         "dedupKey": dedup_key,
         "launchPayload": launch_payload,
+        "frId": fr_id,
+        "suiteId": suite_id,
+        "eventId": event_id,
         "status": "triage",
         "suggestedPriority": suggest_priority_from_severity(severity),
         "suggestedDomain": suggest_domain_from_source(source),
@@ -341,6 +367,9 @@ def append_triage_item_idempotent(
     match_commit: bool = True,
     window_seconds: int | None = 24 * 3600,
     launch_payload: str | None = None,
+    fr_id: str | None = None,
+    suite_id: str | None = None,
+    event_id: str | None = None,
 ) -> str | None:
     """Append a triage item only if no matching item is currently open.
 
@@ -388,6 +417,10 @@ def append_triage_item_idempotent(
     if not isinstance(title, str) or not title.strip():
         raise ValueError("title must be a non-empty string")
 
+    _check_optional_str("fr_id", fr_id)
+    _check_optional_str("suite_id", suite_id)
+    _check_optional_str("event_id", event_id)
+
     new_id = _generate_id()
     ts = _now_z()
     new_event = {
@@ -405,6 +438,9 @@ def append_triage_item_idempotent(
         "commit": commit,
         "dedupKey": dedup_key,
         "launchPayload": launch_payload,
+        "frId": fr_id,
+        "suiteId": suite_id,
+        "eventId": event_id,
         "status": "triage",
         "suggestedPriority": suggest_priority_from_severity(severity),
         "suggestedDomain": suggest_domain_from_source(source),

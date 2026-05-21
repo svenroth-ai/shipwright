@@ -1108,6 +1108,48 @@ Operator flow has three verbs:
 
 Legacy producers (phase-quality, drift, compliance, security, performance, F0.5) stay finding-granular; they MAY emit `launch_payload=None` and the renderer falls back to the historical bullet layout. Only the GitHub action-unit emitter populates `launchPayload` today; the WebUI Triage-tab redesign in `shipwright-webui` (Iterate B, separate) will be a thin wrapper over the same library helpers so the CLI is the single source of truth.
 
+#### 4.11.2 Triage Producer Contract
+
+Codified in `shared/schemas/triage_item.schema.json` (Iterate B0,
+2026-05-21). The schema is the SSoT for the JSONL wire shape — three
+event kinds share `.shipwright/triage.jsonl`: the file header (line 1),
+`append` events (one per new triage item), and `status` events (one
+per Promote / Dismiss / Snooze).
+
+Required `append` fields: `event`, `id`, `ts`, `originalTs`, `source`,
+`severity`, `kind`, `title`, `detail`, `status`, `suggestedPriority`,
+`suggestedDomain`.
+
+Optional `append` fields (always persisted, `null` when omitted so
+consumers can read without `.get(..., default)`):
+
+| Field           | Purpose                                                                    |
+|-----------------|-----------------------------------------------------------------------------|
+| `evidencePath`  | Scanner output / log / report backing the item                              |
+| `runId`         | Iterate / pipeline run that emitted it                                      |
+| `commit`        | Commit SHA observed                                                         |
+| `dedupKey`      | Producer-stable id for idempotent re-emit (convention `<producer>:<key>`)   |
+| `launchPayload` | Ready-to-paste Fix-now block (§ 4.11.1)                                     |
+| `frId`          | FR id this item is rooted in (e.g. `FR-01.05`)                              |
+| `suiteId`       | Test-suite identifier — lets the RTM cross-link failing rows                |
+| `eventId`       | Back-ref into `shipwright_events.jsonl`                                     |
+
+The three FR / suite / event refs are populated opportunistically by
+producers that have the context (the test-evidence emitter does; the
+generic drift / phase-quality producers don't). When present, the
+compliance RTM renderer emits `[FAIL → trg-XXX](triage_inbox.md#trg-XXX)`
+deep-links — the aggregator stamps an HTML anchor
+`<a id="trg-XXX"></a>` above each card so the link resolves in plain
+markdown (VS Code preview, CommonMark, GitHub) without any WebUI
+dependency.
+
+**Inbox render layout.** The aggregator (`aggregate_triage.py`)
+partitions open items by severity: `critical / high / medium / low`
+render in the existing top section, severity-sorted; `info` items
+collapse into a `<details>` block at the end of `triage_inbox.md` so
+the surface stays signal-first. The B0 design rationale lives in
+`.shipwright/planning/adr/054-triage-producer-contract.md`.
+
 ## 5. Stack Profiles
 
 A **stack profile** is a JSON file that defines everything about your technology stack in one place: runtime versions, frontend and backend libraries, UI component library, testing frameworks, deployment target, folder structure, CI pipeline, and architecture rules. Profiles are stored in `~/shipwright/shared/profiles/`.

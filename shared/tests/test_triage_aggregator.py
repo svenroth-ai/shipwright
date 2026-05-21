@@ -327,3 +327,70 @@ def test_internal_fields_not_rendered(tmp_path: Path) -> None:
     assert "statusBy" not in md
     assert "statusReason" not in md
     assert "originalTs" not in md  # filtered out of render
+
+
+# --- Iterate B0 (2026-05-21) — anchor IDs + info-collapse ----------------
+
+def test_each_item_renders_anchor_id(tmp_path: Path) -> None:
+    """Cards carry an HTML anchor so the RTM can deep-link via
+    `triage_inbox.md#trg-XXX`."""
+    item_id = append_triage_item(
+        tmp_path, source="phaseQuality", severity="high", kind="bug",
+        title="t", detail="d",
+    )
+    md = _run_aggregator(tmp_path)
+    assert f'<a id="{item_id}"></a>' in md, (
+        f"missing anchor for {item_id} in rendered markdown:\n{md}"
+    )
+
+
+def test_info_items_collapsed_into_details_block(tmp_path: Path) -> None:
+    """Info-severity items must render inside a `<details>` block so the
+    inbox top stays focused on signal."""
+    append_triage_item(
+        tmp_path, source="phaseQuality", severity="high", kind="bug",
+        title="signal-card", detail="d",
+    )
+    append_triage_item(
+        tmp_path, source="drift", severity="info", kind="maintenance",
+        title="noise-card", detail="d",
+    )
+    md = _run_aggregator(tmp_path)
+
+    # Signal card appears in the top section (before any <details>)
+    top_section, _, info_section = md.partition("<details>")
+    assert "signal-card" in top_section
+    assert "noise-card" not in top_section, (
+        f"info card leaked into signal section:\n{top_section}"
+    )
+
+    # Info section opens via <details>, mentions the count, and contains
+    # the noise card
+    assert "<details>" in md
+    assert "Info-level items (1)" in md
+    assert "noise-card" in info_section
+    assert "</details>" in md
+
+
+def test_only_info_items_keeps_top_section_skeleton(tmp_path: Path) -> None:
+    """When *every* open item is info-severity, the top section stays present
+    with a "no non-info items" line — preserves stable file structure."""
+    append_triage_item(
+        tmp_path, source="drift", severity="info", kind="maintenance",
+        title="only-noise", detail="d",
+    )
+    md = _run_aggregator(tmp_path)
+    assert "No non-info triage items pending" in md
+    assert "<details>" in md
+    assert "only-noise" in md.split("<details>", 1)[1]
+
+
+def test_no_info_items_no_details_block(tmp_path: Path) -> None:
+    """No info items → no `<details>` block in output (clean diff)."""
+    append_triage_item(
+        tmp_path, source="phaseQuality", severity="high", kind="bug",
+        title="signal-only", detail="d",
+    )
+    md = _run_aggregator(tmp_path)
+    assert "<details>" not in md
+    assert "signal-only" in md

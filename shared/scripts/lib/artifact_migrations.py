@@ -388,6 +388,12 @@ ALLOWLIST: dict[str, list[str]] = {
         "shared/scripts/tools/print_next_migration_prompt.py",
         "shared/tests/test_migrate_artifact_dir.py",
         "shared/tests/test_print_next_migration_prompt.py",
+        # iterate-2026-05-21-triage-producer-contract (B0) — the triage
+        # JSONL schema's `kind` enum includes the literal string
+        # `"compliance"` as a triage-item domain category (NOT a legacy
+        # artifact path). JSON has no comment syntax so the inline marker
+        # can't be added; allowlist it here.
+        "shared/schemas/triage_item.schema.json",
         # Plan files (this migration's own design docs)
         "C:/Users/you/.claude/plans/iterate-shipwright-relocation-compliance-*.md",
         # Historical changelog & migration docs (must not be rewritten)

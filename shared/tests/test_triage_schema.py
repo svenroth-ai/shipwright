@@ -51,6 +51,10 @@ OPTIONAL_APPEND_KEYS = {
     "commit",
     "dedupKey",
     "launchPayload",  # iterate-2026-05-20-triage-launch-surface
+    # iterate-2026-05-21-triage-producer-contract (B0) — RTM cross-link fields
+    "frId",
+    "suiteId",
+    "eventId",
 }
 
 REQUIRED_STATUS_KEYS = {"event", "id", "ts", "newStatus", "by"}
@@ -256,3 +260,229 @@ def test_invalid_status_rejected_by_mark_status(project: Path) -> None:
     )
     with pytest.raises(ValueError, match="status"):
         mark_status(project, item_id, new_status="closed", by="test")
+
+
+# ---------------------------------------------------------------------------
+# Iterate B0 (2026-05-21) — Triage Producer Contract
+# Validate that wire events conform to the formal JSON schema at
+# shared/schemas/triage_item.schema.json. The schema is the SSoT for the
+# producer contract; the in-code SETS above are the redundant pin used by
+# `test_append_event_has_required_keys` so a future shape change has to
+# touch both.
+# ---------------------------------------------------------------------------
+
+
+SCHEMA_PATH = Path(__file__).resolve().parents[2] / "shared" / "schemas" / "triage_item.schema.json"
+
+
+@pytest.fixture(scope="module")
+def triage_schema() -> dict:
+    return json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+
+
+def _validate_against_schema(event: dict, schema: dict) -> list[str]:
+    """Return jsonschema error messages (empty list = valid)."""
+    import jsonschema
+
+    validator = jsonschema.Draft202012Validator(schema)
+    return [e.message for e in validator.iter_errors(event)]
+
+
+def test_header_event_matches_schema(project: Path, triage_schema: dict) -> None:
+    append_triage_item(
+        project, source="phaseQuality", severity="high", kind="bug",
+        title="t", detail="d",
+    )
+    header, _ = _read_raw_lines(project)
+    errors = _validate_against_schema(header, triage_schema)
+    assert not errors, f"header failed schema: {errors}"
+
+
+def test_minimal_append_event_matches_schema(project: Path, triage_schema: dict) -> None:
+    """A producer that supplies only the required kwargs still produces a
+    schema-conforming wire event."""
+    append_triage_item(
+        project, source="phaseQuality", severity="high", kind="bug",
+        title="t", detail="d",
+    )
+    _, evt = _read_raw_lines(project)
+    errors = _validate_against_schema(evt, triage_schema)
+    assert not errors, f"minimal append event failed schema: {errors}"
+
+
+def test_full_append_event_matches_schema(project: Path, triage_schema: dict) -> None:
+    """A producer that populates every documented optional field — including
+    the B0 RTM-link fields (frId/suiteId/eventId) — survives schema validation."""
+    append_triage_item(
+        project,
+        source="test-evidence",
+        severity="high",
+        kind="bug",
+        title="UserAuth.test.tsx red",
+        detail="3 failing tests in client/src/auth",
+        evidence_path=".shipwright/runs/iterate-x/test-results.json",
+        run_id="iterate-2026-05-21-foo",
+        commit="abc1234",
+        dedup_key="test-fail:e2e",
+        launch_payload="/shipwright-iterate --type bug \"fix e2e test failures\"",
+        fr_id="FR-01.05",
+        suite_id="client/src/auth.test.tsx",
+        event_id="evt-abc12345",
+    )
+    _, evt = _read_raw_lines(project)
+    errors = _validate_against_schema(evt, triage_schema)
+    assert not errors, f"full append event failed schema: {errors}"
+    # Spot-check the new B0 fields landed on the wire under camelCase
+    assert evt["frId"] == "FR-01.05"
+    assert evt["suiteId"] == "client/src/auth.test.tsx"
+    assert evt["eventId"] == "evt-abc12345"
+
+
+def test_status_event_matches_schema(project: Path, triage_schema: dict) -> None:
+    from triage import mark_status
+
+    item_id = append_triage_item(
+        project, source="phaseQuality", severity="high", kind="bug",
+        title="t", detail="d",
+    )
+    mark_status(
+        project, item_id, new_status="dismissed", by="cli", reason="notRelevant",
+    )
+    _, _append, status_evt = _read_raw_lines(project)
+    errors = _validate_against_schema(status_evt, triage_schema)
+    assert not errors, f"status event failed schema: {errors}"
+
+
+def test_schema_rejects_invalid_severity(triage_schema: dict) -> None:
+    """Negative test — drift-guard: schema enforces severity enum."""
+    bad = {
+        "event": "append",
+        "id": "trg-deadbeef",
+        "ts": "2026-05-21T10:00:00Z",
+        "originalTs": "2026-05-21T10:00:00Z",
+        "source": "test",
+        "severity": "URGENT",  # not in enum
+        "kind": "bug",
+        "title": "t",
+        "detail": "d",
+        "evidencePath": None,
+        "runId": None,
+        "commit": None,
+        "dedupKey": None,
+        "launchPayload": None,
+        "frId": None,
+        "suiteId": None,
+        "eventId": None,
+        "status": "triage",
+        "suggestedPriority": "high",
+        "suggestedDomain": "engineering",
+    }
+    errors = _validate_against_schema(bad, triage_schema)
+    assert errors, "schema should reject severity=URGENT"
+
+
+def test_schema_rejects_invalid_id_format(triage_schema: dict) -> None:
+    """Negative test — id must match `trg-<8 hex>`."""
+    bad = {
+        "event": "append",
+        "id": "trg-XYZ",  # uppercase / too short
+        "ts": "2026-05-21T10:00:00Z",
+        "originalTs": "2026-05-21T10:00:00Z",
+        "source": "test",
+        "severity": "high",
+        "kind": "bug",
+        "title": "t",
+        "detail": "d",
+        "evidencePath": None, "runId": None, "commit": None, "dedupKey": None,
+        "launchPayload": None, "frId": None, "suiteId": None, "eventId": None,
+        "status": "triage",
+        "suggestedPriority": "P1",
+        "suggestedDomain": "engineering",
+    }
+    errors = _validate_against_schema(bad, triage_schema)
+    assert errors, "schema should reject malformed id"
+
+
+# Review finding H1 — producer-side type guards on the new B0 fields.
+
+@pytest.mark.parametrize("field", ["fr_id", "suite_id", "event_id"])
+def test_append_rejects_non_string_b0_field(project: Path, field: str) -> None:
+    """A producer passing a non-string value for the new B0 cross-link
+    fields must hit a ValueError at write time (instead of silently
+    writing an integer that fails the JSON schema at validation time)."""
+    bad_kwargs = {
+        "source": "test", "severity": "high", "kind": "bug",
+        "title": "t", "detail": "d",
+        field: 42,  # int, not str
+    }
+    with pytest.raises(ValueError, match=field):
+        append_triage_item(project, **bad_kwargs)
+
+
+@pytest.mark.parametrize("field", ["fr_id", "suite_id", "event_id"])
+def test_idempotent_append_rejects_non_string_b0_field(project: Path, field: str) -> None:
+    from triage import append_triage_item_idempotent
+
+    bad_kwargs = {
+        "source": "test", "severity": "high", "kind": "bug",
+        "title": "t", "detail": "d",
+        "dedup_key": "test:1",
+        field: 42,
+    }
+    with pytest.raises(ValueError, match=field):
+        append_triage_item_idempotent(project, **bad_kwargs)
+
+
+# Review finding M2 — status-event enum coverage.
+
+@pytest.mark.parametrize("new_status", ["triage", "promoted", "dismissed", "snoozed"])
+def test_status_event_all_enum_values_validate(
+    project: Path, triage_schema: dict, new_status: str,
+) -> None:
+    """The schema must accept every newStatus value `mark_status` accepts,
+    including `triage` (idempotent re-flip). Pre-fix the schema enum was
+    missing `triage` — test_all_statuses_accepted_by_mark_status bypassed
+    schema validation so this didn't surface."""
+    from triage import mark_status
+
+    item_id = append_triage_item(
+        project, source="test", severity="high", kind="bug",
+        title="t", detail="d",
+    )
+    mark_status(project, item_id, new_status=new_status, by="test")
+    raw = _read_raw_lines(project)
+    # last line is the status event
+    status_evt = raw[-1]
+    assert status_evt["event"] == "status"
+    errors = _validate_against_schema(status_evt, triage_schema)
+    assert not errors, f"newStatus={new_status!r} failed schema: {errors}"
+
+
+def test_status_event_schema_rejects_invalid_new_status(triage_schema: dict) -> None:
+    """Negative: status events with `newStatus` outside the enum fail."""
+    bad = {
+        "event": "status",
+        "id": "trg-deadbeef",
+        "ts": "2026-05-21T10:00:00Z",
+        "newStatus": "closed",  # not in enum
+        "by": "cli",
+        "reason": None,
+        "promotedTaskId": None,
+    }
+    errors = _validate_against_schema(bad, triage_schema)
+    assert errors, "schema should reject newStatus=closed"
+
+
+def test_status_event_schema_rejects_missing_by(triage_schema: dict) -> None:
+    """Negative: `by` is required (audit-trail provenance)."""
+    bad = {
+        "event": "status",
+        "id": "trg-deadbeef",
+        "ts": "2026-05-21T10:00:00Z",
+        "newStatus": "dismissed",
+        # by missing
+        "reason": None,
+        "promotedTaskId": None,
+    }
+    errors = _validate_against_schema(bad, triage_schema)
+    assert errors, "schema should reject missing `by` on status event"

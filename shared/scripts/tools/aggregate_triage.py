@@ -147,7 +147,14 @@ def _render_launch_payload(item: dict) -> list[str]:
 
 
 def _render_item(item: dict) -> list[str]:
-    """Render a single triage item as a markdown bullet group."""
+    """Render a single triage item as a markdown bullet group.
+
+    Each item starts with an HTML anchor `<a id="trg-XXX"></a>` so external
+    artifacts — primarily the compliance RTM (`traceability-matrix.md`) —
+    can deep-link straight to a card via standard markdown anchors
+    (`[FAIL → trg-XXX](triage_inbox.md#trg-XXX)`). VS Code's preview, GitHub,
+    and CommonMark all honor this. Iterate B0 (2026-05-21).
+    """
     item_id = item.get("id", "")
     severity = item.get("severity", "")
     kind = item.get("kind", "")
@@ -160,6 +167,7 @@ def _render_item(item: dict) -> list[str]:
     evidence = _truncate(_escape_md(item.get("evidencePath") or ""))
 
     lines = [
+        f'<a id="{item_id}"></a>' if item_id else "",
         f"- **{title}** `id={item_id} | severity={severity} | kind={kind} → "
         f"{priority}/{domain}`",
         f"  - {detail}" if detail else "",
@@ -171,6 +179,23 @@ def _render_item(item: dict) -> list[str]:
         f"  - Promote: `triage_promote.py --id {item_id} --task-ref EXT:<ref>`"
     )
     return [L for L in lines if L]
+
+
+def _split_info_items(items: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Partition items into (signal, info-noise).
+
+    Iterate B0 — pragmatism dial for solo dev: `info`-severity items are
+    rarely actionable on their own (they describe drift / observability /
+    informational findings). Surface them collapsed so the top of the inbox
+    only shows critical/high/medium/low cards. `info` items still render in
+    a ``<details>`` block at the end so they're not lost — just out of the
+    way.
+    """
+    signal: list[dict] = []
+    info: list[dict] = []
+    for it in items:
+        (info if it.get("severity") == "info" else signal).append(it)
+    return signal, info
 
 
 def _summary_counts(items: list[dict]) -> dict[str, int]:
@@ -239,29 +264,52 @@ def render_markdown(items: list[dict], *, now: str) -> str:
         out.append("")
         return "\n".join(out) + "\n"
 
-    rendered = triage_items[:TOP_N]
-    out.append(f"## Top {len(rendered)} items (severity-sorted)")
-    out.append("")
-    if len(triage_items) > TOP_N:
+    # Info-severity items are collapsed into a <details> block at the end
+    # (Iterate B0). Sort key is already applied to the full list, so the
+    # partition keeps each bucket pre-sorted.
+    signal_items, info_items = _split_info_items(triage_items)
+
+    rendered = signal_items[:TOP_N]
+    if rendered:
+        out.append(f"## Top {len(rendered)} items (severity-sorted)")
+        out.append("")
+        if len(signal_items) > TOP_N:
+            out.append(
+                f"_Showing first {TOP_N} of {len(signal_items)} pending; "
+                "remainder elided._"
+            )
+            out.append("")
+
+        # Group by source while preserving severity sort within each group
+        by_source: dict[str, list[dict]] = {}
+        for it in rendered:
+            by_source.setdefault(it.get("source", "unknown"), []).append(it)
+
+        # Source order: alphabetical for stable diffs
+        for source in sorted(by_source.keys()):
+            group = by_source[source]
+            out.append(f"### Source: {source} ({len(group)} item{'s' if len(group) != 1 else ''})")
+            out.append("")
+            for it in group:
+                out.extend(_render_item(it))
+                out.append("")
+    else:
+        # All open items are info-severity — keep the header so the file
+        # structure stays stable for grep / diff tooling.
+        out.append("No non-info triage items pending. ✓")
+        out.append("")
+
+    if info_items:
         out.append(
-            f"_Showing first {TOP_N} of {len(triage_items)} pending; "
-            "remainder elided._"
+            f"<details><summary>Info-level items ({len(info_items)}) — "
+            "expand to view</summary>"
         )
         out.append("")
-
-    # Group by source while preserving severity sort within each group
-    by_source: dict[str, list[dict]] = {}
-    for it in rendered:
-        by_source.setdefault(it.get("source", "unknown"), []).append(it)
-
-    # Source order: alphabetical for stable diffs
-    for source in sorted(by_source.keys()):
-        group = by_source[source]
-        out.append(f"### Source: {source} ({len(group)} item{'s' if len(group) != 1 else ''})")
-        out.append("")
-        for it in group:
+        for it in info_items:
             out.extend(_render_item(it))
             out.append("")
+        out.append("</details>")
+        out.append("")
 
     return "\n".join(out) + "\n"
 
