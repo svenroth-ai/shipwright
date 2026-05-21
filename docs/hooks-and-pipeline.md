@@ -314,6 +314,23 @@ Claude's Bash tool. Idempotent: never duplicates the export line.
 This single hook replaced 8 per-plugin duplicates that used to live
 under `plugins/*/scripts/hooks/capture-session-id.py` (iterate 14.9).
 
+**Session-id fallback chain (Iterate A.4, 2026-05-21).** When the capture
+hook hasn't run — startup races, hook failures, manual `uv run …` invocations
+— `shared/scripts/tools/generate_session_handoff.py::resolve_session_id`
+now goes through a 4-stage fallback instead of emitting the literal string
+`"unknown"`:
+
+| Stage | Resolution | Side effects |
+|-------|-----------|--------------|
+| `env` (primary) | `SHIPWRIGHT_SESSION_ID` env var | No warning. |
+| `A` derived | `derived-<run_id>`, with `-2 / -3 / …` collision suffix | `hook_warning` event (`source=session_id_fallback`, `stage=A`). |
+| `B` persisted | once-per-process UUID, persisted to `.shipwright/session_fallback.json` | `hook_warning` event (`stage=B`). |
+| `C` literal floor | literal `"no-session-id"` | `hook_warning` event (`stage=C`) + WARN banner rendered into the handoff. Reached only when stage-B persistence itself fails (read-only FS, bad `.shipwright/`). |
+
+The fallback file (`session_fallback.json`) is git-ignored by the existing
+`.shipwright/*` rule. The handoff's "Session Info" block captions which
+stage produced the id whenever a non-env stage fired.
+
 ### Shared Hook: check_artifact_drift.py
 
 **Script:** `shared/scripts/hooks/check_artifact_drift.py` — wired

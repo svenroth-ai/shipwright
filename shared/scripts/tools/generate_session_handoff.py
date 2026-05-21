@@ -9,11 +9,16 @@ Usage (from target project root):
 Writes to: .shipwright/agent_docs/session_handoff.md
 """
 
+from __future__ import annotations
+
 import json
 import subprocess
 import sys
+import uuid
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Callable
 
 # Add shared lib to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -25,6 +30,180 @@ from lib.iterate_entry import (
     last_iterate_entry,
 )
 from lib.state import get_checkpoint
+
+
+# ---------------------------------------------------------------------------
+# Iterate A.4 — Session-id fallback chain
+# ---------------------------------------------------------------------------
+#
+# Pre-A.4 behavior: if the capture-hook hadn't run yet, the handoff carried
+# the literal string ``"unknown"`` as the session id. That made the handoff
+# undebuggable in retrospect and broke any consumer trying to correlate the
+# handoff with the actual session.
+#
+# A.4 introduces a 4-stage fallback. Each non-primary stage:
+#   1. resolves to a deterministic-looking id (so consumers can recognise it),
+#   2. emits a `hook_warning` event with `source=session_id_fallback` +
+#      `stage=A|B|C` so the failure is visible in the audit log,
+#   3. is recorded under "Session Info" in the rendered handoff so a human
+#      reader sees which level kicked in.
+#
+# Stage precedence:
+#   0 / env       → SHIPWRIGHT_SESSION_ID env var (set by the capture hook;
+#                   no warning).
+#   A / derived   → `derived-<run_id>`, with `-2 / -3 / ...` collision suffix
+#                   when the same run_id has previously been "derived".
+#   B / persisted → once-per-process UUID, persisted to
+#                   `.shipwright/session_fallback.json` so subsequent calls in
+#                   the same process keep the same id.
+#   C / literal   → the literal `"no-session-id"` sentinel with WARN banner.
+#                   This is the absolute floor — only reached if writing the
+#                   persistence file itself fails (read-only FS, missing
+#                   `.shipwright/`, etc.).
+SESSION_FALLBACK_FILE = ".shipwright/session_fallback.json"
+LITERAL_NO_SESSION_ID = "no-session-id"
+_NULLISH_ENV_VALUES = {"", "unknown", "none", "null"}
+
+
+@dataclass(frozen=True)
+class SessionIdResolution:
+    """Result of :func:`resolve_session_id`.
+
+    ``stage`` is the human-readable identifier (``env``, ``derived``,
+    ``persisted``, ``literal``) used to caption the "Session Info" block.
+    ``warning_stage`` is the A/B/C wire value emitted into the audit event;
+    ``None`` for the primary path (env), which is not a warning.
+    """
+
+    session_id: str
+    stage: str
+    warning_stage: str | None
+    detail: str = ""
+
+
+def _load_fallback_state(project_root: Path) -> dict:
+    path = project_root / SESSION_FALLBACK_FILE
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _save_fallback_state(project_root: Path, state: dict) -> bool:
+    """Best-effort persistence — returns False on any I/O failure."""
+    path = project_root / SESSION_FALLBACK_FILE
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
+        return True
+    except OSError:
+        return False
+
+
+def _derive_with_collision_suffix(run_id: str, prior: list[str]) -> str:
+    """Return ``derived-<run_id>`` or ``derived-<run_id>-N`` on collision.
+
+    Two iterates with the same run_id are impossible by construction (run_id
+    is unique per-iterate), but the suffix logic is the documented contract
+    from the plan — exercise it via repeated calls in tests.
+    """
+    base = f"derived-{run_id}"
+    if base not in prior:
+        return base
+    counter = 2
+    while f"{base}-{counter}" in prior:
+        counter += 1
+    return f"{base}-{counter}"
+
+
+def _emit_session_id_fallback_warning(
+    project_root: Path,
+    *,
+    stage: str,
+    session_id: str,
+    detail: str,
+) -> None:
+    """Best-effort `hook_warning` event so the fallback is auditable."""
+    try:
+        from tools.record_event import append_event, generate_event_id
+
+        append_event(project_root, {
+            "v": 1,
+            "id": generate_event_id(),
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "type": "hook_warning",
+            "source": "session_id_fallback",
+            "stage": stage,
+            "session": session_id,
+            "detail": detail,
+        })
+    except Exception as exc:  # noqa: BLE001 — fail-soft, hooks must never crash
+        print(
+            f"[generate_session_handoff] event emit failed for stage={stage}: "
+            f"{exc!r}",
+            file=sys.stderr,
+        )
+
+
+def resolve_session_id(
+    project_root: Path | str,
+    *,
+    env_session_id: str | None = None,
+    run_id: str | None = None,
+    uuid_factory: Callable[[], str] = lambda: uuid.uuid4().hex,
+    emit_warning: Callable[[str, str, str], None] | None = None,
+) -> SessionIdResolution:
+    """Resolve the effective session id via the A.4 fallback chain.
+
+    Pure helper — does NOT print anything (callers render warnings into the
+    handoff body). ``emit_warning`` is the side-effecting audit-event hook,
+    injectable to keep tests deterministic. Defaults to
+    :func:`_emit_session_id_fallback_warning` when ``None``.
+    """
+    project_root = Path(project_root)
+    emitter: Callable[[str, str, str], None]
+    if emit_warning is None:
+        emitter = lambda st, sid, det: _emit_session_id_fallback_warning(
+            project_root, stage=st, session_id=sid, detail=det,
+        )
+    else:
+        emitter = emit_warning
+
+    # Stage 0 / env — primary path
+    env_value = (env_session_id or "").strip()
+    if env_value and env_value.lower() not in _NULLISH_ENV_VALUES:
+        return SessionIdResolution(env_value, "env", None, detail="from SHIPWRIGHT_SESSION_ID")
+
+    # Stage A / derived from run_id
+    state = _load_fallback_state(project_root)
+    rid = (run_id or "").strip()
+    if rid:
+        prior_derived: list[str] = list(state.get("derived_history", []) or [])
+        derived = _derive_with_collision_suffix(rid, prior_derived)
+        prior_derived.append(derived)
+        state["derived_history"] = prior_derived
+        _save_fallback_state(project_root, state)
+        detail = f"derived from run_id={rid!r}"
+        emitter("A", derived, detail)
+        return SessionIdResolution(derived, "derived", "A", detail=detail)
+
+    # Stage B / persisted UUID
+    persisted = state.get("process_uuid")
+    if not (isinstance(persisted, str) and persisted.strip()):
+        persisted = uuid_factory()
+        state["process_uuid"] = persisted
+        saved = _save_fallback_state(project_root, state)
+        if not saved:
+            # Stage C — persistence failed, fall through to literal
+            detail = "fallback persistence write failed (read-only FS?)"
+            emitter("C", LITERAL_NO_SESSION_ID, detail)
+            return SessionIdResolution(LITERAL_NO_SESSION_ID, "literal", "C", detail=detail)
+    detail = f"once-per-process UUID @ {SESSION_FALLBACK_FILE}"
+    emitter("B", persisted, detail)
+    return SessionIdResolution(persisted, "persisted", "B", detail=detail)
 
 
 def get_git_info(project_root: Path) -> dict[str, str]:
@@ -164,6 +343,7 @@ def generate_handoff(
     reason: str = "context compaction",
     *,
     canon_frontmatter: dict[str, str] | None = None,
+    session_resolution: SessionIdResolution | None = None,
 ) -> str:
     """Generate session handoff markdown content.
 
@@ -175,6 +355,13 @@ def generate_handoff(
     these — most callers go through ``main()`` which reads
     ``SHIPWRIGHT_RUN_ID`` from the environment and refuses to write the
     marker if it is missing (safe degrade, GPT R3 finding).
+
+    ``session_resolution``: A.4 — when the caller went through
+    :func:`resolve_session_id`, pass the result so the rendered handoff
+    captions which fallback stage produced the session id (and renders a
+    WARN banner for stage C). When ``None`` and ``session_id`` matches
+    the literal ``no-session-id`` sentinel, the banner is rendered anyway
+    (defensive — callers that bypass the resolver still get the warning).
     """
     project_root = Path(project_root)
     configs = read_all_configs(project_root)
@@ -218,8 +405,28 @@ def generate_handoff(
         f"- **Session ID**: {session_id}",
         f"- **Timestamp**: {timestamp}",
         f"- **Reason**: {reason}",
-        "",
     ]
+
+    # A.4 — surface the fallback stage so a human reader sees that the id
+    # was synthesized rather than supplied by the capture hook.
+    if session_resolution is not None and session_resolution.stage != "env":
+        lines.append(
+            f"- **Session ID Source**: fallback stage {session_resolution.warning_stage} "
+            f"({session_resolution.stage}) — {session_resolution.detail}"
+        )
+    is_literal_floor = (
+        session_id == LITERAL_NO_SESSION_ID
+        or (session_resolution is not None and session_resolution.stage == "literal")
+    )
+    if is_literal_floor:
+        lines += [
+            "",
+            "> ⚠ **WARN — no session id available.** All fallback stages "
+            "failed. The capture hook didn't fire and the persistence file "
+            f"`{SESSION_FALLBACK_FILE}` could not be written. Cross-session "
+            "correlation will be impossible until this is fixed.",
+        ]
+    lines.append("")
 
     # Iterate 11.3 + file-per-iterate refactor — render "## Last Iterate"
     # from the merged iterate entry store (legacy array + per-file dir).
@@ -397,12 +604,17 @@ def main() -> None:
     args = parser.parse_args()
 
     project_root = Path(args.project_root).resolve() if args.project_root else Path(os.getcwd())
-    session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
+
+    env_run_id = os.environ.get("SHIPWRIGHT_RUN_ID", "").strip()
+    resolution = resolve_session_id(
+        project_root,
+        env_session_id=os.environ.get("SHIPWRIGHT_SESSION_ID"),
+        run_id=env_run_id or None,
+    )
 
     canon_frontmatter: dict[str, str] | None = None
     if args.canon_marker:
-        run_id = os.environ.get("SHIPWRIGHT_RUN_ID", "").strip()
-        if not run_id:
+        if not env_run_id:
             print(
                 "WARN: --canon-marker requested but SHIPWRIGHT_RUN_ID is unset — "
                 "writing handoff WITHOUT canon frontmatter (Stop hook will regenerate "
@@ -411,7 +623,7 @@ def main() -> None:
             )
         else:
             canon_frontmatter = {
-                "run_id": run_id,
+                "run_id": env_run_id,
                 "phase": args.phase,
                 "reason": args.reason,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -419,9 +631,10 @@ def main() -> None:
 
     content = generate_handoff(
         project_root,
-        session_id,
+        resolution.session_id,
         args.reason,
         canon_frontmatter=canon_frontmatter,
+        session_resolution=resolution,
     )
 
     # Ensure .shipwright/agent_docs/ exists

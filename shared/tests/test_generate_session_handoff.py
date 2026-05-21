@@ -4,8 +4,11 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from tools.generate_session_handoff import (
+    LITERAL_NO_SESSION_ID,
+    SESSION_FALLBACK_FILE,
     _current_iterate_progress,
     generate_handoff,
+    resolve_session_id,
 )
 
 
@@ -307,3 +310,179 @@ def test_current_iterate_progress_trivial_skips_review_replay(tmp_project):
     assert "External Review Marker" in text and "missing" in text
     # Small complexity: no replay section should be rendered for review
     assert "External LLM Review" not in text
+
+
+# ---------------------------------------------------------------------------
+# Iterate A.4 — session_id fallback chain (env → derived → persisted → literal)
+# ---------------------------------------------------------------------------
+
+
+def _silent_emitter(*args, **kwargs):  # noqa: D401, ANN001
+    """Test-only emitter that captures invocations without touching disk."""
+    _silent_emitter.calls.append({"stage": args[0], "session": args[1], "detail": args[2]})
+
+
+def _fresh_emitter():
+    _silent_emitter.calls = []
+    return _silent_emitter
+
+
+def test_resolve_session_id_env_wins(tmp_project):
+    emitter = _fresh_emitter()
+    result = resolve_session_id(
+        tmp_project,
+        env_session_id="capture-hook-sess",
+        run_id="iterate-2026-05-21-foo",
+        emit_warning=emitter,
+    )
+    assert result.session_id == "capture-hook-sess"
+    assert result.stage == "env"
+    assert result.warning_stage is None
+    assert emitter.calls == []  # no warning emitted on primary path
+
+
+def test_resolve_session_id_treats_unknown_as_missing(tmp_project):
+    """Pre-A.4 callers used to set ``SHIPWRIGHT_SESSION_ID=unknown`` — that
+    must NOT short-circuit the fallback chain."""
+    emitter = _fresh_emitter()
+    result = resolve_session_id(
+        tmp_project,
+        env_session_id="unknown",
+        run_id="iterate-2026-05-21-foo",
+        emit_warning=emitter,
+    )
+    assert result.stage == "derived"
+    assert result.session_id == "derived-iterate-2026-05-21-foo"
+
+
+def test_resolve_session_id_falls_back_to_stage_a_derived(tmp_project):
+    emitter = _fresh_emitter()
+    result = resolve_session_id(
+        tmp_project, env_session_id=None,
+        run_id="iterate-2026-05-21-foo",
+        emit_warning=emitter,
+    )
+    assert result.stage == "derived"
+    assert result.session_id == "derived-iterate-2026-05-21-foo"
+    assert result.warning_stage == "A"
+    assert emitter.calls and emitter.calls[0]["stage"] == "A"
+    # State persisted so the next call can detect collisions
+    state = json.loads(
+        (tmp_project / SESSION_FALLBACK_FILE).read_text(encoding="utf-8")
+    )
+    assert state["derived_history"] == ["derived-iterate-2026-05-21-foo"]
+
+
+def test_resolve_session_id_derived_collision_suffixed(tmp_project):
+    """A second derive against the same run_id increments to `-2`, `-3`, ..."""
+    emitter = _fresh_emitter()
+    a = resolve_session_id(
+        tmp_project, env_session_id=None, run_id="rid", emit_warning=emitter,
+    )
+    b = resolve_session_id(
+        tmp_project, env_session_id=None, run_id="rid", emit_warning=emitter,
+    )
+    c = resolve_session_id(
+        tmp_project, env_session_id=None, run_id="rid", emit_warning=emitter,
+    )
+    assert a.session_id == "derived-rid"
+    assert b.session_id == "derived-rid-2"
+    assert c.session_id == "derived-rid-3"
+
+
+def test_resolve_session_id_falls_back_to_stage_b_persisted(tmp_project):
+    """No env, no run_id → once-per-process UUID lands in stage B."""
+    emitter = _fresh_emitter()
+    result = resolve_session_id(
+        tmp_project, env_session_id=None, run_id=None,
+        uuid_factory=lambda: "uuid-deterministic-1",
+        emit_warning=emitter,
+    )
+    assert result.stage == "persisted"
+    assert result.session_id == "uuid-deterministic-1"
+    assert result.warning_stage == "B"
+    assert emitter.calls and emitter.calls[0]["stage"] == "B"
+    state = json.loads(
+        (tmp_project / SESSION_FALLBACK_FILE).read_text(encoding="utf-8")
+    )
+    assert state["process_uuid"] == "uuid-deterministic-1"
+
+
+def test_resolve_session_id_stage_b_is_idempotent(tmp_project):
+    """A second call without env/run_id must reuse the persisted UUID."""
+    emitter = _fresh_emitter()
+    first = resolve_session_id(
+        tmp_project, env_session_id=None, run_id=None,
+        uuid_factory=lambda: "uuid-deterministic-1",
+        emit_warning=emitter,
+    )
+    second = resolve_session_id(
+        tmp_project, env_session_id=None, run_id=None,
+        uuid_factory=lambda: "uuid-deterministic-2",  # would clobber if used
+        emit_warning=emitter,
+    )
+    assert second.session_id == first.session_id
+    assert second.session_id == "uuid-deterministic-1"
+
+
+def test_resolve_session_id_stage_c_when_persistence_unwritable(tmp_path):
+    """If the persistence file cannot be written, fall through to the literal
+    sentinel + a stage-C warning."""
+    # Point the persistence dir at a file (forces write to fail because
+    # mkdir(parents=True) on a path whose parent is itself a file errors out).
+    blocker = tmp_path / ".shipwright"
+    blocker.write_text("not a directory", encoding="utf-8")
+    emitter = _fresh_emitter()
+    result = resolve_session_id(
+        tmp_path, env_session_id=None, run_id=None,
+        uuid_factory=lambda: "uuid-x",
+        emit_warning=emitter,
+    )
+    assert result.session_id == LITERAL_NO_SESSION_ID
+    assert result.stage == "literal"
+    assert result.warning_stage == "C"
+    assert emitter.calls and emitter.calls[0]["stage"] == "C"
+
+
+def test_generate_handoff_renders_fallback_stage(tmp_project):
+    """When the handoff is generated for a derived id, the Session Info block
+    must say so — and not blindly echo the synthesized id."""
+    emitter = _fresh_emitter()
+    resolution = resolve_session_id(
+        tmp_project, env_session_id=None, run_id="rid-foo",
+        emit_warning=emitter,
+    )
+    content = generate_handoff(
+        tmp_project, resolution.session_id, "test",
+        session_resolution=resolution,
+    )
+    assert "derived-rid-foo" in content
+    assert "Session ID Source" in content
+    assert "fallback stage A" in content
+
+
+def test_generate_handoff_renders_warn_banner_on_literal_floor(tmp_project):
+    """Stage C → loud WARN banner so a human reader notices."""
+    content = generate_handoff(
+        tmp_project, LITERAL_NO_SESSION_ID, "test",
+    )
+    assert "WARN" in content
+    assert "no session id available" in content.lower()
+    assert SESSION_FALLBACK_FILE in content
+
+
+def test_generate_handoff_env_path_renders_no_fallback_caption(tmp_project):
+    """Happy path: env-id resolution should NOT pollute Session Info with a
+    fallback caption or WARN banner."""
+    emitter = _fresh_emitter()
+    resolution = resolve_session_id(
+        tmp_project, env_session_id="real-sess", run_id="rid",
+        emit_warning=emitter,
+    )
+    content = generate_handoff(
+        tmp_project, resolution.session_id, "test",
+        session_resolution=resolution,
+    )
+    assert "real-sess" in content
+    assert "Session ID Source" not in content
+    assert "WARN" not in content
