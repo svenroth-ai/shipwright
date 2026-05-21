@@ -154,6 +154,12 @@ ALLOWLIST: dict[str, list[str]] = {
         # `shipwright-compliance` and `compliance_report.py` as plugin /
         # phase names by design. Same class as the iterate-spec entry above.
         ".shipwright/planning/adr/**.md",
+        # Campaign handover / state files (e.g. `2026-05-21-artifact-polish-
+        # completion-handover.md`) coordinate multi-iterate campaigns and by
+        # design list plugin-test paths (`plugins/shipwright-compliance/tests/`)
+        # and compliance-artifact filenames in their iterate tables. Same class
+        # as the iterate-spec + ADR-spec entries above.
+        ".shipwright/planning/campaigns/**.md",
         # Layer 2 setup-contract test — intentionally asserts that the legacy
         # path is NOT created. Must reference legacy by name to do so.
         "shared/tests/test_setup_writes_canonical.py",
@@ -229,6 +235,8 @@ ALLOWLIST: dict[str, list[str]] = {
         # `shipwright-compliance` and `compliance_report.py` as plugin /
         # phase names by design. Same class as the iterate-spec entry above.
         ".shipwright/planning/adr/**.md",
+        # Campaign handover / state files (see "planning" entry above).
+        ".shipwright/planning/campaigns/**.md",
         # Layer-2 setup-contract test references both paths by design
         "shared/tests/test_setup_writes_canonical.py",
         # Migration tooling (CLI + helpers) takes artifact name as argument
@@ -297,6 +305,8 @@ ALLOWLIST: dict[str, list[str]] = {
         # `shipwright-compliance` and `compliance_report.py` as plugin /
         # phase names by design. Same class as the iterate-spec entry above.
         ".shipwright/planning/adr/**.md",
+        # Campaign handover / state files (see "planning" entry above).
+        ".shipwright/planning/campaigns/**.md",
         "shipwright_project_config.json",
         # Layer-2 setup-contract test references both paths by design
         "shared/tests/test_setup_writes_canonical.py",
@@ -403,6 +413,8 @@ ALLOWLIST: dict[str, list[str]] = {
         # `shipwright-compliance` and `compliance_report.py` as plugin /
         # phase names by design. Same class as the iterate-spec entry above.
         ".shipwright/planning/adr/**.md",
+        # Campaign handover / state files (see "planning" entry above).
+        ".shipwright/planning/campaigns/**.md",
         # Layer-2 setup-contract test references both paths by design
         "shared/tests/test_setup_writes_canonical.py",
         # Edge-case test file that intentionally references both paths (introduced in designs migration)

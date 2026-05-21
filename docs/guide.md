@@ -1053,7 +1053,7 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 - `.shipwright/compliance/traceability-matrix.md` -- Every requirement mapped to the work events that verify it, with a "Last Verified" column.
 - `.shipwright/compliance/test-evidence.md` -- Test results across unit / integration / pgTAP / smoke / E2E / consistency / visual, with pass/fail counts and skip reasons.
 - `.shipwright/compliance/change-history.md` -- All commits + decisions (from `.shipwright/agent_docs/decision_log.md`) + version tags.
-- `.shipwright/compliance/sbom.md` -- Software Bill of Materials with versions and license types. Flags copyleft licenses.
+- `.shipwright/compliance/sbom.md` -- Software Bill of Materials with versions and license types. Flags copyleft licenses. **Triage producer (Iterate B.2, 2026-05-21):** when a workspace manifest (`package.json` / `pyproject.toml`) carries packages whose licenses can't be resolved from `package-lock.json` / `importlib.metadata`, one `source="sbom"` triage item per workspace lands in `.shipwright/triage.jsonl` with `dedupKey="sbom:undeclared:<manifest-rel-path>"`, the top-20 offenders in the body, and a copy-pasteable `launchPayload` (`cd <workspace> && npm install` / `uv sync`, then re-run `update_compliance.py`). Auto-resolves on the next clean run.
 
 **How the detective audit works:**
 1. `run_audit.py` loads `audit_config.json` (G2 scope stoplist, alias map, A4 path-field allowlist, B7 exclusions) and `ComplianceData`.

@@ -647,6 +647,76 @@ def collect_dependencies(project_root: Path) -> list[DependencyInfo]:
     return deps
 
 
+def collect_undeclared_by_workspace(project_root: Path) -> list[dict]:
+    """Group packages with ``license == "unknown"`` by their manifest.
+
+    Iterate B.2 (ADR-054 D1 / ADR-056) — feeds the SBOM triage producer.
+    ``collect_dependencies`` collapses cross-workspace duplicates into a
+    single row, which is right for the SBOM table but wrong for triage:
+    the operator needs to know *which* workspace to ``cd`` into, so we
+    re-scan manifests without deduping and partition by manifest path.
+
+    Returns a list of dicts (one per manifest with >0 undeclared entries)::
+
+        {
+          "manifest_rel_path": "client/package.json",   # POSIX-style
+          "manifest_type": "npm" | "python",
+          "undeclared": [{"name": "react", "version": "^19.0.0"}, ...],
+        }
+
+    Manifests with all licenses resolved are omitted (no work for the
+    operator → no triage item). Honors the same ``_WORKSPACE_EXCLUDE``
+    list as ``collect_dependencies``. Path components are joined with
+    ``/`` so the dedup-key shape is identical on Linux + Windows.
+    """
+    project_root = Path(project_root).resolve()
+    manifests = _find_manifests(project_root)
+    groups: list[dict] = []
+
+    for pkg_path in manifests["npm"]:
+        manifest_dir = pkg_path.parent
+        try:
+            pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if not isinstance(pkg, dict):
+            continue
+        undeclared: list[dict] = []
+        for section in ("dependencies", "devDependencies"):
+            section_deps = pkg.get(section)
+            # Reviewer-flagged M1: a malformed package.json with
+            # `"dependencies": []` (list/null/string) would AttributeError
+            # on `.items()` and abort the whole sweep. Guard at the
+            # section boundary, mirroring the JSONDecodeError skip above.
+            if not isinstance(section_deps, dict):
+                continue
+            for name, version in section_deps.items():
+                if _detect_npm_license(manifest_dir, name) == "unknown":
+                    undeclared.append({"name": name, "version": str(version)})
+        if undeclared:
+            rel = pkg_path.relative_to(project_root).as_posix()
+            groups.append({
+                "manifest_rel_path": rel,
+                "manifest_type": "npm",
+                "undeclared": undeclared,
+            })
+
+    for pyproject_path in manifests["python"]:
+        undeclared = []
+        for dep in _parse_pyproject_deps(pyproject_path):
+            if dep.license == "unknown":
+                undeclared.append({"name": dep.name, "version": dep.version})
+        if undeclared:
+            rel = pyproject_path.relative_to(project_root).as_posix()
+            groups.append({
+                "manifest_rel_path": rel,
+                "manifest_type": "python",
+                "undeclared": undeclared,
+            })
+
+    return groups
+
+
 def _read_npm_lockfile_licenses(manifest_dir: Path) -> dict[str, str]:
     """Parse package-lock.json (lockfileVersion 3) and return {name: license}.
 

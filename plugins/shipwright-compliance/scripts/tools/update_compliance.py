@@ -19,7 +19,10 @@ from scripts.lib.rtm_generator import generate_file as generate_rtm
 from scripts.lib.test_evidence import generate_file as generate_test_evidence
 from scripts.lib.change_history import generate_file as generate_change_history
 from scripts.lib.compliance_report import generate_file as generate_dashboard
-from scripts.lib.sbom_generator import generate_file as generate_sbom
+from scripts.lib.sbom_generator import (
+    emit_undeclared_triage,
+    generate_file as generate_sbom,
+)
 
 # Phase -> which reports to regenerate
 PHASE_REPORTS = {
@@ -87,11 +90,22 @@ def main() -> int:
     data = collect_all(project_root)
 
     updated = []
+    triage_result: dict[str, int] | None = None
     for report_name in reports_to_update:
         gen_fn = GENERATORS.get(report_name)
         if gen_fn:
             path = gen_fn(project_root, data)
             updated.append(str(path.relative_to(project_root)))
+            # Iterate B.2 (ADR-056): when the SBOM is regenerated, emit
+            # one ``source="sbom"`` triage item per workspace that still
+            # has undeclared licenses, and auto-dismiss workspaces that
+            # are now clean. Best-effort: failures here do not abort
+            # compliance generation.
+            if report_name == "sbom":
+                try:
+                    triage_result = emit_undeclared_triage(project_root)
+                except Exception as exc:  # noqa: BLE001
+                    triage_result = {"appended": 0, "dismissed": 0, "error": str(exc)}
 
     # Update compliance config
     config_path = project_root / "shipwright_compliance_config.json"
@@ -112,6 +126,8 @@ def main() -> int:
         "phase": phase,
         "updated_reports": updated,
     }
+    if triage_result is not None:
+        output["sbom_triage"] = triage_result
     print(json.dumps(output, indent=2))
     return 0
 
