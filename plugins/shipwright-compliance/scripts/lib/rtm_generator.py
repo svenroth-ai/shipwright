@@ -8,12 +8,21 @@ NOTE: Output reports live at .shipwright/compliance/<file>.md (2-deep from
 project_root), so links to project-root files use ``../../<file>`` instead
 of ``../<file>``. Sibling links under .shipwright/ -- the planning subdir --
 use ``../planning/...`` instead of ``../.shipwright/planning/...``.
+
+Iterate B.4 (ADR-058): the requirements-coverage table now consumes the
+B0 (ADR-054) cross-link fields — for each FR with at least one open
+``triage`` item whose ``frId`` matches, the Status cell carries a
+``FAIL → [trg-XXX](../agent_docs/triage_inbox.md#trg-XXX)`` deep-link.
+The Coverage Summary section is rewritten from a thin metrics table
+into three operator-actionable subsections (no tests, stale
+verification, open triage).
 """
 
 from __future__ import annotations
 
 import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -27,6 +36,83 @@ from markdown_table import escape_cell  # noqa: E402
 
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData, SectionInfo, WorkEvent
+
+
+# Iterate B.4 (ADR-058): the "stale verification" coverage section
+# flags FRs whose last verification is older than this window. 14
+# days mirrors the artifact-polish plan B.4 spec.
+_STALE_VERIFICATION_DAYS = 14
+
+# Where the triage inbox lives relative to the RTM's own output
+# directory (.shipwright/compliance/). The aggregator stamps stable
+# `<a id="trg-XXX">` anchors above each card so `#trg-XXX` fragments
+# resolve. Reviewer-flagged OpenAI-M3 / Gemini-M3: hoisted into a
+# named constant so a future relocation of either artifact is a
+# one-line change.
+_TRIAGE_INBOX_REL = "../agent_docs/triage_inbox.md"
+
+# Triage IDs follow the `trg-<8 hex>` shape (see
+# `shared/scripts/triage.py:_generate_id`). Reviewer-flagged
+# OpenAI-L9: validate the pattern before interpolating into a
+# markdown link so a malformed wire value can't produce a broken
+# href.
+_TRIAGE_ID_RE = re.compile(r"^trg-[0-9a-f]{4,16}$")
+
+
+def _open_triage_by_fr(project_root: Path) -> dict[str, list[dict]]:
+    """Return ``{fr_id: [open triage items]}`` keyed by ``frId``.
+
+    Iterate B.4 (ADR-058): consumes the B0 (ADR-054 D5) cross-link
+    field ``frId``. Items without ``frId`` are skipped silently.
+    Only ``status == "triage"`` items participate — promoted /
+    dismissed / snoozed are terminal (mirrors compliance dashboard
+    and B.2 / B.3 producer conventions).
+
+    Lazy-import keeps RTM generation from crashing in minimal envs
+    without ``shared/scripts/`` on ``sys.path``.
+    """
+    try:
+        from triage import read_all_items  # noqa: PLC0415
+    except ImportError:
+        return {}
+    by_fr: dict[str, list[dict]] = {}
+    try:
+        for item in read_all_items(project_root):
+            if item.get("status") != "triage":
+                continue
+            fr_id = item.get("frId")
+            if not isinstance(fr_id, str) or not fr_id:
+                continue
+            by_fr.setdefault(fr_id, []).append(item)
+    except Exception:  # noqa: BLE001
+        return {}
+    return by_fr
+
+
+def _render_fail_triage_links(items: list[dict]) -> str:
+    """Render `FAIL → [trg-XXX](...#trg-XXX)` for one or more triage items.
+
+    Stable sort by item id so repeated runs against the same triage
+    state produce byte-identical RTM output (review-friendly diffs).
+    The aggregator's HTML anchors are emitted as ``<a id="trg-XXX">``
+    above every card (ADR-054 acceptance criteria), so the
+    ``#trg-XXX`` fragment resolves in any CommonMark-compatible
+    viewer (VS Code preview, GitHub blob view, the WebUI's markdown
+    pane).
+
+    Item IDs that don't match the canonical ``trg-<hex>`` shape are
+    skipped (reviewer-flagged OpenAI-L9 — defense in depth against
+    malformed wire data).
+    """
+    parts: list[str] = []
+    for item in sorted(items, key=lambda i: i.get("id", "")):
+        item_id = item.get("id", "")
+        if not isinstance(item_id, str) or not _TRIAGE_ID_RE.match(item_id):
+            continue
+        parts.append(
+            f"FAIL → [{item_id}]({_TRIAGE_INBOX_REL}#{item_id})"
+        )
+    return ", ".join(parts)
 
 
 def generate(data: ComplianceData) -> str:
@@ -291,7 +377,16 @@ def _coverage_summary(data: ComplianceData) -> list[str]:
 # ---------------------------------------------------------------------------
 
 def _requirements_coverage_events(data: ComplianceData) -> list[str]:
-    """Requirements coverage from work events with Last Verified column."""
+    """Requirements coverage from work events with Last Verified column.
+
+    Iterate B.4 (ADR-058): when an FR has at least one open triage
+    item carrying ``frId == req.id``, the Status cell carries a
+    ``FAIL → [trg-XXX](...#trg-XXX)`` deep-link to the matching card
+    in ``../agent_docs/triage_inbox.md`` (overrides whatever status
+    the work-events analysis would have produced — an open triage
+    item is positive evidence the operator hasn't accepted the
+    current verification state).
+    """
     if not data.requirements:
         return []
 
@@ -302,6 +397,10 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
             fr_events.setdefault(fr_id, []).append(we)
 
     e2e_by_split = _collect_e2e_coverage_by_split(data.project_root)
+
+    # Iterate B.4: pull open triage items keyed by frId. The render
+    # below overlays them onto the per-row Status cell.
+    open_triage = _open_triage_by_fr(data.project_root)
 
     lines = [
         "## Requirements Coverage",
@@ -363,6 +462,17 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
             last_verified = "—"
             status = "NOT VERIFIED"
 
+        # B.4 deep-link overlay — an open triage item always wins over
+        # the events-derived status (operator hasn't closed the loop).
+        # Only override when the render produces a non-empty string —
+        # otherwise a malformed trg-id list would silently blank the
+        # status cell (reviewer-flagged OpenAI-L9 sibling).
+        fr_triage = open_triage.get(req.id, [])
+        if fr_triage:
+            rendered = _render_fail_triage_links(fr_triage)
+            if rendered:
+                status = rendered
+
         lines.append(
             f"| {escape_cell(req_link)} | {escape_cell(display_text)} | {req.priority} "
             f"| {escape_cell(verified_cell)} | {escape_cell(tests_cell)} "
@@ -407,14 +517,27 @@ def _verification_timeline(data: ComplianceData) -> list[str]:
 
 
 def _coverage_summary_events(data: ComplianceData) -> list[str]:
-    """Coverage summary from events."""
+    """Coverage summary from events.
+
+    Iterate B.4 (ADR-058) — rewritten from a thin metrics dump into
+    operator-actionable sections answering three solo-dev questions:
+
+    1. Which FRs don't have tests yet? → ``### FRs without tests``
+    2. Which FRs have stale verification (> 14 days OR new iterate
+       touched FR without a test_run)? → ``### FRs with stale
+       verification``
+    3. Which FRs have active regressions (open triage items)? →
+       ``### FRs with open triage items``
+
+    The thin metrics table is kept above the three sections because
+    the dashboard's "Quality indicators" links into it.
+    """
     lines = ["## Coverage Summary", ""]
 
+    # ---- 1. Thin metrics table (kept; small, scannable) -------------
     build_events = [we for we in data.work_events if we.source == "build"]
     iterate_events = [we for we in data.work_events if we.source == "iterate"]
-
     splits_seen = set(we.split for we in build_events if we.split)
-
     lines.extend([
         "| Metric | Value |",
         "|--------|-------|",
@@ -423,44 +546,199 @@ def _coverage_summary_events(data: ComplianceData) -> list[str]:
         f"| Iterate changes | {len(iterate_events)} |",
     ])
 
-    # Requirements coverage
     if data.requirements:
         total_reqs = len(data.requirements)
         must_reqs = [r for r in data.requirements if r.priority == "Must"]
         verified = [r for r in data.requirements if r.sections]
         verified_must = [r for r in must_reqs if r.sections]
-
         lines.extend([
             f"| Requirements total | {total_reqs} |",
             f"| Requirements verified | {len(verified)}/{total_reqs} |",
             f"| Must-have verified | {len(verified_must)}/{len(must_reqs)} |",
         ])
 
-        unverified = [r for r in data.requirements if not r.sections]
-        if unverified:
-            lines.extend(["", "### Not Verified", ""])
-            for req in unverified:
-                lines.append(f"- [{req.id}](../../{req.spec_path}) ({req.priority}): {req.text[:80]}...")
-
-    # Last test run
     if data.test_runs:
         latest = data.test_runs[-1]
-        lines.append(f"| Last full test run | {latest.timestamp[:10]} (Unit: {latest.unit_passed}/{latest.unit_total}, E2E: {latest.e2e_passed}/{latest.e2e_total}) |")
+        lines.append(
+            f"| Last full test run | {latest.timestamp[:10]} "
+            f"(Unit: {latest.unit_passed}/{latest.unit_total}, "
+            f"E2E: {latest.e2e_passed}/{latest.e2e_total}) |"
+        )
 
-    # E2E coverage
     e2e_by_split = _collect_e2e_coverage_by_split(data.project_root)
     total_e2e_specs = sum(s.get("specs", 0) for s in e2e_by_split.values())
     if total_e2e_specs:
         lines.append(f"| E2E specs | {total_e2e_specs} |")
 
-    # Review findings from events
     total_findings = sum(we.review_findings for we in data.work_events)
     unresolved = sum(we.review_findings - we.review_fixed for we in data.work_events)
     lines.extend([
         f"| Total review findings | {total_findings} |",
         f"| Unresolved findings | {unresolved} |",
+        "",
     ])
 
+    if not data.requirements:
+        return lines
+
+    # ---- 2. Three operator-actionable sections ----------------------
+    fr_events_map: dict[str, list[WorkEvent]] = {}
+    for we in data.work_events:
+        for fr_id in we.affected_frs:
+            fr_events_map.setdefault(fr_id, []).append(we)
+
+    no_tests = _frs_without_tests(data.requirements, fr_events_map)
+    lines.extend(_render_no_tests_section(no_tests))
+
+    stale = _frs_with_stale_verification(data.requirements, fr_events_map, data.test_runs)
+    lines.extend(_render_stale_section(stale))
+
+    open_triage = _open_triage_by_fr(data.project_root)
+    open_fr_items = _frs_with_open_triage(data.requirements, open_triage)
+    lines.extend(_render_open_triage_section(open_fr_items))
+
+    return lines
+
+
+def _frs_without_tests(
+    requirements, fr_events_map: dict[str, list],
+) -> list:
+    """FRs with no work_completed event tying back via ``affected_frs``."""
+    return [r for r in requirements if not fr_events_map.get(r.id)]
+
+
+def _parse_iso_ts(ts: str) -> datetime | None:
+    """Parse an ISO-8601 timestamp string into an aware datetime.
+
+    Returns ``None`` on malformed input. Used by the stale-verification
+    detector so a single corrupt timestamp doesn't crash the whole
+    RTM render. Reviewer-flagged OpenAI-L6 / Gemini-M4: parse failures
+    raise a `warnings.warn` so operators see them in test output even
+    though the row is skipped.
+    """
+    import warnings
+    try:
+        return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        warnings.warn(f"RTM: malformed event timestamp skipped: {ts!r}", stacklevel=2)
+        return None
+
+
+def _reference_now(work_events) -> datetime:
+    """Pick the "now" timestamp for stale-verification math.
+
+    Reviewer-flagged Gemini-H1: anchoring to ``datetime.now()`` makes
+    every RTM regeneration non-deterministic (the same event log
+    produces different output on different days). Anchor instead to
+    the latest work_completed event's timestamp — regeneration is
+    deterministic for a given event log, and the staleness window
+    advances only when the operator records new work. Falls back to
+    ``datetime.now()`` only when no events exist (greenfield project
+    pre-first-iterate).
+    """
+    candidates: list[datetime] = []
+    for we in work_events:
+        parsed = _parse_iso_ts(we.timestamp)
+        if parsed is not None:
+            candidates.append(parsed)
+    if candidates:
+        return max(candidates)
+    return datetime.now(timezone.utc)
+
+
+def _frs_with_stale_verification(
+    requirements, fr_events_map: dict[str, list], test_runs,
+    *, reference_now: datetime | None = None,
+) -> list[tuple]:
+    """FRs whose last verification is older than 14 days.
+
+    "Verification" = the latest work_completed event referencing the FR.
+    No events → caught by ``_frs_without_tests`` instead. Returns a
+    list of ``(req, days_old, last_event)`` tuples sorted oldest-first.
+
+    ``reference_now`` defaults to the latest event timestamp via
+    ``_reference_now`` (deterministic regeneration); callers may
+    override for testing.
+    """
+    if reference_now is None:
+        # Flatten events for the reference computation.
+        all_events = [e for evs in fr_events_map.values() for e in evs]
+        reference_now = _reference_now(all_events)
+    out: list[tuple] = []
+    for req in requirements:
+        events = fr_events_map.get(req.id) or []
+        if not events:
+            continue
+        # Reviewer-flagged code-review-M2: pick the event with the
+        # maximum *parsed* timestamp, not list[-1]. The event log is
+        # append-only and usually chronological, but `event_amended`
+        # rewrites + multi-machine usage make list order an unreliable
+        # proxy. Skip events whose timestamp won't parse — they can't
+        # contribute to "latest".
+        parsed = [
+            (e, _parse_iso_ts(e.timestamp))
+            for e in events
+        ]
+        parsed = [(e, dt) for e, dt in parsed if dt is not None]
+        if not parsed:
+            continue
+        latest, dt = max(parsed, key=lambda p: p[1])
+        days = (reference_now - dt).days
+        if days > _STALE_VERIFICATION_DAYS:
+            out.append((req, days, latest))
+    out.sort(key=lambda r: -r[1])
+    return out
+
+
+def _frs_with_open_triage(requirements, open_triage: dict[str, list]) -> list[tuple]:
+    """FRs with one or more open triage items, sorted by FR id."""
+    out: list[tuple] = []
+    for req in sorted(requirements, key=lambda r: r.id):
+        items = open_triage.get(req.id) or []
+        if items:
+            out.append((req, items))
+    return out
+
+
+def _render_no_tests_section(no_tests) -> list[str]:
+    if not no_tests:
+        return []
+    lines = ["### FRs without tests", ""]
+    for req in no_tests:
+        lines.append(
+            f"- [{req.id}](../../{req.spec_path}) ({req.priority}): "
+            f"{req.text[:80]}"
+        )
+    lines.append("")
+    return lines
+
+
+def _render_stale_section(stale) -> list[str]:
+    if not stale:
+        return []
+    lines = [
+        f"### FRs with stale verification (> {_STALE_VERIFICATION_DAYS} days)",
+        "",
+    ]
+    for req, days, latest in stale:
+        ref = latest.section if latest.source == "build" and latest.section else latest.id
+        lines.append(
+            f"- [{req.id}](../../{req.spec_path}) — last verified "
+            f"{days}d ago by `{ref}` ({latest.timestamp[:10]})"
+        )
+    lines.append("")
+    return lines
+
+
+def _render_open_triage_section(open_fr_items) -> list[str]:
+    if not open_fr_items:
+        return []
+    lines = ["### FRs with open triage items", ""]
+    for req, items in open_fr_items:
+        links = _render_fail_triage_links(items)
+        lines.append(
+            f"- [{req.id}](../../{req.spec_path}): {links}"
+        )
     lines.append("")
     return lines
 

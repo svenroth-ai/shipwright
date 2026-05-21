@@ -1,9 +1,9 @@
 {
   "status": "completed",
-  "timestamp": "2026-05-21T15:07:46.516240+00:00",
+  "timestamp": "2026-05-21T15:25:30.605921+00:00",
   "provider": "openrouter",
-  "findings_count": 4,
+  "findings_count": 6,
   "self_review_fallback_ran": false,
-  "reason": "B.3 code review: 2 MED (sanitize newlines + test assertion) + 1 LOW (missing CLI tests) accepted-and-fixed; 1 MED (Gemini partial-pair) truncated/rejected-with-reason",
+  "reason": "B.4 code review: 4 MED accepted-and-fixed (timestamp max-pick + spec AC-9 + sort-order test + plus-suffix test), 1 HIGH rejected-with-reason (already-filtered), 1 truncated",
   "review_mode": "code"
 }

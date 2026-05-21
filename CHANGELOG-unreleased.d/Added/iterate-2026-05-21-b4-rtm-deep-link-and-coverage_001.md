@@ -1,0 +1,1 @@
+RTM requirements-coverage Status cell renders FAIL -> trg-XXX deep-links from open triage items + Coverage Summary gains FRs-without-tests / stale-verification / open-triage subsections (Iterate B.4, ADR-058).
