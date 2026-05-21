@@ -1070,18 +1070,16 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 
 Pre-backlog buffer for findings emitted by hooks, scans, and audits. Triage and the backlog (`ExternalTask` in [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui)) are separate stores; **promote** is the explicit bridge between them. As of iterate-2026-05-20-triage-launch-surface the inbox is a **launch-surface**, not a finding-mirror — see § 4.11.1 below.
 
-- **Store:** `.shipwright/triage.jsonl` (per project, gitignored, append-only with history events).
-- **Producers:** `audit_phase_quality_on_stop` (Tier-1 FAILs, 24h dedup) and `audit_detector.mirror_findings_to_triage` (compliance findings + auto-dismiss when resolved) shipped first; the security-report, performance-gate, F0.5 surface-verification, and drift (`check_drift` + `artifact_sync`) producers followed. The GitHub findings producer (iterate-2026-05-19) imports code-scanning, Dependabot, secret-scanning alerts and failed CI runs via the `gh` CLI; iterate-2026-05-20 collapsed those into action-units (one per repo / per failing workflow). See [docs/triage-inbox.md](triage-inbox.md) for the full producer table.
-- **Consumer:** the Stop hook `aggregate_triage_on_stop` regenerates `.shipwright/agent_docs/triage_inbox.md` after every iterate finalize. Every open item carries an optional `launchPayload` field; when present, the aggregator renders it inside a fenced markdown code block under the item header — operators copy that fence into a new Claude session to start the matching run (§ 4.11.1).
+- **Store:** `.shipwright/triage.jsonl` (per project, gitignored, append-only with history events). Keys are camelCase because the wire format is shared with the [shipwright-webui](https://github.com/svenroth-ai/shipwright-webui) `ExternalTask` schema; status resolution is last-status-wins by file order, and lines that fail JSON-decode are skipped with a stderr warning. Status enum: `triage` (new) → `promoted` (turned into ExternalTask) / `dismissed` (operator decision) / `snoozed` (defer).
+- **Producers:** `audit_phase_quality_on_stop` (Tier-1 FAILs, 24h dedup), `audit_detector.mirror_findings_to_triage` (compliance findings + auto-dismiss when resolved), `generate_security_report._emit_findings_to_triage` (security-report runs), `performance_check._emit_failures_to_triage` (perf-gate runs), `surface_verification._emit_failure_to_triage` (F0.5 fail-closed exits), `check_drift._emit_drift_to_triage` and `artifact_sync._emit_drift_to_triage` (drift hooks), and the throttled SessionStart hook `import_github_findings.py` (GitHub action-units — see § 4.11.1 below).
+- **Consumer:** the Stop hook `aggregate_triage_on_stop` regenerates `.shipwright/agent_docs/triage_inbox.md` after every iterate finalize. Every open item carries an optional `launchPayload` field; when present, the aggregator renders it inside a fenced markdown code block under the item header — operators copy that fence into a new Claude session to start the matching run (§ 4.11.1). Rendered output is capped at 50 items per source, sorted by `(severity, originalTs DESC)`.
 - **Operate from CLI** (first-class — parallel to the WebUI Triage tab):
   - `uv run shared/scripts/tools/triage_cli.py list` — list open items + their `launchPayload`.
   - `uv run shared/scripts/tools/triage_cli.py promote trg-XXXXXXXX --task-ref "EXT:linear-ENG-7"` — promote to backlog.
   - `uv run shared/scripts/tools/triage_cli.py dismiss trg-XXXXXXXX --reason notRelevant` — dismiss as false-positive / won't-fix.
   - The pre-existing `triage_promote.py --id …` tool is unchanged for back-compat; the new `triage_cli.py promote` subcommand delegates to the same library helper (`triage_promote.promote`), so audit-trail shape is byte-identical (only the `by` field differs: `"cli"` vs `"manualPromote"`).
 
-Mapping is mechanical: `critical→P0 / high→P1 / medium→P2 / low→P3 / info→P3` for severity; `compliance→compliance / else→engineering` for source domain. Both values are recorded on the triage record as `suggestedPriority` + `suggestedDomain` so the promote step doesn't have to recompute them — the mapping matches the `leadwright` ExternalTask extension (see [`leadwright/docs/specs/phase-1-external-task-extension.md`](https://github.com/svenroth-ai/leadwright)).
-
-See [docs/triage-inbox.md](triage-inbox.md) for the full pattern (storage shape, producer rules, promote flow, operating caveats).
+Mapping is mechanical: `critical→P0 / high→P1 / medium→P2 / low→P3 / info→P3` for severity; `compliance→compliance / else→engineering` for source domain. Both values are recorded on the triage record as `suggestedPriority` + `suggestedDomain` so the promote step doesn't have to recompute them — the mapping matches the `leadwright` ExternalTask extension (see [`leadwright/docs/specs/phase-1-external-task-extension.md`](https://github.com/svenroth-ai/leadwright)). The full table lives in `shared/scripts/triage.py` (`PRIORITY_FROM_SEVERITY`, `DOMAIN_FROM_SOURCE`) and is exported as the SSoT — tests assert against the imports, not duplicated literals.
 
 #### 4.11.1 Triage as Launch-Surface
 
@@ -1092,6 +1090,13 @@ A triage item represents **one handling**, not one finding. GitHub already has a
 | code-scanning + Dependabot (combined) | `gh-security:{owner}/{repo}`      | `/shipwright-security`                                        |
 | secret-scanning                       | `gh-secrets:{owner}/{repo}`       | Manual rotation (no slash command — secret rotation is manual)|
 | failed default-branch CI per workflow | `gh-ci:{workflow_id}`             | `/shipwright-iterate --type bug`                              |
+
+**Two ingestion paths for the `gh-security` action-unit** (Iterate C — security-artifact-producer):
+
+- **GHAS API path** (preferred when available) — `import_github_findings.py` calls the `code-scanning/alerts` + `dependabot/alerts` GitHub APIs. Requires GitHub Advanced Security on private repos.
+- **shipwright-security artifact path** (fallback, fires when `cs_alerts is None`) — the importer downloads the latest successful run's `security-scan-results` artifact via `gh run download` and parses `findings.json`. Gated by a freshness window (`SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS`, default 14d) and only attempted on the default branch. This makes Shipwright work on private repos without paying for GHAS.
+
+Both paths produce the SAME dedup key and `launchPayload` contract — `by_source["gh-security:artifact"]` distinguishes the ingestion path for telemetry. See **[docs/security-ci-setup.md](security-ci-setup.md)** for the choice between paths and the activation procedure.
 
 Each action-unit carries a `launchPayload` — a ready-to-paste block containing the slash command + context + the relevant GitHub URL. The payload is **frozen at first append** (subsequent imports with the same key are deduplicated and the persisted payload is unchanged); live counts in `detail` are best-effort, so operators click through the GitHub URL for current state.
 

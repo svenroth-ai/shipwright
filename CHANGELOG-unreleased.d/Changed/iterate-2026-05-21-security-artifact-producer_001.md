@@ -1,0 +1,1 @@
+Docs: docs/security-ci-setup.md rewritten as a two-path setup guide (shipwright-security default vs GHAS alternative). docs/triage-inbox.md removed; the high-level user view moved into docs/guide.md §4.11 / §4.11.1, the technical detail lives with the producers.

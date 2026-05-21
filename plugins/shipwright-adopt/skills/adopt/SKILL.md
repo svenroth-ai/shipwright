@@ -660,7 +660,7 @@ Behavior contract:
 - **No migration of existing `known_issues.md` entries.** The two
   files coexist; `known_issues.md` continues to capture TODO/FIXME
   source markers, `triage_inbox.md` captures hook-emitted findings.
-  Reference: `docs/triage-inbox.md` for the pattern.
+  Reference: `docs/guide.md` § 4.11 for the pattern.
 
 ### Step F — Compliance Seeding
 

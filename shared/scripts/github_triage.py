@@ -172,6 +172,21 @@ def _db_extract_severity(alert: dict) -> str | None:
     return (alert.get("security_advisory") or {}).get("severity")
 
 
+def _artifact_extract_severity(finding: dict) -> str | None:
+    """Severity extractor for shipwright-security ``findings.json`` entries.
+
+    The artifact's ``findings[].severity`` is a top-level lowercase string
+    (``"critical"`` / ``"high"`` / etc.) — flat, unlike cs_alerts' nested
+    ``rule.security_severity_level`` and db_alerts' ``security_advisory.severity``.
+
+    Iterate C openai-9: derive truth from the list, never from the
+    redundant ``by_severity`` aggregate. The mapper iterates the
+    ``findings`` array via ``_severity_breakdown`` and ``_max_severity``,
+    both of which call this extractor.
+    """
+    return finding.get("severity")
+
+
 def _format_breakdown(counts: dict[str, int]) -> str:
     """Render a severity breakdown as a stable, comma-separated string.
 
@@ -231,6 +246,138 @@ def security_action_unit(
         f"Severity breakdown — code-scanning: {_format_breakdown(cs_breakdown)}; "
         f"dependabot: {_format_breakdown(db_breakdown)}.\n"
         f"Live state: {url}\n"
+        f"Source: triage item gh-security:{owner_repo}"
+    )
+    return {
+        "severity": severity,
+        "kind": _kind_for(severity),
+        "title": title[:160],
+        "detail": detail,
+        "dedup_key": f"{PREFIX_SECURITY}{owner_repo}",
+        "launch_payload": payload,
+    }
+
+
+# Length cap for the artifact-source detail line — protects against
+# pathological finding-array sizes (review finding openai-11).
+_ARTIFACT_DETAIL_MAX_LEN = 1024
+
+
+def security_action_unit_from_artifact(
+    *,
+    findings: list[dict],
+    owner_repo: str | None,
+    workflow_run_url: str | None = None,
+    dependabot: list[dict] | None = None,
+) -> dict | None:
+    """Collapse shipwright-security ``findings.json`` into the SAME
+    ``gh-security:{owner}/{repo}`` action-unit emitted by the GHAS-based
+    ``security_action_unit``, just sourced from the artifact instead.
+
+    Iterate C — security-artifact-producer. The artifact path fires when
+    GHAS Code Scanning is unavailable (``cs_alerts is None``). Output
+    shape is identical to the API path: same ``dedup_key``, same
+    ``severity`` / ``kind`` semantics, same ``launch_payload`` slash-
+    command shape — only the *source* of the data differs.
+
+    Hygiene boundaries enforced (external LLM review):
+
+    - **openai-9** — severity counts derived from iterating ``findings[]``,
+      never from the redundant aggregate. Each entry's ``severity`` is
+      normalised via ``triage_severity``; unknown values fall back to
+      ``medium``.
+    - **openai-11** — no raw finding strings (``rule``, ``description``,
+      ``affected_file``) are rendered into ``detail`` or
+      ``launch_payload``. Only aggregated counts + the stable workflow
+      run URL appear.
+    - **openai-13 / general** — ``detail`` is capped at
+      ``_ARTIFACT_DETAIL_MAX_LEN`` bytes so a pathological scanner
+      payload can't bloat the inbox.
+    - Stable shape (deterministic ordering via ``_format_breakdown``)
+      keeps the persisted ``launch_payload`` byte-identical across
+      reorder.
+
+    Returns ``None`` when:
+    - ``owner_repo`` is ``None`` (can't form a stable dedup key) — same
+      contract as the API path.
+    - ``findings`` is empty AND no other security source is available
+      (nothing to triage). A 0-finding scan is a *clean* state, handled
+      by the orchestrator's auto-resolve gate; this function never emits
+      an empty action-unit unless Dependabot has its own findings to
+      surface.
+
+    ``dependabot`` may be provided when Dependabot succeeded but GHAS
+    Code Scanning didn't — the artifact path is the SAST source but
+    Dependabot is orthogonal and free, so its real counts are rendered
+    alongside the artifact's in the detail line (external review code
+    finding openai-4 — Dependabot is not gated by `cs_alerts`).
+    """
+    if owner_repo is None:
+        return None
+
+    artifact_breakdown = _severity_breakdown(findings, _artifact_extract_severity)
+    db_breakdown = (
+        _severity_breakdown(dependabot, _db_extract_severity)
+        if dependabot
+        else None
+    )
+    # Emit only when at least one source has findings to surface.
+    # Empty artifact + empty/missing dependabot → no-op (orchestrator
+    # routes to auto-resolve for clean state).
+    if not findings and not dependabot:
+        return None
+
+    all_severities = [
+        triage_severity(_artifact_extract_severity(f)) for f in findings
+    ]
+    if dependabot:
+        all_severities += [
+            triage_severity(_db_extract_severity(a)) for a in dependabot
+        ]
+    severity = _max_severity(all_severities)
+    tab_url = _security_url(owner_repo)
+    # Workflow run URL takes the operator straight to the CI summary;
+    # the security tab URL is the long-term curation surface. Both
+    # appear in the payload; only the run URL is repo-stable enough to
+    # link directly to current findings on a private-no-GHAS repo.
+    run_url = workflow_run_url or tab_url
+
+    artifact_total = len(findings)
+    db_total = len(dependabot or [])
+    title = (
+        f"GitHub security: {artifact_total} shipwright-security"
+        + (f" + {db_total} Dependabot" if db_total else "")
+        + f" finding(s) ({severity})"
+    )
+    db_summary = (
+        _format_breakdown(db_breakdown) if db_breakdown is not None
+        else "(unavailable)"
+    )
+    detail = (
+        f"Repo {owner_repo} | "
+        f"code-scanning: (unavailable) | "
+        f"dependabot: {db_summary} | "
+        f"shipwright-security: {_format_breakdown(artifact_breakdown)} | "
+        f"run: {run_url}"
+    )
+    if len(detail) > _ARTIFACT_DETAIL_MAX_LEN:
+        detail = detail[: _ARTIFACT_DETAIL_MAX_LEN - 1] + "…"
+    db_payload_summary = (
+        f"; dependabot: {_format_breakdown(db_breakdown)}"
+        if db_breakdown is not None
+        else ""
+    )
+    payload = (
+        f"/shipwright-security\n"
+        f"\n"
+        f"Context: the shipwright-security CI workflow reports "
+        f"{artifact_total} open finding(s) for {owner_repo} "
+        f"(GHAS Code Scanning is not configured).\n"
+        f"Severity breakdown — shipwright-security: "
+        f"{_format_breakdown(artifact_breakdown)}"
+        f"{db_payload_summary}.\n"
+        f"Workflow run: {run_url}\n"
+        f"Re-scan locally: see docs/security-ci-setup.md\n"
         f"Source: triage item gh-security:{owner_repo}"
     )
     return {
@@ -550,6 +697,19 @@ def import_findings(project_root) -> dict:
     counts the one-shot legacy items dismissed this run; ``resolved``
     counts current-model items dismissed because their key left the
     finding set (mirror of #39's behavior).
+
+    The ``by_source`` map carries one key per action-unit prefix; the
+    value is the emission count this run, or ``None`` when that prefix's
+    underlying fetch failed (auto-resolve is gated on success — ADR-052).
+
+    Iterate C (security-artifact-producer) adds the parallel artifact
+    ingestion path. When GHAS Code Scanning is unavailable
+    (``cs_alerts is None``), the ``shipwright-security`` workflow's
+    ``findings.json`` artifact is fetched as a third source and emitted
+    as the SAME ``gh-security:{owner}/{repo}`` action-unit. The
+    ``by_source`` map then carries an additional ``gh-security:artifact``
+    key whose value is the artifact-sourced emission count this run —
+    so telemetry / audit can distinguish API vs artifact emission.
     """
     if not github_api.gh_available():
         return {
@@ -569,11 +729,40 @@ def import_findings(project_root) -> dict:
     db_alerts = github_api.fetch_dependabot_alerts()
     ss_alerts = github_api.fetch_secret_scanning_alerts()
 
+    # Iterate C — security-artifact-producer. The artifact path fires ONLY
+    # when ``cs_alerts is None`` (i.e. GHAS Code Scanning is unavailable —
+    # private repo without GHAS). Probing gh-run-download when GHAS works
+    # would (a) waste network bandwidth and (b) risk double-counting the
+    # same semgrep/trivy findings that the workflow's SARIF upload already
+    # streamed into Code Scanning. Dependabot's status is irrelevant —
+    # Dependabot is free and orthogonal to the SAST source (external LLM
+    # review HIGH #1 — gemini-1).
+    artifact_run: dict | None = None
+    artifact_findings: list[dict] | None = None
+    if cs_alerts is None:
+        try:
+            artifact_run = github_api.latest_security_workflow_run()
+            if artifact_run is not None:
+                artifact_findings = github_api.download_security_findings(
+                    artifact_run.get("id") or 0,
+                )
+        except Exception as exc:  # noqa: BLE001 — fail-soft, never block
+            sys.stderr.write(
+                f"[github-triage] artifact fetch failed: "
+                f"{type(exc).__name__}: {exc}\n"
+            )
+            artifact_run = None
+            artifact_findings = None
+
     fetch_succeeded = {
         "code_scanning": cs_alerts is not None,
         "dependabot": db_alerts is not None,
         "secret_scanning": ss_alerts is not None,
         "runs": ci_runs is not None,
+        # Distinguish ``download succeeded with 0/n findings`` from
+        # ``download failed / never tried``. Auto-resolve depends on
+        # this per ADR-052.
+        "artifact": artifact_findings is not None,
     }
 
     # Run the legacy-migration sweep FIRST so it never races against the
@@ -589,10 +778,10 @@ def import_findings(project_root) -> dict:
         migrated = 0
 
     # Build action-units (None when nothing to triage or repo unresolvable).
-    # Security requires BOTH feeds succeeded — emitting on partial fetch would
-    # freeze a payload claiming "0 X alerts" when X actually failed to fetch.
-    # The auto-resolve gate has the same shape; emit and resolve are symmetric.
-    # Code review MED #1 of iterate-2026-05-20-triage-launch-surface.
+    # Security requires BOTH GHAS feeds succeeded — emitting on partial fetch
+    # would freeze a payload claiming "0 X alerts" when X actually failed to
+    # fetch. The auto-resolve gate has the same shape; emit and resolve are
+    # symmetric. Code review MED #1 of iterate-2026-05-20-triage-launch-surface.
     both_security_feeds_ok = (
         cs_alerts is not None and db_alerts is not None
     )
@@ -603,6 +792,23 @@ def import_findings(project_root) -> dict:
             owner_repo=owner_repo,
         )
         if both_security_feeds_ok
+        else None
+    )
+
+    # Iterate C — security-artifact-producer: parallel-source path. Only
+    # consulted when GHAS Code Scanning is unavailable (``cs_alerts is None``).
+    # Dependabot is orthogonal — its real counts (when available) are
+    # passed through to the artifact mapper so the detail line surfaces
+    # them alongside the artifact source. External review code finding
+    # openai-4: hard-coding dependabot=(unavailable) would lose signal.
+    artifact_unit = (
+        security_action_unit_from_artifact(
+            findings=artifact_findings,
+            owner_repo=owner_repo,
+            workflow_run_url=(artifact_run or {}).get("html_url"),
+            dependabot=db_alerts,
+        )
+        if (cs_alerts is None and artifact_findings is not None)
         else None
     )
     secrets_unit = (
@@ -660,6 +866,22 @@ def import_findings(project_root) -> dict:
         sec_id = _maybe_append(security_unit, PREFIX_SECURITY)
         by_source[PREFIX_SECURITY] = 1 if sec_id else 0
         if sec_id:
+            appended += 1
+    elif cs_alerts is None and fetch_succeeded["artifact"]:
+        # Iterate C — artifact path. ``cs_alerts is None`` (no GHAS) AND
+        # the shipwright-security workflow yielded a fresh artifact.
+        # Dependabot's availability is independent — its real counts
+        # are already passed into the artifact mapper above. The
+        # auto-resolve gate is opened for PREFIX_SECURITY so a clean
+        # scan (0 findings) can dismiss a previously-open item — same
+        # githubResolved semantics as the GHAS API path. ``by_source``
+        # records this ingestion path distinctly per AC-5.
+        if owner_repo is not None:
+            resolvable_prefixes.add(PREFIX_SECURITY)
+        art_id = _maybe_append(artifact_unit, PREFIX_SECURITY)
+        by_source[PREFIX_SECURITY] = None  # API path not active
+        by_source["gh-security:artifact"] = 1 if art_id else 0
+        if art_id:
             appended += 1
     else:
         by_source[PREFIX_SECURITY] = None

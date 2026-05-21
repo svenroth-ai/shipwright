@@ -17,10 +17,13 @@ Part of iterate-2026-05-19-github-triage-importer. Sibling module:
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -28,6 +31,27 @@ from urllib.parse import quote
 # `gh` calls are network-bound — a bounded timeout keeps a hung request
 # from ever stalling the SessionStart hook.
 _TIMEOUT_SECONDS = 30
+
+# Artifact download can pull a few-MB zip on slow networks. Give it a
+# longer ceiling than a JSON API call, but still strictly bounded.
+_DOWNLOAD_TIMEOUT_SECONDS = 60
+
+# Default freshness window for the shipwright-security artifact path —
+# 14 days mirrors a typical sprint cycle. A run older than this is
+# treated as stale (returns None from latest_security_workflow_run).
+# Overridable via the env var (Iterate C — external review HIGH #5).
+_ARTIFACT_MAX_AGE_DEFAULT_DAYS = 14.0
+_ENV_ARTIFACT_MAX_AGE = "SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS"
+
+# Workflow file basename used by the shipwright-security CI scan. The
+# canonical path is locked by ``shared/scripts/lib/security_workflow.py``;
+# this constant is the URL-suffix form (basename only) for the
+# ``actions/workflows/{file}/runs`` endpoint.
+_SECURITY_WORKFLOW_FILE = "security.yml"
+
+# Artifact name produced by ``.github/workflows/security.yml`` —
+# ``actions/upload-artifact@v4 with: name: security-scan-results``.
+_SECURITY_ARTIFACT_NAME = "security-scan-results"
 
 
 def gh_available() -> bool:
@@ -217,3 +241,152 @@ def fetch_workflow_runs(branch: str) -> list[dict] | None:
         if isinstance(runs, list):
             return runs
     return None
+
+
+# ---------------------------------------------------------------------------
+# Artifact-based security ingestion (Iterate C —
+# security-artifact-producer). Added for repos without GHAS Code
+# Scanning: pulls the shipwright-security workflow's ``findings.json``
+# artifact as a third parallel source alongside cs_alerts + db_alerts.
+# ---------------------------------------------------------------------------
+
+def artifact_max_age_days() -> float:
+    """Freshness cutoff (in days) for the shipwright-security artifact path.
+
+    Default 14d; overridable via ``SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS``.
+    Non-positive / unparseable env values fall back to the default —
+    matches the throttle-hours resolution pattern in github_triage.
+    """
+    raw = os.environ.get(_ENV_ARTIFACT_MAX_AGE)
+    if raw:
+        try:
+            parsed = float(raw)
+            if parsed > 0:
+                return parsed
+        except ValueError:
+            pass
+    return _ARTIFACT_MAX_AGE_DEFAULT_DAYS
+
+
+def latest_security_workflow_run() -> dict | None:
+    """Latest successful run of ``.github/workflows/security.yml`` on the
+    default branch, gated by the freshness cutoff.
+
+    Iterate C contract:
+
+    1. Branch is auto-resolved via ``default_branch()`` — callers do NOT
+       supply it (review finding openai-7: explicit branch handling).
+    2. API query: ``actions/workflows/security.yml/runs?branch=<default>
+       &status=success&per_page=10`` — filters at the source so feature-
+       branch runs cannot leak through (review finding openai-6,
+       gemini-3).
+    3. The most recent run whose ``created_at`` is within the freshness
+       cutoff (``artifact_max_age_days()``) is returned. Older runs
+       are skipped (review finding openai-5).
+    4. ``None`` on any failure — gh missing, API error, no successful
+       run, all runs too stale, unparseable timestamps. Distinguish
+       failure from empty per the ADR-052 invariant.
+    """
+    branch = default_branch()
+    encoded_branch = quote(branch, safe="")
+    data = _gh_api(
+        f"repos/{{owner}}/{{repo}}/actions/workflows/"
+        f"{_SECURITY_WORKFLOW_FILE}/runs"
+        f"?branch={encoded_branch}&status=success&per_page=10"
+    )
+    if not isinstance(data, dict):
+        return None
+    runs = data.get("workflow_runs")
+    if not isinstance(runs, list) or not runs:
+        return None
+    cutoff = datetime.now(timezone.utc).timestamp() - (
+        artifact_max_age_days() * 86400.0
+    )
+    for run in runs:
+        if not isinstance(run, dict):
+            continue
+        # Recency check uses ``run_started_at`` when present — it
+        # reflects when the workflow actually started executing, closer
+        # to the "scan completion" timestamp than ``created_at`` which
+        # is when the run was queued. ``created_at`` is the universally
+        # present fallback (external review code finding openai-3).
+        ts_str = run.get("run_started_at") or run.get("created_at")
+        if not isinstance(ts_str, str):
+            continue
+        try:
+            ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        if ts.timestamp() >= cutoff:
+            return run
+    return None
+
+
+def download_security_findings(run_id: int) -> list[dict] | None:
+    """Download the ``security-scan-results`` artifact from a workflow run
+    and return its ``findings`` array.
+
+    Iterate C contract:
+
+    1. Subprocess via argv list, ``shell=False`` (review findings
+       openai-10, gemini-4 — command-injection hygiene).
+    2. Robust file discovery via ``rglob`` — works for both flat
+       (``findings.json``) and nested (``subdir/findings.json``)
+       artifact layouts (review finding openai-14).
+    3. Semantic validation — ``findings`` MUST be a list. Trusting the
+       aggregate ``by_severity`` / ``total_findings`` would be unsafe
+       if they disagreed with the actual array (review finding
+       openai-9). Returns ``None`` on a non-list ``findings`` value.
+    4. ``None`` on ANY failure: gh missing (FileNotFoundError), gh
+       non-zero exit, file not found, JSON parse error, semantic
+       validation failure. Empty list ``[]`` is a valid success state
+       (clean scan) — distinguished from failure per ADR-052.
+    5. Tempdir is created via ``tempfile.mkdtemp`` and removed in a
+       finally block — never leaked even on exception paths.
+    """
+    tmpdir = tempfile.mkdtemp(prefix="shipwright-artifact-")
+    try:
+        cmd: list[str] = [
+            "gh", "run", "download", str(run_id),
+            "--name", _SECURITY_ARTIFACT_NAME,
+            "--dir", tmpdir,
+        ]
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=_DOWNLOAD_TIMEOUT_SECONDS,
+            )
+        except (OSError, subprocess.SubprocessError):
+            return None
+        if result.returncode != 0:
+            return None
+        # Robust discovery: gh usually flattens, but nested layouts are tolerated.
+        matches = list(Path(tmpdir).rglob("findings.json"))
+        if not matches:
+            return None
+        try:
+            raw = matches[0].read_text(encoding="utf-8")
+            payload = json.loads(raw)
+        except (OSError, json.JSONDecodeError):
+            return None
+        if not isinstance(payload, dict):
+            return None
+        findings = payload.get("findings")
+        # Semantic validation — ``findings`` must be a list (possibly empty).
+        # Trusting the redundant aggregate would be unsafe if it disagreed.
+        if not isinstance(findings, list):
+            return None
+        # Defensive: every element should be a dict; non-dict entries
+        # are silently dropped so the caller's mapper never crashes on
+        # malformed individual entries.
+        return [f for f in findings if isinstance(f, dict)]
+    finally:
+        # Best-effort cleanup — never raise if the tempdir already vanished.
+        try:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+        except OSError:
+            pass

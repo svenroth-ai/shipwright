@@ -1,0 +1,1 @@
+Triage Inbox: artifact-based ingestion path for the gh-security action-unit. When GHAS Code Scanning is unavailable (private repo without GHAS), the importer downloads the latest fresh shipwright-security workflow's findings.json and emits the same gh-security:{owner}/{repo} action-unit (no schema change). Freshness gated via SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS (default 14d).

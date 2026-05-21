@@ -241,3 +241,64 @@ per-finding mapping):
   if `fetch_dependabot_alerts()` succeeded; etc. A failed fetch never
   triggers that source's legacy migration (preserves the ADR-052
   fail-soft invariant).
+
+Refined by `iterate-2026-05-21-security-artifact-producer` (parallel
+artifact ingestion path for the `gh-security` action-unit — closes the
+Triage Inbox gap on private repos without GHAS):
+
+- (E) Given GHAS Code Scanning is unavailable (`fetch_code_scanning_alerts()`
+  returns `None` — typical on private repos without GHAS), and a recent
+  successful run of `.github/workflows/security.yml` on the default
+  branch exists with a downloadable `security-scan-results` artifact
+  whose `findings.json` lists ≥1 finding, when `import_findings` runs,
+  then exactly one `gh-security:{owner}/{repo}` action-unit is appended
+  to `.shipwright/triage.jsonl`: severity = max severity across the
+  artifact's `findings` array (derived by iterating the list — the
+  redundant `by_severity` aggregate is NOT trusted); `detail` shows
+  per-source counts independently for code-scanning / dependabot /
+  shipwright-security with `(unavailable)` only for `None` sources;
+  `launchPayload` starts with `/shipwright-security` + the workflow
+  run's `html_url`.
+- (E) Given Dependabot is enabled on the same repo and
+  `fetch_dependabot_alerts()` succeeds while `fetch_code_scanning_alerts()`
+  returns `None`, when `import_findings` runs, then the artifact-source
+  action-unit renders Dependabot's real counts in `detail`
+  (Dependabot's status is orthogonal to GHAS — it is free and never
+  gates the artifact path).
+- (E) Given GHAS Code Scanning is active
+  (`fetch_code_scanning_alerts()` returns a list), when `import_findings`
+  runs, then the artifact ingestion path is NOT taken — `gh run download`
+  is never invoked and no double-counting between GHAS-uploaded SARIF
+  and the artifact occurs. The action-unit is emitted only from
+  `cs_alerts` + `db_alerts`.
+- (E) Given the workflow's latest successful run on the default branch
+  is older than `SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS` days (env var,
+  default 14), when `latest_security_workflow_run()` runs, then it
+  returns `None`. The artifact ingestion path is skipped and the
+  auto-resolve pass does NOT mass-resolve previously-open items (a
+  stale clean scan never resolves real findings — ADR-052 invariant).
+- (E) Given the artifact path emitted an action-unit in a previous run
+  and a subsequent fresh successful run yields 0 findings (clean scan,
+  within the freshness window), when `import_findings` next runs, then
+  the previously-open `gh-security:{owner}/{repo}` item is dismissed
+  with `reason="githubResolved"` — same auto-resolve semantics as the
+  GHAS API path.
+- (E) Given the importer ran via the artifact ingestion path, when
+  inspecting `import_findings`'s return dict, then `by_source` carries
+  the key `gh-security:artifact` whose value is the artifact-sourced
+  emission count this run — distinguishing API vs artifact telemetry
+  without changing the persisted action-unit's `source="github"` tag.
+- (E) Given any failure mode in the artifact path (gh missing /
+  unauthenticated, no successful run, run too old, artifact expired,
+  non-zero exit from `gh run download`, malformed `findings.json` —
+  truncated JSON, non-list `findings`, missing keys), when
+  `import_findings` runs, then the helpers return `None`, no emission
+  occurs on the artifact path, the auto-resolve pass does NOT
+  mass-resolve previously-open items, and the SessionStart hook still
+  exits 0 (fail-soft).
+- (E) Given the artifact path emits an action-unit, when its persisted
+  `detail` and `launchPayload` are inspected, then neither carries
+  raw scanner-controlled strings (`rule` identifiers, finding
+  `description` text, `affected_file` paths) — only aggregated counts,
+  the `owner_repo` slug, and the stable workflow run URL. `detail` is
+  capped at 1024 bytes defensively.
