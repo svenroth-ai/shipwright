@@ -9,6 +9,7 @@ NEVER silently overwritten — see `preserve_existing.py` for the policy.
 
 from __future__ import annotations
 
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -38,6 +39,48 @@ from lib.preserve_existing import (  # noqa: E402
 # real project ever reaches >999 ADRs, that's a Shipwright-wide
 # convention upgrade, not a silent serialisation choice in adopt.
 ADR_OUTPUT_MAX_NUMBER = 999
+
+# Architecture-marker format. The marker lives on line 2 of architecture.md
+# (after the H1 title) and lets the Iterate-C drift detector compare the
+# last-sync SHA against new ADRs with `architecture_impact ∈ {component,
+# data-flow}` since that commit. Bump ``v=`` whenever the marker grammar
+# changes; parsers stay tolerant of older versions ("v=1 / no marker"
+# behaves as "no last_sync recorded").
+ARCHITECTURE_MARKER_VERSION = 2
+NO_ARCHITECTURE_SYNC = "no-sync-recorded"
+_ARCHITECTURE_MARKER_RE = re.compile(
+    r"<!--\s*shipwright:architecture\s+v=(?P<version>\d+)\s+last-sync=(?P<sha>\S+)\s*-->"
+)
+_COMMIT_SHA_RE = re.compile(r"^[0-9a-f]{7,40}$")
+
+
+def render_architecture_marker(commit_sha: str | None) -> str:
+    """Render the architecture drift-detection HTML comment marker."""
+    if commit_sha and _COMMIT_SHA_RE.match(commit_sha):
+        last_sync = commit_sha
+    else:
+        last_sync = NO_ARCHITECTURE_SYNC
+    return (
+        f"<!-- shipwright:architecture v={ARCHITECTURE_MARKER_VERSION} "
+        f"last-sync={last_sync} -->"
+    )
+
+
+def parse_architecture_marker(content: str) -> dict[str, str] | None:
+    """Parse the architecture marker out of architecture.md content.
+
+    Returns ``None`` when no marker is present (pre-marker era — drift
+    detector should treat this as "no last_sync known"). A marker with
+    an invalid SHA is normalised to ``NO_ARCHITECTURE_SYNC`` so callers
+    can rely on the sha being either a real commit or that sentinel.
+    """
+    match = _ARCHITECTURE_MARKER_RE.search(content)
+    if not match:
+        return None
+    sha = match.group("sha")
+    if sha != NO_ARCHITECTURE_SYNC and not _COMMIT_SHA_RE.match(sha):
+        sha = NO_ARCHITECTURE_SYNC
+    return {"version": match.group("version"), "last_sync": sha}
 
 
 def _next_adr_start_number(project_root: Path) -> int:
@@ -148,6 +191,7 @@ def _render_architecture_md(
     data_flow_description: str,
     profile_name: str,
     see_also_links: list[str] | None = None,
+    commit_sha: str | None = None,
 ) -> str:
     runtime = _fmt_stack_line(stack.get("runtime", {}))
     frontend = _fmt_stack_line(stack.get("frontend", {}))
@@ -168,7 +212,9 @@ def _render_architecture_md(
             "_Existing user-facing documentation discovered by /shipwright-adopt._\n\n"
             + bullets + "\n"
         )
+    marker = render_architecture_marker(commit_sha)
     return f"""# Architecture — {project_name}
+{marker}
 
 ## System Overview
 
@@ -615,6 +661,7 @@ def write_agent_docs(
         architecture_diagram=architecture_diagram,
         data_flow_description=data_flow_description, profile_name=profile,
         see_also_links=user_facing_docs,
+        commit_sha=commit_sha,
     ), encoding="utf-8")
     record_preservation_action(
         project_root,

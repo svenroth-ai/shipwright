@@ -55,12 +55,25 @@ def build_fallback_enrichment(
             "acceptance_draft": "TBD",
         })
 
+    # Mermaid flowchart so VS Code (and GitHub) render the diagram natively
+    # instead of treating ASCII art as a fenced code block. Layer-2 enrichment
+    # can replace this with a richer hand-authored diagram; the fallback keeps
+    # the output parseable without an LLM round-trip.
     layers = snapshot.get("folders", {}).get("layers", [])
-    diagram_lines = ["```", "  (auto-generated fallback diagram)", ""]
-    for layer in layers:
-        diagram_lines.append(f"  [{layer.get('name', '?')}]")
-        for path in (layer.get("paths") or [])[:5]:
-            diagram_lines.append(f"    - {path}")
+    diagram_lines = [
+        "```mermaid",
+        "flowchart TB",
+        "  %% auto-generated fallback diagram",
+    ]
+    if layers:
+        for idx, layer in enumerate(layers):
+            name = layer.get("name", "?")
+            paths = (layer.get("paths") or [])[:5]
+            label_lines = [name] + [f"- {p}" for p in paths]
+            label = "<br/>".join(label_lines)
+            diagram_lines.append(f"  L{idx}[\"{label}\"]")
+    else:
+        diagram_lines.append("  L0[\"(no layers detected)\"]")
     diagram_lines.append("```")
     architecture_diagram = "\n".join(diagram_lines)
 

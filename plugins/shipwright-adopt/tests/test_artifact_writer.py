@@ -7,7 +7,12 @@ import pytest
 
 from lib.artifact_writer import (
     ADR_OUTPUT_MAX_NUMBER,
+    ARCHITECTURE_MARKER_VERSION,
+    NO_ARCHITECTURE_SYNC,
+    _render_architecture_md,
     _render_decision_log,
+    parse_architecture_marker,
+    render_architecture_marker,
     write_agent_docs,
     write_claude_md,
     write_spec,
@@ -232,3 +237,102 @@ def test_write_spec_has_fr_ids(tmp_path: Path) -> None:
     assert re.search(r"\bFR-\d+\.\d+\b", content)
     assert "Demo app." in content
     assert "CI pipeline must pass" in content
+
+
+# ---------------------------------------------------------------------------
+# Iterate A.1 — architecture marker (drift detector input)
+# ---------------------------------------------------------------------------
+
+
+def test_render_architecture_marker_with_valid_sha() -> None:
+    """A valid 7-40 char hex sha renders verbatim into the marker comment."""
+    marker = render_architecture_marker("abc1234")
+    assert "v=2" in marker
+    assert "last-sync=abc1234" in marker
+
+    long_sha = "0123456789abcdef0123456789abcdef01234567"  # 40 chars
+    assert f"last-sync={long_sha}" in render_architecture_marker(long_sha)
+
+
+def test_render_architecture_marker_falls_back_for_invalid_sha() -> None:
+    """Anything that isn't a valid commit-sha → ``no-sync-recorded`` sentinel."""
+    for bad in (None, "", "not-a-sha", "ABCDEF1", "abc12g4", "abc"):
+        marker = render_architecture_marker(bad)
+        assert NO_ARCHITECTURE_SYNC in marker, f"bad={bad!r}"
+        assert "v=2" in marker
+
+
+def test_parse_architecture_marker_round_trips() -> None:
+    """A rendered marker survives parse + lookup unchanged."""
+    sha = "abc1234"
+    marker = render_architecture_marker(sha)
+    parsed = parse_architecture_marker(f"# Heading\n{marker}\n\nbody")
+    assert parsed is not None
+    assert parsed["version"] == str(ARCHITECTURE_MARKER_VERSION)
+    assert parsed["last_sync"] == sha
+
+
+def test_parse_architecture_marker_missing_returns_none() -> None:
+    """Pre-marker era (no marker line) → None so callers fall back to "unknown"."""
+    assert parse_architecture_marker("# Architecture — Demo\n\nno marker here\n") is None
+
+
+def test_parse_architecture_marker_invalid_sha_normalises_to_sentinel() -> None:
+    """A marker carrying garbage in the sha slot is parsed but the sha is
+    normalised to ``NO_ARCHITECTURE_SYNC`` — callers never have to revalidate."""
+    marker = "<!-- shipwright:architecture v=2 last-sync=not-a-sha -->"
+    parsed = parse_architecture_marker(f"# H\n{marker}\n")
+    assert parsed is not None
+    assert parsed["last_sync"] == NO_ARCHITECTURE_SYNC
+    assert parsed["version"] == "2"
+
+
+def test_parse_architecture_marker_tolerates_v1() -> None:
+    """v=1 markers (pre-this-iterate) parse without error; drift detector
+    decides how to treat them."""
+    marker = "<!-- shipwright:architecture v=1 last-sync=abc1234 -->"
+    parsed = parse_architecture_marker(f"# H\n{marker}\n")
+    assert parsed is not None
+    assert parsed["version"] == "1"
+    assert parsed["last_sync"] == "abc1234"
+
+
+def test_render_architecture_md_embeds_marker(tmp_path: Path) -> None:
+    """The marker lives directly under the H1 so the drift detector can read
+    it without scanning the rest of the doc."""
+    md = _render_architecture_md(
+        project_name="Demo",
+        stack={"runtime": {}, "frontend": {}, "backend": {}, "database": {}, "auth": {}},
+        layers=[],
+        architecture_diagram="```mermaid\nflowchart TB\n  A-->B\n```",
+        data_flow_description="...",
+        profile_name="vite-hono",
+        commit_sha="abc1234",
+    )
+    lines = md.splitlines()
+    assert lines[0] == "# Architecture — Demo"
+    assert "shipwright:architecture" in lines[1]
+    assert "last-sync=abc1234" in lines[1]
+    assert "```mermaid" in md
+
+
+def test_write_agent_docs_writes_architecture_marker(tmp_path: Path) -> None:
+    """Smoke-test the writer end-to-end — the marker should land in
+    ``.shipwright/agent_docs/architecture.md`` with the commit_sha threaded
+    through from the caller."""
+    write_agent_docs(
+        tmp_path,
+        project_name="Demo", profile="vite-hono", scope="full_app",
+        stack={"runtime": {}, "frontend": {}, "backend": {}, "database": {}, "auth": {}},
+        layers=[], loc_by_layer={},
+        architecture_diagram="```mermaid\nflowchart TB\nA-->B\n```",
+        data_flow_description="",
+        conventions={}, conventions_prose="",
+        features_count=0, commits_total=1, contributors_total=1,
+        nested_excluded=[], commit_sha="abc1234", retroactive_adrs=[],
+    )
+    arch = (tmp_path / ".shipwright" / "agent_docs" / "architecture.md").read_text(
+        encoding="utf-8"
+    )
+    parsed = parse_architecture_marker(arch)
+    assert parsed == {"version": "2", "last_sync": "abc1234"}
