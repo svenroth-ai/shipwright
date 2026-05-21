@@ -7,8 +7,8 @@
 
 ## Status
 
-- **Started:** _pending — new session has not picked up yet_
-- **Current iterate:** none
+- **Started:** 2026-05-21 (this session)
+- **Current iterate:** B.3 (next)
 - **Baseline (campaign start, 2026-05-21):**
   - `main` HEAD: `5c06748` (canon-lint allowlist `.shipwright/planning/adr/**.md`)
   - `shared/tests/`: 2101 passed, 12 skipped, 18 deselected
@@ -26,15 +26,17 @@
 
 ### B.2 — SBOM polish
 
-- **Status:** not started
-- **Branch:** _pending_
-- **PR:** _pending_
-- **Squash commit:** _pending_
-- **Predicted ADR:** ADR-056
-- **External review findings:** _pending_
-- **External code-review findings:** _pending_
-- **Test deltas:** _pending_
-- **Deviations from handover:** _pending_
+- **Status:** merged
+- **Branch:** `iterate/b2-sbom-polish` (deleted)
+- **PR:** #57
+- **Squash commit:** `47ab03d`
+- **Predicted ADR:** ADR-056 (filed at `.shipwright/planning/adr/056-sbom-undeclared-triage.md`)
+- **External review findings:** 12 (1 HIGH / 9 MED / 2 LOW) — all addressed; full disposition table in ADR-056.
+- **External code-review findings:** 3 (2 MED accepted-and-fixed: malformed-manifest guard + error surfacing; 1 LOW rejected-with-reason: test fixture path counts).
+- **Test deltas:** compliance 351 → 372 (+21); shared 2101 maintained (canon-lint allowlist gained `.shipwright/planning/campaigns/**.md` to clear regression introduced by #56).
+- **Deviations from handover:**
+  - Folded a chore-style canon-lint allowlist fix into the same commit (handover treated `5c06748` as baseline 2101; the campaign-state file from #56 had reintroduced one failure on the migration linter). In-scope per handover step-5 footnote.
+  - `sbom_generator.py` crossed the 300-LOC guideline (now 339 LOC); test file at 343 LOC. Producer + helpers still cohesive; split into `sbom_triage.py` deferred to a future iterate if C.2 / future adds more producers.
 
 ### B.3 — test-evidence layer column + per-layer FAIL triage
 

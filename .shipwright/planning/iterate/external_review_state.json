@@ -1,9 +1,9 @@
 {
   "status": "completed",
-  "timestamp": "2026-05-21T14:34:43.953990+00:00",
+  "timestamp": "2026-05-21T15:03:12.311026+00:00",
   "provider": "openrouter",
-  "findings_count": 12,
+  "findings_count": 18,
   "self_review_fallback_ran": false,
-  "reason": "B.2 iterate spec review: 1 HIGH (launchPayload chaining) + 11 MED/LOW; addressed inline + recorded dispositions in ADR-056",
+  "reason": "B.3 iterate review: 2 HIGH (skipped-test false positive + negative input validation) + 11 MED + 5 LOW; addressed inline",
   "review_mode": "iterate"
 }
