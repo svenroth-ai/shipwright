@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-05-21T12:31:00Z
-Total commits: 681
+Generated: 2026-05-21T19:07:21Z
+Total commits: 693
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 228
-    "fix" : 179
-    "chore" : 116
-    "docs" : 101
+    "feat" : 235
+    "fix" : 180
+    "chore" : 117
+    "docs" : 104
     "refactor" : 34
     "test" : 15
     "other" : 7
@@ -19,10 +19,17 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 228 commits
+### Features (feat) — 235 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-21 | scripts | plugin-cache vs repo drift check (C.3) (#62) | 02eb08a6fdbb |
+| 2026-05-21 | compliance | doc-hygiene audit detectors F4-F7 (C.2) (#61) | 9008cf4b6d0b |
+| 2026-05-21 | record_event | hard-enforce FR-or-change-type gate at finalize (C.1) (#60) | 388fa55051b4 |
+| 2026-05-21 | compliance | RTM ↔ Triage deep-link + Coverage Summary rewrite (B.4) (#59) | 48024b1684fa |
+| 2026-05-21 | compliance | test-evidence Layer column + per-layer FAIL triage (B.3) (#58) | ccb2b987e77b |
+| 2026-05-21 | compliance | SBOM undeclared-license triage producer (B.2) (#57) | 47ab03d033de |
+| 2026-05-21 | compliance | mode-aware dashboard + Why-warn column + Triage open (B.1) (#53) | c24dd6eeb482 |
 | 2026-05-21 | triage | producer contract schema + RTM-link fields + inbox polish (Iterate B0) (#52) | f2aaf89cfea2 |
 | 2026-05-21 | handoff | 4-stage session-id fallback chain (Iterate A.4) (#50) | 822f5fae9f45 |
 | 2026-05-21 | adr | hard-reject ADR field overflow + spec_ref + INDEX.md (A.3) (#49) | 9addb9a3b404 |
@@ -252,10 +259,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 179 commits
+### Fixes (fix) — 180 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-21 | triage | gate gh-security action-unit emit on artifact stub in test fixture (#54) | f4a1ff11636e |
 | 2026-05-21 | build | section-builder.md JSON examples conform to result schema (#51) | 823225e0942c |
 | 2026-05-21 | meta | post-#43 hygiene — promote escape-cell drift test + allowlist test_results.json (#45) | 3b34fcaeb502 |
 | 2026-05-21 | shared | escape pipe and newline in markdown table cells (#43) | 46b9ac47da28 |
@@ -436,10 +444,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 116 commits
+### Chores (chore) — 117 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-21 | canon | allowlist .shipwright/planning/adr/**.md in compliance migration (#55) | 5c067485c5d7 |
 | 2026-05-20 | phase-0a | backfill FRs + add change_type schema field (#42) | fd212b23ab58 |
 | 2026-05-19 | — | remove gitignore entry for deleted triage handoff doc | 90af09980d93 |
 | 2026-05-18 | compliance | regenerate artefacts after launch-blocker fix iterate | a12455cc3128 |
@@ -557,10 +566,13 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 101 commits
+### Documentation (docs) — 104 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-21 | campaign | empirical-verification handover for B.2→C.3 (#64) | 376c870345c3 |
+| 2026-05-21 | campaign | finalize artifact-polish state file (B.2→C.3 complete) (#63) | d27a8894f52e |
+| 2026-05-21 | campaign | handover + state file for B.2→C.3 completion (#56) | 6e465a8793a5 |
 | 2026-05-21 | test-status | record Phase 0d FAIL-row dismissals (shipwright) (#46) | f2a180edf5b7 |
 | 2026-05-21 | spec | append FR-01.14 acceptance criteria for the artifact ingestion path | 861c0fd83d1d |
 | 2026-05-16 | iterate | fix SKILL.md run_id format + stale F11 events.jsonl grep | 70f52f49f207 |
@@ -744,7 +756,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 681 |
+| Total commits | 693 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 681 |
+| Human-authored commits | 693 |
 

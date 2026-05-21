@@ -1,12 +1,12 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-21T12:31:00Z
+Generated: 2026-05-21T19:07:21Z
 
 ## Requirements Coverage
 
 | Requirement | Title | Priority | Verified By | Tests | Last Verified | Status |
 |-------------|-------|----------|-------------|-------|---------------|--------|
-| [FR-01.01](../../.shipwright/planning/01-adopted/spec.md#fr-0101) | Orchestrate the full Shipwright SDLC pipeline — drives proje... | Must | evt-e3d2949e, evt-b0b9c422, evt-ca7b7d64, evt-7620210f | 225/225 → 1691/1716 | 2026-05-05 (iter) | FAIL |
+| [FR-01.01](../../.shipwright/planning/01-adopted/spec.md#fr-0101) | Orchestrate the full Shipwright SDLC pipeline — drives proje... | Must | evt-e3d2949e, evt-b0b9c422, evt-ca7b7d64, evt-7620210f +1 | 225/225 → 0/0 | 2026-05-21 (iter) | FAIL |
 | [FR-01.02](../../.shipwright/planning/01-adopted/spec.md#fr-0102) | Decompose project requirements (IREB) into well-scoped plann... | Must | evt-e3d2949e, evt-b0b9c422, evt-ca7b7d64, evt-7620210f +1 | 225/225 → 140/140 | 2026-05-16 (iter) | FAIL |
 | [FR-01.03](../../.shipwright/planning/01-adopted/spec.md#fr-0103) | AI-assisted deep planning with research, optional interview,... | Must | evt-e3d2949e, evt-ca7b7d64 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
 | [FR-01.04](../../.shipwright/planning/01-adopted/spec.md#fr-0104) | Generate UI mockups from IREB specs as standalone HTML scree... | Should | evt-e3d2949e, evt-ca7b7d64 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
@@ -62,6 +62,8 @@ Generated: 2026-05-21T12:31:00Z
 | escape pipe and newline in markdown table cells | iterate | bug |  | 23/23 | 9dd6c8b | 2026-05-20 |
 | Artifact-based GitHub security producer for Triage Inbox | iterate | feature | FR-01.14 | 122/122 | 6f5dd5f | 2026-05-20 |
 | Artifact-based GitHub security producer for Triage Inbox (+ spec.md FR-01.14 update) | iterate | feature | FR-01.14 | 122/122 | 861c0fd | 2026-05-20 |
+| VERIFICATION: with affected-frs — should pass | iterate | feature | FR-01.01 | — | 376c870 | 2026-05-21 |
+| VERIFICATION: bug+change-type — should pass | iterate | bug |  | — | 376c870 | 2026-05-21 |
 
 ## Coverage Summary
 
@@ -69,10 +71,21 @@ Generated: 2026-05-21T12:31:00Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 37 |
+| Iterate changes | 39 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
 | Total review findings | 0 |
 | Unresolved findings | 0 |
+
+### FRs with stale verification (> 14 days)
+
+- [FR-01.03](../../.shipwright/planning/01-adopted/spec.md) — last verified 18d ago by `evt-ca7b7d64` (2026-05-03)
+- [FR-01.04](../../.shipwright/planning/01-adopted/spec.md) — last verified 18d ago by `evt-ca7b7d64` (2026-05-03)
+- [FR-01.05](../../.shipwright/planning/01-adopted/spec.md) — last verified 18d ago by `evt-ca7b7d64` (2026-05-03)
+- [FR-01.07](../../.shipwright/planning/01-adopted/spec.md) — last verified 18d ago by `evt-ca7b7d64` (2026-05-03)
+- [FR-01.08](../../.shipwright/planning/01-adopted/spec.md) — last verified 18d ago by `evt-ca7b7d64` (2026-05-03)
+- [FR-01.09](../../.shipwright/planning/01-adopted/spec.md) — last verified 18d ago by `evt-530b0980` (2026-05-03)
+- [FR-01.12](../../.shipwright/planning/01-adopted/spec.md) — last verified 18d ago by `evt-ca7b7d64` (2026-05-03)
+- [FR-01.06](../../.shipwright/planning/01-adopted/spec.md) — last verified 17d ago by `evt-c4ae8ef7` (2026-05-03)
 

@@ -1,11 +1,12 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-21-fix-gh-security-emit-gate-symmetry",
+    "run_id": "iterate-2026-05-21-empirical-followups",
     "date": "2026-05-21",
     "unit": {
       "status": "passed",
-      "passed": 2101,
-      "total": 2113
+      "passed": 2621,
+      "total": 2621,
+      "note": "shared/tests 2176 passed + plugins/shipwright-compliance/tests 445 passed (two sessions per tests.conftest collision workaround)"
     },
     "integration": {
       "status": "not_run",
@@ -29,6 +30,15 @@
     },
     "smoke": {
       "status": "not_run"
+    },
+    "surface_verification": {
+      "surface": "cli",
+      "runner": "bash .shipwright/runs/iterate-2026-05-21-empirical-followups/runner.sh",
+      "exit_code": 0,
+      "tests_run": 66,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-21-empirical-followups/surface_verification.json",
+      "timestamp": "2026-05-21T19:02:32.057Z",
+      "justification": null
     },
     "degraded": []
   }
