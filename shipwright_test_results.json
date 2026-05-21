@@ -1,33 +1,28 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-21-security-artifact-producer",
+    "run_id": "iterate-2026-05-21-post-43-hygiene",
     "date": "2026-05-21",
     "unit": {
       "status": "passed",
-      "passed": 2049,
-      "total": 2049,
-      "note": "Full shared/tests/ suite — 2049 passed, 11 skipped, 18 deselected. Two new test files added in this iterate: shared/tests/test_github_api_artifact.py (23 tests covering latest_security_workflow_run, download_security_findings, artifact_max_age_days; happy path, freshness gate, malformed JSON, nested artifact layout, subprocess argv hygiene, real findings_sample.json round-trip) and shared/tests/test_github_triage_artifact_fallback.py (18 tests covering parallel-source emission, auto-resolve symmetry, source-switching transitions, Dependabot-orthogonal cases, untrusted-content escape, length-cap). touches_shared_infra + touches_io_boundary risk flags enforced full-suite run. The pre-existing canon-lint failure on record_event.py:374 (PR #42) was resolved by adding it to ALLOWLIST['compliance'] — it's an enum-value, not a path reference."
+      "passed": 2048,
+      "total": 2048,
+      "note": "Full shared/tests/ suite green (2048 passed, 12 skipped, 18 deselected, 0 failed). The pre-existing baseline failure from PR #42 is gone: PR #44 added record_event.py to ALLOWLIST while it was in flight, and this iterate adds shipwright_test_results.json to all 4 ALLOWLISTs in artifact_migrations.py (planning, designs, agent_docs, compliance migrations) so iterate-prose notes referencing pipeline-phase names by word don't false-trip the lint. Plus 6 new parametrized cases in plugins/shipwright-compliance/tests/test_markdown_table_wrap_drift.py promoting the one-shot probe from PR #43 to a permanent drift-test; verified empirically by un-wrapping one cell in change_history.py and re-running (test caught the regression and reported the specific generator+field pair)."
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0,
-      "note": "Integration tests skipped — this iterate only touches shared/scripts/github_api.py + github_triage.py, no cross-plugin integration paths changed. Action-unit schema is unchanged, so existing integration tests against the gh-security key would pass trivially."
+      "status": "passed",
+      "passed": 110,
+      "total": 110,
+      "note": "integration-tests/ green — 110/110 (2 deselected as slow)."
     },
     "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
-    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web/Playwright surface — backend producer extension. CLI surface verified below."},
+    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web surface — lint/test-only iterate."},
     "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI."},
     "smoke": {"status": "not_run", "note": "No browser/server surface."},
-    "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --no-project --with pytest pytest shared/tests/test_github_api_artifact.py shared/tests/test_github_triage_artifact_fallback.py shared/tests/test_github_api.py shared/tests/test_github_triage.py shared/tests/test_github_triage_action_units.py --color=no -v",
-      "exit_code": 0,
-      "tests_run": 122,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-21-security-artifact-producer/surface_verification.json",
-      "timestamp": "2026-05-21T00:30:00.000Z",
-      "attempts": 1,
-      "note": "F0.5 cli surface — 122 tests covering both new modules + the existing producer test surface. The real-artifact round-trip test (test_real_findings_sample_parses) drives the captured findings_sample.json (35 real findings from run 26192978904) through download_security_findings + verifies the severity/source classification. Source-switching transitions (3 directional cases) ensure dedup-key idempotency holds across artifact ↔ GHAS state changes. Exit 0, single attempt."
-    },
-    "degraded": []
+    "degraded": [
+      {
+        "condition": "external_review_skipped_small_complexity",
+        "detail": "External LLM review skipped at small complexity per the Phase Matrix (skip / skip / auto / -). No risk flags fired. Self-review only."
+      }
+    ]
   }
 }

@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-05-20T22:58:52Z
-Total commits: 671
+Generated: 2026-05-21T06:11:46Z
+Total commits: 673
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 222
+    "feat" : 223
     "fix" : 177
     "chore" : 116
-    "docs" : 99
+    "docs" : 100
     "refactor" : 34
     "test" : 15
     "other" : 7
@@ -19,10 +19,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 222 commits
+### Features (feat) — 223 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-21 | triage | ingest shipwright-security artifact as gh-security action-unit (Iterate C) | 6f5dd5f23a1d |
 | 2026-05-20 | triage | redesign Triage Inbox as launch-surface (action-units + launchPayload + CLI) | 7b67acf60d70 |
 | 2026-05-19 | triage | import GitHub findings into the triage inbox | ff51a8cc80f1 |
 | 2026-05-16 | spec | backfill FR-01.14 (Triage Inbox) + link 7 historical feature events | 805d268a9dc3 |
@@ -549,10 +550,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 99 commits
+### Documentation (docs) — 100 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-21 | spec | append FR-01.14 acceptance criteria for the artifact ingestion path | 861c0fd83d1d |
 | 2026-05-16 | iterate | fix SKILL.md run_id format + stale F11 events.jsonl grep | 70f52f49f207 |
 | 2026-05-16 | — | align ASCII pipeline diagrams with profile-driven deploy | bd5a0b955ef1 |
 | 2026-05-16 | — | document performance budgets + honest deploy-target framing | c9a442e0c28e |
@@ -734,7 +736,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 671 |
+| Total commits | 673 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 671 |
+| Human-authored commits | 673 |
 

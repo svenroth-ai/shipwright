@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-21-post-43-hygiene",
+  "date": "2026-05-21T06:11:49.195117Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/post-43-hygiene",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-05-21-post-43-hygiene"
+}

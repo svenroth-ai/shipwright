@@ -130,6 +130,14 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/agent_docs/architecture.md",
         ".shipwright/agent_docs/decision_log.md",
         ".shipwright/agent_docs/conventions.md",
+        # shipwright_test_results.json accumulates per-iterate prose `note`
+        # fields that legitimately mention "planning" / "designs" /
+        # "agent_docs" / "compliance" as pipeline-phase names or as words
+        # ("compliance lib", "planning split"). JSON has no comment syntax
+        # so inline `artifact-path-canon: legacy` markers can't be applied.
+        # Same class as conventions.md (Learnings prose) and architecture.md
+        # / decision_log.md. Added in iterate-2026-05-21-post-43-hygiene.
+        "shipwright_test_results.json",
         ".shipwright/compliance/change-history.md",
         ".shipwright/planning/iterate/**.md",
         # External-review JSON captures (e.g. iterate-2026-05-11-triage-
@@ -197,6 +205,8 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/agent_docs/architecture.md",
         ".shipwright/agent_docs/decision_log.md",
         ".shipwright/agent_docs/conventions.md",
+        # See "planning" entry for shipwright_test_results.json rationale.
+        "shipwright_test_results.json",
         ".shipwright/compliance/change-history.md",
         ".shipwright/planning/iterate/**.md",
         # External-review JSON captures (e.g. iterate-2026-05-11-triage-
@@ -257,6 +267,8 @@ ALLOWLIST: dict[str, list[str]] = {
         ".shipwright/agent_docs/architecture.md",
         ".shipwright/agent_docs/decision_log.md",
         ".shipwright/agent_docs/conventions.md",
+        # See "planning" entry for shipwright_test_results.json rationale.
+        "shipwright_test_results.json",
         ".shipwright/compliance/change-history.md",
         ".shipwright/planning/iterate/**.md",
         # External-review JSON captures (e.g. iterate-2026-05-11-triage-
@@ -355,6 +367,8 @@ ALLOWLIST: dict[str, list[str]] = {
         # architecture.md / decision_log.md above; it was simply missed when
         # those sibling agent_docs were allowlisted.
         ".shipwright/agent_docs/conventions.md",
+        # See "planning" entry for shipwright_test_results.json rationale.
+        "shipwright_test_results.json",
         ".shipwright/compliance/change-history.md",
         ".shipwright/planning/iterate/**.md",
         # External-review JSON captures (e.g. iterate-2026-05-11-triage-
