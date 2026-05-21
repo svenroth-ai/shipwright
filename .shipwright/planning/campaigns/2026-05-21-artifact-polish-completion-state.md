@@ -8,7 +8,7 @@
 ## Status
 
 - **Started:** 2026-05-21 (this session)
-- **Current iterate:** C.3 (next)
+- **Current iterate:** _all merged — campaign complete_
 - **Baseline (campaign start, 2026-05-21):**
   - `main` HEAD: `5c06748` (canon-lint allowlist `.shipwright/planning/adr/**.md`)
   - `shared/tests/`: 2101 passed, 12 skipped, 18 deselected
@@ -97,21 +97,55 @@
 
 ### C.3 — Plugin-cache-sync check
 
-- **Status:** not started
-- **Branch:** _pending_
-- **PR:** _pending_
-- **Squash commit:** _pending_
-- **Predicted ADR:** ADR-061
-- **External review findings:** _pending_
-- **External code-review findings:** _pending_
-- **Test deltas:** _pending_
-- **Deviations from handover:** _pending_
+- **Status:** merged
+- **Branch:** `iterate/c3-plugin-cache-sync-check` (deleted)
+- **PR:** #62
+- **Squash commit:** `02eb08a`
+- **Predicted ADR:** ADR-061 (filed at `.shipwright/planning/adr/061-plugin-cache-sync-check.md`)
+- **External review findings:** 16 (2 HIGH SemVer parsing + repo-only file drift + 7 MED + 7 LOW). All addressed inline.
+- **External code-review findings:** 5 (3 MED + 1 LOW + 1 truncated, all accepted-and-fixed: no_repo_plugins CLI skip path, docstring fix, PermissionError isolation, missing CLI test).
+- **Test deltas:** shared 2141 → 2162 (+21).
+- **Deviations from handover:**
+  - Script grew from "~50 LOC" plan estimate to ~200 LOC because of test-friendly parameterization (CLI surface), SemVer-aware version sort (Gemini-S1), CRLF normalization (Gemini-M1), and per-plugin output enrichment (OpenAI-L12). All driven by external review priorities.
 
 ## Final marketplace sync
 
-- **Run:** not yet
-- **13 plugins synced (expected):** _pending_
-- **Cache symbol verification:** _pending_
+- **Run:** 2026-05-21 (after C.3 merge).
+- **13 plugins synced:** 13 synced, 0 skipped, 0 errors.
+- **Cache symbol verification:** confirmed the new B.2 / B.3 / B.4 / C.1 / C.2 / C.3 entry points landed in the cache —
+  `emit_undeclared_triage`, `emit_test_failure_triage`, `_open_triage_by_fr`,
+  `_fr_or_change_type_gate_error`, `_check_f5`, `check_sync`.
+- **C.3 self-test:** ran `uv run scripts/check_plugin_cache_sync.py` post-sync; the script
+  correctly detected one drifted fixture file (a test artifact under
+  `plugins/shipwright-compliance/tests/fixtures/`) the marketplace sync legitimately doesn't
+  pick up — proves the detector works end-to-end.
+
+## Final summary
+
+All 6 iterates merged. Squash commits on `main`:
+
+| Iterate | PR  | Squash    | ADR     |
+|---------|-----|-----------|---------|
+| B.2     | #57 | `47ab03d` | ADR-056 |
+| B.3     | #58 | `ccb2b98` | ADR-057 |
+| B.4     | #59 | `48024b1` | ADR-058 |
+| C.1     | #60 | `388fa55` | ADR-059 |
+| C.2     | #61 | `9008cf4` | ADR-060 |
+| C.3     | #62 | `02eb08a` | ADR-061 |
+
+Final test counts (campaign start 2026-05-21 → end):
+
+- `shared/tests/`: 2101 → 2162 (+61)
+- `plugins/shipwright-compliance/tests/`: 351 → 434 (+83)
+- `plugins/shipwright-iterate/tests/`: 237 (unchanged)
+- `plugins/shipwright-adopt/tests/`: 278 (unchanged)
+- **Zero baseline regressions across the campaign.**
+
+External-review-finding totals (all 6 iterates combined):
+
+- Iterate-spec reviews: ~94 findings (4 HIGH + ~45 MED + ~45 LOW) addressed across the campaign.
+- Code reviews: ~28 findings (1 HIGH + ~18 MED + ~9 LOW) addressed across the campaign.
+- Every HIGH addressed inline; MED findings either accepted-and-fixed or rejected-with-reason documented in the per-iterate ADR.
 
 ## Notes
 
