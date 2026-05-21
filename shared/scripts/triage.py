@@ -253,6 +253,9 @@ def append_triage_item(
     commit: str | None = None,
     dedup_key: str | None = None,
     launch_payload: str | None = None,
+    fr_id: str | None = None,
+    suite_id: str | None = None,
+    event_id: str | None = None,
 ) -> str:
     """Append a new triage item. Returns the new `trg-<8hex>` id.
 
@@ -282,6 +285,14 @@ def append_triage_item(
     append; subsequent idempotent calls leave the on-disk value
     unchanged (AC-8). Legacy producers may keep omitting this kwarg —
     null is the wire default.
+
+    `fr_id` / `suite_id` / `event_id` (iterate-2026-05-21-triage-producer-contract):
+    optional cross-artifact reference fields that consumers — primarily
+    the compliance RTM generator — use to render `FAIL → [trg-XXX](...)`
+    links from a failing FR row directly to the matching triage card.
+    Persisted under camelCase keys `frId` / `suiteId` / `eventId`. Legacy
+    producers may omit all three — null is the wire default. Schema:
+    `shared/schemas/triage_item.schema.json`.
     """
     if severity not in SEVERITIES:
         raise ValueError(
@@ -309,6 +320,9 @@ def append_triage_item(
         "commit": commit,
         "dedupKey": dedup_key,
         "launchPayload": launch_payload,
+        "frId": fr_id,
+        "suiteId": suite_id,
+        "eventId": event_id,
         "status": "triage",
         "suggestedPriority": suggest_priority_from_severity(severity),
         "suggestedDomain": suggest_domain_from_source(source),
@@ -341,6 +355,9 @@ def append_triage_item_idempotent(
     match_commit: bool = True,
     window_seconds: int | None = 24 * 3600,
     launch_payload: str | None = None,
+    fr_id: str | None = None,
+    suite_id: str | None = None,
+    event_id: str | None = None,
 ) -> str | None:
     """Append a triage item only if no matching item is currently open.
 
@@ -405,6 +422,9 @@ def append_triage_item_idempotent(
         "commit": commit,
         "dedupKey": dedup_key,
         "launchPayload": launch_payload,
+        "frId": fr_id,
+        "suiteId": suite_id,
+        "eventId": event_id,
         "status": "triage",
         "suggestedPriority": suggest_priority_from_severity(severity),
         "suggestedDomain": suggest_domain_from_source(source),
