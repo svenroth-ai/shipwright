@@ -8,7 +8,7 @@
 ## Status
 
 - **Started:** 2026-05-21 (this session)
-- **Current iterate:** B.3 (next)
+- **Current iterate:** B.4 (next)
 - **Baseline (campaign start, 2026-05-21):**
   - `main` HEAD: `5c06748` (canon-lint allowlist `.shipwright/planning/adr/**.md`)
   - `shared/tests/`: 2101 passed, 12 skipped, 18 deselected
@@ -40,15 +40,18 @@
 
 ### B.3 — test-evidence layer column + per-layer FAIL triage
 
-- **Status:** not started
-- **Branch:** _pending_
-- **PR:** _pending_
-- **Squash commit:** _pending_
-- **Predicted ADR:** ADR-057
-- **External review findings:** _pending_
-- **External code-review findings:** _pending_
-- **Test deltas:** _pending_
-- **Deviations from handover:** _pending_
+- **Status:** merged
+- **Branch:** `iterate/b3-test-evidence-layer-and-triage` (deleted)
+- **PR:** #58
+- **Squash commit:** `ccb2b98`
+- **Predicted ADR:** ADR-057 (filed at `.shipwright/planning/adr/057-test-evidence-layer-and-triage.md`)
+- **External review findings:** 18 (2 HIGH / 11 MED / 5 LOW) — all addressed inline; disposition table in ADR-057.
+- **External code-review findings:** 4 (3 accepted-and-fixed: sanitize newlines + matching test rewrite + missing CLI flag tests; 1 truncated/rejected-with-reason).
+- **Test deltas:** compliance 372 → 397 (+25); shared 2107 → 2116 (+9).
+- **Deviations from handover:**
+  - Extended `record_event.py` schema beyond the plan's wording: added `--<layer>-failed N` CLI flags AND non-negative-int validation AND `passed > total` rejection. All driven by the external review's HIGH findings (skipped-test false positive + input validation); in-scope per the handover audience principle ("loud only where relevant").
+  - test_evidence.py crossed the 300-LOC guideline (~640 LOC). Producer + helpers still cohesive; split into a sibling `test_evidence_triage.py` deferred pending C.2's third producer landing (when a shared triage-producer base makes sense).
+  - test_test_evidence.py crossed 600 LOC. Same deferral — split per-class file if it grows further.
 
 ### B.4 — RTM deep-link rendering + Coverage Summary rewrite
 
