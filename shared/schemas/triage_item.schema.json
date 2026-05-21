@@ -129,7 +129,8 @@
         "ts": { "$ref": "#/$defs/_isoZ" },
         "newStatus": {
           "type": "string",
-          "enum": ["promoted", "dismissed", "snoozed"]
+          "enum": ["triage", "promoted", "dismissed", "snoozed"],
+          "description": "Includes `triage` because `mark_status` accepts re-flipping to `triage` as an idempotent no-op (see `STATUSES` tuple and the test_all_statuses_accepted_by_mark_status parametrization)."
         },
         "by": {
           "type": "string",

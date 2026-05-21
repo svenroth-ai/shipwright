@@ -12,6 +12,22 @@ loud only where relevant; accept everything else as the cost for the
 solo-dev / agentic-engineering audience. This principle drives every
 decision below — when in doubt, drop a feature rather than add nuance.
 
+## What landed in B0 vs forward-looking
+
+| Decision | Realized in this iterate? | Realized where |
+|----------|---------------------------|----------------|
+| D1 SBOM 1-per-workspace      | No — design only | B.2 (SBOM polish)         |
+| D2 Test 1-per-layer          | No — design only | B.3 (test-evidence polish)|
+| D3 Layer-based default CTA   | No — design only | B.3                       |
+| D4 7-day stale-dismiss       | No — design only | B.2 / B.3 (per producer)  |
+| D5 RTM cross-link fields     | **Yes (producer-side)** | B0 (this PR) — RTM-side render in B.4 |
+| D6 Info-severity collapse    | **Yes** | B0 (this PR)                          |
+| D7 Severity vocab unchanged  | **Yes (decision)** | B0 (no code change needed) |
+| D8 No declarative resolve_condition | **Yes (decision)** | B0 (no code change needed) |
+
+D1-D4 are written down here so the producers building them (B.2, B.3)
+have an aligned contract without re-litigating the granularity decisions.
+
 ## Decisions (B0)
 
 ### D1. SBOM-undeclared triage granularity — **1 item per workspace/manifest**

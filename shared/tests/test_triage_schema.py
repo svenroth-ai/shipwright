@@ -396,8 +396,93 @@ def test_schema_rejects_invalid_id_format(triage_schema: dict) -> None:
         "evidencePath": None, "runId": None, "commit": None, "dedupKey": None,
         "launchPayload": None, "frId": None, "suiteId": None, "eventId": None,
         "status": "triage",
-        "suggestedPriority": "high",
+        "suggestedPriority": "P1",
         "suggestedDomain": "engineering",
     }
     errors = _validate_against_schema(bad, triage_schema)
     assert errors, "schema should reject malformed id"
+
+
+# Review finding H1 — producer-side type guards on the new B0 fields.
+
+@pytest.mark.parametrize("field", ["fr_id", "suite_id", "event_id"])
+def test_append_rejects_non_string_b0_field(project: Path, field: str) -> None:
+    """A producer passing a non-string value for the new B0 cross-link
+    fields must hit a ValueError at write time (instead of silently
+    writing an integer that fails the JSON schema at validation time)."""
+    bad_kwargs = {
+        "source": "test", "severity": "high", "kind": "bug",
+        "title": "t", "detail": "d",
+        field: 42,  # int, not str
+    }
+    with pytest.raises(ValueError, match=field):
+        append_triage_item(project, **bad_kwargs)
+
+
+@pytest.mark.parametrize("field", ["fr_id", "suite_id", "event_id"])
+def test_idempotent_append_rejects_non_string_b0_field(project: Path, field: str) -> None:
+    from triage import append_triage_item_idempotent
+
+    bad_kwargs = {
+        "source": "test", "severity": "high", "kind": "bug",
+        "title": "t", "detail": "d",
+        "dedup_key": "test:1",
+        field: 42,
+    }
+    with pytest.raises(ValueError, match=field):
+        append_triage_item_idempotent(project, **bad_kwargs)
+
+
+# Review finding M2 — status-event enum coverage.
+
+@pytest.mark.parametrize("new_status", ["triage", "promoted", "dismissed", "snoozed"])
+def test_status_event_all_enum_values_validate(
+    project: Path, triage_schema: dict, new_status: str,
+) -> None:
+    """The schema must accept every newStatus value `mark_status` accepts,
+    including `triage` (idempotent re-flip). Pre-fix the schema enum was
+    missing `triage` — test_all_statuses_accepted_by_mark_status bypassed
+    schema validation so this didn't surface."""
+    from triage import mark_status
+
+    item_id = append_triage_item(
+        project, source="test", severity="high", kind="bug",
+        title="t", detail="d",
+    )
+    mark_status(project, item_id, new_status=new_status, by="test")
+    raw = _read_raw_lines(project)
+    # last line is the status event
+    status_evt = raw[-1]
+    assert status_evt["event"] == "status"
+    errors = _validate_against_schema(status_evt, triage_schema)
+    assert not errors, f"newStatus={new_status!r} failed schema: {errors}"
+
+
+def test_status_event_schema_rejects_invalid_new_status(triage_schema: dict) -> None:
+    """Negative: status events with `newStatus` outside the enum fail."""
+    bad = {
+        "event": "status",
+        "id": "trg-deadbeef",
+        "ts": "2026-05-21T10:00:00Z",
+        "newStatus": "closed",  # not in enum
+        "by": "cli",
+        "reason": None,
+        "promotedTaskId": None,
+    }
+    errors = _validate_against_schema(bad, triage_schema)
+    assert errors, "schema should reject newStatus=closed"
+
+
+def test_status_event_schema_rejects_missing_by(triage_schema: dict) -> None:
+    """Negative: `by` is required (audit-trail provenance)."""
+    bad = {
+        "event": "status",
+        "id": "trg-deadbeef",
+        "ts": "2026-05-21T10:00:00Z",
+        "newStatus": "dismissed",
+        # by missing
+        "reason": None,
+        "promotedTaskId": None,
+    }
+    errors = _validate_against_schema(bad, triage_schema)
+    assert errors, "schema should reject missing `by` on status event"
