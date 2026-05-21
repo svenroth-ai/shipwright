@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import warnings
 from datetime import datetime, timezone
@@ -481,6 +482,144 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return p.parse_args(argv)
 
 
+_CHANGE_TYPE_VALUES = ("docs", "tooling", "compliance", "infra")
+_NONE_REASON_MAX_LEN = 280  # ~tweet-length; long enough for a real reason, short enough for one-line audit grep
+_NONE_REASON_CONTROL_RE = re.compile(r"[\x00-\x08\x0a-\x1f\x7f]")  # disallow newlines, ctrl, DEL; tab (0x09) ok
+
+
+def _is_non_empty_fr_list(value) -> bool:
+    """True iff ``value`` is a list with ≥1 non-empty-string element.
+
+    Reviewer-flagged OpenAI-M3: naive `bool(value)` accepted
+    `["", " "]` or `(FR-X,)` (tuple). Type-strict shape check rejects
+    those.
+    """
+    if not isinstance(value, list):
+        return False
+    return any(isinstance(x, str) and x.strip() for x in value)
+
+
+def _is_valid_none_reason(value) -> bool:
+    """Validate `none_reason` shape: trimmed, single-line, ≤ cap.
+
+    Reviewer-flagged OpenAI-M5: a "one-line justification" must
+    actually be one line + not pathologically long. Reject multi-line
+    inputs, control chars (except `\\t`), and strings longer than
+    ``_NONE_REASON_MAX_LEN`` characters.
+    """
+    if not isinstance(value, str):
+        return False
+    if not value.strip():
+        return False
+    if _NONE_REASON_CONTROL_RE.search(value):
+        return False
+    if len(value) > _NONE_REASON_MAX_LEN:
+        return False
+    return True
+
+
+def _fr_or_change_type_gate_error(event) -> dict | None:
+    """Iterate C.1 (ADR-059) FR-gate. Hard-enforce forward-only.
+
+    Every ``work_completed`` event with ``source == "iterate"`` MUST
+    record either:
+
+    - ``affected_frs`` non-empty list (or ``new_frs`` non-empty list
+      — both forms tie the iterate to one or more FRs), OR
+    - ``change_type`` ∈ ``{docs, tooling, compliance, infra}`` AND
+      ``none_reason`` is a valid one-line justification (see
+      ``_is_valid_none_reason``).
+
+    Additional consistency check (reviewer-flagged Gemini-M2 /
+    OpenAI-L4): if ``change_type`` is present at all (even alongside
+    valid FRs), it must be a recognized value. A malformed
+    ``change_type`` value is invalid input regardless of FR presence
+    — cleaner data on disk.
+
+    Hard-rejects otherwise (returns an error dict; ``main`` exits 1
+    and writes nothing to the log).
+
+    Defensive ``.get()`` lookups throughout: a directly-constructed
+    event dict missing ``type`` or ``source`` doesn't crash — it
+    cleanly bypasses (deterministic behavior for malformed input).
+
+    Read-side stays tolerant: events written before this gate
+    landed continue to parse as ``change_type=None`` and
+    ``none_reason=None`` (no schema break).
+
+    Build events (``source != "iterate"``) and non-work_completed
+    events bypass the gate entirely. Phase 0 of the artifact-polish
+    plan retroactively classified every pre-existing iterate event
+    so this hard-enforcement is risk-free in the monorepo + webui.
+
+    Scope: the gate runs at the CLI boundary (``record_event.main``).
+    Direct callers of ``append_event`` (notably
+    ``finalize_iterate._record_event``, which writes a minimal
+    work_completed event from the finalize fallback path) bypass the
+    gate today — same scope as the existing spec-impact gate.
+    Tightening that path is out of scope for C.1.
+
+    Origin: iterate-2026-05-21-c1-fr-gate-finalize.
+    """
+    if not isinstance(event, dict):
+        return None
+    if event.get("type") != "work_completed":
+        return None
+    if event.get("source") != "iterate":
+        return None
+
+    change_type = event.get("change_type")
+    none_reason = event.get("none_reason")
+
+    # Defense in depth: if change_type is present at all, the FULL
+    # pair must be valid — both a recognized value AND a non-empty
+    # one-line none_reason. Reviewer-flagged Gemini-M12 (iterate review)
+    # + Gemini-M1 (code review): if the operator bothered to classify
+    # via change_type, the metadata must be internally consistent. FRs
+    # being present too is not a "free pass" to skip the reason.
+    if change_type is not None:
+        if change_type not in _CHANGE_TYPE_VALUES:
+            return {
+                "error": "fr_gate_unclassified",
+                "detail": (
+                    f"change_type={change_type!r} is not one of "
+                    f"{list(_CHANGE_TYPE_VALUES)}. See SKILL.md step F4."
+                ),
+            }
+        if not _is_valid_none_reason(none_reason):
+            return {
+                "error": "fr_gate_unclassified",
+                "detail": (
+                    "change_type is set but none_reason is missing or "
+                    "malformed (require a non-empty single-line string, "
+                    f"max {_NONE_REASON_MAX_LEN} chars, no control chars "
+                    "except tab). See SKILL.md step F4."
+                ),
+            }
+        # Pair is valid — the change_type path provides classification.
+        return None
+
+    # No change_type → must classify via FRs.
+    has_frs = (
+        _is_non_empty_fr_list(event.get("affected_frs"))
+        or _is_non_empty_fr_list(event.get("new_frs"))
+    )
+    if has_frs:
+        return None
+
+    return {
+        "error": "fr_gate_unclassified",
+        "detail": (
+            "An iterate work_completed event must record either "
+            "--affected-frs (or --new-frs) with at least one FR, OR "
+            "--change-type ∈ {docs, tooling, compliance, infra} together "
+            "with --none-reason '<one-line justification, max "
+            f"{_NONE_REASON_MAX_LEN} chars, no newlines>'. "
+            "See SKILL.md step F4 (FR capture)."
+        ),
+    }
+
+
 def _spec_impact_gate_error(event: dict) -> dict | None:
     """Return an error payload if a feature/change iterate work event is not
     spec-impact-classified, else None.
@@ -541,6 +680,17 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
     event = build_event(args)
+
+    # Iterate C.1 FR-gate (ADR-059): every iterate work_completed event
+    # must either name the FRs it touched or classify as
+    # docs/tooling/compliance/infra with a one-line justification.
+    # Hard-enforce forward-only — Phase 0 classified all pre-existing
+    # events. Runs BEFORE spec_impact gate so an unclassified iterate
+    # surfaces the broader requirement first.
+    fr_gate_error = _fr_or_change_type_gate_error(event)
+    if fr_gate_error is not None:
+        print(json.dumps({"success": False, **fr_gate_error}, indent=2))
+        return 1
 
     # Spec-impact gate: a FEATURE/CHANGE iterate must name the FRs it touched
     # or explicitly record --spec-impact none with a justification. Fail

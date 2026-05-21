@@ -1,9 +1,9 @@
 {
   "status": "completed",
-  "timestamp": "2026-05-21T15:25:30.605921+00:00",
+  "timestamp": "2026-05-21T15:45:53.781025+00:00",
   "provider": "openrouter",
-  "findings_count": 6,
+  "findings_count": 5,
   "self_review_fallback_ran": false,
-  "reason": "B.4 code review: 4 MED accepted-and-fixed (timestamp max-pick + spec AC-9 + sort-order test + plus-suffix test), 1 HIGH rejected-with-reason (already-filtered), 1 truncated",
+  "reason": "C.1 code review: 3 MED accepted-and-fixed (none_reason stricter spec, pair-integrity rule, integration test strengthening), 1 MED + 1 MED rejected-with-reason (strict-data-on-disk + non-dict bypass), 1 LOW accepted",
   "review_mode": "code"
 }

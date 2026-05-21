@@ -1477,6 +1477,17 @@ uv run "{shared_root}/scripts/tools/record_event.py" \
 > `--spec-impact-justification "..."`. BUG iterates may omit all three.
 > Use `--spec-impact none --spec-impact-justification "..."` for a
 > behavior-preserving refactor that genuinely touches no FR.
+>
+> **Iterate C.1 FR-gate (ADR-059, 2026-05-21) — applies to ALL iterates,
+> incl. BUG.** Every `work_completed` event with `source=iterate` must
+> EITHER carry `--affected-frs` / `--new-frs` OR pair `--change-type
+> <docs|tooling|compliance|infra>` with `--none-reason '<one-line
+> justification>'`. Hard-error otherwise (the gate runs BEFORE
+> spec-impact). For a BUG iterate that touches an FR — set
+> `--affected-frs FR-...`. For a BUG iterate that fixes internal
+> tooling (test flakes, CI plumbing) and touches no FR — set
+> `--change-type tooling --none-reason 'flaky CI fix'`. Bypassing the
+> gate isn't an option.
 
 ### F11: Push Branch, Open PR & Verify
 
