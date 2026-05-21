@@ -136,6 +136,20 @@ def _patch_api(
     )
     monkeypatch.setattr(github_api, "fetch_workflow_runs", lambda branch: runs)
     monkeypatch.setattr(github_api, "owner_repo", lambda _: owner_repo_value)
+    # Stub the artifact-path fetchers (Iterate C). Without these, tests
+    # run inside a worktree whose origin has a real ``security.yml``
+    # workflow leak production data into the artifact fallback and emit
+    # an unintended ``gh-security:`` action-unit — defeating any
+    # partial-fetch assertions below. Action-unit tests targeting the
+    # API path explicitly opt out of the artifact path; per-artifact
+    # tests live in test_github_triage_artifact_fallback.py and patch
+    # these directly.
+    monkeypatch.setattr(
+        github_api, "latest_security_workflow_run", lambda: None,
+    )
+    monkeypatch.setattr(
+        github_api, "download_security_findings", lambda run_id: None,
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-21-fix-gh-security-emit-gate-symmetry",
+  "date": "2026-05-21T12:31:08.078768Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/fix-gh-security-emit-gate-symmetry",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-05-21-fix-gh-security-emit-gate-symmetry"
+}

@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-05-21T06:11:46Z
-Total commits: 673
+Generated: 2026-05-21T12:31:00Z
+Total commits: 681
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 223
-    "fix" : 177
+    "feat" : 228
+    "fix" : 179
     "chore" : 116
-    "docs" : 100
+    "docs" : 101
     "refactor" : 34
     "test" : 15
     "other" : 7
@@ -19,10 +19,15 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 223 commits
+### Features (feat) — 228 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-21 | triage | producer contract schema + RTM-link fields + inbox polish (Iterate B0) (#52) | f2aaf89cfea2 |
+| 2026-05-21 | handoff | 4-stage session-id fallback chain (Iterate A.4) (#50) | 822f5fae9f45 |
+| 2026-05-21 | adr | hard-reject ADR field overflow + spec_ref + INDEX.md (A.3) (#49) | 9addb9a3b404 |
+| 2026-05-21 | adopt | Mermaid architecture diagram + drift-sync marker (Iterate A.1) (#48) | 32448078c4cd |
+| 2026-05-21 | compliance | SBOM lockfile + importlib.metadata + workspace-aware (Phase 0f) (#47) | 932e0d221ea1 |
 | 2026-05-21 | triage | ingest shipwright-security artifact as gh-security action-unit (Iterate C) | 6f5dd5f23a1d |
 | 2026-05-20 | triage | redesign Triage Inbox as launch-surface (action-units + launchPayload + CLI) | 7b67acf60d70 |
 | 2026-05-19 | triage | import GitHub findings into the triage inbox | ff51a8cc80f1 |
@@ -247,10 +252,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 177 commits
+### Fixes (fix) — 179 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-21 | build | section-builder.md JSON examples conform to result schema (#51) | 823225e0942c |
+| 2026-05-21 | meta | post-#43 hygiene — promote escape-cell drift test + allowlist test_results.json (#45) | 3b34fcaeb502 |
 | 2026-05-21 | shared | escape pipe and newline in markdown table cells (#43) | 46b9ac47da28 |
 | 2026-05-19 | iterate | resolve decision-drop directory against the main repo (worktree-aware) | 0d4d3d61e3c0 |
 | 2026-05-19 | hooks | make file-size guard a non-blocking crossing-only nudge | c76c9bec8451 |
@@ -550,10 +557,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 100 commits
+### Documentation (docs) — 101 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-21 | test-status | record Phase 0d FAIL-row dismissals (shipwright) (#46) | f2a180edf5b7 |
 | 2026-05-21 | spec | append FR-01.14 acceptance criteria for the artifact ingestion path | 861c0fd83d1d |
 | 2026-05-16 | iterate | fix SKILL.md run_id format + stale F11 events.jsonl grep | 70f52f49f207 |
 | 2026-05-16 | — | align ASCII pipeline diagrams with profile-driven deploy | bd5a0b955ef1 |
@@ -736,7 +744,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 673 |
+| Total commits | 681 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 673 |
+| Human-authored commits | 681 |
 

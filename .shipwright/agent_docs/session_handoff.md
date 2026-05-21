@@ -1,35 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-21-post-43-hygiene"
+run_id: "iterate-2026-05-21-fix-gh-security-emit-gate-symmetry"
 phase: "iterate"
-reason: "iterate: post-#43 hygiene"
-timestamp: "2026-05-21T06:11:46.762633+00:00"
+reason: "iterate: fix-gh-security-emit-gate-symmetry"
+timestamp: "2026-05-21T12:31:00.366340+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-21 06:11:46 UTC
+> Auto-generated 2026-05-21 12:31:00 UTC
 
 ## Session Info
 
-- **Session ID**: f990b8ca-e767-4745-861f-9a142fcc95a4
-- **Timestamp**: 2026-05-21 06:11:46 UTC
-- **Reason**: iterate: post-#43 hygiene
+- **Session ID**: f8d0bbbe-d15f-480c-9e68-5c0eff518455
+- **Timestamp**: 2026-05-21 12:31:00 UTC
+- **Reason**: iterate: fix-gh-security-emit-gate-symmetry
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-21-security-artifact-producer
-- **Date**: 2026-05-20T22:59:00.667988Z
-- **Type**: feature
-- **Complexity**: medium
-- **Branch**: iterate/security-artifact-producer
-- **ADR**: iterate-2026-05-21-security-artifact-producer
+- **Run ID**: iterate-2026-05-21-post-43-hygiene
+- **Date**: 2026-05-21T06:11:49.195117Z
+- **Type**: bug
+- **Complexity**: small
+- **Branch**: iterate/post-43-hygiene
+- **ADR**: iterate-2026-05-21-post-43-hygiene
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-21-security-artifact-producer.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/post-43-hygiene
+- **Branch**: iterate/fix-gh-security-emit-gate-symmetry
 - **External Review Marker**: skipped_missing_keys (external_review_state.json @ 2026-05-20T12:00:00)
 
 ### Mandatory replay on Resume
@@ -48,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/post-43-hygiene
-- **Last Commit**: 161375b Merge pull request #44 from svenroth-ai/iterate/security-artifact-producer
+- **Branch**: iterate/fix-gh-security-emit-gate-symmetry
+- **Last Commit**: f2aaf89 feat(triage): producer contract schema + RTM-link fields + inbox polish (Iterate B0) (#52)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
