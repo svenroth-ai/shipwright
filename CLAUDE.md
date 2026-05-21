@@ -103,9 +103,12 @@ repo but never reach runtime. Iterates 7-11 all had plugin-side fixes
 (SKILL.md F11 updates, shared script improvements) that silently never
 took effect because this step was skipped.
 
-**Enforcement:** Iterate 12's cross-plugin verifier audit will add a
-check for `cache vs repo` drift. Until then, remember to run this after
-any commit that touches plugin-side files.
+**Enforcement (Iterate C.3, 2026-05-21):** the script
+`scripts/check_plugin_cache_sync.py` detects drift between the local
+plugin-cache and repo HEAD via per-file SHA-256 comparison. Run it
+manually (fail-soft WARN by default; `--strict` for CI use) — a
+future iterate will wire it into a SessionStart hook so every iterate
+starts with a sync check.
 
 ### Documentation Guide
 - **Reference doc:** `docs/guide.md`
