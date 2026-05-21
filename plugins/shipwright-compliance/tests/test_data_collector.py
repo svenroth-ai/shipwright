@@ -197,8 +197,127 @@ class TestCollectDependencies:
 
     def test_license_unknown_without_node_modules(self, project_root: Path):
         deps = collect_dependencies(project_root)
-        # No node_modules in fixture, so license should be unknown
+        # No node_modules + no package-lock.json in fixture → license should be unknown
         assert all(d.license == "unknown" for d in deps)
+
+
+class TestSbomLockfileAndWorkspace:
+    """Phase 0f (artifact-polish plan): lockfile-first JS license resolution,
+    importlib.metadata for Python, workspace-aware traversal."""
+
+    def test_npm_lockfile_v3_license_read(self, tmp_path: Path):
+        """package-lock.json (lockfileVersion 3) license field wins over fallback."""
+        from scripts.lib.data_collector import _detect_npm_license  # type: ignore
+
+        manifest_dir = tmp_path
+        (manifest_dir / "package.json").write_text(
+            json.dumps({"dependencies": {"react": "^19.0.0"}}), encoding="utf-8"
+        )
+        (manifest_dir / "package-lock.json").write_text(
+            json.dumps({
+                "lockfileVersion": 3,
+                "packages": {
+                    "": {"name": "test"},
+                    "node_modules/react": {"version": "19.0.0", "license": "MIT"},
+                },
+            }),
+            encoding="utf-8",
+        )
+        assert _detect_npm_license(manifest_dir, "react") == "MIT"
+
+    def test_npm_lockfile_license_object_type(self, tmp_path: Path):
+        """SPDX-object-form `{"type": "Apache-2.0"}` is unwrapped to string."""
+        from scripts.lib.data_collector import _detect_npm_license  # type: ignore
+
+        manifest_dir = tmp_path
+        (manifest_dir / "package-lock.json").write_text(
+            json.dumps({
+                "lockfileVersion": 3,
+                "packages": {
+                    "node_modules/old-pkg": {
+                        "version": "1.0.0", "license": {"type": "Apache-2.0"},
+                    },
+                },
+            }),
+            encoding="utf-8",
+        )
+        assert _detect_npm_license(manifest_dir, "old-pkg") == "Apache-2.0"
+
+    def test_npm_falls_back_to_node_modules_when_no_lockfile(self, tmp_path: Path):
+        """When no package-lock.json exists, fall back to node_modules/<pkg>/package.json."""
+        from scripts.lib.data_collector import _detect_npm_license  # type: ignore
+
+        manifest_dir = tmp_path
+        nm = manifest_dir / "node_modules" / "react"
+        nm.mkdir(parents=True)
+        (nm / "package.json").write_text(
+            json.dumps({"name": "react", "license": "MIT"}), encoding="utf-8"
+        )
+        assert _detect_npm_license(manifest_dir, "react") == "MIT"
+
+    def test_npm_unknown_when_neither_lockfile_nor_node_modules(self, tmp_path: Path):
+        from scripts.lib.data_collector import _detect_npm_license  # type: ignore
+
+        assert _detect_npm_license(tmp_path, "ghost-pkg") == "unknown"
+
+    def test_python_license_via_importlib_metadata(self):
+        """Reading an installed package's license through importlib.metadata.
+
+        pytest is guaranteed installed in this test environment; its
+        metadata declares MIT.
+        """
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        license_ = _detect_python_license("pytest")
+        assert license_ != "unknown", f"Expected a real license, got: {license_!r}"
+
+    def test_python_license_unknown_for_missing_package(self):
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        assert _detect_python_license("definitely-not-a-real-pypi-package-xyz") == "unknown"
+
+    def test_workspace_aware_traversal_finds_nested_manifests(self, tmp_path: Path):
+        """Phase 0f: client/ + server/ split workspaces are discovered."""
+        from scripts.lib.data_collector import collect_dependencies  # type: ignore
+
+        (tmp_path / "client").mkdir()
+        (tmp_path / "client" / "package.json").write_text(
+            json.dumps({"dependencies": {"react": "^19.0.0"}}), encoding="utf-8"
+        )
+        (tmp_path / "server").mkdir()
+        (tmp_path / "server" / "package.json").write_text(
+            json.dumps({"dependencies": {"hono": "^4.0.0"}, "devDependencies": {"vitest": "^1.0.0"}}),
+            encoding="utf-8",
+        )
+        deps = collect_dependencies(tmp_path)
+        names = sorted(d.name for d in deps)
+        assert names == ["hono", "react", "vitest"]
+
+    def test_workspace_exclude_skips_node_modules_and_venv(self, tmp_path: Path):
+        """node_modules / .venv / build / dist / .git / .shipwright are NOT traversed."""
+        from scripts.lib.data_collector import collect_dependencies  # type: ignore
+
+        for excluded in ["node_modules", ".venv", "dist", "build", ".shipwright"]:
+            sub = tmp_path / excluded / "evil"
+            sub.mkdir(parents=True)
+            (sub / "package.json").write_text(
+                json.dumps({"dependencies": {"poison": "^1.0.0"}}), encoding="utf-8"
+            )
+        deps = collect_dependencies(tmp_path)
+        assert all(d.name != "poison" for d in deps), \
+            "Manifests inside excluded dirs must NOT be picked up"
+
+    def test_workspace_dedup_across_manifests(self, tmp_path: Path):
+        """Same (name, version, dep_type) declared in two manifests → one row."""
+        from scripts.lib.data_collector import collect_dependencies  # type: ignore
+
+        for sub in ["client", "server"]:
+            (tmp_path / sub).mkdir()
+            (tmp_path / sub / "package.json").write_text(
+                json.dumps({"dependencies": {"shared-lib": "1.0.0"}}), encoding="utf-8"
+            )
+        deps = collect_dependencies(tmp_path)
+        assert len([d for d in deps if d.name == "shared-lib"]) == 1
 
 
 class TestCollectExternalReviewStates:
