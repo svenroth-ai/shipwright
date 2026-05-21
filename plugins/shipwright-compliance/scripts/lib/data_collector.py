@@ -556,43 +556,183 @@ def collect_git_history(project_root: Path) -> list[CommitEntry]:
 # Dependencies
 # ---------------------------------------------------------------------------
 
-def collect_dependencies(project_root: Path) -> list[DependencyInfo]:
-    """Read dependencies from package.json or pyproject.toml."""
-    deps: list[DependencyInfo] = []
+# Phase 0f (artifact-polish plan): workspace-aware traversal exclude list.
+# Avoid descending into node_modules / .venv / build artifacts / Shipwright
+# state when searching for manifests.
+_WORKSPACE_EXCLUDE = {
+    "node_modules", ".venv", "venv", ".git", "dist", "build", ".next",
+    ".worktrees", ".shipwright", "coverage", "__pycache__", ".pytest_cache",
+    "site-packages",
+}
 
-    # npm/Node.js
-    pkg_path = project_root / "package.json"
-    if pkg_path.exists():
-        pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
+
+def _find_manifests(project_root: Path, max_depth: int = 3) -> dict[str, list[Path]]:
+    """Locate package.json + pyproject.toml across the project tree.
+
+    Returns {"npm": [Path, ...], "python": [Path, ...]} with each manifest
+    directory deduplicated. Honors _WORKSPACE_EXCLUDE so node_modules etc.
+    are not recursed into. ``max_depth`` is relative to project_root.
+    """
+    found: dict[str, list[Path]] = {"npm": [], "python": []}
+
+    def _walk(dir_: Path, depth: int) -> None:
+        if depth > max_depth:
+            return
+        try:
+            entries = list(dir_.iterdir())
+        except (OSError, PermissionError):
+            return
+        # Capture manifests at this level.
+        for entry in entries:
+            if entry.is_file():
+                if entry.name == "package.json":
+                    found["npm"].append(entry)
+                elif entry.name == "pyproject.toml":
+                    found["python"].append(entry)
+        # Recurse into subdirs (skip excluded names + hidden, except .shipwright is excluded above).
+        for entry in entries:
+            if entry.is_dir() and entry.name not in _WORKSPACE_EXCLUDE and not entry.name.startswith("."):
+                _walk(entry, depth + 1)
+
+    _walk(project_root, 0)
+    return found
+
+
+def collect_dependencies(project_root: Path) -> list[DependencyInfo]:
+    """Read dependencies from every package.json + pyproject.toml under project_root.
+
+    Phase 0f (artifact-polish plan): workspace-aware traversal (depth 3,
+    excludes node_modules / .venv / build dirs / .shipwright). License
+    resolution is lockfile-first for JS (package-lock.json v3) and
+    importlib.metadata for Python (reads installed site-packages after
+    `uv sync`). No network, no subprocess.
+    """
+    deps: list[DependencyInfo] = []
+    manifests = _find_manifests(project_root)
+
+    # Track dedup across workspaces: (name, version, dep_type) per manifest.
+    # Multiple manifests legitimately re-declare deps; we keep one row per
+    # (name, version) pair to keep the SBOM clean.
+    seen: set[tuple[str, str, str]] = set()
+
+    for pkg_path in manifests["npm"]:
+        manifest_dir = pkg_path.parent
+        try:
+            pkg = json.loads(pkg_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
         for name, version in pkg.get("dependencies", {}).items():
-            license_ = _detect_npm_license(project_root, name)
+            key = (name, str(version), "runtime")
+            if key in seen:
+                continue
+            seen.add(key)
+            license_ = _detect_npm_license(manifest_dir, name)
             deps.append(DependencyInfo(name=name, version=version, dep_type="runtime", license=license_))
         for name, version in pkg.get("devDependencies", {}).items():
-            license_ = _detect_npm_license(project_root, name)
+            key = (name, str(version), "dev")
+            if key in seen:
+                continue
+            seen.add(key)
+            license_ = _detect_npm_license(manifest_dir, name)
             deps.append(DependencyInfo(name=name, version=version, dep_type="dev", license=license_))
 
-    # Python (pyproject.toml)
-    pyproject_path = project_root / "pyproject.toml"
-    if pyproject_path.exists():
-        deps.extend(_parse_pyproject_deps(pyproject_path))
+    for pyproject_path in manifests["python"]:
+        for dep in _parse_pyproject_deps(pyproject_path):
+            key = (dep.name, dep.version, dep.dep_type)
+            if key in seen:
+                continue
+            seen.add(key)
+            deps.append(dep)
 
     return deps
 
 
-def _detect_npm_license(project_root: Path, package_name: str) -> str:
-    """Try to read license from node_modules/{pkg}/package.json."""
-    pkg_json = project_root / "node_modules" / package_name / "package.json"
+def _read_npm_lockfile_licenses(manifest_dir: Path) -> dict[str, str]:
+    """Parse package-lock.json (lockfileVersion 3) and return {name: license}.
+
+    lockfileVersion 3 stores entries under `packages` keyed by path
+    (e.g. `"node_modules/foo"`); each entry may carry a `license` field.
+    Returns an empty dict if the lockfile is absent / unparseable.
+    """
+    lock_path = manifest_dir / "package-lock.json"
+    if not lock_path.exists():
+        return {}
+    try:
+        data = json.loads(lock_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    result: dict[str, str] = {}
+    for path_key, entry in data.get("packages", {}).items():
+        if not isinstance(entry, dict):
+            continue
+        # path_key is "" for the root project, or "node_modules/<name>" for deps.
+        if not path_key.startswith("node_modules/"):
+            continue
+        name = path_key[len("node_modules/"):]
+        license_ = entry.get("license")
+        if isinstance(license_, str):
+            result[name] = license_
+        elif isinstance(license_, dict) and isinstance(license_.get("type"), str):
+            result[name] = license_["type"]
+    return result
+
+
+def _detect_npm_license(manifest_dir: Path, package_name: str) -> str:
+    """Resolve a JS package license — lockfile-first, node_modules fallback.
+
+    Phase 0f: prefer package-lock.json (centralized + works without `npm
+    install`); fall back to node_modules/<pkg>/package.json (legacy path).
+    """
+    lockfile_licenses = _read_npm_lockfile_licenses(manifest_dir)
+    if package_name in lockfile_licenses:
+        return lockfile_licenses[package_name]
+    pkg_json = manifest_dir / "node_modules" / package_name / "package.json"
     if pkg_json.exists():
         try:
             data = json.loads(pkg_json.read_text(encoding="utf-8"))
-            return data.get("license", "unknown")
+            license_ = data.get("license", "unknown")
+            if isinstance(license_, dict):
+                license_ = license_.get("type", "unknown")
+            return license_
         except (json.JSONDecodeError, OSError):
             pass
     return "unknown"
 
 
+def _detect_python_license(package_name: str) -> str:
+    """Resolve a Python package license via importlib.metadata.
+
+    Phase 0f: reads installed site-packages after `uv sync`. No network,
+    no subprocess. Returns "unknown" when the package is not installed
+    (typical in CI without `uv sync`) or when its metadata declares no
+    License field.
+    """
+    try:
+        from importlib import metadata as _metadata
+    except ImportError:
+        return "unknown"
+    try:
+        meta = _metadata.metadata(package_name)
+    except _metadata.PackageNotFoundError:
+        return "unknown"
+    except Exception:
+        return "unknown"
+    # Try "License" first; fall back to "License-Expression" (PEP 639).
+    license_ = meta.get("License") or meta.get("License-Expression") or ""
+    if not license_ or license_ == "UNKNOWN":
+        # Some packages encode license only in Trove classifiers.
+        for classifier in meta.get_all("Classifier") or []:
+            if classifier.startswith("License :: "):
+                # e.g. "License :: OSI Approved :: MIT License" → "MIT"
+                parts = classifier.split(" :: ")
+                if parts:
+                    return parts[-1].replace(" License", "")
+        return "unknown"
+    return license_.strip().splitlines()[0]  # one-line clamp
+
+
 def _parse_pyproject_deps(pyproject_path: Path) -> list[DependencyInfo]:
-    """Parse dependencies from pyproject.toml (simple regex, no toml lib needed)."""
+    """Parse dependencies from pyproject.toml + resolve each license via importlib.metadata."""
     deps: list[DependencyInfo] = []
     content = pyproject_path.read_text(encoding="utf-8")
 
@@ -617,10 +757,12 @@ def _parse_pyproject_deps(pyproject_path: Path) -> list[DependencyInfo]:
             dep_str = stripped.strip('",')
             match = re.match(r"^([a-zA-Z0-9_-]+)(?:[><=!~]+(.+))?$", dep_str)
             if match:
+                name = match.group(1)
                 deps.append(DependencyInfo(
-                    name=match.group(1),
+                    name=name,
                     version=match.group(2) or "any",
                     dep_type="dev" if in_dev else "runtime",
+                    license=_detect_python_license(name),
                 ))
 
     return deps
