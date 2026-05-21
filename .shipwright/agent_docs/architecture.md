@@ -1,43 +1,31 @@
 # Architecture — shipwright
+<!-- shipwright:architecture v=2 last-sync=932e0d221ea1 -->
 
 ## System Overview
 
-+----------------------------------------------------------+
-| Claude Code (host)                                       |
-|   loads plugins from ~/.claude/plugins/cache/shipwright/ |
-+----------------------------------------------------------+
-        |
-        v
-+---------------------+    +--------------------------------+
-| plugins/            |    | shared/                        |
-|   shipwright-run    |--->|   scripts/  (lib, tools, hooks)|
-|   shipwright-project|--->|   profiles/ (stack + deploy)   |
-|   shipwright-plan   |--->|   templates/                   |
-|   shipwright-design |--->|   prompts/  (review prompts)   |
-|   shipwright-build  |--->|   config/   (defaults)         |
-|   shipwright-test   |    +--------------------------------+
-|   shipwright-security|              ^
-|   shipwright-deploy |               | reads/writes
-|   shipwright-changelog              |
-|   shipwright-compliance ------------+
-|   shipwright-iterate |
-|   shipwright-preview |
-|   shipwright-adopt   |
-+---------------------+
-        |
-        | writes/reads in target project
-        v
-+----------------------------------------------------------+
-| Target project                                           |
-|   CLAUDE.md                                              |
-|   shipwright_*_config.json (run, project, plan, build,   |
-|                             iterate, compliance, sync,   |
-|                             ...)                         |
-|   shipwright_events.jsonl                                |
-|   .shipwright/                                           |
-|     agent_docs/  planning/  compliance/  designs/        |
-|     adopt/  reviews/                                     |
-+----------------------------------------------------------+
+```mermaid
+flowchart TB
+  CC["Claude Code (host)<br/>loads plugins from ~/.claude/plugins/cache/shipwright/"]
+
+  subgraph plugins["plugins/"]
+    direction TB
+    P["shipwright-run<br/>shipwright-project<br/>shipwright-plan<br/>shipwright-design<br/>shipwright-build<br/>shipwright-test<br/>shipwright-security<br/>shipwright-deploy<br/>shipwright-changelog<br/>shipwright-compliance<br/>shipwright-iterate<br/>shipwright-preview<br/>shipwright-adopt"]
+  end
+
+  subgraph shared["shared/"]
+    direction TB
+    S["scripts/ (lib, tools, hooks)<br/>profiles/ (stack + deploy)<br/>templates/<br/>prompts/ (review prompts)<br/>config/ (defaults)"]
+  end
+
+  subgraph target["Target project"]
+    direction TB
+    T["CLAUDE.md<br/>shipwright_*_config.json<br/>shipwright_events.jsonl<br/>.shipwright/<br/>&nbsp;&nbsp;agent_docs/ planning/ compliance/ designs/<br/>&nbsp;&nbsp;adopt/ reviews/"]
+  end
+
+  CC --> plugins
+  plugins -- "reads/writes" --> shared
+  plugins -- "writes/reads" --> target
+```
 
 ## Stack
 
