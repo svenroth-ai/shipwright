@@ -1,18 +1,38 @@
-"""Group F — ADR structural integrity (plan v7 Option Z).
+"""Group F — ADR structural integrity (plan v7 Option Z) + documentation
+hygiene (Iterate C.2 / ADR-060).
 
-Structural checks only (sequential IDs, valid status, supersession refs).
-Content quality is handled by Phase-Quality Q1 (Tier-2 "ADR substance"),
-so F and Q1 scan different axes and do not overlap.
+F1-F3 are preventive-reruns of iterate-12 common.py verifiers
+(sequential IDs, valid status, supersession refs).
 
-Every check is a preventive-rerun of an iterate-12 common.py verifier.
+F4-F7 are detective-only documentation-hygiene checks added by Iterate
+C.2:
+
+- F4 — ADR bloat. ADRs > 60 lines without a ``spec_ref`` link are
+  candidates for refactor into a `.shipwright/planning/adr/<NNN>-…`
+  long-form spec file (mirrors the A.3 / B.0+ pattern).
+- F5 — Architecture drift. ``architecture.md`` carries a
+  ``last-sync=<sha>`` marker; if drops with
+  ``architecture_impact ∈ {component, data-flow}`` exist but the
+  marker is missing, the architecture diagram likely needs a re-
+  sync.
+- F6 — CLAUDE.md size. CLAUDE.md > 200 lines is a sign that per-
+  iterate detail is leaking into the file (webui hit this at 270;
+  Phase 0e refactored it down via ADR-spec-folder extraction).
+- F7 — CLAUDE.md iterate-annotation leak. Regex-counted occurrences
+  of ``Iterate <X> (ADR-NN)`` > 5 indicate inline iterate-detail
+  belongs in `.shipwright/planning/adr/<NNN>-…` files instead.
 """
 
 from __future__ import annotations
 
+import json
+import re
+import subprocess
 from pathlib import Path
 from typing import Any
 
 from scripts.audit.audit_adapters import (
+    SOURCE_DETECTIVE_ONLY,
     SOURCE_PREVENTIVE_RERUN,
     Finding,
     check_result_to_finding,
@@ -25,6 +45,349 @@ _CHECK_TO_ID: tuple[tuple[str, str, str], ...] = (
     ("check_adr_status_valid", "F2", "ADR Status in valid enum"),
     ("check_adr_supersession_exists", "F3", "Superseded ADRs reference a replacement"),
 )
+
+
+# ---------------------------------------------------------------------------
+# F4-F7 thresholds (Iterate C.2 / ADR-060)
+# ---------------------------------------------------------------------------
+
+_ADR_BLOAT_LINE_CAP = 60
+_CLAUDE_MD_LINE_CAP = 200
+_CLAUDE_MD_ITERATE_REF_CAP = 5
+
+# Match the compact-format ADR header `### ADR-NNN: Title`. The verbose
+# old format (`## ADR-NNN | date | ...`) is also detected — only the
+# compact form has clean line-counted bodies (ADR-bloat detection
+# specifically targets the compact form per the plan).
+_ADR_HEADER_RE = re.compile(r"^### ADR-(\d+):\s*.+$", re.MULTILINE)
+
+# Match "Iterate X.Y (ADR-NN)" / "Iterate B0" / similar inline annotations.
+_ITERATE_REF_RE = re.compile(r"Iterate [0-9A-Z][0-9A-Z.]*(?:\s*\(?ADR-[0-9]+\)?)?")
+
+
+# ---------------------------------------------------------------------------
+# F4 — ADR bloat
+# ---------------------------------------------------------------------------
+
+
+def _check_f4(project_root: Path) -> tuple[str, str, str, list[str]]:
+    """Return ``(status, severity, detail, evidence)`` for ADR-bloat.
+
+    Reads ``.shipwright/agent_docs/decision_log.md``, locates each
+    compact-format ADR section, counts the lines between consecutive
+    `### ADR-N` headers, and flags ADRs whose body exceeds
+    ``_ADR_BLOAT_LINE_CAP`` AND that don't carry a
+    ``- **Details:** [...](...)`` link to a long-form ADR spec file.
+    """
+    log = project_root / ".shipwright" / "agent_docs" / "decision_log.md"
+    if not log.exists():
+        return "skip", "LOW", "decision_log.md not present", []
+    try:
+        content = log.read_text(encoding="utf-8")
+    except OSError as exc:
+        return "skip", "LOW", f"decision_log.md unreadable: {exc}", []
+
+    lines = content.splitlines()
+    # Walk the line list once, building (adr_id, body_lines) per section.
+    sections: list[tuple[str, list[str]]] = []
+    current_id: str | None = None
+    current_body: list[str] = []
+    for line in lines:
+        m = _ADR_HEADER_RE.match(line)
+        if m:
+            if current_id is not None:
+                sections.append((current_id, current_body))
+            current_id = f"ADR-{m.group(1)}"
+            current_body = []
+        elif current_id is not None:
+            current_body.append(line)
+    if current_id is not None:
+        sections.append((current_id, current_body))
+
+    bloated: list[tuple[str, int]] = []
+    for adr_id, body in sections:
+        if len(body) <= _ADR_BLOAT_LINE_CAP:
+            continue
+        # ``spec_ref`` aggregates render as ``- **Details:** [<text>](<url>)``
+        # with the URL pointing at ``.../planning/adr/<NNN>-<slug>.md``.
+        # Reviewer-flagged OpenAI-M1: a bare "**Details:**" mention
+        # without a real link target is not a valid spec_ref. Match
+        # the full link shape via `_DETAILS_LINK_RE` instead of
+        # substring-poking individual lines.
+        body_text = "\n".join(body)
+        if not _DETAILS_LINK_RE.search(body_text):
+            bloated.append((adr_id, len(body)))
+
+    if not bloated:
+        return "pass", "MEDIUM", "no bloated ADRs without spec_ref", []
+    bloated.sort(key=lambda x: -x[1])
+    head = ", ".join(f"{adr} ({n} lines)" for adr, n in bloated[:5])
+    if len(bloated) > 5:
+        head += f", … (+{len(bloated) - 5})"
+    detail = (
+        f"{len(bloated)} ADR(s) exceed {_ADR_BLOAT_LINE_CAP} lines without a "
+        f"spec_ref link — refactor each into "
+        f".shipwright/planning/adr/<NNN>-<slug>.md and link via "
+        f"--spec-ref. Heaviest: {head}."
+    )
+    evidence = [f"{adr}: {n} lines" for adr, n in bloated]
+    return "fail", "MEDIUM", detail, evidence
+
+
+# ---------------------------------------------------------------------------
+# F5 — Architecture drift
+# ---------------------------------------------------------------------------
+
+
+_ARCH_MARKER_RE = re.compile(
+    r"<!--\s*shipwright:architecture\s+v=\d+\s+last-sync=([0-9a-f]{7,40})\s*-->"
+)
+
+# Standalone SHA validator — reviewer-flagged Gemini-S1: the marker
+# value goes into subprocess.run; even with shell=False + list args
+# git itself can interpret `--option`-shaped strings as flags if we
+# don't pre-validate. Anchored hex-only pattern eliminates that class
+# of risk.
+_SHA_FORMAT_RE = re.compile(r"^[0-9a-f]{7,40}$")
+
+# Recognize the `**Details:** [...](...)` link rendered by
+# aggregate_decisions.py for an ADR's `spec_ref`. The URL part
+# (`(...)`) is what F4 cares about; mere text mention of "Details"
+# without an actual link doesn't count. The regex matches the
+# relative path `../planning/adr/...` the aggregator emits from a
+# 2-deep decision_log.md location.
+_DETAILS_LINK_RE = re.compile(
+    r"\*\*Details:\*\*\s*\[[^\]]*\]\(\S*planning/adr/[^)]+\)",  # artifact-path-canon: legacy
+    re.IGNORECASE,
+)
+
+
+def _check_f5(project_root: Path) -> tuple[str, str, str, list[str]]:
+    """Return F5 status — architecture marker vs new arch-impact drops.
+
+    Reads the ``last-sync=<sha>`` marker from ``architecture.md`` and
+    scans ``.shipwright/agent_docs/decision-drops/*.json`` for drops
+    with ``architecture_impact ∈ {component, data-flow}``. Drift
+    states:
+
+    - Marker missing + any arch-impact drops → fail (need first sync).
+    - Marker present + arch-impact drops added AFTER the marker's
+      commit (via ``git log``) → fail (need re-sync).
+    - Marker present + no drift, or drops resolve cleanly → pass.
+
+    Git is invoked best-effort; if not a git repo, the marker-missing
+    path still works.
+    """
+    arch_md = project_root / ".shipwright" / "agent_docs" / "architecture.md"
+    drops_dir = project_root / ".shipwright" / "agent_docs" / "decision-drops"
+
+    if not drops_dir.exists():
+        return "skip", "LOW", "no decision-drops dir", []
+
+    arch_drops: list[tuple[str, str]] = []  # (relpath, architecture_impact)
+    corrupt_drops: list[str] = []
+    for drop_path in sorted(drops_dir.glob("*.json")):
+        try:
+            data = json.loads(drop_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as exc:
+            # Reviewer-flagged code-review-HIGH: a corrupt drop file
+            # could hide an arch-impact drop entirely; surface it as a
+            # fail finding rather than silently swallowing.
+            corrupt_drops.append(f"{drop_path.name}:{type(exc).__name__}")
+            continue
+        impact = data.get("architecture_impact")
+        if impact in ("component", "data-flow"):
+            arch_drops.append((drop_path.name, impact))
+
+    if corrupt_drops:
+        return (
+            "fail",
+            "MEDIUM",
+            f"{len(corrupt_drops)} decision-drop(s) failed to parse — "
+            f"cannot reliably assess architecture drift. Fix or remove: "
+            f"{', '.join(corrupt_drops[:3])}"
+            f"{'…' if len(corrupt_drops) > 3 else ''}.",
+            corrupt_drops,
+        )
+
+    if not arch_drops:
+        return "pass", "MEDIUM", "no architecture-impact drops to reconcile", []
+
+    marker_sha: str | None = None
+    if arch_md.exists():
+        try:
+            marker_sha_match = _ARCH_MARKER_RE.search(
+                arch_md.read_text(encoding="utf-8")
+            )
+            if marker_sha_match:
+                marker_sha = marker_sha_match.group(1)
+        except OSError:
+            pass
+
+    if marker_sha is None:
+        head = ", ".join(name for name, _ in arch_drops[:3])
+        if len(arch_drops) > 3:
+            head += f", … (+{len(arch_drops) - 3})"
+        return (
+            "fail",
+            "MEDIUM",
+            f"architecture.md has no shipwright:architecture marker, but "
+            f"{len(arch_drops)} arch-impact drop(s) exist — run the first "
+            f"sync to establish a baseline. Drops: {head}.",
+            [f"{name} (impact={impact})" for name, impact in arch_drops],
+        )
+
+    # Reviewer-flagged Gemini-S1: validate the SHA format BEFORE
+    # passing it to subprocess. Anchored hex match defends against
+    # malformed marker content (`-` / `..` / shell-flag shapes) even
+    # though we use `shell=False` + list args.
+    if not _SHA_FORMAT_RE.match(marker_sha):
+        return (
+            "fail",
+            "MEDIUM",
+            f"architecture.md marker last-sync={marker_sha!r} is not a "
+            f"valid hex SHA (7..40 hex chars). Re-run the architecture "
+            f"sync to write a fresh marker.",
+            [f"marker={marker_sha!r}"],
+        )
+
+    # Marker present — check if any drop file was added/modified after
+    # the marker's commit via git.
+    rel_drops = str(drops_dir.relative_to(project_root)).replace("\\", "/")
+    try:
+        proc = subprocess.run(
+            ["git", "log", "--name-only", "--pretty=format:", f"{marker_sha}..HEAD",
+             "--", rel_drops],
+            cwd=str(project_root),
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return (
+            "skip",
+            "LOW",
+            f"could not run git log; marker={marker_sha}",
+            [],
+        )
+    if proc.returncode != 0:
+        # Reviewer-flagged Gemini-S2: surface a targeted message when
+        # the marker SHA isn't reachable in this repo's history
+        # (rebase / shallow clone / orphan). Operator-actionable
+        # finding, not a silent skip.
+        stderr_tail = (proc.stderr or "").strip().splitlines()[-1:] or [""]
+        return (
+            "fail",
+            "MEDIUM",
+            f"architecture.md marker {marker_sha} isn't reachable in this "
+            f"repo's history — re-sync the diagram and write a fresh marker. "
+            f"git: {stderr_tail[0]}",
+            [f"marker={marker_sha}"],
+        )
+    changed_drops = {
+        Path(line).name
+        for line in proc.stdout.splitlines()
+        if line and line.endswith(".json")
+    }
+    drift_set = [
+        (name, impact) for name, impact in arch_drops
+        if name in changed_drops
+    ]
+    if not drift_set:
+        return "pass", "MEDIUM", f"no arch-impact drift since marker {marker_sha}", []
+
+    head = ", ".join(name for name, _ in drift_set[:3])
+    if len(drift_set) > 3:
+        head += f", … (+{len(drift_set) - 3})"
+    return (
+        "fail",
+        "MEDIUM",
+        f"{len(drift_set)} arch-impact drop(s) added since "
+        f"architecture.md marker {marker_sha} — re-sync the diagram "
+        f"and bump the marker. Drops: {head}.",
+        [f"{name} (impact={impact})" for name, impact in drift_set],
+    )
+
+
+# ---------------------------------------------------------------------------
+# F6 / F7 — CLAUDE.md hygiene
+# ---------------------------------------------------------------------------
+
+
+def _check_f6(project_root: Path) -> tuple[str, str, str, list[str]]:
+    """CLAUDE.md > _CLAUDE_MD_LINE_CAP lines."""
+    claude_md = project_root / "CLAUDE.md"
+    if not claude_md.exists():
+        return "skip", "LOW", "CLAUDE.md not present", []
+    try:
+        line_count = sum(1 for _ in claude_md.open("r", encoding="utf-8"))
+    except OSError as exc:
+        return "skip", "LOW", f"CLAUDE.md unreadable: {exc}", []
+    if line_count <= _CLAUDE_MD_LINE_CAP:
+        return "pass", "MEDIUM", f"CLAUDE.md is {line_count} lines (≤ {_CLAUDE_MD_LINE_CAP})", []
+    return (
+        "fail",
+        "MEDIUM",
+        f"CLAUDE.md is {line_count} lines, exceeds the {_CLAUDE_MD_LINE_CAP}-line "
+        f"hygiene cap — consider moving per-iterate detail into "
+        f".shipwright/planning/adr/<NNN>-<slug>.md spec files.",
+        [f"line_count={line_count}"],
+    )
+
+
+def _check_f7(project_root: Path) -> tuple[str, str, str, list[str]]:
+    """CLAUDE.md inline iterate-annotation count > _CLAUDE_MD_ITERATE_REF_CAP."""
+    claude_md = project_root / "CLAUDE.md"
+    if not claude_md.exists():
+        return "skip", "LOW", "CLAUDE.md not present", []
+    try:
+        content = claude_md.read_text(encoding="utf-8")
+    except OSError as exc:
+        return "skip", "LOW", f"CLAUDE.md unreadable: {exc}", []
+    matches = _ITERATE_REF_RE.findall(content)
+    n = len(matches)
+    if n <= _CLAUDE_MD_ITERATE_REF_CAP:
+        return "pass", "MEDIUM", f"{n} inline iterate references (≤ {_CLAUDE_MD_ITERATE_REF_CAP})", []
+    sample = matches[:3]
+    return (
+        "fail",
+        "MEDIUM",
+        f"{n} inline 'Iterate X (ADR-NN)' references in CLAUDE.md exceed the "
+        f"{_CLAUDE_MD_ITERATE_REF_CAP}-reference cap — move per-iterate detail "
+        f"into .shipwright/planning/adr/<NNN>-<slug>.md spec files. "
+        f"Sample: {sample}.",
+        # Reviewer-flagged code-review-M2: evidence carries the FULL
+        # match list (not just the detail's top-3 sample), so the
+        # audit report shows every offending reference.
+        matches,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Group entry point
+# ---------------------------------------------------------------------------
+
+
+def _detective_finding(
+    check_id: str,
+    name: str,
+    fn,
+    project_root: Path,
+) -> Finding:
+    """Adapter: turn one of the F4-F7 check helpers into a Finding."""
+    try:
+        status, severity, detail, evidence = fn(project_root)
+    except Exception as exc:  # noqa: BLE001
+        return Finding(
+            group="F", check_id=check_id, name=name,
+            severity="HIGH", source=SOURCE_DETECTIVE_ONLY, status="fail",
+            detail=f"check raised {type(exc).__name__}: {exc}",
+        )
+    return Finding(
+        group="F", check_id=check_id, name=name,
+        severity=severity, source=SOURCE_DETECTIVE_ONLY, status=status,
+        detail=detail, evidence=evidence,
+    )
 
 
 def run(
@@ -54,5 +417,19 @@ def run(
         )
         finding.name = human_name
         findings.append(finding)
+
+    # Iterate C.2 detective-only additions.
+    findings.append(_detective_finding(
+        "F4", "ADR bloat (> 60 lines without spec_ref)", _check_f4, project_root,
+    ))
+    findings.append(_detective_finding(
+        "F5", "Architecture marker vs arch-impact drops", _check_f5, project_root,
+    ))
+    findings.append(_detective_finding(
+        "F6", "CLAUDE.md size hygiene", _check_f6, project_root,
+    ))
+    findings.append(_detective_finding(
+        "F7", "CLAUDE.md inline iterate-annotation leak", _check_f7, project_root,
+    ))
 
     return findings
