@@ -148,6 +148,12 @@ ALLOWLIST: dict[str, list[str]] = {
         # inbox-1a after external/code review captures landed under
         # .shipwright/planning/iterate/.
         ".shipwright/planning/iterate/**.json",
+        # iterate-2026-05-21-triage-producer-contract (A.3 / B0+) — long-form
+        # ADR spec files (e.g. `054-triage-producer-contract.md`,
+        # `055-compliance-dashboard-mode-aware.md`) discuss
+        # `shipwright-compliance` and `compliance_report.py` as plugin /
+        # phase names by design. Same class as the iterate-spec entry above.
+        ".shipwright/planning/adr/**.md",
         # Layer 2 setup-contract test — intentionally asserts that the legacy
         # path is NOT created. Must reference legacy by name to do so.
         "shared/tests/test_setup_writes_canonical.py",
@@ -217,6 +223,12 @@ ALLOWLIST: dict[str, list[str]] = {
         # inbox-1a after external/code review captures landed under
         # .shipwright/planning/iterate/.
         ".shipwright/planning/iterate/**.json",
+        # iterate-2026-05-21-triage-producer-contract (A.3 / B0+) — long-form
+        # ADR spec files (e.g. `054-triage-producer-contract.md`,
+        # `055-compliance-dashboard-mode-aware.md`) discuss
+        # `shipwright-compliance` and `compliance_report.py` as plugin /
+        # phase names by design. Same class as the iterate-spec entry above.
+        ".shipwright/planning/adr/**.md",
         # Layer-2 setup-contract test references both paths by design
         "shared/tests/test_setup_writes_canonical.py",
         # Migration tooling (CLI + helpers) takes artifact name as argument
@@ -279,6 +291,12 @@ ALLOWLIST: dict[str, list[str]] = {
         # inbox-1a after external/code review captures landed under
         # .shipwright/planning/iterate/.
         ".shipwright/planning/iterate/**.json",
+        # iterate-2026-05-21-triage-producer-contract (A.3 / B0+) — long-form
+        # ADR spec files (e.g. `054-triage-producer-contract.md`,
+        # `055-compliance-dashboard-mode-aware.md`) discuss
+        # `shipwright-compliance` and `compliance_report.py` as plugin /
+        # phase names by design. Same class as the iterate-spec entry above.
+        ".shipwright/planning/adr/**.md",
         "shipwright_project_config.json",
         # Layer-2 setup-contract test references both paths by design
         "shared/tests/test_setup_writes_canonical.py",
@@ -379,6 +397,12 @@ ALLOWLIST: dict[str, list[str]] = {
         # inbox-1a after external/code review captures landed under
         # .shipwright/planning/iterate/.
         ".shipwright/planning/iterate/**.json",
+        # iterate-2026-05-21-triage-producer-contract (A.3 / B0+) — long-form
+        # ADR spec files (e.g. `054-triage-producer-contract.md`,
+        # `055-compliance-dashboard-mode-aware.md`) discuss
+        # `shipwright-compliance` and `compliance_report.py` as plugin /
+        # phase names by design. Same class as the iterate-spec entry above.
+        ".shipwright/planning/adr/**.md",
         # Layer-2 setup-contract test references both paths by design
         "shared/tests/test_setup_writes_canonical.py",
         # Edge-case test file that intentionally references both paths (introduced in designs migration)
