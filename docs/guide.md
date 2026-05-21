@@ -1049,7 +1049,7 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 - `shipwright_audit_report.json` — structured payload; every finding carries a `source` field (`detective-only` or `preventive-rerun`).
 
 **What the auto-background generator produces** (unchanged from v6):
-- `.shipwright/compliance/dashboard.md` -- Start-here overview with quality indicators, project velocity, and links.
+- `.shipwright/compliance/dashboard.md` -- Start-here overview with quality indicators, project velocity, and links. Mode-aware (Iterate B.1, 2026-05-21): adopted projects (`run_config.adoption` set) render `Pipeline phases completed: n/a (adopted)` instead of a fake `1/7 WARN` and hide the structurally-N/A `Work events (build)` + `All sections reviewed` rows. Every WARN row carries a 4th `Why warn?` column with a one-line diagnostic pointer (`"X failing — see test-evidence.md"`, `"see sbom.md"`, ...). A `Triage open` indicator surfaces the count of open items in `.shipwright/triage.jsonl` (signal severities prominent, info-severity shown in parens — `"3 open (1 info)"`) so the inbox status lives on the compliance home page.
 - `.shipwright/compliance/traceability-matrix.md` -- Every requirement mapped to the work events that verify it, with a "Last Verified" column.
 - `.shipwright/compliance/test-evidence.md` -- Test results across unit / integration / pgTAP / smoke / E2E / consistency / visual, with pass/fail counts and skip reasons.
 - `.shipwright/compliance/change-history.md` -- All commits + decisions (from `.shipwright/agent_docs/decision_log.md`) + version tags.
