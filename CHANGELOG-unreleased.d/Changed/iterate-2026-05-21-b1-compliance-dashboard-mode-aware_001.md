@@ -1,0 +1,1 @@
+Compliance Dashboard: mode-aware indicators (adopted projects show `n/a (adopted)` for pipeline phases; hide structurally-N/A build-section rows), new Why-warn 4th column with per-indicator diagnostic pointers, new Triage open indicator surfacing `.shipwright/triage.jsonl` status (Iterate B.1).

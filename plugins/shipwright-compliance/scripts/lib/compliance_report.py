@@ -17,11 +17,66 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 from markdown_table import escape_cell  # noqa: E402
 
+# Triage Inbox count surfaces in the dashboard's Quality Indicators
+# section (Iterate B.1). Import is deferred to keep the test fixture
+# fallback path simple — a project with no `.shipwright/triage.jsonl`
+# yields an empty list, not a crash.
+try:
+    from triage import read_all_items as _read_triage_items  # noqa: E402
+except ImportError:  # pragma: no cover - triage helper always available in practice
+    _read_triage_items = None  # type: ignore[assignment]
+
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
 
 
 _COPYLEFT_LICENSES = {"GPL", "LGPL", "AGPL", "MPL-2.0", "GPL-2.0", "GPL-3.0", "AGPL-3.0", "LGPL-2.1", "LGPL-3.0"}
+
+
+def _is_adopted(run_config: dict) -> bool:
+    """True when the project was onboarded via /shipwright-adopt.
+
+    The empirically correct signal is the presence of the `adoption`
+    object (carrying `adopted_at`, `commit_at_adoption`, ...). The
+    artifact-polish plan originally suggested checking `scope`, but
+    `scope` carries values like `"library"` / `"full_app"` — orthogonal
+    to adoption status (Iterate B.1, 2026-05-21).
+    """
+    adoption = run_config.get("adoption")
+    return isinstance(adoption, dict) and bool(adoption)
+
+
+_SIGNAL_SEVERITIES = frozenset({"critical", "high", "medium", "low"})
+
+
+def _triage_open_counts(project_root: Path) -> tuple[int, int]:
+    """Return (signal_count, info_count) of open triage items.
+
+    Signal = severity ∈ ``_SIGNAL_SEVERITIES`` (critical/high/medium/low).
+    Info   = severity == "info".
+    Items with malformed / missing / unknown severity are skipped from
+    BOTH counts (ADR-055 D5 — tolerant reader, matches the schema enum
+    boundary so future severity-vocab expansions don't auto-promote to
+    signal until the dashboard is updated).
+    """
+    if _read_triage_items is None:
+        return (0, 0)
+    try:
+        items = _read_triage_items(project_root)
+    except Exception:  # pragma: no cover - tolerant of corrupt file
+        return (0, 0)
+    signal = 0
+    info = 0
+    for it in items:
+        if it.get("status") != "triage":
+            continue
+        sev = it.get("severity")
+        if sev in _SIGNAL_SEVERITIES:
+            signal += 1
+        elif sev == "info":
+            info += 1
+        # else: unknown severity → skipped silently per ADR-055 D5
+    return (signal, info)
 
 
 def generate(data: ComplianceData) -> str:
@@ -84,7 +139,25 @@ def generate(data: ComplianceData) -> str:
 
 
 def _quality_indicators_events(data: ComplianceData) -> list[str]:
-    """Quality indicators from event log."""
+    """Quality indicators from event log.
+
+    Iterate B.1 (2026-05-21) — three changes:
+    - **Mode-aware**: adopted projects don't run the pipeline phases,
+      so the "Pipeline phases completed" row renders ``n/a (adopted)``
+      instead of a fake ``1/7 WARN``; the build-sections + sections-
+      reviewed rows are hidden entirely (structurally N/A, not "not
+      run yet").
+    - **Why warn? column**: one-line diagnostic pointer on every WARN
+      row so the operator knows where to look. Empty cell for PASS /
+      INFO / n/a rows.
+    - **Triage open indicator**: new row counting open items in
+      ``.shipwright/triage.jsonl``. Signal severity (critical/high/
+      medium/low) prominent; info-severity shown in parentheses
+      consistent with the inbox's signal-first render (B0 ADR-054 D6).
+    """
+    run_config = data.configs.get("run", {})
+    adopted = _is_adopted(run_config)
+
     build_events = [we for we in data.work_events if we.source == "build"]
     iterate_events = [we for we in data.work_events if we.source == "iterate"]
 
@@ -109,28 +182,123 @@ def _quality_indicators_events(data: ComplianceData) -> list[str]:
     # Iterate test coverage
     iterate_tested = sum(1 for we in iterate_events if we.tests_total > 0)
 
+    # Triage open counts — signal vs info-severity (B0 ADR-054 D6).
+    triage_signal, triage_info = _triage_open_counts(data.project_root)
+
     lines = [
         "## Quality Indicators",
         "",
-        "| Metric | Value | Status |",
-        "|--------|-------|--------|",
-        f"| Pipeline phases completed | {len(completed_phases)}/{total_pipeline} | {_status_badge(len(completed_phases) >= total_pipeline)} |",
-        f"| Work events (build) | {len(build_events)} sections | {_status_badge(len(build_events) > 0)} |",
-        f"| Work events (iterate) | {len(iterate_events)} changes | INFO |",
-        f"| All unit tests passing | {latest_passed}/{latest_total} | {_status_badge(latest_passed == latest_total and latest_total > 0)} |",
-        f"| All sections reviewed | {reviewed}/{len(build_events)} | {_status_badge(reviewed == len(build_events) and len(build_events) > 0)} |",
-        f"| Architecture decisions | {total_decisions} ADRs | INFO |",
+        "| Metric | Value | Status | Why warn? |",
+        "|--------|-------|--------|-----------|",
     ]
 
+    # Pipeline phases — n/a for adopted, real progress for greenfield.
+    if adopted:
+        lines.append(
+            "| Pipeline phases completed | n/a (adopted) | INFO |  |"
+        )
+    else:
+        pipeline_ok = len(completed_phases) >= total_pipeline
+        pipeline_status = _status_badge(pipeline_ok)
+        pipeline_why = (
+            f"{total_pipeline - len(completed_phases)} phase(s) pending — see shipwright_events.jsonl"
+            if not pipeline_ok else ""
+        )
+        lines.append(
+            f"| Pipeline phases completed | {len(completed_phases)}/{total_pipeline} | "
+            f"{pipeline_status} | {pipeline_why} |"
+        )
+
+    # Build-sections + sections-reviewed: structurally N/A for adopted
+    # (the project was onboarded with existing code, not built section
+    # by section). Hide entirely instead of WARN-noise.
+    if not adopted:
+        build_ok = len(build_events) > 0
+        build_why = (
+            "no build events recorded — run /shipwright-build" if not build_ok else ""
+        )
+        lines.append(
+            f"| Work events (build) | {len(build_events)} sections | "
+            f"{_status_badge(build_ok)} | {build_why} |"
+        )
+
+    lines.append(
+        f"| Work events (iterate) | {len(iterate_events)} changes | INFO |  |"
+    )
+
+    tests_ok = latest_passed == latest_total and latest_total > 0
+    tests_why = (
+        f"{latest_total - latest_passed}/{latest_total} failing — see test-evidence.md"
+        if not tests_ok and latest_total > 0 else
+        "no test events recorded yet" if latest_total == 0 else ""
+    )
+    lines.append(
+        f"| All unit tests passing | {latest_passed}/{latest_total} | "
+        f"{_status_badge(tests_ok)} | {tests_why} |"
+    )
+
+    if not adopted:
+        review_ok = reviewed == len(build_events) and len(build_events) > 0
+        if not review_ok:
+            # Two WARN paths: (a) build_events==0 — pre-build greenfield;
+            # (b) build_events>0 but some unreviewed. Both get a diagnostic
+            # (ADR-055 D4 / AC-5: every WARN row carries a pointer).
+            if len(build_events) == 0:
+                review_why = "no build events yet — run /shipwright-build first"
+            else:
+                review_why = (
+                    f"{len(build_events) - reviewed} section(s) unreviewed — "
+                    "see change-history.md"
+                )
+        else:
+            review_why = ""
+        lines.append(
+            f"| All sections reviewed | {reviewed}/{len(build_events)} | "
+            f"{_status_badge(review_ok)} | {review_why} |"
+        )
+
+    lines.append(
+        f"| Architecture decisions | {total_decisions} ADRs | INFO |  |"
+    )
+
     if iterate_events:
-        lines.append(f"| Iterate tests passing | {iterate_tested}/{len(iterate_events)} iterations tested | {_status_badge(iterate_tested == len(iterate_events))} |")
+        iter_ok = iterate_tested == len(iterate_events)
+        iter_why = (
+            f"{len(iterate_events) - iterate_tested} iterate(s) without tests — see test-evidence.md"
+            if not iter_ok else ""
+        )
+        lines.append(
+            f"| Iterate tests passing | {iterate_tested}/{len(iterate_events)} iterations tested | "
+            f"{_status_badge(iter_ok)} | {iter_why} |"
+        )
 
-    lines.extend([
-        f"| Dependencies | {total_deps} packages | INFO |",
-        f"| Copyleft risk | {copyleft} | {_status_badge(copyleft == 0)} |",
-        "",
-    ])
+    lines.append(
+        f"| Dependencies | {total_deps} packages | INFO |  |"
+    )
 
+    copyleft_why = (
+        f"{copyleft} copyleft license(s) detected — see sbom.md"
+        if copyleft > 0 else ""
+    )
+    lines.append(
+        f"| Copyleft risk | {copyleft} | {_status_badge(copyleft == 0)} | {copyleft_why} |"
+    )
+
+    # Triage open — new B.1 indicator. WARN when any signal item is
+    # open; info-only counts surface as PASS with a non-empty Value.
+    triage_value = f"{triage_signal} open"
+    if triage_info:
+        triage_value += f" ({triage_info} info)"
+    triage_ok = triage_signal == 0
+    triage_why = (
+        f"{triage_signal} actionable item(s) — see ../agent_docs/triage_inbox.md"
+        if not triage_ok else ""
+    )
+    lines.append(
+        f"| Triage open | {triage_value} | {_status_badge(triage_ok)} | {triage_why} |"
+    )
+
+    lines.append("")
     return lines
 
 
