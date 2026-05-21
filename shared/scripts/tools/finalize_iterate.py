@@ -105,13 +105,21 @@ def _record_event(project_root: Path, commit: str, run_id: str, description: str
 def _generate_handoff(project_root: Path, session_id: str, run_id: str, reason: str) -> str | None:
     """Generate session handoff with canon marker. Returns written path or None."""
     try:
+        from lib.events_log import latest_event_dt
         from tools.generate_session_handoff import generate_handoff
 
+        # Deterministic canon-frontmatter timestamp — see
+        # iterate-2026-05-22-deterministic-render-timestamps. Wall-clock
+        # here re-dirtied session_handoff.md on every finalize_iterate call.
+        _canon_dt = latest_event_dt(project_root)
         canon_fm = {
             "run_id": run_id,
             "phase": "iterate",
             "reason": reason,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": (
+                _canon_dt.isoformat() if _canon_dt is not None
+                else "(no events)"
+            ),
         }
         content = generate_handoff(
             project_root, session_id,

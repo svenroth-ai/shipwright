@@ -24,6 +24,7 @@ from typing import Callable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from lib.config import read_all_configs, read_events
+from lib.events_log import latest_event_dt
 from lib.iterate_entry import (
     MIGRATION_QUARANTINE_REPORT_KEY,
     MIGRATION_QUARANTINED_COUNT_KEY,
@@ -367,7 +368,14 @@ def generate_handoff(
     configs = read_all_configs(project_root)
     checkpoint = get_checkpoint(project_root)
     git_info = get_git_info(project_root)
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    # Deterministic banner — see iterate-2026-05-22-deterministic-render-timestamps.
+    # `datetime.now()` made every handoff re-render mutate this line, leaving
+    # the file `M` in `git status`.
+    _ts_dt = latest_event_dt(project_root)
+    timestamp = (
+        _ts_dt.strftime("%Y-%m-%d %H:%M:%S UTC") if _ts_dt is not None
+        else "(no events)"
+    )
 
     # Read decision log if it exists
     decision_log = project_root / ".shipwright" / "agent_docs" / "decision_log.md"
@@ -622,11 +630,20 @@ def main() -> None:
                 file=sys.stderr,
             )
         else:
+            # Deterministic frontmatter timestamp — see iterate-2026-05-22.
+            # Using datetime.now() here was the second-most-common source of
+            # session_handoff.md drift after the rendered banner. Fall back
+            # to a placeholder so the frontmatter still has a `timestamp`
+            # key (Stop hook's conditional-skip logic keys on its presence).
+            _canon_dt = latest_event_dt(project_root)
             canon_frontmatter = {
                 "run_id": env_run_id,
                 "phase": args.phase,
                 "reason": args.reason,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": (
+                    _canon_dt.isoformat() if _canon_dt is not None
+                    else "(no events)"
+                ),
             }
 
     content = generate_handoff(

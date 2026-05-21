@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-21T19:07:21Z
+Generated: 2026-05-21T19:08:17.472175+00:00
 
 ## Requirements Coverage
 
@@ -64,6 +64,7 @@ Generated: 2026-05-21T19:07:21Z
 | Artifact-based GitHub security producer for Triage Inbox (+ spec.md FR-01.14 update) | iterate | feature | FR-01.14 | 122/122 | 861c0fd | 2026-05-20 |
 | VERIFICATION: with affected-frs — should pass | iterate | feature | FR-01.01 | — | 376c870 | 2026-05-21 |
 | VERIFICATION: bug+change-type — should pass | iterate | bug |  | — | 376c870 | 2026-05-21 |
+| empirical-verification follow-ups: triage_add CLI + Full Suite Runs synthesis + path-canon ALLOWLIST | iterate | change |  | 2621/2621 | d8f3c05 | 2026-05-21 |
 
 ## Coverage Summary
 
@@ -71,7 +72,7 @@ Generated: 2026-05-21T19:07:21Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 39 |
+| Iterate changes | 40 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

@@ -10,7 +10,21 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.config import collect_all_build_sections, read_config, read_events
+from lib.events_log import latest_event_dt
 from markdown_table import escape_cell
+
+
+def _deterministic_now(project_root: Path) -> str:
+    """Banner timestamp derived from events.jsonl, not wall-clock.
+
+    See iterate-2026-05-22-deterministic-render-timestamps — using
+    `datetime.now()` caused the rendered dashboard to drift on every
+    Stop hook even when the underlying data was unchanged.
+    """
+    dt = latest_event_dt(project_root)
+    if dt is None:
+        return "(no events)"
+    return dt.strftime("%Y-%m-%d %H:%M UTC")
 
 STEP_LABELS = {
     1: "Read spec", 2: "Install deps", 3: "Write tests (red)",
@@ -164,7 +178,7 @@ def generate_dashboard(
     completed_all = sum(1 for s in all_sections if s.get("status") == "complete")
     current_split = build_info["current_split"]
     completed_splits, total_splits = build_info["completed_splits"], build_info["total_splits"]
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    now = _deterministic_now(project_root)
     sid = session_id or os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
     completed_steps = set(run_config.get("completed_steps", [])) if run_config else set()
 
@@ -305,7 +319,7 @@ def _generate_from_events(project_root: Path, session_id: str | None = None,
     if not events:
         return None
 
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    now = _deterministic_now(project_root)
     sid = session_id or os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
 
     work_events = [e for e in events if e.get("type") == "work_completed"]

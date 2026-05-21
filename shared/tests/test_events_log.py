@@ -13,6 +13,7 @@ import pytest
 
 from lib.events_log import (
     EVENT_FILE,
+    latest_event_dt,
     resolve_events_path,
     resolve_main_repo_root,
 )
@@ -172,3 +173,172 @@ def test_main_repo_root_str_project_root_accepted(git_origin_repo):
     """Accepts a str project_root, not only a Path."""
     work, _ = git_origin_repo
     assert resolve_main_repo_root(str(work)).resolve() == work.resolve()
+
+
+# ---------------------------------------------------------------------------
+# latest_event_dt — deterministic substitute for `datetime.now()` in render
+# banners (iterate-2026-05-22-deterministic-render-timestamps).
+# ---------------------------------------------------------------------------
+
+
+def _write_events_jsonl(project_root: Path, lines: list[str]) -> None:
+    """Write raw lines to the project's events.jsonl (newline-joined)."""
+    path = project_root / EVENT_FILE
+    path.write_text(("\n".join(lines) + "\n") if lines else "", encoding="utf-8")
+
+
+def test_latest_event_dt_returns_none_when_log_missing(tmp_path: Path) -> None:
+    """Brand-new project: no events.jsonl yet → None."""
+    assert latest_event_dt(tmp_path) is None
+
+
+def test_latest_event_dt_returns_none_when_log_empty(tmp_path: Path) -> None:
+    """Existing-but-empty events.jsonl → None."""
+    (tmp_path / EVENT_FILE).write_text("", encoding="utf-8")
+    assert latest_event_dt(tmp_path) is None
+
+
+def test_latest_event_dt_single_event(tmp_path: Path) -> None:
+    """One event → its ts, parsed to UTC."""
+    import json
+    _write_events_jsonl(tmp_path, [
+        json.dumps({"type": "x", "ts": "2026-05-20T12:00:00+00:00"}),
+    ])
+    from datetime import datetime, timezone
+    dt = latest_event_dt(tmp_path)
+    assert dt is not None
+    assert dt == datetime(2026, 5, 20, 12, 0, 0, tzinfo=timezone.utc)
+
+
+def test_latest_event_dt_multiple_events_returns_max(tmp_path: Path) -> None:
+    """Multiple events → the chronologically-latest one."""
+    import json
+    _write_events_jsonl(tmp_path, [
+        json.dumps({"type": "x", "ts": "2026-05-20T12:00:00+00:00"}),
+        json.dumps({"type": "y", "ts": "2026-05-22T03:30:00+00:00"}),
+        json.dumps({"type": "z", "ts": "2026-05-21T09:15:00+00:00"}),
+    ])
+    from datetime import datetime, timezone
+    dt = latest_event_dt(tmp_path)
+    assert dt == datetime(2026, 5, 22, 3, 30, 0, tzinfo=timezone.utc)
+
+
+def test_latest_event_dt_handles_z_suffix(tmp_path: Path) -> None:
+    """`Z` and `+00:00` suffixes both work and compare correctly."""
+    import json
+    _write_events_jsonl(tmp_path, [
+        json.dumps({"type": "x", "ts": "2026-05-20T12:00:00Z"}),
+        json.dumps({"type": "y", "ts": "2026-05-22T03:30:00+00:00"}),
+    ])
+    from datetime import datetime, timezone
+    dt = latest_event_dt(tmp_path)
+    assert dt == datetime(2026, 5, 22, 3, 30, 0, tzinfo=timezone.utc)
+
+
+def test_latest_event_dt_handles_non_utc_offset(tmp_path: Path) -> None:
+    """Mixed-timezone offsets are correctly ordered by instant, not by
+    lexicographic comparison of the timestamp string.
+
+    Lex-max would pick "2026-05-22T08:00:00+02:00" (later string) but
+    "2026-05-22T07:30:00Z" is actually the later instant (08:00 CEST
+    == 06:00 UTC, which is earlier than 07:30 UTC). The helper must
+    parse-then-compare-as-datetime, not bare-string-max.
+    """
+    import json
+    _write_events_jsonl(tmp_path, [
+        # 06:00 UTC instant — string compares lex-largest
+        json.dumps({"type": "x", "ts": "2026-05-22T08:00:00+02:00"}),
+        # 07:30 UTC instant — chronologically later
+        json.dumps({"type": "y", "ts": "2026-05-22T07:30:00Z"}),
+    ])
+    from datetime import datetime, timezone
+    dt = latest_event_dt(tmp_path)
+    assert dt == datetime(2026, 5, 22, 7, 30, 0, tzinfo=timezone.utc), (
+        f"Expected the +02:00 event (06:00 UTC instant) to lose to the "
+        f"07:30Z event (07:30 UTC instant), but got {dt!r}. "
+        f"Likely cause: lexicographic max instead of datetime comparison."
+    )
+
+
+def test_latest_event_dt_skips_corrupt_lines(tmp_path: Path) -> None:
+    """A malformed JSON line in the middle of the log doesn't kill resolution."""
+    import json
+    _write_events_jsonl(tmp_path, [
+        json.dumps({"type": "x", "ts": "2026-05-20T12:00:00+00:00"}),
+        "{not valid json",  # corrupt
+        json.dumps({"type": "z", "ts": "2026-05-22T03:30:00+00:00"}),
+    ])
+    from datetime import datetime, timezone
+    dt = latest_event_dt(tmp_path)
+    assert dt == datetime(2026, 5, 22, 3, 30, 0, tzinfo=timezone.utc)
+
+
+def test_latest_event_dt_skips_lines_without_ts(tmp_path: Path) -> None:
+    """Lines lacking a `ts` field are silently skipped."""
+    import json
+    _write_events_jsonl(tmp_path, [
+        json.dumps({"type": "x"}),  # no ts
+        json.dumps({"type": "y", "ts": "2026-05-22T03:30:00+00:00"}),
+    ])
+    from datetime import datetime, timezone
+    dt = latest_event_dt(tmp_path)
+    assert dt == datetime(2026, 5, 22, 3, 30, 0, tzinfo=timezone.utc)
+
+
+def test_latest_event_dt_skips_non_string_ts(tmp_path: Path) -> None:
+    """Lines with a non-string `ts` (e.g. a number) are skipped."""
+    import json
+    _write_events_jsonl(tmp_path, [
+        json.dumps({"type": "x", "ts": 1234567890}),
+        json.dumps({"type": "y", "ts": "2026-05-20T12:00:00+00:00"}),
+    ])
+    from datetime import datetime, timezone
+    dt = latest_event_dt(tmp_path)
+    assert dt == datetime(2026, 5, 20, 12, 0, 0, tzinfo=timezone.utc)
+
+
+def test_latest_event_dt_skips_unparseable_ts(tmp_path: Path) -> None:
+    """Lines with a malformed `ts` string are skipped."""
+    import json
+    _write_events_jsonl(tmp_path, [
+        json.dumps({"type": "x", "ts": "not a real timestamp"}),
+        json.dumps({"type": "y", "ts": "2026-05-20T12:00:00+00:00"}),
+    ])
+    from datetime import datetime, timezone
+    dt = latest_event_dt(tmp_path)
+    assert dt == datetime(2026, 5, 20, 12, 0, 0, tzinfo=timezone.utc)
+
+
+def test_latest_event_dt_naive_ts_treated_as_utc(tmp_path: Path) -> None:
+    """A `ts` without timezone info is interpreted as UTC (event-log convention)."""
+    import json
+    _write_events_jsonl(tmp_path, [
+        json.dumps({"type": "x", "ts": "2026-05-20T12:00:00"}),
+    ])
+    from datetime import datetime, timezone
+    dt = latest_event_dt(tmp_path)
+    assert dt == datetime(2026, 5, 20, 12, 0, 0, tzinfo=timezone.utc)
+
+
+def test_latest_event_dt_all_corrupt_returns_none(tmp_path: Path) -> None:
+    """Every line corrupt → None (graceful degrade)."""
+    _write_events_jsonl(tmp_path, [
+        "{garbage",
+        "more garbage",
+    ])
+    assert latest_event_dt(tmp_path) is None
+
+
+def test_latest_event_dt_is_deterministic(tmp_path: Path) -> None:
+    """Two calls against the same events.jsonl, separated by wall-clock,
+    return identical answers — the whole point of the helper.
+    """
+    import json
+    import time
+    _write_events_jsonl(tmp_path, [
+        json.dumps({"type": "x", "ts": "2026-05-20T12:00:00+00:00"}),
+    ])
+    dt_1 = latest_event_dt(tmp_path)
+    time.sleep(0.5)
+    dt_2 = latest_event_dt(tmp_path)
+    assert dt_1 == dt_2

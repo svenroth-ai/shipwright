@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-21 19:07 UTC | Session: 2710ed1c-cbd1-4cd9-ab1b-9defcb95611b | Run: iterate-2026-05-21-empirical-followups
+> Updated: 2026-05-21 19:08 UTC | Session: f990b8ca-e767-4745-861f-9a142fcc95a4 | Run: iterate-2026-05-22-deterministic-render-timestamps
 
-## Recent Changes (39 iterations)
+## Recent Changes (40 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | empirical-verification follow-ups: triage_add CLI + Full Suite Runs synthesis + path-canon ALLOWLIST | 2621/2621 | d8f3c05 | tooling | 2026-05-21 |
 | bug | VERIFICATION: bug+change-type — should pass | 0/0 | 376c870 | tooling | 2026-05-21 |
 | feature | VERIFICATION: with affected-frs — should pass | 0/0 | 376c870 | FR-01.01 | 2026-05-21 |
 | feature | Artifact-based GitHub security producer for Triage Inbox (+ spec.md FR-01.14 update) | 122/122 | 861c0fd | FR-01.14 | 2026-05-20 |
@@ -46,7 +47,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-21 | Unit: 2621/2621 | Smoke: not_run | (iterate)
+Last run: 2026-05-22 | Unit: 2195/2195 | Integration: 110/110 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

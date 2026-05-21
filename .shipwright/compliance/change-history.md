@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-05-21T19:07:21Z
-Total commits: 693
+Generated: 2026-05-21T19:08:17.472175+00:00
+Total commits: 694
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 235
+    "feat" : 236
     "fix" : 180
     "chore" : 117
     "docs" : 104
@@ -19,10 +19,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 235 commits
+### Features (feat) — 236 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-21 | compliance | empirical-verification follow-ups (B.4 producer + B.3 synthesis + path-canon) (#65) | 46d674542dc4 |
 | 2026-05-21 | scripts | plugin-cache vs repo drift check (C.3) (#62) | 02eb08a6fdbb |
 | 2026-05-21 | compliance | doc-hygiene audit detectors F4-F7 (C.2) (#61) | 9008cf4b6d0b |
 | 2026-05-21 | record_event | hard-enforce FR-or-change-type gate at finalize (C.1) (#60) | 388fa55051b4 |
@@ -756,7 +757,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 693 |
+| Total commits | 694 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 693 |
+| Human-authored commits | 694 |
 

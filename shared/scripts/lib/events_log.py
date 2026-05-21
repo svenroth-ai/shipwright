@@ -48,9 +48,11 @@ identical to ``project_root / EVENT_FILE`` — behavior is unchanged.
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import warnings
+from datetime import datetime, timezone
 from pathlib import Path
 
 EVENT_FILE = "shipwright_events.jsonl"
@@ -169,3 +171,100 @@ def resolve_events_path(project_root: Path | str) -> Path:
     project_root = Path(project_root)
     main_root = resolve_main_repo_root(project_root)
     return (main_root or project_root) / EVENT_FILE
+
+
+def latest_event_dt(project_root: Path | str) -> datetime | None:
+    """Return the UTC datetime of the most recent event, or ``None``.
+
+    Iterates ``shipwright_events.jsonl`` line-by-line (worktree-aware via
+    :func:`resolve_events_path`), parses only each line's ``ts`` field,
+    and returns the chronologically-latest one as a ``datetime`` in UTC.
+
+    Designed as a deterministic substitute for ``datetime.now()`` in
+    render headers — two calls against the same events.jsonl produce the
+    same answer, so ``Generated:`` / ``Updated:`` banners no longer drift
+    on every Stop hook. The audit-trail's "wann ist was passiert" lives
+    in the events themselves; the render banner just summarises "data as
+    of which event".
+
+    F7-ordering semantic
+    --------------------
+    The iterate's own F7 ``work_completed`` event is written AFTER the
+    F6 commit (so F7 can include the new commit hash). ``finalize_iterate``
+    renders the dashboard + compliance markdowns BEFORE F6 but writes the
+    handoff in a step that runs AFTER ``record_event``. Concretely the
+    rendered banners therefore reflect:
+
+      * ``build_dashboard.md``, ``.shipwright/compliance/*.md``: timestamp
+        of the PREVIOUS iterate's F7 event (this iterate's F7 doesn't
+        exist yet at render time).
+      * ``session_handoff.md``: timestamp of the CURRENT iterate's F7
+        event (its ``_generate_handoff`` runs after ``_record_event``).
+
+    The inconsistency is accepted as the price of "no commit amends" —
+    F7 cannot run before F6 (it needs the commit SHA), and the rendered
+    markdown files must be in the F6 commit. Operator-facing impact: the
+    dashboard's "data as of" banner trails by one iterate. Audit-trail
+    impact: zero — the actual events are all in the log, this is just a
+    rendering banner.
+
+    Returns
+    -------
+    ``datetime`` in UTC, or ``None`` when:
+      * the event log is missing,
+      * the log is empty,
+      * every line is corrupt and unparseable,
+      * no line has a parseable ``ts`` field.
+
+    Robustness
+    ----------
+    * Corrupt JSON lines are skipped silently (the log is append-only;
+      a partial write halfway through one event is the dominant cause
+      of corruption, and amplifying that into a fatal exception would
+      brick every renderer until the operator hand-fixed the file).
+    * ISO8601 timestamps with either ``Z`` or ``+00:00`` suffix are
+      both accepted. Non-UTC offsets (e.g. ``+02:00``) are correctly
+      ordered by *instant* via ``datetime`` comparison, not by
+      lexicographic byte comparison of the string — a 06:00 UTC event
+      written as ``08:00+02:00`` correctly loses to a 07:30Z event.
+      Naive ``ts`` (no offset suffix) is interpreted as UTC, matching
+      the event-log convention used by ``record_event.py``.
+    """
+    path = resolve_events_path(project_root)
+    if not path.exists():
+        return None
+
+    latest: datetime | None = None
+    try:
+        with path.open("r", encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    event = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                ts_raw = event.get("ts")
+                if not isinstance(ts_raw, str):
+                    continue
+                try:
+                    # `Z` suffix is ISO8601-valid but not accepted by
+                    # `fromisoformat` until Python 3.11. Normalise.
+                    normalised = ts_raw.replace("Z", "+00:00")
+                    dt = datetime.fromisoformat(normalised)
+                except ValueError:
+                    continue
+                # Coerce to UTC: naive datetimes are interpreted as UTC
+                # (the event-log convention); aware datetimes are
+                # converted via astimezone.
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                else:
+                    dt = dt.astimezone(timezone.utc)
+                if latest is None or dt > latest:
+                    latest = dt
+    except OSError:
+        return None
+
+    return latest
