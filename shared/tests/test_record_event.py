@@ -17,7 +17,11 @@ _TOOLS = Path(__file__).resolve().parents[1] / "scripts" / "tools"
 if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
 
-from record_event import build_event, parse_args  # noqa: E402
+from record_event import (  # noqa: E402
+    _fr_or_change_type_gate_error,
+    build_event,
+    parse_args,
+)
 
 
 def _args_for_test_run(**kwargs) -> list[str]:
@@ -192,3 +196,255 @@ class TestRunEventFailedField:
         assert event["layers"]["e2e"] == {
             "passed": 4, "total": 5, "failed": 1,
         }
+
+
+class TestFrOrChangeTypeGate:
+    """Iterate C.1 (ADR-059) — hard-enforce FR-or-change-type at finalize."""
+
+    def _iterate_event(self, **overrides) -> dict:
+        event = {
+            "type": "work_completed",
+            "source": "iterate",
+            "intent": "feature",
+        }
+        event.update(overrides)
+        return event
+
+    def test_iterate_with_affected_frs_passes(self):
+        event = self._iterate_event(affected_frs=["FR-01.01"])
+        assert _fr_or_change_type_gate_error(event) is None
+
+    def test_iterate_with_new_frs_passes(self):
+        event = self._iterate_event(new_frs=["FR-02.07"])
+        assert _fr_or_change_type_gate_error(event) is None
+
+    def test_iterate_with_change_type_and_none_reason_passes(self):
+        event = self._iterate_event(change_type="tooling", none_reason="CI fix")
+        assert _fr_or_change_type_gate_error(event) is None
+
+    def test_iterate_without_any_classification_rejected(self):
+        event = self._iterate_event()
+        err = _fr_or_change_type_gate_error(event)
+        assert err is not None
+        assert err["error"] == "fr_gate_unclassified"
+
+    def test_change_type_without_none_reason_rejected(self):
+        event = self._iterate_event(change_type="tooling")
+        err = _fr_or_change_type_gate_error(event)
+        assert err is not None
+
+    def test_change_type_with_whitespace_only_none_reason_rejected(self):
+        event = self._iterate_event(change_type="docs", none_reason="   ")
+        err = _fr_or_change_type_gate_error(event)
+        assert err is not None
+
+    def test_invalid_change_type_rejected_by_gate(self):
+        # CLI argparse uses `choices=` so the bad value never reaches
+        # the gate; but if a producer constructs the event dict
+        # directly, the gate guards against it.
+        event = self._iterate_event(change_type="garbage", none_reason="x")
+        err = _fr_or_change_type_gate_error(event)
+        assert err is not None
+        assert err["error"] == "fr_gate_unclassified"
+
+    def test_bug_iterate_still_gated(self):
+        """BUG iterates aren't exempt — they classify as tooling/compliance
+        when no FR is tied (unlike spec_impact gate which exempts BUG)."""
+        event = self._iterate_event(intent="bug")
+        err = _fr_or_change_type_gate_error(event)
+        assert err is not None
+        # Same iterate WITH change_type passes.
+        event["change_type"] = "tooling"
+        event["none_reason"] = "test-flake fix"
+        assert _fr_or_change_type_gate_error(event) is None
+
+    def test_build_events_bypass_gate(self):
+        event = {
+            "type": "work_completed",
+            "source": "build",
+            "section": "01-login",
+        }
+        assert _fr_or_change_type_gate_error(event) is None
+
+    def test_non_work_completed_events_bypass(self):
+        for event_type in ("phase_started", "phase_completed", "test_run",
+                           "split_completed", "task_created"):
+            event = {"type": event_type, "source": "iterate"}
+            assert _fr_or_change_type_gate_error(event) is None, (
+                f"{event_type} should bypass FR gate"
+            )
+
+    def test_main_exits_1_when_gate_rejects(self, tmp_path, capsys):
+        """CLI integration: rejecting events return exit 1, write nothing."""
+        from record_event import main
+        log = tmp_path / "shipwright_events.jsonl"
+        rc = main([
+            "--project-root", str(tmp_path),
+            "--type", "work_completed",
+            "--source", "iterate",
+            "--intent", "feature",
+        ])
+        assert rc == 1
+        captured = capsys.readouterr()
+        assert "fr_gate_unclassified" in captured.out
+        assert not log.exists()
+
+    def test_main_passes_with_affected_frs(self, tmp_path, capsys, monkeypatch):
+        """CLI integration: events with affected_frs land on disk."""
+        from record_event import main
+        monkeypatch.setenv("SHIPWRIGHT_SESSION_ID", "test-session")
+        rc = main([
+            "--project-root", str(tmp_path),
+            "--type", "work_completed",
+            "--source", "iterate",
+            "--intent", "feature",
+            "--affected-frs", "FR-01.01",
+            "--spec-impact", "modify",
+        ])
+        assert rc == 0
+        captured = capsys.readouterr()
+        assert "fr_gate_unclassified" not in captured.out
+        assert (tmp_path / "shipwright_events.jsonl").exists()
+
+    def test_main_passes_with_change_type(self, tmp_path, capsys):
+        """CLI integration: change_type + none_reason path also passes.
+
+        Code-review-L4: assert the event actually landed on disk, not
+        just that success-shaped JSON was printed.
+        """
+        from record_event import main
+        rc = main([
+            "--project-root", str(tmp_path),
+            "--type", "work_completed",
+            "--source", "iterate",
+            "--intent", "bug",
+            "--change-type", "tooling",
+            "--none-reason", "fix flaky CI",
+        ])
+        assert rc == 0
+        captured = capsys.readouterr()
+        assert "success" in captured.out
+        # The event file MUST exist and contain a work_completed line
+        # with our classification serialized (compact JSON, no spaces).
+        log = tmp_path / "shipwright_events.jsonl"
+        assert log.exists()
+        content = log.read_text(encoding="utf-8")
+        assert '"type":"work_completed"' in content
+        assert '"change_type":"tooling"' in content
+        assert '"none_reason":"fix flaky CI"' in content
+
+
+class TestFrGateInputValidation:
+    """Iterate C.1 — reviewer-flagged input validation hardening."""
+
+    def _iterate_event(self, **overrides) -> dict:
+        event = {
+            "type": "work_completed",
+            "source": "iterate",
+            "intent": "feature",
+        }
+        event.update(overrides)
+        return event
+
+    def test_empty_list_affected_frs_rejected(self):
+        """Gemini-M1: present-but-empty list should fail like missing field."""
+        event = self._iterate_event(affected_frs=[])
+        err = _fr_or_change_type_gate_error(event)
+        assert err is not None
+
+    def test_list_of_empty_strings_rejected(self):
+        """OpenAI-M3: shape validation rejects [\"\", \" \"]."""
+        event = self._iterate_event(affected_frs=["", "  "])
+        err = _fr_or_change_type_gate_error(event)
+        assert err is not None
+
+    def test_tuple_affected_frs_rejected(self):
+        """OpenAI-M3: only lists count; tuples / sets are invalid shape."""
+        event = self._iterate_event(affected_frs=("FR-01.01",))
+        err = _fr_or_change_type_gate_error(event)
+        assert err is not None
+
+    def test_invalid_change_type_rejected_even_when_frs_present(self):
+        """Gemini-M2 / OpenAI-L4: malformed change_type fails regardless of FRs."""
+        event = self._iterate_event(
+            affected_frs=["FR-01.01"],
+            change_type="garbage",
+        )
+        err = _fr_or_change_type_gate_error(event)
+        assert err is not None
+        assert "garbage" in err["detail"]
+
+    def test_multiline_none_reason_rejected(self):
+        """OpenAI-M5: 'one-line' justification means literally one line."""
+        event = self._iterate_event(
+            change_type="tooling",
+            none_reason="fix flaky CI\nsecond line",
+        )
+        err = _fr_or_change_type_gate_error(event)
+        assert err is not None
+
+    def test_oversized_none_reason_rejected(self):
+        """OpenAI-M5: max 280 chars."""
+        event = self._iterate_event(
+            change_type="tooling",
+            none_reason="x" * 300,
+        )
+        err = _fr_or_change_type_gate_error(event)
+        assert err is not None
+
+    def test_control_chars_in_none_reason_rejected(self):
+        event = self._iterate_event(
+            change_type="tooling",
+            none_reason="fix\x1bAttacker break",
+        )
+        err = _fr_or_change_type_gate_error(event)
+        assert err is not None
+
+    def test_tab_in_none_reason_allowed(self):
+        """Tabs are whitespace but not control chars; accepted as common typo."""
+        event = self._iterate_event(
+            change_type="tooling",
+            none_reason="fix\tflaky CI",
+        )
+        assert _fr_or_change_type_gate_error(event) is None
+
+    def test_malformed_dict_input_clean_bypass(self):
+        """OpenAI-L10: defensive .get() prevents KeyError on directly-built dicts."""
+        # Empty dict — no 'type', no 'source'.
+        assert _fr_or_change_type_gate_error({}) is None
+        # Non-dict input also bypasses cleanly.
+        assert _fr_or_change_type_gate_error("not-a-dict") is None
+        assert _fr_or_change_type_gate_error(None) is None
+
+    def test_valid_none_reason_at_max_length(self):
+        """Boundary: exactly 280 chars passes."""
+        event = self._iterate_event(
+            change_type="docs",
+            none_reason="x" * 280,
+        )
+        assert _fr_or_change_type_gate_error(event) is None
+
+    def test_change_type_without_reason_rejected_even_with_frs(self):
+        """Code-review-Gemini-M1: change_type-without-reason fails even when FRs are set.
+
+        Rationale: if the operator bothered to set change_type, the
+        metadata must be internally consistent (paired with a reason).
+        FRs being present doesn't excuse an incomplete classification.
+        """
+        event = self._iterate_event(
+            affected_frs=["FR-01.01"],
+            change_type="tooling",
+            # no none_reason
+        )
+        err = _fr_or_change_type_gate_error(event)
+        assert err is not None
+        assert "none_reason" in err["detail"]
+
+    def test_change_type_with_invalid_reason_rejected_even_with_frs(self):
+        event = self._iterate_event(
+            affected_frs=["FR-01.01"],
+            change_type="tooling",
+            none_reason="multi\nline reason",
+        )
+        err = _fr_or_change_type_gate_error(event)
+        assert err is not None

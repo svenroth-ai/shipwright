@@ -1512,7 +1512,9 @@ Every FEATURE and CHANGE iterate must classify how it changes the requirement sp
 - **REMOVE** -- a capability was deleted: the FR row moves into a `### Removed Requirements` section (never silently dropped).
 - **NONE** -- a behavior-preserving internal refactor: recorded with a one-line justification.
 
-Two layers enforce it. At finalization `record_event.py` refuses (exit 1) a feature/change iterate that names no FR and gives no `spec_impact=none` justification; and the F11 verifier fails the run if its commit touched no `spec.md` without a recorded `spec_impact=none`. The on-demand `/shipwright-compliance` detective audit (Group D, check D5) additionally surfaces any historical feature/change events that landed with no FR linkage. BUG iterates are exempt -- a fix need not change the spec.
+Two layers enforce it. At finalization `record_event.py` refuses (exit 1) a feature/change iterate that names no FR and gives no `spec_impact=none` justification; and the F11 verifier fails the run if its commit touched no `spec.md` without a recorded `spec_impact=none`. The on-demand `/shipwright-compliance` detective audit (Group D, check D5) additionally surfaces any historical feature/change events that landed with no FR linkage. BUG iterates are exempt from the spec-impact gate -- a fix need not change the spec.
+
+**Iterate C.1 FR-gate (ADR-059, 2026-05-21).** A second, broader gate fires *before* the spec-impact gate: every `work_completed` event with `source=iterate` -- **including BUG iterates** -- must record either `--affected-frs` / `--new-frs` OR `--change-type ∈ {docs, tooling, compliance, infra}` paired with `--none-reason '<one-line>'`. Hard-rejects otherwise (exit 1, nothing written). The gate exists because the spec-impact gate exempts BUG iterates entirely, which historically let internal fixes ship without any classification at all; the new gate forces a categorical answer ("this fix is tied to FR-X, or it's classified as `tooling`, …").
 
 ### Risk Taxonomy
 

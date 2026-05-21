@@ -8,7 +8,7 @@
 ## Status
 
 - **Started:** 2026-05-21 (this session)
-- **Current iterate:** B.4 (next)
+- **Current iterate:** C.1 (next)
 - **Baseline (campaign start, 2026-05-21):**
   - `main` HEAD: `5c06748` (canon-lint allowlist `.shipwright/planning/adr/**.md`)
   - `shared/tests/`: 2101 passed, 12 skipped, 18 deselected
@@ -55,15 +55,17 @@
 
 ### B.4 — RTM deep-link rendering + Coverage Summary rewrite
 
-- **Status:** not started
-- **Branch:** _pending_
-- **PR:** _pending_
-- **Squash commit:** _pending_
-- **Predicted ADR:** ADR-058
-- **External review findings:** _pending_
-- **External code-review findings:** _pending_
-- **Test deltas:** _pending_
-- **Deviations from handover:** _pending_
+- **Status:** merged
+- **Branch:** `iterate/b4-rtm-deep-link-and-coverage` (deleted)
+- **PR:** #59
+- **Squash commit:** `48024b1`
+- **Predicted ADR:** ADR-058 (filed at `.shipwright/planning/adr/058-rtm-triage-deep-link-and-coverage.md`)
+- **External review findings:** 15 (1 HIGH datetime determinism + 9 MED + 5 LOW) — all addressed; full disposition in ADR-058.
+- **External code-review findings:** 6 (4 MED accepted-and-fixed: out-of-order events handling, spec/AC realignment around warn-emit, sort-order test strengthening, +00:00 suffix test; 1 HIGH rejected-with-reason — false-positive about non-work events; 1 truncated).
+- **Test deltas:** compliance 397 → 410 (+13); shared 2116 maintained.
+- **Deviations from handover:**
+  - Determinism fix expanded scope: `_reference_now` anchors stale math to latest event timestamp (was wall-clock). Strictly necessary per Gemini-H1; would have caused diff churn on every regeneration otherwise.
+  - Did not implement suite-level (`suiteId`) cross-link — B.3's emit_test_failure_triage doesn't populate it yet. Documented as deferred in ADR-058.
 
 ### C.1 — FR-gate at iterate-finalize
 
