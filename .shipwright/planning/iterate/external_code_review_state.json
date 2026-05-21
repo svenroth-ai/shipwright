@@ -1,9 +1,9 @@
 {
   "status": "completed",
-  "timestamp": "2026-05-21T14:39:38.356826+00:00",
+  "timestamp": "2026-05-21T15:07:46.516240+00:00",
   "provider": "openrouter",
-  "findings_count": 3,
+  "findings_count": 4,
   "self_review_fallback_ran": false,
-  "reason": "B.2 code review: 2 MED (malformed manifest guard + error surfacing) accepted-and-fixed, 1 LOW (test fixture path) rejected-with-reason; Gemini response truncated",
+  "reason": "B.3 code review: 2 MED (sanitize newlines + test assertion) + 1 LOW (missing CLI tests) accepted-and-fixed; 1 MED (Gemini partial-pair) truncated/rejected-with-reason",
   "review_mode": "code"
 }

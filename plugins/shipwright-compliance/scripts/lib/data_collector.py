@@ -186,30 +186,74 @@ class WorkEvent:
 
 @dataclass
 class TestRunEvent:
-    """Full test suite execution from event log."""
+    """Full test suite execution from event log.
+
+    Iterate B.3 (ADR-057): the ``layers`` dict now formally carries
+    ``integration`` and ``pgtap`` keys alongside the legacy ``unit`` /
+    ``e2e`` / ``smoke`` keys. Each layer also carries an optional
+    ``failed`` field (reviewer-flagged Gemini-H1) so producers can
+    distinguish skipped tests from real failures; readers fall back
+    to ``total - passed`` when ``failed`` is absent. Old events
+    without the new keys are read as zero-valued (tolerant
+    fall-through) so the dashboard / RTM / Test Evidence reports
+    never crash when scanning historical runs.
+
+    ``*_evaluated`` flags whether a layer was reported AT ALL in the
+    event — distinguishes "layer omitted" (unknown state) from "layer
+    ran with zero tests" (configured but empty).
+    """
     id: str
     timestamp: str
     trigger: str = ""
     unit_passed: int = 0
     unit_total: int = 0
+    unit_failed: int | None = None
+    unit_evaluated: bool = False
+    integration_passed: int = 0
+    integration_total: int = 0
+    integration_failed: int | None = None
+    integration_evaluated: bool = False
+    pgtap_passed: int = 0
+    pgtap_total: int = 0
+    pgtap_failed: int | None = None
+    pgtap_evaluated: bool = False
     e2e_passed: int = 0
     e2e_total: int = 0
+    e2e_failed: int | None = None
+    e2e_evaluated: bool = False
     smoke_status: str = ""
 
     @classmethod
     def from_dict(cls, d: dict) -> TestRunEvent:
-        layers = d.get("layers", {})
-        unit = layers.get("unit", {})
-        e2e = layers.get("e2e", {})
-        smoke = layers.get("smoke", {})
+        # Reviewer-flagged Gemini-L4: a malformed event with `layers: null`
+        # (not missing — explicitly null) would crash `.get(name, {})`.
+        # Use `or {}` so both missing and null collapse to empty dict.
+        layers = d.get("layers") or {}
+        unit = layers.get("unit") or {}
+        integration = layers.get("integration") or {}
+        pgtap = layers.get("pgtap") or {}
+        e2e = layers.get("e2e") or {}
+        smoke = layers.get("smoke") or {}
         return cls(
             id=d.get("id", ""),
             timestamp=d.get("ts", ""),
             trigger=d.get("trigger", ""),
             unit_passed=unit.get("passed", 0),
             unit_total=unit.get("total", 0),
+            unit_failed=unit.get("failed") if "failed" in unit else None,
+            unit_evaluated=bool(unit),
+            integration_passed=integration.get("passed", 0),
+            integration_total=integration.get("total", 0),
+            integration_failed=integration.get("failed") if "failed" in integration else None,
+            integration_evaluated=bool(integration),
+            pgtap_passed=pgtap.get("passed", 0),
+            pgtap_total=pgtap.get("total", 0),
+            pgtap_failed=pgtap.get("failed") if "failed" in pgtap else None,
+            pgtap_evaluated=bool(pgtap),
             e2e_passed=e2e.get("passed", 0),
             e2e_total=e2e.get("total", 0),
+            e2e_failed=e2e.get("failed") if "failed" in e2e else None,
+            e2e_evaluated=bool(e2e),
             smoke_status=smoke.get("status", ""),
         )
 

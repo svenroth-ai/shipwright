@@ -16,7 +16,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from scripts.lib.data_collector import collect_all
 from scripts.lib.rtm_generator import generate_file as generate_rtm
-from scripts.lib.test_evidence import generate_file as generate_test_evidence
+from scripts.lib.test_evidence import (
+    emit_test_failure_triage,
+    generate_file as generate_test_evidence,
+)
 from scripts.lib.change_history import generate_file as generate_change_history
 from scripts.lib.compliance_report import generate_file as generate_dashboard
 from scripts.lib.sbom_generator import (
@@ -90,7 +93,8 @@ def main() -> int:
     data = collect_all(project_root)
 
     updated = []
-    triage_result: dict[str, int] | None = None
+    sbom_triage_result: dict | None = None
+    test_evidence_triage_result: dict | None = None
     for report_name in reports_to_update:
         gen_fn = GENERATORS.get(report_name)
         if gen_fn:
@@ -103,9 +107,21 @@ def main() -> int:
             # compliance generation.
             if report_name == "sbom":
                 try:
-                    triage_result = emit_undeclared_triage(project_root)
+                    sbom_triage_result = emit_undeclared_triage(project_root)
                 except Exception as exc:  # noqa: BLE001
-                    triage_result = {"appended": 0, "dismissed": 0, "error": str(exc)}
+                    sbom_triage_result = {"appended": 0, "dismissed": 0, "error": str(exc)}
+            # Iterate B.3 (ADR-057): when test-evidence is regenerated,
+            # emit one ``source="test-evidence"`` triage item per
+            # failing layer in the latest test_run event, and
+            # auto-dismiss layers that are now green. Same best-effort
+            # contract as SBOM.
+            elif report_name == "test_evidence":
+                try:
+                    test_evidence_triage_result = emit_test_failure_triage(project_root)
+                except Exception as exc:  # noqa: BLE001
+                    test_evidence_triage_result = {
+                        "appended": 0, "dismissed": 0, "error": str(exc),
+                    }
 
     # Update compliance config
     config_path = project_root / "shipwright_compliance_config.json"
@@ -126,8 +142,10 @@ def main() -> int:
         "phase": phase,
         "updated_reports": updated,
     }
-    if triage_result is not None:
-        output["sbom_triage"] = triage_result
+    if sbom_triage_result is not None:
+        output["sbom_triage"] = sbom_triage_result
+    if test_evidence_triage_result is not None:
+        output["test_evidence_triage"] = test_evidence_triage_result
     print(json.dumps(output, indent=2))
     return 0
 

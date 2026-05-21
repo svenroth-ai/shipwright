@@ -97,6 +97,24 @@ def generate_event_id() -> str:
     return f"evt-{uuid4().hex[:8]}"
 
 
+def _non_negative_int(value: str) -> int:
+    """argparse type guard — reject negatives + non-integer strings.
+
+    Iterate B.3 (ADR-057) — reviewer-flagged H3: layer counts must be
+    non-negative or the downstream FAIL-triage producer renders
+    nonsense (`-2/0 failing`). Argparse's default ``type=int`` accepts
+    negatives; this wrapper raises ``ArgumentTypeError`` so invalid
+    inputs surface at the CLI boundary, not deep in the producer.
+    """
+    try:
+        n = int(value)
+    except (TypeError, ValueError) as exc:
+        raise argparse.ArgumentTypeError(f"expected non-negative integer, got {value!r}") from exc
+    if n < 0:
+        raise argparse.ArgumentTypeError(f"expected non-negative integer, got {n}")
+    return n
+
+
 def _parse_changed_files(raw: str) -> list[str]:
     """Parse the `--changed-files` argument.
 
@@ -279,18 +297,39 @@ def build_event(args: argparse.Namespace) -> dict:
         if args.trigger:
             event["trigger"] = args.trigger
         layers: dict = {}
-        if args.unit_passed is not None or args.unit_total is not None:
-            layers["unit"] = {}
-            if args.unit_passed is not None:
-                layers["unit"]["passed"] = args.unit_passed
-            if args.unit_total is not None:
-                layers["unit"]["total"] = args.unit_total
-        if args.e2e_passed is not None or args.e2e_total is not None:
-            layers["e2e"] = {}
-            if args.e2e_passed is not None:
-                layers["e2e"]["passed"] = args.e2e_passed
-            if args.e2e_total is not None:
-                layers["e2e"]["total"] = args.e2e_total
+        # Iterate B.3 (ADR-057): test_run events carry first-class
+        # `integration` and `pgtap` keys alongside `unit` / `e2e`. The
+        # optional ``failed`` key inside each layer lets producers
+        # express explicit failure counts so the downstream FAIL-triage
+        # producer doesn't mistake skipped tests for failures
+        # (reviewer-flagged H1).
+        for layer_name, passed, total, failed in (
+            ("unit",        args.unit_passed,        args.unit_total,        args.unit_failed),
+            ("integration", args.integration_passed, args.integration_total, args.integration_failed),
+            ("pgtap",       args.pgtap_passed,       args.pgtap_total,       args.pgtap_failed),
+            ("e2e",         args.e2e_passed,         args.e2e_total,         args.e2e_failed),
+        ):
+            if passed is None and total is None and failed is None:
+                continue
+            entry: dict = {}
+            if passed is not None:
+                entry["passed"] = passed
+            if total is not None:
+                entry["total"] = total
+            if failed is not None:
+                entry["failed"] = failed
+            # Reviewer-flagged H3 + M2: validate cross-field invariants
+            # at the CLI boundary so corrupt event payloads never land
+            # on disk.
+            if "passed" in entry and "total" in entry and entry["passed"] > entry["total"]:
+                raise ValueError(
+                    f"{layer_name} passed ({entry['passed']}) > total ({entry['total']})"
+                )
+            if "failed" in entry and "total" in entry and entry["failed"] > entry["total"]:
+                raise ValueError(
+                    f"{layer_name} failed ({entry['failed']}) > total ({entry['total']})"
+                )
+            layers[layer_name] = entry
         if args.smoke_status:
             layers["smoke"] = {"status": args.smoke_status}
         if layers:
@@ -417,10 +456,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     # test_run
     p.add_argument("--trigger", help="What triggered the test run")
-    p.add_argument("--unit-passed", type=int, help="Unit tests passed")
-    p.add_argument("--unit-total", type=int, help="Unit tests total")
-    p.add_argument("--e2e-passed", type=int, help="E2E tests passed")
-    p.add_argument("--e2e-total", type=int, help="E2E tests total")
+    p.add_argument("--unit-passed",        type=_non_negative_int, help="Unit tests passed")
+    p.add_argument("--unit-total",         type=_non_negative_int, help="Unit tests total")
+    p.add_argument("--unit-failed",        type=_non_negative_int, help="Unit tests failed (Iterate B.3 — explicit fail count; otherwise inferred as total-passed)")
+    p.add_argument("--integration-passed", type=_non_negative_int, help="Integration tests passed (Iterate B.3)")
+    p.add_argument("--integration-total",  type=_non_negative_int, help="Integration tests total (Iterate B.3)")
+    p.add_argument("--integration-failed", type=_non_negative_int, help="Integration tests failed (Iterate B.3)")
+    p.add_argument("--pgtap-passed",       type=_non_negative_int, help="pgTAP tests passed (Iterate B.3)")
+    p.add_argument("--pgtap-total",        type=_non_negative_int, help="pgTAP tests total (Iterate B.3)")
+    p.add_argument("--pgtap-failed",       type=_non_negative_int, help="pgTAP tests failed (Iterate B.3)")
+    p.add_argument("--e2e-passed",         type=_non_negative_int, help="E2E tests passed")
+    p.add_argument("--e2e-total",          type=_non_negative_int, help="E2E tests total")
+    p.add_argument("--e2e-failed",         type=_non_negative_int, help="E2E tests failed (Iterate B.3)")
     p.add_argument("--smoke-status", help="Smoke test status: pass | fail")
 
     # event_amended
