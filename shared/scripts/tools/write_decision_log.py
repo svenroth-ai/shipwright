@@ -42,7 +42,27 @@ def _truncate_title(text: str, max_len: int = 60) -> str:
 # decision_log.md is always-loaded Layer-1 context, so every verbose ADR field
 # shows up in the context window of every future iterate run. 500 chars is
 # ~1-3 sentences — enough to be self-contained without bloating the budget.
+# Single-user-repo policy (Iterate A.3): NEW ADR fields are hard-rejected at
+# write time; existing bloated entries are left alone (no retroactive rewrite).
 ADR_FIELD_MAX_CHARS = 500
+
+# Canonical ADR-spec folder for the long-form details that don't fit the 500
+# char per-field budget. ``spec_ref`` in a decision-drop points into this
+# folder. Aggregator renders the link verbatim and rebuilds INDEX.md.
+ADR_SPEC_FOLDER = ".shipwright/planning/adr"
+ADR_SPEC_FOLDER_HINT = (
+    f"{ADR_SPEC_FOLDER}/<NNN>-<slug>.md (flat, one file per ADR, "
+    "ADR-number prefix gives collision protection)"
+)
+
+
+class FieldLengthError(ValueError):
+    """Raised when an ADR field exceeds ``ADR_FIELD_MAX_CHARS`` at write time.
+
+    Iterate A.3 promotes the prior advisory warning to a hard reject for new
+    drops. The error message includes the spec-folder hint so the operator
+    knows where to move overflowed prose.
+    """
 
 # Header written when decision_log.md does not yet exist. Shared with
 # aggregate_decisions.py so the iterate decision-drop path and the direct
@@ -66,7 +86,39 @@ def check_field_length(field_name: str, value: str, max_chars: int = ADR_FIELD_M
         return None
     return (
         f"ADR --{field_name} field is {len(value)} chars "
-        f"(budget: {max_chars}). Consider shortening to 1-3 sentences."
+        f"(budget: {max_chars}). Move the long-form prose into "
+        f"{ADR_SPEC_FOLDER_HINT} and reference it via --spec-ref."
+    )
+
+
+def enforce_field_length_limits(
+    *,
+    context: str = "",
+    decision: str = "",
+    consequences: str = "",
+    rationale: str = "",
+    rejected: str = "",
+    max_chars: int = ADR_FIELD_MAX_CHARS,
+) -> None:
+    """Raise ``FieldLengthError`` if any field exceeds the budget.
+
+    Hard-reject for new drops (Iterate A.3). Existing logs are not touched —
+    only callers of this function are the live write paths (CLI append and
+    the iterate decision-drop writer). The exception message lists every
+    offender so the operator does not need to re-run after each fix.
+    """
+    offenders = collect_length_warnings(
+        context=context, decision=decision, consequences=consequences,
+        rationale=rationale, rejected=rejected, max_chars=max_chars,
+    )
+    if not offenders:
+        return
+    bullet = "\n  - ".join(offenders)
+    raise FieldLengthError(
+        "ADR field(s) over the "
+        f"{max_chars}-char budget — move the long-form prose into "
+        f"{ADR_SPEC_FOLDER_HINT} and reference it via --spec-ref:\n"
+        f"  - {bullet}"
     )
 
 
@@ -97,6 +149,29 @@ def collect_length_warnings(
     return warnings
 
 
+def _format_spec_ref_link(spec_ref: str) -> str:
+    """Render the **Details:** bullet for an ADR with a spec-folder companion.
+
+    ``spec_ref`` is the path provided by the operator (relative to project
+    root). The decision_log.md sits at ``.shipwright/agent_docs/``, so the
+    rendered link is computed relative to that location (``../planning/...``)
+    when the spec lives under ``.shipwright/``. Any other path is rendered
+    verbatim so the operator can opt into a different convention without
+    silent rewrites.
+    """
+    s = spec_ref.strip().replace("\\", "/")
+    if not s:
+        return ""
+    label = s.rsplit("/", 1)[-1] or s
+    href: str
+    if s.startswith(".shipwright/"):
+        # decision_log.md → .shipwright/planning/adr/foo.md is "../planning/adr/foo.md"
+        href = "../" + s[len(".shipwright/"):]
+    else:
+        href = s
+    return f"- **Details:** [{label}]({href})"
+
+
 def format_entry(
     number: int,
     section_ref: str,
@@ -109,6 +184,7 @@ def format_entry(
     rationale: str = "",
     entry_date: str | None = None,
     run_id: str = "",
+    spec_ref: str = "",
 ) -> str:
     """Format a single ADR entry in compact format.
 
@@ -145,6 +221,10 @@ def format_entry(
 
     if rejected:
         lines.append(f"- **Rejected:** {rejected}")
+
+    spec_line = _format_spec_ref_link(spec_ref)
+    if spec_line:
+        lines.append(spec_line)
 
     lines.append("")
     return "\n".join(lines)
@@ -198,8 +278,19 @@ def append_decision(
     architecture_impact: str = "none",  # "component" | "data-flow" | "convention" | "none"
     entry_date: str | None = None,
     run_id: str = "",
+    spec_ref: str = "",
 ) -> int:
-    """Append a decision entry to the decision log. Returns the ADR number."""
+    """Append a decision entry to the decision log. Returns the ADR number.
+
+    Hard-rejects new ADRs whose fields exceed ``ADR_FIELD_MAX_CHARS`` (Iterate
+    A.3 — single-user repo, no staged rollout). Move long-form prose into the
+    ADR spec folder and pass ``spec_ref``.
+    """
+    enforce_field_length_limits(
+        context=context, decision=decision, consequences=consequences,
+        rationale=rationale, rejected=rejected,
+    )
+
     project_root = Path(project_root)
     log_path = project_root / ".shipwright" / "agent_docs" / "decision_log.md"
 
@@ -216,6 +307,7 @@ def append_decision(
     entry = format_entry(
         number, section_ref, commit_hash, context, decision, consequences,
         rejected, title, rationale, entry_date=entry_date, run_id=run_id,
+        spec_ref=spec_ref,
     )
     content += entry
 
@@ -247,34 +339,38 @@ def main() -> None:
     parser.add_argument("--architecture-impact", default="none",
                         choices=["component", "data-flow", "convention", "none"],
                         help="If not 'none', appends update to architecture.md or conventions.md")
+    parser.add_argument(
+        "--spec-ref",
+        default="",
+        help=(
+            "Optional path to long-form ADR spec under "
+            f"{ADR_SPEC_FOLDER}/<NNN>-<slug>.md. Rendered as a "
+            "`**Details:** [...]` bullet in the ADR row. Required when a "
+            "field would otherwise exceed the 500-char budget."
+        ),
+    )
     args = parser.parse_args()
 
     project_root = Path(args.project_root) if args.project_root else Path(os.getcwd())
 
-    # Emit non-blocking warnings for any field over the length budget.
-    # Always proceeds to append; the budget is advisory.
-    for warning in collect_length_warnings(
-        context=args.context,
-        decision=args.decision,
-        consequences=args.consequences,
-        rationale=args.rationale,
-        rejected=args.rejected,
-    ):
-        print(f"warning: {warning}", file=sys.stderr)
-
-    number = append_decision(
-        project_root,
-        section_ref=args.section,
-        commit_hash=args.commit,
-        context=args.context,
-        decision=args.decision,
-        consequences=args.consequences,
-        rejected=args.rejected,
-        title=args.title,
-        rationale=args.rationale,
-        status=args.status,
-        architecture_impact=args.architecture_impact,
-    )
+    try:
+        number = append_decision(
+            project_root,
+            section_ref=args.section,
+            commit_hash=args.commit,
+            context=args.context,
+            decision=args.decision,
+            consequences=args.consequences,
+            rejected=args.rejected,
+            title=args.title,
+            rationale=args.rationale,
+            status=args.status,
+            architecture_impact=args.architecture_impact,
+            spec_ref=args.spec_ref,
+        )
+    except FieldLengthError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        sys.exit(2)
     print(f"ADR-{number:03d} appended to .shipwright/agent_docs/decision_log.md")
 
 

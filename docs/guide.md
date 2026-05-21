@@ -1553,7 +1553,7 @@ Every iterate run -- regardless of complexity -- ends with the same mandatory fi
 0.5. **End-to-End Verification (F0.5; medium+)** -- run the surface runner (`web` / `cli` / `api`, or `none` with justification) against the user-erlebbare Surface via `shared/scripts/surface_verification.py`. Produces the `surface_verification` block in `shipwright_test_results.json.iterate_latest`. Non-zero exit blocks the rest of finalization; the post-commit audit `check_surface_verification` in `iterate_checks.py` is the second layer.
 1. **Drift check** -- verify specs match implementation
 2. **Architecture update** -- update `architecture.md` if structural changes were made
-3. **ADR** -- record the decision in `decision_log.md`
+3. **ADR (decision-drop)** -- record the decision via `write_decision_drop.py`. Each field (`--context`, `--decision`, `--consequences`, `--rationale`, `--rejected`) is hard-rejected at write time if it exceeds 500 characters (Iterate A.3, 2026-05-21 — `decision_log.md` is always-loaded Layer-1 context and every verbose ADR pays for itself in tokens on every future run). Move long-form prose into the flat ADR spec folder `.shipwright/planning/adr/<NNN>-<slug>.md` and link it with `--spec-ref`; the aggregator emits a `**Details:** [...]` bullet under the ADR row and rebuilds `.shipwright/planning/adr/INDEX.md` on every release pass. `--spec-ref` is also required whenever a decision needs a diagram, >3 alternatives, or non-trivial follow-up acceptance criteria.
 4. **Reflection** -- capture learnings (patterns, gotchas, corrections) in `conventions.md` and/or Claude Code Memory
 5. **CHANGELOG drop** -- write a drop file per bullet under `CHANGELOG-unreleased.d/<category>/<run_id>_NNN.md` via `write_changelog_drop.py`. Aggregated into `CHANGELOG.md` at release time by `/shipwright-changelog`. Replaces the legacy `[Unreleased]`-append pattern; eliminates the merge hotspot that blocked parallel iterates.
 6. **Test results JSON** -- write structured test results to `shipwright_test_results.json`
@@ -1885,6 +1885,10 @@ The project master document, generated during `/shipwright-project`. It stays le
 ### Decision Log (ADR Format)
 
 Each decision record follows the ADR template: Status, Context, Decision, Consequences (including rejected alternatives). Profile-level decisions (stack, auth pattern, folder structure) are implicit in the stack profile. Only project-specific decisions go in the log.
+
+**Per-field length budget (hard-enforced, Iterate A.3).** Every new ADR field — context / decision / consequences / rationale / rejected — must fit in **500 characters**. `decision_log.md` is always-loaded Layer-1 context; verbose entries inflate every future iterate's prompt. The writers (`write_decision_log.py`, `write_decision_drop.py`) exit non-zero on overflow with a message pointing at the spec folder. Existing pre-A.3 ADRs are not rewritten — the gate is forward-only.
+
+**ADR spec folder:** `.shipwright/planning/adr/<NNN>-<slug>.md`, flat, one file per ADR. ADR-number prefix gives collision protection. Drops opt in via `--spec-ref <path>`; aggregation renders a `**Details:** [filename](../planning/adr/...)` link and rebuilds `.shipwright/planning/adr/INDEX.md` after every release pass. Schema lives at [shared/schemas/decision_drop.schema.json](../shared/schemas/decision_drop.schema.json).
 
 ### Event Log
 
