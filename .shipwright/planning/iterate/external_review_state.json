@@ -1,15 +1,9 @@
 {
-  "run_id": "iterate-2026-05-20-escape-md-cells",
-  "status": "skipped_missing_keys",
-  "timestamp": "2026-05-20T12:00:00+00:00",
-  "provider": null,
-  "findings_count": 0,
-  "self_review_fallback_ran": true,
-  "review_mode": "iterate",
-  "reason": "External review provider keys (OPENROUTER_API_KEY / GEMINI_API_KEY / OPENAI_API_KEY) are not configured in this environment per check-external-review-keys.py. Falling back to mandatory self-review per the iterate skill's degraded-mode rule (Branch B Option 2). Logged in iterate ADR.",
-  "providers_available": {
-    "openrouter": false,
-    "gemini": false,
-    "openai": false
-  }
+  "status": "completed",
+  "timestamp": "2026-05-21T14:34:43.953990+00:00",
+  "provider": "openrouter",
+  "findings_count": 12,
+  "self_review_fallback_ran": false,
+  "reason": "B.2 iterate spec review: 1 HIGH (launchPayload chaining) + 11 MED/LOW; addressed inline + recorded dispositions in ADR-056",
+  "review_mode": "iterate"
 }

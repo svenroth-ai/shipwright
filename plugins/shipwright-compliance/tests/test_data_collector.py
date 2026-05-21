@@ -320,6 +320,115 @@ class TestSbomLockfileAndWorkspace:
         assert len([d for d in deps if d.name == "shared-lib"]) == 1
 
 
+class TestCollectUndeclaredByWorkspace:
+    """Iterate B.2 (ADR-056) — per-workspace grouping for SBOM triage."""
+
+    def test_returns_empty_when_no_manifests(self, tmp_path: Path):
+        from scripts.lib.data_collector import collect_undeclared_by_workspace  # type: ignore
+
+        assert collect_undeclared_by_workspace(tmp_path) == []
+
+    def test_omits_workspace_with_all_licenses_resolved(self, tmp_path: Path):
+        """A package-lock.json resolving every dep → group skipped."""
+        from scripts.lib.data_collector import collect_undeclared_by_workspace  # type: ignore
+
+        (tmp_path / "package.json").write_text(
+            json.dumps({"dependencies": {"react": "^19.0.0"}}), encoding="utf-8"
+        )
+        (tmp_path / "package-lock.json").write_text(
+            json.dumps({
+                "lockfileVersion": 3,
+                "packages": {
+                    "": {"name": "test"},
+                    "node_modules/react": {"version": "19.0.0", "license": "MIT"},
+                },
+            }),
+            encoding="utf-8",
+        )
+        assert collect_undeclared_by_workspace(tmp_path) == []
+
+    def test_npm_workspace_with_undeclared_emits_group(self, tmp_path: Path):
+        from scripts.lib.data_collector import collect_undeclared_by_workspace  # type: ignore
+
+        (tmp_path / "client").mkdir()
+        (tmp_path / "client" / "package.json").write_text(
+            json.dumps({
+                "dependencies": {"react": "^19.0.0"},
+                "devDependencies": {"vitest": "^1.0.0"},
+            }),
+            encoding="utf-8",
+        )
+        groups = collect_undeclared_by_workspace(tmp_path)
+        assert len(groups) == 1
+        group = groups[0]
+        assert group["manifest_rel_path"] == "client/package.json"
+        assert group["manifest_type"] == "npm"
+        names = sorted(d["name"] for d in group["undeclared"])
+        assert names == ["react", "vitest"]
+
+    def test_python_workspace_with_undeclared_emits_group(self, tmp_path: Path):
+        from scripts.lib.data_collector import collect_undeclared_by_workspace  # type: ignore
+
+        (tmp_path / "pyproject.toml").write_text(
+            'dependencies = [\n  "definitely-not-a-real-pypi-package-xyz>=1.0.0",\n]\n',
+            encoding="utf-8",
+        )
+        groups = collect_undeclared_by_workspace(tmp_path)
+        assert len(groups) == 1
+        group = groups[0]
+        assert group["manifest_rel_path"] == "pyproject.toml"
+        assert group["manifest_type"] == "python"
+        assert any(d["name"] == "definitely-not-a-real-pypi-package-xyz"
+                   for d in group["undeclared"])
+
+    def test_uses_forward_slash_paths_on_all_platforms(self, tmp_path: Path):
+        """Dedup-key stability requires POSIX-style relative paths."""
+        from scripts.lib.data_collector import collect_undeclared_by_workspace  # type: ignore
+
+        (tmp_path / "apps" / "web").mkdir(parents=True)
+        (tmp_path / "apps" / "web" / "package.json").write_text(
+            json.dumps({"dependencies": {"react": "^19.0.0"}}), encoding="utf-8"
+        )
+        groups = collect_undeclared_by_workspace(tmp_path)
+        assert groups[0]["manifest_rel_path"] == "apps/web/package.json"
+        assert "\\" not in groups[0]["manifest_rel_path"]
+
+    def test_excludes_node_modules_and_venv(self, tmp_path: Path):
+        from scripts.lib.data_collector import collect_undeclared_by_workspace  # type: ignore
+
+        for excluded in ["node_modules", ".venv", "dist", "build", ".shipwright"]:
+            sub = tmp_path / excluded / "evil"
+            sub.mkdir(parents=True)
+            (sub / "package.json").write_text(
+                json.dumps({"dependencies": {"poison": "^1.0.0"}}), encoding="utf-8"
+            )
+        groups = collect_undeclared_by_workspace(tmp_path)
+        assert groups == []
+
+    def test_malformed_manifest_is_skipped(self, tmp_path: Path):
+        from scripts.lib.data_collector import collect_undeclared_by_workspace  # type: ignore
+
+        (tmp_path / "package.json").write_text("not-valid-json", encoding="utf-8")
+        assert collect_undeclared_by_workspace(tmp_path) == []
+
+    def test_non_dict_dependencies_section_is_skipped(self, tmp_path: Path):
+        """Reviewer-flagged M1: a package.json with `dependencies: []` shouldn't crash."""
+        from scripts.lib.data_collector import collect_undeclared_by_workspace  # type: ignore
+
+        # Valid JSON, but `dependencies` is a list instead of an object.
+        (tmp_path / "client").mkdir()
+        (tmp_path / "client" / "package.json").write_text(
+            json.dumps({"dependencies": ["this", "should", "be", "an", "object"],
+                        "devDependencies": {"vitest": "^1.0.0"}}),
+            encoding="utf-8",
+        )
+        # Must NOT crash; the bad section is skipped, the good one is scanned.
+        groups = collect_undeclared_by_workspace(tmp_path)
+        assert len(groups) == 1
+        names = [d["name"] for d in groups[0]["undeclared"]]
+        assert names == ["vitest"]
+
+
 class TestCollectExternalReviewStates:
     def _seed_split(self, root: Path, split: str, marker: dict | None) -> None:
         split_dir = root / ".shipwright" / "planning" / split
