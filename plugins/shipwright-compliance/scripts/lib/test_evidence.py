@@ -36,7 +36,22 @@ def generate(data: ComplianceData) -> str:
     # Use event-based generation if events exist
     if data.work_events:
         lines.extend(_test_progression(data))
-        lines.extend(_full_suite_runs(data))
+        # Iterate-2026-05-21-empirical-followups AC-2: when no explicit
+        # test_run events exist on the wire (the common case empirically
+        # — both shipwright and webui carry zero today), synthesize the
+        # Full Suite Runs table from work_completed events instead of
+        # silently omitting the section. test_run-based rendering wins
+        # when present (canonical 4-layer breakdown). Synthesis branch
+        # is gated on BOTH (a) no test_runs AND (b) at least one
+        # qualifying work_event — gate is explicit at the call site
+        # (code-review OpenAI finding #2) so reading `generate()` makes
+        # the fallback condition obvious.
+        if data.test_runs:
+            lines.extend(_full_suite_runs(data))
+        elif any(we.tests_total > 0 for we in data.work_events):
+            lines.extend(_full_suite_runs_from_work_events(data))
+        # else: no test_runs AND no qualifying work_events — emit nothing
+        # (matches prior behavior: `_full_suite_runs(data)` returned `[]`).
         lines.extend(_e2e_details(data))
         lines.extend(_code_review_evidence_events(data))
     else:
@@ -486,6 +501,78 @@ def _full_suite_runs(data: ComplianceData) -> list[str]:
             f"| {i} | {escape_cell(trigger)} | {escape_cell(unit)} "
             f"| {escape_cell(integration)} | {escape_cell(pgtap)} "
             f"| {escape_cell(e2e)} | {escape_cell(smoke)} | {escape_cell(date)} |"
+        )
+
+    lines.append("")
+    return lines
+
+
+_SYNTHESIS_CAP = 30
+_DASH = "—"
+
+
+def _full_suite_runs_from_work_events(data: ComplianceData) -> list[str]:
+    """Synthesize the Full Suite Runs table from work_completed events.
+
+    Iterate-2026-05-21-empirical-followups AC-2. Fallback for the common
+    empirical case where no `test_run`-type events have been recorded on
+    the wire (verified on both shipwright and webui: zero `test_run`
+    events in `shipwright_events.jsonl`). Renders the same 8-column
+    table shape as the test_run-based path so the section is structurally
+    indistinguishable to operators.
+
+    Selection semantics (per external-review OpenAI #3 + Gemini #5):
+
+    1. Filter on ``we.tests_total > 0`` FIRST — zero-test events (pure
+       docs / tooling iterates) don't qualify and don't consume the cap
+       budget.
+    2. Cap at the last 30 in `data.work_events` file order — preserves
+       collector append order from `shipwright_events.jsonl`.
+
+    Column mapping:
+
+    - ``Run``: 1-based index after filter+cap.
+    - ``Trigger``: ``we.source`` (`iterate` / `build`).
+    - ``Unit``: ``we.tests_passed / we.tests_total``.
+    - ``Integration`` / ``pgTAP`` / ``Smoke``: em-dash. The
+      ``work_completed`` wire format doesn't carry these layers; the
+      test_run path is the only producer that can populate them.
+    - ``E2E``: em-dash ALWAYS in the synthesis branch. ``we.e2e_run``
+      is a boolean signal without counts; promoting a boolean to a
+      count would mislead operators. Documented limitation; a future
+      iterate can lift this when real `test_run` events become routine
+      (per OpenAI #2 in the plan review).
+    - ``Date``: ``we.timestamp[:10]``.
+
+    Returns ``[]`` (renders no section) when no qualifying events exist,
+    matching the test_run path's empty-data behavior.
+    """
+    if not data.work_events:
+        return []
+
+    qualifying = [we for we in data.work_events if we.tests_total > 0]
+    if not qualifying:
+        return []
+
+    # Cap at the last 30 in file order (filter-first per OpenAI #3).
+    rows = qualifying[-_SYNTHESIS_CAP:]
+
+    lines = [
+        "## Full Suite Runs",
+        "",
+        "| Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |",
+        "|-----|---------|------|-------------|-------|-----|-------|------|",
+    ]
+
+    for i, we in enumerate(rows, 1):
+        trigger = we.source or _DASH
+        unit = f"{we.tests_passed}/{we.tests_total}"
+        date = we.timestamp[:10] if we.timestamp else _DASH
+
+        lines.append(
+            f"| {i} | {escape_cell(trigger)} | {escape_cell(unit)} "
+            f"| {_DASH} | {_DASH} "
+            f"| {_DASH} | {_DASH} | {escape_cell(date)} |"
         )
 
     lines.append("")

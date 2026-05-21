@@ -1,10 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-05-21 12:31 UTC | Session: f8d0bbbe-d15f-480c-9e68-5c0eff518455 | Run: iterate-2026-05-21-fix-gh-security-emit-gate-symmetry
+> Updated: 2026-05-21 19:07 UTC | Session: 2710ed1c-cbd1-4cd9-ab1b-9defcb95611b | Run: iterate-2026-05-21-empirical-followups
 
-## Recent Changes (37 iterations)
+## Recent Changes (39 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | VERIFICATION: bug+change-type — should pass | 0/0 | 376c870 | tooling | 2026-05-21 |
+| feature | VERIFICATION: with affected-frs — should pass | 0/0 | 376c870 | FR-01.01 | 2026-05-21 |
 | feature | Artifact-based GitHub security producer for Triage Inbox (+ spec.md FR-01.14 update) | 122/122 | 861c0fd | FR-01.14 | 2026-05-20 |
 | feature | Artifact-based GitHub security producer for Triage Inbox | 122/122 | 6f5dd5f | FR-01.14 | 2026-05-20 |
 | bug | escape pipe and newline in markdown table cells | +23 new, 23/23 | 9dd6c8b |  | 2026-05-20 |
@@ -44,7 +46,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-21 | Unit: 2101/2113 | Smoke: not_run | (iterate)
+Last run: 2026-05-21 | Unit: 2621/2621 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

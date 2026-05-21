@@ -1,35 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-21-fix-gh-security-emit-gate-symmetry"
+run_id: "iterate-2026-05-21-empirical-followups"
 phase: "iterate"
-reason: "iterate: fix-gh-security-emit-gate-symmetry"
-timestamp: "2026-05-21T12:31:00.366340+00:00"
+reason: "iterate: empirical-verification follow-ups (B.4 producer + B.3 synthesis + path-canon)"
+timestamp: "2026-05-21T19:07:21.155609+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-21 12:31:00 UTC
+> Auto-generated 2026-05-21 19:07:21 UTC
 
 ## Session Info
 
-- **Session ID**: f8d0bbbe-d15f-480c-9e68-5c0eff518455
-- **Timestamp**: 2026-05-21 12:31:00 UTC
-- **Reason**: iterate: fix-gh-security-emit-gate-symmetry
+- **Session ID**: 2710ed1c-cbd1-4cd9-ab1b-9defcb95611b
+- **Timestamp**: 2026-05-21 19:07:21 UTC
+- **Reason**: iterate: empirical-verification follow-ups (B.4 producer + B.3 synthesis + path-canon)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-21-post-43-hygiene
-- **Date**: 2026-05-21T06:11:49.195117Z
+- **Run ID**: iterate-2026-05-21-fix-gh-security-emit-gate-symmetry
+- **Date**: 2026-05-21T12:31:08.078768Z
 - **Type**: bug
 - **Complexity**: small
-- **Branch**: iterate/post-43-hygiene
-- **ADR**: iterate-2026-05-21-post-43-hygiene
+- **Branch**: iterate/fix-gh-security-emit-gate-symmetry
+- **ADR**: iterate-2026-05-21-fix-gh-security-emit-gate-symmetry
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fix-gh-security-emit-gate-symmetry
-- **External Review Marker**: skipped_missing_keys (external_review_state.json @ 2026-05-20T12:00:00)
+- **Branch**: iterate/empirical-followups
+- **Run ID**: iterate-2026-05-21-empirical-followups
+- **Spec**: .shipwright/planning/iterate/2026-05-21-empirical-followups-code-review.md
+- **External Review Marker**: stale (predates spec (2026-05-21T16:20:59))
 
 ### Mandatory replay on Resume
 
@@ -47,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fix-gh-security-emit-gate-symmetry
-- **Last Commit**: f2aaf89 feat(triage): producer contract schema + RTM-link fields + inbox polish (Iterate B0) (#52)
+- **Branch**: iterate/empirical-followups
+- **Last Commit**: 376c870 docs(campaign): empirical-verification handover for B.2â†’C.3 (#64)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +66,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-5be2bab6 | work_completed | iterate (VERIFICATION: bug+change-type — should pass) | 2026-05-21 |
+| evt-9a656b5f | work_completed | iterate (VERIFICATION: with affected-frs — should pass) | 2026-05-21 |
 | evt-64f8cd79 | work_completed | iterate (Artifact-based GitHub security producer for Triage Inbox (+ spec.md FR-01.14 update)) | 2026-05-20 |
 | evt-a3b7c2d6 | work_completed | iterate (Artifact-based GitHub security producer for Triage Inbox) | 2026-05-20 |
 | evt-5105fa5d | work_completed | iterate (escape pipe and newline in markdown table cells) | 2026-05-20 |
-| evt-7078b787 | work_completed | iterate (fix 17 launch-blocker test failures (Windows python3 stub + 6 smaller groups)) | 2026-05-18 |
-| evt-16154172 | work_completed | iterate (triage detector dedup + auto-resolve (rebased onto #31)) | 2026-05-16 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 37
-- **Last iterate**: feature — Artifact-based GitHub security producer for Triage Inbox (+ spec.md FR-01.14 update) (2026-05-20)
+- **Total work events**: 39
+- **Last iterate**: bug — VERIFICATION: bug+change-type — should pass (2026-05-21)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
