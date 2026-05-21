@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-20T22:58:52Z
+Generated: 2026-05-21T06:11:46Z
 
 ## Requirements Coverage
 
@@ -19,7 +19,7 @@ Generated: 2026-05-20T22:58:52Z
 | [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111) | Complexity-adaptive SDLC for ongoing changes — auto-detects ... | Must | evt-e3d2949e, evt-6c637864, evt-baaf4b0e, evt-ca7b7d64 +12 | 225/225 → 140/140 | 2026-05-16 (iter) | FAIL |
 | [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112) | Local browser preview — start dev server for the target proj... | May | evt-e3d2949e, evt-ca7b7d64 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
 | [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113) | Onboard an existing (brownfield) repository into the Shipwri... | Must | evt-e3d2949e, evt-273bbb54, evt-b0b9c422, evt-aab7ddbd +5 | 225/225 → 304/304 | 2026-05-16 (iter) | FAIL |
-| [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114) | Pre-backlog triage buffer — findings from local hooks/scans/... | Must | evt-3f488ddc, evt-32f2f1f4, evt-84dbdf5e, evt-e14e5f26 +1 | 1642/1649 → 1776/1783 | 2026-05-16 (iter) | FAIL |
+| [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114) | Pre-backlog triage buffer — findings from local hooks/scans/... | Must | evt-3f488ddc, evt-32f2f1f4, evt-84dbdf5e, evt-e14e5f26 +3 | 1642/1649 → 122/122 | 2026-05-20 (iter) | FAIL |
 
 ## Verification Timeline
 
@@ -60,6 +60,8 @@ Generated: 2026-05-20T22:58:52Z
 | triage detector dedup + auto-resolve (rebased onto #31) | iterate | bug | FR-01.14 | 1776/1783 | cd957a0 | 2026-05-16 |
 | fix 17 launch-blocker test failures (Windows python3 stub + 6 smaller groups) | iterate | bug |  | 3507/3507 | 21cef22 | 2026-05-18 |
 | escape pipe and newline in markdown table cells | iterate | bug |  | 23/23 | 9dd6c8b | 2026-05-20 |
+| Artifact-based GitHub security producer for Triage Inbox | iterate | feature | FR-01.14 | 122/122 | 6f5dd5f | 2026-05-20 |
+| Artifact-based GitHub security producer for Triage Inbox (+ spec.md FR-01.14 update) | iterate | feature | FR-01.14 | 122/122 | 861c0fd | 2026-05-20 |
 
 ## Coverage Summary
 
@@ -67,7 +69,7 @@ Generated: 2026-05-20T22:58:52Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 35 |
+| Iterate changes | 37 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

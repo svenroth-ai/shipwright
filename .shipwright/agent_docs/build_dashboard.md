@@ -1,10 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-05-20 22:58 UTC | Session: 004b9480-348b-4674-b913-a11cee1641d6 | Run: iterate-2026-05-21-security-artifact-producer
+> Updated: 2026-05-21 06:11 UTC | Session: f990b8ca-e767-4745-861f-9a142fcc95a4 | Run: iterate-2026-05-21-post-43-hygiene
 
-## Recent Changes (35 iterations)
+## Recent Changes (37 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | Artifact-based GitHub security producer for Triage Inbox (+ spec.md FR-01.14 update) | 122/122 | 861c0fd | FR-01.14 | 2026-05-20 |
+| feature | Artifact-based GitHub security producer for Triage Inbox | 122/122 | 6f5dd5f | FR-01.14 | 2026-05-20 |
 | bug | escape pipe and newline in markdown table cells | +23 new, 23/23 | 9dd6c8b |  | 2026-05-20 |
 | bug | fix 17 launch-blocker test failures (Windows python3 stub + 6 smaller groups) | 3507/3507 | 21cef22 | tooling | 2026-05-18 |
 | bug | triage detector dedup + auto-resolve (rebased onto #31) | 1776/1783 | cd957a0 | FR-01.14 | 2026-05-16 |
@@ -42,7 +44,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-21 | Unit: 2049/2049 | Smoke: not_run | (iterate)
+Last run: 2026-05-21 | Unit: 2048/2048 | Integration: 110/110 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
