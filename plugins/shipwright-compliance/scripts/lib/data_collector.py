@@ -1377,5 +1377,36 @@ def collect_all(project_root: Path) -> ComplianceData:
         # Known failures
         known_failures=known_failures,
         baseline_failure_count=baseline_count,
-        timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        # Deterministic banner — see iterate-2026-05-22-deterministic-render-timestamps.
+        # Using `datetime.now()` here made every compliance generator's
+        # `Generated: ...` header drift on every call, leaving the rendered
+        # `.shipwright/compliance/*.md` permanently dirty in `git status`.
+        # Pin to the most recent event's timestamp so two runs against the
+        # same events.jsonl produce byte-identical output. Falls back to a
+        # stable literal when no events have been recorded yet.
+        timestamp=_latest_event_timestamp(work_events),
     )
+
+
+def _latest_event_timestamp(work_events: list[WorkEvent]) -> str:
+    """Return the latest event timestamp formatted for ``ComplianceData.timestamp``.
+
+    Mirrors ``shared/scripts/lib/events_log.latest_event_dt`` but stays
+    local to the compliance plugin: the plugin is a distinct
+    distributable and cannot import ``shared/scripts/lib`` without a
+    cross-plugin path bootstrap (see events_log.py docstring). The
+    parity test (TestLatestEventTimestamp in test_data_collector.py)
+    pins these two to the same answer for any given input.
+
+    Empty input → ``"(no events)"`` literal so the rendered banner is
+    still a deterministic, human-readable token rather than empty
+    string.
+    """
+    if not work_events:
+        return "(no events)"
+    latest = ""
+    for we in work_events:
+        ts = we.timestamp
+        if isinstance(ts, str) and ts > latest:
+            latest = ts
+    return latest or "(no events)"

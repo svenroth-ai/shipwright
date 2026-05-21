@@ -1,37 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-21-empirical-followups"
+run_id: "iterate-2026-05-22-deterministic-render-timestamps"
 phase: "iterate"
-reason: "iterate: empirical-verification follow-ups (B.4 producer + B.3 synthesis + path-canon)"
-timestamp: "2026-05-21T19:07:21.155609+00:00"
+reason: "iterate: deterministic render timestamps"
+timestamp: "2026-05-21T19:08:17.472175+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-21 19:07:21 UTC
+> Auto-generated 2026-05-21 19:08:17 UTC
 
 ## Session Info
 
-- **Session ID**: 2710ed1c-cbd1-4cd9-ab1b-9defcb95611b
-- **Timestamp**: 2026-05-21 19:07:21 UTC
-- **Reason**: iterate: empirical-verification follow-ups (B.4 producer + B.3 synthesis + path-canon)
+- **Session ID**: f990b8ca-e767-4745-861f-9a142fcc95a4
+- **Timestamp**: 2026-05-21 19:08:17 UTC
+- **Reason**: iterate: deterministic render timestamps
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-21-fix-gh-security-emit-gate-symmetry
-- **Date**: 2026-05-21T12:31:08.078768Z
-- **Type**: bug
-- **Complexity**: small
-- **Branch**: iterate/fix-gh-security-emit-gate-symmetry
-- **ADR**: iterate-2026-05-21-fix-gh-security-emit-gate-symmetry
+- **Run ID**: iterate-2026-05-21-empirical-followups
+- **Date**: 2026-05-21T19:07:30.768750Z
+- **Type**: change
+- **Complexity**: medium
+- **Branch**: iterate/empirical-followups
+- **ADR**: iterate-2026-05-21-empirical-followups
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-05-21-empirical-followups.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/empirical-followups
-- **Run ID**: iterate-2026-05-21-empirical-followups
-- **Spec**: .shipwright/planning/iterate/2026-05-21-empirical-followups-code-review.md
-- **External Review Marker**: stale (predates spec (2026-05-21T16:20:59))
+- **Branch**: iterate/deterministic-render-timestamps
+- **Run ID**: iterate-2026-05-22-deterministic-render-timestamps
+- **Spec**: .shipwright/planning/iterate/2026-05-22-deterministic-render-timestamps.md
+- **Complexity**: medium
+- **External Review Marker**: skipped_missing_keys (external_review_state.json @ 2026-05-22T00:00:01)
 
 ### Mandatory replay on Resume
 
@@ -49,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/empirical-followups
-- **Last Commit**: 376c870 docs(campaign): empirical-verification handover for B.2â†’C.3 (#64)
+- **Branch**: iterate/deterministic-render-timestamps
+- **Last Commit**: 46d6745 feat(compliance): empirical-verification follow-ups (B.4 producer + B.3 synthesis + path-canon) (#65)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-e4340b4c | work_completed | iterate (empirical-verification follow-ups: triage_add CLI + Full Suite Runs synthesis + path-canon ALLOWLIST) | 2026-05-21 |
 | evt-5be2bab6 | work_completed | iterate (VERIFICATION: bug+change-type — should pass) | 2026-05-21 |
 | evt-9a656b5f | work_completed | iterate (VERIFICATION: with affected-frs — should pass) | 2026-05-21 |
 | evt-64f8cd79 | work_completed | iterate (Artifact-based GitHub security producer for Triage Inbox (+ spec.md FR-01.14 update)) | 2026-05-20 |
 | evt-a3b7c2d6 | work_completed | iterate (Artifact-based GitHub security producer for Triage Inbox) | 2026-05-20 |
-| evt-5105fa5d | work_completed | iterate (escape pipe and newline in markdown table cells) | 2026-05-20 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 39
-- **Last iterate**: bug — VERIFICATION: bug+change-type — should pass (2026-05-21)
+- **Total work events**: 40
+- **Last iterate**: change — empirical-verification follow-ups: triage_add CLI + Full Suite Runs synthesis + path-canon ALLOWLIST (2026-05-21)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

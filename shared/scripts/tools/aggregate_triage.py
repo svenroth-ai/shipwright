@@ -27,6 +27,8 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
+from lib.events_log import latest_event_dt  # noqa: E402
+
 from triage import (  # noqa: E402
     SEVERITY_RANK,
     read_all_items,
@@ -330,12 +332,24 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return p.parse_args(argv)
 
 
+def _resolve_render_now(project_root: Path) -> str:
+    """Banner timestamp derived from events.jsonl, not wall-clock.
+
+    See iterate-2026-05-22-deterministic-render-timestamps — using
+    `datetime.now()` caused the rendered triage_inbox.md banner to drift
+    on every Stop hook. The `--now` CLI arg still overrides this for
+    tests and scaffold scripts that need a fixed snapshot value.
+    """
+    dt = latest_event_dt(project_root)
+    if dt is None:
+        return "(no events)"
+    return dt.isoformat().replace("+00:00", "Z")
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     project_root = Path(args.project_root).resolve()
-    now = args.now or (
-        datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    )
+    now = args.now or _resolve_render_now(project_root)
 
     items = read_all_items(project_root)
     md = render_markdown(items, now=now)
