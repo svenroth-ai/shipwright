@@ -1,9 +1,9 @@
 {
   "status": "completed",
-  "timestamp": "2026-05-21T15:41:05.761663+00:00",
+  "timestamp": "2026-05-21T16:03:23.464355+00:00",
   "provider": "openrouter",
-  "findings_count": 15,
+  "findings_count": 18,
   "self_review_fallback_ran": false,
-  "reason": "C.1 iterate review: 0 HIGH + 7 MED + 8 LOW; addressed inline",
+  "reason": "C.2 iterate review: 1 HIGH (SHA injection defense) + 9 MED + 8 LOW; addressed inline",
   "review_mode": "iterate"
 }

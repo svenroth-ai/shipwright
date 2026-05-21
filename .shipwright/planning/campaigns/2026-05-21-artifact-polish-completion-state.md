@@ -8,7 +8,7 @@
 ## Status
 
 - **Started:** 2026-05-21 (this session)
-- **Current iterate:** C.1 (next)
+- **Current iterate:** C.2 (next)
 - **Baseline (campaign start, 2026-05-21):**
   - `main` HEAD: `5c06748` (canon-lint allowlist `.shipwright/planning/adr/**.md`)
   - `shared/tests/`: 2101 passed, 12 skipped, 18 deselected
@@ -69,15 +69,17 @@
 
 ### C.1 — FR-gate at iterate-finalize
 
-- **Status:** not started
-- **Branch:** _pending_
-- **PR:** _pending_
-- **Squash commit:** _pending_
-- **Predicted ADR:** ADR-059
-- **External review findings:** _pending_
-- **External code-review findings:** _pending_
-- **Test deltas:** _pending_
-- **Deviations from handover:** _pending_
+- **Status:** merged
+- **Branch:** `iterate/c1-fr-gate-finalize` (deleted)
+- **PR:** #60
+- **Squash commit:** `388fa55`
+- **Predicted ADR:** ADR-059 (filed at `.shipwright/planning/adr/059-fr-gate-at-finalize.md`)
+- **External review findings:** 15 (0 HIGH + 7 MED + 8 LOW). All addressed inline; disposition table in ADR-059.
+- **External code-review findings:** 5 (3 MED + 1 LOW accepted-and-fixed — stricter `none_reason` rules in spec, pair-integrity rule, integration test strengthening; 2 MED rejected-with-reason — strict-data-on-disk and non-dict bypass design choices).
+- **Test deltas:** shared 2116 → 2141 (+25); compliance 410 → 411 (+1).
+- **Deviations from handover:**
+  - Validation broader than handover description: `_is_valid_none_reason` enforces ≤280 chars + no control chars + no newlines, beyond the "non-empty trimmed string" baseline. Driven by external review (OpenAI-M5).
+  - Pair-integrity rule (change_type's presence requires valid none_reason even with FRs) added per Gemini code-review-M1; strict-data-on-disk semantics.
 
 ### C.2 — ADR-bloat + Architecture-drift + CLAUDE.md-bloat detector
 
