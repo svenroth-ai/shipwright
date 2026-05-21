@@ -431,20 +431,25 @@ If this step fails: log WARNING but do not block — the event can be re-recorde
 
 **Persist result for crash recovery:** Before returning, write the result JSON to `.shipwright/runs/{loop_id}/{section_name}/result.json` (where `loop_id` comes from `SHIPWRIGHT_LOOP_ID` env var). Skip this step if `SHIPWRIGHT_LOOP_ID` is not set (non-loop invocations). The result JSON schema is defined in `agents/section_builder_contract.schema.json`.
 
-When complete, return a JSON object as the **last line of your response**:
+When complete, return a JSON object as the **last line of your response**.
+The example below is a concrete instance that satisfies
+`agents/section_builder_contract.schema.json` — `tests/test_section_builder_contract.py::TestAgentMdJsonExamples`
+verifies every ```json result block in this file against that schema, so
+keep the placeholders concrete (real-looking commit hash, single
+`design_fidelity` value, etc.) rather than `{...}` / `a|b|c` patterns:
 
 ```json
 {
-  "section": "{section_name}",
+  "section": "01-auth",
   "status": "complete",
-  "commit": "{full_commit_hash}",
-  "branch": "{branch_name}",
+  "commit": "abc1234",
+  "branch": "build/01-auth",
   "tests_passed": 12,
   "tests_total": 12,
   "review_findings": [
     {"finding": "description", "status": "fixed"}
   ],
-  "design_fidelity": "full|partial|skipped",
+  "design_fidelity": "full",
   "design_groups": [
     {"group": "Layout structure", "status": "fixed", "screens": ["01-login.html"], "attempts": 1},
     {"group": "Spacing/shadows", "status": "parked", "screens": ["01-login.html"], "attempts": 3, "diagnosis": "Card padding diverges from mockup"}
@@ -456,13 +461,16 @@ When complete, return a JSON object as the **last line of your response**:
 }
 ```
 
+Substitute your own `section`, `commit`, `branch`, `tests_passed/total`,
+and `design_fidelity ∈ {"full", "partial", "skipped"}` when emitting.
+
 If the section could not be completed:
 ```json
 {
-  "section": "{section_name}",
+  "section": "01-auth",
   "status": "failed",
   "error": "Description of what went wrong",
-  "partial_commit": "{commit_hash_if_any}",
+  "partial_commit": "abc1234",
   "tests_passed": 5,
   "tests_total": 12,
   "debug_log": [
