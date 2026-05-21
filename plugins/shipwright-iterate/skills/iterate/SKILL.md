@@ -1237,7 +1237,8 @@ uv run "{shared_root}/scripts/tools/write_decision_drop.py" \
   --title "{short title}" \
   --context "{why}" --decision "{what}" --consequences "{impact}" \
   --rationale "{reasoning}" --rejected "{alternatives}" \
-  [--architecture-impact component|data-flow|convention]
+  [--architecture-impact component|data-flow|convention] \
+  [--spec-ref ".shipwright/planning/adr/<NNN>-<slug>.md"]
 ```
 
 The ADR's identity for this run is the **run_id** — there is no `ADR-NNN`
@@ -1246,7 +1247,28 @@ verifier accepts run-id ADR identity and resolves it (decision-drop now,
 `Run-ID:` line in `decision_log.md` post-aggregation). Reference the iterate
 spec and run_id in the ADR body fields.
 
-**Length budget (forward-only, applies to new ADRs).** Each field — `--context`, `--decision`, `--consequences`, `--rationale`, `--rejected` — should be **1-3 sentences, max ~500 characters**. `decision_log.md` is always-loaded Layer-1 context: every new iterate run pays for every verbose ADR in tokens. Keep entries self-contained but terse. Include rationale only if the decision isn't self-explanatory. `aggregate_decisions.py` renders drops verbatim, so keep each field within ~500 characters at authoring time. Do NOT retroactively shorten existing ADRs — git churn for historical detail isn't worth it.
+**Length budget — hard-rejected at write time (Iterate A.3, 2026-05-21).** Each field — `--context`, `--decision`, `--consequences`, `--rationale`, `--rejected` — MUST be **1-3 sentences, max 500 characters**. `decision_log.md` is always-loaded Layer-1 context: every verbose ADR pays for itself in tokens on every future iterate run. The tool now exits non-zero on overflow; the error message lists every offender and points at the spec-folder convention. Existing bloated entries are NOT retroactively rewritten — the gate is forward-only.
+
+**ADR spec folder** for prose that overflows the budget: `.shipwright/planning/adr/<NNN>-<slug>.md` (flat, one file per ADR, ADR-number prefix gives collision protection). Pass the relative path via `--spec-ref`; the aggregator renders it as a `**Details:** [<filename>](../planning/adr/...)` bullet under the ADR row and rebuilds `.shipwright/planning/adr/INDEX.md` after each release pass.
+
+`--spec-ref` is **mandatory** when:
+
+- a field would otherwise exceed 500 characters (move the long prose into the spec file and keep the ADR body terse), or
+- the decision references >3 alternatives, ADR-spanning diagrams, or non-trivial follow-up acceptance criteria — anything a future reader would otherwise have to reconstruct from commits.
+
+Example (short ADR pointing at a long-form spec):
+
+```bash
+uv run "{shared_root}/scripts/tools/write_decision_drop.py" \
+  --project-root "{project_root}" --run-id "{run_id}" \
+  --section "Iterate — change: replay snapshot" \
+  --title "Snapshot-from-mirror precedence" \
+  --context "Live mirror often beats disk fallback; explain why in spec." \
+  --decision "Try mirror first, then disk; never both." \
+  --consequences "One round-trip per attach; deterministic blank fallback." \
+  --architecture-impact component \
+  --spec-ref ".shipwright/planning/adr/092-replay-snapshot.md"
+```
 
 ### F3a: Reflection — Capture Learnings
 

@@ -81,6 +81,45 @@ def test_optional_fields_persisted(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# Iterate A.3 — hard reject + spec_ref persistence
+# ---------------------------------------------------------------------------
+
+
+def test_spec_ref_persisted_in_drop(tmp_path):
+    """spec_ref MUST survive into the JSON payload so the aggregator can
+    render the **Details:** link at release time."""
+    path = write_decision_drop(
+        tmp_path,
+        **_fields(spec_ref=".shipwright/planning/adr/042-foo.md"),
+    )
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["spec_ref"] == ".shipwright/planning/adr/042-foo.md"
+
+
+def test_spec_ref_omitted_defaults_to_empty(tmp_path):
+    """Backwards-compat: a drop without spec_ref must still validate and the
+    persisted field is an empty string (not missing) — so the schema is stable."""
+    path = write_decision_drop(tmp_path, **_fields())
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["spec_ref"] == ""
+
+
+def test_drop_hard_rejected_on_field_length_overflow(tmp_path):
+    """Iterate A.3: new drops with any field above the 500-char budget must
+    raise DecisionDropError immediately — single-user-repo hard reject."""
+    with pytest.raises(DecisionDropError, match=r"500-char budget"):
+        write_decision_drop(tmp_path, **_fields(context="x" * 600))
+    # No file written on rejection
+    assert not list(drop_dir(tmp_path).glob("*.json")) if drop_dir(tmp_path).is_dir() else True
+
+
+def test_drop_overflow_error_mentions_spec_folder(tmp_path):
+    with pytest.raises(DecisionDropError) as exc:
+        write_decision_drop(tmp_path, **_fields(consequences="y" * 800))
+    assert ".shipwright/planning/adr/" in str(exc.value)
+
+
+# ---------------------------------------------------------------------------
 # Worktree-awareness — iterate F3 runs inside an ephemeral worktree whose
 # .shipwright/agent_docs/decision-drops/ is destroyed by `git worktree
 # remove` before /shipwright-changelog can aggregate it. The drop MUST land

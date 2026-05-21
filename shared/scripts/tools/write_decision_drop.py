@@ -45,6 +45,11 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 from lib.events_log import resolve_main_repo_root  # noqa: E402
 from lib.iterate_entry import sanitize_run_id_for_filename  # noqa: E402
+from tools.write_decision_log import (  # noqa: E402
+    ADR_SPEC_FOLDER,
+    FieldLengthError,
+    enforce_field_length_limits,
+)
 
 DROP_DIRNAME = "decision-drops"  # under .shipwright/agent_docs/
 _ARCHITECTURE_IMPACTS = ("component", "data-flow", "convention", "none")
@@ -107,8 +112,14 @@ def write_decision_drop(
     rejected: str = "",
     commit: str = "",
     architecture_impact: str = "none",
+    spec_ref: str = "",
 ) -> Path:
-    """Write one ADR decision-drop. Returns the absolute path written."""
+    """Write one ADR decision-drop. Returns the absolute path written.
+
+    Iterate A.3 hardens this path: each of context / decision / consequences /
+    rationale / rejected must be within ``ADR_FIELD_MAX_CHARS``. Long-form
+    prose belongs in ``spec_ref`` → ``.shipwright/planning/adr/<NNN>-<slug>.md``.
+    """
     if not run_id.strip():
         raise DecisionDropError("run_id is empty")
     if not decision.strip():
@@ -118,6 +129,14 @@ def write_decision_drop(
             f"unknown architecture_impact {architecture_impact!r}. "
             f"Allowed: {list(_ARCHITECTURE_IMPACTS)}"
         )
+
+    try:
+        enforce_field_length_limits(
+            context=context, decision=decision, consequences=consequences,
+            rationale=rationale, rejected=rejected,
+        )
+    except FieldLengthError as exc:
+        raise DecisionDropError(str(exc)) from exc
 
     project_root = Path(project_root).resolve()
     payload = {
@@ -132,6 +151,7 @@ def write_decision_drop(
         "rejected": rejected,
         "commit": commit,
         "architecture_impact": architecture_impact,
+        "spec_ref": spec_ref,
     }
     text = json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
 
@@ -172,6 +192,16 @@ def main(argv: list[str] | None = None) -> int:
         default="none",
         choices=list(_ARCHITECTURE_IMPACTS),
     )
+    parser.add_argument(
+        "--spec-ref",
+        default="",
+        help=(
+            "Optional path (relative to project root) to long-form ADR spec — "
+            f"convention: {ADR_SPEC_FOLDER}/<NNN>-<slug>.md (flat, one file "
+            "per ADR). Rendered as a `**Details:** [...]` link in the "
+            "aggregated decision_log.md."
+        ),
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -187,6 +217,7 @@ def main(argv: list[str] | None = None) -> int:
             rejected=args.rejected,
             commit=args.commit,
             architecture_impact=args.architecture_impact,
+            spec_ref=args.spec_ref,
         )
     except DecisionDropError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

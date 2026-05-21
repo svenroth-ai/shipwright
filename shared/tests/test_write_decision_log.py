@@ -1,9 +1,16 @@
 """Tests for decision log writer (compact ADR format)."""
 
+import pytest
+
 from tools.write_decision_log import (
+    ADR_FIELD_MAX_CHARS,
+    FieldLengthError,
+    _format_spec_ref_link,
     append_decision,
     check_field_length,
     collect_length_warnings,
+    enforce_field_length_limits,
+    format_entry,
     get_next_adr_number,
 )
 
@@ -187,3 +194,105 @@ def test_optional_fields_omitted_when_empty(tmp_project):
     content = (tmp_project / ".shipwright" / "agent_docs" / "decision_log.md").read_text()
     assert "**Rejected:**" not in content
     assert "**Rationale:**" not in content
+
+
+# ---------------------------------------------------------------------------
+# Iterate A.3 — hard-reject + spec_ref
+# ---------------------------------------------------------------------------
+
+
+def test_enforce_field_length_limits_no_op_for_short_fields():
+    """A no-op call should not raise — every field within the budget."""
+    enforce_field_length_limits(
+        context="short", decision="short", consequences="short",
+    )
+
+
+def test_enforce_field_length_limits_hard_rejects_overflow():
+    """A single overflowed field MUST raise FieldLengthError."""
+    with pytest.raises(FieldLengthError, match=r"500-char budget"):
+        enforce_field_length_limits(
+            context="x" * (ADR_FIELD_MAX_CHARS + 1),
+            decision="ok", consequences="ok",
+        )
+
+
+def test_enforce_field_length_limits_reports_all_offenders():
+    """Multi-field overflow should mention every offender so the operator
+    can fix all of them in one pass."""
+    with pytest.raises(FieldLengthError) as exc:
+        enforce_field_length_limits(
+            context="x" * 600, decision="ok", consequences="y" * 700,
+        )
+    msg = str(exc.value)
+    assert "context" in msg
+    assert "consequences" in msg
+    assert "spec-ref" in msg.lower() or "spec_ref" in msg or "--spec-ref" in msg
+
+
+def test_enforce_field_length_limits_mentions_adr_spec_folder():
+    """Error message MUST tell the operator where the overflow prose belongs."""
+    with pytest.raises(FieldLengthError) as exc:
+        enforce_field_length_limits(context="x" * 600)
+    assert ".shipwright/planning/adr/" in str(exc.value)
+
+
+def test_append_decision_hard_rejects_overflow(tmp_project):
+    """The high-level append path must refuse to write the entry on overflow,
+    leaving decision_log.md untouched (or absent if it didn't exist yet)."""
+    log = tmp_project / ".shipwright" / "agent_docs" / "decision_log.md"
+    assert not log.exists()
+    with pytest.raises(FieldLengthError):
+        append_decision(
+            tmp_project,
+            section_ref="x", commit_hash="abc",
+            context="x" * 600, decision="d", consequences="c",
+        )
+    assert not log.exists()  # no partial write
+
+
+def test_append_decision_succeeds_when_long_prose_moved_to_spec_ref(tmp_project):
+    """Operator path: keep fields short, link the long-form prose via spec_ref."""
+    number = append_decision(
+        tmp_project,
+        section_ref="x", commit_hash="abc",
+        context="see spec", decision="d", consequences="c",
+        spec_ref=".shipwright/planning/adr/099-foo.md",
+    )
+    assert number == 1
+    body = (tmp_project / ".shipwright" / "agent_docs" / "decision_log.md").read_text(
+        encoding="utf-8"
+    )
+    # Rendered as a relative link from .shipwright/agent_docs/ → ../planning/adr/...
+    assert "**Details:**" in body
+    assert "../planning/adr/099-foo.md" in body
+    assert "[099-foo.md]" in body
+
+
+def test_format_entry_spec_ref_uses_relative_link_when_under_shipwright():
+    entry = format_entry(
+        1, "section", "abc", "ctx", "dec", "cons",
+        spec_ref=".shipwright/planning/adr/123-bar.md",
+    )
+    assert "../planning/adr/123-bar.md" in entry
+
+
+def test_format_entry_spec_ref_renders_verbatim_for_external_paths():
+    """Operator-chosen paths outside .shipwright/ are rendered verbatim — no
+    silent rewrite."""
+    entry = format_entry(
+        1, "section", "abc", "ctx", "dec", "cons",
+        spec_ref="docs/adr/123-bar.md",
+    )
+    assert "docs/adr/123-bar.md" in entry
+
+
+def test_format_entry_spec_ref_empty_skips_bullet():
+    entry = format_entry(1, "section", "abc", "ctx", "dec", "cons", spec_ref="")
+    assert "**Details:**" not in entry
+
+
+def test_format_spec_ref_link_handles_backslashes():
+    """Windows-style paths must round-trip into forward-slash URLs."""
+    rendered = _format_spec_ref_link(".shipwright\\planning\\adr\\042-foo.md")
+    assert "../planning/adr/042-foo.md" in rendered
