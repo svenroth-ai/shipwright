@@ -237,6 +237,14 @@ Process the subagent's response:
 - If `escalation_reason` → move to `needs-review` category
 - **Max 3 retries per finding.**
 
+**Suppression syntax (when the fix is a justified `# nosemgrep:` comment):**
+read `references/suppression-syntax.md` before adding the comment — Semgrep
+requires the suppression to sit on the matched line or **immediately** above
+it; any intervening comment silently breaks the attribution. The reference
+also covers the multi-line-call kwarg trap, multi-rule suppression, and the
+post-merge verification recipe (`pass` on the workflow gate does **not**
+mean zero findings — only zero criticals).
+
 ---
 
 ## Step 5: User Interview (Pipeline Mode Only)
