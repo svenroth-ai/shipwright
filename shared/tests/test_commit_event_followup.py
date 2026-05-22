@@ -141,6 +141,35 @@ def test_idempotency_after_first_commit(tracked_repo: Path) -> None:
     assert second["status"] == "clean"
 
 
+def test_worktree_resolves_to_main_repo_and_commits_there(tracked_repo: Path, tmp_path_factory: pytest.TempPathFactory) -> None:
+    """Mirror record_event.py's worktree resolution: F7b invoked with
+    ``--project-root`` inside a linked worktree targets the MAIN repo's
+    events.jsonl (where record_event.py actually wrote). Without this,
+    the helper would check the worktree's copy (clean) and report
+    ``clean`` even when the real log is dirty."""
+    # Create a linked worktree from the tracked_repo.
+    worktree_path = tmp_path_factory.mktemp("worktree")
+    worktree_path.rmdir()  # mktemp creates it; git worktree add needs a non-existent path
+    _git(["worktree", "add", "-b", "iterate/test-branch", str(worktree_path)], tracked_repo)
+
+    # Dirty the main repo's events.jsonl (simulating an F7 record_event call
+    # from inside the worktree — which resolves to the main repo).
+    main_events = tracked_repo / "shipwright_events.jsonl"
+    main_events.write_text(main_events.read_text(encoding="utf-8") + "{\"id\": \"evt-0002\"}\n", encoding="utf-8")
+
+    head_before = _git(["rev-parse", "HEAD"], tracked_repo).stdout.strip()
+    result = _run_tool(worktree_path, run_id="iterate-worktree-test", event_id="evt-0002")
+    head_after_main = _git(["rev-parse", "HEAD"], tracked_repo).stdout.strip()
+
+    assert result["status"] == "committed", result
+    # The commit landed on the MAIN repo, not the worktree branch.
+    assert head_before != head_after_main
+    assert result["commit"] == head_after_main
+    # main_repo_root should be reported for observability
+    assert "main_repo_root" in result
+    assert Path(result["main_repo_root"]).resolve() == tracked_repo.resolve()
+
+
 def test_commit_message_includes_co_author(tracked_repo: Path) -> None:
     events = tracked_repo / "shipwright_events.jsonl"
     events.write_text(events.read_text(encoding="utf-8") + "{\"id\": \"evt-0002\"}\n", encoding="utf-8")

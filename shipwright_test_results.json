@@ -2,7 +2,7 @@
   "iterate_latest": {
     "run_id": "iterate-2026-05-23-iterate-f7-tracked-event-log-commit",
     "date": "2026-05-23",
-    "unit": {"status": "passed", "passed": 6, "total": 6, "note": "New test_commit_event_followup.py: 6/6 green. Covers tracked-dirty -> commit, tracked-clean -> noop, gitignored -> noop (even when dirty), dry-run preserves dirty, idempotency after first commit, co-author embedded in commit message."},
+    "unit": {"status": "passed", "passed": 7, "total": 7, "note": "New test_commit_event_followup.py: 7/7 green. Covers tracked-dirty -> commit, tracked-clean -> noop, gitignored -> noop (even when dirty), dry-run preserves dirty, idempotency after first commit, co-author embedded in commit message, worktree-aware main-repo resolution (mirrors record_event.py's resolve_events_path)."},
     "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "No integration surface."},
     "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
     "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web surface."},

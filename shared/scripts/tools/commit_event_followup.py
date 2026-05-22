@@ -53,6 +53,36 @@ def _run_git(args: list[str], cwd: Path, check: bool = True) -> subprocess.Compl
     )
 
 
+def resolve_main_repo_root(project_root: Path) -> Path:
+    """Return the main-repo root for ``project_root``.
+
+    Mirrors record_event.py's ``resolve_events_path`` semantics: when
+    ``project_root`` is inside a linked git worktree, the canonical event log
+    lives next to the **main** repo (where ``record_event.py`` writes it).
+    The F7b commit must target the same repo or it will check a different
+    events.jsonl and report ``clean`` even when the real log is dirty.
+
+    Resolves via ``git rev-parse --git-common-dir`` and returns its parent.
+    Falls back to ``project_root`` when git is unavailable or the resolution
+    fails (matches the events_log.py fallback contract).
+    """
+    try:
+        result = _run_git(["rev-parse", "--git-common-dir"], project_root, check=False)
+    except (FileNotFoundError, OSError):
+        return project_root
+    if result.returncode != 0:
+        return project_root
+    git_common = result.stdout.strip()
+    if not git_common:
+        return project_root
+    git_common_path = Path(git_common)
+    if not git_common_path.is_absolute():
+        git_common_path = (project_root / git_common_path).resolve()
+    # git-common-dir points at the .git directory of the main repo; its
+    # parent is the main repo's working tree root.
+    return git_common_path.parent
+
+
 def is_tracked(project_root: Path) -> bool:
     """True when ``shipwright_events.jsonl`` is tracked by git in this repo."""
     result = _run_git(["ls-files", "--error-unmatch", EVENT_FILE], project_root, check=False)
@@ -83,11 +113,28 @@ def commit_followup(
     co_author: str | None = None,
     dry_run: bool = False,
 ) -> dict:
-    """Execute the F7-followup commit logic. Returns a result dict."""
-    if not is_tracked(project_root):
-        return {"status": "ignored", "reason": "shipwright_events.jsonl is gitignored"}
-    if not is_dirty(project_root):
-        return {"status": "clean", "reason": "no uncommitted changes to shipwright_events.jsonl"}
+    """Execute the F7-followup commit logic. Returns a result dict.
+
+    Mirrors record_event.py's worktree-aware semantics: if ``project_root``
+    is inside a linked worktree, the operation targets the MAIN repo (where
+    ``record_event.py`` actually wrote the event). The returned dict carries
+    ``main_repo_root`` so callers can see which tree was acted on.
+    """
+    main_repo_root = resolve_main_repo_root(project_root)
+    if not is_tracked(main_repo_root):
+        return {
+            "status": "ignored",
+            "reason": "shipwright_events.jsonl is gitignored",
+            "main_repo_root": str(main_repo_root),
+        }
+    if not is_dirty(main_repo_root):
+        return {
+            "status": "clean",
+            "reason": "no uncommitted changes to shipwright_events.jsonl",
+            "main_repo_root": str(main_repo_root),
+        }
+    # Switch project_root to the main repo for the rest of this function.
+    project_root = main_repo_root
 
     body_lines = [
         f"Follow-up commit for the F7 work_completed event appended by",
@@ -111,12 +158,22 @@ def commit_followup(
     commit_msg = title + "\n\n" + "\n".join(body_lines)
 
     if dry_run:
-        return {"status": "dry_run", "title": title, "body": "\n".join(body_lines)}
+        return {
+            "status": "dry_run",
+            "title": title,
+            "body": "\n".join(body_lines),
+            "main_repo_root": str(main_repo_root),
+        }
 
     _run_git(["add", EVENT_FILE], project_root, check=True)
     _run_git(["commit", "-m", commit_msg], project_root, check=True)
     sha = _run_git(["rev-parse", "HEAD"], project_root, check=True).stdout.strip()
-    return {"status": "committed", "commit": sha, "title": title}
+    return {
+        "status": "committed",
+        "commit": sha,
+        "title": title,
+        "main_repo_root": str(main_repo_root),
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
