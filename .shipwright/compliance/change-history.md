@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-05-22T13:10:04Z
-Total commits: 695
+Generated: 2026-05-22T13:11:13.026162+00:00
+Total commits: 705
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 236
-    "fix" : 181
-    "chore" : 117
+    "fix" : 184
+    "chore" : 123
     "docs" : 104
-    "refactor" : 34
+    "refactor" : 35
     "test" : 15
     "other" : 7
     "build" : 1
@@ -260,10 +260,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 181 commits
+### Fixes (fix) — 184 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-22 | security | inline nosemgrep on shell=True line (semgrep flags kwarg, not call) | 69319684056a |
+| 2026-05-22 | security | place nosemgrep directly adjacent to flagged line | eeab07c9d2e5 |
+| 2026-05-22 | security | hoist github context to env in security workflow (semgrep run-shell-injection) | 81fdc7c0c687 |
 | 2026-05-21 | meta | deterministic render timestamps from max(event.ts) (#66) | 8382ff90bbb2 |
 | 2026-05-21 | triage | gate gh-security action-unit emit on artifact stub in test fixture (#54) | f4a1ff11636e |
 | 2026-05-21 | build | section-builder.md JSON examples conform to result schema (#51) | 823225e0942c |
@@ -446,10 +449,16 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 117 commits
+### Chores (chore) — 123 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-23 | events | restore 9 lost event-log entries after `git reset --hard` (#70) | c5b3208b205d |
+| 2026-05-22 | security | persist remediation results from PR #68 | 6b8e3e8042d7 |
+| 2026-05-22 | compliance | reconcile D1 spec-FR coverage in events (#67) | b379a3063a90 |
+| 2026-05-22 | security | suppress 9 by-design SAST findings with justifications | d3d30eaee778 |
+| 2026-05-22 | security | suppress 4 false-positive Popen Py3.6 compat warnings | 6ecc71fa080a |
+| 2026-05-22 | security | bump deps to patch 21 SCA findings (CI run 26195036492) | 2bdf61482c52 |
 | 2026-05-21 | canon | allowlist .shipwright/planning/adr/**.md in compliance migration (#55) | 5c067485c5d7 |
 | 2026-05-20 | phase-0a | backfill FRs + add change_type schema field (#42) | fd212b23ab58 |
 | 2026-05-19 | — | remove gitignore entry for deleted triage handoff doc | 90af09980d93 |
@@ -677,10 +686,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 34 commits
+### Refactoring (refactor) — 35 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-22 | security | replace 4 dynamic __import__ calls with normal imports | d67b6f02d3bf |
 | 2026-05-11 | tests | centralize CI-discipline helpers + Self-Review § 8 probe | 16618252250b |
 | 2026-05-11 | tests | hard-fail silent skips in CI + add Step 6 governance rules | 20c2e48e7bea |
 | 2026-05-02 | repo | post-adoption framework cleanup (Sub-1A through 1D) | 3db485b24305 |
@@ -758,7 +768,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 695 |
+| Total commits | 705 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 695 |
+| Human-authored commits | 705 |
 
