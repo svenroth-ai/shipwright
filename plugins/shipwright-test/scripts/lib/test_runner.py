@@ -88,10 +88,9 @@ def run_tests(command: str, cwd: str | None = None) -> dict:
         # (npm.cmd, yarn.cmd, pnpm.cmd) which subprocess cannot resolve with shell=False.
         # `command` comes from the trusted shipwright profile configuration (testing.commands.*),
         # not from user input. Profile files are project-internal and version-controlled.
-        # nosemgrep: python.lang.security.audit.subprocess-shell-true.subprocess-shell-true
         proc = subprocess.run(
             command,
-            shell=True,
+            shell=True,  # nosemgrep: python.lang.security.audit.subprocess-shell-true.subprocess-shell-true
             capture_output=True,
             text=True,
             encoding="utf-8",
