@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "scan_date": "2026-05-20T23:05:07.601097+00:00",
+  "remediation_date": "2026-05-22T00:00:00+00:00",
+  "session_id": "03f6a092-c671-4f17-80e0-c8b1eec9e3c2",
+  "repo": "svenroth-ai/shipwright",
+  "scanner": "oss",
+  "ci_run_url": "https://github.com/svenroth-ai/shipwright/actions/runs/26195036492",
+  "ci_artifact_path": ".shipwright/securityreports/ci-26195036492/",
+  "branch": "security/oss-sweep-2026-05-22",
+  "total_findings": 39,
+  "by_severity": {
+    "critical": 0,
+    "high": 10,
+    "medium": 24,
+    "low": 5,
+    "info": 0
+  },
+  "by_source": {
+    "semgrep": 14,
+    "trivy": 21,
+    "shipwright-prompt-scan": 4
+  },
+  "remediation": {
+    "fixed": 39,
+    "declined": 0,
+    "deferred": 0,
+    "open": 0
+  },
+  "remediation_by_class": {
+    "auto-fixable": {
+      "count": 16,
+      "outcome": "fixed",
+      "commit": "1447edc",
+      "summary": "21 trivy SCA findings (16 auto-fixable + 5 informational pygments) patched via uv lock --upgrade-package across 7 lockfiles plus npm install ws@^8.20.1"
+    },
+    "informational": {
+      "count": 5,
+      "outcome": "fixed",
+      "commit": "1447edc",
+      "summary": "Low-severity pygments DoS CVE bundled into the dep-bump sweep above"
+    },
+    "agent-fixable": {
+      "count": 14,
+      "outcome": "fixed-and-suppressed",
+      "commits": ["dda2b00", "e116d01", "4c23b22"],
+      "breakdown": {
+        "real_fixes": 1,
+        "false_positive_suppressions": 4,
+        "by_design_suppressions": 9
+      },
+      "summary": "1 real semgrep fix (security workflow github-context env hoist), 4 false-positive Popen Py3.6 compat suppressions, 9 by-design suppressions (3 importlib + 5 dynamic urllib + 1 subprocess shell=True) each with inline justification"
+    },
+    "needs-review": {
+      "count": 4,
+      "outcome": "refactored",
+      "commit": "c2904bb",
+      "summary": "4 prompt-injection PY_DYNAMIC_IMPORT findings refactored from inline __import__ calls to normal `import` statements (the shipwright prompt scanner has no inline suppression syntax for Python files)"
+    }
+  },
+  "findings_source_artifacts": {
+    "main_findings": ".shipwright/securityreports/ci-26195036492/findings.json",
+    "prompt_injection_findings": ".shipwright/securityreports/ci-26195036492/prompt_risks.json",
+    "report_markdown": ".shipwright/securityreports/ci-26195036492/report.md",
+    "sarif": ".shipwright/securityreports/ci-26195036492/sarif/"
+  },
+  "verification": {
+    "tests_run_after_remediation": [
+      {"plugin": "shipwright-compliance", "test_file": "tests/test_audit_group_b.py", "result": "36/36 passed"},
+      {"plugin": "shipwright-adopt", "test_file": "tests/test_compliance_bridge_fallback.py", "result": "1/1 passed"},
+      {"scope": "root", "test_file": "shared/tests/test_external_review_cli.py", "result": "30/30 passed"}
+    ],
+    "rescan_pending": true,
+    "rescan_note": "Local OSS scanners (semgrep/trivy/gitleaks) are not installed on the host; rescan will run automatically in CI on the next push to security/oss-sweep-2026-05-22 (or on PR merge to main)."
+  }
+}
