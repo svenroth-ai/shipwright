@@ -1,39 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-22-deterministic-render-timestamps"
+run_id: "iterate-2026-05-22-reconcile-d1-fr-coverage"
 phase: "iterate"
-reason: "iterate: deterministic render timestamps"
-timestamp: "2026-05-21T19:08:17.472175+00:00"
+reason: "iterate: reconcile D1 spec-FR coverage in events"
+timestamp: "2026-05-22T13:10:04.800918+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-21 19:08:17 UTC
+> Auto-generated 2026-05-22 13:10:04 UTC
 
 ## Session Info
 
-- **Session ID**: f990b8ca-e767-4745-861f-9a142fcc95a4
-- **Timestamp**: 2026-05-21 19:08:17 UTC
-- **Reason**: iterate: deterministic render timestamps
+- **Session ID**: 18bf1094-aa14-43b4-b60e-a1cf98127cbf
+- **Timestamp**: 2026-05-22 13:10:04 UTC
+- **Reason**: iterate: reconcile D1 spec-FR coverage in events
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-21-empirical-followups
-- **Date**: 2026-05-21T19:07:30.768750Z
+- **Run ID**: iterate-2026-05-22-reconcile-d1-fr-coverage
+- **Date**: 2026-05-22T13:09:50.649783Z
 - **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/empirical-followups
-- **ADR**: iterate-2026-05-21-empirical-followups
+- **Complexity**: small
+- **Branch**: iterate/reconcile-d1-fr-coverage
+- **ADR**: iterate-2026-05-22-reconcile-d1-fr-coverage
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-21-empirical-followups.md
+- **Spec**: .shipwright/planning/iterate/2026-05-22-reconcile-d1-fr-coverage.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/deterministic-render-timestamps
-- **Run ID**: iterate-2026-05-22-deterministic-render-timestamps
-- **Spec**: .shipwright/planning/iterate/2026-05-22-deterministic-render-timestamps.md
-- **Complexity**: medium
-- **External Review Marker**: skipped_missing_keys (external_review_state.json @ 2026-05-22T00:00:01)
+- **Branch**: iterate/reconcile-d1-fr-coverage
+- **Run ID**: iterate-2026-05-22-reconcile-d1-fr-coverage
+- **Spec**: .shipwright/planning/iterate/2026-05-22-reconcile-d1-fr-coverage.md
+- **Complexity**: small
+- **External Review Marker**: stale (predates spec (2026-05-22T00:00:01))
 
 ### Mandatory replay on Resume
 
@@ -51,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/deterministic-render-timestamps
-- **Last Commit**: 46d6745 feat(compliance): empirical-verification follow-ups (B.4 producer + B.3 synthesis + path-canon) (#65)
+- **Branch**: iterate/reconcile-d1-fr-coverage
+- **Last Commit**: 8382ff9 fix(meta): deterministic render timestamps from max(event.ts) (#66)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-e4340b4c | work_completed | iterate (empirical-verification follow-ups: triage_add CLI + Full Suite Runs synthesis + path-canon ALLOWLIST) | 2026-05-21 |
-| evt-5be2bab6 | work_completed | iterate (VERIFICATION: bug+change-type — should pass) | 2026-05-21 |
-| evt-9a656b5f | work_completed | iterate (VERIFICATION: with affected-frs — should pass) | 2026-05-21 |
-| evt-64f8cd79 | work_completed | iterate (Artifact-based GitHub security producer for Triage Inbox (+ spec.md FR-01.14 update)) | 2026-05-20 |
-| evt-a3b7c2d6 | work_completed | iterate (Artifact-based GitHub security producer for Triage Inbox) | 2026-05-20 |
+| evt-1bd33db1 | work_completed | iterate (mirror_findings_to_triage now scoped to groups_run; --only E no longer dismisses A/B/C/D items) | 2026-05-22 |
+| evt-c817e0b9 | work_completed | iterate (Re-aggregated triage_inbox.md; refreshed sbom.md, dashboard.md, test-evidence.md, traceability-matrix.md, change-history.md, session_handoff.md, build_dashboard.md) | 2026-05-22 |
+| evt-da3e7e51 | work_completed | iterate (Re-aggregated triage_inbox.md; refreshed sbom.md, dashboard.md, test-evidence.md, traceability-matrix.md, change-history.md, session_handoff.md, build_dashboard.md) | 2026-05-22 |
+| evt-3277175b | work_completed | iterate (Extended g2_stoplist with 13 cross-cutting monorepo scopes; backfilled ADR-054..061 stubs in decision_log.md; regenerated RTM/test-evidence/dashboard) | 2026-05-22 |
+| evt-af75507f | work_completed | iterate (deterministic render timestamps from max(event.ts)) | 2026-05-21 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 40
-- **Last iterate**: change — empirical-verification follow-ups: triage_add CLI + Full Suite Runs synthesis + path-canon ALLOWLIST (2026-05-21)
+- **Total work events**: 45
+- **Last iterate**: Fix partial-run audit incorrectly dismissing out-of-scope compliance triage items — mirror_findings_to_triage now scoped to groups_run; --only E no longer dismisses A/B/C/D items (2026-05-22)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

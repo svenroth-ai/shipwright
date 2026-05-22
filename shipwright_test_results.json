@@ -1,42 +1,23 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-22-deterministic-render-timestamps",
+    "run_id": "iterate-2026-05-22-reconcile-d1-fr-coverage",
     "date": "2026-05-22",
-    "unit": {
-      "status": "passed",
-      "passed": 2195,
-      "total": 2195,
-      "note": "Full shared/tests/ suite green (2195 passed, 13 skipped, 18 deselected, 0 failed). New tests this iterate: 12 latest_event_dt cases in test_events_log.py covering missing/empty/corrupt/non-string-ts/unparseable/naive/Z+0000-suffix/mixed-non-UTC-offset/all-corrupt/determinism; 6 parametrized determinism cases in test_render_determinism.py (3 renderers x 2 directions). touches_shared_infra enforced full suite. The previous baseline canon-lint failure is gone (allowlist extension from #45 still active)."
-    },
-    "integration": {
-      "status": "passed",
-      "passed": 110,
-      "total": 110,
-      "note": "integration-tests green (110 passed, 2 deselected slow)."
-    },
+    "unit": {"status": "not_run", "passed": 0, "total": 0, "note": "Bookkeeping-only iterate — no source code or test changes. Reconciles detective-audit D1 by recording one work_completed event covering 8 FRs whose post-watermark coverage was empty."},
+    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "No code change."},
     "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
-    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web surface. CLI surface verified below."},
+    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web surface."},
     "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI."},
     "smoke": {"status": "not_run", "note": "No server."},
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run pytest shared/tests/test_render_determinism.py shared/tests/test_events_log.py --color=no",
+      "surface": "none",
+      "runner": "n/a",
       "exit_code": 0,
-      "tests_run": 34,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-22-deterministic-render-timestamps/surface_verification.json",
-      "timestamp": "2026-05-22T00:30:00.000Z",
-      "attempts": 1,
-      "note": "F0.5 cli surface — 34 tests (27 events_log.py from extension + 7 cross-renderer determinism). Empirical end-to-end probe (separately, not part of surface_verification): two finalize_iterate.py calls with sleep 2 between yielded byte-identical output for all 7 rendered markdown files (build_dashboard, session_handoff, 5 compliance/*.md). Compliance plugin test suite: 462/462 (461 prior + 1 new parity test). Exit 0, single attempt."
+      "tests_run": 0,
+      "evidence_path": ".shipwright/planning/iterate/2026-05-22-reconcile-d1-fr-coverage.md",
+      "timestamp": "2026-05-22T08:30:00.000Z",
+      "attempts": 0,
+      "justification": "Small-complexity compliance-bookkeeping iterate — no user-erlebbare surface. Verification is the D1 re-run via plugins/shipwright-compliance/scripts/audit/group_d.py against the post-F7 event log (deterministic Python audit check, not a startable web/cli/api surface)."
     },
-    "degraded": [
-      {
-        "condition": "external_review_missing_keys",
-        "detail": "External LLM review provider keys (OPENROUTER_API_KEY / GEMINI_API_KEY / OPENAI_API_KEY) not configured per check-external-review-keys.py. Fell back to mandatory self-review + internal code-reviewer subagent pass (Branch B Option 2). Reviewer raised 3 MED + 5 LOW findings; MED #1 (mixed non-UTC offset test gap) addressed inline by adding test_latest_event_dt_handles_non_utc_offset; MED #2 (canon-frontmatter timestamp consumer audit) verified safe via grep — Stop hook only reads run_id, not timestamp; MED #3 (full-file scan perf) flagged as follow-up (not blocking for current event log size). One LOW (parity probe between shared+compliance helpers) addressed inline; F7-ordering semantic documented in latest_event_dt docstring."
-      },
-      {
-        "condition": "f0_leak_guard_false_positive_resolved",
-        "detail": "F0 leak-guard initially fired on 2 new .shipwright/planning/campaigns/*.md files that appeared in main tree during this iterate run — written by a parallel session, not by this iterate's worktree. Snapshot manually updated to include those paths as baseline; second F0 run was green. Mechanism: main_tree_snapshot.json under .shipwright/runs/<run-id>/, dirty_paths field extended to cover parallel-session noise. Note for future: a parallel-session-aware re-snapshot tool would be useful follow-up."
-      }
-    ]
+    "degraded": []
   }
 }

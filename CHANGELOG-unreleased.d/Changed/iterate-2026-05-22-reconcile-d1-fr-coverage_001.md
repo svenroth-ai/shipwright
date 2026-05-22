@@ -1,0 +1,1 @@
+Reconcile detective-audit finding D1 (Spec FR coverage in events) by recording a multi-FR work_completed event covering FR-01.03/04/05/06/07/08/09/12 with spec_impact=none (watermark gap, not code defect).
