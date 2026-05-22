@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-22T13:10:04Z
+Generated: 2026-05-22T13:11:13.026162+00:00
 
 ## Requirements Coverage
 
@@ -8,16 +8,16 @@ Generated: 2026-05-22T13:10:04Z
 |-------------|-------|----------|-------------|-------|---------------|--------|
 | [FR-01.01](../../.shipwright/planning/01-adopted/spec.md#fr-0101) | Orchestrate the full Shipwright SDLC pipeline — drives proje... | Must | evt-e3d2949e, evt-b0b9c422, evt-ca7b7d64, evt-7620210f +1 | 225/225 → 0/0 | 2026-05-21 (iter) | FAIL |
 | [FR-01.02](../../.shipwright/planning/01-adopted/spec.md#fr-0102) | Decompose project requirements (IREB) into well-scoped plann... | Must | evt-e3d2949e, evt-b0b9c422, evt-ca7b7d64, evt-7620210f +1 | 225/225 → 140/140 | 2026-05-16 (iter) | FAIL |
-| [FR-01.03](../../.shipwright/planning/01-adopted/spec.md#fr-0103) | AI-assisted deep planning with research, optional interview,... | Must | evt-e3d2949e, evt-ca7b7d64 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
-| [FR-01.04](../../.shipwright/planning/01-adopted/spec.md#fr-0104) | Generate UI mockups from IREB specs as standalone HTML scree... | Should | evt-e3d2949e, evt-ca7b7d64 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
-| [FR-01.05](../../.shipwright/planning/01-adopted/spec.md#fr-0105) | Implement code from /shipwright-plan sections with TDD (red-... | Must | evt-e3d2949e, evt-ca7b7d64 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
-| [FR-01.06](../../.shipwright/planning/01-adopted/spec.md#fr-0106) | Run unit tests, E2E tests (Playwright), smoke tests, and sec... | Must | evt-e3d2949e, evt-ca7b7d64, evt-c4ae8ef7 | 225/225 → 19/19 | 2026-05-03 (iter) | COVERED |
-| [FR-01.07](../../.shipwright/planning/01-adopted/spec.md#fr-0107) | Security scanning chain (Aikido + Semgrep + Trivy + Gitleaks... | Must | evt-e3d2949e, evt-ca7b7d64 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
-| [FR-01.08](../../.shipwright/planning/01-adopted/spec.md#fr-0108) | Deploy to configured targets with smoke testing and rollback... | Should | evt-e3d2949e, evt-ca7b7d64 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
-| [FR-01.09](../../.shipwright/planning/01-adopted/spec.md#fr-0109) | Parse Conventional Commits from git history, generate Keep-a... | Must | evt-e3d2949e, evt-ca7b7d64, evt-530b0980 | 225/225 → 19/19 | 2026-05-03 (iter) | COVERED |
+| [FR-01.03](../../.shipwright/planning/01-adopted/spec.md#fr-0103) | AI-assisted deep planning with research, optional interview,... | Must | evt-e3d2949e, evt-ca7b7d64, evt-ddb23fe7 | 225/225 → 0/0 | 2026-05-22 (iter) | FAIL |
+| [FR-01.04](../../.shipwright/planning/01-adopted/spec.md#fr-0104) | Generate UI mockups from IREB specs as standalone HTML scree... | Should | evt-e3d2949e, evt-ca7b7d64, evt-ddb23fe7 | 225/225 → 0/0 | 2026-05-22 (iter) | FAIL |
+| [FR-01.05](../../.shipwright/planning/01-adopted/spec.md#fr-0105) | Implement code from /shipwright-plan sections with TDD (red-... | Must | evt-e3d2949e, evt-ca7b7d64, evt-ddb23fe7 | 225/225 → 0/0 | 2026-05-22 (iter) | FAIL |
+| [FR-01.06](../../.shipwright/planning/01-adopted/spec.md#fr-0106) | Run unit tests, E2E tests (Playwright), smoke tests, and sec... | Must | evt-e3d2949e, evt-ca7b7d64, evt-c4ae8ef7, evt-ddb23fe7 | 225/225 → 0/0 | 2026-05-22 (iter) | FAIL |
+| [FR-01.07](../../.shipwright/planning/01-adopted/spec.md#fr-0107) | Security scanning chain (Aikido + Semgrep + Trivy + Gitleaks... | Must | evt-e3d2949e, evt-ca7b7d64, evt-ddb23fe7 | 225/225 → 0/0 | 2026-05-22 (iter) | FAIL |
+| [FR-01.08](../../.shipwright/planning/01-adopted/spec.md#fr-0108) | Deploy to configured targets with smoke testing and rollback... | Should | evt-e3d2949e, evt-ca7b7d64, evt-ddb23fe7 | 225/225 → 0/0 | 2026-05-22 (iter) | FAIL |
+| [FR-01.09](../../.shipwright/planning/01-adopted/spec.md#fr-0109) | Parse Conventional Commits from git history, generate Keep-a... | Must | evt-e3d2949e, evt-ca7b7d64, evt-530b0980, evt-ddb23fe7 | 225/225 → 0/0 | 2026-05-22 (iter) | FAIL |
 | [FR-01.10](../../.shipwright/planning/01-adopted/spec.md#fr-0110) | Generate audit-ready compliance documentation (RTM, test evi... | Must | evt-e3d2949e, evt-ca7b7d64, evt-30338dac, evt-a3888caf +1 | 225/225 → 140/140 | 2026-05-16 (iter) | FAIL |
 | [FR-01.11](../../.shipwright/planning/01-adopted/spec.md#fr-0111) | Complexity-adaptive SDLC for ongoing changes — auto-detects ... | Must | evt-e3d2949e, evt-6c637864, evt-baaf4b0e, evt-ca7b7d64 +12 | 225/225 → 140/140 | 2026-05-16 (iter) | FAIL |
-| [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112) | Local browser preview — start dev server for the target proj... | May | evt-e3d2949e, evt-ca7b7d64 | 225/225 → 13/13 | 2026-05-03 (iter) | COVERED |
+| [FR-01.12](../../.shipwright/planning/01-adopted/spec.md#fr-0112) | Local browser preview — start dev server for the target proj... | May | evt-e3d2949e, evt-ca7b7d64, evt-ddb23fe7 | 225/225 → 0/0 | 2026-05-22 (iter) | FAIL |
 | [FR-01.13](../../.shipwright/planning/01-adopted/spec.md#fr-0113) | Onboard an existing (brownfield) repository into the Shipwri... | Must | evt-e3d2949e, evt-273bbb54, evt-b0b9c422, evt-aab7ddbd +5 | 225/225 → 304/304 | 2026-05-16 (iter) | FAIL |
 | [FR-01.14](../../.shipwright/planning/01-adopted/spec.md#fr-0114) | Pre-backlog triage buffer — findings from local hooks/scans/... | Must | evt-3f488ddc, evt-32f2f1f4, evt-84dbdf5e, evt-e14e5f26 +3 | 1642/1649 → 122/122 | 2026-05-20 (iter) | FAIL |
 
@@ -70,6 +70,7 @@ Generated: 2026-05-22T13:10:04Z
 | Re-aggregated triage_inbox.md; refreshed sbom.md, dashboard.md, test-evidence.md, traceability-matrix.md, change-history.md, session_handoff.md, build_dashboard.md | iterate | Re-aggregate triage inbox to surface SBOM bug cluster (trg-8bc99ae4) and commit regen artifacts |  | — | 69f1498 | 2026-05-22 |
 | Re-aggregated triage_inbox.md; refreshed sbom.md, dashboard.md, test-evidence.md, traceability-matrix.md, change-history.md, session_handoff.md, build_dashboard.md | iterate | Re-aggregate triage inbox to surface SBOM bug cluster (trg-8bc99ae4) and commit regen artifacts |  | — | 69f1498 | 2026-05-22 |
 | mirror_findings_to_triage now scoped to groups_run; --only E no longer dismisses A/B/C/D items | iterate | Fix partial-run audit incorrectly dismissing out-of-scope compliance triage items |  | — | 09fedde | 2026-05-22 |
+| compliance reconciliation: D1 spec-FR coverage — multi-FR event covering FR-01.03/04/05/06/07/08/09/12 (post-2026-05-04 watermark gap; no source/test/spec changes) | iterate | change | FR-01.03, FR-01.04, FR-01.05 +5 | — | 1ca566a | 2026-05-22 |
 
 ## Coverage Summary
 
@@ -77,21 +78,10 @@ Generated: 2026-05-22T13:10:04Z
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 45 |
+| Iterate changes | 46 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
 | Total review findings | 0 |
 | Unresolved findings | 0 |
-
-### FRs with stale verification (> 14 days)
-
-- [FR-01.03](../../.shipwright/planning/01-adopted/spec.md) — last verified 18d ago by `evt-ca7b7d64` (2026-05-03)
-- [FR-01.04](../../.shipwright/planning/01-adopted/spec.md) — last verified 18d ago by `evt-ca7b7d64` (2026-05-03)
-- [FR-01.05](../../.shipwright/planning/01-adopted/spec.md) — last verified 18d ago by `evt-ca7b7d64` (2026-05-03)
-- [FR-01.07](../../.shipwright/planning/01-adopted/spec.md) — last verified 18d ago by `evt-ca7b7d64` (2026-05-03)
-- [FR-01.08](../../.shipwright/planning/01-adopted/spec.md) — last verified 18d ago by `evt-ca7b7d64` (2026-05-03)
-- [FR-01.09](../../.shipwright/planning/01-adopted/spec.md) — last verified 18d ago by `evt-530b0980` (2026-05-03)
-- [FR-01.12](../../.shipwright/planning/01-adopted/spec.md) — last verified 18d ago by `evt-ca7b7d64` (2026-05-03)
-- [FR-01.06](../../.shipwright/planning/01-adopted/spec.md) — last verified 17d ago by `evt-c4ae8ef7` (2026-05-03)
 
