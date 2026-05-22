@@ -76,8 +76,8 @@ def run_git(
       for calls where non-zero is semantic (e.g., ``merge-base
       --is-ancestor`` returns 0/1 as truth values).
     """
-    # nosemgrep: python.lang.compatibility.python36.python36-compatibility-Popen1,python.lang.compatibility.python36.python36-compatibility-Popen2
     # `encoding` and `errors` kwargs are available since Python 3.6 — the project requires 3.11+ (see pyproject.toml).
+    # nosemgrep: python.lang.compatibility.python36.python36-compatibility-Popen1,python.lang.compatibility.python36.python36-compatibility-Popen2
     proc = subprocess.Popen(
         ["git", "--no-pager", "-C", str(cwd), *args],
         stdout=subprocess.PIPE,

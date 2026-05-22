@@ -100,6 +100,8 @@ def run_lib_fallback(project_root: Path) -> dict[str, Any]:
         ("compliance_report", f"{_COMPLIANCE_DIR}/dashboard.md"),
     ]:
         try:
+            # `mod_name` comes from the hardcoded for-loop allowlist above (sbom_generator, change_history, etc.), not user input.
+            # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
             mod = importlib.import_module(f"lib.{mod_name}")
             out = mod.generate(data) if hasattr(mod, "generate") else None
             if out is not None:
