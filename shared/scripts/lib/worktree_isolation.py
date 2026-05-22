@@ -104,6 +104,8 @@ def run_git(
     - ``TimeoutExpired`` kills + reaps so no zombie git.exe lingers.
     - ``check=True`` raises :class:`GitError` on non-zero exit.
     """
+    # nosemgrep: python.lang.compatibility.python36.python36-compatibility-Popen1,python.lang.compatibility.python36.python36-compatibility-Popen2
+    # `encoding` and `errors` kwargs are available since Python 3.6 — the project requires 3.11+ (see pyproject.toml).
     proc = subprocess.Popen(
         ["git", "--no-pager", "-C", str(cwd), *args],
         stdout=subprocess.PIPE,
