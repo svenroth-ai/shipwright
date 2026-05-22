@@ -14,6 +14,7 @@ Six core scenarios cover the provider-detect matrix:
 """
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -124,7 +125,7 @@ def test_cli_no_keys_returns_skipped_schema(tmp_path, fake_plan_plugin, monkeypa
     # Strip every credential the script might pick up.
     env = {
         k: v for k, v in {
-            **__import__("os").environ,
+            **os.environ,
         }.items()
         if k not in {
             "OPENROUTER_API_KEY",

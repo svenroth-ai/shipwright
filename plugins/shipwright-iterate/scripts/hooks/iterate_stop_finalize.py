@@ -12,6 +12,7 @@ payload forwarding issues (external review Finding 7).
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import sys
@@ -115,7 +116,7 @@ def main() -> int:
         from hooks.generate_handoff_on_stop import main as handoff_main
         # Re-feed empty stdin since we consumed it
         original_stdin = sys.stdin
-        sys.stdin = open(os.devnull) if os.name != "nt" else __import__("io").StringIO("{}")
+        sys.stdin = open(os.devnull) if os.name != "nt" else io.StringIO("{}")
         try:
             handoff_main()
         finally:
