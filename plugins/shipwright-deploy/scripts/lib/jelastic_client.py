@@ -52,6 +52,8 @@ class JelasticClient:
         req.add_header("Content-Type", "application/x-www-form-urlencoded")
 
         try:
+            # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+            # URL is constructed from self.api_url (Jelastic API endpoint configured at client init) + a fixed endpoint path.
             with urllib.request.urlopen(req, timeout=60) as response:
                 body = json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
