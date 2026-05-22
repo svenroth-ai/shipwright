@@ -84,19 +84,29 @@ jobs:
 
       - name: Run Prompt Injection scan
         working-directory: plugins/shipwright-security
+        env:
+          # Hoist github context into env vars so the run: body never
+          # interpolates ${{ github.* }} directly — guards against
+          # run-shell-injection (semgrep yaml.github-actions.security.
+          # run-shell-injection.run-shell-injection). github.base_ref is
+          # an untrusted user-controlled ref name on pull_request events.
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          WORKSPACE: ${{ github.workspace }}
+          REPO: ${{ github.repository }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "$EVENT_NAME" = "pull_request" ]; then
             uv run scripts/tools/prompt_injection_scan.py \
-              --diff origin/${{ github.base_ref }} \
+              --diff "origin/$BASE_REF" \
               --path ../.. \
-              --output ${{ github.workspace }}/prompt_risks.json \
-              --repo "${{ github.repository }}"
+              --output "$WORKSPACE/prompt_risks.json" \
+              --repo "$REPO"
           else
             uv run scripts/tools/prompt_injection_scan.py \
               --full \
               --path ../.. \
-              --output ${{ github.workspace }}/prompt_risks.json \
-              --repo "${{ github.repository }}"
+              --output "$WORKSPACE/prompt_risks.json" \
+              --repo "$REPO"
           fi
         continue-on-error: true
 
