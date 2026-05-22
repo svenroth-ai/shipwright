@@ -6,6 +6,7 @@ marker. Fallback: direct library imports for full-suite generation.
 
 from __future__ import annotations
 
+import importlib
 import subprocess
 import sys
 from pathlib import Path
@@ -99,7 +100,7 @@ def run_lib_fallback(project_root: Path) -> dict[str, Any]:
         ("compliance_report", f"{_COMPLIANCE_DIR}/dashboard.md"),
     ]:
         try:
-            mod = __import__(f"lib.{mod_name}", fromlist=["generate"])
+            mod = importlib.import_module(f"lib.{mod_name}")
             out = mod.generate(data) if hasattr(mod, "generate") else None
             if out is not None:
                 out_path = project_root / output_name

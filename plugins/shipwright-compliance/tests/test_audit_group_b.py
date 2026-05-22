@@ -26,6 +26,7 @@ Group B — Config ↔ Config ↔ Event-log coherence:
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import textwrap
@@ -447,7 +448,7 @@ def _git_commit(repo: Path, files: dict[str, str], msg: str,
             "GIT_AUTHOR_EMAIL": f"{author}@example.com",
             "GIT_COMMITTER_NAME": author,
             "GIT_COMMITTER_EMAIL": f"{author}@example.com",
-            "PATH": __import__("os").environ.get("PATH", ""),
+            "PATH": os.environ.get("PATH", ""),
         }
     subprocess.run(["git", "-C", str(repo), "commit", "-m", msg], check=True,
                    capture_output=True, env=env)
