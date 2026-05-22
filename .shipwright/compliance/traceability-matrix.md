@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-21T19:08:17.472175+00:00
+Generated: 2026-05-22T13:10:04Z
 
 ## Requirements Coverage
 
@@ -65,6 +65,11 @@ Generated: 2026-05-21T19:08:17.472175+00:00
 | VERIFICATION: with affected-frs — should pass | iterate | feature | FR-01.01 | — | 376c870 | 2026-05-21 |
 | VERIFICATION: bug+change-type — should pass | iterate | bug |  | — | 376c870 | 2026-05-21 |
 | empirical-verification follow-ups: triage_add CLI + Full Suite Runs synthesis + path-canon ALLOWLIST | iterate | change |  | 2621/2621 | d8f3c05 | 2026-05-21 |
+| deterministic render timestamps from max(event.ts) | iterate | bug |  | 34/34 | d325fd6 | 2026-05-21 |
+| Extended g2_stoplist with 13 cross-cutting monorepo scopes; backfilled ADR-054..061 stubs in decision_log.md; regenerated RTM/test-evidence/dashboard | iterate | Clear 5 compliance triage bloat items (G2 stoplist + G3 ADR stubs + 3x artifact-stale) from artifact-polish/empirical-verification campaigns |  | — | c3057ff | 2026-05-22 |
+| Re-aggregated triage_inbox.md; refreshed sbom.md, dashboard.md, test-evidence.md, traceability-matrix.md, change-history.md, session_handoff.md, build_dashboard.md | iterate | Re-aggregate triage inbox to surface SBOM bug cluster (trg-8bc99ae4) and commit regen artifacts |  | — | 69f1498 | 2026-05-22 |
+| Re-aggregated triage_inbox.md; refreshed sbom.md, dashboard.md, test-evidence.md, traceability-matrix.md, change-history.md, session_handoff.md, build_dashboard.md | iterate | Re-aggregate triage inbox to surface SBOM bug cluster (trg-8bc99ae4) and commit regen artifacts |  | — | 69f1498 | 2026-05-22 |
+| mirror_findings_to_triage now scoped to groups_run; --only E no longer dismisses A/B/C/D items | iterate | Fix partial-run audit incorrectly dismissing out-of-scope compliance triage items |  | — | 09fedde | 2026-05-22 |
 
 ## Coverage Summary
 
@@ -72,7 +77,7 @@ Generated: 2026-05-21T19:08:17.472175+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 40 |
+| Iterate changes | 45 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

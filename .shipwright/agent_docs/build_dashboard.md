@@ -1,10 +1,15 @@
 # Project Activity Dashboard
-> Updated: 2026-05-21 19:08 UTC | Session: f990b8ca-e767-4745-861f-9a142fcc95a4 | Run: iterate-2026-05-22-deterministic-render-timestamps
+> Updated: 2026-05-22 13:10 UTC | Session: 18bf1094-aa14-43b4-b60e-a1cf98127cbf | Run: iterate-2026-05-22-reconcile-d1-fr-coverage
 
-## Recent Changes (40 iterations)
+## Recent Changes (45 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| Fix partial-run audit incorrectly dismissing out-of-scope compliance triage items | mirror_findings_to_triage now scoped to groups_run; --only E no longer dismisses A/B/C/D items | 0/0 | 09fedde | tooling | 2026-05-22 |
+| Re-aggregate triage inbox to surface SBOM bug cluster (trg-8bc99ae4) and commit regen artifacts | Re-aggregated triage_inbox.md; refreshed sbom.md, dashboard.md, test-evidence.md, traceability-matrix.md, change-history.md, session_handoff.md, build_dashboard.md | 0/0 | 69f1498 | compliance | 2026-05-22 |
+| Re-aggregate triage inbox to surface SBOM bug cluster (trg-8bc99ae4) and commit regen artifacts | Re-aggregated triage_inbox.md; refreshed sbom.md, dashboard.md, test-evidence.md, traceability-matrix.md, change-history.md, session_handoff.md, build_dashboard.md | 0/0 | 69f1498 | compliance | 2026-05-22 |
+| Clear 5 compliance triage bloat items (G2 stoplist + G3 ADR stubs + 3x artifact-stale) from artifact-polish/empirical-verification campaigns | Extended g2_stoplist with 13 cross-cutting monorepo scopes; backfilled ADR-054..061 stubs in decision_log.md; regenerated RTM/test-evidence/dashboard | 0/0 | c3057ff | compliance | 2026-05-22 |
+| bug | deterministic render timestamps from max(event.ts) | +34 new, 34/34 | d325fd6 | tooling | 2026-05-21 |
 | change | empirical-verification follow-ups: triage_add CLI + Full Suite Runs synthesis + path-canon ALLOWLIST | 2621/2621 | d8f3c05 | tooling | 2026-05-21 |
 | bug | VERIFICATION: bug+change-type — should pass | 0/0 | 376c870 | tooling | 2026-05-21 |
 | feature | VERIFICATION: with affected-frs — should pass | 0/0 | 376c870 | FR-01.01 | 2026-05-21 |
@@ -47,7 +52,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-22 | Unit: 2195/2195 | Integration: 110/110 | Smoke: not_run | (iterate)
+Last run: 2026-05-22 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
