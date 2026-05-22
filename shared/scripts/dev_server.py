@@ -408,6 +408,8 @@ def _http_probe(url: str, timeout: float = 2.0) -> bool:
     """Issue a GET; accept 2xx/3xx as ready. Errors / 4xx / 5xx → not ready."""
     try:
         req = urllib.request.Request(url, method="GET")
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+        # URL targets a local dev service (localhost/127.0.0.1 + configured port); not driven by external user input.
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             status = resp.status
             return 200 <= status < 400

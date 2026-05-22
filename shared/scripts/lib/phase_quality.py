@@ -576,6 +576,8 @@ def run_workflow_checks(phase: str, project_root: Path, run_id: str) -> list[dic
     skip_ids = skipped_check_ids()
     try:
         import importlib
+        # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
+        # `module_name` comes from the internal _WORKFLOW_PHASE_DISPATCH allowlist (no user input).
         module = importlib.import_module(f"tools.verifiers.{module_name}")
         findings = module.run(project_root, run_id)
     except Exception as exc:  # noqa: BLE001
@@ -607,6 +609,8 @@ def _dispatch_shared_category(
     skip_ids = skipped_check_ids()
     try:
         import importlib
+        # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
+        # `module_name` is a caller-supplied internal verifier name (Infra/Trace/Quality), not user input.
         module = importlib.import_module(f"tools.verifiers.{module_name}")
         findings = module.run(phase, project_root)
     except Exception as exc:  # noqa: BLE001

@@ -133,7 +133,8 @@ def preflight_dev_url(url: str, timeout_s: float = 5.0) -> tuple[bool, str]:
     """
     try:
         req = urllib.request.Request(url, method="HEAD")
-        with urllib.request.urlopen(req, timeout=timeout_s):  # noqa: S310 — caller-controlled URL
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+        with urllib.request.urlopen(req, timeout=timeout_s):  # noqa: S310 — caller-controlled URL (dev server URL from the operator's profile)
             return True, ""
     except urllib.error.HTTPError:
         return True, ""  # server responded — Lighthouse can audit error pages

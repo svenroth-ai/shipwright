@@ -142,6 +142,8 @@ def verify_imports(symbols: list[tuple[str, str, int]] | None = None) -> None:
 
     for module_path, symbol, min_arity in symbols:
         try:
+            # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
+            # `module_path` comes from the hardcoded REQUIRED_SYMBOLS constant (no user input).
             mod = importlib.import_module(module_path)
         except ImportError as exc:
             errors.append(f"{module_path}: module not importable ({exc})")

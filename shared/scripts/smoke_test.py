@@ -58,6 +58,8 @@ def run_smoke_test(
         req = urllib.request.Request(url, method="GET")
         req.add_header("User-Agent", "shipwright-smoke-test/0.1")
 
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+        # Smoke-test target URL comes from the deploy config (operator-supplied at deploy time).
         with urllib.request.urlopen(req, timeout=timeout) as response:
             elapsed = (time.monotonic() - start) * 1000
             result["status_code"] = response.status
@@ -86,6 +88,8 @@ def run_smoke_test(
             req = urllib.request.Request(health_url, method="GET")
             req.add_header("User-Agent", "shipwright-smoke-test/0.1")
 
+            # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+            # Health URL is the smoke-test URL + a configured health-check path; both from deploy config.
             with urllib.request.urlopen(req, timeout=timeout) as response:
                 body = response.read().decode("utf-8")
                 try:

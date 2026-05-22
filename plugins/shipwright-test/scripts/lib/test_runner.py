@@ -84,6 +84,11 @@ def run_tests(command: str, cwd: str | None = None) -> dict:
     start = time.monotonic()
 
     try:
+        # nosemgrep: python.lang.security.audit.subprocess-shell-true.subprocess-shell-true
+        # shell=True is required for cross-platform support of Windows .cmd shims
+        # (npm.cmd, yarn.cmd, pnpm.cmd) which subprocess cannot resolve with shell=False.
+        # `command` comes from the trusted shipwright profile configuration (testing.commands.*),
+        # not from user input. Profile files are project-internal and version-controlled.
         proc = subprocess.run(
             command,
             shell=True,
