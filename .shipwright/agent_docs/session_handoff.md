@@ -1,43 +1,43 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-23-compliance-md-single-producer"
+run_id: "iterate-2026-05-23-verifier-drift-remediation"
 phase: "iterate"
-reason: "iterate: compliance-md-single-producer"
-timestamp: "2026-05-23T06:45:58.666113+00:00"
+reason: "iterate: verifier drift remediation"
+timestamp: "2026-05-23T05:34:07.521148+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-23 06:45:58 UTC
+> Auto-generated 2026-05-23 05:34:07 UTC
 
 ## Session Info
 
-- **Session ID**: 615d0851-314a-414f-832c-08b265f8493f
-- **Timestamp**: 2026-05-23 06:45:58 UTC
-- **Reason**: iterate: compliance-md-single-producer
+- **Session ID**: 18bf1094-aa14-43b4-b60e-a1cf98127cbf
+- **Timestamp**: 2026-05-23 05:34:07 UTC
+- **Reason**: iterate: verifier drift remediation
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-23-verifier-multi-commit-aware
-- **Date**: 2026-05-23T05:33:25.368100Z
+- **Run ID**: iterate-2026-05-23-verifier-drift-remediation
+- **Date**: 2026-05-23T06:17:11.026963Z
 - **Type**: change
 - **Complexity**: small
-- **Branch**: iterate/verifier-multi-commit-aware
-- **ADR**: iterate-2026-05-23-verifier-multi-commit-aware
+- **Branch**: iterate/verifier-drift-remediation
+- **ADR**: iterate-2026-05-23-verifier-drift-remediation
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-05-23-verifier-drift-remediation.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/compliance-md-single-producer
-- **Run ID**: iterate-2026-05-23-compliance-md-single-producer
-- **Spec**: .shipwright/planning/iterate/2026-05-23-compliance-md-single-producer.md
-- **Complexity**: medium
+- **Branch**: iterate/verifier-drift-remediation
+- **Run ID**: iterate-2026-05-23-verifier-drift-remediation
+- **Spec**: .shipwright/planning/iterate/2026-05-23-verifier-drift-remediation.md
+- **Complexity**: small (docs + drift-protection test)
 - **External Review Marker**: stale (predates spec (2026-05-22T00:00:01))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -51,7 +51,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/compliance-md-single-producer
+- **Branch**: iterate/verifier-drift-remediation
 - **Last Commit**: df776df chore(events): record evt-c0840121 for iterate-2026-05-23-verifier-multi-commit-aware (#75)
 - **Uncommitted Changes**: Yes
 
@@ -68,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-2205fdc3 | work_completed | iterate (Compliance MDs: single-producer + snapshot-provenance audit) | 2026-05-23 |
-| evt-0a442005 | work_completed | iterate (Architecture-md drift protection test + 11 historical drift entries backfilled + 3 discipline learnings in conventions.md (TDD RED-first, F0/F11 leak-guard symmetry, F2 flag-md coupling)) | 2026-05-23 |
 | evt-c0840121 | work_completed | iterate (F11 verifier multi-commit-aware via run_id lookup (fixes false positives on iterate-f7-tracked-event-log-commit)) | 2026-05-23 |
 | evt-22949141 | work_completed | iterate (iterate skill F7b: seals tracked event-log appends to prevent silent reset wipe (commit_event_followup.py + SKILL.md + 6 tests)) | 2026-05-22 |
 | evt-ddb23fe7 | work_completed | iterate (compliance reconciliation: D1 spec-FR coverage — multi-FR event covering FR-01.03/04/05/06/07/08/09/12 (post-2026-05-04 watermark gap; no source/test/spec changes)) | 2026-05-22 |
+| evt-1bd33db1 | work_completed | iterate (mirror_findings_to_triage now scoped to groups_run; --only E no longer dismisses A/B/C/D items) | 2026-05-22 |
+| evt-c817e0b9 | work_completed | iterate (Re-aggregated triage_inbox.md; refreshed sbom.md, dashboard.md, test-evidence.md, traceability-matrix.md, change-history.md, session_handoff.md, build_dashboard.md) | 2026-05-22 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 50
-- **Last iterate**: change — Compliance MDs: single-producer + snapshot-provenance audit (2026-05-23)
+- **Total work events**: 48
+- **Last iterate**: change — F11 verifier multi-commit-aware via run_id lookup (fixes false positives on iterate-f7-tracked-event-log-commit) (2026-05-23)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-23-verifier-drift-remediation",
+  "date": "2026-05-23T06:17:11.026963Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/verifier-drift-remediation",
+  "spec": ".shipwright/planning/iterate/2026-05-23-verifier-drift-remediation.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-05-23-verifier-drift-remediation"
+}

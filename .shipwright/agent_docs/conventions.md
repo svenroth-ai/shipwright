@@ -417,3 +417,51 @@ Thanks for contributing! If anything in this guide is unclear, please open an is
 - **ADR-049** (2026-05-16): Unconditional worktree isolation for /shipwright-iterate
 
 - **ADR-050** (2026-05-16): Worktree-aware event-log resolution
+
+- **Iterate skill discipline gaps — three lessons from iterate-2026-05-23-verifier-multi-commit-aware's drift remediation:**
+
+  1. **TDD RED-first applies even to "drift-protection" tests.** Writing the
+     assertion AFTER updating the source it asserts on means the test never
+     proves it can fail — you can't tell whether the test is well-formed or
+     accidentally lax. The RED phase IS the evidence that the test
+     discriminates. The F7-fix iterate added 10 tests AFTER the
+     implementation existed; they all passed first-try, which means none of
+     them ever exercised the failure mode they were supposed to pin. The
+     architecture-md drift-protection test in iterate-2026-05-23-verifier-
+     drift-remediation went RED first and surfaced 11 historical drift
+     entries that nobody had noticed — proof that the RED phase finds real
+     drift, not just confirms it doesn't exist.
+
+  2. **F0 leak-guard symmetry with F11.** The iterate skill prescribes
+     `check_iterate_isolation.py --stage f0` BEFORE finalization (drops,
+     compliance regen) and `--stage f11` BEFORE push. Skipping the F0 stage
+     means a parallel-session leak that crept in between worktree creation
+     and finalization is not caught until F11 — by which point the iterate's
+     own snapshot may already include the leaked path as baseline. Run
+     `--stage f0` at the START of finalization (between F0 fresh-test gate
+     and F1 drift check) regardless of how small the iterate looks.
+
+  3. **`--architecture-impact convention|component|data-flow` and an
+     architecture.md update are coupled, structurally.** Setting the flag
+     without adding the bullet is silent drift — the ADR records the
+     decision but the read surface (architecture.md as the always-loaded
+     Layer-1 context) doesn't reflect it. New drift-protection test
+     `shared/tests/test_architecture_md_reflects_arch_impact.py` enforces
+     this forward (and surfaced 11 historical drops missing entries). When
+     adding the flag to `write_decision_drop.py`, in the same diff: append
+     a bullet under `## Architecture Updates` in architecture.md naming
+     the `run_id` + impact category + 1–2 sentence summary of the
+     convention/component/data-flow change. The test now fails closed.
+
+- **Drift-protection meta-pattern (RED-first surfacing of historical drift).**
+  When a convention exists only in prose (SKILL.md, docs/, ADRs), the only
+  way to find historical drift is a mechanical test that enumerates every
+  artifact governed by the convention. Write the test against the *current*
+  state of the artifact; if it goes RED with N entries, you've discovered N
+  pre-existing drift cases. Backfill the N entries to GREEN, then keep the
+  test as a forward-looking gate. The architecture-md test caught 9
+  historical drift entries from the b/c bloat-cleanup campaign that no
+  prior reviewer noticed. Apply the same pattern next time a "documented
+  but unenforced" convention surfaces — `_find_work_event_by_run_id` ↔
+  `adr_id` is a candidate (a meta-test that every iterate's F7 event has
+  an `adr_id` matching the iterate's run_id).
