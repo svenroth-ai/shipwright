@@ -1337,22 +1337,50 @@ Write latest-run state to `shipwright_test_results.json`:
 
 ### F5b: Finalize Iterate Artifacts
 
-Run **one** script that handles compliance, dashboard, and handoff:
+Run **one** script that records the iterate's `work_completed` event,
+regenerates compliance MDs, refreshes the build dashboard, and writes
+the session handoff. Per iterate-2026-05-23-compliance-md-single-producer
+the event is recorded BEFORE the compliance regen so the regenerated MDs
+include the iterate's own event — making the F6 commit snapshot
+self-consistent (and eliminating the recurring E1-E5 staleness class).
+
+`--event-extras-json` carries the SKILL.md F7-mandated fields (intent,
+spec_impact, affected_frs/new_frs/change_type/none_reason, description,
+changed_files). The event is created with `commit=""` placeholder; F6.5
+patches the SHA into the gitignored events.jsonl in place (no tracked
+file drift).
 
 ```bash
+extras='{
+  "intent": "{feature|change|bug}",
+  "description": "{short_description}",
+  "spec_impact": "{add|modify|remove|none}",
+  "spec_impact_justification": "{required when spec_impact=none}",
+  "affected_frs": ["FR-..."],
+  "new_frs": ["FR-..."],
+  "change_type": "{docs|tooling|compliance|infra}",
+  "none_reason": "{required when affected_frs/new_frs empty}",
+  "tests": {"passed": N, "total": N, "e2e_run": true}
+}'
 uv run "{shared_root}/scripts/tools/finalize_iterate.py" \
   --project-root "{project_root}" \
   --run-id "{run_id}" \
-  --reason "iterate: {short_description}"
+  --reason "iterate: {short_description}" \
+  --event-extras-json "$extras"
 ```
 
-This replaces the former F5a (compliance), F5b (dashboard), and F11 (handoff)
-as a single deterministic step. The script is idempotent — safe to run
-multiple times. If you skip this step, the Stop hook will run it
-automatically as a fallback when the session ends.
+Reads back: `result["steps"]["event"]["id"]` — capture this for F6.5.
 
-> **Note:** F7 (event recording with commit SHA) still runs separately
-> after F6 because it needs the commit hash that F6 produces.
+The script is idempotent per `run_id` — re-invocations return the
+existing event_id rather than recording a duplicate. If you skip this
+step, the Stop hook will run it automatically as a fallback when the
+session ends (but without the event_extras — for a clean F11 you must
+call F5b yourself with the full metadata).
+
+> **Note:** F7 (separate `record_event.py` call) is REPLACED by F5b
+> (event recording) + F6.5 (commit SHA patch). The historical F7 is
+> kept below for the rare repo that needs out-of-band events outside
+> finalize.
 
 ### F5c: Record iterate entry (file-per-iterate)
 
@@ -1439,20 +1467,39 @@ If a path in the list above doesn't exist in the current project, skip that
 `git add` — it just means that particular artifact wasn't touched by this run.
 Never add `-A` to bypass the list.
 
-### F7: Record Event
+### F6.5: Attach Commit SHA to F5b Event
 
-F7 is the only finalization step that requires the new commit hash. It writes
-to `shipwright_events.jsonl`. In most Shipwright-installed projects the event
-log is gitignored, so the post-commit append leaves no tracked-file drift —
-the conventional, gitignored-by-default case.
+The F5b-recorded `work_completed` event has `commit=""` placeholder.
+Patch it with the F6 commit SHA so downstream verifiers / RTM / event-
+based queries see the real hash. Writes to the gitignored
+`shipwright_events.jsonl` in place (atomic temp + rename), so no tracked-
+file drift.
 
-**Exception (self-tracking repos).** Some repos — notably the shipwright dev
-repo itself — track `shipwright_events.jsonl` via a
-`!/shipwright_events.jsonl` negation in `.gitignore`. In that mode the F7
-append leaves a *tracked-dirty* file. Without a follow-up commit the next
-`git reset --hard origin/main` (e.g. after a security rebase) silently wipes
-the event. Step **F7b** below handles this case idempotently — it runs after
-`record_event.py` and only acts when the event log is tracked AND dirty.
+```bash
+uv run "{shared_root}/scripts/tools/finalize_iterate.py" attach-commit \
+  --project-root "{project_root}" \
+  --event-id "{event_id from F5b}" \
+  --commit "$(git -C "{project_root}" rev-parse HEAD)"
+```
+
+This step is REQUIRED unless the F5b call already passed a non-empty
+`commit` arg (legacy callers). If `event-id` cannot be located, the
+script returns non-zero; investigate before continuing (typical cause:
+F5b skipped or the event was rotated out of events.jsonl).
+
+### F7 (legacy / out-of-band): Standalone `record_event.py`
+
+> **Default flow uses F5b + F6.5 — skip this section unless you have a
+> specific need to record a `work_completed` event outside iterate
+> finalize.** Common reasons: replaying a missed event, recording the
+> tail-end of an iterate that completed before the F5b reorder landed,
+> CI-side automation.
+
+When you DO call `record_event.py` directly, it still applies the C.1
+FR-gate and spec-impact rules below. Note that calling it after F5b for
+the same `run_id` produces a DUPLICATE event in events.jsonl
+(record_event.py's `--deduplicate-by-commit` only catches same-SHA
+duplicates, not same-run_id). Don't double-dip.
 
 ```bash
 # Compute changed_files for the new commit (vs the merge base) so D's

@@ -50,16 +50,16 @@ GENERATORS = {
 
 
 def _run_check_mode(project_root: Path) -> dict:
-    """Staleness-only diff mode for /shipwright-compliance (plan v7, Step 2).
+    """Snapshot-provenance check mode for /shipwright-compliance.
 
-    Regenerates each compliance doc in memory, byte-compares against disk
-    (with ``Generated:`` header stripped), writes nothing. Returns a JSON
-    payload shaped for the detective audit adapter.
+    Post-iterate-2026-05-23: compares on-disk MDs to the last
+    iterate-finalize snapshot (located by ``Run-ID:`` + diff-filter on
+    ``.shipwright/compliance/``). Writes nothing — operator runs the
+    write-mode (``--phase ...``) separately if they want to refresh.
     """
     from scripts.audit.audit_staleness import check_staleness
 
-    data = collect_all(project_root)
-    report = check_staleness(project_root, data)
+    report = check_staleness(project_root)
     return {
         "mode": "check",
         "success": True,

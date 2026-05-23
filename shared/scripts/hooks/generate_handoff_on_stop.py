@@ -280,34 +280,16 @@ def main() -> int:
         except Exception:
             pass  # Dashboard update is best-effort
 
-        # Update compliance docs (best-effort, idempotent)
-        try:
-            compliance_dashboard = project_root / ".shipwright" / "compliance" / "dashboard.md"
-            run_cfg = project_root / "shipwright_run_config.json"
-            needs_update = (
-                run_cfg.exists()
-                and (not compliance_dashboard.exists()
-                     or compliance_dashboard.stat().st_mtime < run_cfg.stat().st_mtime)
-            )
-            if needs_update:
-                compliance_plugin = Path(__file__).resolve().parents[3] / "plugins" / "shipwright-compliance"
-                update_script = compliance_plugin / "scripts" / "tools" / "update_compliance.py"
-                if update_script.exists():
-                    phase = "iterate"
-                    if has_run_config:
-                        try:
-                            cfg_data = json.loads(run_cfg.read_text(encoding="utf-8"))
-                            phase = cfg_data.get("current_step", "iterate")
-                        except (json.JSONDecodeError, OSError):
-                            pass
-                    subprocess.run(
-                        [sys.executable, str(update_script),
-                         "--project-root", str(project_root),
-                         "--phase", phase],
-                        capture_output=True, timeout=30,
-                    )
-        except Exception:
-            pass  # Compliance update is best-effort
+        # Compliance MDs are NEVER written by this Stop hook.
+        # iterate-2026-05-23-compliance-md-single-producer makes
+        # iterate-finalize the sole producer of .shipwright/compliance/*.md;
+        # the snapshot audit (audit_staleness) verifies on-disk against the
+        # last iterate-finalize commit. Out-of-band auto-regen here caused
+        # dirty-tree noise on every Stop event in non-iterate sessions
+        # (security work, manual fixes) and wrote MDs using whatever
+        # events.jsonl the local machine had — frequently behind what was
+        # in HEAD on a multi-machine project. Deleted as a class of bug,
+        # not just one heuristic.
 
         # Fallback: detect incomplete phase-completion and trigger it
         try:

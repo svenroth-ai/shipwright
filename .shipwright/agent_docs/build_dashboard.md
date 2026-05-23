@@ -1,10 +1,13 @@
 # Project Activity Dashboard
-> Updated: 2026-05-22 22:20 UTC | Session: 18bf1094-aa14-43b4-b60e-a1cf98127cbf | Run: iterate-2026-05-23-verifier-multi-commit-aware
+> Updated: 2026-05-23 06:45 UTC | Session: 615d0851-314a-414f-832c-08b265f8493f | Run: iterate-2026-05-23-compliance-md-single-producer
 
-## Recent Changes (47 iterations)
+## Recent Changes (50 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Compliance MDs: single-producer + snapshot-provenance audit | 3041/3041 |  | tooling | 2026-05-23 |
+| change | Architecture-md drift protection test + 11 historical drift entries backfilled + 3 discipline learnings in conventions.md (TDD RED-first, F0/F11 leak-guard symmetry, F2 flag-md coupling) | 2/2 | 1429aee | FR-01.11 | 2026-05-23 |
+| change | F11 verifier multi-commit-aware via run_id lookup (fixes false positives on iterate-f7-tracked-event-log-commit) | 70/70 | c1c8820 | FR-01.11 | 2026-05-23 |
 | change | iterate skill F7b: seals tracked event-log appends to prevent silent reset wipe (commit_event_followup.py + SKILL.md + 6 tests) | 6/6 | 24d77be | FR-01.11 | 2026-05-22 |
 | change | compliance reconciliation: D1 spec-FR coverage — multi-FR event covering FR-01.03/04/05/06/07/08/09/12 (post-2026-05-04 watermark gap; no source/test/spec changes) | 0/0 | 1ca566a | FR-01.03, FR-01.04, FR-01.05 | 2026-05-22 |
 | Fix partial-run audit incorrectly dismissing out-of-scope compliance triage items | mirror_findings_to_triage now scoped to groups_run; --only E no longer dismisses A/B/C/D items | 0/0 | 09fedde | tooling | 2026-05-22 |
@@ -54,7 +57,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-23 | Unit: 70/70 | Smoke: not_run | (iterate)
+Last run: 2026-05-23 | Unit: 3041/3041 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

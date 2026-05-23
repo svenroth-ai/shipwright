@@ -95,6 +95,53 @@ def test_stop_hook_does_not_emit_invalid_stdout_json(tmp_project):
     assert "session_handoff.md" in result.stderr or "generated" in result.stderr
 
 
+def test_hook_does_not_touch_compliance_dir(tmp_project):
+    """iterate-2026-05-23: Stop hook must NEVER write under .shipwright/compliance/.
+
+    Single-producer invariant: only iterate-finalize writes the tracked
+    compliance MDs. The previous mtime-guarded auto-regen block (lines
+    283-310 of generate_handoff_on_stop.py) is removed in this iterate
+    because it caused dirty-tree noise on out-of-band commits.
+    """
+    # Seed the same 5 compliance MDs the production audit registers.
+    compliance = tmp_project / ".shipwright" / "compliance"
+    compliance.mkdir(parents=True, exist_ok=True)
+    seeded = {
+        "traceability-matrix.md": "# RTM\n\nGenerated: 2026-05-23T00:00:00Z\n\nRTM body\n",
+        "test-evidence.md":       "# Test Evidence\n\nGenerated: 2026-05-23T00:00:00Z\n\nTE body\n",
+        "change-history.md":      "# Change Log\n\nGenerated: 2026-05-23T00:00:00Z\n\nCH body\n",
+        "sbom.md":                "# SBOM\n\nGenerated: 2026-05-23T00:00:00Z\n\nSBOM body\n",
+        "dashboard.md":           "# Dashboard\n\nGenerated: 2026-05-23T00:00:00Z\n\nDash body\n",
+    }
+    for name, content in seeded.items():
+        (compliance / name).write_text(content, encoding="utf-8")
+
+    # Run config exists — this is the case the old auto-regen would fire on.
+    (tmp_project / "shipwright_run_config.json").write_text(
+        json.dumps({"current_step": "iterate"}), encoding="utf-8",
+    )
+
+    before = {p.name: (p.stat().st_mtime_ns, p.read_bytes())
+              for p in compliance.iterdir() if p.is_file()}
+
+    # Run the hook.
+    result = run_hook(
+        tmp_project,
+        env_extra={"SHIPWRIGHT_SESSION_ID": "iterate-md-single-producer-test"},
+    )
+    assert result.returncode == 0
+
+    after = {p.name: (p.stat().st_mtime_ns, p.read_bytes())
+             for p in compliance.iterdir() if p.is_file()}
+
+    # NOTHING under .shipwright/compliance/ was touched.
+    assert set(after.keys()) == set(before.keys())
+    for name in before:
+        assert before[name][1] == after[name][1], (
+            f"Stop hook modified content of .shipwright/compliance/{name}"
+        )
+
+
 def test_idempotent(tmp_project):
     """Running the hook twice produces valid results both times."""
     result1 = run_hook(tmp_project)

@@ -1,27 +1,69 @@
-"""Group E — compliance document content-staleness detection.
+"""Group E — compliance document snapshot-provenance audit.
 
-Regenerates each tracked compliance doc in memory from the current
-``ComplianceData``, strips the volatile ``Generated:`` header line (regex,
-not fixed line numbers — per plan v5 review finding), and byte-compares
-against the on-disk file. This catches *content rot* that mtime-based
-checks (Phase-Quality I1-I4) cannot see: a doc whose mtime is fresh but
-whose bytes are wrong because the last regeneration missed an FR added
-manually.
+Replaces the pre-2026-05-23 fresh-render byte-compare. The current audit
+verifies that on-disk compliance MDs match the version committed in the
+LAST iterate-finalize commit (identified by a ``Run-ID:`` trailer in the
+commit body AND a tree modification under ``.shipwright/compliance/``).
 
-Plan v7 Option Z, Group E (§ "Compliance Document Staleness").
+Rationale: the previous design treated tracked Markdown as both live
+derived state AND committed historical artifact — those semantics
+conflict (any non-iterate commit can shift live state without touching
+the tracked file, producing a perpetual stream of E1-E5 false positives
+in the triage inbox). The new design is purely **snapshot integrity**:
+
+  * On-disk == last iterate snapshot → green.
+  * On-disk != last iterate snapshot → ``stale`` (someone hand-edited
+    or partially-regenerated a tracked MD outside iterate finalize).
+  * No iterate-finalize commit exists yet → ``snapshot_unavailable``
+    on the report, ``any_stale=False`` (greenfield-safe).
+
+Iterate finalize remains the sole producer of these tracked MDs; live
+state can be inspected on demand via ``update_compliance.py`` (which
+writes a fresh, uncommitted regen) but it is no longer required for
+the audit to be accurate.
+
+Semantic shift documented in
+``iterate-2026-05-23-compliance-md-single-producer``.
 """
 
 from __future__ import annotations
 
 import re
+import subprocess
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Iterable
+from typing import Any, Iterable
 
-# Strip every ``Generated: ...`` line anywhere in the doc (multiline mode).
-# Consumes the trailing newline too so the surrounding diff stays clean.
-# If generators add more volatile headers later, extend this regex.
+
+def _load_events_log_resolver():
+    """Load ``resolve_main_repo_root`` via the pollution-free shared loader.
+
+    Plain ``from lib.events_log import resolve_main_repo_root`` pins
+    ``lib`` to ``shared/scripts/lib`` for the rest of the test session,
+    which shadows the compliance plugin's own ``lib`` package and breaks
+    ``test_enforcement_hooks`` collection (it does ``from lib.thresholds
+    import ...``). ``audit_adapters.load_shared_lib`` registers the module
+    under a sentinel name and never touches the ``lib`` slot.
+    """
+    try:
+        from scripts.audit.audit_adapters import load_shared_lib
+        events_log = load_shared_lib("events_log")
+        return events_log.resolve_main_repo_root
+    except Exception:  # noqa: BLE001 — defensive fall-back
+        def _noop(_project_root: Path):
+            return None
+        return _noop
+
+
+_resolve_main_repo_root = _load_events_log_resolver()
+
+
+# Strip every ``Generated: ...`` line so the snapshot byte-compare ignores
+# the volatile timestamp banner. Same regex as the legacy fresh-render
+# audit — both sides of the comparison still need normalisation.
 HEADER_STRIP_RE = re.compile(r"(?m)^Generated:.*\n?")
+
+_GIT_TIMEOUT_SECONDS = 10
 
 
 def normalize(text: str) -> str:
@@ -34,13 +76,13 @@ class DocInfo:
     """Registry entry describing a tracked compliance doc."""
 
     key: str  # "rtm" | "test_evidence" | "change_history" | "sbom" | "dashboard"
-    rel_path: str  # e.g. ".shipwright/compliance/traceability-matrix.md"
+    rel_path: str  # ".shipwright/compliance/traceability-matrix.md" etc.
 
 
 COMPLIANCE_DIR = ".shipwright/compliance"
 LEGACY_COMPLIANCE_DIRNAME = "compliance"
 
-# Single source of truth for the doc set that Group E scans + (Step 7) fixes.
+# Single source of truth for the doc set Group E audits.
 DOC_REGISTRY: tuple[DocInfo, ...] = (
     DocInfo("rtm", f"{COMPLIANCE_DIR}/traceability-matrix.md"),
     DocInfo("test_evidence", f"{COMPLIANCE_DIR}/test-evidence.md"),
@@ -52,15 +94,16 @@ DOC_REGISTRY: tuple[DocInfo, ...] = (
 
 @dataclass
 class DocStalenessResult:
-    """Per-document staleness comparison outcome."""
+    """Per-document snapshot comparison outcome."""
 
     doc: str
     rel_path: str
     exists: bool
     stale: bool
     first_diff_line: int | None = None  # 1-based, post-normalization
-    line_delta: int = 0  # len(fresh_lines) - len(on_disk_lines), post-normalization
-    error: str | None = None  # set when the generator threw
+    line_delta: int = 0  # len(on_disk_lines) - len(snapshot_lines) post-norm
+    error: str | None = None  # set on git error or snapshot-side absence
+    snapshot_sha: str | None = None  # the snapshot the comparison was against
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -68,9 +111,11 @@ class DocStalenessResult:
 
 @dataclass
 class StalenessReport:
-    """Aggregate result for a full Group E pass."""
+    """Aggregate Group E result."""
 
     docs: list[DocStalenessResult] = field(default_factory=list)
+    snapshot_sha: str | None = None
+    snapshot_unavailable: bool = False
 
     @property
     def stale_docs(self) -> list[DocStalenessResult]:
@@ -85,23 +130,98 @@ class StalenessReport:
             "any_stale": self.any_stale,
             "stale_count": len(self.stale_docs),
             "total": len(self.docs),
+            "snapshot_sha": self.snapshot_sha,
+            "snapshot_unavailable": self.snapshot_unavailable,
             "docs": [d.to_dict() for d in self.docs],
         }
 
 
-def _first_diff_line(a: str, b: str) -> int | None:
-    """Return the 1-based line number of the first differing line.
+# ---------------------------------------------------------------------------
+# git helpers
+# ---------------------------------------------------------------------------
 
-    ``None`` when the strings match after normalization (caller should not
-    reach here when stale=False, but we guard anyway).
+
+def _resolve_git_root(project_root: Path) -> Path:
+    """Return the canonical main-repo root (worktree-aware), or project_root."""
+    main = _resolve_main_repo_root(project_root)
+    return main or project_root
+
+
+def _git(args: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", "-C", str(cwd), *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=_GIT_TIMEOUT_SECONDS,
+        check=False,
+    )
+
+
+def find_snapshot_commit(project_root: Path) -> str | None:
+    """Find the most recent commit qualifying as a compliance snapshot.
+
+    Qualifying = ``Run-ID:`` trailer in the commit body AND tree
+    modifications include at least one path under ``.shipwright/compliance/``.
+    ``--diff-filter=AM`` includes both Added (very first iterate-finalize
+    that introduces the dir) and Modified (subsequent iterates).
+
+    Worktree-aware: invoked from inside a linked worktree, it resolves
+    the main repo's git history so the audit sees the same baseline.
+
+    Returns the commit SHA, or ``None`` when no qualifying commit exists
+    (greenfield project, pre-adoption history, or git unavailable).
     """
+    git_root = _resolve_git_root(project_root)
+    try:
+        proc = _git(
+            [
+                "log",
+                "--grep=Run-ID:",
+                "--diff-filter=AM",
+                "--format=%H",
+                "-1",
+                "--",
+                COMPLIANCE_DIR,
+            ],
+            cwd=git_root,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+    if proc.returncode != 0:
+        return None
+    sha = proc.stdout.strip()
+    return sha or None
+
+
+def _read_snapshot_text(
+    project_root: Path,
+    snapshot_sha: str,
+    rel_path: str,
+) -> tuple[str | None, str | None]:
+    """Return ``(content, error)`` from ``git show <sha>:<rel_path>``.
+
+    ``content`` is the file's text at the snapshot. ``error`` is set when
+    the file didn't exist at the snapshot (or git failed); ``content`` is
+    then ``None``.
+    """
+    git_root = _resolve_git_root(project_root)
+    try:
+        proc = _git(["show", f"{snapshot_sha}:{rel_path}"], cwd=git_root)
+    except (FileNotFoundError, subprocess.TimeoutExpired) as exc:
+        return None, f"git unavailable: {exc!r}"
+    if proc.returncode != 0:
+        stderr = (proc.stderr or "").strip()
+        return None, f"snapshot side missing: {stderr or 'git show non-zero exit'}"
+    return proc.stdout, None
+
+
+def _first_diff_line(a: str, b: str) -> int | None:
     a_lines = a.splitlines()
     b_lines = b.splitlines()
     for idx, (la, lb) in enumerate(zip(a_lines, b_lines), start=1):
         if la != lb:
             return idx
-    # All overlapping lines match but lengths differ — first diff is the
-    # first line past the shorter prefix.
     if len(a_lines) != len(b_lines):
         return min(len(a_lines), len(b_lines)) + 1
     return None
@@ -114,110 +234,97 @@ def _line_count(text: str) -> int:
 def compare_doc(
     project_root: Path,
     doc: DocInfo,
-    fresh_content: str,
+    snapshot_sha: str,
 ) -> DocStalenessResult:
-    """Compare ``fresh_content`` against the on-disk copy of ``doc``.
+    """Compare on-disk ``doc`` to the version committed at ``snapshot_sha``.
 
-    Both sides are normalized (``Generated:`` lines stripped) before
-    comparison so mtime/timestamp differences don't trigger a false stale.
+    Both sides are normalised (``Generated:`` lines stripped) before
+    comparison so the volatile banner doesn't drive false drift.
     """
-    path = project_root / doc.rel_path
-    fresh_norm = normalize(fresh_content)
+    on_disk_path = project_root / doc.rel_path
 
-    if not path.exists():
-        # Missing on-disk means stale by definition (the doc should exist).
+    if not on_disk_path.exists():
         return DocStalenessResult(
-            doc=doc.key, rel_path=doc.rel_path, exists=False,
-            stale=True, first_diff_line=None,
-            line_delta=_line_count(fresh_norm),
+            doc=doc.key,
+            rel_path=doc.rel_path,
+            exists=False,
+            stale=True,
+            error="on-disk file missing",
+            snapshot_sha=snapshot_sha,
         )
 
     try:
-        on_disk = path.read_text(encoding="utf-8")
+        on_disk = on_disk_path.read_text(encoding="utf-8")
     except OSError as exc:
         return DocStalenessResult(
-            doc=doc.key, rel_path=doc.rel_path, exists=True,
-            stale=True, error=f"read_error: {exc}",
+            doc=doc.key,
+            rel_path=doc.rel_path,
+            exists=True,
+            stale=True,
+            error=f"read_error: {exc}",
+            snapshot_sha=snapshot_sha,
+        )
+
+    snapshot_text, snapshot_err = _read_snapshot_text(
+        project_root, snapshot_sha, doc.rel_path,
+    )
+    if snapshot_text is None:
+        return DocStalenessResult(
+            doc=doc.key,
+            rel_path=doc.rel_path,
+            exists=True,
+            stale=True,
+            error=snapshot_err,
+            snapshot_sha=snapshot_sha,
         )
 
     disk_norm = normalize(on_disk)
-    if fresh_norm == disk_norm:
+    snap_norm = normalize(snapshot_text)
+    if disk_norm == snap_norm:
         return DocStalenessResult(
-            doc=doc.key, rel_path=doc.rel_path, exists=True,
+            doc=doc.key,
+            rel_path=doc.rel_path,
+            exists=True,
             stale=False,
+            snapshot_sha=snapshot_sha,
         )
 
     return DocStalenessResult(
-        doc=doc.key, rel_path=doc.rel_path, exists=True, stale=True,
-        first_diff_line=_first_diff_line(fresh_norm, disk_norm),
-        line_delta=_line_count(fresh_norm) - _line_count(disk_norm),
+        doc=doc.key,
+        rel_path=doc.rel_path,
+        exists=True,
+        stale=True,
+        first_diff_line=_first_diff_line(disk_norm, snap_norm),
+        line_delta=_line_count(disk_norm) - _line_count(snap_norm),
+        snapshot_sha=snapshot_sha,
     )
-
-
-# A ``Renderer`` takes ComplianceData and returns the doc content as a str.
-Renderer = Callable[[Any], str]
-
-
-def default_renderers() -> dict[str, Renderer]:
-    """Return the stock renderer mapping (DocInfo.key → str-producing fn).
-
-    Imports are localized so ``audit_staleness.py`` stays importable from
-    tests even when the compliance plugin's own deps aren't installed.
-    """
-    from scripts.lib.change_history import generate as render_change_history
-    from scripts.lib.compliance_report import generate as render_dashboard
-    from scripts.lib.rtm_generator import generate as render_rtm
-    from scripts.lib.sbom_generator import generate as render_sbom
-    from scripts.lib.test_evidence import generate as render_test_evidence
-
-    return {
-        "rtm": render_rtm,
-        "test_evidence": render_test_evidence,
-        "change_history": render_change_history,
-        "sbom": render_sbom,
-        "dashboard": render_dashboard,
-    }
 
 
 def check_staleness(
     project_root: Path,
-    data: Any,
     *,
-    renderers: dict[str, Renderer] | None = None,
     doc_filter: Iterable[str] | None = None,
 ) -> StalenessReport:
-    """Run Group E against ``project_root`` using ``data``.
+    """Run Group E against ``project_root``.
 
-    Args:
-        project_root: Project root.
-        data: ``ComplianceData`` instance (opaque here — passed verbatim to
-            each renderer).
-        renderers: Optional renderer override for tests. Defaults to the
-            production generators.
-        doc_filter: If provided, restrict the scan to the named docs.
+    No ``data`` / renderer dependency — the audit reads the last
+    iterate-finalize snapshot from git history and byte-compares against
+    on-disk files. Greenfield projects (no qualifying commit) yield an
+    empty report with ``snapshot_unavailable=True`` and ``any_stale=False``.
     """
-    renderers = renderers or default_renderers()
     wanted = set(doc_filter) if doc_filter is not None else None
-    report = StalenessReport()
 
+    snapshot_sha = find_snapshot_commit(project_root)
+    if snapshot_sha is None:
+        return StalenessReport(
+            docs=[],
+            snapshot_sha=None,
+            snapshot_unavailable=True,
+        )
+
+    report = StalenessReport(snapshot_sha=snapshot_sha)
     for doc in DOC_REGISTRY:
         if wanted is not None and doc.key not in wanted:
             continue
-        render = renderers.get(doc.key)
-        if render is None:
-            report.docs.append(DocStalenessResult(
-                doc=doc.key, rel_path=doc.rel_path, exists=False,
-                stale=True, error="no_renderer_registered",
-            ))
-            continue
-        try:
-            fresh = render(data)
-        except Exception as exc:  # noqa: BLE001 — convert to structured finding
-            report.docs.append(DocStalenessResult(
-                doc=doc.key, rel_path=doc.rel_path, exists=False,
-                stale=True, error=f"render_error: {type(exc).__name__}: {exc}",
-            ))
-            continue
-        report.docs.append(compare_doc(project_root, doc, fresh))
-
+        report.docs.append(compare_doc(project_root, doc, snapshot_sha))
     return report

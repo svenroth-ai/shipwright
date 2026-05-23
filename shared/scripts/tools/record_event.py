@@ -386,6 +386,87 @@ def append_event(project_root: Path, event: dict) -> str:
     return event["id"]
 
 
+def attach_commit_to_event(
+    project_root: Path,
+    event_id: str,
+    commit_sha: str,
+) -> bool:
+    """Patch the ``commit`` field of a previously-recorded event in place.
+
+    Used by iterate finalize F6.5: the F5b-pre step records the
+    ``work_completed`` event BEFORE the F6 git commit (so it can be
+    included in the compliance regen that lands in the F6 commit), with
+    ``commit=""`` as a placeholder. After F6 produces a SHA, finalize
+    invokes this helper to backfill the missing SHA — without touching
+    any other line in the log, without breaking corrupt-line tolerance,
+    and without re-ordering events.
+
+    Atomicity: writes to ``shipwright_events.jsonl.tmp`` then renames
+    over the live log under the same ``.lock`` mutex as ``append_event``.
+    A crash mid-write leaves the original log readable.
+
+    Returns ``True`` if the event was found and patched, ``False`` if:
+      * the log doesn't exist (no events recorded yet),
+      * no line parses to JSON with ``id == event_id``.
+
+    Worktree-aware via ``resolve_events_path``.
+    """
+    path = resolve_events_path(project_root)
+    if not path.exists():
+        return False
+
+    lock_path = path.with_name(path.name + ".lock")
+    tmp_path = path.with_name(path.name + ".tmp")
+
+    patched = False
+    with _FileLock(lock_path):
+        # Read every line, decide line-by-line whether to rewrite or
+        # pass through verbatim (corrupt lines included).
+        with path.open("r", encoding="utf-8", newline="") as fp:
+            lines = fp.readlines()
+
+        new_lines: list[str] = []
+        for raw in lines:
+            if patched:
+                # Already patched — pass everything else through verbatim.
+                new_lines.append(raw)
+                continue
+            stripped = raw.rstrip("\n").rstrip("\r")
+            if not stripped:
+                new_lines.append(raw)
+                continue
+            try:
+                event = json.loads(stripped)
+            except json.JSONDecodeError:
+                # Corrupt line — preserve verbatim (matches read_events tolerance).
+                new_lines.append(raw)
+                continue
+            if isinstance(event, dict) and event.get("id") == event_id:
+                event["commit"] = commit_sha
+                # Re-serialize WITHOUT trailing whitespace; preserve the
+                # original line terminator if it was a \n (default for
+                # append_event-written lines).
+                new_lines.append(
+                    json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
+                )
+                patched = True
+            else:
+                new_lines.append(raw)
+
+        if not patched:
+            # Nothing to do — leave the log untouched.
+            return False
+
+        with tmp_path.open("w", encoding="utf-8", newline="") as fp:
+            fp.writelines(new_lines)
+            fp.flush()
+            os.fsync(fp.fileno())
+
+        os.replace(tmp_path, path)
+
+    return True
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
