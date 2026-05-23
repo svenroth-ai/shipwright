@@ -1,22 +1,22 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-23-security-adopt-compliance-snapshots",
+    "run_id": "iterate-2026-05-23-c1-scope-aware-library",
     "date": "2026-05-23",
-    "unit": {"status": "passed", "passed": 3643, "total": 3643, "note": "shared/tests/ (2227) + plugins/shipwright-compliance/tests/ (474) + plugins/shipwright-adopt/tests/ (284) + plugins/shipwright-security/tests/ (311) + plugins/shipwright-iterate/tests/ (237) + integration-tests/ (110). All green. 19 NEW tests added: test_audit_snapshot.py (+3 multi-producer Run-ID), test_update_compliance_phases.py (4 new PHASE_REPORTS entries), test_adopt_commit_template.py (6), test_finalize_security_compliance.py (6). Pre-existing 3624 tests still pass — no regressions."},
-    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "No integration surface; covered via integration-tests/ unit-style suite."},
+    "unit": {"status": "passed", "passed": 19, "total": 19, "note": "shared/tests/test_verifiers_design.py — 14 pre-existing + 5 new (scope=library skip both functions, scope=full_app still runs, missing/malformed run_config still runs). Wider sanity scan: full shared/tests (2230 passed, 14 skipped, 3 failures all pre-existing on origin/main: test_architecture_md_reflects_arch_impact path-resolution from worktree; test_no_legacy_artifact_paths[compliance-migrated] flagging the security-adopt iterate's finalize_security_compliance.py:78). Cross-plugin: compliance audit + adapter (44 passed) and design plugin (12 passed) green."},
+    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "Verifier-only change; no integration surface touched."},
     "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
-    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web surface."},
+    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web surface — CHANGE is in the compliance audit/verifier layer."},
     "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI."},
     "smoke": {"status": "not_run", "note": "No server."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run pytest plugins/shipwright-compliance/tests/test_audit_snapshot.py plugins/shipwright-compliance/tests/test_update_compliance_phases.py -v",
+      "runner": "uv run --with pytest pytest shared/tests/test_verifiers_design.py -v --color=no",
       "exit_code": 0,
-      "tests_run": 20,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-23-security-adopt-compliance-snapshots/surface_verification.log",
-      "timestamp": "2026-05-23T07:30:00.000Z",
+      "tests_run": 19,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-23-c1-scope-aware-library/surface_verification.json",
+      "timestamp": "2026-05-23T00:00:00.000Z",
       "attempts": 1,
-      "note": "F0.5 cli surface — 20 compliance tests covering snapshot Run-ID acceptance (adopt + security trailers) + new PHASE_REPORTS entries. Single attempt, no retries. The adopt template (6 tests) + security finalize (6 tests) suites pass separately at F0; pytest conftest discovery prevents mixing plugin tests in one invocation, so F0.5 narrows to compliance subset which directly verifies the iterate's audit-side ACs."
+      "note": "F0.5 cli surface — 19 design-verifier tests pass; behavior also verified end-to-end against the audit consumer via `run_audit.py --only C --format json`: C1 now reports status='skip' with detail='scope=library — no UI surface, FR→screen mapping not applicable' (previously HIGH fail '.shipwright/designs/design-manifest.md missing'). any_fail=false for Group C against this scope=library project."
     },
     "degraded": []
   }
