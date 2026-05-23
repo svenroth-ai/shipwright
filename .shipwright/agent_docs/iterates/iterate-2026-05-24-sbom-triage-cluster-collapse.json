@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-24-sbom-triage-cluster-collapse",
+  "date": "2026-05-23T22:52:04.841038Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/sbom-triage-cluster-collapse",
+  "spec": ".shipwright/planning/iterate/2026-05-24-sbom-triage-cluster-collapse.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-05-24-sbom-triage-cluster-collapse"
+}

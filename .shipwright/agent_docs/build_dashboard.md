@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-05-23 21:48 UTC | Session: 7fff2daa-e480-4a9d-a63e-3e9cf33cc0ad | Run: iterate-2026-05-23-sbom-resolver-pin-lockfile
+> Updated: 2026-05-23 22:51 UTC | Session: 7fff2daa-e480-4a9d-a63e-3e9cf33cc0ad | Run: iterate-2026-05-24-sbom-triage-cluster-collapse
 
-## Recent Changes (53 iterations)
+## Recent Changes (54 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| bug | SBOM resolver pin to per-manifest .venv METADATA | 497/497 |  | compliance | 2026-05-23 |
+| change | SBOM triage producer cluster-collapse | 514/514 |  | compliance | 2026-05-23 |
+| bug | SBOM resolver pin to per-manifest .venv METADATA | 497/497 | fc1a7a8 | compliance | 2026-05-23 |
 | bug | Resolve architecture.md merge-conflict markers (lines 90-94) + extend ALLOWLIST[compliance] to include finalize_security_compliance.py whose cross-plugin path comment trips the hyphen-segment regex blind spot | 2/3 | 9e26a9c | tooling | 2026-05-23 |
 | change | C1 design verifier (and sister manifest-exists check) skip on scope=library projects via _is_no_ui_scope helper; audit translates ok=None to status=skip via existing check_result_to_finding | 19/19 | c7b1b29 | tooling | 2026-05-23 |
 | change | iterate finalization | 0/0 |  |  | 2026-05-23 |
@@ -60,7 +61,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-23 | Unit: 497/497 | Smoke: not_run | (iterate)
+Last run: 2026-05-24 | Unit: 514/514 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

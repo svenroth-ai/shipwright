@@ -8,10 +8,18 @@ Iterate B.2 (ADR-056) — also acts as a triage producer: emits one
 licenses couldn't be resolved (``license == "unknown"``). Auto-resolves
 when the workspace re-runs clean. See
 ``.shipwright/planning/adr/056-sbom-undeclared-triage.md``.
+
+Iterate 2026-05-24 (cluster-collapse): when N>=2 workspaces share the
+same undeclared-dep set AND same manifest_type, collapse into ONE
+action-unit (`sbom:undeclared-cluster:<hash>`) per ADR-057's
+launch-surface principle. Per-workspace shape (`sbom:undeclared:<path>`)
+preserved for N=1 cases and as a shadow-key in current_keys to shield
+legacy items from accidental auto-dismiss.
 """
 
 from __future__ import annotations
 
+import hashlib
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -167,6 +175,11 @@ _UNDECLARED_TOP_N = 20
 
 _TRIAGE_SOURCE = "sbom"
 _TRIAGE_DEDUP_PREFIX = "sbom:undeclared:"
+_TRIAGE_CLUSTER_PREFIX = "sbom:undeclared-cluster:"
+# Cluster-collapse threshold: bucket workspaces that share the same
+# (undeclared-set, manifest_type) signature; emit one action-unit per
+# bucket when len(members) >= _CLUSTER_MIN_MEMBERS. Below = per-workspace.
+_CLUSTER_MIN_MEMBERS = 2
 
 
 def _import_triage_api():
@@ -261,6 +274,114 @@ def _render_detail(undeclared: list[dict]) -> str:
     )
 
 
+def _cluster_signature(undeclared: list[dict]) -> tuple[str, ...]:
+    """Sorted, de-duplicated tuple of undeclared dep names.
+
+    De-dup via set (external-review OpenAI #5): duplicate name entries
+    in the input must NOT produce different signatures.
+    """
+    return tuple(sorted({d["name"] for d in undeclared}))
+
+
+def _cluster_dedup_key(
+    signature: tuple[str, ...], member_paths: list[str]
+) -> str:
+    """Stable cluster-item dedup key encoding BOTH signature AND
+    membership (external-review OpenAI #2/#3).
+
+    Membership change with same signature ({A,C} → {A,C,D}) yields a
+    different hash → old cluster auto-dismisses, new cluster emits.
+
+    Member paths are deduplicated via ``set`` before sorting (code-review
+    LOW-2 defense-in-depth: duplicate member paths in the input would
+    otherwise produce a different hash than the same-content
+    no-duplicate input).
+    """
+    components = (
+        "|".join(signature)
+        + "\n--members--\n"
+        + "|".join(sorted(set(member_paths)))
+    )
+    h = hashlib.sha256(components.encode("utf-8")).hexdigest()[:12]
+    return f"{_TRIAGE_CLUSTER_PREFIX}{h}"
+
+
+def _cluster_install_command(manifest_type: str) -> str:
+    """Per-manifest-type install command (external-review OpenAI #6:
+    explicit branching, no silent default).
+    """
+    if manifest_type == "npm":
+        return "npm install"
+    if manifest_type == "python":
+        return "uv sync --extra dev"
+    raise ValueError(
+        f"unsupported manifest_type for cluster launch payload: {manifest_type!r}"
+    )
+
+
+def _cluster_regen_command() -> str:
+    return (
+        "uv run plugins/shipwright-compliance/scripts/tools/update_compliance.py"
+        " --project-root . --phase iterate"
+    )
+
+
+def _cluster_launch_payload(
+    workspaces: list[str], manifest_type: str
+) -> str:
+    """Bash for-loop that installs each workspace then regenerates compliance.
+
+    Workspace paths derived from manifest paths' parents — single-quoted
+    via _shell_quote_workspace (mirrors B.2 hardening). Workspaces sorted
+    alphabetically for diff-stable output (AC-4).
+    """
+    install_cmd = _cluster_install_command(manifest_type)
+    regen_cmd = _cluster_regen_command()
+
+    def _workspace_of(manifest_rel: str) -> str:
+        parent = Path(manifest_rel).parent
+        return "." if parent == Path("") else parent.as_posix()
+
+    ws_paths = sorted({_workspace_of(m) for m in workspaces})
+    quoted = " ".join(_shell_quote_workspace(w) for w in ws_paths)
+    return (
+        f"for d in {quoted} ; do \\\n"
+        f"  ( cd \"$d\" && {install_cmd} ) || exit 1 ;\\\n"
+        f"done \\\n"
+        f"  && {regen_cmd}"
+    )
+
+
+def _cluster_title(members: list[dict], signature: tuple[str, ...]) -> str:
+    # Wording per external-review OpenAI #10: undeclared deps, not licenses.
+    return (
+        f"SBOM: {len(members)} workspaces missing license metadata "
+        f"for {len(signature)} shared package(s)"
+    )
+
+
+def _cluster_detail(
+    members: list[dict], signature: tuple[str, ...]
+) -> str:
+    shown_pkgs = list(signature)[:_UNDECLARED_TOP_N]
+    pkgs_str = ", ".join(shown_pkgs)
+    pkgs_more = (
+        f" (+{len(signature) - len(shown_pkgs)} more)"
+        if len(signature) > len(shown_pkgs) else ""
+    )
+    ws_paths = sorted(m["manifest_rel_path"] for m in members)
+    shown_ws = ws_paths[:_UNDECLARED_TOP_N]
+    ws_str = ", ".join(shown_ws)
+    ws_more = (
+        f" (+{len(ws_paths) - len(shown_ws)} more)"
+        if len(ws_paths) > len(shown_ws) else ""
+    )
+    return (
+        f"Common undeclared ({len(signature)}): {pkgs_str}{pkgs_more}\n"
+        f"Workspaces ({len(members)}): {ws_str}{ws_more}"
+    )
+
+
 def emit_undeclared_triage(
     project_root: Path,
     *,
@@ -269,56 +390,84 @@ def emit_undeclared_triage(
 ) -> dict:
     """Emit ``source="sbom"`` triage items for workspaces with undeclared licenses.
 
-    One item per manifest (ADR-054 D1):
-      - ``dedup_key`` = ``"sbom:undeclared:<manifest-rel-path>"``
-      - ``severity`` = ``"low"`` (visible but quiet — solo-dev pragmatism)
-      - ``kind`` = ``"compliance"``
-      - body lists the top-20 offenders + ``+N more`` footer
-      - ``launchPayload`` carries the workspace-specific install + regen
-        command
+    Two action-unit shapes (cluster-collapse iterate, ADR-057):
+
+    - **Per-workspace** (``sbom:undeclared:<manifest-rel-path>``): used
+      when a workspace's undeclared signature is unique among the run's
+      workspaces (bucket of size 1).
+    - **Cluster** (``sbom:undeclared-cluster:<sha256-12>``): used when
+      N>=2 workspaces share the same (undeclared-set, manifest_type)
+      signature. Dedup key encodes BOTH signature AND membership so
+      membership changes (grow/shrink) trigger old-dismiss + new-emit.
 
     Auto-dismiss: any currently-``triage`` ``source="sbom"`` item whose
-    ``dedupKey`` is NOT in this run's set of workspaces-with-undeclared
-    is marked ``dismissed`` with ``reason="sbomResolved"``. Previously
-    promoted / dismissed items stay terminal (mirrors audit_detector's
-    HIGH-2 contract).
+    ``dedupKey`` is NOT in this run's ``current_keys`` is marked
+    ``dismissed`` with ``reason="sbomResolved"``. ``current_keys``
+    includes:
 
-    Window-less idempotent dedup (``window_seconds=None``) — the same
-    workspace with the same undeclared set is one issue, persistent
-    across days until the operator runs ``uv sync`` / ``npm install``.
+      1. Every key actually appended this run (cluster + per-workspace)
+      2. Shadow per-workspace keys for every cluster member — shields
+         legacy per-workspace items from accidental dismiss when a
+         workspace joins a cluster (external-review HIGH: OpenAI #1 /
+         Gemini #1; preserves AC-7 back-compat).
 
-    Returns ``{"appended": N, "dismissed": N}`` for telemetry. Best-effort:
-    per-item exceptions are swallowed so SBOM generation never crashes
-    the compliance update pipeline.
+    Previously promoted / dismissed items stay terminal.
+
+    Window-less idempotent dedup (``window_seconds=None``).
+
+    Returns ``{"appended": N, "dismissed": M, "clusters": C}`` for
+    telemetry. The ``clusters`` field (AC-10) is additive — pre-existing
+    callers reading ``appended`` / ``dismissed`` are unaffected.
+    Best-effort: per-item exceptions are swallowed so SBOM generation
+    never crashes the compliance update pipeline.
     """
     project_root = Path(project_root).resolve()
     append_idempotent, mark_status_fn, read_all_items = _import_triage_api()
     if append_idempotent is None:
-        # Reviewer-flagged (OpenAI #10): make the lazy-import fallback
-        # observable so operators can tell `no undeclared workspaces`
-        # apart from `triage API missing — regression`.
         return {
             "appended": 0,
             "dismissed": 0,
+            "clusters": 0,
             "error": "triage_api_unavailable",
         }
 
     from scripts.lib.data_collector import collect_undeclared_by_workspace
     groups = collect_undeclared_by_workspace(project_root)
 
+    # Bucket groups by (signature, manifest_type). Same signature with
+    # different manifest_type CANNOT cluster (AC-8) — different install
+    # command, different launch payload.
+    from collections import defaultdict
+    buckets: dict[tuple[tuple[str, ...], str], list[dict]] = defaultdict(list)
+    for group in groups:
+        sig = _cluster_signature(group["undeclared"])
+        mt = group["manifest_type"]
+        buckets[(sig, mt)].append(group)
+
     current_keys: set[str] = set()
     appended = 0
+    clusters_emitted = 0
     errors: list[str] = []
-    for group in groups:
+
+    def _emit_per_workspace(group: dict, mt: str) -> None:
+        """Append one per-workspace item for ``group``. Updates ``appended``
+        and ``current_keys`` in enclosing scope; on failure records to
+        ``errors``.
+        """
+        nonlocal appended
         rel = group["manifest_rel_path"]
-        manifest_type = group["manifest_type"]
         undeclared = group["undeclared"]
         dedup_key = f"{_TRIAGE_DEDUP_PREFIX}{rel}"
         current_keys.add(dedup_key)
-
         title = f"SBOM: {len(undeclared)} undeclared license(s) in {rel}"
         detail = _render_detail(undeclared)
-        payload = _launch_payload(rel, manifest_type)
+        try:
+            payload = _launch_payload(rel, mt)
+        except Exception as exc:  # noqa: BLE001
+            # _launch_payload doesn't currently raise but be defensive
+            # so the per-workspace path stays alive for unknown types.
+            errors.append(f"per_ws_payload:{rel}:{type(exc).__name__}")
+            return
         try:
             new_id = append_idempotent(
                 project_root,
@@ -337,11 +486,58 @@ def emit_undeclared_triage(
             if new_id is not None:
                 appended += 1
         except Exception as exc:  # noqa: BLE001
-            # Reviewer-flagged M2: surface emit failures via the
-            # returned `error` key so `update_compliance.py` doesn't
-            # print a misleading "success" when a per-workspace append
-            # crashed. One line per failing workspace.
             errors.append(f"append:{rel}:{type(exc).__name__}")
+
+    for (signature, manifest_type), members in buckets.items():
+        if len(members) < _CLUSTER_MIN_MEMBERS:
+            _emit_per_workspace(members[0], manifest_type)
+            continue
+
+        # Cluster path (N>=2 members with shared signature + type).
+        member_paths = [m["manifest_rel_path"] for m in members]
+        try:
+            payload = _cluster_launch_payload(member_paths, manifest_type)
+        except ValueError as exc:
+            # Code-review M1: unsupported manifest_type for cluster
+            # launch-payload MUST fall back to per-workspace emit so
+            # the workspaces don't orphan without any triage item.
+            errors.append(f"cluster_payload:{manifest_type}:{exc}")
+            for member in members:
+                _emit_per_workspace(member, manifest_type)
+            continue
+
+        dedup_key = _cluster_dedup_key(signature, member_paths)
+        current_keys.add(dedup_key)
+        # Shadow per-workspace keys (AC-7 back-compat): shield any
+        # pre-existing per-workspace items for these workspaces
+        # from being auto-dismissed by the resolve loop below.
+        for m_path in member_paths:
+            current_keys.add(f"{_TRIAGE_DEDUP_PREFIX}{m_path}")
+
+        title = _cluster_title(members, signature)
+        detail = _cluster_detail(members, signature)
+        try:
+            new_id = append_idempotent(
+                project_root,
+                source=_TRIAGE_SOURCE,
+                severity="low",
+                kind="compliance",
+                title=title[:160],
+                detail=detail,
+                dedup_key=dedup_key,
+                run_id=run_id,
+                commit=commit,
+                match_commit=False,
+                window_seconds=None,
+                launch_payload=payload,
+            )
+            if new_id is not None:
+                appended += 1
+                clusters_emitted += 1
+        except Exception as exc:  # noqa: BLE001
+            errors.append(
+                f"append_cluster:{dedup_key}:{type(exc).__name__}"
+            )
 
     dismissed = 0
     try:
@@ -353,7 +549,11 @@ def emit_undeclared_triage(
             dk = item.get("dedupKey")
             if not isinstance(dk, str):
                 continue
-            if not dk.startswith(_TRIAGE_DEDUP_PREFIX):
+            # Dismiss only items in either of our two shape namespaces.
+            if not (
+                dk.startswith(_TRIAGE_DEDUP_PREFIX)
+                or dk.startswith(_TRIAGE_CLUSTER_PREFIX)
+            ):
                 continue
             if dk in current_keys:
                 continue
@@ -371,7 +571,11 @@ def emit_undeclared_triage(
     except Exception as exc:  # noqa: BLE001
         errors.append(f"read_all:{type(exc).__name__}")
 
-    result: dict = {"appended": appended, "dismissed": dismissed}
+    result: dict = {
+        "appended": appended,
+        "dismissed": dismissed,
+        "clusters": clusters_emitted,
+    }
     if errors:
         result["error"] = "; ".join(errors)
     return result

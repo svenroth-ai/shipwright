@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-05-23T21:48:58.921621+00:00
-Total commits: 717
+Generated: 2026-05-23T22:51:51.578158+00:00
+Total commits: 722
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 237
-    "fix" : 188
-    "chore" : 128
+    "fix" : 190
+    "chore" : 130
     "docs" : 105
-    "refactor" : 36
+    "refactor" : 37
     "test" : 15
     "other" : 7
     "build" : 1
@@ -261,10 +261,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 188 commits
+### Fixes (fix) — 190 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-23 | compliance | pin SBOM Python-license resolver to per-manifest .venv METADATA | fc1a7a86cffb |
+| 2026-05-23 | meta | resolve architecture.md merge-conflict + allowlist security helper | 9e26a9c5e41b |
 | 2026-05-23 | architecture.md | forward-reference upcoming security-adopt follow-up | 93c0fcb75561 |
 | 2026-05-23 | compliance | snapshot audit must walk worktree branch lineage | e178b7c657c1 |
 | 2026-05-23 | verifier | F11 verifier multi-commit-aware via run_id lookup (#74) | 6fcffc01570d |
@@ -454,10 +456,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 128 commits
+### Chores (chore) — 130 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-24 | planning | add three bloat-cleanup campaign files (A/B/C) (#83) | 0336a0d0ffc0 |
+| 2026-05-23 | events | record evt-4c363164 for iterate-2026-05-23-sbom-resolver-pin-lockfile | b4393a6dd7e2 |
 | 2026-05-23 | release | v0.21.0 | 9a219a378932 |
 | 2026-05-23 | events | record evt-0a442005 for iterate-2026-05-23-verifier-drift-remediation (#77) | 22850d57b0df |
 | 2026-05-23 | iterate | architecture-md drift protection + 3 discipline lessons (#76) | 2897db66527d |
@@ -697,10 +701,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 36 commits
+### Refactoring (refactor) — 37 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-23 | verifier | design checks skip on scope=library projects | c7b1b29e5778 |
 | 2026-05-23 | compliance | single-producer + snapshot-provenance audit | 2e4048bc11cf |
 | 2026-05-22 | security | replace 4 dynamic __import__ calls with normal imports | d67b6f02d3bf |
 | 2026-05-11 | tests | centralize CI-discipline helpers + Self-Review § 8 probe | 16618252250b |
@@ -780,7 +785,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 717 |
+| Total commits | 722 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 717 |
+| Human-authored commits | 722 |
 

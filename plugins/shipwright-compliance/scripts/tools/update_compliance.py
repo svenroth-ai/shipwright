@@ -115,7 +115,10 @@ def main() -> int:
                 try:
                     sbom_triage_result = emit_undeclared_triage(project_root)
                 except Exception as exc:  # noqa: BLE001
-                    sbom_triage_result = {"appended": 0, "dismissed": 0, "error": str(exc)}
+                    sbom_triage_result = {
+                        "appended": 0, "dismissed": 0, "clusters": 0,
+                        "error": str(exc),
+                    }
             # Iterate B.3 (ADR-057): when test-evidence is regenerated,
             # emit one ``source="test-evidence"`` triage item per
             # failing layer in the latest test_run event, and

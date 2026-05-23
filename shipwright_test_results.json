@@ -1,29 +1,23 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-23-post-merge-hygiene",
-    "date": "2026-05-23",
-    "unit": {"status": "passed", "passed": 2, "total": 3, "note": "Targeted F0: test_no_legacy_artifact_paths[compliance-migrated] (was FAIL on main, now PASS); test_arch_impact_drops_found_at_all (still fails — separate test-design bug, decision-drops are gitignored so the test can't find evidence on a fresh clone/CI; out of scope for this hygiene iterate); test_every_arch_impact_drop_has_architecture_md_entry (SKIPPED, gated on the failing prerequisite). Both my fixes (architecture.md markers removed; allowlist extended) verified. No new tests authored — both fixes are content/config, not behavioral."},
-    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "Content + config fixes only."},
-    "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL changes."},
-    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web surface."},
+    "run_id": "iterate-2026-05-24-sbom-triage-cluster-collapse",
+    "date": "2026-05-24",
+    "unit": {"status": "passed", "passed": 514, "total": 514, "note": "plugins/shipwright-compliance/tests/ — 15 NEW in TestEmitUndeclaredTriageClusters (cluster formation N=1/2/3, multi-signature partitioning, mixed N=1+N>=2, dedup-key shape encodes signature+members, idempotency, launch-payload fan-out + alphabetical sort + shell-quoting, auto-resolve when all members clean, membership shrink+regrow, manifest-type homogeneity, telemetry clusters field, AC-7 legacy back-compat shielded by shadow-key, ValueError fallback to per-workspace) + 1 strict-dict-equality fix for existing test_no_undeclared_no_triage. All green."},
+    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "No integration surface; covered via compliance plugin's unit-style suite."},
+    "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
+    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web surface; cli surface verified via F0.5."},
     "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI."},
     "smoke": {"status": "not_run", "note": "No server."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest pytest 'shared/tests/test_artifact_path_canon.py::test_no_legacy_artifact_paths[compliance-migrated]' 'shared/tests/test_architecture_md_reflects_arch_impact.py' -v --color=no",
-      "exit_code": 1,
-      "tests_run": 3,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-23-post-merge-hygiene/surface_verification.json",
-      "timestamp": "2026-05-23T00:00:00.000Z",
+      "runner": "uv run --project plugins/shipwright-compliance pytest plugins/shipwright-compliance/tests/test_sbom_generator.py -v --color=no",
+      "exit_code": 0,
+      "tests_run": 40,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-24-sbom-triage-cluster-collapse/surface_verification.json",
+      "timestamp": "2026-05-24T00:00:00.000Z",
       "attempts": 1,
-      "note": "F0.5 cli surface — compliance-migrated test fixed (was the iterate's target); arch-impact-drops-found-at-all remaining failure is a pre-existing test-design issue independent of this iterate's scope (decision-drops are gitignored, so the test fails on every fresh clone/CI/worktree). Recorded with exit_code=1 because the runner saw one failure overall; the iterate's actual targets both succeed."
+      "note": "F0.5 cli surface — 40 sbom_generator tests (23 pre-existing + 15 new cluster + 2 cluster-edge). Single attempt."
     },
-    "degraded": [
-      {
-        "type": "pre_existing_shared_test_failure",
-        "test": "shared/tests/test_architecture_md_reflects_arch_impact.py::test_arch_impact_drops_found_at_all",
-        "note": "Pre-existing on origin/main: brittle sanity-check requires non-empty arch-impact drops in the main repo; decision-drops are gitignored so the test can't find evidence on any fresh clone/CI/worktree. Documented as separate follow-up work in PR #81's out-of-scope section."
-      }
-    ]
+    "degraded": []
   }
 }
