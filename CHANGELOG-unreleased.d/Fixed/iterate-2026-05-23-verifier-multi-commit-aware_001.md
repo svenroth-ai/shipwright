@@ -1,0 +1,1 @@
+F11 iterate finalization verifier is now multi-commit-aware — check_events_has_commit + check_spec_impact_recorded look up the F7 work_completed event by run_id (primary) instead of HEAD commit, so iterates with a follow-up fix commit on the iterate branch no longer surface false-positive failures.

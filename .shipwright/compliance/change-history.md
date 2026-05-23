@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-05-22T13:11:13.026162+00:00
-Total commits: 705
+Generated: 2026-05-22T22:20:32.238208+00:00
+Total commits: 708
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 236
-    "fix" : 184
-    "chore" : 123
-    "docs" : 104
+    "fix" : 185
+    "chore" : 124
+    "docs" : 105
     "refactor" : 35
     "test" : 15
     "other" : 7
@@ -260,10 +260,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 184 commits
+### Fixes (fix) — 185 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-23 | iterate | F7b seals tracked event-log appends to prevent silent reset wipe (#71) | e758ea876105 |
 | 2026-05-22 | security | inline nosemgrep on shell=True line (semgrep flags kwarg, not call) | 69319684056a |
 | 2026-05-22 | security | place nosemgrep directly adjacent to flagged line | eeab07c9d2e5 |
 | 2026-05-22 | security | hoist github context to env in security workflow (semgrep run-shell-injection) | 81fdc7c0c687 |
@@ -449,10 +450,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 123 commits
+### Chores (chore) — 124 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-23 | events | record evt-22949141 for iterate-2026-05-23-iterate-f7-tracked-event-log-commit (#73) | cb02afabf606 |
 | 2026-05-23 | events | restore 9 lost event-log entries after `git reset --hard` (#70) | c5b3208b205d |
 | 2026-05-22 | security | persist remediation results from PR #68 | 6b8e3e8042d7 |
 | 2026-05-22 | compliance | reconcile D1 spec-FR coverage in events (#67) | b379a3063a90 |
@@ -577,10 +579,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 104 commits
+### Documentation (docs) — 105 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-23 | security | add suppression-syntax reference + link from SKILL.md | eb2fa64719b8 |
 | 2026-05-21 | campaign | empirical-verification handover for B.2→C.3 (#64) | 376c870345c3 |
 | 2026-05-21 | campaign | finalize artifact-polish state file (B.2→C.3 complete) (#63) | d27a8894f52e |
 | 2026-05-21 | campaign | handover + state file for B.2→C.3 completion (#56) | 6e465a8793a5 |
@@ -768,7 +771,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 705 |
+| Total commits | 708 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 705 |
+| Human-authored commits | 708 |
 

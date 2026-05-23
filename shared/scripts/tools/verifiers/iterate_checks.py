@@ -61,8 +61,23 @@ def check_iterate_history_has_run_id(project_root: Path, run_id: str) -> CheckRe
     )
 
 
-def check_events_has_commit(project_root: Path, commit_hash: str) -> CheckResult:
-    """F7 check — record_event wrote the commit to events.jsonl.
+def check_events_has_commit(
+    project_root: Path,
+    commit_hash: str,
+    run_id: str = "",
+) -> CheckResult:
+    """F7 check — record_event wrote the iterate's work_completed event.
+
+    Resolution priority (since iterate-2026-05-23-verifier-multi-commit-aware):
+
+    1. **By run_id** (primary). The F7 event records ``adr_id == run_id``;
+       finding such an event is sufficient evidence that F7 ran. This handles
+       multi-commit iterates where the F7 event references the F6 commit but
+       HEAD has advanced (e.g. a follow-up fix commit on the iterate branch).
+    2. **By commit_hash** (fallback / back-compat). Pre-multi-commit-aware
+       call sites passed only the commit; this path stays for them. Matches
+       on substring containment in the JSONL — same as the original
+       implementation.
 
     Worktree-aware: resolves the canonical (main-repo) event log via
     ``resolve_events_path`` so the F11 verifier, run from inside a
@@ -73,10 +88,34 @@ def check_events_has_commit(project_root: Path, commit_hash: str) -> CheckResult
     events = resolve_events_path(project_root)
     if not events.exists():
         return CheckResult(name, False, f"missing {events.name}")
+
+    # Primary path — look up by run_id (the iterate identity, stable across
+    # multi-commit iterates and rebases).
+    if run_id:
+        evt = _find_work_event_by_run_id(project_root, run_id)
+        if evt is not None:
+            evt_commit = str(evt.get("commit", "") or "")
+            if evt_commit:
+                return CheckResult(
+                    name, True,
+                    f"run_id={run_id} → event with commit={evt_commit[:8]} found",
+                )
+            # An event exists but carries no commit — degenerate but valid:
+            # F7 ran, the file has the entry, just no commit field. Treat
+            # as pass; flag in detail so an operator can repair.
+            return CheckResult(
+                name, True,
+                f"run_id={run_id} → event found but no commit field recorded",
+            )
+
+    # Fallback — commit-hash substring search.
     content = events.read_text(encoding="utf-8", errors="ignore")
     if commit_hash and commit_hash in content:
         return CheckResult(name, True, f"commit={commit_hash[:8]} found")
-    return CheckResult(name, False, f"commit={commit_hash[:8]} not found")
+    detail = f"commit={commit_hash[:8]} not found"
+    if run_id:
+        detail += f" (and no work_completed event found for run_id={run_id})"
+    return CheckResult(name, False, detail)
 
 
 def check_adr_in_iterate_history(project_root: Path, run_id: str) -> CheckResult:
@@ -567,6 +606,43 @@ def _find_work_event_by_commit(project_root: Path, commit_hash: str) -> dict | N
     return None
 
 
+def _find_work_event_by_run_id(project_root: Path, run_id: str) -> dict | None:
+    """Return the ``work_completed`` event for ``run_id``, or None.
+
+    The F7 step records ``adr_id == run_id`` on the iterate's work_completed
+    event (per SKILL.md F7). This lookup is the *iterate-identity* path —
+    stable across multi-commit iterates and rebases, where the event's
+    ``commit`` field may reference a non-tip commit on the iterate branch.
+
+    When multiple events match (a re-recorded F7 or two iterates colliding
+    on a run_id — pathological), the **last** match wins. The event log is
+    append-only and chronologically ordered, so the most-recent record is
+    the live one.
+
+    Worktree-aware via ``resolve_events_path`` — reads the same canonical
+    log F7 appended to.
+    """
+    if not run_id:
+        return None
+    events_path = resolve_events_path(project_root)
+    if not events_path.exists():
+        return None
+    matched: dict | None = None
+    for line in events_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            evt = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if evt.get("type") != "work_completed":
+            continue
+        if evt.get("adr_id") == run_id:
+            matched = evt
+    return matched
+
+
 def check_spec_impact_recorded(
     project_root: Path,
     run_id: str,
@@ -603,7 +679,18 @@ def check_spec_impact_recorded(
             severity=Severity.SKIPPED.value,
         )
 
-    event = _find_work_event_by_commit(project_root, commit_hash)
+    # Look up the F7 event by run_id first (primary, iterate-identity); fall
+    # back to commit_hash for legacy single-commit iterates whose F7 event
+    # carries no adr_id. This is what makes multi-commit iterates work — the
+    # caller passes HEAD as commit_hash, but the event references the F6
+    # commit (earlier on the branch).
+    event = _find_work_event_by_run_id(project_root, run_id)
+    if event is None:
+        event = _find_work_event_by_commit(project_root, commit_hash)
+    # The commit the event references — used downstream for the spec.md
+    # path check. Defaults to the caller-supplied commit_hash when no event
+    # was found (matches the original behavior).
+    event_commit = str((event or {}).get("commit", "") or "") or commit_hash
     spec_impact = str((event or {}).get("spec_impact", "")).lower()
 
     if spec_impact == "none":
@@ -620,17 +707,17 @@ def check_spec_impact_recorded(
         )
 
     # spec_impact add|modify|remove, or a legacy event with no spec_impact:
-    # the commit itself must have touched a planning spec.md.
+    # the F7-referenced commit itself must have touched a planning spec.md.
     if not _git_available(project_root):
         return CheckResult(
             name, True, "skipped (git unavailable — cannot inspect commit)",
             severity=Severity.SKIPPED.value,
         )
-    changed = _commit_changed_paths(project_root, commit_hash)
+    changed = _commit_changed_paths(project_root, event_commit)
     if changed is None:
         return CheckResult(
             name, True,
-            f"skipped (could not read commit {commit_hash[:8]})",
+            f"skipped (could not read commit {event_commit[:8]})",
             severity=Severity.SKIPPED.value,
         )
     spec_files = [p for p in changed if _is_planning_spec(p)]
@@ -642,7 +729,7 @@ def check_spec_impact_recorded(
         )
     return CheckResult(
         name, False,
-        f"intent={intent} iterate but commit {commit_hash[:8]} touched no "
+        f"intent={intent} iterate but commit {event_commit[:8]} touched no "
         ".shipwright/planning/**/spec.md and recorded no spec_impact=none — "
         "classify the spec impact (ADD/MODIFY/REMOVE) or record "
         "spec_impact=none with a justification",
@@ -688,8 +775,8 @@ def run_all_checks(
     """Run the full iterate check list and return results in stable order."""
     return [
         check_iterate_history_has_run_id(project_root, run_id),
-        check_events_has_commit(project_root, commit_hash) if commit_hash else CheckResult(
-            "events.jsonl has commit", True, "skipped (no --commit supplied)"
+        check_events_has_commit(project_root, commit_hash, run_id=run_id) if commit_hash or run_id else CheckResult(
+            "events.jsonl has commit", True, "skipped (no --commit or --run-id supplied)"
         ),
         check_adr_in_iterate_history(project_root, run_id),
         check_changelog_unreleased(project_root, run_id=run_id),
