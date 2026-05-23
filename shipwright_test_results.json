@@ -1,8 +1,8 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-23-verifier-multi-commit-aware",
+    "run_id": "iterate-2026-05-23-verifier-drift-remediation",
     "date": "2026-05-23",
-    "unit": {"status": "passed", "passed": 70, "total": 70, "note": "shared/tests/test_verify_iterate_finalization.py: 70/70 green (60 existing + 10 new multi-commit-aware cases). New cases pin: run_id lookup hit, fallback to commit, both miss with helpful detail, no commit field edge case, multi-commit spec.md touch resolution, spec_impact=none in multi-commit, multi-match returns last, unknown run_id returns None, run_all_checks wiring."},
+    "unit": {"status": "passed", "passed": 2, "total": 2, "note": "New shared/tests/test_architecture_md_reflects_arch_impact.py: 2/2 green. RED→GREEN cycle followed: RED phase surfaced 11 missed architecture.md entries (incl. 9 from b/c bloat-cleanup campaign + 2 from PR #71/#74); GREEN after architecture.md backfill. test_arch_impact_drops_found_at_all guards against main-repo-resolution misfire."},
     "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "No integration surface."},
     "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
     "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web surface."},
@@ -10,13 +10,13 @@
     "smoke": {"status": "not_run", "note": "No server."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest pytest shared/tests/test_verify_iterate_finalization.py -v",
+      "runner": "uv run --with pytest pytest shared/tests/test_architecture_md_reflects_arch_impact.py -v",
       "exit_code": 0,
-      "tests_run": 70,
-      "evidence_path": "shared/tests/test_verify_iterate_finalization.py",
-      "timestamp": "2026-05-23T00:50:00.000Z",
+      "tests_run": 2,
+      "evidence_path": "shared/tests/test_architecture_md_reflects_arch_impact.py",
+      "timestamp": "2026-05-23T01:30:00.000Z",
       "attempts": 1,
-      "note": "F0.5 cli surface — 70 pytest cases. 0 regressions in the 60 existing tests; 10 new cases exercise both check functions in multi-commit and legacy scenarios. Single attempt, no retries."
+      "note": "F0.5 cli surface — 2 pytest cases. TDD RED-first discipline observed: RED phase first surfaced 11 historical drift entries, GREEN phase after architecture.md backfill. Single attempt, no retries."
     },
     "degraded": []
   }
