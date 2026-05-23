@@ -407,6 +407,17 @@ ALLOWLIST: dict[str, list[str]] = {
         # followups; surfaced empirically when B.2 SBOM cards landed
         # (PRs #57, #61).
         ".shipwright/agent_docs/triage_inbox.md",
+        # `finalize_security_compliance.py` is the shipwright-security plugin
+        # helper that invokes `update_compliance.py` from the sibling
+        # shipwright-compliance plugin; its inline source comment names the
+        # cross-plugin path `plugins/shipwright-compliance/scripts/tools/`.
+        # Same hyphen-segment trigger as triage_inbox.md above — `-compliance/`
+        # matches the `(?<![\w/.\\])compliance/` regex because `-` is not in
+        # the negative-lookbehind class, but the string is a structurally
+        # legitimate plugin source-tree path (NOT a legacy artifact path).
+        # Added in iterate-2026-05-23-post-merge-hygiene; surfaced when
+        # security-adopt-compliance-snapshots (PR #79) introduced the helper.
+        "plugins/shipwright-security/scripts/tools/finalize_security_compliance.py",
         # See "planning" entry for shipwright_test_results.json rationale.
         "shipwright_test_results.json",
         ".shipwright/compliance/change-history.md",

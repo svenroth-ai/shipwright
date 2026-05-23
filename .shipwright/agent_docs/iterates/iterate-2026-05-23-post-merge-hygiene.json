@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-23-post-merge-hygiene",
+  "date": "2026-05-23T21:46:01.667413Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/post-merge-hygiene",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-05-23-post-merge-hygiene"
+}
