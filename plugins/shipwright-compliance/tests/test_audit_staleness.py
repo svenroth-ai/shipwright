@@ -1,4 +1,20 @@
-"""Tests for Group E staleness detection (plan v7, Step 2)."""
+"""Tests for ``scripts.audit.audit_staleness`` pure-function helpers.
+
+The full Group-E snapshot-provenance audit lives in
+``test_audit_snapshot.py``. This file keeps:
+
+  - ``normalize`` / ``HEADER_STRIP_RE`` unit tests (the Generated:-line
+    stripper is used on BOTH sides of the snapshot byte-compare, so its
+    behaviour must stay locked down).
+  - The deterministic-renderer gate (``collect_all`` + the production
+    renderers must remain stable on byte level across two runs, so that
+    when an operator manually re-runs ``update_compliance.py`` they get
+    the same output and the committed snapshot is reproducible).
+
+Pre-iterate-2026-05-23 tests that compared on-disk vs. a fresh re-render
+have been removed: the new audit no longer holds renderers — it compares
+on-disk to ``git show <snapshot_sha>:<file>`` instead.
+"""
 
 from __future__ import annotations
 
@@ -9,21 +25,17 @@ from pathlib import Path
 
 import pytest
 
-# Add plugin root so ``scripts.audit`` + ``scripts.lib`` both import cleanly.
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT))
 
 from scripts.audit.audit_staleness import (  # noqa: E402
-    DOC_REGISTRY,
     HEADER_STRIP_RE,
-    check_staleness,
-    compare_doc,
     normalize,
 )
 
 
 # ---------------------------------------------------------------------------
-# Pure-function tests — no generator dependency
+# normalize() / HEADER_STRIP_RE — used by snapshot byte-compare
 # ---------------------------------------------------------------------------
 
 
@@ -57,151 +69,7 @@ def test_header_strip_re_is_multiline():
 
 
 # ---------------------------------------------------------------------------
-# compare_doc with synthetic generator output
-# ---------------------------------------------------------------------------
-
-
-class _FakeDoc:
-    def __init__(self, key, rel_path):
-        self.key = key
-        self.rel_path = rel_path
-
-
-def test_compare_doc_missing_file_flagged_stale(tmp_path):
-    doc = _FakeDoc("rtm", "compliance/traceability-matrix.md")
-    # Intentionally do NOT create the file.
-    result = compare_doc(tmp_path, doc, "Generated: now\n# RTM\nBody\n")
-    assert result.exists is False
-    assert result.stale is True
-
-
-def test_compare_doc_fresh_match_after_header_strip(tmp_path):
-    doc = _FakeDoc("rtm", "compliance/traceability-matrix.md")
-    path = tmp_path / doc.rel_path
-    path.parent.mkdir(parents=True)
-    path.write_text("Generated: 2024-01-01\n# RTM\nBody\n", encoding="utf-8")
-
-    # Generator output with a different timestamp but otherwise identical.
-    fresh = "Generated: 2026-04-19\n# RTM\nBody\n"
-    result = compare_doc(tmp_path, doc, fresh)
-    assert result.exists is True
-    assert result.stale is False
-    assert result.first_diff_line is None
-
-
-def test_compare_doc_detects_real_body_drift(tmp_path):
-    doc = _FakeDoc("rtm", "compliance/traceability-matrix.md")
-    path = tmp_path / doc.rel_path
-    path.parent.mkdir(parents=True)
-    path.write_text("Generated: 2024-01-01\n# RTM\nOld body\n", encoding="utf-8")
-
-    fresh = "Generated: 2026-04-19\n# RTM\nNew body\n"
-    result = compare_doc(tmp_path, doc, fresh)
-    assert result.stale is True
-    # First differing line post-normalization: "# RTM" matches, then line 2 drifts.
-    assert result.first_diff_line == 2
-
-
-def test_compare_doc_reports_line_delta_on_added_rows(tmp_path):
-    doc = _FakeDoc("rtm", "compliance/traceability-matrix.md")
-    path = tmp_path / doc.rel_path
-    path.parent.mkdir(parents=True)
-    path.write_text("Generated: x\nline A\n", encoding="utf-8")
-    fresh = "Generated: x\nline A\nline B\nline C\n"
-
-    result = compare_doc(tmp_path, doc, fresh)
-    assert result.stale is True
-    assert result.line_delta == 2
-
-
-# ---------------------------------------------------------------------------
-# check_staleness end-to-end with stub renderers
-# ---------------------------------------------------------------------------
-
-
-def _make_renderers(stub_text_by_key):
-    """Return a renderer dict driven by a static map (key -> str)."""
-    def _renderer_for(key):
-        def _fn(_data):
-            return stub_text_by_key[key]
-        return _fn
-    return {k: _renderer_for(k) for k in stub_text_by_key}
-
-
-def _write_doc(project_root, rel_path, text):
-    path = project_root / rel_path
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
-
-
-def test_check_staleness_all_fresh(tmp_path):
-    # Every renderer matches its on-disk file after header strip.
-    fresh_docs = {}
-    for doc in DOC_REGISTRY:
-        content = f"Generated: now\n# {doc.key}\n"
-        fresh_docs[doc.key] = content
-        _write_doc(tmp_path, doc.rel_path, content.replace("now", "older"))
-
-    report = check_staleness(tmp_path, data=None,
-                             renderers=_make_renderers(fresh_docs))
-    assert not report.any_stale
-    assert len(report.docs) == len(DOC_REGISTRY)
-
-
-def test_check_staleness_detects_single_stale_doc(tmp_path):
-    fresh_docs = {}
-    for doc in DOC_REGISTRY:
-        fresh_docs[doc.key] = f"# {doc.key}\nGenerated: fresh\nBODY-{doc.key}\n"
-    # Disk copies match fresh except for rtm — intentionally mutated.
-    for doc in DOC_REGISTRY:
-        disk = fresh_docs[doc.key].replace("fresh", "old")
-        if doc.key == "rtm":
-            disk = disk.replace("BODY-rtm", "STALE-BODY")
-        _write_doc(tmp_path, doc.rel_path, disk)
-
-    report = check_staleness(tmp_path, data=None,
-                             renderers=_make_renderers(fresh_docs))
-    assert report.any_stale
-    stale = report.stale_docs
-    assert len(stale) == 1
-    assert stale[0].doc == "rtm"
-
-
-def test_check_staleness_doc_filter(tmp_path):
-    fresh_docs = {}
-    for doc in DOC_REGISTRY:
-        fresh_docs[doc.key] = f"# {doc.key}\n"
-        _write_doc(tmp_path, doc.rel_path, "something else\n")
-
-    report = check_staleness(tmp_path, data=None,
-                             renderers=_make_renderers(fresh_docs),
-                             doc_filter=["rtm"])
-    assert [d.doc for d in report.docs] == ["rtm"]
-
-
-def test_check_staleness_renderer_error_captured(tmp_path):
-    def boom(_data):
-        raise RuntimeError("generator exploded")
-
-    renderers = {doc.key: (boom if doc.key == "rtm" else lambda d: "ok\n")
-                 for doc in DOC_REGISTRY}
-    # Disk copies exist so the error isn't confused with missing file.
-    for doc in DOC_REGISTRY:
-        _write_doc(tmp_path, doc.rel_path, "ok\n")
-
-    report = check_staleness(tmp_path, data=None, renderers=renderers)
-    rtm = next(d for d in report.docs if d.doc == "rtm")
-    assert rtm.stale is True
-    assert rtm.error is not None
-    assert "RuntimeError" in rtm.error
-
-
-# ---------------------------------------------------------------------------
-# Determinism gate (plan v7 § Group E "Determinism test required")
-#
-# Auto-fix must rest on deterministic generator output. If the production
-# ``collect_all`` + renderers produce different bytes on two identical runs,
-# Group E would spew spurious staleness findings and auto-fix would churn.
+# Determinism gate — production renderers must produce stable bytes
 # ---------------------------------------------------------------------------
 
 
@@ -224,13 +92,29 @@ def test_collect_all_is_deterministic(project_root):
     assert a.known_failures == b.known_failures
 
 
-def test_generators_deterministic_after_header_strip(project_root):
-    """Twice-run renderers produce byte-identical output after header strip."""
-    from scripts.audit.audit_staleness import default_renderers
+def test_production_generators_deterministic_after_header_strip(project_root):
+    """Twice-run production renderers produce byte-identical output (post header-strip).
+
+    Not for the audit (which uses snapshot-provenance, not fresh-render)
+    — for the OPERATOR who manually re-runs ``update_compliance.py``.
+    They must get a stable, deterministic output so the resulting commit
+    diff stays clean.
+    """
+    from scripts.lib.change_history import generate as render_change_history
+    from scripts.lib.compliance_report import generate as render_dashboard
     from scripts.lib.data_collector import collect_all
+    from scripts.lib.rtm_generator import generate as render_rtm
+    from scripts.lib.sbom_generator import generate as render_sbom
+    from scripts.lib.test_evidence import generate as render_test_evidence
 
     data = collect_all(project_root)
-    renderers = default_renderers()
+    renderers = {
+        "rtm": render_rtm,
+        "test_evidence": render_test_evidence,
+        "change_history": render_change_history,
+        "sbom": render_sbom,
+        "dashboard": render_dashboard,
+    }
     for key, render in renderers.items():
         first = normalize(render(data))
         second = normalize(render(data))
@@ -238,7 +122,7 @@ def test_generators_deterministic_after_header_strip(project_root):
 
 
 # ---------------------------------------------------------------------------
-# update_compliance.py --check CLI
+# update_compliance.py --check CLI contract (still routes through audit)
 # ---------------------------------------------------------------------------
 
 

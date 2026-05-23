@@ -1,22 +1,22 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-23-verifier-drift-remediation",
+    "run_id": "iterate-2026-05-23-compliance-md-single-producer",
     "date": "2026-05-23",
-    "unit": {"status": "passed", "passed": 2, "total": 2, "note": "New shared/tests/test_architecture_md_reflects_arch_impact.py: 2/2 green. RED→GREEN cycle followed: RED phase surfaced 11 missed architecture.md entries (incl. 9 from b/c bloat-cleanup campaign + 2 from PR #71/#74); GREEN after architecture.md backfill. test_arch_impact_drops_found_at_all guards against main-repo-resolution misfire."},
-    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "No integration surface."},
+    "unit": {"status": "passed", "passed": 3041, "total": 3041, "note": "shared/tests/ (2227) + plugins/shipwright-compliance/tests/ (467) + plugins/shipwright-iterate/tests/ (237) + integration-tests/ (110). All green. 23 NEW tests added: test_attach_commit_to_event.py (7) + test_audit_snapshot.py (13) + finalize_iterate (5) + generate_handoff_on_stop (1). test_audit_group_e.py rewritten (~8 tests) for snapshot contract. test_audit_staleness.py trimmed (~14 tests retained for normalize + determinism; ~6 stub-renderer tests deleted)."},
+    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "No integration surface; covered via integration-tests/ unit-style suite."},
     "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
     "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web surface."},
     "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI."},
     "smoke": {"status": "not_run", "note": "No server."},
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest pytest shared/tests/test_architecture_md_reflects_arch_impact.py -v",
+      "runner": "uv run pytest plugins/shipwright-compliance/tests/test_audit_snapshot.py plugins/shipwright-compliance/tests/test_audit_staleness.py plugins/shipwright-compliance/tests/test_audit_group_e.py -v",
       "exit_code": 0,
-      "tests_run": 2,
-      "evidence_path": "shared/tests/test_architecture_md_reflects_arch_impact.py",
-      "timestamp": "2026-05-23T01:30:00.000Z",
+      "tests_run": 43,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-23-compliance-md-single-producer/surface_verification.log",
+      "timestamp": "2026-05-23T06:42:37.743Z",
       "attempts": 1,
-      "note": "F0.5 cli surface — 2 pytest cases. TDD RED-first discipline observed: RED phase first surfaced 11 historical drift entries, GREEN phase after architecture.md backfill. Single attempt, no retries."
+      "note": "F0.5 cli surface — 43 compliance audit tests covering the snapshot-provenance rewrite. Single attempt, no retries. The broader shared+iterate+integration tests pass separately (verified at F0); pytest conftest discovery prevents mixing shared/tests + plugins/*/tests in one invocation, so F0.5 narrows to the compliance-audit subset which directly verifies the iterate's ACs (AC-1 through AC-5)."
     },
     "degraded": []
   }

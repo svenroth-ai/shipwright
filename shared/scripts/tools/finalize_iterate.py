@@ -78,28 +78,115 @@ def _update_compliance(project_root: Path) -> list[str]:
     return []
 
 
-def _record_event(project_root: Path, commit: str, run_id: str, description: str) -> str | None:
-    """Record work_completed event. Returns event ID or None."""
-    try:
-        from tools.record_event import append_event, generate_event_id
+def _record_event(
+    project_root: Path,
+    commit: str,
+    run_id: str,
+    description: str,
+    event_extras: dict | None = None,
+) -> str | None:
+    """Record work_completed event. Returns event ID or None.
 
-        event = {
+    Post-iterate-2026-05-23: ``commit`` may be the empty string for the
+    F5b-pre call (the F6 commit hasn't happened yet). The event is still
+    recorded with ``commit=""`` so it lands in events.jsonl BEFORE the
+    compliance regen — making the iterate's own event visible to the
+    snapshot that F6 commits. After F6, the caller invokes
+    :func:`attach_commit_after_finalize` to backfill the SHA.
+
+    ``event_extras`` (optional) is merged into the event so the F11
+    verifier's spec-impact / FR / change-type fields are present from the
+    start. Caller-supplied keys override the defaults built here EXCEPT
+    for the system-owned identity fields (``id``, ``ts``, ``type``,
+    ``source``, ``adr_id``, ``commit``).
+
+    Idempotent per ``run_id``: a second call with the same ``run_id`` does
+    NOT duplicate the event — the existing event_id is returned. This
+    matters because finalize may be invoked multiple times (operator
+    re-run, generic Stop-hook fallback) and we don't want each call to
+    add another ``work_completed`` row to ComplianceData.
+    """
+    try:
+        from tools.record_event import append_event, generate_event_id, read_events
+    except Exception as exc:
+        print(f"[finalize_iterate] event recording failed: {exc}", file=sys.stderr)
+        return None
+
+    try:
+        # Idempotency: scan for an existing work_completed event for this run_id.
+        for prior in read_events(project_root):
+            if (
+                prior.get("type") == "work_completed"
+                and prior.get("source") == "iterate"
+                and prior.get("adr_id") == run_id
+            ):
+                # Already recorded by an earlier finalize call — return that
+                # event's ID so callers can still patch the commit SHA later.
+                return prior.get("id")
+
+        event: dict = {}
+        # Caller-supplied fields land FIRST so the system fields below
+        # override them (we don't let callers spoof identity / source).
+        if event_extras:
+            for k, v in event_extras.items():
+                if k in {"id", "ts", "type", "source", "adr_id", "commit"}:
+                    continue
+                event[k] = v
+
+        event.update({
             "v": 1,
             "id": generate_event_id(),
             "ts": datetime.now(timezone.utc).isoformat(),
             "type": "work_completed",
             "source": "iterate",
-        }
-        if commit:
-            event["commit"] = commit
+            # Always set "commit" so the schema is consistent across
+            # pre/post-commit calls; "" is the documented placeholder
+            # that attach_commit_after_finalize later patches.
+            "commit": commit or "",
+            # Idempotency key — matches the SKILL.md F7 convention of
+            # storing run_id as adr_id (see record_event.py --adr-id).
+            "adr_id": run_id,
+        })
+        if description and "description" not in event:
+            event["description"] = description
         session = os.environ.get("SHIPWRIGHT_SESSION_ID", "")
-        if session:
+        if session and "session" not in event:
             event["session"] = session
 
         return append_event(project_root, event)
     except Exception as exc:
         print(f"[finalize_iterate] event recording failed: {exc}", file=sys.stderr)
         return None
+
+
+def attach_commit_after_finalize(
+    project_root: Path,
+    event_id: str,
+    commit_sha: str,
+) -> bool:
+    """Patch the post-F6 commit SHA into the event recorded by
+    :func:`run`'s F5b-pre step.
+
+    Thin wrapper around :func:`record_event.attach_commit_to_event` so
+    iterate finalize's API surface is self-contained — callers
+    (SKILL.md F6.5, plus future automation) import this from
+    ``finalize_iterate`` and don't need to know which module owns the
+    line-replacement logic.
+
+    Returns ``True`` on success, ``False`` if the event_id wasn't found
+    in the log (e.g. when the F5b-pre call was skipped or the log was
+    rotated). Best-effort: failures are non-blocking.
+    """
+    try:
+        from tools.record_event import attach_commit_to_event
+    except ImportError as exc:
+        print(f"[finalize_iterate] attach_commit import failed: {exc}", file=sys.stderr)
+        return False
+    try:
+        return attach_commit_to_event(project_root, event_id, commit_sha)
+    except Exception as exc:  # noqa: BLE001 — best-effort post-commit patch
+        print(f"[finalize_iterate] attach_commit failed: {exc}", file=sys.stderr)
+        return False
 
 
 def _generate_handoff(project_root: Path, session_id: str, run_id: str, reason: str) -> str | None:
@@ -140,39 +227,122 @@ def run(
     run_id: str,
     commit: str = "",
     reason: str = "iterate finalization",
+    event_extras: dict | None = None,
 ) -> dict:
-    """Run all finalization steps. Returns structured result dict."""
+    """Run all finalization steps. Returns structured result dict.
+
+    Order (iterate-2026-05-23-compliance-md-single-producer):
+
+      1. Record ``work_completed`` event into events.jsonl. If ``commit``
+         is empty (the common F5b-pre case), the event lands with
+         ``commit=""`` placeholder — caller patches via
+         :func:`attach_commit_after_finalize` once F6 produces a SHA.
+         ``event_extras`` (optional) supplies the F11-mandated fields
+         (``intent``, ``spec_impact``, ``affected_frs``, ``new_frs``,
+         ``change_type``, ``none_reason``, ``description``,
+         ``changed_files``) so the event is COMPLETE at recording time
+         and the F11 verifier passes without a second record_event call.
+      2. Regenerate compliance MDs. They now reflect the just-recorded
+         event, so the F6 commit snapshot is self-consistent.
+      3. Regenerate build dashboard.
+      4. Generate session handoff.
+
+    The returned ``result["steps"]["event"]["id"]`` is the event_id F6.5
+    must pass back to :func:`attach_commit_after_finalize`.
+    """
     session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
     result: dict = {"steps": {}, "project_root": str(project_root)}
 
-    dashboard_path = _update_dashboard(project_root, session_id, run_id)
-    result["steps"]["dashboard"] = {"written": dashboard_path} if dashboard_path else {"skipped": True}
-
-    compliance_paths = _update_compliance(project_root)
-    result["steps"]["compliance"] = {"written": compliance_paths} if compliance_paths else {"skipped": True}
-
-    if commit:
-        event_id = _record_event(project_root, commit, run_id, reason)
-        result["steps"]["event"] = {"id": event_id} if event_id else {"skipped": True}
+    # Step 1: record the work_completed event BEFORE compliance regen so
+    # the regenerated MDs include the iterate's own event.
+    event_id = _record_event(
+        project_root, commit, run_id, reason, event_extras=event_extras,
+    )
+    if event_id:
+        result["steps"]["event"] = {"id": event_id, "commit": commit or ""}
     else:
-        result["steps"]["event"] = {"skipped": True, "reason": "no --commit provided"}
+        result["steps"]["event"] = {"skipped": True, "reason": "record_event failed"}
 
+    # Step 2: regenerate compliance MDs (consume the event recorded above).
+    compliance_paths = _update_compliance(project_root)
+    result["steps"]["compliance"] = (
+        {"written": compliance_paths} if compliance_paths else {"skipped": True}
+    )
+
+    # Step 3: regenerate build dashboard.
+    dashboard_path = _update_dashboard(project_root, session_id, run_id)
+    result["steps"]["dashboard"] = (
+        {"written": dashboard_path} if dashboard_path else {"skipped": True}
+    )
+
+    # Step 4: session handoff (after record_event so the handoff timestamp
+    # reflects the event we just wrote — see iterate-2026-05-22 docs).
     handoff_path = _generate_handoff(project_root, session_id, run_id, reason)
-    result["steps"]["handoff"] = {"written": handoff_path} if handoff_path else {"skipped": True}
+    result["steps"]["handoff"] = (
+        {"written": handoff_path} if handoff_path else {"skipped": True}
+    )
 
     return result
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Finalize iterate run")
-    parser.add_argument("--project-root", required=True, help="Project root directory")
-    parser.add_argument("--run-id", required=True, help="Iterate run ID")
+    sub = parser.add_subparsers(dest="cmd")
+
+    # Default subcommand-less invocation = run finalize. Kept as the
+    # top-level args for backwards compatibility with existing callers.
+    parser.add_argument("--project-root", help="Project root directory")
+    parser.add_argument("--run-id", help="Iterate run ID")
     parser.add_argument("--commit", default="", help="Final commit SHA (optional)")
     parser.add_argument("--reason", default="iterate finalization", help="Handoff reason")
+    parser.add_argument(
+        "--event-extras-json",
+        default="",
+        help=(
+            "JSON object merged into the work_completed event "
+            "(intent / spec_impact / affected_frs / new_frs / change_type "
+            "/ none_reason / description / changed_files). Required at "
+            "F5b time so the F11 spec-impact verifier passes without a "
+            "separate record_event call."
+        ),
+    )
+
+    # New attach-commit subcommand: F6.5 in the SKILL.md.
+    attach = sub.add_parser(
+        "attach-commit",
+        help="Patch the F6 commit SHA into a previously-recorded event.",
+    )
+    attach.add_argument("--project-root", required=True, help="Project root directory")
+    attach.add_argument("--event-id", required=True, help="Event id returned from F5b")
+    attach.add_argument("--commit", required=True, help="Git commit SHA from F6")
+
     args = parser.parse_args(argv)
 
+    if args.cmd == "attach-commit":
+        project_root = Path(args.project_root).resolve()
+        ok = attach_commit_after_finalize(project_root, args.event_id, args.commit)
+        print(json.dumps({"attached": bool(ok)}, ensure_ascii=False))
+        return 0 if ok else 1
+
+    # Default: run() invocation. project-root and run-id are mandatory here.
+    if not args.project_root or not args.run_id:
+        parser.error("--project-root and --run-id are required for the default invocation")
+
     project_root = Path(args.project_root).resolve()
-    result = run(project_root, args.run_id, args.commit, args.reason)
+
+    event_extras: dict | None = None
+    if args.event_extras_json:
+        try:
+            event_extras = json.loads(args.event_extras_json)
+            if not isinstance(event_extras, dict):
+                parser.error("--event-extras-json must be a JSON object")
+        except json.JSONDecodeError as exc:
+            parser.error(f"--event-extras-json failed to parse: {exc}")
+
+    result = run(
+        project_root, args.run_id, args.commit, args.reason,
+        event_extras=event_extras,
+    )
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0

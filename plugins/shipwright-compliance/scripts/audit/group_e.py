@@ -1,23 +1,27 @@
-"""Group E — Compliance-doc content staleness (plan v7 Step 7).
+"""Group E — Compliance MD snapshot-provenance audit (plan v7 Step 7).
 
-Wraps :mod:`audit_staleness` so it shows up in the detective report.
-For each tracked compliance doc (RTM, test-evidence, change-history,
-SBOM, dashboard) the check:
+Replaces the pre-iterate-2026-05-23 fresh-render byte-compare. The audit
+now verifies that on-disk ``.shipwright/compliance/*.md`` files match the
+version committed in the last iterate-finalize commit (the snapshot,
+located via ``Run-ID:`` trailer + ``.shipwright/compliance/`` diff).
 
-1. Regenerates the doc in memory from the current ``ComplianceData``.
-2. Strips the volatile ``Generated:`` header.
-3. Byte-compares against the on-disk file.
+Findings produced:
 
-A mismatch → ``fail`` finding with the first-diff line + line-count
-delta in the detail. ``--fix`` mode (threaded through run_all → run via
-``config["fix"]=True``) writes the regenerated doc back to disk and
-records the relative path on ``AuditReport.fixes_applied`` so the
-operator sees what was rewritten.
+  * **E0 — Snapshot available** — pass: snapshot located at ``<sha>``.
+  * **E0 — Snapshot unavailable** — info/skip: no qualifying commit (greenfield).
+  * **E1-E5 — pass** — per-doc on-disk matches snapshot.
+  * **E1-E5 — fail** — per-doc on-disk drifted from snapshot (hand-edit,
+    partial regen outside iterate finalize). Fix hint:
+    ``/shipwright-compliance --fix`` (which rewrites with the fresh
+    state — operator then commits as a separate ``chore(compliance):``
+    or rolls into the next iterate).
 
-Group E is purely detective-only. It catches *content* drift that
-mtime-based Phase-Quality checks (I1-I4) can't see — a doc whose mtime
-is fresh but whose body lost an FR row because someone edited spec.md
-without re-running ``update_compliance.py``.
+``--fix`` mode (config["fix"]=True): rewrite stale docs with a fresh
+production render so the next snapshot commit will catch up. Same
+mechanism as before — the only change is what counts as "stale".
+
+config["fixes_applied"] (list, mutated in place) accumulates relative
+paths that were rewritten, mirroring the legacy contract.
 """
 
 from __future__ import annotations
@@ -33,7 +37,7 @@ from scripts.audit import audit_staleness
 
 
 _NAME_BY_DOC = {
-    "rtm": "RTM stale (regen vs on-disk)",
+    "rtm": "RTM stale (regen vs snapshot)",
     "test_evidence": "Test-evidence stale",
     "change_history": "Change-history stale",
     "sbom": "SBOM stale",
@@ -70,7 +74,40 @@ def _fail_detail(result: audit_staleness.DocStalenessResult) -> str:
         pieces.append(f"line delta {sign}{result.line_delta}")
     if not pieces:
         pieces.append("byte-compare differs after header strip")
+    if result.snapshot_sha:
+        pieces.append(f"snapshot {result.snapshot_sha[:12]}")
     return "; ".join(pieces)
+
+
+def _render_fresh_for_fix(doc_key: str, data: Any) -> str | None:
+    """Lazy-import the production renderer for ``doc_key``.
+
+    Only used in ``--fix`` mode (and only when ``data`` is available).
+    The snapshot audit itself never needs to render — it just byte-
+    compares against ``git show``.
+    """
+    try:
+        from scripts.lib.change_history import generate as render_change_history
+        from scripts.lib.compliance_report import generate as render_dashboard
+        from scripts.lib.rtm_generator import generate as render_rtm
+        from scripts.lib.sbom_generator import generate as render_sbom
+        from scripts.lib.test_evidence import generate as render_test_evidence
+    except ImportError:
+        return None
+    renderers = {
+        "rtm": render_rtm,
+        "test_evidence": render_test_evidence,
+        "change_history": render_change_history,
+        "sbom": render_sbom,
+        "dashboard": render_dashboard,
+    }
+    render = renderers.get(doc_key)
+    if render is None:
+        return None
+    try:
+        return render(data)
+    except Exception:  # noqa: BLE001 — best-effort fix path
+        return None
 
 
 def _apply_fix(
@@ -78,12 +115,7 @@ def _apply_fix(
     doc: audit_staleness.DocInfo,
     fresh_content: str,
 ) -> str | None:
-    """Write ``fresh_content`` to ``project_root / doc.rel_path``.
-
-    Returns the relative path on success, or ``None`` on write failure
-    (which surfaces as the original stale finding — the operator still
-    needs to know about the staleness, just without the auto-fix).
-    """
+    """Write ``fresh_content`` to ``project_root / doc.rel_path``."""
     target = project_root / doc.rel_path
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -100,98 +132,94 @@ def run(
 ) -> list[Finding]:
     """Run Group E and return Findings.
 
-    Reads ``config["fix"]`` (bool, default False) to decide whether to
-    rewrite stale docs. Reads ``config["fixes_applied"]`` (list, mutated
-    in place) so the detector's report can surface what was rewritten.
+    ``data`` is now optional for the AUDIT step (snapshot byte-compare
+    needs only git, not ComplianceData) but still consumed by ``--fix``
+    mode to produce fresh content. ``config["fix"]`` (bool, default False)
+    enables write-back; ``config["fixes_applied"]`` (list, mutated in
+    place) collects relative paths that were rewritten.
     """
     cfg = config or {}
     fix_enabled = bool(cfg.get("fix", False))
     fixes_sink: list[str] | None = cfg.get("fixes_applied")
     if fix_enabled and fixes_sink is None:
-        # The detector should always supply this when --fix is on; defend
-        # against direct callers that forget so the auto-fix still runs.
         fixes_sink = []
 
-    if data is None:
-        # Group E needs ComplianceData to render; without it we cannot
-        # decide stale-vs-fresh. Skip explicitly so the operator sees
-        # WHY the check did nothing.
-        return [Finding(
-            group="E", check_id="E0", name="Group E ran",
-            severity="LOW", source=SOURCE_DETECTIVE_ONLY, status="skip",
-            detail="no ComplianceData available — collector returned None",
-        )]
-
-    try:
-        renderers = audit_staleness.default_renderers()
-    except ImportError as exc:
-        # Plugin install gap — surface as a single high-severity skip
-        # instead of crashing the whole audit run.
-        return [Finding(
-            group="E", check_id="E0", name="Group E ran",
-            severity="HIGH", source=SOURCE_DETECTIVE_ONLY, status="fail",
-            detail=f"renderer import failed: {type(exc).__name__}: {exc}",
-        )]
+    report = audit_staleness.check_staleness(project_root)
 
     out: list[Finding] = []
-    for doc in audit_staleness.DOC_REGISTRY:
-        check_id = _CHECK_ID_BY_DOC[doc.key]
-        name = _NAME_BY_DOC[doc.key]
-        render = renderers.get(doc.key)
-        if render is None:
-            out.append(Finding(
-                group="E", check_id=check_id, name=name,
-                severity="MEDIUM", source=SOURCE_DETECTIVE_ONLY,
-                status="skip",
-                detail="no renderer registered for this doc",
-            ))
-            continue
 
-        try:
-            fresh = render(data)
-        except Exception as exc:  # noqa: BLE001 — convert to finding
-            out.append(Finding(
-                group="E", check_id=check_id, name=name,
-                severity="HIGH", source=SOURCE_DETECTIVE_ONLY,
-                status="fail",
-                detail=f"render failed: {type(exc).__name__}: {exc}",
-                suggested_iterate_cmd=_suggest(doc.key),
-            ))
-            continue
+    if report.snapshot_unavailable:
+        # Greenfield / pre-adoption: no baseline to drift against.
+        out.append(Finding(
+            group="E", check_id="E0", name="Snapshot baseline",
+            severity="LOW", source=SOURCE_DETECTIVE_ONLY,
+            status="skip",
+            detail=(
+                "no iterate-finalize snapshot found in git history "
+                "(no commit with 'Run-ID:' trailer touching "
+                f"{audit_staleness.COMPLIANCE_DIR}/) — staleness check skipped"
+            ),
+        ))
+        return out
 
-        result = audit_staleness.compare_doc(project_root, doc, fresh)
+    # Snapshot found — emit one positive E0 finding for transparency.
+    snapshot_sha_short = (report.snapshot_sha or "")[:12]
+    out.append(Finding(
+        group="E", check_id="E0", name="Snapshot baseline",
+        severity="LOW", source=SOURCE_DETECTIVE_ONLY,
+        status="pass",
+        detail=f"baseline snapshot {snapshot_sha_short}",
+        evidence=[report.snapshot_sha] if report.snapshot_sha else [],
+    ))
+
+    for result in report.docs:
+        check_id = _CHECK_ID_BY_DOC.get(result.doc, "E?")
+        name = _NAME_BY_DOC.get(result.doc, result.doc)
+
         if not result.stale:
             out.append(Finding(
                 group="E", check_id=check_id, name=name,
                 severity="MEDIUM", source=SOURCE_DETECTIVE_ONLY,
                 status="pass",
-                detail=f"on-disk matches fresh regeneration ({doc.rel_path})",
+                detail=(
+                    f"on-disk matches snapshot {snapshot_sha_short} "
+                    f"({result.rel_path})"
+                ),
             ))
             continue
 
         # Stale path. Apply --fix if enabled, else surface as a fail.
         detail = _fail_detail(result)
-        if fix_enabled:
-            written = _apply_fix(project_root, doc, fresh)
-            if written is not None:
-                if fixes_sink is not None:
-                    fixes_sink.append(written)
-                out.append(Finding(
-                    group="E", check_id=check_id, name=name,
-                    severity="MEDIUM", source=SOURCE_DETECTIVE_ONLY,
-                    status="pass",
-                    detail=(
-                        f"was stale ({detail}); regenerated {doc.rel_path}"
-                    ),
-                ))
-                continue
+        if fix_enabled and data is not None:
+            fresh = _render_fresh_for_fix(result.doc, data)
+            if fresh is not None:
+                doc = next(
+                    (d for d in audit_staleness.DOC_REGISTRY if d.key == result.doc),
+                    None,
+                )
+                if doc is not None:
+                    written = _apply_fix(project_root, doc, fresh)
+                    if written is not None:
+                        if fixes_sink is not None:
+                            fixes_sink.append(written)
+                        out.append(Finding(
+                            group="E", check_id=check_id, name=name,
+                            severity="MEDIUM", source=SOURCE_DETECTIVE_ONLY,
+                            status="pass",
+                            detail=(
+                                f"was stale ({detail}); regenerated "
+                                f"{result.rel_path}"
+                            ),
+                        ))
+                        continue
 
         out.append(Finding(
             group="E", check_id=check_id, name=name,
             severity="MEDIUM", source=SOURCE_DETECTIVE_ONLY,
             status="fail",
             detail=detail,
-            evidence=[doc.rel_path],
-            suggested_iterate_cmd=_suggest(doc.key),
+            evidence=[result.rel_path, report.snapshot_sha or ""],
+            suggested_iterate_cmd=_suggest(result.doc),
         ))
+
     return out

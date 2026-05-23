@@ -34,6 +34,16 @@ flowchart TD
     %% (plan v7 Option Z: compliance is no longer a pipeline phase; it
     %% fires as a non-blocking side effect after every completed phase.
     %% Detective audit runs on demand via /shipwright-compliance).
+    %%
+    %% Iterate 2026-05-23 (compliance-md-single-producer): the auto-
+    %% background regen from generate_handoff_on_stop.py was REMOVED.
+    %% Iterate-finalize remains the sole producer of tracked MDs; the
+    %% snapshot-provenance audit (audit_staleness) compares on-disk to
+    %% the last iterate-finalize commit (Run-ID: trailer + diff-filter
+    %% on .shipwright/compliance/). Pipeline phase-completion hooks
+    %% still trigger update_compliance.py for project/design/plan/build/
+    %% test/changelog/deploy — those are explicit phase-side regens, not
+    %% the Stop-hook drive-by.
     PROJECT -.->|incremental| COMP_INC[Compliance Doc Update]
     DESIGN -.->|incremental| COMP_INC
     PLAN -.->|incremental| COMP_INC
@@ -42,6 +52,23 @@ flowchart TD
     CHANGELOG -.->|incremental| COMP_INC
     DEPLOY -.->|incremental| COMP_INC
 ```
+
+> **Iterate 2026-05-23-compliance-md-single-producer — single-producer
+> invariant.** `.shipwright/compliance/{rtm,test-evidence,change-history,sbom,dashboard}.md`
+> are produced exclusively by `iterate-finalize` (via `finalize_iterate.py`
+> at F5b) and the per-phase `update_compliance.py --phase <name>` calls
+> baked into the orchestrator's phase-completion path. The previous
+> mtime-guarded auto-regen in `generate_handoff_on_stop.py` (lines 283-310
+> on origin/main pre-this-iterate) was DELETED — it fired on out-of-band
+> commits (security work, manual fixes) using the local-only
+> `shipwright_events.jsonl` and produced dirty tracked MDs that didn't
+> match the events log used to produce HEAD. The Group E audit
+> (`audit_staleness.py`) now uses snapshot-provenance: it compares
+> on-disk MDs to the version committed in the last commit that BOTH
+> (a) contains a `Run-ID:` trailer and (b) modified
+> `.shipwright/compliance/`. Non-iterate commits don't touch
+> `.shipwright/compliance/` → snapshot baseline stays stable → no
+> E1-E5 false positives between iterates.
 
 ### Pipeline Constants
 
