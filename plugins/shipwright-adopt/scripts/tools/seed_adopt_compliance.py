@@ -24,8 +24,15 @@ def main() -> int:
     parser.add_argument("--project-root", required=True, type=Path)
     parser.add_argument(
         "--phases", nargs="*",
-        default=["project", "plan", "build", "test"],
-        help="Retroactive phases to trigger update_compliance for",
+        default=["project", "plan", "build", "test", "adopt"],
+        help=(
+            "Retroactive phases to trigger update_compliance for. "
+            "iterate-2026-05-23-security-adopt-compliance-snapshots: "
+            "'adopt' added so the explicit adopt phase regen runs in "
+            "addition to the four retroactive pipeline phases — keeps "
+            "the Step H commit's snapshot in sync with the audit's "
+            "post-adopt expectations."
+        ),
     )
     parser.add_argument(
         "--fallback", action="store_true",

@@ -38,6 +38,12 @@ PHASE_REPORTS = {
     "deploy": ["dashboard"],
     "changelog": ["rtm", "test_evidence", "change_history", "sbom", "dashboard"],
     "iterate": ["rtm", "test_evidence", "change_history", "sbom", "dashboard"],
+    # iterate-2026-05-23-security-adopt-compliance-snapshots:
+    # adopt establishes the initial baseline → all 5 docs.
+    # security pipeline finalize touches dashboard/test_evidence/change_history/sbom
+    # but NOT rtm — security work doesn't add/modify FRs.
+    "adopt": ["rtm", "test_evidence", "change_history", "sbom", "dashboard"],
+    "security": ["dashboard", "test_evidence", "change_history", "sbom"],
 }
 
 GENERATORS = {
