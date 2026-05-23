@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-23-verifier-multi-commit-aware",
+  "date": "2026-05-23T05:33:25.368100Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/verifier-multi-commit-aware",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-05-23-verifier-multi-commit-aware"
+}

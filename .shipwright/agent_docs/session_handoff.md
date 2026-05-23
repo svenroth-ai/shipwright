@@ -1,34 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-23-iterate-f7-tracked-event-log-commit"
+run_id: "iterate-2026-05-23-verifier-multi-commit-aware"
 phase: "iterate"
-reason: "iterate: F7-followup commit for tracked event log"
-timestamp: "2026-05-22T13:11:13.026162+00:00"
+reason: "iterate: verifier multi-commit-aware lookup"
+timestamp: "2026-05-22T22:20:32.238208+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-22 13:11:13 UTC
+> Auto-generated 2026-05-22 22:20:32 UTC
 
 ## Session Info
 
 - **Session ID**: 18bf1094-aa14-43b4-b60e-a1cf98127cbf
-- **Timestamp**: 2026-05-22 13:11:13 UTC
-- **Reason**: iterate: F7-followup commit for tracked event log
+- **Timestamp**: 2026-05-22 22:20:32 UTC
+- **Reason**: iterate: verifier multi-commit-aware lookup
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-23-iterate-f7-tracked-event-log-commit
-- **Date**: 2026-05-22T22:19:40.369431Z
+- **Run ID**: iterate-2026-05-23-verifier-multi-commit-aware
+- **Date**: 2026-05-23T05:33:25.368100Z
 - **Type**: change
 - **Complexity**: small
-- **Branch**: iterate/iterate-f7-tracked-event-log-commit
-- **ADR**: iterate-2026-05-23-iterate-f7-tracked-event-log-commit
+- **Branch**: iterate/verifier-multi-commit-aware
+- **ADR**: iterate-2026-05-23-verifier-multi-commit-aware
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/iterate-f7-tracked-event-log-commit
+- **Branch**: iterate/verifier-multi-commit-aware
 - **External Review Marker**: skipped_missing_keys (external_review_state.json @ 2026-05-22T00:00:01)
 
 ### Mandatory replay on Resume
@@ -47,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/iterate-f7-tracked-event-log-commit
-- **Last Commit**: c5b3208 chore(events): restore 9 lost event-log entries after `git reset --hard` (#70)
+- **Branch**: iterate/verifier-multi-commit-aware
+- **Last Commit**: eb2fa64 docs(security): add suppression-syntax reference + link from SKILL.md
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-22949141 | work_completed | iterate (iterate skill F7b: seals tracked event-log appends to prevent silent reset wipe (commit_event_followup.py + SKILL.md + 6 tests)) | 2026-05-22 |
 | evt-ddb23fe7 | work_completed | iterate (compliance reconciliation: D1 spec-FR coverage — multi-FR event covering FR-01.03/04/05/06/07/08/09/12 (post-2026-05-04 watermark gap; no source/test/spec changes)) | 2026-05-22 |
 | evt-1bd33db1 | work_completed | iterate (mirror_findings_to_triage now scoped to groups_run; --only E no longer dismisses A/B/C/D items) | 2026-05-22 |
 | evt-c817e0b9 | work_completed | iterate (Re-aggregated triage_inbox.md; refreshed sbom.md, dashboard.md, test-evidence.md, traceability-matrix.md, change-history.md, session_handoff.md, build_dashboard.md) | 2026-05-22 |
 | evt-da3e7e51 | work_completed | iterate (Re-aggregated triage_inbox.md; refreshed sbom.md, dashboard.md, test-evidence.md, traceability-matrix.md, change-history.md, session_handoff.md, build_dashboard.md) | 2026-05-22 |
-| evt-3277175b | work_completed | iterate (Extended g2_stoplist with 13 cross-cutting monorepo scopes; backfilled ADR-054..061 stubs in decision_log.md; regenerated RTM/test-evidence/dashboard) | 2026-05-22 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 46
-- **Last iterate**: change — compliance reconciliation: D1 spec-FR coverage — multi-FR event covering FR-01.03/04/05/06/07/08/09/12 (post-2026-05-04 watermark gap; no source/test/spec changes) (2026-05-22)
+- **Total work events**: 47
+- **Last iterate**: change — iterate skill F7b: seals tracked event-log appends to prevent silent reset wipe (commit_event_followup.py + SKILL.md + 6 tests) (2026-05-22)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

@@ -952,3 +952,192 @@ def test_spec_impact_in_run_all_checks(tmp_path):
     assert any("spec impact" in n.lower() for n in names), (
         f"spec-impact check missing from run_all_checks; got: {names}"
     )
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Multi-commit-iterate-aware checks (iterate-2026-05-23-verifier-multi-commit-aware)
+# ──────────────────────────────────────────────────────────────────────
+
+def test_events_check_finds_event_by_run_id_when_head_differs(tmp_path):
+    """Multi-commit iterate scenario: F7 recorded the event with the F6
+    commit (e.g. abc1234), but a follow-up commit (def5678) advanced HEAD.
+    The verifier passes HEAD as commit_hash + run_id. The run_id lookup
+    finds the event with the F6 commit and reports it — no false fail."""
+    proj = tmp_path / "p"
+    proj.mkdir()
+    (proj / "shipwright_events.jsonl").write_text(
+        json.dumps({
+            "type": "work_completed",
+            "source": "iterate",
+            "commit": "abc1234",
+            "adr_id": "iterate-2026-05-23-foo",
+        }) + "\n",
+        encoding="utf-8",
+    )
+    result = check_events_has_commit(proj, "def5678", run_id="iterate-2026-05-23-foo")
+    assert result.ok is True
+    assert "abc1234" in result.detail
+    assert "iterate-2026-05-23-foo" in result.detail
+
+
+def test_events_check_falls_back_to_commit_when_run_id_event_absent(tmp_path):
+    """Legacy / non-iterate events that lack adr_id: fallback to commit
+    substring search keeps working."""
+    proj = tmp_path / "p"
+    proj.mkdir()
+    (proj / "shipwright_events.jsonl").write_text(
+        json.dumps({"type": "work_completed", "commit": "abc1234"}) + "\n",
+        encoding="utf-8",
+    )
+    # run_id supplied but no event matches it — falls back to commit search.
+    result = check_events_has_commit(proj, "abc1234", run_id="iterate-not-recorded")
+    assert result.ok is True
+
+
+def test_events_check_fails_with_helpful_detail_when_both_paths_miss(tmp_path):
+    """Neither the commit nor a run_id-tagged event are present — the
+    failure detail names both unresolved identifiers for fast diagnosis."""
+    proj = tmp_path / "p"
+    proj.mkdir()
+    (proj / "shipwright_events.jsonl").write_text(
+        json.dumps({"type": "work_completed", "commit": "wrong"}) + "\n",
+        encoding="utf-8",
+    )
+    result = check_events_has_commit(proj, "abc1234", run_id="iterate-foo")
+    assert result.ok is False
+    assert "abc1234" in result.detail
+    assert "iterate-foo" in result.detail
+
+
+def test_events_check_passes_when_event_has_no_commit_field(tmp_path):
+    """Pathological — event present for run_id but missing the commit
+    field. F7 did run; treat as pass + flag in detail."""
+    proj = tmp_path / "p"
+    proj.mkdir()
+    (proj / "shipwright_events.jsonl").write_text(
+        json.dumps({"type": "work_completed", "adr_id": "iterate-foo"}) + "\n",
+        encoding="utf-8",
+    )
+    result = check_events_has_commit(proj, "", run_id="iterate-foo")
+    assert result.ok is True
+    assert "no commit field" in result.detail
+
+
+def test_spec_impact_resolves_event_by_run_id_in_multi_commit_iterate(tmp_path):
+    """Multi-commit iterate: F6 commit touched .shipwright/planning/.../spec.md,
+    F7 recorded the event for the F6 commit, then a follow-up F6.5 fix
+    commit advanced HEAD without touching the spec. The verifier (passing
+    HEAD as commit_hash + the run_id) should find the F7 event by run_id
+    and run the spec.md check against the F7 commit — not HEAD."""
+    proj = tmp_path / "p"
+    # F6 commit touches a spec.md (the iterate's real authored content).
+    f6_commit = _git_commit(proj, {
+        ".shipwright/planning/01-x/spec.md": "| FR-01.01 | x | Must |\n",
+        "src/app.py": "x = 1\n",
+    }, "feat: add FR")
+    # F6.5 follow-up commit advances HEAD without touching the spec.
+    head_commit = _git_commit(proj, {"src/app.py": "x = 2\n"}, "fix: tweak")
+    assert f6_commit != head_commit
+
+    _seed_entry_with_intent(proj, "iterate-2026-05-23-foo", "feature")
+    # F7 recorded the event against the F6 commit (not HEAD).
+    _write_work_event(
+        proj, f6_commit, intent="feature", spec_impact="modify",
+        adr_id="iterate-2026-05-23-foo",
+    )
+
+    # Verifier passes HEAD as commit_hash — but lookup is by run_id.
+    result = check_spec_impact_recorded(
+        proj, "iterate-2026-05-23-foo", head_commit,
+    )
+    assert result.ok is True
+    assert "1 planning spec.md" in result.detail
+
+
+def test_spec_impact_falls_back_to_commit_when_run_id_event_absent(tmp_path):
+    """When no run_id-tagged event exists, the legacy by-commit lookup
+    still works — pinned for back-compat."""
+    proj = tmp_path / "p"
+    commit = _git_commit(proj, {
+        ".shipwright/planning/01-x/spec.md": "spec\n",
+    }, "spec change")
+    _seed_entry_with_intent(proj, "r1", "feature")
+    # Event has no adr_id — the legacy shape.
+    _write_work_event(proj, commit, intent="feature", spec_impact="modify")
+    result = check_spec_impact_recorded(proj, "r1", commit)
+    assert result.ok is True
+
+
+def test_spec_impact_multi_commit_with_spec_impact_none_still_passes(tmp_path):
+    """A multi-commit iterate that recorded spec_impact=none with a
+    justification still passes via the run_id lookup, regardless of which
+    commit HEAD points at."""
+    proj = tmp_path / "p"
+    f6 = _git_commit(proj, {"src/app.py": "x = 1\n"}, "feat: no-spec")
+    head = _git_commit(proj, {"src/app.py": "x = 2\n"}, "fix: tweak")
+    _seed_entry_with_intent(proj, "iterate-r1", "change")
+    _write_work_event(
+        proj, f6, intent="change", spec_impact="none",
+        spec_impact_justification="behavior-preserving refactor",
+        adr_id="iterate-r1",
+    )
+    result = check_spec_impact_recorded(proj, "iterate-r1", head)
+    assert result.ok is True
+    assert "spec_impact=none" in result.detail
+
+
+def test_find_work_event_by_run_id_returns_last_when_multiple_match(tmp_path):
+    """Pathological case — two events share the same adr_id (e.g. F7
+    re-recorded). The lookup returns the chronologically later one, since
+    JSONL is append-ordered and the live record is the most recent."""
+    from tools.verifiers.iterate_checks import _find_work_event_by_run_id
+
+    proj = tmp_path / "p"
+    proj.mkdir()
+    (proj / "shipwright_events.jsonl").write_text(
+        json.dumps({"type": "work_completed", "commit": "first", "adr_id": "r1"}) + "\n"
+        + json.dumps({"type": "work_completed", "commit": "second", "adr_id": "r1"}) + "\n",
+        encoding="utf-8",
+    )
+    evt = _find_work_event_by_run_id(proj, "r1")
+    assert evt is not None
+    assert evt["commit"] == "second"
+
+
+def test_find_work_event_by_run_id_returns_none_for_unknown_run_id(tmp_path):
+    """Empty / unknown run_id returns None cleanly — callers can fall
+    back to other resolution strategies."""
+    from tools.verifiers.iterate_checks import _find_work_event_by_run_id
+
+    proj = tmp_path / "p"
+    proj.mkdir()
+    (proj / "shipwright_events.jsonl").write_text(
+        json.dumps({"type": "work_completed", "commit": "x", "adr_id": "other"}) + "\n",
+        encoding="utf-8",
+    )
+    assert _find_work_event_by_run_id(proj, "missing") is None
+    assert _find_work_event_by_run_id(proj, "") is None
+
+
+def test_run_all_checks_passes_run_id_to_events_check(tmp_path):
+    """Drift guard for the run_id wiring in run_all_checks: a multi-commit
+    iterate where commit_hash != event's commit must pass when the F7 event
+    is tagged with the run_id."""
+    proj = tmp_path / "p"
+    proj.mkdir()
+    (proj / "shipwright_run_config.json").write_text(json.dumps({
+        "iterate_history": [{"run_id": "iterate-r1", "complexity": "small", "type": "change"}],
+    }))
+    (proj / "shipwright_events.jsonl").write_text(
+        json.dumps({
+            "type": "work_completed",
+            "commit": "f6abc123",
+            "adr_id": "iterate-r1",
+        }) + "\n",
+        encoding="utf-8",
+    )
+    # Pass a DIFFERENT commit as HEAD — only the run_id lookup can succeed.
+    results = run_all_checks(proj, "iterate-r1", commit_hash="head9999")
+    events_check = next(r for r in results if "events.jsonl has commit" in r.name)
+    assert events_check.ok is True
+    assert "f6abc123" in events_check.detail
