@@ -1,6 +1,6 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-05-23T21:33:36.343907+00:00
+Generated: 2026-05-23T21:48:58.921621+00:00
 
 ## Summary
 
@@ -16,9 +16,9 @@ Generated: 2026-05-23T21:33:36.343907+00:00
 
 ```mermaid
 pie title License Distribution
-    "unknown" : 4
-    "Apache-2.0" : 2
-    "MIT" : 2
+    "MIT" : 4
+    "unknown" : 3
+    "Apache-2.0" : 1
 ```
 
 ## Runtime Dependencies
@@ -28,7 +28,7 @@ pie title License Distribution
 | google-genai | 1.0.0 | unknown |
 | jsonschema | 4.18 | MIT |
 | openai | 2.30.0 | Apache-2.0 |
-| openai | 1.0.0 | Apache-2.0 |
+| openai | 1.0.0 | unknown |
 | pyyaml | 6.0 | MIT |
 | requests | 2.31.0 | unknown |
 
@@ -36,8 +36,8 @@ pie title License Distribution
 
 | Package | Version | License |
 |---------|---------|---------|
-| pytest | 8.0.0 | unknown |
-| pytest-mock | 3.12.0 | unknown |
+| pytest | 8.0.0 | MIT |
+| pytest-mock | 3.12.0 | MIT |
 
 ## License Compliance
 
@@ -45,12 +45,11 @@ No copyleft licenses detected. All dependencies are permissively licensed or unk
 
 ## Unknown Licenses
 
-**4 packages** have unknown licenses. Install dependencies (`npm install` / `uv sync`) and regenerate to detect licenses.
+**3 packages** have unknown licenses. Install dependencies (`npm install` / `uv sync`) and regenerate to detect licenses.
 
 | Package | Version | Type |
 |---------|---------|------|
 | google-genai | 1.0.0 | runtime |
-| pytest | 8.0.0 | dev |
-| pytest-mock | 3.12.0 | dev |
+| openai | 1.0.0 | runtime |
 | requests | 2.31.0 | runtime |
 

@@ -18,6 +18,17 @@
       "attempts": 1,
       "note": "F0.5 cli surface — 19 design-verifier tests pass; behavior also verified end-to-end against the audit consumer via `run_audit.py --only C --format json`: C1 now reports status='skip' with detail='scope=library — no UI surface, FR→screen mapping not applicable' (previously HIGH fail '.shipwright/designs/design-manifest.md missing'). any_fail=false for Group C against this scope=library project."
     },
-    "degraded": []
+    "degraded": [
+      {
+        "type": "pre_existing_shared_test_failure",
+        "test": "shared/tests/test_architecture_md_reflects_arch_impact.py::test_arch_impact_drops_found_at_all",
+        "note": "Pre-existing on origin/main: brittle sanity-check requires non-empty arch-impact drops in the main repo; the single drop present (`iterate-2026-05-23-c1-scope-aware-library`) has architecture_impact=none. Out of scope for this iterate."
+      },
+      {
+        "type": "pre_existing_shared_test_failure",
+        "test": "shared/tests/test_artifact_path_canon.py::test_no_legacy_artifact_paths[compliance-migrated]",
+        "note": "Pre-existing on origin/main: plugins/shipwright-security/scripts/tools/finalize_security_compliance.py:78 trips the legacy-path canon regex. Out of scope for this iterate."
+      }
+    ]
   }
 }
