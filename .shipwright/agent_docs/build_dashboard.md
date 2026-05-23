@@ -1,10 +1,15 @@
 # Project Activity Dashboard
-> Updated: 2026-05-23 05:34 UTC | Session: 18bf1094-aa14-43b4-b60e-a1cf98127cbf | Run: iterate-2026-05-23-verifier-drift-remediation
+> Updated: 2026-05-23 21:48 UTC | Session: 7fff2daa-e480-4a9d-a63e-3e9cf33cc0ad | Run: iterate-2026-05-23-sbom-resolver-pin-lockfile
 
-## Recent Changes (48 iterations)
+## Recent Changes (53 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | SBOM resolver pin to per-manifest .venv METADATA | 497/497 |  | compliance | 2026-05-23 |
+| bug | Resolve architecture.md merge-conflict markers (lines 90-94) + extend ALLOWLIST[compliance] to include finalize_security_compliance.py whose cross-plugin path comment trips the hyphen-segment regex blind spot | 2/3 | 9e26a9c | tooling | 2026-05-23 |
+| change | C1 design verifier (and sister manifest-exists check) skip on scope=library projects via _is_no_ui_scope helper; audit translates ok=None to status=skip via existing check_result_to_finding | 19/19 | c7b1b29 | tooling | 2026-05-23 |
+| change | iterate finalization | 0/0 |  |  | 2026-05-23 |
+| change | Architecture-md drift protection test + 11 historical drift entries backfilled + 3 discipline learnings in conventions.md (TDD RED-first, F0/F11 leak-guard symmetry, F2 flag-md coupling) | 2/2 | 1429aee | FR-01.11 | 2026-05-23 |
 | change | F11 verifier multi-commit-aware via run_id lookup (fixes false positives on iterate-f7-tracked-event-log-commit) | 70/70 | c1c8820 | FR-01.11 | 2026-05-23 |
 | change | iterate skill F7b: seals tracked event-log appends to prevent silent reset wipe (commit_event_followup.py + SKILL.md + 6 tests) | 6/6 | 24d77be | FR-01.11 | 2026-05-22 |
 | change | compliance reconciliation: D1 spec-FR coverage — multi-FR event covering FR-01.03/04/05/06/07/08/09/12 (post-2026-05-04 watermark gap; no source/test/spec changes) | 0/0 | 1ca566a | FR-01.03, FR-01.04, FR-01.05 | 2026-05-22 |
@@ -55,7 +60,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-23 | Unit: 2/2 | Smoke: not_run | (iterate)
+Last run: 2026-05-23 | Unit: 497/497 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
