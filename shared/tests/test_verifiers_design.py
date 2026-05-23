@@ -182,6 +182,75 @@ def test_fr_coverage_skips_when_no_planning_frs(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# Scope-aware skip for library projects
+# ---------------------------------------------------------------------------
+#
+# `scope=library` projects (Python plugin monorepo, CLI framework, etc.)
+# have no UI surface — the FR→screen mapping is structurally meaningless.
+# The audit must report SKIP (ok=None, severity=SKIPPED), not FAIL.
+# A missing or unreadable run_config means "we don't know the scope" and
+# the check still runs (fail-closed; no silent free pass on broken state).
+
+def test_fr_coverage_skips_when_scope_library(tmp_path):
+    # FRs exist but the project is scope=library — no UI to map to.
+    (tmp_path / ".shipwright" / "planning" / "01-x").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "planning" / "01-x" / "spec.md").write_text(
+        "| FR-01.01 | A library API | Must |\n"
+    )
+    (tmp_path / "shipwright_run_config.json").write_text(
+        json.dumps({"scope": "library"})
+    )
+    # Note: no .shipwright/designs tree at all — library projects don't have one.
+    r = check_design_fr_coverage(tmp_path)
+    assert r.ok is None
+    assert r.is_skipped
+    assert "library" in r.detail.lower()
+
+
+def test_manifest_screens_exist_skips_when_scope_library(tmp_path):
+    # Same scenario for the sister check: scope=library short-circuits before
+    # the manifest-missing check would otherwise fail.
+    (tmp_path / "shipwright_run_config.json").write_text(
+        json.dumps({"scope": "library"})
+    )
+    r = check_design_manifest_screens_exist(tmp_path)
+    assert r.ok is None
+    assert r.is_skipped
+    assert "library" in r.detail.lower()
+
+
+def test_fr_coverage_runs_when_scope_full_app(tmp_path):
+    # scope=full_app must still run the check (drift protection — the skip
+    # is library-specific, not a universal opt-out).
+    seed_canon_design(tmp_path)
+    (tmp_path / "shipwright_run_config.json").write_text(
+        json.dumps({"scope": "full_app", "phase_history": {}})
+    )
+    r = check_design_fr_coverage(tmp_path)
+    assert r.ok is True  # passes — every FR mapped
+
+
+def test_fr_coverage_runs_when_run_config_missing(tmp_path):
+    # No shipwright_run_config.json → we don't know scope → check still runs.
+    # Fail-closed: never silently skip on broken state.
+    seed_canon_design(tmp_path, write_canon_artifacts=False)
+    # No run_config at tmp_path/shipwright_run_config.json
+    r = check_design_fr_coverage(tmp_path)
+    # Real assertion: not skipped. The result will be ok=True here because
+    # seed_canon_design wires up a green manifest.
+    assert r.ok is True
+    assert not r.is_skipped
+
+
+def test_fr_coverage_runs_when_run_config_malformed(tmp_path):
+    # Malformed JSON → treat as unknown scope → check still runs (fail-closed).
+    seed_canon_design(tmp_path, write_canon_artifacts=False)
+    (tmp_path / "shipwright_run_config.json").write_text("{not valid json")
+    r = check_design_fr_coverage(tmp_path)
+    assert not r.is_skipped
+
+
+# ---------------------------------------------------------------------------
 # run_design_checks orchestrator
 # ---------------------------------------------------------------------------
 

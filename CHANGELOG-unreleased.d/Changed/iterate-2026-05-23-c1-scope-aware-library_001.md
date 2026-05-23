@@ -1,0 +1,1 @@
+Compliance audit Group C1 (`check_design_fr_coverage`) and sister `check_design_manifest_screens_exist` now SKIP on `scope: library` projects instead of failing — the FR→screen contract is structurally inapplicable for library/CLI/framework repos. Single extension point (`_NO_UI_SCOPES` frozenset) for future no-UI scopes; fail-closed on missing/malformed run_config.
