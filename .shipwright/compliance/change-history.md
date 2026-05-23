@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-05-23T05:34:07.521148+00:00
-Total commits: 710
+Generated: 2026-05-23T21:48:58.921621+00:00
+Total commits: 717
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 236
-    "fix" : 186
-    "chore" : 125
+    "feat" : 237
+    "fix" : 188
+    "chore" : 128
     "docs" : 105
-    "refactor" : 35
+    "refactor" : 36
     "test" : 15
     "other" : 7
     "build" : 1
@@ -19,10 +19,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 236 commits
+### Features (feat) — 237 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-23 | compliance | extend snapshot producers to adopt + security | 96bbcfef1b77 |
 | 2026-05-21 | compliance | empirical-verification follow-ups (B.4 producer + B.3 synthesis + path-canon) (#65) | 46d674542dc4 |
 | 2026-05-21 | scripts | plugin-cache vs repo drift check (C.3) (#62) | 02eb08a6fdbb |
 | 2026-05-21 | compliance | doc-hygiene audit detectors F4-F7 (C.2) (#61) | 9008cf4b6d0b |
@@ -260,10 +261,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 186 commits
+### Fixes (fix) — 188 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-23 | architecture.md | forward-reference upcoming security-adopt follow-up | 93c0fcb75561 |
+| 2026-05-23 | compliance | snapshot audit must walk worktree branch lineage | e178b7c657c1 |
 | 2026-05-23 | verifier | F11 verifier multi-commit-aware via run_id lookup (#74) | 6fcffc01570d |
 | 2026-05-23 | iterate | F7b seals tracked event-log appends to prevent silent reset wipe (#71) | e758ea876105 |
 | 2026-05-22 | security | inline nosemgrep on shell=True line (semgrep flags kwarg, not call) | 69319684056a |
@@ -451,10 +454,13 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 125 commits
+### Chores (chore) — 128 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-23 | release | v0.21.0 | 9a219a378932 |
+| 2026-05-23 | events | record evt-0a442005 for iterate-2026-05-23-verifier-drift-remediation (#77) | 22850d57b0df |
+| 2026-05-23 | iterate | architecture-md drift protection + 3 discipline lessons (#76) | 2897db66527d |
 | 2026-05-23 | events | record evt-c0840121 for iterate-2026-05-23-verifier-multi-commit-aware (#75) | df776df41607 |
 | 2026-05-23 | events | record evt-22949141 for iterate-2026-05-23-iterate-f7-tracked-event-log-commit (#73) | cb02afabf606 |
 | 2026-05-23 | events | restore 9 lost event-log entries after `git reset --hard` (#70) | c5b3208b205d |
@@ -691,10 +697,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 35 commits
+### Refactoring (refactor) — 36 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-23 | compliance | single-producer + snapshot-provenance audit | 2e4048bc11cf |
 | 2026-05-22 | security | replace 4 dynamic __import__ calls with normal imports | d67b6f02d3bf |
 | 2026-05-11 | tests | centralize CI-discipline helpers + Self-Review § 8 probe | 16618252250b |
 | 2026-05-11 | tests | hard-fail silent skips in CI + add Step 6 governance rules | 20c2e48e7bea |
@@ -773,7 +780,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 710 |
+| Total commits | 717 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 710 |
+| Human-authored commits | 717 |
 
