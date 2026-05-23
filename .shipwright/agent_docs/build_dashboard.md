@@ -1,11 +1,13 @@
 # Project Activity Dashboard
-> Updated: 2026-05-23 06:45 UTC | Session: 615d0851-314a-414f-832c-08b265f8493f | Run: iterate-2026-05-23-compliance-md-single-producer
+> Updated: 2026-05-23 08:14 UTC | Session: 615d0851-314a-414f-832c-08b265f8493f | Run: iterate-2026-05-23-security-adopt-compliance-snapshots
 
-## Recent Changes (50 iterations)
+## Recent Changes (52 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | Compliance MDs: single-producer + snapshot-provenance audit | 3041/3041 |  | tooling | 2026-05-23 |
+| change | Extend snapshot producers: adopt Step H + security Step 7.5 | 3643/3643 |  | tooling | 2026-05-23 |
+| change | fix(compliance): snapshot audit branch-lineage fix (follow-up) | 50/50 | e178b7c | tooling | 2026-05-23 |
+| change | Compliance MDs: single-producer + snapshot-provenance audit | 3041/3041 | 2e4048b | tooling | 2026-05-23 |
 | change | Architecture-md drift protection test + 11 historical drift entries backfilled + 3 discipline learnings in conventions.md (TDD RED-first, F0/F11 leak-guard symmetry, F2 flag-md coupling) | 2/2 | 1429aee | FR-01.11 | 2026-05-23 |
 | change | F11 verifier multi-commit-aware via run_id lookup (fixes false positives on iterate-f7-tracked-event-log-commit) | 70/70 | c1c8820 | FR-01.11 | 2026-05-23 |
 | change | iterate skill F7b: seals tracked event-log appends to prevent silent reset wipe (commit_event_followup.py + SKILL.md + 6 tests) | 6/6 | 24d77be | FR-01.11 | 2026-05-22 |
@@ -57,7 +59,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-23 | Unit: 3041/3041 | Smoke: not_run | (iterate)
+Last run: 2026-05-23 | Unit: 3643/3643 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

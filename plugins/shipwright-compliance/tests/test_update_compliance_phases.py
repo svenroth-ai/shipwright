@@ -1,0 +1,103 @@
+"""Tests for new PHASE_REPORTS entries (iterate-2026-05-23-security-adopt-…).
+
+Adds two new phase keys:
+  * ``adopt`` — full doc set (rtm, test_evidence, change_history, sbom,
+    dashboard) since adopt establishes the initial baseline.
+  * ``security`` — 4 docs (dashboard, test_evidence, change_history,
+    sbom). RTM excluded because security work doesn't change FR coverage.
+
+Both phases route through the existing ``update_compliance.py`` CLI; this
+file pins the routing contract.
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+PLUGIN_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PLUGIN_ROOT))
+
+from scripts.tools.update_compliance import PHASE_REPORTS  # noqa: E402
+
+
+UPDATE_SCRIPT = PLUGIN_ROOT / "scripts" / "tools" / "update_compliance.py"
+
+
+def test_phase_reports_adopt_has_full_doc_set():
+    """Adopt seeds the initial baseline → all 5 compliance docs regen."""
+    assert "adopt" in PHASE_REPORTS, "PHASE_REPORTS missing 'adopt' key"
+    assert sorted(PHASE_REPORTS["adopt"]) == sorted([
+        "rtm", "test_evidence", "change_history", "sbom", "dashboard",
+    ])
+
+
+def test_phase_reports_security_excludes_rtm():
+    """Security pipeline finalize regenerates 4 docs; RTM untouched."""
+    assert "security" in PHASE_REPORTS, "PHASE_REPORTS missing 'security' key"
+    assert sorted(PHASE_REPORTS["security"]) == sorted([
+        "dashboard", "test_evidence", "change_history", "sbom",
+    ])
+    # Explicit: no rtm in security set.
+    assert "rtm" not in PHASE_REPORTS["security"]
+
+
+@pytest.fixture
+def synthetic_project(tmp_path):
+    """Minimal project layout that update_compliance.py can run against."""
+    (tmp_path / ".shipwright" / "compliance").mkdir(parents=True)
+    (tmp_path / ".shipwright" / "agent_docs").mkdir(parents=True)
+    (tmp_path / "shipwright_events.jsonl").write_text("", encoding="utf-8")
+    (tmp_path / "shipwright_run_config.json").write_text(
+        json.dumps({"status": "complete", "pipeline": []}), encoding="utf-8",
+    )
+    return tmp_path
+
+
+def test_cli_phase_adopt_exits_zero(synthetic_project):
+    """`update_compliance.py --phase adopt` runs end-to-end."""
+    result = subprocess.run(
+        [sys.executable, str(UPDATE_SCRIPT),
+         "--project-root", str(synthetic_project), "--phase", "adopt"],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    assert result.returncode == 0, f"stderr: {result.stderr}"
+    payload = json.loads(result.stdout)
+    assert payload["success"] is True
+    assert payload["phase"] == "adopt"
+    # All 5 reports should be in the updated list.
+    rels = payload.get("updated_reports", [])
+    names = {Path(r).name for r in rels}
+    expected = {
+        "traceability-matrix.md", "test-evidence.md",
+        "change-history.md", "sbom.md", "dashboard.md",
+    }
+    assert expected.issubset(names), (
+        f"adopt phase missing files. Got: {names}"
+    )
+
+
+def test_cli_phase_security_excludes_rtm(synthetic_project):
+    """`update_compliance.py --phase security` regenerates 4 docs, not RTM."""
+    result = subprocess.run(
+        [sys.executable, str(UPDATE_SCRIPT),
+         "--project-root", str(synthetic_project), "--phase", "security"],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    assert result.returncode == 0, f"stderr: {result.stderr}"
+    payload = json.loads(result.stdout)
+    assert payload["success"] is True
+    assert payload["phase"] == "security"
+    rels = payload.get("updated_reports", [])
+    names = {Path(r).name for r in rels}
+    # Should regen dashboard/test-evidence/change-history/sbom.
+    expected = {
+        "test-evidence.md", "change-history.md", "sbom.md", "dashboard.md",
+    }
+    assert expected.issubset(names), f"missing security docs. Got: {names}"
+    # Should NOT regen RTM.
+    assert "traceability-matrix.md" not in names

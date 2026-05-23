@@ -317,6 +317,46 @@ This config is consumed by `/shipwright-compliance` for traceability.
 
 ---
 
+## Step 7.5: Compliance Snapshot Refresh (Pipeline Mode Only)
+
+After Step 7 persists `shipwright_security_config.json`, refresh the
+compliance MDs so the next snapshot audit sees the post-security state
+AND the resulting commit qualifies as a baseline for
+`audit_staleness.find_snapshot_commit` (per
+iterate-2026-05-23-security-adopt-compliance-snapshots).
+
+Run the helper:
+
+```bash
+scan_id=$(jq -r .scan_id .shipwright/securityreports/latest.json 2>/dev/null || echo "unknown")
+uv run "{plugin_root}/scripts/tools/finalize_security_compliance.py" \
+  --project-root "{project_root}" \
+  --scan-id "${scan_id}"
+```
+
+Helper output is structured JSON:
+
+```json
+{"committed": true,  "reason": "...", "commit_sha": "...", "regenerated": [...]}
+{"committed": false, "reason": "compliance unchanged after security scan — no diff to commit"}
+{"committed": false, "reason": "standalone mode (no shipwright_project_config.json) — pipeline-only step"}
+{"committed": false, "reason": "CI / non-interactive env detected — step skipped"}
+```
+
+**Skip Step 7.5 entirely** (the helper does this internally — listed
+here for operator awareness) when any of:
+
+- `shipwright_project_config.json` absent → standalone mode (Step 8 hands off to `/shipwright-iterate` for the fix commits)
+- `os.environ.get("CI")` truthy → CI workflows don't drive interactive commits
+- `os.environ.get("SHIPWRIGHT_NON_INTERACTIVE")` truthy
+
+When `committed=true`, the new commit's body carries
+`Run-ID: security-<scan_id>` so the audit recognizes it as the new
+snapshot baseline. **Idempotent**: a re-invocation with no new
+compliance drift produces no commit.
+
+---
+
 ## Step 8: Iterate Handoff (OSS standalone mode only)
 
 After Step 6 completes for the OSS backend in standalone mode, offer the user a one-question handoff into `/shipwright-iterate` so they can work through fixes.

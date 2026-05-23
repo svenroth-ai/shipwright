@@ -369,6 +369,71 @@ def test_group_e_emits_e0_info_when_no_snapshot(tmp_path):
     assert per_doc_fails == []
 
 
+# ---------------------------------------------------------------------------
+# iterate-2026-05-23-security-adopt-compliance-snapshots:
+# Snapshot detection accepts Run-ID from any producer (iterate / adopt /
+# security pipeline finalize).
+# ---------------------------------------------------------------------------
+
+
+def test_find_snapshot_commit_accepts_adopt_run_id(tmp_path):
+    """``Run-ID: adopt-...`` trailer qualifies the commit as a snapshot."""
+    from scripts.audit.audit_staleness import find_snapshot_commit
+
+    _git_init(tmp_path)
+    sha = _git_commit(
+        tmp_path, _seed_baseline_compliance(tmp_path),
+        "chore(shipwright): adopt repository into Shipwright SDLC\n\n"
+        "Adopted via /shipwright-adopt using profile=python-cli, scope=full_app.\n\n"
+        "Run-ID: adopt-2026-05-23-myrepo\n",
+    )
+    assert find_snapshot_commit(tmp_path) == sha
+
+
+def test_find_snapshot_commit_accepts_security_run_id(tmp_path):
+    """``Run-ID: security-...`` trailer qualifies the commit as a snapshot."""
+    from scripts.audit.audit_staleness import find_snapshot_commit
+
+    _git_init(tmp_path)
+    sha = _git_commit(
+        tmp_path, _seed_baseline_compliance(tmp_path),
+        "chore(compliance): refresh after security scan\n\n"
+        "Updated dashboard/test-evidence/change-history/sbom to reflect post-scan state.\n"
+        "No FR coverage change (RTM unaffected).\n\n"
+        "Run-ID: security-scan-20260523-001\n",
+    )
+    assert find_snapshot_commit(tmp_path) == sha
+
+
+def test_find_snapshot_commit_picks_most_recent_across_mixed_producers(tmp_path):
+    """iterate + adopt + security commits in mixed order — most recent wins."""
+    from scripts.audit.audit_staleness import find_snapshot_commit
+
+    _git_init(tmp_path)
+    # Adopt is the first producer (sets baseline).
+    _git_commit(
+        tmp_path, _seed_baseline_compliance(tmp_path),
+        "chore(shipwright): adopt\n\nRun-ID: adopt-2026-05-23-repo\n",
+    )
+    # Then a security pipeline finalize.
+    _git_commit(
+        tmp_path,
+        {".shipwright/compliance/dashboard.md":
+         "# Dashboard\n\nGenerated: 2026-05-24T00:00:00Z\n\nPost-security update\n"},
+        "chore(compliance): refresh after security scan\n\nRun-ID: security-001\n",
+    )
+    # Then an iterate.
+    sha_iterate = _git_commit(
+        tmp_path,
+        {".shipwright/compliance/dashboard.md":
+         "# Dashboard\n\nGenerated: 2026-05-25T00:00:00Z\n\nPost-iterate update\n"},
+        "feat(iterate): some feature\n\nRun-ID: iterate-2026-05-25-feat\n",
+    )
+
+    # Most recent wins — regardless of producer type.
+    assert find_snapshot_commit(tmp_path) == sha_iterate
+
+
 def test_group_e_emits_per_doc_findings_when_snapshot_exists(tmp_path):
     """When snapshot exists and on-disk matches, Group E emits 5 pass findings."""
     from scripts.audit import group_e

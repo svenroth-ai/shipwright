@@ -1,36 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-23-compliance-md-single-producer"
+run_id: "iterate-2026-05-23-security-adopt-compliance-snapshots"
 phase: "iterate"
-reason: "iterate: compliance-md-single-producer"
-timestamp: "2026-05-23T06:45:58.666113+00:00"
+reason: "iterate: security-adopt-compliance-snapshots"
+timestamp: "2026-05-23T08:14:41.103826+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-23 06:45:58 UTC
+> Auto-generated 2026-05-23 08:14:41 UTC
 
 ## Session Info
 
 - **Session ID**: 615d0851-314a-414f-832c-08b265f8493f
-- **Timestamp**: 2026-05-23 06:45:58 UTC
-- **Reason**: iterate: compliance-md-single-producer
+- **Timestamp**: 2026-05-23 08:14:41 UTC
+- **Reason**: iterate: security-adopt-compliance-snapshots
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-23-verifier-multi-commit-aware
-- **Date**: 2026-05-23T05:33:25.368100Z
+- **Run ID**: iterate-2026-05-23-compliance-md-single-producer
+- **Date**: 2026-05-23T06:46:08.674478Z
 - **Type**: change
-- **Complexity**: small
-- **Branch**: iterate/verifier-multi-commit-aware
-- **ADR**: iterate-2026-05-23-verifier-multi-commit-aware
+- **Complexity**: medium
+- **Branch**: iterate/compliance-md-single-producer
+- **ADR**: iterate-2026-05-23-compliance-md-single-producer
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-05-23-compliance-md-single-producer.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/compliance-md-single-producer
-- **Run ID**: iterate-2026-05-23-compliance-md-single-producer
-- **Spec**: .shipwright/planning/iterate/2026-05-23-compliance-md-single-producer.md
+- **Branch**: iterate/security-adopt-compliance-snapshots
+- **Run ID**: iterate-2026-05-23-security-adopt-compliance-snapshots
+- **Spec**: .shipwright/planning/iterate/2026-05-23-security-adopt-compliance-snapshots.md
 - **Complexity**: medium
 - **External Review Marker**: stale (predates spec (2026-05-22T00:00:01))
 
@@ -51,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/compliance-md-single-producer
-- **Last Commit**: df776df chore(events): record evt-c0840121 for iterate-2026-05-23-verifier-multi-commit-aware (#75)
+- **Branch**: iterate/security-adopt-compliance-snapshots
+- **Last Commit**: e178b7c fix(compliance): snapshot audit must walk worktree branch lineage
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-7fc08c0f | work_completed | iterate (Extend snapshot producers: adopt Step H + security Step 7.5) | 2026-05-23 |
+| evt-fed70359 | work_completed | iterate (fix(compliance): snapshot audit branch-lineage fix (follow-up)) | 2026-05-23 |
 | evt-2205fdc3 | work_completed | iterate (Compliance MDs: single-producer + snapshot-provenance audit) | 2026-05-23 |
 | evt-0a442005 | work_completed | iterate (Architecture-md drift protection test + 11 historical drift entries backfilled + 3 discipline learnings in conventions.md (TDD RED-first, F0/F11 leak-guard symmetry, F2 flag-md coupling)) | 2026-05-23 |
 | evt-c0840121 | work_completed | iterate (F11 verifier multi-commit-aware via run_id lookup (fixes false positives on iterate-f7-tracked-event-log-commit)) | 2026-05-23 |
-| evt-22949141 | work_completed | iterate (iterate skill F7b: seals tracked event-log appends to prevent silent reset wipe (commit_event_followup.py + SKILL.md + 6 tests)) | 2026-05-22 |
-| evt-ddb23fe7 | work_completed | iterate (compliance reconciliation: D1 spec-FR coverage — multi-FR event covering FR-01.03/04/05/06/07/08/09/12 (post-2026-05-04 watermark gap; no source/test/spec changes)) | 2026-05-22 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 50
-- **Last iterate**: change — Compliance MDs: single-producer + snapshot-provenance audit (2026-05-23)
+- **Total work events**: 52
+- **Last iterate**: change — Extend snapshot producers: adopt Step H + security Step 7.5 (2026-05-23)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

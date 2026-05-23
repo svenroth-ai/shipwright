@@ -1,0 +1,1 @@
+shipwright-adopt Step H commit now carries Run-ID: adopt-<YYYY-MM-DD>-<repo> trailer so audit_staleness.find_snapshot_commit recognises the adoption commit as a compliance snapshot baseline immediately (no need to wait for first iterate). Message-builder lives in plugins/shipwright-adopt/scripts/lib/adopt_commit_template.py with regex-enforced + date-deterministic semantics.

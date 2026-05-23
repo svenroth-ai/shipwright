@@ -707,19 +707,41 @@ of `.preserved` backup paths, and a special call-out if any
 `action: skipped_loadbearing` entry is present (the user must review
 `.shipwright/adopt/CLAUDE.md.adopt-suggested` and merge manually).
 
-2. If validation passes, create a single Conventional Commit:
+2. If validation passes, build the commit message via the SSoT helper
+   (per iterate-2026-05-23-security-adopt-compliance-snapshots — the
+   trailing `Run-ID: adopt-<YYYY-MM-DD>-<repo>` line is what makes the
+   commit a snapshot baseline for `audit_staleness.find_snapshot_commit`):
 
-```
-chore(shipwright): adopt repository into Shipwright SDLC
+   ```python
+   from lib.adopt_commit_template import build_adopt_commit_message
+   msg = build_adopt_commit_message(
+       project_root=Path(cwd),
+       profile=<matched_profile>,
+       scope=<matched_scope>,
+       inferred_fr_count=<N>,
+   )
+   subprocess.run(["git", "commit", "-m", msg], check=True)
+   ```
 
-Adopted via /shipwright-adopt using profile=<profile>, scope=<scope>.
-Inferred <N> functional requirements from existing codebase.
-Seeded compliance artifacts (SBOM, change-history, RTM skeleton).
-Test evidence starts collecting from next /shipwright-test run.
+   Resulting message shape:
 
-See .shipwright/agent_docs/decision_log.md for the adoption ADR
-(id is `max(existing) + 1`, 3-digit zero-padded — ADR-001 on greenfield).
-```
+   ```
+   chore(shipwright): adopt repository into Shipwright SDLC
+
+   Adopted via /shipwright-adopt using profile=<profile>, scope=<scope>.
+   Inferred <N> functional requirements from existing codebase.
+   Seeded compliance artifacts (SBOM, change-history, RTM skeleton).
+   Test evidence starts collecting from next /shipwright-test run.
+
+   See .shipwright/agent_docs/decision_log.md for the adoption ADR
+   (id is `max(existing) + 1`, 3-digit zero-padded — ADR-001 on greenfield).
+
+   Run-ID: adopt-<YYYY-MM-DD>-<repo-name>
+   ```
+
+   **Do not assemble the message by hand** — the helper enforces the
+   Run-ID regex (`^adopt-\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*$`) and
+   the date-deterministic semantics covered by the helper's unit tests.
 
 3. Print a handoff message. The `Env scaffold:` line and the optional
    "Edit .env.local" block are populated from `results["env_local"]`

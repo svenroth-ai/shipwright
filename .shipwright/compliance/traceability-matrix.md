@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-23T06:45:58.666113+00:00
+Generated: 2026-05-23T08:14:41.103826+00:00
 
 ## Requirements Coverage
 
@@ -74,7 +74,9 @@ Generated: 2026-05-23T06:45:58.666113+00:00
 | iterate skill F7b: seals tracked event-log appends to prevent silent reset wipe (commit_event_followup.py + SKILL.md + 6 tests) | iterate | change | FR-01.11 | 6/6 | 24d77be | 2026-05-22 |
 | F11 verifier multi-commit-aware via run_id lookup (fixes false positives on iterate-f7-tracked-event-log-commit) | iterate | change | FR-01.11 | 70/70 | c1c8820 | 2026-05-23 |
 | Architecture-md drift protection test + 11 historical drift entries backfilled + 3 discipline learnings in conventions.md (TDD RED-first, F0/F11 leak-guard symmetry, F2 flag-md coupling) | iterate | change | FR-01.11 | 2/2 | 1429aee | 2026-05-23 |
-| Compliance MDs: single-producer + snapshot-provenance audit | iterate | change |  | 3041/3041 | — | 2026-05-23 |
+| Compliance MDs: single-producer + snapshot-provenance audit | iterate | change |  | 3041/3041 | 2e4048b | 2026-05-23 |
+| fix(compliance): snapshot audit branch-lineage fix (follow-up) | iterate | change |  | 50/50 | e178b7c | 2026-05-23 |
+| Extend snapshot producers: adopt Step H + security Step 7.5 | iterate | change |  | 3643/3643 | — | 2026-05-23 |
 
 ## Coverage Summary
 
@@ -82,7 +84,7 @@ Generated: 2026-05-23T06:45:58.666113+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 50 |
+| Iterate changes | 52 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

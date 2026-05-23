@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-05-23T06:45:58.666113+00:00
-Total commits: 710
+Generated: 2026-05-23T08:14:41.103826+00:00
+Total commits: 712
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 236
-    "fix" : 186
+    "fix" : 187
     "chore" : 125
     "docs" : 105
-    "refactor" : 35
+    "refactor" : 36
     "test" : 15
     "other" : 7
     "build" : 1
@@ -260,10 +260,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 186 commits
+### Fixes (fix) — 187 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-23 | compliance | snapshot audit must walk worktree branch lineage | e178b7c657c1 |
 | 2026-05-23 | verifier | F11 verifier multi-commit-aware via run_id lookup (#74) | 6fcffc01570d |
 | 2026-05-23 | iterate | F7b seals tracked event-log appends to prevent silent reset wipe (#71) | e758ea876105 |
 | 2026-05-22 | security | inline nosemgrep on shell=True line (semgrep flags kwarg, not call) | 69319684056a |
@@ -691,10 +692,11 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 35 commits
+### Refactoring (refactor) — 36 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-23 | compliance | single-producer + snapshot-provenance audit | 2e4048bc11cf |
 | 2026-05-22 | security | replace 4 dynamic __import__ calls with normal imports | d67b6f02d3bf |
 | 2026-05-11 | tests | centralize CI-discipline helpers + Self-Review § 8 probe | 16618252250b |
 | 2026-05-11 | tests | hard-fail silent skips in CI + add Step 6 governance rules | 20c2e48e7bea |
@@ -773,7 +775,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 710 |
+| Total commits | 712 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 710 |
+| Human-authored commits | 712 |
 

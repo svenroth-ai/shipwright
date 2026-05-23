@@ -70,6 +70,33 @@ flowchart TD
 > `.shipwright/compliance/` → snapshot baseline stays stable → no
 > E1-E5 false positives between iterates.
 
+> **Iterate 2026-05-23-security-adopt-compliance-snapshots — extends
+> the snapshot-producer set.** Three additional producer paths now
+> contribute `Run-ID:` snapshot commits that the audit recognises:
+>
+> - **`/shipwright-adopt`** Step H — single brownfield-onboarding commit
+>   with body trailer `Run-ID: adopt-<YYYY-MM-DD>-<repo>`. Message is
+>   built by the SSoT helper `plugins/shipwright-adopt/scripts/lib/adopt_commit_template.py`
+>   (regex-enforced + date-deterministic via test seam).
+> - **`/shipwright-security`** Step 7.5 (pipeline-mode only) — new
+>   helper `plugins/shipwright-security/scripts/tools/finalize_security_compliance.py`
+>   regenerates compliance MDs via `update_compliance.py --phase security`,
+>   stages + commits as `chore(compliance): refresh after security scan`
+>   with body trailer `Run-ID: security-<scan_id>`. Idempotent — a re-run
+>   with no compliance diff produces no commit. Skipped in standalone
+>   mode (Step 8 hands off to iterate), CI, and non-interactive sessions.
+> - **`update_compliance.py`** gains two PHASE_REPORTS entries:
+>   `adopt` (full 5-doc set — initial baseline) and `security`
+>   (4-doc set excluding RTM — security work doesn't change FR coverage).
+>
+> The `Run-ID:` filter on `find_snapshot_commit` is preserved (per
+> Codex sanity-check) — producer-provenance protection still matters.
+> Pipeline phase commits (project/design/plan/build/test/changelog/deploy)
+> still lack `Run-ID:` trailers and are NOT yet snapshot-recognised;
+> deferred to a separate iterate if needed. Greenfield-pipeline users
+> hit `snapshot_unavailable=true` until the first iterate (acceptable
+> degraded-but-correct state — no false positives).
+
 ### Pipeline Constants
 
 **File:** `plugins/shipwright-run/scripts/lib/orchestrator.py`
