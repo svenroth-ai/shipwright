@@ -1,1 +1,0 @@
-GitHub triage producer emits **action-units** (one per repo / per failing workflow) instead of per-finding mirrors; replaces #39's 1:1 mapping. Dedup keys gh-security:{owner}/{repo}, gh-secrets:{owner}/{repo}, gh-ci:{workflow_id} (no head_sha).

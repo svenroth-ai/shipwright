@@ -1,1 +1,0 @@
-Drift-protection test for markdown_table.escape_cell wraps — plugins/shipwright-compliance/tests/test_markdown_table_wrap_drift.py with 7 parametrized cases. Fails if a future iterate silently un-wraps any event-derived cell in change_history / rtm_generator / test_evidence / compliance_report rendering

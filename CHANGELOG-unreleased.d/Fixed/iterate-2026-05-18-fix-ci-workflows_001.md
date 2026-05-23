@@ -1,1 +1,0 @@
-CI workflow hardening: ci.yml installs the OSS security scanners (semgrep, trivy, gitleaks) before running plugin tests, the full-evidence scan test is CI-aware, and codeql.yml tolerates a private repo without GitHub code scanning

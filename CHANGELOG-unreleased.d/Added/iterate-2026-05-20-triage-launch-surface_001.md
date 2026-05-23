@@ -1,1 +1,0 @@
-Triage Inbox is now a launch-surface: every item may carry a producer-generated launchPayload field (frozen at first append), rendered by the inbox aggregator as a fenced markdown code block that operators copy into a new Claude session as the Fix-now flow.

@@ -465,3 +465,35 @@ Thanks for contributing! If anything in this guide is unclear, please open an is
   but unenforced" convention surfaces — `_find_work_event_by_run_id` ↔
   `adr_id` is a candidate (a meta-test that every iterate's F7 event has
   an `adr_id` matching the iterate's run_id).
+
+- **ADR-056** (2026-05-21): Markdown table cell escaping helper
+
+- **ADR-057** (2026-05-20): Triage Inbox redesigned as a launch-surface: action-units + launchPayload + CLI
+
+- **ADR-058** (2026-05-21): Mode-aware dashboard + Why-warn column + Triage open indicator
+
+- **ADR-059** (2026-05-21): SBOM undeclared-license triage (per workspace)
+
+- **ADR-060** (2026-05-21): Per-layer FAIL triage + Layer column + record_event layers schema
+
+- **ADR-061** (2026-05-21): RTM consumes frId cross-link + actionable Coverage subsections
+
+- **ADR-062** (2026-05-21): Hard-enforce FR-or-change-type at iterate finalize (forward-only)
+
+- **ADR-063** (2026-05-21): F4-F7 detective-only documentation hygiene checks
+
+- **ADR-064** (2026-05-21): Detective-only plugin-cache vs repo drift check
+
+- **ADR-069** (2026-05-21): Triage producer contract: schema + RTM-link fields + inbox polish
+
+- **ADR-070** (2026-05-21): Deterministic render timestamps via events.jsonl max-ts
+
+- **ADR-072** (2026-05-23): Compliance MDs: single-producer + snapshot-provenance audit
+
+- **ADR-073** (2026-05-23): F7b seals F7 appends in self-tracking repos
+
+- **ADR-074** (2026-05-23): Extend snapshot producers: adopt Step H + security Step 7.5
+
+- **ADR-075** (2026-05-23): Test enforces architecture.md ↔ decision-drop coupling; 11 historical drift entries backfilled
+
+- **ADR-076** (2026-05-23): F11 verifier resolves F7 event by run_id, not HEAD commit

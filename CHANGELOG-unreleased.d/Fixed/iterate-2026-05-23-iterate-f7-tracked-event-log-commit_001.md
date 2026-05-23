@@ -1,1 +1,0 @@
-Iterate skill F7 now seals work_completed event appends in self-tracking repos (gitignore !/shipwright_events.jsonl) via a new F7b follow-up commit step + commit_event_followup.py helper. Closes the silent-loss hole that wiped 9 events from this repo's log on 2026-05-22.

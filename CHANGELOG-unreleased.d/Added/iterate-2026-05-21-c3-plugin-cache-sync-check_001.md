@@ -1,1 +1,0 @@
-Plugin-cache vs repo drift check at scripts/check_plugin_cache_sync.py — detects when plugin-side edits haven't been synced to ~/.claude/plugins/cache/ (Iterate C.3, ADR-061). Fail-soft WARN by default, --strict for CI.

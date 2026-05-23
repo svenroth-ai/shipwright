@@ -1,1 +1,0 @@
-Windows: the secret-scan, file-size, command-validation and destructive-migration hooks no longer silently pass when python3 resolves to the Microsoft Store alias stub - they now resolve a real Python interpreter (python3/python/py) and strip CRLF

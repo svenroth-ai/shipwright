@@ -1,1 +1,0 @@
-GitHub findings triage producer — a throttled SessionStart hook imports GitHub code-scanning, Dependabot and secret-scanning alerts plus failed default-branch CI runs into the triage inbox via the gh CLI

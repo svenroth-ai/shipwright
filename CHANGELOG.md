@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-05-23
+
+### Added
+
+- GitHub findings triage producer — a throttled SessionStart hook imports GitHub code-scanning, Dependabot and secret-scanning alerts plus failed default-branch CI runs into the triage inbox via the gh CLI
+- Triage Inbox is now a launch-surface: every item may carry a producer-generated launchPayload field (frozen at first append), rendered by the inbox aggregator as a fenced markdown code block that operators copy into a new Claude session as the Fix-now flow.
+- New CLI shared/scripts/tools/triage_cli.py {list|promote|dismiss} (positional id) — first-class operation surface parallel to the future WebUI Triage tab; both delegate to the same library helpers (triage_promote.promote / triage_promote.dismiss).
+- SBOM undeclared-license triage producer — one source='sbom' item per workspace whose manifest has packages with unresolved licenses, auto-dismisses on clean re-run (Iterate B.2, ADR-056).
+- Test Evidence Layer column on Test Progression + Integration/pgTAP columns on Full Suite Runs + per-layer FAIL triage producer with eventId cross-link (Iterate B.3, ADR-057).
+- RTM requirements-coverage Status cell renders FAIL -> trg-XXX deep-links from open triage items + Coverage Summary gains FRs-without-tests / stale-verification / open-triage subsections (Iterate B.4, ADR-058).
+- FR-gate at iterate finalize: every work_completed iterate event must record affected-frs OR change-type+none-reason (Iterate C.1, ADR-059). Hard-error forward-only.
+- Four new detective-only compliance-audit checks for doc hygiene — F4 ADR-bloat, F5 architecture-drift, F6 CLAUDE.md size, F7 CLAUDE.md iterate-annotation leak (Iterate C.2, ADR-060).
+- Plugin-cache vs repo drift check at scripts/check_plugin_cache_sync.py — detects when plugin-side edits haven't been synced to ~/.claude/plugins/cache/ (Iterate C.3, ADR-061). Fail-soft WARN by default, --strict for CI.
+- triage_add.py CLI for manual triage card creation with optional --fr-id stamp, unlocking the B.4 RTM deep-link infrastructure on real data
+- Full Suite Runs synthesis from work_completed events in compliance test-evidence.md when no test_run events exist on the wire (preserves canonical test_run path when present)
+- Drift-protection test for markdown_table.escape_cell wraps — plugins/shipwright-compliance/tests/test_markdown_table_wrap_drift.py with 7 parametrized cases. Fails if a future iterate silently un-wraps any event-derived cell in change_history / rtm_generator / test_evidence / compliance_report rendering
+- Triage Inbox: artifact-based ingestion path for the gh-security action-unit. When GHAS Code Scanning is unavailable (private repo without GHAS), the importer downloads the latest fresh shipwright-security workflow's findings.json and emits the same gh-security:{owner}/{repo} action-unit (no schema change). Freshness gated via SHIPWRIGHT_GITHUB_ARTIFACT_MAX_AGE_DAYS (default 14d).
+- shared/scripts/tools/record_event.py:attach_commit_to_event(event_id, sha) — atomically patches the commit SHA into a previously-recorded event in the gitignored events.jsonl. Used by iterate-finalize F6.5 to backfill the SHA after F6 commits, so the iterate's own work_completed event can be recorded BEFORE the compliance regen (and thus be included in the F6 commit snapshot) without violating the no-amend rule.
+- shipwright-adopt Step H commit now carries Run-ID: adopt-<YYYY-MM-DD>-<repo> trailer so audit_staleness.find_snapshot_commit recognises the adoption commit as a compliance snapshot baseline immediately (no need to wait for first iterate). Message-builder lives in plugins/shipwright-adopt/scripts/lib/adopt_commit_template.py with regex-enforced + date-deterministic semantics.
+- shipwright-security gains Step 7.5 (pipeline mode only): new helper finalize_security_compliance.py regenerates compliance MDs via update_compliance.py --phase security, then commits as chore(compliance): refresh after security scan with Run-ID: security-<scan_id> trailer. Idempotent — no commit on clean tree. Skipped in standalone mode (Step 8 iterate handoff covers it), CI, non-interactive.
+- Drift-protection test shared/tests/test_architecture_md_reflects_arch_impact.py enforces the F2 coupling between --architecture-impact flag on decision-drops and architecture.md updates. RED phase surfaced 11 historical drift entries; all backfilled. Companion lessons added to .shipwright/agent_docs/conventions.md covering TDD RED-first discipline, F0 leak-guard symmetry with F11, and the architecture-md ↔ decision-drop coupling rule.
+
+### Changed
+
+- The file-size hook (`check_file_size`) is now a non-blocking advisory nudge instead of a soft-block. It fires only when an edit pushes a source file *past* the line guideline (default 300) and stays silent on edits to files that were already oversized, so routine one-line fixes in legacy large files no longer re-trigger it. Rewritten from `check_file_size.sh` to `check_file_size.py` with stateless crossing detection (Edit-payload delta, `git HEAD` fallback for Write); always exits 0.
+- GitHub triage producer emits **action-units** (one per repo / per failing workflow) instead of per-finding mirrors; replaces #39's 1:1 mapping. Dedup keys gh-security:{owner}/{repo}, gh-secrets:{owner}/{repo}, gh-ci:{workflow_id} (no head_sha).
+- Pre-iterate legacy per-finding triage items (github:code-scanning:*, github:dependabot:*, github:secret-scanning:*, github-ci:{wf}:{sha}) auto-migrate to dismissed reason=schemaMigration on the first successful run of their original source (per-source-gated; never on a failed fetch).
+- Compliance Dashboard: mode-aware indicators (adopted projects show `n/a (adopted)` for pipeline phases; hide structurally-N/A build-section rows), new Why-warn 4th column with per-indicator diagnostic pointers, new Triage open indicator surfacing `.shipwright/triage.jsonl` status (Iterate B.1).
+- Docs: docs/security-ci-setup.md rewritten as a two-path setup guide (shipwright-security default vs GHAS alternative). docs/triage-inbox.md removed; the high-level user view moved into docs/guide.md §4.11 / §4.11.1, the technical detail lives with the producers.
+- Triage Inbox: formal JSON schema at `shared/schemas/triage_item.schema.json`, new optional `frId`/`suiteId`/`eventId` cross-link fields, HTML anchors per card so the compliance RTM can deep-link FAIL rows, info-severity items collapsed into a `<details>` block (Iterate B0).
+- Reconcile detective-audit finding D1 (Spec FR coverage in events) by recording a multi-FR work_completed event covering FR-01.03/04/05/06/07/08/09/12 with spec_impact=none (watermark gap, not code defect).
+- Compliance MDs are now produced exclusively by iterate-finalize; the Stop-hook auto-regen block in generate_handoff_on_stop.py is removed. Group E audit (E1-E5) switches from fresh-render byte-compare to snapshot-provenance — comparing on-disk to the last commit with a Run-ID: trailer that modified .shipwright/compliance/. Non-iterate commits no longer produce false-positive staleness findings in the triage inbox.
+- update_compliance.py PHASE_REPORTS gains 'adopt' (5 docs — initial baseline) and 'security' (4 docs, RTM excluded) entries.
+
+### Fixed
+
+- CI workflow hardening: ci.yml installs the OSS security scanners (semgrep, trivy, gitleaks) before running plugin tests, the full-evidence scan test is CI-aware, and codeql.yml tolerates a private repo without GitHub code scanning
+- Windows: the secret-scan, file-size, command-validation and destructive-migration hooks no longer silently pass when python3 resolves to the Microsoft Store alias stub - they now resolve a real Python interpreter (python3/python/py) and strip CRLF
+- The F0.5 end-to-end verification gate no longer miscounts a colour-wrapped pytest summary line as zero tests run
+- CI workflow now provisions pytest before running the plugin and integration test suites, and ships the nested-shipwright detector fixture so fresh checkouts run green
+- Phase-quality auditor no longer emits false-negative FAILs on adopted or drop-directory projects: C5 recognises CHANGELOG-unreleased.d/ drop files, S1's spec reader falls back to the .shipwright/planning/*/spec.md adopted layout, and C1 accepts iterate work_completed events and phase_history completion outcomes.
+- Iterate decision-drop ADRs are no longer lost on worktree cleanup — write_decision_drop, aggregate_decisions, and the F11 finalization verifier now resolve the decision-drops directory against the main repo (worktree-aware, mirroring resolve_events_path)
+- Path-canon lint no longer fails on .shipwright/agent_docs/conventions.md — the Learnings doc is now allowlisted alongside its sibling agent_docs in artifact_migrations.py
+- Markdown table cells in build_dashboard.md and compliance reports (RTM, test-evidence, change-history, compliance dashboard) no longer break when event fields contain a literal pipe or newline — every event-derived cell now goes through shared/scripts/markdown_table.py::escape_cell. Surfaced empirically in shipwright-webui where description='(local|tailscale|open)' shifted Recent-Changes columns.
+- Path-canon lint false-fire on regenerated triage inbox markdown that legitimately references plugin source-tree paths via SBOM launchPayloads
+- Triage gh-security emit-gate test fixture: stub artifact-path fetchers in test_github_triage_action_units.py::_patch_api so the partial-fetch parametrize cases no longer leak real workflow runs from worktree gh context (4/4 cases now pass deterministically)
+- Canon-lint test no longer fails on per-iterate prose notes in shipwright_test_results.json — added to all 4 ALLOWLISTs in artifact_migrations.py (same class as conventions.md)
+- Working tree no longer permanently dirty after iterate runs — 7 tracked Markdown banners (build_dashboard, session_handoff, triage_inbox, 5 compliance/*.md) now derive their Generated/Updated timestamp from max(event.ts) instead of datetime.now(), so two renders against the same events.jsonl produce byte-identical output. New helper shared/scripts/lib/events_log.latest_event_dt; compliance keeps a local mirror per the existing parity-test pattern
+- Iterate skill F7 now seals work_completed event appends in self-tracking repos (gitignore !/shipwright_events.jsonl) via a new F7b follow-up commit step + commit_event_followup.py helper. Closes the silent-loss hole that wiped 9 events from this repo's log on 2026-05-22.
+- F11 iterate finalization verifier is now multi-commit-aware — check_events_has_commit + check_spec_impact_recorded look up the F7 work_completed event by run_id (primary) instead of HEAD commit, so iterates with a follow-up fix commit on the iterate branch no longer surface false-positive failures.
+
 ## [v0.20.0] - 2026-05-18
 
 ### Added

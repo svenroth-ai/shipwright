@@ -1,1 +1,0 @@
-New CLI shared/scripts/tools/triage_cli.py {list|promote|dismiss} (positional id) — first-class operation surface parallel to the future WebUI Triage tab; both delegate to the same library helpers (triage_promote.promote / triage_promote.dismiss).

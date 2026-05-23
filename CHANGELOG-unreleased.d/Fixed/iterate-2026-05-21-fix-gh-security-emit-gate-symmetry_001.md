@@ -1,1 +1,0 @@
-Triage gh-security emit-gate test fixture: stub artifact-path fetchers in test_github_triage_action_units.py::_patch_api so the partial-fetch parametrize cases no longer leak real workflow runs from worktree gh context (4/4 cases now pass deterministically)

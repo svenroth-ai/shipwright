@@ -1,1 +1,0 @@
-Triage Inbox: formal JSON schema at `shared/schemas/triage_item.schema.json`, new optional `frId`/`suiteId`/`eventId` cross-link fields, HTML anchors per card so the compliance RTM can deep-link FAIL rows, info-severity items collapsed into a `<details>` block (Iterate B0).

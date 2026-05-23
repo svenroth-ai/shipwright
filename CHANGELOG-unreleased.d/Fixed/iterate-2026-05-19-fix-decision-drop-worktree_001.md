@@ -1,1 +1,0 @@
-Iterate decision-drop ADRs are no longer lost on worktree cleanup — write_decision_drop, aggregate_decisions, and the F11 finalization verifier now resolve the decision-drops directory against the main repo (worktree-aware, mirroring resolve_events_path)
