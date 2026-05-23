@@ -35,27 +35,6 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
-def _load_events_log_resolver():
-    """Load ``resolve_main_repo_root`` via the pollution-free shared loader.
-
-    Plain ``from lib.events_log import resolve_main_repo_root`` pins
-    ``lib`` to ``shared/scripts/lib`` for the rest of the test session,
-    which shadows the compliance plugin's own ``lib`` package and breaks
-    ``test_enforcement_hooks`` collection (it does ``from lib.thresholds
-    import ...``). ``audit_adapters.load_shared_lib`` registers the module
-    under a sentinel name and never touches the ``lib`` slot.
-    """
-    try:
-        from scripts.audit.audit_adapters import load_shared_lib
-        events_log = load_shared_lib("events_log")
-        return events_log.resolve_main_repo_root
-    except Exception:  # noqa: BLE001 — defensive fall-back
-        def _noop(_project_root: Path):
-            return None
-        return _noop
-
-
-_resolve_main_repo_root = _load_events_log_resolver()
 
 
 # Strip every ``Generated: ...`` line so the snapshot byte-compare ignores
@@ -141,12 +120,6 @@ class StalenessReport:
 # ---------------------------------------------------------------------------
 
 
-def _resolve_git_root(project_root: Path) -> Path:
-    """Return the canonical main-repo root (worktree-aware), or project_root."""
-    main = _resolve_main_repo_root(project_root)
-    return main or project_root
-
-
 def _git(args: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         ["git", "-C", str(cwd), *args],
@@ -166,13 +139,19 @@ def find_snapshot_commit(project_root: Path) -> str | None:
     ``--diff-filter=AM`` includes both Added (very first iterate-finalize
     that introduces the dir) and Modified (subsequent iterates).
 
-    Worktree-aware: invoked from inside a linked worktree, it resolves
-    the main repo's git history so the audit sees the same baseline.
+    Uses ``project_root`` directly — git log is branch-scoped, so an
+    iterate worktree's branch lineage (which contains the in-progress
+    F6 commit AND the inherited main-branch iterate history) is the
+    correct source. Routing through the main repo would miss F6 commits
+    on the worktree's branch.
+
+    ``git show`` against the same ``project_root`` resolves blobs from
+    the shared ``.git`` common-dir regardless of which branch the main
+    repo is on — so worktree-isolation doesn't break the lookup.
 
     Returns the commit SHA, or ``None`` when no qualifying commit exists
     (greenfield project, pre-adoption history, or git unavailable).
     """
-    git_root = _resolve_git_root(project_root)
     try:
         proc = _git(
             [
@@ -184,7 +163,7 @@ def find_snapshot_commit(project_root: Path) -> str | None:
                 "--",
                 COMPLIANCE_DIR,
             ],
-            cwd=git_root,
+            cwd=project_root,
         )
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return None
@@ -205,9 +184,8 @@ def _read_snapshot_text(
     the file didn't exist at the snapshot (or git failed); ``content`` is
     then ``None``.
     """
-    git_root = _resolve_git_root(project_root)
     try:
-        proc = _git(["show", f"{snapshot_sha}:{rel_path}"], cwd=git_root)
+        proc = _git(["show", f"{snapshot_sha}:{rel_path}"], cwd=project_root)
     except (FileNotFoundError, subprocess.TimeoutExpired) as exc:
         return None, f"git unavailable: {exc!r}"
     if proc.returncode != 0:

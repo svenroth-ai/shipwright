@@ -61,8 +61,13 @@ def _git_commit(repo: Path, files: dict[str, str], msg: str) -> str:
     return sha
 
 
-def _seed_baseline_compliance(repo: Path) -> dict[str, str]:
-    """Write the 5 canonical compliance MDs (minimal content) and return them."""
+def _seed_baseline_compliance(_repo: Path | None = None) -> dict[str, str]:
+    """Return the 5 canonical compliance MDs as a {rel_path: content} dict.
+
+    The ``_repo`` arg is unused (no longer writes files itself — the
+    ``_git_commit`` helper writes whatever dict it gets). Kept optional
+    for callers that pass ``main`` / ``tmp_path`` for readability.
+    """
     return {
         ".shipwright/compliance/traceability-matrix.md":
             "# Requirements Traceability Matrix\n\nGenerated: 2026-05-23T00:00:00Z\n\nBaseline RTM body\n",
@@ -298,20 +303,23 @@ def test_check_staleness_handles_file_missing_at_snapshot(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def test_find_snapshot_commit_resolves_to_main_repo_from_worktree(tmp_path):
-    """Audit invoked from inside a worktree resolves snapshot via main repo's git history.
+def test_find_snapshot_commit_sees_branch_lineage_from_worktree(tmp_path):
+    """Audit invoked from inside a worktree walks the worktree's branch
+    lineage — which inherits main's history through branching, so a
+    main-branch iterate-finalize commit IS visible.
 
-    Mirrors events_log.resolve_main_repo_root semantics — see ADR / events_log.py.
-    The iterate audit must see the same baseline whether it runs from the
-    main repo or from .worktrees/<slug>/.
+    More importantly (the case the dogfood revealed): the worktree's
+    OWN HEAD commit is also visible, so an iterate audit can find the
+    F6 commit it just made. Routing through the main repo would miss
+    this because main's HEAD doesn't track the iterate branch.
     """
     from scripts.audit.audit_staleness import find_snapshot_commit
 
     main = tmp_path / "main"
     main.mkdir()
     _git_init(main)
-    sha = _git_commit(
-        main, _seed_baseline_compliance(main),
+    main_sha = _git_commit(
+        main, _seed_baseline_compliance(),
         "feat(iterate): seed\n\nRun-ID: iterate-from-main\n",
     )
 
@@ -322,9 +330,20 @@ def test_find_snapshot_commit_resolves_to_main_repo_from_worktree(tmp_path):
         check=True, capture_output=True,
     )
 
-    # Audit invoked from inside the worktree must see main's snapshot.
-    sha_from_wt = find_snapshot_commit(wt)
-    assert sha_from_wt == sha
+    # Through inherited lineage, the worktree sees main's commit.
+    assert find_snapshot_commit(wt) == main_sha
+
+    # Now simulate an iterate-finalize commit ON the worktree's branch
+    # — that commit MUST become the new snapshot (the dogfood case).
+    wt_sha = _git_commit(
+        wt,
+        {".shipwright/compliance/dashboard.md":
+         "# Dashboard\n\nGenerated: 2026-05-24T00:00:00Z\n\nWT update\n"},
+        "feat(iterate): wt update\n\nRun-ID: iterate-from-wt\n",
+    )
+    assert find_snapshot_commit(wt) == wt_sha
+    # Main repo's view is untouched — still its own latest snapshot.
+    assert find_snapshot_commit(main) == main_sha
 
 
 # ---------------------------------------------------------------------------
