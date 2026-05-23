@@ -30,6 +30,7 @@ helpers from ``common.py``.
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -59,6 +60,26 @@ from lib.drift_parsers import collect_requirements_from_planning  # noqa: E402
 # top-level path is referenced only by the drift detector / migration
 # framework, not by this verifier.
 DESIGNS_DIR = ".shipwright/designs"
+
+# Scopes that have no UI surface and therefore cannot have a screen-based
+# design manifest. Both phase-own design checks short-circuit to SKIP for
+# these — the FR→screen contract is structurally inapplicable, not failing.
+_NO_UI_SCOPES = frozenset({"library"})
+
+
+def _is_no_ui_scope(project_root: Path) -> bool:
+    """Read ``shipwright_run_config.json`` and return True iff ``scope`` is
+    a known no-UI value (currently ``library``).
+
+    Fail-closed: missing file, unreadable file, or malformed JSON returns
+    False (check runs normally — never silently skip on broken state).
+    """
+    cfg = project_root / "shipwright_run_config.json"
+    try:
+        data = json.loads(cfg.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return isinstance(data, dict) and data.get("scope") in _NO_UI_SCOPES
 
 
 # ---------------------------------------------------------------------------
@@ -124,6 +145,12 @@ def check_design_manifest_screens_exist(project_root: Path) -> CheckResult:
     must point at an existing HTML file on disk. ERROR — downstream test
     fidelity checks will explode if mockups vanished or were renamed."""
     name = "design_manifest screens exist on disk"
+    if _is_no_ui_scope(project_root):
+        return CheckResult(
+            name, None,
+            "scope=library — no UI surface, design manifest not applicable",
+            severity=Severity.SKIPPED.value,
+        )
     manifest = project_root / DESIGNS_DIR / "design-manifest.md"
     if not manifest.exists():
         return CheckResult(name, False, f"{DESIGNS_DIR}/design-manifest.md missing")
@@ -164,9 +191,17 @@ def check_design_fr_coverage(project_root: Path) -> CheckResult:
     Adapted from the shipwright-check plan Group C1 preventive check:
     design phase is where FR↔UI mapping is decided, so it's the right
     place to fail fast on orphan FRs (test-fidelity drift downstream).
-    Skips if there are no planning FRs (early bootstrap, no work to do).
+    Skips if there are no planning FRs (early bootstrap, no work to do),
+    or if the project's scope has no UI surface (``scope=library``).
     """
     name = "design FR coverage (every FR linked to >=1 screen)"
+
+    if _is_no_ui_scope(project_root):
+        return CheckResult(
+            name, None,
+            "scope=library — no UI surface, FR→screen mapping not applicable",
+            severity=Severity.SKIPPED.value,
+        )
 
     frs = collect_requirements_from_planning(project_root)
     if not frs:

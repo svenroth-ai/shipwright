@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-23T21:45:48.444779+00:00
+Generated: 2026-05-23T21:48:58.921621+00:00
 
 ## Requirements Coverage
 
@@ -76,7 +76,8 @@ Generated: 2026-05-23T21:45:48.444779+00:00
 | Architecture-md drift protection test + 11 historical drift entries backfilled + 3 discipline learnings in conventions.md (TDD RED-first, F0/F11 leak-guard symmetry, F2 flag-md coupling) | iterate | change | FR-01.11 | 2/2 | 1429aee | 2026-05-23 |
 | iterate finalization | iterate | change |  | — | — | 2026-05-23 |
 | C1 design verifier (and sister manifest-exists check) skip on scope=library projects via _is_no_ui_scope helper; audit translates ok=None to status=skip via existing check_result_to_finding | iterate | change |  | 19/19 | c7b1b29 | 2026-05-23 |
-| Resolve architecture.md merge-conflict markers (lines 90-94) + extend ALLOWLIST[compliance] to include finalize_security_compliance.py whose cross-plugin path comment trips the hyphen-segment regex blind spot | iterate | bug |  | 2/3 | — | 2026-05-23 |
+| Resolve architecture.md merge-conflict markers (lines 90-94) + extend ALLOWLIST[compliance] to include finalize_security_compliance.py whose cross-plugin path comment trips the hyphen-segment regex blind spot | iterate | bug |  | 2/3 | 9e26a9c | 2026-05-23 |
+| SBOM resolver pin to per-manifest .venv METADATA | iterate | bug |  | 497/497 | — | 2026-05-23 |
 
 ## Coverage Summary
 
@@ -84,7 +85,7 @@ Generated: 2026-05-23T21:45:48.444779+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 52 |
+| Iterate changes | 53 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

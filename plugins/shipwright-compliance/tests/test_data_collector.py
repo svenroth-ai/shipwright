@@ -260,21 +260,19 @@ class TestSbomLockfileAndWorkspace:
 
         assert _detect_npm_license(tmp_path, "ghost-pkg") == "unknown"
 
-    def test_python_license_via_importlib_metadata(self):
-        """Reading an installed package's license through importlib.metadata.
-
-        pytest is guaranteed installed in this test environment; its
-        metadata declares MIT.
+    def test_python_license_resolver_requires_manifest_dir(self):
+        """ADR-056 follow-up: the Python license resolver is pinned to a
+        per-manifest .venv (no ambient sys.path probe). Calling it without
+        a manifest_dir is a signature error after this iterate.
         """
         from scripts.lib.data_collector import _detect_python_license  # type: ignore
 
-        license_ = _detect_python_license("pytest")
-        assert license_ != "unknown", f"Expected a real license, got: {license_!r}"
-
-    def test_python_license_unknown_for_missing_package(self):
-        from scripts.lib.data_collector import _detect_python_license  # type: ignore
-
-        assert _detect_python_license("definitely-not-a-real-pypi-package-xyz") == "unknown"
+        import inspect
+        sig = inspect.signature(_detect_python_license)
+        assert "manifest_dir" in sig.parameters, (
+            "_detect_python_license must take manifest_dir; ambient sys.path "
+            "lookup via importlib.metadata is non-deterministic (ADR pending)."
+        )
 
     def test_workspace_aware_traversal_finds_nested_manifests(self, tmp_path: Path):
         """Phase 0f: client/ + server/ split workspaces are discovered."""
@@ -318,6 +316,410 @@ class TestSbomLockfileAndWorkspace:
             )
         deps = collect_dependencies(tmp_path)
         assert len([d for d in deps if d.name == "shared-lib"]) == 1
+
+
+class TestPythonLicenseFromVenvMetadata:
+    """ADR-056 follow-up: pin Python-license resolution to per-manifest
+    .venv dist-info METADATA (NOT ambient sys.path via importlib.metadata).
+
+    Mirrors d325fd6 (deterministic render timestamps): the resolver must
+    derive its output from a stable input artifact, not process-Python
+    state that varies between runs.
+    """
+
+    def _seed_distinfo(
+        self,
+        manifest_dir: Path,
+        package: str,
+        version: str,
+        metadata_body: str,
+        layout: str = "windows",
+    ) -> Path:
+        """Write a synthetic dist-info under ``<manifest_dir>/.venv``.
+
+        ``layout="windows"`` writes to ``Lib/site-packages/``; ``layout="posix"``
+        writes to ``lib/python3.11/site-packages/``. Both shapes are valid
+        production layouts; the resolver globs across them.
+        """
+        if layout == "windows":
+            sp = manifest_dir / ".venv" / "Lib" / "site-packages"
+        elif layout == "posix":
+            sp = manifest_dir / ".venv" / "lib" / "python3.11" / "site-packages"
+        else:
+            raise ValueError(f"unknown layout: {layout}")
+        # PEP 503 normalization: hyphen → underscore in dist-info dir name.
+        normalized = package.replace("-", "_")
+        distinfo = sp / f"{normalized}-{version}.dist-info"
+        distinfo.mkdir(parents=True, exist_ok=True)
+        (distinfo / "METADATA").write_text(metadata_body, encoding="utf-8")
+        return distinfo
+
+    def test_reads_license_from_windows_layout(self, tmp_path: Path):
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        self._seed_distinfo(
+            tmp_path, "fake-pkg", "1.0.0",
+            "Metadata-Version: 2.1\nName: fake-pkg\nVersion: 1.0.0\nLicense: Apache-2.0\n",
+            layout="windows",
+        )
+        assert _detect_python_license("fake-pkg", tmp_path) == "Apache-2.0"
+
+    def test_reads_license_from_posix_layout(self, tmp_path: Path):
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        self._seed_distinfo(
+            tmp_path, "fake-pkg", "1.0.0",
+            "Metadata-Version: 2.1\nName: fake-pkg\nVersion: 1.0.0\nLicense: BSD-3-Clause\n",
+            layout="posix",
+        )
+        assert _detect_python_license("fake-pkg", tmp_path) == "BSD-3-Clause"
+
+    def test_returns_unknown_when_no_venv(self, tmp_path: Path):
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        # No .venv at all → unknown, deterministically.
+        assert _detect_python_license("anything", tmp_path) == "unknown"
+
+    def test_returns_unknown_when_no_matching_distinfo(self, tmp_path: Path):
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        # .venv exists with some other package, but not the one queried.
+        self._seed_distinfo(
+            tmp_path, "other-pkg", "1.0.0",
+            "Metadata-Version: 2.1\nName: other-pkg\nVersion: 1.0.0\nLicense: MIT\n",
+        )
+        assert _detect_python_license("ghost-pkg", tmp_path) == "unknown"
+
+    def test_returns_unknown_when_metadata_has_no_license(self, tmp_path: Path):
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        # METADATA exists but no License/License-Expression/Classifier.
+        self._seed_distinfo(
+            tmp_path, "fake-pkg", "1.0.0",
+            "Metadata-Version: 2.1\nName: fake-pkg\nVersion: 1.0.0\n",
+        )
+        assert _detect_python_license("fake-pkg", tmp_path) == "unknown"
+
+    def test_treats_literal_unknown_as_unset(self, tmp_path: Path):
+        """Some packages emit `License: UNKNOWN` — treat as missing."""
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        self._seed_distinfo(
+            tmp_path, "fake-pkg", "1.0.0",
+            "Metadata-Version: 2.1\nName: fake-pkg\nVersion: 1.0.0\nLicense: UNKNOWN\n",
+        )
+        assert _detect_python_license("fake-pkg", tmp_path) == "unknown"
+
+    def test_prefers_license_field_over_license_expression(self, tmp_path: Path):
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        self._seed_distinfo(
+            tmp_path, "fake-pkg", "1.0.0",
+            "Metadata-Version: 2.4\nName: fake-pkg\nVersion: 1.0.0\n"
+            "License: MIT\nLicense-Expression: Apache-2.0\n",
+        )
+        assert _detect_python_license("fake-pkg", tmp_path) == "MIT"
+
+    def test_falls_back_to_license_expression_when_no_license(self, tmp_path: Path):
+        """PEP 639 License-Expression is the canonical PEP 621/639 field."""
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        self._seed_distinfo(
+            tmp_path, "fake-pkg", "1.0.0",
+            "Metadata-Version: 2.4\nName: fake-pkg\nVersion: 1.0.0\n"
+            "License-Expression: Apache-2.0\n",
+        )
+        assert _detect_python_license("fake-pkg", tmp_path) == "Apache-2.0"
+
+    def test_falls_back_to_trove_classifier(self, tmp_path: Path):
+        """Some packages encode license only via Trove classifiers."""
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        self._seed_distinfo(
+            tmp_path, "fake-pkg", "1.0.0",
+            "Metadata-Version: 2.1\nName: fake-pkg\nVersion: 1.0.0\n"
+            "Classifier: License :: OSI Approved :: MIT License\n",
+        )
+        assert _detect_python_license("fake-pkg", tmp_path) == "MIT"
+
+    def test_one_line_clamps_multiline_license(self, tmp_path: Path):
+        """RFC822 continuation lines must not bleed into the cell."""
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        # PKG-INFO continuation: subsequent lines start with whitespace.
+        self._seed_distinfo(
+            tmp_path, "fake-pkg", "1.0.0",
+            "Metadata-Version: 2.1\nName: fake-pkg\nVersion: 1.0.0\n"
+            "License: MIT\n"
+            " (a verbose explanation that runs onto multiple lines\n"
+            "  but stays inside the License header continuation block)\n",
+        )
+        result = _detect_python_license("fake-pkg", tmp_path)
+        # One-line clamp; result must not contain a newline.
+        assert "\n" not in result
+        assert result.startswith("MIT")
+
+    def test_resolver_ignores_ambient_sys_path(self, tmp_path: Path):
+        """Root-cause probe: even if importlib.metadata can locate the
+        package via the *process* Python's sys.path, the resolver MUST
+        use the per-manifest .venv. Otherwise determinism is broken.
+        """
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        # No dist-info in the manifest .venv → must return 'unknown',
+        # regardless of whether the process Python has the package.
+        # 'pytest' is in the process .venv (used to run THIS test).
+        assert _detect_python_license("pytest", tmp_path) == "unknown"
+
+    def test_cross_manifest_isolation(self, tmp_path: Path):
+        """Plugin A and Plugin B may declare the same package with
+        different licenses. Each resolver call resolves to the right one.
+        """
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        plugin_a = tmp_path / "plugin-a"
+        plugin_b = tmp_path / "plugin-b"
+        plugin_a.mkdir()
+        plugin_b.mkdir()
+        self._seed_distinfo(
+            plugin_a, "shared-pkg", "1.0.0",
+            "Metadata-Version: 2.1\nName: shared-pkg\nVersion: 1.0.0\nLicense: MIT\n",
+        )
+        self._seed_distinfo(
+            plugin_b, "shared-pkg", "2.0.0",
+            "Metadata-Version: 2.1\nName: shared-pkg\nVersion: 2.0.0\nLicense: Apache-2.0\n",
+        )
+        assert _detect_python_license("shared-pkg", plugin_a) == "MIT"
+        assert _detect_python_license("shared-pkg", plugin_b) == "Apache-2.0"
+
+    def test_resolver_deterministic_across_runs(self, tmp_path: Path):
+        """Two consecutive calls with the same input filesystem state
+        produce byte-identical output, regardless of process-Python
+        state between calls (the core determinism contract).
+        """
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        self._seed_distinfo(
+            tmp_path, "fake-pkg", "1.0.0",
+            "Metadata-Version: 2.1\nName: fake-pkg\nVersion: 1.0.0\nLicense: Apache-2.0\n",
+        )
+        first = _detect_python_license("fake-pkg", tmp_path)
+        second = _detect_python_license("fake-pkg", tmp_path)
+        assert first == second == "Apache-2.0"
+
+    def test_pep503_name_normalization(self, tmp_path: Path):
+        """Package names normalize: 'google-genai' on disk is
+        'google_genai-VERSION.dist-info'. The resolver must find both.
+        """
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        # Seed with underscore form (the wheel-installed form).
+        self._seed_distinfo(
+            tmp_path, "google-genai", "1.68.0",
+            "Metadata-Version: 2.1\nName: google-genai\nVersion: 1.68.0\nLicense: Apache-2.0\n",
+        )
+        # Query with hyphen form (the pyproject.toml-declared form).
+        assert _detect_python_license("google-genai", tmp_path) == "Apache-2.0"
+
+    def test_collect_dependencies_uses_per_manifest_resolver(self, tmp_path: Path):
+        """Integration: a pyproject.toml + populated .venv → DependencyInfo
+        carries the per-manifest license, not 'unknown'.
+        """
+        from scripts.lib.data_collector import collect_dependencies  # type: ignore
+
+        plugin = tmp_path / "plugins" / "demo"
+        plugin.mkdir(parents=True)
+        (plugin / "pyproject.toml").write_text(
+            'dependencies = [\n  "requests>=2.0",\n  "google-genai>=1.0",\n]\n',
+            encoding="utf-8",
+        )
+        # Seed both deps under the plugin's .venv (Windows layout).
+        self._seed_distinfo(
+            plugin, "requests", "2.33.0",
+            "Metadata-Version: 2.1\nName: requests\nVersion: 2.33.0\nLicense: Apache-2.0\n",
+        )
+        self._seed_distinfo(
+            plugin, "google-genai", "1.68.0",
+            "Metadata-Version: 2.1\nName: google-genai\nVersion: 1.68.0\nLicense: Apache-2.0\n",
+        )
+        deps = collect_dependencies(tmp_path)
+        license_by_name = {d.name: d.license for d in deps}
+        assert license_by_name.get("requests") == "Apache-2.0"
+        assert license_by_name.get("google-genai") == "Apache-2.0"
+
+    def test_launch_payload_outcome_simulation(self, tmp_path: Path):
+        """AC-7: Simulate the operator workflow. Before `uv sync` the
+        plugin .venv has no dist-info → license=unknown. After (simulated
+        by seeding the dist-info), license resolves. The launch payload
+        prescription is now empirically truthful.
+        """
+        from scripts.lib.data_collector import collect_dependencies  # type: ignore
+
+        plugin = tmp_path / "plugins" / "demo"
+        plugin.mkdir(parents=True)
+        (plugin / "pyproject.toml").write_text(
+            'dependencies = [\n  "requests>=2.0",\n]\n', encoding="utf-8",
+        )
+        # Before `uv sync`: no .venv → unknown.
+        before = collect_dependencies(tmp_path)
+        assert next(d for d in before if d.name == "requests").license == "unknown"
+        # After `uv sync` (simulated): dist-info present → resolves.
+        self._seed_distinfo(
+            plugin, "requests", "2.33.0",
+            "Metadata-Version: 2.1\nName: requests\nVersion: 2.33.0\nLicense: Apache-2.0\n",
+        )
+        after = collect_dependencies(tmp_path)
+        assert next(d for d in after if d.name == "requests").license == "Apache-2.0"
+
+    def test_pep503_normalization_dotted_name(self, tmp_path: Path):
+        """Gemini HIGH-1: PEP 503 normalizes `[-_.]+` runs uniformly.
+
+        A package declared as `ruamel.yaml` must resolve to a dist-info
+        named `ruamel_yaml-VERSION.dist-info`. Plain `replace("-", "_")`
+        breaks this.
+        """
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        self._seed_distinfo(
+            tmp_path, "ruamel.yaml", "0.18.5",
+            "Metadata-Version: 2.1\nName: ruamel.yaml\nVersion: 0.18.5\nLicense: MIT\n",
+        )
+        assert _detect_python_license("ruamel.yaml", tmp_path) == "MIT"
+
+    def test_pep503_normalization_case_insensitive(self, tmp_path: Path):
+        """PEP 503 canonical name is lowercase. `Foo-Bar` in pyproject
+        resolves to `foo_bar-*.dist-info` on disk.
+        """
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        # Seed lowercase (the canonical wheel-installed form).
+        self._seed_distinfo(
+            tmp_path, "foo-bar", "1.0.0",
+            "Metadata-Version: 2.1\nName: foo-bar\nVersion: 1.0.0\nLicense: MIT\n",
+        )
+        # Query with mixed case (pyproject author may declare any case).
+        assert _detect_python_license("Foo-Bar", tmp_path) == "MIT"
+
+    def test_multiple_distinfo_picks_deterministically(self, tmp_path: Path):
+        """OpenAI HIGH-2: stale dist-info dirs (uncommon but possible)
+        must be resolved deterministically — the resolver picks a stable
+        candidate, not a filesystem-walk-order artifact.
+        """
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        # Two dist-info dirs for the same normalized package.
+        self._seed_distinfo(
+            tmp_path, "fake-pkg", "1.0.0",
+            "Metadata-Version: 2.1\nName: fake-pkg\nVersion: 1.0.0\nLicense: MIT\n",
+        )
+        self._seed_distinfo(
+            tmp_path, "fake-pkg", "2.0.0",
+            "Metadata-Version: 2.1\nName: fake-pkg\nVersion: 2.0.0\nLicense: Apache-2.0\n",
+        )
+        result = _detect_python_license("fake-pkg", tmp_path)
+        assert result == "Apache-2.0", (
+            "Expected resolver to pick highest-versioned dist-info when "
+            "multiple exist; got: " + repr(result)
+        )
+
+    def test_multiple_distinfo_uses_semver_not_lexicographic(self, tmp_path: Path):
+        """Code-review HIGH-1: lexicographic dir-name sort puts
+        `pkg-10.0.0.dist-info` BEFORE `pkg-2.0.0.dist-info`, so a naive
+        `sorted()[-1]` picks the wrong dist-info. Version comparison
+        must be semver-aware so 10.0.0 > 2.0.0 (it should).
+        """
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        self._seed_distinfo(
+            tmp_path, "fake-pkg", "2.0.0",
+            "Metadata-Version: 2.1\nName: fake-pkg\nVersion: 2.0.0\nLicense: MIT\n",
+        )
+        self._seed_distinfo(
+            tmp_path, "fake-pkg", "10.0.0",
+            "Metadata-Version: 2.1\nName: fake-pkg\nVersion: 10.0.0\nLicense: Apache-2.0\n",
+        )
+        result = _detect_python_license("fake-pkg", tmp_path)
+        assert result == "Apache-2.0", (
+            "Expected resolver to pick 10.0.0 (numerically highest) over "
+            "2.0.0; lexicographic sort would return the wrong answer here. "
+            "Got: " + repr(result)
+        )
+
+    def test_utf8_encoding_for_metadata(self, tmp_path: Path):
+        """Gemini MEDIUM-3: METADATA must be read as utf-8. On Windows
+        the default encoding is cp1252; a METADATA file with non-ASCII
+        (Author names, descriptions) would raise UnicodeDecodeError and
+        crash SBOM generation.
+        """
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        # Author name with non-ASCII (typical real-world case).
+        metadata_body = (
+            "Metadata-Version: 2.1\nName: fake-pkg\nVersion: 1.0.0\n"
+            "Author: Ömer Sözer\n"  # Ö, ö
+            "License: Apache-2.0\n"
+        )
+        self._seed_distinfo(tmp_path, "fake-pkg", "1.0.0", metadata_body)
+        assert _detect_python_license("fake-pkg", tmp_path) == "Apache-2.0"
+
+    def test_multiple_classifiers_finds_license_classifier(self, tmp_path: Path):
+        """Gemini MEDIUM-2: real METADATA has many Classifier headers;
+        the license one is rarely first. Parser must use get_all, not get.
+        """
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        self._seed_distinfo(
+            tmp_path, "fake-pkg", "1.0.0",
+            "Metadata-Version: 2.1\nName: fake-pkg\nVersion: 1.0.0\n"
+            "Classifier: Development Status :: 5 - Production/Stable\n"
+            "Classifier: Intended Audience :: Developers\n"
+            "Classifier: License :: OSI Approved :: BSD License\n"
+            "Classifier: Programming Language :: Python :: 3\n",
+        )
+        assert _detect_python_license("fake-pkg", tmp_path) == "BSD"
+
+    def test_filesystem_error_returns_unknown(self, tmp_path: Path, monkeypatch):
+        """OpenAI MEDIUM-8: a permission error / unreadable METADATA
+        must NOT crash SBOM generation. Return 'unknown' gracefully.
+        """
+        from scripts.lib import data_collector as dc  # type: ignore
+
+        self._seed_distinfo(
+            tmp_path, "fake-pkg", "1.0.0",
+            "Metadata-Version: 2.1\nName: fake-pkg\nVersion: 1.0.0\nLicense: MIT\n",
+        )
+
+        # Detonate METADATA read with PermissionError.
+        original_read = Path.read_text
+
+        def _broken_read(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+            if self.name == "METADATA":
+                raise PermissionError("simulated unreadable METADATA")
+            return original_read(self, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "read_text", _broken_read)
+        # Must NOT raise; must return 'unknown'.
+        assert dc._detect_python_license("fake-pkg", tmp_path) == "unknown"
+
+    def test_no_importlib_metadata_call_in_resolver_path(self, monkeypatch, tmp_path: Path):
+        """Anti-regression probe: the resolver MUST NOT fall back to
+        importlib.metadata. If a future refactor accidentally restores
+        the ambient-sys.path path, this test catches it by detonating
+        every call site.
+        """
+        from importlib import metadata as _metadata
+        from scripts.lib.data_collector import _detect_python_license  # type: ignore
+
+        def _detonate(*args, **kwargs):
+            raise AssertionError(
+                "_detect_python_license must not call importlib.metadata."
+            )
+
+        monkeypatch.setattr(_metadata, "metadata", _detonate)
+        monkeypatch.setattr(_metadata, "distribution", _detonate)
+        # If the resolver still calls importlib.metadata, this errors;
+        # otherwise it returns 'unknown' (no .venv seeded).
+        assert _detect_python_license("anything", tmp_path) == "unknown"
 
 
 class TestCollectUndeclaredByWorkspace:

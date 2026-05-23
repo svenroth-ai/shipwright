@@ -1,0 +1,1 @@
+SBOM license resolver reads per-manifest .venv dist-info METADATA directly (PEP 503 canonical name match + PEP 440 version-aware sort), replacing ambient-sys.path importlib.metadata probe. Fixes non-deterministic license counts across consecutive renders and the broken triage launch payload `cd plugins/<x> && uv sync && update_compliance` that never resolved items.

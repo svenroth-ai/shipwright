@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-23-sbom-resolver-pin-lockfile",
+  "date": "2026-05-23T21:49:41.434310Z",
+  "type": "bug",
+  "complexity": "medium",
+  "branch": "iterate/sbom-resolver-pin-lockfile",
+  "spec": ".shipwright/planning/iterate/2026-05-23-sbom-resolver-pin-lockfile.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-05-23-sbom-resolver-pin-lockfile"
+}

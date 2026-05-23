@@ -18,6 +18,12 @@
       "attempts": 1,
       "note": "F0.5 cli surface — compliance-migrated test fixed (was the iterate's target); arch-impact-drops-found-at-all remaining failure is a pre-existing test-design issue independent of this iterate's scope (decision-drops are gitignored, so the test fails on every fresh clone/CI/worktree). Recorded with exit_code=1 because the runner saw one failure overall; the iterate's actual targets both succeed."
     },
-    "degraded": []
+    "degraded": [
+      {
+        "type": "pre_existing_shared_test_failure",
+        "test": "shared/tests/test_architecture_md_reflects_arch_impact.py::test_arch_impact_drops_found_at_all",
+        "note": "Pre-existing on origin/main: brittle sanity-check requires non-empty arch-impact drops in the main repo; decision-drops are gitignored so the test can't find evidence on any fresh clone/CI/worktree. Documented as separate follow-up work in PR #81's out-of-scope section."
+      }
+    ]
   }
 }

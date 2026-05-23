@@ -813,42 +813,189 @@ def _detect_npm_license(manifest_dir: Path, package_name: str) -> str:
     return "unknown"
 
 
-def _detect_python_license(package_name: str) -> str:
-    """Resolve a Python package license via importlib.metadata.
+from email.parser import HeaderParser as _HeaderParser
 
-    Phase 0f: reads installed site-packages after `uv sync`. No network,
-    no subprocess. Returns "unknown" when the package is not installed
-    (typical in CI without `uv sync`) or when its metadata declares no
-    License field.
+
+def _canonical_pkg_name(name: str) -> str:
+    """PEP 503 canonical name: lowercase + `[-_.]+` runs → single `-`.
+
+    Used to compare a query name against a dist-info dir's project
+    stem regardless of how either side spells separators / case.
+    `Foo_Bar-1.0.0.dist-info`, `foo.bar`, `FOO-BAR` all share canonical
+    `foo-bar`.
+    """
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def _version_sort_key(version: str) -> tuple:
+    """Sort key for distribution versions. Prefers `packaging.version.Version`
+    when available (PEP 440-aware); falls back to a tuple of integer
+    components + the raw string when not.
+
+    Returns a 2-tuple ``(sortable, raw)`` so equal sortables fall back to
+    stable lexicographic order. Robust against weird version strings —
+    unparseable versions sort before parseable ones (PEP 440 invalid →
+    raw string).
     """
     try:
-        from importlib import metadata as _metadata
+        from packaging.version import InvalidVersion, Version  # noqa: PLC0415
     except ImportError:
-        return "unknown"
+        Version = None  # type: ignore[assignment]
+        InvalidVersion = Exception  # type: ignore[assignment]
+
+    if Version is not None:
+        try:
+            return (1, Version(version), version)
+        except InvalidVersion:
+            pass
+    # Fallback: integer-by-integer tuple. `10` > `2` numerically.
+    parts: list = []
+    for chunk in version.split("."):
+        try:
+            parts.append((1, int(chunk)))
+        except ValueError:
+            parts.append((0, chunk))
+    return (0, tuple(parts), version)
+
+
+def _iter_site_packages_dirs(manifest_dir: Path):
+    """Yield site-packages dirs under ``manifest_dir/.venv``, deterministically.
+
+    Windows: ``<venv>/Lib/site-packages``.
+    POSIX:   ``<venv>/lib/python*/site-packages`` (sorted by name so
+    candidate enumeration is stable when multiple python-X.Y dirs exist
+    in a damaged env).
+    """
+    venv = manifest_dir / ".venv"
+    if not venv.is_dir():
+        return
+    win = venv / "Lib" / "site-packages"
+    if win.is_dir():
+        yield win
+    posix_root = venv / "lib"
+    if posix_root.is_dir():
+        try:
+            for python_dir in sorted(posix_root.iterdir(), key=lambda p: p.name):
+                if python_dir.is_dir() and python_dir.name.startswith("python"):
+                    sp = python_dir / "site-packages"
+                    if sp.is_dir():
+                        yield sp
+        except OSError:
+            # Defensive: unreadable lib/ should not crash SBOM generation.
+            return
+
+
+def _find_distinfo_candidates(
+    site_packages: Path, canonical: str
+) -> list[Path]:
+    """Return dist-info dirs in ``site_packages`` matching ``canonical``,
+    sorted by parsed version (lowest first). Caller picks ``[-1]`` for
+    the highest version when multiple stale installs coexist (OpenAI
+    HIGH-2 / code-review HIGH-1: must be version-aware, not lexicographic).
+    """
     try:
-        meta = _metadata.metadata(package_name)
-    except _metadata.PackageNotFoundError:
+        all_distinfos = sorted(site_packages.glob("*.dist-info"))
+    except OSError:
+        return []
+    matches: list[tuple] = []
+    for distinfo in all_distinfos:
+        # dist-info dir name shape: `<project>-<version>.dist-info`.
+        stem = distinfo.name[: -len(".dist-info")]
+        if "-" not in stem:
+            continue
+        project, _, version = stem.rpartition("-")
+        if _canonical_pkg_name(project) == canonical:
+            matches.append((_version_sort_key(version), distinfo))
+    matches.sort(key=lambda pair: pair[0])
+    return [distinfo for _, distinfo in matches]
+
+
+def _parse_metadata_license(distinfo: Path) -> str:
+    """Parse a single dist-info METADATA file. Returns license or 'unknown'.
+
+    All filesystem / parse errors are swallowed to ``unknown`` —
+    SBOM generation must never crash because one METADATA file is
+    unreadable. Output is always single-line (clamps RFC822 folded /
+    multi-line values uniformly across the three extraction paths).
+    """
+    metadata_path = distinfo / "METADATA"
+    try:
+        # Explicit utf-8 (Gemini MEDIUM-3): METADATA on Windows must NOT
+        # fall through to the cp1252 default.
+        raw = metadata_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
         return "unknown"
-    except Exception:
+
+    try:
+        msg = _HeaderParser().parsestr(raw)
+    except Exception:  # noqa: BLE001
         return "unknown"
-    # Try "License" first; fall back to "License-Expression" (PEP 639).
-    license_ = meta.get("License") or meta.get("License-Expression") or ""
-    if not license_ or license_ == "UNKNOWN":
-        # Some packages encode license only in Trove classifiers.
-        for classifier in meta.get_all("Classifier") or []:
+
+    candidate = ""
+
+    # Order: License → License-Expression (PEP 639) → Trove classifier.
+    license_ = msg.get("License") or msg.get("License-Expression") or ""
+    license_ = (license_ or "").strip()
+    if license_ and license_ != "UNKNOWN":
+        candidate = license_
+    else:
+        # Iterate ALL Classifier headers (Gemini MEDIUM-2: get_all, not get).
+        for classifier in msg.get_all("Classifier") or []:
             if classifier.startswith("License :: "):
                 # e.g. "License :: OSI Approved :: MIT License" → "MIT"
                 parts = classifier.split(" :: ")
                 if parts:
-                    return parts[-1].replace(" License", "")
+                    candidate = parts[-1].replace(" License", "")
+                    break
+
+    if not candidate:
         return "unknown"
-    return license_.strip().splitlines()[0]  # one-line clamp
+    # Single-return one-line clamp (code-review M2: applies to all paths).
+    return candidate.splitlines()[0].strip() or "unknown"
+
+
+def _detect_python_license(package_name: str, manifest_dir: Path) -> str:
+    """Resolve a Python package license from a per-manifest .venv.
+
+    Reads ``<manifest_dir>/.venv/.../site-packages/<pkg>-*.dist-info/METADATA``
+    directly. Pinned to authoritative on-disk metadata so:
+
+    1. Output is **deterministic** — same filesystem state → same result.
+       Does NOT depend on the process Python's ambient ``sys.path``.
+       Mirrors d325fd6 (deterministic render timestamps).
+    2. **Cross-manifest isolation** — plugin A and plugin B may declare
+       the same package with different licenses; each resolves independently.
+    3. The triage launch payload ``cd plugins/<x> && uv sync && update_compliance``
+       is empirically truthful — after ``uv sync`` populates
+       ``plugins/<x>/.venv/``, the next resolver call sees the dist-info
+       and flips the license from ``unknown`` to the declared value.
+
+    Returns ``"unknown"`` when no matching dist-info exists in the
+    manifest's ``.venv`` (no install yet, or stale env without the dep).
+
+    When multiple dist-info dirs match the same canonicalized package
+    name (stale install + new install side-by-side — uncommon but
+    possible), the highest-versioned directory wins by lexicographic
+    sort over the dir name. Stable across re-runs.
+    """
+    canonical = _canonical_pkg_name(package_name)
+    for site_packages in _iter_site_packages_dirs(manifest_dir):
+        matches = _find_distinfo_candidates(site_packages, canonical)
+        if not matches:
+            continue
+        # Highest version last in sorted list → pick it (OpenAI HIGH-2).
+        chosen = matches[-1]
+        return _parse_metadata_license(chosen)
+    return "unknown"
 
 
 def _parse_pyproject_deps(pyproject_path: Path) -> list[DependencyInfo]:
-    """Parse dependencies from pyproject.toml + resolve each license via importlib.metadata."""
+    """Parse dependencies from pyproject.toml + resolve each license from
+    the manifest-local .venv dist-info METADATA (NOT ambient sys.path).
+    """
     deps: list[DependencyInfo] = []
     content = pyproject_path.read_text(encoding="utf-8")
+    manifest_dir = pyproject_path.parent
 
     # Simple extraction of dependencies array
     in_deps = False
@@ -876,7 +1023,7 @@ def _parse_pyproject_deps(pyproject_path: Path) -> list[DependencyInfo]:
                     name=name,
                     version=match.group(2) or "any",
                     dep_type="dev" if in_dev else "runtime",
-                    license=_detect_python_license(name),
+                    license=_detect_python_license(name, manifest_dir),
                 ))
 
     return deps
