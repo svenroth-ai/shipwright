@@ -98,14 +98,14 @@ def check_events_has_commit(
             if evt_commit:
                 return CheckResult(
                     name, True,
-                    f"run_id={run_id} → event with commit={evt_commit[:8]} found",
+                    f"run_id={run_id} -> event with commit={evt_commit[:8]} found",
                 )
             # An event exists but carries no commit — degenerate but valid:
             # F7 ran, the file has the entry, just no commit field. Treat
             # as pass; flag in detail so an operator can repair.
             return CheckResult(
                 name, True,
-                f"run_id={run_id} → event found but no commit field recorded",
+                f"run_id={run_id} -> event found but no commit field recorded",
             )
 
     # Fallback — commit-hash substring search.
