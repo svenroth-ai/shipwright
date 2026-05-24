@@ -1,37 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-23-sbom-resolver-pin-lockfile"
+run_id: "iterate-2026-05-24-sbom-triage-cluster-collapse"
 phase: "iterate"
-reason: "iterate: SBOM resolver pin to per-manifest .venv METADATA"
-timestamp: "2026-05-23T21:48:58.921621+00:00"
+reason: "iterate: SBOM triage cluster-collapse"
+timestamp: "2026-05-23T22:51:51.578158+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-23 21:48:58 UTC
+> Auto-generated 2026-05-23 22:51:51 UTC
 
 ## Session Info
 
 - **Session ID**: 7fff2daa-e480-4a9d-a63e-3e9cf33cc0ad
-- **Timestamp**: 2026-05-23 21:48:58 UTC
-- **Reason**: iterate: SBOM resolver pin to per-manifest .venv METADATA
+- **Timestamp**: 2026-05-23 22:51:51 UTC
+- **Reason**: iterate: SBOM triage cluster-collapse
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-23-security-adopt-compliance-snapshots
-- **Date**: 2026-05-23T08:15:05.361332Z
-- **Type**: change
+- **Run ID**: iterate-2026-05-23-sbom-resolver-pin-lockfile
+- **Date**: 2026-05-23T21:49:41.434310Z
+- **Type**: bug
 - **Complexity**: medium
-- **Branch**: iterate/security-adopt-compliance-snapshots
-- **ADR**: iterate-2026-05-23-security-adopt-compliance-snapshots
+- **Branch**: iterate/sbom-resolver-pin-lockfile
+- **ADR**: iterate-2026-05-23-sbom-resolver-pin-lockfile
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-23-security-adopt-compliance-snapshots.md
+- **Spec**: .shipwright/planning/iterate/2026-05-23-sbom-resolver-pin-lockfile.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/sbom-resolver-pin-lockfile
-- **Run ID**: iterate-2026-05-23-sbom-resolver-pin-lockfile
-- **Spec**: .shipwright/planning/iterate/2026-05-23-sbom-resolver-pin-lockfile.md
+- **Branch**: iterate/sbom-triage-cluster-collapse
+- **Run ID**: iterate-2026-05-24-sbom-triage-cluster-collapse
+- **Spec**: .shipwright/planning/iterate/2026-05-24-sbom-triage-cluster-collapse.md
 - **Complexity**: medium
 - **External Review Marker**: stale (predates spec (2026-05-22T00:00:01))
 
@@ -52,8 +52,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/sbom-resolver-pin-lockfile
-- **Last Commit**: 9a219a3 chore(release): v0.21.0
+- **Branch**: iterate/sbom-triage-cluster-collapse
+- **Last Commit**: 924a802 Merge pull request #81 from svenroth-ai/iterate/post-merge-hygiene
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-f355399c | work_completed | iterate (SBOM triage producer cluster-collapse) | 2026-05-23 |
 | evt-4c363164 | work_completed | iterate (SBOM resolver pin to per-manifest .venv METADATA) | 2026-05-23 |
 | evt-e562db7a | work_completed | iterate (Resolve architecture.md merge-conflict markers (lines 90-94) + extend ALLOWLIST[compliance] to include finalize_security_compliance.py whose cross-plugin path comment trips the hyphen-segment regex blind spot) | 2026-05-23 |
 | evt-48c6f9f9 | work_completed | iterate (C1 design verifier (and sister manifest-exists check) skip on scope=library projects via _is_no_ui_scope helper; audit translates ok=None to status=skip via existing check_result_to_finding) | 2026-05-23 |
 | evt-baa456da | work_completed | iterate (iterate finalization) | 2026-05-23 |
-| evt-0a442005 | work_completed | iterate (Architecture-md drift protection test + 11 historical drift entries backfilled + 3 discipline learnings in conventions.md (TDD RED-first, F0/F11 leak-guard symmetry, F2 flag-md coupling)) | 2026-05-23 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 53
-- **Last iterate**: bug — SBOM resolver pin to per-manifest .venv METADATA (2026-05-23)
+- **Total work events**: 54
+- **Last iterate**: change — SBOM triage producer cluster-collapse (2026-05-23)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
