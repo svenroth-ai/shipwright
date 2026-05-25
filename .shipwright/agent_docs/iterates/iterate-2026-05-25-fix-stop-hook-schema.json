@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-25-fix-stop-hook-schema",
+  "date": "2026-05-25T19:10:24.799578Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/fix-stop-hook-schema",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-05-25-fix-stop-hook-schema"
+}

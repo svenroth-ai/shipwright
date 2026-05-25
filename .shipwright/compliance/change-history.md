@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-05-25T07:48:23.476887+00:00
-Total commits: 725
+Generated: 2026-05-25T19:10:17.136660+00:00
+Total commits: 734
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 238
-    "fix" : 190
-    "chore" : 132
+    "feat" : 240
+    "fix" : 191
+    "chore" : 138
     "docs" : 105
     "refactor" : 37
     "test" : 15
@@ -19,10 +19,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 238 commits
+### Features (feat) — 240 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-25 | compliance | Campaign A.review — bloat reviewer prompts + Group H audit | 723c8afffa27 |
+| 2026-05-25 | bloat | Loop-Gate (Campaign A.foundation — A1+A2+A3) | bfd4e63e4440 |
 | 2026-05-24 | compliance | collapse SBOM triage items by common undeclared-signature | 6be7aaebaa60 |
 | 2026-05-23 | compliance | extend snapshot producers to adopt + security | 96bbcfef1b77 |
 | 2026-05-21 | compliance | empirical-verification follow-ups (B.4 producer + B.3 synthesis + path-canon) (#65) | 46d674542dc4 |
@@ -262,10 +264,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 190 commits
+### Fixes (fix) — 191 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-25 | bloat | skip tests/fixtures/ and __fixtures__/ in scan walker | ea2f6110eb12 |
 | 2026-05-23 | compliance | pin SBOM Python-license resolver to per-manifest .venv METADATA | fc1a7a86cffb |
 | 2026-05-23 | meta | resolve architecture.md merge-conflict + allowlist security helper | 9e26a9c5e41b |
 | 2026-05-23 | architecture.md | forward-reference upcoming security-adopt follow-up | 93c0fcb75561 |
@@ -457,10 +460,16 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 132 commits
+### Chores (chore) — 138 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-25 | bloat | allowlist sub-iterate-runner.md after Bloat Checklist append | c81e4b7438b2 |
+| 2026-05-25 | events | record evt-96086624 for iterate-2026-05-25-bloat-review | 8967df942269 |
+| 2026-05-25 | agent-docs | refresh post phase-0 baseline | 4ace732d0348 |
+| 2026-05-25 | events | record evt-eaf513ff for phase-0-baseline | 42bf9d8042bd |
+| 2026-05-25 | bloat | Phase 0 baseline inventory (Campaign A prerequisite) | 66ec453dd7ec |
+| 2026-05-25 | events | record evt-1e014ebd for iterate-2026-05-25-bloat-foundation | 033fd5f4effb |
 | 2026-05-25 | bloat | prep Campaign A with external-frameworks references | 6c27b3214668 |
 | 2026-05-24 | events | record evt-f355399c for iterate-2026-05-24-sbom-triage-cluster-collapse | 2b5118437bd7 |
 | 2026-05-24 | planning | add three bloat-cleanup campaign files (A/B/C) (#83) | 0336a0d0ffc0 |
@@ -788,7 +797,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 725 |
+| Total commits | 734 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 725 |
+| Human-authored commits | 734 |
 

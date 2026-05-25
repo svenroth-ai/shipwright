@@ -8,18 +8,25 @@ Drift-protection for the Stop / SubagentStop schema fix landed
 2026-05-10. Adding a new hook script with an invalid ``hookSpecificOutput``
 shape will fail this test before reaching production.
 
-Per-event allowed shapes (source: official docs, fetched 2026-05-10):
+Per-event allowed shapes (source: official docs, refreshed 2026-05-25):
 
 | Event             | hookSpecificOutput permitted? | Allowed fields inside                                          |
 |-------------------|-------------------------------|----------------------------------------------------------------|
-| Stop              | yes                           | hookEventName ONLY                                             |
-| SubagentStop      | yes                           | hookEventName ONLY                                             |
+| Stop              | NO                            | (top-level decision/reason only; harness rejects the wrapper)  |
+| SubagentStop      | NO                            | (top-level decision/reason only; harness rejects the wrapper)  |
 | PreToolUse        | yes                           | hookEventName, permissionDecision, permissionDecisionReason,   |
 |                   |                               | updatedInput, additionalContext                                |
 | PostToolUse       | yes                           | hookEventName, additionalContext                               |
 | UserPromptSubmit  | yes                           | hookEventName, additionalContext, sessionTitle                 |
 | SessionStart      | yes                           | hookEventName, additionalContext                               |
 | SessionEnd        | NO                            | (no decision control at all)                                   |
+
+Stop / SubagentStop tightening (2026-05-25): Claude Code's current
+validator emits "Hook JSON output validation failed — Invalid input"
+when a Stop hook emits ``{"hookSpecificOutput": {"hookEventName": "Stop"}}``
+on stdout. The 2026-05-10 schema map permitted this; the harness has
+since narrowed it. Stop hooks now MUST emit either empty stdout (pass)
+or top-level ``{"decision": "block", "reason": "..."}`` (block).
 
 Top-level ``decision``/``reason`` is permitted for events that support
 decision control (Stop, SubagentStop, PreToolUse, PostToolUse,
@@ -63,8 +70,8 @@ from test_hygiene import is_ci
 # Fields allowed inside hookSpecificOutput, per event.
 # None  -> hookSpecificOutput is not permitted at all (SessionEnd).
 HOOK_SPECIFIC_OUTPUT_FIELDS: dict[str, set[str] | None] = {
-    "Stop": {"hookEventName"},
-    "SubagentStop": {"hookEventName"},
+    "Stop": None,
+    "SubagentStop": None,
     "PreToolUse": {
         "hookEventName",
         "permissionDecision",
