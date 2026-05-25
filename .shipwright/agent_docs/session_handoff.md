@@ -2,7 +2,7 @@
 canon_generated: true
 run_id: "iterate-2026-05-25-bloat-foundation"
 phase: "iterate"
-reason: "iterate: Bloat Loop-Gate (Campaign A.foundation)"
+reason: "iterate finalization"
 timestamp: "2026-05-25T07:48:23.476887+00:00"
 ---
 
@@ -12,34 +12,20 @@ timestamp: "2026-05-25T07:48:23.476887+00:00"
 
 ## Session Info
 
-- **Session ID**: f74ae4d1-20d5-4156-a2a1-05f5de21b242
+- **Session ID**: unknown
 - **Timestamp**: 2026-05-25 07:48:23 UTC
-- **Reason**: iterate: Bloat Loop-Gate (Campaign A.foundation)
+- **Reason**: iterate finalization
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-24-sbom-triage-cluster-collapse
-- **Date**: 2026-05-23T22:52:04.841038Z
-- **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/sbom-triage-cluster-collapse
-- **ADR**: iterate-2026-05-24-sbom-triage-cluster-collapse
-- **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-24-sbom-triage-cluster-collapse.md
-
-## Current Iterate Progress
-
-- **Branch**: iterate/bloat-foundation
 - **Run ID**: iterate-2026-05-25-bloat-foundation
-- **Spec**: .shipwright/planning/iterate/2026-05-25-bloat-foundation.md
+- **Date**: 2026-05-25T07:48:32.691326Z
+- **Type**: feature
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-05-25T07:21:11))
-
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
-- Finalization (F0–F11) after all mandatory phases pass
+- **Branch**: iterate/bloat-foundation
+- **ADR**: iterate-2026-05-25-bloat-foundation
+- **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-05-25-bloat-foundation.md
 
 ## Legacy build state
 
@@ -52,8 +38,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/bloat-foundation
-- **Last Commit**: 6c27b32 chore(bloat): prep Campaign A with external-frameworks references
+- **Branch**: main
+- **Last Commit**: 033fd5f chore(events): record evt-1e014ebd for iterate-2026-05-25-bloat-foundation
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
