@@ -1,15 +1,15 @@
 # Commit Change Log
 
 Generated: 2026-05-23T22:51:51.578158+00:00
-Total commits: 722
+Total commits: 724
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 237
+    "feat" : 238
     "fix" : 190
-    "chore" : 130
+    "chore" : 131
     "docs" : 105
     "refactor" : 37
     "test" : 15
@@ -19,10 +19,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 237 commits
+### Features (feat) — 238 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-24 | compliance | collapse SBOM triage items by common undeclared-signature | 6be7aaebaa60 |
 | 2026-05-23 | compliance | extend snapshot producers to adopt + security | 96bbcfef1b77 |
 | 2026-05-21 | compliance | empirical-verification follow-ups (B.4 producer + B.3 synthesis + path-canon) (#65) | 46d674542dc4 |
 | 2026-05-21 | scripts | plugin-cache vs repo drift check (C.3) (#62) | 02eb08a6fdbb |
@@ -456,10 +457,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 130 commits
+### Chores (chore) — 131 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-24 | events | record evt-f355399c for iterate-2026-05-24-sbom-triage-cluster-collapse | 2b5118437bd7 |
 | 2026-05-24 | planning | add three bloat-cleanup campaign files (A/B/C) (#83) | 0336a0d0ffc0 |
 | 2026-05-23 | events | record evt-4c363164 for iterate-2026-05-23-sbom-resolver-pin-lockfile | b4393a6dd7e2 |
 | 2026-05-23 | release | v0.21.0 | 9a219a378932 |
@@ -785,7 +787,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 722 |
+| Total commits | 724 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 722 |
+| Human-authored commits | 724 |
 

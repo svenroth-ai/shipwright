@@ -2,7 +2,7 @@
 canon_generated: true
 run_id: "iterate-2026-05-24-sbom-triage-cluster-collapse"
 phase: "iterate"
-reason: "iterate: SBOM triage cluster-collapse"
+reason: "iterate finalization"
 timestamp: "2026-05-23T22:51:51.578158+00:00"
 ---
 
@@ -12,34 +12,20 @@ timestamp: "2026-05-23T22:51:51.578158+00:00"
 
 ## Session Info
 
-- **Session ID**: 7fff2daa-e480-4a9d-a63e-3e9cf33cc0ad
+- **Session ID**: unknown
 - **Timestamp**: 2026-05-23 22:51:51 UTC
-- **Reason**: iterate: SBOM triage cluster-collapse
+- **Reason**: iterate finalization
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-23-sbom-resolver-pin-lockfile
-- **Date**: 2026-05-23T21:49:41.434310Z
-- **Type**: bug
-- **Complexity**: medium
-- **Branch**: iterate/sbom-resolver-pin-lockfile
-- **ADR**: iterate-2026-05-23-sbom-resolver-pin-lockfile
-- **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-23-sbom-resolver-pin-lockfile.md
-
-## Current Iterate Progress
-
-- **Branch**: iterate/sbom-triage-cluster-collapse
 - **Run ID**: iterate-2026-05-24-sbom-triage-cluster-collapse
-- **Spec**: .shipwright/planning/iterate/2026-05-24-sbom-triage-cluster-collapse.md
+- **Date**: 2026-05-23T22:52:04.841038Z
+- **Type**: change
 - **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-05-22T00:00:01))
-
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
-- Finalization (F0–F11) after all mandatory phases pass
+- **Branch**: iterate/sbom-triage-cluster-collapse
+- **ADR**: iterate-2026-05-24-sbom-triage-cluster-collapse
+- **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-05-24-sbom-triage-cluster-collapse.md
 
 ## Legacy build state
 
@@ -52,8 +38,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/sbom-triage-cluster-collapse
-- **Last Commit**: 924a802 Merge pull request #81 from svenroth-ai/iterate/post-merge-hygiene
+- **Branch**: main
+- **Last Commit**: 2b51184 chore(events): record evt-f355399c for iterate-2026-05-24-sbom-triage-cluster-collapse
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read

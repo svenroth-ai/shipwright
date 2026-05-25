@@ -78,7 +78,7 @@ Generated: 2026-05-23T22:51:51.578158+00:00
 | C1 design verifier (and sister manifest-exists check) skip on scope=library projects via _is_no_ui_scope helper; audit translates ok=None to status=skip via existing check_result_to_finding | iterate | change |  | 19/19 | c7b1b29 | 2026-05-23 |
 | Resolve architecture.md merge-conflict markers (lines 90-94) + extend ALLOWLIST[compliance] to include finalize_security_compliance.py whose cross-plugin path comment trips the hyphen-segment regex blind spot | iterate | bug |  | 2/3 | 9e26a9c | 2026-05-23 |
 | SBOM resolver pin to per-manifest .venv METADATA | iterate | bug |  | 497/497 | fc1a7a8 | 2026-05-23 |
-| SBOM triage producer cluster-collapse | iterate | change |  | 514/514 | — | 2026-05-23 |
+| SBOM triage producer cluster-collapse | iterate | change |  | 514/514 | 6be7aae | 2026-05-23 |
 
 ## Coverage Summary
 

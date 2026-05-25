@@ -15,7 +15,7 @@ Scope: library
 | Iterate tests passing | 44/54 iterations tested | WARN | 10 iterate(s) without tests — see test-evidence.md |
 | Dependencies | 8 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 4 open | WARN | 4 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 10 open | WARN | 10 actionable item(s) — see ../agent_docs/triage_inbox.md |
 
 ## Project Velocity
 
