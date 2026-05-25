@@ -285,8 +285,19 @@ AC-14.
   to myself at any point during this iterate. Three of the ten
   probes (4, 5, 7, 9) returned findings *in the plan* — caught by
   external review BEFORE code was written; all fixes are now
-  test-asserted. No yes-then-bug pattern fired in this run, so
-  no extra probe is owed.
+  test-asserted.
+
+- **Post-build empirical probe (live run against real repo):**
+  Ran `baseline_generator.generate(<repo_root>)` against this
+  monorepo. **One finding:** the scanner picked up
+  `plugins/shipwright-test/tests/fixtures/bundle/sample-app/main.js`
+  (2000 LOC) as a grandfathered entry — but spec §3.2 explicitly
+  exempts fixtures. Yes-then-bug pattern triggered: I asserted
+  "ready to ship" before this probe, the probe found a bug, so
+  per the asymptote heuristic I ran one more probe (regex-based
+  fixture-skip + 4 new tests + re-run against the real repo).
+  Result: 163 entries → 162, zero fixture leaks. Fixture-skip
+  patch landed in the same PR.
 
 ## Self-Review
 

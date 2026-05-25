@@ -211,3 +211,20 @@ erfasst.
 ## Notes
 
 _Cross-Iterate-Beobachtungen hier sammeln._
+
+- **LOC-Drift seit Plan-Erstellung (empirisch 2026-05-25):**
+  `baseline_generator` gegen den realen Repo zeigt
+  `plugins/shipwright-iterate/skills/iterate/SKILL.md` bei
+  **1709 LOC** (Spec stand 1611). Andere Werte deckungsgleich
+  (build 1162, test 986). B1-Effort steigt entsprechend marginal —
+  separater B1-Mini-Iterate je SKILL.md bleibt robust gegen
+  weitere Drift bis zum Cleanup-Start.
+- **Fixture-Skip nachgereicht (2026-05-25, gleiche PR wie
+  A.foundation):** Initiale `bloat_baseline.py` ignorierte
+  `tests/fixtures/` und `__fixtures__/`. Empirischer Live-Run
+  legte das offen (Sample-App-Fixture 2000 LOC wäre sonst als
+  grandfathered gelandet). Regex erweitert + 4 neue Tests
+  (`test_scan_skips_test_fixture_dirs`,
+  `test_scan_skips_double_underscore_fixtures`,
+  `test_should_skip_fixture_path`). Empirisch re-verifiziert:
+  163 → 162 entries, null Fixture-Leaks.

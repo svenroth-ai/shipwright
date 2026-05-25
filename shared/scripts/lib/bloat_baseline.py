@@ -44,11 +44,14 @@ LIMIT_SOURCE = 300
 # Source / test extensions where the 300-LOC limit applies.
 _SOURCE_EXTS = {".py", ".ts", ".tsx", ".js", ".jsx"}
 
-# Skip globs / substrings — generated, vendored, lock files, migrations.
+# Skip globs / substrings — generated, vendored, lock files, migrations,
+# test fixtures (spec §3.2: long-by-nature, exempt from size check).
 _SKIP_PATH_RE = re.compile(
     r"(\.lock$|package-lock|node_modules[/\\]|vendor[/\\]|dist[/\\]"
     r"|build[/\\]|\.min\.|__pycache__|\.pyc$|\.generated\."
-    r"|migrations?[/\\].*\.sql)",
+    r"|migrations?[/\\].*\.sql"
+    r"|(?:^|[/\\])fixtures[/\\]"
+    r"|(?:^|[/\\])__fixtures__[/\\])",
     re.IGNORECASE,
 )
 # Non-source extensions that are never weighed.

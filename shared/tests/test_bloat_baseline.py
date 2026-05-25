@@ -1,11 +1,4 @@
-"""Tests for shared/scripts/lib/bloat_baseline.py.
-
-Single producer for the bloat-allowlist schema + classification logic.
-Consumed by Phase-0 inventory, /shipwright-adopt's baseline_generator,
-and the bloat_gate_on_stop hook. Tests cover classification, per-
-filetype limit selection, scan, atomic load, path normalization, and
-fail-open behaviour on malformed input.
-"""
+"""Tests for shared/scripts/lib/bloat_baseline.py — Campaign A.foundation."""
 
 from __future__ import annotations
 
@@ -22,10 +15,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
 from lib import bloat_baseline as bb  # noqa: E402
 
 
-# ---------------------------------------------------------------------
-# classify_md
-# ---------------------------------------------------------------------
-
+# classify_md --------------------------------------------------------
 @pytest.mark.parametrize(
     "rel,expected",
     [
@@ -50,10 +40,7 @@ def test_classify_md(rel, expected):
     assert bb.classify_md(rel) == expected
 
 
-# ---------------------------------------------------------------------
-# limit_for
-# ---------------------------------------------------------------------
-
+# limit_for ----------------------------------------------------------
 @pytest.mark.parametrize(
     "rel,expected",
     [
@@ -82,10 +69,7 @@ def test_limit_for(rel, expected):
     assert bb.limit_for(rel) == expected
 
 
-# ---------------------------------------------------------------------
-# should_skip
-# ---------------------------------------------------------------------
-
+# should_skip --------------------------------------------------------
 @pytest.mark.parametrize(
     "rel,expected",
     [
@@ -110,10 +94,7 @@ def test_should_skip(rel, expected):
     assert bb.should_skip(rel) == expected
 
 
-# ---------------------------------------------------------------------
-# normalize_path
-# ---------------------------------------------------------------------
-
+# normalize_path -----------------------------------------------------
 def test_normalize_path_separator():
     assert bb.normalize_path("plugins\\foo\\bar.py") == "plugins/foo/bar.py"
     assert bb.normalize_path("plugins/foo/bar.py") == "plugins/foo/bar.py"
@@ -129,10 +110,7 @@ def test_normalize_path_strips_leading_dot_slash():
     assert bb.normalize_path("./plugins/foo.py") == "plugins/foo.py"
 
 
-# ---------------------------------------------------------------------
-# scan() — walks project root, emits one entry per oversize tracked file
-# ---------------------------------------------------------------------
-
+# scan() — walks project root, emits one entry per oversize file ----
 def _write_lines(path: Path, n: int) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("x\n" * n, encoding="utf-8")
@@ -182,6 +160,33 @@ def test_scan_skips_dist_and_build(tmp_path):
     assert bb.scan(tmp_path) == []
 
 
+def test_scan_skips_test_fixture_dirs(tmp_path):
+    """Spec §3.2: fixtures are long-by-nature and exempt from the size check."""
+    _write_lines(
+        tmp_path / "plugins" / "p" / "tests" / "fixtures" / "sample-app" / "main.js",
+        2000,
+    )
+    _write_lines(
+        tmp_path / "plugins" / "p" / "tests" / "fixtures" / "big-fixture.py", 800,
+    )
+    _write_lines(tmp_path / "shared" / "tests" / "fixtures" / "huge.ts", 1500)
+    assert bb.scan(tmp_path) == []
+
+
+def test_scan_skips_double_underscore_fixtures(tmp_path):
+    """JS-ecosystem `__fixtures__/` pattern."""
+    _write_lines(tmp_path / "client" / "__fixtures__" / "big.tsx", 1200)
+    assert bb.scan(tmp_path) == []
+
+
+def test_should_skip_fixture_path():
+    assert bb.should_skip("plugins/p/tests/fixtures/sample.py") is True
+    assert bb.should_skip("plugins/p/tests/fixtures/sub/sample.py") is True
+    assert bb.should_skip("client/__fixtures__/big.tsx") is True
+    # Sanity: a file named "fixtures.py" (not a dir) is not exempted.
+    assert bb.should_skip("plugins/p/scripts/fixtures.py") is False
+
+
 def test_scan_entry_shape(tmp_path):
     _write_lines(tmp_path / "plugins" / "foo" / "scripts" / "big.py", 412)
     entries = bb.scan(tmp_path)
@@ -200,10 +205,7 @@ def test_scan_normalizes_path_separator_on_windows(tmp_path):
     assert all("\\" not in e["path"] for e in entries)
 
 
-# ---------------------------------------------------------------------
-# load() — reads shipwright_bloat_baseline.json, fail-open on errors
-# ---------------------------------------------------------------------
-
+# load() — reads shipwright_bloat_baseline.json, fail-open on errors -
 def test_load_returns_none_when_missing(tmp_path):
     assert bb.load(tmp_path) is None
 
@@ -261,10 +263,7 @@ def test_load_normalises_path_separators(tmp_path):
     assert loaded["entries"][0]["path"] == "plugins/foo/bar.py"
 
 
-# ---------------------------------------------------------------------
-# Schema-contract round-trip: scan -> file -> load -> match
-# ---------------------------------------------------------------------
-
+# Schema-contract round-trip: scan -> file -> load -> match ---------
 def test_round_trip_scan_write_load_match(tmp_path):
     _write_lines(tmp_path / "plugins" / "foo" / "scripts" / "big.py", 412)
     _write_lines(
