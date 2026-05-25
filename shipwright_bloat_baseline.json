@@ -352,13 +352,6 @@
       "adr": null
     },
     {
-      "path": "plugins/shipwright-iterate/skills/iterate/SKILL.md",
-      "limit": 400,
-      "current": 1709,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "plugins/shipwright-iterate/tests/test_classify_complexity.py",
       "limit": 300,
       "current": 318,
