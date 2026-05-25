@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-05-23 22:51 UTC | Session: 7fff2daa-e480-4a9d-a63e-3e9cf33cc0ad | Run: iterate-2026-05-24-sbom-triage-cluster-collapse
+> Updated: 2026-05-25 07:48 UTC | Session: f74ae4d1-20d5-4156-a2a1-05f5de21b242 | Run: iterate-2026-05-25-bloat-foundation
 
-## Recent Changes (54 iterations)
+## Recent Changes (55 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | SBOM triage producer cluster-collapse | 514/514 |  | compliance | 2026-05-23 |
+| feature | Bloat Loop-Gate (Campaign A.foundation = A1+A2+A3): runtime-prompt classification, per-session marker writer, blocking Stop-Gate, registered in every plugin | 2678/2678 |  | infra | 2026-05-25 |
+| change | SBOM triage producer cluster-collapse | 514/514 | 6be7aae | compliance | 2026-05-23 |
 | bug | SBOM resolver pin to per-manifest .venv METADATA | 497/497 | fc1a7a8 | compliance | 2026-05-23 |
 | bug | Resolve architecture.md merge-conflict markers (lines 90-94) + extend ALLOWLIST[compliance] to include finalize_security_compliance.py whose cross-plugin path comment trips the hyphen-segment regex blind spot | 2/3 | 9e26a9c | tooling | 2026-05-23 |
 | change | C1 design verifier (and sister manifest-exists check) skip on scope=library projects via _is_no_ui_scope helper; audit translates ok=None to status=skip via existing check_result_to_finding | 19/19 | c7b1b29 | tooling | 2026-05-23 |
@@ -61,7 +62,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-24 | Unit: 514/514 | Smoke: not_run | (iterate)
+Last run: 2026-05-25 | Unit: 2678/2678 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

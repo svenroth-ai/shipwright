@@ -335,6 +335,154 @@ class TestCheckFileSize:
         assert result.returncode == 0
         assert result.stdout.strip() == ""
 
+    # -----------------------------------------------------------------
+    # Campaign A.foundation — runtime-prompt classification + marker writer
+    # -----------------------------------------------------------------
+
+    def _run_hook_with_session(self, payload: str, cwd: str,
+                               session_id: str = "test-sid") -> subprocess.CompletedProcess:
+        script = HOOKS_DIR / "check_file_size.py"
+        env = os.environ.copy()
+        env["SHIPWRIGHT_SESSION_ID"] = session_id
+        return subprocess.run(
+            [sys.executable, str(script)],
+            input=payload, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", cwd=cwd, env=env,
+        )
+
+    def test_runtime_prompt_skill_md_nudges_at_400(self, tmp_path):
+        """SKILL.md at 405 lines crosses the 400 runtime-prompt limit."""
+        f = tmp_path / "plugins" / "shipwright-build" / "skills" / "build" / "SKILL.md"
+        f.parent.mkdir(parents=True)
+        f.write_text(self._lines(405), encoding="utf-8")
+        # delta crossing: before = 395 (under 400), after = 405 (over)
+        payload = self._edit_payload(str(f), old="x", new="x" + "\n" * 10)
+        result = run_python_hook("check_file_size.py", payload, cwd=str(tmp_path))
+        assert result.returncode == 0
+        assert "405" in result.stdout
+        assert "400" in result.stdout
+
+    def test_runtime_prompt_skill_md_silent_at_399(self, tmp_path):
+        f = tmp_path / "plugins" / "shipwright-build" / "skills" / "build" / "SKILL.md"
+        f.parent.mkdir(parents=True)
+        f.write_text(self._lines(399), encoding="utf-8")
+        payload = self._edit_payload(str(f))  # delta 0
+        result = run_python_hook("check_file_size.py", payload, cwd=str(tmp_path))
+        assert result.returncode == 0
+        assert result.stdout.strip() == ""
+
+    def test_runtime_prompt_claude_md(self, tmp_path):
+        f = tmp_path / "CLAUDE.md"
+        f.write_text(self._lines(405), encoding="utf-8")
+        payload = self._edit_payload(str(f), old="x", new="x" + "\n" * 10)
+        result = run_python_hook("check_file_size.py", payload, cwd=str(tmp_path))
+        assert result.returncode == 0
+        assert "405" in result.stdout
+
+    def test_plain_markdown_still_skipped(self, tmp_path):
+        f = tmp_path / "docs" / "guide.md"
+        f.parent.mkdir(parents=True)
+        f.write_text(self._lines(5000), encoding="utf-8")
+        payload = self._edit_payload(str(f), old="x", new="x" + "\n" * 4000)
+        result = run_python_hook("check_file_size.py", payload, cwd=str(tmp_path))
+        assert result.returncode == 0
+        assert result.stdout.strip() == ""
+
+    def test_marker_written_for_crossing(self, tmp_path):
+        """PostToolUse nudge also writes a per-session marker JSON."""
+        f = tmp_path / "grew.py"
+        f.write_text(self._lines(310), encoding="utf-8")
+        payload = self._edit_payload(str(f), old="x", new="x" + "\n" * 12)
+        result = self._run_hook_with_session(payload, str(tmp_path), "sid-1")
+        assert result.returncode == 0
+        marker = tmp_path / ".shipwright" / "locks" / "bloat_pending.sid-1.json"
+        assert marker.is_file(), f"missing marker: {marker}"
+        data = json.loads(marker.read_text(encoding="utf-8"))
+        assert isinstance(data.get("entries"), list)
+        entries = data["entries"]
+        assert len(entries) == 1
+        e = entries[0]
+        assert e["path"].endswith("grew.py")
+        assert e["now"] == 310
+        assert e["limit"] == 300
+        assert e["classification"] == "source"
+        assert e["was_in_allowlist"] is False
+        assert e["delta"] == "crossing"
+        assert e["ts"].endswith("Z") or "+00:00" in e["ts"]
+
+    def test_marker_anti_ratchet_when_path_in_baseline(self, tmp_path):
+        """Path already in baseline → delta=anti-ratchet, even if same value."""
+        # Seed baseline.
+        baseline = {
+            "version": 1,
+            "entries": [
+                {"path": "legacy.py", "limit": 300, "current": 410,
+                 "state": "grandfathered", "adr": None},
+            ],
+        }
+        (tmp_path / "shipwright_bloat_baseline.json").write_text(
+            json.dumps(baseline), encoding="utf-8",
+        )
+        f = tmp_path / "legacy.py"
+        f.write_text(self._lines(420), encoding="utf-8")  # grew further
+        payload = self._edit_payload(str(f), old="x", new="x" + "\n" * 10)
+        result = self._run_hook_with_session(payload, str(tmp_path), "sid-2")
+        assert result.returncode == 0
+        marker = tmp_path / ".shipwright" / "locks" / "bloat_pending.sid-2.json"
+        data = json.loads(marker.read_text(encoding="utf-8"))
+        e = data["entries"][0]
+        assert e["was_in_allowlist"] is True
+        assert e["delta"] == "anti-ratchet"
+
+    def test_marker_read_modify_write_preserves_other_paths(self, tmp_path):
+        """A second hook fire upserts by path; prior entries survive."""
+        # First fire: file_a
+        f_a = tmp_path / "a.py"
+        f_a.write_text(self._lines(312), encoding="utf-8")
+        self._run_hook_with_session(
+            self._edit_payload(str(f_a), old="x", new="x" + "\n" * 14),
+            str(tmp_path), "sid-3",
+        )
+        # Second fire: file_b
+        f_b = tmp_path / "b.py"
+        f_b.write_text(self._lines(315), encoding="utf-8")
+        self._run_hook_with_session(
+            self._edit_payload(str(f_b), old="x", new="x" + "\n" * 17),
+            str(tmp_path), "sid-3",
+        )
+        marker = tmp_path / ".shipwright" / "locks" / "bloat_pending.sid-3.json"
+        data = json.loads(marker.read_text(encoding="utf-8"))
+        paths = {e["path"] for e in data["entries"]}
+        assert any(p.endswith("a.py") for p in paths)
+        assert any(p.endswith("b.py") for p in paths)
+
+    def test_marker_unknown_session_when_env_absent(self, tmp_path):
+        """Missing SHIPWRIGHT_SESSION_ID → writes to bloat_pending.unknown.json."""
+        f = tmp_path / "fresh.py"
+        f.write_text(self._lines(360), encoding="utf-8")
+        env = {k: v for k, v in os.environ.items()
+               if k != "SHIPWRIGHT_SESSION_ID"}
+        script = HOOKS_DIR / "check_file_size.py"
+        result = subprocess.run(
+            [sys.executable, str(script)],
+            input=self._write_payload(str(f)),
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            cwd=str(tmp_path), env=env,
+        )
+        assert result.returncode == 0
+        marker = tmp_path / ".shipwright" / "locks" / "bloat_pending.unknown.json"
+        assert marker.is_file()
+
+    def test_test_files_count_at_300(self, tmp_path):
+        """Test-files participate in crossing/anti-ratchet (campaign §4.1)."""
+        f = tmp_path / "tests" / "test_big.py"
+        f.parent.mkdir(parents=True)
+        f.write_text(self._lines(310), encoding="utf-8")
+        payload = self._edit_payload(str(f), old="x", new="x" + "\n" * 12)
+        result = run_python_hook("check_file_size.py", payload, cwd=str(tmp_path))
+        assert result.returncode == 0
+        assert "310" in result.stdout
+
 
 class TestCheckDrift:
     """Tests for CLAUDE.md drift detection hook."""

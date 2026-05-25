@@ -1,15 +1,9 @@
 {
-  "run_id": "iterate-2026-05-22-deterministic-render-timestamps",
-  "status": "skipped_missing_keys",
-  "timestamp": "2026-05-22T00:00:01+00:00",
-  "provider": null,
-  "findings_count": 0,
-  "self_review_fallback_ran": true,
-  "review_mode": "iterate",
-  "reason": "External review provider keys (OPENROUTER_API_KEY / GEMINI_API_KEY / OPENAI_API_KEY) not configured in this environment per check-external-review-keys.py. Falling back to mandatory self-review + internal code-reviewer subagent pass per the iterate skill's degraded-mode rule (Branch B Option 2). Recorded in iterate ADR.",
-  "providers_available": {
-    "openrouter": false,
-    "gemini": false,
-    "openai": false
-  }
+  "status": "completed",
+  "timestamp": "2026-05-25T07:21:11.557289+00:00",
+  "provider": "openrouter (gemini + openai)",
+  "findings_count": 20,
+  "self_review_fallback_ran": false,
+  "reason": "Iterate plan review: 2 HIGH (session-scoping, stale-violation TTL trap) + 3 MED (read-modify-write, fail-open malformed JSON, API split) incorporated into spec ACs 3/4/7/8/10/11; mini-plan test strategy expanded with schema-contract + session-scoping + stale-revalidation tests",
+  "review_mode": "iterate"
 }

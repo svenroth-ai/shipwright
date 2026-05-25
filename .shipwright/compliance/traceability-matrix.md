@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-23T22:51:51.578158+00:00
+Generated: 2026-05-25T07:48:23.476887+00:00
 
 ## Requirements Coverage
 
@@ -78,7 +78,8 @@ Generated: 2026-05-23T22:51:51.578158+00:00
 | C1 design verifier (and sister manifest-exists check) skip on scope=library projects via _is_no_ui_scope helper; audit translates ok=None to status=skip via existing check_result_to_finding | iterate | change |  | 19/19 | c7b1b29 | 2026-05-23 |
 | Resolve architecture.md merge-conflict markers (lines 90-94) + extend ALLOWLIST[compliance] to include finalize_security_compliance.py whose cross-plugin path comment trips the hyphen-segment regex blind spot | iterate | bug |  | 2/3 | 9e26a9c | 2026-05-23 |
 | SBOM resolver pin to per-manifest .venv METADATA | iterate | bug |  | 497/497 | fc1a7a8 | 2026-05-23 |
-| SBOM triage producer cluster-collapse | iterate | change |  | 514/514 | — | 2026-05-23 |
+| SBOM triage producer cluster-collapse | iterate | change |  | 514/514 | 6be7aae | 2026-05-23 |
+| Bloat Loop-Gate (Campaign A.foundation = A1+A2+A3): runtime-prompt classification, per-session marker writer, blocking Stop-Gate, registered in every plugin | iterate | feature |  | 2678/2678 | — | 2026-05-25 |
 
 ## Coverage Summary
 
@@ -86,7 +87,7 @@ Generated: 2026-05-23T22:51:51.578158+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 54 |
+| Iterate changes | 55 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

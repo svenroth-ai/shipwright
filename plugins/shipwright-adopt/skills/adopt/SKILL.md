@@ -50,6 +50,23 @@ behaves like a natively-built Shipwright project and all other skills
 
 ## Procedure (Steps A–H)
 
+### Step A.0 — Bloat Baseline (must run first)
+
+Before any other artifact write, generate the bloat allowlist so the
+Stop-Gate hook (`bloat_gate_on_stop.py`) has something to compare
+against on the first Stop event of the Adopt session. Without this
+the gate falls back to "pass silently" (AC-7) and offers no protection
+for the rest of Adopt's onboarding writes.
+
+```bash
+uv run "${CLAUDE_PLUGIN_ROOT}/scripts/lib/baseline_generator.py" \
+  --project-root <cwd>
+```
+
+Writes `<cwd>/shipwright_bloat_baseline.json` with all current
+over-limit files as `state=grandfathered`. Idempotent — re-runs
+overwrite atomically.
+
 ### Step A — Pre-flight
 
 Run:
