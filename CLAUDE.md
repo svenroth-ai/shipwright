@@ -134,3 +134,23 @@ uv run pytest integration-tests/ -v
 ## Context
 - **Guide**: docs/guide.md (primary user-facing documentation)
 - **Hooks & Pipeline**: docs/hooks-and-pipeline.md (context loading, hooks registry, between-phase actions)
+- **Glossary**: shared/glossary.md (mandatory-read — shared vocabulary
+  used by hooks, agents, subagents, and compliance audits — Allowlist,
+  Ratchet, Anti-Ratchet, Producer, Action-Unit, Canon-Gate, …)
+
+## Pre-commit hooks
+
+Contributors must install the bloat anti-ratchet pre-commit hook
+**once per clone**:
+
+```bash
+bash scripts/install-hooks.sh       # POSIX / Git-Bash on Windows
+.\scripts\install-hooks.ps1         # PowerShell on Windows
+```
+
+This sets `git config core.hooksPath scripts/hooks` (idempotent;
+refuses to overwrite an existing different value without `--force`).
+The hook only blocks commits that ratchet an existing entry in
+`shipwright_bloat_baseline.json` — new crossings are surfaced by the
+Group H detective audit post-merge. See `shared/glossary.md` for the
+terminology and `shared/scripts/lib/anti_ratchet.py` for the rule.

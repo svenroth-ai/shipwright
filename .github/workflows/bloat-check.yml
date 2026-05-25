@@ -1,0 +1,109 @@
+name: Bloat Check
+
+# Runs the anti-ratchet gate on every PR.  Posts an idempotent PR comment
+# with the allowlist diff vs the base ref.  Exit 1 ONLY when the script
+# reports a ratchet — new crossings outside the baseline are reported in
+# the PR comment but do NOT fail CI (the Group H detective audit and the
+# local pre-commit hook handle those).
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# `pull_request` (not pull_request_target) keeps untrusted fork PR code
+# from running with elevated privileges.  pull-requests:write is needed
+# for the comment-post step.
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: bloat-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bloat-check:
+    name: Anti-ratchet + allowlist diff
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head with full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.11
+
+      - name: Resolve base ref
+        id: base
+        run: |
+          base_sha="${{ github.event.pull_request.base.sha }}"
+          echo "base_sha=$base_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Capture base baseline
+        run: |
+          git show "${{ steps.base.outputs.base_sha }}:shipwright_bloat_baseline.json" \
+              > /tmp/baseline_base.json 2>/dev/null || echo '{"version":1,"entries":[]}' > /tmp/baseline_base.json
+
+      - name: Run anti-ratchet check (worktree mode)
+        id: ratchet
+        run: |
+          set +e
+          uv run shared/scripts/hooks/anti_ratchet_check.py \
+              --project-root . \
+              --worktree --json > /tmp/ratchet.json 2> /tmp/ratchet.stderr
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          cat /tmp/ratchet.json
+          echo "----- stderr -----"
+          cat /tmp/ratchet.stderr || true
+
+      - name: Build allowlist diff
+        id: diff
+        run: |
+          uv run shared/scripts/hooks/build_bloat_diff.py \
+              --base /tmp/baseline_base.json \
+              --head shipwright_bloat_baseline.json \
+              --ratchet /tmp/ratchet.json \
+              > /tmp/diff.md
+
+      - name: Post / update PR comment
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/github-script@v7
+        continue-on-error: true
+        env:
+          DIFF_PATH: /tmp/diff.md
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- shipwright-bloat-check -->';
+            const body = marker + '\n' + fs.readFileSync(process.env.DIFF_PATH, 'utf8');
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const existing = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number }
+            );
+            const prior = existing.find(c => c.body && c.body.includes(marker));
+            if (prior) {
+              await github.rest.issues.updateComment({
+                owner, repo, comment_id: prior.id, body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number, body,
+              });
+            }
+
+      - name: Fail on anti-ratchet
+        if: ${{ steps.ratchet.outputs.exit_code != '0' }}
+        run: |
+          echo "::error::anti-ratchet block — see PR comment + workflow log"
+          cat /tmp/ratchet.stderr
+          exit 1

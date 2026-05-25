@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-25-fix-stop-hook-schema"
+run_id: "iterate-2026-05-25-bloat-defense"
 phase: "iterate"
-reason: "iterate: fix stop-hook schema (bloat_gate_on_stop)"
-timestamp: "2026-05-25T19:10:17.136660+00:00"
+reason: "iterate: bloat-defense (re-run to get event_id)"
+timestamp: "2026-05-25T19:29:07.675673+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-25 19:10:17 UTC
+> Auto-generated 2026-05-25 19:29:07 UTC
 
 ## Session Info
 
-- **Session ID**: 73fe98b0-6329-41cd-a221-a5d397a0e64b
-- **Timestamp**: 2026-05-25 19:10:17 UTC
-- **Reason**: iterate: fix stop-hook schema (bloat_gate_on_stop)
+- **Session ID**: 70a6c2a4-4357-439f-aab1-446837ba917a
+- **Timestamp**: 2026-05-25 19:29:07 UTC
+- **Reason**: iterate: bloat-defense (re-run to get event_id)
 
 ## Last Iterate
 
@@ -29,12 +29,16 @@ timestamp: "2026-05-25T19:10:17.136660+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fix-stop-hook-schema
-- **External Review Marker**: completed (external_review_state.json @ 2026-05-25T12:32:35)
+- **Branch**: iterate/bloat-defense
+- **Run ID**: iterate-2026-05-25-bloat-defense
+- **Spec**: .shipwright/planning/iterate/2026-05-25-bloat-defense.md
+- **Complexity**: medium
+- **External Review Marker**: stale (predates spec (2026-05-25T12:32:35))
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -48,7 +52,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fix-stop-hook-schema
+- **Branch**: iterate/bloat-defense
 - **Last Commit**: 38186ce Merge pull request #86 from svenroth-ai/iterate/bloat-review
 - **Uncommitted Changes**: Yes
 
@@ -65,17 +69,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-044dce38 | work_completed | iterate (Pre-commit anti-ratchet hook + bloat-check CI workflow + bloat-exception ADR template + shared glossary (Campaign A.defense, closes Campaign A defense-in-depth layer)) | 2026-05-25 |
 | evt-db351941 | work_completed | iterate (fix bloat_gate_on_stop.py Stop-hook schema violation) | 2026-05-25 |
 | evt-96086624 | work_completed | iterate (Campaign A.review: bloat reviewer prompts (Karpathy+Osmani+Shipwright) + Group H detective audit (H0-H6)) | 2026-05-25 |
 | evt-eaf513ff | work_completed | iterate (Phase 0 bloat baseline inventory — activates A.foundation Stop-Gate) | 2026-05-25 |
 | evt-1e014ebd | work_completed | iterate (Bloat Loop-Gate (Campaign A.foundation = A1+A2+A3): runtime-prompt classification, per-session marker writer, blocking Stop-Gate, registered in every plugin) | 2026-05-25 |
-| evt-f355399c | work_completed | iterate (SBOM triage producer cluster-collapse) | 2026-05-23 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 58
-- **Last iterate**: bug — fix bloat_gate_on_stop.py Stop-hook schema violation (2026-05-25)
+- **Total work events**: 59
+- **Last iterate**: feature — Pre-commit anti-ratchet hook + bloat-check CI workflow + bloat-exception ADR template + shared glossary (Campaign A.defense, closes Campaign A defense-in-depth layer) (2026-05-25)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

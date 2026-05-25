@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-25T19:10:17.136660+00:00
+Generated: 2026-05-25T19:29:07.675673+00:00
 
 ## Requirements Coverage
 
@@ -82,7 +82,8 @@ Generated: 2026-05-25T19:10:17.136660+00:00
 | Bloat Loop-Gate (Campaign A.foundation = A1+A2+A3): runtime-prompt classification, per-session marker writer, blocking Stop-Gate, registered in every plugin | iterate | feature |  | 2678/2678 | bfd4e63 | 2026-05-25 |
 | Phase 0 bloat baseline inventory — activates A.foundation Stop-Gate | iterate | change |  | — | 66ec453 | 2026-05-25 |
 | Campaign A.review: bloat reviewer prompts (Karpathy+Osmani+Shipwright) + Group H detective audit (H0-H6) | iterate | feature |  | 14/14 | babf9fc | 2026-05-25 |
-| fix bloat_gate_on_stop.py Stop-hook schema violation | iterate | bug |  | 131/131 | — | 2026-05-25 |
+| fix bloat_gate_on_stop.py Stop-hook schema violation | iterate | bug |  | 131/131 | 193b7f5 | 2026-05-25 |
+| Pre-commit anti-ratchet hook + bloat-check CI workflow + bloat-exception ADR template + shared glossary (Campaign A.defense, closes Campaign A defense-in-depth layer) | iterate | feature |  | 41/41 | — | 2026-05-25 |
 
 ## Coverage Summary
 
@@ -90,7 +91,7 @@ Generated: 2026-05-25T19:10:17.136660+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 58 |
+| Iterate changes | 59 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

@@ -18,7 +18,7 @@
 - Run self-review checklist before committing: spec compliance, error handling, security, test quality, naming
 - Log decisions that deviate from spec in `.shipwright/agent_docs/decision_log.md`
 - Update compliance incrementally after each pipeline phase
-- Keep files under 300 lines — split if larger
+- Keep files under 300 lines (Source/Tests) / 400 lines (Runtime-Prompts: SKILL.md, CLAUDE.md, plugin agents, shared prompts). Hard CI block on Anti-Ratchet (existing baseline entry growing past `current`); new crossings advisory. Exception path: `.shipwright/planning/adr/_template-bloat-exception.md` (mandatory Ousterhout / YAGNI / Chesterton-Fence / Re-Review-Date / Incident-Reference fields). See `shared/glossary.md` for Allowlist / Ratchet / Anti-Ratchet vocabulary.
 - Fix the code, not the test — never weaken assertions to make tests pass
 - Never weaken RLS policies to make integration tests pass — fix the test or auth context instead
 - Service-role client is for test setup/teardown ONLY — never use it for test assertions
