@@ -1,23 +1,23 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-25-bloat-foundation",
+    "run_id": "iterate-2026-05-25-bloat-review",
     "date": "2026-05-25",
-    "unit": {"status": "passed", "passed": 2678, "total": 2678, "note": "shared/tests/ 2388 + plugins/shipwright-adopt/tests/ 290 — all green. Campaign A.foundation added 24 (test_bloat_baseline) + 7 (TestCheckFileSize extension) + 15 (test_bloat_gate_on_stop) + 49 (test_hook_registry_bloat) + 6 (test_baseline_generator) = 101 new tests."},
-    "integration": {"status": "not_run", "passed": 0, "total": 0, "note": "No integration surface; covered via shared/plugin unit-style suites."},
-    "pgtap": {"status": "not_run", "passed": 0, "total": 0, "note": "No SQL/RLS changes."},
-    "e2e": {"status": "not_run", "passed": 0, "total": 0, "note": "No web surface; cli surface verified via F0.5."},
-    "design_fidelity": {"status": "not_run", "passed": 0, "total": 0, "note": "No UI."},
-    "smoke": {"status": "not_run", "note": "No server."},
+    "unit": { "status": "passed", "passed": 14, "total": 14, "scope": "plugins/shipwright-compliance/tests/test_audit_group_h.py" },
+    "integration": { "status": "passed", "passed": 528, "total": 528, "scope": "plugins/shipwright-compliance/tests/ (full suite)" },
+    "pgtap": { "status": "skipped", "reason": "no DB changes" },
+    "e2e": { "status": "passed", "passed": 14, "total": 14, "scope": "F0.5 surface=cli runner" },
+    "design_fidelity": { "status": "skipped", "reason": "no UI changes" },
+    "smoke": { "status": "skipped", "reason": "no UI changes" },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest pytest shared/tests/test_hooks.py shared/tests/test_bloat_baseline.py shared/tests/test_bloat_gate_on_stop.py shared/tests/test_hook_registry_bloat.py --color=no",
+      "runner": "uv run --directory plugins/shipwright-compliance pytest tests/test_audit_group_h.py --color=no",
       "exit_code": 0,
-      "tests_run": 167,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-25-bloat-foundation/surface_verification.json",
-      "timestamp": "2026-05-25T07:50:00.000Z",
-      "attempts": 1,
-      "note": "F0.5 cli surface — 167 tests across the four hook-related test files. Single attempt. The broader 113-test schema-compliance suite also passes (exercises every hook in every plugin's hooks.json under realistic stdin)."
+      "tests_run": 14,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-25-bloat-review/surface_verification.log",
+      "timestamp": "2026-05-25T12:46:28Z"
     },
+    "shared_tests": { "status": "passed", "passed": 2396, "total": 2396, "skipped": 13, "deselected": 18 },
+    "parity_test": { "status": "passed", "passed": 5, "total": 5, "scope": "shared/tests/test_reviewer_bloat_checklist_parity.py" },
     "degraded": []
   }
 }

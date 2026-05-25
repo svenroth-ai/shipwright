@@ -731,8 +731,8 @@ def test_registry_wires_a_and_d_via_run_all(tmp_path):
 
     register_all()
     registered = set(audit_detector.registered_groups().keys())
-    # Sub-Iterate C wired E + G; the registry now covers all of A..G.
-    assert registered == {"A", "B", "C", "D", "E", "F", "G"}
+    # Sub-Iterate C wired E + G; A.review wired H (bloat audit).
+    assert registered == {"A", "B", "C", "D", "E", "F", "G", "H"}
 
 
 def test_a_d_findings_are_detective_only(tmp_path):

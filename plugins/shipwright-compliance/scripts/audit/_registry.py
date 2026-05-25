@@ -59,3 +59,7 @@ def register_all() -> None:
     # Group G — Agent-docs freshness vs. git activity (Step 8).
     from scripts.audit import group_g
     audit_detector.register_group("G", group_g.run)
+
+    # Group H — Bloat-policy detective audit (Campaign A.review).
+    from scripts.audit import group_h
+    audit_detector.register_group("H", group_h.run)

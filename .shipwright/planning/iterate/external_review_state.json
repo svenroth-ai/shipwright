@@ -1,9 +1,9 @@
 {
   "status": "completed",
-  "timestamp": "2026-05-25T07:21:11.557289+00:00",
-  "provider": "openrouter (gemini + openai)",
-  "findings_count": 20,
+  "timestamp": "2026-05-25T12:32:35.489775+00:00",
+  "provider": "openrouter",
+  "findings_count": 17,
   "self_review_fallback_ran": false,
-  "reason": "Iterate plan review: 2 HIGH (session-scoping, stale-violation TTL trap) + 3 MED (read-modify-write, fail-open malformed JSON, API split) incorporated into spec ACs 3/4/7/8/10/11; mini-plan test strategy expanded with schema-contract + session-scoping + stale-revalidation tests",
+  "reason": null,
   "review_mode": "iterate"
 }
