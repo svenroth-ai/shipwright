@@ -379,3 +379,101 @@ Escalation:
 ## Safety Rules
 
 Follow `shared/constitution.md` — the complete ALWAYS / ASK FIRST / NEVER boundary definitions.
+
+## Bloat Checklist
+
+When reviewing a Shipwright diff, apply this rule-base BEFORE accepting.
+Three sources: Karpathy 4 principles (structural intent), Osmani Five-
+Axis Review + Change-Sizing + Dead-Code rules (review surface), and
+Shipwright's own bloat-policy invariants (Allowlist, Anti-Ratchet, ADR-
+gated exceptions). Attribution + license + snapshot date at the end.
+
+### Karpathy — 4 Principles
+
+Adapted from [`multica-ai/andrej-karpathy-skills`](https://github.com/multica-ai/andrej-karpathy-skills)
+(MIT, © 2025 multica-ai). Spirit over letter:
+
+1. **Think Before Coding** — Reject diffs whose mini-plan or commit body
+   shows no problem-statement, no alternative considered, no decision
+   trace. "I just started writing it" is a red flag.
+2. **Simplicity First** — Reject premature abstractions, single-use
+   helpers, factories with one factory call, options-flags with one
+   caller. Three similar lines beat a wrong-shape abstraction.
+3. **Surgical Changes** — Reject scope creep. A bug-fix that touches
+   files unrelated to the bug is a refactor wearing a fix label. Demand
+   a split.
+4. **Goal-Driven Execution** — Reject diffs that don't trace back to a
+   stated acceptance criterion, an FR, or an ADR. Anything else is
+   wandering.
+
+### Osmani — Five-Axis Review header
+
+Adapted from [`addyosmani/agent-skills`](https://github.com/addyosmani/agent-skills)
+`skills/code-review-and-quality/SKILL.md` (MIT, © Addy Osmani). Use as
+a review-surface checklist:
+
+- **Correctness** — Does the diff match the spec / mini-plan / ADR?
+- **Readability** — Names descriptive? Control flow < 3 levels? No dead
+  code, no unused imports, no obsolete comments?
+- **Architecture** — Follows existing patterns or justifies new ones?
+- **Security** — Inputs validated at boundaries? Auth on protected
+  routes? No hardcoded secrets?
+- **Performance** — N+1 queries? Unbounded fetching? Sync blocking in
+  async contexts?
+
+### Osmani — Change Sizing
+
+Same source. Use to size the diff:
+
+| Lines changed (net) | Verdict |
+|---|---|
+| ≤ 100  | Single PR, single concern. Acceptable as-is. |
+| ≤ 300  | Borderline. Ask for split if review reveals 2+ concerns. |
+| ≤ 1000 | Demand split. Multi-concern PRs accrete review debt. |
+| > 1000 | Reject unless single, atomic restructure with empirical justification. |
+
+### Osmani — Separate Refactoring from Feature Work
+
+Reject any diff that mixes pure refactor (no behavior change: file
+moves, rename-only, extract-method, dead-code removal) with feature
+work or a bug fix in the same commit. Operators cannot diff-bisect
+those commits later. Demand two commits.
+
+### Osmani — Dead-Code Artifact Check
+
+Reject diffs that leave dead artifacts in the tree:
+
+- Identifiers prefixed `_unused`, `_old`, `_deprecated`, `_legacy`
+- `// removed:` / `# removed:` / `<!-- removed: -->` comments referencing
+  deleted code
+- Commented-out blocks (multi-line `#` or `//` comment blocks of code)
+- Empty `try/except` / `try/finally` left after dead-code removal
+
+If the change wants those traces, they belong in the commit message or
+the ADR, not the source tree.
+
+### Shipwright — Allowlist + Anti-Ratchet + No-Bypass
+
+Shipwright-specific bloat rules (enforced post-commit by Group H audit
+in `plugins/shipwright-compliance`):
+
+- **Allowlist** — A new file crossing its LOC limit (300 source, 400
+  runtime-prompt) MUST appear in `shipwright_bloat_baseline.json`
+  BEFORE the diff merges. A new crossing not in the baseline is a hook
+  bypass (audit H1, HIGH).
+- **Anti-Ratchet** — Increasing `current` upward in
+  `shipwright_bloat_baseline.json` is a contract violation. The baseline
+  records grandfathered crossings, not a sliding ceiling. Reject the
+  diff (audit H3, HIGH).
+- **ADR-gated exceptions** — A baseline entry with `state: exception`
+  MUST link to an ADR (`adr: ".shipwright/planning/adr/NNN-slug.md"`).
+  A `state: deferred-plan` MUST carry a `plan_ref:` pointing to a real
+  iterate-spec. Either missing → reject (audit H4 / H5).
+
+---
+
+External rule sources cited above (snapshot 2026-05-25):
+- [multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills) — Karpathy 4 Principles (MIT, © 2025 multica-ai)
+- [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) — `code-review-and-quality` Five-Axis-Review + Change-Sizing + Dead-Code (MIT, © Addy Osmani)
+
+<!-- /Bloat Checklist -->
