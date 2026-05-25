@@ -270,7 +270,12 @@ def test_block_reason_contains_red_flags_and_rationalization(tmp_path):
 
 # Hook output schema compliance (Stop event, ADR-042) -----------------
 
-def test_block_output_uses_top_level_decision_not_additional_context(tmp_path):
+def test_block_output_uses_top_level_decision_only(tmp_path):
+    """Stop schema: top-level ``decision``/``reason`` only — no
+    ``hookSpecificOutput`` wrapper. Claude Code's current schema
+    permits ``hookSpecificOutput`` only for PreToolUse / PostToolUse /
+    UserPromptSubmit / SessionStart; emitting it on Stop triggers
+    "Hook JSON output validation failed — Invalid input"."""
     _seed_baseline(tmp_path, [])
     (tmp_path / "f.py").write_text(_lines(420), encoding="utf-8")
     _seed_marker(tmp_path, "sid-A", [_entry(
@@ -279,8 +284,16 @@ def test_block_output_uses_top_level_decision_not_additional_context(tmp_path):
     result = _run_gate(tmp_path, session_id="sid-A")
     decision = _parse_decision(result)
     assert decision is not None
-    # Top-level keys only.
     assert decision.get("decision") == "block"
-    # If hookSpecificOutput present, it must NOT carry additionalContext.
-    hso = decision.get("hookSpecificOutput", {})
-    assert "additionalContext" not in hso
+    assert "hookSpecificOutput" not in decision
+
+
+def test_pass_path_emits_empty_stdout(tmp_path):
+    """Stop schema: when the gate passes, stdout MUST be empty.
+    Emitting any JSON object (even ``{"hookSpecificOutput": {...}}``)
+    fails Claude Code's validator."""
+    # No marker → pass path.
+    _seed_baseline(tmp_path, [])
+    result = _run_gate(tmp_path, session_id="sid-A")
+    assert result.returncode == 0
+    assert result.stdout.strip() == ""

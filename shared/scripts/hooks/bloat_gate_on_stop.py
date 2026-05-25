@@ -4,8 +4,10 @@
 Reads the current session's marker (.shipwright/locks/bloat_pending.<sid>.json),
 re-measures each entry's file, consults shipwright_bloat_baseline.json, and
 emits top-level ``{"decision": "block", "reason": "..."}`` for anti-ratchet
-entries or crossings outside the baseline. Stop schema (ADR-042) permits only
-``hookEventName`` inside ``hookSpecificOutput`` — diagnostics route to stderr.
+entries or crossings outside the baseline. Stop schema (Claude Code current,
+refreshed 2026-05-25) permits NO ``hookSpecificOutput`` wrapper — pass-path
+emits empty stdout, block-path emits top-level decision/reason only.
+Diagnostics route to stderr.
 
 Iron-Law / Red-Flags / Rationalization-Prevention block-body adapted from
 ``obra/superpowers`` verification-before-completion (MIT, © Jesse Vincent).
@@ -172,17 +174,14 @@ def _build_block_reason(offenders: list[dict]) -> str:
 
 
 def _emit_block(reason: str) -> None:
-    print(json.dumps({
-        "hookSpecificOutput": {"hookEventName": "Stop"},
-        "decision": "block",
-        "reason": reason,
-    }))
+    print(json.dumps({"decision": "block", "reason": reason}))
 
 
 def _emit_pass() -> None:
-    # Empty stdout is also accepted by the Stop schema. We emit an
-    # explicit object so downstream tooling can confirm the hook ran.
-    print(json.dumps({"hookSpecificOutput": {"hookEventName": "Stop"}}))
+    # Empty stdout is the only schema-valid pass shape for Stop —
+    # any JSON object on stdout (even just hookSpecificOutput) trips
+    # Claude Code's validator with "Invalid input".
+    return
 
 
 def main() -> int:

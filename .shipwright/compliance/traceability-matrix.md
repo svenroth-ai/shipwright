@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-25T07:48:23.476887+00:00
+Generated: 2026-05-25T19:10:17.136660+00:00
 
 ## Requirements Coverage
 
@@ -79,7 +79,10 @@ Generated: 2026-05-25T07:48:23.476887+00:00
 | Resolve architecture.md merge-conflict markers (lines 90-94) + extend ALLOWLIST[compliance] to include finalize_security_compliance.py whose cross-plugin path comment trips the hyphen-segment regex blind spot | iterate | bug |  | 2/3 | 9e26a9c | 2026-05-23 |
 | SBOM resolver pin to per-manifest .venv METADATA | iterate | bug |  | 497/497 | fc1a7a8 | 2026-05-23 |
 | SBOM triage producer cluster-collapse | iterate | change |  | 514/514 | 6be7aae | 2026-05-23 |
-| Bloat Loop-Gate (Campaign A.foundation = A1+A2+A3): runtime-prompt classification, per-session marker writer, blocking Stop-Gate, registered in every plugin | iterate | feature |  | 2678/2678 | — | 2026-05-25 |
+| Bloat Loop-Gate (Campaign A.foundation = A1+A2+A3): runtime-prompt classification, per-session marker writer, blocking Stop-Gate, registered in every plugin | iterate | feature |  | 2678/2678 | bfd4e63 | 2026-05-25 |
+| Phase 0 bloat baseline inventory — activates A.foundation Stop-Gate | iterate | change |  | — | 66ec453 | 2026-05-25 |
+| Campaign A.review: bloat reviewer prompts (Karpathy+Osmani+Shipwright) + Group H detective audit (H0-H6) | iterate | feature |  | 14/14 | babf9fc | 2026-05-25 |
+| fix bloat_gate_on_stop.py Stop-hook schema violation | iterate | bug |  | 131/131 | — | 2026-05-25 |
 
 ## Coverage Summary
 
@@ -87,7 +90,7 @@ Generated: 2026-05-25T07:48:23.476887+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 55 |
+| Iterate changes | 58 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

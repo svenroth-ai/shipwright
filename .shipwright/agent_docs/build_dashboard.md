@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-05-25 12:50 UTC | Session: 77318526-98d5-4157-8e07-dfae68427672 | Run: iterate-2026-05-25-bloat-review
+> Updated: 2026-05-25 19:10 UTC | Session: 73fe98b0-6329-41cd-a221-a5d397a0e64b | Run: iterate-2026-05-25-fix-stop-hook-schema
 
-## Recent Changes (57 iterations)
+## Recent Changes (58 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| feature | Campaign A.review: bloat reviewer prompts (Karpathy+Osmani+Shipwright) + Group H detective audit (H0-H6) | 14/14 |  | infra | 2026-05-25 |
+| bug | fix bloat_gate_on_stop.py Stop-hook schema violation | 131/131 |  | tooling | 2026-05-25 |
+| feature | Campaign A.review: bloat reviewer prompts (Karpathy+Osmani+Shipwright) + Group H detective audit (H0-H6) | 14/14 | babf9fc | infra | 2026-05-25 |
 | change | Phase 0 bloat baseline inventory — activates A.foundation Stop-Gate | 0/0 | 66ec453 | infra | 2026-05-25 |
 | feature | Bloat Loop-Gate (Campaign A.foundation = A1+A2+A3): runtime-prompt classification, per-session marker writer, blocking Stop-Gate, registered in every plugin | 2678/2678 | bfd4e63 | infra | 2026-05-25 |
 | change | SBOM triage producer cluster-collapse | 514/514 | 6be7aae | compliance | 2026-05-23 |
@@ -64,7 +65,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-25 | Unit: 14/14 | Integration: 528/528 | E2E: 14/14 | Smoke: skipped | (iterate)
+Last run: 2026-05-25 | Unit: 26/26 | Integration: 105/105 | Smoke: skipped | (iterate)
 
 ## Pipeline
 
