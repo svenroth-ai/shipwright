@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-05-25 19:10 UTC | Session: 73fe98b0-6329-41cd-a221-a5d397a0e64b | Run: iterate-2026-05-25-fix-stop-hook-schema
+> Updated: 2026-05-25 19:29 UTC | Session: 70a6c2a4-4357-439f-aab1-446837ba917a | Run: iterate-2026-05-25-bloat-defense
 
-## Recent Changes (58 iterations)
+## Recent Changes (59 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| bug | fix bloat_gate_on_stop.py Stop-hook schema violation | 131/131 |  | tooling | 2026-05-25 |
+| feature | Pre-commit anti-ratchet hook + bloat-check CI workflow + bloat-exception ADR template + shared glossary (Campaign A.defense, closes Campaign A defense-in-depth layer) | 41/41 |  | tooling | 2026-05-25 |
+| bug | fix bloat_gate_on_stop.py Stop-hook schema violation | 131/131 | 193b7f5 | tooling | 2026-05-25 |
 | feature | Campaign A.review: bloat reviewer prompts (Karpathy+Osmani+Shipwright) + Group H detective audit (H0-H6) | 14/14 | babf9fc | infra | 2026-05-25 |
 | change | Phase 0 bloat baseline inventory — activates A.foundation Stop-Gate | 0/0 | 66ec453 | infra | 2026-05-25 |
 | feature | Bloat Loop-Gate (Campaign A.foundation = A1+A2+A3): runtime-prompt classification, per-session marker writer, blocking Stop-Gate, registered in every plugin | 2678/2678 | bfd4e63 | infra | 2026-05-25 |
@@ -65,7 +66,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-25 | Unit: 26/26 | Integration: 105/105 | Smoke: skipped | (iterate)
+Last run: 2026-05-25 | Unit: 41/41 | E2E: 41/41 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

@@ -1,23 +1,27 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-25-fix-stop-hook-schema",
+    "run_id": "iterate-2026-05-25-bloat-defense",
     "date": "2026-05-25",
-    "unit": { "status": "passed", "passed": 26, "total": 26, "scope": "shared/tests/test_bloat_gate_on_stop.py" },
-    "integration": { "status": "passed", "passed": 105, "total": 105, "scope": "shared/tests/test_hook_output_schema_compliance.py (parametrized across 7 plugins x event types)" },
+    "unit": { "status": "passed", "passed": 41, "total": 41, "scope": "shared/tests/test_anti_ratchet_check.py + test_anti_ratchet_check_staged.py + test_bloat_defense_artifacts.py" },
+    "integration": { "status": "skipped", "reason": "no integration changes" },
     "pgtap": { "status": "skipped", "reason": "no DB changes" },
-    "e2e": { "status": "skipped", "reason": "surface=none — internal hook stdout contract; exercised by schema-compliance + bloat_gate suites" },
+    "e2e": { "status": "passed", "passed": 41, "total": 41, "scope": "F0.5 surface=cli runner" },
     "design_fidelity": { "status": "skipped", "reason": "no UI changes" },
     "smoke": { "status": "skipped", "reason": "no UI changes" },
     "surface_verification": {
-      "surface": "none",
-      "runner": "uv run --with pytest pytest shared/tests/test_bloat_gate_on_stop.py shared/tests/test_hook_output_schema_compliance.py",
+      "surface": "cli",
+      "runner": "uv run --with pytest --with pytest-mock --with pyyaml pytest shared/tests/test_anti_ratchet_check.py shared/tests/test_anti_ratchet_check_staged.py shared/tests/test_bloat_defense_artifacts.py --color=no",
       "exit_code": 0,
-      "tests_run": 131,
-      "evidence_path": "n/a — assertions in shared test suite",
-      "timestamp": "2026-05-25T13:00:00Z",
-      "justification": "Stop-hook stdout schema is an internal hook→harness contract; the producer is bloat_gate_on_stop.py, the consumer is Claude Code's validator. There is no startable web/cli/api surface for an iterate hook script. The two test files act as the consumer-simulator (drift protection)."
+      "tests_run": 41,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-25-bloat-defense/surface_verification.log",
+      "timestamp": "2026-05-25T19:27:55.599Z"
     },
-    "shared_tests": { "status": "passed_with_preexisting_failures", "passed": 2395, "total": 2397, "skipped": 13, "deselected": 18, "preexisting_failures": ["test_architecture_md_reflects_arch_impact", "test_artifact_path_canon[compliance-migrated]"] },
+    "empirical_precommit_probe": {
+      "status": "passed",
+      "evidence_path": ".shipwright/runs/iterate-2026-05-25-bloat-defense/precommit_probe_shipwright.log",
+      "scenario": "appended 60 lines to plugins/shipwright-iterate/skills/iterate/SKILL.md (baseline current=1709), staged + attempted commit, pre-commit hook exited 1 with Iron-Law block emitted, no commit created, file restored",
+      "ac_satisfied": "AC-9"
+    },
     "degraded": []
   }
 }

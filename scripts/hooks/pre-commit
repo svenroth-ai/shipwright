@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Shipwright bloat anti-ratchet pre-commit gate (Campaign A.defense).
+# Installed via `scripts/install-hooks.sh` (sets git config core.hooksPath).
+#
+# Behavior:
+# - Blocks the commit only when an existing baseline entry has grown
+#   past its `current` field (anti-ratchet). New crossings + stale
+#   entries are reported but DO NOT block here — the Stop hook
+#   (A.foundation) and Group H detective audit cover those.
+# - Measures STAGED content, not the working tree.
+# - Bypass once: `git commit --no-verify` (NEVER in shipwright dev).
+
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -z "$repo_root" ]; then
+    exit 0   # not a git repo — nothing to gate
+fi
+
+if [ ! -f "$repo_root/shipwright_bloat_baseline.json" ]; then
+    # No baseline yet (pre-adopt or fresh project) — fail-open.
+    exit 0
+fi
+
+if ! command -v uv >/dev/null 2>&1; then
+    cat >&2 <<'EOF'
+anti-ratchet pre-commit: 'uv' is not on PATH.
+
+The shipwright bloat-anti-ratchet check requires the `uv` Python
+runner.  Install it from https://docs.astral.sh/uv/ and re-try.
+
+Temporary bypass (one commit):  git commit --no-verify
+EOF
+    exit 1
+fi
+
+uv run "$repo_root/shared/scripts/hooks/anti_ratchet_check.py" \
+    --project-root "$repo_root" \
+    --staged
