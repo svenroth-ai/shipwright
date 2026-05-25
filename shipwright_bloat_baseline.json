@@ -338,6 +338,13 @@
       "adr": null
     },
     {
+      "path": "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
+      "limit": 400,
+      "current": 479,
+      "state": "grandfathered",
+      "adr": null
+    },
+    {
       "path": "plugins/shipwright-iterate/scripts/lib/classify_complexity.py",
       "limit": 300,
       "current": 382,

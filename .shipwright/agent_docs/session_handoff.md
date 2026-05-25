@@ -1,11 +1,3 @@
----
-canon_generated: true
-run_id: "iterate-2026-05-25-bloat-review"
-phase: "iterate"
-reason: "iterate: Campaign A.review bloat reviewer prompts + Group H audit"
-timestamp: "2026-05-25T12:50:35.712596+00:00"
----
-
 # Session Handoff
 
 > Auto-generated 2026-05-25 12:50:35 UTC
@@ -14,18 +6,18 @@ timestamp: "2026-05-25T12:50:35.712596+00:00"
 
 - **Session ID**: 77318526-98d5-4157-8e07-dfae68427672
 - **Timestamp**: 2026-05-25 12:50:35 UTC
-- **Reason**: iterate: Campaign A.review bloat reviewer prompts + Group H audit
+- **Reason**: post-rebase against Phase-0 baseline
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-25-bloat-foundation
-- **Date**: 2026-05-25T07:48:32.691326Z
+- **Run ID**: iterate-2026-05-25-bloat-review
+- **Date**: 2026-05-25T12:50:44.225618Z
 - **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/bloat-foundation
-- **ADR**: iterate-2026-05-25-bloat-foundation
+- **Branch**: iterate/bloat-review
+- **ADR**: iterate-2026-05-25-bloat-review
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-25-bloat-foundation.md
+- **Spec**: .shipwright/planning/iterate/2026-05-25-bloat-review.md
 
 ## Current Iterate Progress
 
@@ -53,7 +45,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/bloat-review
-- **Last Commit**: 033fd5f chore(events): record evt-1e014ebd for iterate-2026-05-25-bloat-foundation
+- **Last Commit**: 723c8af feat(compliance): Campaign A.review â€” bloat reviewer prompts + Group H audit
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
