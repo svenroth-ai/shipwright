@@ -1,66 +1,49 @@
 #!/usr/bin/env python3
-"""PostToolUse hook: nudge when an edit pushes a source file past the line limit.
+"""PostToolUse hook: nudge + write marker when an edit crosses the size limit.
 
-Non-blocking by design. Reads the PostToolUse JSON payload from stdin and
-emits a single advisory message (always exit 0) **only when the current
-edit crossed the threshold** -- the file is over the limit now but was at
-or under it immediately before this tool call. Editing a file that was
-already oversized stays silent, so a one-line fix in a legacy 400-line
-module never re-fires.
+Per Campaign A.foundation (bloat cleanup) this hook now:
+  - Classifies markdown into ``runtime-prompt`` (SKILL.md / CLAUDE.md /
+    plugins/*/agents/*.md / shared/prompts/*.md → 400 LOC) vs ``doc``
+    (skipped) via :func:`bloat_baseline.classify_md`.
+  - Applies per-filetype limits: 300 for source/tests, 400 for runtime
+    prompts.
+  - Writes a per-session marker file
+    ``<cwd>/.shipwright/locks/bloat_pending.<session_id>.json`` on every
+    crossing / anti-ratchet event. The Stop hook ``bloat_gate_on_stop.py``
+    reads this marker, applies TTL + path-normalisation, and blocks the
+    session on anti-ratchet entries or new crossings outside the baseline.
 
-Rationale: large files degrade AI agent performance by consuming excessive
-context window space and weakening edit localisation. This hook is a
-*reminder*, not a gate -- splitting a file is a judgement call the operator
-makes, best made at the moment the file crosses the line.
+PostToolUse stays advisory (always exits 0); only the Stop-Gate ever
+blocks. The marker is the producer-side artefact of the loop-gate.
 
-Crossing detection (stateless -- no session state file):
-
-  - ``Edit`` (without ``replace_all``): the before-size is computed
-    exactly from the payload --
-    ``before = now - (newlines(new_string) - newlines(old_string))``.
-  - ``Write`` / ``Edit`` with ``replace_all`` / anything else: the
-    before-size is the file's line count at ``git HEAD``. A file absent
-    from HEAD (brand-new) counts as 0 lines; if git can't answer the
-    before-size is unknown and the nudge fires (conservative).
-
-Configuration: ``shipwright_build_config.json`` -> ``enforcement.max_file_lines``
-(default: 300).
-
-Ignored (never nudged):
-  - Lock files, generated / vendored / built artefacts, ``node_modules``
-  - Markdown, JSON, YAML, TOML, CSV, SVG, XML, HTML, CSS
-  - SQL migration files (long by nature)
-
-Exit codes:
-  0 = always. This hook is advisory; it never blocks an edit.
+Crossing detection (stateless):
+  - ``Edit`` without ``replace_all``: ``before = now - (newlines(new) - newlines(old))``.
+  - Otherwise: ``before`` = file's line count at ``git HEAD``; brand-new
+    file counts as 0; if git can't answer, ``before`` is unknown and
+    the nudge fires (conservative).
 """
 
 from __future__ import annotations
 
+import datetime
 import json
-import re
+import os
 import subprocess
 import sys
+import tempfile
+import uuid
 from pathlib import Path
 
-DEFAULT_MAX_LINES = 300
+_SHARED_SCRIPTS = Path(__file__).resolve().parents[1]
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
 
-# Non-source files that are legitimately long.
-_SKIP_PATH = re.compile(
-    r"(\.lock$|package-lock|node_modules[/\\]|vendor[/\\]|dist[/\\]"
-    r"|build[/\\]|\.min\.|__pycache__|\.pyc$|\.generated\."
-    r"|migrations?[/\\].*\.sql)",
-    re.IGNORECASE,
-)
-# Config / docs extensions -- often long, but not AI-context-sensitive source.
-_SKIP_EXT = re.compile(
-    r"\.(md|ya?ml|json|toml|csv|svg|xml|html|css)$",
-    re.IGNORECASE,
-)
+from lib import bloat_baseline as _bb  # noqa: E402
+
+DEFAULT_MAX_LINES = _bb.LIMIT_SOURCE  # 300; runtime-prompts override to 400.
 
 
 def _read_payload() -> dict:
-    """Parse the PostToolUse JSON payload from stdin; ``{}`` on any failure."""
     try:
         raw = sys.stdin.read()
     except (OSError, ValueError):
@@ -74,25 +57,41 @@ def _read_payload() -> dict:
     return data if isinstance(data, dict) else {}
 
 
-def _should_skip(file_path: str) -> bool:
-    return bool(_SKIP_PATH.search(file_path) or _SKIP_EXT.search(file_path))
+def _md_classification(file_path: str) -> str | None:
+    """Thin wrapper around :func:`bloat_baseline.classify_md`."""
+    return _bb.classify_md(file_path)
 
 
-def _max_lines(cwd: Path) -> int:
-    """Threshold from ``shipwright_build_config.json``; ``DEFAULT_MAX_LINES`` otherwise."""
+def _limit_for(file_path: str, cwd: Path) -> int | None:
+    """Limit applicable to ``file_path``; honours the source-limit override.
+
+    Runtime-prompt limit (400) is fixed by the campaign and is NOT
+    user-overridable. The legacy ``shipwright_build_config.json::
+    enforcement.max_file_lines`` override applies to source files only.
+    """
+    classification = _md_classification(file_path)
+    if classification == "runtime-prompt":
+        return _bb.LIMIT_RUNTIME_PROMPT
+    if classification == "doc":
+        return None
+    base = _bb.limit_for(file_path)
+    if base is None:
+        return None
     config = cwd / "shipwright_build_config.json"
     if not config.is_file():
-        return DEFAULT_MAX_LINES
+        return base
     try:
         data = json.loads(config.read_text(encoding="utf-8"))
-        value = data.get("enforcement", {}).get("max_file_lines", DEFAULT_MAX_LINES)
-        return int(value)
+        return int(data.get("enforcement", {}).get("max_file_lines", base))
     except (json.JSONDecodeError, OSError, AttributeError, TypeError, ValueError):
-        return DEFAULT_MAX_LINES
+        return base
+
+
+def _should_skip(file_path: str) -> bool:
+    return _bb.should_skip(file_path)
 
 
 def _file_newlines(path: Path) -> int:
-    """Count newline bytes in the file -- matches ``wc -l`` semantics."""
     try:
         with path.open("rb") as fh:
             return fh.read().count(b"\n")
@@ -101,12 +100,6 @@ def _file_newlines(path: Path) -> int:
 
 
 def _git_head_newlines(path: Path) -> int | None:
-    """Newline count of ``path`` at git HEAD.
-
-    Returns ``0`` when the path is inside the repo but absent from HEAD
-    (a brand-new file), and ``None`` when git can't answer (not a repo,
-    git missing, path outside the repo).
-    """
     try:
         top = subprocess.run(
             ["git", "-C", str(path.parent), "rev-parse", "--show-toplevel"],
@@ -124,29 +117,18 @@ def _git_head_newlines(path: Path) -> int | None:
             capture_output=True, timeout=5,
         )
         if blob.returncode != 0:
-            return 0  # tracked-repo-relative but not in HEAD -> brand-new file
+            return 0
         return blob.stdout.count(b"\n")
     except (OSError, subprocess.SubprocessError, ValueError):
         return None
 
 
-def _before_newlines(
-    tool_name: str, tool_input: dict, now: int, path: Path,
-) -> int | None:
-    """Newline count of the file immediately before this tool call.
-
-    ``None`` means undeterminable -- callers treat that as "fire the
-    nudge" (a missed silence is cheaper than a missed warning).
-    """
+def _before_newlines(tool_name: str, tool_input: dict, now: int, path: Path) -> int | None:
     if tool_name == "Edit" and not tool_input.get("replace_all"):
         old = tool_input.get("old_string")
         new = tool_input.get("new_string")
         if isinstance(old, str) and isinstance(new, str):
-            # Replacing old_string with new_string shifts the file's
-            # newline count by exactly this delta.
-            delta = new.count("\n") - old.count("\n")
-            return now - delta
-    # Write, replace_all Edit, or unknown tool -> fall back to git HEAD.
+            return now - (new.count("\n") - old.count("\n"))
     return _git_head_newlines(path)
 
 
@@ -167,37 +149,140 @@ def _emit_nudge(file_path: str, now: int, limit: int) -> None:
     }))
 
 
+# ----------------------------------------------------------------------
+# Per-session marker writer
+# ----------------------------------------------------------------------
+
+def _now_iso() -> str:
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _session_id() -> str:
+    sid = os.environ.get("SHIPWRIGHT_SESSION_ID") or ""
+    sid = sid.strip()
+    return sid or "unknown"
+
+
+def _marker_path(cwd: Path, sid: str) -> Path:
+    return cwd / ".shipwright" / "locks" / f"bloat_pending.{sid}.json"
+
+
+def _load_existing_marker(marker: Path) -> dict:
+    if not marker.is_file():
+        return {"version": 1, "entries": []}
+    try:
+        data = json.loads(marker.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"version": 1, "entries": []}
+    if not isinstance(data, dict):
+        return {"version": 1, "entries": []}
+    entries = data.get("entries")
+    if not isinstance(entries, list):
+        data["entries"] = []
+    return data
+
+
+def _atomic_write_marker(marker: Path, doc: dict) -> None:
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    payload = json.dumps(doc, indent=2, sort_keys=False) + "\n"
+    fd, tmp = tempfile.mkstemp(
+        prefix=f".{marker.name}.tmp.", suffix=f".{uuid.uuid4().hex[:8]}",
+        dir=str(marker.parent),
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(payload)
+        os.replace(tmp, marker)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def _baseline_paths(cwd: Path) -> set[str]:
+    doc = _bb.load(cwd)
+    if not doc:
+        return set()
+    return {e["path"] for e in doc.get("entries", []) if isinstance(e, dict)}
+
+
+def _classification_label(file_path: str) -> str:
+    md = _md_classification(file_path)
+    return md if md == "runtime-prompt" else "source"
+
+
+def _rel_path(cwd: Path, abs_path: Path) -> str:
+    try:
+        return _bb.normalize_path(str(abs_path.resolve().relative_to(cwd.resolve())))
+    except ValueError:
+        return _bb.normalize_path(str(abs_path))
+
+
+def _write_marker_entry(
+    cwd: Path, file_path: str, now: int, limit: int, before: int | None,
+) -> None:
+    """Upsert one entry into the per-session marker file (read-modify-write)."""
+    sid = _session_id()
+    marker = _marker_path(cwd, sid)
+    norm_path = _rel_path(cwd, Path(file_path))
+    in_allowlist = norm_path in _baseline_paths(cwd)
+    delta = "anti-ratchet" if in_allowlist else "crossing"
+    entry = {
+        "path": norm_path,
+        "now": now,
+        "limit": limit,
+        "classification": _classification_label(file_path),
+        "was_in_allowlist": in_allowlist,
+        "delta": delta,
+        "ts": _now_iso(),
+    }
+    doc = _load_existing_marker(marker)
+    entries = [e for e in doc.get("entries", []) if e.get("path") != norm_path]
+    entries.append(entry)
+    doc["entries"] = entries
+    _atomic_write_marker(marker, doc)
+
+
+# ----------------------------------------------------------------------
+# Main
+# ----------------------------------------------------------------------
+
 def main() -> int:
     payload = _read_payload()
-
     tool_input = payload.get("tool_input")
     if not isinstance(tool_input, dict):
         return 0
     file_path = tool_input.get("file_path")
     if not isinstance(file_path, str) or not file_path:
         return 0
-
     path = Path(file_path)
     if not path.is_file():
         return 0
     if _should_skip(file_path):
         return 0
-
-    limit = _max_lines(Path.cwd())
+    cwd = Path.cwd()
+    limit = _limit_for(file_path, cwd)
+    if limit is None:
+        return 0
     now = _file_newlines(path)
     if now <= limit:
-        return 0  # within the guideline -- nothing to flag
-
+        return 0
     before = _before_newlines(
         str(payload.get("tool_name") or ""), tool_input, now, path,
     )
-    if before is not None and before > limit:
-        # The file was already oversized before this edit -- this edit did
-        # not cross the threshold. Stay silent so routine edits to legacy
-        # large files don't re-fire the nudge on every touch.
-        return 0
-
-    _emit_nudge(file_path, now, limit)
+    # Determine whether this edit "newly" crossed the limit or grew an
+    # already-oversize file. The marker is written either way — the
+    # Stop-Gate decides what to do with it (anti-ratchet always blocks).
+    is_crossing = before is None or before <= limit
+    try:
+        _write_marker_entry(cwd, file_path, now, limit, before)
+    except OSError:
+        # Marker write must never break the tool flow.
+        pass
+    if is_crossing:
+        _emit_nudge(file_path, now, limit)
     return 0
 
 

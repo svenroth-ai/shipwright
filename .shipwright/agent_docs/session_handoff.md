@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-24-sbom-triage-cluster-collapse"
+run_id: "iterate-2026-05-25-bloat-foundation"
 phase: "iterate"
-reason: "iterate finalization"
-timestamp: "2026-05-23T22:51:51.578158+00:00"
+reason: "iterate: Bloat Loop-Gate (Campaign A.foundation)"
+timestamp: "2026-05-25T07:48:23.476887+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-23 22:51:51 UTC
+> Auto-generated 2026-05-25 07:48:23 UTC
 
 ## Session Info
 
-- **Session ID**: unknown
-- **Timestamp**: 2026-05-23 22:51:51 UTC
-- **Reason**: iterate finalization
+- **Session ID**: f74ae4d1-20d5-4156-a2a1-05f5de21b242
+- **Timestamp**: 2026-05-25 07:48:23 UTC
+- **Reason**: iterate: Bloat Loop-Gate (Campaign A.foundation)
 
 ## Last Iterate
 
@@ -27,6 +27,20 @@ timestamp: "2026-05-23T22:51:51.578158+00:00"
 - **Tests passed**: True
 - **Spec**: .shipwright/planning/iterate/2026-05-24-sbom-triage-cluster-collapse.md
 
+## Current Iterate Progress
+
+- **Branch**: iterate/bloat-foundation
+- **Run ID**: iterate-2026-05-25-bloat-foundation
+- **Spec**: .shipwright/planning/iterate/2026-05-25-bloat-foundation.md
+- **Complexity**: medium
+- **External Review Marker**: stale (predates spec (2026-05-25T07:21:11))
+
+### Mandatory replay on Resume
+
+Before dispatching to the handoff's Remaining phase, run these if missing:
+- Step 4 — External LLM Review (marker missing/stale)
+- Finalization (F0–F11) after all mandatory phases pass
+
 ## Legacy build state
 
 - **Phase**: design
@@ -38,8 +52,8 @@ timestamp: "2026-05-23T22:51:51.578158+00:00"
 
 ## Git State
 
-- **Branch**: main
-- **Last Commit**: 2b51184 chore(events): record evt-f355399c for iterate-2026-05-24-sbom-triage-cluster-collapse
+- **Branch**: iterate/bloat-foundation
+- **Last Commit**: 6c27b32 chore(bloat): prep Campaign A with external-frameworks references
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -55,17 +69,17 @@ timestamp: "2026-05-23T22:51:51.578158+00:00"
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-1e014ebd | work_completed | iterate (Bloat Loop-Gate (Campaign A.foundation = A1+A2+A3): runtime-prompt classification, per-session marker writer, blocking Stop-Gate, registered in every plugin) | 2026-05-25 |
 | evt-f355399c | work_completed | iterate (SBOM triage producer cluster-collapse) | 2026-05-23 |
 | evt-4c363164 | work_completed | iterate (SBOM resolver pin to per-manifest .venv METADATA) | 2026-05-23 |
 | evt-e562db7a | work_completed | iterate (Resolve architecture.md merge-conflict markers (lines 90-94) + extend ALLOWLIST[compliance] to include finalize_security_compliance.py whose cross-plugin path comment trips the hyphen-segment regex blind spot) | 2026-05-23 |
 | evt-48c6f9f9 | work_completed | iterate (C1 design verifier (and sister manifest-exists check) skip on scope=library projects via _is_no_ui_scope helper; audit translates ok=None to status=skip via existing check_result_to_finding) | 2026-05-23 |
-| evt-baa456da | work_completed | iterate (iterate finalization) | 2026-05-23 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 54
-- **Last iterate**: change — SBOM triage producer cluster-collapse (2026-05-23)
+- **Total work events**: 55
+- **Last iterate**: feature — Bloat Loop-Gate (Campaign A.foundation = A1+A2+A3): runtime-prompt classification, per-session marker writer, blocking Stop-Gate, registered in every plugin (2026-05-25)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

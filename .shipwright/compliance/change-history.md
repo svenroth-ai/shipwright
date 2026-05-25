@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-05-23T22:51:51.578158+00:00
-Total commits: 724
+Generated: 2026-05-25T07:48:23.476887+00:00
+Total commits: 725
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 724
 pie title Commit Types
     "feat" : 238
     "fix" : 190
-    "chore" : 131
+    "chore" : 132
     "docs" : 105
     "refactor" : 37
     "test" : 15
@@ -457,10 +457,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 131 commits
+### Chores (chore) — 132 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-25 | bloat | prep Campaign A with external-frameworks references | 6c27b3214668 |
 | 2026-05-24 | events | record evt-f355399c for iterate-2026-05-24-sbom-triage-cluster-collapse | 2b5118437bd7 |
 | 2026-05-24 | planning | add three bloat-cleanup campaign files (A/B/C) (#83) | 0336a0d0ffc0 |
 | 2026-05-23 | events | record evt-4c363164 for iterate-2026-05-23-sbom-resolver-pin-lockfile | b4393a6dd7e2 |
@@ -787,7 +788,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 724 |
+| Total commits | 725 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 724 |
+| Human-authored commits | 725 |
 

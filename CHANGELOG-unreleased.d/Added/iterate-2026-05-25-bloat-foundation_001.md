@@ -1,0 +1,1 @@
+Bloat Loop-Gate (Campaign A.foundation = A1+A2+A3): runtime-prompt classification, per-session marker writer, blocking Stop-Gate with Iron-Law message, registered in every plugin's hooks.json. Shared bloat_baseline.py + adopt baseline_generator.py + Adopt SKILL.md Step A.0.

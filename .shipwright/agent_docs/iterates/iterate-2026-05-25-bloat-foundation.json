@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-25-bloat-foundation",
+  "date": "2026-05-25T07:48:32.691326Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/bloat-foundation",
+  "spec": ".shipwright/planning/iterate/2026-05-25-bloat-foundation.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-05-25-bloat-foundation"
+}
