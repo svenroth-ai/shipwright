@@ -17,10 +17,17 @@ import pytest
 HOOKS_DIR = Path(__file__).parent.parent / "scripts" / "hooks"
 LIB_DIR = Path(__file__).parent.parent / "scripts" / "lib"
 
-# Import lib modules directly for unit testing
+# Import lib modules directly for unit testing.
+# A sibling test (test_collectors_dashboard.py, alphabetically earlier) loads
+# `shared/scripts/lib/phase_quality/`, which transitively caches `lib.*`
+# entries in sys.modules pointing at the SHARED lib (no `thresholds.py`).
+# Clear those so the `from lib.thresholds` below resolves through our own
+# `plugins/shipwright-compliance/scripts/lib/`.
+for _stale in [k for k in list(sys.modules) if k == "lib" or k.startswith("lib.")]:
+    del sys.modules[_stale]
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
-from lib.thresholds import EnforcementThresholds, load_thresholds
-from lib.override_logger import log_override, read_overrides
+from lib.thresholds import EnforcementThresholds, load_thresholds  # noqa: E402
+from lib.override_logger import log_override, read_overrides  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

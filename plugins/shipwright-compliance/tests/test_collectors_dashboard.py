@@ -16,12 +16,14 @@ from pathlib import Path
 
 import pytest
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-_SHARED_SCRIPTS = _REPO_ROOT / "shared" / "scripts"
-if str(_SHARED_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(_SHARED_SCRIPTS))
-
-from lib.phase_quality import collect_bloat_summary  # noqa: E402
+# Load shared phase_quality as a top-level package (not `lib.phase_quality`).
+# test_enforcement_hooks.py defensively clears its own `lib.*` cache before
+# resolving `lib.thresholds`, so it tolerates the `lib.*` entries this import
+# transitively populates.
+_SHARED_LIB = str(Path(__file__).resolve().parents[3] / "shared" / "scripts" / "lib")
+if _SHARED_LIB not in sys.path:
+    sys.path.insert(0, _SHARED_LIB)
+from phase_quality import collect_bloat_summary  # noqa: E402
 
 from scripts.lib.compliance_report import generate, generate_file  # noqa: E402
 from scripts.lib.data_collector import ComplianceData  # noqa: E402
