@@ -174,6 +174,33 @@ Aligned with the five domains of Anthropic's [Claude Certified Architect](https:
 - **Few-shot examples in subagent definitions** -- code-reviewer, section-writer, and opus-plan-reviewer include worked examples so agents produce consistent output.
 - **Progressive disclosure** -- CLAUDE.md stays lean (~200 lines), detailed docs live in `.shipwright/agent_docs/`.
 
+#### Superpowers — Anti-Slop Framing
+
+Patterns from [`obra/superpowers`](https://github.com/obra/superpowers) (MIT, © Jesse Vincent) drive the parts of Shipwright that say "no" to drive-by AI output:
+
+- **Iron-Law verification language** — the "NO X WITHOUT Y FIRST" framing in the bloat Stop-gate (`shared/scripts/hooks/bloat_gate_on_stop.py`) and in the PR template's Human Authorization / Duplicate Search / Verification sections (`.github/PULL_REQUEST_TEMPLATE.md`).
+- **Two-stage review pattern** — Spec-Compliance reviewer first, then Code-Quality reviewer (planned in the SP1 spec item; see `Spec/external-frameworks-integration.md`).
+- **Anti-slop PR-template framing** — the "most AI-generated PRs are rejected because process is skipped" banner, the explicit "If you are an AI agent" rules, and the empirical-verification-before-checkbox stance, all citing Superpowers attribution in the template footer.
+
+#### Karpathy — Four Pre-Phase Principles
+
+Patterns from [`multica-ai/andrej-karpathy-skills`](https://github.com/multica-ai/andrej-karpathy-skills) (MIT, © 2025 multica-ai) live at two surfaces:
+
+- **`shared/constitution.md`** — the Pre-Phase Principles header cites *Think Before Coding · Simplicity First · Surgical Changes · Goal-Driven Execution* verbatim. Constitution is always loaded into Claude's context, so this is enforcement, not reference.
+- **`shared/glossary.md`** — same four principles listed as reference vocabulary, on-demand loaded.
+- **`plugins/shipwright-build/agents/code-reviewer.md`** — applied post-hoc as review-rejection criteria.
+
+#### Multica — Architectural Patterns (no code or text copied)
+
+[`multica-ai/multica`](https://github.com/multica-ai/multica) is Apache-2.0 *modified* with a hosting restriction (Clause 1a) — incompatible with our public-launch strategy. We deliberately copy **no code and no text** from it, and instead borrow architectural patterns documented in `Spec/external-frameworks-integration.md`:
+
+- WebSocket transcript streaming (replaces 1 s JSONL polling) for the Shipwright Command Center.
+- Multi-workspace isolation for multi-tenant Command Center installs.
+- Runtime registry abstraction (Claude Code, Codex CLI, Copilot CLI, Gemini CLI as pluggable adapters).
+- "Parse, don't cast" — Pydantic schemas for cross-plugin `shipwright_*_config.json` reads.
+
+The shipwright-webui repo carries its own Acknowledgments block referencing the same Multica patterns; the shipwright monorepo carries the constitution and code-reviewer adoptions. Both repos stay MIT.
+
 ---
 
 ## 2. Prerequisites and Installation

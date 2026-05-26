@@ -1,17 +1,17 @@
 # Commit Change Log
 
-Generated: 2026-05-25T19:29:07.675673+00:00
-Total commits: 734
+Generated: 2026-05-26T21:32:18.050071+00:00
+Total commits: 753
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 240
-    "fix" : 191
-    "chore" : 138
-    "docs" : 105
-    "refactor" : 37
+    "feat" : 241
+    "fix" : 192
+    "chore" : 141
+    "docs" : 106
+    "refactor" : 50
     "test" : 15
     "other" : 7
     "build" : 1
@@ -19,10 +19,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 240 commits
+### Features (feat) — 241 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-25 | bloat | Campaign A.defense — pre-commit + CI + ADR template + glossary | ac02d7b24cf5 |
 | 2026-05-25 | compliance | Campaign A.review — bloat reviewer prompts + Group H audit | 723c8afffa27 |
 | 2026-05-25 | bloat | Loop-Gate (Campaign A.foundation — A1+A2+A3) | bfd4e63e4440 |
 | 2026-05-24 | compliance | collapse SBOM triage items by common undeclared-signature | 6be7aaebaa60 |
@@ -264,10 +265,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 191 commits
+### Fixes (fix) — 192 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-25 | hooks | drop invalid hookSpecificOutput wrapper from Stop hook (#87) | f6bca09d9b57 |
 | 2026-05-25 | bloat | skip tests/fixtures/ and __fixtures__/ in scan walker | ea2f6110eb12 |
 | 2026-05-23 | compliance | pin SBOM Python-license resolver to per-manifest .venv METADATA | fc1a7a86cffb |
 | 2026-05-23 | meta | resolve architecture.md merge-conflict + allowlist security helper | 9e26a9c5e41b |
@@ -460,10 +462,13 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 138 commits
+### Chores (chore) — 141 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-26 | campaign | mark Campaign B complete (13/13 sub-iterates merged) | ac604a46f427 |
+| 2026-05-25 | campaign | kick off Campaign B — Shipwright bloat cleanup | 2d11b77085a2 |
+| 2026-05-25 | events | record evt-044dce38 for iterate-2026-05-25-bloat-defense | 71d5bf9df579 |
 | 2026-05-25 | bloat | allowlist sub-iterate-runner.md after Bloat Checklist append | c81e4b7438b2 |
 | 2026-05-25 | events | record evt-96086624 for iterate-2026-05-25-bloat-review | 8967df942269 |
 | 2026-05-25 | agent-docs | refresh post phase-0 baseline | 4ace732d0348 |
@@ -603,10 +608,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 105 commits
+### Documentation (docs) — 106 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-25 | constitution | extend §21 with anti-ratchet CI rule + exception ADR path | a8d498989ddd |
 | 2026-05-23 | security | add suppression-syntax reference + link from SKILL.md | eb2fa64719b8 |
 | 2026-05-21 | campaign | empirical-verification handover for B.2→C.3 (#64) | 376c870345c3 |
 | 2026-05-21 | campaign | finalize artifact-polish state file (B.2→C.3 complete) (#63) | d27a8894f52e |
@@ -713,10 +719,23 @@ pie title Commit Types
 | 2026-03-21 | — | expand README with pipeline diagram, architecture, and quality gates | 377dc2141b3d |
 | 2026-03-20 | — | add README.md for GitHub repo | 853c8f930132 |
 
-### Refactoring (refactor) — 37 commits
+### Refactoring (refactor) — 50 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-26 | run | split orchestrator.py (983 LOC) into orchestrator_pkg/ (Campaign B5) (#102) | 46031f3a9ab9 |
+| 2026-05-26 | shared | split dev_server.py (997 LOC) into 10-file package (Campaign B B4) (#101) | fd6c5585e97c |
+| 2026-05-26 | shared | split phase_quality.py (1108 LOC) + add bloat column to Compliance Dashboard (Campaign B B3) (#99) | 14b24e9346dd |
+| 2026-05-26 | triage | split github_triage.py (929 LOC) into a 7-file package (#98) | 74d4cf0441ed |
+| 2026-05-26 | compliance | split data_collector.py (1559 LOC) into collectors/ package (#97) | 238966c1d483 |
+| 2026-05-26 | shared | introduce shared/contracts/* cross-plugin contract surface (Campaign B B8) (#96) | 347821e21256 |
+| 2026-05-26 | plan | split SKILL.md 581->300 LOC + 5 references (Campaign B B1.plan) (#95) | 54f6267e68bf |
+| 2026-05-26 | project | split SKILL.md 612->229 LOC + 9 references (#94) | 5404a57e73ac |
+| 2026-05-26 | design | split SKILL.md 695->297 LOC + 12 references (#93) | 872648464148 |
+| 2026-05-26 | adopt | split SKILL.md 848->264 LOC + 14 references (#92) | a49774eb58ea |
+| 2026-05-26 | test | split SKILL.md 986->253 LOC + 20 references (Campaign B B1.test) (#91) | af84f57920a3 |
+| 2026-05-26 | build | split SKILL.md 1162->291 LOC + 8 references (#90) | 21496630a572 |
+| 2026-05-26 | iterate | split SKILL.md 1709->295 LOC + 26 references (Campaign B B1.iterate) (#89) | 7c96e0924e5b |
 | 2026-05-23 | verifier | design checks skip on scope=library projects | c7b1b29e5778 |
 | 2026-05-23 | compliance | single-producer + snapshot-provenance audit | 2e4048bc11cf |
 | 2026-05-22 | security | replace 4 dynamic __import__ calls with normal imports | d67b6f02d3bf |
@@ -797,7 +816,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 734 |
+| Total commits | 753 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 734 |
+| Human-authored commits | 753 |
 

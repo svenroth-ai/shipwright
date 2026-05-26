@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-25T19:29:07.675673+00:00
+Generated: 2026-05-26T21:32:18.050071+00:00
 
 ## Requirements Coverage
 
@@ -83,7 +83,9 @@ Generated: 2026-05-25T19:29:07.675673+00:00
 | Phase 0 bloat baseline inventory — activates A.foundation Stop-Gate | iterate | change |  | — | 66ec453 | 2026-05-25 |
 | Campaign A.review: bloat reviewer prompts (Karpathy+Osmani+Shipwright) + Group H detective audit (H0-H6) | iterate | feature |  | 14/14 | babf9fc | 2026-05-25 |
 | fix bloat_gate_on_stop.py Stop-hook schema violation | iterate | bug |  | 131/131 | 193b7f5 | 2026-05-25 |
-| Pre-commit anti-ratchet hook + bloat-check CI workflow + bloat-exception ADR template + shared glossary (Campaign A.defense, closes Campaign A defense-in-depth layer) | iterate | feature |  | 41/41 | — | 2026-05-25 |
+| Pre-commit anti-ratchet hook + bloat-check CI workflow + bloat-exception ADR template + shared glossary (Campaign A.defense, closes Campaign A defense-in-depth layer) | iterate | feature |  | 41/41 | 55be715 | 2026-05-25 |
+| B8: shared/contracts/* cross-plugin contracts (compliance + iterate); adopt-bridge + boundary_coverage_report refactor | iterate | change |  | 1104/1104 | fbde435 | 2026-05-26 |
+| Pre-Phase Principles header in constitution.md + Superpowers anti-slop PR template + expanded README/guide acknowledgments | iterate | change |  | 30/30 | — | 2026-05-26 |
 
 ## Coverage Summary
 
@@ -91,10 +93,10 @@ Generated: 2026-05-25T19:29:07.675673+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 59 |
+| Iterate changes | 61 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
-| Total review findings | 0 |
+| Total review findings | 12 |
 | Unresolved findings | 0 |
 

@@ -1,11 +1,13 @@
 # Project Activity Dashboard
-> Updated: 2026-05-25 19:29 UTC | Session: 70a6c2a4-4357-439f-aab1-446837ba917a | Run: iterate-2026-05-25-bloat-defense
+> Updated: 2026-05-26 21:32 UTC | Session: 40b1eb76-d68e-4414-be55-0283044ac054 | Run: iterate-2026-05-26-public-launch-hardening-shipwright
 
-## Recent Changes (59 iterations)
+## Recent Changes (61 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| feature | Pre-commit anti-ratchet hook + bloat-check CI workflow + bloat-exception ADR template + shared glossary (Campaign A.defense, closes Campaign A defense-in-depth layer) | 41/41 |  | tooling | 2026-05-25 |
+| change | Pre-Phase Principles header in constitution.md + Superpowers anti-slop PR template + expanded README/guide acknowledgments | 30/30 |  | docs | 2026-05-26 |
+| change | B8: shared/contracts/* cross-plugin contracts (compliance + iterate); adopt-bridge + boundary_coverage_report refactor | +26 new, 1104/1104 | fbde435 | tooling | 2026-05-26 |
+| feature | Pre-commit anti-ratchet hook + bloat-check CI workflow + bloat-exception ADR template + shared glossary (Campaign A.defense, closes Campaign A defense-in-depth layer) | 41/41 | 55be715 | tooling | 2026-05-25 |
 | bug | fix bloat_gate_on_stop.py Stop-hook schema violation | 131/131 | 193b7f5 | tooling | 2026-05-25 |
 | feature | Campaign A.review: bloat reviewer prompts (Karpathy+Osmani+Shipwright) + Group H detective audit (H0-H6) | 14/14 | babf9fc | infra | 2026-05-25 |
 | change | Phase 0 bloat baseline inventory — activates A.foundation Stop-Gate | 0/0 | 66ec453 | infra | 2026-05-25 |
@@ -66,7 +68,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-25 | Unit: 41/41 | E2E: 41/41 | Smoke: skipped | (iterate)
+Last run: 2026-05-26 | Unit: 30/30 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

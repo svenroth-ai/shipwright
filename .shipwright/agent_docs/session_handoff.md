@@ -1,44 +1,40 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-25-bloat-defense"
+run_id: "iterate-2026-05-26-public-launch-hardening-shipwright"
 phase: "iterate"
-reason: "iterate: bloat-defense (re-run to get event_id)"
-timestamp: "2026-05-25T19:29:07.675673+00:00"
+reason: "iterate: public-launch hardening P1.1 SP5+KA1 (shipwright leg)"
+timestamp: "2026-05-26T21:32:18.050071+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-25 19:29:07 UTC
+> Auto-generated 2026-05-26 21:32:18 UTC
 
 ## Session Info
 
-- **Session ID**: 70a6c2a4-4357-439f-aab1-446837ba917a
-- **Timestamp**: 2026-05-25 19:29:07 UTC
-- **Reason**: iterate: bloat-defense (re-run to get event_id)
+- **Session ID**: 40b1eb76-d68e-4414-be55-0283044ac054
+- **Timestamp**: 2026-05-26 21:32:18 UTC
+- **Reason**: iterate: public-launch hardening P1.1 SP5+KA1 (shipwright leg)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-25-bloat-review
-- **Date**: 2026-05-25T12:50:44.225618Z
+- **Run ID**: iterate-2026-05-25-bloat-defense
+- **Date**: 2026-05-25T19:29:23.066767Z
 - **Type**: feature
 - **Complexity**: medium
-- **Branch**: iterate/bloat-review
-- **ADR**: iterate-2026-05-25-bloat-review
+- **Branch**: iterate/bloat-defense
+- **ADR**: iterate-2026-05-25-bloat-defense
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-25-bloat-review.md
+- **Spec**: .shipwright/planning/iterate/2026-05-25-bloat-defense.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/bloat-defense
-- **Run ID**: iterate-2026-05-25-bloat-defense
-- **Spec**: .shipwright/planning/iterate/2026-05-25-bloat-defense.md
-- **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-05-25T12:32:35))
+- **Branch**: iterate/public-launch-hardening
+- **External Review Marker**: completed (external_review_state.json @ 2026-05-25T12:32:35)
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/bloat-defense
-- **Last Commit**: 38186ce Merge pull request #86 from svenroth-ai/iterate/bloat-review
+- **Branch**: iterate/public-launch-hardening
+- **Last Commit**: ac604a4 chore(campaign): mark Campaign B complete (13/13 sub-iterates merged)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,23 +65,23 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-b8503137 | work_completed | iterate (Pre-Phase Principles header in constitution.md + Superpowers anti-slop PR template + expanded README/guide acknowledgments) | 2026-05-26 |
+| evt-e3dd6850 | work_completed | iterate (B8: shared/contracts/* cross-plugin contracts (compliance + iterate); adopt-bridge + boundary_coverage_report refactor) | 2026-05-26 |
 | evt-044dce38 | work_completed | iterate (Pre-commit anti-ratchet hook + bloat-check CI workflow + bloat-exception ADR template + shared glossary (Campaign A.defense, closes Campaign A defense-in-depth layer)) | 2026-05-25 |
 | evt-db351941 | work_completed | iterate (fix bloat_gate_on_stop.py Stop-hook schema violation) | 2026-05-25 |
 | evt-96086624 | work_completed | iterate (Campaign A.review: bloat reviewer prompts (Karpathy+Osmani+Shipwright) + Group H detective audit (H0-H6)) | 2026-05-25 |
-| evt-eaf513ff | work_completed | iterate (Phase 0 bloat baseline inventory — activates A.foundation Stop-Gate) | 2026-05-25 |
-| evt-1e014ebd | work_completed | iterate (Bloat Loop-Gate (Campaign A.foundation = A1+A2+A3): runtime-prompt classification, per-session marker writer, blocking Stop-Gate, registered in every plugin) | 2026-05-25 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 59
-- **Last iterate**: feature — Pre-commit anti-ratchet hook + bloat-check CI workflow + bloat-exception ADR template + shared glossary (Campaign A.defense, closes Campaign A defense-in-depth layer) (2026-05-25)
+- **Total work events**: 61
+- **Last iterate**: change — Pre-Phase Principles header in constitution.md + Superpowers anti-slop PR template + expanded README/guide acknowledgments (2026-05-26)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
 
-### ADR-076: F11 verifier resolves F7 event by run_id, not HEAD commit
-- **Date:** 2026-05-23
-- **Section:** Iterate — change: verifier multi-commit-aware lookup
-- **Run-ID:** iterate-2026-05-23-verifier-multi-commit-aware
-- **Context:** Verifier check_events_has_commit + check_spec_impact_recorded keyed off HEAD commit_hash. Multi-commit iterates (F6 + F6.5 fix follow-up) recorded F7 event against F6 commit, so HEAD lookup returned 2 false-positive errors at F11. Surfaced in iterate-2026-05-23-iterate-
+### ADR-077: shared/contracts/* — cross-plugin contract surface introduced for compliance + iterate
+- **Date:** 2026-05-26
+- **Section:** Iterate B8 (Campaign B bloat cleanup) — change: introduce contract package
+- **Run-ID:** sub_iterate-20260525-211635-B8
+- **Context:** Two callsites used to reach across plugin boundaries via fragile mechanisms. `plugins/shipwright-adopt/scripts/lib/compliance_bridge.py` spawned `update_compliance.py` as a subprocess AND walked ancestor directories to locate the compl
