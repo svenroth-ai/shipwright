@@ -317,13 +317,6 @@
       "adr": null
     },
     {
-      "path": "plugins/shipwright-design/skills/design/SKILL.md",
-      "limit": 400,
-      "current": 695,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "plugins/shipwright-iterate/agents/sub-iterate-runner.md",
       "limit": 400,
       "current": 479,
