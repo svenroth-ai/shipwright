@@ -21,16 +21,19 @@ from __future__ import annotations
 
 from pathlib import Path
 
-try:
-    from lib.phase_quality import collect_bloat_summary as _collect_bloat_summary
-except ImportError:  # pragma: no cover - helper always available in practice
-    _collect_bloat_summary = None  # type: ignore[assignment]
-
 
 def _summary(project_root: Path) -> dict[str, int]:
-    if _collect_bloat_summary is None:  # pragma: no cover - broken env only
+    # Lazy import: a module-level `from lib.phase_quality import ...` would
+    # cache the shared `lib` package in sys.modules at import time, which
+    # then shadows plugin-local `lib/` (e.g. shipwright-test/scripts/lib/,
+    # this plugin's lib/thresholds.py) for every later `from lib.X` import
+    # in the same pytest session. Deferring the import keeps the module
+    # load side-effect-free.
+    try:
+        from lib.phase_quality import collect_bloat_summary
+    except ImportError:  # pragma: no cover - broken env only
         return {"over_limit": 0, "in_allowlist": 0, "ratchet_delta": 0}
-    return _collect_bloat_summary(project_root)
+    return collect_bloat_summary(project_root)
 
 
 def _badge(ok: bool) -> str:
