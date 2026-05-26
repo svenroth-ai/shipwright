@@ -1,0 +1,47 @@
+# F5b — Finalize Iterate Artifacts
+
+Run **one** script that records the iterate's `work_completed` event,
+regenerates compliance MDs, refreshes the build dashboard, and writes
+the session handoff. Per
+iterate-2026-05-23-compliance-md-single-producer the event is recorded
+BEFORE the compliance regen so the regenerated MDs include the
+iterate's own event — making the F6 commit snapshot self-consistent
+(and eliminating the recurring E1-E5 staleness class).
+
+`--event-extras-json` carries the SKILL.md F7-mandated fields (intent,
+spec_impact, affected_frs/new_frs/change_type/none_reason, description,
+changed_files). The event is created with `commit=""` placeholder; F6.5
+patches the SHA into the gitignored events.jsonl in place (no tracked
+file drift).
+
+```bash
+extras='{
+  "intent": "{feature|change|bug}",
+  "description": "{short_description}",
+  "spec_impact": "{add|modify|remove|none}",
+  "spec_impact_justification": "{required when spec_impact=none}",
+  "affected_frs": ["FR-..."],
+  "new_frs": ["FR-..."],
+  "change_type": "{docs|tooling|compliance|infra}",
+  "none_reason": "{required when affected_frs/new_frs empty}",
+  "tests": {"passed": N, "total": N, "e2e_run": true}
+}'
+uv run "{shared_root}/scripts/tools/finalize_iterate.py" \
+  --project-root "{project_root}" \
+  --run-id "{run_id}" \
+  --reason "iterate: {short_description}" \
+  --event-extras-json "$extras"
+```
+
+Reads back: `result["steps"]["event"]["id"]` — capture this for F6.5.
+
+The script is idempotent per `run_id` — re-invocations return the
+existing event_id rather than recording a duplicate. If you skip this
+step, the Stop hook will run it automatically as a fallback when the
+session ends (but without the event_extras — for a clean F11 you must
+call F5b yourself with the full metadata).
+
+> **Note:** F7 (separate `record_event.py` call) is REPLACED by F5b
+> (event recording) + F6.5 (commit SHA patch). The historical F7 is
+> kept below for the rare repo that needs out-of-band events outside
+> finalize.

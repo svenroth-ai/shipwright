@@ -21,13 +21,6 @@ Per-event allowed shapes (source: official docs, refreshed 2026-05-25):
 | SessionStart      | yes                           | hookEventName, additionalContext                               |
 | SessionEnd        | NO                            | (no decision control at all)                                   |
 
-Stop / SubagentStop tightening (2026-05-25): Claude Code's current
-validator emits "Hook JSON output validation failed — Invalid input"
-when a Stop hook emits ``{"hookSpecificOutput": {"hookEventName": "Stop"}}``
-on stdout. The 2026-05-10 schema map permitted this; the harness has
-since narrowed it. Stop hooks now MUST emit either empty stdout (pass)
-or top-level ``{"decision": "block", "reason": "..."}`` (block).
-
 Top-level ``decision``/``reason`` is permitted for events that support
 decision control (Stop, SubagentStop, PreToolUse, PostToolUse,
 UserPromptSubmit) but NOT for SessionEnd.
