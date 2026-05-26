@@ -548,13 +548,6 @@
       "adr": null
     },
     {
-      "path": "plugins/shipwright-test/skills/test/SKILL.md",
-      "limit": 400,
-      "current": 986,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "plugins/shipwright-test/tests/test_boundary_coverage_report.py",
       "limit": 300,
       "current": 745,
