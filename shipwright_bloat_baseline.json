@@ -79,13 +79,6 @@
       "adr": null
     },
     {
-      "path": "plugins/shipwright-adopt/skills/adopt/SKILL.md",
-      "limit": 400,
-      "current": 848,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "plugins/shipwright-adopt/tests/test_adopt_pipeline_subprocess.py",
       "limit": 300,
       "current": 432,
