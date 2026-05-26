@@ -35,22 +35,24 @@ _GIT_ENV = {
 
 
 def _load_compliance_resolver():
-    """Import data_collector._resolve_events_path by file path (cross-plugin).
+    """Import ``_resolve_events_path`` from the compliance plugin.
 
-    The module is registered in ``sys.modules`` before execution: its
-    ``@dataclass`` definitions resolve string annotations via
-    ``sys.modules[cls.__module__]``, which would be ``None`` otherwise.
+    Campaign-B B2 moved the resolver from ``data_collector.py`` into
+    the ``collectors/change_history.py`` submodule. ``data_collector.py``
+    is now a re-export shim that uses relative imports — those don't
+    resolve under ``spec_from_file_location`` (no parent package). The
+    canonical fix is to add the compliance plugin root onto sys.path
+    and import via the package machinery.
     """
-    name = "_compliance_data_collector"
-    if name in sys.modules:
-        return sys.modules[name]._resolve_events_path
-    path = (_REPO / "plugins" / "shipwright-compliance" / "scripts"
-            / "lib" / "data_collector.py")
-    spec = importlib.util.spec_from_file_location(name, path)
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[name] = mod
-    spec.loader.exec_module(mod)
-    return mod._resolve_events_path
+    compliance_plugin = _REPO / "plugins" / "shipwright-compliance"
+    sys.path.insert(0, str(compliance_plugin))
+    try:
+        from scripts.lib.collectors.change_history import (  # type: ignore[import-not-found]
+            _resolve_events_path,
+        )
+    finally:
+        sys.path.remove(str(compliance_plugin))
+    return _resolve_events_path
 
 
 def _git(cwd: Path, *args: str) -> None:

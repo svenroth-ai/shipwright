@@ -5,8 +5,8 @@ introduced by iterate 12.0 when it extracted parser code from data_collector
 without removing the original):
 
   - shared/scripts/lib/drift_parsers.py::parse_fr_table       (drift audit)
-  - plugins/shipwright-compliance/scripts/lib/data_collector.py::collect_requirements
-    (RTM generator)
+  - plugins/shipwright-compliance/scripts/lib/collectors/rtm.py::collect_requirements
+    (RTM generator — moved here by Campaign-B B2 from data_collector.py)
 
 When the producer (`/shipwright-adopt`) shipped a 5-data-column FR table
 in 2026-05-02 (`| ID | Name | Priority | Description | Source |`), both
@@ -64,12 +64,22 @@ _drift_parsers = _load_module(
     "_fr_drift_protection_drift_parsers",
     SHARED_LIB / "drift_parsers.py",
 )
-_data_collector = _load_module(
-    "_fr_drift_protection_data_collector",
-    COMPLIANCE_LIB / "data_collector.py",
-)
 DRIFT_FR_RE = _drift_parsers._FR_TABLE_RE
-DATA_FR_RE = _data_collector._FR_TABLE_RE
+
+# Campaign-B B2 moved the FR-table regex from data_collector.py into
+# the collectors/ package. We cannot use ``spec_from_file_location``
+# on ``collectors/rtm.py`` directly because it uses relative imports
+# (``from ._types import ...``) that require the parent package to
+# resolve. Bootstrap the compliance plugin's root onto sys.path so
+# ``scripts.lib.collectors.rtm`` resolves through the package
+# machinery, then unwind it after import to keep the import surface
+# clean.
+_COMPLIANCE_PLUGIN_ROOT = REPO_ROOT / "plugins" / "shipwright-compliance"
+sys.path.insert(0, str(_COMPLIANCE_PLUGIN_ROOT))
+try:
+    from scripts.lib.collectors.rtm import _FR_TABLE_RE as DATA_FR_RE  # type: ignore[import-not-found]
+finally:
+    sys.path.remove(str(_COMPLIANCE_PLUGIN_ROOT))
 
 
 # Each fixture pairs an FR markdown row with the FR id, body, and
