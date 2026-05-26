@@ -359,13 +359,6 @@
       "adr": null
     },
     {
-      "path": "plugins/shipwright-run/scripts/lib/orchestrator.py",
-      "limit": 300,
-      "current": 983,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "plugins/shipwright-run/scripts/lib/phase_task_lifecycle.py",
       "limit": 300,
       "current": 661,

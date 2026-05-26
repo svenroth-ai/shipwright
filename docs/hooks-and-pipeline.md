@@ -99,7 +99,10 @@ flowchart TD
 
 ### Pipeline Constants
 
-**File:** `plugins/shipwright-run/scripts/lib/orchestrator.py`
+**File:** `plugins/shipwright-run/scripts/lib/orchestrator_pkg/constants.py`
+(historical entry point `plugins/shipwright-run/scripts/lib/orchestrator.py` is
+a thin re-export shim post Campaign B5 split, 2026-05-26 — the literal
+constants live in the package now).
 
 ```python
 PIPELINE_STEPS = ["project", "design", "plan", "build", "test", "changelog", "deploy"]
@@ -1506,8 +1509,10 @@ pattern (`load_run_config` → mutate → `save_run_config`), so unknown
 top-level fields like `phase_history` are preserved automatically.
 Authoritative writers:
 
-- `plugins/shipwright-run/scripts/lib/orchestrator.py` — `save_run_config`,
-  called by `create_config` (initialises `phase_history: {}` on fresh
-  creation) and `update_step`.
+- `plugins/shipwright-run/scripts/lib/orchestrator_pkg/config_io.py` —
+  `save_run_config`, called by `create_config`
+  (`orchestrator_pkg/config_factory.py`, initialises `phase_history: {}`
+  on fresh creation) and `update_step` (`orchestrator_pkg/step_planning.py`).
+  Re-exported through `orchestrator.py` (post Campaign B5 split, 2026-05-26).
 
 No other plugin writes this file directly.
