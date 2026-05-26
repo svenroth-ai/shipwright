@@ -184,13 +184,6 @@
       "adr": null
     },
     {
-      "path": "plugins/shipwright-compliance/scripts/lib/data_collector.py",
-      "limit": 300,
-      "current": 1559,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "plugins/shipwright-compliance/scripts/lib/rtm_generator.py",
       "limit": 300,
       "current": 777,
