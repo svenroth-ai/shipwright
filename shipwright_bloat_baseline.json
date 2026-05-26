@@ -527,13 +527,6 @@
       "adr": null
     },
     {
-      "path": "shared/scripts/dev_server.py",
-      "limit": 300,
-      "current": 997,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "shared/scripts/github_api.py",
       "limit": 300,
       "current": 392,
