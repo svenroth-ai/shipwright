@@ -133,16 +133,28 @@ def check_versions(repo: Path) -> list[str]:
 
 
 def check_orchestrator(repo: Path, plugins: set[str]) -> list[str]:
-    """Check orchestrator PIPELINE_STEPS is a valid subset of plugins."""
+    """Check orchestrator PIPELINE_STEPS is a valid subset of plugins.
+
+    Campaign B5 (2026-05-26): the historical 983-LOC ``orchestrator.py``
+    was split into ``orchestrator_pkg/``. The ``PIPELINE_STEPS`` literal
+    moved to ``orchestrator_pkg/constants.py``; we check there first and
+    fall back to the old location for branches that haven't picked up
+    the split yet.
+    """
     errors = []
-    orch_path = repo / "plugins" / "shipwright-run" / "scripts" / "lib" / "orchestrator.py"
-    if not orch_path.exists():
+    lib = repo / "plugins" / "shipwright-run" / "scripts" / "lib"
+    candidates = [
+        lib / "orchestrator_pkg" / "constants.py",  # post-B5 split
+        lib / "orchestrator.py",                     # pre-B5 monolith
+    ]
+    orch_path = next((p for p in candidates if p.exists()), None)
+    if orch_path is None:
         return []
 
     content = orch_path.read_text(encoding="utf-8")
     match = re.search(r'PIPELINE_STEPS\s*=\s*\[(.*?)\]', content, re.DOTALL)
     if not match:
-        return ["orchestrator.py: PIPELINE_STEPS not found"]
+        return [f"{orch_path.name}: PIPELINE_STEPS not found"]
 
     steps_raw = match.group(1)
     steps = re.findall(r'"(\w+)"', steps_raw)
