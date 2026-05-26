@@ -121,13 +121,6 @@
       "adr": null
     },
     {
-      "path": "plugins/shipwright-build/skills/build/SKILL.md",
-      "limit": 400,
-      "current": 1162,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "plugins/shipwright-compliance/scripts/audit/audit_adapters.py",
       "limit": 300,
       "current": 350,
