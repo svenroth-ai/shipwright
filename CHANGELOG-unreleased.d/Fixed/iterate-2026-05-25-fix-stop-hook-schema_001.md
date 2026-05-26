@@ -1,1 +1,0 @@
-bloat_gate_on_stop.py no longer emits invalid hookSpecificOutput wrapper on Stop — eliminates 'Hook JSON output validation failed — Invalid input' error at session end. Schema-compliance regression test tightened to forbid the wrapper for Stop/SubagentStop.

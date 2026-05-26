@@ -1114,3 +1114,150 @@ shipwright/
 - **Consequences:** Adopt's compliance_bridge dropped from 116 → 160 LOC (in-process generator dispatch replaces subprocess; under 300 budget). Test plugin's boundary_coverage_report dropped from 661 → 640 LOC (ratchet DOWN — baseline already 661 grandfathered, so anti-ratchet satisfied). Two new test files split per 300-LOC guideline: integration-tests/test_shared_contracts_consumers.py (270 LOC, 21 tests: imports + static-source guards + parameterized boundary detection) and integration-tests/test_shared_contracts_consumers_behavior.py (174 LOC, 5 tests: parity + behavioral probe + error-path). seed_adopt_compliance.py and plugins/shipwright-test/tests/conftest.py gained a single repo-root `sys.path.insert` each so plugin-local venvs can resolve the `shared` namespace. Total empirical: 1104 tests across 4 trees, 0 failed.
 - **Rejected:** Make `shared/` an installable package with `pip install -e` and remove all bootstrap shims (proper fix but out of scope — requires touching every plugin's pyproject.toml). Expose `update_compliance.main()` itself via the contract instead of `PHASE_REPORTS` + `run_report` (couples adopt to a CLI shape it does not use). Skip the iterate contract and only do compliance (the test plugin's `_ITERATE_LIB` is the EXACT pattern this campaign is eliminating — half-fix would leave the worst offender).
 - **Details:** [B8-contracts.md](../planning/iterate/campaigns/2026-05-25-bloat-cleanup-B-shipwright/sub-iterates/B8-contracts.md), [B8-mini-plan.md](../planning/iterate/campaigns/2026-05-25-bloat-cleanup-B-shipwright/sub-iterates/B8-mini-plan.md)
+
+---
+
+### ADR-078: Split dev_server.py 997 LOC into 10-file package; preserve shim for uv run callers
+- **Date:** 2026-05-26
+- **Section:** Campaign B / B4 dev_server split
+- **Run-ID:** B4-dev-server-split
+- **Context:** shared/scripts/dev_server.py was 997 LOC, over the 300-LOC bloat budget. Used by every skill's browser-verify + test phase via uv run shared/scripts/dev_server.py. Tests heavily monkeypatch package-level names.
+- **Decision:** Split into a dev_server/ package (9 submodules + _proxies). Keep dev_server.py as a 29-LOC shim — Python's package-wins precedence handles uv run. See ADR for full details.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reviewer flagged file/package coexistence as biggest risk; the alternative (delete shim) would break 5+ skill callers. Empirically verified by new parity test.
+- **Consequences:** Future submodules must NOT add module-level from lib.X imports (B3 hazard). Tests targeting dev_server.X continue to work via _proxies dispatch.
+- **Rejected:** Delete dev_server.py entirely (breaks uv run callers); rewrite test monkeypatch targets (out of scope for bloat split).
+- **Details:** [062-b4-dev-server-split.md](../planning/adr/062-b4-dev-server-split.md)
+
+---
+
+### ADR-079: C1 design verifier skips scope=library
+- **Date:** 2026-05-23
+- **Section:** Iterate — change: c1 scope-aware library
+- **Run-ID:** iterate-2026-05-23-c1-scope-aware-library
+- **Context:** Audit Group C1 (`check_design_fr_coverage`) and sister `check_design_manifest_screens_exist` fail-closed on `scope: library` projects: the FR→screen contract is structurally inapplicable (no UI to map). Hits the shipwright dev repo on every audit.
+- **Decision:** Add `_is_no_ui_scope(project_root)` reading `shipwright_run_config.json::scope`; both checks short-circuit to `CheckResult(ok=None, severity=SKIPPED)` when scope ∈ `_NO_UI_SCOPES = frozenset({'library'})`. Audit's existing `check_result_to_finding` translates ok=None → status='skip'.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Scope is the IREB-level project classification; `scope=library` is the canonical 'no UI' signal across the framework. Reading `shipwright_run_config.json::scope` mirrors existing consumers (state.py, handoff).
+- **Consequences:** Library/CLI/framework repos no longer show C1 false-positive failures. `_NO_UI_SCOPES` frozenset is the single extension point for future no-UI scopes. Fail-closed on missing or malformed run_config (check still runs). New consumer of an existing widely-read config field; no new boundary.
+- **Rejected:** (a) Faking a manifest mapping FRs to CLI surfaces — stretches 'screen' semantics and fights `check_design_manifest_screens_exist`. (b) Per-project opt-out marker — verbose, requires per-project edits. (c) Profile-based gating (`profile=python-plugin-monorepo`) — too narrow, future no-UI profiles unsupported.
+
+---
+
+### ADR-080: Resolve merge-conflict + path-canon allowlist for security helper
+- **Date:** 2026-05-23
+- **Section:** Iterate — bug: post-merge hygiene cleanup
+- **Run-ID:** iterate-2026-05-23-post-merge-hygiene
+- **Context:** Two post-merge artifacts on origin/main: (1) architecture.md carries unresolved <<<<<<<HEAD/=======/>>>>>>> markers around the iterate-2026-05-23-security-adopt-compliance-snapshots entry; (2) test_no_legacy_artifact_paths[compliance-migrated] flags finalize_security_compliance.py:78 (a comment naming the sibling plugin path).
+- **Decision:** Resolve the architecture.md conflict by keeping the HEAD side (the historical 'Lands as PR #79 stacked on PR #78' parenthetical from the origin/main side is post-merge noise since both PRs have landed). Extend ALLOWLIST['compliance'] in artifact_migrations.py to include the security-plugin helper — same hyphen-segment trigger documented for triage_inbox.md (line 398).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Per conventions.md line 106 ('path-canon lint must allowlist regenerated artifacts that contain plugin-source-tree paths'): the regex's negative-lookbehind lacks '-', so any 'shipwright-compliance/' substring trips. Allowlist extension is the documented structural fix, not regex tightening.
+- **Consequences:** F0's full-suite shared/tests reduces from 3 failures to 1 on this branch (the remaining test_arch_impact_drops_found_at_all is a separate test-design bug: decision-drops are gitignored so the test can't find evidence on any fresh clone or CI run). architecture.md becomes well-formed markdown again.
+- **Rejected:** (a) Inline '# artifact-path-canon: legacy' marker on the comment line — pollutes a perfectly-fine plugin-cross-reference comment. (b) Regex tightening to add '-' to the negative-lookbehind class — would silently allow real legacy paths after a hyphen (e.g. 'pre-planning/'). (c) Fixing the test_arch_impact_drops_found_at_all design issue here — separate problem, separate iterate.
+
+---
+
+### ADR-081: Pin SBOM Python-license resolver to per-manifest dist-info
+- **Date:** 2026-05-23
+- **Section:** Iterate — bug: SBOM resolver pin to per-manifest .venv METADATA
+- **Run-ID:** iterate-2026-05-23-sbom-resolver-pin-lockfile
+- **Context:** SBOM license resolver used importlib.metadata against ambient sys.path; consecutive renders produced different license counts. The triage launch payload (cd plugin && uv sync && update_compliance) never resolved items because the resolver did not see the plugin venv.
+- **Decision:** Replace _detect_python_license with per-manifest filesystem read of <manifest_dir>/.venv/{Lib,lib/python*}/site-packages/<pkg>-*.dist-info/METADATA via email.parser. PEP 503 canonical name match + PEP 440 version-aware sort for stale dist-infos.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mirrors d325fd6 (deterministic-render-timestamps): derive output from authoritative input artifact, not ambient process state. uv.lock has no license field, so rejected as primary source.
+- **Consequences:** SBOM license resolution is deterministic for a given filesystem state. Triage launch payload is now empirically truthful: uv sync populates the plugin .venv, next regen flips license from unknown to declared value. Tests: 25 new in TestPythonLicenseFromVenvMetadata.
+- **Rejected:** Pin to uv.lock (no license field). Keep importlib.metadata as fallback (re-introduces ambient-state bug). Auto-install deps (out of scope).
+
+---
+
+### ADR-082: SBOM producer collapses N workspaces with same undeclared-signature into one cluster
+- **Date:** 2026-05-24
+- **Section:** Iterate — change: SBOM triage cluster-collapse
+- **Run-ID:** iterate-2026-05-24-sbom-triage-cluster-collapse
+- **Context:** Yesterdays SBOM resolver fix (PR #82) unmasked a producer-shape issue: when many workspaces share the same undeclared-dep root cause (e.g., 10 plugins each missing pytest dev-deps), the producer emits N triage items for one decision. Violates ADR-057 action-unit principle.
+- **Decision:** emit_undeclared_triage now buckets workspaces by (sorted_undeclared_names, manifest_type). N>=2 in a bucket emits ONE cluster action-unit (dedup key encodes BOTH signature AND member-list via sha256-12). N=1 keeps per-workspace shape. Shadow per-workspace keys in current_keys protect legacy items from accidental auto-dismiss.
+- **Commit:** (assigned post-merge)
+- **Rationale:** ADR-057 launch-surface principle: the inbox surfaces actions, not findings. Cluster shape preserves operator visibility (one action-unit per root cause) without filtering legitimate signals. Dev-deps stay visible because a client repo using Shipwright to build its own plugin legitimately wants dev-dep undeclared signals.
+- **Consequences:** Inbox shows 1 row per root cause instead of N. Launch payload is a bash for-loop over all member workspaces. Membership change (grow or shrink) auto-dismisses old + emits new (different hash). 15 new tests in TestEmitUndeclaredTriageClusters; existing 13 TestEmitUndeclaredTriage tests pass unchanged. Plugin suite: 514 tests pass.
+- **Rejected:** Filter dev-deps from triage (loses signal for client repos). Hierarchical parent-child schema (too complex). N>=3 threshold (pain starts at N=2). Include version specifiers in signature (over-segments).
+
+---
+
+### ADR-083: Pre-commit + CI anti-ratchet gate + bloat-exception ADR template + glossary
+- **Date:** 2026-05-25
+- **Section:** Iterate — feature: bloat-defense (Campaign A.defense)
+- **Run-ID:** iterate-2026-05-25-bloat-defense
+- **Context:** Campaign A.foundation added the Stop-gate; A.review added the code-reviewer prompts + Group H detective audit. A.defense closes the defense-in-depth layer with three new gates BEFORE the Stop hook fires.
+- **Decision:** Add pre-commit anti-ratchet hook (scripts/hooks/pre-commit + scripts/install-hooks.{sh,ps1}), bloat-check CI workflow (PR comment + selective block), bloat-exception ADR template (5 mandatory fields), and shared/glossary.md. Anti-ratchet rule is state-agnostic: any baseline entry whose measured LOC exceeds entry.current blocks.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Defense-in-depth: local hook catches before push, CI hook catches before merge, Stop hook catches mid-session, detective audit catches post-merge. Each gate addresses a different failure mode (slow CI feedback, offline contributor, intra-session, multi-PR drift).
+- **Consequences:** Three coordinated gates now enforce the bloat baseline: local pre-commit (hard block), CI workflow (comment + selective block), Stop hook (post-build block). New crossings remain advisory at all three gates; Group H detective audit catches them post-merge. Exception path documented via the new ADR template.
+- **Rejected:** Husky/lefthook (would require root package.json that neither repo has); single Stop-hook only (no offline coverage); CI-only with hard-block on new crossings (would block iterate PRs that legitimately need allowlist additions).
+
+---
+
+### ADR-084: Two-hook structural prevention against file-size regrowth
+- **Date:** 2026-05-25
+- **Section:** Iterate — feature: Bloat Loop-Gate (Campaign A.foundation = A1+A2+A3)
+- **Run-ID:** iterate-2026-05-25-bloat-foundation
+- **Context:** 300-LOC rule existed in constitution but had four enforcement holes: hook only in shipwright-build, advisory-only, blanket markdown skip, no Stop-gate; God-modules grew after the rule.
+- **Decision:** Add classification-aware PostToolUse marker writer (runtime-prompt vs source, 400/300 LOC), new blocking Stop hook with Iron-Law message, register both hooks in every plugin, shared bloat_baseline lib as single schema producer, adopt Step A.0 baseline-first sequence.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Plan-review (Gemini + OpenAI) flagged blind-overwrite, stale-TTL trap, session-scoping contradiction, malformed-JSON crash, API split, unclear adopt entrypoint — all resolved in spec ACs 3/4/7/8/10/11 before code was written; round-trip + schema-contract tests assert each fix.
+- **Consequences:** Stop event blocks on anti-ratchet or new crossings outside baseline allowlist. PostToolUse stays advisory. Parallel iterate worktrees are isolated via session-scoped markers. Fail-open on missing/malformed baseline keeps brownfield/pre-adopt repos unbroken. Campaign's aspirational ≤200 LOC for the gate file is missed by 33 LOC (under structural 300 limit) because Iron-Law message body is content-bearing.
+- **Rejected:** Centralized hooks.json (Claude Code plugin model requires per-plugin registration). Phase-0 baseline write in same iterate (blast radius — separate operation). Skipping Adopt sequence (would leave brownfield gap open).
+- **Details:** [2026-05-25-bloat-foundation.md](../planning/iterate/2026-05-25-bloat-foundation.md)
+
+---
+
+### ADR-085: Bloat-policy detective audit lands as Group H (G collision-avoidance)
+- **Date:** 2026-05-25
+- **Section:** Iterate — feature: Campaign A.review (bloat reviewer prompts + Group H audit)
+- **Run-ID:** iterate-2026-05-25-bloat-review
+- **Context:** Campaign A.review adds bloat-policy reviewer prompts + new compliance audit. Campaign spec said group_g.py, but plan-v7 already shipped group_g.py for commit-scope+ADR-refs (17 tests). Letter collision required resolution at run-start.
+- **Decision:** Use Group H (H0-H6: meta/drift/ratchet-suggestion/anti-ratchet/exception-no-ADR/deferred-no-plan/stale-entry). Verbatim Karpathy + Osmani rules appended to code-reviewer.md and sub-iterate-runner.md with parity drift-protection in shared/tests/.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Replacing G2/G3 would lose 17 detective tests for unrelated checks. Extending group_g.py would mix domains and break the 300-LOC budget. New letter is the cleanest.
+- **Consequences:** Audit-group letter set widens to A-H. Reviewer prompts grow by ~100 LOC each (within budget). Group H needs a populated baseline to find anything (Phase-0 baseline being added on main in parallel).
+- **Rejected:** (a) Replace G2/G3 with H1-H5 — rejected, would drop unrelated detective coverage. (b) Add H1-H5 to existing group_g.py — rejected, mixes domains + breaks LOC budget. (c) Put bloat under Group A/D — rejected, those groups have own coherence.
+- **Details:** [2026-05-25-bloat-review.md](../planning/iterate/2026-05-25-bloat-review.md)
+
+---
+
+### ADR-086: Drop hookSpecificOutput wrapper from Stop-hook stdout
+- **Date:** 2026-05-25
+- **Section:** Iterate — bug: bloat_gate_on_stop schema fix
+- **Run-ID:** iterate-2026-05-25-fix-stop-hook-schema
+- **Context:** bloat_gate_on_stop.py emitted {hookSpecificOutput: {hookEventName: Stop}} on both pass and block paths, tripping Claude Code's validator with 'Hook JSON output validation failed — Invalid input' at every session end. Docstring misread ADR-042 as permitting the wrapper; ADR-042 actually fixed an earlier shape.
+- **Decision:** Stop hooks emit empty stdout on pass and top-level {decision, reason} on block. No hookSpecificOutput wrapper. Schema-compliance map tightened to forbid it for Stop/SubagentStop.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Claude Code's current Stop schema rejects hookSpecificOutput entirely; the 2026-05-10 schema (ADR-042) has since narrowed. Other four Stop hooks were already wrapper-free — bloat_gate was the lone offender.
+- **Consequences:** Red 'Invalid input' line at session end is gone. Hook still blocks correctly (top-level decision/reason). Drift protection prevents future Stop-hook regressions.
+- **Rejected:** Keep wrapper and suppress the validator error — impossible, harness controls output. Move to stderr — loses block contract.
+
+---
+
+### ADR-087: Karpathy 4 principles in constitution; Superpowers anti-slop in PR template
+- **Date:** 2026-05-26
+- **Section:** Iterate — change: public-launch hardening (P1.1 SP5+KA1, shipwright leg)
+- **Run-ID:** iterate-2026-05-26-public-launch-hardening-shipwright
+- **Context:** Pre-public-launch hardening blocker (Spec/external-frameworks-integration.md §6 P1.1 bundle). Constitution and README ack section were thin; PR template let AI agents check boxes without empirical verification.
+- **Decision:** Add Pre-Phase Principles header to shared/constitution.md (4 Karpathy principles verbatim, MIT attribution). Rewrite .github/PULL_REQUEST_TEMPLATE.md with Superpowers anti-slop framing (Iron-Law headings, Human Authorization, Duplicate Search, empirical Verification, Anti-Slop Self-Check). Expand README acknowledgments + guide.md Integrated Learnings to per-source attribution; mark Multica explicitly Apache-2.0 modified, patterns only.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reference + enforcement complementary: glossary already cites Karpathy as reference; constitution makes it enforcement. PR template anti-slop framing addresses the systematic class of AI PRs that paste fluff into checkbox lists without running the commands.
+- **Consequences:** Every Shipwright session loads the 4 Karpathy principles into context. PR reviewers can reject AI PRs that ignore the empirical-verification stance. README + guide.md now satisfy P1.1 acceptance. Constitution grew 126→159 LOC, well below the 400 LOC budget.
+- **Rejected:** Single shared PR template across both repos via symlink (rejected: GitHub does not follow symlinks for PR templates; copy is the only working model). Dropping the Pierce-Lamb paragraph entirely (rejected: still load-bearing for historical attribution).
+
+---
+
+### ADR-088: shared/contracts/* — cross-plugin contract surface introduced for compliance + iterate
+- **Date:** 2026-05-26
+- **Section:** Iterate B8 (Campaign B bloat cleanup) — change: introduce contract package
+- **Run-ID:** sub_iterate-20260525-211635-B8
+- **Context:** Two callsites used to reach across plugin boundaries via fragile mechanisms: plugins/shipwright-adopt/scripts/lib/compliance_bridge.py spawned update_compliance.py as a subprocess + walked ancestor directories; plugins/shipwright-test/scripts/tools/boundary_coverage_report.py computed a _ITERATE_LIB path constant by walking 4 ancestors. Both patterns are path-layout-coupled and brittle.
+- **Decision:** New package shared/contracts/ with two re-export facades: shared.contracts.compliance (collect_all, ComplianceData, dataclasses, PHASE_REPORTS, GENERATORS, run_report) and shared.contracts.iterate (is_io_boundary_change, touches_build_files, RISK_TAXONOMY, pattern lists). Both bootstrap sys.path ONCE at module load (idempotent, guarded). Consumer files refactored to import contracts directly.
+- **Commit:** (assigned post-merge)
+- **Rationale:** External review raised 12 findings across Gemini+OpenAI; addressed Gemini-H1/H2 + OpenAI-H3/H4/M8/M10 (PHASE_REPORTS SSOT, idempotent bootstrap with reload test, behavioral parity probe, eliminated importlib.import_module over user names). Rejected with reason: full pip-install-e refactor (out of scope), expose update_compliance.main() (couples adopt to CLI), drop iterate contract (half-fix).
+- **Consequences:** compliance_bridge.py 116→160 LOC (in-process dispatch replaces subprocess; under 300). boundary_coverage_report.py 661→640 LOC (ratchet DOWN). Two new integration test files: test_shared_contracts_consumers.py (270 LOC, 21 tests) + test_shared_contracts_consumers_behavior.py (174 LOC, 5 tests). Empirical: 1104 tests across 4 trees, 0 failed.
+- **Rejected:** Make shared/ a pip-install-e package (out of scope). Expose update_compliance.main() over CLI shape adopt does not use. Skip iterate contract — would leave the worst offender.
+- **Details:** [B8-contracts.md](../planning/iterate/campaigns/2026-05-25-bloat-cleanup-B-shipwright/sub-iterates/B8-contracts.md)
