@@ -126,3 +126,7 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - **ADR-055** (2026-05-19): GitHub findings triage producer (un-defers the CI producer)
 
 - **ADR-068** (2026-05-21): Artifact-based GitHub security producer for Triage Inbox
+
+- **ADR-078** (2026-05-26): Split dev_server.py 997 LOC into 10-file package; preserve shim for uv run callers
+
+- **ADR-088** (2026-05-26): shared/contracts/* — cross-plugin contract surface introduced for compliance + iterate

@@ -507,3 +507,11 @@ Thanks for contributing! If anything in this guide is unclear, please open an is
 - **ADR-075** (2026-05-23): Test enforces architecture.md ↔ decision-drop coupling; 11 historical drift entries backfilled
 
 - **ADR-076** (2026-05-23): F11 verifier resolves F7 event by run_id, not HEAD commit
+
+- **ADR-082** (2026-05-24): SBOM producer collapses N workspaces with same undeclared-signature into one cluster
+
+- **ADR-083** (2026-05-25): Pre-commit + CI anti-ratchet gate + bloat-exception ADR template + glossary
+
+- **ADR-084** (2026-05-25): Two-hook structural prevention against file-size regrowth
+
+- **ADR-085** (2026-05-25): Bloat-policy detective audit lands as Group H (G collision-avoidance)
