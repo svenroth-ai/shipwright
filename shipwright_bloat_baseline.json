@@ -366,13 +366,6 @@
       "adr": null
     },
     {
-      "path": "plugins/shipwright-plan/skills/plan/SKILL.md",
-      "limit": 400,
-      "current": 581,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "plugins/shipwright-run/scripts/lib/orchestrator.py",
       "limit": 300,
       "current": 983,
