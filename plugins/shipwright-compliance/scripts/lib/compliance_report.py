@@ -25,7 +25,7 @@ try:
     from triage import read_all_items as _read_triage_items  # noqa: E402
 except ImportError:  # pragma: no cover - triage helper always available in practice
     _read_triage_items = None  # type: ignore[assignment]
-
+from ._bloat_dashboard_rows import bloat_rows_events_mode, bloat_rows_legacy_mode  # B3
 if TYPE_CHECKING:
     from scripts.lib.data_collector import ComplianceData
 
@@ -297,8 +297,7 @@ def _quality_indicators_events(data: ComplianceData) -> list[str]:
     lines.append(
         f"| Triage open | {triage_value} | {_status_badge(triage_ok)} | {triage_why} |"
     )
-
-    lines.append("")
+    lines.extend(bloat_rows_events_mode(data.project_root))  # B3 (includes trailing "")
     return lines
 
 
@@ -379,6 +378,7 @@ def _quality_indicators_legacy(data: ComplianceData) -> list[str]:
         f"| Architecture decisions logged | {total_decisions} | INFO | ADR entries in decision_log.md |",
         f"| Third-party dependencies | {total_deps} | INFO | Open-source packages in use |",
         f"| Copyleft license risk | {copyleft} | {_status_badge(copyleft == 0)} | Packages with GPL/AGPL/LGPL/MPL licenses |",
+        *bloat_rows_legacy_mode(data.project_root),  # B3
         "",
     ]
 

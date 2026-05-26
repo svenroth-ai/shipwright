@@ -590,13 +590,6 @@
       "adr": null
     },
     {
-      "path": "shared/scripts/lib/phase_quality.py",
-      "limit": 300,
-      "current": 1108,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "shared/scripts/lib/spec_parser.py",
       "limit": 300,
       "current": 350,
