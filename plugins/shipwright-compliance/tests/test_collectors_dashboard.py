@@ -1,11 +1,11 @@
-"""Tests for the Compliance Dashboard's bloat-findings column (B3).
+"""Tests for the Compliance Dashboard bloat-findings column (B3).
 
-Iterate Campaign B (B3) wired three new Quality-Indicators rows into
+Campaign B B3 wired three Quality-Indicators rows into
 ``compliance_report.py`` fed from
-``shared.scripts.lib.phase_quality.collect_bloat_summary``. Covers:
+``shared.scripts.lib.phase_quality.collect_bloat_summary``. Covers
 producer behaviour (over_limit / in_allowlist / ratchet_delta math +
-fail-open) + the spec-mandated round-trip probe (regenerate the
-dashboard MD against a fixture; confirm the three rows appear).
+fail-open) plus the spec-mandated round-trip probe (regenerate the
+dashboard MD against a fixture; confirm all three rows appear).
 """
 
 from __future__ import annotations
@@ -18,8 +18,7 @@ import pytest
 
 # Load shared phase_quality as a top-level package (not `lib.phase_quality`).
 # test_enforcement_hooks.py defensively clears its own `lib.*` cache before
-# resolving `lib.thresholds`, so it tolerates the `lib.*` entries this import
-# transitively populates.
+# resolving `lib.thresholds`, tolerating the `lib.*` entries this import populates.
 _SHARED_LIB = str(Path(__file__).resolve().parents[3] / "shared" / "scripts" / "lib")
 if _SHARED_LIB not in sys.path:
     sys.path.insert(0, _SHARED_LIB)

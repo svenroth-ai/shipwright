@@ -46,12 +46,17 @@ _SOURCE_EXTS = {".py", ".ts", ".tsx", ".js", ".jsx"}
 
 # Skip globs / substrings — generated, vendored, lock files, migrations,
 # test fixtures (spec §3.2: long-by-nature, exempt from size check).
+# ``.shipwright/runs/`` is the gitignored runtime-artifact tree (campaign
+# setup scripts, surface_verification logs, evidence files); scanning it
+# produces false-positive Group H1 findings because the content can never
+# be committed.
 _SKIP_PATH_RE = re.compile(
     r"(\.lock$|package-lock|node_modules[/\\]|vendor[/\\]|dist[/\\]"
     r"|build[/\\]|\.min\.|__pycache__|\.pyc$|\.generated\."
     r"|migrations?[/\\].*\.sql"
     r"|(?:^|[/\\])fixtures[/\\]"
-    r"|(?:^|[/\\])__fixtures__[/\\])",
+    r"|(?:^|[/\\])__fixtures__[/\\]"
+    r"|(?:^|[/\\])\.shipwright[/\\]runs[/\\])",
     re.IGNORECASE,
 )
 # Non-source extensions that are never weighed.

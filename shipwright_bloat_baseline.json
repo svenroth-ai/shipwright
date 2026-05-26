@@ -501,7 +501,7 @@
     {
       "path": "plugins/shipwright-test/scripts/tools/boundary_coverage_report.py",
       "limit": 300,
-      "current": 661,
+      "current": 640,
       "state": "grandfathered",
       "adr": null
     },
