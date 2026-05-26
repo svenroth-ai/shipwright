@@ -23,6 +23,7 @@ plugins/                    # Claude Code plugins (one per SDLC phase)
   shipwright-adopt/         # Brownfield onboarding (analyze an existing repo)
 # Command Center WebUI lives at github.com/svenroth-ai/shipwright-webui since v0.4.0
 shared/                     # Shared across all plugins
+  contracts/                # Cross-plugin public API (B8): compliance.py, iterate.py
   profiles/                 # Stack profile definitions (JSON) + deploy profiles
   templates/                # CLAUDE.md, .shipwright/agent_docs, CI templates
   prompts/                  # Shared subagent prompts (code_reviewer, iterate_reviewer)
