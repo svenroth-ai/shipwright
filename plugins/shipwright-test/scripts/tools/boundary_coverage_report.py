@@ -35,32 +35,11 @@ from pathlib import Path
 from typing import Iterable
 
 # ---------------------------------------------------------------------------
-# Bring in is_io_boundary_change from the iterate plugin (ADR-024).
+# Bring in is_io_boundary_change from the iterate plugin (ADR-024) via the
+# public cross-plugin contract introduced in Sub-Iterate B8. The contract
+# owns the sys.path bootstrap; no path-walk or `sys.path.insert` here.
 # ---------------------------------------------------------------------------
-_REPO_ROOT_GUESS = Path(__file__).resolve().parents[4]
-_ITERATE_LIB = _REPO_ROOT_GUESS / "plugins" / "shipwright-iterate" / "scripts" / "lib"
-if str(_ITERATE_LIB) not in sys.path:
-    sys.path.insert(0, str(_ITERATE_LIB))
-
-try:
-    from classify_complexity import is_io_boundary_change  # type: ignore
-except Exception:  # pragma: no cover — fallback if iterate plugin missing
-    def is_io_boundary_change(changed_files):  # type: ignore
-        if not changed_files:
-            return False
-        patterns = (
-            r"(^|/)\.env(\..+)?$",
-            r"(^|/)hooks\.json$",
-            r"(^|/)settings\.json$",
-            r"(^|/)[^/]*_config\.json$",
-            r"(^|/)[^/]*_state\.json$",
-        )
-        for path in changed_files:
-            normalized = path.replace("\\", "/")
-            for pattern in patterns:
-                if re.search(pattern, normalized):
-                    return True
-        return False
+from shared.contracts.iterate import is_io_boundary_change  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
