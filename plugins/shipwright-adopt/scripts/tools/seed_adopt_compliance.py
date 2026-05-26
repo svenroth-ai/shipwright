@@ -15,8 +15,32 @@ from pathlib import Path
 
 
 def _load_lib() -> None:
-    lib_dir = Path(__file__).resolve().parent.parent / "lib"
-    sys.path.insert(0, str(lib_dir))
+    """Bootstrap sys.path so the bridge module + the shared contract resolve.
+
+    Iterate B8: the bridge now imports ``shared.contracts.compliance``
+    at module load. When this CLI is invoked from a plugin-local venv
+    (``plugins/shipwright-adopt/.venv``), ``shared/`` is not on
+    sys.path by default. We anchor the repo root from this file's own
+    location and add both that AND ``scripts/lib/`` so legacy callers
+    still ``from compliance_bridge import ...`` succeed.
+
+    File layout used::
+
+        plugins/shipwright-adopt/scripts/tools/seed_adopt_compliance.py
+        repo_root/^         /^         /^     /^^
+                  parents[3] parents[2] parent[1] parent[0]=file
+        plugins/^          /^                  /^      /^      /^
+                parents[4]                                            parents[0]=file
+    """
+    here = Path(__file__).resolve()
+    lib_dir = here.parent.parent / "lib"
+    # here.parents: [0]=tools, [1]=scripts, [2]=shipwright-adopt, [3]=plugins, [4]=repo_root.
+    repo_root = here.parents[4]
+    # Repo root first so ``shared.contracts.compliance`` resolves before any
+    # accidentally-shadowing ``shared/`` module that may exist in a sibling
+    # plugin's lib path.
+    sys.path.insert(0, str(repo_root))
+    sys.path.insert(1, str(lib_dir))
 
 
 def main() -> int:
