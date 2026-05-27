@@ -1516,3 +1516,43 @@ Authoritative writers:
   Re-exported through `orchestrator.py` (post Campaign B5 split, 2026-05-26).
 
 No other plugin writes this file directly.
+
+## Branch integration (Run-ID-bearing branches)
+
+When integrating `main` into a long-lived `iterate/<slug>` branch — or any
+branch whose commit history contains a `Run-ID:` trailer — the framework
+requires `git merge`, NOT `git rebase`.
+
+```
+GOOD:  git merge main          # preserves Run-ID trailer SHAs reachable
+BAD:   git rebase main         # re-parents commits, drops trailer SHAs
+```
+
+Why this matters: `plugins/shipwright-compliance/scripts/audit/audit_staleness.py`
+locates the last single-producer snapshot commit via
+`git log --grep=Run-ID: --diff-filter=AM -- .shipwright/compliance/
+.shipwright/agent_docs/` against the current branch's history. A rebase
+rewrites every Run-ID commit's SHA AND, depending on the rebase strategy,
+may drop merge-commit-bearing trailers entirely. The Group E audit then
+reports `snapshot_unavailable` (greenfield-shaped) on a branch that had
+dozens of legitimate Run-ID commits before the rebase, breaking the
+single-producer guarantee from PR #78 and iterate-2026-05-27.
+
+Operational guidance for contributors:
+
+* Pull main into the iterate branch with `git merge --no-ff main` (or a
+  plain `git merge main`). The merge commit itself does not need a
+  `Run-ID:` trailer — the Run-ID-bearing commits stay reachable through
+  it.
+* When `gh pr merge` against the iterate branch's PR, prefer `--merge`
+  or `--squash` over `--rebase`. `--rebase` on the GitHub side has the
+  same trailer-drop semantics as a local rebase.
+* Force-pushing a rebased history to a branch with merged Run-ID commits
+  is a destructive action; restore the pre-rebase ref via
+  `git reflog show iterate/<slug>` if recovery is needed.
+
+The convention is doc-only (codified here + drift-protected by
+`shared/tests/test_branch_integration_doc.py`); operators self-discipline.
+A future iterate may add a programmatic `pre-rebase` guard if the doc
+proves insufficient (deferred from iterate-2026-05-27 per external review
+finding OpenAI #12).

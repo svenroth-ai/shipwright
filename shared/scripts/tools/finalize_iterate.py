@@ -21,20 +21,125 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
 _SCRIPTS_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
+from lib.artifact_paths import (  # noqa: E402
+    runtime_path,
+    tracked_path,
+)
+
+
+def _atomic_replace(content_bytes: bytes, destination: Path) -> None:
+    """Atomic same-filesystem write via NamedTemporaryFile + os.replace.
+
+    Partial-failure safe: tempfile lives in destination.parent so rename
+    is atomic; on rename failure the tempfile is unlinked (would otherwise
+    leak as ".name.…tmp" cruft into tracked agent_docs). See ADR 089.
+    """
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        mode="wb",
+        dir=destination.parent,
+        prefix=f".{destination.name}.",
+        suffix=".tmp",
+        delete=False,
+    ) as fh:
+        tmp_path = Path(fh.name)
+        fh.write(content_bytes)
+    try:
+        os.replace(tmp_path, destination)
+    except OSError:
+        tmp_path.unlink(missing_ok=True)
+        raise
+
+
+def _refuse_symlink(path: Path) -> bool:
+    """True iff ``path`` is a symlink (finalize refuses these targets)."""
+    try:
+        if path.is_symlink():
+            print(
+                f"[finalize_iterate] refusing symlinked artifact: {path}",
+                file=sys.stderr,
+            )
+            return True
+    except OSError:
+        return True
+    return False
+
+
+def _unlink_runtime_artifacts(project_root: Path) -> dict[str, str]:
+    """Wipe runtime/{session_handoff,build_dashboard}.md after direct-write.
+
+    These two carry iterate-specific context (canon marker, run_id) that
+    the runtime Stop-hook variant lacks — they're regenerated to tracked
+    above; this just cleans up stale runtime. See ADR 089.
+    """
+    results: dict[str, str] = {}
+    for name in ("session_handoff", "build_dashboard"):
+        rp = runtime_path(project_root, name)
+        if not rp.exists():
+            results[name] = "skipped (no runtime)"
+            continue
+        if _refuse_symlink(rp):
+            results[name] = "skipped (symlink)"
+            continue
+        try:
+            rp.unlink(missing_ok=True)
+            results[name] = "unlinked"
+        except OSError as exc:
+            print(
+                f"[finalize_iterate] unlink runtime {name} failed: {exc}",
+                file=sys.stderr,
+            )
+            results[name] = f"error: {exc}"
+    return results
+
+
+def _snapshot_triage_runtime(project_root: Path) -> str:
+    """Atomic copy of runtime/triage_inbox.md → tracked; seed via aggregate_triage if absent.
+
+    Triage carries no iterate-specific context so copy-snapshot is safe.
+    See ADR 089 for the per-file decision rationale.
+    """
+    rp = runtime_path(project_root, "triage_inbox")
+    tp = tracked_path(project_root, "triage_inbox")
+
+    if rp.exists():
+        if _refuse_symlink(rp) or _refuse_symlink(tp):
+            return "skipped (symlink)"
+        try:
+            _atomic_replace(rp.read_bytes(), tp)
+            rp.unlink(missing_ok=True)
+            return "copied"
+        except OSError as exc:
+            print(
+                f"[finalize_iterate] snapshot triage failed: {exc}",
+                file=sys.stderr,
+            )
+            return f"error: {exc}"
+
+    try:
+        from tools import aggregate_triage
+
+        rc = aggregate_triage.main(["--project-root", str(project_root)])
+        return "seeded" if rc == 0 else f"seeded (rc={rc})"
+    except Exception as exc:  # noqa: BLE001 best-effort
+        print(f"[finalize_iterate] triage seed failed: {exc}", file=sys.stderr)
+        return f"seed-error: {exc}"
+
 
 def _update_dashboard(project_root: Path, session_id: str, run_id: str) -> str | None:
-    """Update build_dashboard.md. Returns written path or None.
+    """Update tracked build_dashboard.md (always — runtime variant lacks run_id).
 
-    ``run_id`` is embedded in the dashboard header so the F11 finalization
-    verifier (check_build_dashboard_has_run_id) has a deterministic marker:
-    F5b renders this dashboard BEFORE the F6 commit + F7 event, so the new
-    commit SHA cannot yet be in it.
+    ``run_id`` is embedded so F11's check_build_dashboard_has_run_id
+    succeeds (F5b runs BEFORE F6 commit + F7 event, so SHA isn't yet
+    available). The Stop-hook runtime variant doesn't carry run_id; this
+    direct-write is canonical, runtime gets wiped after. See ADR 089.
     """
     try:
         from tools.update_build_dashboard import generate_dashboard
@@ -42,7 +147,7 @@ def _update_dashboard(project_root: Path, session_id: str, run_id: str) -> str |
         content = generate_dashboard(
             project_root, phase="iterate", session_id=session_id, run_id=run_id
         )
-        out_path = project_root / ".shipwright" / "agent_docs" / "build_dashboard.md"
+        out_path = tracked_path(project_root, "build_dashboard")
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(content, encoding="utf-8")
         return str(out_path.relative_to(project_root))
@@ -190,7 +295,13 @@ def attach_commit_after_finalize(
 
 
 def _generate_handoff(project_root: Path, session_id: str, run_id: str, reason: str) -> str | None:
-    """Generate session handoff with canon marker. Returns written path or None."""
+    """Generate tracked session handoff with canon marker.
+
+    Always writes the tracked variant — the Stop-hook-written runtime
+    variant does NOT carry the canon-frontmarker the F11 verifier
+    (check_session_handoff_fresh) keys on. The subsequent
+    :func:`_unlink_runtime_artifacts` wipes the stale runtime variant.
+    """
     try:
         from lib.events_log import latest_event_dt
         from tools.generate_session_handoff import generate_handoff
@@ -213,7 +324,7 @@ def _generate_handoff(project_root: Path, session_id: str, run_id: str, reason: 
             reason=reason,
             canon_frontmatter=canon_fm,
         )
-        out_path = project_root / ".shipwright" / "agent_docs" / "session_handoff.md"
+        out_path = tracked_path(project_root, "session_handoff")
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(content, encoding="utf-8")
         return str(out_path.relative_to(project_root))
@@ -281,6 +392,18 @@ def run(
     result["steps"]["handoff"] = (
         {"written": handoff_path} if handoff_path else {"skipped": True}
     )
+
+    # Step 5 (iterate-2026-05-27): snapshot the runtime triage aggregation
+    # into the tracked snapshot, then wipe any remaining runtime artifacts
+    # so Stop hooks fired after F5b but before F11 don't re-dirty main.
+    # Triage is the only artifact where runtime → tracked is a safe COPY;
+    # session_handoff and build_dashboard carry iterate-specific context
+    # that the runtime variant lacks, so they're regenerated above and
+    # their runtime variants are wiped here.
+    result["steps"]["triage_snapshot"] = {
+        "outcome": _snapshot_triage_runtime(project_root),
+    }
+    result["steps"]["runtime_cleanup"] = _unlink_runtime_artifacts(project_root)
 
     return result
 

@@ -26,6 +26,12 @@ from pathlib import Path
 # Mirrors agent_docs entry in shared/scripts/lib/artifact_migrations.py.
 _AGENT_DOCS_DIRNAME = ".shipwright/agent_docs"
 
+# Stop-hook writes target the gitignored runtime/ subdir; iterate-finalize
+# is the single producer of the tracked variants. See
+# iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox
+# + shared/scripts/lib/artifact_paths.py.
+_RUNTIME_SUBDIR = "runtime"
+
 
 # Iterate 12.1: parse the canon frontmatter at the top of
 # ``.shipwright/agent_docs/session_handoff.md``. The block is written by
@@ -226,15 +232,22 @@ def main() -> int:
         from tools.generate_session_handoff import generate_handoff
 
         agent_docs = project_root / _AGENT_DOCS_DIRNAME
-        handoff_path = agent_docs / "session_handoff.md"
+        runtime_dir = agent_docs / _RUNTIME_SUBDIR
+        # Tracked path — what the canon-frontmatter skip check inspects
+        # (and what iterate-finalize writes). The runtime variant is the
+        # Stop-hook's actual write target post-2026-05-27.
+        tracked_handoff = agent_docs / "session_handoff.md"
+        handoff_path = runtime_dir / "session_handoff.md"
 
         # Iterate 12.1 — conditional skip: when a phase finalization just
-        # wrote the handoff with --canon-marker and its frontmatter
-        # run_id matches the current SHIPWRIGHT_RUN_ID, leave it alone.
-        # Without this guard the Stop hook fires at turn end and
-        # clobbers the canon handoff with a generic "session end" one,
-        # which the iterate 12 verifier would then flag as missing C3.
-        skip, skip_reason = _should_skip_regeneration(handoff_path)
+        # wrote the TRACKED handoff with --canon-marker and its frontmatter
+        # run_id matches the current SHIPWRIGHT_RUN_ID, leave the runtime
+        # write off too. Without this guard the Stop hook fires at turn end
+        # and would re-shadow the canon handoff in runtime/, which the
+        # iterate 12 verifier (reading tracked) doesn't care about — but
+        # keeping the skip in place preserves the existing semantics for
+        # consumers that fall back from tracked to runtime.
+        skip, skip_reason = _should_skip_regeneration(tracked_handoff)
         if skip:
             # Stop hookSpecificOutput cannot carry additionalContext; emit
             # to stderr instead. See ADR-042.
@@ -266,17 +279,22 @@ def main() -> int:
             phase_namespaced.write_text(content, encoding="utf-8")
             handoff_path = phase_namespaced
         else:
-            agent_docs.mkdir(parents=True, exist_ok=True)
+            # Write to gitignored runtime/ subdir. Iterate-finalize will
+            # copy this to the tracked path at F5b.
+            runtime_dir.mkdir(parents=True, exist_ok=True)
             handoff_path.write_text(content, encoding="utf-8")
 
-        # Update build dashboard with "paused" status
+        # Update build dashboard with "paused" status — also writes to
+        # runtime/. The tracked dashboard is written exclusively by
+        # iterate-finalize.
         try:
             from tools.update_build_dashboard import generate_dashboard
 
             dashboard = generate_dashboard(
                 project_root, status="paused", session_id=session_id,
             )
-            (agent_docs / "build_dashboard.md").write_text(dashboard, encoding="utf-8")
+            runtime_dir.mkdir(parents=True, exist_ok=True)
+            (runtime_dir / "build_dashboard.md").write_text(dashboard, encoding="utf-8")
         except Exception:
             pass  # Dashboard update is best-effort
 

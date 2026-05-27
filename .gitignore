@@ -127,4 +127,9 @@ Spec/
 /.shipwright/adopt/screenshots/
 /.shipwright/agent_docs/decision-drops/
 /.shipwright/agent_docs/visual/
+# Stop-hook live state (session_handoff.md, build_dashboard.md,
+# triage_inbox.md) — written every Stop event in every plugin; tracked
+# variants are produced only by iterate-finalize as the single producer.
+# See iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox.
+/.shipwright/agent_docs/runtime/
 /.shipwright/compliance/skill-compliance/

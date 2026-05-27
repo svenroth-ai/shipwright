@@ -1,11 +1,13 @@
 # Project Activity Dashboard
-> Updated: 2026-05-25 19:29 UTC | Session: 70a6c2a4-4357-439f-aab1-446837ba917a | Run: iterate-2026-05-25-bloat-defense
+> Updated: 2026-05-27 07:46 UTC | Session: 87413758-9986-4b2a-a593-98a16742bfd6 | Run: iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox
 
-## Recent Changes (59 iterations)
+## Recent Changes (61 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| feature | Pre-commit anti-ratchet hook + bloat-check CI workflow + bloat-exception ADR template + shared glossary (Campaign A.defense, closes Campaign A defense-in-depth layer) | 41/41 |  | tooling | 2026-05-25 |
+| change | Runtime/snapshot split for agent-doc trio + hard-gated finalize repair pass + audit_staleness coverage extension + merge-not-rebase doc convention. | 0/0 |  | fix | 2026-05-27 |
+| change | B8: shared/contracts/* cross-plugin contracts (compliance + iterate); adopt-bridge + boundary_coverage_report refactor | +26 new, 1104/1104 | fbde435 | tooling | 2026-05-26 |
+| feature | Pre-commit anti-ratchet hook + bloat-check CI workflow + bloat-exception ADR template + shared glossary (Campaign A.defense, closes Campaign A defense-in-depth layer) | 41/41 | 55be715 | tooling | 2026-05-25 |
 | bug | fix bloat_gate_on_stop.py Stop-hook schema violation | 131/131 | 193b7f5 | tooling | 2026-05-25 |
 | feature | Campaign A.review: bloat reviewer prompts (Karpathy+Osmani+Shipwright) + Group H detective audit (H0-H6) | 14/14 | babf9fc | infra | 2026-05-25 |
 | change | Phase 0 bloat baseline inventory — activates A.foundation Stop-Gate | 0/0 | 66ec453 | infra | 2026-05-25 |
