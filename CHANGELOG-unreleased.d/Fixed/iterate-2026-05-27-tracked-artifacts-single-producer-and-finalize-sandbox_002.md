@@ -1,0 +1,1 @@
+iterate_stop_finalize.py repair pass no longer falls back to cwd when the per-session worktree pointer is stale — it refuses to run, preventing the 8 tracked compliance + agent-doc MDs from being written into main.

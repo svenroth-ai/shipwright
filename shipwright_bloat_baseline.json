@@ -130,9 +130,9 @@
     {
       "path": "plugins/shipwright-compliance/scripts/audit/audit_staleness.py",
       "limit": 300,
-      "current": 308,
-      "state": "grandfathered",
-      "adr": null
+      "current": 347,
+      "state": "exception",
+      "adr": "ADR-090"
     },
     {
       "path": "plugins/shipwright-compliance/scripts/audit/group_a.py",
@@ -242,9 +242,9 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_audit_snapshot.py",
       "limit": 300,
-      "current": 450,
-      "state": "grandfathered",
-      "adr": null
+      "current": 464,
+      "state": "exception",
+      "adr": "ADR-090"
     },
     {
       "path": "plugins/shipwright-compliance/tests/test_compliance_report.py",
@@ -543,9 +543,9 @@
     {
       "path": "shared/scripts/hooks/generate_handoff_on_stop.py",
       "limit": 300,
-      "current": 321,
-      "state": "grandfathered",
-      "adr": null
+      "current": 339,
+      "state": "exception",
+      "adr": "ADR-090"
     },
     {
       "path": "shared/scripts/lib/artifact_migrations.py",
@@ -634,9 +634,9 @@
     {
       "path": "shared/scripts/tools/aggregate_triage.py",
       "limit": 300,
-      "current": 373,
-      "state": "grandfathered",
-      "adr": null
+      "current": 400,
+      "state": "exception",
+      "adr": "ADR-090"
     },
     {
       "path": "shared/scripts/tools/append_changelog_entry.py",
@@ -662,9 +662,9 @@
     {
       "path": "shared/scripts/tools/finalize_iterate.py",
       "limit": 300,
-      "current": 352,
-      "state": "grandfathered",
-      "adr": null
+      "current": 475,
+      "state": "exception",
+      "adr": "ADR-090"
     },
     {
       "path": "shared/scripts/tools/generate_session_handoff.py",
@@ -858,9 +858,9 @@
     {
       "path": "shared/tests/test_generate_handoff_on_stop.py",
       "limit": 300,
-      "current": 337,
-      "state": "grandfathered",
-      "adr": null
+      "current": 402,
+      "state": "exception",
+      "adr": "ADR-090"
     },
     {
       "path": "shared/tests/test_generate_session_handoff.py",

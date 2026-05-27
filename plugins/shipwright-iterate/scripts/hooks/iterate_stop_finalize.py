@@ -75,20 +75,49 @@ def _active_worktree_root(cwd: Path, session_id: str) -> Path | None:
     pointer written by ``setup_iterate_worktree.py`` maps session_id →
     worktree. Without this, a fallback finalize here would write into the
     main tree — and the leak-guard of any concurrent iterate run would then
-    flag a false leak. Best-effort: returns None on any resolution failure.
+    flag a false leak.
+
+    Validation (external review OpenAI #7,
+    iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox):
+
+    * Pointer must exist and resolve to a directory.
+    * Resolved path must be UNDER the main repo's worktree root (rejects
+      foreign repos / absolute paths to other clones).
+    * Path must be a `.git`-bearing directory (a real worktree).
+
+    Best-effort: returns None on any resolution failure or validation miss.
     """
     if not session_id:
         return None
     try:
         from lib.worktree_isolation import main_repo_root, read_run_pointer
 
-        pointer = read_run_pointer(main_repo_root(cwd), session_id)
+        main_root = main_repo_root(cwd)
+        pointer = read_run_pointer(main_root, session_id)
     except Exception:
         return None
     if not pointer:
         return None
-    worktree = Path(pointer.get("worktree_path", ""))
-    return worktree if worktree.is_dir() else None
+    worktree_str = pointer.get("worktree_path", "")
+    if not worktree_str:
+        return None
+    try:
+        worktree = Path(worktree_str).resolve()
+    except (OSError, RuntimeError):
+        return None
+    if not worktree.is_dir():
+        return None
+    # Containment guard: resolved worktree must live under main_root so a
+    # poisoned pointer cannot redirect finalize to an unrelated tree.
+    try:
+        main_root_resolved = main_root.resolve()
+        worktree.relative_to(main_root_resolved)
+    except (ValueError, OSError):
+        return None
+    # Must look like a worktree (has a `.git` file/dir).
+    if not (worktree / ".git").exists():
+        return None
+    return worktree
 
 
 def main() -> int:
@@ -102,6 +131,13 @@ def main() -> int:
     #    active iterate worktree (if any) so a fallback finalize never
     #    dirties the main tree. SHIPWRIGHT_PROJECT_ROOT is honored by
     #    lib.project_root.resolve_project_root.
+    #
+    #    Resolved worktree is captured into a local so the repair-pass
+    #    gate (step 4) can refuse to run when this resolution failed —
+    #    the legacy fallback to cwd silently routed finalize writes into
+    #    the main tree, bypassing the PR #78 single-producer guarantee
+    #    (iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox).
+    worktree: Path | None = None
     try:
         worktree = _active_worktree_root(
             Path.cwd(), os.environ.get("SHIPWRIGHT_SESSION_ID", "")
@@ -139,7 +175,25 @@ def main() -> int:
     if _dashboard_reflects_run_id(project_root, run_id):
         return 0
 
-    # 4. Repair pass — finalize_iterate was not run during this session
+    # 4. Repair pass — finalize_iterate was not run during this session.
+    #    HARD GATE (iterate-2026-05-27): refuse the repair pass when no
+    #    valid worktree pointer exists for this session. cwd at Stop-time
+    #    is the main repo; running finalize against main would write the
+    #    8 tracked compliance + agent-doc MDs in the wrong tree, bypassing
+    #    the single-producer guarantee (PR #78). Steps 1-3 above are safe
+    #    (handoff writes to runtime/, project_root resolution is a read,
+    #    freshness gate is a read). Step 4 is the LAST step before
+    #    return 0 — audited 2026-05-27 — so an early return here only
+    #    skips the dangerous finalize call.
+    if worktree is None:
+        print(
+            "[iterate_stop_finalize] no valid iterate worktree pointer for "
+            f"session {os.environ.get('SHIPWRIGHT_SESSION_ID', '?')!r} "
+            "— repair pass skipped (cwd would be main tree).",
+            file=sys.stderr,
+        )
+        return 0
+
     try:
         from tools.finalize_iterate import run as finalize_run
         result = finalize_run(project_root, run_id=run_id)

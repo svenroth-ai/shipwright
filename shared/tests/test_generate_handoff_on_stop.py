@@ -1,4 +1,11 @@
-"""Tests for the Stop hook that generates session_handoff.md."""
+"""Tests for the Stop hook that generates session_handoff.md.
+
+Post-iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox:
+the hook writes to ``.shipwright/agent_docs/runtime/`` (gitignored). The
+tracked ``.shipwright/agent_docs/session_handoff.md`` is produced
+exclusively by iterate-finalize. Tests use ``runtime_handoff_path`` to
+target the live-state path.
+"""
 
 import json
 import os
@@ -12,6 +19,16 @@ def _agent_docs_root(tmp: Path) -> Path:
     p = tmp / ".shipwright" / "agent_docs"
     p.mkdir(parents=True, exist_ok=True)
     return p
+
+
+def runtime_handoff_path(project_root: Path) -> Path:
+    """Helper: the Stop-hook write target after iterate-2026-05-27."""
+    return project_root / ".shipwright" / "agent_docs" / "runtime" / "session_handoff.md"
+
+
+def tracked_handoff_path(project_root: Path) -> Path:
+    """Helper: the iterate-finalize-only write target."""
+    return project_root / ".shipwright" / "agent_docs" / "session_handoff.md"
 
 
 # The hook script path
@@ -43,7 +60,11 @@ def test_exits_zero_when_not_shipwright_project(tmp_path):
 
 
 def test_generates_handoff_with_run_config(tmp_project):
-    """Hook generates session_handoff.md when shipwright_run_config.json exists."""
+    """Hook generates runtime/session_handoff.md when shipwright_run_config.json exists.
+
+    Post-iterate-2026-05-27: write target is runtime/, NOT the tracked path
+    (iterate-finalize is the sole producer of the tracked variant).
+    """
     config = {"scope": "full_app", "profile": "test"}
     (tmp_project / "shipwright_run_config.json").write_text(
         json.dumps(config), encoding="utf-8"
@@ -55,8 +76,16 @@ def test_generates_handoff_with_run_config(tmp_project):
     )
 
     assert result.returncode == 0
-    handoff = tmp_project / ".shipwright" / "agent_docs" / "session_handoff.md"
-    assert handoff.exists()
+    handoff = runtime_handoff_path(tmp_project)
+    assert handoff.exists(), (
+        f"expected runtime handoff at {handoff}; "
+        f"stderr={result.stderr!r}"
+    )
+    # Tracked path stays absent — only finalize writes it.
+    assert not tracked_handoff_path(tmp_project).exists(), (
+        "Stop hook wrote tracked session_handoff.md — single-producer "
+        "violation. iterate-2026-05-27 regression."
+    )
     content = handoff.read_text(encoding="utf-8")
     assert "# Session Handoff" in content
     assert "test-session-42" in content
@@ -64,12 +93,14 @@ def test_generates_handoff_with_run_config(tmp_project):
 
 
 def test_generates_handoff_with_only_agent_docs(tmp_project):
-    """Hook generates handoff when only agent_docs/ exists (early phase)."""
+    """Hook generates runtime handoff when only agent_docs/ exists (early phase)."""
     result = run_hook(tmp_project)
 
     assert result.returncode == 0
-    handoff = tmp_project / ".shipwright" / "agent_docs" / "session_handoff.md"
-    assert handoff.exists()
+    handoff = runtime_handoff_path(tmp_project)
+    assert handoff.exists(), (
+        f"expected runtime handoff; stderr={result.stderr!r}"
+    )
     content = handoff.read_text(encoding="utf-8")
     assert "# Session Handoff" in content
     assert "not_started" in content
@@ -150,7 +181,7 @@ def test_idempotent(tmp_project):
     result2 = run_hook(tmp_project)
     assert result2.returncode == 0
 
-    handoff = tmp_project / ".shipwright" / "agent_docs" / "session_handoff.md"
+    handoff = runtime_handoff_path(tmp_project)
     assert handoff.exists()
     content = handoff.read_text(encoding="utf-8")
     assert "# Session Handoff" in content
@@ -171,7 +202,7 @@ def test_default_session_id_when_env_not_set(tmp_project):
     )
 
     assert result.returncode == 0
-    handoff = tmp_project / ".shipwright" / "agent_docs" / "session_handoff.md"
+    handoff = runtime_handoff_path(tmp_project)
     assert handoff.exists()
     assert "unknown" in handoff.read_text(encoding="utf-8")
 
@@ -223,11 +254,17 @@ def test_canon_marker_same_run_id_skips_regeneration(tmp_project):
 
 def test_canon_marker_different_run_id_regenerates(tmp_project):
     """A stale canon frontmatter from a prior run must not prevent
-    regeneration when the current run_id differs."""
+    regeneration when the current run_id differs.
+
+    Post-iterate-2026-05-27: the canon-marker check still inspects the
+    TRACKED path (the marker's whole point is to know finalize touched
+    that file), but the regenerated content goes to runtime/. The tracked
+    file is left alone — iterate-finalize is the sole writer.
+    """
     agent_docs = tmp_project / ".shipwright" / "agent_docs"
     agent_docs.mkdir(parents=True, exist_ok=True)
-    handoff = agent_docs / "session_handoff.md"
-    handoff.write_text(
+    tracked = tracked_handoff_path(tmp_project)
+    tracked.write_text(
         "---\n"
         "canon_generated: true\n"
         'run_id: "project-20260414-old"\n'
@@ -238,6 +275,7 @@ def test_canon_marker_different_run_id_regenerates(tmp_project):
         "\n# Session Handoff\n\nStale content.\n",
         encoding="utf-8",
     )
+    tracked_pre = tracked.read_text(encoding="utf-8")
     (tmp_project / "shipwright_run_config.json").write_text(
         json.dumps({"scope": "full_app"}), encoding="utf-8"
     )
@@ -250,19 +288,32 @@ def test_canon_marker_different_run_id_regenerates(tmp_project):
         },
     )
     assert result.returncode == 0
-    content = handoff.read_text(encoding="utf-8")
-    # The regenerated handoff has the "session end" reason; the old
-    # "stale" reason is gone.
+    # Tracked path was NOT touched — single-producer.
+    assert tracked.read_text(encoding="utf-8") == tracked_pre, (
+        "Stop hook modified tracked session_handoff.md; only iterate-"
+        "finalize may write the tracked variant."
+    )
+    # Runtime got the regenerated content.
+    runtime = runtime_handoff_path(tmp_project)
+    assert runtime.exists(), (
+        f"expected runtime regeneration; stderr={result.stderr!r}"
+    )
+    content = runtime.read_text(encoding="utf-8")
     assert "stale" not in content
     assert "session end" in content
 
 
 def test_canon_marker_missing_run_id_env_regenerates(tmp_project):
     """When the frontmatter is present but SHIPWRIGHT_RUN_ID is unset,
-    the hook must fall through to normal regeneration (safe default)."""
+    the hook must fall through to normal regeneration (safe default).
+
+    Post-iterate-2026-05-27: regenerated content goes to runtime/; tracked
+    stays.
+    """
     agent_docs = tmp_project / ".shipwright" / "agent_docs"
     agent_docs.mkdir(parents=True, exist_ok=True)
-    (agent_docs / "session_handoff.md").write_text(
+    tracked = tracked_handoff_path(tmp_project)
+    tracked.write_text(
         "---\n"
         "canon_generated: true\n"
         'run_id: "project-20260414-alpha"\n'
@@ -290,18 +341,27 @@ def test_canon_marker_missing_run_id_env_regenerates(tmp_project):
         env=env,
     )
     assert result.returncode == 0
-    content = (tmp_project / ".shipwright" / "agent_docs" / "session_handoff.md").read_text(encoding="utf-8")
-    # Should be regenerated — old content gone.
+    # Tracked path retains "Old." — single-producer.
+    assert "Old." in tracked.read_text(encoding="utf-8")
+    # Runtime got the regenerated content.
+    runtime = runtime_handoff_path(tmp_project)
+    assert runtime.exists()
+    content = runtime.read_text(encoding="utf-8")
     assert "Old." not in content
     assert "# Session Handoff" in content
 
 
 def test_non_canon_handoff_always_regenerates(tmp_project):
     """Plain handoff without frontmatter: regenerate every time, same
-    as pre-12.1 behaviour. Regression guard."""
+    as pre-12.1 behaviour. Regression guard.
+
+    Post-iterate-2026-05-27: regenerated content goes to runtime/; tracked
+    plain handoff (no canon marker) stays as seeded.
+    """
     agent_docs = tmp_project / ".shipwright" / "agent_docs"
     agent_docs.mkdir(parents=True, exist_ok=True)
-    (agent_docs / "session_handoff.md").write_text(
+    tracked = tracked_handoff_path(tmp_project)
+    tracked.write_text(
         "# Session Handoff\n\nOld manual content.\n",
         encoding="utf-8",
     )
@@ -317,7 +377,12 @@ def test_non_canon_handoff_always_regenerates(tmp_project):
         },
     )
     assert result.returncode == 0
-    content = (tmp_project / ".shipwright" / "agent_docs" / "session_handoff.md").read_text(encoding="utf-8")
+    # Tracked plain content stays (single-producer).
+    assert "Old manual content" in tracked.read_text(encoding="utf-8")
+    # Runtime got the regenerated content.
+    runtime = runtime_handoff_path(tmp_project)
+    assert runtime.exists()
+    content = runtime.read_text(encoding="utf-8")
     assert "Old manual content" not in content
     assert "session end" in content
 
@@ -330,7 +395,7 @@ def test_with_full_config_set(project_with_configs):
     )
 
     assert result.returncode == 0
-    handoff = project_with_configs / ".shipwright" / "agent_docs" / "session_handoff.md"
+    handoff = runtime_handoff_path(project_with_configs)
     content = handoff.read_text(encoding="utf-8")
     assert "full-session" in content
     assert "build" in content  # Phase should be detected as build

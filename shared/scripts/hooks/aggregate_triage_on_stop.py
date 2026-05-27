@@ -30,6 +30,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.artifact_paths import runtime_dir  # noqa: E402
 from lib.project_root import resolve_project_root  # noqa: E402
 
 # aggregate_triage lives at shared/scripts/tools/aggregate_triage.py
@@ -68,9 +69,15 @@ def main() -> int:
 
     try:
         # Reuse the public CLI entry point so behavior is identical to
-        # `uv run shared/scripts/tools/aggregate_triage.py`.
+        # `uv run shared/scripts/tools/aggregate_triage.py`. Write to the
+        # gitignored runtime/ subdir; iterate-finalize is the single
+        # producer of the tracked variant
+        # (iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox).
+        rt = runtime_dir(project_root)
+        rt.mkdir(parents=True, exist_ok=True)
         aggregate_triage.main([
             "--project-root", str(project_root),
+            "--out-dir", str(rt),
         ])
     except Exception as exc:  # noqa: BLE001 — never block Stop chain
         # ADR-042: diagnostics on Stop go to stderr, not additionalContext.

@@ -38,6 +38,7 @@ from triage import (  # noqa: E402
 
 _AGENT_DOCS_DIRNAME = ".shipwright/agent_docs"
 TRIAGE_MD_REL = Path(_AGENT_DOCS_DIRNAME) / "triage_inbox.md"
+TRIAGE_MD_FILENAME = "triage_inbox.md"
 
 TOP_N = 50
 FIELD_TRUNCATE_AT = 120
@@ -329,6 +330,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="ISO-8601 'now' for the header (default: current UTC). "
              "Tests pass a fixed value for snapshot stability.",
     )
+    p.add_argument(
+        "--out-dir",
+        default=None,
+        help=(
+            "Override output directory (default: <project-root>/"
+            ".shipwright/agent_docs). The Stop hook passes "
+            "<project-root>/.shipwright/agent_docs/runtime to keep the "
+            "live aggregation out of the tracked snapshot. Constrained "
+            "to be under --project-root for write-safety."
+        ),
+    )
     return p.parse_args(argv)
 
 
@@ -354,7 +366,22 @@ def main(argv: list[str] | None = None) -> int:
     items = read_all_items(project_root)
     md = render_markdown(items, now=now)
 
-    out_path = project_root / TRIAGE_MD_REL
+    # Resolve and constrain --out-dir per external review #10
+    # (write-safety: refuse paths that escape project_root).
+    if args.out_dir:
+        from lib.artifact_paths import ensure_path_within_project_root  # noqa: E402
+
+        candidate = Path(args.out_dir)
+        if not candidate.is_absolute():
+            candidate = project_root / candidate
+        try:
+            out_dir = ensure_path_within_project_root(candidate, project_root)
+        except ValueError as exc:
+            sys.stderr.write(f"--out-dir rejected: {exc}\n")
+            return 2
+        out_path = out_dir / TRIAGE_MD_FILENAME
+    else:
+        out_path = project_root / TRIAGE_MD_REL
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(md, encoding="utf-8")
 
