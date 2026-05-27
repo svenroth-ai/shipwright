@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-05-27T07:46:31.802388+00:00
-Total commits: 756
+Generated: 2026-05-27T15:26:55.425849+00:00
+Total commits: 760
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 241
-    "fix" : 192
-    "chore" : 144
+    "fix" : 194
+    "chore" : 146
     "docs" : 106
     "refactor" : 50
     "test" : 15
@@ -265,10 +265,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 192 commits
+### Fixes (fix) — 194 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-27 | iterate | correct iterate_history adr field to run-id form | 36375a6408d3 |
+| 2026-05-27 | iterate | runtime/snapshot split for agent-doc trio + hard-gated finalize repair | 54ecb17512c2 |
 | 2026-05-25 | hooks | drop invalid hookSpecificOutput wrapper from Stop hook (#87) | f6bca09d9b57 |
 | 2026-05-25 | bloat | skip tests/fixtures/ and __fixtures__/ in scan walker | ea2f6110eb12 |
 | 2026-05-23 | compliance | pin SBOM Python-license resolver to per-manifest .venv METADATA | fc1a7a86cffb |
@@ -462,10 +464,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 144 commits
+### Chores (chore) — 146 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-27 | events | record evt-bf6d663c for iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox | 6c3c86cce946 |
+| 2026-05-27 | events | record evt-5aca940d for iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox | 4299012f8d72 |
 | 2026-05-26 | release | post-v0.22.0 ADR aggregation polish | 0b67b4bc7d9c |
 | 2026-05-26 | release | v0.22.0 | 83dbdb3a90e7 |
 | 2026-05-26 | bloat | hygiene cleanup of 3 Group H findings (post Campaign B+C) | fe619edeff2c |
@@ -819,7 +823,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 756 |
+| Total commits | 760 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 756 |
+| Human-authored commits | 760 |
 
