@@ -1,11 +1,13 @@
 # Project Activity Dashboard
-> Updated: 2026-05-27 07:46 UTC | Session: 87413758-9986-4b2a-a593-98a16742bfd6 | Run: iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox
+> Updated: 2026-05-27 15:26 UTC | Session: 7d450478-340e-4922-88cc-aff62899b1a3 | Run: iterate-2026-05-27-sbom-license-resolve
 
-## Recent Changes (61 iterations)
+## Recent Changes (63 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | Runtime/snapshot split for agent-doc trio + hard-gated finalize repair pass + audit_staleness coverage extension + merge-not-rebase doc convention. | 0/0 |  | fix | 2026-05-27 |
+| change | Refresh SBOM after syncing dev extras across plugin workspaces; clears 4 stale triage entries (pytest/pytest-mock now resolve as MIT) | 0/0 |  | compliance | 2026-05-27 |
+| change | Correction event: spec_impact reclassified to none with justification (supersedes evt-5aca940d). | 0/0 | 54ecb17 | fix | 2026-05-27 |
+| change | Runtime/snapshot split for agent-doc trio + hard-gated finalize repair pass + audit_staleness coverage extension + merge-not-rebase doc convention. | 0/0 | 54ecb17 | fix | 2026-05-27 |
 | change | B8: shared/contracts/* cross-plugin contracts (compliance + iterate); adopt-bridge + boundary_coverage_report refactor | +26 new, 1104/1104 | fbde435 | tooling | 2026-05-26 |
 | feature | Pre-commit anti-ratchet hook + bloat-check CI workflow + bloat-exception ADR template + shared glossary (Campaign A.defense, closes Campaign A defense-in-depth layer) | 41/41 | 55be715 | tooling | 2026-05-25 |
 | bug | fix bloat_gate_on_stop.py Stop-hook schema violation | 131/131 | 193b7f5 | tooling | 2026-05-25 |

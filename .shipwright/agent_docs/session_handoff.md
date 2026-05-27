@@ -1,44 +1,40 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox"
+run_id: "iterate-2026-05-27-sbom-license-resolve"
 phase: "iterate"
-reason: "F5b: tracked-artifacts single-producer + finalize sandbox"
-timestamp: "2026-05-27T07:46:31.802388+00:00"
+reason: "SBOM dev-extras license resolution refresh"
+timestamp: "2026-05-27T15:26:55.425849+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-27 07:46:31 UTC
+> Auto-generated 2026-05-27 15:26:55 UTC
 
 ## Session Info
 
-- **Session ID**: 87413758-9986-4b2a-a593-98a16742bfd6
-- **Timestamp**: 2026-05-27 07:46:31 UTC
-- **Reason**: F5b: tracked-artifacts single-producer + finalize sandbox
+- **Session ID**: 7d450478-340e-4922-88cc-aff62899b1a3
+- **Timestamp**: 2026-05-27 15:26:55 UTC
+- **Reason**: SBOM dev-extras license resolution refresh
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-25-bloat-defense
-- **Date**: 2026-05-25T19:29:23.066767Z
-- **Type**: feature
+- **Run ID**: iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox
+- **Date**: 2026-05-27T07:46:50.658016Z
+- **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/bloat-defense
-- **ADR**: iterate-2026-05-25-bloat-defense
+- **Branch**: iterate/tracked-artifacts-single-producer-and-finalize-sandbox
+- **ADR**: iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-25-bloat-defense.md
+- **Spec**: .shipwright/planning/iterate/2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/tracked-artifacts-single-producer-and-finalize-sandbox
-- **Run ID**: `iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox`
-- **Spec**: .shipwright/planning/iterate/2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox.md
-- **Complexity**: medium
-- **External Review Marker**: stale (predates spec (2026-05-27T07:11:03))
+- **Branch**: iterate/sbom-license-resolve
+- **External Review Marker**: completed (external_review_state.json @ 2026-05-27T07:11:03)
 
 ### Mandatory replay on Resume
 
 Before dispatching to the handoff's Remaining phase, run these if missing:
-- Step 4 — External LLM Review (marker missing/stale)
 - Finalization (F0–F11) after all mandatory phases pass
 
 ## Legacy build state
@@ -52,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/tracked-artifacts-single-producer-and-finalize-sandbox
-- **Last Commit**: 0b67b4b chore(release): post-v0.22.0 ADR aggregation polish
+- **Branch**: iterate/sbom-license-resolve
+- **Last Commit**: 1a5fbba Merge pull request #106 from svenroth-ai/iterate/tracked-artifacts-single-producer-and-finalize-sandbox
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -69,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-536e20a7 | work_completed | iterate (Refresh SBOM after syncing dev extras across plugin workspaces; clears 4 stale triage entries (pytest/pytest-mock now resolve as MIT)) | 2026-05-27 |
+| evt-bf6d663c | work_completed | iterate (Correction event: spec_impact reclassified to none with justification (supersedes evt-5aca940d).) | 2026-05-27 |
 | evt-5aca940d | work_completed | iterate (Runtime/snapshot split for agent-doc trio + hard-gated finalize repair pass + audit_staleness coverage extension + merge-not-rebase doc convention.) | 2026-05-27 |
 | evt-e3dd6850 | work_completed | iterate (B8: shared/contracts/* cross-plugin contracts (compliance + iterate); adopt-bridge + boundary_coverage_report refactor) | 2026-05-26 |
 | evt-044dce38 | work_completed | iterate (Pre-commit anti-ratchet hook + bloat-check CI workflow + bloat-exception ADR template + shared glossary (Campaign A.defense, closes Campaign A defense-in-depth layer)) | 2026-05-25 |
-| evt-db351941 | work_completed | iterate (fix bloat_gate_on_stop.py Stop-hook schema violation) | 2026-05-25 |
-| evt-96086624 | work_completed | iterate (Campaign A.review: bloat reviewer prompts (Karpathy+Osmani+Shipwright) + Group H detective audit (H0-H6)) | 2026-05-25 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 61
-- **Last iterate**: change — Runtime/snapshot split for agent-doc trio + hard-gated finalize repair pass + audit_staleness coverage extension + merge-not-rebase doc convention. (2026-05-27)
+- **Total work events**: 63
+- **Last iterate**: change — Refresh SBOM after syncing dev extras across plugin workspaces; clears 4 stale triage entries (pytest/pytest-mock now resolve as MIT) (2026-05-27)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

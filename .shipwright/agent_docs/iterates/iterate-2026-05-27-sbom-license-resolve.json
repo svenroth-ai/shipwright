@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-05-27-sbom-license-resolve",
+  "date": "2026-05-27T15:27:25.850566Z",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/sbom-license-resolve",
+  "tests_passed": true,
+  "adr": "iterate-2026-05-27-sbom-license-resolve_001"
+}
