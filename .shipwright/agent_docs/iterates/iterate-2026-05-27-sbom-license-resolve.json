@@ -5,5 +5,5 @@
   "complexity": "trivial",
   "branch": "iterate/sbom-license-resolve",
   "tests_passed": true,
-  "adr": "iterate-2026-05-27-sbom-license-resolve_001"
+  "adr": "iterate-2026-05-27-sbom-license-resolve"
 }
