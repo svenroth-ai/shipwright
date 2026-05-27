@@ -5,12 +5,9 @@
      New `current` values land in shipwright_bloat_baseline.json with
      state="exception" and adr="ADR-090". -->
 
-- **Status:** accepted
+- **Status:** accepted (re-evaluated 2026-05-27 — exception is permanent, see Amendment)
 - **Date:** 2026-05-27
-- **Re-Review-Date:** 2026-08-27 _(3 months out — re-evaluate whether the
-  finalize_iterate snapshot helpers can be moved into a sibling module,
-  and whether test_generate_handoff_on_stop's double-assertion contract
-  per test case can be factored into a shared helper)_
+- **Re-Review-Date:** _none — exception is permanent (see Amendment 2026-05-27)_
 - **Incident Reference:** iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox
   + PR pending — closes the recurring "main is dirty after every session"
   regression class verified against session `40b1eb76` end-state. See
@@ -121,30 +118,58 @@ shared/scripts/tools/finalize_iterate.py                           300 → 475
 shared/tests/test_generate_handoff_on_stop.py                      300 → 402
 ```
 
-Retirement plan: at the 2026-08-27 re-review, evaluate two splits:
-
-1. `finalize_iterate.py` → move `_atomic_replace`,
-   `_refuse_symlink`, `_unlink_runtime_artifacts`, `_snapshot_triage_runtime`
-   into `shared/scripts/lib/iterate_snapshot.py`. Reduces this file by
-   ~120 LOC if the helpers don't need access to the existing private
-   step helpers.
-2. `test_generate_handoff_on_stop.py` → extract the double-assertion
-   pattern (runtime + tracked) into a shared helper, reducing per-test
-   line count.
-
-Both splits are deferred to this iterate (would have expanded scope
-beyond the bug fix).
+Retirement plan: **none — exception is permanent.** See Amendment below.
 
 ## Consequences
 
 - The bloat anti-ratchet hook no longer blocks commits to these 5
   files at their new limits.
 - Group H (bloat detective audit) will still flag any future regression
-  past the new limits — the exception is a one-shot bump, not a
-  permanent waiver.
-- The 2026-08-27 re-review is the gate for the deferred splits. If
-  neither lands by then, this ADR should be re-justified or amended
-  with a new re-review date.
+  past the new limits — the exception is a one-shot bump per file, not
+  a blanket waiver for future growth.
+
+## Amendment — 2026-05-27 (re-evaluation, same day)
+
+The original Decision section deferred two splits to a 2026-08-27 re-review.
+Re-evaluated the same day in conversation; both splits **rejected as
+permanent decisions**, not deferred:
+
+**1. `finalize_iterate.py` snapshot-helper split — REJECTED.**
+
+Honest re-application of Bloat vs Long-Code distinction: bloat is
+uncontrolled growth / dead code / leaked abstractions. `finalize_iterate.py`
+is none of those — every helper is called, all are private, all serve
+one `run()` entrypoint, every LOC was deliberate incident response. The
+file is **long code, not bloat**. Splitting would:
+
+- raise total LOC slightly (new module header + new test file + import)
+- add a search path for readers ("look in iterate_snapshot.py")
+- gain no measurable clarity — the snapshot helpers are intimately
+  coupled to finalize's responsibility ("clean up after each finalize
+  cycle")
+- the "could be reused by future producers" argument is YAGNI; no
+  producer exists or is planned
+- the "different abstraction level" argument also applies to
+  `_record_event` (event-log mechanics) and `_update_compliance`
+  (subprocess wrangling) — and we don't split those out either
+
+`finalize_iterate.py` at 475 LOC is below neighbors
+(`generate_session_handoff.py` 667, `artifact_migrations.py` 567) and
+the Ousterhout deep-module argument from the original Context section
+**stands**: small interface (`run()` + `attach_commit_after_finalize`),
+substantial coherent implementation. Permanent exception.
+
+**2. `test_generate_handoff_on_stop.py` double-assertion factor — REJECTED.**
+
+The "double-assertion per test" pattern (runtime exists + tracked
+unchanged) **is** the single-producer contract that every test must
+prove explicitly. A helper would save ~16-24 LOC realistically, not
+65, and would obscure the invariant each test demonstrates. Tests
+growing to ~400 LOC because they cover more contract cases is healthy.
+Permanent exception.
+
+**Triage `trg-74288ab0`** (the deferred-split tracker) dismissed with
+this rationale on 2026-05-27.
 
 ## Rejected alternatives
 
