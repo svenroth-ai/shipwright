@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-05-27 15:26 UTC | Session: 7d450478-340e-4922-88cc-aff62899b1a3 | Run: iterate-2026-05-27-sbom-license-resolve
+> Updated: 2026-05-27 20:42 UTC | Session: 4e2a1fb9-2941-47d7-b901-a5ce1e500c0f | Run: iterate-2026-05-27-guide-readme-refresh
 
-## Recent Changes (63 iterations)
+## Recent Changes (64 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | Refresh SBOM after syncing dev extras across plugin workspaces; clears 4 stale triage entries (pytest/pytest-mock now resolve as MIT) | 0/0 |  | compliance | 2026-05-27 |
+| change | Refresh docs/guide.md and README.md with Campaign A/B + ADR-060/061/062/089/090 + F7b + runtime/snapshot split + bloat anti-ratchet hook + plugin-cache drift check | 0/0 |  | docs | 2026-05-27 |
+| change | Refresh SBOM after syncing dev extras across plugin workspaces; clears 4 stale triage entries (pytest/pytest-mock now resolve as MIT) | 0/0 | b3ff2eb | compliance | 2026-05-27 |
 | change | Correction event: spec_impact reclassified to none with justification (supersedes evt-5aca940d). | 0/0 | 54ecb17 | fix | 2026-05-27 |
 | change | Runtime/snapshot split for agent-doc trio + hard-gated finalize repair pass + audit_staleness coverage extension + merge-not-rebase doc convention. | 0/0 | 54ecb17 | fix | 2026-05-27 |
 | change | B8: shared/contracts/* cross-plugin contracts (compliance + iterate); adopt-bridge + boundary_coverage_report refactor | +26 new, 1104/1104 | fbde435 | tooling | 2026-05-26 |

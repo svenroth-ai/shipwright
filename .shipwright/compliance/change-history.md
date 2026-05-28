@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-05-27T15:26:55.425849+00:00
-Total commits: 760
+Generated: 2026-05-27T20:42:50.226242+00:00
+Total commits: 763
 
 ## Commit Distribution
 
@@ -9,8 +9,8 @@ Total commits: 760
 pie title Commit Types
     "feat" : 241
     "fix" : 194
-    "chore" : 146
-    "docs" : 106
+    "chore" : 148
+    "docs" : 107
     "refactor" : 50
     "test" : 15
     "other" : 7
@@ -464,10 +464,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 146 commits
+### Chores (chore) — 148 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-27 | events | record evt-536e20a7 for iterate-2026-05-27-sbom-license-resolve | 204ab4ac5c7a |
+| 2026-05-27 | compliance | refresh SBOM after syncing plugin dev extras (#107) | 0469e8511b9c |
 | 2026-05-27 | events | record evt-bf6d663c for iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox | 6c3c86cce946 |
 | 2026-05-27 | events | record evt-5aca940d for iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox | 4299012f8d72 |
 | 2026-05-26 | release | post-v0.22.0 ADR aggregation polish | 0b67b4bc7d9c |
@@ -615,10 +617,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 106 commits
+### Documentation (docs) — 107 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-27 | adr | mark ADR-090 split as permanent exception after re-evaluation | 7a77b290cef1 |
 | 2026-05-25 | constitution | extend §21 with anti-ratchet CI rule + exception ADR path | a8d498989ddd |
 | 2026-05-23 | security | add suppression-syntax reference + link from SKILL.md | eb2fa64719b8 |
 | 2026-05-21 | campaign | empirical-verification handover for B.2→C.3 (#64) | 376c870345c3 |
@@ -823,7 +826,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 760 |
+| Total commits | 763 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 760 |
+| Human-authored commits | 763 |
 
