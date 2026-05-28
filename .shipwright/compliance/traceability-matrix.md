@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-27T20:42:50.226242+00:00
+Generated: 2026-05-28T22:31:54.970539+00:00
 
 ## Requirements Coverage
 
@@ -88,7 +88,9 @@ Generated: 2026-05-27T20:42:50.226242+00:00
 | Runtime/snapshot split for agent-doc trio + hard-gated finalize repair pass + audit_staleness coverage extension + merge-not-rebase doc convention. | iterate | change |  | — | 54ecb17 | 2026-05-27 |
 | Correction event: spec_impact reclassified to none with justification (supersedes evt-5aca940d). | iterate | change |  | — | 54ecb17 | 2026-05-27 |
 | Refresh SBOM after syncing dev extras across plugin workspaces; clears 4 stale triage entries (pytest/pytest-mock now resolve as MIT) | iterate | change |  | — | b3ff2eb | 2026-05-27 |
-| Refresh docs/guide.md and README.md with Campaign A/B + ADR-060/061/062/089/090 + F7b + runtime/snapshot split + bloat anti-ratchet hook + plugin-cache drift check | iterate | change |  | — | — | 2026-05-27 |
+| Refresh docs/guide.md and README.md with Campaign A/B + ADR-060/061/062/089/090 + F7b + runtime/snapshot split + bloat anti-ratchet hook + plugin-cache drift check | iterate | change |  | — | 25fd988 | 2026-05-27 |
+| Correction event: spec_impact=none with proper justification field for the verifier (supersedes evt-13153a5c). | iterate | change |  | — | 25fd988 | 2026-05-27 |
+| Refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath (41 legitimate findings) | iterate | bug |  | 2449/2449 | — | 2026-05-28 |
 
 ## Coverage Summary
 
@@ -96,7 +98,7 @@ Generated: 2026-05-27T20:42:50.226242+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 64 |
+| Iterate changes | 66 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

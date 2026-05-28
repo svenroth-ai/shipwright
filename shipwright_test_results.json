@@ -1,26 +1,20 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-25-bloat-defense",
-    "date": "2026-05-25",
-    "unit": { "status": "passed", "passed": 41, "total": 41, "scope": "shared/tests/test_anti_ratchet_check.py + test_anti_ratchet_check_staged.py + test_bloat_defense_artifacts.py" },
-    "integration": { "status": "skipped", "reason": "no integration changes" },
+    "run_id": "iterate-2026-05-29-fix-path-canon-allowlist",
+    "date": "2026-05-29",
+    "unit": { "status": "passed", "passed": 2449, "total": 2449, "scope": "full shared/tests suite (home of test_artifact_path_canon + sibling migration-lint tests)" },
+    "integration": { "status": "skipped", "reason": "no integration changes (lint-config only)" },
     "pgtap": { "status": "skipped", "reason": "no DB changes" },
-    "e2e": { "status": "passed", "passed": 41, "total": 41, "scope": "F0.5 surface=cli runner" },
+    "e2e": { "status": "skipped", "reason": "surface=none — static lint-config change, no startable runtime surface" },
     "design_fidelity": { "status": "skipped", "reason": "no UI changes" },
     "smoke": { "status": "skipped", "reason": "no UI changes" },
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --with pytest --with pytest-mock --with pyyaml pytest shared/tests/test_anti_ratchet_check.py shared/tests/test_anti_ratchet_check_staged.py shared/tests/test_bloat_defense_artifacts.py --color=no",
+      "surface": "none",
+      "justification": "Static lint-config change: extends ALLOWLIST in shared/scripts/lib/artifact_migrations.py (consumed only by test_artifact_path_canon + drift detector). No startable runtime surface, no UI/API/CLI behavior change. Verified by test_artifact_path_canon (4 params green) + full shared suite (2449 passed).",
       "exit_code": 0,
-      "tests_run": 41,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-25-bloat-defense/surface_verification.log",
-      "timestamp": "2026-05-25T19:27:55.599Z"
-    },
-    "empirical_precommit_probe": {
-      "status": "passed",
-      "evidence_path": ".shipwright/runs/iterate-2026-05-25-bloat-defense/precommit_probe_shipwright.log",
-      "scenario": "appended 60 lines to plugins/shipwright-iterate/skills/iterate/SKILL.md (baseline current=1709), staged + attempted commit, pre-commit hook exited 1 with Iron-Law block emitted, no commit created, file restored",
-      "ac_satisfied": "AC-9"
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-29-fix-path-canon-allowlist/surface_verification.json",
+      "timestamp": "2026-05-29T00:00:00.000Z"
     },
     "degraded": []
   }

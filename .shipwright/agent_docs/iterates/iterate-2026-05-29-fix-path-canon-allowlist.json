@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-29-fix-path-canon-allowlist",
+  "date": "2026-05-28T22:32:04.206148Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/fix-path-canon-allowlist",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-05-29-fix-path-canon-allowlist"
+}
