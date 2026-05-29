@@ -1,11 +1,13 @@
 # Project Activity Dashboard
-> Updated: 2026-05-27 20:42 UTC | Session: 4e2a1fb9-2941-47d7-b901-a5ce1e500c0f | Run: iterate-2026-05-27-guide-readme-refresh
+> Updated: 2026-05-28 22:31 UTC | Session: 37e2bfe1-a0ee-4002-8a52-4b7fd1e0da0a | Run: iterate-2026-05-29-fix-path-canon-allowlist
 
-## Recent Changes (64 iterations)
+## Recent Changes (66 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | Refresh docs/guide.md and README.md with Campaign A/B + ADR-060/061/062/089/090 + F7b + runtime/snapshot split + bloat anti-ratchet hook + plugin-cache drift check | 0/0 |  | docs | 2026-05-27 |
+| bug | Refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath (41 legitimate findings) | 2449/2449 |  | tooling | 2026-05-28 |
+| change | Correction event: spec_impact=none with proper justification field for the verifier (supersedes evt-13153a5c). | 0/0 | 25fd988 | docs | 2026-05-27 |
+| change | Refresh docs/guide.md and README.md with Campaign A/B + ADR-060/061/062/089/090 + F7b + runtime/snapshot split + bloat anti-ratchet hook + plugin-cache drift check | 0/0 | 25fd988 | docs | 2026-05-27 |
 | change | Refresh SBOM after syncing dev extras across plugin workspaces; clears 4 stale triage entries (pytest/pytest-mock now resolve as MIT) | 0/0 | b3ff2eb | compliance | 2026-05-27 |
 | change | Correction event: spec_impact reclassified to none with justification (supersedes evt-5aca940d). | 0/0 | 54ecb17 | fix | 2026-05-27 |
 | change | Runtime/snapshot split for agent-doc trio + hard-gated finalize repair pass + audit_staleness coverage extension + merge-not-rebase doc convention. | 0/0 | 54ecb17 | fix | 2026-05-27 |
@@ -71,7 +73,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-25 | Unit: 41/41 | E2E: 41/41 | Smoke: skipped | (iterate)
+Last run: 2026-05-29 | Unit: 2449/2449 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

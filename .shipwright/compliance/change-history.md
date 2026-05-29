@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-05-27T20:42:50.226242+00:00
-Total commits: 763
+Generated: 2026-05-28T22:31:54.970539+00:00
+Total commits: 768
 
 ## Commit Distribution
 
@@ -9,8 +9,8 @@ Total commits: 763
 pie title Commit Types
     "feat" : 241
     "fix" : 194
-    "chore" : 148
-    "docs" : 107
+    "chore" : 150
+    "docs" : 110
     "refactor" : 50
     "test" : 15
     "other" : 7
@@ -464,10 +464,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 148 commits
+### Chores (chore) — 150 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-27 | events | record work_completed for iterate-2026-05-27-guide-readme-refresh | d5090eff64e7 |
+| 2026-05-27 | events | record work_completed for iterate-2026-05-27-guide-readme-refresh | 91dd6832c310 |
 | 2026-05-27 | events | record evt-536e20a7 for iterate-2026-05-27-sbom-license-resolve | 204ab4ac5c7a |
 | 2026-05-27 | compliance | refresh SBOM after syncing plugin dev extras (#107) | 0469e8511b9c |
 | 2026-05-27 | events | record evt-bf6d663c for iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox | 6c3c86cce946 |
@@ -617,10 +619,13 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 107 commits
+### Documentation (docs) — 110 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-29 | agent-docs | add guide-readme-refresh to architecture baseline | c78fd143ade3 |
+| 2026-05-29 | agent-docs | refresh architecture.md + ADR INDEX for Campaign B baseline | 0241d58d3255 |
+| 2026-05-27 | guide,readme | refresh for Campaign A+B + ADRs 060/061/062/089/090 | 25fd98826faf |
 | 2026-05-27 | adr | mark ADR-090 split as permanent exception after re-evaluation | 7a77b290cef1 |
 | 2026-05-25 | constitution | extend §21 with anti-ratchet CI rule + exception ADR path | a8d498989ddd |
 | 2026-05-23 | security | add suppression-syntax reference + link from SKILL.md | eb2fa64719b8 |
@@ -826,7 +831,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 763 |
+| Total commits | 768 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 763 |
+| Human-authored commits | 768 |
 

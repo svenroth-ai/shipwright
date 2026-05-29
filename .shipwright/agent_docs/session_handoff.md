@@ -1,34 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-27-guide-readme-refresh"
+run_id: "iterate-2026-05-29-fix-path-canon-allowlist"
 phase: "iterate"
-reason: "iterate finalization"
-timestamp: "2026-05-27T20:42:50.226242+00:00"
+reason: "iterate: refresh artifact-path-canon allowlist"
+timestamp: "2026-05-28T22:31:54.970539+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-27 20:42:50 UTC
+> Auto-generated 2026-05-28 22:31:54 UTC
 
 ## Session Info
 
-- **Session ID**: 4e2a1fb9-2941-47d7-b901-a5ce1e500c0f
-- **Timestamp**: 2026-05-27 20:42:50 UTC
-- **Reason**: iterate finalization
+- **Session ID**: 37e2bfe1-a0ee-4002-8a52-4b7fd1e0da0a
+- **Timestamp**: 2026-05-28 22:31:54 UTC
+- **Reason**: iterate: refresh artifact-path-canon allowlist
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-27-sbom-license-resolve
-- **Date**: 2026-05-27T15:27:25.850566Z
+- **Run ID**: iterate-2026-05-27-guide-readme-refresh
+- **Date**: 2026-05-27T20:45:59.698617Z
 - **Type**: change
-- **Complexity**: trivial
-- **Branch**: iterate/sbom-license-resolve
-- **ADR**: iterate-2026-05-27-sbom-license-resolve
+- **Complexity**: medium
+- **Branch**: iterate/guide-readme-refresh
+- **ADR**: iterate-2026-05-27-guide-readme-refresh
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/proposed-guide-readme-refresh.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/guide-readme-refresh
+- **Branch**: iterate/fix-path-canon-allowlist
 - **External Review Marker**: completed (external_review_state.json @ 2026-05-27T07:11:03)
 
 ### Mandatory replay on Resume
@@ -47,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/guide-readme-refresh
-- **Last Commit**: 7a77b29 docs(adr): mark ADR-090 split as permanent exception after re-evaluation
+- **Branch**: iterate/fix-path-canon-allowlist
+- **Last Commit**: c78fd14 docs(agent-docs): add guide-readme-refresh to architecture baseline
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-4244f6e9 | work_completed | iterate (Refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath (41 legitimate findings)) | 2026-05-28 |
+| evt-d15e38c0 | work_completed | iterate (Correction event: spec_impact=none with proper justification field for the verifier (supersedes evt-13153a5c).) | 2026-05-27 |
 | evt-13153a5c | work_completed | iterate (Refresh docs/guide.md and README.md with Campaign A/B + ADR-060/061/062/089/090 + F7b + runtime/snapshot split + bloat anti-ratchet hook + plugin-cache drift check) | 2026-05-27 |
 | evt-536e20a7 | work_completed | iterate (Refresh SBOM after syncing dev extras across plugin workspaces; clears 4 stale triage entries (pytest/pytest-mock now resolve as MIT)) | 2026-05-27 |
 | evt-bf6d663c | work_completed | iterate (Correction event: spec_impact reclassified to none with justification (supersedes evt-5aca940d).) | 2026-05-27 |
-| evt-5aca940d | work_completed | iterate (Runtime/snapshot split for agent-doc trio + hard-gated finalize repair pass + audit_staleness coverage extension + merge-not-rebase doc convention.) | 2026-05-27 |
-| evt-e3dd6850 | work_completed | iterate (B8: shared/contracts/* cross-plugin contracts (compliance + iterate); adopt-bridge + boundary_coverage_report refactor) | 2026-05-26 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 64
-- **Last iterate**: change — Refresh docs/guide.md and README.md with Campaign A/B + ADR-060/061/062/089/090 + F7b + runtime/snapshot split + bloat anti-ratchet hook + plugin-cache drift check (2026-05-27)
+- **Total work events**: 66
+- **Last iterate**: bug — Refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath (41 legitimate findings) (2026-05-28)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

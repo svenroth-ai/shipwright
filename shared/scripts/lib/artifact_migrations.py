@@ -353,6 +353,11 @@ ALLOWLIST: dict[str, list[str]] = {
         "plugins/shipwright-build/tests/**",
         "plugins/shipwright-compliance/tests/**",
         "plugins/shipwright-run/tests/**",
+        # iterate-2026-05-29-fix-path-canon-allowlist — same class as the
+        # sibling plugin test dirs above; simply never added. Covers
+        # test_repair_pass_refuses_main.py (ADR-089), where canonical
+        # `sw / "agent_docs"` builds trip the AST checker behind a Name node.
+        "plugins/shipwright-iterate/tests/**",
         "integration-tests/**",
         # Sub-Iterate D (prose) completed. Plugin SKILLs/agents/references +
         # README + CLAUDE.md + constitution all migrated. Removed.
@@ -465,7 +470,11 @@ ALLOWLIST: dict[str, list[str]] = {
         # Files migrated in B that retain legitimate LEGACY_COMPLIANCE_DIRNAME constant
         # (per Layer-6 cross-validation pattern) or KEYWORD/PHASE-NAME dict keys.
         # The PATH-ref hits in these files are gone; what remains is by design.
-        "shared/scripts/lib/phase_quality.py",                            # LEGACY_COMPLIANCE_DIRNAME + phase-name dict keys
+        # iterate-2026-05-29-fix-path-canon-allowlist: B3 (PR #99) split the
+        # allowlisted phase_quality.py monolith into this package (same
+        # LEGACY_COMPLIANCE_DIRNAME + phase-name refs); glob replaces the stale
+        # entry 1:1, no broadening.
+        "shared/scripts/lib/phase_quality/**",                            # B3 split successor
         "shared/scripts/tools/finalize_iterate.py",                       # result["steps"]["compliance"] phase-name key
         "shared/scripts/tools/verifiers/compliance_compliance.py",        # LEGACY_COMPLIANCE_DIRNAME constant
         "shared/scripts/tools/verifiers/infrastructure_checks.py",        # LEGACY_COMPLIANCE_DIRNAME constant
@@ -483,6 +492,10 @@ ALLOWLIST: dict[str, list[str]] = {
         # PHASE-NAME / skill-compliance subdir refs (compliance is a phase name; the
         # `skill-compliance/` subdir under .shipwright/compliance/ is the dominant text).
         "plugins/shipwright-run/scripts/lib/orchestrator.py",
+        # iterate-2026-05-29-fix-path-canon-allowlist: B5 (PR #102) split
+        # orchestrator.py into this package (same phase-name enums + plugin-path
+        # docstrings; orchestrator.py stays as shim). Glob preserves blast radius.
+        "plugins/shipwright-run/scripts/lib/orchestrator_pkg/**",          # B5 split successor
         "plugins/shipwright-run/scripts/lib/phase_validators.py",
         # Triage Inbox (iterate-2026-05-11-triage-inbox-1a) — uses
         # "compliance" as an ENUM value (kind, source, suggestedDomain),
@@ -507,6 +520,9 @@ ALLOWLIST: dict[str, list[str]] = {
         "plugins/shipwright-compliance/tests/**",
         "plugins/shipwright-adopt/tests/**",
         "plugins/shipwright-run/tests/**",
+        # iterate-2026-05-29-fix-path-canon-allowlist — see the agent_docs
+        # block; same test_repair_pass_refuses_main.py rationale. Never added.
+        "plugins/shipwright-iterate/tests/**",
         "integration-tests/**",
         # Plugin Prosa (D-scope) — migrated in D, no longer in ALLOWLIST.
         # Templates + Docs (E-scope) — migrated in E. Both files retain legitimate
@@ -545,6 +561,15 @@ ALLOWLIST: dict[str, list[str]] = {
         # Pending C-migration (path-ref in adopt's decision-log template, line 204).
         # The entry will narrow once Sub-Iterate C migrates the template string.
         "plugins/shipwright-adopt/scripts/lib/artifact_writer.py",
+        # iterate-2026-05-29-fix-path-canon-allowlist — three Campaign A/B
+        # artifacts carrying legitimate plugin-source paths / module names that
+        # trip the `-compliance/` hyphen segment, never legacy artifact paths:
+        # shared/contracts/** (B8 facade — "compliance" submodule in __all__ +
+        # docstring plugin paths); shared/glossary.md (RTM/SBOM producer paths);
+        # shipwright_bloat_baseline.json ("path" entries — JSON: no inline marker).
+        "shared/contracts/**",
+        "shared/glossary.md",
+        "shipwright_bloat_baseline.json",
     ],
 }
 

@@ -550,9 +550,9 @@
     {
       "path": "shared/scripts/lib/artifact_migrations.py",
       "limit": 300,
-      "current": 567,
-      "state": "grandfathered",
-      "adr": null
+      "current": 592,
+      "state": "exception",
+      "adr": "ADR-091"
     },
     {
       "path": "shared/scripts/lib/autonomous_loop.py",
