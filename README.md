@@ -367,7 +367,14 @@ uv run pytest integration-tests/ -v
 
 *Early versions were forked from Pierce Lamb's [deep-project](https://github.com/piercelamb/deep-project), [deep-plan](https://github.com/piercelamb/deep-plan), and [deep-implement](https://github.com/piercelamb/deep-implement); current code has diverged substantially.*
 
-*Additional inspiration and industry best practices adopted from [obra/superpowers](https://github.com/obra/superpowers) (MIT) and [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) (MIT) — thanks to their authors.*
+### Acknowledgments
+
+Shipwright adopts ideas and adapts specific snippets (with attribution in the relevant files) from these open-source projects:
+
+- **[obra/superpowers](https://github.com/obra/superpowers)** (MIT, © Jesse Vincent) — Iron-Law verification language, the anti-slop PR-template framing (`.github/PULL_REQUEST_TEMPLATE.md`), and the two-stage review pattern (`spec-reviewer` → `code-reviewer`).
+- **[addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)** (MIT, © Addy Osmani) — Five-axis code-review framework, change-sizing heuristics, and Chesterton-Fence checks; informs the bloat-cleanup ADR template and reviewer prompts.
+- **[multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills)** (MIT, © 2025 multica-ai) — the four Karpathy principles (Think Before Coding · Simplicity First · Surgical Changes · Goal-Driven Execution) cited verbatim in `shared/constitution.md` and `shared/glossary.md`.
+- **[multica-ai/multica](https://github.com/multica-ai/multica)** (Apache-2.0 *modified*, hosting-restricted) — architectural patterns only (WebSocket transcript streaming, multi-workspace isolation, runtime registry, "parse don't cast" config reads) inspire the Shipwright Command Center roadmap. **No code or text is copied** — patterns only, deliberately, so this repo stays cleanly MIT.
 
 ## License
 

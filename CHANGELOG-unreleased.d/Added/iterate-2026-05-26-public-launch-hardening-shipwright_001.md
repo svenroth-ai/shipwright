@@ -1,0 +1,1 @@
+Pre-Phase Principles header in `shared/constitution.md` — four Karpathy principles (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution) cited verbatim from [`multica-ai/andrej-karpathy-skills`](https://github.com/multica-ai/andrej-karpathy-skills) (MIT). Loaded into every Shipwright session.

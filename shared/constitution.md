@@ -6,6 +6,39 @@
 
 ---
 
+## Pre-Phase Principles (Karpathy)
+
+> Apply these four principles **before** entering any phase (plan, build,
+> iterate, review). They govern *how* the agent approaches a unit of work,
+> not *what* gates it must pass — the ALWAYS / ASK FIRST / NEVER tiers
+> below are mechanical guard-rails on the output; these four are
+> dispositional guard-rails on the input. Cited verbatim from
+> [`multica-ai/andrej-karpathy-skills`](https://github.com/multica-ai/andrej-karpathy-skills)
+> (MIT, © 2025 multica-ai; snapshot date 2026-05-25). Already referenced
+> in `shared/glossary.md` and enforced post-hoc in
+> `plugins/shipwright-build/agents/code-reviewer.md`; this header is the
+> pre-hoc, every-session enforcement surface.
+
+1. **Think Before Coding** — State the problem, list at least one
+   alternative considered, name the decision and why. "I just started
+   writing it" is a red flag, not a workflow. If the iterate spec /
+   mini-plan / commit body shows no decision trace, stop and write one
+   first.
+2. **Simplicity First** — Prefer the boring shape. Reject premature
+   abstractions, single-use helpers, factories with one factory call,
+   options-flags with one caller. Three similar lines beat a wrong-shape
+   abstraction. Add structure when the third caller arrives, not before.
+3. **Surgical Changes** — Match scope to intent. A bug-fix that touches
+   files unrelated to the bug is a refactor wearing a fix label —
+   split it. A docs change that edits source code is mis-scoped —
+   split it. Diff size should reflect change size.
+4. **Goal-Driven Execution** — Every edit traces back to a stated
+   acceptance criterion, an FR, an ADR, or an explicit iterate intent.
+   Anything else is wandering. If you cannot point at the goal a line
+   serves, do not write the line.
+
+---
+
 ## ALWAYS (do without asking)
 
 - Run tests before committing — tests must pass
