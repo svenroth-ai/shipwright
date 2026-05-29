@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-29-bloat-gate-session-id",
+  "date": "2026-05-29T09:47:51.431386Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/bloat-gate-session-id",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-05-29-bloat-gate-session-id"
+}

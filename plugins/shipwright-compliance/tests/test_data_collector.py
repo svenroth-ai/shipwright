@@ -1143,15 +1143,17 @@ class TestCollectRequirementsColumnWidths:
 
 
 class TestEventLogWorktreeResolution:
-    """BUG B: event-log resolution must be git-worktree-aware.
+    """Event-log resolution is a literal per-tree join.
 
-    shipwright_events.jsonl is gitignored, so a fresh ``git worktree`` does
-    not contain it. data_collector must resolve the log via the git common
-    dir and read the *main* repo's canonical log — otherwise worktree-based
-    finalization (e.g. /shipwright-iterate F5b) sees an empty event log,
-    rtm_generator falls back to the legacy section-count path, and an
-    adopted project with 0 build sections collapses RTM coverage to a
-    false 0%.
+    shipwright_events.jsonl is a **version-controlled, per-tree artifact**: a
+    ``/shipwright-iterate`` run writes its ``work_completed`` event into the
+    worktree's own copy (F5b) and commits it via F6, so it ships through the
+    PR. data_collector must therefore read the WORKTREE's own log
+    (``project_root / EVENT_FILE``) — NOT redirect to the main repo.
+
+    Flipped from the old ``git rev-parse --git-common-dir`` redirect in
+    iterate-2026-05-29-events-jsonl-worktree-commit: that redirect orphaned the
+    event as an uncommitted line in the main tree, outside the iterate PR.
     """
 
     EVENT_LINE = json.dumps({
@@ -1174,19 +1176,27 @@ class TestEventLogWorktreeResolution:
         _git(["add", "README.md"], root)
         _git(["commit", "-m", "seed"], root)
 
-    def test_worktree_reads_main_repo_event_log(self, tmp_path: Path):
-        """Collection from inside a worktree finds the main repo's events."""
+    def test_worktree_reads_its_own_event_log(self, tmp_path: Path):
+        """Collection from inside a worktree reads the WORKTREE's own log —
+        not the main repo's. A decoy event in the main tree must NOT leak in."""
         main = tmp_path / "main-repo"
         self._init_repo(main)
-        # Event log lives in the main repo, untracked (mirrors gitignored).
-        (main / EVENT_FILE).write_text(self.EVENT_LINE + "\n", encoding="utf-8")
+        # Decoy in the main repo — proves resolution does NOT redirect to main.
+        decoy = json.dumps({
+            "id": "evt-main-decoy", "type": "work_completed",
+            "source": "iterate", "ts": "2026-05-01T00:00:00Z",
+            "commit": "deadbeef", "affected_frs": ["FR-99.99"],
+        })
+        (main / EVENT_FILE).write_text(decoy + "\n", encoding="utf-8")
 
         worktree = tmp_path / "wt"
         _git(["worktree", "add", str(worktree)], main)
 
-        # Sanity: the worktree checkout itself carries no event log.
-        assert not (worktree / EVENT_FILE).exists()
+        # The iterate writes its event into the worktree's OWN copy (F5b),
+        # which F6 commits and the PR carries.
+        (worktree / EVENT_FILE).write_text(self.EVENT_LINE + "\n", encoding="utf-8")
 
+        assert _resolve_events_path(worktree) == worktree / EVENT_FILE
         work_events, _, _ = collect_events(worktree)
         assert len(work_events) == 1
         assert work_events[0].id == "evt-test-0001"

@@ -234,15 +234,24 @@ shipwright/
 │   └── shipwright-adopt/             # Brownfield onboarding (analyze existing repos)
 # Command Center WebUI: github.com/svenroth-ai/shipwright-webui (separate repo)
 ├── shared/                           # Shared across plugins
-│   ├── profiles/                     # Stack profile definitions (JSON)
+│   ├── contracts/                    # Cross-plugin public API (compliance.py, iterate.py)
+│   ├── profiles/                     # Stack profile definitions (JSON) + deploy profiles
 │   ├── templates/                    # CLAUDE.md, .shipwright/agent_docs, CI/CD, rules templates
-│   └── scripts/                      # Shared Python utilities
+│   ├── prompts/                      # Shared subagent prompts (code_reviewer, iterate_reviewer)
+│   ├── schemas/                      # JSON schemas (run_config v2, triage item, decision drop)
+│   ├── scripts/                      # Shared Python utilities (dev_server pkg, finalize_iterate, surface_verification, …)
+│   ├── glossary.md                   # Shared vocabulary (Allowlist / Ratchet / Producer / Canon-Gate / …)
+│   └── constitution.md               # ALWAYS / ASK FIRST / NEVER rules for all agents
 ├── scripts/
 │   ├── install.sh                    # All-in-one installer
+│   ├── install-hooks.sh              # Pre-commit bloat anti-ratchet hook (one-shot per clone)
+│   ├── check_plugin_cache_sync.py    # Detect drift between repo and ~/.claude/plugins/cache/
+│   ├── update-marketplace.sh         # Sync plugin sources into Claude Code cache after a push
 │   └── verify-setup.sh               # Post-install verification
 ├── docs/
 │   ├── guide.md                      # Canonical user guide
 │   └── hooks-and-pipeline.md         # Hooks registry + context loading
+├── CHANGELOG-unreleased.d/           # Pending changelog drops (aggregated at release)
 └── integration-tests/                # Cross-plugin integration tests
 ```
 
@@ -282,6 +291,9 @@ Inheriting a Shipwright-generated repository or reviewing one without going thro
 Other references:
 
 - [docs/hooks-and-pipeline.md](docs/hooks-and-pipeline.md) — hooks registry, context loading matrix, between-phase actions
+- [shared/glossary.md](shared/glossary.md) — shared vocabulary across agents, hooks, subagents, and compliance audits (Allowlist / Ratchet / Producer / Canon-Gate / Action-Unit / Worktree-Isolation / F7b-Seal / …)
+- [shared/constitution.md](shared/constitution.md) — ALWAYS / ASK FIRST / NEVER behavioral boundaries for all agents
+- [.shipwright/planning/adr/](.shipwright/planning/adr/) — long-form ADR specs (auto-indexed in `INDEX.md` on every release)
 - [shipwright-webui/docs/guide.md](https://github.com/svenroth-ai/shipwright-webui/blob/main/docs/guide.md) — Command Center user guide (install, daily workflow, custom actions, autostart)
 - [CONTRIBUTING.md](CONTRIBUTING.md) — contribution workflow and security model
 - [SECURITY.md](SECURITY.md) — vulnerability disclosure
@@ -329,9 +341,10 @@ Shipwright enforces quality through mechanical hooks — not advisory prose. Hoo
 | Secret Scanning | API keys, tokens, passwords, PEM keys in source code |
 | Destructive Migration Scan | `DROP TABLE` / `DROP COLUMN` without rollback SQL |
 | File Size Nudge | An edit pushing a source file past the line guideline (advisory, non-blocking) |
+| Bloat Anti-Ratchet | **Hard-blocks** commits that raise an allowlisted entry past its frozen `current` LOC. Three layers: pre-commit (local), Stop-Gate (in-session), CI workflow (merge gate). Exceptions go through the ADR-template at `.shipwright/planning/adr/_template-bloat-exception.md`. |
 | Drift Detection | Stale CLAUDE.md when source files changed |
 
-Blocking hooks use exit code 2 (soft-block): you can override, but the override is logged. Advisory hooks (file-size nudge, drift detection) never block — they only surface a note. See **[docs/guide.md](docs/guide.md)** for details on the constitution, TDD workflow, code review, and migration safety.
+Blocking hooks use exit code 2 (soft-block): you can override, but the override is logged. Advisory hooks (file-size nudge, drift detection) never block — they only surface a note. The bloat anti-ratchet hook is the only one that hard-blocks unconditionally — install it once per clone with `bash scripts/install-hooks.sh` (POSIX/Git-Bash) or `.\scripts\install-hooks.ps1` (PowerShell). See **[docs/guide.md](docs/guide.md)** for details on the constitution, TDD workflow, code review, and migration safety.
 
 ## Contributing
 

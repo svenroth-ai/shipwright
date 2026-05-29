@@ -116,15 +116,14 @@ class TestKnownFailures:
 class TestRtmAdoptedProjectWorktree:
     """F0.5 end-to-end: RTM generation from a git worktree of an adopted project.
 
-    Reproduces both bugs together:
-      * Bug A — the adopted spec uses a 6-column FR table.
-      * Bug B — shipwright_events.jsonl is untracked, so a fresh worktree
-        checkout does not carry it.
-    Before the fixes, RTM generation from the worktree saw zero FRs and
-    zero events, fell back to the legacy section-count path, and an adopted
-    project (0 build sections) emitted "| Traceability coverage | 0% |" —
-    which the check_rtm_coverage pre-commit hook soft-blocks. After the
-    fixes the RTM shows real, event-sourced FR coverage.
+    Two things must hold for real, event-sourced coverage from a worktree:
+      * Bug A — the adopted spec uses a 6-column FR table (parsed correctly).
+      * Per-tree event log (iterate-2026-05-29-events-jsonl-worktree-commit) —
+        shipwright_events.jsonl is a tracked, committed artifact, so a fresh
+        worktree checkout CARRIES it and RTM reads the worktree's own copy.
+    Without these the RTM falls back to the legacy section-count path and an
+    adopted project (0 build sections) emits "| Traceability coverage | 0% |" —
+    which the check_rtm_coverage pre-commit hook soft-blocks.
     """
 
     SIX_COL_SPEC = (
@@ -156,12 +155,8 @@ class TestRtmAdoptedProjectWorktree:
         planning.mkdir(parents=True)
         (planning / "spec.md").write_text(self.SIX_COL_SPEC, encoding="utf-8")
 
-        # Tracked artifacts go into the commit so the worktree carries them.
-        _git(["add", "-A"], root)
-        _git(["commit", "-m", "adopt baseline"], root)
-
-        # The event log is untracked (mirrors gitignored) and written AFTER
-        # the commit — a fresh worktree must NOT receive it.
+        # The event log is a tracked, per-tree artifact — written BEFORE the
+        # commit so it lands in the baseline and a fresh worktree CARRIES it.
         events = [{
             "id": "evt-adopt-1", "type": "work_completed", "source": "iterate",
             "ts": "2026-05-15T10:00:00Z", "commit": "deadbeef",
@@ -172,15 +167,21 @@ class TestRtmAdoptedProjectWorktree:
             "\n".join(json.dumps(e) for e in events) + "\n", encoding="utf-8"
         )
 
+        # Tracked artifacts (incl. the event log) go into the commit so the
+        # worktree carries them.
+        _git(["add", "-A"], root)
+        _git(["commit", "-m", "adopt baseline"], root)
+
     def test_rtm_from_worktree_shows_real_coverage(self, tmp_path: Path):
         main = tmp_path / "adopted-main"
         self._build_adopted_project(main)
 
         worktree = tmp_path / "wt"
         _git(["worktree", "add", str(worktree)], main)
-        # The worktree carries the committed spec but NOT the untracked log.
+        # The worktree carries BOTH the committed spec and the committed log
+        # (per-tree model — RTM reads the worktree's own copy).
         assert (worktree / ".shipwright" / "planning" / "01-adopted" / "spec.md").exists()
-        assert not (worktree / "shipwright_events.jsonl").exists()
+        assert (worktree / "shipwright_events.jsonl").exists()
 
         rtm_path = generate_file(worktree)
         rtm = rtm_path.read_text(encoding="utf-8")

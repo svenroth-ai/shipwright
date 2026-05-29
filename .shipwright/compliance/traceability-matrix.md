@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-26T21:32:18.050071+00:00
+Generated: 2026-05-29T13:33:06.388769+00:00
 
 ## Requirements Coverage
 
@@ -85,7 +85,16 @@ Generated: 2026-05-26T21:32:18.050071+00:00
 | fix bloat_gate_on_stop.py Stop-hook schema violation | iterate | bug |  | 131/131 | 193b7f5 | 2026-05-25 |
 | Pre-commit anti-ratchet hook + bloat-check CI workflow + bloat-exception ADR template + shared glossary (Campaign A.defense, closes Campaign A defense-in-depth layer) | iterate | feature |  | 41/41 | 55be715 | 2026-05-25 |
 | B8: shared/contracts/* cross-plugin contracts (compliance + iterate); adopt-bridge + boundary_coverage_report refactor | iterate | change |  | 1104/1104 | fbde435 | 2026-05-26 |
-| Pre-Phase Principles header in constitution.md + Superpowers anti-slop PR template + expanded README/guide acknowledgments | iterate | change |  | 30/30 | — | 2026-05-26 |
+| Runtime/snapshot split for agent-doc trio + hard-gated finalize repair pass + audit_staleness coverage extension + merge-not-rebase doc convention. | iterate | change |  | — | 54ecb17 | 2026-05-27 |
+| Correction event: spec_impact reclassified to none with justification (supersedes evt-5aca940d). | iterate | change |  | — | 54ecb17 | 2026-05-27 |
+| Refresh SBOM after syncing dev extras across plugin workspaces; clears 4 stale triage entries (pytest/pytest-mock now resolve as MIT) | iterate | change |  | — | b3ff2eb | 2026-05-27 |
+| Refresh docs/guide.md and README.md with Campaign A/B + ADR-060/061/062/089/090 + F7b + runtime/snapshot split + bloat anti-ratchet hook + plugin-cache drift check | iterate | change |  | — | 25fd988 | 2026-05-27 |
+| Correction event: spec_impact=none with proper justification field for the verifier (supersedes evt-13153a5c). | iterate | change |  | — | 25fd988 | 2026-05-27 |
+| Refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath (41 legitimate findings) | iterate | bug |  | 2449/2449 | 9d9b1e5 | 2026-05-28 |
+| events.jsonl per-tree, PR-committed artifact (worktree iterate audit-log fix) | iterate | bug |  | 2449/2450 | — | 2026-05-29 |
+| P4.1 Skill Bootstrap Pack: using-shipwright SessionStart bootstrap + writing-plugin/plugin-cache Stop wave (SP2+SP4) | iterate | feature |  | 2545/2545 | e788870 | 2026-05-29 |
+| Bloat marker keyed off stdin-payload session_id (not env) in check_file_size.py + bloat_gate_on_stop.py | iterate | bug |  | 2549/2550 | 4adfd44 | 2026-05-29 |
+| suggest_iterate UserPromptSubmit hook: emit hookEventName on hookSpecificOutput (+ AST meta-test) | iterate | bug |  | 2558/2558 | — | 2026-05-29 |
 
 ## Coverage Summary
 
@@ -93,7 +102,7 @@ Generated: 2026-05-26T21:32:18.050071+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 61 |
+| Iterate changes | 70 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

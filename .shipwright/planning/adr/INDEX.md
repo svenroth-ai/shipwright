@@ -11,3 +11,7 @@ regeneration overwrites this file on every release pass._
 - [ADR-059 — fr gate at finalize](059-fr-gate-at-finalize.md)
 - [ADR-060 — c2 doc hygiene detectors](060-c2-doc-hygiene-detectors.md)
 - [ADR-061 — plugin cache sync check](061-plugin-cache-sync-check.md)
+- [ADR-062 — b4 dev server split](062-b4-dev-server-split.md)
+- [ADR-089 — tracked artifacts single producer and finalize sandbox](089-tracked-artifacts-single-producer-and-finalize-sandbox.md)
+- [ADR-090 — bloat exception runtime snapshot split](090-bloat-exception-runtime-snapshot-split.md)
+- [_template bloat exception](_template-bloat-exception.md)

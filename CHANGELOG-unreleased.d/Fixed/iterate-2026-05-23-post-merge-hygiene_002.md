@@ -1,1 +1,0 @@
-Extend `ALLOWLIST['compliance']` in `artifact_migrations.py` to include `plugins/shipwright-security/scripts/tools/finalize_security_compliance.py` — its inline cross-plugin path reference (`plugins/shipwright-compliance/scripts/tools/`) was tripping the path-canon regex's hyphen-segment blind spot. Same fix pattern as triage_inbox.md (line 398).

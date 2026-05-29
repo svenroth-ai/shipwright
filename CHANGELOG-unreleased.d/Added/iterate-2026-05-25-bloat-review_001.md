@@ -1,1 +1,0 @@
-Bloat reviewer checklist (Karpathy 4 + Osmani Five-Axis/Change-Sizing/Dead-Code + Shipwright Allowlist/Anti-Ratchet/no-bypass) appended to code-reviewer and sub-iterate-runner agent prompts, with attribution footer + parity drift-protection test.

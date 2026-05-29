@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-05-26T21:32:18.050071+00:00
-Total commits: 753
+Generated: 2026-05-29T13:33:06.388769+00:00
+Total commits: 775
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 241
-    "fix" : 192
-    "chore" : 141
-    "docs" : 106
+    "feat" : 242
+    "fix" : 198
+    "chore" : 152
+    "docs" : 110
     "refactor" : 50
     "test" : 15
     "other" : 7
@@ -19,10 +19,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 241 commits
+### Features (feat) — 242 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-29 | hooks | add using-shipwright SessionStart bootstrap + plugin-cache Stop wave (P4.1) | e7888704a598 |
 | 2026-05-25 | bloat | Campaign A.defense — pre-commit + CI + ADR template + glossary | ac02d7b24cf5 |
 | 2026-05-25 | compliance | Campaign A.review — bloat reviewer prompts + Group H audit | 723c8afffa27 |
 | 2026-05-25 | bloat | Loop-Gate (Campaign A.foundation — A1+A2+A3) | bfd4e63e4440 |
@@ -265,10 +266,16 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 192 commits
+### Fixes (fix) — 198 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-29 | hooks | clear bloat anti-ratchet at baseline current, not raw limit | 4adfd4441725 |
+| 2026-05-29 | hooks | key bloat marker off stdin-payload session_id, not env | a447fc625b71 |
+| 2026-05-29 | iterate | ship work_completed event in the PR via per-tree events.jsonl | 4eb6b1a90528 |
+| 2026-05-29 | meta | refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath | 9d9b1e57c247 |
+| 2026-05-27 | iterate | correct iterate_history adr field to run-id form | 36375a6408d3 |
+| 2026-05-27 | iterate | runtime/snapshot split for agent-doc trio + hard-gated finalize repair | 54ecb17512c2 |
 | 2026-05-25 | hooks | drop invalid hookSpecificOutput wrapper from Stop hook (#87) | f6bca09d9b57 |
 | 2026-05-25 | bloat | skip tests/fixtures/ and __fixtures__/ in scan walker | ea2f6110eb12 |
 | 2026-05-23 | compliance | pin SBOM Python-license resolver to per-manifest .venv METADATA | fc1a7a86cffb |
@@ -462,10 +469,21 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 141 commits
+### Chores (chore) — 152 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-29 | events | backfill orphaned work_completed events for #110 + #112 | fa186cce8046 |
+| 2026-05-29 | events | record work_completed for iterate-2026-05-29-fix-path-canon-allowlist | af9190b5a939 |
+| 2026-05-27 | events | record work_completed for iterate-2026-05-27-guide-readme-refresh | d5090eff64e7 |
+| 2026-05-27 | events | record work_completed for iterate-2026-05-27-guide-readme-refresh | 91dd6832c310 |
+| 2026-05-27 | events | record evt-536e20a7 for iterate-2026-05-27-sbom-license-resolve | 204ab4ac5c7a |
+| 2026-05-27 | compliance | refresh SBOM after syncing plugin dev extras (#107) | 0469e8511b9c |
+| 2026-05-27 | events | record evt-bf6d663c for iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox | 6c3c86cce946 |
+| 2026-05-27 | events | record evt-5aca940d for iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox | 4299012f8d72 |
+| 2026-05-26 | release | post-v0.22.0 ADR aggregation polish | 0b67b4bc7d9c |
+| 2026-05-26 | release | v0.22.0 | 83dbdb3a90e7 |
+| 2026-05-26 | bloat | hygiene cleanup of 3 Group H findings (post Campaign B+C) | fe619edeff2c |
 | 2026-05-26 | campaign | mark Campaign B complete (13/13 sub-iterates merged) | ac604a46f427 |
 | 2026-05-25 | campaign | kick off Campaign B — Shipwright bloat cleanup | 2d11b77085a2 |
 | 2026-05-25 | events | record evt-044dce38 for iterate-2026-05-25-bloat-defense | 71d5bf9df579 |
@@ -608,10 +626,14 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 106 commits
+### Documentation (docs) — 110 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-29 | agent-docs | add guide-readme-refresh to architecture baseline | c78fd143ade3 |
+| 2026-05-29 | agent-docs | refresh architecture.md + ADR INDEX for Campaign B baseline | 0241d58d3255 |
+| 2026-05-27 | guide,readme | refresh for Campaign A+B + ADRs 060/061/062/089/090 | 25fd98826faf |
+| 2026-05-27 | adr | mark ADR-090 split as permanent exception after re-evaluation | 7a77b290cef1 |
 | 2026-05-25 | constitution | extend §21 with anti-ratchet CI rule + exception ADR path | a8d498989ddd |
 | 2026-05-23 | security | add suppression-syntax reference + link from SKILL.md | eb2fa64719b8 |
 | 2026-05-21 | campaign | empirical-verification handover for B.2→C.3 (#64) | 376c870345c3 |
@@ -816,7 +838,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 753 |
+| Total commits | 775 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 753 |
+| Human-authored commits | 775 |
 

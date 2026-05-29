@@ -1,1 +1,0 @@
-Compliance audit Group H (Bloat-policy detective): H0 baseline-meta, H1 drift, H2 ratchet-suggestion, H3 anti-ratchet, H4 exception-no-ADR, H5 deferred-no-plan, H6 stale-entry. Tagged source=detective-only.

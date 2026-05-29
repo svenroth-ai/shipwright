@@ -1,0 +1,1 @@
+Bloat Stop-gate no longer false-positives on a grandfathered file that was trimmed back to within its baseline ceiling: bloat_gate_on_stop.py now clears an anti-ratchet entry when the live size is <= the baseline 'current', blocking only when it grew past it (was comparing against the 300 limit).

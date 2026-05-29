@@ -28,9 +28,33 @@ if str(_SHARED_SCRIPTS) not in sys.path:
 from lib import bloat_baseline as _bb  # noqa: E402
 
 
-def _session_id() -> str:
+def _session_id(payload: object = None) -> str:
+    """Per-session marker key. Prefer the hook stdin payload's ``session_id``
+    (the canonical id, same across PostToolUse + Stop of one session); fall back
+    to the ``SHIPWRIGHT_SESSION_ID`` env var, then ``"unknown"``. The env var is
+    NOT set in this Stop process, so env-only keying pooled every session into a
+    shared ``bloat_pending.unknown.json`` — one session's oversize file then
+    blocked another's Stop (fixed 2026-05-29)."""
+    if isinstance(payload, dict):
+        sid = payload.get("session_id")
+        if isinstance(sid, str) and sid.strip():
+            return sid.strip()
     sid = (os.environ.get("SHIPWRIGHT_SESSION_ID") or "").strip()
     return sid or "unknown"
+
+
+def _read_payload() -> dict:
+    try:
+        raw = sys.stdin.read()
+    except (OSError, ValueError):
+        return {}
+    if not raw or not raw.strip():
+        return {}
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def _marker_path(cwd: Path, sid: str) -> Path:
@@ -98,17 +122,21 @@ def _re_measure_oversize(cwd: Path, entry: dict) -> int | None:
     return n
 
 
-def _baseline_path_set(cwd: Path) -> set[str] | None:
-    """Set of baseline paths, or ``None`` if baseline is missing/malformed.
+def _baseline_map(cwd: Path) -> dict[str, object] | None:
+    """``{normalized_path: current}`` for baseline entries, or ``None`` if the
+    baseline is missing/malformed.
 
-    ``None`` triggers AC-7 pass-silently behavior in the caller. Returning
-    an empty set instead would block every crossing in fresh/pre-adopt
-    repos as "not in allowlist".
+    ``None`` triggers AC-7 pass-silently behavior in the caller. The ``current``
+    value is the grandfathered line ceiling: an anti-ratchet entry only blocks
+    when the live size grew PAST it (canonical definition — constitution +
+    ``anti_ratchet.py``). ``_bb.load`` normalises entry paths, so keys line up
+    with the marker's ``_bb.normalize_path`` form.
     """
     doc = _bb.load(cwd)
     if doc is None:
         return None
-    return {e["path"] for e in doc.get("entries", []) if isinstance(e, dict)}
+    return {e["path"]: e.get("current")
+            for e in doc.get("entries", []) if isinstance(e, dict) and "path" in e}
 
 
 # Iron-Law block message — adapted from obra/superpowers (MIT,
@@ -186,14 +214,14 @@ def _emit_pass() -> None:
 
 def main() -> int:
     cwd = Path.cwd()
-    sid = _session_id()
+    sid = _session_id(_read_payload())
     entries = _load_marker(_marker_path(cwd, sid))
     if not entries:
         _emit_pass()
         return 0
     now = datetime.datetime.now(datetime.timezone.utc)
-    baseline_paths = _baseline_path_set(cwd)
-    if baseline_paths is None:
+    baseline = _baseline_map(cwd)
+    if baseline is None:
         # AC-7: no/malformed baseline → pass silently (fresh / pre-adopt / corrupted).
         _emit_pass()
         return 0
@@ -207,11 +235,17 @@ def main() -> int:
         if current is None:
             continue
         path = _bb.normalize_path(str(entry.get("path", "")))
-        in_baseline = path in baseline_paths
+        in_baseline = path in baseline
         delta = entry.get("delta")
-        # Anti-ratchet always blocks. New crossing blocks unless the
-        # path is already grandfathered in the baseline.
+        # Anti-ratchet blocks only when the file grew PAST its baseline ceiling.
+        # A grandfathered file trimmed back to <= `current` (even if still over
+        # the raw 300 limit) is NOT a ratchet — clearing it here fixes the
+        # transient-over-then-trimmed false-positive. New crossing blocks unless
+        # the path is already grandfathered in the baseline.
         if delta == "anti-ratchet":
+            ceiling = baseline.get(path)
+            if isinstance(ceiling, int) and current <= ceiling:
+                continue
             offenders.append({**entry, "path": path, "now": current})
         elif delta == "crossing" and not in_baseline:
             offenders.append({**entry, "path": path, "now": current})

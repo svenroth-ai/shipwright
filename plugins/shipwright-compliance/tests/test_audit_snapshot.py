@@ -197,7 +197,12 @@ def test_check_staleness_green_when_on_disk_matches_snapshot(tmp_path):
     report = check_staleness(tmp_path)
     assert report.snapshot_unavailable is False
     assert report.any_stale is False
-    assert len(report.docs) == 5
+    # iterate-2026-05-27 added 3 agent-doc MDs to the registry. The
+    # baseline fixture only seeds the 5 compliance MDs — the 3 agent-doc
+    # entries are absent on both sides (test fixture didn't seed them,
+    # snapshot didn't contain them), so compare_doc returns
+    # ``stale=False, error="not-in-snapshot"`` for those.
+    assert len(report.docs) == 8
     assert all(d.stale is False for d in report.docs)
 
 
@@ -266,10 +271,15 @@ def test_check_staleness_emits_e0_when_no_snapshot_available(tmp_path):
 
 def test_check_staleness_handles_file_missing_at_snapshot(tmp_path):
     """If a doc was added AFTER the snapshot (e.g. new compliance file),
-    compare flags it stale with an explanatory error rather than crashing.
+    compare returns ``stale=False, error="not-in-snapshot"`` rather than
+    flagging it stale.
 
-    Operationally rare: would happen if a new DOC_REGISTRY entry is added
-    in code but the snapshot pre-dates the addition. Defensive coverage.
+    iterate-2026-05-27 (code-reviewer HIGH #1) changed the semantics: a
+    doc whose snapshot side is missing is a "registry expansion ahead of
+    the snapshot baseline" — not a drift. The next iterate-finalize
+    commit introduces the doc into the snapshot; subsequent audits then
+    compare normally. Treating this as stale produced 3 false-positive
+    Group E entries per audit until the next finalize.
     """
     from scripts.audit.audit_staleness import check_staleness
 
@@ -288,14 +298,18 @@ def test_check_staleness_handles_file_missing_at_snapshot(tmp_path):
         (tmp_path / rel).write_text(content, encoding="utf-8")
 
     report = check_staleness(tmp_path)
-    # Dashboard is consistent with snapshot; others are stale-with-error.
+    # Dashboard is consistent with snapshot.
     by_doc = {d.doc: d for d in report.docs}
     assert by_doc["dashboard"].stale is False
+    # The 4 missing-at-snapshot docs are now benign per the
+    # iterate-2026-05-27 semantics fix.
     for key in ("rtm", "test_evidence", "change_history", "sbom"):
         d = by_doc[key]
-        assert d.stale is True
-        # Error explains the snapshot-side absence.
-        assert d.error and "snapshot" in d.error.lower()
+        assert d.stale is False, (
+            f"{key} flagged stale; iterate-2026-05-27 'not-in-snapshot' "
+            f"semantic regressed (error={d.error!r})"
+        )
+        assert d.error == "not-in-snapshot"
 
 
 # ---------------------------------------------------------------------------

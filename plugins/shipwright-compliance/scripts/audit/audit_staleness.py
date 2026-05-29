@@ -59,15 +59,31 @@ class DocInfo:
 
 
 COMPLIANCE_DIR = ".shipwright/compliance"
+AGENT_DOCS_DIR = ".shipwright/agent_docs"
 LEGACY_COMPLIANCE_DIRNAME = "compliance"
 
-# Single source of truth for the doc set Group E audits.
+# Single source of truth for the doc set Group E audits. Extended in
+# iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox
+# to cover the 3 agent-doc MDs that also follow the single-producer
+# pattern (Stop hooks now write to runtime/, finalize is the sole writer
+# of the tracked variants).
 DOC_REGISTRY: tuple[DocInfo, ...] = (
     DocInfo("rtm", f"{COMPLIANCE_DIR}/traceability-matrix.md"),
     DocInfo("test_evidence", f"{COMPLIANCE_DIR}/test-evidence.md"),
     DocInfo("change_history", f"{COMPLIANCE_DIR}/change-history.md"),
     DocInfo("sbom", f"{COMPLIANCE_DIR}/sbom.md"),
     DocInfo("dashboard", f"{COMPLIANCE_DIR}/dashboard.md"),
+    DocInfo("session_handoff", f"{AGENT_DOCS_DIR}/session_handoff.md"),
+    DocInfo("build_dashboard", f"{AGENT_DOCS_DIR}/build_dashboard.md"),
+    DocInfo("triage_inbox", f"{AGENT_DOCS_DIR}/triage_inbox.md"),
+)
+
+# Paths that qualify as a single-producer snapshot when modified in a
+# Run-ID-bearing commit. Compliance MDs were the original (PR #78);
+# agent-doc MDs joined in iterate-2026-05-27.
+SNAPSHOT_PATH_FILTERS: tuple[str, ...] = (
+    COMPLIANCE_DIR,
+    AGENT_DOCS_DIR,
 )
 
 
@@ -161,7 +177,10 @@ def find_snapshot_commit(project_root: Path) -> str | None:
                 "--format=%H",
                 "-1",
                 "--",
-                COMPLIANCE_DIR,
+                # Widened in iterate-2026-05-27: agent-doc MDs joined the
+                # single-producer set, so a Run-ID-bearing commit that
+                # touched ONLY agent-doc paths also qualifies.
+                *SNAPSHOT_PATH_FILTERS,
             ],
             cwd=project_root,
         )
@@ -220,8 +239,41 @@ def compare_doc(
     comparison so the volatile banner doesn't drive false drift.
     """
     on_disk_path = project_root / doc.rel_path
+    on_disk_exists = on_disk_path.exists()
 
-    if not on_disk_path.exists():
+    # Peek at the snapshot side BEFORE deciding on missing-side semantics.
+    # If a doc was added to DOC_REGISTRY after the snapshot commit (e.g.
+    # the agent-doc trio added in iterate-2026-05-27 won't appear in
+    # earlier compliance-only snapshots), missing-from-snapshot is benign
+    # — neither side has the file yet. Treat as "not present in snapshot,
+    # not stale". External review OpenAI #8.
+    snapshot_text, snapshot_err = _read_snapshot_text(
+        project_root, snapshot_sha, doc.rel_path,
+    )
+    snapshot_exists = snapshot_text is not None
+
+    if not snapshot_exists:
+        # The snapshot commit predates the registry entry for this doc
+        # (e.g. the agent-doc trio was added in iterate-2026-05-27; any
+        # pre-2026-05-27 snapshot won't have those paths). Whether the
+        # on-disk side is present or missing, we are NOT in a position
+        # to call this "stale" — there's no canonical version to diff
+        # against. Treat as benign "not-in-snapshot".
+        #
+        # The next finalize commit will introduce these paths, after
+        # which subsequent audits compare against a snapshot that DOES
+        # have them and any drift becomes real staleness again. External
+        # review (code-reviewer, iterate-2026-05-27) HIGH #1.
+        return DocStalenessResult(
+            doc=doc.key,
+            rel_path=doc.rel_path,
+            exists=on_disk_exists,
+            stale=False,
+            error="not-in-snapshot",
+            snapshot_sha=snapshot_sha,
+        )
+
+    if not on_disk_exists:
         return DocStalenessResult(
             doc=doc.key,
             rel_path=doc.rel_path,
@@ -240,19 +292,6 @@ def compare_doc(
             exists=True,
             stale=True,
             error=f"read_error: {exc}",
-            snapshot_sha=snapshot_sha,
-        )
-
-    snapshot_text, snapshot_err = _read_snapshot_text(
-        project_root, snapshot_sha, doc.rel_path,
-    )
-    if snapshot_text is None:
-        return DocStalenessResult(
-            doc=doc.key,
-            rel_path=doc.rel_path,
-            exists=True,
-            stale=True,
-            error=snapshot_err,
             snapshot_sha=snapshot_sha,
         )
 

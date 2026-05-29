@@ -448,3 +448,54 @@ class TestFrGateInputValidation:
         )
         err = _fr_or_change_type_gate_error(event)
         assert err is not None
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Boundary probe — per-tree event log round-trip (touches_io_boundary)
+# iterate-2026-05-29-events-jsonl-worktree-commit
+# ──────────────────────────────────────────────────────────────────────
+
+class TestWorktreeEventLogRoundTrip:
+    """append_event / read_events / attach_commit_to_event round-trip on the
+    WORKTREE-local log — and the main tree is never touched.
+
+    These pin the per-tree model end-to-end: a producer call from inside an
+    iterate worktree writes the worktree's own copy (which F6 commits), a reader
+    from the same worktree sees it, the in-place SHA patch round-trips, and the
+    main tree's log stays clean (no orphaned line — the bug this iterate fixes).
+    """
+
+    def test_append_then_read_roundtrips_in_worktree(self, git_origin_repo, make_worktree):
+        from record_event import append_event, read_events
+
+        work, _ = git_origin_repo
+        wt = make_worktree(work, "rt")
+        evt = {"v": 1, "id": "evt-rt000042", "ts": "2026-05-29T00:00:00Z",
+               "type": "work_completed", "source": "iterate", "commit": "",
+               "adr_id": "iterate-rt", "affected_frs": ["FR-01.01"]}
+        returned = append_event(wt, evt)
+        assert returned == "evt-rt000042"
+
+        # Written to the worktree's OWN copy, NOT the main tree.
+        assert (wt / "shipwright_events.jsonl").exists()
+        assert not (work / "shipwright_events.jsonl").exists()
+
+        # Reader from the same worktree sees exactly the one event back.
+        events = read_events(wt)
+        assert [e["id"] for e in events] == ["evt-rt000042"]
+        assert events[0]["adr_id"] == "iterate-rt"
+
+    def test_attach_commit_patches_worktree_log_in_place(self, git_origin_repo, make_worktree):
+        from record_event import append_event, attach_commit_to_event, read_events
+
+        work, _ = git_origin_repo
+        wt = make_worktree(work, "rt2")
+        append_event(wt, {"v": 1, "id": "evt-rt000099", "ts": "T",
+                          "type": "work_completed", "source": "iterate",
+                          "commit": "", "adr_id": "iterate-rt2"})
+        ok = attach_commit_to_event(wt, "evt-rt000099", "feedc0de")
+        assert ok is True
+        # Patched in the worktree copy; main tree still clean.
+        events = read_events(wt)
+        assert events[0]["commit"] == "feedc0de"
+        assert not (work / "shipwright_events.jsonl").exists()

@@ -1052,17 +1052,18 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 /shipwright-compliance --format json            # JSON output only
 ```
 
-**What the detective audit checks** (7 groups planned; **only C and F are currently wired** per plan v7 Step 6 — Steps 4/5/7/8 will add the remaining groups incrementally):
+**What the detective audit checks** (8 groups, all wired as of Campaign A.review / 2026-05-25):
 
-- **A** *(planned, not implemented)* Artifact presence + path integrity — `npm run`, `uv run`, `make` commands in READMEs resolve; markdown links resolve; config path fields point to real files.
-- **B** *(planned, not implemented)* Config ↔ config ↔ event-log coherence — `project_config.splits[]` matches `.shipwright/planning/NN-*/`; build section test files exist; commits on main have matching `work_completed` events.
+- **A** ✅ **shipped** — Artifact presence + path integrity — `npm run`, `uv run`, `make` commands in READMEs resolve; markdown links resolve; config path fields point to real files. The composite handler also runs **A5** (CI security-workflow integrity) so `.github/workflows/security.yml` parity drift surfaces here.
+- **B** ✅ **shipped** — Config ↔ config ↔ event-log coherence — `project_config.splits[]` matches `.shipwright/planning/NN-*/`; build section test files exist; commits on main have matching `work_completed` events; **B7** reverse-direction git-log scan catches commits without events.
 - **C** ✅ **shipped** — Planning internal coherence (preventive re-run): every spec FR appears in a plan section, plan section IDs valid, section manifest ↔ files.
-- **D** *(planned, not implemented)* Implementation evidence — every FR has at least one `work_completed` event, every built section has `test_count > 0`.
-- **E** *(planned, not implemented)* Compliance-doc content staleness — regenerate each doc in memory, strip volatile `Generated:` header, byte-compare against disk. Strictly deeper than Phase-Quality's mtime checks.
-- **F** ✅ **shipped** — ADR structural integrity (preventive re-run): unique sequential IDs, valid status enum, supersession refs exist.
-- **G** *(planned, not implemented)* Agent-docs freshness vs. git activity — conventional-commit scope ↔ architecture.md substring match (with stoplist/alias map), ADR-ID references in commit bodies vs. decision_log.
+- **D** ✅ **shipped** — Implementation evidence — every FR has at least one `work_completed` event (D5 enforces FR-or-`spec_impact=none` linkage), every built section has `test_count > 0`.
+- **E** ✅ **shipped** — Compliance-doc content staleness — regenerate each doc in memory, strip volatile `Generated:` header, byte-compare against disk. Strictly deeper than Phase-Quality's mtime checks. **Snapshot-provenance audit** (Iterate 2026-05-23) widens coverage to the 8 tracked compliance + agent-doc MDs and walks worktree branch lineage via `find_snapshot_commit` so post-merge state stays clean (ADR-089).
+- **F** ✅ **shipped** — ADR structural integrity (preventive re-run F1–F3): unique sequential IDs, valid status enum, supersession refs exist. **F4–F7 doc-hygiene detectors** (ADR-060, Iterate C.2 / 2026-05-21) added on top: F4 flags ADRs > 60 lines without a `**Details:** [spec-folder link](...)`; F5 detects architecture-diagram drift via the `<!-- shipwright:architecture v=N last-sync=<sha> -->` marker + decision-drop `architecture_impact`; F6 caps `CLAUDE.md` at 200 lines; F7 flags > 5 inline `Iterate X (ADR-N)` annotations leaking into CLAUDE.md.
+- **G** ✅ **shipped** — Agent-docs freshness vs. git activity — conventional-commit scope ↔ architecture.md substring match (with stoplist/alias map), ADR-ID references in commit bodies vs. decision_log.
+- **H** ✅ **shipped** — Bloat-policy detective audit (Campaign A.review / 2026-05-25). Walks the codebase against `shipwright_bloat_baseline.json`, flags new crossings of the 300-line source / 400-line runtime-prompt budgets, and surfaces ratchets (existing entries that grew past their frozen `current` value). New crossings render as `info` triage items; ratchets are blocked at commit by the pre-commit hook (see Chapter 9 → Bloat anti-ratchet).
 
-> **Status today:** Invoking `/shipwright-compliance --only A` (or B, D, E, G) reports `groups_skipped=[<letter>]` with reason `not-implemented` cleanly — no fabricated passes. Groups C and F run on every audit by default.
+> **Detective-only tagging.** Every Group F4–F7 and Group H finding is tagged `SOURCE_DETECTIVE_ONLY` so the audit report distinguishes them from preventive re-runs of F1–F3 / C / B3 / B6. Failing detective checks are mirrored into `.shipwright/triage.jsonl` (source `compliance`) and auto-dismiss when the underlying drift resolves.
 
 **What it needs (detective audit):**
 - `shipwright_events.jsonl` — primary event source.
@@ -1076,7 +1077,7 @@ Together with preventive Canon and reactive Phase-Quality, it's a three-layer qu
 - `shipwright_audit_report.json` — structured payload; every finding carries a `source` field (`detective-only` or `preventive-rerun`).
 
 **What the auto-background generator produces** (unchanged from v6):
-- `.shipwright/compliance/dashboard.md` -- Start-here overview with quality indicators, project velocity, and links. Mode-aware (Iterate B.1, 2026-05-21): adopted projects (`run_config.adoption` set) render `Pipeline phases completed: n/a (adopted)` instead of a fake `1/7 WARN` and hide the structurally-N/A `Work events (build)` + `All sections reviewed` rows. Every WARN row carries a 4th `Why warn?` column with a one-line diagnostic pointer (`"X failing — see test-evidence.md"`, `"see sbom.md"`, ...). A `Triage open` indicator surfaces the count of open items in `.shipwright/triage.jsonl` (signal severities prominent, info-severity shown in parens — `"3 open (1 info)"`) so the inbox status lives on the compliance home page.
+- `.shipwright/compliance/dashboard.md` -- Start-here overview with quality indicators, project velocity, and links. Mode-aware (Iterate B.1, 2026-05-21): adopted projects (`run_config.adoption` set) render `Pipeline phases completed: n/a (adopted)` instead of a fake `1/7 WARN` and hide the structurally-N/A `Work events (build)` + `All sections reviewed` rows. Every WARN row carries a 4th `Why warn?` column with a one-line diagnostic pointer (`"X failing — see test-evidence.md"`, `"see sbom.md"`, ...). A `Triage open` indicator surfaces the count of open items in `.shipwright/triage.jsonl` (signal severities prominent, info-severity shown in parens — `"3 open (1 info)"`) so the inbox status lives on the compliance home page. **Bloat column (Campaign B.B3, 2026-05-25):** the per-phase quality matrix gained a Bloat indicator sourced from `shipwright_bloat_baseline.json` — green when no entry's measured LOC exceeds its frozen `current`, WARN when any file ratcheted past its limit, with a one-click pointer to the Group H detective audit.
 - `.shipwright/compliance/traceability-matrix.md` -- Every requirement mapped to the work events that verify it, with a "Last Verified" column. **Iterate B.4 (2026-05-21):** the Requirements Coverage Status cell renders `FAIL → [trg-XXX](../agent_docs/triage_inbox.md#trg-XXX)` deep-links for every FR with an open triage card carrying `frId == row.fr_id` (overrides COVERED / COVERED (baseline) when an operator flagged a regression). The Coverage Summary section gains three operator-actionable subsections rendered only when non-empty: "FRs without tests", "FRs with stale verification (> 14 days)", "FRs with open triage items".
 - `.shipwright/compliance/test-evidence.md` -- Test results across unit / integration / pgTAP / smoke / E2E / consistency / visual, with pass/fail counts and skip reasons. **Layer column (Iterate B.3, 2026-05-21):** the `## Test Progression` table classifies each work_completed event into `unit | e2e | mixed | —`; `## Full Suite Runs` breaks out Integration + pgTAP alongside Unit + E2E (sourced from new `layers.integration` and `layers.pgtap` keys on test_run events). **Triage producer (Iterate B.3):** one `source="test-evidence"` triage item per failing layer in the latest test_run event, dedupKey `test-fail:<layer>`, severity layer-based (high for e2e/integration/pgtap, low for unit), `eventId` cross-link to the originating test_run, `launchPayload` carries `/shipwright-iterate --type bug`. Auto-dismisses layers that go green.
 - `.shipwright/compliance/change-history.md` -- All commits + decisions (from `.shipwright/agent_docs/decision_log.md`) + version tags.
@@ -1478,7 +1479,7 @@ The **constitution** (`shared/constitution.md`) defines behavioral boundaries fo
 - Validate input at system boundaries.
 - Run the self-review checklist before committing.
 - Log deviating decisions in `.shipwright/agent_docs/decision_log.md`.
-- Keep files under 300 lines -- split if larger.
+- Keep files under **300 lines (source / tests) / 400 lines (runtime-prompts: `SKILL.md`, `CLAUDE.md`, plugin agents, shared prompts)** — split if larger. The bloat anti-ratchet hook hard-blocks commits that grow an allowlisted entry past its frozen `current`; new crossings are advisory and surfaced by the Group H detective audit post-merge. Exceptions go through `.shipwright/planning/adr/_template-bloat-exception.md` with mandatory Ousterhout / YAGNI / Chesterton-Fence / Re-Review-Date / Incident-Reference fields. Allowlist / Ratchet / Anti-Ratchet vocabulary lives in `shared/glossary.md`.
 - Fix the code, not the test -- never weaken assertions to pass.
 
 **ASK FIRST (require user confirmation):**
@@ -1632,8 +1633,10 @@ Every iterate run -- regardless of complexity -- ends with the same mandatory fi
 8. **Update build dashboard** -- refresh `build_dashboard.md` (pre-commit)
 9. **Record iterate entry** -- `append_iterate_entry.py` writes `.shipwright/agent_docs/iterates/<run_id>.json` (last 50 entries retained; commit hash intentionally omitted — look it up in `shipwright_events.jsonl` by `run_id`). On first contact with a legacy `iterate_history` array, the tool migrates all valid rows under the same transaction lock; invalid / duplicate rows land in `.shipwright/agent_docs/iterates/_quarantine/` and the count surfaces in the handoff + verifier output.
 10. **Conventional commit** -- single atomic commit with explicit `git add` list (never `-A`), `Run-ID` trailer and FR references
-11. **Record event** -- append `work_completed` to `shipwright_events.jsonl` with the real commit hash (the only step that legitimately runs post-commit, and it writes only to a gitignored file)
-12. **Merge, push & verify** -- merge branch to main, push, verify event was recorded, regenerate session handoff
+11. **Record event** -- the `work_completed` event is appended to **this worktree's** `shipwright_events.jsonl` at finalize (F5b, *before* the commit) and **staged in the same atomic commit** above (step 10), so it ships in the iterate PR and merges to `main` like every other artifact — a per-tree, PR-committed model (iterate-2026-05-29-events-jsonl-worktree-commit). The main tree is never written, so there is no orphaned dirty line and **no separate `chore(events)` sealing commit**. The F11 verifier fails closed if a tracked log's event isn't in the commit. *(Legacy/out-of-band only: when an event is recorded into a tree it does NOT commit — replay, non-worktree phases — the **F7b** `commit_event_followup.py` seal still applies; it is a no-op for the normal worktree flow.)*
+12. **Merge, push & verify** -- push branch, open PR via `gh pr create`, verify event was recorded, regenerate session handoff via the **runtime/snapshot split** (ADR-089, 2026-05-27): Stop hooks write live state to `.shipwright/agent_docs/runtime/` (gitignored); iterate-finalize is the **sole producer** of the tracked `session_handoff.md`, `build_dashboard.md`, and `triage_inbox.md`. The repair pass refuses to run when the session→worktree pointer is invalid — stale-pointer sessions no longer poison main.
+
+> **Branch-integration rule (ADR-089).** Use `git merge` (not `git rebase` / `gh pr merge --rebase`) for branches carrying `Run-ID:` commits. Rebase rewrites the Run-ID SHAs that the snapshot-provenance audit (Group E) follows via `git log --grep=Run-ID:` and can silently strip merge-bearing trailers. Recover an accidental rebase via `git reflog`. Drift-protected by `shared/tests/test_branch_integration_doc.py`.
 
 ### Degraded Mode
 
@@ -1788,7 +1791,17 @@ Hooks are Python and shell scripts that fire on specific Claude Code events. The
 | `validate_command.sh` | PreToolUse Bash | Blocks `git push --force` to main, `rm -rf /`, `DROP DATABASE` |
 | `check_secrets.sh` | PostToolUse Write/Edit | Detects API keys (`sk-...`, `AKIA...`, `ghp_...`), PEM keys, passwords, connection strings |
 | `check_destructive_migration.sh` | PostToolUse Write/Edit on .sql | Warns on `DROP TABLE`, `DROP COLUMN`, `TRUNCATE` without a matching `down.sql` |
-| `check_file_size.py` | PostToolUse Write/Edit | Non-blocking nudge when an edit pushes a source file past the line guideline (default 300); silent on edits to files already over the limit |
+| `check_file_size.py` | PostToolUse Write/Edit | Non-blocking nudge when an edit pushes a source file past the line guideline (default 300); silent on edits to files already over the limit. Also records `.shipwright/locks/bloat_pending.<sid>.json` markers so the Stop-Gate fires in the same session that triggered the over-limit write. |
+
+**Bloat anti-ratchet (pre-commit + Stop + CI):**
+
+| Layer | Trigger | What It Prevents |
+|-------|---------|-----------------|
+| `scripts/hooks/pre-commit` | local `git commit` | **Hard-blocks** commits that raise the measured LOC of any allowlisted entry past its frozen `current` in `shipwright_bloat_baseline.json`. New crossings (a previously-clean file gaining its first allowlist entry) are nudged, not blocked — Group H surfaces them post-merge. Installed once per clone via `bash scripts/install-hooks.sh` (POSIX/Git-Bash) or `.\scripts\install-hooks.ps1` (PowerShell). |
+| `bloat_gate_on_stop.py` | Stop | Reads the session bloat marker and refuses to finalize a turn while a ratchet is pending — the gate that catches in-session ratchets the same Claude that wrote them. |
+| `.github/workflows/bloat-check.yml` | CI on PRs to main | Same anti-ratchet rule on the merge gate, defense-in-depth against operators who skip the pre-commit install. |
+
+Exception path: write an ADR using `.shipwright/planning/adr/_template-bloat-exception.md` (mandatory Ousterhout / YAGNI / Chesterton-Fence / Re-Review-Date / Incident-Reference sections), bump the entry's `current` in the allowlist with `state="exception"` and `adr="ADR-NNN"`. See Campaign A (`.shipwright/planning/campaigns/2026-05-21-bloat-cleanup-A-prevention.md`) for the design and ADR-089 / ADR-090 for the first applied exceptions.
 
 **Multi-session lifecycle (orchestrator-driven phases):**
 
@@ -1850,6 +1863,20 @@ The secret scanner runs on every file write or edit and detects:
 - Hardcoded passwords and connection strings with embedded credentials
 
 It automatically skips `.env.example`, test fixtures, lock files, and vendor directories.
+
+**Suppression syntax (`nosemgrep` adjacency rule).** A `# nosemgrep:<rule-id>` directive MUST sit on the matched line or immediately preceding it; an intervening justification comment breaks attribution and Semgrep flags the call anyway. For multi-line calls flagged on a kwarg, write the directive as an inline trailing comment on that kwarg line. Full reference: `plugins/shipwright-security/skills/security/references/suppression-syntax.md`.
+
+### Plugin-cache drift check
+
+After `git push` to the dev repo, plugin-side fixes (under `plugins/*`, `shared/scripts/`, any `SKILL.md`) do **not** auto-sync to the Claude Code runtime cache at `~/.claude/plugins/cache/shipwright/`. Without `bash scripts/update-marketplace.sh`, fixes land in the repo but never reach runtime. `scripts/check_plugin_cache_sync.py` (ADR-061, Iterate C.3 / 2026-05-21) compares the repo head against the lexically-latest cached plugin version via per-file SHA-256 and reports drift:
+
+```bash
+uv run scripts/check_plugin_cache_sync.py             # fail-soft WARN by default
+uv run scripts/check_plugin_cache_sync.py --strict    # exit 1 on drift (CI use)
+uv run scripts/check_plugin_cache_sync.py --json      # structured output for tooling
+```
+
+The check is no-op when `~/.claude/plugins/cache/shipwright/` does not exist (typical CI runners), so it slots cleanly into a sanity-check pipeline without false negatives. Scope: shipwright dev repo only — end-users consuming the plugins on their own projects run the installed cache versions and never need this step.
 
 ### Pipeline Verifier and Phase Completion Canon
 
@@ -1935,12 +1962,17 @@ The `.shipwright/agent_docs/` directory is the project's knowledge base for AI a
 
 | File | Purpose | Updated By |
 |------|---------|-----------|
-| `architecture.md` | System overview, stack table, data flow, security model | `/shipwright-project` |
+| `architecture.md` | System overview, stack table, data flow, security model. Carries a `<!-- shipwright:architecture v=N last-sync=<sha> -->` marker that the Group F5 detective audit uses to detect diagram drift against architecture-impacting decision-drops | `/shipwright-project` (drift-protected by `shared/tests/test_architecture_md_reflects_arch_impact.py`) |
 | `conventions.md` | Code patterns, naming, git workflow, component examples | `/shipwright-project` |
-| `decision_log.md` | Architecture Decision Records (ADR format) | All phases |
-| `session_handoff.md` | Recovery document: last events, git state, resume instructions | Auto-generated on context pressure or session end |
-| `build_dashboard.md` | Project activity: recent changes, test status, pipeline, build history | Updated after every phase and iterate |
+| `decision_log.md` | Architecture Decision Records (ADR format). Compact one-row entries with mandatory 500-char field caps; long-form prose lives in the flat `.shipwright/planning/adr/<NNN>-<slug>.md` spec folder | All phases |
+| `session_handoff.md` | Recovery document: last events, git state, resume instructions. **Single producer** = `iterate_finalize` (ADR-089) | Iterate finalization — runtime mirror at `.shipwright/agent_docs/runtime/session_handoff.md` (gitignored) |
+| `build_dashboard.md` | Project activity: recent changes, test status, pipeline, build history. **Single producer** = `iterate_finalize` (ADR-089) | Iterate finalization — runtime mirror at `runtime/build_dashboard.md` (gitignored) |
+| `triage_inbox.md` | Aggregated Triage Inbox rendered from `.shipwright/triage.jsonl` (see § 4.11) | Iterate finalization via atomic `os.replace` from the runtime mirror — Stop hooks write only to `runtime/triage_inbox.md` |
+| `iterates/<run_id>.json` | Per-iterate record (one file per iterate; legacy `iterate_history` array is migration-only) | Iterate finalization (F5c, 50-entry retention) |
+| `decision-drops/<run_id>.json` | Per-iterate ADR draft, aggregated at `/shipwright-changelog` release into sequentially-numbered `decision_log.md` entries (gitignored, main-repo path) | Iterate F3 |
 | `compliance_overrides.log` | Audit log of hook overrides | Hooks (when user says "Continue anyway") |
+
+**Runtime/tracked split (ADR-089, 2026-05-27).** Stop hooks write live mid-session state to `.shipwright/agent_docs/runtime/` (gitignored via re-exclude in the allowlist block); iterate-finalize is the single producer of the tracked variants above. The split closes the recurring "main is dirty after every session" regression class while preserving mid-session inspection — `cat .shipwright/agent_docs/runtime/triage_inbox.md` for fresh state; the tracked copy reflects the last iterate's snapshot.
 
 ### CLAUDE.md
 

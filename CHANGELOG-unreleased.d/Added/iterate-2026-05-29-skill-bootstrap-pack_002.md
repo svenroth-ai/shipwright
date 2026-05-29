@@ -1,0 +1,1 @@
+Plugin-cache drift reminder: editing plugin-side files surfaces a once-per-session Stop reminder to run update-marketplace.sh + check_plugin_cache_sync.py and files a plugin-sync triage item (monorepo-only).

@@ -1,11 +1,20 @@
 # Project Activity Dashboard
-> Updated: 2026-05-26 21:32 UTC | Session: 40b1eb76-d68e-4414-be55-0283044ac054 | Run: iterate-2026-05-26-public-launch-hardening-shipwright
+> Updated: 2026-05-29 13:33 UTC | Session: d3b8b26b-1b53-4e84-9427-ae125bdbb87e | Run: iterate-2026-05-29-fix-suggest-iterate-hookeventname
 
-## Recent Changes (61 iterations)
+## Recent Changes (70 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | Pre-Phase Principles header in constitution.md + Superpowers anti-slop PR template + expanded README/guide acknowledgments | 30/30 |  | docs | 2026-05-26 |
+| bug | suggest_iterate UserPromptSubmit hook: emit hookEventName on hookSpecificOutput (+ AST meta-test) | 2558/2558 |  | tooling | 2026-05-29 |
+| bug | Bloat marker keyed off stdin-payload session_id (not env) in check_file_size.py + bloat_gate_on_stop.py | 2549/2550 | 4adfd44 | tooling | 2026-05-29 |
+| feature | P4.1 Skill Bootstrap Pack: using-shipwright SessionStart bootstrap + writing-plugin/plugin-cache Stop wave (SP2+SP4) | 2545/2545 | e788870 | tooling | 2026-05-29 |
+| bug | events.jsonl per-tree, PR-committed artifact (worktree iterate audit-log fix) | 2449/2450 |  | tooling | 2026-05-29 |
+| bug | Refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath (41 legitimate findings) | 2449/2449 | 9d9b1e5 | tooling | 2026-05-28 |
+| change | Correction event: spec_impact=none with proper justification field for the verifier (supersedes evt-13153a5c). | 0/0 | 25fd988 | docs | 2026-05-27 |
+| change | Refresh docs/guide.md and README.md with Campaign A/B + ADR-060/061/062/089/090 + F7b + runtime/snapshot split + bloat anti-ratchet hook + plugin-cache drift check | 0/0 | 25fd988 | docs | 2026-05-27 |
+| change | Refresh SBOM after syncing dev extras across plugin workspaces; clears 4 stale triage entries (pytest/pytest-mock now resolve as MIT) | 0/0 | b3ff2eb | compliance | 2026-05-27 |
+| change | Correction event: spec_impact reclassified to none with justification (supersedes evt-5aca940d). | 0/0 | 54ecb17 | fix | 2026-05-27 |
+| change | Runtime/snapshot split for agent-doc trio + hard-gated finalize repair pass + audit_staleness coverage extension + merge-not-rebase doc convention. | 0/0 | 54ecb17 | fix | 2026-05-27 |
 | change | B8: shared/contracts/* cross-plugin contracts (compliance + iterate); adopt-bridge + boundary_coverage_report refactor | +26 new, 1104/1104 | fbde435 | tooling | 2026-05-26 |
 | feature | Pre-commit anti-ratchet hook + bloat-check CI workflow + bloat-exception ADR template + shared glossary (Campaign A.defense, closes Campaign A defense-in-depth layer) | 41/41 | 55be715 | tooling | 2026-05-25 |
 | bug | fix bloat_gate_on_stop.py Stop-hook schema violation | 131/131 | 193b7f5 | tooling | 2026-05-25 |
@@ -68,7 +77,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-26 | Unit: 30/30 | Smoke: skipped | (iterate)
+Last run: 2026-05-29 | Unit: 2558/2558 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

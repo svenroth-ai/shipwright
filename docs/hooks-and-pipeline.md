@@ -434,6 +434,45 @@ sister tests) automatically covers the new entry.
 (written in Sub-Iterate G of the planning relocation) holds the full
 playbook for proposing and executing a new migration.
 
+### Shared Hooks: Skill Bootstrap Pack (SP2 + SP4)
+
+Three hooks added by iterate `iterate-2026-05-29-skill-bootstrap-pack`
+(P4.1, external-frameworks SP2 + SP4). Registered in **all 12 hooks-bearing**
+plugin `hooks.json` files (`shipwright-preview` has no `hooks/` dir, so it is
+excluded — consistent with every other shared hook). Forward/reverse meta-test:
+`shared/tests/test_using_shipwright_hook.py`. All fail-open. SP4 is
+monorepo-scoped (no-ops unless `scripts/update-marketplace.sh` is present), so
+end-user projects never see the sync reminder.
+
+**`shared/scripts/hooks/session_start_using_shipwright.py` — SessionStart
+(SP2).** When `shipwright_run_config.json` is present in the project root,
+emits `shared/prompts/using-shipwright.md` as
+`hookSpecificOutput.additionalContext` so a fresh session knows to route
+changes to `/shipwright-iterate`, compliance to `/shipwright-compliance`,
+etc. Silent in non-Shipwright projects. Because it fires up to 12× per
+session, an atomic O_EXCL sentinel
+(`.shipwright/locks/using_shipwright_bootstrap.<sid>`) ensures exactly one
+firing injects. Reads `SHIPWRIGHT_SESSION_ID` from env.
+
+**`shared/scripts/hooks/mark_plugin_edit.py` — PostToolUse `Write|Edit`
+(SP4).** Records plugin-side edits to
+`.shipwright/locks/plugin_edit_pending.<sid>.json` (set-idempotent).
+"Plugin-side" = under `plugins/`, under `shared/` (excl. `shared/tests/`),
+or any `SKILL.md` — exactly what `update-marketplace.sh` syncs into the
+runtime cache. Silent in non-Shipwright projects.
+
+**`shared/scripts/hooks/plugin_sync_reminder_on_stop.py` — Stop (SP4).**
+Reads the marker; if plugin-side files were edited this session, surfaces a
+once-per-session block-reminder
+(`{"decision":"block","reason":...}`) to run `bash scripts/update-marketplace.sh`
++ `uv run scripts/check_plugin_cache_sync.py --strict`, AND appends an
+idempotent `source="plugin-sync"` triage item (durable follow-up). A
+`plugin_sync_reminded.<sid>` sentinel makes it fire exactly once — **block
+once, never block-until-green** (avoids a hard loop when edited-but-not-pushed
+or the cache is absent in CI). This is the Stop half of a PostToolUse→Stop
+wave analogous to the bloat gate (`check_file_size.py` →
+`bloat_gate_on_stop.py`).
+
 ### Shared Hook: audit_phase_quality_on_stop.py
 
 **Script:** `shared/scripts/hooks/audit_phase_quality_on_stop.py` —
@@ -749,7 +788,7 @@ phase to load explicitly.
 | PreToolUse | `{"tools": ["Bash"]}` | `validate_command.sh` | Blocks dangerous shell commands (rm -rf, force push, etc.) |
 | PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_destructive_migration.sh` | Warns on DROP/DELETE in .sql files without down.sql |
 | PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_secrets.sh` | Scans written files for API keys, tokens, passwords |
-| PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_file_size.py` | Non-blocking nudge + per-session marker writer. Crossings of the 300/400 line guideline (300 source/test, 400 runtime-prompt SKILL.md/CLAUDE.md/agents) emit a stdout nudge AND write `.shipwright/locks/bloat_pending.<session_id>.json` (atomic tmp+rename). The Stop-Gate (`bloat_gate_on_stop.py`) reads that marker. Registered in every plugin's `hooks.json` since Campaign A.foundation. |
+| PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_file_size.py` | Non-blocking nudge + per-session marker writer. Crossings of the 300/400 line guideline (300 source/test, 400 runtime-prompt SKILL.md/CLAUDE.md/agents) emit a stdout nudge AND write `.shipwright/locks/bloat_pending.<session_id>.json` (atomic tmp+rename). The Stop-Gate (`bloat_gate_on_stop.py`) reads that marker. Registered in every plugin's `hooks.json` since Campaign A.foundation. `<session_id>` comes from the hook **stdin payload** (`session_id`), falling back to the `SHIPWRIGHT_SESSION_ID` env var then `"unknown"` — both writer and gate must agree (fixed `iterate-2026-05-29-bloat-gate-session-id`; env-only keying pooled every session into one `unknown` bucket so one session's oversize file blocked another's Stop). The Stop-Gate clears an **anti-ratchet** entry when the file is trimmed back to `<=` its baseline `current` (the grandfathered ceiling) — it blocks only when the live size grew PAST `current`, matching the canonical anti-ratchet rule in `anti_ratchet.py` (same iterate; previously it compared only against the 300 limit, so a correctly-trimmed grandfathered file kept blocking). |
 | PostToolUse | — (catch-all) | `track_tool_calls.py` | Increments tool call counter for context pressure detection |
 | Stop | — | `bloat_gate_on_stop.py` | Blocks completion when bloat markers indicate anti-ratchet or a new crossing outside the baseline allowlist (`shipwright_bloat_baseline.json`). Session-scoped (reads only the current session's marker, falls back to `unknown` when `SHIPWRIGHT_SESSION_ID` is unset). Re-measures each entry at decision time so a fixed file isn't punished. Pass-silently when no baseline file exists (fresh / pre-adopt repos). Registered in every plugin's `hooks.json` since Campaign A.foundation. |
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W1 TDD-order Tier-2 + I1-I4 infrastructure freshness + Q1/Q2 quality) |
@@ -1100,6 +1139,11 @@ The unified event log (`shipwright_events.jsonl`) is written to by these compone
 | Changelog SKILL.md (Step 7) | `phase_completed` (phase=changelog) | PR created or tag pushed | Version + PR URL via `--detail` |
 
 All events share common fields: `v` (schema version), `id` (UUID-based), `ts` (ISO timestamp), `type`, and optional `session`.
+
+**Where the log is written (per-tree, PR-committed — iterate-2026-05-29-events-jsonl-worktree-commit).**
+`shipwright_events.jsonl` is a per-tree, version-controlled artifact. `lib/events_log.py::resolve_events_path` (and the parity-pinned compliance copy `collectors/change_history.py::_resolve_events_path`) return `project_root / shipwright_events.jsonl` **literally** — no `git --git-common-dir` redirect. Under a `/shipwright-iterate` worktree run the event is therefore written to the **worktree's own** copy, and **F6 stages it** so it ships in the iterate PR and merges to `main` (the main tree is never written; AC2). The F11 verifier `check_events_has_commit` fails closed if a *tracked* log's `work_completed` event is not in the commit (AC4). `resolve_main_repo_root` (git-common-dir) is retained but now serves **only** the decision-drop resolvers (`write_decision_drop.py`, `aggregate_decisions.py`) — gitignored staging that `/shipwright-changelog` consumes on `main`. The legacy out-of-band F7 (`record_event.py`) + F7b seal (`commit_event_followup.py`) still target the main tree and are used only for replay / non-worktree phases.
+
+*Operational notes for the per-tree model:* (1) Because the log is an append-only file committed per-branch, two concurrent iterate PRs can conflict at EOF on `shipwright_events.jsonl`; resolve the conflict like any other (keep both event lines). The event readers are corrupt-line-tolerant, so a mishandled merge drops events rather than crashing parsers — recover/validate with `uv run shared/scripts/tools/validate_event_log.py --project-root .`. (2) An **abandoned** iterate's events live only in its (discarded) worktree and never reach `main` — acceptable because `work_completed` denotes completed work.
 
 ---
 
@@ -1516,3 +1560,43 @@ Authoritative writers:
   Re-exported through `orchestrator.py` (post Campaign B5 split, 2026-05-26).
 
 No other plugin writes this file directly.
+
+## Branch integration (Run-ID-bearing branches)
+
+When integrating `main` into a long-lived `iterate/<slug>` branch — or any
+branch whose commit history contains a `Run-ID:` trailer — the framework
+requires `git merge`, NOT `git rebase`.
+
+```
+GOOD:  git merge main          # preserves Run-ID trailer SHAs reachable
+BAD:   git rebase main         # re-parents commits, drops trailer SHAs
+```
+
+Why this matters: `plugins/shipwright-compliance/scripts/audit/audit_staleness.py`
+locates the last single-producer snapshot commit via
+`git log --grep=Run-ID: --diff-filter=AM -- .shipwright/compliance/
+.shipwright/agent_docs/` against the current branch's history. A rebase
+rewrites every Run-ID commit's SHA AND, depending on the rebase strategy,
+may drop merge-commit-bearing trailers entirely. The Group E audit then
+reports `snapshot_unavailable` (greenfield-shaped) on a branch that had
+dozens of legitimate Run-ID commits before the rebase, breaking the
+single-producer guarantee from PR #78 and iterate-2026-05-27.
+
+Operational guidance for contributors:
+
+* Pull main into the iterate branch with `git merge --no-ff main` (or a
+  plain `git merge main`). The merge commit itself does not need a
+  `Run-ID:` trailer — the Run-ID-bearing commits stay reachable through
+  it.
+* When `gh pr merge` against the iterate branch's PR, prefer `--merge`
+  or `--squash` over `--rebase`. `--rebase` on the GitHub side has the
+  same trailer-drop semantics as a local rebase.
+* Force-pushing a rebased history to a branch with merged Run-ID commits
+  is a destructive action; restore the pre-rebase ref via
+  `git reflog show iterate/<slug>` if recovery is needed.
+
+The convention is doc-only (codified here + drift-protected by
+`shared/tests/test_branch_integration_doc.py`); operators self-discipline.
+A future iterate may add a programmatic `pre-rebase` guard if the doc
+proves insufficient (deferred from iterate-2026-05-27 per external review
+finding OpenAI #12).

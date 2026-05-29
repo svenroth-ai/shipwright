@@ -1,26 +1,43 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-26-public-launch-hardening-shipwright",
-    "date": "2026-05-26",
-    "unit": { "status": "passed", "passed": 30, "total": 30, "scope": "shared/tests/test_bloat_defense_artifacts.py + test_reviewer_bloat_checklist_parity.py (targeted; docs-only iterate, no source code changed)" },
-    "integration": { "status": "skipped", "reason": "no integration changes (docs-only iterate)" },
-    "pgtap": { "status": "skipped", "reason": "no DB changes" },
-    "e2e": { "status": "skipped", "reason": "no UI changes; docs-only iterate" },
-    "design_fidelity": { "status": "skipped", "reason": "no UI changes" },
-    "smoke": { "status": "skipped", "reason": "no UI changes; library project" },
+    "run_id": "iterate-2026-05-29-fix-suggest-iterate-hookeventname",
+    "date": "2026-05-29",
+    "unit": {
+      "status": "passed",
+      "passed": 2558,
+      "total": 2558
+    },
+    "integration": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
     "surface_verification": {
       "surface": "none",
-      "justification": "Docs-only iterate (constitution.md + PR template + README + guide.md); no startable user-facing surface to drive. F0.5 is Advisory at small complexity without touches_io_boundary or UI; recorded for compliance.",
+      "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "timestamp": "2026-05-26T22:30:00.000Z"
-    },
-    "anti_ratchet": {
-      "status": "passed",
-      "scope": "shared/scripts/hooks/anti_ratchet_check.py --worktree",
-      "result": "exit 0; one pre-existing advisory new-crossing (plugins/shipwright-compliance/tests/test_collectors_dashboard.py) unrelated to this iterate",
-      "constitution_md_loc": 159,
-      "constitution_md_budget": 400
+      "evidence_path": ".shipwright/runs/iterate-2026-05-29-fix-suggest-iterate-hookeventname/surface_verification.json",
+      "timestamp": "2026-05-29T13:32:43.403Z",
+      "justification": "Framework-internal hook output fix (suggest_iterate.py UserPromptSubmit hook) + an AST drift-guard meta-test. No startable web/CLI/API app surface. Verified: reproduced the schema violation, fixed it, end-to-end the hook now emits hookEventName=UserPromptSubmit, AST meta-test + behavioral round-trip tests green, full shared/tests (2558) pass."
     },
     "degraded": []
   }
