@@ -21,7 +21,12 @@ ADD does not apply to bug fixes.
 
 ## Step 3: Investigate & Reproduce
 
-**Do NOT attempt fixes before completing investigation.**
+**Do NOT attempt fixes before completing investigation.** Run the four-phase
+[F-debug](F-debug.md) protocol first — Iron Law: *NO FIXES WITHOUT ROOT CAUSE
+INVESTIGATION FIRST* (Read Error → Reproduce → Recent Changes →
+Component-Boundary Instrumentation). The steps below mirror its phases, and
+F-debug carries the reviewer gate that rejects a symptom-patch over a
+root-cause fix.
 
 1. **Reproduce** — trigger the bug reliably. Note exact steps, inputs,
    and environment.

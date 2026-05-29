@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-05-29T13:33:06.388769+00:00
-Total commits: 775
+Generated: 2026-05-29T20:08:37.081996+00:00
+Total commits: 777
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 242
-    "fix" : 198
+    "fix" : 199
     "chore" : 152
-    "docs" : 110
+    "docs" : 111
     "refactor" : 50
     "test" : 15
     "other" : 7
@@ -266,10 +266,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 198 commits
+### Fixes (fix) — 199 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-29 | hooks | suggest_iterate UserPromptSubmit output must set hookEventName | 6f79d47b9e9e |
 | 2026-05-29 | hooks | clear bloat anti-ratchet at baseline current, not raw limit | 4adfd4441725 |
 | 2026-05-29 | hooks | key bloat marker off stdin-payload session_id, not env | a447fc625b71 |
 | 2026-05-29 | iterate | ship work_completed event in the PR via per-tree events.jsonl | 4eb6b1a90528 |
@@ -626,7 +627,7 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 110 commits
+### Documentation (docs) — 111 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
@@ -634,6 +635,7 @@ pie title Commit Types
 | 2026-05-29 | agent-docs | refresh architecture.md + ADR INDEX for Campaign B baseline | 0241d58d3255 |
 | 2026-05-27 | guide,readme | refresh for Campaign A+B + ADRs 060/061/062/089/090 | 25fd98826faf |
 | 2026-05-27 | adr | mark ADR-090 split as permanent exception after re-evaluation | 7a77b290cef1 |
+| 2026-05-26 | governance | public-launch hardening — Karpathy principles + Superpowers anti-slop PR template (P1.1, shipwright leg) | 396c56a768e3 |
 | 2026-05-25 | constitution | extend §21 with anti-ratchet CI rule + exception ADR path | a8d498989ddd |
 | 2026-05-23 | security | add suppression-syntax reference + link from SKILL.md | eb2fa64719b8 |
 | 2026-05-21 | campaign | empirical-verification handover for B.2→C.3 (#64) | 376c870345c3 |
@@ -838,7 +840,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 775 |
+| Total commits | 777 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 775 |
+| Human-authored commits | 777 |
 

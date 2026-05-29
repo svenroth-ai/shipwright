@@ -1,0 +1,1 @@
+shipwright-project: assumptions-first interview pre-phase — the agent lists its inferred assumptions (surface, stack, persistence, auth model) before the first clarifying question and asks for correction. Adapted from addyosmani/agent-skills (MIT).

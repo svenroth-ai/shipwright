@@ -64,6 +64,12 @@ the full step. Detailed interview guidance is in
 **Goal:** Surface the user's mental model of the project and combine it
 with Claude's intelligence.
 
+**Assumptions-first (before the first clarifying question):** list your
+inferred assumptions explicitly — web-app vs CLI, stack, persistence, auth
+model — and ask the user to correct them. See the "Surface Inferred
+Assumptions First" pre-phase in
+[interview-protocol.md](references/interview-protocol.md).
+
 **Context to read** depends on input mode (File / Inline / Chat). For
 Extension scope, read ALL existing project context (CLAUDE.md,
 `.shipwright/agent_docs/*`, all `.shipwright/planning/*/spec.md`).

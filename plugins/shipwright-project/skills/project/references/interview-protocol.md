@@ -1,5 +1,32 @@
 # Interview Protocol
 
+## Pre-Phase: Surface Inferred Assumptions First
+
+**Before asking the first clarifying question, list your inferred assumptions
+explicitly and ask the user to correct them.** Stating assumptions out loud is
+cheaper than discovering one wrong three questions later, and it prevents
+silent assumptions from hardening into specs. This runs ONCE, at the very top
+of the interview — before the Core Topics, before any AskUserQuestion.
+
+Surface at least these dimensions, each with your current best guess:
+
+- **Surface:** web-app vs CLI vs library vs service/API vs mobile?
+- **Stack:** language, framework, runtime (e.g. "Next.js + TypeScript",
+  "Python CLI")?
+- **Persistence:** none / file / SQLite / Postgres / external store?
+- **Auth model:** none / single-user / session-cookies / OAuth / multi-tenant?
+- **Scope & users:** single-user vs multi-user; internal tool vs public product?
+
+Format it as a short, correctable list, for example:
+
+> I'm inferring: **single-user web-app**, **Next.js + Postgres**,
+> **session-cookie auth**, deployed as one service. Correct anything that's
+> wrong before we go deeper.
+
+Then proceed to the adaptive questions below. Re-surface a revised assumption
+list only when an answer invalidates a foundational one. For Extension scope,
+draw assumptions from the existing `CLAUDE.md` / `architecture.md` first.
+
 ## Context to Read
 
 Before starting the interview:
@@ -80,3 +107,10 @@ Stop the interview when you have enough information to:
 ## Output
 
 After the interview, write `{planning_dir}/shipwright_project_interview.md` with a complete transcript.
+
+---
+
+> The "Surface Inferred Assumptions First" pre-phase is adapted from
+> [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)
+> `skills/spec-driven-development/SKILL.md` ("Surface assumptions immediately").
+> MIT, © Addy Osmani.

@@ -21,7 +21,7 @@ Complexity-adaptive change lifecycle for completed Shipwright projects. Detects 
 | Design Check, Testing, Visual, E2E | [design-and-testing](references/design-and-testing.md) |
 | Reflection, Boundary Probes, Round-Trip, Confidence | [reflection](references/reflection.md) · [boundary-probes](references/boundary-probes.md) · [round-trip-tests](references/round-trip-tests.md) · [confidence-anti-patterns](references/confidence-anti-patterns.md) |
 | Context Loading | [context-loading](references/context-loading.md) |
-| Path A / B / C body | [path-a-feature](references/path-a-feature.md) · [path-b-change](references/path-b-change.md) · [path-c-bug](references/path-c-bug.md) |
+| Path A / B / C body | [path-a-feature](references/path-a-feature.md) · [path-b-change](references/path-b-change.md) · [path-c-bug](references/path-c-bug.md) · [F-debug](references/F-debug.md) (BUG systematic-debugging) |
 | Campaign Mode, Escalation, Degraded, Errors | [campaign-mode](references/campaign-mode.md) · [mid-flight-escalation](references/mid-flight-escalation.md) · [degraded-mode](references/degraded-mode.md) · [error-handling](references/error-handling.md) |
 | Artifact Ownership | [artifact-ownership](references/artifact-ownership.md) |
 | Finalization F-phases | [F0](references/F0.md) · [F0.5](references/F0.5.md) · [F1](references/F1.md) · [F2](references/F2.md) · [F3](references/F3.md) · [F3a](references/F3a.md) · [F4](references/F4.md) · [F5](references/F5.md) · [F5b](references/F5b.md) · [F5c](references/F5c.md) · [F6](references/F6.md) · [F6.5](references/F6.5.md) · [F7](references/F7.md) · [F7b](references/F7b.md) · [F11](references/F11.md) · [F12](references/F12.md) |
@@ -188,7 +188,7 @@ See `references/path-b-change.md`. Same steps as FEATURE; default Spec Impact is
 
 ## Path C: BUG (fix something broken)
 
-See `references/path-c-bug.md` (investigation, reproduce, root-cause, write-failing-test, fix). Step 7.5 (Confidence Calibration) applies identically — mandatory at medium+, also at small with `touches_io_boundary`.
+BUG intent (intent-classification `kind: bug-fix`) routes through **[F-debug](references/F-debug.md)** BEFORE any fix — Iron Law: **NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST** (4 phases: Read Error → Reproduce → Recent Changes → Component-Boundary Instrumentation). The reviewer **rejects a fix that patches a symptom rather than the root cause** (no root-cause statement / no test pinning it). Then follow `references/path-c-bug.md` (investigation, reproduce, root-cause, write-failing-test, fix). Step 7.5 (Confidence Calibration) applies identically — mandatory at medium+, also at small with `touches_io_boundary`.
 
 ---
 
