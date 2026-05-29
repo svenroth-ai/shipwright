@@ -1,36 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-29-skill-bootstrap-pack"
+run_id: "iterate-2026-05-29-bloat-gate-session-id"
 phase: "iterate"
-reason: "iterate: skill bootstrap pack (SP2+SP4)"
-timestamp: "2026-05-29T08:37:28.445021+00:00"
+reason: "iterate: bloat-gate fixes"
+timestamp: "2026-05-29T09:47:50.793321+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-29 08:37:28 UTC
+> Auto-generated 2026-05-29 09:47:50 UTC
 
 ## Session Info
 
 - **Session ID**: 57abe24a-3e68-4515-868d-15d30cd6ad36
-- **Timestamp**: 2026-05-29 08:37:28 UTC
-- **Reason**: iterate: skill bootstrap pack (SP2+SP4)
+- **Timestamp**: 2026-05-29 09:47:50 UTC
+- **Reason**: iterate: bloat-gate fixes
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-29-fix-path-canon-allowlist
-- **Date**: 2026-05-28T22:32:04.206148Z
+- **Run ID**: iterate-2026-05-29-bloat-gate-session-id
+- **Date**: 2026-05-29T09:47:51.431386Z
 - **Type**: bug
 - **Complexity**: small
-- **Branch**: iterate/fix-path-canon-allowlist
-- **ADR**: iterate-2026-05-29-fix-path-canon-allowlist
+- **Branch**: iterate/bloat-gate-session-id
+- **ADR**: iterate-2026-05-29-bloat-gate-session-id
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/skill-bootstrap-pack
-- **Spec**: .shipwright/planning/iterate/2026-05-29-skill-bootstrap-pack.md
-- **External Review Marker**: stale (predates spec (2026-05-27T07:11:03))
+- **Branch**: iterate/bloat-gate-session-id
+- **External Review Marker**: completed (external_review_state.json @ 2026-05-27T07:11:03)
 
 ### Mandatory replay on Resume
 
@@ -48,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/skill-bootstrap-pack
-- **Last Commit**: c729db0 Merge pull request #109 from svenroth-ai/iterate/fix-path-canon-allowlist
+- **Branch**: iterate/bloat-gate-session-id
+- **Last Commit**: a447fc6 fix(hooks): key bloat marker off stdin-payload session_id, not env
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-fb9ffdbd | work_completed | iterate (Bloat marker keyed off stdin-payload session_id (not env) in check_file_size.py + bloat_gate_on_stop.py) | 2026-05-29 |
 | evt-39f0678b | work_completed | iterate (P4.1 Skill Bootstrap Pack: using-shipwright SessionStart bootstrap + writing-plugin/plugin-cache Stop wave (SP2+SP4)) | 2026-05-29 |
 | evt-4244f6e9 | work_completed | iterate (Refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath (41 legitimate findings)) | 2026-05-28 |
 | evt-d15e38c0 | work_completed | iterate (Correction event: spec_impact=none with proper justification field for the verifier (supersedes evt-13153a5c).) | 2026-05-27 |
 | evt-13153a5c | work_completed | iterate (Refresh docs/guide.md and README.md with Campaign A/B + ADR-060/061/062/089/090 + F7b + runtime/snapshot split + bloat anti-ratchet hook + plugin-cache drift check) | 2026-05-27 |
-| evt-536e20a7 | work_completed | iterate (Refresh SBOM after syncing dev extras across plugin workspaces; clears 4 stale triage entries (pytest/pytest-mock now resolve as MIT)) | 2026-05-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 67
-- **Last iterate**: feature — P4.1 Skill Bootstrap Pack: using-shipwright SessionStart bootstrap + writing-plugin/plugin-cache Stop wave (SP2+SP4) (2026-05-29)
+- **Total work events**: 68
+- **Last iterate**: bug — Bloat marker keyed off stdin-payload session_id (not env) in check_file_size.py + bloat_gate_on_stop.py (2026-05-29)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

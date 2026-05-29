@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-05-29T08:37:28.445021+00:00
-Total commits: 770
+Generated: 2026-05-29T09:47:50.793321+00:00
+Total commits: 772
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 241
-    "fix" : 195
+    "feat" : 242
+    "fix" : 196
     "chore" : 151
     "docs" : 110
     "refactor" : 50
@@ -19,10 +19,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 241 commits
+### Features (feat) — 242 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-29 | hooks | add using-shipwright SessionStart bootstrap + plugin-cache Stop wave (P4.1) | e7888704a598 |
 | 2026-05-25 | bloat | Campaign A.defense — pre-commit + CI + ADR template + glossary | ac02d7b24cf5 |
 | 2026-05-25 | compliance | Campaign A.review — bloat reviewer prompts + Group H audit | 723c8afffa27 |
 | 2026-05-25 | bloat | Loop-Gate (Campaign A.foundation — A1+A2+A3) | bfd4e63e4440 |
@@ -265,10 +266,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 195 commits
+### Fixes (fix) — 196 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-29 | hooks | key bloat marker off stdin-payload session_id, not env | a447fc625b71 |
 | 2026-05-29 | meta | refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath | 9d9b1e57c247 |
 | 2026-05-27 | iterate | correct iterate_history adr field to run-id form | 36375a6408d3 |
 | 2026-05-27 | iterate | runtime/snapshot split for agent-doc trio + hard-gated finalize repair | 54ecb17512c2 |
@@ -833,7 +835,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 770 |
+| Total commits | 772 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 770 |
+| Human-authored commits | 772 |
 
