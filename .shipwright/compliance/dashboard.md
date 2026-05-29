@@ -16,9 +16,9 @@ Scope: library
 | Dependencies | 8 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
 | Triage open | 4 open | WARN | 4 actionable item(s) — see ../agent_docs/triage_inbox.md |
-| Bloat over-limit | 144 | WARN | 144 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
+| Bloat over-limit | 138 | WARN | 138 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
 | Bloat in allowlist | 151 entries | INFO |  |
-| Bloat ratchet delta | +195 lines | WARN | grandfathered surface ratcheted up by 195 line(s) — Iron Law violation |
+| Bloat ratchet delta | -24 lines | PASS |  |
 
 ## Project Velocity
 

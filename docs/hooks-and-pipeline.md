@@ -434,6 +434,45 @@ sister tests) automatically covers the new entry.
 (written in Sub-Iterate G of the planning relocation) holds the full
 playbook for proposing and executing a new migration.
 
+### Shared Hooks: Skill Bootstrap Pack (SP2 + SP4)
+
+Three hooks added by iterate `iterate-2026-05-29-skill-bootstrap-pack`
+(P4.1, external-frameworks SP2 + SP4). Registered in **all 12 hooks-bearing**
+plugin `hooks.json` files (`shipwright-preview` has no `hooks/` dir, so it is
+excluded — consistent with every other shared hook). Forward/reverse meta-test:
+`shared/tests/test_using_shipwright_hook.py`. All fail-open. SP4 is
+monorepo-scoped (no-ops unless `scripts/update-marketplace.sh` is present), so
+end-user projects never see the sync reminder.
+
+**`shared/scripts/hooks/session_start_using_shipwright.py` — SessionStart
+(SP2).** When `shipwright_run_config.json` is present in the project root,
+emits `shared/prompts/using-shipwright.md` as
+`hookSpecificOutput.additionalContext` so a fresh session knows to route
+changes to `/shipwright-iterate`, compliance to `/shipwright-compliance`,
+etc. Silent in non-Shipwright projects. Because it fires up to 12× per
+session, an atomic O_EXCL sentinel
+(`.shipwright/locks/using_shipwright_bootstrap.<sid>`) ensures exactly one
+firing injects. Reads `SHIPWRIGHT_SESSION_ID` from env.
+
+**`shared/scripts/hooks/mark_plugin_edit.py` — PostToolUse `Write|Edit`
+(SP4).** Records plugin-side edits to
+`.shipwright/locks/plugin_edit_pending.<sid>.json` (set-idempotent).
+"Plugin-side" = under `plugins/`, under `shared/` (excl. `shared/tests/`),
+or any `SKILL.md` — exactly what `update-marketplace.sh` syncs into the
+runtime cache. Silent in non-Shipwright projects.
+
+**`shared/scripts/hooks/plugin_sync_reminder_on_stop.py` — Stop (SP4).**
+Reads the marker; if plugin-side files were edited this session, surfaces a
+once-per-session block-reminder
+(`{"decision":"block","reason":...}`) to run `bash scripts/update-marketplace.sh`
++ `uv run scripts/check_plugin_cache_sync.py --strict`, AND appends an
+idempotent `source="plugin-sync"` triage item (durable follow-up). A
+`plugin_sync_reminded.<sid>` sentinel makes it fire exactly once — **block
+once, never block-until-green** (avoids a hard loop when edited-but-not-pushed
+or the cache is absent in CI). This is the Stop half of a PostToolUse→Stop
+wave analogous to the bloat gate (`check_file_size.py` →
+`bloat_gate_on_stop.py`).
+
 ### Shared Hook: audit_phase_quality_on_stop.py
 
 **Script:** `shared/scripts/hooks/audit_phase_quality_on_stop.py` —

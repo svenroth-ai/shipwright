@@ -2,7 +2,7 @@
 canon_generated: true
 run_id: "iterate-2026-05-29-events-jsonl-worktree-commit"
 phase: "iterate"
-reason: "iterate: events.jsonl per-tree worktree-commit fix"
+reason: "merge origin/main: regenerate single-producer artifacts"
 timestamp: "2026-05-29T09:26:22.493504+00:00"
 ---
 
@@ -14,17 +14,19 @@ timestamp: "2026-05-29T09:26:22.493504+00:00"
 
 - **Session ID**: d3b8b26b-1b53-4e84-9427-ae125bdbb87e
 - **Timestamp**: 2026-05-29 09:26:22 UTC
-- **Reason**: iterate: events.jsonl per-tree worktree-commit fix
+- **Reason**: merge origin/main: regenerate single-producer artifacts
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-29-fix-path-canon-allowlist
-- **Date**: 2026-05-28T22:32:04.206148Z
+- **Run ID**: iterate-2026-05-29-events-jsonl-worktree-commit
+- **Date**: 2026-05-29T09:27:26.560532Z
 - **Type**: bug
-- **Complexity**: small
-- **Branch**: iterate/fix-path-canon-allowlist
-- **ADR**: iterate-2026-05-29-fix-path-canon-allowlist
+- **Complexity**: medium
+- **Branch**: iterate/events-jsonl-worktree-commit
+- **ADR**: iterate-2026-05-29-events-jsonl-worktree-commit
+- **Description**: events.jsonl per-tree, PR-committed artifact (worktree iterate audit-log fix)
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-05-29-events-jsonl-worktree-commit.md
 
 ## Current Iterate Progress
 
@@ -51,7 +53,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/events-jsonl-worktree-commit
-- **Last Commit**: c729db0 Merge pull request #109 from svenroth-ai/iterate/fix-path-canon-allowlist
+- **Last Commit**: 4eb6b1a fix(iterate): ship work_completed event in the PR via per-tree events.jsonl
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
