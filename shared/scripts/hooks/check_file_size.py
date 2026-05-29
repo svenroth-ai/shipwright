@@ -157,10 +157,15 @@ def _now_iso() -> str:
     return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _session_id() -> str:
-    sid = os.environ.get("SHIPWRIGHT_SESSION_ID") or ""
-    sid = sid.strip()
-    return sid or "unknown"
+def _session_id(payload: object = None) -> str:
+    """Marker key from the stdin payload ``session_id`` (env var is unset in this
+    process), then ``SHIPWRIGHT_SESSION_ID``, then ``"unknown"`` — env-only keying
+    pooled sessions into one bucket and blocked the wrong Stop (fixed 2026-05-29)."""
+    if isinstance(payload, dict):
+        sid = payload.get("session_id")
+        if isinstance(sid, str) and sid.strip():
+            return sid.strip()
+    return (os.environ.get("SHIPWRIGHT_SESSION_ID") or "").strip() or "unknown"
 
 
 def _marker_path(cwd: Path, sid: str) -> Path:
@@ -222,9 +227,10 @@ def _rel_path(cwd: Path, abs_path: Path) -> str:
 
 def _write_marker_entry(
     cwd: Path, file_path: str, now: int, limit: int, before: int | None,
+    payload: dict,
 ) -> None:
     """Upsert one entry into the per-session marker file (read-modify-write)."""
-    sid = _session_id()
+    sid = _session_id(payload)
     marker = _marker_path(cwd, sid)
     norm_path = _rel_path(cwd, Path(file_path))
     in_allowlist = norm_path in _baseline_paths(cwd)
@@ -277,7 +283,7 @@ def main() -> int:
     # Stop-Gate decides what to do with it (anti-ratchet always blocks).
     is_crossing = before is None or before <= limit
     try:
-        _write_marker_entry(cwd, file_path, now, limit, before)
+        _write_marker_entry(cwd, file_path, now, limit, before, payload)
     except OSError:
         # Marker write must never break the tool flow.
         pass

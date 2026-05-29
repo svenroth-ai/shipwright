@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-05-29T08:37:28.445021+00:00
-Total commits: 770
+Generated: 2026-05-29T09:47:50.793321+00:00
+Total commits: 771
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 241
+    "feat" : 242
     "fix" : 195
     "chore" : 151
     "docs" : 110
@@ -19,10 +19,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 241 commits
+### Features (feat) — 242 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-29 | hooks | add using-shipwright SessionStart bootstrap + plugin-cache Stop wave (P4.1) | e7888704a598 |
 | 2026-05-25 | bloat | Campaign A.defense — pre-commit + CI + ADR template + glossary | ac02d7b24cf5 |
 | 2026-05-25 | compliance | Campaign A.review — bloat reviewer prompts + Group H audit | 723c8afffa27 |
 | 2026-05-25 | bloat | Loop-Gate (Campaign A.foundation — A1+A2+A3) | bfd4e63e4440 |
@@ -833,7 +834,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 770 |
+| Total commits | 771 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 770 |
+| Human-authored commits | 771 |
 

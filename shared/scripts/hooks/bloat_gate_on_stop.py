@@ -28,9 +28,33 @@ if str(_SHARED_SCRIPTS) not in sys.path:
 from lib import bloat_baseline as _bb  # noqa: E402
 
 
-def _session_id() -> str:
+def _session_id(payload: object = None) -> str:
+    """Per-session marker key. Prefer the hook stdin payload's ``session_id``
+    (the canonical id, same across PostToolUse + Stop of one session); fall back
+    to the ``SHIPWRIGHT_SESSION_ID`` env var, then ``"unknown"``. The env var is
+    NOT set in this Stop process, so env-only keying pooled every session into a
+    shared ``bloat_pending.unknown.json`` — one session's oversize file then
+    blocked another's Stop (fixed 2026-05-29)."""
+    if isinstance(payload, dict):
+        sid = payload.get("session_id")
+        if isinstance(sid, str) and sid.strip():
+            return sid.strip()
     sid = (os.environ.get("SHIPWRIGHT_SESSION_ID") or "").strip()
     return sid or "unknown"
+
+
+def _read_payload() -> dict:
+    try:
+        raw = sys.stdin.read()
+    except (OSError, ValueError):
+        return {}
+    if not raw or not raw.strip():
+        return {}
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def _marker_path(cwd: Path, sid: str) -> Path:
@@ -186,7 +210,7 @@ def _emit_pass() -> None:
 
 def main() -> int:
     cwd = Path.cwd()
-    sid = _session_id()
+    sid = _session_id(_read_payload())
     entries = _load_marker(_marker_path(cwd, sid))
     if not entries:
         _emit_pass()
