@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-05-29T09:26:22.493504+00:00
-Total commits: 772
+Generated: 2026-05-29T13:33:06.388769+00:00
+Total commits: 775
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 242
-    "fix" : 196
-    "chore" : 151
+    "fix" : 198
+    "chore" : 152
     "docs" : 110
     "refactor" : 50
     "test" : 15
@@ -266,10 +266,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 196 commits
+### Fixes (fix) — 198 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-29 | hooks | clear bloat anti-ratchet at baseline current, not raw limit | 4adfd4441725 |
+| 2026-05-29 | hooks | key bloat marker off stdin-payload session_id, not env | a447fc625b71 |
 | 2026-05-29 | iterate | ship work_completed event in the PR via per-tree events.jsonl | 4eb6b1a90528 |
 | 2026-05-29 | meta | refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath | 9d9b1e57c247 |
 | 2026-05-27 | iterate | correct iterate_history adr field to run-id form | 36375a6408d3 |
@@ -467,10 +469,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 151 commits
+### Chores (chore) — 152 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-29 | events | backfill orphaned work_completed events for #110 + #112 | fa186cce8046 |
 | 2026-05-29 | events | record work_completed for iterate-2026-05-29-fix-path-canon-allowlist | af9190b5a939 |
 | 2026-05-27 | events | record work_completed for iterate-2026-05-27-guide-readme-refresh | d5090eff64e7 |
 | 2026-05-27 | events | record work_completed for iterate-2026-05-27-guide-readme-refresh | 91dd6832c310 |
@@ -835,7 +838,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 772 |
+| Total commits | 775 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 772 |
+| Human-authored commits | 775 |
 

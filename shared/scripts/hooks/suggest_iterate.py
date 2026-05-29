@@ -82,6 +82,7 @@ def handle_completed_pipeline(
         skill = SKILL_NAMES[phase]
         return {
             "hookSpecificOutput": {
+                "hookEventName": "UserPromptSubmit",
                 "additionalContext": (
                     f"[Shipwright] Detected intent: {phase}\n"
                     f"Pipeline is complete. Suggested skill: {skill}\n"
@@ -111,6 +112,7 @@ def handle_in_progress_pipeline(
         skill = SKILL_NAMES[phase]
         return {
             "hookSpecificOutput": {
+                "hookEventName": "UserPromptSubmit",
                 "additionalContext": (
                     f"[Shipwright] Intent mismatch: you asked about '{phase}' "
                     f"but the pipeline is at step '{current_step}'.\n"
@@ -154,6 +156,7 @@ def classify_for_iterate(prompt: str, project_root: Path) -> dict | None:
 
     return {
         "hookSpecificOutput": {
+            "hookEventName": "UserPromptSubmit",
             "additionalContext": (
                 f"[Shipwright] Detected: {intent_type} — {summary}\n"
                 f"Affected FRs: {frs}\n"

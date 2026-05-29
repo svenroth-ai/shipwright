@@ -1,10 +1,13 @@
 # Project Activity Dashboard
-> Updated: 2026-05-29 09:26 UTC | Session: d3b8b26b-1b53-4e84-9427-ae125bdbb87e | Run: iterate-2026-05-29-events-jsonl-worktree-commit
+> Updated: 2026-05-29 13:33 UTC | Session: d3b8b26b-1b53-4e84-9427-ae125bdbb87e | Run: iterate-2026-05-29-fix-suggest-iterate-hookeventname
 
-## Recent Changes (67 iterations)
+## Recent Changes (70 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | suggest_iterate UserPromptSubmit hook: emit hookEventName on hookSpecificOutput (+ AST meta-test) | 2558/2558 |  | tooling | 2026-05-29 |
+| bug | Bloat marker keyed off stdin-payload session_id (not env) in check_file_size.py + bloat_gate_on_stop.py | 2549/2550 | 4adfd44 | tooling | 2026-05-29 |
+| feature | P4.1 Skill Bootstrap Pack: using-shipwright SessionStart bootstrap + writing-plugin/plugin-cache Stop wave (SP2+SP4) | 2545/2545 | e788870 | tooling | 2026-05-29 |
 | bug | events.jsonl per-tree, PR-committed artifact (worktree iterate audit-log fix) | 2449/2450 |  | tooling | 2026-05-29 |
 | bug | Refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath (41 legitimate findings) | 2449/2449 | 9d9b1e5 | tooling | 2026-05-28 |
 | change | Correction event: spec_impact=none with proper justification field for the verifier (supersedes evt-13153a5c). | 0/0 | 25fd988 | docs | 2026-05-27 |
@@ -74,7 +77,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-29 | Unit: 2449/2450 | Integration: 136/136 | Smoke: not_run | (iterate)
+Last run: 2026-05-29 | Unit: 2558/2558 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

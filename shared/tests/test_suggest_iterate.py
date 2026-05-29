@@ -281,3 +281,19 @@ class TestHookIntegration:
         output = json.loads(result.stdout)
         context = output["hookSpecificOutput"]["additionalContext"]
         assert "/shipwright-test" in context
+
+    # UserPromptSubmit's hookSpecificOutput MUST carry hookEventName or Claude
+    # Code rejects the output (iterate-2026-05-29-fix-suggest-iterate-hookeventname).
+    # The AST meta-test (test_hook_output_schema.py) covers all 3 emission paths
+    # statically; these two deterministic paths assert the runtime output.
+    @pytest.mark.parametrize("prompt,config", [
+        ("run the tests again", {"status": "complete"}),
+        ("deploy to production", {"status": "in_progress", "current_step": "build"}),
+    ])
+    def test_emitted_output_sets_hookeventname(self, tmp_path, prompt, config):
+        result = self._run_hook(prompt, str(tmp_path), config=config)
+        assert result.returncode == 0 and result.stdout.strip()
+        hso = json.loads(result.stdout)["hookSpecificOutput"]
+        assert hso.get("hookEventName") == "UserPromptSubmit", (
+            f"must set hookEventName=UserPromptSubmit; got {hso.get('hookEventName')!r}"
+        )
