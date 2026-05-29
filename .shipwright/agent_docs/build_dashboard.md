@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-29 13:33 UTC | Session: d3b8b26b-1b53-4e84-9427-ae125bdbb87e | Run: iterate-2026-05-29-fix-suggest-iterate-hookeventname
+> Updated: 2026-05-29 20:08 UTC | Session: ec6ecac9-1ffb-47d1-928d-c52ba9a8a756 | Run: iterate-2026-05-29-sp3-os2-reintegration
 
-## Recent Changes (70 iterations)
+## Recent Changes (71 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | SP3+OS2 post-Campaign-B reintegration — F-debug.md systematic-debugging sub-skill + assumptions-first interview pre-phase | 317/317 |  | docs | 2026-05-29 |
 | bug | suggest_iterate UserPromptSubmit hook: emit hookEventName on hookSpecificOutput (+ AST meta-test) | 2558/2558 |  | tooling | 2026-05-29 |
 | bug | Bloat marker keyed off stdin-payload session_id (not env) in check_file_size.py + bloat_gate_on_stop.py | 2549/2550 | 4adfd44 | tooling | 2026-05-29 |
 | feature | P4.1 Skill Bootstrap Pack: using-shipwright SessionStart bootstrap + writing-plugin/plugin-cache Stop wave (SP2+SP4) | 2545/2545 | e788870 | tooling | 2026-05-29 |
@@ -77,7 +78,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-29 | Unit: 2558/2558 | Smoke: not_run | (iterate)
+Last run: 2026-05-29 | Unit: 317/317 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

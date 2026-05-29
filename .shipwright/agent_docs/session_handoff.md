@@ -1,35 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-29-fix-suggest-iterate-hookeventname"
+run_id: "iterate-2026-05-29-sp3-os2-reintegration"
 phase: "iterate"
-reason: "iterate: suggest_iterate hookEventName fix"
-timestamp: "2026-05-29T13:33:06.388769+00:00"
+reason: "iterate: SP3+OS2 post-Campaign-B reintegration"
+timestamp: "2026-05-29T20:08:37.081996+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-29 13:33:06 UTC
+> Auto-generated 2026-05-29 20:08:37 UTC
 
 ## Session Info
 
-- **Session ID**: d3b8b26b-1b53-4e84-9427-ae125bdbb87e
-- **Timestamp**: 2026-05-29 13:33:06 UTC
-- **Reason**: iterate: suggest_iterate hookEventName fix
+- **Session ID**: ec6ecac9-1ffb-47d1-928d-c52ba9a8a756
+- **Timestamp**: 2026-05-29 20:08:37 UTC
+- **Reason**: iterate: SP3+OS2 post-Campaign-B reintegration
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-29-bloat-gate-session-id
-- **Date**: 2026-05-29T09:47:51.431386Z
+- **Run ID**: iterate-2026-05-29-fix-suggest-iterate-hookeventname
+- **Date**: 2026-05-29T13:33:18.875557Z
 - **Type**: bug
 - **Complexity**: small
-- **Branch**: iterate/bloat-gate-session-id
-- **ADR**: iterate-2026-05-29-bloat-gate-session-id
+- **Branch**: iterate/fix-suggest-iterate-hookeventname
+- **ADR**: iterate-2026-05-29-fix-suggest-iterate-hookeventname
+- **Description**: suggest_iterate UserPromptSubmit hookEventName fix + AST meta-test
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/fix-suggest-iterate-hookeventname
-- **External Review Marker**: completed (external_review_state.json @ 2026-05-27T07:11:03)
+- **Branch**: iterate/sp3-os2-reintegration
+- **Run ID**: `iterate-2026-05-29-sp3-os2-reintegration`
+- **Spec**: .shipwright/planning/iterate/2026-05-29-sp3-os2-reintegration.md
+- **Complexity**: medium — `cross_split` (changes span shipwright-iterate +
+- **External Review Marker**: stale (predates spec (2026-05-27T07:11:03))
 
 ### Mandatory replay on Resume
 
@@ -47,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/fix-suggest-iterate-hookeventname
-- **Last Commit**: fa186cc chore(events): backfill orphaned work_completed events for #110 + #112
+- **Branch**: iterate/sp3-os2-reintegration
+- **Last Commit**: 7ee5e26 Merge pull request #105 from svenroth-ai/iterate/public-launch-hardening
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +68,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-6ebab37a | work_completed | iterate (SP3+OS2 post-Campaign-B reintegration — F-debug.md systematic-debugging sub-skill + assumptions-first interview pre-phase) | 2026-05-29 |
 | evt-bdfa9e6b | work_completed | iterate (suggest_iterate UserPromptSubmit hook: emit hookEventName on hookSpecificOutput (+ AST meta-test)) | 2026-05-29 |
 | evt-fb9ffdbd | work_completed | iterate (Bloat marker keyed off stdin-payload session_id (not env) in check_file_size.py + bloat_gate_on_stop.py) | 2026-05-29 |
 | evt-39f0678b | work_completed | iterate (P4.1 Skill Bootstrap Pack: using-shipwright SessionStart bootstrap + writing-plugin/plugin-cache Stop wave (SP2+SP4)) | 2026-05-29 |
 | evt-110ed3b1 | work_completed | iterate (events.jsonl per-tree, PR-committed artifact (worktree iterate audit-log fix)) | 2026-05-29 |
-| evt-4244f6e9 | work_completed | iterate (Refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath (41 legitimate findings)) | 2026-05-28 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 70
-- **Last iterate**: bug — suggest_iterate UserPromptSubmit hook: emit hookEventName on hookSpecificOutput (+ AST meta-test) (2026-05-29)
+- **Total work events**: 71
+- **Last iterate**: feature — SP3+OS2 post-Campaign-B reintegration — F-debug.md systematic-debugging sub-skill + assumptions-first interview pre-phase (2026-05-29)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

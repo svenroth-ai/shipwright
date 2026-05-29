@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-29-fix-suggest-iterate-hookeventname",
+    "run_id": "iterate-2026-05-29-sp3-os2-reintegration",
     "date": "2026-05-29",
     "unit": {
       "status": "passed",
-      "passed": 2558,
-      "total": 2558
+      "passed": 317,
+      "total": 317
     },
     "integration": {
       "status": "not_run",
@@ -35,10 +35,19 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-29-fix-suggest-iterate-hookeventname/surface_verification.json",
-      "timestamp": "2026-05-29T13:32:43.403Z",
-      "justification": "Framework-internal hook output fix (suggest_iterate.py UserPromptSubmit hook) + an AST drift-guard meta-test. No startable web/CLI/API app surface. Verified: reproduced the schema violation, fixed it, end-to-end the hook now emits hookEventName=UserPromptSubmit, AST meta-test + behavioral round-trip tests green, full shared/tests (2558) pass."
+      "evidence_path": ".shipwright/runs/iterate-2026-05-29-sp3-os2-reintegration/surface_verification.json",
+      "timestamp": "2026-05-29T20:06:35.801Z",
+      "justification": "Plugin-side prompt documentation + drift-protection meta-tests across shipwright-iterate and shipwright-project skills; no startable web/CLI/API app surface is affected. Verification is the two plugins' full pytest suites (258 + 59 passed) incl. reference-link drift tests pinning the new F-debug.md link and both Kerns <=300 LOC. Behavioral acceptance (live bug-routing / assumptions-first) is prompt-execution, covered structurally by the new tests."
     },
-    "degraded": []
+    "degraded": [
+      {
+        "condition": "external_review_skipped",
+        "detail": "Autonomous run; external LLM review (medium+ auto) skipped — no API keys available and the change is documentation + meta-tests only. Self-review + drift-protection suites stand in."
+      },
+      {
+        "condition": "unit_suite_scoped",
+        "detail": "Full unit suite scoped to the two touched plugins (shipwright-iterate 258, shipwright-project 59 = 317). Monorepo-wide shared/tests + integration-tests were not re-run because no shared/* or integration code changed; the touched files are markdown prompts + two plugin meta-tests."
+      }
+    ]
   }
 }
