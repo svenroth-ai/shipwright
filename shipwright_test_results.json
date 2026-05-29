@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-29-events-jsonl-worktree-commit",
+    "run_id": "iterate-2026-05-29-fix-suggest-iterate-hookeventname",
     "date": "2026-05-29",
     "unit": {
       "status": "passed",
-      "passed": 2449,
-      "total": 2450
+      "passed": 2558,
+      "total": 2558
     },
     "integration": {
-      "status": "passed",
-      "passed": 136,
-      "total": 136
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -35,13 +35,10 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-29-events-jsonl-worktree-commit/surface_verification.json",
-      "timestamp": "2026-05-29T09:21:42.237Z",
-      "justification": "Framework-internal tooling change (per-tree event-log path resolution in events_log.py + compliance parity copy, and the F11 finalization verifier's committed-event assertion). No startable web/CLI/API app surface in this library repo. Verified empirically: shared 2449 + compliance 559 + integration 136 tests pass, a real-git-worktree producer->verifier round-trip, AC4 tracked/uncommitted/untracked cases, and the live dogfood of finalize_iterate + verify_iterate_finalization in this worktree."
+      "evidence_path": ".shipwright/runs/iterate-2026-05-29-fix-suggest-iterate-hookeventname/surface_verification.json",
+      "timestamp": "2026-05-29T13:32:43.403Z",
+      "justification": "Framework-internal hook output fix (suggest_iterate.py UserPromptSubmit hook) + an AST drift-guard meta-test. No startable web/CLI/API app surface. Verified: reproduced the schema violation, fixed it, end-to-end the hook now emits hookEventName=UserPromptSubmit, AST meta-test + behavioral round-trip tests green, full shared/tests (2558) pass."
     },
-    "degraded": [
-      "1 pre-existing unrelated shared/tests failure (test_architecture_md_reflects_arch_impact: a different iterate's skill-bootstrap-pack arch-impact drop lacks an architecture.md entry \u2014 confirmed failing on origin/main, independent of this change).",
-      "7 pre-existing FR-gate failures in the orphaned shared/scripts/tools/tests/test_record_event.py (ADR-059 fr_gate_unclassified; confirmed on origin/main; this iterate fixed the 1 it touched). Compliance suite: 559 passed."
-    ]
+    "degraded": []
   }
 }

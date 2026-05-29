@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-29T09:26:22.493504+00:00
+Generated: 2026-05-29T13:33:06.388769+00:00
 
 ## Requirements Coverage
 
@@ -92,6 +92,9 @@ Generated: 2026-05-29T09:26:22.493504+00:00
 | Correction event: spec_impact=none with proper justification field for the verifier (supersedes evt-13153a5c). | iterate | change |  | — | 25fd988 | 2026-05-27 |
 | Refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath (41 legitimate findings) | iterate | bug |  | 2449/2449 | 9d9b1e5 | 2026-05-28 |
 | events.jsonl per-tree, PR-committed artifact (worktree iterate audit-log fix) | iterate | bug |  | 2449/2450 | — | 2026-05-29 |
+| P4.1 Skill Bootstrap Pack: using-shipwright SessionStart bootstrap + writing-plugin/plugin-cache Stop wave (SP2+SP4) | iterate | feature |  | 2545/2545 | e788870 | 2026-05-29 |
+| Bloat marker keyed off stdin-payload session_id (not env) in check_file_size.py + bloat_gate_on_stop.py | iterate | bug |  | 2549/2550 | 4adfd44 | 2026-05-29 |
+| suggest_iterate UserPromptSubmit hook: emit hookEventName on hookSpecificOutput (+ AST meta-test) | iterate | bug |  | 2558/2558 | — | 2026-05-29 |
 
 ## Coverage Summary
 
@@ -99,7 +102,7 @@ Generated: 2026-05-29T09:26:22.493504+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 67 |
+| Iterate changes | 70 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

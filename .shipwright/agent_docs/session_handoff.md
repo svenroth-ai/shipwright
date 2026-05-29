@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-29-events-jsonl-worktree-commit"
+run_id: "iterate-2026-05-29-fix-suggest-iterate-hookeventname"
 phase: "iterate"
-reason: "merge origin/main (post-#112): regenerate single-producer artifacts"
-timestamp: "2026-05-29T09:26:22.493504+00:00"
+reason: "iterate: suggest_iterate hookEventName fix"
+timestamp: "2026-05-29T13:33:06.388769+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-29 09:26:22 UTC
+> Auto-generated 2026-05-29 13:33:06 UTC
 
 ## Session Info
 
 - **Session ID**: d3b8b26b-1b53-4e84-9427-ae125bdbb87e
-- **Timestamp**: 2026-05-29 09:26:22 UTC
-- **Reason**: merge origin/main (post-#112): regenerate single-producer artifacts
+- **Timestamp**: 2026-05-29 13:33:06 UTC
+- **Reason**: iterate: suggest_iterate hookEventName fix
 
 ## Last Iterate
 
@@ -28,11 +28,8 @@ timestamp: "2026-05-29T09:26:22.493504+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/events-jsonl-worktree-commit
-- **Run ID**: `iterate-2026-05-29-events-jsonl-worktree-commit`
-- **Spec**: .shipwright/planning/iterate/2026-05-29-events-jsonl-worktree-commit.md
-- **Complexity**: medium (overrides classifier's keyword-only "trivial" — touches the
-- **External Review Marker**: stale (predates spec (2026-05-27T07:11:03))
+- **Branch**: iterate/fix-suggest-iterate-hookeventname
+- **External Review Marker**: completed (external_review_state.json @ 2026-05-27T07:11:03)
 
 ### Mandatory replay on Resume
 
@@ -50,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/events-jsonl-worktree-commit
-- **Last Commit**: 4c70954 Merge remote-tracking branch 'origin/main' into iterate/events-jsonl-worktree-commit
+- **Branch**: iterate/fix-suggest-iterate-hookeventname
+- **Last Commit**: fa186cc chore(events): backfill orphaned work_completed events for #110 + #112
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-bdfa9e6b | work_completed | iterate (suggest_iterate UserPromptSubmit hook: emit hookEventName on hookSpecificOutput (+ AST meta-test)) | 2026-05-29 |
+| evt-fb9ffdbd | work_completed | iterate (Bloat marker keyed off stdin-payload session_id (not env) in check_file_size.py + bloat_gate_on_stop.py) | 2026-05-29 |
+| evt-39f0678b | work_completed | iterate (P4.1 Skill Bootstrap Pack: using-shipwright SessionStart bootstrap + writing-plugin/plugin-cache Stop wave (SP2+SP4)) | 2026-05-29 |
 | evt-110ed3b1 | work_completed | iterate (events.jsonl per-tree, PR-committed artifact (worktree iterate audit-log fix)) | 2026-05-29 |
 | evt-4244f6e9 | work_completed | iterate (Refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath (41 legitimate findings)) | 2026-05-28 |
-| evt-d15e38c0 | work_completed | iterate (Correction event: spec_impact=none with proper justification field for the verifier (supersedes evt-13153a5c).) | 2026-05-27 |
-| evt-13153a5c | work_completed | iterate (Refresh docs/guide.md and README.md with Campaign A/B + ADR-060/061/062/089/090 + F7b + runtime/snapshot split + bloat anti-ratchet hook + plugin-cache drift check) | 2026-05-27 |
-| evt-536e20a7 | work_completed | iterate (Refresh SBOM after syncing dev extras across plugin workspaces; clears 4 stale triage entries (pytest/pytest-mock now resolve as MIT)) | 2026-05-27 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 67
-- **Last iterate**: bug — events.jsonl per-tree, PR-committed artifact (worktree iterate audit-log fix) (2026-05-29)
+- **Total work events**: 70
+- **Last iterate**: bug — suggest_iterate UserPromptSubmit hook: emit hookEventName on hookSpecificOutput (+ AST meta-test) (2026-05-29)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
