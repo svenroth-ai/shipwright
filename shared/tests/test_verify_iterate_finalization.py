@@ -8,6 +8,7 @@ and the verifier is the guard that prevents "I forgot that step" regressions.
 """
 
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -16,6 +17,18 @@ import pytest
 
 # Linked worktrees come from the shared ``make_worktree`` fixture
 # (shared/tests/conftest.py).
+
+_GIT_ENV = {
+    **os.environ,
+    "GIT_AUTHOR_NAME": "T", "GIT_AUTHOR_EMAIL": "t@t.invalid",
+    "GIT_COMMITTER_NAME": "T", "GIT_COMMITTER_EMAIL": "t@t.invalid",
+}
+
+
+def _git(cwd: Path, *args: str) -> None:
+    """Run ``git -C cwd <args>`` with a pinned identity (for commit tests)."""
+    subprocess.run(["git", "-C", str(cwd), *args], env=_GIT_ENV,
+                   capture_output=True, text=True, check=True)
 
 
 def _agent_docs_root(tmp: Path) -> Path:
@@ -140,36 +153,76 @@ def test_events_fails_when_file_missing(tmp_path):
     assert result.ok is False
 
 
-def test_events_check_resolves_main_log_from_worktree(git_origin_repo, make_worktree):
-    """check_events_has_commit run from inside an iterate worktree must read
-    the MAIN repo's event log — that is where F7 records the commit."""
+def test_events_check_reads_worktree_committed_log(git_origin_repo, make_worktree):
+    """check_events_has_commit reads the WORKTREE's own log — the per-tree,
+    PR-committed model. A tracked + committed event passes.
+
+    Replaces the old main-repo-redirect test
+    (iterate-2026-05-29-events-jsonl-worktree-commit)."""
     work, _ = git_origin_repo
-    (work / "shipwright_events.jsonl").write_text(
-        json.dumps({"type": "work_completed", "commit": "ma1nc0m"}) + "\n",
-        encoding="utf-8",
-    )
     wt = make_worktree(work, "probe")
-    result = check_events_has_commit(wt, "ma1nc0m")
+    evt = {"v": 1, "id": "evt-wt000001", "ts": "T", "type": "work_completed",
+           "source": "iterate", "commit": "wtc0mm1t", "adr_id": "iterate-wt"}
+    (wt / "shipwright_events.jsonl").write_text(json.dumps(evt) + "\n", encoding="utf-8")
+    _git(wt, "add", "shipwright_events.jsonl")
+    _git(wt, "commit", "-m", "chore(events): record evt-wt000001")
+    result = check_events_has_commit(wt, "wtc0mm1t", run_id="iterate-wt")
+    assert result.ok is True
+
+
+def test_events_fails_when_tracked_but_only_in_working_copy(git_origin_repo, make_worktree):
+    """AC4: when events.jsonl is TRACKED, an event present ONLY in the working
+    copy (F6 forgot to ``git add`` it) FAILS — it would never ship in the PR."""
+    work, _ = git_origin_repo
+    wt = make_worktree(work, "probe")
+    # Commit a baseline events.jsonl so the file is tracked in HEAD...
+    (wt / "shipwright_events.jsonl").write_text(
+        json.dumps({"type": "phase_started", "phase": "p"}) + "\n", encoding="utf-8")
+    _git(wt, "add", "shipwright_events.jsonl")
+    _git(wt, "commit", "-m", "chore(events): baseline")
+    # ...then append the iterate's event but DO NOT commit it (the bug).
+    with (wt / "shipwright_events.jsonl").open("a", encoding="utf-8") as fp:
+        fp.write(json.dumps({"v": 1, "id": "evt-uncommit", "type": "work_completed",
+                             "source": "iterate", "commit": "n0tc0mm1t",
+                             "adr_id": "iterate-unc"}) + "\n")
+    result = check_events_has_commit(wt, "n0tc0mm1t", run_id="iterate-unc")
+    assert result.ok is False
+    assert "commit" in result.detail.lower()
+
+
+def test_events_working_copy_sufficient_when_untracked(git_origin_repo, make_worktree):
+    """No regression for gitignored/untracked logs: an uncommitted event still
+    passes when events.jsonl is NOT tracked (committed-assertion is skipped)."""
+    work, _ = git_origin_repo
+    wt = make_worktree(work, "probe")
+    # Present but never `git add`-ed → untracked. (Mirrors a gitignored log.)
+    (wt / "shipwright_events.jsonl").write_text(
+        json.dumps({"v": 1, "id": "evt-untrk", "type": "work_completed",
+                    "source": "iterate", "commit": "untrk001",
+                    "adr_id": "iterate-unt"}) + "\n", encoding="utf-8")
+    result = check_events_has_commit(wt, "untrk001", run_id="iterate-unt")
     assert result.ok is True
 
 
 def test_boundary_roundtrip_worktree_producer_to_verifier(git_origin_repo, make_worktree):
     """AC-6 boundary round-trip: an event WRITTEN from a worktree via
-    record_event is READ BACK by the F11 verifier from that same worktree —
-    both resolve the one canonical main-repo log. This pins producer and
-    consumer to the same path."""
+    record_event lands in that worktree's OWN log and is READ BACK by the F11
+    verifier from the same worktree — producer and consumer share the per-tree
+    path. (Updated for the worktree-commit model.)"""
     from tools.record_event import append_event
 
     work, _ = git_origin_repo
     wt = make_worktree(work, "probe")
     append_event(wt, {"v": 1, "id": "evt-rt000001", "ts": "T",
                       "type": "work_completed", "source": "iterate",
-                      "commit": "r0undtr1p"})
-    # Producer wrote the MAIN log, not the throwaway worktree copy...
-    assert (work / "shipwright_events.jsonl").exists()
-    assert not (wt / "shipwright_events.jsonl").exists()
-    # ...and the consumer (verifier) reads it back from the worktree.
-    assert check_events_has_commit(wt, "r0undtr1p").ok is True
+                      "commit": "r0undtr1p", "adr_id": "iterate-rt"})
+    # Producer wrote the WORKTREE's own copy, NOT the main tree.
+    assert (wt / "shipwright_events.jsonl").exists()
+    assert not (work / "shipwright_events.jsonl").exists()
+    # The consumer (verifier) reads it back from the same worktree. The log is
+    # untracked here (record_event doesn't commit), so working-copy presence is
+    # sufficient — the committed-assertion only applies to tracked logs.
+    assert check_events_has_commit(wt, "r0undtr1p", run_id="iterate-rt").ok is True
 
 
 # ──────────────────────────────────────────────────────────────────────

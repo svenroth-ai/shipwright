@@ -1,12 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-29 09:47 UTC | Session: 57abe24a-3e68-4515-868d-15d30cd6ad36 | Run: iterate-2026-05-29-bloat-gate-session-id
+> Updated: 2026-05-29 09:26 UTC | Session: d3b8b26b-1b53-4e84-9427-ae125bdbb87e | Run: iterate-2026-05-29-events-jsonl-worktree-commit
 
-## Recent Changes (68 iterations)
+## Recent Changes (67 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| bug | Bloat marker keyed off stdin-payload session_id (not env) in check_file_size.py + bloat_gate_on_stop.py | 2549/2550 | a447fc6 | tooling | 2026-05-29 |
-| feature | P4.1 Skill Bootstrap Pack: using-shipwright SessionStart bootstrap + writing-plugin/plugin-cache Stop wave (SP2+SP4) | 2545/2545 | e788870 | tooling | 2026-05-29 |
+| bug | events.jsonl per-tree, PR-committed artifact (worktree iterate audit-log fix) | 2449/2450 |  | tooling | 2026-05-29 |
 | bug | Refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath (41 legitimate findings) | 2449/2449 | 9d9b1e5 | tooling | 2026-05-28 |
 | change | Correction event: spec_impact=none with proper justification field for the verifier (supersedes evt-13153a5c). | 0/0 | 25fd988 | docs | 2026-05-27 |
 | change | Refresh docs/guide.md and README.md with Campaign A/B + ADR-060/061/062/089/090 + F7b + runtime/snapshot split + bloat anti-ratchet hook + plugin-cache drift check | 0/0 | 25fd988 | docs | 2026-05-27 |
@@ -75,7 +74,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-29 | Unit: 2552/2553 | Smoke: skipped | (iterate)
+Last run: 2026-05-29 | Unit: 2449/2450 | Integration: 136/136 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

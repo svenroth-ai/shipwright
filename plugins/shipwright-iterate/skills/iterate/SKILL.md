@@ -253,7 +253,7 @@ See `references/artifact-ownership.md` (iterate spec, `spec.md`, `shipwright_eve
 
 **CRITICAL: F0–F11 (incl. F3a, F5a, F5b, F5c) are MANDATORY.**
 
-> **Order matters.** F0.5 / F3 / F3a / F4 / F5 / F5a / F5b / F5c all write tracked artifacts and MUST run before F6 so a single atomic commit stages them. F0.5 is the production-time E2E gate. F7 is the only step that legitimately runs after F6 (it needs the commit hash + writes only to a gitignored event log). Do not reorder.
+> **Order matters.** F0.5 / F3 / F3a / F4 / F5 / F5a / F5b / F5c all write tracked artifacts and MUST run before F6 so a single atomic commit stages them. **F5b's `work_completed` event lands in this worktree's `shipwright_events.jsonl`, so F6 stages it and it ships in the PR** (per-tree, PR-committed model — iterate-2026-05-29-events-jsonl-worktree-commit). F0.5 is the production-time E2E gate. F6.5 (SHA patch) and F7/F7b are SKIPPED in the normal worktree flow — they exist only for legacy / out-of-band (non-worktree, replay) event recording. Do not reorder.
 
 ### F0: Fresh Verification Gate
 
@@ -277,12 +277,12 @@ Four fail-closed conditions enforced by `surface_verification.py` (orchestrator)
 | F3a | [F3a](references/F3a.md) | Reflection — append learnings per `references/reflection.md` |
 | F4 | [F4](references/F4.md) | `write_changelog_drop.py` → one bullet per AC under `CHANGELOG-unreleased.d/<category>/` |
 | F5 | [F5](references/F5.md) | Latest-run state under `iterate_latest` in `shipwright_test_results.json` |
-| F5b | [F5b](references/F5b.md) | `finalize_iterate.py` — records `work_completed` (with `commit=""`) BEFORE compliance regen + handoff; capture `event_id` for F6.5 |
+| F5b | [F5b](references/F5b.md) | `finalize_iterate.py` — records `work_completed` (with `commit=""`) into **this worktree's** events.jsonl BEFORE compliance regen + handoff; F6 stages it (ships in the PR) |
 | F5c | [F5c](references/F5c.md) | `append_iterate_entry.py` → `.shipwright/agent_docs/iterates/<run_id>.json` atomically; 50-entry retention |
-| F6 | [F6](references/F6.md) | Commit (Conventional Commits). Explicit `git add` per-path list. NEVER `-A`. Footer: `Run-ID: {run_id}` + `Co-Authored-By: Claude <noreply@anthropic.com>` |
-| F6.5 | [F6.5](references/F6.5.md) | `finalize_iterate.py attach-commit --event-id … --commit "$(git rev-parse HEAD)"` |
-| F7 | [F7](references/F7.md) | Legacy/out-of-band `record_event.py`. Skip unless replaying. ADR-059 FR-gate applies to ALL iterates incl. BUG |
-| F7b | [F7b](references/F7b.md) | `commit_event_followup.py` seals the F7 append (idempotent: gitignored/clean/untracked noop) |
+| F6 | [F6](references/F6.md) | Commit (Conventional Commits). Explicit `git add` per-path list — **incl. `shipwright_events.jsonl` when tracked**. NEVER `-A`. Footer: `Run-ID: {run_id}` + `Co-Authored-By: Claude <noreply@anthropic.com>` |
+| F6.5 | [F6.5](references/F6.5.md) | **SKIP in worktree flow** — event ships with `commit=""`. Legacy/non-worktree only: `finalize_iterate.py attach-commit …` |
+| F7 | [F7](references/F7.md) | Legacy/out-of-band `record_event.py`. Skip unless replaying / non-worktree. ADR-059 FR-gate applies to ALL iterates incl. BUG |
+| F7b | [F7b](references/F7b.md) | `commit_event_followup.py` — seals an **out-of-band F7** main-tree append only (not the worktree flow; idempotent noop otherwise) |
 | F11 | [F11](references/F11.md) | Leak-guard (`--stage f11`), push + `gh pr create` against `origin/<default>`, update handoff, run `verify_iterate_finalization.py` |
 | F12 | [F12](references/F12.md) | Count pending drops; prompt for `/shipwright-changelog` once PR merges; print summary banner |
 

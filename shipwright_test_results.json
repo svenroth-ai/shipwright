@@ -1,30 +1,47 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-29-bloat-gate-session-id",
+    "run_id": "iterate-2026-05-29-events-jsonl-worktree-commit",
     "date": "2026-05-29",
-    "unit": { "status": "passed", "passed": 2552, "total": 2553, "scope": "full shared/tests suite. Two fixes, two new test files: test_bloat_session_id_payload.py (5) + test_bloat_gate_anti_ratchet_clear.py (3). The single non-pass is a pre-existing cross-iterate drift failure unrelated to this change — see degraded[]." },
-    "integration": { "status": "skipped", "reason": "no integration/DB changes (2 hook files + 1 test)" },
-    "pgtap": { "status": "skipped", "reason": "no DB changes" },
-    "e2e": { "status": "skipped", "reason": "surface=none — framework-internal hooks, no startable runtime surface" },
-    "design_fidelity": { "status": "skipped", "reason": "no UI changes" },
-    "smoke": { "status": "skipped", "reason": "no UI changes" },
+    "unit": {
+      "status": "passed",
+      "passed": 2449,
+      "total": 2450
+    },
+    "integration": {
+      "status": "passed",
+      "passed": 136,
+      "total": 136
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
     "surface_verification": {
       "surface": "none",
-      "justification": "Bug fix to two Claude Code hooks (check_file_size PostToolUse + bloat_gate_on_stop Stop); no startable web/UI/API surface. Verified by 21 tests (5 new payload-session-id incl. cross-session isolation + 16 existing bloat-gate) + the live reproduction that triggered this fix.",
+      "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-29-bloat-gate-session-id/surface_verification.json",
-      "timestamp": "2026-05-29T00:00:00.000Z"
+      "evidence_path": ".shipwright/runs/iterate-2026-05-29-events-jsonl-worktree-commit/surface_verification.json",
+      "timestamp": "2026-05-29T09:21:42.237Z",
+      "justification": "Framework-internal tooling change (per-tree event-log path resolution in events_log.py + compliance parity copy, and the F11 finalization verifier's committed-event assertion). No startable web/CLI/API app surface in this library repo. Verified empirically: shared 2449 + compliance 559 + integration 136 tests pass, a real-git-worktree producer->verifier round-trip, AC4 tracked/uncommitted/untracked cases, and the live dogfood of finalize_iterate + verify_iterate_finalization in this worktree."
     },
     "degraded": [
-      {
-        "condition": "preexisting_cross_iterate_test_failure",
-        "detail": "test_architecture_md_reflects_arch_impact::test_every_arch_impact_drop_has_architecture_md_entry fails on the decision-drop of the CONCURRENT iterate 'iterate-2026-05-29-events-jsonl-worktree-commit' (session d3b8b26b) — its drop sits in the shared (main-repo, gitignored) decision-drops staging while its architecture.md entry is not yet merged. The identical failure reproduces on clean main (f41cb1e), proving it is unrelated to this change. No failures are attributable to this iterate; it resolves when the events-jsonl iterate merges. Operator-acknowledged 2026-05-29."
-      },
-      {
-        "condition": "leak_guard_false_positive",
-        "detail": ".shipwright/agent_docs/triage_inbox.md is regenerated in the MAIN repo by this interactive session's own ambient Stop hooks (not by the iterate). All iterate edits are isolated in the worktree."
-      }
+      "1 pre-existing unrelated shared/tests failure (test_architecture_md_reflects_arch_impact: a different iterate's skill-bootstrap-pack arch-impact drop lacks an architecture.md entry \u2014 confirmed failing on origin/main, independent of this change).",
+      "7 pre-existing FR-gate failures in the orphaned shared/scripts/tools/tests/test_record_event.py (ADR-059 fr_gate_unclassified; confirmed on origin/main; this iterate fixed the 1 it touched). Compliance suite: 559 passed."
     ]
   }
 }

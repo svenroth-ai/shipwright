@@ -57,13 +57,13 @@ _RUN_INFRA_PREFIXES = (
     f"{WORKTREES_DIRNAME}",
 )
 
-# The event log is a REPO-scoped append-only journal: /shipwright-iterate F7
-# records the run's work_completed event into the MAIN repo's log (post-F6,
-# by design — see record_event.resolve_events_path). That deliberate write,
-# and its `.lock` mutex, is never a branch-scoped "leak", so the leak-guard
-# must ignore it — exactly as it ignores run scaffolding above. Matched as an
-# EXACT root-relative path: a same-named file in a subdirectory is NOT the
-# canonical log and stays flagged.
+# Since iterate-2026-05-29-events-jsonl-worktree-commit the event log is a
+# PER-TREE artifact (F5b records into the worktree's own shipwright_events.jsonl,
+# F6 commits it) so a normal iterate never writes the main-tree log. The
+# exemption is retained only as defense-in-depth for the legacy/out-of-band F7 +
+# F7b seal (record_event.py / commit_event_followup.py target the main repo via
+# resolve_main_repo_root) and replays — never a branch-scoped "leak". Matched as
+# an EXACT root-relative path: a same-named file in a subdir stays flagged.
 _MAIN_TREE_WRITE_EXEMPT = (
     EVENT_FILE,
     EVENT_FILE + ".lock",

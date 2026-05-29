@@ -1,9 +1,16 @@
-# F7b — Event-log follow-up commit (self-tracking repos only)
+# F7b — Event-log follow-up commit (out-of-band F7 only)
+
+> **Not needed for a normal worktree iterate.** Since
+> iterate-2026-05-29-events-jsonl-worktree-commit the F5b event is committed
+> by **F6** inside the worktree and ships in the PR, so there is no tracked-dirty
+> main-tree append to seal. F7b pairs only with an **out-of-band F7**
+> (`record_event.py`) call that writes the **main tree's** log directly —
+> replay, non-worktree phases, CI automation.
 
 When `shipwright_events.jsonl` is **tracked** in the project (rare —
 shipwright dev repo, and any downstream that chooses to track it via
-`!/shipwright_events.jsonl` in `.gitignore`), the F7 append leaves a
-tracked-dirty file. Run this immediately after `record_event.py` to
+`!/shipwright_events.jsonl` in `.gitignore`), an out-of-band F7 append leaves a
+tracked-dirty file. Run this immediately after that `record_event.py` to
 seal the append in a small follow-up commit so it survives the next
 `git reset --hard` / `git stash` / rebase. The tool is idempotent:
 gitignored / clean / untracked / dry-run all return cleanly without

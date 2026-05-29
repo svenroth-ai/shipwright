@@ -79,43 +79,121 @@ def check_events_has_commit(
        on substring containment in the JSONL — same as the original
        implementation.
 
-    Worktree-aware: resolves the canonical (main-repo) event log via
-    ``resolve_events_path`` so the F11 verifier, run from inside a
-    ``/shipwright-iterate`` worktree, reads the log F7 actually appended
-    to — not an empty worktree-local copy.
+    Per-tree, PR-committed model
+    ----------------------------
+    Since iterate-2026-05-29-events-jsonl-worktree-commit the event log is a
+    per-tree, version-controlled artifact: ``resolve_events_path`` returns the
+    worktree-local copy and F6 commits it, so it ships through the iterate PR.
+    This check therefore has two layers:
+
+    1. **Presence** in the working copy — the event was recorded (F5b).
+    2. **AC4 — committed.** When the log is *tracked*, the event MUST also be in
+       a COMMIT (the HEAD blob), not merely the working copy. An event present
+       only in the working tree means F6 forgot to ``git add`` it and it would
+       never reach the PR — that is the bug this check guards against. For
+       *untracked / gitignored* logs the committed-assertion is skipped and
+       working-copy presence is sufficient (unchanged for those repos).
     """
     name = "events.jsonl has commit"
     events = resolve_events_path(project_root)
     if not events.exists():
         return CheckResult(name, False, f"missing {events.name}")
 
+    # --- Layer 1: presence in the working copy -----------------------------
     # Primary path — look up by run_id (the iterate identity, stable across
     # multi-commit iterates and rebases).
+    present_detail: str | None = None
     if run_id:
         evt = _find_work_event_by_run_id(project_root, run_id)
         if evt is not None:
             evt_commit = str(evt.get("commit", "") or "")
-            if evt_commit:
-                return CheckResult(
-                    name, True,
-                    f"run_id={run_id} -> event with commit={evt_commit[:8]} found",
-                )
-            # An event exists but carries no commit — degenerate but valid:
-            # F7 ran, the file has the entry, just no commit field. Treat
-            # as pass; flag in detail so an operator can repair.
-            return CheckResult(
-                name, True,
-                f"run_id={run_id} -> event found but no commit field recorded",
+            present_detail = (
+                f"run_id={run_id} -> event with commit={evt_commit[:8]} found"
+                if evt_commit
+                else f"run_id={run_id} -> event found (no commit field — "
+                     "shipped with commit='' placeholder)"
             )
+    if present_detail is None:
+        # Fallback — commit-hash substring search.
+        content = events.read_text(encoding="utf-8", errors="ignore")
+        if commit_hash and commit_hash in content:
+            present_detail = f"commit={commit_hash[:8]} found"
+        else:
+            detail = f"commit={commit_hash[:8]} not found"
+            if run_id:
+                detail += f" (and no work_completed event found for run_id={run_id})"
+            return CheckResult(name, False, detail)
 
-    # Fallback — commit-hash substring search.
-    content = events.read_text(encoding="utf-8", errors="ignore")
-    if commit_hash and commit_hash in content:
-        return CheckResult(name, True, f"commit={commit_hash[:8]} found")
-    detail = f"commit={commit_hash[:8]} not found"
-    if run_id:
-        detail += f" (and no work_completed event found for run_id={run_id})"
-    return CheckResult(name, False, detail)
+    # --- Layer 2 (AC4): when tracked, the event must be in a COMMIT --------
+    committed = _event_committed_in_head(project_root, events, commit_hash, run_id)
+    if committed is False:
+        return CheckResult(
+            name, False,
+            f"{present_detail}, but it is NOT in any commit (HEAD blob) — F6 "
+            "must `git add shipwright_events.jsonl` so the event ships in the "
+            "iterate PR (it currently lives only in the working copy)",
+        )
+    if committed is True:
+        return CheckResult(name, True, f"{present_detail}; committed in HEAD")
+    # committed is None — untracked / gitignored / git unavailable: the
+    # committed-assertion does not apply, working-copy presence is sufficient.
+    return CheckResult(name, True, present_detail)
+
+
+def _committed_blob_has_event(content: str, commit_hash: str, run_id: str) -> bool:
+    """True iff ``content`` (a committed events.jsonl blob) carries a matching
+    ``work_completed`` event — by ``adr_id == run_id`` (primary) or
+    ``commit == commit_hash`` (fallback)."""
+    for line in content.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            evt = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(evt, dict) or evt.get("type") != "work_completed":
+            continue
+        if run_id and evt.get("adr_id") == run_id:
+            return True
+        if commit_hash and str(evt.get("commit", "") or "") == commit_hash:
+            return True
+    return False
+
+
+def _event_committed_in_head(
+    project_root: Path,
+    events: Path,
+    commit_hash: str,
+    run_id: str,
+) -> bool | None:
+    """Tri-state AC4 helper — is the work_completed event in a COMMIT?
+
+    Returns:
+      * ``True``  — ``events`` is tracked AND the committed HEAD version
+        contains a matching work_completed event.
+      * ``False`` — ``events`` is tracked but the HEAD version does NOT
+        contain it (F6 forgot to stage the append; or it's added-but-uncommitted).
+      * ``None``  — ``events`` is untracked / gitignored, or git is unavailable
+        — the committed-assertion does not apply (working-copy presence
+        suffices; mirrors gitignored-log repos).
+
+    Origin: iterate-2026-05-29-events-jsonl-worktree-commit.
+    """
+    # `git ls-files --error-unmatch` doubles as the tracked? probe AND yields
+    # the repo-root-relative path for `git show HEAD:<path>`.
+    rc, full_name, _ = _run_git(
+        project_root, "ls-files", "--full-name", "--error-unmatch", "--", events.name
+    )
+    if rc != 0:
+        return None  # untracked / gitignored / not a git repo
+    rel = (full_name.strip().splitlines() or [events.name])[0].strip() or events.name
+    rc, committed, _ = _run_git(project_root, "show", f"HEAD:{rel}")
+    if rc != 0:
+        # Tracked in the index but absent from HEAD (newly added, never
+        # committed; or the repo has no commits yet) → not in a commit.
+        return False
+    return _committed_blob_has_event(committed, commit_hash, run_id)
 
 
 def check_adr_in_iterate_history(project_root: Path, run_id: str) -> CheckResult:
@@ -585,8 +663,8 @@ def _is_planning_spec(path: str) -> bool:
 def _find_work_event_by_commit(project_root: Path, commit_hash: str) -> dict | None:
     """Return the ``work_completed`` event for ``commit_hash``, or None.
 
-    Worktree-aware via ``resolve_events_path`` — reads the same canonical
-    log F7 appended to.
+    Reads the per-tree log via ``resolve_events_path`` — the same
+    worktree-local copy the F5b producer wrote (and F6 committed).
     """
     if not commit_hash:
         return None
@@ -619,8 +697,8 @@ def _find_work_event_by_run_id(project_root: Path, run_id: str) -> dict | None:
     append-only and chronologically ordered, so the most-recent record is
     the live one.
 
-    Worktree-aware via ``resolve_events_path`` — reads the same canonical
-    log F7 appended to.
+    Reads the per-tree log via ``resolve_events_path`` — the same
+    worktree-local copy the F5b producer wrote (and F6 committed).
     """
     if not run_id:
         return None

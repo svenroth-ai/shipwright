@@ -1,10 +1,13 @@
 """SSoT drift-protection for shipwright_events.jsonl path resolution.
 
 ``shared/scripts/lib/events_log.py::resolve_events_path`` is the single
-source of truth for *locating* the event log. The log is repo-scoped, so
-any code that may run from inside a ``/shipwright-iterate`` worktree MUST
-resolve it via that helper — a literal ``project_root /
-"shipwright_events.jsonl"`` reads/writes a throwaway worktree copy.
+source of truth for *locating* the event log. The log is a **per-tree,
+PR-committed artifact** (iterate-2026-05-29-events-jsonl-worktree-commit): the
+resolver returns the worktree-local copy and F6 commits it. Even though the
+resolution is now a literal join, every consumer MUST still go through the one
+helper — so a future change to the resolution rule (e.g. a nested-project
+sub-path) is a one-place edit, not a scatter of raw ``project_root /
+"shipwright_events.jsonl"`` joins that silently disagree.
 
 This meta-test pins the invariant in both directions (mirrors the
 "Registry-driven SSoT meta-test rule" in shipwright-iterate SKILL.md):
@@ -27,8 +30,9 @@ from lib.events_log import resolve_events_path  # noqa: F401  (import == helper 
 
 _SHARED_SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 
-# Files reached during iterate finalization (F5b dashboard, F7 record_event,
-# F11 verifier) from INSIDE a worktree — MUST resolve the log via the helper.
+# Files reached during iterate finalization (F5b dashboard, record_event,
+# F11 verifier) from INSIDE a worktree — MUST resolve the log via the helper
+# (single point of truth for the per-tree path; see module docstring).
 _WORKTREE_REACHABLE = {
     "tools/record_event.py",
     "tools/verifiers/iterate_checks.py",
@@ -48,7 +52,10 @@ _MAIN_REPO_ONLY = {
     "tools/validate_event_log.py":
         "manual event-log health-check CLI; run against the main repo",
     "tools/verifiers/common.py":
-        "generic verifier helper for build/adopt phase verifiers (main-repo phases)",
+        "generic verifier helper (read_events_jsonl). Primarily build/adopt "
+        "phase verifiers; also reached from the iterate W3 compliance check in "
+        "a worktree — harmless since the raw join now equals the per-tree "
+        "resolver answer (both are project_root / EVENT_FILE).",
     "tools/verifiers/adopt_compliance.py":
         "/shipwright-adopt A7 verifier; adopt executes in the main repo",
     "lib/phase_quality/_resolution.py":
@@ -89,8 +96,9 @@ def test_worktree_reachable_files_use_the_resolver():
         src = path.read_text(encoding="utf-8")
         assert "resolve_events_path" in src, (
             f"{rel} is reached from inside an iterate worktree but does not "
-            "use events_log.resolve_events_path — it would read/write a "
-            "throwaway worktree copy of shipwright_events.jsonl."
+            "use events_log.resolve_events_path — every consumer must locate "
+            "the per-tree shipwright_events.jsonl through the one resolver so "
+            "the resolution rule stays single-sourced."
         )
 
 

@@ -1,49 +1,45 @@
-"""Worktree-aware resolution of the ``shipwright_events.jsonl`` event log.
+"""Resolution of the ``shipwright_events.jsonl`` event log.
 
 Single source of truth for *locating* the unified event log. The log is a
-**repo-scoped** append-only journal. Under ``/shipwright-iterate`` worktree
-isolation (see shipwright-iterate SKILL.md "Worktree Isolation") a run
-executes inside an ephemeral linked worktree, but the canonical event log
-lives next to the **main** repo. A literal ``project_root / EVENT_FILE``
-from inside a worktree therefore reads/writes a throwaway copy that is
-discarded on ``git worktree remove`` — F7 ``work_completed`` events never
-reach the main log.
+**per-tree, version-controlled artifact**: it is tracked (where a project opts
+in via ``!/shipwright_events.jsonl``) and the iterate that produces a new
+``work_completed`` event **commits it** as part of the F6 commit, so it ships
+through the iterate PR and merges to ``main`` like every other artifact.
 
-``resolve_events_path`` resolves the log via ``git rev-parse
---git-common-dir``: git consistently reports the *main* repo's ``.git``
-directory even from inside a linked worktree, and its parent is the
-canonical project root that owns the event log.
+``resolve_events_path`` therefore returns ``project_root / EVENT_FILE``
+**literally** — including from inside a ``/shipwright-iterate`` worktree, where
+``project_root`` is the worktree root. The worktree's copy is NOT a throwaway:
+F6 stages it and the PR carries it to ``main``.
 
-That git-common-dir resolution is exposed on its own as
-``resolve_main_repo_root`` — the generic worktree-aware primitive shared
-with the decision-drop directory resolver in
-``tools/write_decision_drop.py`` and ``tools/aggregate_decisions.py``. The
-decision-drop staging dir is repo-scoped for the same reason the event log
-is, and an iterate worktree's copy is discarded by ``git worktree remove``
-before ``/shipwright-changelog`` can aggregate it.
+History (iterate-2026-05-29-events-jsonl-worktree-commit)
+---------------------------------------------------------
+This resolver used to redirect to the **main** repo via ``git rev-parse
+--git-common-dir`` so a worktree-local copy would not be lost to
+``git worktree remove``. That was wrong for the worktree-commit flow: the
+``work_completed`` event landed as an **uncommitted line in the main tree**,
+never entered the iterate PR, and required a manual ``chore(events)`` backfill.
+The redirect is gone; the event now rides the PR.
+
+``resolve_main_repo_root`` stays
+--------------------------------
+The git-common-dir primitive ``resolve_main_repo_root`` is **retained,
+unchanged** — but it is no longer used to locate the event log. Its remaining
+consumers are the **decision-drop** directory resolver
+(``tools/write_decision_drop.py``, ``tools/aggregate_decisions.py``) and the
+F11 verifier's decision-drop lookup. Decision-drops are *gitignored* staging
+that ``/shipwright-changelog`` consumes on ``main``, so they genuinely must
+resolve to the main repo (an iterate worktree's copy IS discarded before
+aggregation). The event log no longer shares that constraint because it is
+committed into the branch.
 
 Relationship to ``shipwright-compliance``'s
-``data_collector._resolve_events_path``
+``collectors.change_history._resolve_events_path``
 ----------------------------------------------------------------------
-This helper is the **shared-side SSoT**, modelled on that compliance-plugin
-function (which stays separate — the compliance plugin is a distinct
-distributable and cannot import ``shared/scripts/lib`` without a
-cross-plugin path bootstrap). A parity test pins the two to the same
-answer. This helper deliberately hardens two things the compliance copy
-does not:
-
-- It does **not** pass ``--path-format=absolute`` (a Git 2.31+ flag, Mar
-  2021). Older git silently fails that flag, which would trigger the
-  fallback and leave the worktree bug unfixed. Plain ``--git-common-dir``
-  is resolved to an absolute path against ``project_root`` in Python —
-  same answer, no git-version floor.
-- When git is genuinely **broken** (binary absent, timeout) or returns an
-  **unexpected layout**, it emits a ``warnings.warn`` diagnostic before
-  falling back, so a worktree run whose git unexpectedly failed is visible
-  rather than silently writing the throwaway worktree copy.
-
-In a plain single-repo checkout (no linked worktree) the resolved path is
-identical to ``project_root / EVENT_FILE`` — behavior is unchanged.
+That compliance-plugin function is the standalone-distributable twin of this
+one (the compliance plugin cannot import ``shared/scripts/lib`` without a
+cross-plugin path bootstrap). ``integration-tests/test_events_log_parity.py``
+pins the two to the same answer; both resolve to the per-tree
+``project_root / EVENT_FILE``.
 """
 
 from __future__ import annotations
@@ -159,18 +155,19 @@ def resolve_main_repo_root(project_root: Path | str) -> Path | None:
 
 
 def resolve_events_path(project_root: Path | str) -> Path:
-    """Return the path to ``shipwright_events.jsonl``, git-worktree-aware.
+    """Return the path to ``shipwright_events.jsonl`` — ``project_root / EVENT_FILE``.
 
-    From inside a linked git worktree this resolves to the **main** repo's
-    event log; in a plain checkout — or when git is unavailable — it is
-    identical to ``project_root / EVENT_FILE`` (behavior unchanged).
+    The event log is a **per-tree, version-controlled artifact**. From inside a
+    ``/shipwright-iterate`` worktree ``project_root`` is the worktree root and
+    the iterate commits the log via F6, so the path is the worktree-local copy
+    — NOT redirected to the main repo. In a plain checkout this is the repo's
+    own log. No git call is made (the resolution is a literal join), so this is
+    decoupled from ``resolve_main_repo_root``.
 
-    Thin derivation of :func:`resolve_main_repo_root` — see that function
-    for the git-resolution and ``warnings.warn`` diagnostic semantics.
+    See the module docstring for the history (this used to redirect to the main
+    repo, which orphaned the work_completed event outside the iterate PR).
     """
-    project_root = Path(project_root)
-    main_root = resolve_main_repo_root(project_root)
-    return (main_root or project_root) / EVENT_FILE
+    return Path(project_root) / EVENT_FILE
 
 
 def latest_event_dt(project_root: Path | str) -> datetime | None:

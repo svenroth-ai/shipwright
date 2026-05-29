@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-05-29T09:47:50.793321+00:00
+Generated: 2026-05-29T09:26:22.493504+00:00
 Total commits: 772
 
 ## Commit Distribution
@@ -270,7 +270,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-05-29 | hooks | key bloat marker off stdin-payload session_id, not env | a447fc625b71 |
+| 2026-05-29 | iterate | ship work_completed event in the PR via per-tree events.jsonl | 4eb6b1a90528 |
 | 2026-05-29 | meta | refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath | 9d9b1e57c247 |
 | 2026-05-27 | iterate | correct iterate_history adr field to run-id form | 36375a6408d3 |
 | 2026-05-27 | iterate | runtime/snapshot split for agent-doc trio + hard-gated finalize repair | 54ecb17512c2 |

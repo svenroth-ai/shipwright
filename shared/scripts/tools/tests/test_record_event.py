@@ -469,12 +469,12 @@ class TestChangedFiles:
 
 
 # ---------------------------------------------------------------------------
-# Worktree-aware event-log resolution
+# Per-tree event-log resolution (iterate-2026-05-29-events-jsonl-worktree-commit)
 #
-# Under /shipwright-iterate worktree isolation the event log is a
-# repo-scoped journal. A literal project_root/EVENT_FILE from inside an
-# ephemeral worktree writes a throwaway copy discarded on `git worktree
-# remove` — record_event must resolve the MAIN repo's log instead.
+# The event log is a per-tree, PR-committed artifact: from inside a
+# /shipwright-iterate worktree, record_event writes the WORKTREE's own
+# shipwright_events.jsonl (which F6 commits and the PR carries to main) — NOT
+# the main repo's log. The main tree is never touched by an iterate.
 # ---------------------------------------------------------------------------
 
 _GIT_ENV = {
@@ -511,48 +511,49 @@ def _add_worktree(main: Path, slug: str) -> Path:
 
 
 class TestWorktreeAwareLog:
-    """record_event + config.read_events resolve the MAIN repo's event log
-    from inside a linked git worktree."""
+    """record_event + config.read_events operate on the WORKTREE's own event
+    log from inside a linked git worktree (per-tree, PR-committed model)."""
 
-    def test_append_event_from_worktree_lands_in_main_log(self, tmp_path):
+    def test_append_event_from_worktree_lands_in_worktree_log(self, tmp_path):
         main = _init_main_repo(tmp_path)
         wt = _add_worktree(main, "wt1")
         append_event(wt, {"v": 1, "id": "evt-wt000001", "ts": "T",
                            "type": "work_completed", "source": "iterate",
                            "commit": "c0ffee0"})
-        # Lands in the MAIN repo's log — survives `git worktree remove`.
-        assert (main / "shipwright_events.jsonl").exists()
-        assert not (wt / "shipwright_events.jsonl").exists()
-        assert [e["id"] for e in read_events(main)] == ["evt-wt000001"]
+        # Lands in the WORKTREE's own log (F6 commits it; ships in the PR).
+        # The main tree is never written.
+        assert (wt / "shipwright_events.jsonl").exists()
+        assert not (main / "shipwright_events.jsonl").exists()
+        assert [e["id"] for e in read_events(wt)] == ["evt-wt000001"]
 
-    def test_read_events_from_worktree_reads_main_log(self, tmp_path):
+    def test_read_events_from_worktree_reads_worktree_log(self, tmp_path):
         main = _init_main_repo(tmp_path)
         wt = _add_worktree(main, "wt1")
-        append_event(main, {"v": 1, "id": "evt-main00001", "ts": "T",
-                            "type": "phase_started", "phase": "build"})
-        assert [e["id"] for e in read_events(wt)] == ["evt-main00001"]
+        append_event(wt, {"v": 1, "id": "evt-wtread001", "ts": "T",
+                          "type": "phase_started", "phase": "build"})
+        assert [e["id"] for e in read_events(wt)] == ["evt-wtread001"]
 
-    def test_lock_file_sits_next_to_main_log(self, tmp_path):
+    def test_lock_file_sits_next_to_worktree_log(self, tmp_path):
         main = _init_main_repo(tmp_path)
         wt = _add_worktree(main, "wt1")
         append_event(wt, {"v": 1, "id": "evt-lock00001", "ts": "T",
                           "type": "phase_started", "phase": "build"})
-        # The mutex must guard the main log, not a throwaway worktree lock.
-        assert (main / "shipwright_events.jsonl.lock").exists()
-        assert not (wt / "shipwright_events.jsonl.lock").exists()
+        # The mutex guards the worktree's own log, next to where it's written.
+        assert (wt / "shipwright_events.jsonl.lock").exists()
+        assert not (main / "shipwright_events.jsonl.lock").exists()
 
-    def test_has_commit_dedup_sees_main_log_from_worktree(self, tmp_path):
+    def test_has_commit_dedup_sees_worktree_log(self, tmp_path):
         main = _init_main_repo(tmp_path)
         wt = _add_worktree(main, "wt1")
-        append_event(main, {"v": 1, "id": "evt-dd000001", "ts": "T",
-                            "type": "work_completed", "source": "iterate",
-                            "commit": "deadbee"})
+        append_event(wt, {"v": 1, "id": "evt-dd000001", "ts": "T",
+                          "type": "work_completed", "source": "iterate",
+                          "commit": "deadbee"})
         assert has_commit(wt, "deadbee") is True
         assert has_commit(wt, "absent0") is False
 
-    def test_script_invocation_from_worktree_lands_in_main_log(self, tmp_path):
-        """The argparse CLI path (record_main) is worktree-aware too —
-        covers script-mode invocation, not only in-process import."""
+    def test_script_invocation_from_worktree_lands_in_worktree_log(self, tmp_path):
+        """The argparse CLI path (record_main) is per-tree too — covers
+        script-mode invocation, not only in-process import."""
         main = _init_main_repo(tmp_path)
         wt = _add_worktree(main, "wt1")
         rc = record_main([
@@ -560,14 +561,18 @@ class TestWorktreeAwareLog:
             "--type", "work_completed",
             "--source", "iterate", "--commit", "5cr1pt0",
             "--description", "from worktree via CLI",
+            # ADR-059 FR-gate: an iterate work_completed event must classify.
+            "--change-type", "tooling", "--none-reason", "worktree-log CLI test",
         ])
         assert rc == 0
-        assert [e["commit"] for e in read_events(main)] == ["5cr1pt0"]
-        assert not (wt / "shipwright_events.jsonl").exists()
+        assert [e["commit"] for e in read_events(wt)] == ["5cr1pt0"]
+        assert not (main / "shipwright_events.jsonl").exists()
 
-    def test_two_worktrees_concurrent_append_share_one_main_log(self, tmp_path):
-        """Two worktrees appending concurrently funnel into ONE main log;
-        the centralized lock serializes them with no data loss."""
+    def test_two_worktrees_append_to_independent_logs(self, tmp_path):
+        """Per-tree model: two concurrent worktrees write their OWN logs (each
+        ships in its own PR). No shared main-tree funnel. (The append-only logs
+        would conflict at EOF if two PRs merge concurrently — an accepted,
+        documented tradeoff for the normal sequential-iterate case.)"""
         main = _init_main_repo(tmp_path)
         wt_a = _add_worktree(main, "wt-a")
         wt_b = _add_worktree(main, "wt-b")
@@ -586,19 +591,22 @@ class TestWorktreeAwareLog:
             for f in futures:
                 f.result()
 
-        events = read_events(main)
-        assert len(events) == 50
-        assert len({e["id"] for e in events}) == 50
-        assert not (wt_a / "shipwright_events.jsonl").exists()
-        assert not (wt_b / "shipwright_events.jsonl").exists()
+        events_a = read_events(wt_a)
+        events_b = read_events(wt_b)
+        assert len(events_a) == 25
+        assert len(events_b) == 25
+        assert {e["commit"] for e in events_a} == {f"a-{i:02d}" for i in range(25)}
+        assert {e["commit"] for e in events_b} == {f"b-{i:02d}" for i in range(25)}
+        # Each worktree's log is independent; the main tree is untouched.
+        assert not (main / "shipwright_events.jsonl").exists()
 
-    def test_config_read_events_from_worktree_reads_main_log(self, tmp_path):
-        """config.read_events (the dashboard's event source) is worktree-aware."""
+    def test_config_read_events_from_worktree_reads_worktree_log(self, tmp_path):
+        """config.read_events (the dashboard's event source) is per-tree."""
         main = _init_main_repo(tmp_path)
         wt = _add_worktree(main, "wt1")
-        append_event(main, {"v": 1, "id": "evt-cfgwt001", "ts": "T",
-                            "type": "work_completed", "source": "iterate",
-                            "commit": "x"})
+        append_event(wt, {"v": 1, "id": "evt-cfgwt001", "ts": "T",
+                          "type": "work_completed", "source": "iterate",
+                          "commit": "x"})
         assert [e["id"] for e in config_read_events(wt)] == ["evt-cfgwt001"]
 
     def test_non_git_dir_behavior_unchanged(self, tmp_path):
