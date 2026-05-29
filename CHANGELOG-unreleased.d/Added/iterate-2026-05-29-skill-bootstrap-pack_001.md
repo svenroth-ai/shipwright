@@ -1,0 +1,1 @@
+SessionStart 'using-shipwright' bootstrap: every session in a Shipwright project self-orients (routes change requests to /shipwright-iterate, compliance to /shipwright-compliance) without manual priming.
