@@ -2,7 +2,7 @@
 canon_generated: true
 run_id: "iterate-2026-05-29-bloat-gate-session-id"
 phase: "iterate"
-reason: "iterate: bloat-gate session-id fix"
+reason: "iterate: bloat-gate fixes"
 timestamp: "2026-05-29T09:47:50.793321+00:00"
 ---
 
@@ -14,18 +14,17 @@ timestamp: "2026-05-29T09:47:50.793321+00:00"
 
 - **Session ID**: 57abe24a-3e68-4515-868d-15d30cd6ad36
 - **Timestamp**: 2026-05-29 09:47:50 UTC
-- **Reason**: iterate: bloat-gate session-id fix
+- **Reason**: iterate: bloat-gate fixes
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-29-skill-bootstrap-pack
-- **Date**: 2026-05-29T08:38:00.079101Z
-- **Type**: feature
-- **Complexity**: medium
-- **Branch**: iterate/skill-bootstrap-pack
-- **ADR**: iterate-2026-05-29-skill-bootstrap-pack
+- **Run ID**: iterate-2026-05-29-bloat-gate-session-id
+- **Date**: 2026-05-29T09:47:51.431386Z
+- **Type**: bug
+- **Complexity**: small
+- **Branch**: iterate/bloat-gate-session-id
+- **ADR**: iterate-2026-05-29-bloat-gate-session-id
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-05-29-skill-bootstrap-pack.md
 
 ## Current Iterate Progress
 
@@ -49,7 +48,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/bloat-gate-session-id
-- **Last Commit**: f41cb1e Merge pull request #110 from svenroth-ai/iterate/skill-bootstrap-pack
+- **Last Commit**: a447fc6 fix(hooks): key bloat marker off stdin-payload session_id, not env
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read

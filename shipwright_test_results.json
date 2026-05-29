@@ -2,7 +2,7 @@
   "iterate_latest": {
     "run_id": "iterate-2026-05-29-bloat-gate-session-id",
     "date": "2026-05-29",
-    "unit": { "status": "passed", "passed": 2549, "total": 2550, "scope": "full shared/tests suite (incl. test_bloat_session_id_payload.py: 5 new tests). The single non-pass is a pre-existing cross-iterate drift failure unrelated to this change — see degraded[]." },
+    "unit": { "status": "passed", "passed": 2552, "total": 2553, "scope": "full shared/tests suite. Two fixes, two new test files: test_bloat_session_id_payload.py (5) + test_bloat_gate_anti_ratchet_clear.py (3). The single non-pass is a pre-existing cross-iterate drift failure unrelated to this change — see degraded[]." },
     "integration": { "status": "skipped", "reason": "no integration/DB changes (2 hook files + 1 test)" },
     "pgtap": { "status": "skipped", "reason": "no DB changes" },
     "e2e": { "status": "skipped", "reason": "surface=none — framework-internal hooks, no startable runtime surface" },

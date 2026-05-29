@@ -122,17 +122,21 @@ def _re_measure_oversize(cwd: Path, entry: dict) -> int | None:
     return n
 
 
-def _baseline_path_set(cwd: Path) -> set[str] | None:
-    """Set of baseline paths, or ``None`` if baseline is missing/malformed.
+def _baseline_map(cwd: Path) -> dict[str, object] | None:
+    """``{normalized_path: current}`` for baseline entries, or ``None`` if the
+    baseline is missing/malformed.
 
-    ``None`` triggers AC-7 pass-silently behavior in the caller. Returning
-    an empty set instead would block every crossing in fresh/pre-adopt
-    repos as "not in allowlist".
+    ``None`` triggers AC-7 pass-silently behavior in the caller. The ``current``
+    value is the grandfathered line ceiling: an anti-ratchet entry only blocks
+    when the live size grew PAST it (canonical definition — constitution +
+    ``anti_ratchet.py``). ``_bb.load`` normalises entry paths, so keys line up
+    with the marker's ``_bb.normalize_path`` form.
     """
     doc = _bb.load(cwd)
     if doc is None:
         return None
-    return {e["path"] for e in doc.get("entries", []) if isinstance(e, dict)}
+    return {e["path"]: e.get("current")
+            for e in doc.get("entries", []) if isinstance(e, dict) and "path" in e}
 
 
 # Iron-Law block message — adapted from obra/superpowers (MIT,
@@ -216,8 +220,8 @@ def main() -> int:
         _emit_pass()
         return 0
     now = datetime.datetime.now(datetime.timezone.utc)
-    baseline_paths = _baseline_path_set(cwd)
-    if baseline_paths is None:
+    baseline = _baseline_map(cwd)
+    if baseline is None:
         # AC-7: no/malformed baseline → pass silently (fresh / pre-adopt / corrupted).
         _emit_pass()
         return 0
@@ -231,11 +235,17 @@ def main() -> int:
         if current is None:
             continue
         path = _bb.normalize_path(str(entry.get("path", "")))
-        in_baseline = path in baseline_paths
+        in_baseline = path in baseline
         delta = entry.get("delta")
-        # Anti-ratchet always blocks. New crossing blocks unless the
-        # path is already grandfathered in the baseline.
+        # Anti-ratchet blocks only when the file grew PAST its baseline ceiling.
+        # A grandfathered file trimmed back to <= `current` (even if still over
+        # the raw 300 limit) is NOT a ratchet — clearing it here fixes the
+        # transient-over-then-trimmed false-positive. New crossing blocks unless
+        # the path is already grandfathered in the baseline.
         if delta == "anti-ratchet":
+            ceiling = baseline.get(path)
+            if isinstance(ceiling, int) and current <= ceiling:
+                continue
             offenders.append({**entry, "path": path, "now": current})
         elif delta == "crossing" and not in_baseline:
             offenders.append({**entry, "path": path, "now": current})
