@@ -86,51 +86,33 @@ EVENT_FILE = "shipwright_events.jsonl"
 
 
 def _resolve_events_path(project_root: Path) -> Path:
-    """Resolve the path to ``shipwright_events.jsonl``, git-worktree-aware.
+    """Resolve the path to ``shipwright_events.jsonl`` — ``project_root / EVENT_FILE``.
 
-    The event log is gitignored, so a fresh ``git worktree`` checkout does
-    not contain it. ``git rev-parse --git-common-dir`` consistently returns
-    the *main* repo's ``.git`` directory even from inside a worktree — its
-    parent is the canonical project root that owns the event log. When
-    ``project_root`` is already the main repo (or git is unavailable), the
-    resolved path is identical to ``project_root / EVENT_FILE``, so
-    single-repo behavior is unchanged.
+    The event log is a **per-tree, version-controlled artifact**: the
+    ``/shipwright-iterate`` run commits it via F6, so a worktree checkout
+    carries its own copy that ships through the PR. Resolution is therefore a
+    literal join — from inside a worktree ``project_root`` is the worktree
+    root, and that is the copy compliance must read so the F5b regen reflects
+    the iterate's just-recorded event (and the F6 commit snapshot is
+    self-consistent).
 
-    Without this, worktree-based finalization (/shipwright-iterate F5b) reads
-    an empty log and collapses RTM coverage to a false 0%.
+    Standalone-distributable twin of
+    ``shared/scripts/lib/events_log.py::resolve_events_path``;
+    ``integration-tests/test_events_log_parity.py`` pins them to the same
+    answer. Both flipped from a main-repo ``--git-common-dir`` redirect to this
+    literal join in iterate-2026-05-29-events-jsonl-worktree-commit (the
+    redirect orphaned the work_completed event outside the iterate PR).
     """
-    try:
-        proc = subprocess.run(
-            ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
-            cwd=str(project_root),
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except (OSError, ValueError):
-        return project_root / EVENT_FILE
-    if proc.returncode != 0:
-        return project_root / EVENT_FILE
-    common_dir = proc.stdout.strip()
-    if not common_dir:
-        return project_root / EVENT_FILE
-    common_path = Path(common_dir)
-    if not common_path.is_absolute():
-        common_path = (project_root / common_path).resolve()
-    # `--git-common-dir` returns the .git directory of the main repo; its
-    # parent is the main repo root. Defensive guard: only trust the result
-    # when the path actually ends with ".git", else fall back.
-    if common_path.name == ".git":
-        return common_path.parent / EVENT_FILE
     return project_root / EVENT_FILE
 
 
 def _read_event_log(project_root: Path) -> list[dict]:
     """Read and parse shipwright_events.jsonl. Tolerant of corrupt lines.
 
-    Resolves the log via the git common dir (see ``_resolve_events_path``) so
-    that collection runs from inside a git worktree read the main repo's
-    canonical event log instead of an empty one.
+    Resolves the per-tree log via ``_resolve_events_path`` (a literal
+    ``project_root / EVENT_FILE`` join) so collection from inside a worktree
+    reads the worktree's own committed copy — the same file the F5b producer
+    wrote and F6 committed.
     """
     path = _resolve_events_path(project_root)
     if not path.exists():

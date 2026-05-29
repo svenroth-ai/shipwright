@@ -1,0 +1,1 @@
+Worktree iterates now commit the `work_completed` event in the PR: `shipwright_events.jsonl` is resolved per-tree (no main-repo redirect) and staged at F6, so the audit-log event ships with the iterate instead of being orphaned as an uncommitted line in the main tree. The F11 finalization verifier fails closed if a tracked event log's event isn't committed.

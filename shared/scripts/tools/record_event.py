@@ -158,9 +158,8 @@ def _parse_changed_files(raw: str) -> list[str]:
 def read_events(project_root: Path) -> list[dict]:
     """Tolerant reader — skips corrupt lines instead of crashing.
 
-    Worktree-aware: resolves the canonical (main-repo) event log via
-    ``resolve_events_path`` so a read from inside a ``/shipwright-iterate``
-    worktree sees the real log, not an empty throwaway copy.
+    Resolves the per-tree event log via ``resolve_events_path`` (worktree-local
+    under a ``/shipwright-iterate`` run; see ``lib.events_log`` for the model).
     """
     path = resolve_events_path(project_root)
     if not path.exists():
@@ -367,11 +366,11 @@ def build_event(args: argparse.Namespace) -> dict:
 def append_event(project_root: Path, event: dict) -> str:
     """Atomically append an event to the JSONL log. Returns the event ID.
 
-    Worktree-aware: resolves the canonical (main-repo) event log via
-    ``resolve_events_path`` so an append from inside a ``/shipwright-iterate``
-    worktree lands in the real log — and survives ``git worktree remove`` —
-    instead of a throwaway worktree copy. The ``.lock`` mutex is derived
-    from the resolved path so it guards the same (main-repo) log.
+    Resolves the per-tree event log via ``resolve_events_path``. Under a
+    ``/shipwright-iterate`` run this is the worktree-local copy: the append
+    lands there and F6 commits it, so the event ships through the iterate PR
+    rather than being orphaned in the main tree. The ``.lock`` mutex is derived
+    from the resolved path. See ``lib.events_log`` for the model + history.
     """
     path = resolve_events_path(project_root)
     lock_path = path.with_name(path.name + ".lock")
@@ -393,13 +392,14 @@ def attach_commit_to_event(
 ) -> bool:
     """Patch the ``commit`` field of a previously-recorded event in place.
 
-    Used by iterate finalize F6.5: the F5b-pre step records the
-    ``work_completed`` event BEFORE the F6 git commit (so it can be
-    included in the compliance regen that lands in the F6 commit), with
-    ``commit=""`` as a placeholder. After F6 produces a SHA, finalize
-    invokes this helper to backfill the missing SHA — without touching
-    any other line in the log, without breaking corrupt-line tolerance,
-    and without re-ordering events.
+    **Legacy / non-worktree only.** The standard ``/shipwright-iterate`` worktree
+    flow no longer calls this: events.jsonl is committed by F6 within the
+    worktree, so an in-place SHA patch *after* F6 would re-dirty the
+    just-committed file. That flow ships the event with ``commit=""`` (linkage
+    via the F6 commit's ``Run-ID:`` footer + the event's ``adr_id == run_id``).
+    See iterate-2026-05-29-events-jsonl-worktree-commit. When used (out-of-band
+    recording), the SHA is backfilled without touching any other line, without
+    breaking corrupt-line tolerance, and without re-ordering events.
 
     Atomicity: writes to ``shipwright_events.jsonl.tmp`` then renames
     over the live log under the same ``.lock`` mutex as ``append_event``.

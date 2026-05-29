@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-05-28 22:31 UTC | Session: 37e2bfe1-a0ee-4002-8a52-4b7fd1e0da0a | Run: iterate-2026-05-29-fix-path-canon-allowlist
+> Updated: 2026-05-29 09:26 UTC | Session: d3b8b26b-1b53-4e84-9427-ae125bdbb87e | Run: iterate-2026-05-29-events-jsonl-worktree-commit
 
-## Recent Changes (66 iterations)
+## Recent Changes (67 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| bug | Refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath (41 legitimate findings) | 2449/2449 |  | tooling | 2026-05-28 |
+| bug | events.jsonl per-tree, PR-committed artifact (worktree iterate audit-log fix) | 2449/2450 |  | tooling | 2026-05-29 |
+| bug | Refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath (41 legitimate findings) | 2449/2449 | 9d9b1e5 | tooling | 2026-05-28 |
 | change | Correction event: spec_impact=none with proper justification field for the verifier (supersedes evt-13153a5c). | 0/0 | 25fd988 | docs | 2026-05-27 |
 | change | Refresh docs/guide.md and README.md with Campaign A/B + ADR-060/061/062/089/090 + F7b + runtime/snapshot split + bloat anti-ratchet hook + plugin-cache drift check | 0/0 | 25fd988 | docs | 2026-05-27 |
 | change | Refresh SBOM after syncing dev extras across plugin workspaces; clears 4 stale triage entries (pytest/pytest-mock now resolve as MIT) | 0/0 | b3ff2eb | compliance | 2026-05-27 |
@@ -73,7 +74,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-29 | Unit: 2449/2449 | Smoke: skipped | (iterate)
+Last run: 2026-05-29 | Unit: 2449/2450 | Integration: 136/136 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

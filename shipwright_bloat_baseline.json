@@ -256,16 +256,16 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_data_collector.py",
       "limit": 300,
-      "current": 1214,
-      "state": "grandfathered",
-      "adr": null
+      "current": 1224,
+      "state": "exception",
+      "adr": "ADR-092"
     },
     {
       "path": "plugins/shipwright-compliance/tests/test_rtm_generator.py",
       "limit": 300,
-      "current": 534,
-      "state": "grandfathered",
-      "adr": null
+      "current": 535,
+      "state": "exception",
+      "adr": "ADR-092"
     },
     {
       "path": "plugins/shipwright-compliance/tests/test_sbom_generator.py",
@@ -690,9 +690,9 @@
     {
       "path": "shared/scripts/tools/tests/test_record_event.py",
       "limit": 300,
-      "current": 783,
-      "state": "grandfathered",
-      "adr": null
+      "current": 791,
+      "state": "exception",
+      "adr": "ADR-092"
     },
     {
       "path": "shared/scripts/tools/update_build_dashboard.py",
@@ -725,9 +725,9 @@
     {
       "path": "shared/scripts/tools/verifiers/iterate_checks.py",
       "limit": 300,
-      "current": 803,
-      "state": "grandfathered",
-      "adr": null
+      "current": 881,
+      "state": "exception",
+      "adr": "ADR-092"
     },
     {
       "path": "shared/scripts/tools/verifiers/plan_checks.py",
@@ -949,9 +949,9 @@
     {
       "path": "shared/tests/test_record_event.py",
       "limit": 300,
-      "current": 450,
-      "state": "grandfathered",
-      "adr": null
+      "current": 501,
+      "state": "exception",
+      "adr": "ADR-092"
     },
     {
       "path": "shared/tests/test_setup_writes_canonical.py",
@@ -1040,9 +1040,9 @@
     {
       "path": "shared/tests/test_verify_iterate_finalization.py",
       "limit": 300,
-      "current": 1143,
-      "state": "grandfathered",
-      "adr": null
+      "current": 1196,
+      "state": "exception",
+      "adr": "ADR-092"
     },
     {
       "path": "shared/tests/test_workflow_checks.py",

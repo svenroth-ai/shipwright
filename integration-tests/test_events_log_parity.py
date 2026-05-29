@@ -80,14 +80,18 @@ def test_parity_in_main_repo(main_repo):
 
 
 def test_parity_inside_worktree(main_repo):
-    """The case that matters: from a linked worktree both resolvers must
-    point at the MAIN repo's log, not the throwaway worktree copy."""
+    """The case that matters: from a linked worktree both resolvers must agree
+    on the WORKTREE's own log — events.jsonl is a per-tree, PR-committed
+    artifact (F6 stages it, it merges to main via the PR). Parity is what this
+    guard pins; the shared target flipped to worktree-local in
+    iterate-2026-05-29-events-jsonl-worktree-commit, and the compliance copy
+    must flip in lockstep."""
     compliance_resolve = _load_compliance_resolver()
     wt = main_repo / ".worktrees" / "probe"
     _git(main_repo, "worktree", "add", str(wt), "-b", "iterate/probe", "main")
     shared = resolve_events_path(wt).resolve()
     compliance = compliance_resolve(wt).resolve()
-    assert shared == compliance == (main_repo / "shipwright_events.jsonl").resolve()
+    assert shared == compliance == (wt / "shipwright_events.jsonl").resolve()
 
 
 def test_parity_non_git_dir(tmp_path):
