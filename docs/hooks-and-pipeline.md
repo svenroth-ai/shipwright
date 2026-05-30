@@ -513,6 +513,20 @@ entirely (never a false dismiss) + stderr diagnostic. Strictly safer than
 `run_audit.py`'s unconditional emit. Scoped per-group auto-dismiss
 (Option A2) and cross-worktree triage sync (Option C) are out of scope.
 
+**Versioned-install resolution fix (same iterate, shared):** wiring this
+hook surfaced that `phase_quality.phase_from_plugin_root` only matched the
+plugin-root **basename**. Claude Code's `installed_plugins.json` uses
+`installPath=.../<plugin>/<version>` (e.g. `shipwright-iterate/0.4.1`), so
+the basename is the *version* and the lookup returned `None` — silently
+no-opping **every** phase-keyed Stop hook (phase_quality, this hook, the
+`capture_session_id` injection guard) under a versioned install. Verified
+empirically: the cached `audit_phase_quality_on_stop.py` invoked with the
+real versioned `CLAUDE_PLUGIN_ROOT` wrote no finding. The resolver now
+falls back to the parent directory (the plugin name), re-enabling all
+phase-keyed Stop hooks. Reactivation was measured (not assumed) to emit at
+most the current per-phase Tier-1 FAILs (≈1, deduped, non-blocking) — not a
+backlog flood.
+
 ### Shared Hook: audit_phase_quality_on_stop.py
 
 **Script:** `shared/scripts/hooks/audit_phase_quality_on_stop.py` —
