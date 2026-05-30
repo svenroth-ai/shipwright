@@ -1194,3 +1194,272 @@ def test_run_all_checks_passes_run_id_to_events_check(tmp_path):
     events_check = next(r for r in results if "events.jsonl has commit" in r.name)
     assert events_check.ok is True
     assert "f6abc123" in events_check.detail
+
+
+# ──────────────────────────────────────────────────────────────────────
+# check_test_completeness_ledger — the Test Completeness gate
+# (iterate-2026-05-30-test-completeness-gate)
+#
+# Principle: "testable ⇒ tested". Every behavior the diff introduces is
+# either `tested` (with evidence) or `untestable` (with a closed-vocabulary
+# structural reason). The escape hatch "could-test-but-didn't" is abolished:
+# any other disposition, or untested_testable > 0, fails the gate.
+# ──────────────────────────────────────────────────────────────────────
+
+
+def _write_completeness(proj: Path, block: dict | None) -> None:
+    """Write iterate_latest.test_completeness (None = block absent)."""
+    payload: dict = {"iterate_latest": {}}
+    if block is not None:
+        payload["iterate_latest"]["test_completeness"] = block
+    (proj / "shipwright_test_results.json").write_text(
+        json.dumps(payload, indent=2), encoding="utf-8"
+    )
+
+
+def _complete_block(behaviors: list[dict], **extra) -> dict:
+    """Build a status=complete block with derived-clean counts."""
+    tested = sum(1 for b in behaviors if b.get("disposition") == "tested")
+    untestable = sum(1 for b in behaviors if b.get("disposition") == "untestable")
+    block = {
+        "status": "complete",
+        "behaviors": behaviors,
+        "counts": {
+            "testable": tested,
+            "tested": tested,
+            "untestable": untestable,
+            "untested_testable": 0,
+        },
+    }
+    block.update(extra)
+    return block
+
+
+def test_completeness_skipped_when_run_id_missing(tmp_path):
+    from tools.verifiers.iterate_checks import check_test_completeness_ledger
+    proj = tmp_path / "webui"
+    proj.mkdir()
+    result = check_test_completeness_ledger(proj, "absent")
+    assert result.is_skipped
+
+
+def test_completeness_skipped_for_trivial(tmp_path):
+    """Trivial iterates get an auto n/a, no hard gate (graduated coverage)."""
+    from tools.verifiers.iterate_checks import check_test_completeness_ledger
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "trivial")
+    _write_completeness(proj, None)  # no block — still must not fail at trivial
+    result = check_test_completeness_ledger(proj, "r1")
+    assert result.is_skipped
+    assert "trivial" in result.detail
+
+
+def test_completeness_fails_when_results_missing_at_small(tmp_path):
+    """Graduated coverage: enforced at SMALL (stricter than F0.5's medium+)."""
+    from tools.verifiers.iterate_checks import check_test_completeness_ledger
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "small")
+    result = check_test_completeness_ledger(proj, "r1")
+    assert result.ok is False
+    assert result.severity == Severity.ERROR.value
+    assert "shipwright_test_results.json" in result.detail
+
+
+def test_completeness_fails_when_block_missing_at_medium(tmp_path):
+    from tools.verifiers.iterate_checks import check_test_completeness_ledger
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    _write_completeness(proj, None)
+    result = check_test_completeness_ledger(proj, "r1")
+    assert result.ok is False
+    assert "test_completeness" in result.detail
+    assert "missing" in result.detail.lower()
+
+
+def test_completeness_fails_when_results_malformed(tmp_path):
+    from tools.verifiers.iterate_checks import check_test_completeness_ledger
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    (proj / "shipwright_test_results.json").write_text("{nope", encoding="utf-8")
+    result = check_test_completeness_ledger(proj, "r1")
+    assert result.ok is False
+    assert "malformed" in result.detail.lower()
+
+
+def test_completeness_fails_when_untested_testable_positive(tmp_path):
+    """The core rule — a declared testable-but-untested count > 0 blocks."""
+    from tools.verifiers.iterate_checks import check_test_completeness_ledger
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    block = _complete_block([
+        {"behavior": "happy path", "disposition": "tested", "evidence": "t::a PASSED"},
+    ])
+    block["counts"]["untested_testable"] = 2  # operator left 2 testable behaviors unprobed
+    _write_completeness(proj, block)
+    result = check_test_completeness_ledger(proj, "r1")
+    assert result.ok is False
+    assert result.severity == Severity.ERROR.value
+    assert "untested" in result.detail.lower()
+
+
+def test_completeness_fails_for_escape_hatch_disposition(tmp_path):
+    """Kill the escape hatch: 'deferred'/'untested'/'acceptable' are NOT
+    valid dispositions. Only 'tested' or 'untestable' are allowed."""
+    from tools.verifiers.iterate_checks import check_test_completeness_ledger
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    block = _complete_block([
+        {"behavior": "edge case X", "disposition": "deferred",
+         "reason": "ran out of time"},
+    ])
+    _write_completeness(proj, block)
+    result = check_test_completeness_ledger(proj, "r1")
+    assert result.ok is False
+    assert "disposition" in result.detail.lower() or "deferred" in result.detail.lower()
+
+
+def test_completeness_fails_for_bad_reason_code(tmp_path):
+    """An 'untestable' behavior must cite a reason_code from the closed
+    vocabulary — a free-text excuse does not pass."""
+    from tools.verifiers.iterate_checks import check_test_completeness_ledger
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    block = _complete_block([
+        {"behavior": "weird path", "disposition": "untestable",
+         "reason_code": "too-hard", "reason": "meh"},
+    ])
+    _write_completeness(proj, block)
+    result = check_test_completeness_ledger(proj, "r1")
+    assert result.ok is False
+    assert "reason_code" in result.detail.lower() or "too-hard" in result.detail
+
+
+def test_completeness_passes_when_all_tested(tmp_path):
+    from tools.verifiers.iterate_checks import check_test_completeness_ledger
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    _write_completeness(proj, _complete_block([
+        {"behavior": "happy path", "disposition": "tested", "evidence": "t::a PASSED"},
+        {"behavior": "error path", "disposition": "tested", "evidence": "t::b PASSED"},
+    ]))
+    result = check_test_completeness_ledger(proj, "r1")
+    assert result.ok is True
+
+
+def test_completeness_passes_with_valid_untestable(tmp_path):
+    """A mix of tested + untestable-with-valid-reason and zero untested
+    testable behaviors passes."""
+    from tools.verifiers.iterate_checks import (
+        UNTESTABLE_REASON_CODES, check_test_completeness_ledger,
+    )
+    assert "requires-prod-credential" in UNTESTABLE_REASON_CODES
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    _write_completeness(proj, _complete_block([
+        {"behavior": "send live email", "disposition": "untestable",
+         "reason_code": "requires-prod-credential",
+         "reason": "needs the real SMTP secret, absent from CI"},
+        {"behavior": "parse address", "disposition": "tested",
+         "evidence": "t::parse PASSED"},
+    ]))
+    result = check_test_completeness_ledger(proj, "r1")
+    assert result.ok is True
+
+
+def test_completeness_na_without_justification_fails(tmp_path):
+    from tools.verifiers.iterate_checks import check_test_completeness_ledger
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "small")
+    _write_completeness(proj, {"status": "n/a", "behaviors": [], "counts": {}})
+    result = check_test_completeness_ledger(proj, "r1")
+    assert result.ok is False
+    assert "justification" in result.detail.lower()
+
+
+def test_completeness_na_with_justification_passes(tmp_path):
+    """status=n/a is honest only with a structural justification (e.g. a
+    pure docs/markdown change with no runtime behavior)."""
+    from tools.verifiers.iterate_checks import check_test_completeness_ledger
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "small")
+    _write_completeness(proj, {
+        "status": "n/a", "behaviors": [], "counts": {},
+        "justification": "markdown-only edit; no executable behavior changed",
+    })
+    result = check_test_completeness_ledger(proj, "r1")
+    assert result.ok is True
+
+
+def test_completeness_na_forbidden_at_medium(tmp_path):
+    """n/a is the 'no testable behavior' claim — forbidden at medium+ (a
+    medium iterate has testable behavior by definition). Closes the residual
+    escape hatch a free-text n/a would otherwise leave open."""
+    from tools.verifiers.iterate_checks import check_test_completeness_ledger
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    _write_completeness(proj, {
+        "status": "n/a", "behaviors": [], "counts": {},
+        "justification": "claims nothing testable",
+    })
+    result = check_test_completeness_ledger(proj, "r1")
+    assert result.ok is False
+    assert "n/a" in result.detail.lower()
+
+
+def test_completeness_rejects_bool_untested_testable(tmp_path):
+    """`untested_testable: false` (a JSON bool) must NOT satisfy the int==0
+    contract — bool is an int subclass in Python."""
+    from tools.verifiers.iterate_checks import check_test_completeness_ledger
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    block = _complete_block([
+        {"behavior": "x", "disposition": "tested", "evidence": "t::x PASSED"},
+    ])
+    block["counts"]["untested_testable"] = False
+    _write_completeness(proj, block)
+    result = check_test_completeness_ledger(proj, "r1")
+    assert result.ok is False
+    assert "untested" in result.detail.lower()
+
+
+def test_completeness_fails_on_enumeration_gap(tmp_path):
+    """Under-enumeration guard: if the basis reports more ACs than the
+    ledger covers, the gate fails even though every listed row is tested."""
+    from tools.verifiers.iterate_checks import check_test_completeness_ledger
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    block = _complete_block(
+        [{"behavior": "ac1", "disposition": "tested", "evidence": "t::a PASSED"}],
+        enumeration_basis={"acs": 5, "covered_acs": 3},
+    )
+    _write_completeness(proj, block)
+    result = check_test_completeness_ledger(proj, "r1")
+    assert result.ok is False
+    assert "enumerat" in result.detail.lower()
+
+
+def test_completeness_complete_requires_non_empty_behaviors(tmp_path):
+    """status=complete with an empty behavior list is incoherent — a small+
+    iterate that changed runtime behavior must enumerate at least one."""
+    from tools.verifiers.iterate_checks import check_test_completeness_ledger
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    _write_completeness(proj, {"status": "complete", "behaviors": [],
+                               "counts": {"untested_testable": 0}})
+    result = check_test_completeness_ledger(proj, "r1")
+    assert result.ok is False
+
+
+def test_completeness_in_run_all_checks(tmp_path):
+    """Drift guard — run_all_checks must list the completeness gate so a
+    future refactor can't silently drop it (mirrors the spec-impact guard)."""
+    proj = tmp_path / "webui"
+    _seed_iterate_entry(proj, "r1", "medium")
+    _write_completeness(proj, _complete_block([
+        {"behavior": "x", "disposition": "tested", "evidence": "t::x PASSED"},
+    ]))
+    results = run_all_checks(proj, "r1", commit_hash="abc1234")
+    names = [r.name.lower() for r in results]
+    assert any("completeness" in n for n in names), (
+        f"test-completeness check missing from run_all_checks; got: {names}"
+    )

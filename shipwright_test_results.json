@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-29-sp3-os2-reintegration",
-    "date": "2026-05-29",
+    "run_id": "iterate-2026-05-30-test-completeness-gate",
+    "date": "2026-05-31",
     "unit": {
       "status": "passed",
-      "passed": 317,
-      "total": 317
+      "passed": 262,
+      "total": 262
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 136,
+      "total": 136
     },
     "pgtap": {
       "status": "not_run",
@@ -31,22 +31,61 @@
       "status": "not_run"
     },
     "surface_verification": {
-      "surface": "none",
-      "runner": "",
+      "surface": "cli",
+      "runner": "uv run --directory shared --extra dev pytest tests/test_audit_e2e_integration.py tests/test_untestable_vocab_doc_sync.py -q",
       "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-29-sp3-os2-reintegration/surface_verification.json",
-      "timestamp": "2026-05-29T20:06:35.801Z",
-      "justification": "Plugin-side prompt documentation + drift-protection meta-tests across shipwright-iterate and shipwright-project skills; no startable web/CLI/API app surface is affected. Verification is the two plugins' full pytest suites (258 + 59 passed) incl. reference-link drift tests pinning the new F-debug.md link and both Kerns <=300 LOC. Behavioral acceptance (live bug-routing / assumptions-first) is prompt-execution, covered structurally by the new tests."
+      "tests_run": 14,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-30-test-completeness-gate/surface_verification.json",
+      "timestamp": "2026-05-31T00:00:00.000Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        { "behavior": "counts.untested_testable>0 → FAIL", "disposition": "tested",
+          "evidence": "test_verify_iterate_finalization.py::test_completeness_fails_when_untested_testable_positive PASSED" },
+        { "behavior": "escape-hatch disposition (e.g. 'deferred') → FAIL", "disposition": "tested",
+          "evidence": "::test_completeness_fails_for_escape_hatch_disposition PASSED" },
+        { "behavior": "untestable with reason_code outside closed vocab → FAIL", "disposition": "tested",
+          "evidence": "::test_completeness_fails_for_bad_reason_code PASSED" },
+        { "behavior": "missing block at small+ → FAIL", "disposition": "tested",
+          "evidence": "::test_completeness_fails_when_block_missing_at_medium + ::_results_missing_at_small PASSED" },
+        { "behavior": "trivial → SKIP (auto n/a)", "disposition": "tested",
+          "evidence": "::test_completeness_skipped_for_trivial PASSED" },
+        { "behavior": "all tested / valid untestable mix → PASS", "disposition": "tested",
+          "evidence": "::test_completeness_passes_when_all_tested + ::_passes_with_valid_untestable PASSED" },
+        { "behavior": "n/a without justification → FAIL; with → PASS (small)", "disposition": "tested",
+          "evidence": "::test_completeness_na_without_justification_fails + ::_na_with_justification_passes PASSED" },
+        { "behavior": "n/a forbidden at medium/large → FAIL (review MEDIUM)", "disposition": "tested",
+          "evidence": "::test_completeness_na_forbidden_at_medium PASSED" },
+        { "behavior": "untested_testable: false (bool) rejected (review LOW)", "disposition": "tested",
+          "evidence": "::test_completeness_rejects_bool_untested_testable PASSED" },
+        { "behavior": "enumeration_basis acs>covered_acs → FAIL", "disposition": "tested",
+          "evidence": "::test_completeness_fails_on_enumeration_gap PASSED" },
+        { "behavior": "malformed / non-object results JSON → clean ERROR (review LOW)", "disposition": "tested",
+          "evidence": "::test_completeness_fails_when_results_malformed PASSED" },
+        { "behavior": "check wired into run_all_checks (F11 enforces)", "disposition": "tested",
+          "evidence": "::test_completeness_in_run_all_checks PASSED" },
+        { "behavior": "CLI verifier fails closed on testable-but-untested", "disposition": "tested",
+          "evidence": "test_audit_e2e_integration.py::test_cli_fails_on_testable_but_untested_behavior PASSED" },
+        { "behavior": "doc↔code UNTESTABLE vocabulary sync (forward+reverse)", "disposition": "tested",
+          "evidence": "test_untestable_vocab_doc_sync.py (3 cases) PASSED" },
+        { "behavior": "SKILL Phase-Matrix row + Override-Classes drift", "disposition": "tested",
+          "evidence": "test_skill_completeness_matrix.py (2 cases) + test_skill_phase_matrix.py PASSED" },
+        { "behavior": "live operator UX of the F11 PR completeness summary line", "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "PR-body rendering is a human visual call; only the F11 prose is asserted structurally, the rendered line is operator-observed" }
+      ],
+      "counts": { "testable": 16, "tested": 15, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 10, "covered_acs": 10 }
     },
     "degraded": [
       {
-        "condition": "external_review_skipped",
-        "detail": "Autonomous run; external LLM review (medium+ auto) skipped — no API keys available and the change is documentation + meta-tests only. Self-review + drift-protection suites stand in."
+        "condition": "preexisting_shared_failures",
+        "detail": "Full shared suite ran 2578 passed; 2 failures (test_architecture_md_reflects_arch_impact, test_artifact_path_canon[compliance-migrated]) are PRE-EXISTING — reproduced identically on the main tree where this change does not exist (the documented `compliance/` path-canon dirty-tree issue + an arch-impact drop). Unrelated to this iterate."
       },
       {
-        "condition": "unit_suite_scoped",
-        "detail": "Full unit suite scoped to the two touched plugins (shipwright-iterate 258, shipwright-project 59 = 317). Monorepo-wide shared/tests + integration-tests were not re-run because no shared/* or integration code changed; the touched files are markdown prompts + two plugin meta-tests."
+        "condition": "external_review_substituted",
+        "detail": "External LLM cascade not run; the internal code-reviewer subagent ran on the staged diff and returned 1 HIGH (ADR for the baseline bump) + 1 MEDIUM (n/a-at-medium escape hatch) + 2 LOW, all fixed (ADR-093, n/a forbidden at medium+, bool-as-int guard, non-object-JSON robustness)."
       }
     ]
   }

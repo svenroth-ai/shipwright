@@ -725,9 +725,9 @@
     {
       "path": "shared/scripts/tools/verifiers/iterate_checks.py",
       "limit": 300,
-      "current": 881,
+      "current": 1093,
       "state": "exception",
-      "adr": "ADR-092"
+      "adr": "ADR-093"
     },
     {
       "path": "shared/scripts/tools/verifiers/plan_checks.py",
@@ -1040,9 +1040,9 @@
     {
       "path": "shared/tests/test_verify_iterate_finalization.py",
       "limit": 300,
-      "current": 1196,
+      "current": 1465,
       "state": "exception",
-      "adr": "ADR-092"
+      "adr": "ADR-093"
     },
     {
       "path": "shared/tests/test_workflow_checks.py",

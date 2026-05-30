@@ -321,7 +321,7 @@ def test_iterate_spec_template_has_four_calibration_bullets():
     required_bullets = [
         "boundaries touched",
         "empirical probes",
-        "edge cases not probed",
+        "test completeness",  # was "edge cases not probed" (escape hatch removed)
         "confidence-pattern check",
     ]
     missing = [b for b in required_bullets if b not in fenced_block]

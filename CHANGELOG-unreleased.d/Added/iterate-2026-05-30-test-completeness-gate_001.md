@@ -1,0 +1,1 @@
+Iterate Test Completeness Ledger gate — every behavior a diff introduces must be tested (with evidence) or untestable (closed-vocabulary reason); the F11 verifier fails closed on any testable-but-untested gap, making the pre-merge "did you test everything testable?" check self-answering.

@@ -25,9 +25,11 @@ DOC_PATH = (
 # edits don't break the drift check.
 REQUIRED_SECTIONS = [
     "are you confident",  # The "are you confident?" anti-pattern
-    "asymptote",          # Asymptote heuristic
+    "asymptote",          # Asymptote heuristic (depth)
     "stop probing",       # Decision rule: when to stop probing
-    "cross-references",   # Section 4: cross-references
+    "coverage",           # Coverage Stopping Rule (breadth) — completeness gate
+    "untestable",         # The closed UNTESTABLE vocabulary
+    "cross-references",   # Cross-references
 ]
 
 

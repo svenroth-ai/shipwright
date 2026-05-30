@@ -39,19 +39,34 @@ VERIFIER = (
 )
 
 
+# A valid Test Completeness Ledger block — seeded green by default so the
+# F0.5 surface block stays the isolated red flag (gate added 2026-05-30).
+_VALID_COMPLETENESS: dict = {
+    "status": "complete",
+    "behaviors": [
+        {"behavior": "seeded behavior", "disposition": "tested",
+         "evidence": "fixture::seeded PASSED"},
+    ],
+    "counts": {"testable": 1, "tested": 1, "untestable": 0, "untested_testable": 0},
+}
+
+
 def _seed(
     proj: Path,
     run_id: str,
     *,
     complexity: str = "medium",
     surface_block: dict | None = None,
+    completeness_block: dict | None = None,
     include_test_results: bool = True,
 ) -> None:
     """Build a minimally-passing project state, optionally with the F0.5 block.
 
-    The other audit checks (iterate_history, ADR, changelog, session_handoff)
-    are seeded green so the only red flag (or its absence) is the F0.5
-    surface_verification block. That isolates the failure mode under test."""
+    The other audit checks (iterate_history, ADR, changelog, session_handoff,
+    test_completeness) are seeded green so the only red flag (or its absence)
+    is the F0.5 surface_verification block. That isolates the failure mode
+    under test. Pass ``completeness_block`` to override the green default and
+    isolate the completeness gate instead."""
     proj.mkdir(parents=True, exist_ok=True)
     (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
     (proj / ".shipwright" / "agent_docs" / "iterates").mkdir(parents=True, exist_ok=True)
@@ -104,6 +119,8 @@ def _seed(
         results: dict = {"iterate_latest": {}}
         if surface_block is not None:
             results["iterate_latest"]["surface_verification"] = surface_block
+        comp = completeness_block if completeness_block is not None else _VALID_COMPLETENESS
+        results["iterate_latest"]["test_completeness"] = comp
         (proj / "shipwright_test_results.json").write_text(
             json.dumps(results, indent=2), encoding="utf-8"
         )
@@ -227,6 +244,31 @@ def test_cli_fails_when_test_results_missing_at_medium(tmp_path):
     _seed(proj, "iterate-2026-05-06-no-results", include_test_results=False)
     code, output = _run_verifier(proj, "iterate-2026-05-06-no-results")
     assert code == 1, output
+
+
+def test_cli_fails_on_testable_but_untested_behavior(tmp_path):
+    """CLI-level completeness gate: surface green, but the ledger declares a
+    testable-but-untested behavior → verifier exits 1 (the merge chokepoint)."""
+    proj = tmp_path / "proj"
+    _seed(
+        proj, "iterate-2026-05-06-untested",
+        surface_block={
+            "surface": "cli", "runner": "pytest", "exit_code": 0,
+            "tests_run": 5, "evidence_path": "log.txt", "timestamp": "now",
+        },
+        completeness_block={
+            "status": "complete",
+            "behaviors": [
+                {"behavior": "happy", "disposition": "tested",
+                 "evidence": "t::a PASSED"},
+            ],
+            "counts": {"testable": 3, "tested": 1, "untestable": 0,
+                       "untested_testable": 2},
+        },
+    )
+    code, output = _run_verifier(proj, "iterate-2026-05-06-untested")
+    assert code == 1, f"testable-but-untested must fail; output:\n{output}"
+    assert "completeness" in output.lower()
 
 
 # ---------------------------------------------------------------------------
