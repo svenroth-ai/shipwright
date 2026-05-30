@@ -49,6 +49,10 @@
           },
           {
             "type": "command",
+            "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_compliance_on_stop.py\""
+          },
+          {
+            "type": "command",
             "command": "uv run \"${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/write_terminal_marker.py\""
           },
           {

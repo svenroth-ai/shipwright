@@ -1,11 +1,12 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-29-sp3-os2-reintegration",
-    "date": "2026-05-29",
+    "run_id": "iterate-2026-05-30-compliance-audit-on-stop",
+    "date": "2026-05-30",
     "unit": {
       "status": "passed",
-      "passed": 317,
-      "total": 317
+      "passed": 2587,
+      "total": 2588,
+      "note": "All 28 new tests for this iterate (shared/tests/test_audit_compliance_on_stop.py) pass. Full shared/tests suite: 2587 passed, 14 skipped. The 1 failure (test_artifact_path_canon[compliance-migrated]) is PRE-EXISTING and UNRELATED — a canon-lint false-positive on the ADR slug 'compliance/rtm-status-logic' inside a prior iterate's recorded JSON (.shipwright/agent_docs/iterates/iterate-2026-05-30-rtm-covered-ignore-untested-events.json), introduced by commit 76a3b12 (PR #115). This iterate touches none of that. See degraded[]."
     },
     "integration": {
       "status": "not_run",
@@ -18,9 +19,10 @@
       "total": 0
     },
     "e2e": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 3,
+      "total": 3,
+      "note": "Empirical hook E2E against the real worktree project: (1) full A-G audit emitted 6 real compliance fails + idempotent skip on re-run; (2) injected a resolved compliance item -> hook reported dismissed=1 and flipped it to dismissed/auditResolved while all 6 genuinely-failing items stayed in triage; (3) marker written under .shipwright/agent_docs/runtime/compliance_audit/. No web/UI surface."
     },
     "design_fidelity": {
       "status": "skipped",
@@ -35,18 +37,18 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-29-sp3-os2-reintegration/surface_verification.json",
-      "timestamp": "2026-05-29T20:06:35.801Z",
-      "justification": "Plugin-side prompt documentation + drift-protection meta-tests across shipwright-iterate and shipwright-project skills; no startable web/CLI/API app surface is affected. Verification is the two plugins' full pytest suites (258 + 59 passed) incl. reference-link drift tests pinning the new F-debug.md link and both Kerns <=300 LOC. Behavioral acceptance (live bug-routing / assumptions-first) is prompt-execution, covered structurally by the new tests."
+      "evidence_path": ".shipwright/runs/iterate-2026-05-30-compliance-audit-on-stop/surface_verification.json",
+      "timestamp": "2026-05-30T12:00:00.000Z",
+      "justification": "Backend Stop-hook triage producer (shared/scripts/hooks/audit_compliance_on_stop.py) + two hooks.json Stop-chain wirings + docs. No startable web/CLI/API app surface is affected, and the triage.jsonl contract/schema is unchanged (this only adds a new automatic trigger for the existing audit_detector.mirror_findings_to_triage producer). Verification is the 28 hook unit/integration tests plus empirical hook E2E (emit, auto-dismiss, full-coverage safety gate, idempotency) run directly against the real worktree project."
     },
     "degraded": [
       {
-        "condition": "external_review_skipped",
-        "detail": "Autonomous run; external LLM review (medium+ auto) skipped — no API keys available and the change is documentation + meta-tests only. Self-review + drift-protection suites stand in."
+        "condition": "preexisting_unrelated_test_failure",
+        "detail": "shared/tests/test_artifact_path_canon.py::test_no_legacy_artifact_paths[compliance-migrated] fails on the origin/main base (commit 76a3b12, PR #115) — a canon-lint false-positive matching 'compliance/' inside the ADR slug value 'compliance/rtm-status-logic' in a prior iterate's recorded JSON. Out of scope for this iterate (a different iterate's append-only audit record; JSON cannot carry an inline canon marker). Recommend a follow-up to either narrow the canon regex for ADR-slug contexts or extend ALLOWLIST['compliance']."
       },
       {
-        "condition": "unit_suite_scoped",
-        "detail": "Full unit suite scoped to the two touched plugins (shipwright-iterate 258, shipwright-project 59 = 317). Monorepo-wide shared/tests + integration-tests were not re-run because no shared/* or integration code changed; the touched files are markdown prompts + two plugin meta-tests."
+        "condition": "external_review_skipped",
+        "detail": "Autonomous run; medium+ external LLM review skipped (no API keys available). Compensated by 28 targeted tests, the full shared/tests suite, and direct empirical hook E2E proving emit/auto-dismiss/idempotency and the full-coverage safety gate."
       }
     ]
   }
