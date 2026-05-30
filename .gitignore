@@ -116,6 +116,13 @@ Spec/
 # ignore everything under .shipwright/, then re-include only the canonical
 # homes — robust against future transient runtime files (locks, loop state,
 # runs, security reports, triage logs) that should never be committed.
+#
+# The rule-lines between the BEGIN/END markers below are kept congruent with
+# shared/templates/shipwright-gitignore.template (the SSoT propagated to every
+# consuming project). Drift is caught by
+# shared/tests/test_gitignore_template_congruent.py — a future ADR adding a
+# gitignored .shipwright/ dir must edit the template AND this block.
+# === BEGIN Shipwright canonical .shipwright artifact-ignore (managed) ===
 /.shipwright/*
 !/.shipwright/adopt/
 !/.shipwright/agent_docs/
@@ -133,3 +140,4 @@ Spec/
 # See iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox.
 /.shipwright/agent_docs/runtime/
 /.shipwright/compliance/skill-compliance/
+# === END Shipwright canonical .shipwright artifact-ignore (managed) ===

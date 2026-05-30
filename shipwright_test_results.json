@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-29-sp3-os2-reintegration",
-    "date": "2026-05-29",
+    "run_id": "iterate-2026-05-30-gitignore-canon-propagation",
+    "date": "2026-05-30",
     "unit": {
       "status": "passed",
-      "passed": 317,
-      "total": 317
+      "passed": 377,
+      "total": 377
     },
     "integration": {
       "status": "not_run",
@@ -35,18 +35,18 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-29-sp3-os2-reintegration/surface_verification.json",
-      "timestamp": "2026-05-29T20:06:35.801Z",
-      "justification": "Plugin-side prompt documentation + drift-protection meta-tests across shipwright-iterate and shipwright-project skills; no startable web/CLI/API app surface is affected. Verification is the two plugins' full pytest suites (258 + 59 passed) incl. reference-link drift tests pinning the new F-debug.md link and both Kerns <=300 LOC. Behavioral acceptance (live bug-routing / assumptions-first) is prompt-execution, covered structurally by the new tests."
+      "evidence_path": ".shipwright/runs/iterate-2026-05-30-gitignore-canon-propagation/surface_verification.json",
+      "timestamp": "2026-05-30T21:12:34.358Z",
+      "justification": "Framework-internal change: canonical .shipwright gitignore-block propagation (SSoT template + shared writer + adopt/project integration + drift test). No startable web/CLI/API product surface is affected. Empirical verification is the git check-ignore round-trips in a real git repo (shared/tests/test_gitignore_canon_merge.py: fresh-repo + webui-regression backfill prove runtime/ ignored & agent_docs/architecture.md tracked), the drift-congruence test (test_gitignore_template_congruent.py), and end-to-end runs of write-project-config.py + the adopt pipeline subprocess. Suites green: 22 new + adopt 296 + project 59."
     },
     "degraded": [
       {
-        "condition": "external_review_skipped",
-        "detail": "Autonomous run; external LLM review (medium+ auto) skipped — no API keys available and the change is documentation + meta-tests only. Self-review + drift-protection suites stand in."
+        "condition": "pre_existing_unrelated_test_failure",
+        "detail": "shared/tests/test_artifact_path_canon.py::test_no_legacy_artifact_paths[compliance-migrated] fails on the base commit (origin/main @ 55ac703), tripped by a PRIOR iterate's committed artifact .shipwright/agent_docs/iterates/iterate-2026-05-30-rtm-covered-ignore-untested-events.json line 8 (\"adr\": \"compliance/rtm-status-logic\" matches the legacy compliance/ canon regex). NOT introduced by this iterate (file not in this diff, tracked at base). Recommend a separate fix: add the value to ALLOWLIST['compliance'] or correct the slug."
       },
       {
-        "condition": "unit_suite_scoped",
-        "detail": "Full unit suite scoped to the two touched plugins (shipwright-iterate 258, shipwright-project 59 = 317). Monorepo-wide shared/tests + integration-tests were not re-run because no shared/* or integration code changed; the touched files are markdown prompts + two plugin meta-tests."
+        "condition": "parallel_iterate_local_staging_contamination",
+        "detail": "shared/tests/test_architecture_md_reflects_arch_impact.py flags decision-drop iterate-2026-05-30-compliance-audit-on-stop_001.json (impact=convention) as missing an architecture.md entry. That drop belongs to a SEPARATE in-flight iterate and lives only in the main repo's gitignored decision-drops staging (not committed, not in this PR). THIS iterate's own drop (iterate-2026-05-30-gitignore-canon-propagation) IS reflected in architecture.md and passes. This failure vanishes on a clean CI checkout (the staging drop is gitignored). (The compliance-migrated canon-lint failure above, by contrast, is from a COMMITTED file so it persists on clean CI — but is likewise pre-existing and unrelated.) All other ~2575 shared tests pass; both failures are independent of this change."
       }
     ]
   }

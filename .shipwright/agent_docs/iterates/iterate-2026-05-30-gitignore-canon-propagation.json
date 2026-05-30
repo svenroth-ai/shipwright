@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-05-30-gitignore-canon-propagation",
+  "date": "2026-05-30T21:13:45.322199Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/gitignore-canon-propagation",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-05-30-gitignore-canon-propagation.md"
+}
