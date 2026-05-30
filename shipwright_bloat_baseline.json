@@ -186,7 +186,7 @@
     {
       "path": "plugins/shipwright-compliance/scripts/lib/rtm_generator.py",
       "limit": 300,
-      "current": 777,
+      "current": 804,
       "state": "grandfathered",
       "adr": null
     },
@@ -263,7 +263,7 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_rtm_generator.py",
       "limit": 300,
-      "current": 535,
+      "current": 656,
       "state": "exception",
       "adr": "ADR-092"
     },
@@ -683,7 +683,7 @@
     {
       "path": "shared/scripts/tools/record_event.py",
       "limit": 300,
-      "current": 792,
+      "current": 797,
       "state": "grandfathered",
       "adr": null
     },

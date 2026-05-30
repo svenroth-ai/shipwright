@@ -416,7 +416,8 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
 
         events = fr_events.get(req.id, [])
         if events:
-            # Verified-by: section names for build, event IDs for iterate
+            # Verified-by lists ALL work events that touched the FR (section
+            # names for build, event IDs for iterate) — "what work happened".
             refs = []
             for we in events:
                 if we.source == "build" and we.section:
@@ -427,34 +428,43 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
             if len(refs) > 4:
                 verified_cell += f" +{len(refs) - 4}"
 
-            # Test progression: first → latest
-            first_tests = f"{events[0].tests_passed}/{events[0].tests_total}"
-            last_tests = f"{events[-1].tests_passed}/{events[-1].tests_total}"
-            if first_tests != last_tests:
-                tests_cell = f"{first_tests} → {last_tests}"
-            else:
-                tests_cell = last_tests
+            # Verification signal comes ONLY from events that recorded a test
+            # count. Untested (0/0) events — docs / refactor / backfill-retro
+            # commits, or verification artifacts — are NEUTRAL: they neither
+            # cover nor fail an FR. Status reflects the LATEST tested event,
+            # not an all()-over-history, so a single 0/0 commit or a transient
+            # historical failure a later run fixed never pins the FR to FAIL.
+            # (iterate-2026-05-30-rtm-covered-ignore-untested-events)
+            tested = [we for we in events if we.tests_total and we.tests_total > 0]
+            if tested:
+                latest = _latest_tested_event(tested)
 
-            # Last verified timestamp
-            last_ts = events[-1].timestamp[:10]
-            source_tag = "iter" if events[-1].source == "iterate" else "build"
-            last_verified = f"{last_ts} ({source_tag})"
-
-            # Status
-            all_passing = all(we.tests_passed == we.tests_total and we.tests_total > 0 for we in events)
-            has_tests = any(we.tests_total > 0 for we in events)
-            baseline = data.baseline_failure_count
-            if has_tests and all_passing:
-                status = "COVERED"
-            elif has_tests and baseline > 0:
-                max_failures = max(
-                    (we.tests_total - we.tests_passed for we in events if we.tests_total > 0),
-                    default=0,
+                # Progression across TESTED events only — an untested 0/0 tail
+                # would otherwise render a misleading "→ 0/0" under COVERED.
+                first_tests = f"{tested[0].tests_passed}/{tested[0].tests_total}"
+                last_tests = f"{latest.tests_passed}/{latest.tests_total}"
+                tests_cell = (
+                    f"{first_tests} → {last_tests}"
+                    if first_tests != last_tests else last_tests
                 )
-                status = "COVERED (baseline)" if max_failures <= baseline else "FAIL"
-            elif has_tests:
-                status = "FAIL"
+
+                # "Last verified" = the latest event that actually ran tests.
+                last_ts = latest.timestamp[:10]
+                source_tag = "iter" if latest.source == "iterate" else "build"
+                last_verified = f"{last_ts} ({source_tag})"
+
+                failures = latest.tests_total - latest.tests_passed
+                baseline = data.baseline_failure_count
+                if failures <= 0:
+                    status = "COVERED"
+                elif baseline > 0 and failures <= baseline:
+                    status = "COVERED (baseline)"
+                else:
+                    status = "FAIL"
             else:
+                # Work touched the FR but no event recorded a test count.
+                tests_cell = "—"
+                last_verified = "—"
                 status = "NO TESTS"
         else:
             verified_cell = "—"
@@ -622,6 +632,23 @@ def _parse_iso_ts(ts: str) -> datetime | None:
     except (ValueError, AttributeError):
         warnings.warn(f"RTM: malformed event timestamp skipped: {ts!r}", stacklevel=2)
         return None
+
+
+def _latest_tested_event(tested):
+    """Return the event with the max *parsed* timestamp from ``tested``.
+
+    Mirrors the robustness of ``_frs_with_stale_verification`` (reviewer-flagged
+    code-review-M2): list order is an unreliable proxy for "latest" because
+    ``event_amended`` rewrites + multi-machine usage break append order. Events
+    whose timestamp won't parse are excluded from the ``max()``; if NONE parse
+    we fall back to list order. Callers pass only events with
+    ``tests_total > 0`` (events that actually recorded a test count).
+    """
+    parsed = [(we, _parse_iso_ts(we.timestamp)) for we in tested]
+    parseable = [(we, dt) for we, dt in parsed if dt is not None]
+    if parseable:
+        return max(parseable, key=lambda p: p[1])[0]
+    return tested[-1]
 
 
 def _reference_now(work_events) -> datetime:

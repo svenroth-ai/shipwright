@@ -15,6 +15,11 @@ Event types:
     split_completed  -- All sections of a split are done
     test_run         -- Full test suite execution
     event_amended    -- Correction of a previous event
+
+Never CLI/smoke-verify against a live project: ``--project-root .`` appends
+real events that surface as phantom work in the RTM (the 2026-05-21 campaign
+leaked two; one neutralized via ``event_amended``). Use ``--project-root
+"$(mktemp -d)"``.
 """
 
 from __future__ import annotations
