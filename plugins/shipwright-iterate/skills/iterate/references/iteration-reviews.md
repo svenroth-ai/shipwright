@@ -127,6 +127,31 @@ The code-reviewer subagent from `shipwright-build` is reused. Provide:
 - The iterate spec or affected FR section
 - The self-review results
 
+### Reviewer Cascade — `spec-reviewer` → `code-reviewer` → `doubt-reviewer`
+
+The reused `shipwright-build` reviewers form a three-stage cascade (the same one
+`/shipwright-build` Step 6 runs — see that plugin's `references/code-review.md`).
+When the sub-iterate-runner contract (`agents/sub-iterate-runner.md` Step 3.7)
+delegates the cascade to the orchestrator (campaign mode) or the parent SKILL.md
+(standalone), all three stages run in this fixed order:
+
+1. **`spec-reviewer` (Stage 1, HARD-GATE).** Spec-compliance only: does the diff
+   match the iterate spec / affected FR? A REJECT cites the exact spec line and
+   **blocks Stage 2** — the `code-reviewer` does not run until `spec-reviewer`
+   returns PASS. Re-review the fixed diff until PASS.
+2. **`code-reviewer` (Stage 2, quality).** The existing 5-axis review, run only
+   behind a Stage-1 PASS.
+3. **`doubt-reviewer` (Stage 3, conditional, advisory).** After Stage 2 passes,
+   and **only** when the diff touches a non-trivial surface — migrations,
+   async/concurrency, cross-plugin imports, or irreversible ops — a fresh-context,
+   disprove-biased pass. Docs-only / trivial diffs skip it. It is
+   advisory-must-address: the implementer answers each doubt in writing (fix or
+   reasoned rebuttal) before commit; it does not hard-block the way Stage 1 does.
+
+All three are **internal** Claude subagents. The external cascade below stays a
+generic code-quality second opinion on the diff — the spec-compliance and doubt
+roles are not cascaded to external LLM providers.
+
 ---
 
 ## External Code-Review Cascade (medium+, default on)

@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-05-30-reviewer-stack",
+  "date": "2026-05-30T21:33:30.160223Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/reviewer-stack",
+  "tests_passed": true,
+  "adr": "build/reviewer-stack-cascade"
+}

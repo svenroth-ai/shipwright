@@ -197,13 +197,16 @@ Remove duplication, improve naming, extract utilities if warranted. Run tests af
 
 ---
 
-## Step 6: Code Review (Two-Tier + Optional External Cascade)
+## Step 6: Reviewer Cascade — Spec → Code → Doubt (+ Optional External)
 
-See [code-review](references/code-review.md).
+See [code-review](references/code-review.md) for the full cascade: the
+`spec-reviewer` HARD-GATE re-review loop and the `doubt-reviewer` trigger heuristic.
 
 - **6a Self-Review (always):** 5-point checklist per [self-review-checklist](references/self-review-checklist.md). Fix all failures.
-- **6b Full Review (conditional):** triggered when diff > 100 lines, section `risk: high`, or security-sensitive files. Full flow per [code-review-protocol](references/code-review-protocol.md); user interaction per [code-review-interview](references/code-review-interview.md).
-- **6c External Cascade (opt-in):** `external_code_review.enabled: true` in `shipwright_build_config.json`. See [code-review](references/code-review.md) for the full diff-exposure warning and marker semantics.
+- **Stage 1 — `spec-reviewer` (HARD-GATE):** spec-compliance gate; runs **whenever 6b runs** (same trigger, so Stage 1 always precedes Stage 2). On REJECT, fix and re-review; **6b does NOT run until PASS**.
+- **6b Full Review — `code-reviewer` (Stage 2, conditional):** triggered when diff > 100 lines, section `risk: high`, or security-sensitive files. Full flow per [code-review-protocol](references/code-review-protocol.md); user interaction per [code-review-interview](references/code-review-interview.md).
+- **6c External Cascade (opt-in):** `external_code_review.enabled: true` in `shipwright_build_config.json`. Generic code-quality second opinion only — the internal `spec-reviewer`/`doubt-reviewer` do NOT cascade externally. See [code-review](references/code-review.md).
+- **Stage 3 — `doubt-reviewer` (conditional, advisory):** after 6b passes, a fresh-context disprove pass for non-trivial touches (migrations, async/concurrency, cross-plugin imports, irreversible ops). Implementer must address each doubt.
 
 ---
 

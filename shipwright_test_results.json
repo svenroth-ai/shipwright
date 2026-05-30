@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-29-sp3-os2-reintegration",
-    "date": "2026-05-29",
+    "run_id": "iterate-2026-05-30-reviewer-stack",
+    "date": "2026-05-30",
     "unit": {
       "status": "passed",
-      "passed": 317,
-      "total": 317
+      "passed": 342,
+      "total": 342
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 136,
+      "total": 136
     },
     "pgtap": {
       "status": "not_run",
@@ -35,19 +35,11 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-29-sp3-os2-reintegration/surface_verification.json",
-      "timestamp": "2026-05-29T20:06:35.801Z",
-      "justification": "Plugin-side prompt documentation + drift-protection meta-tests across shipwright-iterate and shipwright-project skills; no startable web/CLI/API app surface is affected. Verification is the two plugins' full pytest suites (258 + 59 passed) incl. reference-link drift tests pinning the new F-debug.md link and both Kerns <=300 LOC. Behavioral acceptance (live bug-routing / assumptions-first) is prompt-execution, covered structurally by the new tests."
+      "evidence_path": ".shipwright/runs/iterate-2026-05-30-reviewer-stack/surface_verification.json",
+      "timestamp": "2026-05-30T21:27:27.623Z",
+      "attempts": 0,
+      "justification": "Framework-internal change: two NEW reviewer subagent prompts (spec-reviewer, doubt-reviewer) + build Step-6 orchestration docs + a drift-protection meta-test, across shipwright-build and shipwright-iterate plugins. No startable web/CLI/API app surface is affected. Verification is the touched plugins' full pytest suites (build 84, iterate 258) + integration (136) + anti-ratchet (clean) + the sub-iterate-runner contract (37). Behavioral acceptance (live probe-build where spec-reviewer rejects spec-divergent code; doubt-reviewer fires on migrations but not docs-only) is prompt-execution, covered structurally by test_reviewer_orchestration.py."
     },
-    "degraded": [
-      {
-        "condition": "external_review_skipped",
-        "detail": "Autonomous run; external LLM review (medium+ auto) skipped — no API keys available and the change is documentation + meta-tests only. Self-review + drift-protection suites stand in."
-      },
-      {
-        "condition": "unit_suite_scoped",
-        "detail": "Full unit suite scoped to the two touched plugins (shipwright-iterate 258, shipwright-project 59 = 317). Monorepo-wide shared/tests + integration-tests were not re-run because no shared/* or integration code changed; the touched files are markdown prompts + two plugin meta-tests."
-      }
-    ]
+    "degraded": []
   }
 }

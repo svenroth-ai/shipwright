@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-05-30T08:02:42.078582+00:00
-Total commits: 778
+Generated: 2026-05-30T21:32:24.578373+00:00
+Total commits: 779
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 243
-    "fix" : 199
+    "fix" : 200
     "chore" : 152
     "docs" : 111
     "refactor" : 50
@@ -267,10 +267,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 199 commits
+### Fixes (fix) — 200 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-30 | compliance | RTM status from latest tested event; untested 0/0 events neutral | 76a3b12b4f9f |
 | 2026-05-29 | hooks | suggest_iterate UserPromptSubmit output must set hookEventName | 6f79d47b9e9e |
 | 2026-05-29 | hooks | clear bloat anti-ratchet at baseline current, not raw limit | 4adfd4441725 |
 | 2026-05-29 | hooks | key bloat marker off stdin-payload session_id, not env | a447fc625b71 |
@@ -841,7 +842,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 778 |
+| Total commits | 779 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 778 |
+| Human-authored commits | 779 |
 
