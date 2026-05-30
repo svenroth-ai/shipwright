@@ -9,9 +9,10 @@
       "note": "All 28 new tests (test_audit_compliance_on_stop.py) + the new versioned-path regression (test_audit_phase_quality.py::test_phase_from_plugin_root_versioned_install) pass. Full shared/tests: 2587 passed, 14 skipped, 2 failed. BOTH failures are external to this change: (1) test_artifact_path_canon[compliance-migrated] — pre-existing canon-lint false-positive on ADR slug 'compliance/rtm-status-logic' in a prior iterate's committed JSON (commit 76a3b12 / PR #115); (2) test_architecture_md_reflects_arch_impact — caused solely by TWO other iterates' decision drops (gitignore-canon-propagation, reviewer-stack, impact=convention) sitting in the shared, gitignored main-tree decision-drops staging; LOCAL-ONLY (decision drops are not committed, so this cannot occur in CI). My own decision drop is impact=none and is not flagged. See degraded[]."
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 136,
+      "total": 136,
+      "note": "integration-tests/ run because the resolver fix touches shared phase resolution used framework-wide (cross-plugin). 136 passed, 0 failed, 2 deselected."
     },
     "pgtap": {
       "status": "not_run",
