@@ -1,3 +1,38 @@
-# Shipwright autonomous loop transient state
-.shipwright/loop.lock
-.shipwright/runs/
+# Shipwright canonical `.shipwright/` artifact-ignore block — SINGLE SOURCE OF TRUTH.
+#
+# This file is the SSoT for how Shipwright SDLC artifacts are gitignored in
+# EVERY consuming project. It is merged idempotently into a target project's
+# .gitignore by /shipwright-adopt and /shipwright-project (and self-heals on
+# re-run) via shared/scripts/lib/gitignore_canon.py.
+#
+# The rules live between the BEGIN/END markers below. A future ADR that adds
+# (or removes) a gitignored `.shipwright/` path MUST edit THIS file. The drift
+# test shared/tests/test_gitignore_template_congruent.py then fails until the
+# framework's own .gitignore block (wrapped in the same markers) is updated to
+# match — so the change auto-propagates everywhere.
+#
+# Do NOT hand-edit the managed block inside a consuming project's .gitignore;
+# re-running adopt/project overwrites drift.
+
+# === BEGIN Shipwright canonical .shipwright artifact-ignore (managed) ===
+# Whitelist approach: ignore everything under .shipwright/, then re-include
+# only the canonical SDLC-doc homes. Robust against future transient runtime
+# files (locks, loop state, runs, security/triage logs) that should never be
+# committed.
+/.shipwright/*
+!/.shipwright/adopt/
+!/.shipwright/agent_docs/
+!/.shipwright/compliance/
+!/.shipwright/designs/
+!/.shipwright/planning/
+# Re-exclude transient / internal / generated content inside the doc homes:
+/.shipwright/adopt/backups/
+/.shipwright/adopt/screenshots/
+/.shipwright/agent_docs/decision-drops/
+/.shipwright/agent_docs/visual/
+# Stop-hook live state (session_handoff/build_dashboard/triage_inbox) — written
+# every Stop event in every plugin; the tracked variants are produced only by
+# iterate-finalize as the single producer (ADR-089, 2026-05-27).
+/.shipwright/agent_docs/runtime/
+/.shipwright/compliance/skill-compliance/
+# === END Shipwright canonical .shipwright artifact-ignore (managed) ===

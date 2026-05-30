@@ -184,6 +184,27 @@ stack profile. Framework keys (always written): `OPENROUTER_API_KEY`,
 
 Full procedure → [references/step-e5-env-scaffold.md](references/step-e5-env-scaffold.md).
 
+### Step E.6 — Canonical Gitignore Propagation (MANDATORY)
+
+```bash
+uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/lib/gitignore_canon.py" \
+  --project-root <project_root>
+```
+
+Merges the canonical `.shipwright/` artifact-ignore block (SSoT:
+`shared/templates/shipwright-gitignore.template`) into the project's
+`.gitignore`. **Idempotent + additive** — line-level merge that adds only
+missing rules inside a managed BEGIN/END block (never duplicates), so
+re-running self-heals an already-adopted repo. Closes the gap where
+framework-added ignore rules (e.g. `/.shipwright/agent_docs/runtime/`,
+ADR-089) never reached consuming projects: transient artifacts get
+ignored while the canonical SDLC-doc homes stay tracked. JSON output:
+`{action, path, added, already_present, total_canonical}`. Drift vs. the
+framework's own `.gitignore` block is guarded by
+`shared/tests/test_gitignore_template_congruent.py`.
+
+Full procedure → [references/step-e-artifact-generation.md](references/step-e-artifact-generation.md) (Step E.6 section).
+
 ### Step E.16 — Triage Inbox Scaffold
 
 ```bash
