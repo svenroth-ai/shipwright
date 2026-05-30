@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-05-29T20:08:37.081996+00:00
-Total commits: 777
+Generated: 2026-05-30T08:02:42.078582+00:00
+Total commits: 778
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 242
+    "feat" : 243
     "fix" : 199
     "chore" : 152
     "docs" : 111
@@ -19,10 +19,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 242 commits
+### Features (feat) — 243 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-29 | iterate,project | reintegrate SP3 + OS2 after Campaign B | a4cb2a306fab |
 | 2026-05-29 | hooks | add using-shipwright SessionStart bootstrap + plugin-cache Stop wave (P4.1) | e7888704a598 |
 | 2026-05-25 | bloat | Campaign A.defense — pre-commit + CI + ADR template + glossary | ac02d7b24cf5 |
 | 2026-05-25 | compliance | Campaign A.review — bloat reviewer prompts + Group H audit | 723c8afffa27 |
@@ -840,7 +841,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 777 |
+| Total commits | 778 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 777 |
+| Human-authored commits | 778 |
 

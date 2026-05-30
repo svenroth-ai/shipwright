@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-29 20:08 UTC | Session: ec6ecac9-1ffb-47d1-928d-c52ba9a8a756 | Run: iterate-2026-05-29-sp3-os2-reintegration
+> Updated: 2026-05-30 08:02 UTC | Session: 1d1513f2-b22d-4264-9631-0685e9a200c1 | Run: iterate-2026-05-30-rtm-covered-ignore-untested-events
 
-## Recent Changes (71 iterations)
+## Recent Changes (72 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | RTM: untested (0/0) events neutral; status from latest tested event (fixes 7 false FAILs); neutralize leaked verification event via event_amended | 0/0 |  | tooling | 2026-05-30 |
 | feature | SP3+OS2 post-Campaign-B reintegration — F-debug.md systematic-debugging sub-skill + assumptions-first interview pre-phase | 317/317 |  | docs | 2026-05-29 |
 | bug | suggest_iterate UserPromptSubmit hook: emit hookEventName on hookSpecificOutput (+ AST meta-test) | 2558/2558 |  | tooling | 2026-05-29 |
 | bug | Bloat marker keyed off stdin-payload session_id (not env) in check_file_size.py + bloat_gate_on_stop.py | 2549/2550 | 4adfd44 | tooling | 2026-05-29 |

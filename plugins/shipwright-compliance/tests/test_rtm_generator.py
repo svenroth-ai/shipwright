@@ -533,3 +533,124 @@ class TestRtmTriageIdValidation:
         assert "FAIL → [bogus-id]" not in rows[0]
         # The original COVERED status survives unchanged.
         assert "COVERED" in rows[0]
+
+
+# ---------------------------------------------------------------------------
+# iterate-2026-05-30 — untested (0/0) events are NEUTRAL; an FR's COVERED
+# status derives only from the LATEST event that recorded a test count, not
+# from `all(...)` over every event ever. (ADR assigned at release.)
+#
+# Before: status = all(passed==total and total>0 for ev). A single untested
+# 0/0 event (docs / refactor / backfill-retro commit, or a verification
+# artifact) — or a transient historical failure a later run fixed — pinned
+# the FR to FAIL forever even though its latest test run was fully green.
+# ---------------------------------------------------------------------------
+
+
+class TestRtmUntestedEventsNeutral:
+    def _data(self, tmp_path: Path, events):
+        """events: list of (passed, total, ts) for a single FR-01.01."""
+        data = ComplianceData(project_root=tmp_path, timestamp="2026-05-30T00:00:00Z")
+        data.requirements = [
+            RequirementInfo(id="FR-01.01", text="Login works", priority="Must", split="01-auth"),
+        ]
+        data.work_events = [
+            WorkEvent(
+                id=f"ev-{i}", timestamp=ts, source="iterate",
+                description=f"work {i}", tests_passed=p, tests_total=t,
+                affected_frs=["FR-01.01"],
+            )
+            for i, (p, t, ts) in enumerate(events)
+        ]
+        return data
+
+    def _row(self, result: str) -> str:
+        rows = [l for l in result.splitlines() if l.startswith("| [FR-01.01]")]
+        assert rows, "FR-01.01 row missing"
+        return rows[0]
+
+    def test_green_then_untested_event_stays_covered(self, tmp_path: Path):
+        """A green run followed by an untested (0/0) commit stays COVERED."""
+        data = self._data(tmp_path, [
+            (830, 830, "2026-05-14T10:00:00Z"),
+            (0, 0, "2026-05-21T10:00:00Z"),   # docs/refactor — no count recorded
+        ])
+        row = self._row(generate(data))
+        assert "COVERED" in row
+        assert "FAIL" not in row
+        # The untested 0/0 tail must not bleed into the Tests progression cell.
+        assert "0/0" not in row
+
+    def test_transient_failure_then_green_is_covered(self, tmp_path: Path):
+        """One red test on day 1, fixed fully green on day 2 → COVERED."""
+        data = self._data(tmp_path, [
+            (1717, 1717, "2026-05-13T10:00:00Z"),
+            (1939, 1940, "2026-05-17T10:00:00Z"),  # 1 transient failure
+            (1123, 1123, "2026-05-18T10:00:00Z"),  # fixed next day
+        ])
+        row = self._row(generate(data))
+        assert "COVERED" in row
+        assert "FAIL" not in row
+
+    def test_latest_tested_uses_timestamp_not_list_order(self, tmp_path: Path):
+        """Latest tested event is picked by parsed timestamp, not list order.
+
+        A naive list[-1] would pick the red 5/6 (physically last) → FAIL;
+        the chronologically-latest event is the green 10/10 → COVERED.
+        """
+        data = self._data(tmp_path, [
+            (10, 10, "2026-05-20T10:00:00Z"),  # GREEN, latest by ts
+            (5, 6, "2026-05-10T10:00:00Z"),    # red, earlier ts, list-last
+        ])
+        row = self._row(generate(data))
+        assert "COVERED" in row
+        assert "FAIL" not in row
+
+    def test_latest_failure_after_green_still_fails(self, tmp_path: Path):
+        """Guard: a genuine regression in the LATEST tested run is still FAIL."""
+        data = self._data(tmp_path, [
+            (10, 10, "2026-05-13T10:00:00Z"),
+            (5, 6, "2026-05-18T10:00:00Z"),   # latest run is red
+        ])
+        row = self._row(generate(data))
+        assert "FAIL" in row
+        assert "COVERED" not in row
+
+    def test_only_untested_events_is_no_tests(self, tmp_path: Path):
+        """An FR touched only by untested (0/0) events is NO TESTS, not FAIL."""
+        data = self._data(tmp_path, [
+            (0, 0, "2026-05-13T10:00:00Z"),
+            (0, 0, "2026-05-18T10:00:00Z"),
+        ])
+        row = self._row(generate(data))
+        assert "NO TESTS" in row
+        assert "FAIL" not in row
+
+    def test_untested_latest_baseline_still_covered_baseline(self, tmp_path: Path):
+        """Baseline path keys off the latest TESTED event, ignoring 0/0 tails."""
+        data = self._data(tmp_path, [
+            (830, 831, "2026-05-14T10:00:00Z"),  # 1 failure == baseline
+            (0, 0, "2026-05-21T10:00:00Z"),      # untested tail
+        ])
+        data.baseline_failure_count = 1
+        row = self._row(generate(data))
+        assert "COVERED (baseline)" in row
+        assert "| FAIL" not in row
+
+    def test_malformed_timestamp_excluded_from_latest_selection(self, tmp_path: Path):
+        """A tested event with an unparseable ts can't win 'latest' selection.
+
+        Robustness mirror of _frs_with_stale_verification: the green event
+        with a valid (older) ts is picked over the red event whose ts won't
+        parse — so a corrupt timestamp can't silently flip an FR to FAIL.
+        """
+        import warnings
+        data = self._data(tmp_path, [
+            (10, 10, "2026-05-10T10:00:00Z"),  # green, parseable
+            (5, 6, "not-a-timestamp"),         # red, unparseable → excluded
+        ])
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            row = self._row(generate(data))
+        assert "COVERED" in row
+        assert "FAIL" not in row
