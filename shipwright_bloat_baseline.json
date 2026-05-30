@@ -690,7 +690,7 @@
     {
       "path": "shared/scripts/tools/tests/test_record_event.py",
       "limit": 300,
-      "current": 791,
+      "current": 810,
       "state": "exception",
       "adr": "ADR-092"
     },

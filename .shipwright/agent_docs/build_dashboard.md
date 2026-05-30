@@ -1,11 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-30 21:13 UTC | Session: 2d60713f-a294-4fbd-b61a-245c91bd275c | Run: iterate-2026-05-30-gitignore-canon-propagation
+> Updated: 2026-05-30 20:59 UTC | Session: 1d1513f2-b22d-4264-9631-0685e9a200c1 | Run: iterate-2026-05-30-record-event-test-failures
 
 ## Recent Changes (73 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test | 0/0 |  | tooling | 2026-05-30 |
+| bug | Align 7 stale record_event tests to the C.1 FR-gate (gates all iterates incl. bug/intentless); surface CI shared-test gap (trg-f363b1ab) | 0/0 |  | tooling | 2026-05-30 |
 | bug | RTM: untested (0/0) events neutral; status from latest tested event (fixes 7 false FAILs); neutralize leaked verification event via event_amended | 0/0 |  | tooling | 2026-05-30 |
 | feature | SP3+OS2 post-Campaign-B reintegration — F-debug.md systematic-debugging sub-skill + assumptions-first interview pre-phase | 317/317 |  | docs | 2026-05-29 |
 | bug | suggest_iterate UserPromptSubmit hook: emit hookEventName on hookSpecificOutput (+ AST meta-test) | 2558/2558 |  | tooling | 2026-05-29 |
@@ -80,7 +80,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-30 | Unit: 377/377 | Smoke: not_run | (iterate)
+Last run: 2026-05-29 | Unit: 317/317 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

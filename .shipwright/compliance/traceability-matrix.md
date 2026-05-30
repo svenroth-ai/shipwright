@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-30T21:13:17.603821+00:00
+Generated: 2026-05-30T20:59:20.601989+00:00
 
 ## Requirements Coverage
 
@@ -97,7 +97,7 @@ Generated: 2026-05-30T21:13:17.603821+00:00
 | suggest_iterate UserPromptSubmit hook: emit hookEventName on hookSpecificOutput (+ AST meta-test) | iterate | bug |  | 2558/2558 | — | 2026-05-29 |
 | SP3+OS2 post-Campaign-B reintegration — F-debug.md systematic-debugging sub-skill + assumptions-first interview pre-phase | iterate | feature |  | 317/317 | — | 2026-05-29 |
 | RTM: untested (0/0) events neutral; status from latest tested event (fixes 7 false FAILs); neutralize leaked verification event via event_amended | iterate | bug |  | — | — | 2026-05-30 |
-| Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test | iterate | change |  | — | — | 2026-05-30 |
+| Align 7 stale record_event tests to the C.1 FR-gate (gates all iterates incl. bug/intentless); surface CI shared-test gap (trg-f363b1ab) | iterate | bug |  | — | — | 2026-05-30 |
 
 ## Coverage Summary
 
