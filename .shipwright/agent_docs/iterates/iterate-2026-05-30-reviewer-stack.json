@@ -5,5 +5,5 @@
   "complexity": "medium",
   "branch": "iterate/reviewer-stack",
   "tests_passed": true,
-  "adr": "build/reviewer-stack-cascade"
+  "adr": "iterate-2026-05-30-reviewer-stack"
 }
