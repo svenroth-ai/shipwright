@@ -1,0 +1,1 @@
+Aligned 7 stale tests in record_event's test suite to the Iterate C.1 FR-gate (which gates all iterate intents incl. bug/intentless); they asserted pre-C.1 exemptions and failed locally. Also surfaced that CI never runs shared/ tests (tracked for follow-up).

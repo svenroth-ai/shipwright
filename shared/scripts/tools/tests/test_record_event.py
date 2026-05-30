@@ -423,6 +423,7 @@ class TestChangedFiles:
             "--project-root", str(project),
             "--type", "work_completed",
             "--source", "iterate", "--commit", "abc1234",
+            "--change-type", "tooling", "--none-reason", "test-infra: changed-files capture",
             "--description", "Test changed-files",
             "--changed-files", ".env,shipwright_run_config.json,src/x.py",
         ])
@@ -438,6 +439,7 @@ class TestChangedFiles:
             "--project-root", str(project),
             "--type", "work_completed",
             "--source", "iterate", "--commit", "abc1235",
+            "--change-type", "tooling", "--none-reason", "test-infra: changed-files capture",
             "--changed-files", '[".env", "src/y.py"]',
         ])
         assert rc == 0
@@ -462,6 +464,7 @@ class TestChangedFiles:
             "--project-root", str(project),
             "--type", "work_completed",
             "--source", "iterate", "--commit", "abc1237",
+            "--change-type", "tooling", "--none-reason", "test-infra: changed-files capture",
         ])
         assert rc == 0
         events = read_events(project)
@@ -635,6 +638,7 @@ class TestWorktreeAwareLog:
             "--project-root", str(project),
             "--type", "work_completed",
             "--source", "iterate", "--commit", "abc1239",
+            "--change-type", "tooling", "--none-reason", "test-infra: changed-files capture",
             "--changed-files", ".env.local,src/parser.py",
         ])
         assert rc == 0
@@ -656,12 +660,14 @@ class TestWorktreeAwareLog:
 
 
 # ---------------------------------------------------------------------------
-# Spec-impact classification gate (iterate-2026-05-16-spec-impact-gate)
+# Classification gates (two coexisting layers — decision_log Iterate C.1)
 #
-# Every FEATURE/CHANGE iterate work_completed event must name the FRs it
-# touched (--affected-frs / --new-frs) OR record --spec-impact none with a
-# justification. record_event.py fails closed (exit 1) otherwise. Build
-# events and intent-less / bug-intent iterate events are unaffected.
+# FR-gate (ADR-059 / C.1, iterate-2026-05-21-c1-fr-gate-finalize) is BROADER:
+# EVERY iterate work_completed event — incl. BUG and intent-less — must record
+# --affected-frs/--new-frs OR --change-type + --none-reason, else exit 1.
+# Spec-impact gate (iterate-2026-05-16) is STRICTER but narrower: FEATURE/CHANGE
+# only, additionally accepting --spec-impact none + justification. Build events
+# (source != iterate) bypass both. The FR-gate runs first.
 # ---------------------------------------------------------------------------
 
 
@@ -695,7 +701,12 @@ class TestSpecImpactField:
 
 
 class TestSpecImpactGate:
-    """record_event.main fails closed on an unclassified feature/change iterate."""
+    """record_event.main fails closed on an unclassified iterate work event.
+
+    The FR-gate (C.1) gates ALL iterates; the spec-impact gate adds the
+    FEATURE/CHANGE-only --spec-impact-none-needs-justification check. Build
+    events bypass both. See the section comment above for the two-gate model.
+    """
 
     def test_feature_with_affected_frs_passes(self, project):
         rc = record_main([
@@ -749,7 +760,11 @@ class TestSpecImpactGate:
         assert rc == 1
         assert read_events(project) == []
 
-    def test_spec_impact_none_with_justification_passes(self, project):
+    def test_spec_impact_none_without_change_type_fails_fr_gate(self, project):
+        """ADR-059 C.1: --spec-impact none + justification satisfies only the
+        stricter (FEATURE/CHANGE) spec-impact gate, NOT the broader FR-gate,
+        which runs first across ALL iterates. A no-FR change must classify via
+        --change-type/--none-reason (see test_work_completed_change_type)."""
         rc = record_main([
             "--project-root", str(project),
             "--type", "work_completed",
@@ -758,8 +773,8 @@ class TestSpecImpactGate:
             "--spec-impact", "none",
             "--spec-impact-justification", "no user-visible behavior change",
         ])
-        assert rc == 0
-        assert len(read_events(project)) == 1
+        assert rc == 1
+        assert read_events(project) == []
 
     def test_build_event_without_frs_unaffected(self, project):
         """Build events are NOT gated — only iterate feature/change."""
@@ -770,22 +785,26 @@ class TestSpecImpactGate:
         ])
         assert rc == 0
 
-    def test_bug_intent_without_frs_unaffected(self, project):
-        """BUG iterates are not gated — a bug fix need not touch the spec."""
+    def test_bug_intent_without_classification_fails(self, project):
+        """ADR-059 C.1: the FR-gate applies to ALL iterates incl. BUG — a bug
+        iterate must still classify via FRs or --change-type/--none-reason."""
         rc = record_main([
             "--project-root", str(project),
             "--type", "work_completed",
             "--source", "iterate", "--intent", "bug", "--commit", "g8",
             "--description", "fix crash",
         ])
-        assert rc == 0
+        assert rc == 1
+        assert read_events(project) == []
 
-    def test_intentless_iterate_event_unaffected(self, project):
-        """An iterate event with no --intent is not gated (backwards compat)."""
+    def test_intentless_iterate_without_classification_fails(self, project):
+        """ADR-059 C.1: the FR-gate applies to every iterate work_completed
+        regardless of --intent — an intentless event must still classify."""
         rc = record_main([
             "--project-root", str(project),
             "--type", "work_completed",
             "--source", "iterate", "--commit", "g9",
             "--description", "legacy-style event",
         ])
-        assert rc == 0
+        assert rc == 1
+        assert read_events(project) == []

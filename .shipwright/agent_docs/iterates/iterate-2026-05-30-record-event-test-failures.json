@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-05-30-record-event-test-failures",
+  "date": "2026-05-30T20:59:33.750570Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/record-event-test-failures",
+  "tests_passed": true,
+  "adr": "testing/record-event-fr-gate-tests"
+}
