@@ -8,7 +8,7 @@
       "status": "passed",
       "passed": 2674,
       "total": 2675,
-      "note": "Guard suite (40) + validate_env (59) + shared/scripts/tests (175) + tools/tests (51) all green. The single failing test in the full shared/tests run is test_architecture_md_reflects_arch_impact — PRE-EXISTING arch-impact drift (also flagged degraded by the prior iterate); see degraded[]. This diff touches no decision-drops/architecture.md beyond adding its own clean entry."
+      "note": "Verified against the REAL CI run on PR #127. The new shared-tests CI step exposed test_arch_impact_drops_found_at_all (asserted gitignored decision-drops exist — false in a clean CI checkout); FIXED here (skip when no drop JSON on disk). The remaining LOCAL-only failure test_every_arch_impact_drop_has_architecture_md_entry is pre-existing sibling-drop drift (run_ids ci-lint-gate-ruff + phasequality-triage-bundle, not this run) and SKIPS in CI (no drops). Guard suite (40) + validate_env (59) green; shared/scripts/tests (175) + tools/tests (51) green locally and re-verified in CI after the fix."
     },
     "integration": { "status": "passed", "passed": 136, "total": 136 },
     "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
@@ -66,7 +66,7 @@
       {
         "condition": "preexisting_unrelated_failure",
         "test": "shared/tests/test_architecture_md_reflects_arch_impact.py::test_every_arch_impact_drop_has_architecture_md_entry",
-        "detail": "Fails because two OTHER iterates' arch-impact decision-drops in the shared main-tree staging area (gitignored) are not reflected in architecture.md: run_id=iterate-2026-05-31-ci-lint-gate-ruff (convention) and run_id=iterate-2026-05-31-phasequality-triage-bundle (convention). Both were written by concurrent sibling iterates this session; neither is this run. This test reaches into the main-tree gitignored drops, so it surfaces on any worktree run from this machine independent of the change (the prior iterate's degraded[] flagged the same test). Not fixed here — would require editing architecture.md for other iterates' undocumented work (out of scope; their F2/F3 owns it). Surfaced for follow-up."
+        "detail": "LOCAL-only: fails because two OTHER iterates' arch-impact decision-drops in the gitignored main-tree staging area are not reflected in architecture.md (run_id=iterate-2026-05-31-ci-lint-gate-ruff + iterate-2026-05-31-phasequality-triage-bundle, both convention). Concurrent sibling iterates this session; neither is this run. In CI (clean checkout, no gitignored drops) this test SKIPS, so it does not gate. Not fixed here — would require editing architecture.md for other iterates' undocumented work (their F2/F3 owns it). Surfaced for follow-up. NOTE: the sibling test test_arch_impact_drops_found_at_all in the same file WAS a real CI failure (it asserted the gitignored drops exist) that this iterate's new shared-tests CI coverage exposed; it is FIXED in this diff (skip when no drop JSON on disk)."
       },
       {
         "condition": "external_review_substituted",
