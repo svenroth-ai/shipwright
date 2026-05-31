@@ -121,6 +121,11 @@ def main() -> int:
             "quality": pq.run_quality_checks(phase, project_root),
             "spec": pq.run_spec_checks(phase, project_root, run_id),
         }
+        # iterate-2026-05-31-phasequality-dashboard-skip: when the project
+        # never actively engaged this phase, rewrite its FAILs to SKIP so the
+        # dashboard agrees with the inbox (which already suppresses them). The
+        # runners are untouched; this is a hook-level, FAIL-OPEN post-pass.
+        findings = _skip_unengaged_fails(findings, phase, project_root)
         finding_path = pq.write_finding_json(
             project_root, phase, run_id, session_id, findings,
             source=source,
@@ -191,6 +196,34 @@ def _gc_best_effort(project_root: Path) -> None:
         pq.gc_old_findings(project_root)
     except Exception:  # noqa: BLE001
         pass
+
+
+def _skip_unengaged_fails(
+    findings: dict[str, list[dict]],
+    phase: str,
+    project_root: Path,
+) -> dict[str, list[dict]]:
+    """Rewrite FAIL→SKIP for a phase the project never actively engaged.
+
+    Dashboard-consistency follow-up to the triage backlog: a phase with no
+    completion evidence (and not the active pipeline cursor) renders its
+    Tier-1 FAILs as "not applicable" rather than red. Best-effort + FAIL-OPEN
+    — any error, or an engaged/undeterminable phase, leaves findings verbatim.
+    """
+    try:
+        cfg, events = pq.load_engagement_inputs(project_root)
+        if pq.phase_is_engaged(phase, cfg, events):
+            return findings
+        note = f"phase '{phase}' not engaged by this project — check not applicable"
+        for items in findings.values():
+            for f in items or []:
+                if isinstance(f, dict) and f.get("status") == pq.STATUS_FAIL:
+                    f["status"] = pq.STATUS_SKIP
+                    f["evidence"] = note
+                    f["provenance"] = "not-engaged"
+    except Exception:  # noqa: BLE001 — never block the Stop chain
+        pass
+    return findings
 
 
 _GIT_WARN_EMITTED = False  # process-local one-shot guard

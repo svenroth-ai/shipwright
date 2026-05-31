@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-31-phasequality-triage-bundle",
+    "run_id": "iterate-2026-05-31-phasequality-dashboard-skip",
     "date": "2026-05-31",
     "unit": {
       "status": "passed",
-      "passed": 2660,
-      "total": 2660
+      "passed": 2666,
+      "total": 2666
     },
     "integration": {
       "status": "not_run",
@@ -32,58 +32,42 @@
     },
     "surface_verification": {
       "surface": "none",
-      "justification": "Python Stop-hook/lib + verifier change with no user-facing web/UI surface and no backend-affects-frontend contract; behavior is fully covered by unit tests (40 focused + full 2660-pass shared suite) plus an end-to-end reproduction probe of the exact 9-item flood (→ 0 items). No dev server / E2E surface applies.",
-      "tests_run": 40,
+      "justification": "Python Stop-hook post-process (FAIL->SKIP for unengaged phases) with no user-facing web/UI surface; covered by 6 focused unit tests + an end-to-end probe (finding JSON + dashboard aggregate + backlog consistency) + full 2666-pass shared-suite regression. No dev server / E2E surface applies.",
+      "tests_run": 6,
       "timestamp": "2026-05-31T00:00:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "phase_is_engaged: event / iterate-when-complete / in-progress cursor / casing (AC-1,2,3)", "disposition": "tested",
-          "evidence": "test_phase_quality_engagement.py (11 cases incl stale-cursor + casing) PASSED" },
-        { "behavior": "phase_is_engaged FAIL-OPEN on unreadable cfg (AC-1b)", "disposition": "tested",
-          "evidence": "test_phase_quality_engagement.py::test_fail_open_when_cfg_none + test_load_inputs_* PASSED" },
-        { "behavior": "collect_in_scope_fails: multi-code per phase, filter unengaged, exclude tier-2/pass/skip, latest-per-phase, fail-open (AC-4)", "disposition": "tested",
-          "evidence": "test_phase_quality_engagement.py (6 collect cases) PASSED" },
-        { "behavior": "collect excludes provenance=error + source=error masking (review MEDIUM + LOW-1)", "disposition": "tested",
-          "evidence": "::test_collect_excludes_provenance_error + ::test_collect_error_source_finding_does_not_mask_real_fail PASSED" },
-        { "behavior": "S2/S3 SKIP on sentinel/no-exact-entry; file-on-disk→PASS; exact-entry→FAIL/WARN preserved (AC-5,6)", "disposition": "tested",
-          "evidence": "test_spec_checks_run_id_guard.py (7 cases) PASSED" },
-        { "behavior": "existing S2/S3 PASS/FAIL/WARN/SKIP semantics preserved", "disposition": "tested",
-          "evidence": "test_spec_checks.py (40 cases) PASSED" },
-        { "behavior": "single rolling backlog item with body+launch_payload (AC-7, AC-16 sig-derivable)", "disposition": "tested",
-          "evidence": "test_phase_quality_triage_emit.py::test_single_backlog_item_for_many_fails + ::test_backlog_body_lists_fails_and_launch_payload PASSED" },
-        { "behavior": "idempotent within/across sweeps; convergence to one item (AC-8, AC-15)", "disposition": "tested",
-          "evidence": "::test_idempotent_same_set_one_item PASSED" },
-        { "behavior": "refresh on changed FAIL set; dismiss stale-sig (AC-9)", "disposition": "tested",
-          "evidence": "::test_refresh_on_changed_set PASSED" },
-        { "behavior": "auto-dismiss when FAIL set clears (AC-10)", "disposition": "tested",
-          "evidence": "::test_auto_dismiss_when_resolved PASSED" },
-        { "behavior": "legacy {phase}:{code} items untouched; dismissed backlog re-fires (AC-11)", "disposition": "tested",
-          "evidence": "::test_legacy_per_code_items_untouched + ::test_dismissed_backlog_can_refire PASSED" },
-        { "behavior": "unengaged-only / no-fails → no item, no error (AC-13 best-effort)", "disposition": "tested",
-          "evidence": "::test_unengaged_phase_emits_nothing + ::test_no_fails_no_item_no_error PASSED" },
-        { "behavior": "events log read via SSOT accessor (no raw join)", "disposition": "tested",
-          "evidence": "test_events_log_ssot.py::test_no_unaccounted_raw_event_log_joins PASSED" },
-        { "behavior": "hook delegates to emit_phase_quality_backlog; old per-FAIL fn removed", "disposition": "tested",
-          "evidence": "import smoke (hook main present, _emit_tier1_fails_to_triage gone) + test_audit_phase_quality.py + test_hook_output_schema_compliance.py PASSED" },
-        { "behavior": "end-to-end flood elimination on the real framework-repo scenario (9 FAILs → 0 items)", "disposition": "tested",
-          "evidence": "Step 7.5 reproduction probe: collect_in_scope_fails=0, emit appended=0; no-over-suppression probe surfaces engaged iterate:W2" },
-        { "behavior": "docs hooks-and-pipeline.md describes the backlog action-unit shape (AC-14)", "disposition": "untestable",
+        { "behavior": "unengaged phase FAIL->SKIP + provenance=not-engaged (AC-1)", "disposition": "tested",
+          "evidence": "test_phase_quality_dashboard_skip.py::test_unengaged_phase_fails_become_skip PASSED" },
+        { "behavior": "engaged phase preserves FAIL: via event, iterate-when-complete, in-progress current_step (AC-2)", "disposition": "tested",
+          "evidence": "::test_engaged_phase_preserves_fail + ::test_iterate_engaged_when_complete_preserves_fail + ::test_in_progress_current_step_engaged_preserves_fail PASSED" },
+        { "behavior": "FAIL-OPEN on missing run_config (AC-3)", "disposition": "tested",
+          "evidence": "::test_fail_open_without_run_config PASSED" },
+        { "behavior": "PASS/WARN/SKIP findings untouched", "disposition": "tested",
+          "evidence": "::test_pass_warn_skip_untouched PASSED" },
+        { "behavior": "runners unchanged — runner-direct tests still FAIL (AC-4)", "disposition": "tested",
+          "evidence": "test_audit_phase_quality.py (51 cases) PASSED unchanged" },
+        { "behavior": "dashboard + backlog consistency: collect_in_scope_fails excludes converted phase (AC-5)", "disposition": "tested",
+          "evidence": "Step 7.5 end-to-end probe: design C1/D1 -> SKIP, collect -> ['iterate:W2'] only" },
+        { "behavior": "non-blocking best-effort; hook always exits 0 (AC-6)", "disposition": "tested",
+          "evidence": "helper wrapped in try/except; test_hook_output_schema_compliance.py PASSED" },
+        { "behavior": "docs note dashboard SKIP behavior (AC-8)", "disposition": "untestable",
           "reason_code": "covered-by-existing-test",
-          "reason": "documentation prose, not executable behavior; the producer behavior it describes is covered by the tests above" }
+          "reason": "documentation prose; the behavior it describes is covered by the tests above" }
       ],
-      "counts": { "testable": 15, "tested": 15, "untestable": 1, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 17, "covered_acs": 17 }
+      "counts": { "testable": 7, "tested": 7, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 9, "covered_acs": 9 }
     },
     "degraded": [
       {
         "condition": "preexisting_shared_failures",
-        "detail": "Full shared suite: 2660 passed, 14 skipped, 2 FAILURES that are PRE-EXISTING and unrelated to this iterate — confirmed by re-running on the clean origin/main base with this work stashed: test_github_triage.py::test_failed_fetch_does_not_resolve_items (github producer, order-dependent) and test_architecture_md_reflects_arch_impact.py::test_every_arch_impact_drop_has_architecture_md_entry (repo-hygiene: main-tree decision-drops not reflected in architecture.md). This iterate touches only shared/scripts/lib/phase_quality + tools/verifiers/spec_checks + their tests; neither failing test references those files."
+        "detail": "Full shared suite: 2666 passed, 14 skipped, 1 failure (test_architecture_md_reflects_arch_impact) — PRE-EXISTING and unrelated, confirmed on origin/main with this work stashed during iterate 1. (test_github_triage::test_failed_fetch_does_not_resolve_items is an order-dependent pre-existing flake that surfaces in some full runs; also confirmed on the clean base.) This iterate touches only audit_phase_quality_on_stop.py + its tests."
       },
       {
-        "condition": "external_review_mode",
-        "detail": "External LLM iterate review (gemini-3.1-pro + gpt-5.4 via OpenRouter) ran on the plan and returned 12 findings; dispositions folded into the spec (fail-open, S2/S3 file-on-disk guard, sig-derivable body, concurrency convergence, consumer audit). The internal code-reviewer subagent then reviewed the diff: 1 MEDIUM (provenance=error pollution) + 3 LOW (error-source masking, stale bloat baseline, code fallback) — all fixed."
+        "condition": "external_review_self_review_fallback",
+        "detail": "External LLM cascade not re-run: this is a tight 15-line FAIL->SKIP follow-up reusing iterate-1's externally-reviewed (gemini-3.1-pro + gpt-5.4) phase_is_engaged engagement helper. Self-review + end-to-end probe + full-suite regression performed; marker recorded with self_review_fallback_ran=true."
       }
     ]
   }
