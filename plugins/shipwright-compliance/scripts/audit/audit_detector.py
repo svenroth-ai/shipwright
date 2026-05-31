@@ -338,85 +338,32 @@ def mirror_findings_to_triage(
     run_id: str | None = None,
     commit: str | None = None,
 ) -> dict[str, int]:
-    """Mirror audit findings to ``.shipwright/triage.jsonl``.
+    """Mirror audit findings to ``.shipwright/triage.jsonl`` as ONE action-unit.
 
-    For each ``Finding`` with ``status == "fail"``: append a triage item
-    via ``append_triage_item_idempotent`` with ``source="compliance"``,
-    ``dedup_key=check_id``, ``match_commit=False``. Idempotent across
-    sessions — the same finding code on the same project stays as a
-    single triage item until the operator promotes or dismisses it.
+    As of iterate-2026-05-31-compliance-triage-bundle this no longer emits one
+    item per failing check (which flooded the inbox); it delegates to
+    :func:`triage_bundle.emit_compliance_backlog`, which keeps a single rolling
+    ``compliance:backlog:<sig>`` item, dismisses it when no check fails
+    (``complianceResolved`` — preserves the auto-dismiss-on-resolve guarantee),
+    refreshes it when the failing set changes, and one-shot-retires legacy
+    per-check items (``supersededByBacklog``). Producers emit action-units, not
+    finding-mirrors (``project_triage_launch_surface_redesign`` / ADR-057).
 
-    For currently-``triage`` items with ``source=="compliance"`` whose
-    ``dedupKey`` is NOT in this run's failed findings: mark ``dismissed``
-    with ``reason="auditResolved"`` (HIGH-2 from external review:
-    auto-dismiss applies only to currently-``triage`` items; items
-    previously promoted or dismissed stay terminal).
-
-    Best-effort: per-item errors are swallowed. Returns
-    ``{"appended": N, "dismissed": N}`` so callers can log telemetry.
+    Best-effort. Returns ``{"appended", "dismissed"}`` (back-compat telemetry).
     """
-    append_idempotent, mark_status_fn, read_all_items = _import_triage_api()
-    if append_idempotent is None:
-        return {"appended": 0, "dismissed": 0}
-
-    fail_findings = [f for f in report.findings if f.status == "fail"]
-    current_codes = {f.check_id for f in fail_findings}
-
-    appended = 0
-    for f in fail_findings:
-        sev = _SEVERITY_MAP.get(f.severity.upper(), "medium")
-        title = f"{f.group}/{f.check_id}: {f.name}"[:160]
-        detail_parts: list[str] = []
-        if f.detail:
-            detail_parts.append(f.detail)
-        if f.evidence:
-            detail_parts.append("evidence: " + "; ".join(str(e) for e in f.evidence))
-        if f.suggested_iterate_cmd:
-            detail_parts.append(f"hint: {f.suggested_iterate_cmd}")
-        detail = " | ".join(detail_parts) or f.name
-
-        try:
-            new_id = append_idempotent(
-                project_root,
-                source="compliance",
-                severity=sev,
-                kind="compliance",
-                title=title,
-                detail=detail,
-                dedup_key=f.check_id,
-                run_id=run_id,
-                commit=commit,
-                match_commit=False,
-                window_seconds=None,  # cross-session indefinite dedup
-                                      # while item stays in `triage` state
-                                      # (Gemini HIGH from code review)
-            )
-            if new_id is not None:
-                appended += 1
-        except Exception:  # noqa: BLE001
-            continue
-
-    dismissed = 0
     try:
-        for item in read_all_items(project_root):
-            if item.get("source") != "compliance":
-                continue
-            if item.get("status") != "triage":
-                continue
-            dk = item.get("dedupKey")
-            if dk and dk not in current_codes:
-                try:
-                    mark_status_fn(
-                        project_root,
-                        item["id"],
-                        new_status="dismissed",
-                        by="auditDetector",
-                        reason="auditResolved",
-                    )
-                    dismissed += 1
-                except Exception:  # noqa: BLE001
-                    continue
-    except Exception:  # noqa: BLE001
-        pass
+        from .triage_bundle import emit_compliance_backlog  # noqa: PLC0415
+    except ImportError:
+        # audit_detector loaded standalone (spec_from_file_location in tests) —
+        # no parent package, so fall back to a path-based import.
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from triage_bundle import emit_compliance_backlog  # noqa: PLC0415
 
-    return {"appended": appended, "dismissed": dismissed}
+    stats = emit_compliance_backlog(
+        project_root, report, run_id=run_id, commit=commit,
+    )
+    return {
+        "appended": stats.get("appended", 0),
+        "dismissed": stats.get("dismissed", 0),
+    }

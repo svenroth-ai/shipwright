@@ -1,12 +1,20 @@
+---
+canon_generated: true
+run_id: "iterate-2026-05-31-compliance-triage-bundle"
+phase: "iterate"
+reason: "compliance triage bundling: one rolling compliance:backlog action-unit"
+timestamp: "2026-05-31T15:52:35.290127+00:00"
+---
+
 # Session Handoff
 
-> Auto-generated 2026-05-30 22:25:04 UTC
+> Auto-generated 2026-05-31 15:52:35 UTC
 
 ## Session Info
 
-- **Session ID**: c1702965-7788-4a6d-9f90-6d17d8d9f91c
-- **Timestamp**: 2026-05-30 22:25:04 UTC
-- **Reason**: asymptote probe follow-up: iterate-2026-05-30-test-completeness-gate
+- **Session ID**: 3e307394-564c-4915-8128-3c7fa7eeb609
+- **Timestamp**: 2026-05-31 15:52:35 UTC
+- **Reason**: compliance triage bundling: one rolling compliance:backlog action-unit
 
 ## Last Iterate
 
@@ -20,11 +28,10 @@
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/test-completeness-gate
-- **Run ID**: `iterate-2026-05-30-test-completeness-gate`
-- **Spec**: .shipwright/planning/iterate/2026-05-30-test-completeness-gate.md
-- **Complexity**: medium (classifier said `trivial`@0.6 — under-estimate; cross-cutting skill discipline + new enforced verifier + drift-test updates)
-- **External Review Marker**: stale (predates spec (2026-05-27T07:11:03))
+- **Branch**: iterate/compliance-triage-bundle
+- **Spec**: .shipwright/planning/iterate/2026-05-31-compliance-triage-bundle.md
+- **Complexity**: medium (`touches_io_boundary`: writes `triage.jsonl`; changes a
+- **External Review Marker**: completed (external_review_state.json @ 2026-05-31T15:51:40)
 
 ### Mandatory replay on Resume
 
@@ -42,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/test-completeness-gate
-- **Last Commit**: bde2812 feat(iterate): add fail-closed Test Completeness Ledger gate
+- **Branch**: iterate/compliance-triage-bundle
+- **Last Commit**: 78a281fa Merge pull request #120 from svenroth-ai/iterate/test-completeness-gate
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -59,17 +66,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-41bb1152 | work_completed | iterate (Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement)) | 2026-05-31 |
 | evt-d16cc59c | work_completed | iterate (iterate completion: test-completeness-gate) | 2026-05-30 |
-| evt-c9f7073a | work_completed | iterate (Align 7 stale record_event tests to the C.1 FR-gate (gates all iterates incl. bug/intentless); surface CI shared-test gap (trg-f363b1ab)) | 2026-05-30 |
-| evt-13cd797e | work_completed | iterate (RTM: untested (0/0) events neutral; status from latest tested event (fixes 7 false FAILs); neutralize leaked verification event via event_amended) | 2026-05-30 |
-| evt-4a141c52 | event_amended | — | 2026-05-30 |
-| evt-6ebab37a | work_completed | iterate (SP3+OS2 post-Campaign-B reintegration — F-debug.md systematic-debugging sub-skill + assumptions-first interview pre-phase) | 2026-05-29 |
+| evt-d70f6cd4 | work_completed | iterate (iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade)) | 2026-05-30 |
+| evt-76ce63ff | work_completed | iterate (Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test) | 2026-05-30 |
+| evt-abaef023 | work_completed | iterate (Add audit_compliance_on_stop.py: auto-emit/auto-dismiss source=compliance triage items on every iterate/changelog Stop, gated on full A-G audit coverage.) | 2026-05-30 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 74
-- **Last iterate**: change — iterate completion: test-completeness-gate (2026-05-30)
+- **Total work events**: 78
+- **Last iterate**: change — Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement) (2026-05-31)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
