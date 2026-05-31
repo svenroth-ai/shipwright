@@ -15,7 +15,7 @@ Scope: library
 | Iterate tests passing | 56/78 iterations tested | WARN | 22 iterate(s) without tests — see test-evidence.md |
 | Dependencies | 8 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 4 open | WARN | 4 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 19 open | WARN | 19 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit | 138 | WARN | 138 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
 | Bloat in allowlist | 151 entries | INFO |  |
 | Bloat ratchet delta | -23 lines | PASS |  |

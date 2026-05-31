@@ -1,7 +1,7 @@
 # Commit Change Log
 
 Generated: 2026-05-31T11:30:29.581346+00:00
-Total commits: 791
+Total commits: 792
 
 ## Commit Distribution
 
@@ -14,6 +14,7 @@ pie title Commit Types
     "refactor" : 50
     "test" : 18
     "other" : 7
+    "ci" : 1
     "build" : 1
 ```
 
@@ -844,6 +845,12 @@ pie title Commit Types
 | 2026-04-04 | — | Revert "fix: rename skill dirs to full plugin name for clean slash-command display" | 1545b4b2c522 |
 | 2026-03-21 | — | revert: restore full skill names in SKILL.md frontmatter | 05c0d5ce7566 |
 
+### CI/CD (ci) — 1 commits
+
+| Date | Scope | Description | Commit |
+|------|-------|-------------|--------|
+| 2026-05-31 | integration | gate integration-tests step on failure; fix F821 in events-log test | 83d68709d125 |
+
 ### Build (build) — 1 commits
 
 | Date | Scope | Description | Commit |
@@ -854,7 +861,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 791 |
+| Total commits | 792 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 791 |
+| Human-authored commits | 792 |
 

@@ -54,12 +54,11 @@
         },
         {
           "behavior": "Removing '|| true' makes the integration-tests CI step propagate a non-zero exit (gate) instead of swallowing it",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "Observing CI actually turn red on a failing integration suite requires a live GitHub Actions run with an injected failure; the gating itself is platform-guaranteed (GHA default Linux shell = `bash --noprofile --norc -eo pipefail`, so -e is already active for a single-command run:). Structurally verified here: grep confirms '|| true' is removed from ONLY the integration step (the lint step retains its own '|| true' + continue-on-error, which is an explicitly separate out-of-scope item)."
+          "disposition": "tested",
+          "evidence": "shared/tests/test_ci_self_gating.py (2 cases) PASSED — structural guard asserts the integration step has neither '|| true' nor continue-on-error; an inline negative control confirms the guard catches a re-added '|| true' (not vacuous). Behavior also empirically replicated against GHA's default shell `bash --noprofile --norc -eo pipefail`: fail(exit 1)->1 GATES, pass->0, no-collect(exit 5)->5, old '|| true'->0 (swallow was real). NOTE: this row was mis-classified 'untestable/requires-external-nondeterministic-service' in the first pass; the marginal confidence probe surfaced that it is in fact locally testable — corrected here."
         }
       ],
-      "counts": { "testable": 2, "tested": 2, "untestable": 1, "untested_testable": 0 },
+      "counts": { "testable": 3, "tested": 3, "untestable": 0, "untested_testable": 0 },
       "enumeration_basis": { "acs": 3, "covered_acs": 3 }
     },
     "degraded": [
