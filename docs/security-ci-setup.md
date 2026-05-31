@@ -85,6 +85,14 @@ gate → artifact upload) runs on every dispatch. The PR-comment step is
 no-op outside PR events; SARIF still uploads on `workflow_dispatch` and
 `schedule` events.
 
+> **Critical gate fails closed.** The "Check for critical findings" step
+> aborts the run if `findings.json` is **absent or unparseable** (a
+> scanner crash), instead of reading it as "0 criticals" and passing
+> green. `prompt_risks.json` is a softer signal: its absence warns loudly
+> but does not block. This invariant is enforced going forward by the
+> CI-gate guard (`shared/scripts/tools/check_ci_gate_coverage.py`,
+> check (c)).
+
 ### Activation — turn on auto-triggers
 
 Pre-flight checklist before flipping the auto-triggers on:

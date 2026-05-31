@@ -1,12 +1,20 @@
+---
+canon_generated: true
+run_id: "iterate-2026-05-31-ci-gate-guard"
+phase: "iterate"
+reason: "iterate: CI gate-coverage guard + workflow hardening"
+timestamp: "2026-05-31T12:06:42.335438+00:00"
+---
+
 # Session Handoff
 
-> Auto-generated 2026-05-30 22:25:04 UTC
+> Auto-generated 2026-05-31 12:06:42 UTC
 
 ## Session Info
 
-- **Session ID**: c1702965-7788-4a6d-9f90-6d17d8d9f91c
-- **Timestamp**: 2026-05-30 22:25:04 UTC
-- **Reason**: asymptote probe follow-up: iterate-2026-05-30-test-completeness-gate
+- **Session ID**: 88880223-1c91-445e-a810-186587ece148
+- **Timestamp**: 2026-05-31 12:06:42 UTC
+- **Reason**: iterate: CI gate-coverage guard + workflow hardening
 
 ## Last Iterate
 
@@ -20,10 +28,9 @@
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/test-completeness-gate
-- **Run ID**: `iterate-2026-05-30-test-completeness-gate`
-- **Spec**: .shipwright/planning/iterate/2026-05-30-test-completeness-gate.md
-- **Complexity**: medium (classifier said `trivial`@0.6 — under-estimate; cross-cutting skill discipline + new enforced verifier + drift-test updates)
+- **Branch**: iterate/ci-gate-guard
+- **Spec**: .shipwright/planning/iterate/2026-05-31-ci-gate-guard.md
+- **Complexity**: medium (locked)
 - **External Review Marker**: stale (predates spec (2026-05-27T07:11:03))
 
 ### Mandatory replay on Resume
@@ -42,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/test-completeness-gate
-- **Last Commit**: bde2812 feat(iterate): add fail-closed Test Completeness Ledger gate
+- **Branch**: iterate/ci-gate-guard
+- **Last Commit**: 78a281fa Merge pull request #120 from svenroth-ai/iterate/test-completeness-gate
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -59,17 +66,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-1da91106 | work_completed | iterate (CI gate-coverage guard + workflow hardening (test-dir coverage, loose-gate allowlist, security fail-closed)) | 2026-05-31 |
 | evt-d16cc59c | work_completed | iterate (iterate completion: test-completeness-gate) | 2026-05-30 |
-| evt-c9f7073a | work_completed | iterate (Align 7 stale record_event tests to the C.1 FR-gate (gates all iterates incl. bug/intentless); surface CI shared-test gap (trg-f363b1ab)) | 2026-05-30 |
-| evt-13cd797e | work_completed | iterate (RTM: untested (0/0) events neutral; status from latest tested event (fixes 7 false FAILs); neutralize leaked verification event via event_amended) | 2026-05-30 |
-| evt-4a141c52 | event_amended | — | 2026-05-30 |
-| evt-6ebab37a | work_completed | iterate (SP3+OS2 post-Campaign-B reintegration — F-debug.md systematic-debugging sub-skill + assumptions-first interview pre-phase) | 2026-05-29 |
+| evt-d70f6cd4 | work_completed | iterate (iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade)) | 2026-05-30 |
+| evt-76ce63ff | work_completed | iterate (Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test) | 2026-05-30 |
+| evt-abaef023 | work_completed | iterate (Add audit_compliance_on_stop.py: auto-emit/auto-dismiss source=compliance triage items on every iterate/changelog Stop, gated on full A-G audit coverage.) | 2026-05-30 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 74
-- **Last iterate**: change — iterate completion: test-completeness-gate (2026-05-30)
+- **Total work events**: 78
+- **Last iterate**: feature — CI gate-coverage guard + workflow hardening (test-dir coverage, loose-gate allowlist, security fail-closed) (2026-05-31)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

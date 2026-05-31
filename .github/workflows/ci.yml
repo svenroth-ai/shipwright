@@ -68,11 +68,32 @@ jobs:
             fi
           done
 
+      - name: Run shared tests
+        shell: bash
+        run: |
+          set -e
+          # Run each shared test dir as its own pytest session — `shared/tests`
+          # and `shared/scripts/tests` share basenames (test_config.py, ...),
+          # which collide in a single collection. Mirrors the per-plugin loop
+          # above. A NEW shared test dir not listed here is caught by the
+          # CI-gate guard (check_ci_gate_coverage.py, check (a)).
+          for d in shared/tests shared/scripts/tests shared/scripts/tools/tests; do
+            echo "--- Running tests in $d ---"
+            uv run --with pytest --with pytest-mock pytest "$d" -v
+          done
+
       - name: Run integration tests
         run: |
           if [ -d integration-tests ]; then
-            uv run --with pytest --with pytest-mock pytest integration-tests/ -v || true
+            uv run --with pytest --with pytest-mock pytest integration-tests/ -v
           fi
+
+      - name: Run CI-gate guard
+        # Fails if a test dir is silently uncovered, a quality gate goes loose
+        # outside the documented allowlist, or the security critical-gate loses
+        # its fail-closed missing-findings guard. See
+        # shared/scripts/tools/check_ci_gate_coverage.py.
+        run: uv run shared/scripts/tools/check_ci_gate_coverage.py --project-root .
 
   # WebUI client + server checks moved to
   # https://github.com/svenroth-ai/shipwright-webui/blob/main/.github/workflows/ci.yml

@@ -1,0 +1,1 @@
+Hardened `ci.yml`: integration tests are now gating (removed `|| true`) and `shared/**/tests` are run in CI (previously uncovered); ruff lint is recorded as an explicit non-gating tracked-debt entry rather than a silent `|| true`.
