@@ -1,11 +1,18 @@
 # Project Activity Dashboard
-> Updated: 2026-05-31 15:52 UTC | Session: 3e307394-564c-4915-8128-3c7fa7eeb609 | Run: iterate-2026-05-31-compliance-triage-bundle
+> Updated: 2026-06-01 05:15 UTC | Session: edce381c-01f8-43c8-82a4-8d6400b4ddd3 | Run: iterate-2026-05-31-plugin-sync-triage-main-repo
 
-## Recent Changes (78 iterations)
+## Recent Changes (85 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | plugin-sync Stop-hook triage item written to durable main-repo log (worktree-aware) | 48/49 |  | tooling | 2026-06-01 |
+| feature | CI gate-coverage guard + workflow hardening (test-dir coverage, loose-gate allowlist, security fail-closed) | 2674/2675 |  | infra | 2026-05-31 |
+| change | Gate CI Python lint on a curated bug-focused ruff ruleset (pyflakes F + high-signal E/W); remove the \|\| true + continue-on-error neutering; provision ruff via pinned uvx; rename job to Python (lint + test). | 0/0 |  | chore | 2026-05-31 |
+| change | Wire shared/ test suites (shared/tests, shared/scripts/tests, shared/scripts/tools/tests) into ci.yml as blocking per-dir invocations; fix 2 non-hermetic validate_env tests via a dir conftest; make the born-red arch-md sibling skip when gitignored decision-drops are absent. | 0/0 |  |  | 2026-05-31 |
+| change | remove vestigial "\|\| true" from CI integration step (gate failures) + add pathlib.Path import to clear 14 F821 in test_events_log.py | 2771/2771 |  | infra | 2026-05-31 |
 | change | Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement) | 0/0 |  | compliance | 2026-05-31 |
+| change | Render unengaged phases as SKIP (not FAIL) in the persisted finding JSON so the skill-compliance dashboard agrees with the triage inbox | 0/0 |  | compliance | 2026-05-31 |
+| change | Collapse phase-quality Tier-1 FAIL triage into one rolling phaseQuality:backlog action-unit; add phase-applicability gate and run_id=unknown spec-check guard | 0/0 |  | compliance | 2026-05-31 |
 | change | iterate completion: test-completeness-gate | 0/0 |  |  | 2026-05-30 |
 | change | iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade) | 0/0 |  |  | 2026-05-30 |
 | change | Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test | 0/0 |  | tooling | 2026-05-30 |

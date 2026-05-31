@@ -4,8 +4,10 @@
 Reads the session marker written by ``mark_plugin_edit.py``. If plugin-side files
 were edited this session, surface a one-time reminder to run
 ``scripts/update-marketplace.sh`` + ``scripts/check_plugin_cache_sync.py``, AND
-append an idempotent ``source="plugin-sync"`` triage item so the follow-up
-survives the session (mirrors the drift/audit producers).
+append an idempotent ``source="plugin-sync"`` triage item to the **durable
+main-repo log** (worktree-aware — see ``_emit_triage``) so the follow-up
+survives the session AND ``git worktree remove`` (mirrors the drift/audit
+producers).
 
 Design (user-confirmed 2026-05-29): **block once per session**, never
 block-until-green. Block-until-green hard-loops when you've edited-but-not-pushed
@@ -97,15 +99,31 @@ def _claim_reminded(project_root: Path, session_id: str) -> bool:
 
 
 def _emit_triage(project_root: Path, rel_paths: list[str]) -> None:
-    """Append an idempotent plugin-sync triage item (best-effort)."""
+    """Append an idempotent plugin-sync triage item (best-effort).
+
+    Triage items are an append-only **audit trail** and MUST live in the
+    durable MAIN-repo log so the follow-up survives ``git worktree remove``
+    after an iterate PR merges. From inside a ``/shipwright-iterate`` worktree
+    ``project_root`` is the worktree root, whose ``.shipwright/triage.jsonl``
+    is gitignored and discarded on cleanup — so the append is redirected to
+    the main repo via ``resolve_main_repo_root`` (mirrors the decision-drop
+    resolver in ``tools/write_decision_drop.py``). The banner + once-per-session
+    sentinel still key off the worktree root (the live SDLC context); only this
+    durable append redirects. ``resolve_main_repo_root`` returns ``None`` for a
+    non-git root, so the ``or project_root`` fallback preserves plain-checkout
+    and non-git behaviour unchanged.
+    """
     try:
         scripts_dir = str(Path(__file__).resolve().parent.parent)
         if scripts_dir not in sys.path:
             sys.path.insert(0, scripts_dir)
         from triage import append_triage_item_idempotent  # noqa: PLC0415
+        from lib.events_log import resolve_main_repo_root  # noqa: PLC0415
+
+        triage_root = resolve_main_repo_root(project_root) or project_root
 
         append_triage_item_idempotent(
-            project_root,
+            triage_root,
             source="plugin-sync",
             severity="low",
             kind="maintenance",
