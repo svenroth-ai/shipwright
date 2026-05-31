@@ -64,14 +64,13 @@ def _assert_canonical_planning_exists(project_root: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.cross_plugin
 def test_adopt_artifact_writer_writes_under_dot_shipwright(tmp_path: Path) -> None:
     _add_plugin_to_path("shipwright-adopt")
     try:
         from artifact_writer import write_spec  # type: ignore
     except (ImportError, ModuleNotFoundError) as exc:
         import_or_fail_in_ci("shipwright-adopt", exc)
-        # import_or_fail_in_ci is annotated NoReturn; pyright will flag a
-        # path that elides this terminal call. No `return` needed.
 
     spec_path = write_spec(
         tmp_path,
@@ -91,14 +90,13 @@ def test_adopt_artifact_writer_writes_under_dot_shipwright(tmp_path: Path) -> No
     assert spec_path.is_file()
 
 
+@pytest.mark.cross_plugin
 def test_adopt_config_writer_emits_canonical_planning_dir(tmp_path: Path) -> None:
     _add_plugin_to_path("shipwright-adopt")
     try:
         from config_writer import write_project_config  # type: ignore
     except (ImportError, ModuleNotFoundError) as exc:
         import_or_fail_in_ci("shipwright-adopt", exc)
-        # import_or_fail_in_ci is annotated NoReturn; pyright will flag a
-        # path that elides this terminal call. No `return` needed.
 
     config_path = write_project_config(
         tmp_path,
@@ -121,14 +119,13 @@ def test_adopt_config_writer_emits_canonical_planning_dir(tmp_path: Path) -> Non
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.cross_plugin
 def test_iterate_campaign_init_writes_under_dot_shipwright(tmp_path: Path) -> None:
     _add_plugin_to_path("shipwright-iterate")
     try:
         from campaign_init import init_campaign  # type: ignore
     except (ImportError, ModuleNotFoundError) as exc:
         import_or_fail_in_ci("shipwright-iterate", exc)
-        # import_or_fail_in_ci is annotated NoReturn; pyright will flag a
-        # path that elides this terminal call. No `return` needed.
 
     result = init_campaign(
         project_root=tmp_path,
@@ -221,14 +218,13 @@ def test_design_setup_session_writes_canonical_designs(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.cross_plugin
 def test_compliance_collect_requirements_reads_canonical(tmp_path: Path) -> None:
     _add_plugin_to_path("shipwright-compliance")
     try:
         from data_collector import collect_requirements  # type: ignore
     except (ImportError, ModuleNotFoundError) as exc:
         import_or_fail_in_ci("shipwright-compliance", exc)
-        # import_or_fail_in_ci is annotated NoReturn; pyright will flag a
-        # path that elides this terminal call. No `return` needed.
 
     canonical = tmp_path / ".shipwright" / "planning" / "01-auth"
     canonical.mkdir(parents=True)
@@ -331,6 +327,7 @@ def test_no_legacy_designs_path_construction_in_plugin_source(plugin: str) -> No
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.cross_plugin
 def test_adopt_write_agent_docs_writes_under_dot_shipwright(tmp_path: Path) -> None:
     """End-to-end contract: invoke write_agent_docs and verify it writes
     only under .shipwright/agent_docs/ — no legacy top-level dir, no double
@@ -341,8 +338,6 @@ def test_adopt_write_agent_docs_writes_under_dot_shipwright(tmp_path: Path) -> N
         from artifact_writer import write_agent_docs  # type: ignore
     except (ImportError, ModuleNotFoundError) as exc:
         import_or_fail_in_ci("shipwright-adopt", exc)
-        # import_or_fail_in_ci is annotated NoReturn; pyright will flag a
-        # path that elides this terminal call. No `return` needed.
 
     paths = write_agent_docs(
         tmp_path,
@@ -412,6 +407,7 @@ def test_no_legacy_agent_docs_path_construction_in_plugin_source(plugin: str) ->
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.cross_plugin
 def test_compliance_generators_write_under_dot_shipwright(tmp_path: Path) -> None:
     """All shipwright-compliance generators must write under
     .shipwright/compliance/, never compliance/ at project root."""
@@ -422,8 +418,6 @@ def test_compliance_generators_write_under_dot_shipwright(tmp_path: Path) -> Non
         import scripts.lib.compliance_report  # type: ignore  # noqa: F401
     except (ImportError, ModuleNotFoundError) as exc:
         import_or_fail_in_ci("shipwright-compliance", exc)
-        # import_or_fail_in_ci is annotated NoReturn; pyright will flag a
-        # path that elides this terminal call. No `return` needed.
     _add_plugin_to_path("shipwright-compliance")
 
     project_root = tmp_path / "proj"
@@ -437,8 +431,6 @@ def test_compliance_generators_write_under_dot_shipwright(tmp_path: Path) -> Non
         from scripts.lib.compliance_report import COMPLIANCE_DIR  # type: ignore
     except ImportError as exc:
         import_or_fail_in_ci("shipwright-compliance", exc)
-        # import_or_fail_in_ci is annotated NoReturn; pyright will flag a
-        # path that elides this terminal call. No `return` needed.
 
     canonical = project_root / COMPLIANCE_DIR
     legacy = project_root / "compliance"

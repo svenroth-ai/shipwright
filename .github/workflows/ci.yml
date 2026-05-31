@@ -85,9 +85,15 @@ jobs:
           # collision. Same pattern as the per-plugin loop above. The root
           # pyproject.toml supplies `-m 'not slow'` + pythonpath, so no extra
           # flags are needed here.
+          # `not cross_plugin`: tests importing another plugin's lib/tools
+          # collide on the shared `tests`/`lib` namespace from a shared/tests
+          # session and hard-fail in CI by design (ADR-044 / test_hygiene
+          # .import_or_fail_in_ci) — they run under their owning plugin's
+          # session via the per-plugin loop above. A command-line `-m` replaces
+          # the pyproject `-m 'not slow'`, so restate `not slow` here.
           for dir in shared/tests shared/scripts/tests shared/scripts/tools/tests; do
             echo "--- Running tests in $dir ---"
-            uv run --with pytest --with pytest-mock pytest "$dir" -v
+            uv run --with pytest --with pytest-mock pytest "$dir" -v -m "not slow and not cross_plugin"
           done
 
       - name: Run integration tests
