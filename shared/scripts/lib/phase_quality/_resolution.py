@@ -37,11 +37,36 @@ def is_shipwright_project(project_root: Path) -> bool:
 
 
 def phase_from_plugin_root(plugin_root: str | os.PathLike[str] | None) -> str | None:
-    """Map ``CLAUDE_PLUGIN_ROOT`` to the Shipwright phase name."""
+    """Map ``CLAUDE_PLUGIN_ROOT`` to the Shipwright phase name.
+
+    Handles both install layouts:
+
+    * **Un-versioned** marketplace mirror — ``.../plugins/shipwright-iterate``
+      → ``.name == "shipwright-iterate"`` matches directly.
+    * **Versioned** install (Claude Code's ``installed_plugins.json`` uses
+      ``installPath=.../<plugin>/<version>``) — ``.../shipwright-iterate/0.4.1``
+      → ``.name == "0.4.1"`` does NOT match, so we fall back to the parent
+      directory (the plugin name). Without this fallback every Stop hook
+      keyed on phase silently no-ops under a versioned install — which is
+      exactly how phase_quality + this compliance hook went dark after the
+      marketplace switched to version-pinned installPaths (verified
+      iterate-2026-05-30). The lookup is name-keyed (not path-substring) so
+      an unrelated ancestor directory cannot spoof a phase.
+    """
     if not plugin_root:
         return None
-    name = Path(plugin_root).name
-    return PLUGIN_TO_PHASE.get(name)
+    p = Path(plugin_root)
+    phase = PLUGIN_TO_PHASE.get(p.name)
+    if phase:
+        return phase
+    # Versioned install: the plugin name is the immediate parent of the
+    # version segment. Check it (and one more level to tolerate a future
+    # ``.../<plugin>/<version>/<sub>`` shape) before giving up.
+    for ancestor in list(p.parents)[:2]:
+        phase = PLUGIN_TO_PHASE.get(ancestor.name)
+        if phase:
+            return phase
+    return None
 
 
 def cwd_is_strict_ancestor_of(cwd: Path, project_root: Path) -> bool:

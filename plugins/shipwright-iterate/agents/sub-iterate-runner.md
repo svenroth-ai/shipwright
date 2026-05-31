@@ -165,16 +165,16 @@ review for those.
 
 **Procedure** when triggered:
 
-1. Internal code-reviewer subagent. The runner has `Read, Write, Edit,
+1. Internal reviewer cascade. The runner has `Read, Write, Edit,
    Bash, Glob, Grep` tools — no `Agent` tool — so the runner CANNOT
-   spawn the `shipwright-build:code-reviewer` subagent itself. Two
-   options:
+   spawn the `shipwright-build` reviewer subagents itself. The cascade
+   is `spec-reviewer` (HARD-GATE) → `code-reviewer` → conditional
+   `doubt-reviewer` (see `references/iteration-reviews.md`). Delegate:
    - **Option A (campaign mode):** the campaign orchestrator spawns
-     the code-reviewer in parallel with the runner, after Build
-     completes; the orchestrator merges findings back into the iterate
-     ADR.
+     the cascade in parallel with the runner, after Build completes;
+     the orchestrator merges findings back into the iterate ADR.
    - **Option B (standalone iterate mode):** the parent SKILL.md
-     lifecycle Step 8 spawns the code-reviewer.
+     lifecycle Step 8 spawns the cascade.
    In either case, the runner records `reviews.code` status as
    `delegated_to_orchestrator` (Option A) or `delegated_to_skill`
    (Option B) — never `skipped_silently`.

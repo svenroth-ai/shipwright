@@ -57,6 +57,17 @@ uv run "{plugin_root}/scripts/checks/write-project-config.py" \
   --scope "{scope}"
 ```
 
+On the `--status complete` (full-scaffold) path this also merges the
+canonical `.shipwright/` artifact-ignore block (SSoT:
+`shared/templates/shipwright-gitignore.template`) into the project's
+`.gitignore` via `shared/scripts/lib/gitignore_canon.merge_canonical_block`
+— closing the gap where `/shipwright-project` previously wrote no
+`.gitignore` entries at all. The merge is idempotent + additive (adds only
+missing rules in a managed block, never duplicates); the action is reported
+to **stderr** so stdout stays a pure config JSON. This ensures transient
+artifacts (`.shipwright/agent_docs/runtime/`, decision-drops, visual) are
+ignored while the canonical SDLC-doc homes stay tracked.
+
 ## Write interview decisions to decision_log.md
 
 After scaffolding, extract all project-level decisions made during the interview

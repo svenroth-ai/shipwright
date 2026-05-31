@@ -18,6 +18,33 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from lib.state import detect_state
 
 
+def _merge_canonical_gitignore(project_root: Path) -> dict:
+    """Merge the canonical ``.shipwright`` artifact-ignore block into the
+    project's ``.gitignore`` so framework-managed ignore rules propagate.
+
+    Idempotent + additive (see ``shared/scripts/lib/gitignore_canon.py``).
+    /shipwright-project previously wrote no .gitignore entries at all; this
+    closes that gap (iterate-2026-05-30-gitignore-canon-propagation). On
+    import failure (corrupted shared tree) returns an action=skipped record
+    rather than crashing scaffolding.
+    """
+    repo_root = Path(__file__).resolve().parents[4]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    try:
+        from shared.scripts.lib.gitignore_canon import (  # type: ignore
+            merge_canonical_block,
+        )
+    except ImportError as exc:
+        return {
+            "action": "skipped",
+            "reason": "gitignore_canon_import_failed",
+            "error": str(exc),
+            "path": str(project_root / ".gitignore"),
+        }
+    return merge_canonical_block(project_root)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Write shipwright project config")
     parser.add_argument("--planning-dir", required=True, help="Path to planning directory")
@@ -59,6 +86,17 @@ def main() -> int:
 
     config_path = project_root / "shipwright_project_config.json"
     config_path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+
+    # Propagate the canonical .shipwright artifact-ignore block into the
+    # project's .gitignore on the full-scaffold path. Reported to stderr so
+    # stdout stays a pure config JSON for downstream parsers.
+    if args.status == "complete":
+        merge = _merge_canonical_gitignore(project_root)
+        print(
+            f"[write-project-config] .gitignore canonical block: "
+            f"{merge.get('action')} (added {len(merge.get('added', []))} rule(s))",
+            file=sys.stderr,
+        )
 
     print(json.dumps(config, indent=2))
     return 0

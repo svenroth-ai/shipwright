@@ -179,7 +179,7 @@ Aligned with the five domains of Anthropic's [Claude Certified Architect](https:
 Patterns from [`obra/superpowers`](https://github.com/obra/superpowers) (MIT, © Jesse Vincent) drive the parts of Shipwright that say "no" to drive-by AI output:
 
 - **Iron-Law verification language** — the "NO X WITHOUT Y FIRST" framing in the bloat Stop-gate (`shared/scripts/hooks/bloat_gate_on_stop.py`) and in the PR template's Human Authorization / Duplicate Search / Verification sections (`.github/PULL_REQUEST_TEMPLATE.md`).
-- **Two-stage review pattern** — Spec-Compliance reviewer first, then Code-Quality reviewer (planned in the SP1 spec item; see `Spec/external-frameworks-integration.md`).
+- **Two-stage review pattern** — a `spec-reviewer` spec-compliance HARD-GATE runs first, then the `code-reviewer` quality stage (`plugins/shipwright-build/agents/spec-reviewer.md`; build Step 6 / `references/code-review.md`). An optional third `doubt-reviewer` (fresh-context, disprove-biased — addyosmani/agent-skills OS3) runs after for non-trivial diffs. See `Spec/external-frameworks-integration.md` SP1 + OS3.
 - **Anti-slop PR-template framing** — the "most AI-generated PRs are rejected because process is skipped" banner, the explicit "If you are an AI agent" rules, and the empirical-verification-before-checkbox stance, all citing Superpowers attribution in the template footer.
 
 #### Karpathy — Four Pre-Phase Principles

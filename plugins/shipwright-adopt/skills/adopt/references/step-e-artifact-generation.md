@@ -218,9 +218,39 @@ other is non-empty. Each merged feature carries an `origin` of
 AST scan of route handlers) and UI FRs (from the crawl), giving a
 complete picture for downstream consumers.
 
-**Gitignore awareness (4.1)**. After all writes, the tool runs
-`git check-ignore` against every output path. The result lands in
-`results.gitignore_report` as `{total, gitignored: [...], majority_gitignored: bool}`.
+**Canonical gitignore propagation (Step E.6 — MANDATORY).** Immediately
+after the artifact generator returns, adopt MUST merge the canonical
+`.shipwright/` artifact-ignore block into the project's `.gitignore` so
+framework-managed ignore rules propagate to this brownfield repo. Run:
+
+```bash
+uv run "{shared_root}/scripts/lib/gitignore_canon.py" --project-root "{project_root}"
+```
+
+The SSoT is `shared/templates/shipwright-gitignore.template`; the merge is
+**idempotent + additive** (line-level: adds only missing rules inside a
+managed BEGIN/END block, never duplicates), so re-running adopt back-fills
+only rules a later template revision introduces — this self-heals an
+already-adopted repo. It closes the gap where framework-added ignore rules
+(e.g. `/.shipwright/agent_docs/runtime/`, ADR-089) never reached consuming
+projects: transient artifacts get ignored while the canonical SDLC-doc
+homes stay tracked. The JSON output carries
+`{action, path, added, already_present, total_canonical}` (`action` ∈
+`created`/`updated`/`unchanged`) for the Step H banner. Drift between the
+template and the framework's own `.gitignore` block is caught by
+`shared/tests/test_gitignore_template_congruent.py`. (It runs as a separate
+CLI rather than inside `generate_adoption_artifacts.py` to keep that
+already-grandfathered file under its bloat baseline —
+iterate-2026-05-30-gitignore-canon-propagation.)
+
+**Gitignore awareness (4.1)**. Inside `generate_adoption_artifacts.py`,
+after all artifact writes, the tool runs `git check-ignore` against every
+output path. The result lands in `results.gitignore_report` as
+`{total, gitignored: [...], majority_gitignored: bool}`. This runs **before**
+the E.6 merge above, so the report is a *pre-merge, advisory* snapshot; the
+E.6 merge is what actually guarantees the canonical ignore rules are in
+place. If the report still warns after E.6 has run, surface it — but the
+canonical `.shipwright/` homes are tracked by design once E.6 completes.
 
 If `majority_gitignored` is true (≥50% of artifacts excluded), surface
 a `**GITIGNORED OUTPUTS**` block in the handoff and ask the user via
