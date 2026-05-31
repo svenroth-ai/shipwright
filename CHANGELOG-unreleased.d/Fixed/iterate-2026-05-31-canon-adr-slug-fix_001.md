@@ -1,0 +1,1 @@
+Resolved two `artifact-path-canon` lint failures on main: a malformed `adr` value in the rtm iterate record (and its session handoff) now uses the run_id, and two legitimate test-fixture lines in `test_gitignore_propagation_wiring.py` carry inline canon markers. The CI canon gate is green again.

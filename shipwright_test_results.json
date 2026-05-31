@@ -1,52 +1,35 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-30-gitignore-canon-propagation",
-    "date": "2026-05-30",
+    "run_id": "iterate-2026-05-31-canon-adr-slug-fix",
+    "date": "2026-05-31",
     "unit": {
       "status": "passed",
-      "passed": 377,
-      "total": 377
+      "passed": 2575,
+      "total": 2576,
+      "note": "Full shared/tests suite after the fix: all 4 test_artifact_path_canon migrations now PASS (compliance + planning were red on clean origin/main 1088b82). 2575 passed, 14 skipped. The 1 remaining failure (test_architecture_md_reflects_arch_impact) is LOCAL-ONLY and external: it is driven by uncommitted decision-drops in the shared dev-machine main-tree staging (gitignored), so it cannot occur in CI; it is unrelated to this fix."
     },
     "integration": {
       "status": "not_run",
       "passed": 0,
       "total": 0
     },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "not_run"
-    },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
+    "design_fidelity": { "status": "skipped", "passed": 0, "total": 0 },
+    "smoke": { "status": "not_run" },
     "surface_verification": {
       "surface": "none",
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-30-gitignore-canon-propagation/surface_verification.json",
-      "timestamp": "2026-05-30T21:12:34.358Z",
-      "justification": "Framework-internal change: canonical .shipwright gitignore-block propagation (SSoT template + shared writer + adopt/project integration + drift test). No startable web/CLI/API product surface is affected. Empirical verification is the git check-ignore round-trips in a real git repo (shared/tests/test_gitignore_canon_merge.py: fresh-repo + webui-regression backfill prove runtime/ ignored & agent_docs/architecture.md tracked), the drift-congruence test (test_gitignore_template_congruent.py), and end-to-end runs of write-project-config.py + the adopt pipeline subprocess. Suites green: 22 new + adopt 296 + project 59."
+      "evidence_path": ".shipwright/runs/iterate-2026-05-31-canon-adr-slug-fix/surface_verification.json",
+      "timestamp": "2026-05-31T12:00:00.000Z",
+      "justification": "Canon-lint hygiene only: corrected a malformed `adr` value (compliance/<slug> -> run_id) in a recorded iterate JSON + its session-handoff line, and added two inline `# artifact-path-canon: legacy` markers to legitimate test-fixture lines. No startable web/CLI/API app surface and no runtime code path is affected. Verification is test_artifact_path_canon (4/4 migrations pass) + the full shared/tests suite."
     },
     "degraded": [
       {
-        "condition": "pre_existing_unrelated_test_failure",
-        "detail": "shared/tests/test_artifact_path_canon.py::test_no_legacy_artifact_paths[compliance-migrated] fails on the base commit (origin/main @ 55ac703), tripped by a PRIOR iterate's committed artifact .shipwright/agent_docs/iterates/iterate-2026-05-30-rtm-covered-ignore-untested-events.json line 8 (\"adr\": \"compliance/rtm-status-logic\" matches the legacy compliance/ canon regex). NOT introduced by this iterate (file not in this diff, tracked at base). Recommend a separate fix: add the value to ALLOWLIST['compliance'] or correct the slug."
-      },
-      {
-        "condition": "parallel_iterate_local_staging_contamination",
-        "detail": "shared/tests/test_architecture_md_reflects_arch_impact.py flags decision-drop iterate-2026-05-30-compliance-audit-on-stop_001.json (impact=convention) as missing an architecture.md entry. That drop belongs to a SEPARATE in-flight iterate and lives only in the main repo's gitignored decision-drops staging (not committed, not in this PR). THIS iterate's own drop (iterate-2026-05-30-gitignore-canon-propagation) IS reflected in architecture.md and passes. This failure vanishes on a clean CI checkout (the staging drop is gitignored). (The compliance-migrated canon-lint failure above, by contrast, is from a COMMITTED file so it persists on clean CI — but is likewise pre-existing and unrelated.) All other ~2575 shared tests pass; both failures are independent of this change."
+        "condition": "local_only_test_failure_external_drops",
+        "detail": "test_architecture_md_reflects_arch_impact fails only because of uncommitted convention-impact decision drops in the shared dev-machine main-tree staging; not committed, so CI-invisible, and unrelated to this canon fix."
       }
     ]
   }

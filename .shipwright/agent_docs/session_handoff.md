@@ -23,7 +23,7 @@ timestamp: "2026-05-30T20:59:20.601989+00:00"
 - **Type**: bug
 - **Complexity**: small
 - **Branch**: iterate/rtm-covered-ignore-untested-events
-- **ADR**: compliance/rtm-status-logic
+- **ADR**: iterate-2026-05-30-rtm-covered-ignore-untested-events
 - **Tests passed**: True
 
 ## Current Iterate Progress

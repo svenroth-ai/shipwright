@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-05-31-canon-adr-slug-fix",
+  "date": "2026-05-31T06:53:58.553271Z",
+  "type": "bug",
+  "complexity": "trivial",
+  "branch": "iterate/canon-adr-slug-fix",
+  "tests_passed": true,
+  "adr": "iterate-2026-05-31-canon-adr-slug-fix"
+}
