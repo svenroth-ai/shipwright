@@ -9,8 +9,8 @@
     },
     "integration": {
       "status": "passed",
-      "passed": 136,
-      "total": 136
+      "passed": 138,
+      "total": 138
     },
     "pgtap": {
       "status": "not_run",
@@ -50,12 +50,12 @@
         {
           "behavior": "Integration suite runs green under the exact CI command — the precondition that un-swallowing '|| true' cannot turn CI red on existing tests",
           "disposition": "tested",
-          "evidence": "uv run --with pytest --with pytest-mock pytest integration-tests/ -v → 136 passed / 0 failed (CI-parity command). Full shared suite also green: 2635 passed, 14 skipped."
+          "evidence": "uv run --with pytest --with pytest-mock pytest integration-tests/ -v → 138 passed / 0 failed (CI-parity command; 136 pre-existing + 2 new gating-guard cases). Full shared suite also green: 2635 passed, 14 skipped."
         },
         {
           "behavior": "Removing '|| true' makes the integration-tests CI step propagate a non-zero exit (gate) instead of swallowing it",
           "disposition": "tested",
-          "evidence": "shared/tests/test_ci_self_gating.py (2 cases) PASSED — structural guard asserts the integration step has neither '|| true' nor continue-on-error; an inline negative control confirms the guard catches a re-added '|| true' (not vacuous). Behavior also empirically replicated against GHA's default shell `bash --noprofile --norc -eo pipefail`: fail(exit 1)->1 GATES, pass->0, no-collect(exit 5)->5, old '|| true'->0 (swallow was real). NOTE: this row was mis-classified 'untestable/requires-external-nondeterministic-service' in the first pass; the marginal confidence probe surfaced that it is in fact locally testable — corrected here."
+          "evidence": "integration-tests/test_ci_self_gating.py (2 cases) PASSED under the exact CI command (collected, not skipped) — placed in integration-tests/ ON PURPOSE because CI runs only plugins/*/tests + integration-tests, NOT shared/tests, so a guard in shared/tests would never fire in the pipeline it protects. Structural guard asserts the integration step has neither '|| true' nor continue-on-error; an inline negative control confirms the guard catches a re-added '|| true' (not vacuous). Behavior also empirically replicated against GHA's default shell `bash --noprofile --norc -eo pipefail`: fail(exit 1)->1 GATES, pass->0, no-collect(exit 5)->5, old '|| true'->0 (swallow was real). NOTE: this row was mis-classified 'untestable/requires-external-nondeterministic-service' in the first pass; the marginal confidence probe surfaced that it is in fact locally testable AND that the guard had to move into a CI-run dir to matter — both corrected here."
         }
       ],
       "counts": { "testable": 3, "tested": 3, "untestable": 0, "untested_testable": 0 },

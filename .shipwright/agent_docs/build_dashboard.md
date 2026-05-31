@@ -85,7 +85,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-31 | Unit: 2635/2649 | Integration: 136/136 | Smoke: not_run | (iterate)
+Last run: 2026-05-31 | Unit: 2635/2649 | Integration: 138/138 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

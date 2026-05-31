@@ -1,13 +1,17 @@
 """Regression guard: the repo's OWN integration-tests CI step must gate.
 
+Lives in ``integration-tests/`` ON PURPOSE: that is one of the only two
+directories the CI workflow actually executes (``plugins/*/tests`` and
+``integration-tests``). ``shared/tests`` is NOT run by CI, so a guard placed
+there would not fire in the very pipeline it protects.
+
 `.github/workflows/ci.yml`'s "Run integration tests" step previously ended
 in ``|| true``, swallowing the suite's non-zero exit so a red integration
 run still left CI green — a dormant-CI-era leftover (commit ``4107a6b``)
 that the public-launch hardening pass (``d85210f``) missed. Removed in
 iterate-2026-05-31-ci-gate-f821. Without this test, re-adding ``|| true``
 (or ``continue-on-error: true``) to that step would silently un-gate the
-layer again, and nobody would notice until a real regression shipped to
-main.
+layer again, and nobody would notice until a real regression shipped.
 
 Why the structural check is sufficient (empirically verified). Removing
 ``|| true`` gates on GitHub Actions' default Linux shell
@@ -20,8 +24,12 @@ Why the structural check is sufficient (empirically verified). Removing
     OLD  fail + '|| true' (control)     -> exit 0   (swallow was REAL)
 
 So the behavior is fully determined by the absence of the swallow on this
-step; this test pins exactly that structural invariant (and stays
-host-agnostic — no bash dependency on the test runner).
+step; this test pins exactly that structural invariant (host-agnostic — no
+bash dependency on the runner).
+
+``yaml`` is imported unconditionally (not ``importorskip``): PyYAML is a
+guaranteed root dependency (``pyproject.toml``), so a missing import should
+hard-error (CI-fail), never silently skip (ADR-044 discipline).
 
 Scope: ONLY the integration-tests execution step. The lint step's own
 ``|| true`` + ``continue-on-error`` is a separate, intentionally-tolerated
@@ -32,11 +40,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
+import yaml
 
-yaml = pytest.importorskip("yaml")  # PyYAML — root + adopt + compliance deps
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[1]
 CI_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "ci.yml"
 
 
