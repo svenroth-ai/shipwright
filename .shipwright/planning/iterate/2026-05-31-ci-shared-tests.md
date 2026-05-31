@@ -143,3 +143,42 @@ parser/round-trip tests plus the empirical probes below.
   live PR CI run rather than a dev-stack surface.
 - **Evidence path:** `.shipwright/runs/{run_id}/surface_verification.json`
   (surface=none + justification).
+
+## Linux-CI Discovery & Cross-Platform Fixes (mid-flight scope expansion)
+
+All local verification above ran on the **Windows** dev host (incl. the
+"clean-clone CI sim", which was a clone on the same machine). The first **live**
+CI run (ubuntu-latest) revealed what no Windows check could: **`shared/tests`
+had never run on Linux** and was not Linux-clean. A Windows-simulation test that
+fakes `os.name="nt"` and then fails makes pytest's failure renderer instantiate
+a `WindowsPath` on Linux → `NotImplementedError` **INTERNALERROR** that aborted
+the whole run at 20%, masking everything after it.
+
+**Structural unmask** (`shared/tests/conftest.py`): a `pytest_runtest_makereport`
+hookwrapper pins `os.name` to the real platform during failure rendering, so an
+`os.name`-fake failure reports normally instead of aborting the session. With
+masking removed, one CI run enumerated the **full, bounded** failure set
+(6 failed / 2634 passed), resolved as:
+
+| Linux failure | Verdict | Fix |
+|---|---|---|
+| `dev_server` `_start_one` → `subprocess.CREATE_NEW_PROCESS_GROUP` | **real cross-platform bug** | `getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)` |
+| `validate_deploy_profile` Windows-abs `client.entrypoint` (`C:\…`) not rejected on POSIX | **real cross-platform bug** | check `PurePosixPath` + `PureWindowsPath` (host-independent) |
+| `test_playwright_setup_multiservice` npm-resolution (`os.name="nt"` fake → `WindowsPath`) | Windows-only behavior | `skipif(os.name != "nt")` |
+| 4× `test_setup_writes_canonical` cross-plugin imports | structural (ADR-044) — hard-fail-in-CI by design | `@pytest.mark.cross_plugin`, excluded from the shared/tests CI step |
+
+**Outcome:** CI run `26717256253`→`success` (final); `Python (lint + type +
+test)` green. Two of the four were **genuine cross-platform bugs** the
+never-Linux-tested suites had hidden — exactly the rot this iterate set out to
+stop.
+
+**Flagged follow-ups (out of scope here):**
+- A `windows-latest` CI job (or an injectable `is_windows()` seam) so the
+  `os.name`-fake Windows-simulation tests also run under Linux CI rather than
+  skipping.
+- Relocating the cross-plugin contract tests in `test_setup_writes_canonical.py`
+  to their owning plugins' test dirs (so they actually execute in CI under a
+  clean namespace), per ADR-044.
+- `finalize_iterate.py` documents the spec-impact extras key as `none_reason`
+  but the F11 verifier reads `spec_impact_justification` — a producer/consumer
+  field-name drift worth a dedicated fix + drift test.
