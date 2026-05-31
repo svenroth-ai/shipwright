@@ -22,7 +22,6 @@ Origin: iterate-2026-05-21-post-43-hygiene
 
 from __future__ import annotations
 
-from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -226,8 +225,8 @@ def test_newline_in_event_field_collapses_to_space() -> None:
     # At least one row must show the collapsed form (newline → space).
     collapsed_rows = [r for r in matching if f"{_NEEDLE_PREFIX}line1 line2" in r]
     assert collapsed_rows, (
-        f"newline should have collapsed to a single space in the description cell "
-        f"— rows containing prefix:\n  " + "\n  ".join(matching)
+        "newline should have collapsed to a single space in the description cell "
+        "— rows containing prefix:\n  " + "\n  ".join(matching)
     )
     # And no matching row may carry a literal embedded newline.
     for row in matching:

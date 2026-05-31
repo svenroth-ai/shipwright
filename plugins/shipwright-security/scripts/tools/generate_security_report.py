@@ -154,11 +154,11 @@ def generate_standard_report(findings: list[dict[str, Any]], repo_name: str = "u
 
     lines = [
         f"# Security Report: {repo_name}",
-        f"",
+        "",
         f"**Generated:** {now}",
         f"**Risk Level:** {RISK_EMOJI[risk]} {risk}",
         f"**Total Findings:** {len(findings)}",
-        f"",
+        "",
         "## Summary",
         "",
         "### By Severity",
@@ -230,7 +230,6 @@ PR_COMMENT_MARKER = "<!-- shipwright-security-report -->"
 def generate_pr_report(findings: list[dict[str, Any]], repo_name: str = "unknown") -> str:
     """Compact report optimized for a PR comment."""
     risk = calculate_risk_level(findings)
-    severity_counts = Counter(f.get("severity", "unknown") for f in findings)
     breakdown = scanner_breakdown(findings)
 
     lines = [

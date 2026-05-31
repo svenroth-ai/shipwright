@@ -168,7 +168,7 @@ def _test_execution_summary(data: ComplianceData) -> list[str]:
             vis_status = "PASS" if tr.design_fidelity_passed == tr.design_fidelity_total else "WARNING"
             vis_detail = "Code-level mockup comparison"
             if tr.design_fidelity_report_path:
-                vis_detail += f" ([detail](design-fidelity-report.json))"
+                vis_detail += " ([detail](design-fidelity-report.json))"
             lines.append(
                 f"| Design Fidelity | {vis_status} | {tr.design_fidelity_passed} | {tr.design_fidelity_total} "
                 f"| — | {escape_cell(vis_detail)} |"
@@ -366,7 +366,6 @@ def _test_progression(data: ComplianceData) -> list[str]:
     if not data.work_events:
         return []
 
-    build_events = [we for we in data.work_events if we.source == "build"]
     iterate_events = [we for we in data.work_events if we.source == "iterate"]
     new_from_iterate = sum(we.tests_new for we in iterate_events)
 

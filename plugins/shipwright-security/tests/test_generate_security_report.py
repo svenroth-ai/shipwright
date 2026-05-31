@@ -14,7 +14,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
 
 PLUGIN_ROOT = Path(__file__).parent.parent
 TOOL = PLUGIN_ROOT / "scripts" / "tools" / "generate_security_report.py"

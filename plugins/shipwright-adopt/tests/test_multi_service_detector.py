@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
 
 
 from lib.multi_service_detector import detect_multi_service_layout

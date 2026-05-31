@@ -87,7 +87,11 @@ def _start_one(service: dict, cwd: Path) -> tuple[Any, dict]:
         cmd_parts[0] = _resolve_via_pkg(cmd_parts[0])
     creation_flags = 0
     if os.name == "nt":
-        creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP
+        # CREATE_NEW_PROCESS_GROUP is a Windows-only subprocess attribute.
+        # getattr-with-default keeps this robust when os.name reports "nt" on a
+        # host whose subprocess module lacks it — e.g. a cross-platform test
+        # faking os.name="nt" on Linux (default 0 = no special flags).
+        creation_flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
 
     proc = subprocess.Popen(
         cmd_parts,

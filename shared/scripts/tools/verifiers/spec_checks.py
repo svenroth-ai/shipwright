@@ -1,36 +1,17 @@
-"""Spec-category checks (Phase-Quality PR 4 — S1-S10).
+"""Spec-category checks (Phase-Quality PR 4 — S1-S10). See plan § 3.
 
-Plan mapping (§ 3):
-
-- **S1** (Tier-1, FAIL): ``.shipwright/agent_docs/spec.md`` exists, non-empty, has
-  ≥1 FR heading.
-- **S2** (Tier-1, FAIL): for iterate medium+, ``.shipwright/planning/iterate/<run_id>.md``
-  (or a similarly named spec file) exists. SKIP when complexity=small.
-- **S3** (Tier-2, WARN): for iterate medium+, a mini-plan file exists. SKIP
-  when complexity=small. Heuristic — WARN only.
-- **S4** (Tier-2, WARN): FR preservation: any FR removed from a spec
-  still has ``status: deprecated`` in git history.
-- **S5** (Tier-2, WARN): FR coherence: every FR heading has Description
-  + Acceptance Criteria.
-- **S6** (Tier-1, FAIL): ``CLAUDE.md`` exists + non-empty.
-- **S7** (Tier-2, WARN): ``CLAUDE.md`` has a Structure block (used by
-  ``check_drift.py``).
-- **S8** (Tier-1, FAIL): ``README.md`` exists + non-empty.
-- **S9** (Tier-2, WARN): for iterate category=feature **and** UI-facing
-  change, ``README.md`` is touched in the last 10 commits. SKIP
-  otherwise.
-- **S10** (Tier-2, WARN): for iterate category ∈ {feature, bugfix},
-  ``CLAUDE.md`` is touched when new top-level directories appear in
-  recent diffs. SKIP otherwise.
-
-Tier-2 checks emit ``provenance="unverified_marker"`` and carry
-``tier=2`` so the aggregate dashboard can group them as low-signal.
+Tier-1 (FAIL): S1 spec.md exists + non-empty + ≥1 FR heading; S2 iterate spec
+file for medium+ (SKIP below medium); S6 CLAUDE.md non-empty; S8 README.md
+non-empty. Tier-2 (WARN, ``provenance="unverified_marker"``, ``tier=2``): S3
+mini-plan (medium+); S4 FR-preservation (removed FR keeps ``deprecated`` in
+git history); S5 FR-coherence (Description + Acceptance Criteria per FR); S7
+CLAUDE.md Structure block; S9 README-freshness (feature + UI-facing); S10
+CLAUDE.md-sync (new top-level dirs). The S2/S3 run_id guard lives in
+``_iterate_run_id.py``.
 """
 
 from __future__ import annotations
 
-import json
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -54,6 +35,9 @@ from lib.phase_quality import (  # noqa: E402
     STATUS_SKIP,
     STATUS_WARN,
     make_finding,
+)
+from tools.verifiers._iterate_run_id import (  # noqa: E402
+    unresolvable_run_id_skip,
 )
 from lib.spec_parser import (  # noqa: E402
     compute_fr_coherence,
@@ -250,6 +234,11 @@ def _iter_spec_candidates(project_root: Path, run_id: str) -> list[Path]:
 
 def check_s2_iterate_spec(project_root: Path, run_id: str) -> dict[str, Any]:
     """S2 — iterate spec file exists for medium+ complexity."""
+    guard = unresolvable_run_id_skip(  # AC-5/AC-6 (run_id=unknown bug)
+        project_root, run_id,
+        _iter_spec_candidates(project_root, run_id), "S2", S2_NAME)
+    if guard is not None:
+        return guard
     complexity = _iterate_complexity(project_root, run_id)
     if complexity is None:
         return make_finding(
@@ -298,6 +287,12 @@ def _iter_miniplan_candidates(project_root: Path, run_id: str) -> list[Path]:
 
 def check_s3_iterate_miniplan(project_root: Path, run_id: str) -> dict[str, Any]:
     """S3 — mini-plan file exists for medium+ iterates (Tier-2, WARN)."""
+    guard = unresolvable_run_id_skip(  # AC-5/AC-6 (same guard as S2)
+        project_root, run_id,
+        _iter_miniplan_candidates(project_root, run_id), "S3", S3_NAME,
+        provenance="unverified_marker")
+    if guard is not None:
+        return guard
     complexity = _iterate_complexity(project_root, run_id)
     if complexity is None:
         return make_finding(

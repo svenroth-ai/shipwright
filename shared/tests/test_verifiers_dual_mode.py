@@ -17,7 +17,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
 
 from lib.iterate_entry import (
     MIGRATION_STATE_KEY,
@@ -31,7 +30,6 @@ from tools.verifiers.iterate_checks import (
     check_adr_in_iterate_history,
     check_architecture_reviewed,
     check_compliance_reflects_run_id,
-    check_conventions_reviewed,
     check_iterate_history_has_run_id,
     check_migration_quarantine_empty,
 )

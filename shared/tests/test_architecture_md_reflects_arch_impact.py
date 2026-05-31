@@ -122,30 +122,29 @@ def test_every_arch_impact_drop_has_architecture_md_entry():
 
 
 def test_arch_impact_drops_found_at_all():
-    """Sanity check — WHEN decision-drops exist on disk, the discovery path
-    actually finds the arch-impact ones. Without this, the main assertion
-    silently no-ops on a repo where main-repo resolution misfires and the
-    decision-drops dir comes back empty.
+    """Sanity check — the discovery path actually finds drops in the repo.
+    Without this, the main assertion silently no-ops on a repo where the
+    main-repo resolution misfires and the decision-drops dir comes back
+    empty.
 
-    Skips on a clean checkout (CI): decision-drops are gitignored, so a fresh
-    checkout legitimately carries none and there is nothing to sanity-check —
-    "empty" then means "no staging", not "resolution broke". This surfaced once
-    ``shared/tests`` became CI-covered (iterate-2026-05-31-ci-gate-guard): the
-    dir had never run in CI, so the unconditional ``assert drops`` was never
-    exercised against a drop-less tree and would fail-positive there."""
-    drops_dir = (
-        _main_repo_root() / ".shipwright" / "agent_docs" / "decision-drops"
-    )
-    if not drops_dir.is_dir() or not any(drops_dir.glob("*.json")):
+    Decision-drops are gitignored, so a clean checkout (CI runner, fresh
+    clone) genuinely has no ``decision-drops/`` directory — that is *not* a
+    resolution misfire, it is the expected absence of dev-time artifacts.
+    Skip there; only assert when the directory exists (the case this guard
+    is actually about). Without this skip the test is born-red the moment
+    ``shared/tests`` runs in CI (iterate-2026-05-31-ci-shared-tests)."""
+    drops_dir = _main_repo_root() / ".shipwright" / "agent_docs" / "decision-drops"
+    if not drops_dir.is_dir():
         pytest.skip(
-            "no decision-drop JSON on disk (clean checkout / CI) — decision-drops "
-            "are gitignored; nothing to sanity-check here"
+            f"decision-drops/ absent under {drops_dir} — clean checkout "
+            "(drops are gitignored, not present in CI); nothing to sanity-check"
         )
     drops = _arch_impact_drops()
-    # Drops ARE present on disk: an empty arch-impact list now means we're
-    # looking at the wrong directory or the impact filter / resolver is broken.
+    # The repo has carried multiple arch-impact decision-drops since
+    # iterate-2026-05-03; an empty list (with the dir present) means we're
+    # looking at the wrong directory or the resolution helper is broken.
     assert drops, (
-        f"decision-drops exist under {drops_dir} but none carry an "
-        f"architecture-impact — main-repo resolution or the impact filter "
-        f"may be broken"
+        f"no arch-impact drops discovered under "
+        f"{_main_repo_root() / '.shipwright/agent_docs/decision-drops'} — "
+        "main-repo resolution may be broken"
     )

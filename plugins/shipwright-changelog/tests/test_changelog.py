@@ -1,6 +1,5 @@
 """Tests for changelog module."""
 
-from pathlib import Path
 
 from lib.changelog import (
     categorize_commits,

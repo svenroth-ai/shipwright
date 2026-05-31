@@ -1,6 +1,5 @@
 """Tests for track_tool_calls.py hook."""
 
-from pathlib import Path
 
 
 class TestTrackToolCalls:

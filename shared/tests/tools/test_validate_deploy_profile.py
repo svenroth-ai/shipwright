@@ -21,7 +21,6 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 from shared.scripts.lib.deploy_profile_validator import (  # noqa: E402
-    ValidationError,
     validate,
 )
 from shared.scripts.tools import validate_deploy_profile as cli_module  # noqa: E402

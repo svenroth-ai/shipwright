@@ -70,7 +70,7 @@ def run_browser_verify(
     except json.JSONDecodeError:
         return {
             "success": False,
-            "error": f"Could not parse browser-verify output",
+            "error": "Could not parse browser-verify output",
             "stdout": proc.stdout[:2000] if proc.stdout else "",
             "stderr": proc.stderr[:2000] if proc.stderr else "",
             "returncode": proc.returncode,

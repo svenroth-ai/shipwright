@@ -472,8 +472,6 @@ def test_main_propagates_zero_tests_exit(tmp_path):
     shlex quoting of sys.executable paths with spaces/backslashes."""
     runner_script = tmp_path / "runner.py"
     runner_script.write_text("print('no tests collected')\n", encoding="utf-8")
-    import shlex as _shlex
-    runner_str = f"{_shlex.quote(sys.executable)} {_shlex.quote(str(runner_script))}"
     # On Windows shlex.quote uses POSIX-style single-quote escaping, which
     # our orchestrator's tokenizer handles via posix=False. To stay portable,
     # bypass argparse and call verify_surface directly with a list runner.

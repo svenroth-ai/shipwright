@@ -1,6 +1,5 @@
 """Tests for screen registry."""
 
-from pathlib import Path
 
 from screen_registry import generate_manifest, scan_designs_dir, write_manifest
 

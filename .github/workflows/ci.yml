@@ -13,7 +13,9 @@ concurrency:
 
 jobs:
   python-checks:
-    name: Python (lint + type + test)
+    # Type-checking is a deliberate won't-do for this repo (see dismissed
+    # triage trg-84f204ba), so the job name does not claim it.
+    name: Python (lint + test)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,8 +32,12 @@ jobs:
         run: uv sync
 
       - name: Lint (ruff)
-        run: uv run ruff check . || true
-        continue-on-error: true
+        # Bug-focused, GATING lint. The curated ruleset lives in the root
+        # pyproject.toml ([tool.ruff.lint]). Run via uvx with a pinned ruff
+        # version (ruff is not a project dependency, and pinning prevents a
+        # new ruff release from silently breaking the gate). This step gates:
+        # no `|| true`, no `continue-on-error`.
+        run: uvx ruff@0.15.15 check .
 
       # OSS security scanners — the shipwright-security plugin's
       # test_oss_backend_smoke.py smoke tests hard-fail in CI when these
@@ -68,24 +74,32 @@ jobs:
             fi
           done
 
-      - name: Run shared tests (non-gating, tracked-debt)
+      - name: Run shared tests
         shell: bash
-        # NON-GATING (tracked-debt). shared/**/tests carries Linux-portability
-        # debt from Windows-only development: leaked `os.name='nt'` monkeypatches
-        # crash pytest's failure reporter on the ubuntu runner (it builds a
-        # WindowsPath), and some tests assume gitignored main-tree staging that
-        # a clean checkout lacks. Each dir runs as its own session (`shared/tests`
-        # + `shared/scripts/tests` share basenames that collide in one
-        # collection) and is wrapped in `|| true` so the suite runs for
-        # VISIBILITY without gating CI until a follow-up iterate makes it
-        # Linux-CI-clean. This loose gate is documented in LOOSE_GATE_ALLOWLIST
-        # (ci.yml / this step); when the debt is cleared the entry goes stale and
-        # the CI-gate guard forces removal of the `|| true`. The dirs stay
-        # REFERENCED so guard check (a) still catches a NEW uncovered shared dir.
         run: |
-          for d in shared/tests shared/scripts/tests shared/scripts/tools/tests; do
-            echo "--- Running tests in $d (non-gating) ---"
-            uv run --with pytest --with pytest-mock pytest "$d" -v || true
+          set -e
+          # The shared/ suites historically NEVER ran in CI — only
+          # plugins/*/tests/ + integration-tests/ did — which is how regressions
+          # under shared/ rotted unseen (iterate-2026-05-31-ci-shared-tests).
+          #
+          # They must run as SEPARATE per-dir invocations: shared/tests/ and
+          # shared/scripts/tests/ are each their own top-level `tests` package
+          # (each carries __init__.py + a conftest.py), so collecting more than
+          # one in ONE pytest process collides on the duplicate top-level
+          # package name (ModuleNotFoundError / ImportPathMismatchError on
+          # `tests.conftest`). One process per dir = one `tests` package = no
+          # collision. Same pattern as the per-plugin loop above. The root
+          # pyproject.toml supplies `-m 'not slow'` + pythonpath, so no extra
+          # flags are needed here.
+          # `not cross_plugin`: tests importing another plugin's lib/tools
+          # collide on the shared `tests`/`lib` namespace from a shared/tests
+          # session and hard-fail in CI by design (ADR-044 / test_hygiene
+          # .import_or_fail_in_ci) — they run under their owning plugin's
+          # session via the per-plugin loop above. A command-line `-m` replaces
+          # the pyproject `-m 'not slow'`, so restate `not slow` here.
+          for dir in shared/tests shared/scripts/tests shared/scripts/tools/tests; do
+            echo "--- Running tests in $dir ---"
+            uv run --with pytest --with pytest-mock pytest "$dir" -v -m "not slow and not cross_plugin"
           done
 
       - name: Run integration tests

@@ -1,0 +1,1 @@
+Phase-quality triage no longer floods the inbox with one item per Tier-1 FAIL: the Stop-hook producer now emits a single rolling `phaseQuality:backlog` action-unit, gates out phases the project never engaged, skips run_id-less iterate spec checks (the `run_id=unknown` false FAIL), and auto-dismisses when the FAIL set clears.

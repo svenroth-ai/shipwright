@@ -185,7 +185,6 @@ def _requirements_coverage(data: ComplianceData) -> list[str]:
 
             # E2E coverage for this requirement's split
             split_e2e = e2e_by_split.get(req.split, {})
-            e2e_flows = split_e2e.get("flows", 0)
             e2e_specs = split_e2e.get("specs", 0)
             has_e2e = e2e_specs > 0
             e2e_cell = f"Split: {e2e_specs} specs" if has_e2e else "—"
@@ -395,8 +394,6 @@ def _requirements_coverage_events(data: ComplianceData) -> list[str]:
     for we in data.work_events:
         for fr_id in we.affected_frs:
             fr_events.setdefault(fr_id, []).append(we)
-
-    e2e_by_split = _collect_e2e_coverage_by_split(data.project_root)
 
     # Iterate B.4: pull open triage items keyed by frId. The render
     # below overlays them onto the per-row Status cell.

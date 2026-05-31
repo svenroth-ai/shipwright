@@ -123,7 +123,6 @@ def test_run_playwright_success(mock_run, tmp_path):
     mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
 
     # Patch to write results after subprocess.run is called
-    original_run = mock_run
     def write_results_then_return(*args, **kwargs):
         (tmp_path / "e2e-results.json").write_text(json.dumps(data))
         return MagicMock(returncode=0, stdout="", stderr="")

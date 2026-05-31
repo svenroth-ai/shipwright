@@ -12,14 +12,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
 
 from conftest import (
-    BUILD_PLUGIN,
     PLAN_PLUGIN,
-    PROJECT_PLUGIN,
     REPO_ROOT,
-    run_script,
 )
 
 COMPLIANCE_PLUGIN = REPO_ROOT / "plugins" / "shipwright-compliance"
@@ -54,7 +50,7 @@ def write_rtm(project_root: Path, coverage_pct: int, unresolved: int = 0):
     lines = [
         "# Requirements Traceability Matrix",
         "",
-        f"Generated: 2026-03-23T10:00:00Z",
+        "Generated: 2026-03-23T10:00:00Z",
         "",
         "## Matrix",
         "",

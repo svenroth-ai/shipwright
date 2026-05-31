@@ -35,7 +35,7 @@ import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from scripts.audit.audit_adapters import (
     SOURCE_DETECTIVE_ONLY,

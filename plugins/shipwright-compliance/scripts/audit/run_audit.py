@@ -27,7 +27,7 @@ if str(_PLUGIN_ROOT) not in sys.path:
 
 from scripts.audit._registry import register_all  # noqa: E402
 from scripts.audit.audit_detector import run_all  # noqa: E402
-from scripts.audit.audit_report import render_markdown, write as write_report  # noqa: E402
+from scripts.audit.audit_report import write as write_report  # noqa: E402
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:

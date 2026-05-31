@@ -10,7 +10,6 @@ Provides:
 import json
 import sys
 from collections import defaultdict
-from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Optional

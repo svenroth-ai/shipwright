@@ -34,26 +34,12 @@ class AllowEntry:
 
 
 LOOSE_GATE_ALLOWLIST: list[AllowEntry] = [
-    AllowEntry(
-        "ci.yml", "Lint (ruff)",
-        "Tracked debt: ruff is not yet a real gate (261 baseline violations and "
-        "ruff is not a declared dep, so the step is currently a no-op). Hardening "
-        "needs a dedicated cleanup iterate. Listed so the loose gate is explicit, "
-        "not silent.",
-        "tracked-debt",
-    ),
-    AllowEntry(
-        "ci.yml", "Run shared tests (non-gating, tracked-debt)",
-        "Tracked debt: shared/**/tests carries Linux-portability debt from "
-        "Windows-only development (leaked os.name='nt' monkeypatches crash "
-        "pytest's reporter on the ubuntu-only runner; some tests assume "
-        "gitignored main-tree staging). Runs non-gating for visibility until a "
-        "follow-up iterate makes the suite Linux-CI-clean; the dirs stay "
-        "referenced so check (a) still catches a NEW uncovered shared dir. When "
-        "the debt clears, the step hardens and this entry goes stale (forcing "
-        "removal).",
-        "tracked-debt",
-    ),
+    # NOTE: ci.yml's lint + shared-tests steps were tracked-debt allowlist
+    # entries in this PR's original form (when they were loose). They are now
+    # GATING on main — lint via PR #125 (uvx ruff@0.15.15, curated F-ruleset)
+    # and shared/tests via PR #124 (set -e, `-m "not cross_plugin"`) — so the
+    # tracked-debt entries were dropped; a gating step is not loose, and a stale
+    # allowlist entry would (correctly) fail the guard's own stale-entry check.
     AllowEntry(
         "security.yml", "Run OSS security scan (Semgrep + Trivy + Gitleaks)",
         "By design: the scan must not gate the workflow — the 'Check for critical "

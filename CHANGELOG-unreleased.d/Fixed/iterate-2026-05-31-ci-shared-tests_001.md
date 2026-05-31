@@ -1,0 +1,1 @@
+Hardened two non-hermetic env-validation tests that leaked ambient .env.local vars, and made the architecture-drift sanity test skip (not fail) on clean checkouts where its gitignored decision-drops are absent — so the new shared-test CI step is not born red.

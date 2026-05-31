@@ -260,7 +260,6 @@ class TestSymlinkSkip:
 
     def test_symlinked_file_is_skipped(self, tmp_path: Path):
         if sys.platform == "win32":
-            pytest_skip_or_pass = True
             try:
                 # Symlink support requires elevation on Windows; skip if not available.
                 target = tmp_path / "_target"
@@ -269,7 +268,6 @@ class TestSymlinkSkip:
                 link.symlink_to(target)
                 link.unlink()
                 target.unlink()
-                pytest_skip_or_pass = False
             except (OSError, NotImplementedError):
                 import pytest
                 pytest.skip("symlinks not creatable on this Windows runner")
