@@ -1,11 +1,3 @@
----
-canon_generated: true
-run_id: "iterate-2026-05-30-test-completeness-gate"
-phase: "iterate"
-reason: "iterate completion: test-completeness-gate"
-timestamp: "2026-05-30T22:25:04.744361+00:00"
----
-
 # Session Handoff
 
 > Auto-generated 2026-05-30 22:25:04 UTC
@@ -14,7 +6,7 @@ timestamp: "2026-05-30T22:25:04.744361+00:00"
 
 - **Session ID**: c1702965-7788-4a6d-9f90-6d17d8d9f91c
 - **Timestamp**: 2026-05-30 22:25:04 UTC
-- **Reason**: iterate completion: test-completeness-gate
+- **Reason**: asymptote probe follow-up: iterate-2026-05-30-test-completeness-gate
 
 ## Last Iterate
 
@@ -51,7 +43,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/test-completeness-gate
-- **Last Commit**: c2f35e9 Merge pull request #116 from svenroth-ai/iterate/record-event-test-failures
+- **Last Commit**: bde2812 feat(iterate): add fail-closed Test Completeness Ledger gate
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read

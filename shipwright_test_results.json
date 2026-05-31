@@ -71,11 +71,13 @@
           "evidence": "test_untestable_vocab_doc_sync.py (3 cases) PASSED" },
         { "behavior": "SKILL Phase-Matrix row + Override-Classes drift", "disposition": "tested",
           "evidence": "test_skill_completeness_matrix.py (2 cases) + test_skill_phase_matrix.py PASSED" },
+        { "behavior": "type-robustness edges: list-shaped iterate_latest/block, non-object behavior row, absent counts → fail closed (asymptote probe)", "disposition": "tested",
+          "evidence": "test_test_completeness_ledger_edges.py (4 cases) PASSED" },
         { "behavior": "live operator UX of the F11 PR completeness summary line", "disposition": "untestable",
           "reason_code": "requires-manual-visual-judgment",
           "reason": "PR-body rendering is a human visual call; only the F11 prose is asserted structurally, the rendered line is operator-observed" }
       ],
-      "counts": { "testable": 16, "tested": 15, "untestable": 1, "untested_testable": 0 },
+      "counts": { "testable": 17, "tested": 16, "untestable": 1, "untested_testable": 0 },
       "enumeration_basis": { "acs": 10, "covered_acs": 10 }
     },
     "degraded": [
