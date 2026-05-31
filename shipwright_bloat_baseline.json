@@ -527,13 +527,6 @@
       "adr": null
     },
     {
-      "path": "shared/scripts/hooks/audit_phase_quality_on_stop.py",
-      "limit": 300,
-      "current": 310,
-      "state": "grandfathered",
-      "adr": null
-    },
-    {
       "path": "shared/scripts/hooks/check_drift.py",
       "limit": 300,
       "current": 554,

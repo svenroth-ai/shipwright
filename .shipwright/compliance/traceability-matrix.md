@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-30T22:25:04.744361+00:00
+Generated: 2026-05-31T11:59:14.345122+00:00
 
 ## Requirements Coverage
 
@@ -98,7 +98,11 @@ Generated: 2026-05-30T22:25:04.744361+00:00
 | SP3+OS2 post-Campaign-B reintegration — F-debug.md systematic-debugging sub-skill + assumptions-first interview pre-phase | iterate | feature |  | 317/317 | — | 2026-05-29 |
 | RTM: untested (0/0) events neutral; status from latest tested event (fixes 7 false FAILs); neutralize leaked verification event via event_amended | iterate | bug |  | — | — | 2026-05-30 |
 | Align 7 stale record_event tests to the C.1 FR-gate (gates all iterates incl. bug/intentless); surface CI shared-test gap (trg-f363b1ab) | iterate | bug |  | — | — | 2026-05-30 |
+| Add audit_compliance_on_stop.py: auto-emit/auto-dismiss source=compliance triage items on every iterate/changelog Stop, gated on full A-G audit coverage. | iterate | feature |  | — | — | 2026-05-30 |
+| Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test | iterate | change |  | — | — | 2026-05-30 |
+| iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade) | iterate | change |  | — | — | 2026-05-30 |
 | iterate completion: test-completeness-gate | iterate | change |  | — | — | 2026-05-30 |
+| Collapse phase-quality Tier-1 FAIL triage into one rolling phaseQuality:backlog action-unit; add phase-applicability gate and run_id=unknown spec-check guard | iterate | change |  | — | — | 2026-05-31 |
 
 ## Coverage Summary
 
@@ -106,7 +110,7 @@ Generated: 2026-05-30T22:25:04.744361+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 74 |
+| Iterate changes | 78 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
