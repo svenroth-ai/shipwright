@@ -95,7 +95,7 @@ def test_spec_reviewer_cites_spec_line_on_reject() -> None:
 
 def test_spec_reviewer_is_adversarial_compliance() -> None:
     low = _lower(SPEC_REVIEWER)
-    assert "spec" in low and "compliance" in low, (
+    assert "spec" in low and "compliance" in low, (  # artifact-path-canon: legacy
         "spec-reviewer must frame itself as a spec-compliance review"
     )
 

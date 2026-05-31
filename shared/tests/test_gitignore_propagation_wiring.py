@@ -77,14 +77,14 @@ def test_project_write_config_merges_canonical_block(tmp_path: Path) -> None:
     """`write-project-config.py --status complete` propagates the block."""
     _require_git()
     _git("init", cwd=tmp_path)
-    (tmp_path / "planning").mkdir()
+    (tmp_path / "planning").mkdir()  # artifact-path-canon: legacy
 
     proc = subprocess.run(
         [
             sys.executable,
             str(_WRITE_PROJECT_CONFIG),
             "--planning-dir",
-            str(tmp_path / "planning"),
+            str(tmp_path / "planning"),  # artifact-path-canon: legacy
             "--profile",
             "generic",
             "--scope",

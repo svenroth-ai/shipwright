@@ -5,5 +5,5 @@
   "complexity": "small",
   "branch": "iterate/rtm-covered-ignore-untested-events",
   "tests_passed": true,
-  "adr": "compliance/rtm-status-logic"
+  "adr": "iterate-2026-05-30-rtm-covered-ignore-untested-events"
 }
