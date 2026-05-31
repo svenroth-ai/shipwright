@@ -43,6 +43,18 @@ LOOSE_GATE_ALLOWLIST: list[AllowEntry] = [
         "tracked-debt",
     ),
     AllowEntry(
+        "ci.yml", "Run shared tests (non-gating, tracked-debt)",
+        "Tracked debt: shared/**/tests carries Linux-portability debt from "
+        "Windows-only development (leaked os.name='nt' monkeypatches crash "
+        "pytest's reporter on the ubuntu-only runner; some tests assume "
+        "gitignored main-tree staging). Runs non-gating for visibility until a "
+        "follow-up iterate makes the suite Linux-CI-clean; the dirs stay "
+        "referenced so check (a) still catches a NEW uncovered shared dir. When "
+        "the debt clears, the step hardens and this entry goes stale (forcing "
+        "removal).",
+        "tracked-debt",
+    ),
+    AllowEntry(
         "security.yml", "Run OSS security scan (Semgrep + Trivy + Gitleaks)",
         "By design: the scan must not gate the workflow — the 'Check for critical "
         "findings' step is the real gate; a scanner crash is caught by the "

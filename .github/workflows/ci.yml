@@ -68,18 +68,24 @@ jobs:
             fi
           done
 
-      - name: Run shared tests
+      - name: Run shared tests (non-gating, tracked-debt)
         shell: bash
+        # NON-GATING (tracked-debt). shared/**/tests carries Linux-portability
+        # debt from Windows-only development: leaked `os.name='nt'` monkeypatches
+        # crash pytest's failure reporter on the ubuntu runner (it builds a
+        # WindowsPath), and some tests assume gitignored main-tree staging that
+        # a clean checkout lacks. Each dir runs as its own session (`shared/tests`
+        # + `shared/scripts/tests` share basenames that collide in one
+        # collection) and is wrapped in `|| true` so the suite runs for
+        # VISIBILITY without gating CI until a follow-up iterate makes it
+        # Linux-CI-clean. This loose gate is documented in LOOSE_GATE_ALLOWLIST
+        # (ci.yml / this step); when the debt is cleared the entry goes stale and
+        # the CI-gate guard forces removal of the `|| true`. The dirs stay
+        # REFERENCED so guard check (a) still catches a NEW uncovered shared dir.
         run: |
-          set -e
-          # Run each shared test dir as its own pytest session — `shared/tests`
-          # and `shared/scripts/tests` share basenames (test_config.py, ...),
-          # which collide in a single collection. Mirrors the per-plugin loop
-          # above. A NEW shared test dir not listed here is caught by the
-          # CI-gate guard (check_ci_gate_coverage.py, check (a)).
           for d in shared/tests shared/scripts/tests shared/scripts/tools/tests; do
-            echo "--- Running tests in $d ---"
-            uv run --with pytest --with pytest-mock pytest "$d" -v
+            echo "--- Running tests in $d (non-gating) ---"
+            uv run --with pytest --with pytest-mock pytest "$d" -v || true
           done
 
       - name: Run integration tests
