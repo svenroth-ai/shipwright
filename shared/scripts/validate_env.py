@@ -513,7 +513,7 @@ def validate(
     available_vars: dict[str, str] = {}
     if env_file_exists:
         available_vars.update(parse_env_file(env_file_path))
-    # Always check os.environ as fallback
+    # os.environ takes precedence over .env.local (mirrors load_shipwright_env)
     available_vars.update(os.environ)
 
     found: list[str] = []

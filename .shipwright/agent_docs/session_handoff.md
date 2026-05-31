@@ -1,35 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-31-ci-lint-gate-ruff"
+run_id: "iterate-2026-05-31-compliance-triage-bundle"
 phase: "iterate"
-reason: "F5b: CI lint gate hardening (curated ruff ruleset + de-neuter)"
-timestamp: "2026-05-31T11:52:03.721586+00:00"
+reason: "compliance triage bundling: one rolling compliance:backlog action-unit"
+timestamp: "2026-05-31T15:52:35.290127+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-31 11:52:03 UTC
+> Auto-generated 2026-05-31 15:52:35 UTC
 
 ## Session Info
 
-- **Session ID**: 0250f8d6-99a9-479e-b9b8-ddce0da3c398
-- **Timestamp**: 2026-05-31 11:52:03 UTC
-- **Reason**: F5b: CI lint gate hardening (curated ruff ruleset + de-neuter)
+- **Session ID**: 3e307394-564c-4915-8128-3c7fa7eeb609
+- **Timestamp**: 2026-05-31 15:52:35 UTC
+- **Reason**: compliance triage bundling: one rolling compliance:backlog action-unit
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-31-ci-lint-gate-ruff
-- **Date**: 2026-05-31T11:50:32.785845Z
+- **Run ID**: iterate-2026-05-30-test-completeness-gate
+- **Date**: 2026-05-30T22:24:52.586049Z
 - **Type**: change
-- **Complexity**: small
-- **Branch**: iterate/ci-lint-gate-ruff
-- **ADR**: iterate-2026-05-31-ci-lint-gate-ruff
+- **Complexity**: medium
+- **Branch**: iterate/test-completeness-gate
+- **ADR**: iterate-2026-05-30-test-completeness-gate
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/ci-lint-gate-ruff
-- **External Review Marker**: completed (external_review_state.json @ 2026-05-27T07:11:03)
+- **Branch**: iterate/compliance-triage-bundle
+- **Spec**: .shipwright/planning/iterate/2026-05-31-compliance-triage-bundle.md
+- **Complexity**: medium (`touches_io_boundary`: writes `triage.jsonl`; changes a
+- **External Review Marker**: completed (external_review_state.json @ 2026-05-31T15:51:40)
 
 ### Mandatory replay on Resume
 
@@ -47,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/ci-lint-gate-ruff
-- **Last Commit**: 78a281f Merge pull request #120 from svenroth-ai/iterate/test-completeness-gate
+- **Branch**: iterate/compliance-triage-bundle
+- **Last Commit**: 78a281fa Merge pull request #120 from svenroth-ai/iterate/test-completeness-gate
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,7 +66,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-4cb02049 | work_completed | iterate (Gate CI Python lint on a curated bug-focused ruff ruleset (pyflakes F + high-signal E/W); remove the || true + continue-on-error neutering; provision ruff via pinned uvx; rename job to Python (lint + test).) | 2026-05-31 |
+| evt-41bb1152 | work_completed | iterate (Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement)) | 2026-05-31 |
 | evt-d16cc59c | work_completed | iterate (iterate completion: test-completeness-gate) | 2026-05-30 |
 | evt-d70f6cd4 | work_completed | iterate (iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade)) | 2026-05-30 |
 | evt-76ce63ff | work_completed | iterate (Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test) | 2026-05-30 |
@@ -74,7 +76,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 78
-- **Last iterate**: change — Gate CI Python lint on a curated bug-focused ruff ruleset (pyflakes F + high-signal E/W); remove the || true + continue-on-error neutering; provision ruff via pinned uvx; rename job to Python (lint + test). (2026-05-31)
+- **Last iterate**: change — Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement) (2026-05-31)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

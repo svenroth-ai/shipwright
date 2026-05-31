@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-31T11:52:03.721586+00:00
+Generated: 2026-05-31T15:52:35.290127+00:00
 
 ## Requirements Coverage
 
@@ -102,7 +102,7 @@ Generated: 2026-05-31T11:52:03.721586+00:00
 | Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test | iterate | change |  | — | — | 2026-05-30 |
 | iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade) | iterate | change |  | — | — | 2026-05-30 |
 | iterate completion: test-completeness-gate | iterate | change |  | — | — | 2026-05-30 |
-| Gate CI Python lint on a curated bug-focused ruff ruleset (pyflakes F + high-signal E/W); remove the \|\| true + continue-on-error neutering; provision ruff via pinned uvx; rename job to Python (lint + test). | iterate | change |  | — | — | 2026-05-31 |
+| Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement) | iterate | change |  | — | — | 2026-05-31 |
 
 ## Coverage Summary
 

@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-05-31-compliance-triage-bundle",
+  "date": "2026-05-31T15:52:35.875489Z",
+  "complexity": "medium",
+  "type": "change",
+  "status": "complete",
+  "branch": "iterate/compliance-triage-bundle",
+  "tests_passed": true,
+  "adr": "iterate-2026-05-31-compliance-triage-bundle",
+  "title": "Compliance triage: one rolling backlog action-unit"
+}
