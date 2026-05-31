@@ -5,5 +5,5 @@
   "complexity": "medium",
   "branch": "iterate/compliance-audit-on-stop",
   "tests_passed": true,
-  "adr": "audit-compliance-on-stop-hook"
+  "adr": "iterate-2026-05-30-compliance-audit-on-stop"
 }
