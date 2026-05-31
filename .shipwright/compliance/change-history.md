@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-05-31T12:17:01.107904+00:00
-Total commits: 793
+Generated: 2026-05-31T15:52:35.290127+00:00
+Total commits: 791
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 246
-    "fix" : 206
-    "chore" : 154
+    "fix" : 205
+    "chore" : 153
     "docs" : 111
     "refactor" : 50
     "test" : 18
@@ -270,11 +270,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 206 commits
+### Fixes (fix) — 205 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-05-31 | compliance | collapse phase-quality triage into one rolling backlog action-unit | 527fc4b718f9 |
 | 2026-05-31 | canon | resolve compliance + planning artifact-path-canon failures on main | 658198fbe220 |
 | 2026-05-31 | iterate | point iterate-history adr field at the run_id so F11 resolves the decision-drop | 2ef5e0abcd6b |
 | 2026-05-30 | iterate | use run_id as decision-drop ADR identity in iterate entry | 5fc34c27b756 |
@@ -481,11 +480,10 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 154 commits
+### Chores (chore) — 153 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-05-31 | iterate | record ADR reference in iterate_history entry | 2fd362c71aff |
 | 2026-05-30 | iterate | record spec-impact justification + ADR ref for finalization | bbda6576b07a |
 | 2026-05-29 | events | backfill orphaned work_completed events for #110 + #112 | fa186cce8046 |
 | 2026-05-29 | events | record work_completed for iterate-2026-05-29-fix-path-canon-allowlist | af9190b5a939 |
@@ -856,7 +854,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 793 |
+| Total commits | 791 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 793 |
+| Human-authored commits | 791 |
 

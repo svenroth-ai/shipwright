@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-31T12:17:01.107904+00:00
+Generated: 2026-05-31T15:52:35.290127+00:00
 
 ## Requirements Coverage
 
@@ -102,8 +102,7 @@ Generated: 2026-05-31T12:17:01.107904+00:00
 | Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test | iterate | change |  | — | — | 2026-05-30 |
 | iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade) | iterate | change |  | — | — | 2026-05-30 |
 | iterate completion: test-completeness-gate | iterate | change |  | — | — | 2026-05-30 |
-| Collapse phase-quality Tier-1 FAIL triage into one rolling phaseQuality:backlog action-unit; add phase-applicability gate and run_id=unknown spec-check guard | iterate | change |  | — | — | 2026-05-31 |
-| Render unengaged phases as SKIP (not FAIL) in the persisted finding JSON so the skill-compliance dashboard agrees with the triage inbox | iterate | change |  | — | — | 2026-05-31 |
+| Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement) | iterate | change |  | — | — | 2026-05-31 |
 
 ## Coverage Summary
 
@@ -111,7 +110,7 @@ Generated: 2026-05-31T12:17:01.107904+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 79 |
+| Iterate changes | 78 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
