@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-05-31T11:59:14.345122+00:00
+Generated: 2026-05-31T12:17:01.107904+00:00
 
 ## Requirements Coverage
 
@@ -103,6 +103,7 @@ Generated: 2026-05-31T11:59:14.345122+00:00
 | iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade) | iterate | change |  | — | — | 2026-05-30 |
 | iterate completion: test-completeness-gate | iterate | change |  | — | — | 2026-05-30 |
 | Collapse phase-quality Tier-1 FAIL triage into one rolling phaseQuality:backlog action-unit; add phase-applicability gate and run_id=unknown spec-check guard | iterate | change |  | — | — | 2026-05-31 |
+| Render unengaged phases as SKIP (not FAIL) in the persisted finding JSON so the skill-compliance dashboard agrees with the triage inbox | iterate | change |  | — | — | 2026-05-31 |
 
 ## Coverage Summary
 
@@ -110,7 +111,7 @@ Generated: 2026-05-31T11:59:14.345122+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 78 |
+| Iterate changes | 79 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

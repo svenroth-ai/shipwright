@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-31 11:59 UTC | Session: 3e307394-564c-4915-8128-3c7fa7eeb609 | Run: iterate-2026-05-31-phasequality-triage-bundle
+> Updated: 2026-05-31 12:17 UTC | Session: 3e307394-564c-4915-8128-3c7fa7eeb609 | Run: iterate-2026-05-31-phasequality-dashboard-skip
 
-## Recent Changes (78 iterations)
+## Recent Changes (79 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Render unengaged phases as SKIP (not FAIL) in the persisted finding JSON so the skill-compliance dashboard agrees with the triage inbox | 0/0 |  | compliance | 2026-05-31 |
 | change | Collapse phase-quality Tier-1 FAIL triage into one rolling phaseQuality:backlog action-unit; add phase-applicability gate and run_id=unknown spec-check guard | 0/0 |  | compliance | 2026-05-31 |
 | change | iterate completion: test-completeness-gate | 0/0 |  |  | 2026-05-30 |
 | change | iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade) | 0/0 |  |  | 2026-05-30 |
@@ -85,7 +86,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-31 | Unit: 2660/2660 | Smoke: not_run | (iterate)
+Last run: 2026-05-31 | Unit: 2666/2666 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

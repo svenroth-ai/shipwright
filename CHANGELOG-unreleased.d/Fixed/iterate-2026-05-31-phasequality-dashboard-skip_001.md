@@ -1,0 +1,1 @@
+Skill-compliance dashboard no longer shows red FAILs for phases a project never runs: the phase-quality Stop hook rewrites such findings to SKIP (not-engaged), making the dashboard consistent with the triage inbox.

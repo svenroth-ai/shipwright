@@ -1,9 +1,9 @@
 {
   "status": "completed",
-  "timestamp": "2026-05-31T11:29:16.584931+00:00",
-  "provider": "openrouter",
-  "findings_count": 12,
-  "self_review_fallback_ran": false,
-  "reason": "gemini+gpt5.4 iterate review; dispositions folded into spec (fail-open, S2/S3 file-on-disk guard, sig-derivable body, concurrency convergence, consumer audit)",
+  "timestamp": "2026-05-31T12:16:09.051278+00:00",
+  "provider": null,
+  "findings_count": 0,
+  "self_review_fallback_ran": true,
+  "reason": "tight 15-line FAIL->SKIP follow-up reusing iterate-1's externally-reviewed phase_is_engaged; self-review + end-to-end probe + full-suite regression performed",
   "review_mode": "iterate"
 }
