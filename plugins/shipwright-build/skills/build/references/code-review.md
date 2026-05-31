@@ -2,6 +2,75 @@
 
 Detail for Kern Step 6.
 
+## Reviewer Cascade — Spec → Code → Doubt (overview)
+
+Step 6 runs a three-stage reviewer cascade, in this fixed order, after the
+always-on 6a self-review:
+
+```
+spec-reviewer (Stage 1, HARD-GATE)  ->  code-reviewer (Stage 2, quality)  ->  doubt-reviewer (Stage 3, conditional)
+```
+
+Each stage is a distinct subagent prompt under `agents/`:
+`agents/spec-reviewer.md`, `agents/code-reviewer.md`, `agents/doubt-reviewer.md`.
+
+### Stage 1 — `spec-reviewer` (HARD-GATE)
+
+Spawn the `spec-reviewer` subagent with the section/iterate spec path and the
+diff. It answers one question — **does the code match the spec?** — and returns
+`{"verdict": "PASS" | "REJECT", "spec_citations": [...]}`.
+
+- A **REJECT** is a HARD-GATE: it **blocks Stage 2**. Every REJECT entry carries
+  an explicit `spec_ref` citing the exact spec file:line/section the diff
+  violates. The implementer fixes the divergence; you re-invoke `spec-reviewer`
+  on the updated diff. **The `code-reviewer` (6b) is NOT invoked until the
+  spec-reviewer returns PASS** — keep the re-review loop running until then.
+- Trigger: **whenever the full code review (6b) runs** — diff > 100 lines,
+  section `risk: high`, or security-sensitive files. Stage 1 and Stage 2 share
+  one trigger so Stage 1 always precedes Stage 2; there is no path where the
+  `code-reviewer` runs without a prior spec-reviewer PASS. A trivial diff that
+  skips 6b relies on the 6a self-review's Spec-Compliance item (item 1) instead.
+- This is a spec-**compliance** gate only — it does not judge code quality. That
+  is Stage 2's job and is exactly why the two stages are separate (Superpowers
+  two-stage pattern): a clean implementation of the wrong spec still fails Stage 1.
+
+### Stage 2 — `code-reviewer` (quality)
+
+Once Stage 1 PASSes, run the existing 5-axis `code-reviewer` (6b below). Nothing
+about the existing flow changes; it simply now runs **behind** the spec gate.
+
+### Stage 3 — `doubt-reviewer` (conditional, advisory)
+
+**After** the `code-reviewer` passes, conditionally spawn the `doubt-reviewer` —
+a fresh-context, disprove-biased adversary (Osmani doubt-driven). It fires
+**only** when the diff touches a non-trivial surface:
+
+| Trigger | Example paths / signals |
+|---|---|
+| **Migrations** | `supabase/migrations/*.sql`, any schema change |
+| **Async / concurrency** | `await` in loops, parallel writes, shared mutable state, locks, ordering |
+| **Cross-plugin imports** | `plugins/shipwright-X` importing from `plugins/shipwright-Y`; new module dependency edge |
+| **Irreversible ops** | deletes, destructive writes, side-effecting external calls, payments |
+
+A diff that touches **only** trivial surfaces — **docs-only** (`README.md`, `*.md`
+prose), comments, test fixtures, a one-line copy change — does **NOT** trigger
+Stage 3. The change is too trivial to justify an adversarial pass.
+
+`doubt-reviewer` is **advisory-must-address**, NOT a hard gate: it raises doubts
+the implementer must answer in writing before commit — fix it, or give a
+**reasoned rebuttal** that disproves the doubt. A doubt met with a sound rebuttal
+may proceed; an unanswered doubt may not. (Contrast Stage 1, which hard-blocks.)
+
+### Internal-only boundary
+
+All three cascade reviewers are **internal** Claude subagents. The optional 6c
+external cascade stays a *generic code-quality* second opinion on the diff — the
+`spec-reviewer` and `doubt-reviewer` roles are **not** cascaded to external LLM
+providers (no external spec-compliance or doubt prompt templates). This keeps the
+internal/external boundary clean and limits third-party diff exposure to 6c.
+
+---
+
 ## 6a: Self-Review (always)
 
 See [self-review-checklist.md](self-review-checklist.md).

@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-05-30T08:02:42.078582+00:00
+Generated: 2026-05-30T20:59:20.601989+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -9,20 +9,20 @@ Scope: library
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 72 changes | INFO |  |
+| Work events (iterate) | 73 changes | INFO |  |
 | All unit tests passing | 0/0 | WARN | no test events recorded yet |
 | Architecture decisions | 88 ADRs | INFO |  |
-| Iterate tests passing | 55/72 iterations tested | WARN | 17 iterate(s) without tests — see test-evidence.md |
+| Iterate tests passing | 55/73 iterations tested | WARN | 18 iterate(s) without tests — see test-evidence.md |
 | Dependencies | 8 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 4 open | WARN | 4 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 5 open | WARN | 5 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit | 138 | WARN | 138 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
 | Bloat in allowlist | 151 entries | INFO |  |
-| Bloat ratchet delta | +14 lines | WARN | grandfathered surface ratcheted up by 14 line(s) — Iron Law violation |
+| Bloat ratchet delta | -24 lines | PASS |  |
 
 ## Project Velocity
 
-- Iterate: 72 changes (2026-05-02 → 2026-05-30)
+- Iterate: 73 changes (2026-05-02 → 2026-05-30)
 - Last activity: 2026-05-30
 
 ## External LLM Review Evidence
