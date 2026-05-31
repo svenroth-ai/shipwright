@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-30-test-completeness-gate",
+    "run_id": "iterate-2026-05-31-ci-gate-f821",
     "date": "2026-05-31",
     "unit": {
       "status": "passed",
-      "passed": 262,
-      "total": 262
+      "passed": 2635,
+      "total": 2649
     },
     "integration": {
       "status": "passed",
@@ -31,63 +31,41 @@
       "status": "not_run"
     },
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --directory shared --extra dev pytest tests/test_audit_e2e_integration.py tests/test_untestable_vocab_doc_sync.py -q",
+      "surface": "none",
+      "runner": "",
       "exit_code": 0,
-      "tests_run": 14,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-30-test-completeness-gate/surface_verification.json",
-      "timestamp": "2026-05-31T00:00:00.000Z"
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-31-ci-gate-f821/surface_verification.json",
+      "timestamp": "2026-05-31T11:27:07.929Z",
+      "justification": "CI-workflow hardening (remove vestigial '|| true' from integration gate) + test-file lint hygiene (add pathlib.Path import). No web/API/CLI/store/SSE/message-contract surface touched; nothing user-experienceable to drive through a running stack."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "counts.untested_testable>0 → FAIL", "disposition": "tested",
-          "evidence": "test_verify_iterate_finalization.py::test_completeness_fails_when_untested_testable_positive PASSED" },
-        { "behavior": "escape-hatch disposition (e.g. 'deferred') → FAIL", "disposition": "tested",
-          "evidence": "::test_completeness_fails_for_escape_hatch_disposition PASSED" },
-        { "behavior": "untestable with reason_code outside closed vocab → FAIL", "disposition": "tested",
-          "evidence": "::test_completeness_fails_for_bad_reason_code PASSED" },
-        { "behavior": "missing block at small+ → FAIL", "disposition": "tested",
-          "evidence": "::test_completeness_fails_when_block_missing_at_medium + ::_results_missing_at_small PASSED" },
-        { "behavior": "trivial → SKIP (auto n/a)", "disposition": "tested",
-          "evidence": "::test_completeness_skipped_for_trivial PASSED" },
-        { "behavior": "all tested / valid untestable mix → PASS", "disposition": "tested",
-          "evidence": "::test_completeness_passes_when_all_tested + ::_passes_with_valid_untestable PASSED" },
-        { "behavior": "n/a without justification → FAIL; with → PASS (small)", "disposition": "tested",
-          "evidence": "::test_completeness_na_without_justification_fails + ::_na_with_justification_passes PASSED" },
-        { "behavior": "n/a forbidden at medium/large → FAIL (review MEDIUM)", "disposition": "tested",
-          "evidence": "::test_completeness_na_forbidden_at_medium PASSED" },
-        { "behavior": "untested_testable: false (bool) rejected (review LOW)", "disposition": "tested",
-          "evidence": "::test_completeness_rejects_bool_untested_testable PASSED" },
-        { "behavior": "enumeration_basis acs>covered_acs → FAIL", "disposition": "tested",
-          "evidence": "::test_completeness_fails_on_enumeration_gap PASSED" },
-        { "behavior": "malformed / non-object results JSON → clean ERROR (review LOW)", "disposition": "tested",
-          "evidence": "::test_completeness_fails_when_results_malformed PASSED" },
-        { "behavior": "check wired into run_all_checks (F11 enforces)", "disposition": "tested",
-          "evidence": "::test_completeness_in_run_all_checks PASSED" },
-        { "behavior": "CLI verifier fails closed on testable-but-untested", "disposition": "tested",
-          "evidence": "test_audit_e2e_integration.py::test_cli_fails_on_testable_but_untested_behavior PASSED" },
-        { "behavior": "doc↔code UNTESTABLE vocabulary sync (forward+reverse)", "disposition": "tested",
-          "evidence": "test_untestable_vocab_doc_sync.py (3 cases) PASSED" },
-        { "behavior": "SKILL Phase-Matrix row + Override-Classes drift", "disposition": "tested",
-          "evidence": "test_skill_completeness_matrix.py (2 cases) + test_skill_phase_matrix.py PASSED" },
-        { "behavior": "type-robustness edges: list-shaped iterate_latest/block, non-object behavior row, absent counts → fail closed (asymptote probe)", "disposition": "tested",
-          "evidence": "test_test_completeness_ledger_edges.py (4 cases) PASSED" },
-        { "behavior": "live operator UX of the F11 PR completeness summary line", "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "PR-body rendering is a human visual call; only the F11 prose is asserted structurally, the rendered line is operator-observed" }
+        {
+          "behavior": "shared/tests/test_events_log.py: pathlib.Path resolves in lazy annotations; ruff F821 cleared (was 14 → 0)",
+          "disposition": "tested",
+          "evidence": "uvx ruff check shared/tests/test_events_log.py --select F821 → 'All checks passed!' (0 errors, previously 14); full-rule ruff on the file also clean (no I001 import-sort regression from the added import); `cd shared && pytest tests/test_events_log.py -q` → 25 passed"
+        },
+        {
+          "behavior": "Integration suite runs green under the exact CI command — the precondition that un-swallowing '|| true' cannot turn CI red on existing tests",
+          "disposition": "tested",
+          "evidence": "uv run --with pytest --with pytest-mock pytest integration-tests/ -v → 136 passed / 0 failed (CI-parity command). Full shared suite also green: 2635 passed, 14 skipped."
+        },
+        {
+          "behavior": "Removing '|| true' makes the integration-tests CI step propagate a non-zero exit (gate) instead of swallowing it",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "Observing CI actually turn red on a failing integration suite requires a live GitHub Actions run with an injected failure; the gating itself is platform-guaranteed (GHA default Linux shell = `bash --noprofile --norc -eo pipefail`, so -e is already active for a single-command run:). Structurally verified here: grep confirms '|| true' is removed from ONLY the integration step (the lint step retains its own '|| true' + continue-on-error, which is an explicitly separate out-of-scope item)."
+        }
       ],
-      "counts": { "testable": 17, "tested": 16, "untestable": 1, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 10, "covered_acs": 10 }
+      "counts": { "testable": 2, "tested": 2, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 3, "covered_acs": 3 }
     },
     "degraded": [
       {
-        "condition": "preexisting_shared_failures",
-        "detail": "Full shared suite ran 2578 passed; 2 failures (test_architecture_md_reflects_arch_impact, test_artifact_path_canon[compliance-migrated]) are PRE-EXISTING — reproduced identically on the main tree where this change does not exist (the documented `compliance/` path-canon dirty-tree issue + an arch-impact drop). Unrelated to this iterate."
-      },
-      {
-        "condition": "external_review_substituted",
-        "detail": "External LLM cascade not run; the internal code-reviewer subagent ran on the staged diff and returned 1 HIGH (ADR for the baseline bump) + 1 MEDIUM (n/a-at-medium escape hatch) + 2 LOW, all fixed (ADR-093, n/a forbidden at medium+, bool-as-int guard, non-object-JSON robustness)."
+        "condition": "f0_f11_leak_guard_cross_run_contamination",
+        "detail": "check_iterate_isolation (--stage f0) reported main_tree_leak for 2 untracked files in the MAIN repo root (_wt_setup.json.txt, _tests_listing.txt) — stdout-redirect debris from a CONCURRENT iterate run (iterate-2026-05-31-plugin-sync-triage-main-repo; its worktree + checked-out branch + iterate_active pointer are all present, written ~13:23). Not produced by this run (no command here redirects to those names) and physically excluded from this PR (separate worktree + explicit per-path `git add`, never -A). Left untouched per the constitution (did not create them; the parallel run may be live). This iterate's own diff is isolated entirely to its worktree (2 files, +2/-1)."
       }
     ]
   }

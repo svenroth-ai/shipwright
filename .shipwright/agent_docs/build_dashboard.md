@@ -1,11 +1,15 @@
 # Project Activity Dashboard
-> Updated: 2026-05-30 22:25 UTC | Session: c1702965-7788-4a6d-9f90-6d17d8d9f91c | Run: iterate-2026-05-30-test-completeness-gate
+> Updated: 2026-05-31 11:30 UTC | Session: 51910aa5-a19e-4e22-a2d3-537661721bb4 | Run: iterate-2026-05-31-ci-gate-f821
 
-## Recent Changes (74 iterations)
+## Recent Changes (78 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | remove vestigial "\|\| true" from CI integration step (gate failures) + add pathlib.Path import to clear 14 F821 in test_events_log.py | 2771/2771 |  | infra | 2026-05-31 |
 | change | iterate completion: test-completeness-gate | 0/0 |  |  | 2026-05-30 |
+| change | iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade) | 0/0 |  |  | 2026-05-30 |
+| change | Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test | 0/0 |  | tooling | 2026-05-30 |
+| feature | Add audit_compliance_on_stop.py: auto-emit/auto-dismiss source=compliance triage items on every iterate/changelog Stop, gated on full A-G audit coverage. | 0/0 |  | compliance | 2026-05-30 |
 | bug | Align 7 stale record_event tests to the C.1 FR-gate (gates all iterates incl. bug/intentless); surface CI shared-test gap (trg-f363b1ab) | 0/0 |  | tooling | 2026-05-30 |
 | bug | RTM: untested (0/0) events neutral; status from latest tested event (fixes 7 false FAILs); neutralize leaked verification event via event_amended | 0/0 |  | tooling | 2026-05-30 |
 | feature | SP3+OS2 post-Campaign-B reintegration — F-debug.md systematic-debugging sub-skill + assumptions-first interview pre-phase | 317/317 |  | docs | 2026-05-29 |
@@ -81,7 +85,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-31 | Unit: 262/262 | Integration: 136/136 | Smoke: not_run | (iterate)
+Last run: 2026-05-31 | Unit: 2635/2649 | Integration: 136/136 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
