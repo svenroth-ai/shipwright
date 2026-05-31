@@ -1,11 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-31 11:30 UTC | Session: 51910aa5-a19e-4e22-a2d3-537661721bb4 | Run: iterate-2026-05-31-ci-gate-f821
+> Updated: 2026-05-31 15:52 UTC | Session: 3e307394-564c-4915-8128-3c7fa7eeb609 | Run: iterate-2026-05-31-compliance-triage-bundle
 
 ## Recent Changes (78 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | remove vestigial "\|\| true" from CI integration step (gate failures) + add pathlib.Path import to clear 14 F821 in test_events_log.py | 2771/2771 |  | infra | 2026-05-31 |
+| change | Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement) | 0/0 |  | compliance | 2026-05-31 |
 | change | iterate completion: test-completeness-gate | 0/0 |  |  | 2026-05-30 |
 | change | iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade) | 0/0 |  |  | 2026-05-30 |
 | change | Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test | 0/0 |  | tooling | 2026-05-30 |
@@ -85,7 +85,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-31 | Unit: 2635/2649 | Integration: 138/138 | Smoke: not_run | (iterate)
+Last run: 2026-05-31 | Unit: 2635/2635 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

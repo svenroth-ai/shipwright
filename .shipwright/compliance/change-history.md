@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-05-31T11:30:29.581346+00:00
-Total commits: 793
+Generated: 2026-05-31T15:52:35.290127+00:00
+Total commits: 791
 
 ## Commit Distribution
 
@@ -12,9 +12,8 @@ pie title Commit Types
     "chore" : 153
     "docs" : 111
     "refactor" : 50
-    "test" : 19
+    "test" : 18
     "other" : 7
-    "ci" : 1
     "build" : 1
 ```
 
@@ -810,11 +809,10 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 19 commits
+### Tests (test) — 18 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-05-31 | ci | pin integration-step no-swallow invariant; correct completeness ledger | 21e2f810dab7 |
 | 2026-05-31 | iterate | pin type-robustness edges of the completeness gate (asymptote probe) | 3dfffc8791d2 |
 | 2026-05-30 | compliance | record integration-tests pass (136) for the framework-wide resolver change | 1d876b09301f |
 | 2026-05-30 | shared | align stale record_event tests to the C.1 FR-gate | d954c492cd64 |
@@ -846,12 +844,6 @@ pie title Commit Types
 | 2026-04-04 | — | Revert "fix: rename skill dirs to full plugin name for clean slash-command display" | 1545b4b2c522 |
 | 2026-03-21 | — | revert: restore full skill names in SKILL.md frontmatter | 05c0d5ce7566 |
 
-### CI/CD (ci) — 1 commits
-
-| Date | Scope | Description | Commit |
-|------|-------|-------------|--------|
-| 2026-05-31 | integration | gate integration-tests step on failure; fix F821 in events-log test | 83d68709d125 |
-
 ### Build (build) — 1 commits
 
 | Date | Scope | Description | Commit |
@@ -862,7 +854,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 793 |
+| Total commits | 791 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 793 |
+| Human-authored commits | 791 |
 
