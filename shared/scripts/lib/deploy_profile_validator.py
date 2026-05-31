@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Iterable
 
 from jsonschema import Draft202012Validator
@@ -142,8 +142,11 @@ def _semantic_errors(
     if isinstance(client, dict):
         entrypoint = client.get("entrypoint")
         if isinstance(entrypoint, str) and entrypoint:
-            # Reject absolute paths (POSIX or Windows).
-            if Path(entrypoint).is_absolute() or entrypoint.startswith(("/", "\\")):
+            # Reject absolute paths (POSIX or Windows) regardless of host OS;
+            # Path().is_absolute() misses `C:\` on POSIX (e.g. Linux CI).
+            if (PurePosixPath(entrypoint).is_absolute()
+                    or PureWindowsPath(entrypoint).is_absolute()
+                    or entrypoint.startswith(("/", "\\"))):
                 out.append(
                     ValidationError(
                         json_pointer="/client/entrypoint",

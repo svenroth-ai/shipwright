@@ -125,11 +125,24 @@ def test_arch_impact_drops_found_at_all():
     """Sanity check — the discovery path actually finds drops in the repo.
     Without this, the main assertion silently no-ops on a repo where the
     main-repo resolution misfires and the decision-drops dir comes back
-    empty."""
+    empty.
+
+    Decision-drops are gitignored, so a clean checkout (CI runner, fresh
+    clone) genuinely has no ``decision-drops/`` directory — that is *not* a
+    resolution misfire, it is the expected absence of dev-time artifacts.
+    Skip there; only assert when the directory exists (the case this guard
+    is actually about). Without this skip the test is born-red the moment
+    ``shared/tests`` runs in CI (iterate-2026-05-31-ci-shared-tests)."""
+    drops_dir = _main_repo_root() / ".shipwright" / "agent_docs" / "decision-drops"
+    if not drops_dir.is_dir():
+        pytest.skip(
+            f"decision-drops/ absent under {drops_dir} — clean checkout "
+            "(drops are gitignored, not present in CI); nothing to sanity-check"
+        )
     drops = _arch_impact_drops()
     # The repo has carried multiple arch-impact decision-drops since
-    # iterate-2026-05-03; an empty list means we're looking at the wrong
-    # directory or the resolution helper is broken.
+    # iterate-2026-05-03; an empty list (with the dir present) means we're
+    # looking at the wrong directory or the resolution helper is broken.
     assert drops, (
         f"no arch-impact drops discovered under "
         f"{_main_repo_root() / '.shipwright/agent_docs/decision-drops'} — "

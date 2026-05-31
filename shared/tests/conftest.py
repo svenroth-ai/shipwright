@@ -13,6 +13,38 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 
+# Real platform os.name, captured once at import (before any test patches it).
+_REAL_OS_NAME = os.name
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    """Stop an ``os.name="nt"`` monkeypatch from crashing the whole session
+    on a non-Windows host.
+
+    Several tests here simulate Windows by patching ``os.name`` to ``"nt"``
+    (npm.cmd resolution, dev-server spawn, cmd_resolver, …). The monkeypatch
+    is restored at *fixture teardown*, which runs AFTER this makereport phase.
+    So if such a test FAILS on Linux/macOS, pytest's own failure renderer
+    (``_pytest.nodes._repr_failure_py`` → ``Path(os.getcwd())``) instantiates a
+    ``WindowsPath`` on a POSIX host → ``NotImplementedError`` → INTERNALERROR
+    that aborts the ENTIRE run, masking every test after it. Surfaced the
+    moment ``shared/tests`` first ran in CI (iterate-2026-05-31-ci-shared-tests).
+
+    Pin ``os.name`` to the real platform for the duration of report rendering,
+    then restore whatever the test had set. Report-only — the test already ran
+    with its patched value, so behaviour is unchanged; only the rendered
+    paths are POSIX-correct.
+    """
+    saved = os.name
+    if saved != _REAL_OS_NAME:
+        os.name = _REAL_OS_NAME
+    try:
+        yield
+    finally:
+        os.name = saved
+
+
 _OSS_SCANNERS = ("semgrep", "trivy", "gitleaks")
 
 

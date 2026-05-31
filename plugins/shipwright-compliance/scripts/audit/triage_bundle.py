@@ -96,7 +96,7 @@ def _build_detail(fails: list[dict[str, str]]) -> str:
 def _build_launch_payload(fails: list[dict[str, str]]) -> str:
     keys = ", ".join(d["key"] for d in fails)
     return (
-        "/shipwright-compliance\n\n"
+        "/shipwright-compliance\n\n"  # artifact-path-canon: legacy (slash command, not a path)
         f"Context: {len(fails)} open compliance finding(s): {keys}.\n"
         f"Dashboard: {DASHBOARD_REL}\n"
         "Each finding + hint is listed in this item's detail."
@@ -130,7 +130,7 @@ def emit_compliance_backlog(
     try:
         open_compliance = [
             it for it in read_all_items(project_root)
-            if it.get("source") == "compliance" and it.get("status") == "triage"
+            if it.get("source") == "compliance" and it.get("status") == "triage"  # artifact-path-canon: legacy (triage source enum, not a path)
         ]
     except Exception:  # noqa: BLE001
         open_compliance = []
@@ -170,9 +170,9 @@ def emit_compliance_backlog(
     try:
         new_id = append_idempotent(
             project_root,
-            source="compliance",
+            source="compliance",  # artifact-path-canon: legacy (triage source enum, not a path)
             severity=_max_severity(fails),
-            kind="compliance",
+            kind="compliance",  # artifact-path-canon: legacy (triage kind enum, not a path)
             title=f"Compliance: {len(fails)} open finding(s)"[:160],
             detail=_build_detail(fails),
             dedup_key=cur_key,

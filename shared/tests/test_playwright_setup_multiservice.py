@@ -9,9 +9,12 @@ False → tries `npm install` at the root → fails.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "scripts"))
@@ -53,6 +56,16 @@ def test_resolve_setup_dir_falls_back_to_cwd_for_single_service(tmp_path):
     assert result == tmp_path
 
 
+@pytest.mark.skipif(
+    os.name != "nt",
+    reason=(
+        "Exercises the Windows npm.cmd-resolution branch by faking os.name='nt'. "
+        "On a POSIX host that fake makes pathlib build a WindowsPath inside "
+        "playwright_setup.setup() -> NotImplementedError. Runs natively on "
+        "Windows; a follow-up can add a windows-latest CI job or an injectable "
+        "is_windows() seam so it also runs under Linux CI."
+    ),
+)
 def test_setup_uses_resolved_executable_for_npm(tmp_path, monkeypatch):
     """Verify subprocess.run for `npm install` uses the cmd_resolver result."""
     captured: list = []
