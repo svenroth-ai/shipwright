@@ -1607,7 +1607,7 @@ Not all phases can be skipped. Iterate defines three categories:
 
 | Category | Includes | User Can Skip? |
 |----------|----------|----------------|
-| **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON, **E2E Verification at medium+** (F0.5 — author + execute) | Never |
+| **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON, **E2E Verification at medium+** (F0.5 — author + execute), **Test Completeness Ledger at small+** (F5 produce → F11 gate) | Never |
 | **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations), **E2E Verification at small with `touches_io_boundary` or UI** | Only with explicit risk acknowledgment |
 | **Advisory** | Design check, mini-plan, design fidelity, external LLM review | Freely skippable |
 
@@ -1623,6 +1623,7 @@ Every iterate run -- regardless of complexity -- ends with the same mandatory fi
 
 0. **Fresh verification (F0)** -- run the full unit/type/integration test suite; non-zero exit means STOP, do not enter F0.5 with failing tests.
 0.5. **End-to-End Verification (F0.5; medium+)** -- run the surface runner (`web` / `cli` / `api`, or `none` with justification) against the user-erlebbare Surface via `shared/scripts/surface_verification.py`. Produces the `surface_verification` block in `shipwright_test_results.json.iterate_latest`. Non-zero exit blocks the rest of finalization; the post-commit audit `check_surface_verification` in `iterate_checks.py` is the second layer.
+0.6. **Test Completeness Ledger (F5 produce → F11 gate; small+)** -- enumerate every behavior the diff introduces and classify each as `tested` (evidence) or `untestable` (closed-vocabulary `reason_code`); the "could-test-but-didn't" disposition is forbidden. The ledger lands in `shipwright_test_results.json.iterate_latest.test_completeness`; the F11 audit `check_test_completeness_ledger` fails closed on any testable-but-untested behavior. This is the gate that makes a pre-merge "did you test everything testable?" question unnecessary. Trivial iterates emit an auto `n/a` line.
 1. **Drift check** -- verify specs match implementation
 2. **Architecture update** -- update `architecture.md` if structural changes were made
 3. **ADR (decision-drop)** -- record the decision via `write_decision_drop.py`. Each field (`--context`, `--decision`, `--consequences`, `--rationale`, `--rejected`) is hard-rejected at write time if it exceeds 500 characters (Iterate A.3, 2026-05-21 — `decision_log.md` is always-loaded Layer-1 context and every verbose ADR pays for itself in tokens on every future run). Move long-form prose into the flat ADR spec folder `.shipwright/planning/adr/<NNN>-<slug>.md` and link it with `--spec-ref`; the aggregator emits a `**Details:** [...]` bullet under the ADR row and rebuilds `.shipwright/planning/adr/INDEX.md` on every release pass. `--spec-ref` is also required whenever a decision needs a diagram, >3 alternatives, or non-trivial follow-up acceptance criteria.

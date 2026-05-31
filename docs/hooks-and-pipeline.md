@@ -1286,6 +1286,19 @@ and the post-commit audit is `check_surface_verification` in
 on the same four conditions: missing block, `tests_run == 0`,
 `exit_code != 0` after retry cap, `surface == "none"` without justification.
 
+**Test-completeness gate (iterate).** At small / medium / large complexity
+every `/shipwright-iterate` run writes a `test_completeness` ledger into
+`shipwright_test_results.json.iterate_latest` at F5 (producer) — every
+behavior the diff introduces is `tested` (with evidence) or `untestable`
+(closed-vocabulary `reason_code`); the "could-test-but-didn't" disposition
+is abolished. The post-commit audit `check_test_completeness_ledger` in
+`shared/scripts/tools/verifiers/iterate_checks.py` fails closed (ERROR) when
+any behavior is testable-but-untested, an `untestable` row lacks a valid
+`reason_code`, or the enumeration is short of the AC count. This is the gate
+that makes the operator's pre-merge "did you empirically test everything?"
+question structurally self-answering (`iterate-2026-05-30-test-completeness-gate`).
+Trivial iterates emit an auto `n/a` line and skip the hard gate.
+
 **Spec-impact gate (iterate).** Every FEATURE/CHANGE `/shipwright-iterate`
 run classifies its spec impact at Step 2 as ADD / MODIFY / REMOVE / NONE.
 Two layers enforce it: `record_event.py` fails closed (exit 1) at F7 when a

@@ -158,6 +158,59 @@ in the calibration sense.)
 
 ---
 
+## Completeness — the Coverage Stopping Rule
+
+The asymptote heuristic above governs **depth** — how far to probe a
+*single* dimension before it is exhausted. It says nothing about
+**breadth** — whether *every* behavior the diff introduces has been
+probed at all. The "I should still test X, Y, Z" answer at merge time is
+a breadth failure, not a depth one: the agent probed one area to the
+asymptote and left three others untouched, then reported them as
+"acceptable to skip."
+
+The **Coverage Stopping Rule** closes that gap and replaces the
+"acceptable to skip" escape hatch:
+
+> You are **not done** until every testable behavior introduced or
+> changed by the diff is either **`tested`** (with named evidence) or
+> **`untestable`** (with a structural, falsifiable reason). The
+> disposition "could test but chose not to" does not exist.
+
+This is the **Test Completeness Ledger** (Step 7.5). "Testable ⇒ tested"
+is enforced mechanically: the F5 `iterate_latest.test_completeness` block
+records the ledger and the F11 verifier
+`check_test_completeness_ledger`
+(`shared/scripts/tools/verifiers/iterate_checks.py`) STOPs the run if any
+behavior is testable-but-untested. "I should still test X" therefore
+becomes a **blocking work item** — test X now, or prove X structurally
+untestable — never a note that ships.
+
+### The closed `UNTESTABLE` vocabulary
+
+`untestable` is honest only with a structural, falsifiable reason. The
+reason must come from this closed set (SSoT: `UNTESTABLE_REASON_CODES`
+in `shared/scripts/tools/verifiers/iterate_checks.py`; a reverse-drift
+test asserts this list and the code agree):
+
+- `requires-prod-credential` — needs a real production secret/credential
+  absent from CI.
+- `requires-external-nondeterministic-service` — depends on a live
+  third-party service with non-deterministic output.
+- `requires-physical-device` — needs hardware/peripheral not available
+  in CI.
+- `requires-manual-visual-judgment` — correctness is a human visual or
+  aesthetic judgment (covered by design-fidelity / browser-verify, not a
+  unit assertion).
+- `requires-interactive-tty` — needs an interactive terminal or login the
+  harness cannot drive.
+- `covered-by-existing-test` — already pinned by a named pre-existing
+  test (cite it in `reason`).
+
+"Hard to test", "out of time", or "low risk" are **not** in this set —
+they are the escape hatch the gate exists to kill.
+
+---
+
 ## Cross-References
 
 The Confidence Calibration phase consumes outputs from these docs:

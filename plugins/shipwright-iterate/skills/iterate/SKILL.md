@@ -127,9 +127,9 @@ Print `Run ID / Intent / Complexity (+ reasoning) / Risk flags / Phases / Skippi
 
 | Category | Phases | User can skip? |
 |---|---|---|
-| **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON, iterate_history, Confidence Calibration (medium+) | Never skippable |
-| **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations), Boundary Probe (when `touches_io_boundary`), Confidence Calibration (small with `touches_io_boundary`) | Only with explicit risk acknowledgment |
-| **Advisory** | Design check, mini-plan, design fidelity, E2E update, external LLM review, release prompt, Confidence Calibration (trivial / small without `touches_io_boundary`) | Freely skippable |
+| **Mandatory** | Self-review, unit test, commit, ADR, compliance, test results JSON, iterate_history, Confidence Calibration (medium+), Test Completeness Ledger (medium+) | Never skippable |
+| **Safety-enforced** | Full review (when risk flags), full test suite (when shared infra), down.sql (when migrations), Boundary Probe (when `touches_io_boundary`), Confidence Calibration (small with `touches_io_boundary`), Test Completeness Ledger (small) | Only with explicit risk acknowledgment |
+| **Advisory** | Design check, mini-plan, design fidelity, E2E update, external LLM review, release prompt, Confidence Calibration (trivial / small without `touches_io_boundary`), Test Completeness Ledger (trivial → auto `n/a`) | Freely skippable |
 | **Complexity-gated** | Iterate spec, context scan depth | Adjustable via "make it medium/small" |
 
 ---
@@ -146,8 +146,9 @@ Create `.shipwright/planning/iterate/{date}-{short-description}.md`. Full templa
 ## Confidence Calibration
 - **Boundaries touched:** {list from Affected Boundaries}
 - **Empirical probes run:** {one-line per probe + finding}
-- **Edge cases NOT probed + why acceptable:** {one line per skip}
-- **Confidence-pattern check:** {asymptote heuristic}
+- **Test Completeness Ledger:** {table — every testable behavior → `tested`
+  (evidence) | `untestable` (closed-vocab reason_code); 0 untested-testable}
+- **Confidence-pattern check:** {asymptote (depth) + coverage (breadth)}
 ```
 
 ### Step 6: Build (TDD — Red-Green-Refactor)
@@ -164,7 +165,9 @@ See `references/iteration-reviews.md` for the 7-point checklist (item 7: Affecte
 
 ### Step 7.5: Confidence Calibration (mandatory at medium+, also when `touches_io_boundary`)
 
-"Are you confident?" is unfalsifiable — replace with empirical probes per `references/confidence-anti-patterns.md`. Before F0, populate the spec's Confidence Calibration section with: (1) boundaries touched, (2) empirical probes run + finding, (3) edge cases NOT probed + why acceptable, (4) confidence-pattern check (asymptote: yes-then-bug pattern → run one more probe). **Override Classes:** Mandatory at medium+, Safety-enforced at small with `touches_io_boundary`, Advisory otherwise.
+"Are you confident?" is unfalsifiable — replace with empirical probes per `references/confidence-anti-patterns.md`. Before F0, populate the spec's Confidence Calibration section with: (1) boundaries touched, (2) empirical probes run + finding, (3) the **Test Completeness Ledger**, (4) confidence-pattern check (asymptote depth + coverage breadth). **Override Classes:** Mandatory at medium+, Safety-enforced at small with `touches_io_boundary`, Advisory otherwise.
+
+**Test Completeness Ledger (the empirical-completeness gate).** Principle: **testable ⇒ tested.** Enumerate every behavior this diff introduces/changes; classify each as exactly one of `tested` (cite the test + result) or `untestable` (cite a `reason_code` from the closed vocabulary in `references/confidence-anti-patterns.md` — `requires-prod-credential`, `requires-external-nondeterministic-service`, `requires-physical-device`, `requires-manual-visual-judgment`, `requires-interactive-tty`, `covered-by-existing-test`). The disposition "could-test-but-didn't" is **abolished** — "I should still test X" is a blocking work item, not a spec note. At F5, record the machine-readable block `iterate_latest.test_completeness` in `shipwright_test_results.json` (shape in `references/F5.md`); the F11 verifier `check_test_completeness_ledger` STOPs the run if any behavior is testable-but-untested, or an `untestable` row lacks a valid `reason_code`, or the enumeration is short of the AC count. **Graduated:** enforced at small/medium/large; auto `n/a` (with a one-line justification) at trivial.
 
 ### Step 8: Full Code Review (conditional)
 
@@ -216,6 +219,7 @@ See `references/campaign-mode.md` for the full protocol: campaign setup, autonom
 | Boundary Probe | skip | if `touches_io_boundary` | if `touches_io_boundary` | — |
 | Self-Review | always | always | always | — |
 | Confidence Calibration | skip | if `touches_io_boundary` | always | always |
+| Test Completeness Ledger | n/a (auto) | always | always | always |
 | Full Code Review | only if risk flags | only if risk flags | always | — |
 | Browser Verify | if UI | if UI | if UI | — |
 | Smoke Test | if server up | if server up | if server up | — |
@@ -276,7 +280,7 @@ Four fail-closed conditions enforced by `surface_verification.py` (orchestrator)
 | F3 | [F3](references/F3.md) | `write_decision_drop.py` keyed by `run_id`; ADR-NNN assigned at `/shipwright-changelog` release; field cap 1-3 sentences / 500 chars |
 | F3a | [F3a](references/F3a.md) | Reflection — append learnings per `references/reflection.md` |
 | F4 | [F4](references/F4.md) | `write_changelog_drop.py` → one bullet per AC under `CHANGELOG-unreleased.d/<category>/` |
-| F5 | [F5](references/F5.md) | Latest-run state under `iterate_latest` in `shipwright_test_results.json` |
+| F5 | [F5](references/F5.md) | Latest-run state under `iterate_latest` in `shipwright_test_results.json` — incl. the `test_completeness` ledger block (small+) |
 | F5b | [F5b](references/F5b.md) | `finalize_iterate.py` — records `work_completed` (with `commit=""`) into **this worktree's** events.jsonl BEFORE compliance regen + handoff; F6 stages it (ships in the PR) |
 | F5c | [F5c](references/F5c.md) | `append_iterate_entry.py` → `.shipwright/agent_docs/iterates/<run_id>.json` atomically; 50-entry retention |
 | F6 | [F6](references/F6.md) | Commit (Conventional Commits). Explicit `git add` per-path list — **incl. `shipwright_events.jsonl` when tracked**. NEVER `-A`. Footer: `Run-ID: {run_id}` + `Co-Authored-By: Claude <noreply@anthropic.com>` |

@@ -59,11 +59,24 @@ If no boundaries touched: write `n/a` with one-line justification.}
 - **Boundaries touched:** {list from "Affected Boundaries" above}
 - **Empirical probes run:** {one-line per probe + finding — real
   round-trip / edge-case tests, not "I re-read the diff"}
-- **Edge cases NOT probed + why acceptable:** {one line per skipped
-  category, with rationale}
-- **Confidence-pattern check:** {has any "are you confident?"-style
-  question already produced "yes" + a subsequent finding in this
-  run? If yes, run one more probe before F0 — asymptote heuristic}}
+- **Test Completeness Ledger:** {every testable behavior this diff
+  introduces/changes — one row each, `tested` (evidence) or `untestable`
+  (closed-vocab reason_code). The "could-test-but-didn't" disposition is
+  forbidden. Mirror into the F5 `iterate_latest.test_completeness` block;
+  the F11 verifier `check_test_completeness_ledger` enforces it.}
+
+  | # | Testable behavior | Disposition | Evidence / reason_code |
+  |---|---|---|---|
+  | 1 | {behavior} | tested | {test_name::case PASSED} |
+  | 2 | {behavior} | untestable | {requires-prod-credential ·
+  requires-external-nondeterministic-service · requires-physical-device ·
+  requires-manual-visual-judgment · requires-interactive-tty ·
+  covered-by-existing-test} |
+
+- **Confidence-pattern check:** {asymptote (depth): has any "are you
+  confident?"-style question already produced "yes" + a subsequent finding
+  this run? If yes, run one more probe before F0. AND coverage (breadth):
+  every ledger row `tested`/`untestable`, 0 untested-testable?}}
 
 ## Verification (medium+)
 {Mandatory at medium+. The runner that will produce the F0.5

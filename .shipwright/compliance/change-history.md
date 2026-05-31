@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-05-30T20:59:20.601989+00:00
-Total commits: 779
+Generated: 2026-05-30T22:25:04.744361+00:00
+Total commits: 780
 
 ## Commit Distribution
 
@@ -12,7 +12,7 @@ pie title Commit Types
     "chore" : 152
     "docs" : 111
     "refactor" : 50
-    "test" : 15
+    "test" : 16
     "other" : 7
     "build" : 1
 ```
@@ -800,10 +800,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 15 commits
+### Tests (test) — 16 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-30 | shared | align stale record_event tests to the C.1 FR-gate | d954c492cd64 |
 | 2026-05-18 | security | make test_explicit_name_not_in_registry hermetic | 77bcc9803039 |
 | 2026-05-07 | hooks | unwrap top-level hooks key in tests that read plugin hooks.json | c58e112027cd |
 | 2026-05-06 | iterate | backfill F0.5 empirical-test coverage (plan §V follow-up) | 531171c61fad |
@@ -842,7 +843,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 779 |
+| Total commits | 780 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 779 |
+| Human-authored commits | 780 |
 

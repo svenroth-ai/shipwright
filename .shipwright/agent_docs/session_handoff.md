@@ -1,35 +1,30 @@
----
-canon_generated: true
-run_id: "iterate-2026-05-30-record-event-test-failures"
-phase: "iterate"
-reason: "iterate finalization"
-timestamp: "2026-05-30T20:59:20.601989+00:00"
----
-
 # Session Handoff
 
-> Auto-generated 2026-05-30 20:59:20 UTC
+> Auto-generated 2026-05-30 22:25:04 UTC
 
 ## Session Info
 
-- **Session ID**: 1d1513f2-b22d-4264-9631-0685e9a200c1
-- **Timestamp**: 2026-05-30 20:59:20 UTC
-- **Reason**: iterate finalization
+- **Session ID**: c1702965-7788-4a6d-9f90-6d17d8d9f91c
+- **Timestamp**: 2026-05-30 22:25:04 UTC
+- **Reason**: asymptote probe follow-up: iterate-2026-05-30-test-completeness-gate
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-30-rtm-covered-ignore-untested-events
-- **Date**: 2026-05-30T08:05:37.450709Z
-- **Type**: bug
-- **Complexity**: small
-- **Branch**: iterate/rtm-covered-ignore-untested-events
-- **ADR**: iterate-2026-05-30-rtm-covered-ignore-untested-events
+- **Run ID**: iterate-2026-05-30-test-completeness-gate
+- **Date**: 2026-05-30T22:24:52.586049Z
+- **Type**: change
+- **Complexity**: medium
+- **Branch**: iterate/test-completeness-gate
+- **ADR**: iterate-2026-05-30-test-completeness-gate
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/record-event-test-failures
-- **External Review Marker**: completed (external_review_state.json @ 2026-05-27T07:11:03)
+- **Branch**: iterate/test-completeness-gate
+- **Run ID**: `iterate-2026-05-30-test-completeness-gate`
+- **Spec**: .shipwright/planning/iterate/2026-05-30-test-completeness-gate.md
+- **Complexity**: medium (classifier said `trivial`@0.6 — under-estimate; cross-cutting skill discipline + new enforced verifier + drift-test updates)
+- **External Review Marker**: stale (predates spec (2026-05-27T07:11:03))
 
 ### Mandatory replay on Resume
 
@@ -47,8 +42,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/record-event-test-failures
-- **Last Commit**: 55ac703 Merge pull request #115 from svenroth-ai/iterate/rtm-covered-ignore-untested-events
+- **Branch**: iterate/test-completeness-gate
+- **Last Commit**: bde2812 feat(iterate): add fail-closed Test Completeness Ledger gate
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +59,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-d16cc59c | work_completed | iterate (iterate completion: test-completeness-gate) | 2026-05-30 |
 | evt-c9f7073a | work_completed | iterate (Align 7 stale record_event tests to the C.1 FR-gate (gates all iterates incl. bug/intentless); surface CI shared-test gap (trg-f363b1ab)) | 2026-05-30 |
 | evt-13cd797e | work_completed | iterate (RTM: untested (0/0) events neutral; status from latest tested event (fixes 7 false FAILs); neutralize leaked verification event via event_amended) | 2026-05-30 |
 | evt-4a141c52 | event_amended | — | 2026-05-30 |
 | evt-6ebab37a | work_completed | iterate (SP3+OS2 post-Campaign-B reintegration — F-debug.md systematic-debugging sub-skill + assumptions-first interview pre-phase) | 2026-05-29 |
-| evt-bdfa9e6b | work_completed | iterate (suggest_iterate UserPromptSubmit hook: emit hookEventName on hookSpecificOutput (+ AST meta-test)) | 2026-05-29 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 73
-- **Last iterate**: bug — Align 7 stale record_event tests to the C.1 FR-gate (gates all iterates incl. bug/intentless); surface CI shared-test gap (trg-f363b1ab) (2026-05-30)
+- **Total work events**: 74
+- **Last iterate**: change — iterate completion: test-completeness-gate (2026-05-30)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

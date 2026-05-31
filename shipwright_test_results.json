@@ -1,18 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-30-compliance-audit-on-stop",
-    "date": "2026-05-30",
+    "run_id": "iterate-2026-05-30-test-completeness-gate",
+    "date": "2026-05-31",
     "unit": {
       "status": "passed",
-      "passed": 2587,
-      "total": 2589,
-      "note": "All 28 new tests (test_audit_compliance_on_stop.py) + the new versioned-path regression (test_audit_phase_quality.py::test_phase_from_plugin_root_versioned_install) pass. Full shared/tests: 2587 passed, 14 skipped, 2 failed. BOTH failures are external to this change: (1) test_artifact_path_canon[compliance-migrated] — pre-existing canon-lint false-positive on ADR slug 'compliance/rtm-status-logic' in a prior iterate's committed JSON (commit 76a3b12 / PR #115); (2) test_architecture_md_reflects_arch_impact — caused solely by TWO other iterates' decision drops (gitignore-canon-propagation, reviewer-stack, impact=convention) sitting in the shared, gitignored main-tree decision-drops staging; LOCAL-ONLY (decision drops are not committed, so this cannot occur in CI). My own decision drop is impact=none and is not flagged. See degraded[]."
+      "passed": 262,
+      "total": 262
     },
     "integration": {
       "status": "passed",
       "passed": 136,
-      "total": 136,
-      "note": "integration-tests/ run because the resolver fix touches shared phase resolution used framework-wide (cross-plugin). 136 passed, 0 failed, 2 deselected."
+      "total": 136
     },
     "pgtap": {
       "status": "not_run",
@@ -20,10 +18,9 @@
       "total": 0
     },
     "e2e": {
-      "status": "passed",
-      "passed": 3,
-      "total": 3,
-      "note": "Empirical hook E2E against the real worktree project: (1) full A-G audit emitted real compliance fails + idempotent skip on re-run; (2) injected a resolved compliance item -> hook reported dismissed=1 and flipped it to dismissed/auditResolved while genuinely-failing items stayed in triage; (3) RUNTIME-FAITHFUL re-test: invoked with the REAL versioned CLAUDE_PLUGIN_ROOT (.../shipwright-iterate/0.4.1, per installed_plugins.json) -> hook fired (appended=5) after the phase_from_plugin_root version-tolerance fix, whereas before the fix it (and phase_quality) silently no-opped; (4) reactivation backlog measured empirically: re-enabled phase_quality emitted at most ~1 per-phase Tier-1 FAIL (deduped, non-blocking), not a flood. No web/UI surface."
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
       "status": "skipped",
@@ -34,26 +31,63 @@
       "status": "not_run"
     },
     "surface_verification": {
-      "surface": "none",
-      "runner": "",
+      "surface": "cli",
+      "runner": "uv run --directory shared --extra dev pytest tests/test_audit_e2e_integration.py tests/test_untestable_vocab_doc_sync.py -q",
       "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-30-compliance-audit-on-stop/surface_verification.json",
-      "timestamp": "2026-05-30T12:00:00.000Z",
-      "justification": "Backend Stop-hook triage producer (shared/scripts/hooks/audit_compliance_on_stop.py) + two hooks.json Stop-chain wirings + docs. No startable web/CLI/API app surface is affected, and the triage.jsonl contract/schema is unchanged (this only adds a new automatic trigger for the existing audit_detector.mirror_findings_to_triage producer). Verification is the 28 hook unit/integration tests plus empirical hook E2E (emit, auto-dismiss, full-coverage safety gate, idempotency) run directly against the real worktree project."
+      "tests_run": 14,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-30-test-completeness-gate/surface_verification.json",
+      "timestamp": "2026-05-31T00:00:00.000Z"
+    },
+    "test_completeness": {
+      "status": "complete",
+      "behaviors": [
+        { "behavior": "counts.untested_testable>0 → FAIL", "disposition": "tested",
+          "evidence": "test_verify_iterate_finalization.py::test_completeness_fails_when_untested_testable_positive PASSED" },
+        { "behavior": "escape-hatch disposition (e.g. 'deferred') → FAIL", "disposition": "tested",
+          "evidence": "::test_completeness_fails_for_escape_hatch_disposition PASSED" },
+        { "behavior": "untestable with reason_code outside closed vocab → FAIL", "disposition": "tested",
+          "evidence": "::test_completeness_fails_for_bad_reason_code PASSED" },
+        { "behavior": "missing block at small+ → FAIL", "disposition": "tested",
+          "evidence": "::test_completeness_fails_when_block_missing_at_medium + ::_results_missing_at_small PASSED" },
+        { "behavior": "trivial → SKIP (auto n/a)", "disposition": "tested",
+          "evidence": "::test_completeness_skipped_for_trivial PASSED" },
+        { "behavior": "all tested / valid untestable mix → PASS", "disposition": "tested",
+          "evidence": "::test_completeness_passes_when_all_tested + ::_passes_with_valid_untestable PASSED" },
+        { "behavior": "n/a without justification → FAIL; with → PASS (small)", "disposition": "tested",
+          "evidence": "::test_completeness_na_without_justification_fails + ::_na_with_justification_passes PASSED" },
+        { "behavior": "n/a forbidden at medium/large → FAIL (review MEDIUM)", "disposition": "tested",
+          "evidence": "::test_completeness_na_forbidden_at_medium PASSED" },
+        { "behavior": "untested_testable: false (bool) rejected (review LOW)", "disposition": "tested",
+          "evidence": "::test_completeness_rejects_bool_untested_testable PASSED" },
+        { "behavior": "enumeration_basis acs>covered_acs → FAIL", "disposition": "tested",
+          "evidence": "::test_completeness_fails_on_enumeration_gap PASSED" },
+        { "behavior": "malformed / non-object results JSON → clean ERROR (review LOW)", "disposition": "tested",
+          "evidence": "::test_completeness_fails_when_results_malformed PASSED" },
+        { "behavior": "check wired into run_all_checks (F11 enforces)", "disposition": "tested",
+          "evidence": "::test_completeness_in_run_all_checks PASSED" },
+        { "behavior": "CLI verifier fails closed on testable-but-untested", "disposition": "tested",
+          "evidence": "test_audit_e2e_integration.py::test_cli_fails_on_testable_but_untested_behavior PASSED" },
+        { "behavior": "doc↔code UNTESTABLE vocabulary sync (forward+reverse)", "disposition": "tested",
+          "evidence": "test_untestable_vocab_doc_sync.py (3 cases) PASSED" },
+        { "behavior": "SKILL Phase-Matrix row + Override-Classes drift", "disposition": "tested",
+          "evidence": "test_skill_completeness_matrix.py (2 cases) + test_skill_phase_matrix.py PASSED" },
+        { "behavior": "type-robustness edges: list-shaped iterate_latest/block, non-object behavior row, absent counts → fail closed (asymptote probe)", "disposition": "tested",
+          "evidence": "test_test_completeness_ledger_edges.py (4 cases) PASSED" },
+        { "behavior": "live operator UX of the F11 PR completeness summary line", "disposition": "untestable",
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "PR-body rendering is a human visual call; only the F11 prose is asserted structurally, the rendered line is operator-observed" }
+      ],
+      "counts": { "testable": 17, "tested": 16, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 10, "covered_acs": 10 }
     },
     "degraded": [
       {
-        "condition": "preexisting_unrelated_test_failure",
-        "detail": "shared/tests/test_artifact_path_canon.py::test_no_legacy_artifact_paths[compliance-migrated] fails on the origin/main base (commit 76a3b12, PR #115) — a canon-lint false-positive matching 'compliance/' inside the ADR slug value 'compliance/rtm-status-logic' in a prior iterate's recorded JSON. Out of scope for this iterate (a different iterate's append-only audit record; JSON cannot carry an inline canon marker). Recommend a follow-up to either narrow the canon regex for ADR-slug contexts or extend ALLOWLIST['compliance']."
+        "condition": "preexisting_shared_failures",
+        "detail": "Full shared suite ran 2578 passed; 2 failures (test_architecture_md_reflects_arch_impact, test_artifact_path_canon[compliance-migrated]) are PRE-EXISTING — reproduced identically on the main tree where this change does not exist (the documented `compliance/` path-canon dirty-tree issue + an arch-impact drop). Unrelated to this iterate."
       },
       {
-        "condition": "local_only_test_failure_external_drops",
-        "detail": "test_architecture_md_reflects_arch_impact fails ONLY because two OTHER iterates' decision drops (gitignore-canon-propagation, reviewer-stack; impact=convention) sit in the shared, gitignored main-tree decision-drops staging without architecture.md entries. Local-dev-machine state only — decision drops are not committed, so this cannot reproduce in CI. My own drop was reclassified impact=none (a pipeline producer-trigger + resolver bugfix, documented in hooks-and-pipeline.md, not an app-level architecture change), so it is not flagged."
-      },
-      {
-        "condition": "external_review_skipped",
-        "detail": "Autonomous run; medium+ external LLM review skipped (no API keys available). Compensated by 28 targeted tests, the full shared/tests suite, and direct empirical hook E2E proving emit/auto-dismiss/idempotency and the full-coverage safety gate."
+        "condition": "external_review_substituted",
+        "detail": "External LLM cascade not run; the internal code-reviewer subagent ran on the staged diff and returned 1 HIGH (ADR for the baseline bump) + 1 MEDIUM (n/a-at-medium escape hatch) + 2 LOW, all fixed (ADR-093, n/a forbidden at medium+, bool-as-int guard, non-object-JSON robustness)."
       }
     ]
   }
