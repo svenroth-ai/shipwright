@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-31-ci-gate-guard",
+  "date": "2026-05-31T12:11:45.151880Z",
+  "type": "feature",
+  "complexity": "medium",
+  "branch": "iterate/ci-gate-guard",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-05-31-ci-gate-guard.md",
+  "adr": "iterate-2026-05-31-ci-gate-guard"
+}

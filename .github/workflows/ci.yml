@@ -108,6 +108,13 @@ jobs:
             uv run --with pytest --with pytest-mock pytest integration-tests/ -v
           fi
 
+      - name: Run CI-gate guard
+        # Fails if a test dir is silently uncovered, a quality gate goes loose
+        # outside the documented allowlist, or the security critical-gate loses
+        # its fail-closed missing-findings guard. See
+        # shared/scripts/tools/check_ci_gate_coverage.py.
+        run: uv run shared/scripts/tools/check_ci_gate_coverage.py --project-root .
+
   # WebUI client + server checks moved to
   # https://github.com/svenroth-ai/shipwright-webui/blob/main/.github/workflows/ci.yml
   # when the WebUI was extracted into its own repo (v0.4.0, 2026-04-24).
