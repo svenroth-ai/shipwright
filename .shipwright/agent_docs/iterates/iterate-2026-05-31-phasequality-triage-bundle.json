@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-05-31-phasequality-triage-bundle",
+  "date": "2026-05-31T11:59:52.552867Z",
+  "complexity": "medium",
+  "type": "change",
+  "status": "complete",
+  "branch": "iterate/phasequality-triage-bundle",
+  "tests_passed": true,
+  "title": "Phase-quality triage: one rolling backlog action-unit + applicability gate + run_id guard"
+}

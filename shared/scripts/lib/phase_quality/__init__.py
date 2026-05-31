@@ -100,6 +100,14 @@ from ._runners import (
     run_traceability_checks,
     run_workflow_checks,
 )
+from ._triage_bundle import (
+    BACKLOG_PREFIX,
+    DASHBOARD_REL,
+    collect_in_scope_fails,
+    emit_phase_quality_backlog,
+    load_engagement_inputs,
+    phase_is_engaged,
+)
 
 
 __all__ = [
@@ -120,11 +128,17 @@ __all__ = [
     "STATUS_WARN",
     "SUMMARY_PATH",
     "TIER_2_CHECK_IDS",
+    "BACKLOG_PREFIX",
+    "DASHBOARD_REL",
     "LoadedFinding",
     "already_audited",
     "apply_skip_override",
     "collect_bloat_summary",
+    "collect_in_scope_fails",
     "count_by_status",
+    "emit_phase_quality_backlog",
+    "load_engagement_inputs",
+    "phase_is_engaged",
     "cwd_is_strict_ancestor_of",
     "finding_path",
     "flag_enabled",
