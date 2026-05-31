@@ -1,6 +1,6 @@
 # Test Evidence Report
 
-Generated: 2026-05-31T11:53:17.529858+00:00
+Generated: 2026-05-31T15:52:35.290127+00:00
 
 ## Summary
 
@@ -14,7 +14,7 @@ Generated: 2026-05-31T11:53:17.529858+00:00
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Wire shared/ test suites (shared/tests, shared/scripts/tests, shared/scripts/tools/tests) into ci.yml as blocking per-dir invocations; fix 2 non-hermetic validate_env tests via a dir conftest; make the born-red arch-md sibling skip when gitignored decision-drops are absent. | iterate | — | +0 | — | — | 2026-05-31 |
+| 1 | Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement) | iterate | — | +0 | — | — | 2026-05-31 |
 | 2 | iterate completion: test-completeness-gate | iterate | — | +0 | — | — | 2026-05-30 |
 | 3 | iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade) | iterate | — | +0 | — | — | 2026-05-30 |
 | 4 | Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test | iterate | — | +0 | — | — | 2026-05-30 |

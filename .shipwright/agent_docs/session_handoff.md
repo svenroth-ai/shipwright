@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-31-ci-shared-tests"
+run_id: "iterate-2026-05-31-compliance-triage-bundle"
 phase: "iterate"
-reason: "CI shared-test wiring + born-red remediation complete"
-timestamp: "2026-05-31T11:53:17.529858+00:00"
+reason: "compliance triage bundling: one rolling compliance:backlog action-unit"
+timestamp: "2026-05-31T15:52:35.290127+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-31 11:53:17 UTC
+> Auto-generated 2026-05-31 15:52:35 UTC
 
 ## Session Info
 
-- **Session ID**: 19608e37-ff29-4eb4-92bd-1d9e0b792b27
-- **Timestamp**: 2026-05-31 11:53:17 UTC
-- **Reason**: CI shared-test wiring + born-red remediation complete
+- **Session ID**: 3e307394-564c-4915-8128-3c7fa7eeb609
+- **Timestamp**: 2026-05-31 15:52:35 UTC
+- **Reason**: compliance triage bundling: one rolling compliance:backlog action-unit
 
 ## Last Iterate
 
@@ -28,11 +28,10 @@ timestamp: "2026-05-31T11:53:17.529858+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/ci-shared-tests
-- **Run ID**: `iterate-2026-05-31-ci-shared-tests`
-- **Spec**: .shipwright/planning/iterate/2026-05-31-ci-shared-tests.md
-- **Complexity**: medium (systemic ci gap; touches ci infra + test hygiene; multi-file root-cause across two failure modes)
-- **External Review Marker**: stale (predates spec (2026-05-27T07:11:03))
+- **Branch**: iterate/compliance-triage-bundle
+- **Spec**: .shipwright/planning/iterate/2026-05-31-compliance-triage-bundle.md
+- **Complexity**: medium (`touches_io_boundary`: writes `triage.jsonl`; changes a
+- **External Review Marker**: completed (external_review_state.json @ 2026-05-31T15:51:40)
 
 ### Mandatory replay on Resume
 
@@ -50,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/ci-shared-tests
-- **Last Commit**: 78a281f Merge pull request #120 from svenroth-ai/iterate/test-completeness-gate
+- **Branch**: iterate/compliance-triage-bundle
+- **Last Commit**: 78a281fa Merge pull request #120 from svenroth-ai/iterate/test-completeness-gate
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,7 +66,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-0b680aca | work_completed | iterate (Wire shared/ test suites (shared/tests, shared/scripts/tests, shared/scripts/tools/tests) into ci.yml as blocking per-dir invocations; fix 2 non-hermetic validate_env tests via a dir conftest; make the born-red arch-md sibling skip when gitignored decision-drops are absent.) | 2026-05-31 |
+| evt-41bb1152 | work_completed | iterate (Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement)) | 2026-05-31 |
 | evt-d16cc59c | work_completed | iterate (iterate completion: test-completeness-gate) | 2026-05-30 |
 | evt-d70f6cd4 | work_completed | iterate (iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade)) | 2026-05-30 |
 | evt-76ce63ff | work_completed | iterate (Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test) | 2026-05-30 |
@@ -77,7 +76,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 78
-- **Last iterate**: change — Wire shared/ test suites (shared/tests, shared/scripts/tests, shared/scripts/tools/tests) into ci.yml as blocking per-dir invocations; fix 2 non-hermetic validate_env tests via a dir conftest; make the born-red arch-md sibling skip when gitignored decision-drops are absent. (2026-05-31)
+- **Last iterate**: change — Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement) (2026-05-31)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

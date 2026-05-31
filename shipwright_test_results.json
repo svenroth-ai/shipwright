@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-31-ci-shared-tests",
+    "run_id": "iterate-2026-05-31-compliance-triage-bundle",
     "date": "2026-05-31",
     "unit": {
       "status": "passed",
-      "passed": 2861,
-      "total": 2861
+      "passed": 2635,
+      "total": 2635
     },
     "integration": {
       "status": "not_run",
@@ -31,56 +31,45 @@
       "status": "not_run"
     },
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --with pytest --with pytest-mock pytest shared/scripts/tests -q -p no:cacheprovider",
-      "exit_code": 0,
-      "tests_run": 175,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-31-ci-shared-tests/surface_verification.json",
-      "timestamp": "2026-05-31T11:49:40.323Z"
+      "surface": "none",
+      "justification": "Python triage-producer change (compliance audit mirror) with no user-facing web/UI surface; covered by 10 producer tests + 28 caller (audit_compliance_on_stop) + 566 compliance-plugin + full 2635-pass shared suite, plus an end-to-end probe reproducing the exact 11-item flood (-> 1 bundle -> 0 on resolve). No dev server / E2E surface applies.",
+      "tests_run": 10,
+      "timestamp": "2026-05-31T00:00:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "validate_env file-based tests stay green regardless of ambient os.environ (the red→green fix)", "disposition": "tested",
-          "evidence": "worktree run under ambient NEXT_PUBLIC_SUPABASE_URL=... → 59 passed; F0.5 cli runner shared/scripts/tests → 175 passed exit 0" },
-        { "behavior": "shared/scripts/tests collects + passes as a separate per-dir invocation (clean env)", "disposition": "tested",
-          "evidence": "clean-clone CI sim (scrubbed env) → 175 passed" },
-        { "behavior": "arch-md test_arch_impact_drops_found_at_all SKIPs when decision-drops/ dir is absent (clean checkout)", "disposition": "tested",
-          "evidence": "clean clone (drops absent) → 2 skipped (was 1 failed before fix)" },
-        { "behavior": "arch-md sibling STILL asserts when decision-drops/ dir is present (guard didn't neuter the check)", "disposition": "tested",
-          "evidence": "worktree (drops present via main-repo redirect) → 2 passed" },
-        { "behavior": "shared/tests collects + passes/skips as a separate per-dir invocation under clean CI (no born-red)", "disposition": "tested",
-          "evidence": "clean-clone CI sim with fixes → 2633 passed, 16 skipped, 0 failed" },
-        { "behavior": "shared/scripts/tools/tests collects + passes per-dir", "disposition": "tested",
-          "evidence": "clean-clone CI sim → 51 passed; worktree F0 → 51 passed" },
-        { "behavior": "the three dirs in ONE pytest process still collide (negative control — proves separate invocations are required)", "disposition": "tested",
-          "evidence": "reproduced 11 ModuleNotFoundError; F0.5 first attempt combining 2 dirs → ImportPathMismatchError('tests.conftest')" },
-        { "behavior": "validate_env.py comment-only edit changes no behavior", "disposition": "tested",
-          "evidence": "full shared/scripts/tests green (175) after the net-zero comment edit" },
-        { "behavior": "GitHub Actions actually executing the new 'Run shared tests' CI step green on the live PR", "disposition": "tested",
-          "evidence": "live CI run 26717256253 conclusion=success; shared/tests passed, shared/scripts/tests 175 passed, shared/scripts/tools/tests 51 passed" },
-        { "behavior": "Linux: conftest makereport hookwrapper turns an os.name-fake INTERNALERROR (WindowsPath on POSIX during failure rendering) into a normal reported failure (no session abort/masking)", "disposition": "tested",
-          "evidence": "discovery CI run 26716937089 reported all 6 failures + 2634 passed instead of aborting at 20%" },
-        { "behavior": "Linux: dev_server _start_one no longer raises AttributeError on Windows-only subprocess.CREATE_NEW_PROCESS_GROUP under faked os.name=nt", "disposition": "tested",
-          "evidence": "test_dev_server_windows_npm absent from discovery failure set after getattr fix; Windows 85 passed" },
-        { "behavior": "Linux: validate_deploy_profile rejects Windows absolute client.entrypoint (C:\\...) regardless of host OS", "disposition": "tested",
-          "evidence": "host-independent PureWindowsPath/PurePosixPath logic proof + Windows 35 passed + final CI green" },
-        { "behavior": "Linux: cross_plugin-marked tests deselected from the shared/tests CI step (ADR-044 hard-fail-in-CI tests run under their plugin session)", "disposition": "tested",
-          "evidence": "final CI green; local marker run → 6 deselected, 24 passed" },
-        { "behavior": "Windows-only os.name-fake test skips (not fails) on a POSIX host", "disposition": "tested",
-          "evidence": "skipif(os.name != 'nt') on test_setup_uses_resolved_executable_for_npm; absent from final CI failure set" }
+        { "behavior": "many fails -> 1 backlog item, max severity, body lists keys, launch payload (AC-1)", "disposition": "tested",
+          "evidence": "test_compliance_audit_triage_emit::test_many_fails_one_backlog_item + ::test_severity_is_max_of_bundle PASSED" },
+        { "behavior": "pass/skip findings not emitted", "disposition": "tested",
+          "evidence": "::test_pass_skip_not_emitted PASSED" },
+        { "behavior": "idempotent across commits + refresh on changed set (AC-2)", "disposition": "tested",
+          "evidence": "::test_idempotent_across_commits + ::test_refresh_on_changed_set PASSED" },
+        { "behavior": "auto-dismiss when resolved + empty-report no-op (AC-3)", "disposition": "tested",
+          "evidence": "::test_auto_dismiss_when_all_resolved + ::test_empty_report_no_op PASSED" },
+        { "behavior": "one-shot legacy per-check retirement (AC-4)", "disposition": "tested",
+          "evidence": "::test_legacy_per_check_items_retired PASSED" },
+        { "behavior": "promoted + other-source items untouched", "disposition": "tested",
+          "evidence": "::test_promoted_backlog_stays_terminal + ::test_other_source_items_not_touched PASSED" },
+        { "behavior": "full-coverage caller gate preserved (AC-5)", "disposition": "tested",
+          "evidence": "test_audit_compliance_on_stop.py (28 cases) PASSED unchanged" },
+        { "behavior": "end-to-end 11-flood -> 1 bundle -> 0 on resolve", "disposition": "tested",
+          "evidence": "Step 7.5 reproduction probe: appended=1 (sev=high), resolve dismissed=1, open=0" },
+        { "behavior": "docs hooks-and-pipeline.md compliance row (AC-9)", "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "documentation prose; producer behavior covered by the tests above" }
       ],
-      "counts": { "testable": 14, "tested": 14, "untestable": 0, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 5, "covered_acs": 5 }
+      "counts": { "testable": 8, "tested": 8, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 9, "covered_acs": 9 }
     },
     "degraded": [
       {
-        "condition": "external_review_substituted",
-        "detail": "External LLM cascade not run (proportionate for a CI/test-infra change with no product-logic, security, or data surface). An internal code-reviewer subagent reviewed the full diff and returned NO BLOCKERS + 3 NITs; the 2 substantive NITs (ci.yml collision-comment precision, conftest docstring) were fixed."
+        "condition": "preexisting_shared_failures",
+        "detail": "Full shared suite: 2635 passed, 14 skipped, 1 failure (test_architecture_md_reflects_arch_impact) — PRE-EXISTING and unrelated (main-tree decision-drops not reflected in architecture.md), confirmed on origin/main with this work stashed. This iterate touches only plugins/shipwright-compliance/scripts/audit/{audit_detector,triage_bundle}.py + its test + docs."
       },
       {
-        "condition": "task_description_partially_stale",
-        "detail": "2 of the 4 named candidate tests were already green: arch-md test_every_arch_impact_drop_has_architecture_md_entry (skips cleanly in CI) and test_artifact_path_canon[compliance-migrated] (fixed on main by PR #122 / 658198f). The real born-red blocker was the arch-md SIBLING test_arch_impact_drops_found_at_all, found only via the clean-clone CI simulation."
+        "condition": "external_review_self_review_fallback",
+        "detail": "External LLM cascade not re-run: the compliance bundle mirrors iterate-1's externally-reviewed (gemini-3.1-pro + gpt-5.4) phaseQuality backlog pattern. Self-review (7-point) + reproduction probe + 10 producer / 28 caller / 566 plugin / full-suite green; marker recorded with self_review_fallback_ran=true."
       }
     ]
   }

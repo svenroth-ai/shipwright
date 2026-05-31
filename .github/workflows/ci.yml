@@ -99,7 +99,7 @@ jobs:
       - name: Run integration tests
         run: |
           if [ -d integration-tests ]; then
-            uv run --with pytest --with pytest-mock pytest integration-tests/ -v || true
+            uv run --with pytest --with pytest-mock pytest integration-tests/ -v
           fi
 
   # WebUI client + server checks moved to

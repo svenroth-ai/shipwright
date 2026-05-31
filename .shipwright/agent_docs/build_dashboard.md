@@ -1,11 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-05-31 11:53 UTC | Session: 19608e37-ff29-4eb4-92bd-1d9e0b792b27 | Run: iterate-2026-05-31-ci-shared-tests
+> Updated: 2026-05-31 15:52 UTC | Session: 3e307394-564c-4915-8128-3c7fa7eeb609 | Run: iterate-2026-05-31-compliance-triage-bundle
 
 ## Recent Changes (78 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | Wire shared/ test suites (shared/tests, shared/scripts/tests, shared/scripts/tools/tests) into ci.yml as blocking per-dir invocations; fix 2 non-hermetic validate_env tests via a dir conftest; make the born-red arch-md sibling skip when gitignored decision-drops are absent. | 0/0 |  |  | 2026-05-31 |
+| change | Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement) | 0/0 |  | compliance | 2026-05-31 |
 | change | iterate completion: test-completeness-gate | 0/0 |  |  | 2026-05-30 |
 | change | iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade) | 0/0 |  |  | 2026-05-30 |
 | change | Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test | 0/0 |  | tooling | 2026-05-30 |
@@ -85,7 +85,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-31 | Unit: 2861/2861 | Smoke: not_run | (iterate)
+Last run: 2026-05-31 | Unit: 2635/2635 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

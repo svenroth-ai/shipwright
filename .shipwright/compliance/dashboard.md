@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-05-31T11:53:17.529858+00:00
+Generated: 2026-05-31T15:52:35.290127+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -18,7 +18,7 @@ Scope: library
 | Triage open | 4 open | WARN | 4 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit | 138 | WARN | 138 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
 | Bloat in allowlist | 151 entries | INFO |  |
-| Bloat ratchet delta | -24 lines | PASS |  |
+| Bloat ratchet delta | -77 lines | PASS |  |
 
 ## Project Velocity
 
