@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-30-reviewer-stack"
+run_id: "iterate-2026-05-30-record-event-test-failures"
 phase: "iterate"
-reason: "iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade)"
-timestamp: "2026-05-30T21:32:24.578373+00:00"
+reason: "iterate finalization"
+timestamp: "2026-05-30T20:59:20.601989+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-30 21:32:24 UTC
+> Auto-generated 2026-05-30 20:59:20 UTC
 
 ## Session Info
 
-- **Session ID**: 66a98762-5ccf-4086-9e09-becd01d59dc7
-- **Timestamp**: 2026-05-30 21:32:24 UTC
-- **Reason**: iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade)
+- **Session ID**: 1d1513f2-b22d-4264-9631-0685e9a200c1
+- **Timestamp**: 2026-05-30 20:59:20 UTC
+- **Reason**: iterate finalization
 
 ## Last Iterate
 
@@ -28,11 +28,8 @@ timestamp: "2026-05-30T21:32:24.578373+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/reviewer-stack
-- **Run ID**: `iterate-2026-05-30-reviewer-stack`
-- **Spec**: .shipwright/planning/iterate/2026-05-30-reviewer-stack.md
-- **Complexity**: medium — `cross_split` (changes span shipwright-build +
-- **External Review Marker**: stale (predates spec (2026-05-27T07:11:03))
+- **Branch**: iterate/record-event-test-failures
+- **External Review Marker**: completed (external_review_state.json @ 2026-05-27T07:11:03)
 
 ### Mandatory replay on Resume
 
@@ -50,7 +47,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/reviewer-stack
+- **Branch**: iterate/record-event-test-failures
 - **Last Commit**: 55ac703 Merge pull request #115 from svenroth-ai/iterate/rtm-covered-ignore-untested-events
 - **Uncommitted Changes**: Yes
 
@@ -67,7 +64,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-d70f6cd4 | work_completed | iterate (iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade)) | 2026-05-30 |
+| evt-c9f7073a | work_completed | iterate (Align 7 stale record_event tests to the C.1 FR-gate (gates all iterates incl. bug/intentless); surface CI shared-test gap (trg-f363b1ab)) | 2026-05-30 |
 | evt-13cd797e | work_completed | iterate (RTM: untested (0/0) events neutral; status from latest tested event (fixes 7 false FAILs); neutralize leaked verification event via event_amended) | 2026-05-30 |
 | evt-4a141c52 | event_amended | — | 2026-05-30 |
 | evt-6ebab37a | work_completed | iterate (SP3+OS2 post-Campaign-B reintegration — F-debug.md systematic-debugging sub-skill + assumptions-first interview pre-phase) | 2026-05-29 |
@@ -77,7 +74,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 73
-- **Last iterate**: change — iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade) (2026-05-30)
+- **Last iterate**: bug — Align 7 stale record_event tests to the C.1 FR-gate (gates all iterates incl. bug/intentless); surface CI shared-test gap (trg-f363b1ab) (2026-05-30)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
