@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-30-test-completeness-gate",
+    "run_id": "iterate-2026-05-31-ci-shared-tests",
     "date": "2026-05-31",
     "unit": {
       "status": "passed",
-      "passed": 262,
-      "total": 262
+      "passed": 2861,
+      "total": 2861
     },
     "integration": {
-      "status": "passed",
-      "passed": 136,
-      "total": 136
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -32,62 +32,46 @@
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --directory shared --extra dev pytest tests/test_audit_e2e_integration.py tests/test_untestable_vocab_doc_sync.py -q",
+      "runner": "uv run --with pytest --with pytest-mock pytest shared/scripts/tests -q -p no:cacheprovider",
       "exit_code": 0,
-      "tests_run": 14,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-30-test-completeness-gate/surface_verification.json",
-      "timestamp": "2026-05-31T00:00:00.000Z"
+      "tests_run": 175,
+      "evidence_path": ".shipwright/runs/iterate-2026-05-31-ci-shared-tests/surface_verification.json",
+      "timestamp": "2026-05-31T11:49:40.323Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "counts.untested_testable>0 → FAIL", "disposition": "tested",
-          "evidence": "test_verify_iterate_finalization.py::test_completeness_fails_when_untested_testable_positive PASSED" },
-        { "behavior": "escape-hatch disposition (e.g. 'deferred') → FAIL", "disposition": "tested",
-          "evidence": "::test_completeness_fails_for_escape_hatch_disposition PASSED" },
-        { "behavior": "untestable with reason_code outside closed vocab → FAIL", "disposition": "tested",
-          "evidence": "::test_completeness_fails_for_bad_reason_code PASSED" },
-        { "behavior": "missing block at small+ → FAIL", "disposition": "tested",
-          "evidence": "::test_completeness_fails_when_block_missing_at_medium + ::_results_missing_at_small PASSED" },
-        { "behavior": "trivial → SKIP (auto n/a)", "disposition": "tested",
-          "evidence": "::test_completeness_skipped_for_trivial PASSED" },
-        { "behavior": "all tested / valid untestable mix → PASS", "disposition": "tested",
-          "evidence": "::test_completeness_passes_when_all_tested + ::_passes_with_valid_untestable PASSED" },
-        { "behavior": "n/a without justification → FAIL; with → PASS (small)", "disposition": "tested",
-          "evidence": "::test_completeness_na_without_justification_fails + ::_na_with_justification_passes PASSED" },
-        { "behavior": "n/a forbidden at medium/large → FAIL (review MEDIUM)", "disposition": "tested",
-          "evidence": "::test_completeness_na_forbidden_at_medium PASSED" },
-        { "behavior": "untested_testable: false (bool) rejected (review LOW)", "disposition": "tested",
-          "evidence": "::test_completeness_rejects_bool_untested_testable PASSED" },
-        { "behavior": "enumeration_basis acs>covered_acs → FAIL", "disposition": "tested",
-          "evidence": "::test_completeness_fails_on_enumeration_gap PASSED" },
-        { "behavior": "malformed / non-object results JSON → clean ERROR (review LOW)", "disposition": "tested",
-          "evidence": "::test_completeness_fails_when_results_malformed PASSED" },
-        { "behavior": "check wired into run_all_checks (F11 enforces)", "disposition": "tested",
-          "evidence": "::test_completeness_in_run_all_checks PASSED" },
-        { "behavior": "CLI verifier fails closed on testable-but-untested", "disposition": "tested",
-          "evidence": "test_audit_e2e_integration.py::test_cli_fails_on_testable_but_untested_behavior PASSED" },
-        { "behavior": "doc↔code UNTESTABLE vocabulary sync (forward+reverse)", "disposition": "tested",
-          "evidence": "test_untestable_vocab_doc_sync.py (3 cases) PASSED" },
-        { "behavior": "SKILL Phase-Matrix row + Override-Classes drift", "disposition": "tested",
-          "evidence": "test_skill_completeness_matrix.py (2 cases) + test_skill_phase_matrix.py PASSED" },
-        { "behavior": "type-robustness edges: list-shaped iterate_latest/block, non-object behavior row, absent counts → fail closed (asymptote probe)", "disposition": "tested",
-          "evidence": "test_test_completeness_ledger_edges.py (4 cases) PASSED" },
-        { "behavior": "live operator UX of the F11 PR completeness summary line", "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "PR-body rendering is a human visual call; only the F11 prose is asserted structurally, the rendered line is operator-observed" }
+        { "behavior": "validate_env file-based tests stay green regardless of ambient os.environ (the red→green fix)", "disposition": "tested",
+          "evidence": "worktree run under ambient NEXT_PUBLIC_SUPABASE_URL=... → 59 passed; F0.5 cli runner shared/scripts/tests → 175 passed exit 0" },
+        { "behavior": "shared/scripts/tests collects + passes as a separate per-dir invocation (clean env)", "disposition": "tested",
+          "evidence": "clean-clone CI sim (scrubbed env) → 175 passed" },
+        { "behavior": "arch-md test_arch_impact_drops_found_at_all SKIPs when decision-drops/ dir is absent (clean checkout)", "disposition": "tested",
+          "evidence": "clean clone (drops absent) → 2 skipped (was 1 failed before fix)" },
+        { "behavior": "arch-md sibling STILL asserts when decision-drops/ dir is present (guard didn't neuter the check)", "disposition": "tested",
+          "evidence": "worktree (drops present via main-repo redirect) → 2 passed" },
+        { "behavior": "shared/tests collects + passes/skips as a separate per-dir invocation under clean CI (no born-red)", "disposition": "tested",
+          "evidence": "clean-clone CI sim with fixes → 2633 passed, 16 skipped, 0 failed" },
+        { "behavior": "shared/scripts/tools/tests collects + passes per-dir", "disposition": "tested",
+          "evidence": "clean-clone CI sim → 51 passed; worktree F0 → 51 passed" },
+        { "behavior": "the three dirs in ONE pytest process still collide (negative control — proves separate invocations are required)", "disposition": "tested",
+          "evidence": "reproduced 11 ModuleNotFoundError; F0.5 first attempt combining 2 dirs → ImportPathMismatchError('tests.conftest')" },
+        { "behavior": "validate_env.py comment-only edit changes no behavior", "disposition": "tested",
+          "evidence": "full shared/scripts/tests green (175) after the net-zero comment edit" },
+        { "behavior": "GitHub Actions actually executing the new 'Run shared tests' CI step green on the live PR", "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "the GitHub Actions runner is an external service; locally verified via a clean-clone CI simulation, confirmed for real only by observing the PR's CI run post-push" }
       ],
-      "counts": { "testable": 17, "tested": 16, "untestable": 1, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 10, "covered_acs": 10 }
+      "counts": { "testable": 9, "tested": 8, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 5, "covered_acs": 5 }
     },
     "degraded": [
       {
-        "condition": "preexisting_shared_failures",
-        "detail": "Full shared suite ran 2578 passed; 2 failures (test_architecture_md_reflects_arch_impact, test_artifact_path_canon[compliance-migrated]) are PRE-EXISTING — reproduced identically on the main tree where this change does not exist (the documented `compliance/` path-canon dirty-tree issue + an arch-impact drop). Unrelated to this iterate."
+        "condition": "external_review_substituted",
+        "detail": "External LLM cascade not run (proportionate for a CI/test-infra change with no product-logic, security, or data surface). An internal code-reviewer subagent reviewed the full diff and returned NO BLOCKERS + 3 NITs; the 2 substantive NITs (ci.yml collision-comment precision, conftest docstring) were fixed."
       },
       {
-        "condition": "external_review_substituted",
-        "detail": "External LLM cascade not run; the internal code-reviewer subagent ran on the staged diff and returned 1 HIGH (ADR for the baseline bump) + 1 MEDIUM (n/a-at-medium escape hatch) + 2 LOW, all fixed (ADR-093, n/a forbidden at medium+, bool-as-int guard, non-object-JSON robustness)."
+        "condition": "task_description_partially_stale",
+        "detail": "2 of the 4 named candidate tests were already green: arch-md test_every_arch_impact_drop_has_architecture_md_entry (skips cleanly in CI) and test_artifact_path_canon[compliance-migrated] (fixed on main by PR #122 / 658198f). The real born-red blocker was the arch-md SIBLING test_arch_impact_drops_found_at_all, found only via the clean-clone CI simulation."
       }
     ]
   }

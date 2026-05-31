@@ -68,6 +68,28 @@ jobs:
             fi
           done
 
+      - name: Run shared tests
+        shell: bash
+        run: |
+          set -e
+          # The shared/ suites historically NEVER ran in CI — only
+          # plugins/*/tests/ + integration-tests/ did — which is how regressions
+          # under shared/ rotted unseen (iterate-2026-05-31-ci-shared-tests).
+          #
+          # They must run as SEPARATE per-dir invocations: shared/tests/ and
+          # shared/scripts/tests/ are each their own top-level `tests` package
+          # (each carries __init__.py + a conftest.py), so collecting more than
+          # one in ONE pytest process collides on the duplicate top-level
+          # package name (ModuleNotFoundError / ImportPathMismatchError on
+          # `tests.conftest`). One process per dir = one `tests` package = no
+          # collision. Same pattern as the per-plugin loop above. The root
+          # pyproject.toml supplies `-m 'not slow'` + pythonpath, so no extra
+          # flags are needed here.
+          for dir in shared/tests shared/scripts/tests shared/scripts/tools/tests; do
+            echo "--- Running tests in $dir ---"
+            uv run --with pytest --with pytest-mock pytest "$dir" -v
+          done
+
       - name: Run integration tests
         run: |
           if [ -d integration-tests ]; then

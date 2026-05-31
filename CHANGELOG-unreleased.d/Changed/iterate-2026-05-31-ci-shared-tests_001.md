@@ -1,0 +1,1 @@
+CI now runs the shared/ test suites (shared/tests, shared/scripts/tests, shared/scripts/tools/tests) as blocking, separate per-dir steps — previously only plugins/*/tests and integration-tests ran in CI, so shared-side regressions rotted unseen.
