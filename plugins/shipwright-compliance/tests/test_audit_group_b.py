@@ -32,7 +32,6 @@ import sys
 import textwrap
 from pathlib import Path
 
-import pytest
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 if str(PLUGIN_ROOT) not in sys.path:
@@ -464,7 +463,7 @@ def _git_tag(repo: Path, tag: str) -> None:
 
 def test_b7_passes_when_every_post_release_commit_has_an_event(tmp_path):
     _git_init(tmp_path)
-    sha0 = _git_commit(tmp_path, {"a.txt": "v1"}, "initial")
+    _git_commit(tmp_path, {"a.txt": "v1"}, "initial")
     _git_tag(tmp_path, "v0.1.0")
     sha1 = _git_commit(tmp_path, {"a.txt": "v2"}, "feat: thing")
 

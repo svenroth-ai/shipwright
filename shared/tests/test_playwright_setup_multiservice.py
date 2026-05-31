@@ -12,7 +12,6 @@ import json
 import os
 import sys
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -84,7 +83,8 @@ def test_setup_uses_resolved_executable_for_npm(tmp_path, monkeypatch):
     (tmp_path / "package.json").write_text(
         json.dumps({"name": "x", "dependencies": {}}), encoding="utf-8"
     )
-    monkeypatch.setattr(playwright_setup.os, "name", "nt")
+    # NOTE: setup() resolves npm/npx purely via cmd_resolver.resolve_executable
+    # (monkeypatched below); it never reads os.name, so no os patch is needed.
     monkeypatch.setattr(playwright_setup.subprocess, "run", fake_run)
     monkeypatch.setattr(
         playwright_setup,

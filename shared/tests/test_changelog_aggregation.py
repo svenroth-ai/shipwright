@@ -5,7 +5,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import pytest
 
 from tools.aggregate_changelog import (
     CHANGELOG_NAME,
@@ -286,7 +285,7 @@ class TestAggregateEndToEnd:
 
         monkeypatch.setattr(mod, "_snapshot_drop_files", partial_snapshot)
 
-        result = aggregate(tmp_path, "0.3.0", release_date="2026-04-23")
+        aggregate(tmp_path, "0.3.0", release_date="2026-04-23")
 
         # Only "first" made it into this release.
         changelog = (tmp_path / CHANGELOG_NAME).read_text(encoding="utf-8")

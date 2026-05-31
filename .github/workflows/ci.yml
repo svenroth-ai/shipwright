@@ -13,7 +13,9 @@ concurrency:
 
 jobs:
   python-checks:
-    name: Python (lint + type + test)
+    # Type-checking is a deliberate won't-do for this repo (see dismissed
+    # triage trg-84f204ba), so the job name does not claim it.
+    name: Python (lint + test)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,8 +32,12 @@ jobs:
         run: uv sync
 
       - name: Lint (ruff)
-        run: uv run ruff check . || true
-        continue-on-error: true
+        # Bug-focused, GATING lint. The curated ruleset lives in the root
+        # pyproject.toml ([tool.ruff.lint]). Run via uvx with a pinned ruff
+        # version (ruff is not a project dependency, and pinning prevents a
+        # new ruff release from silently breaking the gate). This step gates:
+        # no `|| true`, no `continue-on-error`.
+        run: uvx ruff@0.15.15 check .
 
       # OSS security scanners — the shipwright-security plugin's
       # test_oss_backend_smoke.py smoke tests hard-fail in CI when these

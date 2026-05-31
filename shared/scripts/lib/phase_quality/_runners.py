@@ -95,7 +95,7 @@ def run_canon_checks(phase: str, project_root: Path) -> list[dict[str, Any]]:
         ))
     else:
         findings.append({
-            "id": "C5", "name": f"C5 CHANGELOG [Unreleased] has entry",
+            "id": "C5", "name": "C5 CHANGELOG [Unreleased] has entry",
             "status": STATUS_SKIP,
             "evidence": f"not applicable for phase={phase}",
         })

@@ -19,7 +19,6 @@ import hashlib
 import json
 import sys
 from pathlib import Path
-from typing import Any
 
 _SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
 if str(_SCRIPTS_ROOT) not in sys.path:

@@ -118,7 +118,6 @@ def test_adopt_render_roundtrips_through_parse_adr_headers() -> None:
     own `scripts/lib` namespace (which collides with `shared/scripts/lib`
     if loaded into the test process) stays isolated.
     """
-    import json
     import subprocess
     import sys
 

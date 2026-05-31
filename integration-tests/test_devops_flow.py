@@ -12,7 +12,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CHANGELOG_PLUGIN = REPO_ROOT / "plugins" / "shipwright-changelog"

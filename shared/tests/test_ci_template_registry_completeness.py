@@ -24,7 +24,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 
 from lib.ci_workflow import TEMPLATE_BY_PROFILE  # noqa: E402
 

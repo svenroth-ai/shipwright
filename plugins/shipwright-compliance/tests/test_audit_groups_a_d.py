@@ -31,7 +31,6 @@ import sys
 import textwrap
 from pathlib import Path
 
-import pytest
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 if str(PLUGIN_ROOT) not in sys.path:

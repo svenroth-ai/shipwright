@@ -240,7 +240,7 @@ def test_artifact_skipped_when_no_run_available(
         artifact_run=None,  # no fresh run available
         artifact_findings=None,  # never called, but defensive
     )
-    result = github_triage.import_findings(tmp_path)
+    github_triage.import_findings(tmp_path)
     appends = _append_events(tmp_path)
     assert not any(a["dedupKey"].startswith("gh-security") for a in appends)
 
@@ -256,7 +256,7 @@ def test_artifact_skipped_when_download_fails(
         artifact_run=_build_run(),
         artifact_findings=None,  # download_security_findings returned None
     )
-    result = github_triage.import_findings(tmp_path)
+    github_triage.import_findings(tmp_path)
     appends = _append_events(tmp_path)
     assert not any(a["dedupKey"].startswith("gh-security") for a in appends)
 

@@ -33,6 +33,39 @@ markers = [
     "cross_plugin: tests that import another plugin's lib/tools modules. The cross-plugin namespace collision is structural (ADR-044) and hard-fails in CI from a shared/tests session via test_hygiene.import_or_fail_in_ci — they must run under their owning plugin's pytest session, so they are excluded from the `shared/tests` CI step (`-m 'not cross_plugin'`).",
 ]
 
+# ---------------------------------------------------------------------------
+# Ruff — bug-focused lint GATE (enforced by .github/workflows/ci.yml).
+#
+# This is a deliberately curated, high-signal ruleset for a solo / small-team
+# monorepo — NOT ruff's full default set. The goal is to catch real defects
+# (undefined names, unused imports/variables, f-string mistakes, comparison
+# and bare-except bugs) while skipping the purely-cosmetic whitespace/layout
+# rules that only generate churn on this repo's sys.path-bootstrapping scripts.
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py311"
+# Intentional sample/bad code (security scanner bait, adopt sample projects)
+# — these must never be auto-mutated by `ruff check --fix`.
+extend-exclude = ["**/tests/fixtures", "**/tests/fixtures/**"]
+
+[tool.ruff.lint]
+select = [
+    "F",     # Pyflakes — entirely bug-class: F401 unused-import, F811 redefinition,
+             #            F821 undefined-name, F841 unused-variable, F50x/F541 f-string bugs
+    "E711",  # comparison to None should use `is` / `is not`
+    "E712",  # comparison to True/False should use `is` / truthiness
+    "E713",  # membership test should be `not in`
+    "E714",  # identity test should be `is not`
+    "E721",  # type comparison should use `is` / isinstance, not `==`
+    "E722",  # bare `except:`
+    "E902",  # IO / tokenization error
+    "W605",  # invalid escape sequence in string literal
+]
+# Cosmetic pycodestyle rules ruff selects by default are intentionally OMITTED
+# (not in `select` above): E401/E402 import placement, E701-E704 one-liners,
+# E731 lambda-assign, E741 ambiguous single-char names. They fire heavily on
+# this repo's bootstrapping scripts without catching bugs.
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["shared*"]

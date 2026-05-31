@@ -1,7 +1,6 @@
 """Tests for git_utils module."""
 
 import os
-import subprocess
 
 from lib.git_utils import (
     get_commits_since,

@@ -95,7 +95,7 @@ def run_update_compliance(
     for phase in phases:
         if phase not in valid_phases:
             failed.append(
-                (phase, f"unknown_phase: not in PHASE_REPORTS allowlist"[:500])
+                (phase, "unknown_phase: not in PHASE_REPORTS allowlist"[:500])
             )
             continue
         reports = PHASE_REPORTS[phase]

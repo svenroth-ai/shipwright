@@ -55,10 +55,10 @@ def test_default_skips_test_fixtures(tmp_path: Path) -> None:
         f"expected 1 source TODO, got {by_marker}"
     )
     assert by_marker.get("FIXME", 0) == 0, (
-        f"FIXME from tests/test_inventory.py should have been skipped"
+        "FIXME from tests/test_inventory.py should have been skipped"
     )
     assert by_marker.get("HACK", 0) == 0, (
-        f"HACK from feature.test.ts should have been skipped"
+        "HACK from feature.test.ts should have been skipped"
     )
 
     body = (root / ".shipwright/agent_docs/known_issues.md").read_text(encoding="utf-8")

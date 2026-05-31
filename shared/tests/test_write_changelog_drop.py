@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path

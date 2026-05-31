@@ -12,7 +12,6 @@ Usage:
 
 import argparse
 import json
-import os
 import sys
 
 
@@ -28,7 +27,7 @@ def rollback_git(env_name: str, target_ref: str) -> dict:
     # Update the VCS project branch to the target ref
     # Note: This changes what the next Update pulls
     try:
-        result = client._call(
+        client._call(
             "environment/vcs/rest/update",
             envName=env_name,
             context="ROOT",
@@ -69,7 +68,7 @@ def rollback_clone(env_name: str, clone_name: str) -> dict:
             "message": f"Stopped {env_name}. Use {clone_name} as active environment.",
             "next_steps": [
                 f"Verify {clone_name} is running",
-                f"Update DNS if needed",
+                "Update DNS if needed",
                 f"Delete {env_name} when confirmed",
             ],
         }

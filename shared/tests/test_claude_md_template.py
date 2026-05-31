@@ -18,7 +18,6 @@ the CHANGELOG-fragment + ADR conventions before this iterate.
 
 from __future__ import annotations
 
-import importlib.util
 import subprocess
 import sys
 from pathlib import Path

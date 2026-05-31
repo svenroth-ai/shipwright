@@ -9,7 +9,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "lib
 
 from orchestrator import (
     PIPELINE_STEPS,
-    _COMPLIANCE_SCRIPT,
     build_pipeline,
     create_config,
     get_build_progress,

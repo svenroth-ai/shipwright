@@ -26,7 +26,7 @@ from lib.git_utils import get_commits_since, get_current_branch, get_last_tag
 def main() -> int:
     parser = argparse.ArgumentParser(description="Setup changelog session")
     parser.add_argument("--plugin-root", required=True)
-    args = parser.parse_args()
+    parser.parse_args()
 
     last_tag = get_last_tag()
     commits = get_commits_since(last_tag)

@@ -6,7 +6,6 @@ import json
 import sys
 from pathlib import Path
 
-import pytest
 
 PLUGIN_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "tools"))

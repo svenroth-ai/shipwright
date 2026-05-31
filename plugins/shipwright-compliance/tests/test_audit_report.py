@@ -42,7 +42,6 @@ def test_render_markdown_splits_preventive_and_detective():
     assert "Preventive re-checks" in md
     assert "Detective-only checks" in md
     # Each finding appears under its own section
-    p_idx = md.index("Preventive re-checks")
     d_idx = md.index("Detective-only checks")
     assert md.index("**C2**") < d_idx
     assert md.index("**B7**") > d_idx

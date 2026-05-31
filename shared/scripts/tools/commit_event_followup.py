@@ -137,12 +137,12 @@ def commit_followup(
     project_root = main_repo_root
 
     body_lines = [
-        f"Follow-up commit for the F7 work_completed event appended by",
+        "Follow-up commit for the F7 work_completed event appended by",
         f"record_event.py during iterate run {run_id}. shipwright_events.jsonl",
-        f"is tracked in this repo (.gitignore line 70 negates the general",
-        f"ignore for the repo root); without a follow-up commit, the next",
-        f"`git reset --hard` / `git stash` / rebase silently wipes the",
-        f"append.",
+        "is tracked in this repo (.gitignore line 70 negates the general",
+        "ignore for the repo root); without a follow-up commit, the next",
+        "`git reset --hard` / `git stash` / rebase silently wipes the",
+        "append.",
     ]
     if event_id:
         body_lines.append("")

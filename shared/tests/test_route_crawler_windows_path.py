@@ -1,4 +1,4 @@
-"""Regression test for the route_crawler Windows-path bug (sub-iterate G).
+r"""Regression test for the route_crawler Windows-path bug (sub-iterate G).
 
 `npx playwright test <path>` interprets the path argument as a REGEX.
 On Windows, `Path.relative_to(...).str()` returns backslash separators

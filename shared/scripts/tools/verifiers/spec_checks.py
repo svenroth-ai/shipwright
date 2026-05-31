@@ -12,8 +12,6 @@ CLAUDE.md-sync (new top-level dirs). The S2/S3 run_id guard lives in
 
 from __future__ import annotations
 
-import json
-import os
 import subprocess
 import sys
 from pathlib import Path

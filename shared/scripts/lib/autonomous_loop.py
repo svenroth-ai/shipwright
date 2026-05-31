@@ -18,7 +18,6 @@ import json
 import os
 import subprocess
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -281,7 +280,6 @@ def cmd_record(args: argparse.Namespace) -> int:
         result = json.loads(result_str)
     except json.JSONDecodeError:
         runs_dir = Path(".shipwright/runs")
-        fallback = None
         state_peek = _load_state(state_path)
         loop_id = state_peek.get("loop_id", "")
         fallback_path = runs_dir / loop_id / args.unit / "result.json"

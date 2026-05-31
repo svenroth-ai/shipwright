@@ -14,18 +14,14 @@ Internal helper API was refactored in iterate-20260425 (multi-service):
   unowned processes).
 """
 
-import json
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 from dev_server import (
-    STATE_FILE,
     _get_config,
-    _is_port_in_use,
     _load_state,
     _save_state,
     _clear_state,

@@ -4,7 +4,6 @@ import json
 import sys
 from pathlib import Path
 
-import pytest
 
 # Add scripts/lib to path
 sys.path.insert(
