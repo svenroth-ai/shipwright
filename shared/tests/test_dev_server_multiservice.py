@@ -10,11 +10,10 @@ All tests use mocks; no real subprocess is launched.
 from __future__ import annotations
 
 import json
-import socket
 import sys
 import time
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -503,7 +502,6 @@ def test_wait_for_service_http_uses_declared_host(tmp_path):
 @patch("dev_server._is_pid_running", return_value=True)
 @patch("dev_server._is_port_in_use_for_host", return_value=True)
 def test_start_already_running_only_when_pid_owned(mock_port, mock_pid, tmp_path):
-    services = [{"name": "primary", "command": "x", "port": 3000, "host": "localhost", "scheme": "http"}]
     state = {
         "version": 2,
         "services": [{"name": "primary", "pid": 99, "port": 3000, "host": "localhost",
@@ -681,8 +679,6 @@ def test_save_state_atomic_replace_failure_no_orphan_tmp(mock_popen, mock_port, 
         {"name": "a", "command": "x", "port": 3000, "host": "localhost", "scheme": "http"},
     ]
 
-    real_replace = dev_server.os.replace
-
     def boom_replace(src, dst):
         raise OSError("replace failed")
 
@@ -724,7 +720,7 @@ def test_stop_kills_all_pids_in_reverse_order(tmp_path):
         return {"name": record["name"], "pid": record["pid"], "killed": True}
 
     with patch("dev_server._kill_one", side_effect=fake_kill):
-        result = dev_server.cmd_stop(tmp_path)
+        dev_server.cmd_stop(tmp_path)
     assert kill_calls == ["b", "a"]
     assert not (tmp_path / dev_server.STATE_FILE).exists()
 
@@ -798,7 +794,7 @@ def test_stop_windows_taskkill_not_found_treated_nonfatal(tmp_path, monkeypatch)
     completed = MagicMock(returncode=128, stdout="", stderr="not found")
     with patch("dev_server.subprocess.run", return_value=completed):
         # Should not raise
-        result = dev_server.cmd_stop(tmp_path)
+        dev_server.cmd_stop(tmp_path)
     assert not (tmp_path / dev_server.STATE_FILE).exists()
 
 
@@ -816,7 +812,7 @@ def test_stop_windows_taskkill_timeout_treated_nonfatal(tmp_path, monkeypatch):
     dev_server._save_state(tmp_path, state)
     with patch("dev_server.subprocess.run",
                side_effect=subprocess.TimeoutExpired(cmd="taskkill", timeout=10)):
-        result = dev_server.cmd_stop(tmp_path)
+        dev_server.cmd_stop(tmp_path)
     assert not (tmp_path / dev_server.STATE_FILE).exists()
 
 
@@ -993,7 +989,7 @@ def test_cli_services_json_overrides_profile_with_warning(tmp_path, capsys):
     with patch("dev_server.subprocess.Popen", return_value=proc), \
          patch("dev_server._is_port_in_use_for_host", return_value=False), \
          patch("dev_server._wait_for_service", return_value=(True, "")):
-        rc = dev_server.main_with_args([
+        dev_server.main_with_args([
             "start", "--cwd", str(tmp_path),
             "--profile", "supabase-nextjs",
             "--services-json", inline,

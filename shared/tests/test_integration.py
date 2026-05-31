@@ -1,6 +1,5 @@
 """Integration tests: templates + handoff + decision log together."""
 
-import json
 
 from lib.config import read_config, write_config
 from lib.state import get_checkpoint

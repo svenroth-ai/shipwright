@@ -11,7 +11,6 @@ import pytest
 from scripts.lib.data_collector import (
     ComplianceData,
     RequirementInfo,
-    TestResults as _TestResults,
     TestRunEvent as _TestRunEvent,
     WorkEvent,
     collect_all,

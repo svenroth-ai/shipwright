@@ -11,7 +11,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
 
 # Hook scripts are standalone (no imports needed), we test via subprocess
 HOOKS_DIR = Path(__file__).parent.parent / "scripts" / "hooks"

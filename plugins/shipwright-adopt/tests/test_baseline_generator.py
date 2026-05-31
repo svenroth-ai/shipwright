@@ -44,7 +44,6 @@ def test_generate_idempotent_overwrites_in_place(tmp_path):
     big.parent.mkdir(parents=True)
     big.write_text(_lines(412), encoding="utf-8")
     target = bg.generate(tmp_path)
-    first_mtime = target.stat().st_mtime
     target2 = bg.generate(tmp_path)
     assert target == target2
     # Re-running produces a (possibly identical) baseline file at the

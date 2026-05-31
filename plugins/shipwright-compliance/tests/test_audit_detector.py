@@ -160,7 +160,6 @@ def test_load_audit_config_tolerates_corrupt_json(tmp_path):
 
 
 def test_run_all_reports_import_gate_error(tmp_path, monkeypatch):
-    from scripts.audit import audit_adapters
 
     def _boom(_=None):
         from scripts.audit.audit_adapters import ImportGateError

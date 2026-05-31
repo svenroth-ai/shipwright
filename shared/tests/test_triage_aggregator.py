@@ -17,7 +17,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
 
 _WORKTREE = Path(__file__).resolve().parents[2]
 _SHARED_SCRIPTS = _WORKTREE / "shared" / "scripts"
@@ -190,8 +189,8 @@ def test_payload_preserves_leading_whitespace(tmp_path: Path) -> None:
 # --- Status filtering ----------------------------------------------------
 
 def test_only_triage_status_shown(tmp_path: Path) -> None:
-    a = append_triage_item(tmp_path, source="phaseQuality", severity="high",
-                           kind="bug", title="alpha", detail="d")
+    append_triage_item(tmp_path, source="phaseQuality", severity="high",
+                       kind="bug", title="alpha", detail="d")
     b = append_triage_item(tmp_path, source="phaseQuality", severity="medium",
                            kind="bug", title="beta", detail="d")
     c = append_triage_item(tmp_path, source="phaseQuality", severity="low",

@@ -34,7 +34,6 @@ from __future__ import annotations
 
 import ast
 import importlib.util
-import sys
 from pathlib import Path
 
 import pytest
@@ -203,11 +202,11 @@ def test_local_constants_match_manifest():
             f"{matched_count} matched constants drifted from manifest):\n\n"
             + "\n".join(failures)
             + "\n\nFix options per finding:\n"
-            f"  1) correct the constant value to match "
-            f"shared/scripts/lib/artifact_migrations.py\n"
-            f"  2) rename the constant if it should NOT bind to a manifest entry\n"
-            f"  3) add the file to ALLOWLIST_FILES in this test if the binding "
-            f"is intentional and exempt"
+            "  1) correct the constant value to match "
+            "shared/scripts/lib/artifact_migrations.py\n"
+            "  2) rename the constant if it should NOT bind to a manifest entry\n"
+            "  3) add the file to ALLOWLIST_FILES in this test if the binding "
+            "is intentional and exempt"
         )
         pytest.fail(msg)
 

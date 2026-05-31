@@ -33,7 +33,6 @@ import pytest
 from scripts.lib.change_history import generate as render_change_history
 from scripts.lib.compliance_report import generate as render_compliance_dashboard
 from scripts.lib.data_collector import (
-    ComplianceData,
     _latest_event_timestamp,
     collect_all,
 )
@@ -129,7 +128,6 @@ class TestLatestEventTimestamp:
         """
         import json
         import sys
-        from datetime import datetime, timezone
         from pathlib import Path
 
         # The compliance plugin's tests don't normally have shared/lib
@@ -240,8 +238,8 @@ def test_generator_changes_when_events_change(
         # event SHOULD bump the banner from 2026-05-20 to 2026-05-22. If
         # outputs are still identical, the banner is degenerate.
         assert out_1 != out_2, (
-            f"[sbom] Adding a later event did not change the rendered "
-            f"banner — `Generated:` is degenerate."
+            "[sbom] Adding a later event did not change the rendered "
+            "banner — `Generated:` is degenerate."
         )
     else:
         assert out_1 != out_2, (

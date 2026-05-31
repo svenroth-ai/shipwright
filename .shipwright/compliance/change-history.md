@@ -1,28 +1,31 @@
 # Commit Change Log
 
-Generated: 2026-05-30T22:25:04.744361+00:00
-Total commits: 780
+Generated: 2026-05-31T11:52:03.721586+00:00
+Total commits: 791
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 243
-    "fix" : 200
-    "chore" : 152
+    "feat" : 246
+    "fix" : 205
+    "chore" : 153
     "docs" : 111
     "refactor" : 50
-    "test" : 16
+    "test" : 18
     "other" : 7
     "build" : 1
 ```
 
 ## Changes by Type
 
-### Features (feat) — 243 commits
+### Features (feat) — 246 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-31 | iterate | add fail-closed Test Completeness Ledger gate | bde2812d0525 |
+| 2026-05-30 | build,iterate | spec-reviewer + doubt-reviewer cascade in build Step 6 (trg-7c6137ed) | f93c273cc7ee |
+| 2026-05-30 | compliance | auto emit/dismiss compliance triage on Stop with full-coverage gate | 9b31ce2956c2 |
 | 2026-05-29 | iterate,project | reintegrate SP3 + OS2 after Campaign B | a4cb2a306fab |
 | 2026-05-29 | hooks | add using-shipwright SessionStart bootstrap + plugin-cache Stop wave (P4.1) | e7888704a598 |
 | 2026-05-25 | bloat | Campaign A.defense — pre-commit + CI + ADR template + glossary | ac02d7b24cf5 |
@@ -267,10 +270,15 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 200 commits
+### Fixes (fix) — 205 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-31 | canon | resolve compliance + planning artifact-path-canon failures on main | 658198fbe220 |
+| 2026-05-31 | iterate | point iterate-history adr field at the run_id so F11 resolves the decision-drop | 2ef5e0abcd6b |
+| 2026-05-30 | iterate | use run_id as decision-drop ADR identity in iterate entry | 5fc34c27b756 |
+| 2026-05-30 | compliance | resolve versioned CLAUDE_PLUGIN_ROOT so phase-keyed Stop hooks fire | b919f7db81de |
+| 2026-05-30 | adopt,project | propagate canonical .shipwright gitignore block to consuming projects | 60120fbb1f30 |
 | 2026-05-30 | compliance | RTM status from latest tested event; untested 0/0 events neutral | 76a3b12b4f9f |
 | 2026-05-29 | hooks | suggest_iterate UserPromptSubmit output must set hookEventName | 6f79d47b9e9e |
 | 2026-05-29 | hooks | clear bloat anti-ratchet at baseline current, not raw limit | 4adfd4441725 |
@@ -472,10 +480,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 152 commits
+### Chores (chore) — 153 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-30 | iterate | record spec-impact justification + ADR ref for finalization | bbda6576b07a |
 | 2026-05-29 | events | backfill orphaned work_completed events for #110 + #112 | fa186cce8046 |
 | 2026-05-29 | events | record work_completed for iterate-2026-05-29-fix-path-canon-allowlist | af9190b5a939 |
 | 2026-05-27 | events | record work_completed for iterate-2026-05-27-guide-readme-refresh | d5090eff64e7 |
@@ -800,10 +809,12 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 16 commits
+### Tests (test) — 18 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-31 | iterate | pin type-robustness edges of the completeness gate (asymptote probe) | 3dfffc8791d2 |
+| 2026-05-30 | compliance | record integration-tests pass (136) for the framework-wide resolver change | 1d876b09301f |
 | 2026-05-30 | shared | align stale record_event tests to the C.1 FR-gate | d954c492cd64 |
 | 2026-05-18 | security | make test_explicit_name_not_in_registry hermetic | 77bcc9803039 |
 | 2026-05-07 | hooks | unwrap top-level hooks key in tests that read plugin hooks.json | c58e112027cd |
@@ -843,7 +854,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 780 |
+| Total commits | 791 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 780 |
+| Human-authored commits | 791 |
 

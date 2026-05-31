@@ -30,7 +30,7 @@ from __future__ import annotations
 import glob as _glob
 import json
 from pathlib import Path
-from typing import Any, Callable, Iterable
+from typing import Any, Callable
 
 from scripts.audit.audit_adapters import (
     SOURCE_DETECTIVE_ONLY,

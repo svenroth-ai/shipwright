@@ -8,14 +8,13 @@ Outputs a warning if documentation is missing but does NOT block.
 from __future__ import annotations
 
 import json
-import os
 import sys
 from pathlib import Path
 
 
 def main() -> int:
     try:
-        payload = json.load(sys.stdin)
+        json.load(sys.stdin)
     except (json.JSONDecodeError, Exception):
         return 0
 

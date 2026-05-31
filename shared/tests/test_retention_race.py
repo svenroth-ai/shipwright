@@ -24,7 +24,6 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-import pytest
 
 from lib.iterate_entry import (
     MIGRATION_STATE_KEY,

@@ -31,7 +31,7 @@ from lib.phase_quality import (  # noqa: E402
     STATUS_SKIP,
     make_finding,
 )
-from tools.verifiers.common import read_events_jsonl, read_run_config  # noqa: E402
+from tools.verifiers.common import read_events_jsonl  # noqa: E402
 
 
 W2_NAME = "W2 F11 external-review marker"

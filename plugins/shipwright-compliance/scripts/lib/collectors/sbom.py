@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 
 from ._npm_license import detect_npm_license
-from ._python_license import detect_python_license, parse_pyproject_deps
+from ._python_license import parse_pyproject_deps
 from ._types import DependencyInfo
 
 

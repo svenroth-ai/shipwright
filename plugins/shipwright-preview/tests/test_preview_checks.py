@@ -7,11 +7,8 @@ Validates the logic that determines whether a preview can be started:
 """
 
 import json
-import subprocess
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
-import pytest
 
 
 # --- Helpers that mirror the SKILL.md logic ---

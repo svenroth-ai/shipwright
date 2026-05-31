@@ -22,7 +22,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any, Optional
+from typing import Any
 
 DEFAULT_API_URL = "https://jca.jpc.infomaniak.com/1.0"
 

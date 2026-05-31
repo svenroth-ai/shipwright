@@ -66,7 +66,7 @@ def test_ast_features_survive_when_crawl_finds_only_frontend(tmp_path: Path) -> 
     ]
     snap, enr, rts = _write_inputs(tmp_path, snapshot_features=ast_features, routes=routes)
 
-    result = generate(
+    generate(
         tmp_path,
         snapshot_path=snap, enrichment_path=enr, routes_path=rts,
         split_name="01-adopted", plugin_version="0.2.0",

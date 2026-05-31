@@ -168,7 +168,7 @@ def testing_pyramid_diagram(sections: list[SectionInfo], test_results=None) -> s
         e2e_label = f"E2E Tests<br/>{tr.e2e_passed}/{tr.e2e_total} passed"
         e2e_color = "#4CAF50" if tr.e2e_passed == tr.e2e_total else "#FFC107"
     elif tr and tr.e2e_skipped:
-        e2e_label = f"E2E Tests<br/>skipped"
+        e2e_label = "E2E Tests<br/>skipped"
         e2e_color = "#9E9E9E"
     else:
         e2e_label = "E2E Tests<br/>not run"

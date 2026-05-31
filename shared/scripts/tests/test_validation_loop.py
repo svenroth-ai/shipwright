@@ -1,6 +1,5 @@
 """Tests for shared.scripts.lib.validation_loop module."""
 
-import pytest
 
 from shared.scripts.lib.validation_loop import validate_with_retry
 

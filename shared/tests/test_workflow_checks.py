@@ -188,7 +188,6 @@ def test_w3_passes_with_event_and_fresh_evidence(proj: Path):
     (proj / ".shipwright" / "compliance").mkdir()
     ev = proj / ".shipwright" / "compliance" / "test-evidence.md"
     ev.write_text("# Evidence\n", encoding="utf-8")
-    now = time.time()
     ev.touch()
     f = iterate_compliance.check_w3_work_completed_and_evidence(proj, "run-1")
     assert f["status"] == pq.STATUS_PASS

@@ -6,7 +6,6 @@ plugins and tested in shared/tests/test_capture_session_id.py.
 
 import json
 import subprocess
-import sys
 from pathlib import Path
 
 HOOKS_DIR = Path(__file__).resolve().parent.parent / "scripts" / "hooks"

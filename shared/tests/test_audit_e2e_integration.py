@@ -26,7 +26,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
 
 
 # Resolve the verifier path relative to this test file. The script is at

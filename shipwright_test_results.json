@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-30-test-completeness-gate",
+    "run_id": "iterate-2026-05-31-ci-lint-gate-ruff",
     "date": "2026-05-31",
     "unit": {
       "status": "passed",
-      "passed": 262,
-      "total": 262
+      "passed": 1988,
+      "total": 1991
     },
     "integration": {
       "status": "passed",
@@ -31,63 +31,39 @@
       "status": "not_run"
     },
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --directory shared --extra dev pytest tests/test_audit_e2e_integration.py tests/test_untestable_vocab_doc_sync.py -q",
+      "surface": "none",
+      "justification": "CI workflow + ruff lint-config + dead-code/import cleanup; no runtime or UI surface is touched (no API routes, store, SSE, message contracts, or client code). AC1 verified empirically (`uvx ruff@0.15.15 check .` exits 0); AC2/AC3 pinned by integration-tests/test_ci_lint_gate.py.",
       "exit_code": 0,
-      "tests_run": 14,
-      "evidence_path": ".shipwright/runs/iterate-2026-05-30-test-completeness-gate/surface_verification.json",
+      "tests_run": 0,
       "timestamp": "2026-05-31T00:00:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "counts.untested_testable>0 → FAIL", "disposition": "tested",
-          "evidence": "test_verify_iterate_finalization.py::test_completeness_fails_when_untested_testable_positive PASSED" },
-        { "behavior": "escape-hatch disposition (e.g. 'deferred') → FAIL", "disposition": "tested",
-          "evidence": "::test_completeness_fails_for_escape_hatch_disposition PASSED" },
-        { "behavior": "untestable with reason_code outside closed vocab → FAIL", "disposition": "tested",
-          "evidence": "::test_completeness_fails_for_bad_reason_code PASSED" },
-        { "behavior": "missing block at small+ → FAIL", "disposition": "tested",
-          "evidence": "::test_completeness_fails_when_block_missing_at_medium + ::_results_missing_at_small PASSED" },
-        { "behavior": "trivial → SKIP (auto n/a)", "disposition": "tested",
-          "evidence": "::test_completeness_skipped_for_trivial PASSED" },
-        { "behavior": "all tested / valid untestable mix → PASS", "disposition": "tested",
-          "evidence": "::test_completeness_passes_when_all_tested + ::_passes_with_valid_untestable PASSED" },
-        { "behavior": "n/a without justification → FAIL; with → PASS (small)", "disposition": "tested",
-          "evidence": "::test_completeness_na_without_justification_fails + ::_na_with_justification_passes PASSED" },
-        { "behavior": "n/a forbidden at medium/large → FAIL (review MEDIUM)", "disposition": "tested",
-          "evidence": "::test_completeness_na_forbidden_at_medium PASSED" },
-        { "behavior": "untested_testable: false (bool) rejected (review LOW)", "disposition": "tested",
-          "evidence": "::test_completeness_rejects_bool_untested_testable PASSED" },
-        { "behavior": "enumeration_basis acs>covered_acs → FAIL", "disposition": "tested",
-          "evidence": "::test_completeness_fails_on_enumeration_gap PASSED" },
-        { "behavior": "malformed / non-object results JSON → clean ERROR (review LOW)", "disposition": "tested",
-          "evidence": "::test_completeness_fails_when_results_malformed PASSED" },
-        { "behavior": "check wired into run_all_checks (F11 enforces)", "disposition": "tested",
-          "evidence": "::test_completeness_in_run_all_checks PASSED" },
-        { "behavior": "CLI verifier fails closed on testable-but-untested", "disposition": "tested",
-          "evidence": "test_audit_e2e_integration.py::test_cli_fails_on_testable_but_untested_behavior PASSED" },
-        { "behavior": "doc↔code UNTESTABLE vocabulary sync (forward+reverse)", "disposition": "tested",
-          "evidence": "test_untestable_vocab_doc_sync.py (3 cases) PASSED" },
-        { "behavior": "SKILL Phase-Matrix row + Override-Classes drift", "disposition": "tested",
-          "evidence": "test_skill_completeness_matrix.py (2 cases) + test_skill_phase_matrix.py PASSED" },
-        { "behavior": "type-robustness edges: list-shaped iterate_latest/block, non-object behavior row, absent counts → fail closed (asymptote probe)", "disposition": "tested",
-          "evidence": "test_test_completeness_ledger_edges.py (4 cases) PASSED" },
-        { "behavior": "live operator UX of the F11 PR completeness summary line", "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "PR-body rendering is a human visual call; only the F11 prose is asserted structurally, the rendered line is operator-observed" }
+        { "behavior": "AC1 — `ruff check .` exits 0 against the curated bug-focused ruleset", "disposition": "tested",
+          "evidence": "`uvx ruff@0.15.15 check .` → exit 0 (All checks passed). 214 findings resolved: 174 safe auto-fix + 40 manual (26 F841, 14 F821)." },
+        { "behavior": "AC2 — CI lint step GATES (no `|| true`, no `continue-on-error: true`)", "disposition": "tested",
+          "evidence": "integration-tests/test_ci_lint_gate.py::test_lint_step_gates_and_is_not_neutered PASSED (asserts ruff+check present, no '|| true', continue-on-error is not True)." },
+        { "behavior": "AC3 — python-checks job name no longer claims type-checking", "disposition": "tested",
+          "evidence": "integration-tests/test_ci_lint_gate.py::test_job_name_does_not_claim_type PASSED ('type' absent from name; renamed to 'Python (lint + test)')." },
+        { "behavior": "Curated [tool.ruff.lint] ruleset (pyflakes F + high-signal E/W) present in root pyproject.toml", "disposition": "tested",
+          "evidence": "integration-tests/test_ci_lint_gate.py::test_curated_ruff_ruleset_present PASSED (select includes 'F')." },
+        { "behavior": "Dead-code/import removals (F401x143, F541x28, F811x2, W605x1 auto; F841x26, F821x14 manual) preserve runtime behavior", "disposition": "tested",
+          "evidence": "Full suites green: shared/tests 2635 passed; all 13 plugin suites passed (1988 passed/3 skipped); integration-tests 136 passed. The one breakage (test_playwright_setup_multiservice: vestigial `playwright_setup.os` monkeypatch on a now-removed dead import) was fixed — 4 passed." },
+        { "behavior": "Ruff is provisioned in CI via uvx (pinned) so the gate runs ruff instead of failing 'command not found'", "disposition": "tested",
+          "evidence": "Root cause confirmed: `uv run ruff` → 'program not found' (ruff is not a dependency). `uvx ruff@0.15.15 --version` → ruff 0.15.15; `uvx ruff@0.15.15 check .` resolves the config and runs (exit 0). End-to-end GitHub-runner execution is verified by the PR's own CI run." }
       ],
-      "counts": { "testable": 17, "tested": 16, "untestable": 1, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 10, "covered_acs": 10 }
+      "counts": { "testable": 6, "tested": 6, "untestable": 0, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 3, "covered_acs": 3 }
     },
     "degraded": [
       {
-        "condition": "preexisting_shared_failures",
-        "detail": "Full shared suite ran 2578 passed; 2 failures (test_architecture_md_reflects_arch_impact, test_artifact_path_canon[compliance-migrated]) are PRE-EXISTING — reproduced identically on the main tree where this change does not exist (the documented `compliance/` path-canon dirty-tree issue + an arch-impact drop). Unrelated to this iterate."
+        "condition": "preexisting_unrelated_failures",
+        "detail": "shared/scripts/tests/test_validate_env.py::TestValidateBuild (2 tests) fail, but reproduce IDENTICALLY in the untouched main worktree (origin/main base) — neither validate_env.py nor test_validate_env.py is in this diff, and shared/scripts/tests is not run by CI. Environment-specific, unrelated to this iterate."
       },
       {
-        "condition": "external_review_substituted",
-        "detail": "External LLM cascade not run; the internal code-reviewer subagent ran on the staged diff and returned 1 HIGH (ADR for the baseline bump) + 1 MEDIUM (n/a-at-medium escape hatch) + 2 LOW, all fixed (ADR-093, n/a forbidden at medium+, bool-as-int guard, non-object-JSON robustness)."
+        "condition": "main_tree_snapshot_amended",
+        "detail": "F0/F11 leak-guard initially flagged two foreign main-tree scratch files (_cleanup_done.txt, _find_tests.txt) created by a CONCURRENT session (content references a `plugin_sync_reminder_on_stop` grep this iterate never ran). They are absent from this worktree and excluded from the PR. Rather than delete another session's files, the two paths were registered in this run's main_tree_snapshot.json dirty_paths (the snapshot's purpose: record non-run-attributable main-tree noise). Leak-guard then ALLOW."
       }
     ]
   }

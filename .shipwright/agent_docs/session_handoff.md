@@ -1,30 +1,35 @@
+---
+canon_generated: true
+run_id: "iterate-2026-05-31-ci-lint-gate-ruff"
+phase: "iterate"
+reason: "F5b: CI lint gate hardening (curated ruff ruleset + de-neuter)"
+timestamp: "2026-05-31T11:52:03.721586+00:00"
+---
+
 # Session Handoff
 
-> Auto-generated 2026-05-30 22:25:04 UTC
+> Auto-generated 2026-05-31 11:52:03 UTC
 
 ## Session Info
 
-- **Session ID**: c1702965-7788-4a6d-9f90-6d17d8d9f91c
-- **Timestamp**: 2026-05-30 22:25:04 UTC
-- **Reason**: asymptote probe follow-up: iterate-2026-05-30-test-completeness-gate
+- **Session ID**: 0250f8d6-99a9-479e-b9b8-ddce0da3c398
+- **Timestamp**: 2026-05-31 11:52:03 UTC
+- **Reason**: F5b: CI lint gate hardening (curated ruff ruleset + de-neuter)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-30-test-completeness-gate
-- **Date**: 2026-05-30T22:24:52.586049Z
+- **Run ID**: iterate-2026-05-31-ci-lint-gate-ruff
+- **Date**: 2026-05-31T11:50:32.785845Z
 - **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/test-completeness-gate
-- **ADR**: iterate-2026-05-30-test-completeness-gate
+- **Complexity**: small
+- **Branch**: iterate/ci-lint-gate-ruff
+- **ADR**: iterate-2026-05-31-ci-lint-gate-ruff
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/test-completeness-gate
-- **Run ID**: `iterate-2026-05-30-test-completeness-gate`
-- **Spec**: .shipwright/planning/iterate/2026-05-30-test-completeness-gate.md
-- **Complexity**: medium (classifier said `trivial`@0.6 — under-estimate; cross-cutting skill discipline + new enforced verifier + drift-test updates)
-- **External Review Marker**: stale (predates spec (2026-05-27T07:11:03))
+- **Branch**: iterate/ci-lint-gate-ruff
+- **External Review Marker**: completed (external_review_state.json @ 2026-05-27T07:11:03)
 
 ### Mandatory replay on Resume
 
@@ -42,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/test-completeness-gate
-- **Last Commit**: bde2812 feat(iterate): add fail-closed Test Completeness Ledger gate
+- **Branch**: iterate/ci-lint-gate-ruff
+- **Last Commit**: 78a281f Merge pull request #120 from svenroth-ai/iterate/test-completeness-gate
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -59,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-4cb02049 | work_completed | iterate (Gate CI Python lint on a curated bug-focused ruff ruleset (pyflakes F + high-signal E/W); remove the || true + continue-on-error neutering; provision ruff via pinned uvx; rename job to Python (lint + test).) | 2026-05-31 |
 | evt-d16cc59c | work_completed | iterate (iterate completion: test-completeness-gate) | 2026-05-30 |
-| evt-c9f7073a | work_completed | iterate (Align 7 stale record_event tests to the C.1 FR-gate (gates all iterates incl. bug/intentless); surface CI shared-test gap (trg-f363b1ab)) | 2026-05-30 |
-| evt-13cd797e | work_completed | iterate (RTM: untested (0/0) events neutral; status from latest tested event (fixes 7 false FAILs); neutralize leaked verification event via event_amended) | 2026-05-30 |
-| evt-4a141c52 | event_amended | — | 2026-05-30 |
-| evt-6ebab37a | work_completed | iterate (SP3+OS2 post-Campaign-B reintegration — F-debug.md systematic-debugging sub-skill + assumptions-first interview pre-phase) | 2026-05-29 |
+| evt-d70f6cd4 | work_completed | iterate (iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade)) | 2026-05-30 |
+| evt-76ce63ff | work_completed | iterate (Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test) | 2026-05-30 |
+| evt-abaef023 | work_completed | iterate (Add audit_compliance_on_stop.py: auto-emit/auto-dismiss source=compliance triage items on every iterate/changelog Stop, gated on full A-G audit coverage.) | 2026-05-30 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 74
-- **Last iterate**: change — iterate completion: test-completeness-gate (2026-05-30)
+- **Total work events**: 78
+- **Last iterate**: change — Gate CI Python lint on a curated bug-focused ruff ruleset (pyflakes F + high-signal E/W); remove the || true + continue-on-error neutering; provision ruff via pinned uvx; rename job to Python (lint + test). (2026-05-31)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

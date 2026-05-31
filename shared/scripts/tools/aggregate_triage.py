@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 _SCRIPTS_DIR = Path(__file__).resolve().parent.parent
@@ -137,7 +136,7 @@ def _render_launch_payload(item: dict) -> list[str]:
         clean = _strip_control_chars(payload)
         fence = _fence_opener(clean)
         return [
-            f"  - Launch payload (copy into a new Claude session):",
+            "  - Launch payload (copy into a new Claude session):",
             f"    {fence}text",
             *(f"    {line}" for line in clean.splitlines()),
             f"    {fence}",

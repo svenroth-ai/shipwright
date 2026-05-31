@@ -24,7 +24,7 @@ PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 if str(PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(PLUGIN_ROOT))
 
-from scripts.audit import audit_staleness, group_e  # noqa: E402
+from scripts.audit import group_e  # noqa: E402
 from scripts.audit.audit_adapters import SOURCE_DETECTIVE_ONLY  # noqa: E402
 
 

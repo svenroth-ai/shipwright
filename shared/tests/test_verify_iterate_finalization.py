@@ -12,7 +12,6 @@ import os
 import subprocess
 from pathlib import Path
 
-import pytest
 
 
 # Linked worktrees come from the shared ``make_worktree`` fixture
@@ -39,7 +38,6 @@ def _agent_docs_root(tmp: Path) -> Path:
 
 
 from tools.verify_iterate_finalization import (
-    CheckResult,
     Severity,
     check_adr_in_iterate_history,
     check_changelog_unreleased,
@@ -51,7 +49,6 @@ from tools.verify_iterate_finalization import (
 from tools.verifiers.iterate_checks import (
     check_build_dashboard_has_run_id,
     check_architecture_reviewed,
-    check_conventions_reviewed,
     check_spec_impact_recorded,
     check_surface_verification,
 )

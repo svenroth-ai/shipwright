@@ -23,7 +23,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 # Re-imported in __init__.py for the package-level surface.
-from .validation import LOOPBACK_HOSTS, _validate_services
+from .validation import _validate_services
 
 
 def _pkg():
