@@ -24,8 +24,10 @@ from triage import append_triage_item_idempotent
 from .mappers import ci_action_unit, latest_failed_ci_runs, secrets_action_unit
 from .producer import (
     PREFIX_CI,
+    PREFIX_PROMPT,
     PREFIX_SECRETS,
     PREFIX_SECURITY,
+    prompt_injection_action_unit_from_artifact,
     security_action_unit,
     security_action_unit_from_artifact,
 )
@@ -82,13 +84,15 @@ def import_findings(project_root) -> dict:
     # review HIGH #1 — gemini-1).
     artifact_run: dict | None = None
     artifact_findings: list[dict] | None = None
+    prompt_findings: list[dict] | None = None
     if cs_alerts is None:
         try:
             artifact_run = github_api.latest_security_workflow_run()
             if artifact_run is not None:
-                artifact_findings = github_api.download_security_findings(
-                    artifact_run.get("id") or 0,
-                )
+                run_id = artifact_run.get("id") or 0
+                artifact_findings = github_api.download_security_findings(run_id)
+                # prompt_risks.json ships in the SAME artifact (gh-prompt source).
+                prompt_findings = github_api.download_prompt_risks(run_id)
         except Exception as exc:  # noqa: BLE001 — fail-soft, never block
             sys.stderr.write(
                 f"[github-triage] artifact fetch failed: "
@@ -96,6 +100,7 @@ def import_findings(project_root) -> dict:
             )
             artifact_run = None
             artifact_findings = None
+            prompt_findings = None
 
     fetch_succeeded = {
         "code_scanning": cs_alerts is not None,
@@ -106,6 +111,7 @@ def import_findings(project_root) -> dict:
         # ``download failed / never tried``. Auto-resolve depends on
         # this per ADR-052.
         "artifact": artifact_findings is not None,
+        "prompt": prompt_findings is not None,
     }
 
     # Run the legacy-migration sweep FIRST so it never races against the
@@ -147,6 +153,16 @@ def import_findings(project_root) -> dict:
             dependabot=db_alerts,
         )
         if (cs_alerts is None and artifact_findings is not None)
+        else None
+    )
+    # Prompt-injection artifact path: parallel to artifact_unit, separate source.
+    prompt_unit = (
+        prompt_injection_action_unit_from_artifact(
+            findings=prompt_findings,
+            owner_repo=owner_repo,
+            workflow_run_url=(artifact_run or {}).get("html_url"),
+        )
+        if (cs_alerts is None and prompt_findings is not None)
         else None
     )
     secrets_unit = (
@@ -221,6 +237,19 @@ def import_findings(project_root) -> dict:
             appended += 1
     else:
         by_source[PREFIX_SECRETS] = None
+
+    # Prompt-injection (artifact path; parallel to + independent of gh-security).
+    # Gated on cs_alerts is None like the artifact security unit; auto-resolve
+    # opens for PREFIX_PROMPT so a clean scan ([] findings) dismisses an open item.
+    if cs_alerts is None and fetch_succeeded["prompt"]:
+        if owner_repo is not None:
+            resolvable_prefixes.add(PREFIX_PROMPT)
+        prompt_id = _maybe_append(prompt_unit)
+        by_source[PREFIX_PROMPT] = 1 if prompt_id else 0
+        if prompt_id:
+            appended += 1
+    else:
+        by_source[PREFIX_PROMPT] = None
 
     # CI
     if fetch_succeeded["runs"]:

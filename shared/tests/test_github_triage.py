@@ -121,6 +121,13 @@ def _patch_api(
     )
     monkeypatch.setattr(github_api, "fetch_workflow_runs", lambda branch: runs)
     monkeypatch.setattr(github_api, "owner_repo", lambda _: owner_repo)
+    # Artifact path dormant by default — these tests exercise the GHAS/secret/CI
+    # feeds, not the security-scan-results artifact. Without this the cs_alerts=
+    # None cases hit the REAL gh artifact download (non-hermetic: flakes once the
+    # repo has fresh successful security.yml runs).
+    monkeypatch.setattr(github_api, "latest_security_workflow_run", lambda: None)
+    monkeypatch.setattr(github_api, "download_security_findings", lambda rid: None)
+    monkeypatch.setattr(github_api, "download_prompt_risks", lambda rid: None)
 
 
 def _append_events(project_root: Path) -> list[dict]:
