@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-06-01-audit-honors-amendments",
+  "date": "2026-06-01T08:58:42.777264Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/audit-honors-amendments",
+  "tests_passed": true,
+  "spec_impact": "none",
+  "adr": "iterate-2026-06-01-audit-honors-amendments",
+  "summary": "Detective audit honors event_amended; D5 cleared, D4 disabled (gating-CI stale-noise)"
+}

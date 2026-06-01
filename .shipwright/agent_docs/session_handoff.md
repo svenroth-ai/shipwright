@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-31-churn-merge-resolver"
+run_id: "iterate-2026-06-01-audit-honors-amendments"
 phase: "iterate"
-reason: "merge origin/main reconciliation"
-timestamp: "2026-06-01T06:28:39.307027+00:00"
+reason: "Detective audit honors event_amended; D5 cleared, D4 disabled (gating-CI stale-noise)"
+timestamp: "2026-06-01T08:56:08.674700+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-01 06:28:39 UTC
+> Auto-generated 2026-06-01 08:56:08 UTC
 
 ## Session Info
 
-- **Session ID**: 82d423d1-0377-4687-bd05-9741f85a1ee2
-- **Timestamp**: 2026-06-01 06:28:39 UTC
-- **Reason**: merge origin/main reconciliation
+- **Session ID**: 3e307394-564c-4915-8128-3c7fa7eeb609
+- **Timestamp**: 2026-06-01 08:56:08 UTC
+- **Reason**: Detective audit honors event_amended; D5 cleared, D4 disabled (gating-CI stale-noise)
 
 ## Last Iterate
 
@@ -28,11 +28,8 @@ timestamp: "2026-06-01T06:28:39.307027+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/churn-merge-resolver
-- **Run ID**: `iterate-2026-05-31-churn-merge-resolver`
-- **Spec**: .shipwright/planning/iterate/2026-05-31-churn-merge-resolver.md
-- **Complexity**: medium (high end — `touches_shared_infra` enforces full review + full test suite)
-- **External Review Marker**: stale (predates spec (2026-06-01T06:00:50))
+- **Branch**: iterate/audit-honors-amendments
+- **External Review Marker**: completed (external_review_state.json @ 2026-06-01T06:00:50)
 
 ### Mandatory replay on Resume
 
@@ -50,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/churn-merge-resolver
-- **Last Commit**: 78967b41 Merge remote-tracking branch 'origin/main' into iterate/churn-merge-resolver
+- **Branch**: iterate/audit-honors-amendments
+- **Last Commit**: 79712cbf Merge pull request #136 from svenroth-ai/release/v0.23.0
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,23 +64,24 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-904cb041 | work_completed | iterate (Detective audit honors event_amended corrections (group_d applies shared apply_amendments SSOT before D1-D5; new shared/scripts/lib/events_amend.py, re-exported by config.py); D4 disabled for the framework monorepo (gating-CI stale-noise); evt-5aca940d corrected to spec_impact=none.) | 2026-06-01 |
+| evt-57e2fbbb | event_amended | — | 2026-06-01 |
 | evt-f762bc17 | work_completed | iterate (Document the gating ruff CI lint step in CLAUDE.md Development section.) | 2026-06-01 |
 | evt-b27ecbd3 | work_completed | iterate (D5 honors change_type+none_reason exemption; add audit_config.disabled_checks applicability gate; framework repo disables A5.6/B7/D1/G2) | 2026-06-01 |
 | evt-ea7f2302 | work_completed | iterate (plugin-sync Stop-hook triage item written to durable main-repo log (worktree-aware)) | 2026-06-01 |
-| evt-1da91106 | work_completed | iterate (CI gate-coverage guard + workflow hardening (test-dir coverage, loose-gate allowlist, security fail-closed)) | 2026-05-31 |
-| evt-4cb02049 | work_completed | iterate (Gate CI Python lint on a curated bug-focused ruff ruleset (pyflakes F + high-signal E/W); remove the || true + continue-on-error neutering; provision ruff via pinned uvx; rename job to Python (lint + test).) | 2026-05-31 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 88
-- **Last iterate**: change — Document the gating ruff CI lint step in CLAUDE.md Development section. (2026-06-01)
+- **Total work events**: 89
+- **Last iterate**: change — Detective audit honors event_amended corrections (group_d applies shared apply_amendments SSOT before D1-D5; new shared/scripts/lib/events_amend.py, re-exported by config.py); D4 disabled for the framework monorepo (gating-CI stale-noise); evt-5aca940d corrected to spec_impact=none. (2026-06-01)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
 
-### ADR-088: shared/contracts/* — cross-plugin contract surface introduced for compliance + iterate
-- **Date:** 2026-05-26
-- **Section:** Iterate B8 (Campaign B bloat cleanup) — change: introduce contract package
-- **Run-ID:** sub_iterate-20260525-211635-B8
-- **Context:** Two callsites used to reach across plugin boundaries via fragile mechanisms: plugins/shipwright-adopt/scripts/lib/compliance_bridge.py spawned update_compliance.py as a subprocess + walked ancestor directories; plugins/shipwright-test/
+### ADR-116: Document the gating ruff lint step in CLAUDE.md
+- **Date:** 2026-06-01
+- **Section:** CLAUDE.md / Development
+- **Run-ID:** iterate-2026-06-01-refresh-claudemd-lint-gate
+- **Context:** The SessionStart timestamp-drift heuristic flagged CLAUDE.md as stale because pyproject.toml changed more recently; the real delta was the 2026-05-31 CI ruff lint gate (uvx ruff@0.15.15 check . in ci.yml, curated ruleset in [tool.ruff.lint]), which CLAUDE.md documented nowhere.
+- **Decision:** Add a 'Lint is 

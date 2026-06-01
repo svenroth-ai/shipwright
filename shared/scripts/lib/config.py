@@ -16,6 +16,7 @@ import warnings
 from pathlib import Path
 from typing import Any
 
+from .events_amend import apply_amendments  # noqa: F401 — re-exported SSOT
 from .events_log import resolve_events_path
 
 CONFIG_FILES = {
@@ -152,20 +153,3 @@ def read_events(project_root: str | Path) -> list[dict[str, Any]]:
         except json.JSONDecodeError:
             warnings.warn(f"Corrupt event at line {i + 1} in {EVENT_FILE}, skipping")
     return events
-
-
-def apply_amendments(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Apply event_amended entries to their target events."""
-    amendments: dict[str, dict] = {}
-    for e in events:
-        if e.get("type") == "event_amended":
-            amendments[e["amends"]] = e.get("fields", {})
-
-    result: list[dict[str, Any]] = []
-    for e in events:
-        if e.get("type") == "event_amended":
-            continue
-        if e.get("id") in amendments:
-            e = {**e, **amendments[e["id"]]}
-        result.append(e)
-    return result

@@ -235,4 +235,6 @@ def test_framework_audit_config_disables_expected_checks():
     repo_root = PLUGIN_ROOT.parent.parent
     cfg_path = repo_root / "audit_config.json"
     cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
-    assert set(cfg["disabled_checks"]) == {"A5.6", "B7", "D1", "G2"}
+    assert set(cfg["disabled_checks"]) == {"A5.6", "B7", "D1", "D4", "G2"}
+    # Every disabled check carries a documented reason.
+    assert set(cfg["disabled_checks"]) <= set(cfg["_disabled_checks_reasons"])
