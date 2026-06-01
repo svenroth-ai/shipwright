@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-01T06:28:39.307027+00:00
-Total commits: 816
+Generated: 2026-06-01T08:56:08.674700+00:00
+Total commits: 821
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 246
-    "fix" : 218
-    "chore" : 156
+    "feat" : 247
+    "fix" : 220
+    "chore" : 158
     "docs" : 114
     "refactor" : 50
     "test" : 20
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 246 commits
+### Features (feat) — 247 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-01 | triage | ingest prompt_risks.json as a gh-prompt producer source | fef7f67451ff |
 | 2026-05-31 | iterate | add fail-closed Test Completeness Ledger gate | bde2812d0525 |
 | 2026-05-30 | build,iterate | spec-reviewer + doubt-reviewer cascade in build Step 6 (trg-7c6137ed) | f93c273cc7ee |
 | 2026-05-30 | compliance | auto emit/dismiss compliance triage on Stop with full-coverage gate | 9b31ce2956c2 |
@@ -271,10 +272,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 218 commits
+### Fixes (fix) — 220 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-01 | iterate | deterministic integrate merge + CI-robust integrate tests | 2f1687c1ec3b |
+| 2026-06-01 | canon | drop legacy-path token from resolver docstring | 0ef2b7f0a195 |
 | 2026-06-01 | iterate | auto-reconcile churn-artifact merge conflicts (events=union + resolver) | 7bbb6b57721a |
 | 2026-06-01 | compliance | D5 change_type exemption + per-project disabled_checks gate | 7522a7081c2f |
 | 2026-06-01 | security | diff-mode prompt-injection scan honors self-reference/skip excludes | 6c523b575a42 |
@@ -494,10 +497,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 156 commits
+### Chores (chore) — 158 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-01 | release | v0.23.0 | f67f3122236a |
+| 2026-06-01 | churn | regenerate derived snapshots after main merge | 638ba80d68fa |
 | 2026-05-31 | iterate | record adr=run_id in iterate entry for F11 verifier | b5d4683626e1 |
 | 2026-05-31 | iterate | record ADR reference in iterate_history entry | 2fd362c71aff |
 | 2026-05-31 | ci | gate Python lint on a curated bug-focused ruff ruleset | 953d263c070e |
@@ -885,7 +890,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 816 |
+| Total commits | 821 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 816 |
+| Human-authored commits | 821 |
 

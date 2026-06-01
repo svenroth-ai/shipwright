@@ -8,9 +8,8 @@ Canon gate cannot see them, only a holistic events × spec scan can.
 - D1 — Spec FR uncovered by events. For each FR in the spec table,
   flag if no ``work_completed`` event has the FR in ``affected_frs``.
   Severity is priority-driven: Must=HIGH, Should=MEDIUM, May=LOW.
-- D2 — Stale FR reference in events. For each ``affected_frs`` in
-  ``shipwright_events.jsonl``, flag FR-IDs not present in the current
-  spec — likely renames or removals. Severity MEDIUM.
+- D2 — Stale FR reference. Flag ``affected_frs`` FR-IDs in the event
+  log not present in the current spec (renames/removals). Severity MEDIUM.
 - D3 — Promised FR not delivered. FR appears in some past event's
   ``new_frs`` but never in any subsequent ``affected_frs`` — the spec
   promised the work, the work never landed. Severity MEDIUM.
@@ -46,6 +45,7 @@ from scripts.audit.audit_adapters import (
 # ``shared/scripts/lib/drift_parsers.py`` under a sentinel module name
 # without touching the ``lib`` namespace.
 drift_parsers = load_shared_lib("drift_parsers")
+events_amend = load_shared_lib("events_amend")  # honor event_amended corrections
 
 
 # ---------------------------------------------------------------------------
@@ -423,7 +423,7 @@ def run(
 ) -> list[Finding]:
     """Run D1-D4 and return Findings."""
     spec_frs = _load_spec_frs(project_root)
-    events = _load_events(project_root)
+    events = events_amend.apply_amendments(raw) if (raw := _load_events(project_root)) is not None else None
 
     plan: list[tuple[str, callable]] = [
         ("D1", lambda: _check_d1(spec_frs, events)),
