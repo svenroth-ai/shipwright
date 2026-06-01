@@ -1,6 +1,6 @@
 # Commit Change Log
 
-Generated: 2026-06-01T05:15:30.344266+00:00
+Generated: 2026-06-01T06:01:42.375782+00:00
 Total commits: 812
 
 ## Commit Distribution
@@ -275,7 +275,7 @@ pie title Commit Types
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-05-31 | iterate | write plugin-sync Stop-hook triage item to durable main-repo log | d8e29f8b88dd |
+| 2026-06-01 | iterate | write plugin-sync Stop-hook triage item to durable main-repo log (#130) | 0c15e9a6df64 |
 | 2026-05-31 | canon | mark triage_bundle.py compliance-word literals as non-path | 4c77369fa004 |
 | 2026-05-31 | deploy | reject Windows absolute client.entrypoint on any host OS | ea0db8d24483 |
 | 2026-05-31 | shared-tests | make shared/tests CI-green on Linux (cross_plugin marker + Windows-only skip) | 4d14ac96201d |

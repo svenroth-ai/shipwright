@@ -1,9 +1,9 @@
 {
   "status": "completed",
-  "timestamp": "2026-05-31T15:51:40.560418+00:00",
-  "provider": null,
-  "findings_count": 0,
-  "self_review_fallback_ran": true,
-  "reason": "compliance bundle mirrors the externally-reviewed (gemini+gpt5.4) phaseQuality backlog pattern; self-review (7-point) + reproduction probe + 10 producer/28 caller/566 plugin/full-suite green",
+  "timestamp": "2026-06-01T06:00:50.376446+00:00",
+  "provider": "internal-code-reviewer",
+  "findings_count": 4,
+  "self_review_fallback_ran": false,
+  "reason": "code-reviewer subagent: 1 MEDIUM (D5 parity gap \u2014 now requires none_reason, true gate parity) + 3 LOW (casing comment, pass-preservation guard, disable scope note) all addressed; +self-caught canon-lint regression fixed",
   "review_mode": "iterate"
 }

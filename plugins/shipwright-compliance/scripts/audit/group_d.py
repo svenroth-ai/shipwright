@@ -350,14 +350,10 @@ def _check_d4(
 def _check_d5(
     events: list[dict] | None,
 ) -> tuple[str, str, str, list[str]]:
-    """Returns (status, severity, detail, evidence).
-
-    The inverse of D1: D1 finds spec FRs with no covering event; D5 finds
-    FEATURE/CHANGE iterate ``work_completed`` events that touched no FR at
-    all — a new capability that never produced a requirement. An event is
-    exempt when it explicitly recorded ``spec_impact == "none"`` (a
-    justified no-op). BUG iterates and build events are out of scope.
-    Time-invariant — no epoch-floor watermark (like D3/D4).
+    """(status, severity, detail, evidence). Inverse of D1: flags FEATURE/CHANGE
+    iterate ``work_completed`` events touching no FR. Exempt when
+    ``spec_impact=none`` OR an exempt ``change_type`` + ``none_reason``
+    (record_event ADR-C.1 parity). BUG/build out of scope; time-invariant.
     """
     if events is None:
         return "skip", "MEDIUM", "shipwright_events.jsonl not present", []
@@ -379,6 +375,10 @@ def _check_d5(
             continue
         if str(ev.get("spec_impact", "")).lower() == "none":
             continue  # explicit, justified no-op
+        # ADR-C.1 write-gate parity: exempt change_type AND non-empty none_reason.
+        ct = str(ev.get("change_type", "")).lower()
+        if ct in {"tooling", "compliance", "infra", "docs"} and str(ev.get("none_reason", "")).strip():  # artifact-path-canon: legacy
+            continue
         unlinked.append(ev)
 
     if not unlinked:

@@ -935,6 +935,17 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
    Writes `.shipwright/compliance/audit-report.md` + `shipwright_audit_report.json`.
    Does not modify anything unless `--fix` is passed (Group E per-doc
    regen only).
+   **Applicability (iterate-2026-05-31 `compliance-check-context-gate`):** a
+   repo-root `audit_config.json` may set `disabled_checks: ["B7","D1",…]` —
+   detective checks that are structurally not-applicable to the project type.
+   `run_all` rewrites a listed check's finding to `skip` (before the triage
+   mirror, so it drops out of `any_fail` + the `compliance:backlog` bundle).
+   Explicit, per-project declaration — never auto-detected; default `[]` runs
+   every check. The Shipwright framework monorepo disables A5.6/B7/D1/G2 (each
+   with a documented reason) as an adopted, multi-component, active-CI repo.
+   Separately, **D5** now exempts iterate events whose `change_type` ∈
+   `{tooling,compliance,infra,docs}` (parity with the `record_event` ADR-C.1
+   gate), not just `spec_impact=none`.
 
 | Event | Matcher | Script | What It Does |
 |-------|---------|--------|--------------|

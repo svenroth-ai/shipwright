@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-31-plugin-sync-triage-main-repo"
+run_id: "iterate-2026-05-31-compliance-check-context-gate"
 phase: "iterate"
-reason: "iterate: plugin-sync triage main-repo redirect (post-rebase)"
-timestamp: "2026-06-01T05:15:30.344266+00:00"
+reason: "compliance check context-gate: D5 change_type fix + audit_config.disabled_checks"
+timestamp: "2026-06-01T06:01:42.375782+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-01 05:15:30 UTC
+> Auto-generated 2026-06-01 06:01:42 UTC
 
 ## Session Info
 
-- **Session ID**: edce381c-01f8-43c8-82a4-8d6400b4ddd3
-- **Timestamp**: 2026-06-01 05:15:30 UTC
-- **Reason**: iterate: plugin-sync triage main-repo redirect (post-rebase)
+- **Session ID**: 3e307394-564c-4915-8128-3c7fa7eeb609
+- **Timestamp**: 2026-06-01 06:01:42 UTC
+- **Reason**: compliance check context-gate: D5 change_type fix + audit_config.disabled_checks
 
 ## Last Iterate
 
@@ -28,8 +28,10 @@ timestamp: "2026-06-01T05:15:30.344266+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/plugin-sync-triage-main-repo
-- **External Review Marker**: completed (external_review_state.json @ 2026-05-31T15:51:40)
+- **Branch**: iterate/compliance-check-context-gate
+- **Spec**: .shipwright/planning/iterate/2026-05-31-compliance-check-context-gate.md
+- **Complexity**: medium (`touches_io_boundary`: reads `audit_config.json`,
+- **External Review Marker**: completed (external_review_state.json @ 2026-06-01T06:00:50)
 
 ### Mandatory replay on Resume
 
@@ -47,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/plugin-sync-triage-main-repo
-- **Last Commit**: d8e29f8b fix(iterate): write plugin-sync Stop-hook triage item to durable main-repo log
+- **Branch**: iterate/compliance-check-context-gate
+- **Last Commit**: 0c15e9a6 fix(iterate): write plugin-sync Stop-hook triage item to durable main-repo log (#130)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +66,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-b27ecbd3 | work_completed | iterate (D5 honors change_type+none_reason exemption; add audit_config.disabled_checks applicability gate; framework repo disables A5.6/B7/D1/G2) | 2026-06-01 |
 | evt-ea7f2302 | work_completed | iterate (plugin-sync Stop-hook triage item written to durable main-repo log (worktree-aware)) | 2026-06-01 |
 | evt-1da91106 | work_completed | iterate (CI gate-coverage guard + workflow hardening (test-dir coverage, loose-gate allowlist, security fail-closed)) | 2026-05-31 |
 | evt-4cb02049 | work_completed | iterate (Gate CI Python lint on a curated bug-focused ruff ruleset (pyflakes F + high-signal E/W); remove the || true + continue-on-error neutering; provision ruff via pinned uvx; rename job to Python (lint + test).) | 2026-05-31 |
 | evt-0b680aca | work_completed | iterate (Wire shared/ test suites (shared/tests, shared/scripts/tests, shared/scripts/tools/tests) into ci.yml as blocking per-dir invocations; fix 2 non-hermetic validate_env tests via a dir conftest; make the born-red arch-md sibling skip when gitignored decision-drops are absent.) | 2026-05-31 |
-| evt-794a4945 | work_completed | iterate (remove vestigial "|| true" from CI integration step (gate failures) + add pathlib.Path import to clear 14 F821 in test_events_log.py) | 2026-05-31 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 85
-- **Last iterate**: bug — plugin-sync Stop-hook triage item written to durable main-repo log (worktree-aware) (2026-06-01)
+- **Total work events**: 86
+- **Last iterate**: change — D5 honors change_type+none_reason exemption; add audit_config.disabled_checks applicability gate; framework repo disables A5.6/B7/D1/G2 (2026-06-01)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
