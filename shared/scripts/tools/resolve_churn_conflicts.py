@@ -6,9 +6,9 @@ origin/main`` conflicts exclusively on generated/"churn" artifacts (see
 iterate-2026-05-31-churn-merge-resolver). This tool reconciles them
 deterministically so a human never hand-resolves them again:
 
-- **derived MDs** (5 ``compliance/*.md`` + 3 ``agent_docs/*.md``) — regenerated
-  from the merged tree via the *same* single-producer generators that
-  ``finalize_iterate`` uses (zero drift by construction).
+- **derived MDs** (the 5 compliance + 3 agent-doc snapshot markdown files) —
+  regenerated from the merged tree via the *same* single-producer generators
+  that ``finalize_iterate`` uses (zero drift by construction).
 - **``shipwright_test_results.json``** — a PR-owned snapshot → resolved ``--ours``.
 - **``shipwright_events.jsonl``** — append-only log; normally auto-unioned by
   ``.gitattributes`` (``merge=union``). Validated unconditionally (every line
