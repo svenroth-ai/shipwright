@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-06-01T06:01:42.375782+00:00
-Total commits: 812
+Generated: 2026-06-01T06:28:39.307027+00:00
+Total commits: 816
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 246
-    "fix" : 215
+    "fix" : 218
     "chore" : 156
-    "docs" : 113
+    "docs" : 114
     "refactor" : 50
     "test" : 20
     "other" : 7
@@ -271,10 +271,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 215 commits
+### Fixes (fix) — 218 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-01 | iterate | auto-reconcile churn-artifact merge conflicts (events=union + resolver) | 7bbb6b57721a |
+| 2026-06-01 | compliance | D5 change_type exemption + per-project disabled_checks gate | 7522a7081c2f |
+| 2026-06-01 | security | diff-mode prompt-injection scan honors self-reference/skip excludes | 6c523b575a42 |
 | 2026-06-01 | iterate | write plugin-sync Stop-hook triage item to durable main-repo log (#130) | 0c15e9a6df64 |
 | 2026-05-31 | canon | mark triage_bundle.py compliance-word literals as non-path | 4c77369fa004 |
 | 2026-05-31 | deploy | reject Windows absolute client.entrypoint on any host OS | ea0db8d24483 |
@@ -652,10 +655,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 113 commits
+### Documentation (docs) — 114 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-01 | claude-md | document gating ruff lint step in Development section (#133) | 74a3e0b241f4 |
 | 2026-05-31 | iterate | fold Linux-CI discovery + cross-platform fixes into iterate artifacts | ef089eb6a64f |
 | 2026-05-31 | conventions | record CI-coverage trap (shared/tests not run by CI) | afa728c11447 |
 | 2026-05-29 | agent-docs | add guide-readme-refresh to architecture baseline | c78fd143ade3 |
@@ -881,7 +885,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 812 |
+| Total commits | 816 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 812 |
+| Human-authored commits | 816 |
 

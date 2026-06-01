@@ -1,0 +1,1 @@
+Iterate PRs no longer hit recurring 'dirty' merge conflicts on generated artifacts: `shipwright_events.jsonl` now uses a `merge=union` driver and the new `integrate_main.py` auto-reconciles the compliance/agent-doc snapshots on `origin/main` merges.

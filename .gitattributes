@@ -1,0 +1,13 @@
+# Shipwright churn-artifact merge strategy.
+# See .shipwright/planning/iterate/2026-05-31-churn-merge-resolver.md (AC-1).
+#
+# shipwright_events.jsonl is an append-only event log: when origin/main and an
+# iterate branch each append events, keep BOTH sides' lines automatically instead
+# of forcing a manual conflict resolution. `union` is git's built-in line-union
+# merge driver (no per-clone `git config` needed) and is honored by GitHub's
+# server-side merge too.
+#
+# Rollout note: a long-lived branch created BEFORE this commit must merge this
+# commit (so .gitattributes is present in its tree) before `union` applies to it.
+# The resolver (resolve_churn_conflicts.py) validates the merged log regardless.
+shipwright_events.jsonl merge=union
