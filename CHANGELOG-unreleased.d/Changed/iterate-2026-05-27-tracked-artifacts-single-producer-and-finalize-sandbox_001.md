@@ -1,1 +1,0 @@
-audit_staleness DOC_REGISTRY widens from 5 (compliance) to 8 docs (compliance + agent-doc trio); 'not-in-snapshot' semantic added so registry expansions ahead of the snapshot baseline don't emit false-positive Group E findings.

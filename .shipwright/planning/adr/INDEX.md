@@ -14,4 +14,8 @@ regeneration overwrites this file on every release pass._
 - [ADR-062 — b4 dev server split](062-b4-dev-server-split.md)
 - [ADR-089 — tracked artifacts single producer and finalize sandbox](089-tracked-artifacts-single-producer-and-finalize-sandbox.md)
 - [ADR-090 — bloat exception runtime snapshot split](090-bloat-exception-runtime-snapshot-split.md)
+- [ADR-091 — bloat exception artifact migrations allowlist](091-bloat-exception-artifact-migrations-allowlist.md)
+- [ADR-092 — bloat exception events worktree commit](092-bloat-exception-events-worktree-commit.md)
+- [ADR-093 — bloat exception test completeness gate](093-bloat-exception-test-completeness-gate.md)
+- [ADR-094 — bloat github triage prompt producer tests](094-bloat-github-triage-prompt-producer-tests.md)
 - [_template bloat exception](_template-bloat-exception.md)

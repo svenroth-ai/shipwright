@@ -1,1 +1,0 @@
-Refreshed the artifact-path-canon ALLOWLIST (`shared/scripts/lib/artifact_migrations.py`) for Campaign A/B aftermath — `test_artifact_path_canon` was red on 41 legitimate references (split-package paths, plugin-source paths, phase-name enums, the bloat baseline JSON). Per-artifact allowlist extension only; no regex loosening, no real legacy-path reference masked.

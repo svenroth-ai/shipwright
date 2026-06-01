@@ -1,1 +1,0 @@
-shipwright-iterate: systematic-debugging sub-skill (`references/F-debug.md`) — BUG intent routes through a 4-phase root-cause protocol (Iron Law: no fixes without root-cause investigation first) with a reviewer gate that rejects symptom patches. Adapted from obra/superpowers (MIT).

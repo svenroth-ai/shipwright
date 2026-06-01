@@ -1,1 +1,0 @@
-Compliance RTM no longer reports passing requirements as FAIL: an FR's status now derives from its latest event that recorded a test count (untested 0/0 commits are neutral), so a docs/refactor commit or an already-fixed transient failure no longer pins the FR to FAIL.

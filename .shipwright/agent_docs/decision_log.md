@@ -1261,3 +1261,365 @@ shipwright/
 - **Consequences:** compliance_bridge.py 116→160 LOC (in-process dispatch replaces subprocess; under 300). boundary_coverage_report.py 661→640 LOC (ratchet DOWN). Two new integration test files: test_shared_contracts_consumers.py (270 LOC, 21 tests) + test_shared_contracts_consumers_behavior.py (174 LOC, 5 tests). Empirical: 1104 tests across 4 trees, 0 failed.
 - **Rejected:** Make shared/ a pip-install-e package (out of scope). Expose update_compliance.main() over CLI shape adopt does not use. Skip iterate contract — would leave the worst offender.
 - **Details:** [B8-contracts.md](../planning/iterate/campaigns/2026-05-25-bloat-cleanup-B-shipwright/sub-iterates/B8-contracts.md)
+
+---
+
+### ADR-089: Guide + README refresh for Campaign A+B (post-v0.22.0)
+- **Date:** 2026-05-27
+- **Section:** docs
+- **Run-ID:** iterate-2026-05-27-guide-readme-refresh
+- **Context:** docs/guide.md last updated at 388fa55 (Iterate C.1); 91 commits + 5 ADRs (060/061/062/089/090) + Campaign A (foundation/review/defense) + Campaign B (SKILL.md splits, shared/contracts, B3 bloat column, B4-B7 module splits) landed since. Compliance section still claimed only Groups C+F shipped.
+- **Decision:** Refresh guide §4.10 (all 8 audit groups + bloat dashboard column), §7.5 (300/400 LOC + anti-ratchet), §8 (F7b sealing + runtime/snapshot split + merge-not-rebase), §9 (bloat hook + suppression syntax + plugin-cache sync), §10 (agent_docs/runtime + ADR spec folder). README: add shared/contracts + glossary + constitution to architecture tree; add bloat anti-ratchet row to hooks table; link glossary + constitution + ADR folder under Other references.
+- **Commit:** (assigned post-merge)
+- **Consequences:** User-facing docs now reflect post-v0.22.0 state. Operators see all 8 audit groups marked shipped, learn the runtime/tracked split, find the install-hooks one-liner, and have a pointer to the bloat exception ADR template. INDEX.md regenerates on next /shipwright-changelog release.
+
+---
+
+### ADR-090: Refresh SBOM after syncing dev extras across plugin workspaces
+- **Date:** 2026-05-27
+- **Section:** compliance/sbom
+- **Run-ID:** iterate-2026-05-27-sbom-license-resolve
+- **Context:** Stale SBOM triage cluster (2026-05-23) flagged pytest/pytest-mock as undeclared across 9 plugin workspaces. The Python license resolver reads <manifest>/.venv/<pkg>-*.dist-info METADATA; affected plugins were synced without --extra dev so no dist-info existed. Both packages declare MIT in their installed METADATA.
+- **Decision:** Run uv sync --extra dev across the 10 affected plugin workspaces + root, then regenerate compliance docs. No code change required.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Resolver behavior is correct (ADR-056: pinned to per-manifest .venv METADATA). The triage launchPayload itself prescribes uv sync --extra dev as the remediation. No code defect — purely stale local state.
+- **Consequences:** SBOM: 0 unknown licenses (was 3). Triage inbox: 0 pending sbom items (was 4). All licenses now resolve as MIT or Apache-2.0. .venv directories are gitignored, so only the regenerated compliance docs appear in the diff.
+- **Rejected:** (a) Change resolver to distinguish 'unknown' vs 'not-installed' — overkill for a self-clearing symptom. (b) Hard-code license allowlist — maintenance burden when new dev deps land.
+
+---
+
+### ADR-091: Runtime/snapshot split for agent-doc trio + hard-gated finalize repair pass
+- **Date:** 2026-05-27
+- **Section:** Iterate
+- **Run-ID:** iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox
+- **Context:** Every plugin Stop hook (12 plugins) re-generated 3 tracked agent-doc MDs each turn, dirtying main. Iterate-finalize also escaped to main via stale session->worktree pointer (cwd fallback bypassed PR #78). Rebase loses Run-ID trailer SHAs needed by audit_staleness.
+- **Decision:** Extend PR #78 single-producer: Stop hooks -> gitignored .shipwright/agent_docs/runtime/; finalize is sole producer of tracked. Per-file: handoff+dashboard direct-write (carry canon/run_id), triage copy-and-unlink. Hard-gate repair pass when worktree pointer invalid. Widen audit_staleness to 8 docs with not-in-snapshot semantic. Codify git merge (not rebase) for Run-ID branches.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Alternative A (delete Stop writes, 1:1 PR #78) loses live-state value for non-iterate sessions. Per-file finalize decision avoids 'always generate then overwrite' double-producer (external review OpenAI #1). Doc-only rebase guard per user pref; programmatic pre-rebase deferred.
+- **Consequences:** Closes 'main dirty every session' class. Mid-session runtime/ stays inspectable; tracked is canonical snapshot. Repair pass refuses to write main on stale pointer. Group E covers agent-doc trio. Future iterates must git merge (not rebase) Run-ID branches.
+- **Rejected:** Delete Stop writes (loses live state). Pre-commit hook (target-projects inherit it, competes with bloat anti-ratchet hooksPath). Programmatic pre-rebase guard (deferred per external review OpenAI #12).
+- **Details:** [089-tracked-artifacts-single-producer-and-finalize-sandbox.md](../planning/adr/089-tracked-artifacts-single-producer-and-finalize-sandbox.md)
+
+---
+
+### ADR-092: Bloat marker keyed off stdin-payload session_id, not env
+- **Date:** 2026-05-29
+- **Section:** Iterate — bug: bloat-gate session-id
+- **Run-ID:** iterate-2026-05-29-bloat-gate-session-id
+- **Context:** check_file_size.py (PostToolUse) and bloat_gate_on_stop.py (Stop) derived the per-session bloat marker name from the SHIPWRIGHT_SESSION_ID env var, which is unset in those hook processes, so every session pooled into one bloat_pending.unknown.json bucket.
+- **Decision:** Both hooks now read session_id from the hook stdin payload (falling back to env then 'unknown'), matching capture_session_id.py.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Reproduced live: a 791-LOC file edited in another worktree's session blocked this session's Stop via the shared unknown bucket. The payload session_id is the canonical per-session key Claude Code passes to every hook event.
+- **Consequences:** Markers are per-session isolated; one session's oversize file no longer blocks another session's Stop. Backward-compatible: empty payload + unset env still maps to the unknown bucket.
+- **Rejected:** Env-only read (status quo, the root cause); a global lock or per-cwd marker (does not isolate concurrent sessions in one repo).
+
+---
+
+### ADR-093: Anti-ratchet clears at baseline current, not the raw limit
+- **Date:** 2026-05-29
+- **Section:** Iterate — bug: bloat-gate anti-ratchet clear
+- **Run-ID:** iterate-2026-05-29-bloat-gate-session-id
+- **Context:** bloat_gate_on_stop.py _re_measure_oversize compared the live file size only against the 300 limit, never the baseline 'current', and never cleared an anti-ratchet entry when the file was trimmed back within its grandfathered ceiling.
+- **Decision:** The Stop-gate now blocks an anti-ratchet entry only when the live size grew PAST the baseline 'current' (loaded via _baseline_map); a file trimmed to <= current is cleared even if still over 300.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Aligns the Stop-gate with the canonical anti-ratchet definition already used by the pre-commit anti_ratchet.py and stated in the constitution: 'an existing baseline entry growing past current'.
+- **Consequences:** A grandfathered file that was transiently over baseline and correctly trimmed back no longer blocks Stop as a false-positive (record_event.py 799->792). New crossings outside baseline still block.
+- **Rejected:** Comparing against the raw 300 limit (status quo, the bug); clearing on any shrink regardless of ceiling (would let a still-ratcheted file pass).
+
+---
+
+### ADR-094: events.jsonl is a per-tree, PR-committed artifact
+- **Date:** 2026-05-29
+- **Section:** shared/scripts/lib/events_log.py
+- **Run-ID:** iterate-2026-05-29-events-jsonl-worktree-commit
+- **Context:** In a worktree iterate, resolve_events_path redirected the work_completed event write to the MAIN repo via git --git-common-dir. F6 staged an explicit per-path list excluding events.jsonl, so the event landed as an uncommitted line in the main tree, never entered the PR, and needed a manual chore(events) backfill (tracked-file drift; PR #70 wipe incident).
+- **Decision:** resolve_events_path (+ compliance parity _resolve_events_path) now return project_root/EVENT_FILE literally. The event is recorded into the worktree's own log at F5b, staged by F6, and ships in the PR. F6.5 SHA-patch + F7/F7b seal are skipped for the worktree flow (event ships commit=''; linkage via Run-ID footer + adr_id). check_events_has_commit asserts a tracked log's event is in the committed HEAD blob (AC4).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Only this honors the ACs (event in PR, main clean, no backfill, verifier asserts committed). resolve_main_repo_root is left unchanged for decision-drops (gitignored, consumed on main). User chose option A (root-cause fix) over auto-seal-on-main (B) / re-plan (C).
+- **Consequences:** Main tree stays clean; no chore(events) backfill; event is reviewed in the PR. Tradeoff: events.jsonl is now the one per-branch append-only file, so concurrent iterate PRs can conflict at EOF (corrupt-line-tolerant readers degrade gracefully; recover via validate_event_log.py).
+- **Rejected:** B: make F7b seal mandatory+automatic (keeps a chore(events) commit per iterate -> fails AC3). C: untrack events.jsonl (loses version-controlled audit trail). Full leak-guard exemption removal deferred (false-positive risk vs legacy path).
+
+---
+
+### ADR-095: Refresh artifact-path-canon ALLOWLIST for Campaign A/B aftermath
+- **Date:** 2026-05-29
+- **Section:** tooling
+- **Run-ID:** iterate-2026-05-29-fix-path-canon-allowlist
+- **Context:** Campaign A.defense + B (merged 2026-05-25..27) added new files (shared/contracts, glossary.md, bloat_baseline.json) and split monoliths into packages (orchestrator_pkg/, phase_quality/) without updating the artifact_migrations.py ALLOWLIST. test_artifact_path_canon went red: 2 agent_docs + 39 compliance findings, all verified LEGITIMATE (plugin-source paths via the -compliance/ hyphen trigger, phase-name enums, canonical .shipwright paths behind a variable) — no real legacy-path bug.
+- **Decision:** Per-artifact ALLOWLIST extension, no regex loosening. Package globs replace the stale whole-file monolith entries 1:1 (orchestrator_pkg/**, phase_quality/**) so blast radius is unchanged. Added plugins/shipwright-iterate/tests/** (only plugin test dir never allowlisted), shared/contracts/**, shared/glossary.md, shipwright_bloat_baseline.json (JSON has no inline-marker syntax). Each finding verified legitimate first.
+- **Commit:** (assigned post-merge)
+- **Consequences:** test_artifact_path_canon green (4 params). No legacy-path reference masked: split-package globs preserve the pre-split whole-file exemption; new entries carry only verified plugin-path/phase-name/JSON-baseline content.
+- **Rejected:** Loosening the compliance/ regex to exclude the -compliance/ hyphen segment: would globally weaken legacy-path detection. Per-file inline markers: impossible for JSON, noisy for 25 baseline entries.
+
+---
+
+### ADR-096: UserPromptSubmit hookSpecificOutput must carry hookEventName
+- **Date:** 2026-05-29
+- **Section:** shared/scripts/hooks/suggest_iterate.py
+- **Run-ID:** iterate-2026-05-29-fix-suggest-iterate-hookeventname
+- **Context:** suggest_iterate.py (UserPromptSubmit hook) emitted hookSpecificOutput at 3 paths without the required hookEventName field. Claude Code rejected the output ('hookSpecificOutput is missing required field hookEventName'), silently dropping the iterate-routing context on every code-change prompt.
+- **Decision:** Add hookEventName='UserPromptSubmit' to all 3 hookSpecificOutput dicts. Add an AST drift-guard meta-test (test_hook_output_schema.py) asserting every hook's hookSpecificOutput dict-literal carries hookEventName, across shared + plugin hooks.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Schema-required field; the meta-test prevents regression class-wide.
+- **Consequences:** Routing context now reaches the model. The meta-test fails closed on the whole bug class going forward (AST-based, ignores comments). AST scan confirmed suggest_iterate was the only offender.
+
+---
+
+### ADR-097: SessionStart bootstrap + plugin-cache Stop reminder; Python hooks keyed off payload session_id
+- **Date:** 2026-05-29
+- **Section:** Iterate — feature: skill bootstrap pack (SP2+SP4)
+- **Run-ID:** iterate-2026-05-29-skill-bootstrap-pack
+- **Context:** Sessions in a Shipwright project didn't self-orient (users had to prefix /shipwright-iterate); plugin-side edits silently skipped the runtime cache re-sync.
+- **Decision:** Add 3 hooks across all 12 hooks-bearing plugins: SessionStart injects using-shipwright.md; a PostToolUse->Stop wave marks plugin-side edits and surfaces a block-once update-marketplace.sh + check_plugin_cache_sync.py reminder plus a plugin-sync triage item.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Python (not the spec's .sh) is needed for atomic O_EXCL dedup across 12x firing, JSON-escaping a markdown file, and Windows robustness; session_id must come from the stdin payload because SHIPWRIGHT_SESSION_ID is unset in sibling SessionStart processes.
+- **Consequences:** Any session routes work correctly; SP4 is monorepo-scoped so end-user projects are unaffected; new triage producer source=plugin-sync.
+- **Rejected:** block-until-green Stop gate (hard-loops when edited-but-not-pushed/CI); bash hook (fragile JSON+sentinel); env-keyed sentinel (one-shot-per-project bug).
+
+---
+
+### ADR-098: SP3 + OS2 reintegrated as standalone iterate after Campaign B
+- **Date:** 2026-05-29
+- **Section:** external-frameworks SP3+OS2 (trg-89d3caa4)
+- **Run-ID:** iterate-2026-05-29-sp3-os2-reintegration
+- **Context:** Campaign B (PRs #89-#102, merged 2026-05-26) split the iterate and project SKILL.md files but did not carry the inline SP3 (systematic-debugging) / OS2 (assumptions-first) patches that Spec/external-frameworks-integration.md §6.2 prescribed; verified missing 2026-05-27.
+- **Decision:** Re-establish both as a standalone iterate: add references/F-debug.md (Iron Law + 4-phase) wired into the iterate Kern BUG path plus a reviewer root-cause gate; add an assumptions-first pre-phase to project interview-protocol.md surfaced from Kern Step 1. Both carry MIT attribution footers.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Inline-with-Campaign-B path missed because Campaign B sub-iterate plans never referenced SP3/OS2 (post-mortem §6.2); Campaign B is closed so inline carry is no longer possible.
+- **Consequences:** BUG iterates route through systematic debugging before any fix; /shipwright-project lists inferred assumptions before clarifying questions. New drift-protection meta-tests pin both. Spec §10 acceptance for B1.iterate/B1.project SP3/OS2 is now satisfied.
+- **Rejected:** Re-open the closed Campaign B to patch inline; leave the gap (Spec §10 acceptance unmet).
+
+---
+
+### ADR-099: Compliance audit triage emit/dismiss runs on Stop with a full-coverage gate
+- **Date:** 2026-05-30
+- **Section:** shared/scripts/hooks/audit_compliance_on_stop.py
+- **Run-ID:** iterate-2026-05-30-compliance-audit-on-stop
+- **Context:** mirror_findings_to_triage (compliance triage emit + auto-dismiss) was reachable only via the manual /shipwright-compliance skill, so F-/B-group items lingered in triage long after the finding was fixed — the lone triage producer without an automatic trigger.
+- **Decision:** Add shared Stop hook audit_compliance_on_stop.py (Option A1), wired into the iterate + changelog Stop chains after phase_quality and before aggregate_triage. It runs the full A-G audit with emit_to_triage=False and mirrors only when all groups ran with no import_gate_error; any partial/crashed run skips mirroring so a missing group cannot false-dismiss another group's items.
+- **Commit:** (assigned post-merge)
+- **Rationale:** In-process (vs shelling out to run_audit.py) avoids report-file churn and lets the full-coverage gate interpose between detection and the triage mirror; the audit chain is stdlib + first-party so it is environment-independent.
+- **Consequences:** source=compliance items now auto-emit and auto-dismiss on every Stop. Idempotent per (HEAD-sha, session_id); never blocks; opt-out via SHIPWRIGHT_COMPLIANCE_AUDIT_ON_STOP=0; per-worktree (triage.jsonl is gitignored).
+- **Rejected:** Unconditional emit_to_triage=True (the run_audit.py path) would false-dismiss on any crashed group. Scoped per-group auto-dismiss (A2) and cross-worktree triage sync (C) deferred to separate iterates.
+
+---
+
+### ADR-100: Canonical .shipwright gitignore block propagates to consuming projects
+- **Date:** 2026-05-30
+- **Section:** Iterate: gitignore canon propagation
+- **Run-ID:** iterate-2026-05-30-gitignore-canon-propagation
+- **Context:** Framework-added .shipwright/ ignore rules (e.g. agent_docs/runtime/, ADR-089) never reached consuming projects: the template was a 3-line orphan, adopt only CHECKED coverage, project wrote no .gitignore at all. webui ended up with untracked runtime clutter (symptom-fixed in f6e34a6).
+- **Decision:** Make shared/templates/shipwright-gitignore.template the SSoT for the canonical .shipwright artifact-ignore block (marker-delimited). New shared/scripts/lib/gitignore_canon.py idempotently line-merges it into a target .gitignore (adds only missing rules, no duplicates). adopt + project now call it; a drift test keeps the template congruent with the framework's own .gitignore.
+- **Commit:** (assigned post-merge)
+- **Consequences:** Newly adopted/created projects get correct .shipwright ignore rules automatically; existing projects self-heal on re-run or via the CLI. A future ADR adding a gitignored .shipwright/ dir must edit the template, which auto-propagates everywhere.
+- **Rejected:** Whole-block replace (duplicates pre-existing unmarked rules); scoping the block to include .worktrees/locks (out of scope).
+
+---
+
+### ADR-101: Align stale record_event tests to the C.1 FR-gate (gates all iterates)
+- **Date:** 2026-05-30
+- **Section:** testing/record-event-fr-gate-tests
+- **Run-ID:** iterate-2026-05-30-record-event-test-failures
+- **Context:** 7 tests in shared/scripts/tools/tests/test_record_event.py failed locally (rc=1, fr_gate_unclassified) while CI was green. Root cause: the Iterate C.1 FR-gate (decision_log: broader than the spec-impact gate, applies to ALL iterates incl. bug/intentless, requires --affected-frs/--new-frs OR --change-type+--none-reason) was added, but these tests predate it and assert the old exemptions. CI never caught it because ci.yml only runs plugins/*/tests/ + integration-tests/, never shared/.
+- **Decision:** Fix the tests, not the gate (gate behaves as designed per decision_log + F7.md). Cluster A (4 changed-files feature tests): add --change-type tooling --none-reason to classify the iterate event. Cluster B (3 SpecImpactGate exemption tests): invert to assert the FR-gate now rejects unclassified bug/intentless iterates and that spec-impact-justification alone does not satisfy the broader FR-gate. Updated class/section docs to the two-gate model.
+- **Commit:** (assigned post-merge)
+- **Consequences:** test_record_event.py is 51/51 green and now pins the C.1 contract. The CI gap (shared/ tests unrun) + shared collection-layout collisions are tracked as triage trg-f363b1ab for a follow-up iterate. Bumped the ADR-092 bloat exception current 791->810.
+- **Rejected:** Patching the gate to re-exempt bug/intentless (contradicts C.1 intent); wiring shared/ into CI now (blocked by 11 collection errors — separate effort).
+
+---
+
+### ADR-102: Three-stage build reviewer cascade: spec-reviewer (HARD-GATE) -> code-reviewer -> conditional doubt-reviewer
+- **Date:** 2026-05-30
+- **Section:** Iterate — P3.1 Reviewer Stack (SP1 + OS3)
+- **Run-ID:** iterate-2026-05-30-reviewer-stack
+- **Context:** Build Step 6 had a single quality gate. SP1 (Superpowers two-stage) wanted a spec-compliance gate BEFORE quality review; OS3 (Osmani doubt-driven) wanted a fresh-context disprove-biased pass for non-trivial decisions. README already advertised spec-reviewer -> code-reviewer but the agents did not exist.
+- **Decision:** Add two NEW internal reviewer subagents to build Step 6. spec-reviewer (Stage 1, HARD-GATE) blocks code-reviewer until a spec PASS, cites the spec line on REJECT, and runs whenever 6b runs. doubt-reviewer (Stage 3, conditional, advisory) is fresh-context + disprove-biased and fires only for non-trivial touches (migrations, async/concurrency, cross-plugin imports, irreversible ops). Detail in references/code-review.md; autonomous path via sub-iterate-runner Step 3.7.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Two distinct adversarial roles (spec hard-gate, disprove-biased doubt) stay as separate INTERNAL subagent prompts, not folded into the 5-axis code-reviewer nor cascaded externally: bespoke prompts catch failure modes the generic pass misses, and internal-only limits third-party diff exposure to the opt-in 6c. Behavioral acceptance is pinned structurally (pytest cannot run live subagents).
+- **Consequences:** Spec-compliance is now a distinct HARD-GATE preceding quality review. Self-Review: 7/7 pass (spec, error-handling N/A, security, test-quality, naming, consistency, affected-boundaries). External LLM review (OpenRouter): 1 spec-mismatch + 3 test notes, all 4 FIXED (trigger aligned to 6b; blocking test asserts 'not invoked until PASS'; order test pins one line; 'concurrency' token). section-builder.md (frozen) unchanged; run-orchestrator wiring is a follow-up.
+- **Rejected:** (a) orchestration in Kern - rejected: 300-LOC meta-test cap. (b) cascade spec/doubt externally (Q1) - rejected: duplicates role logic + diff exposure. (c) doubt-reviewer as hard gate (Q2) - rejected: disprove-bias would stall; advisory-must-address instead. (d) grow frozen section-builder/sub-iterate-runner - rejected: anti-ratchet; net-zero reword + non-frozen reference detail.
+- **Details:** [2026-05-30-reviewer-stack.md](../planning/iterate/2026-05-30-reviewer-stack.md)
+
+---
+
+### ADR-103: RTM status reflects latest tested event; untested 0/0 events are neutral
+- **Date:** 2026-05-30
+- **Section:** compliance/rtm-status-logic
+- **Run-ID:** iterate-2026-05-30-rtm-covered-ignore-untested-events
+- **Context:** RTM COVERED status used all(passed==total and total>0 for every event touching an FR). Any event with no recorded test count (0/0 — docs/refactor/backfill-retro commits, or a leaked verification artifact) or a transient historical failure pinned the FR to FAIL forever, even when the latest test run was fully green. 7 FRs in webui were false FAILs.
+- **Decision:** Derive status only from events that recorded a test count (tests_total>0), and only from the LATEST such event (chosen by parsed timestamp, mirroring _frs_with_stale_verification). Untested 0/0 events are NEUTRAL. The Tests/Last-Verified cells also restrict to tested events to stay coherent. Baseline and open-triage overlay paths are unchanged.
+- **Commit:** (assigned post-merge)
+- **Consequences:** False FAILs disappear (7 webui FRs -> COVERED, verified against the real event log). A genuine regression in the latest tested run still shows FAIL. test_evidence.py was already per-event-correct and needs no change.
+- **Rejected:** Physically deleting leaked log lines (breaks append-only); building tombstone/suppress amendment semantics (separate larger feature).
+
+---
+
+### ADR-104: Test Completeness Ledger replaces the Confidence-Calibration escape hatch
+- **Date:** 2026-05-31
+- **Section:** Iterate — change: Test Completeness Ledger gate
+- **Run-ID:** iterate-2026-05-30-test-completeness-gate
+- **Context:** The operator asked 'tested everything testable?' before every PR; the Confidence-Calibration 'Edge cases NOT probed + why acceptable' bullet structurally invited leaving testable behavior untested, so the answer was always 'I should still test X'.
+- **Decision:** Add fail-closed F11 verifier check_test_completeness_ledger reading iterate_latest.test_completeness: every behavior is tested(evidence) or untestable(closed-vocab reason_code); untested_testable must be 0; n/a forbidden at medium+. Graduated: trivial auto-n/a, small+ enforced.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A prose-only advisory ledger would not remove the manual nag; a fail-closed gate answers structurally. The closed UNTESTABLE vocabulary keeps 'untestable' falsifiable.
+- **Consequences:** Pre-merge 'did you test everything?' is now self-answering; F11 STOPs on any gap. Two ADR-092 exception files grew under ADR-093; grandfathered phase-matrix test kept net-zero via a split.
+- **Rejected:** Prose-only advisory ledger (nag survives); reuse ADR-092 for the bloat bump (misattributes the exception); split iterate_checks.py mid-feature (balloons scope).
+
+---
+
+### ADR-105: Fix two pre-existing artifact-path-canon failures on main
+- **Date:** 2026-05-31
+- **Section:** .shipwright/agent_docs/iterates + shared/tests/test_gitignore_propagation_wiring.py
+- **Run-ID:** iterate-2026-05-31-canon-adr-slug-fix
+- **Context:** Clean origin/main (1088b82) fails test_artifact_path_canon for the compliance + planning migrations, turning CI red. (1) the rtm iterate entry and its generated session_handoff carry adr value 'compliance/<slug>' (a malformed non-run_id/non-ADR-NNN value) that trips the compliance canon matcher; (2) a gitignore-propagation test builds tmp_path planning-dir fixtures the planning AST matcher flags.
+- **Decision:** (1) Set the rtm entry's adr (and the handoff line) to its run_id, the value the F11 verifier expects and which carries no legacy literal. (2) Add inline '# artifact-path-canon: legacy' markers on the two legitimate test-fixture lines.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Data correction over allowlist-extension for (1) since the slug was a malformed adr value; inline marker over path-change for (2) since the tmp planning dir is intentional test usage.
+- **Consequences:** All four canon migrations pass; the CI canon gate goes green. The rtm entry's adr now resolves to its pending decision-drop (F11-correct).
+- **Rejected:** Extending the canon ALLOWLIST masks the malformed-data root cause and weakens the lint against real legacy paths.
+
+---
+
+### ADR-106: Churn-artifact merge reconciliation: events=union + regenerate-on-conflict resolver
+- **Date:** 2026-06-01
+- **Section:** iterate
+- **Run-ID:** iterate-2026-05-31-churn-merge-resolver
+- **Context:** Iterate PRs recurrently went CONFLICTING/DIRTY whenever origin/main advanced (session 10dff198/PR #121). Conflicts were ONLY on generated 'churn' artifacts (events.jsonl, compliance+agent-doc MDs, test_results.json), hand-resolved >=3 times; no .gitattributes and no merge-time resolver existed.
+- **Decision:** Add .gitattributes 'shipwright_events.jsonl merge=union'; a NEW allowlist-gated resolver (resolve_churn_conflicts.py) regenerates derived MDs from the merged tree via the canonical finalize producers, takes test_results.json --ours, validates/dedups events; integrate_main.py wraps fetch->merge->resolve->merge-commit->Run-ID follow-up commit. Hard pre-flight gate aborts untouched on any non-churn (source) conflict.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Keeps artifacts tracked (does NOT reverse the externally-reviewed 2026-05-27 single-producer decision); union is the only built-in driver GitHub honors server-side; resolver reuses finalize producers => zero drift.
+- **Consequences:** Iterate-branch/origin-main merges auto-reconcile churn with zero manual surgery; source conflicts still reach a human; snapshot-provenance audit stays intact (artifacts remain tracked); regenerated MDs land in a separate non-merge commit so audit_staleness (--diff-filter=AM) finds them.
+- **Rejected:** Untrack derived artifacts (breaks audit_staleness DOC_REGISTRY); custom per-file merge driver (per-clone git config, GitHub can't run it server-side); post-merge regen on main (breaks Run-ID snapshot-provenance -> E1-E5 false staleness).
+- **Details:** [2026-05-31-churn-merge-resolver.md](../planning/iterate/2026-05-31-churn-merge-resolver.md)
+
+---
+
+### ADR-107: Integration-test CI step gates on failure; clear F821 in events-log test
+- **Date:** 2026-05-31
+- **Section:** CI gating / lint hygiene
+- **Run-ID:** iterate-2026-05-31-ci-gate-f821
+- **Context:** The integration-tests CI step ended in '|| true', a vestigial artifact from the dormant-CI/early-access era (4107a6b). The public-launch hardening pass (d85210f) added 'set -e' to the plugin-test loop but missed this step, so integration failures were silently swallowed and CI stayed green. Separately, shared/tests/test_events_log.py used pathlib.Path in lazy annotations under 'from __future__ import annotations' without importing it (14 ruff F821).
+- **Decision:** Remove '|| true' from the integration step so a non-zero pytest exit propagates (GitHub Actions' default Linux shell is 'bash -eo pipefail', so the step now fails on a failing suite). Add 'from pathlib import Path' to test_events_log.py.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Verified safe: integration suite was 136 passed / 0 failed at change time, so gating cannot turn CI red on existing tests; the import fix is pure hygiene (file already passed via lazy annotations).
+- **Consequences:** Integration-test failures now fail CI (the layer actually gates). F821 on the file drops to 0, de-noising lint enforcement. No runtime behavior change. The lint-step '|| true' is intentionally left untouched (separate tracked item).
+
+---
+
+### ADR-108: CI gate-coverage guard + workflow hardening
+- **Date:** 2026-05-31
+- **Section:** CI / Quality Gates
+- **Run-ID:** iterate-2026-05-31-ci-gate-guard
+- **Context:** ci.yml was authored dormant (|| true + continue-on-error) and only partially hardened; lint/integration/shared-coverage stayed loose with no guard against recurrence. security.yml's critical-gate read 0 criticals when findings.json was absent (scanner crash => silent green).
+- **Decision:** Add a CI-run gate-coverage guard (check_ci_gate_coverage.py + lib/ci_gate_scan.py + lib/ci_gate_allowlist.py): (a) every test dir referenced by a CI pytest invocation; (b) every loose quality gate justified in a documented allowlist with launch_gate tracking; (c) security critical-gate fails closed on missing/invalid findings.json. Harden ci.yml (integration gating + shared coverage) and security.yml; ruff lint stays non-gating as explicit tracked-debt.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Prevent recurrence of the dormant-ci loosening and make every non-gating step explicit instead of silent.
+- **Consequences:** A new loose CI gate or silently-uncovered test dir now fails CI. CodeQL analyze + security upload-sarif continue-on-error are tracked launch-gates to remove at public launch. ruff lint cleanup (261 violations) is deferred to a follow-up iterate.
+- **Rejected:** Hardening ruff lint now (261 violations = separate cleanup iterate); auto-discovering shared test dirs in CI (would defeat the catch-a-newly-uncovered-dir guard).
+
+---
+
+### ADR-109: CI lint gate: curated bug-focused ruff ruleset + de-neuter
+- **Date:** 2026-05-31
+- **Section:** iterate
+- **Run-ID:** iterate-2026-05-31-ci-lint-gate-ruff
+- **Context:** ci.yml's lint step ran 'uv run ruff check . || true' with 'continue-on-error: true' — and ruff was not even a dependency ('uv run ruff' returns command-not-found), so the step gated nothing despite the job name claiming lint+type.
+- **Decision:** Add a curated [tool.ruff.lint] set to root pyproject (pyflakes F + high-signal E711-714/E721/E722/E902/W605; cosmetic E401/E402/E701-704/E731/E741 omitted); fix all 214 findings (174 auto-fix + 40 manual); run via pinned 'uvx ruff@0.15.15 check .'; remove '|| true' and 'continue-on-error'; rename job to 'Python (lint + test)'.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Pragmatic solo/small-team posture: bug-class signal without cosmetic churn; pinned ruff keeps the gate reproducible.
+- **Consequences:** CI now fails on real lint defects (undefined names, unused imports/vars, f-string/escape bugs); new code must pass the curated set; a drift test (integration-tests/test_ci_lint_gate.py) blocks silent re-neutering.
+- **Rejected:** Full default ruleset (261 findings, cosmetic churn); enabling type-checking (out of scope, trg-84f204ba); also fixing the ci-python-plugin-monorepo template (separate decision — needs adopt-side ruff scaffolding).
+
+---
+
+### ADR-110: Run shared/ test suites in CI via separate per-dir invocations
+- **Date:** 2026-05-31
+- **Section:** CI / test-infra
+- **Run-ID:** iterate-2026-05-31-ci-shared-tests
+- **Context:** ci.yml only ran plugins/*/tests + integration-tests, so shared/tests, shared/scripts/tests, shared/scripts/tools/tests never ran in CI — record_event regressions rotted unseen. Collecting the three dirs in ONE pytest process collides (duplicate top-level 'tests' package + per-dir conftest.py -> ImportPathMismatchError).
+- **Decision:** Add a blocking 'Run shared tests' step that loops the three dirs as SEPARATE 'uv run pytest <dir>' invocations (one 'tests' package per process). Also fix the reds that would make the step born-red: 2 non-hermetic validate_env tests (new conftest clears ambient .env.local-leaked vars) and the gitignored-data arch-md sibling (skip when decision-drops/ absent).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Per-dir loop mirrors the existing per-plugin loop — minimal blast radius. validate() env precedence is correct (mirrors load_shipwright_env); the tests were leaking ambient env, not buggy.
+- **Consequences:** shared/ regressions now break CI; the three dirs are covered going forward; collision avoided structurally; arch-md drift test runs only where its (gitignored) data exists.
+- **Rejected:** pytest --import-mode=importlib across all dirs (repo-wide import-semantics change, higher risk); renaming/namespacing the duplicate 'tests' packages (churns many files).
+
+---
+
+### ADR-111: Per-project disabled_checks applicability gate + D5 change_type exemption
+- **Date:** 2026-06-01
+- **Section:** plugins/shipwright-compliance/scripts/audit + audit_config.json
+- **Run-ID:** iterate-2026-05-31-compliance-check-context-gate
+- **Context:** The compliance backlog bundle held 6 findings on the adopted framework monorepo. D5 was a real bug (exempted only spec_impact=none, not the record_event ADR-C.1 change_type alternative). B7/D1/G2/A5.6 are structurally not-applicable to a multi-component, active-CI, adopted repo but had no opt-out.
+- **Decision:** Fix D5 to also exempt feature/change events whose change_type in {tooling,compliance,infra,docs} WITH a non-empty none_reason (true parity with the record_event write gate). Add audit_config.disabled_checks: run_all rewrites a listed check's FAIL finding to skip BEFORE the triage mirror (drops from any_fail + compliance:backlog). Default empty = no-op. Framework repo disables A5.6/B7/D1/G2 with documented reasons.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Explicit per-project declaration, never auto-detected / never a blanket. D5 requires BOTH change_type and none_reason (matches the write gate, which fails closed). Reviewed by the code-reviewer subagent (1 MEDIUM + 3 LOW, all addressed); self-caught + fixed an artifact-path-canon lint regression.
+- **Consequences:** Real-repo bundle 6 -> 2 (one anomalous change_type=fix D5 event + G3 which self-resolves at changelog release). Disabled checks become SKIP, not hidden. Passing disabled checks keep their pass signal (only FAIL suppressed). A single FR-driven consumer app is unaffected (empty default).
+- **Rejected:** Adding change_type=fix to the D5 exempt set (diverges from the gate, hides real signal); re-architecting B7/G2 internals (disabled_checks is the right tool for not-applicable); blanket auto-suppression by repo type.
+- **Details:** [2026-05-31-compliance-check-context-gate.md](../planning/iterate/2026-05-31-compliance-check-context-gate.md)
+
+---
+
+### ADR-112: Compliance triage emits one rolling backlog action-unit, not one item per check
+- **Date:** 2026-05-31
+- **Section:** plugins/shipwright-compliance/scripts/audit/{audit_detector,triage_bundle}.py
+- **Run-ID:** iterate-2026-05-31-compliance-triage-bundle
+- **Context:** mirror_findings_to_triage mirrored one source=compliance triage item per failing Group A-G check. A full audit of the adopted framework monorepo produced 11 items — the same finding-mirror flood the phaseQuality producer had; dismissals re-fire because the producer was unchanged.
+- **Decision:** Delegate to a compliance-local triage_bundle.emit_compliance_backlog: keep ONE rolling compliance:backlog:<sig> item (sig=sha256[:12] of sorted group/check_id; severity=max of bundled), dismiss it when no check fails (complianceResolved), refresh on a changed set (complianceRefreshed), and one-shot-retire legacy per-check items (supersededByBacklog). Producers emit action-units, not finding-mirrors.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Mirrors iterate-1's externally-reviewed phaseQuality backlog pattern. Kept compliance-local (two callers is not three — Simplicity First); a shared helper waits for a third producer. Bundle in a new module so audit_detector stays under its grandfathered baseline.
+- **Consequences:** 11 failing checks -> 1 inbox row (empirically verified); resolve -> auto-dismiss -> 0. audit_detector.py shrinks 422->362 (de-ratchet). The full-coverage caller gate in audit_compliance_on_stop is unchanged (no false dismiss). Per-check applicability gating (D1/D5/B7 noise-by-context) is explicitly deferred; the bundle guarantees <=1 row regardless.
+- **Rejected:** Per-check applicability gate now (fuzzy for A-G checks, risks hiding real findings — separate iterate); premature shared bundle helper across both producers (no third caller yet).
+- **Details:** [2026-05-31-compliance-triage-bundle.md](../planning/iterate/2026-05-31-compliance-triage-bundle.md)
+
+---
+
+### ADR-113: Phase-quality dashboard renders unengaged phases as SKIP, not FAIL
+- **Date:** 2026-05-31
+- **Section:** shared/scripts/hooks/audit_phase_quality_on_stop.py
+- **Run-ID:** iterate-2026-05-31-phasequality-dashboard-skip
+- **Context:** Iterate-2026-05-31-phasequality-triage-bundle cleaned the triage inbox but left a documented limitation: the skill-compliance dashboard still rendered unengaged-phase FAILs (design/build/deploy/adopt C1 etc.) as red, because it reads raw finding JSONs without the engagement filter.
+- **Decision:** In audit_phase_quality_on_stop.main(), after building the per-phase findings and before write_finding_json, rewrite FAIL->SKIP (provenance=not-engaged) when phase_is_engaged is False — reusing iterate-1's pq.load_engagement_inputs + phase_is_engaged. Hook-level post-pass only; the category runners are untouched and FAIL-OPEN (unreadable state -> engaged -> no conversion).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Hook-level conversion keeps blast radius to one function + new tests (runners + their direct tests unchanged). Reuses the externally-reviewed iterate-1 engagement helper rather than re-deriving. Stacked on iterate-1 (PR #126).
+- **Consequences:** Dashboard now agrees with the inbox: phases the project never runs show SKIP. Backlog + dashboard are consistent (collect_in_scope_fails already excludes SKIP). Fresh/in-progress projects unaffected (fail-open), so runner-direct tests stay green; only new SKIP-conversion tests added. Hook 238->271 LOC (<=300).
+- **Rejected:** Gating inside each category runner (wider blast radius into _runners + test_audit_phase_quality); converting WARN too (kept minimal — WARN is already low-signal Tier-2).
+- **Details:** [2026-05-31-phasequality-dashboard-skip.md](../planning/iterate/2026-05-31-phasequality-dashboard-skip.md)
+
+---
+
+### ADR-114: Phase-quality triage emits one rolling backlog action-unit, not one item per FAIL
+- **Date:** 2026-05-31
+- **Section:** shared/scripts/lib/phase_quality + spec_checks
+- **Run-ID:** iterate-2026-05-31-phasequality-triage-bundle
+- **Context:** The phase-quality Stop hook fans out across ~13 plugins and the producer mirrored ONE triage item per Tier-1 FAIL. On the adopted framework monorepo this flooded the inbox with 9 false-positive items (unengaged phase gates + iterate:S2 with run_id=unknown), re-firing every commit — violating the action-units-not-finding-mirrors principle.
+- **Decision:** Replace the per-FAIL mirror with three producer-side layers: (1) phase_is_engaged() applicability gate (FAIL-OPEN; stale current_step on a complete project does not re-admit a phase); (2) S2/S3 SKIP on sentinel/no-exact-entry-and-no-file run_id; (3) one rolling phaseQuality:backlog:<sig> action-unit that dismisses stale-sig items and auto-dismisses when the FAIL set clears.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Producer-side keeps blast radius to one module + a verifier guard. No leader election (Simplicity First): atomic writes + deterministic signature + triage _FileLock + idempotent ops converge to one item and reduce write volume. Validated by gemini+gpt5.4 external review.
+- **Consequences:** Inbox shows at most ONE phase-quality row (was N-phases x M-codes); the exact 9-item flood now yields 0. Dashboard still renders unengaged-phase FAILs (producer-side only — runner-level SKIP is a follow-up iterate). provenance/source=error findings excluded so runner crashes never pollute the signature.
+- **Rejected:** Runner-level SKIP (wider blast radius — split to iterate 2); per-phase bundles (still N rows); leader-election marker (premature complexity).
+- **Details:** [2026-05-31-phasequality-triage-bundle.md](../planning/iterate/2026-05-31-phasequality-triage-bundle.md)
+
+---
+
+### ADR-115: plugin-sync Stop-hook triage item targets the durable main-repo log
+- **Date:** 2026-05-31
+- **Section:** Iterate — bug: plugin-sync triage main-repo redirect
+- **Run-ID:** iterate-2026-05-31-plugin-sync-triage-main-repo
+- **Context:** In an iterate-worktree session, _emit_triage in plugin_sync_reminder_on_stop.py wrote its plugin-sync triage item to the worktree-local .shipwright/triage.jsonl, which is gitignored and discarded by git worktree remove after PR merge. The durable follow-up handle the WebUI/RTM read was lost.
+- **Decision:** Resolve the MAIN repo root via lib.events_log.resolve_main_repo_root for the _emit_triage append only (triage_root = resolve_main_repo_root(project_root) or project_root). The reminder banner and once-per-session sentinel still key off the worktree root.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Triage items are an append-only audit trail and must live in the main-repo log; the decision-drop writer already solved the identical worktree problem with git-common-dir.
+- **Consequences:** plugin-sync cache-drift triage items now survive worktree cleanup; non-git/plain-checkout behaviour is unchanged via the or-project_root fallback. Mirrors the decision-drop resolver.
+- **Rejected:** Keeping the worktree path (loses the item); copying on worktree teardown (fragile, no teardown hook).
+
+---
+
+### ADR-116: Document the gating ruff lint step in CLAUDE.md
+- **Date:** 2026-06-01
+- **Section:** CLAUDE.md / Development
+- **Run-ID:** iterate-2026-06-01-refresh-claudemd-lint-gate
+- **Context:** The SessionStart timestamp-drift heuristic flagged CLAUDE.md as stale because pyproject.toml changed more recently; the real delta was the 2026-05-31 CI ruff lint gate (uvx ruff@0.15.15 check . in ci.yml, curated ruleset in [tool.ruff.lint]), which CLAUDE.md documented nowhere.
+- **Decision:** Add a 'Lint is a hard CI gate' note to CLAUDE.md's Development section reflecting the actual ci.yml step and the curated, pinned ruleset, rather than a no-op mtime touch.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Drift was a timestamp false-positive for architectural content (structure/stack/commands verified accurate); the one real gap was the undocumented lint gate.
+- **Consequences:** Contributors see the gating lint locally before pushing; the recurring drift false-positive is silenced by genuine content. No code/behavior change.

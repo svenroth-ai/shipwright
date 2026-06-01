@@ -1,1 +1,0 @@
-Two cross-platform bugs the never-Linux-tested shared/ suites had hidden: dev_server spawn used the Windows-only subprocess.CREATE_NEW_PROCESS_GROUP unconditionally under os.name=='nt', and the deploy-profile validator only rejected Windows absolute client.entrypoint paths (C:\...) when run on Windows — both now host-independent.

@@ -1,1 +1,0 @@
-Bloat Stop-gate no longer blocks on another session's oversize file: check_file_size.py and bloat_gate_on_stop.py now key the per-session marker off the hook stdin-payload session_id instead of the (unset) SHIPWRIGHT_SESSION_ID env var.

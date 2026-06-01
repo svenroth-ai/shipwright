@@ -1,1 +1,0 @@
-PR template (`.github/PULL_REQUEST_TEMPLATE.md`) rewritten with [`obra/superpowers`](https://github.com/obra/superpowers) anti-slop framing (MIT) — Iron-Law headings, Human Authorization + Duplicate Search + empirical Verification + Anti-Slop Self-Check sections, MIT attribution footer.
