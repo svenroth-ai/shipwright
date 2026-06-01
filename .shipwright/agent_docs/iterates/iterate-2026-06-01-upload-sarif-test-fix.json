@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-06-01-upload-sarif-test-fix",
+  "date": "2026-06-01T21:14:39.534334Z",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/upload-sarif-test-fix",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-01-upload-sarif-test-fix"
+}

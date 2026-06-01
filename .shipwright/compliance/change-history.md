@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-01T20:47:45.801845+00:00
-Total commits: 822
+Generated: 2026-06-01T21:14:29.419000+00:00
+Total commits: 823
 
 ## Commit Distribution
 
@@ -14,7 +14,7 @@ pie title Commit Types
     "refactor" : 50
     "test" : 20
     "other" : 7
-    "ci" : 4
+    "ci" : 5
     "build" : 1
 ```
 
@@ -872,10 +872,11 @@ pie title Commit Types
 | 2026-04-04 | — | Revert "fix: rename skill dirs to full plugin name for clean slash-command display" | 1545b4b2c522 |
 | 2026-03-21 | — | revert: restore full skill names in SKILL.md frontmatter | 05c0d5ce7566 |
 
-### CI/CD (ci) — 4 commits
+### CI/CD (ci) — 5 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-01 | — | pin third-party actions to SHA and verify gitleaks download integrity | 32bc15a5aa01 |
 | 2026-05-31 | — | descope shared-tests to non-gating tracked-debt (Linux-portability) | e1d016e0e848 |
 | 2026-05-31 | — | add CI gate-coverage guard and harden workflow gates | ae35cd199c99 |
 | 2026-05-31 | — | run shared/ test suites in CI via per-dir invocations | eb68b567899d |
@@ -891,7 +892,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 822 |
+| Total commits | 823 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 822 |
+| Human-authored commits | 823 |
 
