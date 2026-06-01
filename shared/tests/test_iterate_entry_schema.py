@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
 
 from lib.iterate_entry import (
     MAX_ENTRY_FILE_BYTES,

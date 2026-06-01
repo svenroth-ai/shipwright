@@ -30,7 +30,6 @@ import ast
 import fnmatch
 import re
 import subprocess
-import sys
 from functools import lru_cache
 from pathlib import Path
 from typing import Iterable

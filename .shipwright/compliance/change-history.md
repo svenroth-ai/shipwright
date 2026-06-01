@@ -1,19 +1,20 @@
 # Commit Change Log
 
-Generated: 2026-06-01T06:28:39.307027+00:00
-Total commits: 795
+Generated: 2026-06-01T06:01:42.375782+00:00
+Total commits: 812
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 246
-    "fix" : 208
-    "chore" : 154
-    "docs" : 111
+    "fix" : 215
+    "chore" : 156
+    "docs" : 113
     "refactor" : 50
-    "test" : 18
+    "test" : 20
     "other" : 7
+    "ci" : 4
     "build" : 1
 ```
 
@@ -270,13 +271,20 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 208 commits
+### Fixes (fix) — 215 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-01 | iterate | write plugin-sync Stop-hook triage item to durable main-repo log (#130) | 0c15e9a6df64 |
+| 2026-05-31 | canon | mark triage_bundle.py compliance-word literals as non-path | 4c77369fa004 |
+| 2026-05-31 | deploy | reject Windows absolute client.entrypoint on any host OS | ea0db8d24483 |
+| 2026-05-31 | shared-tests | make shared/tests CI-green on Linux (cross_plugin marker + Windows-only skip) | 4d14ac96201d |
 | 2026-05-31 | compliance | collapse compliance triage into one rolling backlog action-unit | 448b0580cdb7 |
+| 2026-05-31 | shared-tests | unmask os.name-fake crashes on non-native CI + portable spawn flag | 2742e46a9350 |
+| 2026-05-31 | ci | make arch-impact sanity test CI-aware (skip on clean checkout) | 81d840769752 |
 | 2026-05-31 | compliance | render unengaged phases as SKIP on the phase-quality dashboard | 19cc2ca8ad1e |
 | 2026-05-31 | compliance | collapse phase-quality triage into one rolling backlog action-unit | 527fc4b718f9 |
+| 2026-05-31 | iterate | record spec_impact_justification on the work_completed event | b3ab00273b26 |
 | 2026-05-31 | canon | resolve compliance + planning artifact-path-canon failures on main | 658198fbe220 |
 | 2026-05-31 | iterate | point iterate-history adr field at the run_id so F11 resolves the decision-drop | 2ef5e0abcd6b |
 | 2026-05-30 | iterate | use run_id as decision-drop ADR identity in iterate entry | 5fc34c27b756 |
@@ -483,11 +491,13 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 154 commits
+### Chores (chore) — 156 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-31 | iterate | record adr=run_id in iterate entry for F11 verifier | b5d4683626e1 |
 | 2026-05-31 | iterate | record ADR reference in iterate_history entry | 2fd362c71aff |
+| 2026-05-31 | ci | gate Python lint on a curated bug-focused ruff ruleset | 953d263c070e |
 | 2026-05-30 | iterate | record spec-impact justification + ADR ref for finalization | bbda6576b07a |
 | 2026-05-29 | events | backfill orphaned work_completed events for #110 + #112 | fa186cce8046 |
 | 2026-05-29 | events | record work_completed for iterate-2026-05-29-fix-path-canon-allowlist | af9190b5a939 |
@@ -642,10 +652,12 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 111 commits
+### Documentation (docs) — 113 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-31 | iterate | fold Linux-CI discovery + cross-platform fixes into iterate artifacts | ef089eb6a64f |
+| 2026-05-31 | conventions | record CI-coverage trap (shared/tests not run by CI) | afa728c11447 |
 | 2026-05-29 | agent-docs | add guide-readme-refresh to architecture baseline | c78fd143ade3 |
 | 2026-05-29 | agent-docs | refresh architecture.md + ADR INDEX for Campaign B baseline | 0241d58d3255 |
 | 2026-05-27 | guide,readme | refresh for Campaign A+B + ADRs 060/061/062/089/090 | 25fd98826faf |
@@ -813,10 +825,12 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 18 commits
+### Tests (test) — 20 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-05-31 | ci | move integration-gate guard into a CI-run dir (integration-tests/) | f8ab94fd1d85 |
+| 2026-05-31 | ci | pin integration-step no-swallow invariant; correct completeness ledger | 21e2f810dab7 |
 | 2026-05-31 | iterate | pin type-robustness edges of the completeness gate (asymptote probe) | 3dfffc8791d2 |
 | 2026-05-30 | compliance | record integration-tests pass (136) for the framework-wide resolver change | 1d876b09301f |
 | 2026-05-30 | shared | align stale record_event tests to the C.1 FR-gate | d954c492cd64 |
@@ -848,6 +862,15 @@ pie title Commit Types
 | 2026-04-04 | — | Revert "fix: rename skill dirs to full plugin name for clean slash-command display" | 1545b4b2c522 |
 | 2026-03-21 | — | revert: restore full skill names in SKILL.md frontmatter | 05c0d5ce7566 |
 
+### CI/CD (ci) — 4 commits
+
+| Date | Scope | Description | Commit |
+|------|-------|-------------|--------|
+| 2026-05-31 | — | descope shared-tests to non-gating tracked-debt (Linux-portability) | e1d016e0e848 |
+| 2026-05-31 | — | add CI gate-coverage guard and harden workflow gates | ae35cd199c99 |
+| 2026-05-31 | — | run shared/ test suites in CI via per-dir invocations | eb68b567899d |
+| 2026-05-31 | integration | gate integration-tests step on failure; fix F821 in events-log test | 83d68709d125 |
+
 ### Build (build) — 1 commits
 
 | Date | Scope | Description | Commit |
@@ -858,7 +881,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 795 |
+| Total commits | 812 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 795 |
+| Human-authored commits | 812 |
 

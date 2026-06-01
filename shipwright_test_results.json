@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-05-31-compliance-triage-bundle",
-    "date": "2026-05-31",
+    "run_id": "iterate-2026-05-31-compliance-check-context-gate",
+    "date": "2026-06-01",
     "unit": {
       "status": "passed",
-      "passed": 2635,
-      "total": 2635
+      "passed": 2712,
+      "total": 2712
     },
     "integration": {
       "status": "not_run",
@@ -32,44 +32,52 @@
     },
     "surface_verification": {
       "surface": "none",
-      "justification": "Python triage-producer change (compliance audit mirror) with no user-facing web/UI surface; covered by 10 producer tests + 28 caller (audit_compliance_on_stop) + 566 compliance-plugin + full 2635-pass shared suite, plus an end-to-end probe reproducing the exact 11-item flood (-> 1 bundle -> 0 on resolve). No dev server / E2E surface applies.",
-      "tests_run": 10,
-      "timestamp": "2026-05-31T00:00:00.000Z"
+      "justification": "Python detective-audit check/config change (group_d D5 + audit_detector disabled_checks + repo audit_config.json) with no user-facing web/UI surface; covered by 581 compliance-plugin + full 2712-pass shared suite, the artifact-path-canon lint, and an end-to-end real-repo audit probe (6 fails -> 2). No dev server / E2E surface applies.",
+      "tests_run": 27,
+      "timestamp": "2026-06-01T00:00:00.000Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "many fails -> 1 backlog item, max severity, body lists keys, launch payload (AC-1)", "disposition": "tested",
-          "evidence": "test_compliance_audit_triage_emit::test_many_fails_one_backlog_item + ::test_severity_is_max_of_bundle PASSED" },
-        { "behavior": "pass/skip findings not emitted", "disposition": "tested",
-          "evidence": "::test_pass_skip_not_emitted PASSED" },
-        { "behavior": "idempotent across commits + refresh on changed set (AC-2)", "disposition": "tested",
-          "evidence": "::test_idempotent_across_commits + ::test_refresh_on_changed_set PASSED" },
-        { "behavior": "auto-dismiss when resolved + empty-report no-op (AC-3)", "disposition": "tested",
-          "evidence": "::test_auto_dismiss_when_all_resolved + ::test_empty_report_no_op PASSED" },
-        { "behavior": "one-shot legacy per-check retirement (AC-4)", "disposition": "tested",
-          "evidence": "::test_legacy_per_check_items_retired PASSED" },
-        { "behavior": "promoted + other-source items untouched", "disposition": "tested",
-          "evidence": "::test_promoted_backlog_stays_terminal + ::test_other_source_items_not_touched PASSED" },
-        { "behavior": "full-coverage caller gate preserved (AC-5)", "disposition": "tested",
-          "evidence": "test_audit_compliance_on_stop.py (28 cases) PASSED unchanged" },
-        { "behavior": "end-to-end 11-flood -> 1 bundle -> 0 on resolve", "disposition": "tested",
-          "evidence": "Step 7.5 reproduction probe: appended=1 (sev=high), resolve dismissed=1, open=0" },
-        { "behavior": "docs hooks-and-pipeline.md compliance row (AC-9)", "disposition": "untestable",
+        { "behavior": "D5 exempts change_type in {tooling,compliance,infra,docs} WITH none_reason, incl. casing (AC-1)", "disposition": "tested",
+          "evidence": "test_audit_d5_change_type::test_d5_exempts_known_change_types_with_none_reason (5 params) PASSED" },
+        { "behavior": "D5 requires none_reason for the change_type exemption (true gate parity; review MEDIUM)", "disposition": "tested",
+          "evidence": "::test_d5_flags_exempt_change_type_without_none_reason PASSED" },
+        { "behavior": "D5 still exempts spec_impact=none; flags no-FR-no-exemption; rejects unknown change_type", "disposition": "tested",
+          "evidence": "::test_d5_still_exempts_spec_impact_none + ::_still_flags_… + ::_does_not_exempt_unknown_change_type PASSED" },
+        { "behavior": "disabled_checks rewrites a FAILing finding to skip + any_fail false (AC-2/AC-4)", "disposition": "tested",
+          "evidence": "test_audit_detector::test_disabled_check_rewritten_to_skip PASSED" },
+        { "behavior": "disabled check that PASSES keeps pass (review LOW — only FAIL suppressed)", "disposition": "tested",
+          "evidence": "::test_disabled_check_pass_is_not_rewritten PASSED" },
+        { "behavior": "default (no key) = no-op (AC-3); default config empty list", "disposition": "tested",
+          "evidence": "::test_disabled_checks_default_is_noop + ::_in_default_config_empty PASSED" },
+        { "behavior": "only listed ids affected", "disposition": "tested",
+          "evidence": "::test_disabled_checks_only_affects_listed_ids PASSED" },
+        { "behavior": "framework audit_config disables exactly A5.6/B7/D1/G2 (AC-5)", "disposition": "tested",
+          "evidence": "::test_framework_audit_config_disables_expected_checks PASSED" },
+        { "behavior": "edits keep artifact-path-canon lint green (self-caught regression)", "disposition": "tested",
+          "evidence": "shared/tests/test_artifact_path_canon.py (4) PASSED" },
+        { "behavior": "end-to-end real-repo bundle 6 -> 2", "disposition": "tested",
+          "evidence": "Step 7.5 run_audit.py --fix probe: A5.6/B7/D1/G2 SKIP, D5 4->1, G3 unchanged" },
+        { "behavior": "docs hooks-and-pipeline.md disabled_checks note (AC-8)", "disposition": "untestable",
           "reason_code": "covered-by-existing-test",
-          "reason": "documentation prose; producer behavior covered by the tests above" }
+          "reason": "documentation prose; the behavior it describes is covered by the tests above" }
       ],
-      "counts": { "testable": 8, "tested": 8, "untestable": 1, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 9, "covered_acs": 9 }
+      "counts": { "testable": 10, "tested": 10, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 8, "covered_acs": 8 }
     },
     "degraded": [
       {
-        "condition": "preexisting_shared_failures",
-        "detail": "Full shared suite: 2635 passed, 14 skipped, 1 failure (test_architecture_md_reflects_arch_impact) — PRE-EXISTING and unrelated (main-tree decision-drops not reflected in architecture.md), confirmed on origin/main with this work stashed. This iterate touches only plugins/shipwright-compliance/scripts/audit/{audit_detector,triage_bundle}.py + its test + docs."
+        "condition": "preexisting_shared_failure",
+        "detail": "Full shared suite: 2712 passed, 14 skipped, 1 failure (test_architecture_md_reflects_arch_impact) — PRE-EXISTING and unrelated, stash-verified this iterate (clean origin/main base fails identically). This iterate touches only plugins/shipwright-compliance/scripts/audit/{group_d,audit_detector}.py + audit_config.json + tests + docs."
       },
       {
-        "condition": "external_review_self_review_fallback",
-        "detail": "External LLM cascade not re-run: the compliance bundle mirrors iterate-1's externally-reviewed (gemini-3.1-pro + gpt-5.4) phaseQuality backlog pattern. Self-review (7-point) + reproduction probe + 10 producer / 28 caller / 566 plugin / full-suite green; marker recorded with self_review_fallback_ran=true."
+        "condition": "self_caught_regression_fixed",
+        "detail": "My initial group_d.py + audit_config.json edits tripped the artifact-path-canon lint (bare 'compliance' literal + slashed plugin-path strings reading as legacy artifact paths). Stash-verified the failure was MINE (clean base passed), fixed via the established # artifact-path-canon: legacy marker + comma/path rewording. Now green."
+      },
+      {
+        "condition": "external_review_internal_subagent",
+        "detail": "Code-reviewer subagent reviewed the diff: 1 MEDIUM (D5 parity gap — exemption now requires none_reason, matching the record_event gate) + 3 LOW (casing comment, pass-preservation guard, disable-scope note) all addressed."
       }
     ]
   }

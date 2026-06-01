@@ -118,7 +118,7 @@ def main() -> int:
     md_lines.append(f"# External LLM Review — {plan_path.name}")
     md_lines.append("")
     md_lines.append(f"- Provider: `{result.get('provider')}`")
-    md_lines.append(f"- Reviewer models: gemini-3.1-pro-preview, gpt-5.4 (via OpenRouter)")
+    md_lines.append("- Reviewer models: gemini-3.1-pro-preview, gpt-5.4 (via OpenRouter)")
     md_lines.append("")
     for name, review in result.get("reviews", {}).items():
         md_lines.append(f"## Reviewer: {name}")

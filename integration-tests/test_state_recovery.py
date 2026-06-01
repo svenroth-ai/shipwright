@@ -8,7 +8,6 @@ where one plugin's output is another's input.
 import json
 from pathlib import Path
 
-import pytest
 
 from conftest import (
     BUILD_PLUGIN,

@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-05-31-ci-gate-f821",
+  "date": "2026-05-31T11:30:39.640770Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/ci-gate-f821",
+  "tests_passed": true,
+  "adr": "iterate-2026-05-31-ci-gate-f821"
+}

@@ -9,7 +9,6 @@ Output: JSON with estimate, confidence, risk_flags, and signals.
 
 import json
 import re
-import sys
 from pathlib import Path
 
 # --- Canonical Risk Taxonomy ---

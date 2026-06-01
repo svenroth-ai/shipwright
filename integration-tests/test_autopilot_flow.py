@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from conftest import SHARED_SCRIPTS, run_shared_script
+from conftest import SHARED_SCRIPTS
 
 # Plugin paths
 REPO_ROOT = Path(__file__).resolve().parent.parent

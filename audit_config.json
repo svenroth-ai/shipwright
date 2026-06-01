@@ -1,0 +1,10 @@
+{
+  "_comment": "Detective-audit overrides for the Shipwright FRAMEWORK monorepo. Shallow-merged over the shipwright-compliance audit defaults by load_audit_config. disabled_checks lists detective checks that are STRUCTURALLY not-applicable to this adopted, multi-component, active-CI framework repo (each rewritten to SKIP, not FAIL). A single FR-driven consumer app keeps all checks on (empty default).",
+  "disabled_checks": ["A5.6", "B7", "D1", "G2"],
+  "_disabled_checks_reasons": {
+    "A5.6": "Security CI workflow is intentionally ACTIVE (pull_request/schedule) here, not dormant — the dormant-trigger contract targets staged-but-inactive projects.",
+    "B7": "Adopted multi-component framework monorepo: most commits are plugin development / merges / chores, not iterate work_completed events — 'every commit since release has a matching event' does not apply.",
+    "D1": "Adopted repo whose inferred FRs are not actively event-tracked; development runs via tooling/compliance iterates, not FR-driven feature work.",
+    "G2": "Monorepo uses multi-component conventional-commit scopes (e.g. 'canon', 'build,iterate', 'hooks') that are not split-names in the plan alias-map."
+  }
+}

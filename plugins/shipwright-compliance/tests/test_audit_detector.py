@@ -160,7 +160,6 @@ def test_load_audit_config_tolerates_corrupt_json(tmp_path):
 
 
 def test_run_all_reports_import_gate_error(tmp_path, monkeypatch):
-    from scripts.audit import audit_adapters
 
     def _boom(_=None):
         from scripts.audit.audit_adapters import ImportGateError
@@ -174,3 +173,66 @@ def test_run_all_reports_import_gate_error(tmp_path, monkeypatch):
     assert "mocked iterate-12 drift" in report.import_gate_error
     # No groups run when the gate fails
     assert report.groups_run == []
+
+
+# ---------------------------------------------------------------------------
+# disabled_checks applicability gate
+# (iterate-2026-05-31-compliance-check-context-gate)
+# ---------------------------------------------------------------------------
+
+
+def test_disabled_check_rewritten_to_skip(tmp_path):
+    register_group("A", lambda *a: [_make_finding(check_id="B7", status="fail")])
+    report = run_all(
+        tmp_path, only=["A"], run_gate=False, emit_to_triage=False,
+        config={"disabled_checks": ["B7"]},
+    )
+    [f] = report.findings
+    assert f.status == "skip"
+    assert f.severity == "LOW"
+    assert f.detail == "disabled via audit_config.disabled_checks"
+    assert report.any_fail is False
+
+
+def test_disabled_checks_default_is_noop(tmp_path):
+    register_group("A", lambda *a: [_make_finding(check_id="B7", status="fail")])
+    report = run_all(tmp_path, only=["A"], run_gate=False, emit_to_triage=False)
+    [f] = report.findings
+    assert f.status == "fail"  # unchanged when disabled_checks absent
+
+
+def test_disabled_checks_only_affects_listed_ids(tmp_path):
+    register_group("A", lambda *a: [
+        _make_finding(check_id="B7", status="fail"),
+        _make_finding(check_id="D1", status="fail"),
+    ])
+    report = run_all(
+        tmp_path, only=["A"], run_gate=False, emit_to_triage=False,
+        config={"disabled_checks": ["B7"]},
+    )
+    by_id = {f.check_id: f.status for f in report.findings}
+    assert by_id == {"B7": "skip", "D1": "fail"}
+
+
+def test_disabled_check_pass_is_not_rewritten(tmp_path):
+    # A disabled check that PASSES keeps its pass signal — only FAILs suppressed.
+    register_group("A", lambda *a: [_make_finding(check_id="B7", status="pass")])
+    report = run_all(
+        tmp_path, only=["A"], run_gate=False, emit_to_triage=False,
+        config={"disabled_checks": ["B7"]},
+    )
+    [f] = report.findings
+    assert f.status == "pass"
+
+
+def test_disabled_checks_in_default_config_empty(tmp_path):
+    cfg = load_audit_config(tmp_path)
+    assert cfg.get("disabled_checks") == []
+
+
+def test_framework_audit_config_disables_expected_checks():
+    """The repo-root audit_config.json declares the framework repo's N/A checks."""
+    repo_root = PLUGIN_ROOT.parent.parent
+    cfg_path = repo_root / "audit_config.json"
+    cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+    assert set(cfg["disabled_checks"]) == {"A5.6", "B7", "D1", "G2"}

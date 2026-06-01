@@ -28,7 +28,6 @@ from __future__ import annotations
 import contextlib
 import io
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -141,7 +140,7 @@ def _walk_phase_via_hooks(
 
     # No .block-pending sentinel on happy path
     block_path = val_path.parent / ".block-pending"
-    assert not block_path.exists(), f".block-pending should not exist on happy path"
+    assert not block_path.exists(), ".block-pending should not exist on happy path"
 
     # CAS-claim happened
     cfg = _read_config(project_root)

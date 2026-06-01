@@ -155,8 +155,28 @@ jobs:
         shell: bash
         run: |
           set -e
-          critical=$(jq '[.findings[]? | select(.severity == "critical")] | length' findings.json 2>/dev/null || echo 0)
-          prompt_critical=$(jq '[.findings[]? | select(.severity == "critical")] | length' prompt_risks.json 2>/dev/null || echo 0)
+          # Fail CLOSED if the primary scan produced no output. A missing or
+          # corrupt findings.json means the scanner crashed; reading it as
+          # "0 criticals" (the old `2>/dev/null || echo 0`) would let a broken
+          # scan pass green. Silent-green regression fixed in
+          # iterate-2026-05-31-ci-gate-guard; enforced going forward by
+          # shared/scripts/tools/check_ci_gate_coverage.py (check (c)).
+          if [ ! -f findings.json ]; then
+            echo "::error::findings.json is absent — the security scan produced no output (scanner crash?). Failing closed."
+            exit 1
+          fi
+          if ! jq empty findings.json 2>/dev/null; then
+            echo "::error::findings.json is present but not valid JSON — failing closed."
+            exit 1
+          fi
+          critical=$(jq '[.findings[]? | select(.severity == "critical")] | length' findings.json)
+          # prompt_risks.json is a softer signal: warn loudly if absent, don't block.
+          if [ ! -f prompt_risks.json ]; then
+            echo "::warning::prompt_risks.json is absent — prompt-injection scan did not run; treating as 0 prompt-critical."
+            prompt_critical=0
+          else
+            prompt_critical=$(jq '[.findings[]? | select(.severity == "critical")] | length' prompt_risks.json)
+          fi
           total=$((critical + prompt_critical))
           echo "Critical findings: $total"
           if [ "$total" -gt 0 ]; then

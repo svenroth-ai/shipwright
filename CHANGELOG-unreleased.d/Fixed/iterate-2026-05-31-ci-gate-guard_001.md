@@ -1,0 +1,1 @@
+Made `shared/scripts/tests` env-validation tests hermetic via a new `shared/scripts/tests/conftest.py` autouse fixture (clears profile env vars) so file-based `validate_env` tests no longer fail when the host exports the same variables — a latent failure hidden while `shared/scripts/tests` was uncovered by CI.

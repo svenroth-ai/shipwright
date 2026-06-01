@@ -13,7 +13,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 RUNNER = REPO_ROOT / "plugins" / "shipwright-test" / "scripts" / "lib" / "performance_check.py"

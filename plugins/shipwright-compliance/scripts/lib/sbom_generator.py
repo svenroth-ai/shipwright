@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING
 from scripts.lib.mermaid import license_pie
 
 if TYPE_CHECKING:
-    from scripts.lib.data_collector import ComplianceData, DependencyInfo
+    from scripts.lib.data_collector import ComplianceData
 
 
 _COPYLEFT_LICENSES = {

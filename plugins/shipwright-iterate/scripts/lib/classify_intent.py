@@ -3,7 +3,6 @@
 
 import json
 import re
-import sys
 from pathlib import Path
 
 FEATURE_KEYWORDS = {"add", "create", "implement", "new", "build", "introduce", "develop"}

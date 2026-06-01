@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-01T06:28:39.307027+00:00
+Generated: 2026-06-01T06:01:42.375782+00:00
 
 ## Requirements Coverage
 
@@ -105,7 +105,12 @@ Generated: 2026-06-01T06:28:39.307027+00:00
 | Collapse phase-quality Tier-1 FAIL triage into one rolling phaseQuality:backlog action-unit; add phase-applicability gate and run_id=unknown spec-check guard | iterate | change |  | — | — | 2026-05-31 |
 | Render unengaged phases as SKIP (not FAIL) in the persisted finding JSON so the skill-compliance dashboard agrees with the triage inbox | iterate | change |  | — | — | 2026-05-31 |
 | Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement) | iterate | change |  | — | — | 2026-05-31 |
-| events=union + churn-merge resolver/integrate_main: auto-reconcile generated artifacts on origin/main merge | iterate | change |  | — | — | 2026-06-01 |
+| remove vestigial "\|\| true" from CI integration step (gate failures) + add pathlib.Path import to clear 14 F821 in test_events_log.py | iterate | change |  | 2771/2771 | — | 2026-05-31 |
+| Wire shared/ test suites (shared/tests, shared/scripts/tests, shared/scripts/tools/tests) into ci.yml as blocking per-dir invocations; fix 2 non-hermetic validate_env tests via a dir conftest; make the born-red arch-md sibling skip when gitignored decision-drops are absent. | iterate | change |  | — | — | 2026-05-31 |
+| Gate CI Python lint on a curated bug-focused ruff ruleset (pyflakes F + high-signal E/W); remove the \|\| true + continue-on-error neutering; provision ruff via pinned uvx; rename job to Python (lint + test). | iterate | change |  | — | — | 2026-05-31 |
+| CI gate-coverage guard + workflow hardening (test-dir coverage, loose-gate allowlist, security fail-closed) | iterate | feature |  | 2674/2675 | — | 2026-05-31 |
+| plugin-sync Stop-hook triage item written to durable main-repo log (worktree-aware) | iterate | bug |  | 48/49 | — | 2026-06-01 |
+| D5 honors change_type+none_reason exemption; add audit_config.disabled_checks applicability gate; framework repo disables A5.6/B7/D1/G2 | iterate | change |  | — | — | 2026-06-01 |
 
 ## Coverage Summary
 
@@ -113,7 +118,7 @@ Generated: 2026-06-01T06:28:39.307027+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 81 |
+| Iterate changes | 86 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
