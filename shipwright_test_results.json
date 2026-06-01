@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-01-refresh-claudemd-lint-gate",
+    "run_id": "iterate-2026-05-31-compliance-check-context-gate",
     "date": "2026-06-01",
     "unit": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 2712,
+      "total": 2712
     },
     "integration": {
       "status": "not_run",
@@ -18,7 +18,7 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -32,18 +32,52 @@
     },
     "surface_verification": {
       "surface": "none",
-      "justification": "Documentation-only refresh of CLAUDE.md (Development section: CI ruff lint gate). Zero code / UI / IO-boundary delta; git diff = CLAUDE.md +8 lines only. No runtime surface exists to verify.",
-      "tests_run": 0,
+      "justification": "Python detective-audit check/config change (group_d D5 + audit_detector disabled_checks + repo audit_config.json) with no user-facing web/UI surface; covered by 581 compliance-plugin + full 2712-pass shared suite, the artifact-path-canon lint, and an end-to-end real-repo audit probe (6 fails -> 2). No dev server / E2E surface applies.",
+      "tests_run": 27,
       "timestamp": "2026-06-01T00:00:00.000Z"
     },
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial doc-only refresh; no testable behavior introduced (CLAUDE.md prose, not code)."
+      "status": "complete",
+      "behaviors": [
+        { "behavior": "D5 exempts change_type in {tooling,compliance,infra,docs} WITH none_reason, incl. casing (AC-1)", "disposition": "tested",
+          "evidence": "test_audit_d5_change_type::test_d5_exempts_known_change_types_with_none_reason (5 params) PASSED" },
+        { "behavior": "D5 requires none_reason for the change_type exemption (true gate parity; review MEDIUM)", "disposition": "tested",
+          "evidence": "::test_d5_flags_exempt_change_type_without_none_reason PASSED" },
+        { "behavior": "D5 still exempts spec_impact=none; flags no-FR-no-exemption; rejects unknown change_type", "disposition": "tested",
+          "evidence": "::test_d5_still_exempts_spec_impact_none + ::_still_flags_… + ::_does_not_exempt_unknown_change_type PASSED" },
+        { "behavior": "disabled_checks rewrites a FAILing finding to skip + any_fail false (AC-2/AC-4)", "disposition": "tested",
+          "evidence": "test_audit_detector::test_disabled_check_rewritten_to_skip PASSED" },
+        { "behavior": "disabled check that PASSES keeps pass (review LOW — only FAIL suppressed)", "disposition": "tested",
+          "evidence": "::test_disabled_check_pass_is_not_rewritten PASSED" },
+        { "behavior": "default (no key) = no-op (AC-3); default config empty list", "disposition": "tested",
+          "evidence": "::test_disabled_checks_default_is_noop + ::_in_default_config_empty PASSED" },
+        { "behavior": "only listed ids affected", "disposition": "tested",
+          "evidence": "::test_disabled_checks_only_affects_listed_ids PASSED" },
+        { "behavior": "framework audit_config disables exactly A5.6/B7/D1/G2 (AC-5)", "disposition": "tested",
+          "evidence": "::test_framework_audit_config_disables_expected_checks PASSED" },
+        { "behavior": "edits keep artifact-path-canon lint green (self-caught regression)", "disposition": "tested",
+          "evidence": "shared/tests/test_artifact_path_canon.py (4) PASSED" },
+        { "behavior": "end-to-end real-repo bundle 6 -> 2", "disposition": "tested",
+          "evidence": "Step 7.5 run_audit.py --fix probe: A5.6/B7/D1/G2 SKIP, D5 4->1, G3 unchanged" },
+        { "behavior": "docs hooks-and-pipeline.md disabled_checks note (AC-8)", "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "documentation prose; the behavior it describes is covered by the tests above" }
+      ],
+      "counts": { "testable": 10, "tested": 10, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 8, "covered_acs": 8 }
     },
     "degraded": [
       {
-        "condition": "full test suite not run at F0",
-        "reason": "Doc-only diff (CLAUDE.md, +8 lines, zero code delta). Trivial-complexity testing per phase matrix is --related, which resolves to no tests; the gating ruff/pytest CI suite still runs on the PR."
+        "condition": "preexisting_shared_failure",
+        "detail": "Full shared suite: 2712 passed, 14 skipped, 1 failure (test_architecture_md_reflects_arch_impact) — PRE-EXISTING and unrelated, stash-verified this iterate (clean origin/main base fails identically). This iterate touches only plugins/shipwright-compliance/scripts/audit/{group_d,audit_detector}.py + audit_config.json + tests + docs."
+      },
+      {
+        "condition": "self_caught_regression_fixed",
+        "detail": "My initial group_d.py + audit_config.json edits tripped the artifact-path-canon lint (bare 'compliance' literal + slashed plugin-path strings reading as legacy artifact paths). Stash-verified the failure was MINE (clean base passed), fixed via the established # artifact-path-canon: legacy marker + comma/path rewording. Now green."
+      },
+      {
+        "condition": "external_review_internal_subagent",
+        "detail": "Code-reviewer subagent reviewed the diff: 1 MEDIUM (D5 parity gap — exemption now requires none_reason, matching the record_event gate) + 3 LOW (casing comment, pass-preservation guard, disable-scope note) all addressed."
       }
     ]
   }

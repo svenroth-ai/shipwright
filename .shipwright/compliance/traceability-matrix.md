@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-01T06:07:15.577426+00:00
+Generated: 2026-06-01T06:01:42.375782+00:00
 
 ## Requirements Coverage
 
@@ -110,7 +110,7 @@ Generated: 2026-06-01T06:07:15.577426+00:00
 | Gate CI Python lint on a curated bug-focused ruff ruleset (pyflakes F + high-signal E/W); remove the \|\| true + continue-on-error neutering; provision ruff via pinned uvx; rename job to Python (lint + test). | iterate | change |  | — | — | 2026-05-31 |
 | CI gate-coverage guard + workflow hardening (test-dir coverage, loose-gate allowlist, security fail-closed) | iterate | feature |  | 2674/2675 | — | 2026-05-31 |
 | plugin-sync Stop-hook triage item written to durable main-repo log (worktree-aware) | iterate | bug |  | 48/49 | — | 2026-06-01 |
-| Document the gating ruff CI lint step in CLAUDE.md Development section. | iterate | change |  | — | — | 2026-06-01 |
+| D5 honors change_type+none_reason exemption; add audit_config.disabled_checks applicability gate; framework repo disables A5.6/B7/D1/G2 | iterate | change |  | — | — | 2026-06-01 |
 
 ## Coverage Summary
 

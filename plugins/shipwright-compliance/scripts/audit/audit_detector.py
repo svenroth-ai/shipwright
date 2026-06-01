@@ -162,6 +162,11 @@ _DEFAULT_CONFIG: dict[str, Any] = {
     "a5_required_permissions": None,    # dict[str,str] — override REQUIRED_PERMISSIONS
     "a5_critical_gate_step_id": None,   # str — override CRITICAL_GATE_STEP_ID
     "a5_sarif_category": None,          # str — override SARIF_CATEGORY
+    # Detective checks that DON'T APPLY to this project type. Each listed
+    # check-id (e.g. "B7", "D1") has its finding rewritten to SKIP rather than
+    # FAIL/WARN — an explicit, per-project applicability declaration (NOT a
+    # blanket / NOT auto-detection). Default empty: every check runs.
+    "disabled_checks": [],
 }
 
 
@@ -275,6 +280,23 @@ def run_all(
             continue
         report.findings.extend(findings)
         report.groups_run.append(letter)
+
+    # Applicability gate (iterate-2026-05-31-compliance-check-context-gate):
+    # rewrite findings for checks this project declared not-applicable
+    # (``audit_config.disabled_checks``) to SKIP, BEFORE the triage mirror — so
+    # they drop out of ``any_fail`` and the ``compliance:backlog`` bundle.
+    # Explicit, per-project declaration; never auto-detected.
+    disabled = {
+        str(c).strip() for c in (cfg.get("disabled_checks") or []) if str(c).strip()
+    }
+    if disabled:
+        for f in report.findings:
+            # Only suppress FAILing findings — a disabled check that happens to
+            # pass keeps its pass signal (we suppress noise, not information).
+            if f.check_id in disabled and f.status == "fail":
+                f.status = "skip"
+                f.severity = "LOW"
+                f.detail = "disabled via audit_config.disabled_checks"
 
     if emit_to_triage:
         # Best-effort — never block the audit on triage failure, but

@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-01T06:07:15.577426+00:00
-Total commits: 813
+Generated: 2026-06-01T06:01:42.375782+00:00
+Total commits: 812
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 246
-    "fix" : 216
+    "fix" : 215
     "chore" : 156
     "docs" : 113
     "refactor" : 50
@@ -271,11 +271,10 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 216 commits
+### Fixes (fix) — 215 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-01 | security | diff-mode prompt-injection scan honors self-reference/skip excludes | 6c523b575a42 |
 | 2026-06-01 | iterate | write plugin-sync Stop-hook triage item to durable main-repo log (#130) | 0c15e9a6df64 |
 | 2026-05-31 | canon | mark triage_bundle.py compliance-word literals as non-path | 4c77369fa004 |
 | 2026-05-31 | deploy | reject Windows absolute client.entrypoint on any host OS | ea0db8d24483 |
@@ -882,7 +881,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 813 |
+| Total commits | 812 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 813 |
+| Human-authored commits | 812 |
 
