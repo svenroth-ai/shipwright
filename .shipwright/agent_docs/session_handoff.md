@@ -1,36 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-31-compliance-triage-bundle"
+run_id: "iterate-2026-05-31-plugin-sync-triage-main-repo"
 phase: "iterate"
-reason: "compliance triage bundling: one rolling compliance:backlog action-unit"
-timestamp: "2026-05-31T15:52:35.290127+00:00"
+reason: "iterate: plugin-sync triage main-repo redirect (post-rebase)"
+timestamp: "2026-06-01T05:15:30.344266+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-31 15:52:35 UTC
+> Auto-generated 2026-06-01 05:15:30 UTC
 
 ## Session Info
 
-- **Session ID**: 3e307394-564c-4915-8128-3c7fa7eeb609
-- **Timestamp**: 2026-05-31 15:52:35 UTC
-- **Reason**: compliance triage bundling: one rolling compliance:backlog action-unit
+- **Session ID**: edce381c-01f8-43c8-82a4-8d6400b4ddd3
+- **Timestamp**: 2026-06-01 05:15:30 UTC
+- **Reason**: iterate: plugin-sync triage main-repo redirect (post-rebase)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-30-test-completeness-gate
-- **Date**: 2026-05-30T22:24:52.586049Z
-- **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/test-completeness-gate
-- **ADR**: iterate-2026-05-30-test-completeness-gate
+- **Run ID**: iterate-2026-05-31-plugin-sync-triage-main-repo
+- **Date**: 2026-05-31T18:15:12.016686Z
+- **Type**: bug
+- **Complexity**: trivial
+- **Branch**: iterate/plugin-sync-triage-main-repo
+- **ADR**: iterate-2026-05-31-plugin-sync-triage-main-repo
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/compliance-triage-bundle
-- **Spec**: .shipwright/planning/iterate/2026-05-31-compliance-triage-bundle.md
-- **Complexity**: medium (`touches_io_boundary`: writes `triage.jsonl`; changes a
+- **Branch**: iterate/plugin-sync-triage-main-repo
 - **External Review Marker**: completed (external_review_state.json @ 2026-05-31T15:51:40)
 
 ### Mandatory replay on Resume
@@ -49,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/compliance-triage-bundle
-- **Last Commit**: 78a281fa Merge pull request #120 from svenroth-ai/iterate/test-completeness-gate
+- **Branch**: iterate/plugin-sync-triage-main-repo
+- **Last Commit**: d8e29f8b fix(iterate): write plugin-sync Stop-hook triage item to durable main-repo log
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-41bb1152 | work_completed | iterate (Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement)) | 2026-05-31 |
-| evt-d16cc59c | work_completed | iterate (iterate completion: test-completeness-gate) | 2026-05-30 |
-| evt-d70f6cd4 | work_completed | iterate (iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade)) | 2026-05-30 |
-| evt-76ce63ff | work_completed | iterate (Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test) | 2026-05-30 |
-| evt-abaef023 | work_completed | iterate (Add audit_compliance_on_stop.py: auto-emit/auto-dismiss source=compliance triage items on every iterate/changelog Stop, gated on full A-G audit coverage.) | 2026-05-30 |
+| evt-ea7f2302 | work_completed | iterate (plugin-sync Stop-hook triage item written to durable main-repo log (worktree-aware)) | 2026-06-01 |
+| evt-1da91106 | work_completed | iterate (CI gate-coverage guard + workflow hardening (test-dir coverage, loose-gate allowlist, security fail-closed)) | 2026-05-31 |
+| evt-4cb02049 | work_completed | iterate (Gate CI Python lint on a curated bug-focused ruff ruleset (pyflakes F + high-signal E/W); remove the || true + continue-on-error neutering; provision ruff via pinned uvx; rename job to Python (lint + test).) | 2026-05-31 |
+| evt-0b680aca | work_completed | iterate (Wire shared/ test suites (shared/tests, shared/scripts/tests, shared/scripts/tools/tests) into ci.yml as blocking per-dir invocations; fix 2 non-hermetic validate_env tests via a dir conftest; make the born-red arch-md sibling skip when gitignored decision-drops are absent.) | 2026-05-31 |
+| evt-794a4945 | work_completed | iterate (remove vestigial "|| true" from CI integration step (gate failures) + add pathlib.Path import to clear 14 F821 in test_events_log.py) | 2026-05-31 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 78
-- **Last iterate**: change — Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement) (2026-05-31)
+- **Total work events**: 85
+- **Last iterate**: bug — plugin-sync Stop-hook triage item written to durable main-repo log (worktree-aware) (2026-06-01)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

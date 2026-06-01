@@ -1,0 +1,1 @@
+plugin-sync Stop-hook triage item is now written to the durable main-repo .shipwright/triage.jsonl instead of the throwaway iterate-worktree log, so the cache-drift follow-up survives git worktree remove after the PR merges (monorepo-dev only)
