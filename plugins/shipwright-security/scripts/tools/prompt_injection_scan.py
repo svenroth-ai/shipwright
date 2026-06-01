@@ -489,23 +489,20 @@ SELF_REFERENCE_PATHS = {
 }
 
 
+def _is_excluded(path: Path, root: Path) -> bool:
+    """Under a SKIP_DIRS segment, or a SELF_REFERENCE_PATHS file (shared by the full walk + --diff path)."""
+    if any(part in SKIP_DIRS for part in path.parts):
+        return True
+    try:
+        rel = path.relative_to(root).as_posix()
+    except ValueError:
+        rel = path.as_posix()
+    return rel in SELF_REFERENCE_PATHS
+
+
 def iter_scannable_files(root: Path) -> list[Path]:
-    """Walk the tree and yield files we care about."""
-    result: list[Path] = []
-    for path in root.rglob("*"):
-        if not path.is_file():
-            continue
-        # Skip anything under a blocked directory
-        if any(part in SKIP_DIRS for part in path.parts):
-            continue
-        try:
-            rel = path.relative_to(root).as_posix()
-        except ValueError:
-            rel = path.as_posix()
-        if rel in SELF_REFERENCE_PATHS:
-            continue
-        result.append(path)
-    return result
+    """Walk the tree, excluding skip dirs + self-reference files (_is_excluded)."""
+    return [p for p in root.rglob("*") if p.is_file() and not _is_excluded(p, root)]
 
 
 def scan_file(
@@ -672,9 +669,11 @@ def main() -> int:
         )
         return 2
 
-    # Select files to scan
+    # Select files to scan. Both modes apply the same exclusion (_is_excluded);
+    # diff-mode must filter too, else a self-reference / skip-dir file in a PR
+    # diff is false-flagged (the bug seen on PR #125).
     if args.diff:
-        files = get_changed_files(args.diff, target)
+        files = [f for f in get_changed_files(args.diff, target) if not _is_excluded(f, target)]
     else:
         files = iter_scannable_files(target)
 
