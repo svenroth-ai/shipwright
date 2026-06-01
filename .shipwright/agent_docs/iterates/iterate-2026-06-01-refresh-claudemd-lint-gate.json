@@ -6,5 +6,5 @@
   "branch": "iterate/refresh-claudemd-lint-gate",
   "tests_passed": true,
   "spec": "none (trivial doc refresh)",
-  "adr": "iterate-2026-06-01-refresh-claudemd-lint-gate_001"
+  "adr": "iterate-2026-06-01-refresh-claudemd-lint-gate"
 }
