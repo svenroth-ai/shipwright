@@ -84,16 +84,24 @@ def integrate(
     if _git(project_root, "rev-parse", "--verify", "--quiet", ref, check=False).returncode != 0:
         return {"status": "bad_ref", "ref": ref, "steps": steps}
 
-    # --no-commit so NOTHING is committed until churn is reconciled AND events are
-    # validated — even on a clean merge where `merge=union` silently resolves
-    # events.jsonl (the designed common case). Without this the union result would
-    # be auto-committed unvalidated.
-    _git(project_root, "merge", "--no-commit", "--no-edit", ref, check=False)
+    # --no-ff + --no-commit:
+    #   --no-ff  → always create a real merge commit (never fast-forward), so the
+    #     reachability of Run-ID-trailer commits is preserved (2026-05-27 AC-6
+    #     "merge, not rebase") AND `merge_in_progress` is deterministic regardless
+    #     of the runner's `merge.ff` config.
+    #   --no-commit → commit nothing until churn is reconciled AND events are
+    #     validated — even on a clean merge where `merge=union` silently resolves
+    #     events.jsonl (the designed common case).
+    merge = _git(project_root, "merge", "--no-ff", "--no-commit", "--no-edit", ref, check=False)
     merge_in_progress = (
         _git(project_root, "rev-parse", "--verify", "--quiet", "MERGE_HEAD", check=False).returncode == 0
     )
     if not merge_in_progress:
-        # Already up to date, or a fast-forward already applied — nothing to reconcile.
+        if merge.returncode != 0:
+            # Merge refused before it began (e.g. unborn ref, local changes) —
+            # surface it instead of silently claiming success.
+            return {"status": "merge_failed", "stderr": (merge.stderr or "").strip()[:500], "steps": steps}
+        # `ref` is already an ancestor — genuinely nothing to integrate.
         steps.append("already-up-to-date")
         return {"status": "ok", "steps": steps}
 
@@ -169,6 +177,9 @@ def main(argv: list[str] | None = None) -> int:
     if result["status"] == "bad_ref":
         print(f"ABORT: merge ref does not resolve: {result.get('ref')}", file=sys.stderr)
         return 5
+    if result["status"] == "merge_failed":
+        print(f"ABORT: git merge refused: {result.get('stderr')}", file=sys.stderr)
+        return 6
     return 3
 
 
