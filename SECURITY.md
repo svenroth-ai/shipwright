@@ -39,7 +39,6 @@ I follow responsible disclosure principles. Once a fix is released, a security a
 
 - **Plugins in this repository** (`plugins/shipwright-*`)
 - **Shared scripts and templates** (`shared/`)
-- **WebUI client and server** (`webui/`)
 - **CI/CD workflows** (`.github/workflows/`)
 - **Hook configurations** that could lead to code execution
 - **Prompt injection vulnerabilities** in skill or agent definitions
@@ -48,7 +47,8 @@ I follow responsible disclosure principles. Once a fix is released, a security a
 ### Out of scope
 
 - **Claude Code itself** — report to [Anthropic](https://www.anthropic.com/security)
-- **Third-party dependencies** — report to the respective upstream project (we track these via Dependabot)
+- **Command Center WebUI** — the WebUI lives in its [own repository](https://github.com/svenroth-ai/shipwright-webui); report WebUI vulnerabilities through that repository's security advisories
+- **Third-party dependencies** — report to the respective upstream project (we surface these via Dependabot alerts and Trivy SCA scanning)
 - **Self-inflicted issues** — running Shipwright on untrusted projects is your responsibility
 - **Social engineering** — issues requiring the maintainer to be tricked into running malicious code
 - **Rate-limiting or availability issues** on external services (Aikido, Supabase, etc.)
@@ -86,7 +86,8 @@ Contributors unlock broader access only after demonstrating a track record of go
 
 ### Dependency hygiene
 
-- Dependabot monitors all `pyproject.toml` and `package.json` files
+- Dependabot **alerts** are active across the repository's `pyproject.toml` manifests; automated dependency-update PRs are held (config staged in [`.github/dependabot.yml`](.github/dependabot.yml)) until the public go-live
+- Trivy SCA scanning runs in CI on every PR and flags vulnerable dependencies
 - New dependencies require justification in an issue
 - Typosquatting detection via the Prompt Injection Scanner
 
