@@ -21,7 +21,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        # Third-party action pinned to a full commit SHA (supply-chain
+        # hardening): a mutable tag like @v3 can be repointed by the upstream
+        # owner. The trailing comment records the human-readable tag.
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39  # v3
         with:
           enable-cache: true
 
@@ -55,9 +58,18 @@ jobs:
 
       - name: Install Gitleaks
         run: |
+          # Download to disk + verify SHA256 before extracting (supply-chain
+          # integrity): the old `wget | tar` piped an unverified tarball
+          # straight into extraction. The default GitHub-Actions bash shell
+          # runs with `-eo pipefail`, so a checksum mismatch aborts the step.
           GITLEAKS_VERSION="8.21.2"
-          wget -qO- "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar xz
+          GITLEAKS_SHA256="5bc41815076e6ed6ef8fbecc9d9b75bcae31f39029ceb55da08086315316e3ba"
+          TARBALL="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          wget -qO "$TARBALL" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${TARBALL}"
+          echo "${GITLEAKS_SHA256}  ${TARBALL}" | sha256sum -c -
+          tar xzf "$TARBALL"
           sudo mv gitleaks /usr/local/bin/
+          rm -f "$TARBALL"
           gitleaks version
 
       - name: Run plugin tests

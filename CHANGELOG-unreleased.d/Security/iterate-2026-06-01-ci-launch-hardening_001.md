@@ -1,0 +1,1 @@
+Hardened the CI supply chain ahead of public launch: pinned third-party GitHub Actions (`astral-sh/setup-uv`, `peter-evans/create-or-update-comment`) to full commit SHAs, and added SHA256 integrity verification for the Gitleaks binary download in `ci.yml` and `security.yml` (previously piped `wget | tar` unverified).

@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-01T08:56:08.674700+00:00
-Total commits: 821
+Generated: 2026-06-01T20:47:45.801845+00:00
+Total commits: 822
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 247
-    "fix" : 220
+    "fix" : 221
     "chore" : 158
     "docs" : 114
     "refactor" : 50
@@ -272,10 +272,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 220 commits
+### Fixes (fix) — 221 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-01 | compliance | detective audit honors event_amended corrections | 470404c809a4 |
 | 2026-06-01 | iterate | deterministic integrate merge + CI-robust integrate tests | 2f1687c1ec3b |
 | 2026-06-01 | canon | drop legacy-path token from resolver docstring | 0ef2b7f0a195 |
 | 2026-06-01 | iterate | auto-reconcile churn-artifact merge conflicts (events=union + resolver) | 7bbb6b57721a |
@@ -890,7 +891,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 821 |
+| Total commits | 822 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 821 |
+| Human-authored commits | 822 |
 

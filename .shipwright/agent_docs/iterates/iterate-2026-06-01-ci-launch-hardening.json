@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-06-01-ci-launch-hardening",
+  "date": "2026-06-01T20:48:22.894560Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/ci-launch-hardening",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-01-ci-launch-hardening"
+}

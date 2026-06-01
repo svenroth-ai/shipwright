@@ -34,7 +34,9 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        # Third-party action pinned to a full commit SHA (supply-chain
+        # hardening); trailing comment records the human-readable tag.
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39  # v3
         with:
           enable-cache: true
 
