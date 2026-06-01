@@ -106,6 +106,7 @@ def _patch_api(
     ci_runs: Any = None,
     artifact_run: Any = None,
     artifact_findings: Any = None,
+    prompt_findings: Any = None,
     branch: str = "main",
     owner_repo_value: str | None = OWNER_REPO,
     available: bool = True,
@@ -126,6 +127,9 @@ def _patch_api(
     )
     monkeypatch.setattr(
         github_api, "download_security_findings", lambda run_id: artifact_findings,
+    )
+    monkeypatch.setattr(
+        github_api, "download_prompt_risks", lambda run_id: prompt_findings,
     )
 
 

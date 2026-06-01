@@ -39,11 +39,64 @@ from .severity import (
 PREFIX_SECURITY = "gh-security:"
 PREFIX_SECRETS = "gh-secrets:"
 PREFIX_CI = "gh-ci:"
-_OWNED_PREFIXES = (PREFIX_SECURITY, PREFIX_SECRETS, PREFIX_CI)
+PREFIX_PROMPT = "gh-prompt:"
+_OWNED_PREFIXES = (PREFIX_SECURITY, PREFIX_SECRETS, PREFIX_CI, PREFIX_PROMPT)
 
 # Length cap for the artifact-source detail line — protects against
 # pathological finding-array sizes (review finding openai-11).
 _ARTIFACT_DETAIL_MAX_LEN = 1024
+
+
+def prompt_injection_action_unit_from_artifact(
+    *,
+    findings: list[dict],
+    owner_repo: str | None,
+    workflow_run_url: str | None = None,
+) -> dict | None:
+    """Collapse shipwright-security prompt-injection findings (``prompt_risks.json``
+    artifact) into a ``gh-prompt:{owner}/{repo}`` action-unit — a SEPARATE source
+    from the SAST/SCA ``gh-security`` unit (different finding class, independently
+    dismissable). Same ADR-052 + hygiene contract as
+    ``security_action_unit_from_artifact``: severity derived by iterating
+    ``findings`` (never the aggregate); no raw finding strings in ``detail`` /
+    ``launch_payload``; ``detail`` capped. Returns ``None`` when ``owner_repo`` is
+    ``None`` OR ``findings`` is empty — an empty (clean) scan is handled by the
+    orchestrator's auto-resolve gate.
+    """
+    if owner_repo is None or not findings:
+        return None
+    breakdown = severity_breakdown(findings, artifact_extract_severity)
+    severity = max_severity(
+        [triage_severity(artifact_extract_severity(f)) for f in findings]
+    )
+    total = len(findings)
+    run_url = workflow_run_url or security_url(owner_repo)
+    title = f"GitHub prompt-injection: {total} finding(s) ({severity})"
+    detail = (
+        f"Repo {owner_repo} | "
+        f"prompt-injection (prompt_risks.json): {format_breakdown(breakdown)} | "
+        f"run: {run_url}"
+    )
+    if len(detail) > _ARTIFACT_DETAIL_MAX_LEN:
+        detail = detail[: _ARTIFACT_DETAIL_MAX_LEN - 1] + "…"
+    payload = (
+        f"/shipwright-security\n"
+        f"\n"
+        f"Context: the shipwright-security prompt-injection scan reports "
+        f"{total} open finding(s) for {owner_repo}.\n"
+        f"Severity breakdown — prompt-injection: {format_breakdown(breakdown)}.\n"
+        f"Workflow run: {run_url}\n"
+        f"Re-scan locally: see docs/security-ci-setup.md\n"
+        f"Source: triage item {PREFIX_PROMPT}{owner_repo}"
+    )
+    return {
+        "severity": severity,
+        "kind": kind_for(severity),
+        "title": title[:160],
+        "detail": detail,
+        "dedup_key": f"{PREFIX_PROMPT}{owner_repo}",
+        "launch_payload": payload,
+    }
 
 
 def security_action_unit(

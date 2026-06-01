@@ -56,8 +56,10 @@ from .consumer import import_findings
 from .mappers import ci_action_unit, latest_failed_ci_runs, secrets_action_unit
 from .producer import (
     PREFIX_CI,
+    PREFIX_PROMPT,
     PREFIX_SECRETS,
     PREFIX_SECURITY,
+    prompt_injection_action_unit_from_artifact,
     security_action_unit,
     security_action_unit_from_artifact,
 )
@@ -74,6 +76,7 @@ from .state import (
 __all__ = [
     "DEFAULT_THROTTLE_HOURS",
     "PREFIX_CI",
+    "PREFIX_PROMPT",
     "PREFIX_SECRETS",
     "PREFIX_SECURITY",
     "SOURCE",
@@ -81,6 +84,7 @@ __all__ = [
     "import_findings",
     "is_due",
     "latest_failed_ci_runs",
+    "prompt_injection_action_unit_from_artifact",
     "read_last_import",
     "secrets_action_unit",
     "security_action_unit",

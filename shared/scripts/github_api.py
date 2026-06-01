@@ -325,26 +325,25 @@ def latest_security_workflow_run() -> dict | None:
 
 
 def download_security_findings(run_id: int) -> list[dict] | None:
-    """Download the ``security-scan-results`` artifact from a workflow run
-    and return its ``findings`` array.
+    """SAST/SCA findings from the ``security-scan-results`` artifact's
+    ``findings.json``. Contract (subprocess hygiene, rglob discovery, semantic
+    list-validation, ADR-052 None-vs-``[]``) lives in ``_download_artifact_findings``.
+    """
+    return _download_artifact_findings(run_id, "findings.json")
 
-    Iterate C contract:
 
-    1. Subprocess via argv list, ``shell=False`` (review findings
-       openai-10, gemini-4 — command-injection hygiene).
-    2. Robust file discovery via ``rglob`` — works for both flat
-       (``findings.json``) and nested (``subdir/findings.json``)
-       artifact layouts (review finding openai-14).
-    3. Semantic validation — ``findings`` MUST be a list. Trusting the
-       aggregate ``by_severity`` / ``total_findings`` would be unsafe
-       if they disagreed with the actual array (review finding
-       openai-9). Returns ``None`` on a non-list ``findings`` value.
-    4. ``None`` on ANY failure: gh missing (FileNotFoundError), gh
-       non-zero exit, file not found, JSON parse error, semantic
-       validation failure. Empty list ``[]`` is a valid success state
-       (clean scan) — distinguished from failure per ADR-052.
-    5. Tempdir is created via ``tempfile.mkdtemp`` and removed in a
-       finally block — never leaked even on exception paths.
+def download_prompt_risks(run_id: int) -> list[dict] | None:
+    """Prompt-injection findings from the artifact's ``prompt_risks.json`` (same
+    contract as ``download_security_findings`` — see ``_download_artifact_findings``)."""
+    return _download_artifact_findings(run_id, "prompt_risks.json")
+
+
+def _download_artifact_findings(run_id: int, filename: str) -> list[dict] | None:
+    """Shared impl for the artifact-download helpers: download the
+    ``security-scan-results`` artifact and return the ``findings`` array out of
+    ``filename`` (``findings.json`` | ``prompt_risks.json``). Same hygiene as
+    the original ``download_security_findings`` (argv subprocess, robust rglob,
+    semantic list-validation, tempdir cleanup, ADR-052 None-vs-``[]``).
     """
     tmpdir = tempfile.mkdtemp(prefix="shipwright-artifact-")
     try:
@@ -365,7 +364,7 @@ def download_security_findings(run_id: int) -> list[dict] | None:
         if result.returncode != 0:
             return None
         # Robust discovery: gh usually flattens, but nested layouts are tolerated.
-        matches = list(Path(tmpdir).rglob("findings.json"))
+        matches = list(Path(tmpdir).rglob(filename))
         if not matches:
             return None
         try:
