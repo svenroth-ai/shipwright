@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-01T05:15:30.344266+00:00
-Total commits: 812
+Generated: 2026-06-01T06:07:15.577426+00:00
+Total commits: 813
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 246
-    "fix" : 215
+    "fix" : 216
     "chore" : 156
     "docs" : 113
     "refactor" : 50
@@ -271,11 +271,12 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 215 commits
+### Fixes (fix) — 216 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-05-31 | iterate | write plugin-sync Stop-hook triage item to durable main-repo log | d8e29f8b88dd |
+| 2026-06-01 | security | diff-mode prompt-injection scan honors self-reference/skip excludes | 6c523b575a42 |
+| 2026-06-01 | iterate | write plugin-sync Stop-hook triage item to durable main-repo log (#130) | 0c15e9a6df64 |
 | 2026-05-31 | canon | mark triage_bundle.py compliance-word literals as non-path | 4c77369fa004 |
 | 2026-05-31 | deploy | reject Windows absolute client.entrypoint on any host OS | ea0db8d24483 |
 | 2026-05-31 | shared-tests | make shared/tests CI-green on Linux (cross_plugin marker + Windows-only skip) | 4d14ac96201d |
@@ -881,7 +882,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 812 |
+| Total commits | 813 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 812 |
+| Human-authored commits | 813 |
 

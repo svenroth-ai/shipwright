@@ -1,34 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-31-plugin-sync-triage-main-repo"
+run_id: "iterate-2026-06-01-refresh-claudemd-lint-gate"
 phase: "iterate"
-reason: "iterate: plugin-sync triage main-repo redirect (post-rebase)"
-timestamp: "2026-06-01T05:15:30.344266+00:00"
+reason: "Trivial doc refresh: documented CI ruff lint gate in CLAUDE.md"
+timestamp: "2026-06-01T06:07:15.577426+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-01 05:15:30 UTC
+> Auto-generated 2026-06-01 06:07:15 UTC
 
 ## Session Info
 
-- **Session ID**: edce381c-01f8-43c8-82a4-8d6400b4ddd3
-- **Timestamp**: 2026-06-01 05:15:30 UTC
-- **Reason**: iterate: plugin-sync triage main-repo redirect (post-rebase)
+- **Session ID**: f5abacda-c0df-452c-a647-ee215ae3f97b
+- **Timestamp**: 2026-06-01 06:07:15 UTC
+- **Reason**: Trivial doc refresh: documented CI ruff lint gate in CLAUDE.md
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-31-plugin-sync-triage-main-repo
-- **Date**: 2026-05-31T18:15:12.016686Z
-- **Type**: bug
+- **Run ID**: iterate-2026-06-01-refresh-claudemd-lint-gate
+- **Date**: 2026-06-01T06:06:53.293418Z
+- **Type**: change
 - **Complexity**: trivial
-- **Branch**: iterate/plugin-sync-triage-main-repo
-- **ADR**: iterate-2026-05-31-plugin-sync-triage-main-repo
+- **Branch**: iterate/refresh-claudemd-lint-gate
+- **ADR**: iterate-2026-06-01-refresh-claudemd-lint-gate_001
 - **Tests passed**: True
+- **Spec**: none (trivial doc refresh)
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/plugin-sync-triage-main-repo
+- **Branch**: iterate/refresh-claudemd-lint-gate
 - **External Review Marker**: completed (external_review_state.json @ 2026-05-31T15:51:40)
 
 ### Mandatory replay on Resume
@@ -47,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/plugin-sync-triage-main-repo
-- **Last Commit**: d8e29f8b fix(iterate): write plugin-sync Stop-hook triage item to durable main-repo log
+- **Branch**: iterate/refresh-claudemd-lint-gate
+- **Last Commit**: 4292ab05 Merge pull request #131 from svenroth-ai/fix/prompt-scan-diff-skip
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-f762bc17 | work_completed | iterate (Document the gating ruff CI lint step in CLAUDE.md Development section.) | 2026-06-01 |
 | evt-ea7f2302 | work_completed | iterate (plugin-sync Stop-hook triage item written to durable main-repo log (worktree-aware)) | 2026-06-01 |
 | evt-1da91106 | work_completed | iterate (CI gate-coverage guard + workflow hardening (test-dir coverage, loose-gate allowlist, security fail-closed)) | 2026-05-31 |
 | evt-4cb02049 | work_completed | iterate (Gate CI Python lint on a curated bug-focused ruff ruleset (pyflakes F + high-signal E/W); remove the || true + continue-on-error neutering; provision ruff via pinned uvx; rename job to Python (lint + test).) | 2026-05-31 |
 | evt-0b680aca | work_completed | iterate (Wire shared/ test suites (shared/tests, shared/scripts/tests, shared/scripts/tools/tests) into ci.yml as blocking per-dir invocations; fix 2 non-hermetic validate_env tests via a dir conftest; make the born-red arch-md sibling skip when gitignored decision-drops are absent.) | 2026-05-31 |
-| evt-794a4945 | work_completed | iterate (remove vestigial "|| true" from CI integration step (gate failures) + add pathlib.Path import to clear 14 F821 in test_events_log.py) | 2026-05-31 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 85
-- **Last iterate**: bug — plugin-sync Stop-hook triage item written to durable main-repo log (worktree-aware) (2026-06-01)
+- **Total work events**: 86
+- **Last iterate**: change — Document the gating ruff CI lint step in CLAUDE.md Development section. (2026-06-01)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

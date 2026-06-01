@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-01 05:15 UTC | Session: edce381c-01f8-43c8-82a4-8d6400b4ddd3 | Run: iterate-2026-05-31-plugin-sync-triage-main-repo
+> Updated: 2026-06-01 06:07 UTC | Session: f5abacda-c0df-452c-a647-ee215ae3f97b | Run: iterate-2026-06-01-refresh-claudemd-lint-gate
 
-## Recent Changes (85 iterations)
+## Recent Changes (86 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Document the gating ruff CI lint step in CLAUDE.md Development section. | 0/0 |  | docs | 2026-06-01 |
 | bug | plugin-sync Stop-hook triage item written to durable main-repo log (worktree-aware) | 48/49 |  | tooling | 2026-06-01 |
 | feature | CI gate-coverage guard + workflow hardening (test-dir coverage, loose-gate allowlist, security fail-closed) | 2674/2675 |  | infra | 2026-05-31 |
 | change | Gate CI Python lint on a curated bug-focused ruff ruleset (pyflakes F + high-signal E/W); remove the \|\| true + continue-on-error neutering; provision ruff via pinned uvx; rename job to Python (lint + test). | 0/0 |  | chore | 2026-05-31 |
@@ -92,7 +93,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-05-31 | Unit: 2635/2635 | Smoke: not_run | (iterate)
+Last run: 2026-06-01 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

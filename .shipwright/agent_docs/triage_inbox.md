@@ -1,6 +1,6 @@
 # Triage Inbox
 
-> Auto-generated 2026-05-31T18:19:31.535939Z. Items waiting for triage decision.
+> Auto-generated 2026-06-01T06:07:15.577426Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
@@ -12,20 +12,8 @@
 
 ### Source: sbom (4 items)
 
-<a id="trg-c2d90477"></a>
-- **SBOM: 4 undeclared license(s) in plugins/shipwright-plan/pyproject.toml** `id=trg-c2d90477 | severity=low | kind=compliance → P3/engineering`
-  - 4 package(s) without a resolvable license. Top 4: google-genai@1.0.0, openai@1.0.0, pytest@8.0.0, pytest-mock@3.12.0
-  - Launch payload (copy into a new Claude session):
-    ```text
-    cd 'plugins/shipwright-plan' \
-      && uv sync \
-      && cd - \
-      && uv run plugins/shipwright-compliance/scripts/tools/update_compliance.py --project-root . --phase iterate
-    ```
-  - Promote: `triage_promote.py --id trg-c2d90477 --task-ref EXT:<ref>`
-
-<a id="trg-ca85ac2a"></a>
-- **SBOM: 3 undeclared license(s) in plugins/shipwright-security/pyproject.toml** `id=trg-ca85ac2a | severity=low | kind=compliance → P3/engineering`
+<a id="trg-18592ba3"></a>
+- **SBOM: 3 undeclared license(s) in plugins/shipwright-security/pyproject.toml** `id=trg-18592ba3 | severity=low | kind=compliance → P3/engineering`
   - 3 package(s) without a resolvable license. Top 3: pytest@8.0.0, pytest-mock@3.12.0, requests@2.31.0
   - Launch payload (copy into a new Claude session):
     ```text
@@ -34,22 +22,22 @@
       && cd - \
       && uv run plugins/shipwright-compliance/scripts/tools/update_compliance.py --project-root . --phase iterate
     ```
-  - Promote: `triage_promote.py --id trg-ca85ac2a --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-18592ba3 --task-ref EXT:<ref>`
 
-<a id="trg-1cae4805"></a>
-- **SBOM: 9 workspaces missing license metadata for 2 shared package(s)** `id=trg-1cae4805 | severity=low | kind=compliance → P3/engineering`
-  - Common undeclared (2): pytest, pytest-mock Workspaces (9): plugins/shipwright-build/pyproject.toml, plugins/shipwright-…
+<a id="trg-64426943"></a>
+- **SBOM: 4 undeclared license(s) in plugins/shipwright-plan/pyproject.toml** `id=trg-64426943 | severity=low | kind=compliance → P3/engineering`
+  - 4 package(s) without a resolvable license. Top 4: google-genai@1.0.0, openai@1.0.0, pytest@8.0.0, pytest-mock@3.12.0
   - Launch payload (copy into a new Claude session):
     ```text
-    for d in 'plugins/shipwright-build' 'plugins/shipwright-changelog' 'plugins/shipwright-deploy' 'plugins/shipwright-design' 'plugins/shipwright-iterate' 'plugins/shipwright-preview' 'plugins/shipwright-project' 'plugins/shipwright-run' 'plugins/shipwright-test' ; do \
-      ( cd "$d" && uv sync --extra dev ) || exit 1 ;\
-    done \
+    cd 'plugins/shipwright-plan' \
+      && uv sync \
+      && cd - \
       && uv run plugins/shipwright-compliance/scripts/tools/update_compliance.py --project-root . --phase iterate
     ```
-  - Promote: `triage_promote.py --id trg-1cae4805 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-64426943 --task-ref EXT:<ref>`
 
-<a id="trg-78362ca7"></a>
-- **SBOM: 2 workspaces missing license metadata for 3 shared package(s)** `id=trg-78362ca7 | severity=low | kind=compliance → P3/engineering`
+<a id="trg-895378cf"></a>
+- **SBOM: 2 workspaces missing license metadata for 3 shared package(s)** `id=trg-895378cf | severity=low | kind=compliance → P3/engineering`
   - Common undeclared (3): pytest, pytest-mock, pyyaml Workspaces (2): plugins/shipwright-adopt/pyproject.toml, plugins/shi…
   - Launch payload (copy into a new Claude session):
     ```text
@@ -58,5 +46,17 @@
     done \
       && uv run plugins/shipwright-compliance/scripts/tools/update_compliance.py --project-root . --phase iterate
     ```
-  - Promote: `triage_promote.py --id trg-78362ca7 --task-ref EXT:<ref>`
+  - Promote: `triage_promote.py --id trg-895378cf --task-ref EXT:<ref>`
+
+<a id="trg-981bad1c"></a>
+- **SBOM: 10 workspaces missing license metadata for 2 shared package(s)** `id=trg-981bad1c | severity=low | kind=compliance → P3/engineering`
+  - Common undeclared (2): pytest, pytest-mock Workspaces (10): plugins/shipwright-build/pyproject.toml, plugins/shipwright…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    for d in '.' 'plugins/shipwright-build' 'plugins/shipwright-changelog' 'plugins/shipwright-deploy' 'plugins/shipwright-design' 'plugins/shipwright-iterate' 'plugins/shipwright-preview' 'plugins/shipwright-project' 'plugins/shipwright-run' 'plugins/shipwright-test' ; do \
+      ( cd "$d" && uv sync --extra dev ) || exit 1 ;\
+    done \
+      && uv run plugins/shipwright-compliance/scripts/tools/update_compliance.py --project-root . --phase iterate
+    ```
+  - Promote: `triage_promote.py --id trg-981bad1c --task-ref EXT:<ref>`
 

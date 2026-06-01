@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-01-refresh-claudemd-lint-gate",
+  "date": "2026-06-01T06:06:53.293418Z",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/refresh-claudemd-lint-gate",
+  "tests_passed": true,
+  "spec": "none (trivial doc refresh)",
+  "adr": "iterate-2026-06-01-refresh-claudemd-lint-gate_001"
+}
