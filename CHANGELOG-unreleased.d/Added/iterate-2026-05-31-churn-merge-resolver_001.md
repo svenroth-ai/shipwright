@@ -1,0 +1,1 @@
+`shared/scripts/tools/integrate_main.py` + `resolve_churn_conflicts.py`: allowlist-gated, regenerate-on-conflict reconciliation of churn artifacts (hard pre-flight gate that refuses to touch real source conflicts).

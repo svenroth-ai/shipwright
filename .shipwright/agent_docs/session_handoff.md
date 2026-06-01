@@ -1,37 +1,38 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-05-31-compliance-triage-bundle"
+run_id: "iterate-2026-05-31-churn-merge-resolver"
 phase: "iterate"
-reason: "compliance triage bundling: one rolling compliance:backlog action-unit"
-timestamp: "2026-05-31T15:52:35.290127+00:00"
+reason: "events=union + churn-merge resolver/integrate_main: auto-reconcile generated artifacts on origin/main merge"
+timestamp: "2026-06-01T06:28:39.307027+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-05-31 15:52:35 UTC
+> Auto-generated 2026-06-01 06:28:39 UTC
 
 ## Session Info
 
-- **Session ID**: 3e307394-564c-4915-8128-3c7fa7eeb609
-- **Timestamp**: 2026-05-31 15:52:35 UTC
-- **Reason**: compliance triage bundling: one rolling compliance:backlog action-unit
+- **Session ID**: 82d423d1-0377-4687-bd05-9741f85a1ee2
+- **Timestamp**: 2026-06-01 06:28:39 UTC
+- **Reason**: events=union + churn-merge resolver/integrate_main: auto-reconcile generated artifacts on origin/main merge
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-05-30-test-completeness-gate
-- **Date**: 2026-05-30T22:24:52.586049Z
+- **Run ID**: iterate-2026-05-31-compliance-triage-bundle
+- **Date**: 2026-05-31T15:52:35.875489Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/test-completeness-gate
-- **ADR**: iterate-2026-05-30-test-completeness-gate
+- **Branch**: iterate/compliance-triage-bundle
+- **ADR**: iterate-2026-05-31-compliance-triage-bundle
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/compliance-triage-bundle
-- **Spec**: .shipwright/planning/iterate/2026-05-31-compliance-triage-bundle.md
-- **Complexity**: medium (`touches_io_boundary`: writes `triage.jsonl`; changes a
-- **External Review Marker**: completed (external_review_state.json @ 2026-05-31T15:51:40)
+- **Branch**: iterate/churn-merge-resolver
+- **Run ID**: `iterate-2026-05-31-churn-merge-resolver`
+- **Spec**: .shipwright/planning/iterate/2026-05-31-churn-merge-resolver.md
+- **Complexity**: medium (high end — `touches_shared_infra` enforces full review + full test suite)
+- **External Review Marker**: stale (predates spec (2026-05-31T15:51:40))
 
 ### Mandatory replay on Resume
 
@@ -49,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/compliance-triage-bundle
-- **Last Commit**: 78a281fa Merge pull request #120 from svenroth-ai/iterate/test-completeness-gate
+- **Branch**: iterate/churn-merge-resolver
+- **Last Commit**: 89df9a55 Merge pull request #129 from svenroth-ai/iterate/compliance-triage-bundle
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-8b4aa0e2 | work_completed | iterate (events=union + churn-merge resolver/integrate_main: auto-reconcile generated artifacts on origin/main merge) | 2026-06-01 |
 | evt-41bb1152 | work_completed | iterate (Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement)) | 2026-05-31 |
+| evt-a073b04d | work_completed | iterate (Render unengaged phases as SKIP (not FAIL) in the persisted finding JSON so the skill-compliance dashboard agrees with the triage inbox) | 2026-05-31 |
+| evt-fa922bb7 | work_completed | iterate (Collapse phase-quality Tier-1 FAIL triage into one rolling phaseQuality:backlog action-unit; add phase-applicability gate and run_id=unknown spec-check guard) | 2026-05-31 |
 | evt-d16cc59c | work_completed | iterate (iterate completion: test-completeness-gate) | 2026-05-30 |
-| evt-d70f6cd4 | work_completed | iterate (iterate complete: P3.1 reviewer stack (spec-reviewer + doubt-reviewer cascade)) | 2026-05-30 |
-| evt-76ce63ff | work_completed | iterate (Propagate canonical .shipwright artifact-ignore block to consuming projects via SSoT template + idempotent merge in adopt/project + drift test) | 2026-05-30 |
-| evt-abaef023 | work_completed | iterate (Add audit_compliance_on_stop.py: auto-emit/auto-dismiss source=compliance triage items on every iterate/changelog Stop, gated on full A-G audit coverage.) | 2026-05-30 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 78
-- **Last iterate**: change — Collapse the compliance detective-audit mirror into one rolling compliance:backlog action-unit (auto-dismiss + refresh + legacy retirement) (2026-05-31)
+- **Total work events**: 81
+- **Last iterate**: change — events=union + churn-merge resolver/integrate_main: auto-reconcile generated artifacts on origin/main merge (2026-06-01)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

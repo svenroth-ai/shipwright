@@ -97,6 +97,45 @@ flowchart TD
 > hit `snapshot_unavailable=true` until the first iterate (acceptable
 > degraded-but-correct state — no false positives).
 
+### Merge reconciliation of churn artifacts (iterate-2026-05-31-churn-merge-resolver)
+
+When `origin/main` advances while an iterate branch is open, a merge collides
+**only** on generated/"churn" artifacts (never real source). Reconciliation is
+automatic via `shared/scripts/tools/integrate_main.py` (the command an iterate
+runs instead of a bare `git merge origin/main`), which delegates conflict
+resolution to `shared/scripts/tools/resolve_churn_conflicts.py`. Each churn
+artifact has exactly one documented resolution strategy:
+
+| Churn artifact | Strategy on merge |
+|---|---|
+| `shipwright_events.jsonl` | **union** (`.gitattributes`) + unconditional validate/dedup |
+| `.shipwright/compliance/dashboard.md` | **regenerate** (from merged tree) |
+| `.shipwright/compliance/sbom.md` | **regenerate** |
+| `.shipwright/compliance/test-evidence.md` | **regenerate** |
+| `.shipwright/compliance/traceability-matrix.md` | **regenerate** |
+| `.shipwright/compliance/change-history.md` | **regenerate** |
+| `.shipwright/agent_docs/build_dashboard.md` | **regenerate** |
+| `.shipwright/agent_docs/session_handoff.md` | **regenerate** |
+| `.shipwright/agent_docs/triage_inbox.md` | **regenerate** |
+| `shipwright_test_results.json` | **ours** (PR-owned snapshot) |
+
+This table is the SSoT for `resolve_churn_conflicts.CHURN_ALLOWLIST`
+(`shared/tests/test_churn_merge_doc_sync.py` fails on any drift, both
+directions). Two load-bearing rules:
+
+- **`.shipwright/agent_docs/architecture.md` is deliberately NOT a churn
+  artifact** — it is curated prose, so a conflict on it (or any source file)
+  trips the resolver's hard pre-flight gate and reaches a human; the resolver
+  touches nothing in that case.
+- **Regenerated MDs land in a *separate, non-merge* follow-up commit** carrying
+  a `Run-ID:` trailer. This is mandatory: `audit_staleness.find_snapshot_commit`
+  uses `git log --diff-filter=AM` which skips merge commits, so the snapshot the
+  Group-E audit compares against must be on a regular commit.
+
+**Rollout note:** a long-lived branch created BEFORE the `.gitattributes` commit
+must merge that commit (so the attribute is present in its tree) before `union`
+applies to its `events.jsonl`. The resolver validates the merged log regardless.
+
 ### Pipeline Constants
 
 **File:** `plugins/shipwright-run/scripts/lib/orchestrator_pkg/constants.py`
