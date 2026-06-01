@@ -1,1 +1,0 @@
-The `suggest_iterate` UserPromptSubmit hook now sets `hookEventName` on its `hookSpecificOutput`, so Claude Code no longer rejects the iterate-routing context ("missing required field hookEventName"). An AST meta-test enforces the field across all hooks.

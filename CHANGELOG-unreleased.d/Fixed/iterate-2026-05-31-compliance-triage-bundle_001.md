@@ -1,1 +1,0 @@
-Compliance triage no longer floods the inbox with one item per failing check: the detective-audit producer now emits a single rolling `compliance:backlog` action-unit, auto-dismissed when no check fails and refreshed when the failing set changes (legacy per-check items are retired automatically).

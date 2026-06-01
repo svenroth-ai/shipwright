@@ -1,1 +1,0 @@
-README + `docs/guide.md` Integrated Learnings expanded with per-source acknowledgments (Superpowers, Osmani, Karpathy, Multica) — Multica explicitly Apache-2.0 modified, patterns only, no code copy. Closes P1.1 of Spec/external-frameworks-integration.md (shipwright leg).

@@ -537,3 +537,27 @@ Thanks for contributing! If anything in this guide is unclear, please open an is
 - **ADR-084** (2026-05-25): Two-hook structural prevention against file-size regrowth
 
 - **ADR-085** (2026-05-25): Bloat-policy detective audit lands as Group H (G collision-avoidance)
+
+- **ADR-089** (2026-05-27): Guide + README refresh for Campaign A+B (post-v0.22.0)
+
+- **ADR-091** (2026-05-27): Runtime/snapshot split for agent-doc trio + hard-gated finalize repair pass
+
+- **ADR-094** (2026-05-29): events.jsonl is a per-tree, PR-committed artifact
+
+- **ADR-097** (2026-05-29): SessionStart bootstrap + plugin-cache Stop reminder; Python hooks keyed off payload session_id
+
+- **ADR-100** (2026-05-30): Canonical .shipwright gitignore block propagates to consuming projects
+
+- **ADR-102** (2026-05-30): Three-stage build reviewer cascade: spec-reviewer (HARD-GATE) -> code-reviewer -> conditional doubt-reviewer
+
+- **ADR-106** (2026-06-01): Churn-artifact merge reconciliation: events=union + regenerate-on-conflict resolver
+
+- **ADR-108** (2026-05-31): CI gate-coverage guard + workflow hardening
+
+- **ADR-109** (2026-05-31): CI lint gate: curated bug-focused ruff ruleset + de-neuter
+
+- **ADR-111** (2026-06-01): Per-project disabled_checks applicability gate + D5 change_type exemption
+
+- **ADR-112** (2026-05-31): Compliance triage emits one rolling backlog action-unit, not one item per check
+
+- **ADR-114** (2026-05-31): Phase-quality triage emits one rolling backlog action-unit, not one item per FAIL

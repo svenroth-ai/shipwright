@@ -1,1 +1,0 @@
-Stop hooks no longer dirty main's tracked agent_docs/ trio (session_handoff.md, build_dashboard.md, triage_inbox.md) — live writes redirect to gitignored runtime/, iterate-finalize is the sole producer of the tracked snapshots (extends PR #78 single-producer pattern, ADR-088).

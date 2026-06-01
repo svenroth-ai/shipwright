@@ -1,1 +1,0 @@
-shipwright-build / shipwright-iterate: build Step 6 now orchestrates `spec-reviewer` → `code-reviewer` → conditional `doubt-reviewer`; the autonomous sub-iterate-runner Step 3.7 delegates the full cascade to the orchestrator. The optional external code-review cascade (6c) stays a generic code-quality second opinion and is not extended to the new spec/doubt roles.

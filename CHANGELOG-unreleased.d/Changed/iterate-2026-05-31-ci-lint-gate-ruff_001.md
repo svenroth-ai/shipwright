@@ -1,1 +1,0 @@
-CI: the Python lint step now GATES on a curated bug-focused ruff ruleset (pyflakes + high-signal pycodestyle), runs via pinned `uvx ruff`, and no longer swallows failures (`|| true` / `continue-on-error` removed); job renamed to 'Python (lint + test)'.
