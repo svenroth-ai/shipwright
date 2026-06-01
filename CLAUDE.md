@@ -45,7 +45,15 @@ CHANGELOG-unreleased.d/     # Pending changelog drop files (aggregated at releas
 uv sync                              # Install dependencies
 uv run pytest tests/ -v               # Run tests for a plugin (from plugin dir)
 uv run pytest integration-tests/ -v   # Run integration tests (from root)
+uvx ruff@0.15.15 check .              # Bug-focused lint — GATING in CI (ci.yml)
 ```
+
+**Lint is a hard CI gate.** `.github/workflows/ci.yml` runs `uvx ruff@0.15.15
+check .` with no `|| true` / `continue-on-error`, so a lint failure blocks merge.
+The ruleset is deliberately curated (Pyflakes + a few bug-class pycodestyle
+rules, cosmetic rules omitted) and lives in the root `pyproject.toml`
+`[tool.ruff.lint]` — run it locally before pushing. ruff is pinned (not a project
+dependency) so a new release can't silently change the gate.
 
 ### Plugin Structure (each plugin follows this pattern)
 ```
