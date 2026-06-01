@@ -132,8 +132,17 @@ class TestSarifAndGuards:
             "SARIF generation must use --input-from-cache to avoid double-scan"
 
     def test_upload_sarif_action_used(self, workflow_text):
-        assert "github/codeql-action/upload-sarif@v3" in workflow_text, \
-            "upload-sarif action not invoked"
+        # Match the actual `uses:` invocation, not a comment mention — a
+        # stale permission comment like "# required by ...upload-sarif@v3"
+        # must NOT satisfy this (the prior `... in workflow_text` check did,
+        # so a wrong version bump on the real step went undetected).
+        # Version-agnostic (`@v\d`) so an action bump doesn't churn the test,
+        # but the action must be invoked on a genuine `uses:` line.
+        assert re.search(
+            r"^\s*uses:\s*github/codeql-action/upload-sarif@v\d",
+            workflow_text,
+            re.MULTILINE,
+        ), "upload-sarif not invoked on a `uses:` line"
 
     def test_upload_sarif_fork_guard(self, workflow_text):
         # The upload step must guard against fork PRs (read-only GITHUB_TOKEN).

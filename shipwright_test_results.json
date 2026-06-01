@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-01-ci-launch-hardening",
+    "run_id": "iterate-2026-06-01-upload-sarif-test-fix",
     "date": "2026-06-01",
     "unit": {
       "status": "passed",
-      "passed": 19,
-      "total": 19
+      "passed": 14,
+      "total": 14
     },
     "integration": {
       "status": "not_run",
@@ -32,31 +32,26 @@
     },
     "surface_verification": {
       "surface": "none",
-      "justification": "Infra/doc change: CI workflow YAML (third-party action SHA-pinning, Gitleaks tarball SHA256 verification) + SECURITY.md wording. No application/Python source, no UI, no API/store/SSE surface (backend-affects-frontend rule N/A). Workflow invariants are covered by test_workflow_shape (14), CI integration gating tests (5), the check_ci_gate_coverage guard, the CI template-registry test, and yaml.safe_load on all 4 workflows (all green); the runtime hardening is exercised by this PR's own CI + Security Scan workflow runs."
+      "justification": "Trivial CI/test-hygiene change: corrected two stale @v3 permission comments in security.yml to @v4 and rewrote test_upload_sarif_action_used to assert the real `uses:` line. No application/Python runtime, no UI, no API/store/SSE surface."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Workflows stay valid and preserve their security invariants (triggers, permissions, fork-guards, critical-gate, action invocations) after SHA-pinning + Gitleaks edits",
+          "behavior": "The workflow-shape test asserts the real upload-sarif `uses:` invocation and rejects comment-only mentions",
           "disposition": "tested",
-          "evidence": "yaml.safe_load OK on all 4 workflows; test_workflow_shape.py 14/14 PASSED; test_ci_self_gating.py + test_ci_lint_gate.py 5/5 PASSED; check_ci_gate_coverage.py PASSED"
-        },
-        {
-          "behavior": "Gitleaks tarball SHA256 is verified before extraction; CI fails closed on a checksum mismatch",
-          "disposition": "tested",
-          "evidence": "SHA256 5bc41815...316e3ba verified against the official gitleaks v8.21.2 checksums.txt; gating runs under the default GitHub-Actions '-eo pipefail' shell via 'sha256sum -c' and is exercised end-to-end by this PR's CI + Security Scan runs"
+          "evidence": "test_workflow_shape.py 14/14 PASSED including the rewritten test_upload_sarif_action_used; the anchored regex '^\\s*uses:\\s*github/codeql-action/upload-sarif@v\\d' (MULTILINE) only matches the genuine uses: line (150), never the actions:/security-events: comment lines"
         }
       ],
       "counts": {
-        "testable": 2,
-        "tested": 2,
+        "testable": 1,
+        "tested": 1,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 2,
-        "covered_acs": 2
+        "acs": 1,
+        "covered_acs": 1
       }
     },
     "degraded": []

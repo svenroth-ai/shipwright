@@ -1,34 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-01-ci-launch-hardening"
+run_id: "iterate-2026-06-01-upload-sarif-test-fix"
 phase: "iterate"
-reason: "CI/security launch hardening complete (SHA-pinning + gitleaks integrity + SECURITY.md accuracy)"
-timestamp: "2026-06-01T20:47:45.801845+00:00"
+reason: "upload-sarif test integrity + comment accuracy fix"
+timestamp: "2026-06-01T21:14:29.419000+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-01 20:47:45 UTC
+> Auto-generated 2026-06-01 21:14:29 UTC
 
 ## Session Info
 
 - **Session ID**: 3050612b-33fc-473f-97d9-8829549329cf
-- **Timestamp**: 2026-06-01 20:47:45 UTC
-- **Reason**: CI/security launch hardening complete (SHA-pinning + gitleaks integrity + SECURITY.md accuracy)
+- **Timestamp**: 2026-06-01 21:14:29 UTC
+- **Reason**: upload-sarif test integrity + comment accuracy fix
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-01-audit-honors-amendments
-- **Date**: 2026-06-01T08:58:42.777264Z
+- **Run ID**: iterate-2026-06-01-ci-launch-hardening
+- **Date**: 2026-06-01T20:48:22.894560Z
 - **Type**: change
 - **Complexity**: small
-- **Branch**: iterate/audit-honors-amendments
-- **ADR**: iterate-2026-06-01-audit-honors-amendments
+- **Branch**: iterate/ci-launch-hardening
+- **ADR**: iterate-2026-06-01-ci-launch-hardening
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/ci-launch-hardening
+- **Branch**: iterate/upload-sarif-test-fix
 - **External Review Marker**: completed (external_review_state.json @ 2026-06-01T06:00:50)
 
 ### Mandatory replay on Resume
@@ -47,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/ci-launch-hardening
-- **Last Commit**: 46100318 Merge pull request #137 from svenroth-ai/iterate/audit-honors-amendments
+- **Branch**: iterate/upload-sarif-test-fix
+- **Last Commit**: 73122283 Merge pull request #138 from svenroth-ai/iterate/ci-launch-hardening
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-61e60d2f | work_completed | iterate (Rewrote test_upload_sarif_action_used to assert the real upload-sarif uses: line (anchored regex, version-agnostic) instead of matching a stale comment; corrected the two @v3 permission comments in security.yml to @v4.) | 2026-06-01 |
 | evt-e40d7f38 | work_completed | iterate (Pinned third-party GitHub Actions (setup-uv, create-or-update-comment) to commit SHAs; added SHA256 verification for the Gitleaks binary download in ci.yml + security.yml; corrected stale SECURITY.md scope (webui) and Dependabot wording.) | 2026-06-01 |
 | evt-904cb041 | work_completed | iterate (Detective audit honors event_amended corrections (group_d applies shared apply_amendments SSOT before D1-D5; new shared/scripts/lib/events_amend.py, re-exported by config.py); D4 disabled for the framework monorepo (gating-CI stale-noise); evt-5aca940d corrected to spec_impact=none.) | 2026-06-01 |
 | evt-57e2fbbb | event_amended | — | 2026-06-01 |
 | evt-f762bc17 | work_completed | iterate (Document the gating ruff CI lint step in CLAUDE.md Development section.) | 2026-06-01 |
-| evt-b27ecbd3 | work_completed | iterate (D5 honors change_type+none_reason exemption; add audit_config.disabled_checks applicability gate; framework repo disables A5.6/B7/D1/G2) | 2026-06-01 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 90
-- **Last iterate**: change — Pinned third-party GitHub Actions (setup-uv, create-or-update-comment) to commit SHAs; added SHA256 verification for the Gitleaks binary download in ci.yml + security.yml; corrected stale SECURITY.md scope (webui) and Dependabot wording. (2026-06-01)
+- **Total work events**: 91
+- **Last iterate**: change — Rewrote test_upload_sarif_action_used to assert the real upload-sarif uses: line (anchored regex, version-agnostic) instead of matching a stale comment; corrected the two @v3 permission comments in security.yml to @v4. (2026-06-01)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-01T20:47:45.801845+00:00
+Generated: 2026-06-01T21:14:29.419000+00:00
 
 ## Requirements Coverage
 
@@ -115,6 +115,7 @@ Generated: 2026-06-01T20:47:45.801845+00:00
 | Document the gating ruff CI lint step in CLAUDE.md Development section. | iterate | change |  | — | — | 2026-06-01 |
 | Detective audit honors event_amended corrections (group_d applies shared apply_amendments SSOT before D1-D5; new shared/scripts/lib/events_amend.py, re-exported by config.py); D4 disabled for the framework monorepo (gating-CI stale-noise); evt-5aca940d corrected to spec_impact=none. | iterate | change |  | — | — | 2026-06-01 |
 | Pinned third-party GitHub Actions (setup-uv, create-or-update-comment) to commit SHAs; added SHA256 verification for the Gitleaks binary download in ci.yml + security.yml; corrected stale SECURITY.md scope (webui) and Dependabot wording. | iterate | change |  | — | — | 2026-06-01 |
+| Rewrote test_upload_sarif_action_used to assert the real upload-sarif uses: line (anchored regex, version-agnostic) instead of matching a stale comment; corrected the two @v3 permission comments in security.yml to @v4. | iterate | change |  | — | — | 2026-06-01 |
 
 ## Coverage Summary
 
@@ -122,7 +123,7 @@ Generated: 2026-06-01T20:47:45.801845+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 90 |
+| Iterate changes | 91 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
