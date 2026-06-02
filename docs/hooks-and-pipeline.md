@@ -755,6 +755,21 @@ noise" for small/solo setups. Only Tier-1 FAILs are injected; Tier-2
 ids (`W1`, `I4`, `T2`, `Q1`, `S3-S5`, `S7`, `S9`, `S10`, `Cmp1`, `D2`)
 are filtered out.
 
+**Once-per-event dedup (iterate-2026-06-02-sessionstart-dedup-guard):**
+because the hook is registered in all 12 plugins and Claude Code fires
+every registered SessionStart hook (no active-plugin filter), one
+SessionStart event ran the injection ~12× with the identical block. The
+Phase-Quality block is now gated by
+`shared/scripts/lib/event_once.py::claim_once` — a first-wins, TTL-armed
+claim keyed on `.shipwright/.cache/sessionstart-<session_id>.claim`, so
+exactly one invocation emits per event and a later resume/compact
+(TTL-expired) re-emits. **Fail-open:** any guard error emits, so a real
+FAIL is never dropped. Only the Phase-Quality block is deduped — the env
+context (`SHIPWRIGHT_SESSION_ID`/`PROJECT_ROOT`/loop vars) and the
+`CLAUDE_ENV_FILE` write still run per invocation. (The remaining
+SessionStart fan-out — drift/using-shipwright/phase-start — is collapsed
+later by campaign `2026-06-02-hook-consolidation` B2.)
+
 ```
 Session ends → Stop hook writes finding JSON + regenerates
                 .shipwright/agent_docs/skill-compliance-findings.md

@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-06-02-sessionstart-dedup-guard",
+  "date": "2026-06-02T09:43:20.373798Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/sessionstart-dedup-guard",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-02-sessionstart-dedup-guard"
+}

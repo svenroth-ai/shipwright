@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-01T21:14:29.419000+00:00
-Total commits: 823
+Generated: 2026-06-02T09:43:00.857693+00:00
+Total commits: 824
 
 ## Commit Distribution
 
@@ -12,7 +12,7 @@ pie title Commit Types
     "chore" : 158
     "docs" : 114
     "refactor" : 50
-    "test" : 20
+    "test" : 21
     "other" : 7
     "ci" : 5
     "build" : 1
@@ -835,10 +835,11 @@ pie title Commit Types
 | 2026-03-30 | env | consolidate plugin env vars into single .env.local | 4a9267b522fb |
 | 2026-03-28 | — | unify decision log to shared ADR format across all phases | 2851babbbcfa |
 
-### Tests (test) — 20 commits
+### Tests (test) — 21 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-01 | — | assert upload-sarif on the real uses: line, not a stale comment | 2219ccea8729 |
 | 2026-05-31 | ci | move integration-gate guard into a CI-run dir (integration-tests/) | f8ab94fd1d85 |
 | 2026-05-31 | ci | pin integration-step no-swallow invariant; correct completeness ledger | 21e2f810dab7 |
 | 2026-05-31 | iterate | pin type-robustness edges of the completeness gate (asymptote probe) | 3dfffc8791d2 |
@@ -892,7 +893,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 823 |
+| Total commits | 824 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 823 |
+| Human-authored commits | 824 |
 
