@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-01 21:14 UTC | Session: 3050612b-33fc-473f-97d9-8829549329cf | Run: iterate-2026-06-01-upload-sarif-test-fix
+> Updated: 2026-06-02 09:43 UTC | Session: 42feb775-7101-4888-a0d2-4d2c54ddc665 | Run: iterate-2026-06-02-sessionstart-dedup-guard
 
-## Recent Changes (91 iterations)
+## Recent Changes (92 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Dedup SessionStart Phase-Quality injection to once-per-event via event_once.claim_once (fail-open). | 0/0 |  | tooling | 2026-06-02 |
 | change | Rewrote test_upload_sarif_action_used to assert the real upload-sarif uses: line (anchored regex, version-agnostic) instead of matching a stale comment; corrected the two @v3 permission comments in security.yml to @v4. | 0/0 |  | tooling | 2026-06-01 |
 | change | Pinned third-party GitHub Actions (setup-uv, create-or-update-comment) to commit SHAs; added SHA256 verification for the Gitleaks binary download in ci.yml + security.yml; corrected stale SECURITY.md scope (webui) and Dependabot wording. | 0/0 |  | infra | 2026-06-01 |
 | change | Detective audit honors event_amended corrections (group_d applies shared apply_amendments SSOT before D1-D5; new shared/scripts/lib/events_amend.py, re-exported by config.py); D4 disabled for the framework monorepo (gating-CI stale-noise); evt-5aca940d corrected to spec_impact=none. | 0/0 |  | compliance | 2026-06-01 |

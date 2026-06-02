@@ -226,15 +226,31 @@ def main() -> int:
         if value:
             context_parts.append(f"{var}={value}")
 
-    # Phase-Quality Tier-1 FAIL injection (opt-in via
-    # SHIPWRIGHT_PHASE_QUALITY_MODE=audit_inject). Non-blocking; errors
-    # inside _build_phase_quality_injection never propagate.
-    try:
-        injection = _build_phase_quality_injection(project_root)
-    except Exception:  # noqa: BLE001
-        injection = ""
-    if injection:
-        context_parts.append(injection)
+    # Phase-Quality Tier-1 FAIL injection. The hook is registered in every
+    # plugin, so one SessionStart event fires it ~12x with the identical
+    # block. Dedup to once-per-event via claim_once (event-scoped on the
+    # session id, TTL-armed so a later resume/compact re-emits). Fail-open:
+    # claim_once returns True on any guard error, so a real FAIL is never
+    # dropped. Only the block is gated — env context is emitted every time.
+    # audit_only short-circuits before claiming so the opt-out leaves no
+    # cache file. Non-blocking; injection errors never propagate.
+    if _phase_quality_inject_enabled():
+        try:
+            from lib.event_once import claim_once
+            claim_path = (
+                Path(project_root) / ".shipwright" / ".cache"
+                / f"sessionstart-{session_id}.claim"
+            )
+            may_emit = claim_once(claim_path)
+        except Exception:  # noqa: BLE001
+            may_emit = True
+        if may_emit:
+            try:
+                injection = _build_phase_quality_injection(project_root)
+            except Exception:  # noqa: BLE001
+                injection = ""
+            if injection:
+                context_parts.append(injection)
 
     if context_parts:
         print(json.dumps({

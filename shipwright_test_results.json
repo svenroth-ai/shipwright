@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-01-upload-sarif-test-fix",
-    "date": "2026-06-01",
+    "run_id": "iterate-2026-06-02-sessionstart-dedup-guard",
+    "date": "2026-06-02",
     "unit": {
       "status": "passed",
-      "passed": 14,
-      "total": 14
+      "passed": 21,
+      "total": 21
     },
     "integration": {
       "status": "not_run",
@@ -32,28 +32,63 @@
     },
     "surface_verification": {
       "surface": "none",
-      "justification": "Trivial CI/test-hygiene change: corrected two stale @v3 permission comments in security.yml to @v4 and rewrote test_upload_sarif_action_used to assert the real `uses:` line. No application/Python runtime, no UI, no API/store/SSE surface."
+      "justification": "Framework SessionStart-hook runtime change + new shared helper (event_once.py). No application/web/UI/API/store/SSE surface in this monorepo. Verified via 21 unit tests AND a concurrent 12-subprocess empirical probe (real multi-process fan-out -> block emitted exactly once)."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "The workflow-shape test asserts the real upload-sarif `uses:` invocation and rejects comment-only mentions",
+          "behavior": "First invocation of a SessionStart event emits the Phase-Quality block; subsequent invocations of the same event skip it (once-per-event)",
           "disposition": "tested",
-          "evidence": "test_workflow_shape.py 14/14 PASSED including the rewritten test_upload_sarif_action_used; the anchored regex '^\\s*uses:\\s*github/codeql-action/upload-sarif@v\\d' (MULTILINE) only matches the genuine uses: line (150), never the actions:/security-events: comment lines"
+          "evidence": "test_capture_session_id.py::test_phase_quality_block_emitted_then_deduped; test_event_once.py::test_first_claim_wins + test_second_claim_same_event_skips"
+        },
+        {
+          "behavior": "A TTL-expired claim from a later event (resume/compact reusing the session id) re-emits",
+          "disposition": "tested",
+          "evidence": "test_capture_session_id.py::test_phase_quality_block_re_emits_after_ttl; test_event_once.py::test_stale_claim_re_arms_then_fresh_skips + test_now_param_makes_ttl_deterministic"
+        },
+        {
+          "behavior": "Exactly one of N concurrent invocations wins per event (atomic, race-safe via O_CREAT|O_EXCL)",
+          "disposition": "tested",
+          "evidence": "test_event_once.py::test_concurrent_invocations_exactly_one_winner; plus empirical 12-subprocess probe -> emitted by 1 (PROBE PASS)"
+        },
+        {
+          "behavior": "Env context (SESSION_ID/PROJECT_ROOT/loop vars) + CLAUDE_ENV_FILE write are NOT gated by the dedup (AC-4/AC-7)",
+          "disposition": "tested",
+          "evidence": "test_capture_session_id.py::test_phase_quality_block_emitted_then_deduped asserts SHIPWRIGHT_PROJECT_ROOT present on the deduped invocation; existing env/loop/env-file tests still pass"
+        },
+        {
+          "behavior": "Any guard error fails open (emits) rather than dropping a FAIL",
+          "disposition": "tested",
+          "evidence": "test_event_once.py::test_unwritable_parent_fails_open"
+        },
+        {
+          "behavior": "audit_only opt-out suppresses the block and creates no cache file",
+          "disposition": "tested",
+          "evidence": "test_capture_session_id.py::test_phase_quality_block_suppressed_in_audit_only"
+        },
+        {
+          "behavior": "A different session id (distinct event) re-emits independently",
+          "disposition": "tested",
+          "evidence": "test_capture_session_id.py::test_phase_quality_block_re_emits_for_new_session; test_event_once.py::test_distinct_keys_are_independent"
         }
       ],
       "counts": {
-        "testable": 1,
-        "tested": 1,
+        "testable": 7,
+        "tested": 7,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 1,
-        "covered_acs": 1
+        "acs": 7,
+        "covered_acs": 7
       }
     },
-    "degraded": []
+    "degraded": [
+      {
+        "condition": "pre_existing_unrelated_failure",
+        "detail": "shared/tests/test_architecture_md_reflects_arch_impact.py fails LOCALLY on 2 gitignored foreign decision-drops (iterate-2026-06-01-ci-launch-hardening, -upload-sarif-test-fix) lacking architecture.md entries. Not caused by this 4-file diff. decision-drops are gitignored -> CI sees none -> passes vacuously. Not a merge blocker."
+      }
+    ]
   }
 }
