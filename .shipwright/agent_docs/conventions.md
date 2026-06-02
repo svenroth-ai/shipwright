@@ -561,3 +561,9 @@ Thanks for contributing! If anything in this guide is unclear, please open an is
 - **ADR-112** (2026-05-31): Compliance triage emits one rolling backlog action-unit, not one item per check
 
 - **ADR-114** (2026-05-31): Phase-quality triage emits one rolling backlog action-unit, not one item per FAIL
+
+- **ADR-118** (2026-06-01): Pin third-party GitHub Actions to SHA + verify Gitleaks download
+
+- **ADR-119** (2026-06-01): Assert upload-sarif on the real uses: line, not a comment substring
+
+- **ADR-120** (2026-06-02): Dedup SessionStart Phase-Quality injection to once-per-event

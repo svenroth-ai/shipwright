@@ -1,1 +1,0 @@
-CI: the `upload-sarif` workflow-shape test now asserts the real `uses:` invocation (regex, version-agnostic) instead of incidentally matching a stale permission-block comment; the `security.yml` permission comments are corrected from `@v3` to the actual `@v4`.
