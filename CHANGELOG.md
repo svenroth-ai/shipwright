@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.23.1] - 2026-06-02
+
+### Fixed
+
+- Compliance detective audit now honors `event_amended` corrections: `group_d` applies the shared `apply_amendments` SSOT (extracted to `shared/scripts/lib/events_amend.py`, re-exported by `config.py`) before D1-D5, so a recorded correction is respected consistently with the RTM/change-history collector — previously the audit read the event log raw and ignored amendments. Also disables D4 (latest-covering-event test-snapshot) for the framework monorepo via `audit_config.disabled_checks`: gating CI makes current test-health authoritative, so D4 can only ever surface stale historical snapshots.
+- CI: the `upload-sarif` workflow-shape test now asserts the real `uses:` invocation (regex, version-agnostic) instead of incidentally matching a stale permission-block comment; the `security.yml` permission comments are corrected from `@v3` to the actual `@v4`.
+- SessionStart no longer injects the Phase-Quality Tier-1 FAIL block ~12× (once per plugin); a once-per-event fail-open dedup guard emits it once and re-emits after resume/compact.
+
+### Security
+
+- Hardened the CI supply chain ahead of public launch: pinned third-party GitHub Actions (`astral-sh/setup-uv`, `peter-evans/create-or-update-comment`) to full commit SHAs, and added SHA256 integrity verification for the Gitleaks binary download in `ci.yml` and `security.yml` (previously piped `wget | tar` unverified).
+
 ## [v0.23.0] - 2026-06-01
 
 ### Added

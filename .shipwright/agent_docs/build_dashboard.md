@@ -1,5 +1,5 @@
 # Project Activity Dashboard
-> Updated: 2026-06-02 09:43 UTC | Session: 42feb775-7101-4888-a0d2-4d2c54ddc665 | Run: iterate-2026-06-02-sessionstart-dedup-guard
+> Updated: 2026-06-02 09:43 UTC | Session: 42feb775-7101-4888-a0d2-4d2c54ddc665
 
 ## Recent Changes (92 iterations)
 
@@ -99,7 +99,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-01 | Unit: 14/14 | Smoke: not_run | (iterate)
+Last run: 2026-06-02 | Unit: 21/21 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

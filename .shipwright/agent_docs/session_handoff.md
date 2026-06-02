@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-02-sessionstart-dedup-guard"
-phase: "iterate"
-reason: "iterate finalization"
+run_id: "changelog-v0.23.1-20260602"
+phase: "changelog"
+reason: "release v0.23.1"
 timestamp: "2026-06-02T09:43:00.857693+00:00"
 ---
 
@@ -14,27 +14,17 @@ timestamp: "2026-06-02T09:43:00.857693+00:00"
 
 - **Session ID**: 42feb775-7101-4888-a0d2-4d2c54ddc665
 - **Timestamp**: 2026-06-02 09:43:00 UTC
-- **Reason**: iterate finalization
+- **Reason**: release v0.23.1
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-01-upload-sarif-test-fix
-- **Date**: 2026-06-01T21:14:39.534334Z
+- **Run ID**: iterate-2026-06-02-sessionstart-dedup-guard
+- **Date**: 2026-06-02T09:43:20.373798Z
 - **Type**: change
-- **Complexity**: trivial
-- **Branch**: iterate/upload-sarif-test-fix
-- **ADR**: iterate-2026-06-01-upload-sarif-test-fix
-- **Tests passed**: True
-
-## Current Iterate Progress
-
+- **Complexity**: small
 - **Branch**: iterate/sessionstart-dedup-guard
-- **External Review Marker**: completed (external_review_state.json @ 2026-06-01T06:00:50)
-
-### Mandatory replay on Resume
-
-Before dispatching to the handoff's Remaining phase, run these if missing:
-- Finalization (F0–F11) after all mandatory phases pass
+- **ADR**: iterate-2026-06-02-sessionstart-dedup-guard
+- **Tests passed**: True
 
 ## Legacy build state
 
@@ -47,8 +37,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/sessionstart-dedup-guard
-- **Last Commit**: f558e068 Merge pull request #139 from svenroth-ai/iterate/upload-sarif-test-fix
+- **Branch**: main
+- **Last Commit**: f75a0390 fix(hooks): dedup SessionStart Phase-Quality injection to once-per-event (#140)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -79,9 +69,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Recent Decisions
 
-### ADR-116: Document the gating ruff lint step in CLAUDE.md
-- **Date:** 2026-06-01
-- **Section:** CLAUDE.md / Development
-- **Run-ID:** iterate-2026-06-01-refresh-claudemd-lint-gate
-- **Context:** The SessionStart timestamp-drift heuristic flagged CLAUDE.md as stale because pyproject.toml changed more recently; the real delta was the 2026-05-31 CI ruff lint gate (uvx ruff@0.15.15 check . in ci.yml, curated ruleset in [tool.ruff.lint]), which CLAUDE.md documented nowhere.
-- **Decision:** Add a 'Lint is 
+### ADR-120: Dedup SessionStart Phase-Quality injection to once-per-event
+- **Date:** 2026-06-02
+- **Section:** SessionStart hook (shared/scripts/hooks/capture_session_id.py)
+- **Run-ID:** iterate-2026-06-02-sessionstart-dedup-guard
+- **Context:** capture_session_id.py is registered as a SessionStart hook in all 12 plugins; Claude Code fires every registered hook with no active-plugin filter, so one SessionStart event ran the Phase-Quality Tier-1 FAIL injection ~12x with the identical block (observed li

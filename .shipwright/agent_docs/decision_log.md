@@ -1623,3 +1623,54 @@ shipwright/
 - **Commit:** (assigned post-merge)
 - **Rationale:** Drift was a timestamp false-positive for architectural content (structure/stack/commands verified accurate); the one real gap was the undocumented lint gate.
 - **Consequences:** Contributors see the gating lint locally before pushing; the recurring drift false-positive is silenced by genuine content. No code/behavior change.
+
+---
+
+### ADR-117: Detective audit honors event_amended (+ D4 disabled as gating-CI stale-noise)
+- **Date:** 2026-06-01
+- **Section:** shipwright-compliance/audit
+- **Run-ID:** iterate-2026-06-01-audit-honors-amendments
+- **Context:** group_d read the event log raw and ignored event_amended corrections (unlike the change-history collector / RTM), so a mislabeled historical event was uncorrectable by the audit. The last open compliance finding — D5 on stale duplicate evt-5aca940d (commit 54ecb175, spec_impact=modify) — was unclearable: a bare amend is invisible to the raw read and dismissing the triage item re-fires.
+- **Decision:** Extract apply_amendments into a shared SSOT (shared/scripts/lib/events_amend.py); config.py re-exports it; group_d loads it via the pollution-free load_shared_lib and applies it before D1-D5. Record an event_amended reclassifying evt-5aca940d spec_impact=none. Disable D4 on this repo via audit_config.disabled_checks.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A shared apply_amendments already existed in config.py; reusing it avoids a 3rd drifting copy (SSOT intent). load_shared_lib avoids lib-namespace pollution — config.py's relative import bars sentinel-loading config directly. Disabling D4 is not hiding a real finding: gating CI guarantees green main, so every D4 fail is a stale event-log snapshot, not an action-unit (same class as already-disabled D1).
+- **Consequences:** D5 now passes and the audit honors corrections consistently with the RTM. Honoring amendments unmasked a real (RTM-corroborated) D4 finding on FR-01.01 (2026-05-05 1691/1716, long since green); disabled as structural stale-noise — gating CI makes current test-health authoritative, so D4 can only surface stale snapshots. Compliance backlog auto-dismisses to empty.
+- **Rejected:** Bare event_amended without the code fix (raw read ignores it). Dismissing the triage item (re-fires; dedup skips dismissed). Editing evt-5aca940d in place (append-only audit log; falsifies history). Consolidating change_history's package-local copy too (cross-package shared-import fragility in non-audit contexts).
+
+---
+
+### ADR-118: Pin third-party GitHub Actions to SHA + verify Gitleaks download
+- **Date:** 2026-06-01
+- **Section:** CI/Security infrastructure (launch hardening)
+- **Run-ID:** iterate-2026-06-01-ci-launch-hardening
+- **Context:** Pre public-early-access launch. For a security-positioned project, mutable action tags (@v3/@v4) and an unverified `wget | tar` of the Gitleaks binary are supply-chain risks that OpenSSF Scorecard flags and senior reviewers scrutinize.
+- **Decision:** Pin the two third-party actions (astral-sh/setup-uv, peter-evans/create-or-update-comment) to full commit SHAs with the tag in a trailing comment; download the Gitleaks tarball to disk and verify its SHA256 before extracting in ci.yml + security.yml.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Defense-in-depth + dogfooding credibility: the launch image must practice the supply-chain hygiene Shipwright preaches.
+- **Consequences:** Action upgrades now require a deliberate SHA bump (Dependabot github-actions ecosystem covers this once un-dormanted); the Gitleaks SHA256 constant must be updated whenever GITLEAKS_VERSION changes, else CI fails closed.
+- **Rejected:** Leave actions on mutable tags (rejected: Scorecard/supply-chain risk). Pin GitHub-owned actions too (deferred: lower risk, more SHA churn, out of scope). Keep wget|tar unverified (rejected: ironic for a secret-scanner binary).
+
+---
+
+### ADR-119: Assert upload-sarif on the real uses: line, not a comment substring
+- **Date:** 2026-06-01
+- **Section:** CI/security workflow test integrity
+- **Run-ID:** iterate-2026-06-01-upload-sarif-test-fix
+- **Context:** test_upload_sarif_action_used used a plain substring check (`upload-sarif@v3 in workflow_text`) that was satisfied by a stale permission-block COMMENT, not the actual action invocation (which is @v4) — giving a false-positive that would survive a wrong version bump.
+- **Decision:** Assert via an anchored regex (^\s*uses:\s*github/codeql-action/upload-sarif@v\d, MULTILINE) so the check matches a genuine uses: line and is version-agnostic; also correct the two stale @v3 permission comments to @v4.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A workflow-shape invariant must verify the real step, not text that happens to appear in a comment.
+- **Consequences:** The test now fails if upload-sarif is removed from a uses: line, and no longer passes on comment-only mentions; action version bumps no longer churn the test.
+
+---
+
+### ADR-120: Dedup SessionStart Phase-Quality injection to once-per-event
+- **Date:** 2026-06-02
+- **Section:** SessionStart hook (shared/scripts/hooks/capture_session_id.py)
+- **Run-ID:** iterate-2026-06-02-sessionstart-dedup-guard
+- **Context:** capture_session_id.py is registered as a SessionStart hook in all 12 plugins; Claude Code fires every registered hook with no active-plugin filter, so one SessionStart event ran the Phase-Quality Tier-1 FAIL injection ~12x with the identical block (observed live: same 3 FAILs injected 11x).
+- **Decision:** Gate the injection on a first-wins, TTL-armed claim (new shared primitive shared/scripts/lib/event_once.py::claim_once, atomic O_CREAT|O_EXCL) keyed on .shipwright/.cache/sessionstart-<session_id>.claim, so exactly one invocation emits per event; a later resume/compact (TTL-expired) re-emits.
+- **Commit:** (assigned post-merge)
+- **Rationale:** SessionStart injections are byte-identical across plugins, so first-wins dedup is correct without phase-awareness (unlike Stop, where the audited phase differs and a phase-aware dispatcher is required).
+- **Consequences:** Visible SessionStart spam removed. Fail-open: any guard error emits, so a real Tier-1 FAIL is never dropped. Only the Phase-Quality block is deduped; env context + CLAUDE_ENV_FILE write still run per invocation. Interim fix superseded by campaign 2026-06-02-hook-consolidation B2 (full SessionStart dispatcher).
+- **Rejected:** Active-plugin detection at SessionStart (no reliable signal — that is the root cause); session-lifetime dedup without TTL (would suppress legitimate re-injection after resume/compact).
