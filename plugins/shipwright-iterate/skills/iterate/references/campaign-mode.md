@@ -64,6 +64,14 @@ If campaign directory doesn't exist yet:
    Extract `loop_id` from stdout. Then:
    `export SHIPWRIGHT_LOOP_ID="{loop_id}"`.
 
+   Then **mark the campaign started** (top-level lifecycle status
+   `draft` → `active`, so the WebUI Campaigns lane shows it on the board —
+   a `draft` campaign is planned-only / triage-only and stays hidden):
+   ```bash
+   uv run "{plugin_root}/scripts/tools/campaign_progress.py" start \
+     --campaign-dir ".shipwright/planning/iterate/campaigns/{slug}"
+   ```
+
 3. **Loop (repeat until exit code 2):**
 
    ```
@@ -96,6 +104,13 @@ If campaign directory doesn't exist yet:
    ```bash
    uv run ... finalize --state .shipwright/loop_state.json
    ```
+   The campaign's top-level lifecycle status reaches `complete`
+   **automatically** — the `update-status` call in 3g flips it to
+   `complete` once every sub-iterate is `complete`, which hides the
+   campaign from the board. If the loop strict-stopped on a failure /
+   escalation (3f), some sub-iterates are not `complete`, so the status
+   stays `active` and the campaign remains visible (matching step 5's
+   "campaign incomplete" branch). No explicit set-complete call is needed.
 
 5. **Release prompt (F12, once):** Only if ALL sub-iterates are
    `complete` AND worktree is clean: count unreleased entries in

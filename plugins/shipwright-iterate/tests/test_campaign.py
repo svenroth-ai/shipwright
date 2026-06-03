@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
+from argparse import Namespace
 from pathlib import Path
 
 import pytest
@@ -159,3 +160,135 @@ class TestCampaignProgress:
         args.tests_total = None
         ret = cmd_update_status(args)
         assert ret == 1
+
+
+class TestCampaignLifecycleStatus:
+    """Producer-owned campaign lifecycle: draft -> active -> complete.
+
+    Consumer side lives in shipwright-webui (PR #96): the Campaigns lane shows a
+    campaign iff top-level ``status == 'active'`` (status.json wins, else the
+    campaign.md frontmatter ``status:``); ``draft`` and ``complete`` are hidden;
+    a *missing* status is legacy and falls back to the prior ``done<total``.
+    Values are canonical lowercase ``draft|active|complete``.
+    """
+
+    @property
+    def VALID(self) -> set[str]:
+        # SSoT: the producer's own declared vocabulary, which must equal the
+        # webui consumer's VALID_LIFECYCLE set (draft|active|complete).
+        from campaign_progress import LIFECYCLE_STATUSES
+
+        return set(LIFECYCLE_STATUSES)
+
+    def _make(self, project) -> Path:
+        subs = [{"id": "15.0", "slug": "layout"}, {"id": "15.1", "slug": "widgets"}]
+        result = init_campaign(project, "lifecycle", "Intent", subs)
+        return Path(result["campaign_dir"])
+
+    def _start(self, campaign_dir: Path) -> int:
+        from campaign_progress import cmd_start
+
+        return cmd_start(Namespace(campaign_dir=str(campaign_dir)))
+
+    def _set_sub(self, campaign_dir: Path, sub_id: str, status: str) -> int:
+        from campaign_progress import cmd_update_status
+
+        return cmd_update_status(
+            Namespace(
+                campaign_dir=str(campaign_dir),
+                sub_iterate_id=sub_id,
+                status=status,
+                commit=None,
+                branch=None,
+                tests_passed=None,
+                tests_total=None,
+            )
+        )
+
+    def _make_legacy(self, project) -> Path:
+        """Campaign whose status.json predates the lifecycle field."""
+        campaign_dir = self._make(project)
+        status = _load_status(campaign_dir)
+        status.pop("status", None)
+        (campaign_dir / "status.json").write_text(
+            json.dumps(status, indent=2), encoding="utf-8"
+        )
+        return campaign_dir
+
+    # --- init writes draft -------------------------------------------------
+
+    def test_init_writes_draft_to_status_json(self, project):
+        status = _load_status(self._make(project))
+        assert status["status"] == "draft"
+
+    def test_init_writes_draft_to_frontmatter(self, project):
+        md = (self._make(project) / "campaign.md").read_text(encoding="utf-8")
+        assert "status: draft" in md
+
+    # --- start -> active ---------------------------------------------------
+
+    def test_start_sets_active(self, project, capsys):
+        campaign_dir = self._make(project)
+        assert self._start(campaign_dir) == 0
+        assert _load_status(campaign_dir)["status"] == "active"
+        out = json.loads(capsys.readouterr().out)
+        assert out["status"] == "active"
+
+    def test_start_on_legacy_adds_active(self, project):
+        campaign_dir = self._make_legacy(project)
+        assert self._start(campaign_dir) == 0
+        assert _load_status(campaign_dir)["status"] == "active"
+
+    # --- update-status auto-complete --------------------------------------
+
+    def test_partial_complete_keeps_active(self, project):
+        campaign_dir = self._make(project)
+        self._start(campaign_dir)
+        self._set_sub(campaign_dir, "15.0", "complete")
+        assert _load_status(campaign_dir)["status"] == "active"
+
+    def test_all_complete_sets_complete(self, project):
+        campaign_dir = self._make(project)
+        self._start(campaign_dir)
+        self._set_sub(campaign_dir, "15.0", "complete")
+        self._set_sub(campaign_dir, "15.1", "complete")
+        assert _load_status(campaign_dir)["status"] == "complete"
+
+    def test_legacy_auto_completes_on_final_sub(self, project):
+        campaign_dir = self._make_legacy(project)
+        self._set_sub(campaign_dir, "15.0", "complete")
+        self._set_sub(campaign_dir, "15.1", "complete")
+        assert _load_status(campaign_dir)["status"] == "complete"
+
+    # --- summary prints top-level status ----------------------------------
+
+    def test_summary_prints_status(self, project, capsys):
+        from campaign_progress import cmd_summary
+
+        campaign_dir = self._make(project)
+        self._start(campaign_dir)
+        capsys.readouterr()  # discard start output
+        assert cmd_summary(Namespace(campaign_dir=str(campaign_dir))) == 0
+        out = json.loads(capsys.readouterr().out)
+        assert out["status"] == "active"
+
+    def test_summary_legacy_status_is_null(self, project, capsys):
+        from campaign_progress import cmd_summary
+
+        campaign_dir = self._make_legacy(project)
+        assert cmd_summary(Namespace(campaign_dir=str(campaign_dir))) == 0
+        out = json.loads(capsys.readouterr().out)
+        assert out["status"] is None
+
+    # --- round-trip / boundary probe --------------------------------------
+
+    def test_lifecycle_roundtrip_canonical_values(self, project):
+        campaign_dir = self._make(project)
+        assert _load_status(campaign_dir)["status"] == "draft"
+        self._start(campaign_dir)
+        assert _load_status(campaign_dir)["status"] == "active"
+        self._set_sub(campaign_dir, "15.0", "complete")
+        self._set_sub(campaign_dir, "15.1", "complete")
+        final = _load_status(campaign_dir)["status"]
+        assert final == "complete"
+        assert final in self.VALID

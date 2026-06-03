@@ -1,6 +1,6 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-06-02T09:43:00.857693+00:00
+Generated: 2026-06-03T10:54:51.366400+00:00
 
 ## Summary
 

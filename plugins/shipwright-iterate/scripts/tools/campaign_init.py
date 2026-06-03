@@ -37,6 +37,7 @@ def init_campaign(
 
     campaign_md = f"""---
 campaign: {campaign_slug}
+status: draft
 branch_strategy: {branch_strategy}
 created: {datetime.now(timezone.utc).isoformat()}
 ---
@@ -73,6 +74,11 @@ created: {datetime.now(timezone.utc).isoformat()}
 
     status = {
         "campaign": campaign_slug,
+        # Producer-owned campaign lifecycle status (draft -> active -> complete).
+        # A fresh campaign is "draft" (planned, triage-only) until it is started.
+        # Consumers that predate this field treat its absence as legacy and fall
+        # back to derived done<total. Canonical lowercase; see campaign_progress.py.
+        "status": "draft",
         "branch_strategy": branch_strategy,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "sub_iterates": [

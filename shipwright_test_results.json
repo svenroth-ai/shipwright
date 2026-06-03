@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-02-sessionstart-dedup-guard",
-    "date": "2026-06-02",
+    "run_id": "iterate-2026-06-03-campaign-status-field",
+    "date": "2026-06-03",
     "unit": {
       "status": "passed",
-      "passed": 21,
-      "total": 21
+      "passed": 275,
+      "total": 275
     },
     "integration": {
       "status": "not_run",
@@ -31,46 +31,50 @@
       "status": "not_run"
     },
     "surface_verification": {
-      "surface": "none",
-      "justification": "Framework SessionStart-hook runtime change + new shared helper (event_once.py). No application/web/UI/API/store/SSE surface in this monorepo. Verified via 21 unit tests AND a concurrent 12-subprocess empirical probe (real multi-process fan-out -> block emitted exactly once)."
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-iterate pytest tests/test_campaign.py -q",
+      "tests_run": 20,
+      "exit_code": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-06-03-campaign-status-field/surface_verification.json",
+      "justification": "Plugin-internal campaign tooling (campaign_init / campaign_progress / autonomous-loop reference). The behavior surface is CLI: the campaign_* scripts are invoked via `uv run`. Exercised end-to-end by the 20-test campaign suite AND a real-CLI boundary probe (init -> start -> update-status x2 -> summary -> legacy-strip) that asserted on-disk status.json + campaign.md frontmatter + stdout against the shipwright-webui consumer contract (PR #96 pickLifecycle: status.json wins, lowercase draft|active|complete, absent -> null -> done<total fallback). No web/UI/API/store/SSE surface."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "First invocation of a SessionStart event emits the Phase-Quality block; subsequent invocations of the same event skip it (once-per-event)",
+          "behavior": "campaign_init writes top-level status='draft' into status.json (a fresh campaign is planned, not started)",
           "disposition": "tested",
-          "evidence": "test_capture_session_id.py::test_phase_quality_block_emitted_then_deduped; test_event_once.py::test_first_claim_wins + test_second_claim_same_event_skips"
+          "evidence": "test_campaign.py::TestCampaignLifecycleStatus::test_init_writes_draft_to_status_json PASSED + boundary probe step 1"
         },
         {
-          "behavior": "A TTL-expired claim from a later event (resume/compact reusing the session id) re-emits",
+          "behavior": "campaign_init writes 'status: draft' into the campaign.md frontmatter (consumer's fallback source)",
           "disposition": "tested",
-          "evidence": "test_capture_session_id.py::test_phase_quality_block_re_emits_after_ttl; test_event_once.py::test_stale_claim_re_arms_then_fresh_skips + test_now_param_makes_ttl_deterministic"
+          "evidence": "test_campaign.py::TestCampaignLifecycleStatus::test_init_writes_draft_to_frontmatter PASSED + boundary probe step 1"
         },
         {
-          "behavior": "Exactly one of N concurrent invocations wins per event (atomic, race-safe via O_CREAT|O_EXCL)",
+          "behavior": "the `start` subcommand flips top-level status draft->active (and prints active); legacy-safe on a status.json with no prior status field",
           "disposition": "tested",
-          "evidence": "test_event_once.py::test_concurrent_invocations_exactly_one_winner; plus empirical 12-subprocess probe -> emitted by 1 (PROBE PASS)"
+          "evidence": "test_campaign.py::TestCampaignLifecycleStatus::test_start_sets_active + test_start_on_legacy_adds_active PASSED + boundary probe step 2"
         },
         {
-          "behavior": "Env context (SESSION_ID/PROJECT_ROOT/loop vars) + CLAUDE_ENV_FILE write are NOT gated by the dedup (AC-4/AC-7)",
+          "behavior": "update-status keeps the campaign 'active' while any sub-iterate is still incomplete (halted campaigns stay visible)",
           "disposition": "tested",
-          "evidence": "test_capture_session_id.py::test_phase_quality_block_emitted_then_deduped asserts SHIPWRIGHT_PROJECT_ROOT present on the deduped invocation; existing env/loop/env-file tests still pass"
+          "evidence": "test_campaign.py::TestCampaignLifecycleStatus::test_partial_complete_keeps_active PASSED + boundary probe step 3"
         },
         {
-          "behavior": "Any guard error fails open (emits) rather than dropping a FAIL",
+          "behavior": "update-status auto-sets top-level status->complete once every sub-iterate is complete, including a legacy campaign on its final sub-iterate",
           "disposition": "tested",
-          "evidence": "test_event_once.py::test_unwritable_parent_fails_open"
+          "evidence": "test_campaign.py::TestCampaignLifecycleStatus::test_all_complete_sets_complete + test_legacy_auto_completes_on_final_sub PASSED + boundary probe step 4"
         },
         {
-          "behavior": "audit_only opt-out suppresses the block and creates no cache file",
+          "behavior": "summary prints the top-level lifecycle status; a legacy campaign with no status field yields null (backward-compat fallback signal)",
           "disposition": "tested",
-          "evidence": "test_capture_session_id.py::test_phase_quality_block_suppressed_in_audit_only"
+          "evidence": "test_campaign.py::TestCampaignLifecycleStatus::test_summary_prints_status + test_summary_legacy_status_is_null PASSED + boundary probe steps 5-6"
         },
         {
-          "behavior": "A different session id (distinct event) re-emits independently",
+          "behavior": "the full draft->active->complete lifecycle round-trips through status.json holding only canonical lowercase values from the producer's declared LIFECYCLE_STATUSES (== webui VALID_LIFECYCLE)",
           "disposition": "tested",
-          "evidence": "test_capture_session_id.py::test_phase_quality_block_re_emits_for_new_session; test_event_once.py::test_distinct_keys_are_independent"
+          "evidence": "test_campaign.py::TestCampaignLifecycleStatus::test_lifecycle_roundtrip_canonical_values PASSED (asserts final in LIFECYCLE_STATUSES SSoT)"
         }
       ],
       "counts": {
@@ -84,11 +88,6 @@
         "covered_acs": 7
       }
     },
-    "degraded": [
-      {
-        "condition": "pre_existing_unrelated_failure",
-        "detail": "shared/tests/test_architecture_md_reflects_arch_impact.py fails LOCALLY on 2 gitignored foreign decision-drops (iterate-2026-06-01-ci-launch-hardening, -upload-sarif-test-fix) lacking architecture.md entries. Not caused by this 4-file diff. decision-drops are gitignored -> CI sees none -> passes vacuously. Not a merge blocker."
-      }
-    ]
+    "degraded": []
   }
 }

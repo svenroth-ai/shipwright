@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-06-03-campaign-status-field",
+  "date": "2026-06-03T10:54:19.052135Z",
+  "type": "feature",
+  "complexity": "small",
+  "branch": "iterate/campaign-status-field",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-03-campaign-status-field"
+}
