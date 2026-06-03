@@ -596,6 +596,91 @@ def test_b7_disabling_rule_b_re_includes_dependabot_commits(tmp_path):
     assert sha1[:8] in b7.detail
 
 
+def test_b7_covers_commit_via_run_id_footer_when_event_has_no_sha(tmp_path):
+    """Since iterate-2026-05-29-events-jsonl-worktree-commit a work_completed
+    event ships commit:"" and links to its commit via the Run-ID: footer ↔
+    adr_id. B7 must treat such a commit as covered even though no event carries
+    its SHA (C1, 2026-06-02-compliance-detective-realign)."""
+    _git_init(tmp_path)
+    _git_commit(tmp_path, {"a.txt": "v1"}, "initial")
+    _git_tag(tmp_path, "v0.1.0")
+    _git_commit(
+        tmp_path, {"src/foo.ts": "x"},
+        "feat: thing\n\nRun-ID: iterate-2026-06-02-thing\n",
+    )
+    _events(tmp_path / "shipwright_events.jsonl", [
+        {"type": "work_completed", "ts": "2026-06-02T00:00:00+00:00",
+         "commit": "", "adr_id": "iterate-2026-06-02-thing"},
+    ])
+    findings = group_b.run(tmp_path, _default_config(), None)
+    b7 = next(f for f in findings if f.check_id == "B7")
+    assert b7.status == "pass", b7.detail
+
+
+def test_b7_flags_commit_when_run_id_matches_no_event(tmp_path):
+    """A Run-ID footer that matches no event adr_id must NOT falsely cover the
+    commit — the SHA-less linkage requires an actual adr_id match (C1)."""
+    _git_init(tmp_path)
+    _git_commit(tmp_path, {"a.txt": "v1"}, "initial")
+    _git_tag(tmp_path, "v0.1.0")
+    sha1 = _git_commit(
+        tmp_path, {"src/foo.ts": "x"},
+        "feat: thing\n\nRun-ID: iterate-2026-06-02-thing\n",
+    )
+    _events(tmp_path / "shipwright_events.jsonl", [
+        {"type": "work_completed", "ts": "2026-06-02T00:00:00+00:00",
+         "commit": "", "adr_id": "iterate-2026-06-02-other"},
+    ])
+    findings = group_b.run(tmp_path, _default_config(), None)
+    b7 = next(f for f in findings if f.check_id == "B7")
+    assert b7.status == "fail"
+    assert sha1[:8] in b7.detail
+
+
+def test_commit_run_id_extracts_trailer(tmp_path):
+    """git_log_scan.commit_run_id parses the loose Run-ID: trailer, None when
+    absent (C1)."""
+    from scripts.audit import git_log_scan
+    _git_init(tmp_path)
+    sha = _git_commit(
+        tmp_path, {"a.txt": "x"},
+        "feat: thing\n\nSome body line.\nRun-ID: iterate-2026-06-02-thing\n",
+    )
+    assert git_log_scan.commit_run_id(tmp_path, sha) == "iterate-2026-06-02-thing"
+    sha2 = _git_commit(tmp_path, {"b.txt": "y"}, "chore: no run id")
+    assert git_log_scan.commit_run_id(tmp_path, sha2) is None
+
+
+def test_b7_excludes_release_commit(tmp_path):
+    """A chore(release) commit is the changelog phase's tracked output (no
+    work_completed event by design) — B7 must NOT flag it as drift, parallel to
+    Group E recognizing chore(release) snapshots (B,
+    2026-06-02-compliance-detective-realign)."""
+    _git_init(tmp_path)
+    _git_commit(tmp_path, {"a.txt": "v1"}, "initial")
+    _git_tag(tmp_path, "v0.1.0")
+    _git_commit(tmp_path, {"CHANGELOG.md": "## v0.2.0\n"}, "chore(release): v0.2.0")
+    _events(tmp_path / "shipwright_events.jsonl", [])
+    findings = group_b.run(tmp_path, _default_config(), None)
+    b7 = next(f for f in findings if f.check_id == "B7")
+    assert b7.status == "pass", b7.detail
+
+
+def test_b7_still_flags_non_release_chore_without_event(tmp_path):
+    """Rule D is NARROW: a plain chore committed DIRECTLY (bypassing iterate) is
+    real drift and must STILL be flagged — only chore(release) is recognized.
+    Guards against the rejected blanket commit-type exclusion (B)."""
+    _git_init(tmp_path)
+    _git_commit(tmp_path, {"a.txt": "v1"}, "initial")
+    _git_tag(tmp_path, "v0.1.0")
+    sha1 = _git_commit(tmp_path, {"src/tool.py": "x"}, "chore: tidy helper")
+    _events(tmp_path / "shipwright_events.jsonl", [])
+    findings = group_b.run(tmp_path, _default_config(), None)
+    b7 = next(f for f in findings if f.check_id == "B7")
+    assert b7.status == "fail"
+    assert sha1[:8] in b7.detail
+
+
 # ---------------------------------------------------------------------------
 # End-to-end through the detector + registry
 # ---------------------------------------------------------------------------

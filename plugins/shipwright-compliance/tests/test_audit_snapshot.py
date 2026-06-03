@@ -157,6 +157,30 @@ def test_find_snapshot_commit_skips_compliance_commits_without_run_id(tmp_path):
     assert sha == sha_iter
 
 
+def test_find_snapshot_commit_recognizes_chore_release(tmp_path):
+    """The changelog/release phase regenerates the tracked MDs and commits them
+    as ``chore(release): vX.Y.Z`` WITHOUT a Run-ID: trailer. That commit MUST be
+    recognized as the snapshot — otherwise every clean release re-flags the MDs
+    as stale against the older iterate-finalize commit (C1, the trg-8747213b
+    root cause)."""
+    from scripts.audit.audit_staleness import find_snapshot_commit
+
+    _git_init(tmp_path)
+    # Older iterate-finalize seed (has Run-ID).
+    _git_commit(
+        tmp_path, _seed_baseline_compliance(tmp_path),
+        "feat(iterate): seed\n\nRun-ID: iterate-2026-05-31-seed\n",
+    )
+    # Release commit regenerates an MD, NO Run-ID: trailer.
+    regen = dict(_seed_baseline_compliance(tmp_path))
+    regen[".shipwright/compliance/dashboard.md"] = (
+        "# Compliance Dashboard\n\nGenerated: 2026-06-02T00:00:00Z\n\nRelease regen\n"
+    )
+    sha_release = _git_commit(tmp_path, regen, "chore(release): v0.23.1")
+
+    assert find_snapshot_commit(tmp_path) == sha_release
+
+
 def test_find_snapshot_commit_returns_none_when_no_match(tmp_path):
     """Greenfield repo with no qualifying commits returns None."""
     from scripts.audit.audit_staleness import find_snapshot_commit
@@ -227,6 +251,29 @@ def test_check_staleness_green_after_non_compliance_commits_layered(tmp_path):
     assert report.snapshot_unavailable is False
     assert report.any_stale is False
     assert all(d.stale is False for d in report.docs)
+
+
+def test_check_staleness_green_after_release_regen(tmp_path):
+    """A clean chore(release) that regenerated the MDs leaves the audit green —
+    no E-group false positive after a release. This is the trg-8747213b root
+    cause (C1): the release commit is now a recognized snapshot, so on-disk
+    (== release commit) matches the snapshot instead of the older iterate."""
+    from scripts.audit.audit_staleness import check_staleness
+
+    _git_init(tmp_path)
+    _git_commit(
+        tmp_path, _seed_baseline_compliance(tmp_path),
+        "feat(iterate): seed\n\nRun-ID: iterate-2026-05-31-seed\n",
+    )
+    regen = dict(_seed_baseline_compliance(tmp_path))
+    regen[".shipwright/compliance/dashboard.md"] = (
+        "# Compliance Dashboard\n\nGenerated: 2026-06-02T00:00:00Z\n\nRelease regen\n"
+    )
+    _git_commit(tmp_path, regen, "chore(release): v0.23.1")
+
+    report = check_staleness(tmp_path)
+    assert report.snapshot_unavailable is False
+    assert report.any_stale is False, [d.doc for d in report.docs if d.stale]
 
 
 def test_check_staleness_flags_hand_edited_md(tmp_path):

@@ -130,9 +130,9 @@
     {
       "path": "plugins/shipwright-compliance/scripts/audit/audit_staleness.py",
       "limit": 300,
-      "current": 347,
+      "current": 365,
       "state": "exception",
-      "adr": "ADR-090"
+      "adr": "ADR-095"
     },
     {
       "path": "plugins/shipwright-compliance/scripts/audit/group_a.py",
@@ -144,16 +144,16 @@
     {
       "path": "plugins/shipwright-compliance/scripts/audit/group_a5.py",
       "limit": 300,
-      "current": 598,
-      "state": "grandfathered",
-      "adr": null
+      "current": 608,
+      "state": "exception",
+      "adr": "ADR-095"
     },
     {
       "path": "plugins/shipwright-compliance/scripts/audit/group_b.py",
       "limit": 300,
-      "current": 529,
-      "state": "grandfathered",
-      "adr": null
+      "current": 545,
+      "state": "exception",
+      "adr": "ADR-095"
     },
     {
       "path": "plugins/shipwright-compliance/scripts/audit/group_d.py",
@@ -207,16 +207,16 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_audit_group_a5.py",
       "limit": 300,
-      "current": 699,
-      "state": "grandfathered",
-      "adr": null
+      "current": 702,
+      "state": "exception",
+      "adr": "ADR-095"
     },
     {
       "path": "plugins/shipwright-compliance/tests/test_audit_group_b.py",
       "limit": 300,
-      "current": 622,
-      "state": "grandfathered",
-      "adr": null
+      "current": 706,
+      "state": "exception",
+      "adr": "ADR-095"
     },
     {
       "path": "plugins/shipwright-compliance/tests/test_audit_group_g.py",
@@ -242,9 +242,9 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_audit_snapshot.py",
       "limit": 300,
-      "current": 464,
+      "current": 509,
       "state": "exception",
-      "adr": "ADR-090"
+      "adr": "ADR-095"
     },
     {
       "path": "plugins/shipwright-compliance/tests/test_compliance_report.py",
