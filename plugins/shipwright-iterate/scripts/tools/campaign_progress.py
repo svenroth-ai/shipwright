@@ -7,11 +7,15 @@ Usage:
     # List units in autonomous_loop.py-compatible format
     uv run campaign_progress.py list-units --campaign-dir <path>
 
-    # Update a sub-iterate's status
+    # Mark the campaign as started (top-level status draft -> active)
+    uv run campaign_progress.py start --campaign-dir <path>
+
+    # Update a sub-iterate's status (auto-sets campaign status -> complete
+    # once every sub-iterate is complete)
     uv run campaign_progress.py update-status --campaign-dir <path> \
         --sub-iterate-id 14.2 --status complete --commit abc123 --branch iterate/14.2-x
 
-    # Print human-readable summary
+    # Print human-readable summary (includes the top-level lifecycle status)
     uv run campaign_progress.py summary --campaign-dir <path>
 """
 
@@ -36,6 +40,36 @@ def _save_status(campaign_dir: Path, status: dict) -> None:
     status_path.write_text(
         json.dumps(status, indent=2, ensure_ascii=False), encoding="utf-8"
     )
+
+
+# Producer-owned campaign lifecycle: draft -> active -> complete.
+#   draft    = planned, lives only in triage (set by campaign_init.py)
+#   active   = started, shown on the board (set by `start`)
+#   complete = done, hidden (set automatically once every sub-iterate completes)
+# The field is optional: consumers treat its absence as "legacy" and fall back
+# to derived done<total, so adding it never breaks an existing campaign.
+LIFECYCLE_STATUSES = ("draft", "active", "complete")
+
+
+def _all_subs_complete(status: dict) -> bool:
+    """True iff the campaign has sub-iterates and every one is complete."""
+    subs = status.get("sub_iterates", [])
+    return bool(subs) and all(s.get("status") == "complete" for s in subs)
+
+
+def cmd_start(args: argparse.Namespace) -> int:
+    """Mark a campaign as started: top-level status -> active.
+
+    Idempotent and legacy-safe — a campaign whose status.json predates the
+    lifecycle field simply gains status='active'. The ->complete transition is
+    owned by cmd_update_status (fires once every sub-iterate is complete).
+    """
+    campaign_dir = Path(args.campaign_dir)
+    status = _load_status(campaign_dir)
+    status["status"] = "active"
+    _save_status(campaign_dir, status)
+    print(json.dumps({"campaign": status.get("campaign"), "status": "active"}))
+    return 0
 
 
 def cmd_list_units(args: argparse.Namespace) -> int:
@@ -69,8 +103,18 @@ def cmd_update_status(args: argparse.Namespace) -> int:
         print(f"ERROR: Sub-iterate {args.sub_iterate_id} not found", file=sys.stderr)
         return 1
 
+    # Auto-advance the campaign to 'complete' once every sub-iterate is complete.
+    # (The draft->active transition is owned by `start`.) Left untouched while
+    # work remains, so a halted/incomplete campaign stays visible on the board.
+    if _all_subs_complete(status):
+        status["status"] = "complete"
+
     _save_status(campaign_dir, status)
-    print(json.dumps({"updated": args.sub_iterate_id, "status": args.status}))
+    print(json.dumps({
+        "updated": args.sub_iterate_id,
+        "status": args.status,
+        "campaign_status": status.get("status"),
+    }))
     return 0
 
 
@@ -85,6 +129,9 @@ def cmd_summary(args: argparse.Namespace) -> int:
 
     summary = {
         "campaign": status.get("campaign"),
+        # Top-level lifecycle status (draft|active|complete); None for a legacy
+        # campaign with no status field — consumers fall back to done<total.
+        "status": status.get("status"),
         "branch_strategy": status.get("branch_strategy"),
         "total": len(subs),
         "complete": complete,
@@ -107,6 +154,9 @@ def main() -> int:
     p_list = sub.add_parser("list-units", help="List units for autonomous_loop.py")
     p_list.add_argument("--campaign-dir", required=True)
 
+    p_start = sub.add_parser("start", help="Mark campaign as started (status -> active)")
+    p_start.add_argument("--campaign-dir", required=True)
+
     p_update = sub.add_parser("update-status", help="Update sub-iterate status")
     p_update.add_argument("--campaign-dir", required=True)
     p_update.add_argument("--sub-iterate-id", required=True)
@@ -123,6 +173,7 @@ def main() -> int:
     args = parser.parse_args()
     cmd_map = {
         "list-units": cmd_list_units,
+        "start": cmd_start,
         "update-status": cmd_update_status,
         "summary": cmd_summary,
     }

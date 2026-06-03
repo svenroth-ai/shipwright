@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-02 09:43 UTC | Session: 42feb775-7101-4888-a0d2-4d2c54ddc665
+> Updated: 2026-06-03 10:54 UTC | Session: 0360f9c4-63f8-4b1b-856e-7e0a08bd2ec6 | Run: iterate-2026-06-03-campaign-status-field
 
-## Recent Changes (92 iterations)
+## Recent Changes (93 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| feature | Add producer-owned campaign lifecycle status (draft->active->complete): campaign_init writes status:draft to status.json + campaign.md frontmatter; campaign_progress gains a start subcommand (->active), update-status auto-sets complete when all sub-iterates complete, summary prints the top-level status; the autonomous campaign loop marks the campaign active at run start; missing status = legacy fallback to done<total. | 0/0 |  | tooling | 2026-06-03 |
 | change | Dedup SessionStart Phase-Quality injection to once-per-event via event_once.claim_once (fail-open). | 0/0 |  | tooling | 2026-06-02 |
 | change | Rewrote test_upload_sarif_action_used to assert the real upload-sarif uses: line (anchored regex, version-agnostic) instead of matching a stale comment; corrected the two @v3 permission comments in security.yml to @v4. | 0/0 |  | tooling | 2026-06-01 |
 | change | Pinned third-party GitHub Actions (setup-uv, create-or-update-comment) to commit SHAs; added SHA256 verification for the Gitleaks binary download in ci.yml + security.yml; corrected stale SECURITY.md scope (webui) and Dependabot wording. | 0/0 |  | infra | 2026-06-01 |
@@ -99,7 +100,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-02 | Unit: 21/21 | Smoke: not_run | (iterate)
+Last run: 2026-06-03 | Unit: 275/275 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
