@@ -415,10 +415,19 @@ def _check_b7(
     # via prefix when needed.
     events = _load_events(project_root) or []
     tracked: set[str] = set()
+    tracked_run_ids: set[str] = set()
     for ev in events:
         sha = ev.get("commit")
         if isinstance(sha, str) and sha:
             tracked.add(sha)
+        # Since iterate-2026-05-29-events-jsonl-worktree-commit a work_completed
+        # event ships commit:"" and links to its commit via the F6 commit's
+        # Run-ID: footer ↔ the event's adr_id. Collect adr_ids so a commit whose
+        # Run-ID trailer matches a recorded event still counts as covered even
+        # when the event carries no SHA (C1, 2026-06-02-compliance-detective-realign).
+        adr_id = ev.get("adr_id")
+        if isinstance(adr_id, str) and adr_id:
+            tracked_run_ids.add(adr_id)
 
     uncovered: list[tuple[str, str]] = []  # (sha, reason-or-empty)
     excluded_count = 0
@@ -434,8 +443,15 @@ def _check_b7(
         if result.excluded:
             excluded_count += 1
             continue
-        if not _sha_match(sha, tracked):
-            uncovered.append((sha, ""))
+        if _sha_match(sha, tracked):
+            continue
+        # Fallback for the worktree-commit flow: the event carries no SHA but
+        # links via Run-ID footer ↔ adr_id. Only pay the extra git call when the
+        # cheap SHA-set lookup missed.
+        run_id = git_log_scan.commit_run_id(project_root, sha)
+        if run_id and run_id in tracked_run_ids:
+            continue
+        uncovered.append((sha, ""))
 
     if not uncovered:
         if excluded_count:

@@ -543,9 +543,19 @@ def run(
     try:
         import yaml  # PyYAML — declared in compliance plugin's pyproject.toml
     except ImportError as exc:
+        # A missing PyYAML is an ENV/invocation problem (the audit ran in an
+        # interpreter without the compliance plugin's deps — e.g. a non-Python
+        # adopt project where bare `uv run` resolves an env with no pyyaml),
+        # NOT a compliance violation. Degrade to SKIP so it never lands in the
+        # triage backlog as a phantom A5.0 FAIL. The invocation side (the
+        # iterate/changelog Stop hooks) passes `uv run --with pyyaml` so A5
+        # actually runs where a workflow exists. (C2,
+        # 2026-06-02-compliance-detective-realign.)
         return [_make_finding(
-            "A5.0", "fail",
-            f"PyYAML unavailable ({type(exc).__name__}: {exc})",
+            "A5.0", "skip",
+            f"PyYAML unavailable — A5 workflow checks skipped "
+            f"({type(exc).__name__}: {exc}); run the audit with its declared "
+            f"deps (uv run --with pyyaml).",
         )]
     try:
         parsed = yaml.safe_load(

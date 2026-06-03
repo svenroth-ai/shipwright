@@ -672,10 +672,14 @@ def test_a5_does_not_crash_on_jobs_null(tmp_path):
     assert "raised" not in by_id["A5.5"].detail
 
 
-def test_a5_pyyaml_missing_emits_setup_failure(tmp_path, monkeypatch):
-    """Reviewer-flagged: the PyYAML import lives inside ``run()``. If the
-    import fails (e.g. plugin install drift), A5 must surface a single
-    A5.0 setup-failure Finding rather than crashing or returning empty."""
+def test_a5_pyyaml_missing_emits_setup_skip(tmp_path, monkeypatch):
+    """The PyYAML import lives inside ``run()``. A missing PyYAML is an
+    ENV/invocation problem (plugin-install drift, or a non-Python adopt project
+    where bare ``uv run`` resolves an env without pyyaml), NOT a compliance
+    violation — A5 must surface a single A5.0 **SKIP** (not FAIL) so it never
+    lands in the triage backlog as a phantom finding (C2,
+    2026-06-02-compliance-detective-realign). The invocation side passes
+    ``uv run --with pyyaml`` so A5 actually runs where a workflow exists."""
     _write_workflow(tmp_path, _canonical_workflow())
 
     import builtins
@@ -694,6 +698,5 @@ def test_a5_pyyaml_missing_emits_setup_failure(tmp_path, monkeypatch):
     assert len(findings) == 1
     f = findings[0]
     assert f.check_id == "A5.0"
-    assert f.status == "fail"
-    assert f.severity == "HIGH"
-    assert "PyYAML" in f.detail or "yaml" in f.detail.lower()
+    assert f.status == "skip"
+    assert "PyYAML unavailable" in f.detail

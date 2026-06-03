@@ -11,10 +11,16 @@ crashing, so Group B's audit run keeps going.
 
 from __future__ import annotations
 
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
+
+# Loose ``Run-ID:`` trailer match — the same convention
+# ``audit_staleness.find_snapshot_commit`` keys on (a ``Run-ID: <run-id>``
+# line anywhere in the commit message, not strict git-trailer parsing).
+_RUN_ID_TRAILER_RE = re.compile(r"(?im)^[ \t]*Run-ID:[ \t]*(\S+)[ \t]*$")
 
 
 @dataclass(frozen=True)
@@ -122,6 +128,26 @@ def commit_info(repo: Path, sha: str) -> CommitInfo | ScanError:
     paths = tuple(p for p in diff_out.splitlines() if p.strip())
     return CommitInfo(sha=sha, author_email=email,
                       parent_count=parent_count, changed_paths=paths)
+
+
+def commit_run_id(repo: Path, sha: str) -> str | None:
+    """Return the ``Run-ID:`` trailer value of *sha*, or ``None``.
+
+    Since ``iterate-2026-05-29-events-jsonl-worktree-commit`` a
+    ``work_completed`` event ships ``commit:""`` BY DESIGN and links to its
+    commit via the F6 commit's ``Run-ID:`` footer ↔ the event's ``adr_id``.
+    B7 uses this to recognize a commit as covered when the matching event
+    carries no SHA (C1, 2026-06-02-compliance-detective-realign).
+
+    Soft-fails to ``None`` on any git error — the caller then treats the
+    commit as un-linked (the safe, flagging direction).
+    """
+    try:
+        body = _run_git(repo, ["show", "--no-patch", "--format=%B", sha])
+    except (RuntimeError, subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        return None
+    match = _RUN_ID_TRAILER_RE.search(body)
+    return match.group(1) if match else None
 
 
 def commit_is_within_path_prefixes(

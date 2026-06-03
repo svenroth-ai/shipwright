@@ -150,10 +150,18 @@ def _git(args: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
 def find_snapshot_commit(project_root: Path) -> str | None:
     """Find the most recent commit qualifying as a compliance snapshot.
 
-    Qualifying = ``Run-ID:`` trailer in the commit body AND tree
-    modifications include at least one path under ``.shipwright/compliance/``.
-    ``--diff-filter=AM`` includes both Added (very first iterate-finalize
-    that introduces the dir) and Modified (subsequent iterates).
+    Qualifying = the commit modified at least one snapshot path AND its
+    message marks it as a recognized producer — EITHER a ``Run-ID:``
+    trailer (iterate-finalize) OR a ``chore(release)`` subject. The
+    changelog/release phase regenerates the tracked MDs and commits them
+    as ``chore(release): vX.Y.Z`` WITHOUT a ``Run-ID:`` trailer; before
+    this was recognized, every clean release re-flagged those MDs as stale
+    because the scan fell back to the older iterate-finalize snapshot
+    (C1, 2026-06-02-compliance-detective-realign). A manual
+    ``chore(compliance)`` regen is deliberately NOT recognized — that is
+    the hand-edit case Group E must still catch.
+    ``--diff-filter=AM`` includes both Added (very first finalize that
+    introduces the dir) and Modified (subsequent producers).
 
     Uses ``project_root`` directly — git log is branch-scoped, so an
     iterate worktree's branch lineage (which contains the in-progress
@@ -172,7 +180,17 @@ def find_snapshot_commit(project_root: Path) -> str | None:
         proc = _git(
             [
                 "log",
+                # Match the grep patterns LITERALLY — robust against a global
+                # grep.extendedRegexp=true that would otherwise treat the
+                # parens in "chore(release)" as a regex group.
+                "--fixed-strings",
+                # A commit qualifies when its message carries EITHER an
+                # iterate-finalize "Run-ID:" trailer OR a changelog/release
+                # "chore(release)" subject. Multiple --grep are OR'd (no
+                # --all-match). See the docstring for why the release case
+                # was added (C1).
                 "--grep=Run-ID:",
+                "--grep=chore(release)",
                 "--diff-filter=AM",
                 "--format=%H",
                 "-1",
