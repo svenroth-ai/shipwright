@@ -651,6 +651,36 @@ def test_commit_run_id_extracts_trailer(tmp_path):
     assert git_log_scan.commit_run_id(tmp_path, sha2) is None
 
 
+def test_b7_excludes_release_commit(tmp_path):
+    """A chore(release) commit is the changelog phase's tracked output (no
+    work_completed event by design) — B7 must NOT flag it as drift, parallel to
+    Group E recognizing chore(release) snapshots (B,
+    2026-06-02-compliance-detective-realign)."""
+    _git_init(tmp_path)
+    _git_commit(tmp_path, {"a.txt": "v1"}, "initial")
+    _git_tag(tmp_path, "v0.1.0")
+    _git_commit(tmp_path, {"CHANGELOG.md": "## v0.2.0\n"}, "chore(release): v0.2.0")
+    _events(tmp_path / "shipwright_events.jsonl", [])
+    findings = group_b.run(tmp_path, _default_config(), None)
+    b7 = next(f for f in findings if f.check_id == "B7")
+    assert b7.status == "pass", b7.detail
+
+
+def test_b7_still_flags_non_release_chore_without_event(tmp_path):
+    """Rule D is NARROW: a plain chore committed DIRECTLY (bypassing iterate) is
+    real drift and must STILL be flagged — only chore(release) is recognized.
+    Guards against the rejected blanket commit-type exclusion (B)."""
+    _git_init(tmp_path)
+    _git_commit(tmp_path, {"a.txt": "v1"}, "initial")
+    _git_tag(tmp_path, "v0.1.0")
+    sha1 = _git_commit(tmp_path, {"src/tool.py": "x"}, "chore: tidy helper")
+    _events(tmp_path / "shipwright_events.jsonl", [])
+    findings = group_b.run(tmp_path, _default_config(), None)
+    b7 = next(f for f in findings if f.check_id == "B7")
+    assert b7.status == "fail"
+    assert sha1[:8] in b7.detail
+
+
 # ---------------------------------------------------------------------------
 # End-to-end through the detector + registry
 # ---------------------------------------------------------------------------

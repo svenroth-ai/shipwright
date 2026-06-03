@@ -45,15 +45,18 @@ commit-field / legacy fallback so out-of-band and pre-redesign data still match.
 - [ ] **AC-2 (B7 stops false-flagging tracked iterate work).** Re-running the
       audit on the webui at `e3b1021`, `26ea506` (the FR-01.33 feature, whose
       event ships `commit:""` and links via Run-ID↔adr_id) is no longer
-      "uncovered". **DECISION (2026-06-02, user):** do NOT add a commit-type
-      exclusion. B7 exists precisely to surface commits that bypassed the iterate
-      flow; excluding `ci`/`docs`/`chore` by type would hide exactly that drift
-      and neuter the check. The remaining 5 webui hits (`d66ab550`/`71962052`/
-      `48badb61`/`fff2b02d` = ci/docs, `da43aa4e` = chore(release)) have neither
-      a SHA nor a Run-ID match → they genuinely ran outside iterate. Those are
-      CORRECT, transient findings (they age out at the next release tag) and are
-      reconciled as data/process in C4 (record events or consciously accept) —
-      NOT suppressed in the check, and NOT via a `disabled_checks` mask.
+      "uncovered". **DECISION (2026-06-02, user):** do NOT add a *blanket*
+      commit-type exclusion. B7 exists precisely to surface commits that bypassed
+      the iterate flow; excluding `ci`/`docs`/`chore` by type would hide exactly
+      that drift and neuter the check. **Sub-iterate B (folded into PR #142)**
+      adds ONE narrow, principled recognition: a `chore(release)` commit
+      (`da43aa4e`) is the changelog phase's tracked output — NOT drift — so Rule D
+      in `git_log_scan.apply_retention_rules` excludes it, parallel to AC-3's
+      Group E recognition. The 4 ci/docs hits (`d66ab550`/`71962052`/`48badb61`/
+      `fff2b02d`) have neither a SHA nor a Run-ID match → they genuinely ran
+      outside iterate. Those stay CORRECT findings (transient — age out at the
+      next release tag) and are **fixed by recording events** in C4 (sub-iterate
+      A), NOT suppressed and NOT via a `disabled_checks` mask.
 - [ ] **AC-3 (Group E release snapshot).** `find_snapshot_commit` recognizes a
       changelog/release snapshot (the tracked MD's `canon_generated`+`phase:
       changelog` frontmatter, or a release-commit Run-ID trailer — pick one and

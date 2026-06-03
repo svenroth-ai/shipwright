@@ -32,16 +32,18 @@ Source:
   problem, not a compliance violation) instead of a phantom FAIL.
 
 Tests:
-- `test_audit_group_b.py` 622 → 676 (+54): two B7 Run-ID-linkage cases + a
-  `commit_run_id` unit test.
+- `test_audit_group_b.py` 622 → 706 (+84): B7 Run-ID-linkage cases + a
+  `commit_run_id` unit test (C1) + 2 `chore(release)` recognition cases — release
+  excluded, non-release chore still flagged (sub-iterate B, folded into this PR).
 - `test_audit_snapshot.py` 464 → 509 (+45): a `chore(release)` recognition case
   + a green-after-release staleness case (the `trg-8747213b` root cause).
 - `test_audit_group_a5.py` 699 → 702 (+3): the pre-existing pyyaml-missing test
   updated from asserting FAIL to asserting SKIP (contract change, not weakening).
 
-The `git_log_scan.py` helper that carries the new `commit_run_id` parser stayed
-unbaselined at 216 LOC (room under the 300 limit), so the heaviest new logic did
-NOT land in a baselined file.
+The `git_log_scan.py` helper carrying the new `commit_run_id` parser AND the
+Rule D release-commit detection stayed unbaselined (216 → 249 LOC, under the 300
+limit), so the heaviest new logic did NOT land in a baselined file. `group_b.py`
+did not grow for sub-iterate B (Rule D lives entirely in `git_log_scan`).
 
 ## Ousterhout Argument
 
@@ -83,7 +85,7 @@ Raise the six entries to their post-change measurements (`state: exception`,
 | `plugins/shipwright-compliance/scripts/audit/group_b.py` | 545 |
 | `plugins/shipwright-compliance/scripts/audit/audit_staleness.py` | 365 |
 | `plugins/shipwright-compliance/scripts/audit/group_a5.py` | 608 |
-| `plugins/shipwright-compliance/tests/test_audit_group_b.py` | 676 |
+| `plugins/shipwright-compliance/tests/test_audit_group_b.py` | 706 |
 | `plugins/shipwright-compliance/tests/test_audit_snapshot.py` | 509 |
 | `plugins/shipwright-compliance/tests/test_audit_group_a5.py` | 702 |
 

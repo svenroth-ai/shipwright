@@ -31,9 +31,23 @@ class CommitInfo:
     author_email: str
     parent_count: int
     changed_paths: tuple[str, ...]
+    subject: str = ""  # commit subject (first line / conventional-commit header)
 
     def is_merge(self) -> bool:
         return self.parent_count > 1
+
+    def is_release_commit(self) -> bool:
+        """True for a changelog/release-phase commit (``chore(release): ...``).
+
+        The release phase (/shipwright-changelog) produces this commit BY DESIGN
+        (version bump + changelog + dashboards); it is a tracked SDLC-phase
+        output, NOT iterate work, so it carries no work_completed event. Parallel
+        to ``audit_staleness.find_snapshot_commit`` recognizing chore(release)
+        snapshots. NARROW on purpose — only the release header, never generic
+        chore/ci/docs (those, committed directly, ARE drift B7 must surface).
+        (B, 2026-06-02-compliance-detective-realign.)
+        """
+        return self.subject.strip().lower().startswith("chore(release)")
 
 
 @dataclass(frozen=True)
@@ -111,14 +125,20 @@ def commit_info(repo: Path, sha: str) -> CommitInfo | ScanError:
     try:
         out = _run_git(
             repo,
-            ["show", "--no-patch", "--pretty=format:%ae|%P", sha],
+            # ``%s`` (subject) is appended for Rule D release-commit detection;
+            # it is the last field so an embedded ``|`` in the subject is kept
+            # intact by ``split("|", 2)``.
+            ["show", "--no-patch", "--pretty=format:%ae|%P|%s", sha],
         )
     except RuntimeError as exc:
         return ScanError(str(exc))
     line = out.strip().splitlines()[0] if out.strip() else ""
     if "|" not in line:
         return ScanError(f"unparseable git show output for {sha}: {line!r}")
-    email, parents = line.split("|", 1)
+    parts = line.split("|", 2)
+    email = parts[0]
+    parents = parts[1] if len(parts) > 1 else ""
+    subject = parts[2] if len(parts) > 2 else ""
     parent_count = len(parents.split()) if parents.strip() else 0
 
     try:
@@ -126,8 +146,8 @@ def commit_info(repo: Path, sha: str) -> CommitInfo | ScanError:
     except RuntimeError as exc:
         return ScanError(str(exc))
     paths = tuple(p for p in diff_out.splitlines() if p.strip())
-    return CommitInfo(sha=sha, author_email=email,
-                      parent_count=parent_count, changed_paths=paths)
+    return CommitInfo(sha=sha, author_email=email, parent_count=parent_count,
+                      changed_paths=paths, subject=subject)
 
 
 def commit_run_id(repo: Path, sha: str) -> str | None:
@@ -183,15 +203,21 @@ def apply_retention_rules(
     exclusions: dict,
     retention: dict,
 ) -> FilterResult:
-    """Apply Rules A/B/C and return the result.
+    """Apply Rules A/B/C/D and return the result.
 
     Each rule respects two flags:
-    - ``retention.rule_a/b/c`` (top-level on/off switch)
+    - ``retention.rule_a/b/c/d`` (top-level on/off switch)
     - the corresponding sub-key under ``b7_exclusions``
+
+    Rule D (release-phase commits) is NARROW: it excludes only
+    ``chore(release)`` headers — the changelog phase's tracked output — never
+    generic chore/ci/docs commits (those, committed directly, are real drift
+    B7 must keep surfacing).
     """
     rule_a_on = retention.get("rule_a", True)
     rule_b_on = retention.get("rule_b", True)
     rule_c_on = retention.get("rule_c", True)
+    rule_d_on = retention.get("rule_d", True)
 
     if rule_a_on and exclusions.get("exclude_merge_commits", True):
         if info.is_merge():
@@ -211,6 +237,13 @@ def apply_retention_rules(
             return FilterResult(
                 info, True,
                 f"diff fully under {prefixes} (Rule C)",
+            )
+
+    if rule_d_on and exclusions.get("exclude_release_commits", True):
+        if info.is_release_commit():
+            return FilterResult(
+                info, True,
+                "chore(release) release-phase commit (Rule D)",
             )
 
     return FilterResult(info, False, "")

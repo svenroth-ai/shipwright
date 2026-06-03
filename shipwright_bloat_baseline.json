@@ -214,7 +214,7 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_audit_group_b.py",
       "limit": 300,
-      "current": 676,
+      "current": 706,
       "state": "exception",
       "adr": "ADR-095"
     },
