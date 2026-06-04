@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-03T10:54:51.366400+00:00
+Generated: 2026-06-04T06:14:01.893129+00:00
 
 ## Requirements Coverage
 
@@ -118,6 +118,7 @@ Generated: 2026-06-03T10:54:51.366400+00:00
 | Rewrote test_upload_sarif_action_used to assert the real upload-sarif uses: line (anchored regex, version-agnostic) instead of matching a stale comment; corrected the two @v3 permission comments in security.yml to @v4. | iterate | change |  | — | — | 2026-06-01 |
 | Dedup SessionStart Phase-Quality injection to once-per-event via event_once.claim_once (fail-open). | iterate | change |  | — | — | 2026-06-02 |
 | Add producer-owned campaign lifecycle status (draft->active->complete): campaign_init writes status:draft to status.json + campaign.md frontmatter; campaign_progress gains a start subcommand (->active), update-status auto-sets complete when all sub-iterates complete, summary prints the top-level status; the autonomous campaign loop marks the campaign active at run start; missing status = legacy fallback to done<total. | iterate | feature |  | — | — | 2026-06-03 |
+| Fix the adopt security-gate so it resolves SARIF severity at rule level, blocks on any secret, and fails closed — previously a structural false green in every adopted repo. | iterate | bug |  | — | — | 2026-06-04 |
 
 ## Coverage Summary
 
@@ -125,7 +126,7 @@ Generated: 2026-06-03T10:54:51.366400+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 93 |
+| Iterate changes | 94 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

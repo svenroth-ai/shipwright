@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-06-04-security-gate-template-fix",
+  "date": "2026-06-04T06:13:51.435449Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/security-gate-template-fix",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-04-security-gate-template-fix"
+}

@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-03-campaign-status-field",
-    "date": "2026-06-03",
+    "run_id": "iterate-2026-06-04-security-gate-template-fix",
+    "date": "2026-06-04",
     "unit": {
       "status": "passed",
-      "passed": 275,
-      "total": 275
+      "passed": 2760,
+      "total": 2760
     },
     "integration": {
       "status": "not_run",
@@ -31,61 +31,70 @@
       "status": "not_run"
     },
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --directory plugins/shipwright-iterate pytest tests/test_campaign.py -q",
-      "tests_run": 20,
+      "surface": "none",
+      "tests_run": 9,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-03-campaign-status-field/surface_verification.json",
-      "justification": "Plugin-internal campaign tooling (campaign_init / campaign_progress / autonomous-loop reference). The behavior surface is CLI: the campaign_* scripts are invoked via `uv run`. Exercised end-to-end by the 20-test campaign suite AND a real-CLI boundary probe (init -> start -> update-status x2 -> summary -> legacy-strip) that asserted on-disk status.json + campaign.md frontmatter + stdout against the shipwright-webui consumer contract (PR #96 pickLifecycle: status.json wins, lowercase draft|active|complete, absent -> null -> done<total fallback). No web/UI/API/store/SSE surface."
+      "evidence_path": "shared/tests/test_security_critical_gate.py",
+      "justification": "No application runtime surface: this changes a CI workflow-template shell gate (shared/templates/github-actions/security.yml.template) shipped by /shipwright-adopt, plus its pytest regression test. The boundary (raw scanner SARIF -> merge block/pass decision) is verified empirically by executing the SHIPPED gate shell (extracted from the template, no logic drift) against synthetic SARIF fixtures across 9 cases (RED on the old result-level filter -> GREEN on the fix) AND against the real WebUI scanner SARIF (semgrep 130 / trivy 12 max 7.5 / gitleaks 1): the corrected gate reports 0 false criticals and blocks on the 1 real secret. No web/UI/API/store/SSE surface."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "campaign_init writes top-level status='draft' into status.json (a fresh campaign is planned, not started)",
+          "behavior": "Gate blocks when a finding's rule-level security-severity >= 9.0 (resolved result.ruleId -> tool.driver.rules[].properties) -- the exact shape the old result-level read missed",
           "disposition": "tested",
-          "evidence": "test_campaign.py::TestCampaignLifecycleStatus::test_init_writes_draft_to_status_json PASSED + boundary probe step 1"
+          "evidence": "test_security_critical_gate.py::test_rule_level_critical_blocks PASSED (RED on old template, GREEN on fix)"
         },
         {
-          "behavior": "campaign_init writes 'status: draft' into the campaign.md frontmatter (consumer's fallback source)",
+          "behavior": "Gate resolves severity via ruleIndex fallback when a result references its rule only by index (no ruleId)",
           "disposition": "tested",
-          "evidence": "test_campaign.py::TestCampaignLifecycleStatus::test_init_writes_draft_to_frontmatter PASSED + boundary probe step 1"
+          "evidence": "test_security_critical_gate.py::test_rule_index_only_critical_blocks PASSED"
         },
         {
-          "behavior": "the `start` subcommand flips top-level status draft->active (and prints active); legacy-safe on a status.json with no prior status field",
+          "behavior": "Gate resolves severity per-result (a 9.5 rule elsewhere does NOT block a result pointing at a sub-critical rule)",
           "disposition": "tested",
-          "evidence": "test_campaign.py::TestCampaignLifecycleStatus::test_start_sets_active + test_start_on_legacy_adds_active PASSED + boundary probe step 2"
+          "evidence": "test_security_critical_gate.py::test_rule_index_points_to_noncritical_passes PASSED"
         },
         {
-          "behavior": "update-status keeps the campaign 'active' while any sub-iterate is still incomplete (halted campaigns stay visible)",
+          "behavior": "A non-numeric security-severity (future/3rd scanner) degrades to not-critical via try/catch instead of wedging the gate under set -e",
           "disposition": "tested",
-          "evidence": "test_campaign.py::TestCampaignLifecycleStatus::test_partial_complete_keeps_active PASSED + boundary probe step 3"
+          "evidence": "test_security_critical_gate.py::test_nonnumeric_severity_degrades_not_wedge PASSED"
         },
         {
-          "behavior": "update-status auto-sets top-level status->complete once every sub-iterate is complete, including a legacy campaign on its final sub-iterate",
+          "behavior": "Gate blocks on any result emitted by the Gitleaks run (a committed secret always blocks, regardless of severity score)",
           "disposition": "tested",
-          "evidence": "test_campaign.py::TestCampaignLifecycleStatus::test_all_complete_sets_complete + test_legacy_auto_completes_on_final_sub PASSED + boundary probe step 4"
+          "evidence": "test_security_critical_gate.py::test_secret_blocks PASSED + empirical real WebUI gitleaks.sarif -> blocks"
         },
         {
-          "behavior": "summary prints the top-level lifecycle status; a legacy campaign with no status field yields null (backward-compat fallback signal)",
+          "behavior": "Gate does NOT block on scanner findings that carry no security-severity (e.g. Semgrep --config auto) -- a critical gate firing on 130 auto-findings would be unusable",
           "disposition": "tested",
-          "evidence": "test_campaign.py::TestCampaignLifecycleStatus::test_summary_prints_status + test_summary_legacy_status_is_null PASSED + boundary probe steps 5-6"
+          "evidence": "test_security_critical_gate.py::test_semgrep_without_severity_does_not_block PASSED"
         },
         {
-          "behavior": "the full draft->active->complete lifecycle round-trips through status.json holding only canonical lowercase values from the producer's declared LIFECYCLE_STATUSES (== webui VALID_LIFECYCLE)",
+          "behavior": "Gate passes a clean scan (trivy < 9.0 + semgrep no-severity + gitleaks ran with no secret)",
           "disposition": "tested",
-          "evidence": "test_campaign.py::TestCampaignLifecycleStatus::test_lifecycle_roundtrip_canonical_values PASSED (asserts final in LIFECYCLE_STATUSES SSoT)"
+          "evidence": "test_security_critical_gate.py::test_clean_scan_passes PASSED"
+        },
+        {
+          "behavior": "Gate fails CLOSED when sarif/ is empty (every scanner crashed / produced no output)",
+          "disposition": "tested",
+          "evidence": "test_security_critical_gate.py::test_empty_sarif_dir_fails_closed PASSED (old template failed open here)"
+        },
+        {
+          "behavior": "Gate fails CLOSED when a SARIF file is invalid JSON (a scanner emitted a broken report)",
+          "disposition": "tested",
+          "evidence": "test_security_critical_gate.py::test_invalid_json_fails_closed PASSED (old template failed open here)"
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 7,
+        "testable": 9,
+        "tested": 9,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
+        "acs": 9,
+        "covered_acs": 9
       }
     },
     "degraded": []
