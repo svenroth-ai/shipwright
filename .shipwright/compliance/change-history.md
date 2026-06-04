@@ -1,13 +1,13 @@
 # Commit Change Log
 
-Generated: 2026-06-03T10:54:51.366400+00:00
-Total commits: 828
+Generated: 2026-06-04T06:14:01.893129+00:00
+Total commits: 829
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 247
+    "feat" : 248
     "fix" : 224
     "chore" : 159
     "docs" : 114
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 247 commits
+### Features (feat) — 248 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-03 | iterate | producer-owned campaign lifecycle status (draft->active->complete) | 3afe1fba71b1 |
 | 2026-06-01 | triage | ingest prompt_risks.json as a gh-prompt producer source | fef7f67451ff |
 | 2026-05-31 | iterate | add fail-closed Test Completeness Ledger gate | bde2812d0525 |
 | 2026-05-30 | build,iterate | spec-reviewer + doubt-reviewer cascade in build Step 6 (trg-7c6137ed) | f93c273cc7ee |
@@ -897,7 +898,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 828 |
+| Total commits | 829 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 828 |
+| Human-authored commits | 829 |
 

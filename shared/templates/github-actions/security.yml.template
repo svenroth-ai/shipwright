@@ -142,27 +142,63 @@ jobs:
         shell: bash
         run: |
           set -e
-          # Count critical-severity findings across all SARIF files. SARIF
-          # encodes severity in `properties.security-severity` (0.0–10.0,
-          # GitHub's mapping) — anything ≥ 9.0 is "critical" by GitHub's
-          # default. Falls back to a 0 count if a SARIF file is malformed
-          # or absent, so a missing scanner does not silently mask
-          # criticals from other tools.
+          # The merge gate. Two independent blocking conditions:
+          #   1. A CVSS-critical finding — security-severity >= 9.0 (GitHub's
+          #      0.0–10.0 mapping). SARIF carries security-severity on the
+          #      RULE (tool.driver.rules[].properties), NOT on the result, so
+          #      each result is resolved to its rule by ruleId (ruleIndex as
+          #      a fallback). Reading it off the result directly — the prior
+          #      bug — made the gate structurally unable to ever fire:
+          #      Semgrep/Gitleaks emit it nowhere and Trivy only on the rule,
+          #      so every finding read as "0" and a real critical passed green.
+          #   2. A leaked secret — ANY result emitted by the Gitleaks run. A
+          #      committed secret is always merge-blocking regardless of score.
+          # Fail CLOSED if sarif/ is empty or a file is not valid JSON: that
+          # means a scanner crashed, and counting it as "0 findings" would let
+          # a broken scan pass green (the old `2>/dev/null || echo 0` did).
+          # Scanners that emit no security-severity (e.g. Semgrep --config
+          # auto) do not block on their own — a critical gate firing on every
+          # auto-finding would be unusable.
+          shopt -s nullglob
+          files=(sarif/*.sarif)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error::No SARIF files in sarif/ — every scanner crashed or produced no output. Failing closed."
+            exit 1
+          fi
           critical=0
-          for f in sarif/*.sarif; do
-            [ -f "$f" ] || continue
-            n=$(jq '
-              [.runs[]?.results[]? |
-               select(
-                 (.properties["security-severity"] // "0") | tonumber >= 9.0
-               )] | length
-            ' "$f" 2>/dev/null || echo 0)
-            critical=$((critical + n))
+          secrets=0
+          for f in "${files[@]}"; do
+            if ! jq empty "$f" 2>/dev/null; then
+              echo "::error::$f is not valid JSON — a scanner emitted a broken report. Failing closed."
+              exit 1
+            fi
+            # CVSS-critical: resolve each result -> its rule's security-severity.
+            c=$(jq '
+              [ .runs[]?
+                | (.tool.driver.rules // []) as $rules
+                | ( reduce ($rules[]? | select(.id != null)) as $r
+                      ({}; .[$r.id] = ($r.properties["security-severity"] // null)) ) as $by_id
+                | .results[]?
+                | . as $res
+                | ( $res.properties["security-severity"]
+                    // (if $res.ruleId != null then $by_id[$res.ruleId] else null end)
+                    // (if $res.ruleIndex != null then ($rules[$res.ruleIndex].properties["security-severity"] // null) else null end)
+                    // "0" )
+                | (try tonumber catch 0)
+                | select(. >= 9.0)
+              ] | length
+            ' "$f")
+            critical=$((critical + c))
+            # Secret leaks: any result from the Gitleaks driver blocks.
+            s=$(jq '[ .runs[]? | select((.tool.driver.name // "") | ascii_downcase | test("gitleaks")) | .results[]? ] | length' "$f")
+            secrets=$((secrets + s))
           done
-          echo "Critical findings: $critical"
-          echo "critical_count=$critical" >> "$GITHUB_OUTPUT"
-          if [ "$critical" -gt 0 ]; then
-            echo "::error::Found $critical critical security findings — blocking merge"
+          total=$((critical + secrets))
+          echo "Critical CVSS findings (>=9.0): $critical"
+          echo "Secret leaks (gitleaks): $secrets"
+          echo "critical_count=$total" >> "$GITHUB_OUTPUT"
+          if [ "$total" -gt 0 ]; then
+            echo "::error::Found $critical critical-severity finding(s) and $secrets secret leak(s) — blocking merge"
             exit 1
           fi
 
