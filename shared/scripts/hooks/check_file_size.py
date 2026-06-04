@@ -1,26 +1,17 @@
 #!/usr/bin/env python3
 """PostToolUse hook: nudge + write marker when an edit crosses the size limit.
 
-Per Campaign A.foundation (bloat cleanup) this hook now:
-  - Classifies markdown into ``runtime-prompt`` (SKILL.md / CLAUDE.md /
-    plugins/*/agents/*.md / shared/prompts/*.md → 400 LOC) vs ``doc``
-    (skipped) via :func:`bloat_baseline.classify_md`.
-  - Applies per-filetype limits: 300 for source/tests, 400 for runtime
-    prompts.
-  - Writes a per-session marker file
-    ``<cwd>/.shipwright/locks/bloat_pending.<session_id>.json`` on every
-    crossing / anti-ratchet event. The Stop hook ``bloat_gate_on_stop.py``
-    reads this marker, applies TTL + path-normalisation, and blocks the
-    session on anti-ratchet entries or new crossings outside the baseline.
+Per Campaign A.foundation (bloat cleanup): per-filetype limits (300 source/
+tests, 400 runtime-prompt — SKILL.md / CLAUDE.md / agents / prompts via
+``bloat_baseline.classify_md``; docs skipped). On every crossing / anti-ratchet
+event it writes a per-session marker
+``<cwd>/.shipwright/locks/bloat_pending.<session_id>.json``; the Stop hook
+``bloat_gate_on_stop.py`` reads it (TTL + path-normalise) and blocks on
+anti-ratchet entries or new crossings outside the baseline. PostToolUse stays
+advisory (always exits 0); only the Stop-Gate blocks.
 
-PostToolUse stays advisory (always exits 0); only the Stop-Gate ever
-blocks. The marker is the producer-side artefact of the loop-gate.
-
-Crossing detection (stateless):
-  - ``Edit`` without ``replace_all``: ``before = now - (newlines(new) - newlines(old))``.
-  - Otherwise: ``before`` = file's line count at ``git HEAD``; brand-new
-    file counts as 0; if git can't answer, ``before`` is unknown and
-    the nudge fires (conservative).
+Crossing detection is stateless: ``Edit`` without ``replace_all`` uses the line
+delta; otherwise ``before`` is the line count at ``git HEAD`` (unknown -> nudge).
 """
 
 from __future__ import annotations
@@ -269,6 +260,12 @@ def main() -> int:
     if _should_skip(file_path):
         return 0
     cwd = Path.cwd()
+    # Only govern files within THIS project: a sibling repo (its own bloat
+    # baseline) must not leak into this project's marker (advisory -> skip).
+    try:
+        path.resolve().relative_to(cwd.resolve())
+    except ValueError:
+        return 0
     limit = _limit_for(file_path, cwd)
     if limit is None:
         return 0
