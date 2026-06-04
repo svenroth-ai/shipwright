@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-06-04-bloat-recorder-cross-repo-scope",
+  "date": "2026-06-04T08:52:04.520662Z",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/bloat-recorder-cross-repo-scope",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-04-bloat-recorder-cross-repo-scope"
+}
