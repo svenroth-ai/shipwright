@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-06-05T12:39:52.235518+00:00
-Total commits: 847
+Generated: 2026-06-05T18:08:24.547455+00:00
+Total commits: 852
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 249
-    "fix" : 231
+    "feat" : 250
+    "fix" : 234
     "chore" : 165
-    "docs" : 116
+    "docs" : 117
     "refactor" : 50
     "test" : 21
     "ci" : 7
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 249 commits
+### Features (feat) — 250 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | triage | machine-churn-only GC tool for the dismissed pile | bad895af4403 |
 | 2026-06-05 | compliance | A5.8 behaviorally probes the deployed critical-gate | 387e1da8bae3 |
 | 2026-06-03 | iterate | producer-owned campaign lifecycle status (draft->active->complete) | 3afe1fba71b1 |
 | 2026-06-01 | triage | ingest prompt_risks.json as a gh-prompt producer source | fef7f67451ff |
@@ -274,10 +275,13 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 231 commits
+### Fixes (fix) — 234 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | evidence | record A's unit suite as 617/617, not 617/627 (external review) | de77c5fc7e44 |
+| 2026-06-05 | triage | reword GC machine-set comment to satisfy artifact-path-canon (B) | 76b067bc9606 |
+| 2026-06-05 | triage | address Codex code-review findings on triage_gc (B) | 6334d902012f |
 | 2026-06-05 | compliance | SBOM cluster dedup-key = signature + manifest_type only | 53ccf300c5b2 |
 | 2026-06-05 | compliance | B7 excludes non-functional commit types (Rule E) | a611fc8dd9fc |
 | 2026-06-05 | hooks | make the bloat marker + Stop gate worktree-aware (trg-305e2aab) | 9282ef267871 |
@@ -680,10 +684,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 116 commits
+### Documentation (docs) — 117 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | triage | reconcile B spec with the 8+8 machine-set (external review) | 3d78dcfbb726 |
 | 2026-06-05 | campaign | normalize C1/C2 status to `complete`; C3 in review (#147) | 3593093e0851 |
 | 2026-06-05 | compliance | document merged C1/C2 detective-audit realign + mark campaign rows done | 5b61555b6c9a |
 | 2026-06-01 | claude-md | document gating ruff lint step in Development section (#133) | 74a3e0b241f4 |
@@ -916,7 +921,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 847 |
+| Total commits | 852 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 847 |
+| Human-authored commits | 852 |
 
