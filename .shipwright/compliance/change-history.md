@@ -1,20 +1,20 @@
 # Commit Change Log
 
-Generated: 2026-06-05T10:24:14.454603+00:00
-Total commits: 832
+Generated: 2026-06-05T10:44:47.137948+00:00
+Total commits: 836
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 248
-    "fix" : 226
-    "chore" : 159
-    "docs" : 115
+    "fix" : 227
+    "chore" : 160
+    "docs" : 116
     "refactor" : 50
     "test" : 21
     "other" : 7
-    "ci" : 5
+    "ci" : 6
     "build" : 1
 ```
 
@@ -273,10 +273,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 226 commits
+### Fixes (fix) — 227 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | iterate | enforce FR-gate on finalize write-path + same-event D3 (C3) | 2b0fb66cf115 |
 | 2026-06-04 | hooks | scope bloat recorder to the project root (no cross-repo marker leak) | e1ce915dddf9 |
 | 2026-06-04 | adopt | security-gate counts criticals by rule-level SARIF severity + blocks secrets, fail-closed | 41372faa7c63 |
 | 2026-06-03 | compliance | B7 recognizes chore(release) as tracked-phase output (sub-iterate B) | 2fa549541b62 |
@@ -504,10 +505,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 159 commits
+### Chores (chore) — 160 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | iterate | correct finalization metadata (adr key + spec_impact_justification) | 3a571d8435d1 |
 | 2026-06-02 | release | v0.23.1 | a0aa1e624070 |
 | 2026-06-01 | release | v0.23.0 | f67f3122236a |
 | 2026-06-01 | churn | regenerate derived snapshots after main merge | 638ba80d68fa |
@@ -668,10 +670,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 115 commits
+### Documentation (docs) — 116 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | campaign | normalize C1/C2 status to `complete`; C3 in review (#147) | 3593093e0851 |
 | 2026-06-05 | compliance | document merged C1/C2 detective-audit realign + mark campaign rows done | 5b61555b6c9a |
 | 2026-06-01 | claude-md | document gating ruff lint step in Development section (#133) | 74a3e0b241f4 |
 | 2026-05-31 | iterate | fold Linux-CI discovery + cross-platform fixes into iterate artifacts | ef089eb6a64f |
@@ -881,10 +884,11 @@ pie title Commit Types
 | 2026-04-04 | — | Revert "fix: rename skill dirs to full plugin name for clean slash-command display" | 1545b4b2c522 |
 | 2026-03-21 | — | revert: restore full skill names in SKILL.md frontmatter | 05c0d5ce7566 |
 
-### CI/CD (ci) — 5 commits
+### CI/CD (ci) — 6 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | security-template | checkout at fetch-depth 1 (no scanner reads git history) | f6dd93918acf |
 | 2026-06-01 | — | pin third-party actions to SHA and verify gitleaks download integrity | 32bc15a5aa01 |
 | 2026-05-31 | — | descope shared-tests to non-gating tracked-debt (Linux-portability) | e1d016e0e848 |
 | 2026-05-31 | — | add CI gate-coverage guard and harden workflow gates | ae35cd199c99 |
@@ -901,7 +905,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 832 |
+| Total commits | 836 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 832 |
+| Human-authored commits | 836 |
 
