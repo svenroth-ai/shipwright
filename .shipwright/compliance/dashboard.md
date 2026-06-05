@@ -9,20 +9,20 @@ Scope: library
 | Metric | Value | Status | Why warn? |
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
-| Work events (iterate) | 99 changes | INFO |  |
+| Work events (iterate) | 100 changes | INFO |  |
 | All unit tests passing | 9/9 | PASS |  |
 | Architecture decisions | 120 ADRs | INFO |  |
-| Iterate tests passing | 61/99 iterations tested | WARN | 38 iterate(s) without tests — see test-evidence.md |
+| Iterate tests passing | 62/100 iterations tested | WARN | 38 iterate(s) without tests — see test-evidence.md |
 | Dependencies | 8 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 4 open | WARN | 4 actionable item(s) — see ../agent_docs/triage_inbox.md |
-| Bloat over-limit | 127 | WARN | 127 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
+| Triage open | 3 open | WARN | 3 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Bloat over-limit | 125 | WARN | 125 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
 | Bloat in allowlist | 150 entries | INFO |  |
 | Bloat ratchet delta | -113 lines | PASS |  |
 
 ## Project Velocity
 
-- Iterate: 99 changes (2026-05-02 → 2026-06-05)
+- Iterate: 100 changes (2026-05-02 → 2026-06-05)
 - Last activity: 2026-06-05
 
 ## External LLM Review Evidence

@@ -29,6 +29,22 @@ from oss_backend import (
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 
+def _fake_gitleaks_run(fixture, returncode=1):
+    """``subprocess.run`` side-effect that simulates the REAL gitleaks
+    contract: gitleaks writes its JSON report to the ``--report-path`` FILE
+    and emits nothing structured to stdout (its human summary goes to
+    stderr). ``--report-path -`` is a literal file named ``-``, not stdout
+    (v8.21.2 ``report.Write`` → ``os.Create``) — so mocking JSON on stdout
+    would test a path the binary never takes."""
+
+    def run(cmd, **_kwargs):
+        report_path = cmd[cmd.index("--report-path") + 1]
+        Path(report_path).write_text(json.dumps(fixture), encoding="utf-8")
+        return MagicMock(returncode=returncode, stdout="", stderr="")
+
+    return run
+
+
 # ---------------------------------------------------------------------------
 # OSSBackend
 # ---------------------------------------------------------------------------
@@ -107,17 +123,108 @@ class TestRunGitleaks:
 
     def test_parses_output(self):
         fixture = json.loads((FIXTURES_DIR / "sample_gitleaks_output.json").read_text())
-        mock_result = MagicMock()
-        mock_result.returncode = 1  # gitleaks returns 1 when findings exist
-        mock_result.stdout = json.dumps(fixture)
-        mock_result.stderr = ""
-
-        with patch("subprocess.run", return_value=mock_result):
+        with patch("subprocess.run", side_effect=_fake_gitleaks_run(fixture)):
             findings = _run_gitleaks("/tmp/test")
 
         assert len(findings) == 2
         assert findings[0]["source"] == "gitleaks"
         assert findings[0]["type"] == "secret_detection"
+
+    def test_reads_findings_from_report_file_not_stdout(self):
+        """Regression (iterate-2026-06-05): real gitleaks writes its JSON to
+        the ``--report-path`` FILE and emits nothing structured to stdout.
+
+        ``--report-path -`` does NOT mean stdout — gitleaks does
+        ``os.Create("-")`` and writes a literal file named ``-`` (proven
+        against v8.21.2 ``cmd/root.go`` + ``report/report.go``). So
+        ``_run_gitleaks`` MUST read the report file, not stdout. This test
+        simulates the real binary; it is RED on the old stdout-reading
+        wrapper (which returned 0 findings → silent smoke-test skip).
+        """
+        fixture = json.loads((FIXTURES_DIR / "sample_gitleaks_output.json").read_text())
+
+        # A wrapper that (wrongly) read stdout would see "" here and return [].
+        def fake_gitleaks(cmd, **_kwargs):
+            report_path = cmd[cmd.index("--report-path") + 1]
+            Path(report_path).write_text(json.dumps(fixture), encoding="utf-8")
+            return MagicMock(returncode=1, stdout="", stderr="leaks found: 2")
+
+        with patch("subprocess.run", side_effect=fake_gitleaks):
+            findings = _run_gitleaks("/tmp/test")
+
+        assert len(findings) == 2, (
+            "expected findings read from the gitleaks report FILE; got "
+            f"{findings!r} (wrapper likely still reads stdout)"
+        )
+        assert findings[0]["source"] == "gitleaks"
+
+    def test_report_path_is_real_file_not_dash(self):
+        """Regression sentinel for the exact bug: the ``--report-path`` value
+        must be a real writable file, never ``-`` (which gitleaks turns into a
+        stray file named ``-`` instead of stdout)."""
+        captured = {}
+
+        def capture(cmd, **_kwargs):
+            captured["cmd"] = cmd
+            return MagicMock(returncode=0, stdout="", stderr="")
+
+        with patch("subprocess.run", side_effect=capture):
+            _run_gitleaks("/tmp/test")
+
+        idx = captured["cmd"].index("--report-path")
+        report_arg = captured["cmd"][idx + 1]
+        assert report_arg != "-", (
+            "gitleaks --report-path must be a real file, not '-' (the dash is "
+            "written as a literal file, not stdout)"
+        )
+        assert report_arg.endswith(".json")
+
+    def test_surfaces_stderr_on_empty_report(self, capsys):
+        """Visibility fix: when gitleaks exits non-zero with no parseable
+        report (e.g. a fatal error → exit 1, same code as 'leaks found'), the
+        wrapper must log stderr rather than silently returning 0 findings."""
+        def fatal_gitleaks(cmd, **_kwargs):
+            # Report file left empty; gitleaks-style fatal on stderr.
+            return MagicMock(
+                returncode=1, stdout="",
+                stderr="FTL could not open repo: dubious ownership",
+            )
+
+        with patch("subprocess.run", side_effect=fatal_gitleaks):
+            findings = _run_gitleaks("/tmp/test")
+
+        assert findings == []
+        assert "dubious ownership" in capsys.readouterr().err
+
+    def test_cleans_up_temp_report_file(self):
+        """The generated report temp file must be removed after gitleaks
+        returns (mirrors the temp-config cleanup contract)."""
+        captured = {}
+
+        def capture(cmd, **_kwargs):
+            captured["report"] = cmd[cmd.index("--report-path") + 1]
+            return MagicMock(returncode=0, stdout="", stderr="")
+
+        with patch("subprocess.run", side_effect=capture):
+            _run_gitleaks("/tmp/test")
+
+        assert not Path(captured["report"]).exists(), (
+            "gitleaks temp report file leaked"
+        )
+
+    def test_returns_empty_on_invalid_report_json(self):
+        """A truncated/garbage report file (e.g. gitleaks killed mid-write)
+        must degrade to [] without raising — the JSONDecodeError is logged,
+        not propagated. Pins the report-file decode path symmetrically with
+        the stdout decode path."""
+        def garbage_gitleaks(cmd, **_kwargs):
+            report_path = cmd[cmd.index("--report-path") + 1]
+            Path(report_path).write_text("[ {not valid json", encoding="utf-8")
+            return MagicMock(returncode=1, stdout="", stderr="")
+
+        with patch("subprocess.run", side_effect=garbage_gitleaks):
+            findings = _run_gitleaks("/tmp/test")
+        assert findings == []
 
     def test_returns_empty_on_timeout(self):
         import subprocess
@@ -153,8 +260,13 @@ class TestOSSBackendScan:
                 result.returncode = 0
                 result.stdout = json.dumps(trivy_fixture)
             elif "gitleaks" in cmd[0]:
+                # gitleaks writes JSON to the --report-path FILE, not stdout.
+                report_path = cmd[cmd.index("--report-path") + 1]
+                Path(report_path).write_text(
+                    json.dumps(gitleaks_fixture), encoding="utf-8"
+                )
                 result.returncode = 1
-                result.stdout = json.dumps(gitleaks_fixture)
+                result.stdout = ""
             return result
 
         with patch("subprocess.run", side_effect=mock_run):

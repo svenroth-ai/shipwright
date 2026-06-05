@@ -1,36 +1,104 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-05-bloat-marker-worktree-aware",
+    "run_id": "iterate-2026-06-05-gitleaks-report-path",
     "date": "2026-06-05",
-    "unit": { "status": "passed", "passed": 9, "total": 9 },
-    "integration": { "status": "not_run", "passed": 0, "total": 0 },
-    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
-    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
-    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
-    "smoke": { "status": "not_run" },
+    "intent": "bug",
+    "complexity": "small",
+    "unit": {
+      "status": "passed",
+      "passed": 320,
+      "total": 320
+    },
+    "integration": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "skipped"
+    },
+    "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "runner": "surface_verification.py --surface none",
-      "tests_run": 0,
+      "tests_run": 320,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-05-bloat-marker-worktree-aware/surface_verification.json",
-      "justification": "Framework-internal Python hook fix (bloat marker recorder + Stop gate worktree-awareness). No web/UI/startable surface; no API/store/SSE/message-contract touched (backend-affects-frontend N/A). Verified by 9 new regression tests + the full bloat suites (test_bloat_gate_on_stop, test_bloat_baseline, test_anti_ratchet_check, test_check_file_size_cross_repo — all green) and a clean worktree anti-ratchet self-check."
+      "justification": "CLI/library change to the gitleaks scanner wrapper (Python backend in shipwright-security); no web/runtime surface and no UI-consumed code. The real-binary E2E is the smoke test test_gitleaks_detect_scans_committed_shipwright_dir, unmockable locally (gitleaks not installed) and executed on Linux by this iterate's own PR CI (now CI-gated via ADR-044, not silently skipped)."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "strip_worktree_prefix strips a leading .worktrees/<slug>/ segment", "disposition": "tested", "evidence": "test_strip_worktree_prefix_strips_one_segment PASSED" },
-        { "behavior": "strip_worktree_prefix is idempotent for ordinary repo-relative paths", "disposition": "tested", "evidence": "test_strip_worktree_prefix_idempotent_for_repo_relative PASSED" },
-        { "behavior": "strip_worktree_prefix normalizes backslashes", "disposition": "tested", "evidence": "test_strip_worktree_prefix_normalizes_backslashes PASSED" },
-        { "behavior": "strip_worktree_prefix only strips a LEADING .worktrees segment", "disposition": "tested", "evidence": "test_strip_worktree_prefix_only_strips_leading_worktrees PASSED" },
-        { "behavior": "Stop gate does NOT block a worktree-prefixed baselined file mis-marked as crossing (the bug)", "disposition": "tested", "evidence": "test_worktree_prefixed_baselined_crossing_does_not_block PASSED" },
-        { "behavior": "Stop gate does NOT block a worktree-prefixed anti-ratchet within ceiling", "disposition": "tested", "evidence": "test_worktree_prefixed_anti_ratchet_within_ceiling_does_not_block PASSED" },
-        { "behavior": "Stop gate STILL blocks a genuine ratchet (over ceiling) on a worktree path (no weakening)", "disposition": "tested", "evidence": "test_worktree_prefixed_anti_ratchet_over_ceiling_still_blocks PASSED" },
-        { "behavior": "Stop gate STILL blocks a genuine new crossing (not baselined) on a worktree path", "disposition": "tested", "evidence": "test_worktree_prefixed_genuine_new_crossing_still_blocks PASSED" },
-        { "behavior": "Recorder classifies a worktree edit of an already-baselined file as anti-ratchet (not crossing)", "disposition": "tested", "evidence": "test_recorder_classifies_worktree_baselined_file_as_anti_ratchet PASSED" }
+        {
+          "behavior": "_run_gitleaks returns findings from the report FILE (not stdout)",
+          "disposition": "tested",
+          "evidence": "test_oss_backend.py::TestRunGitleaks::test_reads_findings_from_report_file_not_stdout PASSED (RED on old code)"
+        },
+        {
+          "behavior": "--report-path value is a real temp file, never '-'",
+          "disposition": "tested",
+          "evidence": "test_oss_backend.py::TestRunGitleaks::test_report_path_is_real_file_not_dash PASSED"
+        },
+        {
+          "behavior": "gitleaks config + report temp files are cleaned up",
+          "disposition": "tested",
+          "evidence": "test_gitleaks_cleans_up_temp_config + TestRunGitleaks::test_cleans_up_temp_report_file PASSED"
+        },
+        {
+          "behavior": "_run_tool surfaces stderr when an expect_nonzero tool yields no output",
+          "disposition": "tested",
+          "evidence": "test_oss_backend.py::TestRunGitleaks::test_surfaces_stderr_on_empty_report PASSED"
+        },
+        {
+          "behavior": "malformed/garbage report file degrades to [] without raising",
+          "disposition": "tested",
+          "evidence": "test_oss_backend.py::TestRunGitleaks::test_returns_empty_on_invalid_report_json PASSED"
+        },
+        {
+          "behavior": "full OSSBackend.scan combines gitleaks(report-file)+semgrep+trivy",
+          "disposition": "tested",
+          "evidence": "test_oss_backend.py::TestOSSBackendScan::test_full_scan_combines_all_tools PASSED"
+        },
+        {
+          "behavior": "gitleaks stays in detect (git-history) mode",
+          "disposition": "tested",
+          "evidence": "test_oss_backend.py::test_gitleaks_stays_in_detect_mode PASSED"
+        },
+        {
+          "behavior": "smoke positive-control fails (not skips) in CI on a real gitleaks miss",
+          "disposition": "tested",
+          "evidence": "scan_test_hygiene static probe: no findings (CI-gated pytest.fail accepted) + shared/tests/test_silent_skip_ci_discipline.py 33 passed"
+        },
+        {
+          "behavior": "real gitleaks binary detects the committed key on Linux CI",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "gitleaks not installed locally; the smoke test runs the real binary in this iterate's own PR CI on Linux (the live probe) and is not unit-mockable"
+        }
       ],
-      "counts": { "testable": 9, "tested": 9, "untestable": 0, "untested_testable": 0 }
-    },
-    "degraded": []
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 9,
+        "covered_acs": 9
+      }
+    }
   }
 }
