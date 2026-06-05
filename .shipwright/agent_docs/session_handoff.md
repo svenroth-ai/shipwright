@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-05-security-template-fetch-depth"
+run_id: "iterate-2026-06-05-bloat-marker-worktree-aware"
 phase: "iterate"
-reason: "integrate #147 churn before merge of PR #148"
-timestamp: "2026-06-05T10:44:47.137948+00:00"
+reason: "iterate: bloat marker worktree-awareness (trg-305e2aab)"
+timestamp: "2026-06-05T11:26:02.491805+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-05 10:44:47 UTC
+> Auto-generated 2026-06-05 11:26:02 UTC
 
 ## Session Info
 
-- **Session ID**: 0af22530-adef-4cd2-97bb-82b51d5f9847
-- **Timestamp**: 2026-06-05 10:44:47 UTC
-- **Reason**: integrate #147 churn before merge of PR #148
+- **Session ID**: 8c417574-f89c-40fd-a5b3-5d01f6272edb
+- **Timestamp**: 2026-06-05 11:26:02 UTC
+- **Reason**: iterate: bloat marker worktree-awareness (trg-305e2aab)
 
 ## Last Iterate
 
@@ -29,7 +29,7 @@ timestamp: "2026-06-05T10:44:47.137948+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/security-template-fetch-depth
+- **Branch**: iterate/bloat-marker-worktree-aware
 - **External Review Marker**: completed (external_review_state.json @ 2026-06-01T06:00:50)
 
 ### Mandatory replay on Resume
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/security-template-fetch-depth
-- **Last Commit**: 10bda16d Merge remote-tracking branch 'origin/main' into iterate/security-template-fetch-depth
+- **Branch**: iterate/bloat-marker-worktree-aware
+- **Last Commit**: dc78b6d4 Merge pull request #148 from svenroth-ai/iterate/security-template-fetch-depth
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-702f8c5b | work_completed | iterate (Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab)) | 2026-06-05 |
 | evt-2c8f0a52 | work_completed | iterate (Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery) | 2026-06-05 |
 | evt-247909be | work_completed | iterate (Set security.yml.template checkout to fetch-depth: 1 (working-tree only) and correct the misleading diff-aware-secret-scans comment; no scanner reads git history.) | 2026-06-05 |
 | evt-4ceefd02 | work_completed | iterate (C1/C2 detective-realign doc + ledger closeout) | 2026-06-05 |
 | evt-447a8c00 | work_completed | iterate (Scope the bloat recorder to the project root so cross-repo edits do not leak into this project marker and block its Stop gate.) | 2026-06-04 |
-| evt-fca435d8 | work_completed | iterate (Fix the adopt security-gate so it resolves SARIF severity at rule level, blocks on any secret, and fails closed — previously a structural false green in every adopted repo.) | 2026-06-04 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 98
-- **Last iterate**: change — Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery (2026-06-05)
+- **Total work events**: 99
+- **Last iterate**: change — Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab) (2026-06-05)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

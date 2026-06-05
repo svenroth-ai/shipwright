@@ -88,6 +88,18 @@ def normalize_path(p: str) -> str:
     return s
 
 
+_WORKTREE_PREFIX_RE = re.compile(r"^\.worktrees/[^/]+/")
+
+
+def strip_worktree_prefix(rel_path: str) -> str:
+    """Strip a leading ``.worktrees/<slug>/`` so a marker path recorded relative
+    to the MAIN root during a ``/shipwright-iterate`` run resolves against the
+    repo-relative baseline keys (idempotent for ordinary paths). trg-305e2aab:
+    without it, a worktree iterate growing an already-baselined file is
+    mis-classified ``crossing`` + false-blocks the Stop gate."""
+    return _WORKTREE_PREFIX_RE.sub("", normalize_path(rel_path), count=1)
+
+
 # ---------------------------------------------------------------------
 # Classification
 # ---------------------------------------------------------------------

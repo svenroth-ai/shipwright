@@ -224,7 +224,10 @@ def _write_marker_entry(
     sid = _session_id(payload)
     marker = _marker_path(cwd, sid)
     norm_path = _rel_path(cwd, Path(file_path))
-    in_allowlist = norm_path in _baseline_paths(cwd)
+    # trg-305e2aab: strip the worktree prefix for the baseline-membership check
+    # so an already-baselined file edited in a worktree classifies `anti-ratchet`
+    # not `crossing` (`norm_path` keeps the prefix for the Stop gate's re-measure).
+    in_allowlist = _bb.strip_worktree_prefix(norm_path) in _baseline_paths(cwd)
     delta = "anti-ratchet" if in_allowlist else "crossing"
     entry = {
         "path": norm_path,
