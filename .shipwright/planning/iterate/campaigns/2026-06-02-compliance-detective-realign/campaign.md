@@ -76,8 +76,8 @@ code + same review/risk profile), not 1:1:
 
 | ID | Slug | Title | Repo | Depends on | Status |
 |---|---|---|---|---|---|
-| **C1** | audit-run-id-provenance | Detective audit honors Run-ID provenance: B7 matches `Run-ID:`↔`adr_id` (commit-field fallback for legacy); Group E recognizes changelog/release snapshots | monorepo | — | pending |
-| **C2** | audit-invocation-resilience | Guarantee PyYAML at audit invocation (PEP-723 deps / `uv run --with` / `--project`) **and** degrade `group_a5` to SKIP (not FAIL) when yaml is genuinely absent | monorepo | — | pending |
+| **C1** | audit-run-id-provenance | Detective audit honors Run-ID provenance: B7 matches `Run-ID:`↔`adr_id` (commit-field fallback for legacy); Group E recognizes changelog/release snapshots | monorepo | — | done (PR #142 — f688c391 + 2fa54954) |
+| **C2** | audit-invocation-resilience | Guarantee PyYAML at audit invocation (PEP-723 deps / `uv run --with` / `--project`) **and** degrade `group_a5` to SKIP (not FAIL) when yaml is genuinely absent | monorepo | — | done (PR #142 — f688c391) |
 | **C3** | fr-linkage-lifecycle | Close the FR-gate bypass on the finalize path (prevent D5-class at write) + accept same-event `new_frs`+`affected_frs` as delivered in D3 | monorepo | — (trace resolved) | pending |
 | **C4** | webui-data-config | webui repo: add `board` to `g2_stoplist`; link reopen event `evt-83b9b73f` to its FR (data reconcile) | **webui** | C1 + C2 merged + `update-marketplace.sh` synced | pending |
 

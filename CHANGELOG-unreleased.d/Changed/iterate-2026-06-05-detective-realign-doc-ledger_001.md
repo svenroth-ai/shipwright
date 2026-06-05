@@ -1,0 +1,1 @@
+Docs: hooks-and-pipeline.md now documents the merged C1/C2 detective-audit realign — find_snapshot_commit recognizing chore(release) snapshots, and the audit-on-stop hook's uv run --with pyyaml invocation with A5.0 graceful-skip — and the compliance-detective-realign campaign ledger marks C1/C2 done.

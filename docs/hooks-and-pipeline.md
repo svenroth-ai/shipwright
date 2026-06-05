@@ -91,11 +91,29 @@ flowchart TD
 >
 > The `Run-ID:` filter on `find_snapshot_commit` is preserved (per
 > Codex sanity-check) — producer-provenance protection still matters.
-> Pipeline phase commits (project/design/plan/build/test/changelog/deploy)
+> The remaining pipeline phase commits (project/design/plan/build/test/deploy)
 > still lack `Run-ID:` trailers and are NOT yet snapshot-recognised;
-> deferred to a separate iterate if needed. Greenfield-pipeline users
-> hit `snapshot_unavailable=true` until the first iterate (acceptable
+> deferred to a separate iterate if needed (the changelog/release case was
+> picked up by C1, below). Greenfield-pipeline users hit
+> `snapshot_unavailable=true` until the first iterate (acceptable
 > degraded-but-correct state — no false positives).
+
+> **Iterate 2026-06-02-compliance-detective-realign (C1) — release commits
+> join the recognised snapshot producers.** `find_snapshot_commit` now OR's
+> two `--grep` patterns under `--fixed-strings`: a `Run-ID:` trailer
+> (iterate-finalize) OR a `chore(release)` subject. `/shipwright-changelog`
+> regenerates the tracked agent-doc/compliance MDs and commits them as
+> `chore(release): vX.Y.Z` **without** a `Run-ID:` trailer, so before this
+> every clean release re-flagged those MDs as Group-E stale against the older
+> iterate-finalize snapshot. A manual `chore(compliance)` regen is deliberately
+> **not** recognised — that is the hand-edit case Group E must still catch.
+> Companion B7 change (same Run-ID-provenance fix): `group_b._check_b7`
+> recognises an event↔commit link via the commit's `Run-ID:` footer ↔ the
+> event's `adr_id` (since `work_completed` events ship `commit:""` by design),
+> with the `commit`-field SHA match retained as the legacy/out-of-band fallback;
+> and `apply_retention_rules` Rule D (`exclude_release_commits`) excludes a
+> `chore(release)` commit as the changelog phase's tracked output — never
+> generic chore/ci/docs commits, which stay surfaced as real drift.
 
 ### Merge reconciliation of churn artifacts (iterate-2026-05-31-churn-merge-resolver)
 
@@ -568,6 +586,23 @@ item per Tier-1 FAIL across every audited phase; iterate-2026-05-31
 `phaseQuality:backlog:<sig>` action-unit plus a phase-applicability gate and a
 `run_id=unknown` spec-check guard — see the producer side-effect note on the
 iterate Stop row below.)
+
+**Invocation carries its own deps (C2, iterate-2026-06-02-compliance-detective-realign):**
+both Stop-chain registrations invoke the hook as
+`uv run --with pyyaml "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/hooks/audit_compliance_on_stop.py"`
+(`plugins/shipwright-iterate/hooks/hooks.json`,
+`plugins/shipwright-changelog/hooks/hooks.json`). The audit imports `group_a5`,
+whose A5.2+ workflow checks need PyYAML. A non-Python adopt repo (e.g. the
+WebUI) has no root `pyproject.toml` declaring `pyyaml`, so a bare `uv run`
+resolved an interpreter without it and the whole A5 group hard-failed as an
+"A5.0 setup" FAIL — a phantom compliance finding caused by the invocation env,
+not by anything in the target repo. `--with pyyaml` makes the audit
+self-contained regardless of the target project's pyproject. Defence-in-depth on
+the check side: if `import yaml` still fails, `group_a5.run` emits a single
+**A5.0 SKIP** (not FAIL) with an "audit deps unavailable — run with
+`uv run --with pyyaml`" reason, so a missing dependency never poisons `any_fail`
+or lands in the triage backlog. A *real* A5 violation in a project that does
+have yaml is unaffected — only the missing-dependency setup path degrades.
 
 ### Shared Hook: audit_phase_quality_on_stop.py
 
