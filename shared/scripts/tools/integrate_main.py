@@ -112,9 +112,9 @@ def integrate(
         _git(project_root, "merge", "--abort", check=False)
         return {"status": "blocked", "blocking": result.blocking,
                 "message": "non-churn conflicts — merge aborted; resolve by hand", "steps": steps}
-    if result.status == "events_invalid":
+    if result.status in ("events_invalid", "triage_invalid"):
         _git(project_root, "merge", "--abort", check=False)
-        return {"status": "events_invalid", "errors": result.errors, "steps": steps}
+        return {"status": result.status, "errors": result.errors, "steps": steps}
     _git(project_root, "commit", "--no-edit")
     steps.append("merge-committed")
 
@@ -172,7 +172,8 @@ def main(argv: list[str] | None = None) -> int:
     if result["status"] == "blocked":
         print("ABORT: non-churn conflicts — resolve by hand: " f"{result.get('blocking')}", file=sys.stderr)
         return 2
-    if result["status"] == "events_invalid":
+    if result["status"] in ("events_invalid", "triage_invalid"):
+        print(f"ABORT: {result['status']} after merge: {result.get('errors')}", file=sys.stderr)
         return 4
     if result["status"] == "bad_ref":
         print(f"ABORT: merge ref does not resolve: {result.get('ref')}", file=sys.stderr)

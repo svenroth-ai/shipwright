@@ -1050,6 +1050,13 @@
       "current": 372,
       "state": "grandfathered",
       "adr": null
+    },
+    {
+      "path": "shared/scripts/tools/resolve_churn_conflicts.py",
+      "limit": 300,
+      "current": 318,
+      "state": "exception",
+      "adr": "ADR-099"
     }
   ]
 }

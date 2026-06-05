@@ -163,6 +163,33 @@ def test_detect_leak_ignores_tracked_event_log(git_origin_repo):
     assert new == []
 
 
+def test_detect_leak_ignores_tracked_triage_log(git_origin_repo):
+    """Campaign 2026-06-05-track-triage-jsonl: once .shipwright/triage.jsonl is
+    tracked, background Stop-hook / triage_add appends to the MAIN backlog during
+    an iterate are durable-log writes, not a leak — same exemption as events."""
+    work, _ = git_origin_repo
+    (work / ".shipwright").mkdir(exist_ok=True)
+    (work / ".shipwright" / "triage.jsonl").write_text(
+        '{"v":1,"schema":"triage"}\n', encoding="utf-8")
+    subprocess.run(
+        ["git", "-C", str(work), "add", ".shipwright/triage.jsonl"],
+        capture_output=True, text=True, check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(work), "-c", "user.name=t",
+         "-c", "user.email=t@t.invalid", "commit", "-m", "track triage"],
+        capture_output=True, text=True, check=True,
+    )
+    write_snapshot(work, "run-t")  # clean snapshot
+    (work / ".shipwright" / "triage.jsonl").write_text(
+        '{"v":1,"schema":"triage"}\n{"event":"append","id":"trg-1"}\n',
+        encoding="utf-8",
+    )  # a background-hook append → tracked file now modified
+    clean, new = detect_leak(work, "run-t")
+    assert clean is True
+    assert new == []
+
+
 def test_detect_leak_still_flags_event_log_in_subdir(git_origin_repo):
     """The exemption is an EXACT root-relative match: a same-named file in
     a subdirectory is NOT the canonical event log and is still a leak.

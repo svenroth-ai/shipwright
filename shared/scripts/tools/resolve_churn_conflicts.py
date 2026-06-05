@@ -42,10 +42,13 @@ from lib.churn_merge import (  # noqa: E402
     DERIVED_MDS,
     EVENTS_LOG,
     TEST_RESULTS,
+    TRIAGE_LOG,
     classify,
     dedup_event_lines,
+    dedup_triage_lines,
     norm,
     validate_events_text,
+    validate_triage_text,
 )
 
 __all__ = [
@@ -83,11 +86,26 @@ def _take_side(project_root: Path, rel: str, side: str) -> None:
     _git(project_root, "add", "--", rel)
 
 
+def _union_conflict(project_root: Path, rel: str) -> None:
+    """Union both sides of an append-only-log conflict (ours stage :2: + theirs
+    stage :3:) and stage it. ``--ours`` would DROP theirs' items; target projects
+    lack the ``merge=union`` driver so this is the sole safety net there. The
+    duplicate header + shared lines collapse in the subsequent ``_reconcile_*``
+    dedup; the reconcile also validates the union.
+    """
+    both = (
+        _git(project_root, "show", f":2:{rel}", check=False).stdout.splitlines()
+        + _git(project_root, "show", f":3:{rel}", check=False).stdout.splitlines()
+    )
+    (project_root / rel).write_text("\n".join(both) + "\n" if both else "", encoding="utf-8")
+    _git(project_root, "add", "--", rel)
+
+
 # --- resolution outcome -----------------------------------------------------
 
 @dataclass
 class ResolveResult:
-    status: str  # "resolved" | "blocked" | "clean" | "events_invalid"
+    status: str  # "resolved" | "blocked" | "clean" | "events_invalid" | "triage_invalid"
     resolved: list[str] = field(default_factory=list)
     blocking: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
@@ -95,7 +113,10 @@ class ResolveResult:
 
     @property
     def exit_code(self) -> int:
-        return {"clean": 0, "resolved": 0, "blocked": 2, "events_invalid": 4}.get(self.status, 1)
+        return {
+            "clean": 0, "resolved": 0, "blocked": 2,
+            "events_invalid": 4, "triage_invalid": 4,
+        }.get(self.status, 1)
 
 
 def _reconcile_events(
@@ -118,6 +139,43 @@ def _reconcile_events(
     return validate_events_text(new_text, require_run_id=run_id), warnings
 
 
+def _reconcile_triage(
+    project_root: Path, resolved: list[str]
+) -> tuple[list[str], list[str]]:
+    """Dedup + validate ``triage.jsonl`` unconditionally (mirrors
+    ``_reconcile_events``; triage dedup never warns — shared append/status ids
+    are by design). Mutates ``resolved``; returns ``(errors, warnings)``.
+    """
+    log = project_root / TRIAGE_LOG
+    if not log.exists():
+        return [], []
+    original = log.read_text(encoding="utf-8")
+    deduped, warnings = dedup_triage_lines(original.splitlines())
+    new_text = "\n".join(deduped) + "\n" if deduped else ""
+    if new_text != original:
+        log.write_text(new_text, encoding="utf-8")
+        _git(project_root, "add", "--", TRIAGE_LOG)
+        if TRIAGE_LOG not in resolved:
+            resolved.append(TRIAGE_LOG)
+    return validate_triage_text(new_text), warnings
+
+
+def _reconcile_logs(
+    project_root: Path, run_id: str | None, resolved: list[str]
+) -> tuple[str | None, list[str], list[str]]:
+    """Reconcile BOTH append-only logs. Returns ``(invalid_status_or_None,
+    errors, warnings)`` — the status is ``events_invalid`` / ``triage_invalid``.
+    """
+    e_errors, e_warnings = _reconcile_events(project_root, run_id, resolved)
+    t_errors, t_warnings = _reconcile_triage(project_root, resolved)
+    warnings = e_warnings + t_warnings
+    if e_errors:
+        return "events_invalid", e_errors, warnings
+    if t_errors:
+        return "triage_invalid", t_errors, warnings
+    return None, [], warnings
+
+
 def complete_merge(project_root: Path, *, run_id: str | None = None) -> ResolveResult:
     """Make a conflicted merge committable by resolving ONLY churn conflicts.
 
@@ -131,25 +189,28 @@ def complete_merge(project_root: Path, *, run_id: str | None = None) -> ResolveR
     if blocking:
         return ResolveResult(status="blocked", blocking=blocking)
     if not conflicted:
-        # Still reconcile events: union may have resolved it silently.
+        # Still reconcile the append-only logs: union may have resolved them silently.
         resolved: list[str] = []
-        errors, warnings = _reconcile_events(project_root, run_id, resolved)
-        if errors:
-            return ResolveResult(status="events_invalid", resolved=resolved, errors=errors, warnings=warnings)
+        invalid, errors, warnings = _reconcile_logs(project_root, run_id, resolved)
+        if invalid:
+            return ResolveResult(status=invalid, resolved=resolved, errors=errors, warnings=warnings)
         return ResolveResult(status="clean" if not resolved else "resolved", resolved=resolved, warnings=warnings)
 
     resolved = []
     for rel in resolvable:
-        if rel in (EVENTS_LOG, TEST_RESULTS):
+        if rel == TRIAGE_LOG:
+            _union_conflict(project_root, rel)  # append-only backlog — keep BOTH sides
+            resolved.append(rel)
+        elif rel in (EVENTS_LOG, TEST_RESULTS):
             _take_side(project_root, rel, "--ours")
             resolved.append(rel)
         elif rel in DERIVED_MDS:
             _take_side(project_root, rel, "--theirs")  # placeholder — regenerated later
             resolved.append(rel)
 
-    errors, warnings = _reconcile_events(project_root, run_id, resolved)
-    if errors:
-        return ResolveResult(status="events_invalid", resolved=sorted(set(resolved)), errors=errors, warnings=warnings)
+    invalid, errors, warnings = _reconcile_logs(project_root, run_id, resolved)
+    if invalid:
+        return ResolveResult(status=invalid, resolved=sorted(set(resolved)), errors=errors, warnings=warnings)
     return ResolveResult(status="resolved", resolved=sorted(set(resolved)), warnings=warnings)
 
 
@@ -248,6 +309,8 @@ def main(argv: list[str] | None = None) -> int:
         )
     elif result.status == "events_invalid":
         print(f"ABORT: {EVENTS_LOG} failed validation after merge: {result.errors}", file=sys.stderr)
+    elif result.status == "triage_invalid":
+        print(f"ABORT: {TRIAGE_LOG} failed validation after merge: {result.errors}", file=sys.stderr)
     return result.exit_code
 
 

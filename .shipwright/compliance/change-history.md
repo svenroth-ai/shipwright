@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-05T19:45:29.065056+00:00
-Total commits: 857
+Generated: 2026-06-05T20:06:43.582776+00:00
+Total commits: 861
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 251
-    "fix" : 237
-    "chore" : 166
+    "feat" : 252
+    "fix" : 239
+    "chore" : 167
     "docs" : 117
     "refactor" : 50
     "test" : 21
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 251 commits
+### Features (feat) — 252 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | triage | merge-safety + leak-guard exemption for tracked triage.jsonl (C2) | d864828427a6 |
 | 2026-06-05 | triage | git-track .shipwright/triage.jsonl — gitignore negation + scaffolder self-heal (C1) | 17af03c0e70b |
 | 2026-06-05 | triage | machine-churn-only GC tool for the dismissed pile | bad895af4403 |
 | 2026-06-05 | compliance | A5.8 behaviorally probes the deployed critical-gate | 387e1da8bae3 |
@@ -276,16 +277,18 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 237 commits
+### Fixes (fix) — 239 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
 | 2026-06-05 | triage | C1 preservation tests assert no-reflow, not byte-level CRLF | c22ac1c3c06f |
 | 2026-06-05 | triage | scaffolder self-heal preserves content + line endings (external review, C1) | 71c5577ff383 |
 | 2026-06-05 | evidence | record A's unit suite as 617/617, not 617/627 (external review) | de77c5fc7e44 |
+| 2026-06-05 | triage | two-pass triage validator — order-independent (external review, C2) | bad7d909325f |
 | 2026-06-05 | triage | reword GC machine-set comment to satisfy artifact-path-canon (B) | 76b067bc9606 |
 | 2026-06-05 | triage | scaffolder fallback also ignores triage.jsonl.bak (C1, Codex LOW) | 39ddc7c35410 |
 | 2026-06-05 | triage | address Codex code-review findings on triage_gc (B) | 6334d902012f |
+| 2026-06-05 | triage | address Codex code-review findings on the churn resolver (C2) | b7559a2ec639 |
 | 2026-06-05 | compliance | SBOM cluster dedup-key = signature + manifest_type only | 53ccf300c5b2 |
 | 2026-06-05 | compliance | B7 excludes non-functional commit types (Rule E) | a611fc8dd9fc |
 | 2026-06-05 | hooks | make the bloat marker + Stop gate worktree-aware (trg-305e2aab) | 9282ef267871 |
@@ -518,10 +521,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 166 commits
+### Chores (chore) — 167 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | churn | regenerate derived snapshots after main merge | 1ad6cd3ae78f |
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | c0b3685ffcfc |
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | 10cc1e661386 |
 | 2026-06-05 | iterate | stamp adr ref + spec_impact_justification on A5.8 finalization | f70e2674faf8 |
@@ -926,7 +930,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 857 |
+| Total commits | 861 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 857 |
+| Human-authored commits | 861 |
 
