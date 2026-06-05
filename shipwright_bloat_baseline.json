@@ -214,9 +214,9 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_audit_group_b.py",
       "limit": 300,
-      "current": 706,
+      "current": 751,
       "state": "exception",
-      "adr": "ADR-095"
+      "adr": "ADR-097"
     },
     {
       "path": "plugins/shipwright-compliance/tests/test_audit_group_g.py",
@@ -403,9 +403,9 @@
     {
       "path": "plugins/shipwright-security/scripts/lib/oss_backend.py",
       "limit": 300,
-      "current": 374,
-      "state": "grandfathered",
-      "adr": null
+      "current": 421,
+      "state": "exception",
+      "adr": "ADR-097"
     },
     {
       "path": "plugins/shipwright-security/scripts/tools/generate_security_report.py",
@@ -452,9 +452,9 @@
     {
       "path": "plugins/shipwright-security/tests/test_oss_backend.py",
       "limit": 300,
-      "current": 543,
-      "state": "grandfathered",
-      "adr": null
+      "current": 655,
+      "state": "exception",
+      "adr": "ADR-097"
     },
     {
       "path": "plugins/shipwright-security/tests/test_prompt_injection_scan.py",

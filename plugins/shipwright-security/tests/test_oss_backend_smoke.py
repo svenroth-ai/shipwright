@@ -36,7 +36,7 @@ REPO_ROOT = PLUGIN_ROOT.parent.parent
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts" / "lib"))
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
-from test_hygiene import skip_or_fail_on_missing_binary  # noqa: E402
+from test_hygiene import is_ci, skip_or_fail_on_missing_binary  # noqa: E402
 from oss_backend import _run_gitleaks, _run_semgrep, _run_trivy  # noqa: E402
 
 
@@ -195,20 +195,27 @@ def test_gitleaks_detect_scans_committed_shipwright_dir(
     findings = _run_gitleaks(str(synthetic_repo))
     paths = [_finding_path(f) for f in findings or []]
 
-    # Positive-control gate: src/main_key.pem is committed in the
-    # synthetic repo and is never excluded by any allowlist. If Gitleaks
-    # cannot find it, the binary itself is misbehaving on this fixture
-    # and we cannot validate the exclusion contract.
+    # Positive-control gate: src/main_key.pem is committed in the synthetic
+    # repo and is never excluded by any allowlist. Unlike the Semgrep gate
+    # above, a Gitleaks miss is NOT plausibly "upstream rule churn": gitleaks
+    # runs with [extend] useDefault=true, i.e. the binary-embedded ruleset
+    # with NO network fetch, so detection of a freshly-committed private key
+    # is deterministic. A miss therefore means a real regression — most
+    # likely the historical `--report-path -` bug returning here, where
+    # gitleaks wrote its JSON to a stray file named `-` instead of stdout and
+    # the wrapper saw 0 findings (iterate-2026-06-05). Per ADR-044
+    # silent-skip discipline this must be VISIBLE: hard-fail in CI (so the
+    # coverage hole can never hide again) and skip only locally.
     if not any("main_key.pem" in p for p in paths):
-        # Positive-control fixture must be found before we can validate the
-        # exclusion contract; absence indicates a Gitleaks ruleset/binary
-        # mismatch, not a CI-vs-local condition.
-        # test-hygiene: allow-silent-skip — positive-control gate, see rationale above.
-        pytest.skip(
+        msg = (
             f"Gitleaks did not find the positive-control fixture file "
-            f"(src/main_key.pem) — likely a binary/ruleset mismatch on "
-            f"this machine. Got paths: {paths}"
+            f"(src/main_key.pem). gitleaks uses its embedded ruleset (no "
+            f"network), so this is a real regression, not upstream churn. "
+            f"Got paths: {paths}\n{_gitleaks_diagnostic(synthetic_repo)}"
         )
+        if is_ci():
+            pytest.fail(msg, pytrace=False)
+        pytest.skip(msg)
 
     assert any(".shipwright" in p for p in paths), (
         f"Gitleaks found the positive control but missed "
@@ -271,6 +278,32 @@ def test_trivy_scans_shipwright_dir_after_refactor(
 
 
 # --- Helpers --------------------------------------------------------------
+
+def _gitleaks_diagnostic(repo: Path) -> str:
+    """Best-effort diagnostic for a positive-control miss in CI.
+
+    A miss after the ``--report-path`` fix means gitleaks itself reported no
+    leaks on a freshly-committed private key — so dump the binary version and
+    the fixture's git state to make the CI failure actionable rather than a
+    bare ``Got paths: []``.
+    """
+    blocks = []
+    for label, args in (
+        ("gitleaks version", ["gitleaks", "version"]),
+        ("fixture git log", ["git", "-C", str(repo), "log", "--oneline", "--stat"]),
+    ):
+        try:
+            out = subprocess.run(
+                args, capture_output=True, text=True, timeout=30, encoding="utf-8",
+                errors="replace",
+            )
+            blocks.append(
+                f"--- {label} ---\n{out.stdout.strip()}\n{out.stderr.strip()}".strip()
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            blocks.append(f"--- {label} (failed: {exc!r}) ---")
+    return "\n".join(blocks)
+
 
 def _finding_path(finding: dict) -> str:
     """Best-effort extract a file-path-ish string from a normalized finding."""

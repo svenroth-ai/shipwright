@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-05T12:07:58.769492+00:00
+Generated: 2026-06-05T12:01:23.350872+00:00
 
 ## Requirements Coverage
 
@@ -123,7 +123,9 @@ Generated: 2026-06-05T12:07:58.769492+00:00
 | C1/C2 detective-realign doc + ledger closeout | iterate | change |  | 41/41 | — | 2026-06-05 |
 | Set security.yml.template checkout to fetch-depth: 1 (working-tree only) and correct the misleading diff-aware-secret-scans comment; no scanner reads git history. | iterate | change |  | — | — | 2026-06-05 |
 | Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery | iterate | change |  | 64/64 | — | 2026-06-05 |
-| Add A5.8: execute the deployed critical-gate shell against dual-artifact fixtures (flavor-agnostic across SARIF/findings.json; skip-safe; env kill-switch). | iterate | change |  | — | — | 2026-06-05 |
+| gitleaks --report-path - wrote a stray file named - instead of stdout, so the secrets leg silently returned 0 findings everywhere; report now written to a temp file and read back; smoke positive-control converted to ADR-044 CI-gated fail | iterate | bug |  | 320/320 | — | 2026-06-05 |
+| Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab) | iterate | change |  | 9/9 | — | 2026-06-05 |
+| B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill. | iterate | change |  | 44/44 | — | 2026-06-05 |
 
 ## Coverage Summary
 
@@ -131,7 +133,7 @@ Generated: 2026-06-05T12:07:58.769492+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 99 |
+| Iterate changes | 101 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

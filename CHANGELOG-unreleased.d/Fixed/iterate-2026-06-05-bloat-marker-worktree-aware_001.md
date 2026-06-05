@@ -1,0 +1,1 @@
+Bloat anti-ratchet Stop gate is now worktree-aware: a /shipwright-iterate run that grows an already-baselined file (with an ADR + baseline bump) no longer false-blocks at Stop — the marker's .worktrees/<slug>/ path now resolves to the repo-relative baseline key (recorder classifies anti-ratchet, gate finds the ceiling); genuine ratchets still block.

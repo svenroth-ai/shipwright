@@ -91,8 +91,11 @@ semgrep scan --json --config auto {target_dir}
 # Trivy (SCA) — --skip-dirs repeated per directory name
 trivy fs --format json --scanners vuln --skip-dirs .venv --skip-dirs node_modules ... {target_dir}
 
-# Gitleaks (Secrets) — detect mode + temp TOML config with [allowlist] paths
-gitleaks detect --report-format json -s {target_dir} --report-path - --config {generated_toml}
+# Gitleaks (Secrets) — detect mode + temp TOML config with [allowlist] paths.
+# The report goes to a temp FILE that the plugin reads back: gitleaks has no
+# stdout-report mode — `--report-path -` writes a literal file named `-`, not
+# stdout (gitleaks report.Write → os.Create), so the plugin must read the file.
+gitleaks detect --report-format json -s {target_dir} --report-path {temp_json_report} --config {generated_toml}
 ```
 
 ## Scanner-Exclusion Contract

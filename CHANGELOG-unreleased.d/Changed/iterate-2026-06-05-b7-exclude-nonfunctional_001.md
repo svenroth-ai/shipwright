@@ -1,0 +1,1 @@
+Compliance B7 now excludes non-functional Conventional-Commit types (build/chore/ci/docs/style/test) by default — repo maintenance needs no work_completed event, so direct ci/docs/chore commits no longer recur as B7 drift. Functional types (feat/fix/perf/refactor) are still flagged; opt out via b7_exclusions.exclude_nonfunctional_types=false.
