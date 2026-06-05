@@ -1,0 +1,1 @@
+Security scan template (`security.yml.template`): checkout now uses `fetch-depth: 1` instead of `0` — no scanner in the workflow reads git history (Gitleaks runs `--no-git`, Semgrep/Trivy scan the working tree), and the full-history fetch had correlated with a stale-merge-ref Gitleaks false positive.

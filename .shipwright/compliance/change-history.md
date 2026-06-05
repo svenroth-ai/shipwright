@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-05T07:37:49.248549+00:00
-Total commits: 831
+Generated: 2026-06-05T10:44:47.137948+00:00
+Total commits: 832
 
 ## Commit Distribution
 
@@ -10,7 +10,7 @@ pie title Commit Types
     "feat" : 248
     "fix" : 226
     "chore" : 159
-    "docs" : 114
+    "docs" : 115
     "refactor" : 50
     "test" : 21
     "other" : 7
@@ -668,10 +668,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 114 commits
+### Documentation (docs) — 115 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | compliance | document merged C1/C2 detective-audit realign + mark campaign rows done | 5b61555b6c9a |
 | 2026-06-01 | claude-md | document gating ruff lint step in Development section (#133) | 74a3e0b241f4 |
 | 2026-05-31 | iterate | fold Linux-CI discovery + cross-platform fixes into iterate artifacts | ef089eb6a64f |
 | 2026-05-31 | conventions | record CI-coverage trap (shared/tests not run by CI) | afa728c11447 |
@@ -900,7 +901,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 831 |
+| Total commits | 832 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 831 |
+| Human-authored commits | 832 |
 

@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-06-05-security-template-fetch-depth",
+  "date": "2026-06-05T10:45:19.469854Z",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/security-template-fetch-depth",
+  "tests_passed": true,
+  "spec": "NONE",
+  "adr": "pending",
+  "summary": "security.yml.template checkout fetch-depth 0->1 + accurate comment (no scanner reads git history)"
+}

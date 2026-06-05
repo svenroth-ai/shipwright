@@ -1,10 +1,10 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-05-detective-realign-doc-ledger",
+    "run_id": "iterate-2026-06-05-security-template-fetch-depth",
     "date": "2026-06-05",
     "unit": {
       "status": "passed",
-      "passed": 41,
+      "passed": 32,
       "total": 41
     },
     "integration": {
@@ -18,7 +18,7 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -35,14 +35,18 @@
       "runner": "surface_verification.py --surface none",
       "tests_run": 0,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-05-detective-realign-doc-ledger/surface_verification.json",
-      "timestamp": "2026-06-05T07:33:37.044Z",
-      "justification": "Docs/planning-ledger-only change: corrects docs/hooks-and-pipeline.md (C1 release-snapshot + C2 pyyaml-invocation notes) and flips C1/C2 campaign ledger rows to done. No code, API, UI, or startable surface touched; C1/C2 code already merged in PR #142."
+      "justification": "Static CI-workflow-template edit: security.yml.template checkout fetch-depth 0->1 plus an accurate block comment. No application runtime surface (no API/UI/startable server); validated by YAML-parse + ci-template-registry + adopt security-workflow scaffold tests."
     },
     "test_completeness": {
       "status": "n/a",
-      "justification": "Trivial complexity: docs/hooks-and-pipeline.md clarifications + campaign ledger status flips. No code or behavior changed and no testable behavior is introduced; the C1/C2 audit logic this documents is already covered by merged tests (PR #142). Related doc-sync/campaign meta-tests (41) re-run green at F0."
+      "justification": "Trivial complexity: single-line CI-template config/comment edit (fetch-depth 0->1). No new application behavior to enumerate. Template validity is covered by YAML-parse + ci_template_registry_completeness + adopt scaffold + bloat_defense_artifacts tests, all green at F0."
     },
-    "degraded": []
+    "degraded": [
+      {
+        "condition": "jq absent on local Windows runner: 9 test_security_critical_gate bash tests skipped locally",
+        "impact": "low",
+        "note": "They execute in CI (ubuntu ships jq) and are unrelated to this diff, which does not touch the critical-gate logic."
+      }
+    ]
   }
 }
