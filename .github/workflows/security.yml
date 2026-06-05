@@ -75,6 +75,20 @@ jobs:
 
       - name: Run OSS security scan (Semgrep + Trivy + Gitleaks)
         working-directory: plugins/shipwright-security
+        env:
+          # Scope this self-scan to shipped code. The security plugin's own
+          # test suites (plugins/*/tests, shared/tests) carry SYNTHETIC
+          # secrets by design — redaction/detection/hook tests need sample
+          # API keys, GitHub PATs, Slack tokens and PEM markers as fixtures.
+          # Now that the Gitleaks leg actually works (the `--report-path -`
+          # fix, iterate-2026-06-05-gitleaks-report-path), those synthetic
+          # fixtures surface as 14 false-positive findings (3 critical).
+          # Excluding the `tests` path-segment from the scan keeps the gate
+          # focused on shipped plugin code (tests are not distributed). A
+          # real leak in test code is still caught by the check_secrets.sh
+          # pre-commit hook + review. trg-190ff3b9 tracks a finer-grained
+          # per-secret allowlist as a possible future refinement.
+          SHIPWRIGHT_SCAN_EXCLUDES: tests
         run: |
           uv run scripts/tools/scan.py \
             --path ../.. \
