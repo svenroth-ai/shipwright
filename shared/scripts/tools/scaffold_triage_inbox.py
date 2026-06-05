@@ -90,10 +90,13 @@ def _scaffold_gitignore(project_root: Path) -> dict[str, object]:
     """
     gi_path = project_root / ".gitignore"
     existing_text = gi_path.read_text(encoding="utf-8") if gi_path.exists() else ""
-    lines = existing_text.splitlines()
 
-    kept = [L for L in lines if L.strip() not in _STALE_IGNORE_LINES]
-    healed = [L.strip() for L in lines if L.strip() in _STALE_IGNORE_LINES]
+    # keepends=True so the kept lines retain their ORIGINAL terminators — healing
+    # one stale line must not normalize CRLF<->LF or reflow the rest of the file
+    # (external-review GPT-5.4 HIGH).
+    raw = existing_text.splitlines(keepends=True)
+    kept = [L for L in raw if L.strip() not in _STALE_IGNORE_LINES]
+    healed = [L.strip() for L in raw if L.strip() in _STALE_IGNORE_LINES]
 
     present = {L.strip() for L in kept if L.strip()}
     needed = [line for line in GITIGNORE_LINES if line not in present]
@@ -106,15 +109,18 @@ def _scaffold_gitignore(project_root: Path) -> dict[str, object]:
             "healed": [],
         }
 
-    new_text = "\n".join(kept)
-    if new_text and not new_text.endswith("\n"):
-        new_text += "\n"
+    # Append-only (no heal) preserves the existing file byte-for-byte; only a
+    # heal rewrites, and even then the kept lines keep their original endings.
+    base = "".join(kept) if healed else existing_text
+    if base and not base.endswith(("\n", "\r")):
+        base += "\n"
+    appendix = ""
     if needed:
-        new_text += ("\n# Triage Inbox (shipwright)\n" if new_text
-                     else "# Triage Inbox (shipwright)\n")
-        new_text += "\n".join(needed) + "\n"
+        appendix = ("\n# Triage Inbox (shipwright)\n" if base
+                    else "# Triage Inbox (shipwright)\n")
+        appendix += "\n".join(needed) + "\n"
 
-    gi_path.write_text(new_text, encoding="utf-8")
+    gi_path.write_text(base + appendix, encoding="utf-8")
     return {
         "path": ".gitignore",
         "action": "healed" if healed and not needed else

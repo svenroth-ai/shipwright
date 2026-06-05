@@ -19,14 +19,18 @@ leak-guard exemption (C2), **not** a systemic resolver. C1 is just the gitignore
 2. **Monorepo `.gitignore`** — identical line at the identical rule-position
    (the congruence test compares the two managed blocks as an **ordered list**).
 3. **`scaffold_triage_inbox.py`** — `GITIGNORE_LINES` drops the bare
-   `.shipwright/triage.jsonl` (keeps `.lock`); `_scaffold_gitignore` gains a
-   **self-heal** that strips any stale bare/`/`-prefixed `.shipwright/triage.jsonl`
-   ignore line (a pre-tracking adopter appended it AFTER the managed block, where
-   gitignore last-match-wins would override the negation). The `!` negation is
-   never stripped.
+   `.shipwright/triage.jsonl` (keeps `.lock` **and the GC `.bak`** — Codex LOW:
+   belt-and-braces for repos lacking the canonical block); `_scaffold_gitignore`
+   gains a **self-heal** that strips any stale bare/`/`-prefixed
+   `.shipwright/triage.jsonl` ignore line (a pre-tracking adopter appended it
+   AFTER the managed block, where gitignore last-match-wins would override the
+   negation). The `!` negation is never stripped, and the heal **preserves the
+   file's existing content + line endings** (external-review GPT-5.4 HIGH —
+   `keepends=True`, append-only path leaves bytes verbatim).
 
 `.lock` + the GC's `.bak` stay ignored by the `/.shipwright/*` wildcard (the
-negation matches only the exact `.jsonl`).
+negation matches only the exact `.jsonl`); the scaffolder also lists them as a
+fallback for non-canonical `.gitignore` files.
 
 ## Acceptance criteria
 

@@ -157,6 +157,35 @@ def test_self_heals_stale_bare_jsonl_ignore(project: Path) -> None:
     assert ".shipwright/triage.jsonl" in result["results"]["gitignore"]["healed"]
 
 
+def test_self_heal_preserves_content_and_line_endings(project: Path) -> None:
+    """Healing the stale line must NOT normalize CRLF->LF or reflow unrelated
+    content (external-review GPT-5.4 HIGH)."""
+    gi = project / ".gitignore"
+    gi.write_bytes(
+        b"node_modules/\r\n.env\r\n"
+        b".shipwright/triage.jsonl\r\n.shipwright/triage.jsonl.lock\r\n"
+    )
+    result = scaffold_triage_inbox(project)
+    raw = gi.read_bytes()
+    assert b"\r\n" in raw                       # CRLF preserved, not normalized
+    assert b"node_modules/\r\n" in raw          # unrelated content untouched
+    assert b".env\r\n" in raw
+    decoded = [L.strip() for L in raw.decode().splitlines()]
+    assert ".shipwright/triage.jsonl" not in decoded        # stale bare line healed
+    assert ".shipwright/triage.jsonl.lock" in decoded       # lock kept
+    assert ".shipwright/triage.jsonl" in result["results"]["gitignore"]["healed"]
+
+
+def test_append_only_preserves_existing_bytes(project: Path) -> None:
+    """No stale line → append-only must leave existing content byte-identical."""
+    gi = project / ".gitignore"
+    gi.write_bytes(b"node_modules/\r\n")  # CRLF, no triage lines
+    scaffold_triage_inbox(project)
+    raw = gi.read_bytes()
+    assert raw.startswith(b"node_modules/\r\n")  # original bytes preserved verbatim
+    assert b".shipwright/triage.jsonl.lock" in raw
+
+
 def test_self_heal_strips_slash_prefixed_variant(project: Path) -> None:
     gi = project / ".gitignore"
     gi.write_text("/.shipwright/triage.jsonl\n.shipwright/triage.jsonl.lock\n",
