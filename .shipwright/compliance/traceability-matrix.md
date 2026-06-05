@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-05T20:06:43.582776+00:00
+Generated: 2026-06-05T22:07:25.140368+00:00
 
 ## Requirements Coverage
 
@@ -136,6 +136,7 @@ Generated: 2026-06-05T20:06:43.582776+00:00
 | git-track triage.jsonl: gitignore negation + scaffolder self-heal (C1) | iterate | change |  | 19/19 | — | 2026-06-05 |
 | triage_gc tool: machine-churn-only dismissed-pile compaction | iterate | feature |  | 387/387 | — | 2026-06-05 |
 | SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift) | iterate | change |  | 617/617 | — | 2026-06-05 |
+| adopt skill docs: triage.jsonl is tracked, not gitignored (D) | iterate | change |  | 24/24 | — | 2026-06-05 |
 
 ## Coverage Summary
 
@@ -143,7 +144,7 @@ Generated: 2026-06-05T20:06:43.582776+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 111 |
+| Iterate changes | 112 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

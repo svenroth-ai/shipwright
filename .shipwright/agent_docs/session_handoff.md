@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-05-triage-track-c2-churn"
+run_id: "iterate-2026-06-06-triage-adopt-project-wiring"
 phase: "iterate"
-reason: "integrate main after A+B+C1 merged (campaign stack)"
-timestamp: "2026-06-05T20:06:43.582776+00:00"
+reason: "iterate: adopt wiring docs (D)"
+timestamp: "2026-06-05T22:07:25.140368+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-05 20:06:43 UTC
+> Auto-generated 2026-06-05 22:07:25 UTC
 
 ## Session Info
 
 - **Session ID**: 474cb900-eabb-46ef-8f55-83f5fd879d5f
-- **Timestamp**: 2026-06-05 20:06:43 UTC
-- **Reason**: integrate main after A+B+C1 merged (campaign stack)
+- **Timestamp**: 2026-06-05 22:07:25 UTC
+- **Reason**: iterate: adopt wiring docs (D)
 
 ## Last Iterate
 
@@ -29,7 +29,7 @@ timestamp: "2026-06-05T20:06:43.582776+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/triage-track-c2
+- **Branch**: iterate/triage-adopt-wiring
 - **External Review Marker**: completed (external_review_state.json @ 2026-06-01T06:00:50)
 
 ### Mandatory replay on Resume
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-track-c2
-- **Last Commit**: dd18fc25 Merge remote-tracking branch 'origin/main' into iterate/triage-track-c2
+- **Branch**: iterate/triage-adopt-wiring
+- **Last Commit**: 359e1edb Merge #156: triage merge-safety + leak-guard exemption (campaign C2)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-731a06cd | work_completed | iterate (adopt skill docs: triage.jsonl is tracked, not gitignored (D)) | 2026-06-05 |
 | evt-7e3e2dc7 | work_completed | iterate (SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift)) | 2026-06-05 |
 | evt-64ee4ee6 | work_completed | iterate (triage_gc tool: machine-churn-only dismissed-pile compaction) | 2026-06-05 |
 | evt-17f29a61 | work_completed | iterate (git-track triage.jsonl: gitignore negation + scaffolder self-heal (C1)) | 2026-06-05 |
 | evt-a27ad620 | work_completed | iterate (triage.jsonl merge-safety + leak-guard exemption (like events) — C2) | 2026-06-05 |
-| evt-7f17543a | work_completed | iterate (B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill.) | 2026-06-05 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 111
-- **Last iterate**: change — SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift) (2026-06-05)
+- **Total work events**: 112
+- **Last iterate**: change — adopt skill docs: triage.jsonl is tracked, not gitignored (D) (2026-06-05)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
