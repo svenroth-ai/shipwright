@@ -16,9 +16,9 @@ Generated: 2026-06-05T12:01:23.350872+00:00
 
 ```mermaid
 pie title License Distribution
-    "unknown" : 4
-    "Apache-2.0" : 2
+    "unknown" : 5
     "MIT" : 2
+    "Apache-2.0" : 1
 ```
 
 ## Runtime Dependencies
@@ -30,7 +30,7 @@ pie title License Distribution
 | openai | 2.30.0 | Apache-2.0 |
 | openai | 1.0.0 | unknown |
 | pyyaml | 6.0 | MIT |
-| requests | 2.31.0 | Apache-2.0 |
+| requests | 2.31.0 | unknown |
 
 ## Dev Dependencies
 
@@ -45,7 +45,7 @@ No copyleft licenses detected. All dependencies are permissively licensed or unk
 
 ## Unknown Licenses
 
-**4 packages** have unknown licenses. Install dependencies (`npm install` / `uv sync`) and regenerate to detect licenses.
+**5 packages** have unknown licenses. Install dependencies (`npm install` / `uv sync`) and regenerate to detect licenses.
 
 | Package | Version | Type |
 |---------|---------|------|
@@ -53,4 +53,5 @@ No copyleft licenses detected. All dependencies are permissively licensed or unk
 | openai | 1.0.0 | runtime |
 | pytest | 8.0.0 | dev |
 | pytest-mock | 3.12.0 | dev |
+| requests | 2.31.0 | runtime |
 

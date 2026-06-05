@@ -133,7 +133,7 @@ Generated: 2026-06-05T12:01:23.350872+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 100 |
+| Iterate changes | 101 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

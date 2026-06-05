@@ -1,20 +1,20 @@
 # Commit Change Log
 
-Generated: 2026-06-05T11:26:02.491805+00:00
-Total commits: 839
+Generated: 2026-06-05T12:01:23.350872+00:00
+Total commits: 842
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 248
-    "fix" : 229
-    "chore" : 161
+    "fix" : 230
+    "chore" : 162
     "docs" : 116
     "refactor" : 50
     "test" : 21
+    "ci" : 7
     "other" : 7
-    "ci" : 6
     "build" : 1
 ```
 
@@ -273,10 +273,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 229 commits
+### Fixes (fix) — 230 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | compliance | B7 excludes non-functional commit types (Rule E) | a611fc8dd9fc |
 | 2026-06-05 | hooks | make the bloat marker + Stop gate worktree-aware (trg-305e2aab) | 9282ef267871 |
 | 2026-06-05 | security | read gitleaks report from a file, not stdout | 4a27c374ed3c |
 | 2026-06-05 | iterate | enforce FR-gate on finalize write-path + same-event D3 (C3) | 2b0fb66cf115 |
@@ -507,10 +508,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 161 commits
+### Chores (chore) — 162 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | churn | regenerate derived snapshots after main merge | faa552ad0fef |
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | aab4bd7f64e7 |
 | 2026-06-05 | iterate | correct finalization metadata (adr key + spec_impact_justification) | 3a571d8435d1 |
 | 2026-06-02 | release | v0.23.1 | a0aa1e624070 |
@@ -875,6 +877,18 @@ pie title Commit Types
 | 2026-04-11 | — | complete test phase — 299 unit tests, 5 E2E tests, smoke PASS | e843d458942d |
 | 2026-04-11 | e2e | set up Playwright with E2E specs and smoke test results | cba0fd6e9012 |
 
+### CI/CD (ci) — 7 commits
+
+| Date | Scope | Description | Commit |
+|------|-------|-------------|--------|
+| 2026-06-05 | security | scope self-scan to shipped code (exclude tests/) | b49fa41db2ae |
+| 2026-06-05 | security-template | checkout at fetch-depth 1 (no scanner reads git history) | f6dd93918acf |
+| 2026-06-01 | — | pin third-party actions to SHA and verify gitleaks download integrity | 32bc15a5aa01 |
+| 2026-05-31 | — | descope shared-tests to non-gating tracked-debt (Linux-portability) | e1d016e0e848 |
+| 2026-05-31 | — | add CI gate-coverage guard and harden workflow gates | ae35cd199c99 |
+| 2026-05-31 | — | run shared/ test suites in CI via per-dir invocations | eb68b567899d |
+| 2026-05-31 | integration | gate integration-tests step on failure; fix F821 in events-log test | 83d68709d125 |
+
 ### Other (other) — 7 commits
 
 | Date | Scope | Description | Commit |
@@ -887,17 +901,6 @@ pie title Commit Types
 | 2026-04-04 | — | Revert "fix: rename skill dirs to full plugin name for clean slash-command display" | 1545b4b2c522 |
 | 2026-03-21 | — | revert: restore full skill names in SKILL.md frontmatter | 05c0d5ce7566 |
 
-### CI/CD (ci) — 6 commits
-
-| Date | Scope | Description | Commit |
-|------|-------|-------------|--------|
-| 2026-06-05 | security-template | checkout at fetch-depth 1 (no scanner reads git history) | f6dd93918acf |
-| 2026-06-01 | — | pin third-party actions to SHA and verify gitleaks download integrity | 32bc15a5aa01 |
-| 2026-05-31 | — | descope shared-tests to non-gating tracked-debt (Linux-portability) | e1d016e0e848 |
-| 2026-05-31 | — | add CI gate-coverage guard and harden workflow gates | ae35cd199c99 |
-| 2026-05-31 | — | run shared/ test suites in CI via per-dir invocations | eb68b567899d |
-| 2026-05-31 | integration | gate integration-tests step on failure; fix F821 in events-log test | 83d68709d125 |
-
 ### Build (build) — 1 commits
 
 | Date | Scope | Description | Commit |
@@ -908,7 +911,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 839 |
+| Total commits | 842 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 839 |
+| Human-authored commits | 842 |
 
