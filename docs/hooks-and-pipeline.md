@@ -127,6 +127,7 @@ artifact has exactly one documented resolution strategy:
 | Churn artifact | Strategy on merge |
 |---|---|
 | `shipwright_events.jsonl` | **union** (`.gitattributes`) + unconditional validate/dedup |
+| `.shipwright/triage.jsonl` | **union** (`.gitattributes`, dogfood-only) + unconditional `_reconcile_triage` (exact-line dedup, NO id-collision warning — append/status share an id by design — + header/JSON validate) |
 | `.shipwright/compliance/dashboard.md` | **regenerate** (from merged tree) |
 | `.shipwright/compliance/sbom.md` | **regenerate** |
 | `.shipwright/compliance/test-evidence.md` | **regenerate** |

@@ -29,6 +29,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.churn_merge import TRIAGE_LOG  # noqa: E402
 from lib.events_log import EVENT_FILE  # noqa: E402
 from lib.iterate_entry import sanitize_run_id_for_filename  # noqa: E402
 
@@ -57,16 +58,14 @@ _RUN_INFRA_PREFIXES = (
     f"{WORKTREES_DIRNAME}",
 )
 
-# Since iterate-2026-05-29-events-jsonl-worktree-commit the event log is a
-# PER-TREE artifact (F5b records into the worktree's own shipwright_events.jsonl,
-# F6 commits it) so a normal iterate never writes the main-tree log. The
-# exemption is retained only as defense-in-depth for the legacy/out-of-band F7 +
-# F7b seal (record_event.py / commit_event_followup.py target the main repo via
-# resolve_main_repo_root) and replays — never a branch-scoped "leak". Matched as
-# an EXACT root-relative path: a same-named file in a subdir stays flagged.
-_MAIN_TREE_WRITE_EXEMPT = (
-    EVENT_FILE,
-    EVENT_FILE + ".lock",
+# Tracked append-only logs (shipwright_events.jsonl + .shipwright/triage.jsonl,
+# the latter since campaign 2026-06-05-track-triage-jsonl). A normal iterate writes
+# these PER-TREE (worktree copy, committed via F6); the leak-guard exemption is
+# defense-in-depth for legitimate MAIN-repo durable-log appends — events' legacy
+# F7/F7b seal + replays, and triage's background Stop-hook / on-demand triage_add
+# writes — never a branch leak. EXACT root-relative paths (+ .lock sidecars).
+_MAIN_TREE_WRITE_EXEMPT = tuple(
+    f + s for f in (EVENT_FILE, TRIAGE_LOG) for s in ("", ".lock")
 )
 
 

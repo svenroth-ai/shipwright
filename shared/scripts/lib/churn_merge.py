@@ -24,11 +24,16 @@ DERIVED_MDS: frozenset[str] = COMPLIANCE_MDS | AGENT_DOC_MDS
 
 EVENTS_LOG = "shipwright_events.jsonl"
 TEST_RESULTS = "shipwright_test_results.json"
+#: The triage backlog — an append-only JSONL log tracked since campaign
+#: 2026-06-05-track-triage-jsonl (C). Reconciled like ``EVENTS_LOG`` but with
+#: a triage-specific dedup (no id-collision warning — see
+#: :func:`dedup_triage_lines`).
+TRIAGE_LOG = ".shipwright/triage.jsonl"
 
 #: Everything the resolver may auto-resolve. A conflict outside this set aborts.
 #: NOTE: ``.shipwright/agent_docs/architecture.md`` is intentionally absent
 #: (curated prose — must reach a human; folds external-review G4/O1).
-CHURN_ALLOWLIST: frozenset[str] = DERIVED_MDS | {EVENTS_LOG, TEST_RESULTS}
+CHURN_ALLOWLIST: frozenset[str] = DERIVED_MDS | {EVENTS_LOG, TEST_RESULTS, TRIAGE_LOG}
 
 
 def norm(rel: str) -> str:
@@ -82,6 +87,59 @@ def dedup_event_lines(lines: list[str]) -> tuple[list[str], list[str]]:
                 )
             id_to_line.setdefault(ev_id, line)
     return out, warnings
+
+
+def dedup_triage_lines(lines: list[str]) -> tuple[list[str], list[str]]:
+    """Exact-line dedup for the triage log, preserving first-seen order.
+
+    Returns ``(deduped, warnings)`` for interface parity with
+    :func:`dedup_event_lines`, but ``warnings`` is **always empty**: triage
+    ``append`` and ``status`` events INTENTIONALLY share an item ``id`` (the
+    status event flips the status of an existing item), so the event-log
+    "distinct lines share an id → warn" heuristic would false-fire on every
+    item that was ever promoted / dismissed. Only byte-identical duplicate
+    lines (the same event recorded on both merge sides) are dropped.
+    """
+    seen: set[str] = set()
+    out: list[str] = []
+    for line in lines:
+        if not line.strip() or line in seen:
+            continue
+        seen.add(line)
+        out.append(line)
+    return out, []
+
+
+def validate_triage_text(text: str) -> list[str]:
+    """Return a list of error strings (empty = valid) for the triage log.
+
+    Checks: (a) the first non-blank line is the ``{"schema":"triage",...}``
+    header; (b) every non-blank line parses as JSON. Parallel to
+    :func:`validate_events_text` but triage-specific (no ``work_completed`` /
+    ``adr_id`` semantics — the triage schema has none).
+    """
+    errors: list[str] = []
+    header_seen = False
+    for n, line in enumerate(text.splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            obj = json.loads(line)
+        except json.JSONDecodeError as exc:
+            errors.append(
+                f"line {n}: not valid JSON ({exc.msg}) — union may have corrupted a historic line"
+            )
+            continue
+        if not header_seen:
+            header_seen = True
+            if not (isinstance(obj, dict) and obj.get("schema") == "triage" and "v" in obj):
+                errors.append(
+                    f"line {n}: first non-blank line is not the triage header "
+                    '({"v":...,"schema":"triage",...}) — the merge reordered or dropped it'
+                )
+    if not header_seen:
+        errors.append("triage log is empty after merge — the header was dropped")
+    return errors
 
 
 def validate_events_text(text: str, *, require_run_id: str | None = None) -> list[str]:
