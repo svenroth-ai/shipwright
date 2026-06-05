@@ -49,8 +49,8 @@ MACHINE_DISMISSERS = frozenset({
     "f05Detector",
     "githubImporter",
     "complianceBacklog",
-    "phaseQualityBacklog",  # phase_quality/_triage_bundle.py
-    "testEvidence",         # plugins/shipwright-compliance/.../test_evidence.py
+    "phaseQualityBacklog",  # phase_quality _triage_bundle producer
+    "testEvidence",         # shipwright-compliance test_evidence producer
 })
 
 # Exact machine auto-resolve tokens. A human free-text reason (even one that
