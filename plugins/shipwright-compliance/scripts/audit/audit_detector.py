@@ -141,6 +141,15 @@ _DEFAULT_CONFIG: dict[str, Any] = {
         # Glob pattern passed to ``git describe --tags --match`` to find
         # the baseline tag B7 scans from. ``v*`` matches v0.1.0, v1.2.3, …
         "last_release_tag_pattern": "v*",
+        # Rule E (iterate-2026-06-05-b7-exclude-nonfunctional): non-functional
+        # Conventional-Commit types are repo maintenance with no RTM footprint,
+        # so they need no work_completed event — excluded by default to stop a
+        # direct ci/docs/chore commit from being a recurring B7 entry. Functional
+        # types (feat/fix/perf/refactor) are NEVER excluded here (real drift B7
+        # keeps surfacing). Set ``exclude_nonfunctional_types`` false to restore
+        # the old flag-everything stance; override ``nonfunctional_types`` to tune.
+        "exclude_nonfunctional_types": True,
+        "nonfunctional_types": ["build", "chore", "ci", "docs", "style", "test"],
     },
     # Per-rule on/off switches for B7. Set any to false to disable that
     # rule without removing the substantive exclusion list (lets users
@@ -150,6 +159,8 @@ _DEFAULT_CONFIG: dict[str, Any] = {
         "rule_a": True,  # exclude merge commits
         "rule_b": True,  # exclude CI-bot authors
         "rule_c": True,  # exclude commits whose diff stays in path_prefixes
+        "rule_d": True,  # exclude chore(release) changelog-phase commits
+        "rule_e": True,  # exclude non-functional Conventional-Commit types
     },
     # Group A5 — CI security workflow integrity overrides. All four are
     # escape hatches for projects that legitimately diverge from the
