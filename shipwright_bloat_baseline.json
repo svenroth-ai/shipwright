@@ -158,9 +158,9 @@
     {
       "path": "plugins/shipwright-compliance/scripts/audit/group_d.py",
       "limit": 300,
-      "current": 457,
-      "state": "grandfathered",
-      "adr": null
+      "current": 465,
+      "state": "exception",
+      "adr": "ADR-096"
     },
     {
       "path": "plugins/shipwright-compliance/scripts/audit/group_f.py",
@@ -228,9 +228,9 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_audit_groups_a_d.py",
       "limit": 300,
-      "current": 748,
-      "state": "grandfathered",
-      "adr": null
+      "current": 789,
+      "state": "exception",
+      "adr": "ADR-096"
     },
     {
       "path": "plugins/shipwright-compliance/tests/test_audit_groups_c_f.py",
@@ -655,9 +655,9 @@
     {
       "path": "shared/scripts/tools/finalize_iterate.py",
       "limit": 300,
-      "current": 475,
+      "current": 532,
       "state": "exception",
-      "adr": "ADR-090"
+      "adr": "ADR-096"
     },
     {
       "path": "shared/scripts/tools/generate_session_handoff.py",
@@ -844,9 +844,9 @@
     {
       "path": "shared/tests/test_finalize_iterate.py",
       "limit": 300,
-      "current": 306,
-      "state": "grandfathered",
-      "adr": null
+      "current": 464,
+      "state": "exception",
+      "adr": "ADR-096"
     },
     {
       "path": "shared/tests/test_generate_handoff_on_stop.py",

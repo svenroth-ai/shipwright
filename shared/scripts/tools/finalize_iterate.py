@@ -34,6 +34,24 @@ from lib.artifact_paths import (  # noqa: E402
 )
 
 
+class FinalizeGateError(RuntimeError):
+    """Raised when the finalize FR-gate rejects an iterate work_completed event.
+
+    Fail-closed (iterate-2026-06-05-fr-linkage-lifecycle / ADR-059 parity):
+    the finalize write-path now runs the SAME gate as ``record_event.main``
+    (``_fr_or_change_type_gate_error``). An iterate ``work_completed`` event
+    lacking FR linkage (``affected_frs``/``new_frs``) AND a valid
+    ``change_type``+``none_reason`` is rejected BEFORE write — finalize halts
+    with actionable guidance rather than silently writing a non-compliant
+    event that the Group-D detective audit (D5) would later flag.
+
+    The ``detail`` carried here is the gate's actionable message (which field
+    is missing + the remediation). The CLI ``main`` catches it and exits 1;
+    the Stop-hook fallback (``iterate_stop_finalize``) catches it and logs —
+    in both cases nothing is appended to the event log.
+    """
+
+
 def _atomic_replace(content_bytes: bytes, destination: Path) -> None:
     """Atomic same-filesystem write via NamedTemporaryFile + os.replace.
 
@@ -212,7 +230,12 @@ def _record_event(
     add another ``work_completed`` row to ComplianceData.
     """
     try:
-        from tools.record_event import append_event, generate_event_id, read_events
+        from tools.record_event import (
+            _fr_or_change_type_gate_error,
+            append_event,
+            generate_event_id,
+            read_events,
+        )
     except Exception as exc:
         print(f"[finalize_iterate] event recording failed: {exc}", file=sys.stderr)
         return None
@@ -258,7 +281,25 @@ def _record_event(
         if session and "session" not in event:
             event["session"] = session
 
+        # FR-gate parity (iterate-2026-06-05-fr-linkage-lifecycle / ADR-059):
+        # close the bypass that let FR-less iterate work_completed events reach
+        # the log via this direct ``append_event`` caller. Runs AFTER the
+        # idempotency early-return above (a re-run of an already-recorded run_id
+        # is never re-gated) and BEFORE the write. Reuses the CLI gate verbatim
+        # — single source of truth, do not re-implement. Build events bypass it
+        # (source != "iterate"); this writer only ever emits source="iterate".
+        gate_error = _fr_or_change_type_gate_error(event)
+        if gate_error is not None:
+            raise FinalizeGateError(
+                gate_error.get("detail", "FR-gate rejected the work_completed event")
+            )
+
         return append_event(project_root, event)
+    except FinalizeGateError:
+        # Fail-closed: propagate so the iterate halts with guidance rather than
+        # silently dropping (or degrading) the work record. NOT swallowed by the
+        # best-effort handler below.
+        raise
     except Exception as exc:
         print(f"[finalize_iterate] event recording failed: {exc}", file=sys.stderr)
         return None
@@ -360,6 +401,13 @@ def run(
 
     The returned ``result["steps"]["event"]["id"]`` is the event_id F6.5
     must pass back to :func:`attach_commit_after_finalize`.
+
+    **Fail-closed (iterate-2026-06-05-fr-linkage-lifecycle):** if Step 1's
+    FR-gate rejects the event, :func:`_record_event` raises
+    :class:`FinalizeGateError`, which propagates out of ``run`` BEFORE Steps
+    2-5 — the derived artifacts are deliberately NOT refreshed for an
+    unclassified (incomplete) iterate. ``main`` turns it into exit 1; the
+    Stop-hook fallback catches it and logs. Re-run F5b with classification.
     """
     session_id = os.environ.get("SHIPWRIGHT_SESSION_ID", "unknown")
     result: dict = {"steps": {}, "project_root": str(project_root)}
@@ -462,10 +510,19 @@ def main(argv: list[str] | None = None) -> int:
         except json.JSONDecodeError as exc:
             parser.error(f"--event-extras-json failed to parse: {exc}")
 
-    result = run(
-        project_root, args.run_id, args.commit, args.reason,
-        event_extras=event_extras,
-    )
+    try:
+        result = run(
+            project_root, args.run_id, args.commit, args.reason,
+            event_extras=event_extras,
+        )
+    except FinalizeGateError as exc:
+        # Fail-closed, mirroring record_event.main: exit 1 + structured error,
+        # nothing written. The detail names the missing field + remediation.
+        print(json.dumps(
+            {"success": False, "error": "fr_gate_unclassified", "detail": str(exc)},
+            indent=2, ensure_ascii=False,
+        ))
+        return 1
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0

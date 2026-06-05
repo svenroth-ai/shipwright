@@ -11,8 +11,10 @@ Canon gate cannot see them, only a holistic events × spec scan can.
 - D2 — Stale FR reference. Flag ``affected_frs`` FR-IDs in the event
   log not present in the current spec (renames/removals). Severity MEDIUM.
 - D3 — Promised FR not delivered. FR appears in some past event's
-  ``new_frs`` but never in any subsequent ``affected_frs`` — the spec
-  promised the work, the work never landed. Severity MEDIUM.
+  ``new_frs`` but never in any same-event-or-later ``affected_frs`` — the
+  spec promised the work, the work never landed. A same-event delivery
+  (``new_frs`` + ``affected_frs`` together, the normal single-iterate case)
+  counts as delivered. Severity MEDIUM.
 - D4 — Latest covering event has failing tests. The most recent event
   covering an FR has ``tests.passed < tests.total`` — the FR sits in a
   partially-broken state. Severity LOW.
@@ -258,7 +260,13 @@ def _check_d3(
     pending: list[str] = []
     for fr_id, promised_ts in promised.items():
         delivered_ts_list = delivered_after.get(fr_id, [])
-        if any(ts > promised_ts for ts in delivered_ts_list):
+        # ``>=`` (not ``>``): an FR present in both ``new_frs`` and
+        # ``affected_frs`` of the SAME event (ts == promised_ts) — the normal
+        # single-iterate "introduce + deliver" case — counts as delivered.
+        # Strictly-later was the FR-01.33 webui false-positive: a same-event
+        # delivery stayed "pending" forever until some unrelated later event
+        # happened to touch the FR (iterate-2026-06-05-fr-linkage-lifecycle).
+        if any(ts >= promised_ts for ts in delivered_ts_list):
             continue
         pending.append(fr_id)
 

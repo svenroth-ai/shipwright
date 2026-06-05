@@ -12,7 +12,7 @@ Group D — Event-log FR coverage:
   (Must=HIGH, Should=MEDIUM, May=LOW).
 - D2: events referencing FR-IDs not present in the current spec.md
 - D3: FRs introduced via an event's ``new_frs`` but never observed in any
-  subsequent event's ``affected_frs``
+  same-event-or-later ``affected_frs`` (same-event delivery counts)
 - D4: most recent covering event has ``tests.passed < tests.total``
 
 Epoch floor (D1/D2): the latest event carrying a ``spec_updated`` field
@@ -604,6 +604,48 @@ def test_d3_flags_promised_but_never_touched_fr(tmp_path):
     assert d3.status == "fail"
     assert d3.severity == "MEDIUM"
     assert "FR-01.01" in d3.detail
+
+
+def test_d3_passes_when_fr_delivered_in_same_event(tmp_path):
+    """C3 (iterate-2026-06-05-fr-linkage-lifecycle): an FR introduced via
+    ``new_frs`` AND delivered via ``affected_frs`` in the SAME event counts as
+    delivered — the normal single-iterate case. Previously D3 required a
+    strictly-later (``ts > promised_ts``) affected event and flagged this
+    forever (the FR-01.33 webui false-positive)."""
+    _write(
+        tmp_path / ".shipwright" / "planning" / "01-foo" / "spec.md",
+        _spec_with_frs([("FR-01.33", "x", "Must")]),
+    )
+    _events(tmp_path / "shipwright_events.jsonl", [
+        {"type": "work_completed", "ts": "2026-04-01T00:00:00+00:00",
+         "new_frs": ["FR-01.33"], "affected_frs": ["FR-01.33"]},
+    ])
+
+    findings = group_d.run(tmp_path, _default_config(), None)
+    d3 = next(f for f in findings if f.check_id == "D3")
+    assert d3.status == "pass"
+
+
+def test_d3_still_flags_new_fr_with_no_covering_affected(tmp_path):
+    """C3: D3 flags ONLY FRs promised via ``new_frs`` with no covering
+    ``affected_frs`` at all (same-event or later). Re-promised but never
+    affected → still flagged (the relaxation is same-event ``==``, not a
+    blanket pass)."""
+    _write(
+        tmp_path / ".shipwright" / "planning" / "01-foo" / "spec.md",
+        _spec_with_frs([("FR-01.50", "x", "Must")]),
+    )
+    _events(tmp_path / "shipwright_events.jsonl", [
+        {"type": "work_completed", "ts": "2026-04-01T00:00:00+00:00",
+         "new_frs": ["FR-01.50"]},
+        {"type": "work_completed", "ts": "2026-04-02T00:00:00+00:00",
+         "new_frs": ["FR-01.50"]},  # re-promised, never affected
+    ])
+
+    findings = group_d.run(tmp_path, _default_config(), None)
+    d3 = next(f for f in findings if f.check_id == "D3")
+    assert d3.status == "fail"
+    assert "FR-01.50" in d3.detail
 
 
 # ---------------------------------------------------------------------------

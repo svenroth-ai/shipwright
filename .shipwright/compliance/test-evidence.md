@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-06-05T10:44:47.137948+00:00
+Generated: 2026-06-05T10:24:14.454603+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 97 |
-| Total unit tests (latest) | 0/0 |
+| Total unit tests (latest) | 64/64 |
 | New tests from iterations | +102 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Set security.yml.template checkout to fetch-depth: 1 (working-tree only) and correct the misleading diff-aware-secret-scans comment; no scanner reads git history. | iterate | — | +0 | — | — | 2026-06-05 |
+| 1 | Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery | iterate | unit | +0 | 64/64 | PASS | 2026-06-05 |
 | 2 | C1/C2 detective-realign doc + ledger closeout | iterate | unit | +0 | 41/41 | PASS | 2026-06-05 |
 | 3 | Scope the bloat recorder to the project root so cross-repo edits do not leak into this project marker and block its Stop gate. | iterate | — | +0 | — | — | 2026-06-04 |
 | 4 | Fix the adopt security-gate so it resolves SARIF severity at rule level, blocks on any secret, and fails closed — previously a structural false green in every adopted repo. | iterate | — | +0 | — | — | 2026-06-04 |
@@ -116,36 +116,36 @@ Generated: 2026-06-05T10:44:47.137948+00:00
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 140/140 | — | — | — | — | 2026-05-16 |
-| 2 | iterate | 1776/1783 | — | — | — | — | 2026-05-16 |
-| 3 | iterate | 3507/3507 | — | — | — | — | 2026-05-18 |
-| 4 | iterate | 23/23 | — | — | — | — | 2026-05-20 |
+| 1 | iterate | 1776/1783 | — | — | — | — | 2026-05-16 |
+| 2 | iterate | 3507/3507 | — | — | — | — | 2026-05-18 |
+| 3 | iterate | 23/23 | — | — | — | — | 2026-05-20 |
+| 4 | iterate | 122/122 | — | — | — | — | 2026-05-20 |
 | 5 | iterate | 122/122 | — | — | — | — | 2026-05-20 |
-| 6 | iterate | 122/122 | — | — | — | — | 2026-05-20 |
-| 7 | iterate | 2621/2621 | — | — | — | — | 2026-05-21 |
-| 8 | iterate | 34/34 | — | — | — | — | 2026-05-21 |
-| 9 | iterate | 6/6 | — | — | — | — | 2026-05-22 |
-| 10 | iterate | 70/70 | — | — | — | — | 2026-05-23 |
-| 11 | iterate | 2/2 | — | — | — | — | 2026-05-23 |
-| 12 | iterate | 19/19 | — | — | — | — | 2026-05-23 |
-| 13 | iterate | 2/3 | — | — | — | — | 2026-05-23 |
-| 14 | iterate | 497/497 | — | — | — | — | 2026-05-23 |
-| 15 | iterate | 514/514 | — | — | — | — | 2026-05-23 |
-| 16 | iterate | 2678/2678 | — | — | — | — | 2026-05-25 |
-| 17 | iterate | 14/14 | — | — | — | — | 2026-05-25 |
-| 18 | iterate | 131/131 | — | — | — | — | 2026-05-25 |
-| 19 | iterate | 41/41 | — | — | — | — | 2026-05-25 |
-| 20 | iterate | 1104/1104 | — | — | — | — | 2026-05-26 |
-| 21 | iterate | 2449/2449 | — | — | — | — | 2026-05-28 |
-| 22 | iterate | 2449/2450 | — | — | — | — | 2026-05-29 |
-| 23 | iterate | 2545/2545 | — | — | — | — | 2026-05-29 |
-| 24 | iterate | 2549/2550 | — | — | — | — | 2026-05-29 |
-| 25 | iterate | 2558/2558 | — | — | — | — | 2026-05-29 |
-| 26 | iterate | 317/317 | — | — | — | — | 2026-05-29 |
-| 27 | iterate | 2771/2771 | — | — | — | — | 2026-05-31 |
-| 28 | iterate | 2674/2675 | — | — | — | — | 2026-05-31 |
-| 29 | iterate | 48/49 | — | — | — | — | 2026-06-01 |
-| 30 | iterate | 41/41 | — | — | — | — | 2026-06-05 |
+| 6 | iterate | 2621/2621 | — | — | — | — | 2026-05-21 |
+| 7 | iterate | 34/34 | — | — | — | — | 2026-05-21 |
+| 8 | iterate | 6/6 | — | — | — | — | 2026-05-22 |
+| 9 | iterate | 70/70 | — | — | — | — | 2026-05-23 |
+| 10 | iterate | 2/2 | — | — | — | — | 2026-05-23 |
+| 11 | iterate | 19/19 | — | — | — | — | 2026-05-23 |
+| 12 | iterate | 2/3 | — | — | — | — | 2026-05-23 |
+| 13 | iterate | 497/497 | — | — | — | — | 2026-05-23 |
+| 14 | iterate | 514/514 | — | — | — | — | 2026-05-23 |
+| 15 | iterate | 2678/2678 | — | — | — | — | 2026-05-25 |
+| 16 | iterate | 14/14 | — | — | — | — | 2026-05-25 |
+| 17 | iterate | 131/131 | — | — | — | — | 2026-05-25 |
+| 18 | iterate | 41/41 | — | — | — | — | 2026-05-25 |
+| 19 | iterate | 1104/1104 | — | — | — | — | 2026-05-26 |
+| 20 | iterate | 2449/2449 | — | — | — | — | 2026-05-28 |
+| 21 | iterate | 2449/2450 | — | — | — | — | 2026-05-29 |
+| 22 | iterate | 2545/2545 | — | — | — | — | 2026-05-29 |
+| 23 | iterate | 2549/2550 | — | — | — | — | 2026-05-29 |
+| 24 | iterate | 2558/2558 | — | — | — | — | 2026-05-29 |
+| 25 | iterate | 317/317 | — | — | — | — | 2026-05-29 |
+| 26 | iterate | 2771/2771 | — | — | — | — | 2026-05-31 |
+| 27 | iterate | 2674/2675 | — | — | — | — | 2026-05-31 |
+| 28 | iterate | 48/49 | — | — | — | — | 2026-06-01 |
+| 29 | iterate | 41/41 | — | — | — | — | 2026-06-05 |
+| 30 | iterate | 64/64 | — | — | — | — | 2026-06-05 |
 
 ## Code Review Evidence
 
