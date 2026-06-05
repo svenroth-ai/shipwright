@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-05 10:44 UTC | Session: 0af22530-adef-4cd2-97bb-82b51d5f9847 | Run: iterate-2026-06-05-security-template-fetch-depth
+> Updated: 2026-06-05 12:07 UTC | Session: 4d6fa624-3464-474d-9824-d403297eff6e | Run: iterate-2026-06-05-a5-gate-behavioral-probe
 
-## Recent Changes (98 iterations)
+## Recent Changes (99 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Add A5.8: execute the deployed critical-gate shell against dual-artifact fixtures (flavor-agnostic across SARIF/findings.json; skip-safe; env kill-switch). | 0/0 |  | tooling | 2026-06-05 |
 | change | Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery | 64/64 |  | tooling | 2026-06-05 |
 | change | Set security.yml.template checkout to fetch-depth: 1 (working-tree only) and correct the misleading diff-aware-secret-scans comment; no scanner reads git history. | 0/0 |  | infra | 2026-06-05 |
 | change | C1/C2 detective-realign doc + ledger closeout | 41/41 |  | docs | 2026-06-05 |
@@ -105,7 +106,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-05 | Unit: 32/41 | Smoke: not_run | (iterate)
+Last run: 2026-06-05 | Unit: 612/622 | E2E: 17/17 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
