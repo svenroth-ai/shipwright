@@ -1,0 +1,1 @@
+SBOM undeclared-license cluster triage items now keep a stable id under workspace-membership drift (dedup key = signature + manifest type, not the member list), ending the per-run id churn and the growing dismissed pile

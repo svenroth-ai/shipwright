@@ -284,24 +284,20 @@ def _cluster_signature(undeclared: list[dict]) -> tuple[str, ...]:
 
 
 def _cluster_dedup_key(
-    signature: tuple[str, ...], member_paths: list[str]
+    signature: tuple[str, ...], manifest_type: str
 ) -> str:
-    """Stable cluster-item dedup key encoding BOTH signature AND
-    membership (external-review OpenAI #2/#3).
+    """Stable cluster dedup key = the ``(signature, manifest_type)`` pair
+    ONLY, **not** the member list (sub-iterate A; supersedes the
+    membership-encoding of external-review OpenAI #2/#3).
 
-    Membership change with same signature ({A,C} → {A,C,D}) yields a
-    different hash → old cluster auto-dismisses, new cluster emits.
-
-    Member paths are deduplicated via ``set`` before sorting (code-review
-    LOW-2 defense-in-depth: duplicate member paths in the input would
-    otherwise produce a different hash than the same-content
-    no-duplicate input).
+    Identity is decoupled from membership: drift while >=2 members keep
+    the signature reuses the SAME id (no churn, dismissed pile stops
+    growing — AC-4); the bucket dismisses only when its last member
+    resolves. ``manifest_type`` is folded in so npm/python clusters that
+    share a signature don't collide (AC-8). Body re-render under drift is
+    deferred (append-only store) — see campaign A spec + trg-9403a648.
     """
-    components = (
-        "|".join(signature)
-        + "\n--members--\n"
-        + "|".join(sorted(set(member_paths)))
-    )
+    components = manifest_type + "\n--sig--\n" + "|".join(signature)
     h = hashlib.sha256(components.encode("utf-8")).hexdigest()[:12]
     return f"{_TRIAGE_CLUSTER_PREFIX}{h}"
 
@@ -397,8 +393,9 @@ def emit_undeclared_triage(
       workspaces (bucket of size 1).
     - **Cluster** (``sbom:undeclared-cluster:<sha256-12>``): used when
       N>=2 workspaces share the same (undeclared-set, manifest_type)
-      signature. Dedup key encodes BOTH signature AND membership so
-      membership changes (grow/shrink) trigger old-dismiss + new-emit.
+      signature. Dedup key = (signature, manifest_type) pair ONLY
+      (sub-iterate A) so membership drift reuses the SAME id (no churn);
+      the bucket dismisses only when its last member resolves.
 
     Auto-dismiss: any currently-``triage`` ``source="sbom"`` item whose
     ``dedupKey`` is NOT in this run's ``current_keys`` is marked
@@ -506,7 +503,7 @@ def emit_undeclared_triage(
                 _emit_per_workspace(member, manifest_type)
             continue
 
-        dedup_key = _cluster_dedup_key(signature, member_paths)
+        dedup_key = _cluster_dedup_key(signature, manifest_type)
         current_keys.add(dedup_key)
         # Shadow per-workspace keys (AC-7 back-compat): shield any
         # pre-existing per-workspace items for these workspaces

@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-05T12:07:58.769492+00:00
-Total commits: 845
+Generated: 2026-06-05T12:39:52.235518+00:00
+Total commits: 847
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 249
-    "fix" : 230
-    "chore" : 164
+    "fix" : 231
+    "chore" : 165
     "docs" : 116
     "refactor" : 50
     "test" : 21
@@ -274,10 +274,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 230 commits
+### Fixes (fix) — 231 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | compliance | SBOM cluster dedup-key = signature + manifest_type only | 53ccf300c5b2 |
 | 2026-06-05 | compliance | B7 excludes non-functional commit types (Rule E) | a611fc8dd9fc |
 | 2026-06-05 | hooks | make the bloat marker + Stop gate worktree-aware (trg-305e2aab) | 9282ef267871 |
 | 2026-06-05 | security | read gitleaks report from a file, not stdout | 4a27c374ed3c |
@@ -509,10 +510,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 164 commits
+### Chores (chore) — 165 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | churn | regenerate derived snapshots after main merge | 10cc1e661386 |
 | 2026-06-05 | iterate | stamp adr ref + spec_impact_justification on A5.8 finalization | f70e2674faf8 |
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | fa051a6abd76 |
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | faa552ad0fef |
@@ -914,7 +916,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 845 |
+| Total commits | 847 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 845 |
+| Human-authored commits | 847 |
 
