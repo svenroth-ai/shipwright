@@ -18,11 +18,21 @@ notes) — that is real audit history and must survive.
 
 New tool `shared/scripts/tools/triage_gc.py`. An item is droppable **iff**:
 `status == "dismissed"` **AND** `statusBy ∈ {sbomGenerator, auditDetector,
-driftDetector, f05Detector, githubImporter, complianceBacklog}` **AND**
-`statusReason ∈ {sbomResolved, auditResolved, driftResolved, f05Resolved,
-githubResolved, complianceResolved}` (exact token). Both conditions required →
-a human dismissal that reuses a token, or a producer dismissal with free-text
-rationale, survives. `promoted` + open never dropped.
+driftDetector, f05Detector, githubImporter, complianceBacklog,
+phaseQualityBacklog, testEvidence}` **AND** `statusReason ∈ {sbomResolved,
+auditResolved, driftResolved, f05Resolved, githubResolved, complianceResolved,
+phaseQualityResolved, testEvidenceResolved}` (exact token). Both conditions
+required → a human dismissal that reuses a token, or a producer dismissal with
+free-text rationale, survives. `promoted` + open never dropped.
+
+> **Set completeness (Codex review):** the original draft listed 6 producer
+> pairs; `phaseQualityBacklog`/`phaseQualityResolved`
+> (`phase_quality/_triage_bundle.py:247,254`) and
+> `testEvidence`/`testEvidenceResolved` (`test_evidence.py:908,909`) are real
+> background-producer auto-resolves that were missing — added so GC actually
+> collects them. The both-conditions predicate keeps the policy conservative
+> (human-curated dismissals still survive). External review (GPT-5.4) flagged the
+> spec/code drift; this list is now the authoritative 8+8 set.
 
 The store is append-only, so compaction is a **destructive rewrite**:
 dry-run is the default; `--apply` writes a `.bak` backup first and re-validates
