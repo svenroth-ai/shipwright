@@ -40,7 +40,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # full history for diff-aware secret scans
+          # Working-tree checkout only. No scanner in this workflow reads git
+          # history: Gitleaks runs `--no-git` (filesystem), Semgrep scans `.`
+          # and Trivy scans `fs .` — all operate on the checked-out tree. A
+          # full-history fetch (fetch-depth: 0) is unnecessary here and has
+          # correlated with a stale-merge-ref Gitleaks false positive.
+          fetch-depth: 1
 
       # --- OSS scanner installation (pinned per-tool versions) ---
 
