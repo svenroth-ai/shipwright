@@ -1,10 +1,11 @@
 {
   "run_id": "iterate-2026-06-05-a5-gate-behavioral-probe",
-  "date": "2026-06-05T12:08:19.123923Z",
+  "date": "2026-06-05T12:12:18.666645Z",
   "type": "change",
   "complexity": "medium",
   "branch": "iterate/a5-gate-behavioral-probe",
   "tests_passed": true,
   "spec": ".shipwright/planning/iterate/2026-06-05-a5-gate-behavioral-probe.md",
+  "adr": "iterate-2026-06-05-a5-gate-behavioral-probe",
   "summary": "A5.8 behavioral probe of the deployed security.yml critical-gate (flavor-agnostic, skip-safe)"
 }
