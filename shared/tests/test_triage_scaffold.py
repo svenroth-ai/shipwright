@@ -123,16 +123,112 @@ def test_skips_already_present_lines(project: Path) -> None:
     assert result["results"]["gitignore"]["added"] == []
 
 
-def test_partial_gitignore_appends_only_missing(project: Path) -> None:
-    """Only .jsonl present, .lock missing → append .lock only."""
+# --- tracking flip: triage.jsonl is the tracked SSoT (campaign C1) ------
+
+def test_jsonl_is_no_longer_a_managed_ignore_line(project: Path) -> None:
+    """triage.jsonl is tracked now — only the .lock + GC .bak are scaffolder ignores."""
+    assert ".shipwright/triage.jsonl" not in GITIGNORE_LINES  # the tracked SSoT
+    assert ".shipwright/triage.jsonl.lock" in GITIGNORE_LINES
+    assert ".shipwright/triage.jsonl.bak" in GITIGNORE_LINES
+
+
+def test_self_heals_stale_bare_jsonl_ignore(project: Path) -> None:
+    """A pre-tracking bare ``.shipwright/triage.jsonl`` ignore (appended after
+    the managed block) is stripped so it can't override the negation.
+    """
     gi = project / ".gitignore"
-    gi.write_text(GITIGNORE_LINES[0] + "\n", encoding="utf-8")
+    gi.write_text(
+        "node_modules/\n"
+        "# === BEGIN Shipwright canonical .shipwright artifact-ignore (managed) ===\n"
+        "/.shipwright/*\n"
+        "!/.shipwright/triage.jsonl\n"
+        "# === END Shipwright canonical .shipwright artifact-ignore (managed) ===\n"
+        "\n# Triage Inbox (shipwright)\n"
+        ".shipwright/triage.jsonl\n"
+        ".shipwright/triage.jsonl.lock\n",
+        encoding="utf-8",
+    )
     result = scaffold_triage_inbox(project)
-    content = gi.read_text(encoding="utf-8")
-    assert GITIGNORE_LINES[0] in content
-    assert GITIGNORE_LINES[1] in content
-    assert GITIGNORE_LINES[1] in result["results"]["gitignore"]["added"]
-    assert GITIGNORE_LINES[0] not in result["results"]["gitignore"]["added"]
+    lines = [L.strip() for L in gi.read_text(encoding="utf-8").splitlines()]
+    # Stale bare line gone; negation + lock survive.
+    assert ".shipwright/triage.jsonl" not in lines
+    assert "!/.shipwright/triage.jsonl" in lines
+    assert ".shipwright/triage.jsonl.lock" in lines
+    assert ".shipwright/triage.jsonl" in result["results"]["gitignore"]["healed"]
+
+
+def test_self_heal_preserves_content_no_reflow(project: Path) -> None:
+    """Healing the stale line preserves unrelated content AND structure (trailing
+    blank lines are not reflowed away) — external-review GPT-5.4 HIGH. (Line-ending
+    policy is delegated to text I/O / .gitattributes, like the rest of the repo.)"""
+    gi = project / ".gitignore"
+    gi.write_text(
+        "node_modules/\n.env\n\n.shipwright/triage.jsonl\n.shipwright/triage.jsonl.lock\n\n",
+        encoding="utf-8",
+    )
+    result = scaffold_triage_inbox(project)
+    text = gi.read_text(encoding="utf-8")
+    lines = [L.strip() for L in text.splitlines()]
+    assert text.startswith("node_modules/\n.env\n\n")     # leading content not reflowed
+    assert ".shipwright/triage.jsonl" not in lines        # stale bare line healed
+    assert ".shipwright/triage.jsonl.lock" in lines       # lock kept
+    assert ".shipwright/triage.jsonl" in result["results"]["gitignore"]["healed"]
+
+
+def test_append_only_preserves_existing_content(project: Path) -> None:
+    """No stale line → append-only leaves the existing content verbatim (no reflow
+    of blank lines / comments), appending only after it."""
+    gi = project / ".gitignore"
+    original = "node_modules/\n\n# my section\nbuild/\n"
+    gi.write_text(original, encoding="utf-8")
+    scaffold_triage_inbox(project)
+    text = gi.read_text(encoding="utf-8")
+    assert text.startswith(original)                      # existing content untouched
+    assert ".shipwright/triage.jsonl.lock" in text
+
+
+def test_self_heal_strips_slash_prefixed_variant(project: Path) -> None:
+    gi = project / ".gitignore"
+    gi.write_text("/.shipwright/triage.jsonl\n.shipwright/triage.jsonl.lock\n",
+                  encoding="utf-8")
+    scaffold_triage_inbox(project)
+    lines = [L.strip() for L in gi.read_text(encoding="utf-8").splitlines()]
+    assert "/.shipwright/triage.jsonl" not in lines
+    assert ".shipwright/triage.jsonl.lock" in lines
+
+
+def test_self_heal_never_strips_the_negation(project: Path) -> None:
+    """The ``!`` negation must survive a (re-)scaffold untouched."""
+    gi = project / ".gitignore"
+    gi.write_text("!/.shipwright/triage.jsonl\n.shipwright/triage.jsonl.lock\n",
+                  encoding="utf-8")
+    result = scaffold_triage_inbox(project)
+    lines = [L.strip() for L in gi.read_text(encoding="utf-8").splitlines()]
+    assert "!/.shipwright/triage.jsonl" in lines
+    assert result["results"]["gitignore"]["healed"] == []  # negation isn't "stale"
+
+
+def test_canonical_negation_tracks_jsonl_but_ignores_lock_and_bak(project: Path) -> None:
+    """End-to-end on the REAL SSoT template (via gitignore_canon): the managed
+    block tracks triage.jsonl while .lock + .bak stay ignored. Pins the
+    load-bearing gitignore behavior so a future template edit can't regress it.
+    """
+    from lib.gitignore_canon import merge_canonical_block
+
+    merge_canonical_block(project)  # writes the canonical block from the SSoT template
+    subprocess.run(["git", "init", "-q"], cwd=project, check=True)
+    (project / ".shipwright").mkdir(exist_ok=True)
+    for name in ("triage.jsonl", "triage.jsonl.lock", "triage.jsonl.bak"):
+        (project / ".shipwright" / name).write_text("", encoding="utf-8")
+
+    def _ignored(rel: str) -> bool:
+        return subprocess.run(
+            ["git", "check-ignore", "-q", rel], cwd=project
+        ).returncode == 0
+
+    assert not _ignored(".shipwright/triage.jsonl"), "triage.jsonl must be TRACKED"
+    assert _ignored(".shipwright/triage.jsonl.lock"), ".lock must stay ignored"
+    assert _ignored(".shipwright/triage.jsonl.bak"), ".bak must stay ignored"
 
 
 # --- Full idempotency ---------------------------------------------------
