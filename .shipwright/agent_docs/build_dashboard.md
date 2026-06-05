@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-04 08:52 UTC | Session: 718c62d0-9275-488e-a5df-e91c612c6dee | Run: iterate-2026-06-04-bloat-recorder-cross-repo-scope
+> Updated: 2026-06-05 07:37 UTC | Session: 1d5954a4-cb63-48b9-a938-1d19fcc978c0 | Run: iterate-2026-06-05-detective-realign-doc-ledger
 
-## Recent Changes (95 iterations)
+## Recent Changes (96 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | C1/C2 detective-realign doc + ledger closeout | 41/41 |  | docs | 2026-06-05 |
 | bug | Scope the bloat recorder to the project root so cross-repo edits do not leak into this project marker and block its Stop gate. | 0/0 |  | fix | 2026-06-04 |
 | bug | Fix the adopt security-gate so it resolves SARIF severity at rule level, blocks on any secret, and fails closed — previously a structural false green in every adopted repo. | 0/0 |  | fix | 2026-06-04 |
 | feature | Add producer-owned campaign lifecycle status (draft->active->complete): campaign_init writes status:draft to status.json + campaign.md frontmatter; campaign_progress gains a start subcommand (->active), update-status auto-sets complete when all sub-iterates complete, summary prints the top-level status; the autonomous campaign loop marks the campaign active at run start; missing status = legacy fallback to done<total. | 0/0 |  | tooling | 2026-06-03 |
@@ -102,7 +103,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-04 | Unit: 2753/2753 | Smoke: not_run | (iterate)
+Last run: 2026-06-05 | Unit: 41/41 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-04T08:52:04.636206+00:00
-Total commits: 830
+Generated: 2026-06-05T07:37:49.248549+00:00
+Total commits: 831
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 248
-    "fix" : 225
+    "fix" : 226
     "chore" : 159
     "docs" : 114
     "refactor" : 50
@@ -273,10 +273,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 225 commits
+### Fixes (fix) — 226 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-04 | hooks | scope bloat recorder to the project root (no cross-repo marker leak) | e1ce915dddf9 |
 | 2026-06-04 | adopt | security-gate counts criticals by rule-level SARIF severity + blocks secrets, fail-closed | 41372faa7c63 |
 | 2026-06-03 | compliance | B7 recognizes chore(release) as tracked-phase output (sub-iterate B) | 2fa549541b62 |
 | 2026-06-03 | compliance | realign detective audit with Run-ID/release model + A5 invocation (C1+C2) | f688c391bcdb |
@@ -899,7 +900,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 830 |
+| Total commits | 831 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 830 |
+| Human-authored commits | 831 |
 

@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-04-bloat-recorder-cross-repo-scope",
-    "date": "2026-06-04",
+    "run_id": "iterate-2026-06-05-detective-realign-doc-ledger",
+    "date": "2026-06-05",
     "unit": {
       "status": "passed",
-      "passed": 2753,
-      "total": 2753
+      "passed": 41,
+      "total": 41
     },
     "integration": {
       "status": "not_run",
@@ -32,40 +32,16 @@
     },
     "surface_verification": {
       "surface": "none",
-      "tests_run": 2,
+      "runner": "surface_verification.py --surface none",
+      "tests_run": 0,
       "exit_code": 0,
-      "evidence_path": "shared/tests/test_check_file_size_cross_repo.py",
-      "justification": "No application runtime surface: this fixes a PostToolUse bloat-recorder hook (shared/scripts/hooks/check_file_size.py) so it no longer records cross-repo file edits into THIS project's per-session bloat marker. The boundary (hook stdin payload -> marker decision) is verified by invoking the real hook as a subprocess against a JSON payload: an out-of-cwd file writes no marker + emits no nudge (RED on the unfixed hook -> GREEN), and an in-cwd oversize file still records + nudges (regression guard). No web/UI/API/store/SSE surface."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-05-detective-realign-doc-ledger/surface_verification.json",
+      "timestamp": "2026-06-05T07:33:37.044Z",
+      "justification": "Docs/planning-ledger-only change: corrects docs/hooks-and-pipeline.md (C1 release-snapshot + C2 pyyaml-invocation notes) and flips C1/C2 campaign ledger rows to done. No code, API, UI, or startable surface touched; C1/C2 code already merged in PR #142."
     },
     "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "A file edited OUTSIDE the project root (cwd) writes NO marker entry into this project's .shipwright/locks/bloat_pending.<sid>.json",
-          "disposition": "tested",
-          "evidence": "test_check_file_size_cross_repo.py::test_out_of_project_edit_writes_no_marker_and_no_nudge PASSED (RED on unfixed recorder, which wrote bloat_pending.S-X.json)"
-        },
-        {
-          "behavior": "A file edited OUTSIDE the project root emits NO advisory nudge (empty stdout)",
-          "disposition": "tested",
-          "evidence": "test_check_file_size_cross_repo.py::test_out_of_project_edit_writes_no_marker_and_no_nudge PASSED (asserts result.stdout empty)"
-        },
-        {
-          "behavior": "An oversize file INSIDE the project root still records a marker entry (by relative path) AND emits the nudge (behavior unchanged by the guard)",
-          "disposition": "tested",
-          "evidence": "test_check_file_size_cross_repo.py::test_in_project_oversize_edit_still_records_and_nudges PASSED"
-        }
-      ],
-      "counts": {
-        "testable": 3,
-        "tested": 3,
-        "untestable": 0,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
-      }
+      "status": "n/a",
+      "justification": "Trivial complexity: docs/hooks-and-pipeline.md clarifications + campaign ledger status flips. No code or behavior changed and no testable behavior is introduced; the C1/C2 audit logic this documents is already covered by merged tests (PR #142). Related doc-sync/campaign meta-tests (41) re-run green at F0."
     },
     "degraded": []
   }
