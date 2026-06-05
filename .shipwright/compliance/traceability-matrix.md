@@ -132,7 +132,7 @@ Generated: 2026-06-05T12:39:52.235518+00:00
 | gitleaks --report-path - wrote a stray file named - instead of stdout, so the secrets leg silently returned 0 findings everywhere; report now written to a temp file and read back; smoke positive-control converted to ADR-044 CI-gated fail | iterate | bug |  | 320/320 | — | 2026-06-05 |
 | Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab) | iterate | change |  | 9/9 | — | 2026-06-05 |
 | B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill. | iterate | change |  | 44/44 | — | 2026-06-05 |
-| SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift) | iterate | change |  | 617/627 | — | 2026-06-05 |
+| SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift) | iterate | change |  | 617/617 | — | 2026-06-05 |
 
 ## Coverage Summary
 

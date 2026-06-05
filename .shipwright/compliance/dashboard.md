@@ -10,15 +10,15 @@ Scope: library
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 108 changes | INFO |  |
-| All unit tests passing | 617/627 | WARN | 10/627 failing — see test-evidence.md |
+| All unit tests passing | 617/617 | PASS |  |
 | Architecture decisions | 120 ADRs | INFO |  |
 | Iterate tests passing | 66/108 iterations tested | WARN | 42 iterate(s) without tests — see test-evidence.md |
 | Dependencies | 8 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
 | Triage open | 4 open | WARN | 4 actionable item(s) — see ../agent_docs/triage_inbox.md |
-| Bloat over-limit | 125 | WARN | 125 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
+| Bloat over-limit | 124 | WARN | 124 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
 | Bloat in allowlist | 150 entries | INFO |  |
-| Bloat ratchet delta | -19 lines | PASS |  |
+| Bloat ratchet delta | -105 lines | PASS |  |
 
 ## Project Velocity
 
