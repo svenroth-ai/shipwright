@@ -1,35 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-05-triage-track-c2-churn"
+run_id: "iterate-2026-06-05-triage-track-c1-gitignore"
 phase: "iterate"
-reason: "iterate: triage merge-safety (C2)"
-timestamp: "2026-06-05T20:06:43.582776+00:00"
+reason: "integrate main after A+B merged (campaign stack)"
+timestamp: "2026-06-05T19:45:29.065056+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-05 20:06:43 UTC
+> Auto-generated 2026-06-05 19:45:29 UTC
 
 ## Session Info
 
 - **Session ID**: 474cb900-eabb-46ef-8f55-83f5fd879d5f
-- **Timestamp**: 2026-06-05 20:06:43 UTC
-- **Reason**: iterate: triage merge-safety (C2)
+- **Timestamp**: 2026-06-05 19:45:29 UTC
+- **Reason**: integrate main after A+B merged (campaign stack)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-05-a5-gate-behavioral-probe
-- **Date**: 2026-06-05T12:12:18.666645Z
+- **Run ID**: iterate-2026-06-05-triage-track-c1-gitignore
+- **Date**: 2026-06-05T19:45:29.568637Z
 - **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/a5-gate-behavioral-probe
-- **ADR**: iterate-2026-06-05-a5-gate-behavioral-probe
+- **Complexity**: small
+- **Branch**: iterate/triage-track-c1
+- **ADR**: iterate-2026-06-05-triage-track-c1-gitignore
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-05-a5-gate-behavioral-probe.md
+- **Spec**: .shipwright/planning/iterate/campaigns/2026-06-05-track-triage-jsonl/sub-iterates/C1-triage-gitignore-trackable.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/triage-track-c2
+- **Branch**: iterate/triage-track-c1
 - **External Review Marker**: completed (external_review_state.json @ 2026-06-01T06:00:50)
 
 ### Mandatory replay on Resume
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-track-c2
-- **Last Commit**: 86ea7a68 Merge pull request #152 from svenroth-ai/iterate/a5-gate-behavioral-probe
+- **Branch**: iterate/triage-track-c1
+- **Last Commit**: b015fbc3 Merge remote-tracking branch 'origin/main' into iterate/triage-track-c1
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-a27ad620 | work_completed | iterate (triage.jsonl merge-safety + leak-guard exemption (like events) — C2) | 2026-06-05 |
+| evt-7e3e2dc7 | work_completed | iterate (SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift)) | 2026-06-05 |
+| evt-64ee4ee6 | work_completed | iterate (triage_gc tool: machine-churn-only dismissed-pile compaction) | 2026-06-05 |
+| evt-17f29a61 | work_completed | iterate (git-track triage.jsonl: gitignore negation + scaffolder self-heal (C1)) | 2026-06-05 |
 | evt-7f17543a | work_completed | iterate (B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill.) | 2026-06-05 |
 | evt-702f8c5b | work_completed | iterate (Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab)) | 2026-06-05 |
-| evt-bebd144d | work_completed | iterate (gitleaks --report-path - wrote a stray file named - instead of stdout, so the secrets leg silently returned 0 findings everywhere; report now written to a temp file and read back; smoke positive-control converted to ADR-044 CI-gated fail) | 2026-06-05 |
-| evt-2c8f0a52 | work_completed | iterate (Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery) | 2026-06-05 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 108
-- **Last iterate**: change — triage.jsonl merge-safety + leak-guard exemption (like events) — C2 (2026-06-05)
+- **Total work events**: 110
+- **Last iterate**: change — SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift) (2026-06-05)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

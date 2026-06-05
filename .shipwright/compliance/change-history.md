@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-06-05T20:06:43.582776+00:00
-Total commits: 846
+Generated: 2026-06-05T19:45:29.065056+00:00
+Total commits: 857
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 249
-    "fix" : 230
-    "chore" : 165
-    "docs" : 116
+    "feat" : 251
+    "fix" : 237
+    "chore" : 166
+    "docs" : 117
     "refactor" : 50
     "test" : 21
     "ci" : 7
@@ -20,10 +20,12 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 249 commits
+### Features (feat) — 251 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | triage | git-track .shipwright/triage.jsonl — gitignore negation + scaffolder self-heal (C1) | 17af03c0e70b |
+| 2026-06-05 | triage | machine-churn-only GC tool for the dismissed pile | bad895af4403 |
 | 2026-06-05 | compliance | A5.8 behaviorally probes the deployed critical-gate | 387e1da8bae3 |
 | 2026-06-03 | iterate | producer-owned campaign lifecycle status (draft->active->complete) | 3afe1fba71b1 |
 | 2026-06-01 | triage | ingest prompt_risks.json as a gh-prompt producer source | fef7f67451ff |
@@ -274,10 +276,17 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 230 commits
+### Fixes (fix) — 237 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | triage | C1 preservation tests assert no-reflow, not byte-level CRLF | c22ac1c3c06f |
+| 2026-06-05 | triage | scaffolder self-heal preserves content + line endings (external review, C1) | 71c5577ff383 |
+| 2026-06-05 | evidence | record A's unit suite as 617/617, not 617/627 (external review) | de77c5fc7e44 |
+| 2026-06-05 | triage | reword GC machine-set comment to satisfy artifact-path-canon (B) | 76b067bc9606 |
+| 2026-06-05 | triage | scaffolder fallback also ignores triage.jsonl.bak (C1, Codex LOW) | 39ddc7c35410 |
+| 2026-06-05 | triage | address Codex code-review findings on triage_gc (B) | 6334d902012f |
+| 2026-06-05 | compliance | SBOM cluster dedup-key = signature + manifest_type only | 53ccf300c5b2 |
 | 2026-06-05 | compliance | B7 excludes non-functional commit types (Rule E) | a611fc8dd9fc |
 | 2026-06-05 | hooks | make the bloat marker + Stop gate worktree-aware (trg-305e2aab) | 9282ef267871 |
 | 2026-06-05 | security | read gitleaks report from a file, not stdout | 4a27c374ed3c |
@@ -509,10 +518,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 165 commits
+### Chores (chore) — 166 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | churn | regenerate derived snapshots after main merge | c0b3685ffcfc |
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | 10cc1e661386 |
 | 2026-06-05 | iterate | stamp adr ref + spec_impact_justification on A5.8 finalization | f70e2674faf8 |
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | fa051a6abd76 |
@@ -679,10 +689,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 116 commits
+### Documentation (docs) — 117 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | triage | reconcile B spec with the 8+8 machine-set (external review) | 3d78dcfbb726 |
 | 2026-06-05 | campaign | normalize C1/C2 status to `complete`; C3 in review (#147) | 3593093e0851 |
 | 2026-06-05 | compliance | document merged C1/C2 detective-audit realign + mark campaign rows done | 5b61555b6c9a |
 | 2026-06-01 | claude-md | document gating ruff lint step in Development section (#133) | 74a3e0b241f4 |
@@ -915,7 +926,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 846 |
+| Total commits | 857 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 846 |
+| Human-authored commits | 857 |
 
