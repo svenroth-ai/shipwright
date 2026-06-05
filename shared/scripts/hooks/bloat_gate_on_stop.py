@@ -235,7 +235,12 @@ def main() -> int:
         if current is None:
             continue
         path = _bb.normalize_path(str(entry.get("path", "")))
-        in_baseline = path in baseline
+        # trg-305e2aab: a worktree-iterate marker stores `.worktrees/<slug>/...`
+        # (relative to the MAIN root); resolve it to the repo-relative baseline
+        # key so an already-baselined file finds its ceiling / isn't treated as a
+        # new crossing. `path` itself stays prefixed (re-measured above as-is).
+        baseline_key = _bb.strip_worktree_prefix(path)
+        in_baseline = baseline_key in baseline
         delta = entry.get("delta")
         # Anti-ratchet blocks only when the file grew PAST its baseline ceiling.
         # A grandfathered file trimmed back to <= `current` (even if still over
@@ -243,7 +248,7 @@ def main() -> int:
         # transient-over-then-trimmed false-positive. New crossing blocks unless
         # the path is already grandfathered in the baseline.
         if delta == "anti-ratchet":
-            ceiling = baseline.get(path)
+            ceiling = baseline.get(baseline_key)
             if isinstance(ceiling, int) and current <= ceiling:
                 continue
             offenders.append({**entry, "path": path, "now": current})

@@ -1,52 +1,36 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-05-security-template-fetch-depth",
+    "run_id": "iterate-2026-06-05-bloat-marker-worktree-aware",
     "date": "2026-06-05",
-    "unit": {
-      "status": "passed",
-      "passed": 32,
-      "total": 41
-    },
-    "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "pgtap": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "e2e": {
-      "status": "skipped",
-      "passed": 0,
-      "total": 0
-    },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
-    "smoke": {
-      "status": "not_run"
-    },
+    "unit": { "status": "passed", "passed": 9, "total": 9 },
+    "integration": { "status": "not_run", "passed": 0, "total": 0 },
+    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
+    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
+    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
+    "smoke": { "status": "not_run" },
     "surface_verification": {
       "surface": "none",
       "runner": "surface_verification.py --surface none",
       "tests_run": 0,
       "exit_code": 0,
-      "justification": "Static CI-workflow-template edit: security.yml.template checkout fetch-depth 0->1 plus an accurate block comment. No application runtime surface (no API/UI/startable server); validated by YAML-parse + ci-template-registry + adopt security-workflow scaffold tests."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-05-bloat-marker-worktree-aware/surface_verification.json",
+      "justification": "Framework-internal Python hook fix (bloat marker recorder + Stop gate worktree-awareness). No web/UI/startable surface; no API/store/SSE/message-contract touched (backend-affects-frontend N/A). Verified by 9 new regression tests + the full bloat suites (test_bloat_gate_on_stop, test_bloat_baseline, test_anti_ratchet_check, test_check_file_size_cross_repo — all green) and a clean worktree anti-ratchet self-check."
     },
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial complexity: single-line CI-template config/comment edit (fetch-depth 0->1). No new application behavior to enumerate. Template validity is covered by YAML-parse + ci_template_registry_completeness + adopt scaffold + bloat_defense_artifacts tests, all green at F0."
+      "status": "complete",
+      "behaviors": [
+        { "behavior": "strip_worktree_prefix strips a leading .worktrees/<slug>/ segment", "disposition": "tested", "evidence": "test_strip_worktree_prefix_strips_one_segment PASSED" },
+        { "behavior": "strip_worktree_prefix is idempotent for ordinary repo-relative paths", "disposition": "tested", "evidence": "test_strip_worktree_prefix_idempotent_for_repo_relative PASSED" },
+        { "behavior": "strip_worktree_prefix normalizes backslashes", "disposition": "tested", "evidence": "test_strip_worktree_prefix_normalizes_backslashes PASSED" },
+        { "behavior": "strip_worktree_prefix only strips a LEADING .worktrees segment", "disposition": "tested", "evidence": "test_strip_worktree_prefix_only_strips_leading_worktrees PASSED" },
+        { "behavior": "Stop gate does NOT block a worktree-prefixed baselined file mis-marked as crossing (the bug)", "disposition": "tested", "evidence": "test_worktree_prefixed_baselined_crossing_does_not_block PASSED" },
+        { "behavior": "Stop gate does NOT block a worktree-prefixed anti-ratchet within ceiling", "disposition": "tested", "evidence": "test_worktree_prefixed_anti_ratchet_within_ceiling_does_not_block PASSED" },
+        { "behavior": "Stop gate STILL blocks a genuine ratchet (over ceiling) on a worktree path (no weakening)", "disposition": "tested", "evidence": "test_worktree_prefixed_anti_ratchet_over_ceiling_still_blocks PASSED" },
+        { "behavior": "Stop gate STILL blocks a genuine new crossing (not baselined) on a worktree path", "disposition": "tested", "evidence": "test_worktree_prefixed_genuine_new_crossing_still_blocks PASSED" },
+        { "behavior": "Recorder classifies a worktree edit of an already-baselined file as anti-ratchet (not crossing)", "disposition": "tested", "evidence": "test_recorder_classifies_worktree_baselined_file_as_anti_ratchet PASSED" }
+      ],
+      "counts": { "testable": 9, "tested": 9, "untestable": 0, "untested_testable": 0 }
     },
-    "degraded": [
-      {
-        "condition": "jq absent on local Windows runner: 9 test_security_critical_gate bash tests skipped locally",
-        "impact": "low",
-        "note": "They execute in CI (ubuntu ships jq) and are unrelated to this diff, which does not touch the critical-gate logic."
-      }
-    ]
+    "degraded": []
   }
 }
