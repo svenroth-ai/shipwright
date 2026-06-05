@@ -22,6 +22,21 @@ from typing import Iterable
 # line anywhere in the commit message, not strict git-trailer parsing).
 _RUN_ID_TRAILER_RE = re.compile(r"(?im)^[ \t]*Run-ID:[ \t]*(\S+)[ \t]*$")
 
+# Conventional-Commit ``type[(scope)][!]:`` header — group 1 is the type.
+_CONVENTIONAL_TYPE_RE = re.compile(r"^([A-Za-z]+)(?:\([^)]*\))?!?:")
+
+# Non-functional Conventional-Commit types: repo maintenance with no
+# product / RTM footprint. Rule E excludes these from B7 by default (they need
+# no work_completed event), so a direct ``ci``/``docs``/``chore`` commit is not
+# a recurring B7 entry. Functional types (feat, fix, perf, refactor) are NOT
+# here — a feature/fix that bypassed the iterate flow is real drift B7 keeps
+# surfacing. Opt out per project via ``b7_exclusions.exclude_nonfunctional_types
+# = false`` (restores the old flag-everything stance) or override the set via
+# ``b7_exclusions.nonfunctional_types``.
+# (iterate-2026-06-05-b7-exclude-nonfunctional — supersedes the narrow-Rule-D
+# decision of B, 2026-06-02-compliance-detective-realign.)
+_NONFUNCTIONAL_TYPES = frozenset({"build", "chore", "ci", "docs", "style", "test"})
+
 
 @dataclass(frozen=True)
 class CommitInfo:
@@ -43,11 +58,19 @@ class CommitInfo:
         (version bump + changelog + dashboards); it is a tracked SDLC-phase
         output, NOT iterate work, so it carries no work_completed event. Parallel
         to ``audit_staleness.find_snapshot_commit`` recognizing chore(release)
-        snapshots. NARROW on purpose — only the release header, never generic
-        chore/ci/docs (those, committed directly, ARE drift B7 must surface).
+        snapshots — kept narrow because ``audit_staleness`` keys on this exact
+        header. The BROADER non-functional-type exclusion (generic
+        chore/ci/docs/…) is Rule E, not this method.
         (B, 2026-06-02-compliance-detective-realign.)
         """
         return self.subject.strip().lower().startswith("chore(release)")
+
+    def conventional_type(self) -> str | None:
+        """The Conventional-Commit type of the subject (``ci(security): …`` →
+        ``"ci"``; ``feat!: …`` → ``"feat"``), lowercased, or ``None`` when the
+        subject has no ``type[(scope)][!]:`` prefix. Used by Rule E."""
+        m = _CONVENTIONAL_TYPE_RE.match(self.subject.strip())
+        return m.group(1).lower() if m else None
 
 
 @dataclass(frozen=True)
@@ -203,21 +226,29 @@ def apply_retention_rules(
     exclusions: dict,
     retention: dict,
 ) -> FilterResult:
-    """Apply Rules A/B/C/D and return the result.
+    """Apply Rules A/B/C/D/E and return the result.
 
     Each rule respects two flags:
-    - ``retention.rule_a/b/c/d`` (top-level on/off switch)
+    - ``retention.rule_a/b/c/d/e`` (top-level on/off switch)
     - the corresponding sub-key under ``b7_exclusions``
 
-    Rule D (release-phase commits) is NARROW: it excludes only
-    ``chore(release)`` headers — the changelog phase's tracked output — never
-    generic chore/ci/docs commits (those, committed directly, are real drift
-    B7 must keep surfacing).
+    Rule D (release-phase commits) stays NARROW — only ``chore(release)``
+    headers — because ``audit_staleness`` keys on that exact header. Rule E is
+    the BROADER policy: it excludes non-functional Conventional-Commit types
+    (``build``/``chore``/``ci``/``docs``/``style``/``test`` by default —
+    maintenance with no RTM footprint, so no work_completed event is expected).
+    Functional types (``feat``/``fix``/``perf``/``refactor``) are NEVER excluded
+    by Rule E — a feature/fix that bypassed the iterate flow is real drift B7
+    keeps surfacing. Opt out via ``b7_exclusions.exclude_nonfunctional_types =
+    false`` (old flag-everything stance) or override ``nonfunctional_types``.
+    (iterate-2026-06-05-b7-exclude-nonfunctional supersedes B's narrow-Rule-D
+    decision after the backfill treadmill it created.)
     """
     rule_a_on = retention.get("rule_a", True)
     rule_b_on = retention.get("rule_b", True)
     rule_c_on = retention.get("rule_c", True)
     rule_d_on = retention.get("rule_d", True)
+    rule_e_on = retention.get("rule_e", True)
 
     if rule_a_on and exclusions.get("exclude_merge_commits", True):
         if info.is_merge():
@@ -244,6 +275,18 @@ def apply_retention_rules(
             return FilterResult(
                 info, True,
                 "chore(release) release-phase commit (Rule D)",
+            )
+
+    if rule_e_on and exclusions.get("exclude_nonfunctional_types", True):
+        nonfunctional = {
+            str(t).lower()
+            for t in (exclusions.get("nonfunctional_types") or _NONFUNCTIONAL_TYPES)
+        }
+        ctype = info.conventional_type()
+        if ctype is not None and ctype in nonfunctional:
+            return FilterResult(
+                info, True,
+                f"non-functional {ctype} commit (Rule E)",
             )
 
     return FilterResult(info, False, "")

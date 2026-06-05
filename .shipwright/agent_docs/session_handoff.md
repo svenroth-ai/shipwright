@@ -1,35 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-05-bloat-marker-worktree-aware"
+run_id: "iterate-2026-06-05-b7-exclude-nonfunctional"
 phase: "iterate"
-reason: "iterate: bloat marker worktree-awareness (trg-305e2aab)"
-timestamp: "2026-06-05T11:26:02.491805+00:00"
+reason: "iterate: B7 Rule E (exclude non-functional commit types)"
+timestamp: "2026-06-05T12:01:23.350872+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-05 11:26:02 UTC
+> Auto-generated 2026-06-05 12:01:23 UTC
 
 ## Session Info
 
 - **Session ID**: 8c417574-f89c-40fd-a5b3-5d01f6272edb
-- **Timestamp**: 2026-06-05 11:26:02 UTC
-- **Reason**: iterate: bloat marker worktree-awareness (trg-305e2aab)
+- **Timestamp**: 2026-06-05 12:01:23 UTC
+- **Reason**: iterate: B7 Rule E (exclude non-functional commit types)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-05-security-template-fetch-depth
-- **Date**: 2026-06-05T10:45:19.469854Z
+- **Run ID**: iterate-2026-06-05-bloat-marker-worktree-aware
+- **Date**: 2026-06-05T11:26:03.171780Z
 - **Type**: change
-- **Complexity**: trivial
-- **Branch**: iterate/security-template-fetch-depth
-- **ADR**: iterate-2026-06-05-security-template-fetch-depth
+- **Complexity**: small
+- **Branch**: iterate/bloat-marker-worktree-aware
+- **ADR**: iterate-2026-06-05-bloat-marker-worktree-aware
 - **Tests passed**: True
-- **Spec**: NONE
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/bloat-marker-worktree-aware
+- **Branch**: iterate/b7-exclude-nonfunctional
 - **External Review Marker**: completed (external_review_state.json @ 2026-06-01T06:00:50)
 
 ### Mandatory replay on Resume
@@ -48,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/bloat-marker-worktree-aware
-- **Last Commit**: dc78b6d4 Merge pull request #148 from svenroth-ai/iterate/security-template-fetch-depth
+- **Branch**: iterate/b7-exclude-nonfunctional
+- **Last Commit**: 267c8842 Merge pull request #150 from svenroth-ai/iterate/bloat-marker-worktree-aware
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-7f17543a | work_completed | iterate (B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill.) | 2026-06-05 |
 | evt-702f8c5b | work_completed | iterate (Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab)) | 2026-06-05 |
 | evt-2c8f0a52 | work_completed | iterate (Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery) | 2026-06-05 |
 | evt-247909be | work_completed | iterate (Set security.yml.template checkout to fetch-depth: 1 (working-tree only) and correct the misleading diff-aware-secret-scans comment; no scanner reads git history.) | 2026-06-05 |
 | evt-4ceefd02 | work_completed | iterate (C1/C2 detective-realign doc + ledger closeout) | 2026-06-05 |
-| evt-447a8c00 | work_completed | iterate (Scope the bloat recorder to the project root so cross-repo edits do not leak into this project marker and block its Stop gate.) | 2026-06-04 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 99
-- **Last iterate**: change — Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab) (2026-06-05)
+- **Total work events**: 100
+- **Last iterate**: change — B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill. (2026-06-05)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

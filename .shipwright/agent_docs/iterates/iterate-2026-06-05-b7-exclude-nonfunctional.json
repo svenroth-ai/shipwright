@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-05-b7-exclude-nonfunctional",
+  "date": "2026-06-05T12:01:23.896278Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/b7-exclude-nonfunctional",
+  "spec": ".shipwright/planning/adr/097-bloat-b7-rule-e-test-growth.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-05-b7-exclude-nonfunctional"
+}

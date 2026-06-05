@@ -590,6 +590,7 @@ def test_b7_disabling_rule_b_re_includes_dependabot_commits(tmp_path):
 
     config = _default_config()
     config["retention"]["rule_b"] = False
+    config["retention"]["rule_e"] = False  # isolate Rule B (the bot author, not the chore type)
     findings = group_b.run(tmp_path, config, None)
     b7 = next(f for f in findings if f.check_id == "B7")
     assert b7.status == "fail"
@@ -666,19 +667,63 @@ def test_b7_excludes_release_commit(tmp_path):
     assert b7.status == "pass", b7.detail
 
 
-def test_b7_still_flags_non_release_chore_without_event(tmp_path):
-    """Rule D is NARROW: a plain chore committed DIRECTLY (bypassing iterate) is
-    real drift and must STILL be flagged — only chore(release) is recognized.
-    Guards against the rejected blanket commit-type exclusion (B)."""
+def test_b7_excludes_nonfunctional_chore_by_default(tmp_path):
+    """Rule E (iterate-2026-06-05-b7-exclude-nonfunctional, supersedes B's narrow
+    Rule D): a non-functional type (chore/ci/docs/…) committed directly is repo
+    maintenance with no RTM footprint — excluded by default, no event needed."""
     _git_init(tmp_path)
     _git_commit(tmp_path, {"a.txt": "v1"}, "initial")
     _git_tag(tmp_path, "v0.1.0")
-    sha1 = _git_commit(tmp_path, {"src/tool.py": "x"}, "chore: tidy helper")
+    _git_commit(tmp_path, {"src/tool.py": "x"}, "chore: tidy helper")
+    _events(tmp_path / "shipwright_events.jsonl", [])
+    findings = group_b.run(tmp_path, _default_config(), None)
+    b7 = next(f for f in findings if f.check_id == "B7")
+    assert b7.status == "pass", b7.detail
+
+
+def test_b7_still_flags_functional_feat_without_event(tmp_path):
+    """Rule E NEVER excludes functional types: a feat/fix that bypassed the
+    iterate flow is real drift B7 keeps surfacing (the campaign's spirit)."""
+    _git_init(tmp_path)
+    _git_commit(tmp_path, {"a.txt": "v1"}, "initial")
+    _git_tag(tmp_path, "v0.1.0")
+    sha1 = _git_commit(tmp_path, {"src/tool.py": "x"}, "feat: new helper")
     _events(tmp_path / "shipwright_events.jsonl", [])
     findings = group_b.run(tmp_path, _default_config(), None)
     b7 = next(f for f in findings if f.check_id == "B7")
     assert b7.status == "fail"
     assert sha1[:8] in b7.detail
+
+
+def test_b7_flags_nonfunctional_when_exclusion_disabled(tmp_path):
+    """Opt-out: b7_exclusions.exclude_nonfunctional_types=False restores the old
+    flag-everything stance for a project that wants maximal accountability."""
+    _git_init(tmp_path)
+    _git_commit(tmp_path, {"a.txt": "v1"}, "initial")
+    _git_tag(tmp_path, "v0.1.0")
+    sha1 = _git_commit(tmp_path, {"src/tool.py": "x"}, "chore: tidy helper")
+    _events(tmp_path / "shipwright_events.jsonl", [])
+    config = _default_config()
+    config["b7_exclusions"]["exclude_nonfunctional_types"] = False
+    findings = group_b.run(tmp_path, config, None)
+    b7 = next(f for f in findings if f.check_id == "B7")
+    assert b7.status == "fail"
+    assert sha1[:8] in b7.detail
+
+
+def test_conventional_type_parsing():
+    """Rule E's type extraction handles scope, ``!``, and no-prefix subjects."""
+    from scripts.audit.git_log_scan import CommitInfo
+
+    def _t(subject: str):
+        return CommitInfo("s", "a@b", 1, (), subject).conventional_type()
+
+    assert _t("ci(security): x") == "ci"
+    assert _t("feat!: breaking") == "feat"
+    assert _t("Fix(API): y") == "fix"
+    assert _t("docs: z") == "docs"
+    assert _t("no prefix here") is None
+    assert _t("WIP merge stuff") is None
 
 
 # ---------------------------------------------------------------------------

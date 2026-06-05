@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-05 11:26 UTC | Session: 8c417574-f89c-40fd-a5b3-5d01f6272edb | Run: iterate-2026-06-05-bloat-marker-worktree-aware
+> Updated: 2026-06-05 12:01 UTC | Session: 8c417574-f89c-40fd-a5b3-5d01f6272edb | Run: iterate-2026-06-05-b7-exclude-nonfunctional
 
-## Recent Changes (99 iterations)
+## Recent Changes (100 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill. | 44/44 |  | compliance | 2026-06-05 |
 | change | Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab) | 9/9 |  | tooling | 2026-06-05 |
 | change | Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery | 64/64 |  | tooling | 2026-06-05 |
 | change | Set security.yml.template checkout to fetch-depth: 1 (working-tree only) and correct the misleading diff-aware-secret-scans comment; no scanner reads git history. | 0/0 |  | infra | 2026-06-05 |
@@ -106,7 +107,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-05 | Unit: 9/9 | Smoke: not_run | (iterate)
+Last run: 2026-06-05 | Unit: 44/44 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
