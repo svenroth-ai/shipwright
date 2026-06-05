@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-05-sbom-cluster-stable-identity",
+    "run_id": "iterate-2026-06-05-triage-dismissed-gc",
     "date": "2026-06-05",
     "unit": {
       "status": "passed",
-      "passed": 617,
-      "total": 617
+      "passed": 387,
+      "total": 387
     },
     "integration": {
       "status": "not_run",
@@ -32,64 +32,79 @@
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --directory plugins/shipwright-compliance --extra dev pytest tests/test_sbom_generator.py -q",
-      "tests_run": 42,
+      "runner": "uv run --directory shared --extra dev pytest tests/test_triage_gc.py -q  (+ live dry-run: triage_gc.py --project-root . => 53 droppable / 122 kept, writes nothing)",
+      "tests_run": 11,
       "exit_code": 0,
-      "justification": "Framework-internal compliance SBOM producer (no web/API/UI surface). The CLI runner exercises the full sbom_generator surface incl. the cluster identity round-trip (emit -> read back dedupKey -> re-emit under membership drift -> same id). Broader regression: full compliance suite 617 passed / 10 skipped."
+      "justification": "Framework-internal maintenance CLI (no web/API/UI). The runner exercises the predicate + the destructive rewrite round-trip (apply -> re-read -> validate header/orphan-status) + console safety; a live dry-run against the main-tree pile confirms 53 machine-churn droppable / 122 human-curated kept without writing."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "cluster dedup key = f(signature, manifest_type) only",
+          "behavior": "predicate requires both producer-dismisser AND exact machine token",
           "disposition": "tested",
-          "evidence": "test_cluster_dedup_key_independent_of_membership + test_cluster_dedup_key_shape_is_sha256_12 PASSED"
+          "evidence": "test_is_machine_churn_requires_both_conditions PASSED"
         },
         {
-          "behavior": "membership grow {a,c}->{a,c,d} keeps stable id (no dismiss/append)",
+          "behavior": "plan drops machine, keeps human",
           "disposition": "tested",
-          "evidence": "test_cluster_membership_grows_keeps_stable_id PASSED"
+          "evidence": "test_plan_drops_machine_keeps_human PASSED"
         },
         {
-          "behavior": "membership shrink-in-range {a,b,c}->{a,b} keeps stable id",
+          "behavior": "promoted + open never dropped",
           "disposition": "tested",
-          "evidence": "test_cluster_membership_shrinks_within_range_keeps_stable_id PASSED"
+          "evidence": "test_promoted_and_open_never_dropped PASSED"
         },
         {
-          "behavior": "2->1 shrink crosses to per-workspace (preserved)",
+          "behavior": "machine reason + human dismisser kept",
           "disposition": "tested",
-          "evidence": "test_cluster_dismisses_then_reemits_when_membership_shrinks PASSED"
+          "evidence": "test_machine_reason_but_human_dismisser_kept PASSED"
         },
         {
-          "behavior": "npm vs python same-signature stay distinct clusters",
+          "behavior": "producer dismisser + human reason kept",
           "disposition": "tested",
-          "evidence": "test_npm_and_python_signatures_emit_separate_clusters PASSED"
+          "evidence": "test_producer_dismisser_but_human_reason_kept PASSED"
         },
         {
-          "behavior": "idempotent same-signature same-members",
+          "behavior": "dry-run writes nothing",
           "disposition": "tested",
-          "evidence": "test_cluster_idempotent_across_runs PASSED"
+          "evidence": "test_dry_run_writes_nothing PASSED"
         },
         {
-          "behavior": "auto-resolve when all members clean",
+          "behavior": "apply compacts + creates backup",
           "disposition": "tested",
-          "evidence": "test_cluster_auto_resolves_when_all_members_clean PASSED"
+          "evidence": "test_apply_compacts_and_backs_up PASSED"
         },
         {
-          "behavior": "open-item body shows membership-at-first-emit (stale by-design, append-only store)",
+          "behavior": "multi-status item fully dropped, no orphan status",
           "disposition": "tested",
-          "evidence": "test_cluster_membership_grows_keeps_stable_id asserts 'Workspaces (2)' PASSED"
+          "evidence": "test_apply_drops_all_lines_of_multi_status_item PASSED"
+        },
+        {
+          "behavior": "apply idempotent (byte-identical second run)",
+          "disposition": "tested",
+          "evidence": "test_apply_idempotent PASSED"
+        },
+        {
+          "behavior": "header preserved + post-rewrite validation",
+          "disposition": "tested",
+          "evidence": "test_apply_preserves_header_and_validates PASSED"
+        },
+        {
+          "behavior": "report console-encoding-safe (cp1252 + arrow)",
+          "disposition": "tested",
+          "evidence": "test_report_survives_non_cp1252_title PASSED"
         }
       ],
       "counts": {
-        "testable": 8,
-        "tested": 8,
+        "testable": 11,
+        "tested": 11,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
+        "acs": 6,
+        "covered_acs": 6
       }
     },
     "degraded": []
