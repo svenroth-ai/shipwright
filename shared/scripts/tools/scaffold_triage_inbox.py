@@ -6,10 +6,14 @@ AC-6 of iterate-2026-05-11-triage-inbox-1a. Idempotent — safe to re-run.
 Files touched:
 - ``.shipwright/triage.jsonl``                — schema header if missing
 - ``.shipwright/agent_docs/triage_inbox.md``  — empty skeleton if missing
-- ``.gitignore``                              — append ``.shipwright/triage.jsonl``
-                                                and ``.shipwright/triage.jsonl.lock``
-                                                if those lines aren't present
-                                                (LOW-14 + Gemini LOW-4)
+- ``.gitignore``                              — ensure ``.shipwright/triage.jsonl.lock``
+                                                is ignored AND **self-heal** any stale
+                                                bare ``.shipwright/triage.jsonl`` ignore
+                                                line (pre-tracking adopters appended it
+                                                here; triage.jsonl is now the tracked
+                                                SSoT, re-included by the canonical
+                                                managed block's ``!`` negation — campaign
+                                                2026-06-05-track-triage-jsonl, C1)
 
 Returns a dict summarising what changed so adopt's Step E.16 can surface
 it in the handoff banner.
@@ -34,9 +38,18 @@ from tools.aggregate_triage import render_markdown  # noqa: E402
 
 _AGENT_DOCS_DIRNAME = ".shipwright/agent_docs"
 TRIAGE_MD_REL = Path(_AGENT_DOCS_DIRNAME) / "triage_inbox.md"
-GITIGNORE_LINES = (
-    ".shipwright/triage.jsonl",
-    ".shipwright/triage.jsonl.lock",
+# Only the lock stays ignored. triage.jsonl itself is the tracked SSoT backlog
+# (campaign 2026-06-05-track-triage-jsonl): the canonical managed block
+# re-includes it via ``!/.shipwright/triage.jsonl``. (The ``/.shipwright/*``
+# wildcard already covers the lock, so this is belt-and-braces for projects
+# whose .gitignore lacks the canonical block.)
+GITIGNORE_LINES = (".shipwright/triage.jsonl.lock",)
+
+# Stale PLAIN ignores of the now-tracked jsonl, stripped on (re-)scaffold. A
+# bare line appended AFTER the managed block would override the negation by
+# gitignore last-match semantics. The ``!`` negation itself is never stripped.
+_STALE_IGNORE_LINES = frozenset(
+    {".shipwright/triage.jsonl", "/.shipwright/triage.jsonl"}
 )
 
 
@@ -64,40 +77,47 @@ def _scaffold_markdown(project_root: Path, *, now: str = "scaffold") -> dict[str
 
 
 def _scaffold_gitignore(project_root: Path) -> dict[str, object]:
-    """Append triage.jsonl + .lock to .gitignore if missing. Idempotent."""
-    gi_path = project_root / ".gitignore"
-    existing_lines: set[str] = set()
-    existing_text = ""
-    if gi_path.exists():
-        existing_text = gi_path.read_text(encoding="utf-8")
-        existing_lines = {
-            L.strip() for L in existing_text.splitlines() if L.strip()
-        }
+    """Ensure the triage ``.lock`` is ignored and self-heal a stale bare
+    ``.shipwright/triage.jsonl`` ignore line. Idempotent.
 
-    needed = [line for line in GITIGNORE_LINES if line not in existing_lines]
-    if not needed:
+    Self-heal: any PLAIN (non-``!``) ignore of the now-tracked jsonl is
+    dropped — a bare line sitting after the canonical managed block would
+    override its ``!/.shipwright/triage.jsonl`` negation (gitignore
+    last-match-wins). The negation itself is never touched.
+    """
+    gi_path = project_root / ".gitignore"
+    existing_text = gi_path.read_text(encoding="utf-8") if gi_path.exists() else ""
+    lines = existing_text.splitlines()
+
+    kept = [L for L in lines if L.strip() not in _STALE_IGNORE_LINES]
+    healed = [L.strip() for L in lines if L.strip() in _STALE_IGNORE_LINES]
+
+    present = {L.strip() for L in kept if L.strip()}
+    needed = [line for line in GITIGNORE_LINES if line not in present]
+
+    if not needed and not healed:
         return {
             "path": ".gitignore",
             "action": "already-present",
             "added": [],
+            "healed": [],
         }
 
-    # Ensure file ends with newline before appending
-    new_text = existing_text
+    new_text = "\n".join(kept)
     if new_text and not new_text.endswith("\n"):
         new_text += "\n"
     if needed:
-        if existing_text:
-            new_text += "\n# Triage Inbox (shipwright)\n"
-        else:
-            new_text = "# Triage Inbox (shipwright)\n"
+        new_text += ("\n# Triage Inbox (shipwright)\n" if new_text
+                     else "# Triage Inbox (shipwright)\n")
         new_text += "\n".join(needed) + "\n"
 
     gi_path.write_text(new_text, encoding="utf-8")
     return {
         "path": ".gitignore",
-        "action": "appended" if existing_text else "created",
+        "action": "healed" if healed and not needed else
+                  ("appended" if existing_text else "created"),
         "added": needed,
+        "healed": healed,
     }
 
 

@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-05-a5-gate-behavioral-probe",
+    "run_id": "iterate-2026-06-05-triage-track-c1-gitignore",
     "date": "2026-06-05",
     "unit": {
       "status": "passed",
-      "passed": 612,
-      "total": 622
+      "passed": 19,
+      "total": 19
     },
     "integration": {
       "status": "not_run",
@@ -18,12 +18,12 @@
       "total": 0
     },
     "e2e": {
-      "status": "passed",
-      "passed": 17,
-      "total": 17
+      "status": "skipped",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -32,48 +32,48 @@
     },
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --directory plugins/shipwright-compliance --with pytest --with pyyaml pytest tests/test_gate_probe_orchestration.py tests/test_audit_gate_behavior_probe.py -q",
-      "tests_run": 17,
+      "runner": "uv run --directory shared --extra dev pytest tests/test_triage_scaffold.py tests/test_gitignore_template_congruent.py -q",
+      "tests_run": 19,
       "exit_code": 0,
-      "justification": "Framework-internal compliance-audit sub-check (A5.8). The CLI runner executes the gate-behavior probe decision-tree + integration tests; the 10 bash/jq end-to-end cases run in CI (skipped on this Windows dev box, identical posture to the sibling shared/tests/test_security_critical_gate.py). No web/API/UI surface."
+      "justification": "gitignore/scaffolder config-tooling (no web/API/UI). Runner exercises the scaffolder self-heal + the end-to-end git check-ignore on the REAL SSoT template (negation tracks triage.jsonl, .lock+.bak ignored) + template<->framework ordered-list congruence."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 — A5.8 FAILs (HIGH) when the gate exits 0 on a CRITICAL fixture (the 2026-06-04 false-green class)",
+          "behavior": "canonical negation tracks jsonl, ignores lock+bak (real SSoT, end-to-end)",
           "disposition": "tested",
-          "evidence": "test_gate_probe_orchestration.py::test_critical_not_blocking_is_fail PASSED (local); test_audit_gate_behavior_probe.py::test_probe_fails_on_noop_gate / test_probe_fails_on_result_level_only_gate (CI)"
+          "evidence": "test_canonical_negation_tracks_jsonl_but_ignores_lock_and_bak PASSED"
         },
         {
-          "behavior": "AC2 — A5.8 FAILs when the gate exits 0 on EMPTY or INVALID scan output (not fail-closed)",
+          "behavior": "template <-> monorepo ordered-list congruent",
           "disposition": "tested",
-          "evidence": "test_gate_probe_orchestration.py::test_empty_not_failing_closed_is_fail / test_invalid_not_failing_closed_is_fail PASSED (local); test_audit_gate_behavior_probe.py::test_probe_fails_when_gate_not_fail_closed_on_empty / test_probe_fails_when_gate_tolerates_invalid_json (CI)"
+          "evidence": "test_gitignore_template_congruent.py (4) PASSED"
         },
         {
-          "behavior": "AC3 — A5.8 PASSes against BOTH real gate flavors (template SARIF + deployed findings.json)",
+          "behavior": "bare jsonl no longer a managed ignore line",
           "disposition": "tested",
-          "evidence": "test_audit_gate_behavior_probe.py::test_probe_passes_against_real_template_gate / test_probe_passes_against_real_deployed_monorepo_gate (CI; assert repo invariant + probe==pass)"
+          "evidence": "test_jsonl_is_no_longer_a_managed_ignore_line PASSED"
         },
         {
-          "behavior": "AC4 — A5.8 SKIPs (never FAIL) on absent bash/jq, no run-body, ${{ }} body, clean-sanity failure, timeout/OSError, or SHIPWRIGHT_A5_GATE_PROBE=0",
+          "behavior": "self-heal strips stale bare line",
           "disposition": "tested",
-          "evidence": "test_audit_gate_behavior_probe.py::test_probe_skips_when_tools_unavailable / _no_run_body / _gate_step_absent / _overblocking_gate; test_gate_probe_orchestration.py::test_clean_not_passing_is_skip / _github_expression_body_is_skip / _timeout_is_skip / _oserror_is_skip; test_run_if_enabled_skips_without_probing_when_disabled"
+          "evidence": "test_self_heals_stale_bare_jsonl_ignore PASSED"
         },
         {
-          "behavior": "AC5 — Structural A5.1–A5.7 + the audit suite stay green and acquire no bash/jq dependency (conftest opt-out)",
+          "behavior": "self-heal strips slash-prefixed variant",
           "disposition": "tested",
-          "evidence": "Full compliance suite 612 passed / 10 skipped; test_audit_group_a5.py 36 passed with the probe disabled by the package conftest"
+          "evidence": "test_self_heal_strips_slash_prefixed_variant PASSED"
         },
         {
-          "behavior": "AC6 — group_a5.py stays within its (bumped) bloat baseline; the new module + test files are <=300 LOC",
+          "behavior": "self-heal never strips the negation",
           "disposition": "tested",
-          "evidence": "anti_ratchet_check.py --worktree => status ok (group_a5.py 608->614 baseline bump); gate_behavior_probe.py 298, test files 300/125"
+          "evidence": "test_self_heal_never_strips_the_negation PASSED"
         },
         {
-          "behavior": "Finding contract + crash isolation: run() emits one A5.8 Finding (group A / detective-only / HIGH / cmd-on-fail) and never raises",
+          "behavior": ".lock still ignored/appended; scaffolder idempotent",
           "disposition": "tested",
-          "evidence": "test_audit_gate_behavior_probe.py::test_run_emits_single_a5_8_finding_with_contract (CI) / test_run_skip_finding_carries_no_suggested_cmd / test_run_never_raises_on_internal_error (local)"
+          "evidence": "test_creates_gitignore_when_absent + test_appends_to_existing_gitignore + test_full_idempotency PASSED"
         }
       ],
       "counts": {
@@ -83,15 +83,15 @@
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 3,
+        "covered_acs": 3
       }
     },
     "degraded": [
       {
-        "condition": "bash/jq absent on this local Windows runner: the 10 A5.8 end-to-end probe tests skip locally",
-        "impact": "low",
-        "note": "They execute in CI (ubuntu ships both, and skip_or_fail_on_missing_binary hard-fails there if absent). The probe's decision tree is fully covered locally by test_gate_probe_orchestration.py (stubs _run_gate). Same ADR-044 posture as the sibling shared/tests/test_security_critical_gate.py."
+        "condition": "Full shared suite (2774 passed / 23 skipped) has 1 PRE-EXISTING local-only failure: test_architecture_md_reflects_arch_impact lists 4 NON-campaign arch-impact decision-drops (a5-gate-behavioral-probe, b7-exclude-nonfunctional, bloat-marker-worktree-aware, fr-linkage-lifecycle / PRs #152/#151/#150/#147) lacking architecture.md entries. CI-green (decision-drops are gitignored, absent from a clean checkout). C1 added the campaign's own A/B/C1 entries; the pre-existing drift is tracked as trg-b61abfab (F2 backfill).",
+        "impact": "none-on-c1",
+        "tracked": "trg-b61abfab"
       }
     ]
   }
