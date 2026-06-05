@@ -7,6 +7,16 @@ from pathlib import Path
 
 import pytest
 
+# C3 (iterate-2026-06-05-fr-linkage-lifecycle): finalize now enforces the
+# FR-gate, so every run() that expects a written event must supply a valid
+# classification — exactly as a real F5b call does. These tests exercise
+# dashboard / handoff / idempotency / attach behaviour, not FR linkage, so the
+# minimal tooling classification keeps them focused while satisfying the gate.
+_VALID_EXTRAS = {
+    "change_type": "tooling",
+    "none_reason": "finalize unit test classification",
+}
+
 
 @pytest.fixture()
 def project(tmp_path):
@@ -29,7 +39,7 @@ def test_run_writes_dashboard(project, monkeypatch):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
     from tools.finalize_iterate import run
 
-    result = run(project, run_id="test-001")
+    result = run(project, run_id="test-001", event_extras=_VALID_EXTRAS)
     assert result["steps"]["dashboard"].get("written")
     assert (project / ".shipwright" / "agent_docs" / "build_dashboard.md").exists()
 
@@ -42,7 +52,7 @@ def test_run_writes_handoff(project, monkeypatch):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
     from tools.finalize_iterate import run
 
-    result = run(project, run_id="test-002")
+    result = run(project, run_id="test-002", event_extras=_VALID_EXTRAS)
     assert result["steps"]["handoff"].get("written")
     handoff = project / ".shipwright" / "agent_docs" / "session_handoff.md"
     assert handoff.exists()
@@ -64,7 +74,7 @@ def test_run_records_event_even_without_commit_arg(project, monkeypatch):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
     from tools.finalize_iterate import run
 
-    result = run(project, run_id="test-003")
+    result = run(project, run_id="test-003", event_extras=_VALID_EXTRAS)
     assert result["steps"]["event"].get("id") is not None
     assert "skipped" not in result["steps"]["event"]
 
@@ -77,7 +87,7 @@ def test_run_records_event_with_commit(project, monkeypatch):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
     from tools.finalize_iterate import run
 
-    result = run(project, run_id="test-004", commit="abc123")
+    result = run(project, run_id="test-004", commit="abc123", event_extras=_VALID_EXTRAS)
     event_step = result["steps"]["event"]
     assert event_step.get("id") is not None
 
@@ -93,10 +103,10 @@ def test_run_is_idempotent(project, monkeypatch):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
     from tools.finalize_iterate import run
 
-    result1 = run(project, run_id="test-005")
+    result1 = run(project, run_id="test-005", event_extras=_VALID_EXTRAS)
     dashboard1 = (project / ".shipwright" / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
 
-    result2 = run(project, run_id="test-005")
+    result2 = run(project, run_id="test-005", event_extras=_VALID_EXTRAS)
     dashboard2 = (project / ".shipwright" / "agent_docs" / "build_dashboard.md").read_text(encoding="utf-8")
 
     assert dashboard1 == dashboard2
@@ -115,7 +125,7 @@ def test_run_graceful_without_compliance_dir(tmp_path, monkeypatch):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
     from tools.finalize_iterate import run
 
-    result = run(tmp_path, run_id="test-006")
+    result = run(tmp_path, run_id="test-006", event_extras=_VALID_EXTRAS)
     assert "steps" in result
 
 
@@ -142,7 +152,8 @@ def test_run_records_event_pre_commit_with_empty_commit(project, monkeypatch):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
     from tools.finalize_iterate import run
 
-    result = run(project, run_id="test-reorder-001", reason="iterate test")
+    result = run(project, run_id="test-reorder-001", reason="iterate test",
+                 event_extras=_VALID_EXTRAS)
 
     event_step = result["steps"]["event"]
     # Event MUST be recorded even without a known commit SHA.
@@ -173,7 +184,7 @@ def test_run_includes_iterate_event_in_compliance_data(project, monkeypatch):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
     from tools.finalize_iterate import run
 
-    run(project, run_id="test-reorder-002")
+    run(project, run_id="test-reorder-002", event_extras=_VALID_EXTRAS)
 
     events = _read_events_jsonl(project)
     # Exactly one work_completed event, written before any compliance step.
@@ -191,7 +202,7 @@ def test_attach_commit_after_finalize_patches_event(project, monkeypatch):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
     from tools.finalize_iterate import attach_commit_after_finalize, run
 
-    result = run(project, run_id="test-reorder-003")
+    result = run(project, run_id="test-reorder-003", event_extras=_VALID_EXTRAS)
     event_id = result["steps"]["event"]["id"]
 
     ok = attach_commit_after_finalize(project, event_id, "deadbeef0001")
@@ -213,7 +224,8 @@ def test_run_no_longer_requires_commit_arg(project, monkeypatch):
     from tools.finalize_iterate import run
 
     # Old caller signature (commit known at call time) still works.
-    result = run(project, run_id="test-reorder-004", commit="legacy-sha-abc")
+    result = run(project, run_id="test-reorder-004", commit="legacy-sha-abc",
+                 event_extras=_VALID_EXTRAS)
     assert result["steps"]["event"].get("id") is not None
 
     events = _read_events_jsonl(project)
@@ -270,6 +282,7 @@ def test_event_extras_cannot_spoof_system_fields(project, monkeypatch):
         "adr_id": "wrong-run-id",   # attempted spoof
         "commit": "fake-sha",       # attempted spoof
         "intent": "feature",        # legitimate
+        "affected_frs": ["FR-01.01"],  # classification so the FR-gate passes
     }
     run(project, run_id="test-spoof-001", event_extras=extras)
 
@@ -290,7 +303,7 @@ def test_cli_attach_commit_subcommand(project, monkeypatch):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
     from tools.finalize_iterate import main, run
 
-    result = run(project, run_id="test-cli-attach-001")
+    result = run(project, run_id="test-cli-attach-001", event_extras=_VALID_EXTRAS)
     event_id = result["steps"]["event"]["id"]
 
     rc = main([
@@ -303,3 +316,149 @@ def test_cli_attach_commit_subcommand(project, monkeypatch):
 
     [event] = _read_events_jsonl(project)
     assert event["commit"] == "abc123sha"
+
+
+# ---------------------------------------------------------------------------
+# C3 (iterate-2026-06-05-fr-linkage-lifecycle): finalize FR-gate parity.
+# finalize._record_event now runs record_event._fr_or_change_type_gate_error
+# BEFORE append_event — an iterate work_completed event lacking FR linkage AND
+# a valid change_type+none_reason is rejected, fail-closed (ADR-059 parity).
+# Closes the bypass that let the reopen event evt-83b9b73f land for D5 to catch.
+# ---------------------------------------------------------------------------
+
+
+def _import_finalize():
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    from tools import finalize_iterate as fi
+    return fi
+
+
+def test_finalize_rejects_feature_event_without_fr_linkage(project, monkeypatch):
+    """AC-1/AC-2: a feature event with no FR and no change_type+none_reason is
+    rejected BEFORE write — finalize raises FinalizeGateError, nothing lands."""
+    monkeypatch.chdir(project)
+    monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
+    fi = _import_finalize()
+
+    extras = {"intent": "feature", "spec_impact": "add",
+              "description": "reopen-shaped event with no FR"}
+    with pytest.raises(fi.FinalizeGateError) as excinfo:
+        fi.run(project, run_id="test-gate-reject-001", event_extras=extras)
+
+    # Actionable: the error names the remediation (FR or change_type path).
+    msg = str(excinfo.value).lower()
+    assert "affected" in msg or "change_type" in msg or "change-type" in msg
+
+    # Fail-closed: no work_completed event was written (no silent degenerate row).
+    events = _read_events_jsonl(project)
+    assert [e for e in events if e.get("type") == "work_completed"] == []
+
+
+def test_finalize_allows_feature_event_with_affected_frs(project, monkeypatch):
+    """AC-5: a feature event that links an FR passes the gate and is written."""
+    monkeypatch.chdir(project)
+    monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
+    fi = _import_finalize()
+
+    extras = {"intent": "feature", "spec_impact": "add",
+              "affected_frs": ["FR-01.01"], "new_frs": ["FR-01.01"]}
+    result = fi.run(project, run_id="test-gate-allow-001", event_extras=extras)
+    assert result["steps"]["event"].get("id") is not None
+
+    [event] = _read_events_jsonl(project)
+    assert event["affected_frs"] == ["FR-01.01"]
+
+
+def test_finalize_allows_event_with_change_type_pair(project, monkeypatch):
+    """AC-5: a no-FR iterate classified via change_type+none_reason passes."""
+    monkeypatch.chdir(project)
+    monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
+    fi = _import_finalize()
+
+    extras = {"intent": "change", "change_type": "tooling",
+              "none_reason": "internal tooling — no FR touched"}
+    result = fi.run(project, run_id="test-gate-allow-002", event_extras=extras)
+    assert result["steps"]["event"].get("id") is not None
+    [event] = _read_events_jsonl(project)
+    assert event["change_type"] == "tooling"
+
+
+def test_finalize_gate_rejects_malformed_change_type(project, monkeypatch):
+    """AC-2 parity: change_type present but unrecognized (e.g. an unfilled F5b
+    placeholder) is rejected even alongside FRs — matches the CLI gate's
+    defense-in-depth (cleaner data on disk)."""
+    monkeypatch.chdir(project)
+    monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
+    fi = _import_finalize()
+
+    extras = {"intent": "change", "affected_frs": ["FR-01.01"],
+              "change_type": "{docs|tooling|compliance|infra}"}  # unfilled placeholder
+    with pytest.raises(fi.FinalizeGateError):
+        fi.run(project, run_id="test-gate-malformed-001", event_extras=extras)
+    assert [e for e in _read_events_jsonl(project)
+            if e.get("type") == "work_completed"] == []
+
+
+def test_finalize_gate_preserves_idempotency_without_regating(project, monkeypatch):
+    """The idempotency early-return runs BEFORE the gate: a re-run with the
+    same run_id but invalid extras returns the existing event id and never
+    re-gates (no spurious rejection on operator / Stop-hook re-run)."""
+    monkeypatch.chdir(project)
+    monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
+    fi = _import_finalize()
+
+    first = fi.run(project, run_id="test-gate-idem-001",
+                   event_extras={"intent": "change", "change_type": "tooling",
+                                 "none_reason": "first valid call"})
+    event_id = first["steps"]["event"]["id"]
+
+    # Second call: same run_id, now with INVALID extras (no FR/change_type).
+    # Must NOT raise — the early-return short-circuits before the gate.
+    second = fi.run(project, run_id="test-gate-idem-001",
+                    event_extras={"intent": "feature"})
+    assert second["steps"]["event"]["id"] == event_id
+    assert len([e for e in _read_events_jsonl(project)
+                if e.get("type") == "work_completed"]) == 1
+
+
+def test_cli_main_returns_1_on_gate_rejection(project, monkeypatch):
+    """AC-2: the CLI surfaces the rejection as exit 1 + a structured error,
+    matching record_event.main's fail-closed contract (nothing written)."""
+    monkeypatch.chdir(project)
+    monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
+    fi = _import_finalize()
+
+    rc = fi.main([
+        "--project-root", str(project),
+        "--run-id", "test-gate-cli-001",
+        "--event-extras-json", json.dumps({"intent": "feature", "spec_impact": "add"}),
+    ])
+    assert rc == 1
+    assert [e for e in _read_events_jsonl(project)
+            if e.get("type") == "work_completed"] == []
+
+
+def test_finalize_gate_rejection_aborts_artifact_regen(project, monkeypatch):
+    """Fail-closed consequence (Stop-hook safety-net behaviour): a gate
+    rejection at Step 1 propagates out of run() BEFORE Steps 2-5, so the
+    derived artifacts (dashboard / handoff) are NOT refreshed for the
+    unclassified iterate. Pins the documented intentional skip — the
+    operator must re-run F5b with classification, which regenerates them."""
+    monkeypatch.chdir(project)
+    monkeypatch.delenv("SHIPWRIGHT_SESSION_ID", raising=False)
+    fi = _import_finalize()
+
+    dashboard = project / ".shipwright" / "agent_docs" / "build_dashboard.md"
+    handoff = project / ".shipwright" / "agent_docs" / "session_handoff.md"
+    assert not dashboard.exists()  # fixture starts clean
+
+    with pytest.raises(fi.FinalizeGateError):
+        fi.run(project, run_id="test-gate-abort-001",
+               event_extras={"intent": "feature"})  # no FR / change_type
+
+    # Steps 2-5 never ran: no dashboard, no handoff, no event.
+    assert not dashboard.exists()
+    assert not handoff.exists()
+    assert [e for e in _read_events_jsonl(project)
+            if e.get("type") == "work_completed"] == []

@@ -19,7 +19,22 @@ events_log history, iterate-2026-05-29-events-jsonl-worktree-commit), with
 keeps `commit=""` (F6.5 SHA patch is skipped in the worktree flow — the
 `Run-ID:` commit footer and `adr_id == run_id` carry the linkage).
 
+**The finalize FR-gate (ADR-059) is enforced on this path** (since
+`iterate-2026-06-05-fr-linkage-lifecycle`): the event is **rejected before
+write** — finalize exits non-zero with guidance — unless it is classified. Set
+**exactly one** of the two branches and **omit** the other keys; a leftover
+placeholder such as `"change_type": "{docs|…}"` is itself a rejection (a present
+`change_type` must be a recognized value paired with a valid `none_reason`):
+
+- **FR-linked** (feature/change touching the spec) — set `affected_frs` and/or
+  `new_frs`; **omit** `change_type`/`none_reason`.
+- **No-FR** (docs/tooling/compliance/infra) — set `change_type` ∈
+  `{docs,tooling,compliance,infra}` + a one-line `none_reason`; **omit**
+  `affected_frs`/`new_frs`.
+
 ```bash
+# Example: FR-linked iterate. For a no-FR iterate, drop affected_frs/new_frs
+# and instead set "change_type" + "none_reason" (see the two branches above).
 extras='{
   "intent": "{feature|change|bug}",
   "description": "{short_description}",
@@ -27,8 +42,6 @@ extras='{
   "spec_impact_justification": "{required when spec_impact=none}",
   "affected_frs": ["FR-..."],
   "new_frs": ["FR-..."],
-  "change_type": "{docs|tooling|compliance|infra}",
-  "none_reason": "{required when affected_frs/new_frs empty}",
   "tests": {"passed": N, "total": N, "e2e_run": true}
 }'
 uv run "{shared_root}/scripts/tools/finalize_iterate.py" \
@@ -45,8 +58,10 @@ legacy F6.5 SHA patch, used only by non-worktree callers).
 The script is idempotent per `run_id` — re-invocations return the
 existing event_id rather than recording a duplicate. If you skip this
 step, the Stop hook will run it automatically as a fallback when the
-session ends (but without the event_extras — for a clean F11 you must
-call F5b yourself with the full metadata).
+session ends — but **without** the event_extras, so the enforced FR-gate
+**rejects that fallback write** (it would be an unclassified event): nothing
+is recorded and the failure is logged to stderr. For a clean F11 you **must**
+call F5b yourself with the full metadata.
 
 > **Note:** F7 (separate `record_event.py` call) is REPLACED by F5b (event
 > recording into the worktree log) + F6 (staging it into the commit). The

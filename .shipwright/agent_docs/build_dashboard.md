@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-05 07:37 UTC | Session: 1d5954a4-cb63-48b9-a938-1d19fcc978c0 | Run: iterate-2026-06-05-detective-realign-doc-ledger
+> Updated: 2026-06-05 10:24 UTC | Session: 8c417574-f89c-40fd-a5b3-5d01f6272edb | Run: iterate-2026-06-05-fr-linkage-lifecycle
 
-## Recent Changes (96 iterations)
+## Recent Changes (97 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery | 64/64 |  | tooling | 2026-06-05 |
 | change | C1/C2 detective-realign doc + ledger closeout | 41/41 |  | docs | 2026-06-05 |
 | bug | Scope the bloat recorder to the project root so cross-repo edits do not leak into this project marker and block its Stop gate. | 0/0 |  | fix | 2026-06-04 |
 | bug | Fix the adopt security-gate so it resolves SARIF severity at rule level, blocks on any secret, and fails closed — previously a structural false green in every adopted repo. | 0/0 |  | fix | 2026-06-04 |
@@ -103,7 +104,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-05 | Unit: 41/41 | Smoke: not_run | (iterate)
+Last run: 2026-06-05 | Unit: 64/64 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

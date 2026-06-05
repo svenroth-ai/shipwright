@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-05-detective-realign-doc-ledger",
+    "run_id": "iterate-2026-06-05-fr-linkage-lifecycle",
     "date": "2026-06-05",
     "unit": {
       "status": "passed",
-      "passed": 41,
-      "total": 41
+      "passed": 64,
+      "total": 64
     },
     "integration": {
       "status": "not_run",
@@ -35,13 +35,26 @@
       "runner": "surface_verification.py --surface none",
       "tests_run": 0,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-05-detective-realign-doc-ledger/surface_verification.json",
-      "timestamp": "2026-06-05T07:33:37.044Z",
-      "justification": "Docs/planning-ledger-only change: corrects docs/hooks-and-pipeline.md (C1 release-snapshot + C2 pyyaml-invocation notes) and flips C1/C2 campaign ledger rows to done. No code, API, UI, or startable surface touched; C1/C2 code already merged in PR #142."
+      "evidence_path": ".shipwright/runs/iterate-2026-06-05-fr-linkage-lifecycle/surface_verification.json",
+      "justification": "Framework-internal Python tooling: the finalize_iterate write-gate (finalize_iterate._record_event) and the Group-D D3 audit semantics (group_d._check_d3). No web/UI/startable surface consumes the change; no API route, store mutation, SSE/WS handler, or message contract is touched (backend-affects-frontend rule N/A). Verification is the unit/regression suites — finalize 20, audit-groups 44, record_event 93, plus full shared (2761), compliance (595), iterate (275) — all green at F0."
     },
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Trivial complexity: docs/hooks-and-pipeline.md clarifications + campaign ledger status flips. No code or behavior changed and no testable behavior is introduced; the C1/C2 audit logic this documents is already covered by merged tests (PR #142). Related doc-sync/campaign meta-tests (41) re-run green at F0."
+      "status": "complete",
+      "behaviors": [
+        { "behavior": "AC-1: finalize rejects an unclassified iterate work_completed event (no FR, no valid change_type+none_reason) BEFORE write", "disposition": "tested", "evidence": "test_finalize_iterate.py::test_finalize_rejects_feature_event_without_fr_linkage PASSED" },
+        { "behavior": "AC-2: rejection is fail-closed — CLI exits 1, nothing written", "disposition": "tested", "evidence": "test_finalize_iterate.py::test_cli_main_returns_1_on_gate_rejection PASSED" },
+        { "behavior": "AC-2: rejection surfaces an actionable error naming the missing field", "disposition": "tested", "evidence": "test_finalize_iterate.py::test_finalize_rejects_feature_event_without_fr_linkage (asserts affected/change_type in message) PASSED" },
+        { "behavior": "AC-2: a gate rejection aborts run() steps 2-5 (no dashboard/handoff regen for an unclassified iterate)", "disposition": "tested", "evidence": "test_finalize_iterate.py::test_finalize_gate_rejection_aborts_artifact_regen PASSED" },
+        { "behavior": "AC-5: finalize allows an FR-linked event (affected_frs/new_frs)", "disposition": "tested", "evidence": "test_finalize_iterate.py::test_finalize_allows_feature_event_with_affected_frs PASSED" },
+        { "behavior": "AC-5: finalize allows a no-FR event classified via change_type+none_reason", "disposition": "tested", "evidence": "test_finalize_iterate.py::test_finalize_allows_event_with_change_type_pair PASSED" },
+        { "behavior": "AC-1 defense-in-depth: a present-but-malformed change_type (unfilled placeholder) is rejected even alongside FRs", "disposition": "tested", "evidence": "test_finalize_iterate.py::test_finalize_gate_rejects_malformed_change_type PASSED" },
+        { "behavior": "Idempotency early-return runs BEFORE the gate — a re-run with the same run_id and invalid extras is never re-gated", "disposition": "tested", "evidence": "test_finalize_iterate.py::test_finalize_gate_preserves_idempotency_without_regating PASSED" },
+        { "behavior": "AC-3: D3 counts an FR delivered in the same event it was introduced (new_frs+affected_frs together)", "disposition": "tested", "evidence": "test_audit_groups_a_d.py::test_d3_passes_when_fr_delivered_in_same_event PASSED" },
+        { "behavior": "AC-3: D3 still flags an FR promised via new_frs with no covering affected_frs at all", "disposition": "tested", "evidence": "test_audit_groups_a_d.py::test_d3_still_flags_new_fr_with_no_covering_affected PASSED" },
+        { "behavior": "AC-4: the FR-01.33 webui false-positive is cleared by the same-event D3 fix", "disposition": "untestable", "reason_code": "covered-by-existing-test", "reason": "The monorepo D3 unit test mirrors FR-01.33's exact same-event shape; the live shipwright-webui audit green is a post-merge + marketplace-sync verification owned by sub-iterate C4." }
+      ],
+      "counts": { "testable": 10, "tested": 10, "untestable": 1, "untested_testable": 0 },
+      "enumeration_basis": { "acs": 5, "covered_acs": 5 }
     },
     "degraded": []
   }
