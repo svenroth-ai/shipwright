@@ -1,0 +1,1 @@
+Compliance Group-D D3 no longer flags an FR delivered in the same event it was introduced (new_frs + affected_frs together — the normal single-iterate case) as never-delivered; same-event delivery now counts (was a strictly-later requirement).

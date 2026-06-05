@@ -1,34 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-05-detective-realign-doc-ledger"
+run_id: "iterate-2026-06-05-fr-linkage-lifecycle"
 phase: "iterate"
-reason: "iterate: C1/C2 detective-realign doc + ledger closeout"
-timestamp: "2026-06-05T07:37:49.248549+00:00"
+reason: "iterate: FR-linkage lifecycle (finalize FR-gate + D3 same-event)"
+timestamp: "2026-06-05T10:24:14.454603+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-05 07:37:49 UTC
+> Auto-generated 2026-06-05 10:24:14 UTC
 
 ## Session Info
 
-- **Session ID**: 1d5954a4-cb63-48b9-a938-1d19fcc978c0
-- **Timestamp**: 2026-06-05 07:37:49 UTC
-- **Reason**: iterate: C1/C2 detective-realign doc + ledger closeout
+- **Session ID**: 8c417574-f89c-40fd-a5b3-5d01f6272edb
+- **Timestamp**: 2026-06-05 10:24:14 UTC
+- **Reason**: iterate: FR-linkage lifecycle (finalize FR-gate + D3 same-event)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-04-bloat-recorder-cross-repo-scope
-- **Date**: 2026-06-04T08:52:04.520662Z
-- **Type**: bug
-- **Complexity**: small
-- **Branch**: iterate/bloat-recorder-cross-repo-scope
-- **ADR**: iterate-2026-06-04-bloat-recorder-cross-repo-scope
+- **Run ID**: iterate-2026-06-05-detective-realign-doc-ledger
+- **Date**: 2026-06-05T07:38:00.934900Z
+- **Type**: change
+- **Complexity**: trivial
+- **Branch**: iterate/detective-realign-doc-ledger
+- **ADR**: iterate-2026-06-05-detective-realign-doc-ledger
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/detective-realign-doc-ledger
+- **Branch**: iterate/compliance-detective-realign-c3
 - **External Review Marker**: completed (external_review_state.json @ 2026-06-01T06:00:50)
 
 ### Mandatory replay on Resume
@@ -47,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/detective-realign-doc-ledger
-- **Last Commit**: f4552180 Merge pull request #145 from svenroth-ai/iterate/bloat-recorder-cross-repo-scope
+- **Branch**: iterate/compliance-detective-realign-c3
+- **Last Commit**: 700b19b6 Merge pull request #146 from svenroth-ai/iterate/detective-realign-doc-ledger
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +64,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-2c8f0a52 | work_completed | iterate (Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery) | 2026-06-05 |
 | evt-4ceefd02 | work_completed | iterate (C1/C2 detective-realign doc + ledger closeout) | 2026-06-05 |
 | evt-447a8c00 | work_completed | iterate (Scope the bloat recorder to the project root so cross-repo edits do not leak into this project marker and block its Stop gate.) | 2026-06-04 |
 | evt-fca435d8 | work_completed | iterate (Fix the adopt security-gate so it resolves SARIF severity at rule level, blocks on any secret, and fails closed — previously a structural false green in every adopted repo.) | 2026-06-04 |
 | evt-b835a489 | work_completed | iterate (Add producer-owned campaign lifecycle status (draft->active->complete): campaign_init writes status:draft to status.json + campaign.md frontmatter; campaign_progress gains a start subcommand (->active), update-status auto-sets complete when all sub-iterates complete, summary prints the top-level status; the autonomous campaign loop marks the campaign active at run start; missing status = legacy fallback to done<total.) | 2026-06-03 |
-| evt-7e4caba4 | work_completed | iterate (Dedup SessionStart Phase-Quality injection to once-per-event via event_once.claim_once (fail-open).) | 2026-06-02 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 96
-- **Last iterate**: change — C1/C2 detective-realign doc + ledger closeout (2026-06-05)
+- **Total work events**: 97
+- **Last iterate**: change — Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery (2026-06-05)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

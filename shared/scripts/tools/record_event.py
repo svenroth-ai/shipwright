@@ -638,12 +638,12 @@ def _fr_or_change_type_gate_error(event) -> dict | None:
     plan retroactively classified every pre-existing iterate event
     so this hard-enforcement is risk-free in the monorepo + webui.
 
-    Scope: the gate runs at the CLI boundary (``record_event.main``).
-    Direct callers of ``append_event`` (notably
-    ``finalize_iterate._record_event``, which writes a minimal
-    work_completed event from the finalize fallback path) bypass the
-    gate today — same scope as the existing spec-impact gate.
-    Tightening that path is out of scope for C.1.
+    Scope: the gate runs at the CLI boundary (``record_event.main``)
+    AND, since iterate-2026-06-05-fr-linkage-lifecycle, inside
+    ``finalize_iterate._record_event`` (the worktree F5b / Stop-hook
+    write-path), which calls this same function before its
+    ``append_event`` — that bypass is now closed (ADR-059 parity). The
+    spec-impact gate (``_spec_impact_gate_error``) stays CLI-only.
 
     Origin: iterate-2026-05-21-c1-fr-gate-finalize.
     """
