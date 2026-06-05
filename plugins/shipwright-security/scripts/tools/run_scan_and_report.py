@@ -228,15 +228,21 @@ def _prune_history(history_dir: Path, retain: int = RETAIN_PAIRS) -> int:
 # ---------------------------------------------------------------------------
 
 
-def _build_md_with_scan_id(findings: list[dict[str, Any]], repo: str, scan_id: str) -> str:
+def _build_md_with_scan_id(
+    findings: list[dict[str, Any]], repo: str, scan_id: str,
+    scan_errors: list[dict[str, Any]] | None = None,
+) -> str:
     """Build the human-readable Markdown report with an HTML-comment scan_id header."""
-    body = gsr.generate_standard_report(findings, repo)
+    body = gsr.generate_standard_report(findings, repo, scan_errors)
     # Embed scan_id as the first line so latest.md ↔ latest.json correlate
     return f"<!-- scan_id: {scan_id} -->\n{body}"
 
 
-def _build_json_with_scan_id(findings: list[dict[str, Any]], repo: str, scan_id: str) -> dict[str, Any]:
-    payload = gsr.build_json_sidecar(findings, repo)
+def _build_json_with_scan_id(
+    findings: list[dict[str, Any]], repo: str, scan_id: str,
+    scan_errors: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    payload = gsr.build_json_sidecar(findings, repo, scan_errors)
     payload["scan_id"] = scan_id
     return payload
 
@@ -269,6 +275,10 @@ def run(*, project_root: Path, repo: str = "unknown", full_evidence: bool = Fals
 
     target = str(project_root)
     raw_findings = backend.scan(target)
+    # Degraded-leg markers (empty for backends/mocks that never set the attr;
+    # the isinstance guard rejects a MagicMock auto-attribute).
+    raw_errors = getattr(backend, "scan_errors", [])
+    scan_errors = list(raw_errors) if isinstance(raw_errors, list) else []
 
     # Default-on redaction unless explicitly opted out
     findings = redact_findings(raw_findings, full_evidence=full_evidence)
@@ -276,8 +286,8 @@ def run(*, project_root: Path, repo: str = "unknown", full_evidence: bool = Fals
     now = datetime.now(timezone.utc)
     scan_id = _new_scan_id(now)
 
-    md_text = _build_md_with_scan_id(findings, repo, scan_id)
-    json_payload = _build_json_with_scan_id(findings, repo, scan_id)
+    md_text = _build_md_with_scan_id(findings, repo, scan_id, scan_errors)
+    json_payload = _build_json_with_scan_id(findings, repo, scan_id, scan_errors)
     json_text = json.dumps(json_payload, ensure_ascii=False, indent=2) + "\n"
 
     reports_dir = project_root / REPORTS_DIR
@@ -301,6 +311,8 @@ def run(*, project_root: Path, repo: str = "unknown", full_evidence: bool = Fals
         "command": "run_scan_and_report",
         "scan_id": scan_id,
         "findings_count": len(findings),
+        "degraded": bool(scan_errors),
+        "scan_errors": scan_errors,
         "report_md": str(reports_dir / LATEST_MD),
         "report_json": str(reports_dir / LATEST_JSON),
         "history_pruned": removed,
@@ -308,7 +320,9 @@ def run(*, project_root: Path, repo: str = "unknown", full_evidence: bool = Fals
         "redaction": "off" if full_evidence else "on",
     })
     print(json.dumps(summary, ensure_ascii=False))
-    return 0
+    # A degraded scan is not a clean success — report it (exit 1) so a local
+    # caller / wrapper sees the same fail-closed signal the CI gate enforces.
+    return 1 if scan_errors else 0
 
 
 def main() -> int:

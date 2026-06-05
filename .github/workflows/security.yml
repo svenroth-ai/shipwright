@@ -196,6 +196,19 @@ jobs:
             echo "::error::findings.json is present but not valid JSON — failing closed."
             exit 1
           fi
+          # Fail CLOSED on a DEGRADED scan: a scanner leg (gitleaks/semgrep/
+          # trivy) that fataled or produced a truncated report writes
+          # `degraded: true` + `scan_errors` into findings.json. Its findings
+          # are [] — so the critical count below would read 0 and pass green
+          # (same failure class as iterate-2026-06-05-gitleaks-report-path).
+          # The scan step is continue-on-error, so scan.py's exit code is
+          # ignored here; this jq read is the enforcement.
+          degraded=$(jq -r '.degraded // false' findings.json)
+          if [ "$degraded" = "true" ]; then
+            echo "::error::Security scan DEGRADED — a scanner failed to produce parseable output. Failing closed."
+            jq -c '.scan_errors // []' findings.json
+            exit 1
+          fi
           critical=$(jq '[.findings[]? | select(.severity == "critical")] | length' findings.json)
           # prompt_risks.json is a softer signal: warn loudly if absent, don't block.
           if [ ! -f prompt_risks.json ]; then

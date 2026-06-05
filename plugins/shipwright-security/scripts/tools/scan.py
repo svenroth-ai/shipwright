@@ -143,8 +143,16 @@ def build_config(
     findings: list[dict[str, Any]],
     repo: str,
     scanner: str,
+    scan_errors: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Build a shipwright_security_config.json compatible dict."""
+    """Build a shipwright_security_config.json compatible dict.
+
+    ``scan_errors`` carries degraded-leg markers (see oss_backend.scan_errors).
+    A non-empty list sets ``degraded: true`` so the CI critical-gate (which
+    reads this file via jq) can fail closed even when ``findings`` is empty —
+    a scanner that fataled must not read as a clean 0-findings scan.
+    """
+    errors = list(scan_errors or [])
     severity_counts = Counter(f.get("severity", "unknown") for f in findings)
     return {
         "scan_date": datetime.now(timezone.utc).isoformat(),
@@ -152,6 +160,8 @@ def build_config(
         "scanner": scanner,
         "total_findings": len(findings),
         "by_severity": {sev: severity_counts.get(sev, 0) for sev in SEVERITY_ORDER},
+        "degraded": bool(errors),
+        "scan_errors": errors,
         "remediation": {
             "fixed": 0,
             "declined": 0,
@@ -280,6 +290,7 @@ def main() -> int:
 
     backend_name = args.backend
     backend_capabilities: set[str] | None = None
+    scan_errors: list[dict[str, Any]] = []
 
     if cache_path and cache_path.exists():
         try:
@@ -299,6 +310,11 @@ def main() -> int:
             return 2
         findings = cached.get("findings", []) if isinstance(cached, dict) else []
         backend_name = (cached.get("scanner") if isinstance(cached, dict) else None) or backend_name
+        # Round-trip the degraded markers so the SARIF re-read (which reuses
+        # this cache) keeps failing closed rather than re-emitting a clean scan.
+        if isinstance(cached, dict):
+            cached_errors = cached.get("scan_errors")
+            scan_errors = list(cached_errors) if isinstance(cached_errors, list) else []
     else:
         try:
             backend = get_backend(args.backend)
@@ -338,8 +354,13 @@ def main() -> int:
             return 2
 
         backend_capabilities = getattr(backend, "capabilities", None)
+        # Degraded-leg markers (empty for backends/mocks that never set them).
+        raw_errors = getattr(backend, "scan_errors", [])
+        scan_errors = list(raw_errors) if isinstance(raw_errors, list) else []
 
-    config = build_config(findings, repo=args.repo, scanner=backend_name)
+    config = build_config(
+        findings, repo=args.repo, scanner=backend_name, scan_errors=scan_errors,
+    )
 
     if args.sarif_dir:
         try:
@@ -370,6 +391,8 @@ def main() -> int:
                 "output_path": str(output_path),
                 "findings_count": len(findings),
                 "by_severity": config["by_severity"],
+                "degraded": config["degraded"],
+                "scan_errors": scan_errors,
                 "backend": backend_name,
                 "scan_types": scan_types or (
                     sorted(backend_capabilities) if backend_capabilities else None
@@ -382,6 +405,8 @@ def main() -> int:
                 "command": "scan",
                 "findings_count": len(findings),
                 "by_severity": config["by_severity"],
+                "degraded": config["degraded"],
+                "scan_errors": scan_errors,
                 "backend": backend_name,
                 "config": config,
             }
@@ -389,6 +414,13 @@ def main() -> int:
 
     print(json.dumps(result, ensure_ascii=False))
 
+    # A degraded scan (a scanner fataled / produced no parseable output) is a
+    # scan ERROR, not a clean result — fail closed with exit 2 BEFORE the
+    # --fail-on threshold so it never reports as exit 0. CI gates on findings.json
+    # `degraded` (the scan step is continue-on-error); this exit code is for
+    # direct/local callers.
+    if scan_errors:
+        return 2
     if count_above_threshold(findings, fail_on) > 0:
         return 1
     return 0

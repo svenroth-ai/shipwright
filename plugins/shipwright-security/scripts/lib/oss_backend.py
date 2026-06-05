@@ -29,6 +29,8 @@ class OSSBackend(ScannerBackend):
 
     name = "oss"
     requires_cloud = False
+    # scan_errors (degraded-leg markers) is declared + documented on the
+    # ScannerBackend ABC; scan() (re)populates it per call.
 
     @property
     def capabilities(self) -> set[str]:
@@ -45,19 +47,28 @@ class OSSBackend(ScannerBackend):
         return len(self.capabilities) > 0
 
     def scan(self, target: str, scan_types: list[str] | None = None) -> list[dict[str, Any]]:
-        """Run available scanners and return normalized findings."""
+        """Run available scanners and return normalized findings.
+
+        Degraded legs (a scanner that was invoked but produced no parseable
+        output) are recorded on ``self.scan_errors`` rather than silently
+        collapsing to ``[]`` findings. The findings list stays a pure
+        data-plane channel; ``scan_errors`` is the control-plane signal a
+        consumer reads via ``getattr(backend, "scan_errors", [])``.
+        """
         caps = self.capabilities
         if scan_types:
             caps = caps & set(scan_types)
 
         findings: list[dict[str, Any]] = []
+        # Reset per call so a second scan() never inherits the first's markers.
+        self.scan_errors = []
 
         if "sast" in caps:
-            findings.extend(_run_semgrep(target))
+            findings.extend(_run_semgrep(target, self.scan_errors))
         if "sca" in caps:
-            findings.extend(_run_trivy(target))
+            findings.extend(_run_trivy(target, self.scan_errors))
         if "secrets" in caps:
-            findings.extend(_run_gitleaks(target))
+            findings.extend(_run_gitleaks(target, self.scan_errors))
 
         # Apply classification
         for f in findings:
@@ -112,6 +123,28 @@ _TOOL_INFO = {
 # ---------------------------------------------------------------------------
 
 _TIMEOUT = 300  # 5 minutes per tool
+
+# Closed vocabulary of degraded-scan reasons recorded on the ``scan_errors``
+# channel. Every ``None``-return branch of ``_run_tool`` maps to exactly one of
+# these. The report/gate layer relies on this set being exhaustive (a meta-test
+# asserts every emitted reason is a member).
+#   nonzero_exit  : unexpected non-zero exit (expect_nonzero=False), e.g. a
+#                   semgrep/trivy crash.
+#   empty_output  : the tool exited but produced no parseable payload — a
+#                   gitleaks fatal (exit 1, empty report) or a semgrep/trivy
+#                   empty stdout. A *clean* leg never reaches here: it emits a
+#                   non-empty JSON envelope ({"results":[]} / []).
+#   timeout       : killed by the per-tool timeout.
+#   invalid_json  : payload present but not valid JSON (truncated/garbage).
+#   missing_binary: the binary vanished from PATH between capability probe and
+#                   invocation (FileNotFoundError).
+SCAN_ERROR_REASONS: tuple[str, ...] = (
+    "nonzero_exit",
+    "empty_output",
+    "timeout",
+    "invalid_json",
+    "missing_binary",
+)
 
 # Per-scanner exclusion contract (Sub-Iterate H, Pfad B').
 #
@@ -223,31 +256,42 @@ def _resolve_excludes(scanner: str) -> tuple[str, ...]:
     return tuple(defaults)
 
 
-def _run_semgrep(target: str) -> list[dict[str, Any]]:
-    """Run Semgrep and return normalized findings."""
+def _run_semgrep(
+    target: str, errors: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    """Run Semgrep and return normalized findings.
+
+    ``errors`` (when provided) is the degraded-scan accumulator; a degraded
+    leg appends one marker to it and still returns ``[]`` findings.
+    """
     cmd = ["semgrep", "scan", "--json", "--config", "auto"]
     for name in _resolve_excludes("semgrep"):
         cmd.extend(["--exclude", name])
     cmd.append(target)
-    raw = _run_tool(cmd, tool_name="semgrep")
+    raw = _run_tool(cmd, tool_name="semgrep", errors=errors)
     if raw is None:
         return []
     return normalize_semgrep(raw)
 
 
-def _run_trivy(target: str) -> list[dict[str, Any]]:
-    """Run Trivy and return normalized findings."""
+def _run_trivy(
+    target: str, errors: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    """Run Trivy and return normalized findings (see ``_run_semgrep`` for
+    the ``errors`` accumulator contract)."""
     cmd = ["trivy", "fs", "--format", "json", "--scanners", "vuln"]
     for name in _resolve_excludes("trivy"):
         cmd.extend(["--skip-dirs", name])
     cmd.append(target)
-    raw = _run_tool(cmd, tool_name="trivy")
+    raw = _run_tool(cmd, tool_name="trivy", errors=errors)
     if raw is None:
         return []
     return normalize_trivy(raw)
 
 
-def _run_gitleaks(target: str) -> list[dict[str, Any]]:
+def _run_gitleaks(
+    target: str, errors: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
     """Run Gitleaks and return normalized findings.
 
     Gitleaks has no --exclude flag; path exclusions go through a TOML config
@@ -279,6 +323,7 @@ def _run_gitleaks(target: str) -> list[dict[str, Any]]:
             tool_name="gitleaks",
             expect_nonzero=True,
             report_path=report_path,
+            errors=errors,
         )
     finally:
         for tmp in (config_path, report_path):
@@ -349,11 +394,33 @@ def _read_report_file(path: str) -> str:
         return ""
 
 
+def _record_scan_error(
+    errors: list[dict[str, Any]] | None,
+    tool_name: str,
+    reason: str,
+    detail: str,
+) -> None:
+    """Append one degraded-leg marker to the ``errors`` accumulator.
+
+    No-op when ``errors`` is None (direct callers that don't track degradation).
+    ``reason`` must be a member of ``SCAN_ERROR_REASONS``; ``detail`` is
+    truncated to keep the marker small enough to ride in ``findings.json``.
+    """
+    if errors is None:
+        return
+    errors.append({
+        "scanner": tool_name,
+        "reason": reason,
+        "detail": (detail or "").strip()[:500],
+    })
+
+
 def _run_tool(
     cmd: list[str],
     tool_name: str,
     expect_nonzero: bool = False,
     report_path: str | None = None,
+    errors: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any] | list[dict[str, Any]] | None:
     """Run a CLI tool and parse its JSON output.
 
@@ -368,9 +435,14 @@ def _run_tool(
             mode — ``--report-path -`` writes to a literal file named ``-``,
             never to stdout (see ``_run_gitleaks``). Semgrep / Trivy leave
             this None and emit JSON on stdout natively.
+        errors: Optional degraded-scan accumulator. EVERY ``None`` return below
+            is a degraded leg (the tool was invoked but produced no parseable
+            output) and records exactly one marker here. A clean leg returns
+            parsed JSON and records nothing. This is what lets ``scan()``
+            distinguish "ran clean → 0 findings" from "fataled → 0 findings".
 
     Returns:
-        Parsed JSON (dict or list), or None on failure.
+        Parsed JSON (dict or list), or None on failure (degraded).
     """
     try:
         result = subprocess.run(
@@ -387,6 +459,10 @@ def _run_tool(
             _log(f"{tool_name}: exited with code {result.returncode}")
             if result.stderr:
                 _log(f"{tool_name} stderr: {result.stderr[:500]}")
+            _record_scan_error(
+                errors, tool_name, "nonzero_exit",
+                f"exit {result.returncode}: {result.stderr or ''}",
+            )
             return None
 
         if report_path is not None:
@@ -401,18 +477,30 @@ def _run_tool(
             # silent tool failure is not mistaken for a clean "0 findings".
             if result.stderr and result.stderr.strip():
                 _log(f"{tool_name} stderr: {result.stderr[:500]}")
+            _record_scan_error(
+                errors, tool_name, "empty_output",
+                f"no parseable output (exit {result.returncode}): "
+                f"{result.stderr or ''}",
+            )
             return None
 
         return json.loads(payload)
 
     except subprocess.TimeoutExpired:
         _log(f"{tool_name}: timed out after {_TIMEOUT}s")
+        _record_scan_error(
+            errors, tool_name, "timeout", f"timed out after {_TIMEOUT}s",
+        )
         return None
     except json.JSONDecodeError as e:
         _log(f"{tool_name}: invalid JSON output: {e}")
+        _record_scan_error(errors, tool_name, "invalid_json", str(e))
         return None
     except FileNotFoundError:
         _log(f"{tool_name}: binary not found on PATH")
+        _record_scan_error(
+            errors, tool_name, "missing_binary", "binary not found on PATH",
+        )
         return None
 
 

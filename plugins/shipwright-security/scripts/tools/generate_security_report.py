@@ -109,6 +109,22 @@ def load_findings_from_file(path: Path) -> list[dict[str, Any]]:
     return data.get("findings", data.get("data", []))
 
 
+def load_scan_errors_from_file(path: Path) -> list[dict[str, Any]]:
+    """Read the degraded-scan markers (``scan_errors``) from a findings.json.
+
+    Returns [] when the file is absent/invalid or carries no markers — the
+    report then renders no degraded banner.
+    """
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return []
+    errors = data.get("scan_errors") if isinstance(data, dict) else None
+    return errors if isinstance(errors, list) else []
+
+
 def load_findings_from_stdin() -> list[dict[str, Any]]:
     try:
         if sys.stdin.isatty():
@@ -140,10 +156,45 @@ def scanner_breakdown(findings: list[dict[str, Any]]) -> dict[str, Counter]:
 
 
 # ---------------------------------------------------------------------------
+# Degraded-scan banner (iterate-2026-06-05-scanner-degraded-marker)
+# ---------------------------------------------------------------------------
+
+def degraded_banner(scan_errors: list[dict[str, Any]] | None) -> list[str]:
+    """Markdown lines warning that one or more scanner legs degraded.
+
+    Returns [] when not degraded so callers can unconditionally splice it in.
+    A degraded leg means a scanner was invoked but produced no parseable output
+    — the report below is INCOMPLETE and must not read as a clean pass.
+    """
+    errors = list(scan_errors or [])
+    if not errors:
+        return []
+    lines = [
+        "> ⚠️ **Degraded Scan** — one or more scanners failed to produce "
+        "parseable output. Results below are INCOMPLETE; do not read this as a "
+        "clean pass.",
+        "",
+        "| Scanner | Reason | Detail |",
+        "|---------|--------|--------|",
+    ]
+    for e in errors:
+        scanner = str(e.get("scanner", "?"))
+        reason = str(e.get("reason", "?"))
+        detail = str(e.get("detail", "")).replace("\n", " ").replace("|", "\\|")[:120]
+        lines.append(f"| {scanner} | {reason} | {detail} |")
+    lines.append("")
+    return lines
+
+
+# ---------------------------------------------------------------------------
 # Standard report (existing format)
 # ---------------------------------------------------------------------------
 
-def generate_standard_report(findings: list[dict[str, Any]], repo_name: str = "unknown") -> str:
+def generate_standard_report(
+    findings: list[dict[str, Any]],
+    repo_name: str = "unknown",
+    scan_errors: list[dict[str, Any]] | None = None,
+) -> str:
     """Generate the full Markdown report (original format, extended slightly)."""
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
@@ -159,6 +210,7 @@ def generate_standard_report(findings: list[dict[str, Any]], repo_name: str = "u
         f"**Risk Level:** {RISK_EMOJI[risk]} {risk}",
         f"**Total Findings:** {len(findings)}",
         "",
+        *degraded_banner(scan_errors),
         "## Summary",
         "",
         "### By Severity",
@@ -227,7 +279,11 @@ generate_report = generate_standard_report
 PR_COMMENT_MARKER = "<!-- shipwright-security-report -->"
 
 
-def generate_pr_report(findings: list[dict[str, Any]], repo_name: str = "unknown") -> str:
+def generate_pr_report(
+    findings: list[dict[str, Any]],
+    repo_name: str = "unknown",
+    scan_errors: list[dict[str, Any]] | None = None,
+) -> str:
     """Compact report optimized for a PR comment."""
     risk = calculate_risk_level(findings)
     breakdown = scanner_breakdown(findings)
@@ -239,6 +295,7 @@ def generate_pr_report(findings: list[dict[str, Any]], repo_name: str = "unknown
         f"**Risk Level:** {RISK_EMOJI[risk]} **{risk}**",
         f"**Total Findings:** {len(findings)}",
         "",
+        *degraded_banner(scan_errors),
     ]
 
     # Scanner breakdown table
@@ -458,7 +515,9 @@ JSON_SIDECAR_SCHEMA_VERSION = 1
 
 
 def build_json_sidecar(
-    findings: list[dict[str, Any]], repo_name: str = "unknown",
+    findings: list[dict[str, Any]],
+    repo_name: str = "unknown",
+    scan_errors: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Compose the machine-readable sidecar payload.
 
@@ -466,6 +525,7 @@ def build_json_sidecar(
     automated consumer (CI, /shipwright-iterate handoff) can read this
     file instead of parsing the markdown.
     """
+    errors = list(scan_errors or [])
     by_severity = Counter(f.get("severity", "unknown") for f in findings)
     breakdown = scanner_breakdown(findings)
     by_source = {src: int(cnt.get("total", 0)) for src, cnt in breakdown.items()}
@@ -477,6 +537,8 @@ def build_json_sidecar(
         "total_findings": len(findings),
         "by_severity": dict(by_severity),
         "by_source": by_source,
+        "degraded": bool(errors),
+        "scan_errors": errors,
         "findings": list(findings),
     }
 
@@ -517,9 +579,18 @@ def main() -> int:
         findings = load_findings_from_stdin()
 
     # Priority 3: shipwright_security_config.json
+    config_path = Path(args.project_root) / "shipwright_security_config.json"
     if not findings:
-        config_path = Path(args.project_root) / "shipwright_security_config.json"
         findings = load_findings_from_file(config_path)
+
+    # Degraded-scan markers — read from the same source the findings came from
+    # (the scan.py findings.json carries `scan_errors`). The findings list and
+    # the degraded flag are independent: a degraded leg can have 0 findings.
+    scan_errors: list[dict[str, Any]] = []
+    if args.input:
+        scan_errors = load_scan_errors_from_file(Path(args.input))
+    if not scan_errors:
+        scan_errors = load_scan_errors_from_file(config_path)
 
     # Merge prompt-injection findings if provided
     if args.prompt_risks:
@@ -539,15 +610,15 @@ def main() -> int:
 
     # Generate report
     if args.pr_mode:
-        report = generate_pr_report(findings, args.repo)
+        report = generate_pr_report(findings, args.repo, scan_errors)
     else:
-        report = generate_standard_report(findings, args.repo)
+        report = generate_standard_report(findings, args.repo, scan_errors)
 
     risk_level = calculate_risk_level(findings)
 
     # Optional machine-readable sidecar (independent of --output / --format).
     if args.json_output:
-        sidecar = build_json_sidecar(findings, args.repo)
+        sidecar = build_json_sidecar(findings, args.repo, scan_errors)
         sidecar_path = Path(args.json_output)
         sidecar_path.parent.mkdir(parents=True, exist_ok=True)
         sidecar_path.write_text(

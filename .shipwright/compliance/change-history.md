@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-05T12:07:58.769492+00:00
-Total commits: 845
+Generated: 2026-06-05T20:10:57.844941+00:00
+Total commits: 846
 
 ## Commit Distribution
 
@@ -9,7 +9,7 @@ Total commits: 845
 pie title Commit Types
     "feat" : 249
     "fix" : 230
-    "chore" : 164
+    "chore" : 165
     "docs" : 116
     "refactor" : 50
     "test" : 21
@@ -509,10 +509,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 164 commits
+### Chores (chore) — 165 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | churn | regenerate derived snapshots after main merge | 10cc1e661386 |
 | 2026-06-05 | iterate | stamp adr ref + spec_impact_justification on A5.8 finalization | f70e2674faf8 |
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | fa051a6abd76 |
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | faa552ad0fef |
@@ -914,7 +915,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 845 |
+| Total commits | 846 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 845 |
+| Human-authored commits | 846 |
 
