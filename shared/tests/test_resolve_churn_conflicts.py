@@ -156,8 +156,11 @@ def test_triage_deduped_and_validated_even_without_conflict(tmp_path: Path) -> N
     assert result.status in ("resolved", "clean")
 
 
-def test_triage_routed_in_churn_only_merge(tmp_path: Path) -> None:
-    """A triage.jsonl conflict is auto-resolved (--ours) + reconciled, not blocking."""
+def test_triage_conflict_unions_both_sides(tmp_path: Path) -> None:
+    """Codex BLOCKER fix: a hard triage.jsonl conflict UNIONS both sides (keeps
+    ours AND theirs items). Target projects lack the merge=union driver, so the
+    old `--ours` path would silently drop the other side's backlog items.
+    """
     merge = _make_conflict_repo(
         tmp_path,
         {".shipwright/triage.jsonl": (
@@ -171,6 +174,9 @@ def test_triage_routed_in_churn_only_merge(tmp_path: Path) -> None:
     assert result.status == "resolved"
     assert rcc.conflicted_paths(tmp_path) == []
     assert TRIAGE_LOG in result.resolved
+    text = (tmp_path / ".shipwright" / "triage.jsonl").read_text(encoding="utf-8")
+    assert "trg-ours" in text and "trg-theirs" in text  # NEITHER side dropped
+    assert text.count("schema") == 1                    # header deduped to one
 
 
 def test_triage_invalid_when_header_dropped(tmp_path: Path) -> None:

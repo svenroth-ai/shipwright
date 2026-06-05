@@ -114,12 +114,16 @@ def validate_triage_text(text: str) -> list[str]:
     """Return a list of error strings (empty = valid) for the triage log.
 
     Checks: (a) the first non-blank line is the ``{"schema":"triage",...}``
-    header; (b) every non-blank line parses as JSON. Parallel to
-    :func:`validate_events_text` but triage-specific (no ``work_completed`` /
-    ``adr_id`` semantics — the triage schema has none).
+    header; (b) every non-blank line parses as JSON; (c) no duplicate ``append``
+    for one id; (d) no ``status`` event without a preceding ``append`` (the
+    reader silently DROPS such orphans — ``triage.read_all_items`` skips a
+    status for an unknown id — so a merge that lost an append would otherwise
+    pass validation while silently dropping triage state). Parallel to
+    :func:`validate_events_text` but triage-specific.
     """
     errors: list[str] = []
     header_seen = False
+    append_ids: set[str] = set()
     for n, line in enumerate(text.splitlines(), start=1):
         if not line.strip():
             continue
@@ -137,6 +141,16 @@ def validate_triage_text(text: str) -> list[str]:
                     f"line {n}: first non-blank line is not the triage header "
                     '({"v":...,"schema":"triage",...}) — the merge reordered or dropped it'
                 )
+            continue
+        if not isinstance(obj, dict):
+            continue
+        event, iid = obj.get("event"), obj.get("id")
+        if event == "append":
+            if iid in append_ids:
+                errors.append(f"line {n}: duplicate append for id {iid!r} — the merge double-counted an item")
+            append_ids.add(iid)
+        elif event == "status" and iid not in append_ids:
+            errors.append(f"line {n}: status for id {iid!r} has no preceding append — the merge dropped it")
     if not header_seen:
         errors.append("triage log is empty after merge — the header was dropped")
     return errors

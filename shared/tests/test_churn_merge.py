@@ -119,3 +119,23 @@ def test_triage_validate_flags_non_json_line() -> None:
 
 def test_triage_validate_flags_empty_log() -> None:
     assert validate_triage_text("") == ["triage log is empty after merge — the header was dropped"]
+
+
+def test_triage_validate_accepts_append_then_status() -> None:
+    ok = (_TRIAGE_HEADER + '\n{"event":"append","id":"trg-x"}\n'
+          '{"event":"status","id":"trg-x","newStatus":"dismissed"}\n')
+    assert validate_triage_text(ok) == []
+
+
+def test_triage_validate_flags_orphan_status() -> None:
+    """A status whose append was lost on merge would be silently dropped by the
+    reader — the validator must reject it (Codex HIGH)."""
+    errs = validate_triage_text(
+        _TRIAGE_HEADER + '\n{"event":"status","id":"trg-x","newStatus":"dismissed"}\n')
+    assert errs and any("no preceding append" in e for e in errs)
+
+
+def test_triage_validate_flags_duplicate_append() -> None:
+    errs = validate_triage_text(
+        _TRIAGE_HEADER + '\n{"event":"append","id":"trg-x"}\n{"event":"append","id":"trg-x"}\n')
+    assert errs and any("duplicate append" in e for e in errs)

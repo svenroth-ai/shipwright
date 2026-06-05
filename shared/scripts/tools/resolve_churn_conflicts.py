@@ -86,6 +86,21 @@ def _take_side(project_root: Path, rel: str, side: str) -> None:
     _git(project_root, "add", "--", rel)
 
 
+def _union_conflict(project_root: Path, rel: str) -> None:
+    """Union both sides of an append-only-log conflict (ours stage :2: + theirs
+    stage :3:) and stage it. ``--ours`` would DROP theirs' items; target projects
+    lack the ``merge=union`` driver so this is the sole safety net there. The
+    duplicate header + shared lines collapse in the subsequent ``_reconcile_*``
+    dedup; the reconcile also validates the union.
+    """
+    both = (
+        _git(project_root, "show", f":2:{rel}", check=False).stdout.splitlines()
+        + _git(project_root, "show", f":3:{rel}", check=False).stdout.splitlines()
+    )
+    (project_root / rel).write_text("\n".join(both) + "\n" if both else "", encoding="utf-8")
+    _git(project_root, "add", "--", rel)
+
+
 # --- resolution outcome -----------------------------------------------------
 
 @dataclass
@@ -183,7 +198,10 @@ def complete_merge(project_root: Path, *, run_id: str | None = None) -> ResolveR
 
     resolved = []
     for rel in resolvable:
-        if rel in (EVENTS_LOG, TEST_RESULTS, TRIAGE_LOG):
+        if rel == TRIAGE_LOG:
+            _union_conflict(project_root, rel)  # append-only backlog — keep BOTH sides
+            resolved.append(rel)
+        elif rel in (EVENTS_LOG, TEST_RESULTS):
             _take_side(project_root, rel, "--ours")
             resolved.append(rel)
         elif rel in DERIVED_MDS:
@@ -291,6 +309,8 @@ def main(argv: list[str] | None = None) -> int:
         )
     elif result.status == "events_invalid":
         print(f"ABORT: {EVENTS_LOG} failed validation after merge: {result.errors}", file=sys.stderr)
+    elif result.status == "triage_invalid":
+        print(f"ABORT: {TRIAGE_LOG} failed validation after merge: {result.errors}", file=sys.stderr)
     return result.exit_code
 
 
