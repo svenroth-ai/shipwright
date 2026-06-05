@@ -1,7 +1,7 @@
 # Commit Change Log
 
-Generated: 2026-06-05T11:11:35.057327+00:00
-Total commits: 834
+Generated: 2026-06-05T11:26:02.491805+00:00
+Total commits: 837
 
 ## Commit Distribution
 
@@ -9,12 +9,12 @@ Total commits: 834
 pie title Commit Types
     "feat" : 248
     "fix" : 227
-    "chore" : 159
+    "chore" : 161
     "docs" : 116
     "refactor" : 50
     "test" : 21
     "other" : 7
-    "ci" : 5
+    "ci" : 6
     "build" : 1
 ```
 
@@ -505,10 +505,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 159 commits
+### Chores (chore) — 161 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | churn | regenerate derived snapshots after main merge | aab4bd7f64e7 |
+| 2026-06-05 | iterate | correct finalization metadata (adr key + spec_impact_justification) | 3a571d8435d1 |
 | 2026-06-02 | release | v0.23.1 | a0aa1e624070 |
 | 2026-06-01 | release | v0.23.0 | f67f3122236a |
 | 2026-06-01 | churn | regenerate derived snapshots after main merge | 638ba80d68fa |
@@ -883,10 +885,11 @@ pie title Commit Types
 | 2026-04-04 | — | Revert "fix: rename skill dirs to full plugin name for clean slash-command display" | 1545b4b2c522 |
 | 2026-03-21 | — | revert: restore full skill names in SKILL.md frontmatter | 05c0d5ce7566 |
 
-### CI/CD (ci) — 5 commits
+### CI/CD (ci) — 6 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | security-template | checkout at fetch-depth 1 (no scanner reads git history) | f6dd93918acf |
 | 2026-06-01 | — | pin third-party actions to SHA and verify gitleaks download integrity | 32bc15a5aa01 |
 | 2026-05-31 | — | descope shared-tests to non-gating tracked-debt (Linux-portability) | e1d016e0e848 |
 | 2026-05-31 | — | add CI gate-coverage guard and harden workflow gates | ae35cd199c99 |
@@ -903,7 +906,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 834 |
+| Total commits | 837 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 834 |
+| Human-authored commits | 837 |
 

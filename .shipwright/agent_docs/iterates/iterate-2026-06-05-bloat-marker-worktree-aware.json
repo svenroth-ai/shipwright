@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-05-bloat-marker-worktree-aware",
+  "date": "2026-06-05T11:26:03.171780Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/bloat-marker-worktree-aware",
+  "spec": null,
+  "tests_passed": true,
+  "adr": "iterate-2026-06-05-bloat-marker-worktree-aware"
+}
