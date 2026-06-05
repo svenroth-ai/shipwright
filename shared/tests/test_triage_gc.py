@@ -163,3 +163,32 @@ def test_apply_preserves_header_and_validates(tmp_path: Path):
     raw = triage._iter_raw_lines(tmp_path)
     assert raw[0].get("schema") == "triage"
     assert {i["id"] for i in triage.read_all_items(tmp_path)} == {keep}
+
+
+def test_apply_refuses_on_malformed_line(tmp_path: Path):
+    """Codex HIGH: a pre-existing corrupt line must ABORT the rewrite (the
+    tolerant reader would otherwise silently compact it away — data loss)."""
+    import pytest
+
+    m = _add(tmp_path, title="m", dedup="k")
+    _dismiss(tmp_path, m, by="sbomGenerator", reason="sbomResolved")
+    path = triage._triage_path(tmp_path)
+    with open(path, "a", encoding="utf-8") as fp:
+        fp.write("NOT JSON\n")
+    with pytest.raises(RuntimeError, match="malformed JSON"):
+        triage_gc.apply_gc(tmp_path, triage_gc.plan_gc(tmp_path)["drop_ids"])
+    # Live log untouched: corrupt line still present, nothing dropped.
+    assert "NOT JSON" in path.read_text(encoding="utf-8")
+    assert m in path.read_text(encoding="utf-8")
+
+
+def test_phasequality_and_testevidence_machine_churn_dropped(tmp_path: Path):
+    """Codex MEDIUM: phaseQuality + testEvidence producer auto-resolves are
+    machine-churn too (were missing from the dismisser/reason sets)."""
+    pq = _add(tmp_path, title="pq", dedup="kpq")
+    _dismiss(tmp_path, pq, by="phaseQualityBacklog", reason="phaseQualityResolved")
+    te = _add(tmp_path, title="te", dedup="kte")
+    _dismiss(tmp_path, te, by="testEvidence", reason="testEvidenceResolved")
+    human = _add(tmp_path, title="h", dedup="kh")
+    _dismiss(tmp_path, human, by="user", reason="phaseQualityResolved")  # human → kept
+    assert triage_gc.plan_gc(tmp_path)["drop_ids"] == {pq, te}

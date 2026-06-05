@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -48,6 +49,8 @@ MACHINE_DISMISSERS = frozenset({
     "f05Detector",
     "githubImporter",
     "complianceBacklog",
+    "phaseQualityBacklog",  # phase_quality/_triage_bundle.py
+    "testEvidence",         # plugins/shipwright-compliance/.../test_evidence.py
 })
 
 # Exact machine auto-resolve tokens. A human free-text reason (even one that
@@ -59,6 +62,8 @@ MACHINE_REASONS = frozenset({
     "f05Resolved",
     "githubResolved",
     "complianceResolved",
+    "phaseQualityResolved",
+    "testEvidenceResolved",
 })
 
 
@@ -111,9 +116,24 @@ def _validate_after(project_root: Path | str, drop_ids: set[str]) -> None:
 def apply_gc(project_root: Path | str, drop_ids: set[str], backup: bool = True) -> Path:
     """Rewrite the log without the ``drop_ids`` lines. Returns the backup path
     (or the live path when ``backup`` is False). Holds the store's file lock.
+
+    Refuses to rewrite if any non-blank line is malformed JSON — the tolerant
+    reader would otherwise silently compact a corrupt line away (data loss). The
+    rewrite is atomic (temp file + ``os.replace``) so a crash never truncates the
+    live log; the ``.bak`` backup is written first.
     """
     path = triage._triage_path(project_root)
     with triage._FileLock(triage._lock_path(project_root)):
+        original_text = path.read_text(encoding="utf-8") if path.exists() else ""
+        for n, line in enumerate(original_text.splitlines(), start=1):
+            if line.strip():
+                try:
+                    json.loads(line)
+                except json.JSONDecodeError as exc:
+                    raise RuntimeError(
+                        f"triage_gc: refusing to rewrite — malformed JSON at line "
+                        f"{n} ({exc.msg}); fix or remove it first"
+                    )
         raw = triage._iter_raw_lines(project_root)
         kept = [
             r for r in raw
@@ -121,11 +141,16 @@ def apply_gc(project_root: Path | str, drop_ids: set[str], backup: bool = True) 
         ]
         backup_path = path.with_suffix(path.suffix + ".bak")
         if backup and path.exists():
-            backup_path.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
-        lines = [
+            backup_path.write_text(original_text, encoding="utf-8")
+        new_text = "\n".join(
             json.dumps(r, ensure_ascii=False, separators=(",", ":")) for r in kept
-        ]
-        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        ) + "\n"
+        tmp = path.with_suffix(path.suffix + ".tmp")
+        with open(tmp, "w", encoding="utf-8") as fp:
+            fp.write(new_text)
+            fp.flush()
+            os.fsync(fp.fileno())
+        os.replace(tmp, path)
     _validate_after(project_root, drop_ids)
     return backup_path if backup else path
 
