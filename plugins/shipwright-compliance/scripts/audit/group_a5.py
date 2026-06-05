@@ -42,6 +42,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
+from scripts.audit import gate_behavior_probe
 from scripts.audit.audit_adapters import (
     SOURCE_DETECTIVE_ONLY,
     Finding,
@@ -604,5 +605,10 @@ def run(
     findings.append(_safe_run(
         "A5.7", lambda: _check_a5_7_fork_guard(parsed, conv),
     ))
+
+    # A5.8 — behaviorally probe the deployed gate (executes its run: body
+    # against fixture scan output). Own module to keep this file within its
+    # ADR-095 bloat budget; tool-gated + kill-switch-safe (see gate_behavior_probe).
+    findings.extend(gate_behavior_probe.run_if_enabled(parsed, conv))
 
     return findings

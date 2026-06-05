@@ -15,9 +15,9 @@ constants in ``shared/scripts/lib/security_workflow.py``:
   activation must be deliberate)
 - A5.7: fail when the SARIF upload step lacks a fork-PR guard
   (``head.repo.full_name == github.repository`` substring)
-- A5.8: every Finding carries ``source=detective-only`` and ``group="A"``
-- A5.9: a crash inside one sub-check produces a fail Finding without
-  suppressing other sub-checks
+- A5.8 (behavioral gate probe): see ``test_audit_gate_behavior_probe.py``
+- meta: every Finding carries ``source=detective-only`` / ``group="A"``;
+  a crash in one sub-check is isolated to a fail Finding (others still run)
 
 Hermetic: every test builds a synthetic workflow under ``tmp_path``.
 Mirrors the existing ``test_audit_groups_a_d.py`` fixture shape.
@@ -435,7 +435,7 @@ def test_a5_7_skips_when_no_upload_step(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# A5.8 — Finding metadata contract
+# Finding metadata contract (all A5.x sub-checks)
 # ---------------------------------------------------------------------------
 
 
@@ -463,7 +463,7 @@ def test_a5_failed_findings_carry_suggested_iterate_cmd(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# A5.9 — crash isolation
+# Crash isolation (one sub-check raising must not suppress the others)
 # ---------------------------------------------------------------------------
 
 

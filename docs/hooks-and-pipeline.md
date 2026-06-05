@@ -604,6 +604,26 @@ the check side: if `import yaml` still fails, `group_a5.run` emits a single
 or lands in the triage backlog. A *real* A5 violation in a project that does
 have yaml is unaffected — only the missing-dependency setup path degrades.
 
+**A5.8 behavioral gate probe (iterate-2026-06-05-a5-gate-behavioral-probe):**
+A5.4 confirms the deployed `.github/workflows/security.yml` carries a step with
+`id: shipwright-critical-gate` — that it is *present*. A5.8 confirms it *works*:
+it extracts the gate's `run:` body and *executes* it against fixture scan output,
+asserting the ratified policy (critical → block, empty/invalid → fail closed,
+clean → pass). It is flavor-agnostic — each scenario stages BOTH the template's
+`sarif/*.sarif` AND the monorepo's `findings.json`/`prompt_risks.json`
+consistently, so it is correct whether the deployed gate reads SARIF (adopted
+repos, rendered from `security.yml.template`) or findings.json (this monorepo's
+own scan). The gate body needs `bash`+`jq` (system binaries, NOT injected by
+`--with pyyaml`); where either is absent — or the gate can't pass a clean
+fixture, or has no `run:` body — A5.8 emits **SKIP** (never a phantom FAIL),
+same posture as the A5.0 PyYAML skip. Operator kill-switch:
+`SHIPWRIGHT_A5_GATE_PROBE=0` disables it. Behavior pinned by
+`plugins/shipwright-compliance/tests/test_audit_gate_behavior_probe.py`
+(bash/jq cases run in CI, skip on Windows-dev per ADR-044) and
+`test_gate_probe_orchestration.py` (decision-tree, runs everywhere); the
+*template* gate is independently pinned by
+`shared/tests/test_security_critical_gate.py`.
+
 ### Shared Hook: audit_phase_quality_on_stop.py
 
 **Script:** `shared/scripts/hooks/audit_phase_quality_on_stop.py` —

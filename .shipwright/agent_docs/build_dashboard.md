@@ -1,13 +1,19 @@
 # Project Activity Dashboard
-> Updated: 2026-06-05 12:01 UTC | Session: 8c417574-f89c-40fd-a5b3-5d01f6272edb | Run: iterate-2026-06-05-b7-exclude-nonfunctional
+> Updated: 2026-06-05 12:07 UTC | Session: 4d6fa624-3464-474d-9824-d403297eff6e | Run: iterate-2026-06-05-a5-gate-behavioral-probe
 
-## Recent Changes (101 iterations)
+## Recent Changes (107 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill. | 44/44 |  | compliance | 2026-06-05 |
 | change | Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab) | 9/9 |  | tooling | 2026-06-05 |
 | bug | gitleaks --report-path - wrote a stray file named - instead of stdout, so the secrets leg silently returned 0 findings everywhere; report now written to a temp file and read back; smoke positive-control converted to ADR-044 CI-gated fail | 320/320 |  | tooling | 2026-06-05 |
+| change | Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery | 64/64 |  | tooling | 2026-06-05 |
+| change | Set security.yml.template checkout to fetch-depth: 1 (working-tree only) and correct the misleading diff-aware-secret-scans comment; no scanner reads git history. | 0/0 |  | infra | 2026-06-05 |
+| change | C1/C2 detective-realign doc + ledger closeout | 41/41 |  | docs | 2026-06-05 |
+| bug | Scope the bloat recorder to the project root so cross-repo edits do not leak into this project marker and block its Stop gate. | 0/0 |  | fix | 2026-06-04 |
+| bug | Fix the adopt security-gate so it resolves SARIF severity at rule level, blocks on any secret, and fails closed — previously a structural false green in every adopted repo. | 0/0 |  | fix | 2026-06-04 |
+| change | Add A5.8: execute the deployed critical-gate shell against dual-artifact fixtures (flavor-agnostic across SARIF/findings.json; skip-safe; env kill-switch). | 0/0 |  | tooling | 2026-06-05 |
 | change | Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery | 64/64 |  | tooling | 2026-06-05 |
 | change | Set security.yml.template checkout to fetch-depth: 1 (working-tree only) and correct the misleading diff-aware-secret-scans comment; no scanner reads git history. | 0/0 |  | infra | 2026-06-05 |
 | change | C1/C2 detective-realign doc + ledger closeout | 41/41 |  | docs | 2026-06-05 |
@@ -108,7 +114,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-05 | Unit: 44/44 | Smoke: not_run | (iterate)
+Last run: 2026-06-05 | Unit: 612/622 | E2E: 17/17 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

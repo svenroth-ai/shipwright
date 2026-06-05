@@ -91,3 +91,17 @@ def sample_decision_log_text() -> str:
 def sample_package_json() -> dict:
     """Return parsed sample package.json."""
     return json.loads((FIXTURES_DIR / "sample_package.json").read_text(encoding="utf-8"))
+
+
+@pytest.fixture(autouse=True)
+def _disable_a5_gate_probe(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep the A5.1–A5.7 structural unit tests free of bash/jq.
+
+    A5.8's behavioral probe (``gate_behavior_probe``) spawns ``bash``+``jq``
+    against fixture scan output. The structural Group-A5 tests only inspect
+    workflow *shape*, so by default this package disables the probe via the
+    ``SHIPWRIGHT_A5_GATE_PROBE`` kill-switch — no subprocess, no tool
+    dependency. The dedicated behavioral test (``test_audit_gate_behavior_probe``)
+    drives the probe directly / re-enables it per-test, overriding this default.
+    """
+    monkeypatch.setenv("SHIPWRIGHT_A5_GATE_PROBE", "0")

@@ -38,7 +38,7 @@ Usage:
   /shipwright-compliance --format json    # JSON output only
 
 Groups:
-  A — Artifact + path integrity (A2 dev-block npm/uv/make, A3 [project.scripts], A4 config path-fields, A5 CI security workflow integrity)
+  A — Artifact + path integrity (A2 dev-block npm/uv/make, A3 [project.scripts], A4 config path-fields, A5 CI security workflow integrity incl. A5.8 behavioral gate probe)
   B — Config ↔ Config ↔ Event-log coherence (splits, sections, events, reverse git scan)
   C — Planning internal coherence (preventive re-run of plan_checks)
   D — Event-log FR coverage (uncovered FRs, stale refs, promised-not-delivered, last-build state)

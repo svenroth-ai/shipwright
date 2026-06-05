@@ -1,33 +1,98 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-05-b7-exclude-nonfunctional",
+    "run_id": "iterate-2026-06-05-a5-gate-behavioral-probe",
     "date": "2026-06-05",
-    "unit": { "status": "passed", "passed": 44, "total": 44 },
-    "integration": { "status": "not_run", "passed": 0, "total": 0 },
-    "pgtap": { "status": "not_run", "passed": 0, "total": 0 },
-    "e2e": { "status": "not_run", "passed": 0, "total": 0 },
-    "design_fidelity": { "status": "not_run", "passed": 0, "total": 0 },
-    "smoke": { "status": "not_run" },
+    "unit": {
+      "status": "passed",
+      "passed": 612,
+      "total": 622
+    },
+    "integration": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "pgtap": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "e2e": {
+      "status": "passed",
+      "passed": 17,
+      "total": 17
+    },
+    "design_fidelity": {
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
+    },
+    "smoke": {
+      "status": "not_run"
+    },
     "surface_verification": {
-      "surface": "none",
-      "runner": "surface_verification.py --surface none",
-      "tests_run": 0,
+      "surface": "cli",
+      "runner": "uv run --directory plugins/shipwright-compliance --with pytest --with pyyaml pytest tests/test_gate_probe_orchestration.py tests/test_audit_gate_behavior_probe.py -q",
+      "tests_run": 17,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-05-b7-exclude-nonfunctional/surface_verification.json",
-      "justification": "Framework-internal compliance-audit logic (B7 Rule E in git_log_scan + audit_detector default config). No web/UI/startable surface; no API/store/SSE/message-contract touched. Verified by the full Group-B suite (44 incl. 5 new Rule E cases) + the full shipwright-compliance suite (598 green) + ruff + a clean worktree anti-ratchet self-check."
+      "justification": "Framework-internal compliance-audit sub-check (A5.8). The CLI runner executes the gate-behavior probe decision-tree + integration tests; the 10 bash/jq end-to-end cases run in CI (skipped on this Windows dev box, identical posture to the sibling shared/tests/test_security_critical_gate.py). No web/API/UI surface."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "Rule E excludes a non-functional (chore) direct commit from B7 by default", "disposition": "tested", "evidence": "test_b7_excludes_nonfunctional_chore_by_default PASSED" },
-        { "behavior": "Rule E NEVER excludes a functional (feat) commit — still flagged as drift", "disposition": "tested", "evidence": "test_b7_still_flags_functional_feat_without_event PASSED" },
-        { "behavior": "Opt-out (exclude_nonfunctional_types=false) restores the flag-everything stance", "disposition": "tested", "evidence": "test_b7_flags_nonfunctional_when_exclusion_disabled PASSED" },
-        { "behavior": "conventional_type parses scope / ! / case / no-prefix subjects", "disposition": "tested", "evidence": "test_conventional_type_parsing PASSED" },
-        { "behavior": "Rule B (bot-author) isolation preserved when Rule E is off", "disposition": "tested", "evidence": "test_b7_disabling_rule_b_re_includes_dependabot_commits (updated, rule_e=false) PASSED" },
-        { "behavior": "Existing Rules A-D + Run-ID/path/docs behaviour unaffected", "disposition": "tested", "evidence": "full Group-B suite 44/44 PASSED (incl. release-commit, mixed-docs, Run-ID-footer cases)" }
+        {
+          "behavior": "AC1 — A5.8 FAILs (HIGH) when the gate exits 0 on a CRITICAL fixture (the 2026-06-04 false-green class)",
+          "disposition": "tested",
+          "evidence": "test_gate_probe_orchestration.py::test_critical_not_blocking_is_fail PASSED (local); test_audit_gate_behavior_probe.py::test_probe_fails_on_noop_gate / test_probe_fails_on_result_level_only_gate (CI)"
+        },
+        {
+          "behavior": "AC2 — A5.8 FAILs when the gate exits 0 on EMPTY or INVALID scan output (not fail-closed)",
+          "disposition": "tested",
+          "evidence": "test_gate_probe_orchestration.py::test_empty_not_failing_closed_is_fail / test_invalid_not_failing_closed_is_fail PASSED (local); test_audit_gate_behavior_probe.py::test_probe_fails_when_gate_not_fail_closed_on_empty / test_probe_fails_when_gate_tolerates_invalid_json (CI)"
+        },
+        {
+          "behavior": "AC3 — A5.8 PASSes against BOTH real gate flavors (template SARIF + deployed findings.json)",
+          "disposition": "tested",
+          "evidence": "test_audit_gate_behavior_probe.py::test_probe_passes_against_real_template_gate / test_probe_passes_against_real_deployed_monorepo_gate (CI; assert repo invariant + probe==pass)"
+        },
+        {
+          "behavior": "AC4 — A5.8 SKIPs (never FAIL) on absent bash/jq, no run-body, ${{ }} body, clean-sanity failure, timeout/OSError, or SHIPWRIGHT_A5_GATE_PROBE=0",
+          "disposition": "tested",
+          "evidence": "test_audit_gate_behavior_probe.py::test_probe_skips_when_tools_unavailable / _no_run_body / _gate_step_absent / _overblocking_gate; test_gate_probe_orchestration.py::test_clean_not_passing_is_skip / _github_expression_body_is_skip / _timeout_is_skip / _oserror_is_skip; test_run_if_enabled_skips_without_probing_when_disabled"
+        },
+        {
+          "behavior": "AC5 — Structural A5.1–A5.7 + the audit suite stay green and acquire no bash/jq dependency (conftest opt-out)",
+          "disposition": "tested",
+          "evidence": "Full compliance suite 612 passed / 10 skipped; test_audit_group_a5.py 36 passed with the probe disabled by the package conftest"
+        },
+        {
+          "behavior": "AC6 — group_a5.py stays within its (bumped) bloat baseline; the new module + test files are <=300 LOC",
+          "disposition": "tested",
+          "evidence": "anti_ratchet_check.py --worktree => status ok (group_a5.py 608->614 baseline bump); gate_behavior_probe.py 298, test files 300/125"
+        },
+        {
+          "behavior": "Finding contract + crash isolation: run() emits one A5.8 Finding (group A / detective-only / HIGH / cmd-on-fail) and never raises",
+          "disposition": "tested",
+          "evidence": "test_audit_gate_behavior_probe.py::test_run_emits_single_a5_8_finding_with_contract (CI) / test_run_skip_finding_carries_no_suggested_cmd / test_run_never_raises_on_internal_error (local)"
+        }
       ],
-      "counts": { "testable": 6, "tested": 6, "untestable": 0, "untested_testable": 0 }
+      "counts": {
+        "testable": 7,
+        "tested": 7,
+        "untestable": 0,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 6,
+        "covered_acs": 6
+      }
     },
-    "degraded": []
+    "degraded": [
+      {
+        "condition": "bash/jq absent on this local Windows runner: the 10 A5.8 end-to-end probe tests skip locally",
+        "impact": "low",
+        "note": "They execute in CI (ubuntu ships both, and skip_or_fail_on_missing_binary hard-fails there if absent). The probe's decision tree is fully covered locally by test_gate_probe_orchestration.py (stubs _run_gate). Same ADR-044 posture as the sibling shared/tests/test_security_critical_gate.py."
+      }
+    ]
   }
 }
