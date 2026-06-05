@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-05T10:24:14.454603+00:00
+Generated: 2026-06-05T11:11:35.057327+00:00
 
 ## Requirements Coverage
 
@@ -122,6 +122,7 @@ Generated: 2026-06-05T10:24:14.454603+00:00
 | Scope the bloat recorder to the project root so cross-repo edits do not leak into this project marker and block its Stop gate. | iterate | bug |  | — | — | 2026-06-04 |
 | C1/C2 detective-realign doc + ledger closeout | iterate | change |  | 41/41 | — | 2026-06-05 |
 | Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery | iterate | change |  | 64/64 | — | 2026-06-05 |
+| gitleaks --report-path - wrote a stray file named - instead of stdout, so the secrets leg silently returned 0 findings everywhere; report now written to a temp file and read back; smoke positive-control converted to ADR-044 CI-gated fail | iterate | bug |  | 320/320 | — | 2026-06-05 |
 
 ## Coverage Summary
 
@@ -129,7 +130,7 @@ Generated: 2026-06-05T10:24:14.454603+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 97 |
+| Iterate changes | 98 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

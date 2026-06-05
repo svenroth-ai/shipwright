@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-06-05T10:24:14.454603+00:00
-Total commits: 832
+Generated: 2026-06-05T11:11:35.057327+00:00
+Total commits: 834
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 248
-    "fix" : 226
+    "fix" : 227
     "chore" : 159
-    "docs" : 115
+    "docs" : 116
     "refactor" : 50
     "test" : 21
     "other" : 7
@@ -273,10 +273,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 226 commits
+### Fixes (fix) — 227 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | iterate | enforce FR-gate on finalize write-path + same-event D3 (C3) | 2b0fb66cf115 |
 | 2026-06-04 | hooks | scope bloat recorder to the project root (no cross-repo marker leak) | e1ce915dddf9 |
 | 2026-06-04 | adopt | security-gate counts criticals by rule-level SARIF severity + blocks secrets, fail-closed | 41372faa7c63 |
 | 2026-06-03 | compliance | B7 recognizes chore(release) as tracked-phase output (sub-iterate B) | 2fa549541b62 |
@@ -668,10 +669,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 115 commits
+### Documentation (docs) — 116 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | campaign | normalize C1/C2 status to `complete`; C3 in review (#147) | 3593093e0851 |
 | 2026-06-05 | compliance | document merged C1/C2 detective-audit realign + mark campaign rows done | 5b61555b6c9a |
 | 2026-06-01 | claude-md | document gating ruff lint step in Development section (#133) | 74a3e0b241f4 |
 | 2026-05-31 | iterate | fold Linux-CI discovery + cross-platform fixes into iterate artifacts | ef089eb6a64f |
@@ -901,7 +903,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 832 |
+| Total commits | 834 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 832 |
+| Human-authored commits | 834 |
 

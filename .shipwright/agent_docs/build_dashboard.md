@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-05 10:24 UTC | Session: 8c417574-f89c-40fd-a5b3-5d01f6272edb | Run: iterate-2026-06-05-fr-linkage-lifecycle
+> Updated: 2026-06-05 11:11 UTC | Session: 2e937623-d1e9-4832-9565-087ee19c132d | Run: iterate-2026-06-05-gitleaks-report-path
 
-## Recent Changes (97 iterations)
+## Recent Changes (98 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| bug | gitleaks --report-path - wrote a stray file named - instead of stdout, so the secrets leg silently returned 0 findings everywhere; report now written to a temp file and read back; smoke positive-control converted to ADR-044 CI-gated fail | 320/320 |  | tooling | 2026-06-05 |
 | change | Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery | 64/64 |  | tooling | 2026-06-05 |
 | change | C1/C2 detective-realign doc + ledger closeout | 41/41 |  | docs | 2026-06-05 |
 | bug | Scope the bloat recorder to the project root so cross-repo edits do not leak into this project marker and block its Stop gate. | 0/0 |  | fix | 2026-06-04 |
@@ -104,7 +105,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-05 | Unit: 64/64 | Smoke: not_run | (iterate)
+Last run: 2026-06-05 | Unit: 320/320 | Smoke: skipped | (iterate)
 
 ## Pipeline
 

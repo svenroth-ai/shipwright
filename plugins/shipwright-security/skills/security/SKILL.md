@@ -156,7 +156,7 @@ tracked-files-in-gitignored-paths).
 
 - Semgrep: `semgrep scan --json --config auto {target}` (env extras add `--exclude` flags)
 - Trivy: `trivy fs --format json --scanners vuln --skip-dirs <each-default> {target}`
-- Gitleaks: `gitleaks detect --report-format json -s {target} --report-path - --config <temp-toml-with-allowlist>`
+- Gitleaks: `gitleaks detect --report-format json -s {target} --report-path <temp-json-report> --config <temp-toml-with-allowlist>` — report goes to a temp FILE the plugin reads back (gitleaks has no stdout-report mode; `--report-path -` writes a literal file named `-`, not stdout)
 
 **For Aikido backend:**
 

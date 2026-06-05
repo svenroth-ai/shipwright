@@ -251,24 +251,41 @@ def _run_gitleaks(target: str) -> list[dict[str, Any]]:
     """Run Gitleaks and return normalized findings.
 
     Gitleaks has no --exclude flag; path exclusions go through a TOML config
-    with [allowlist] paths regex entries. A temp config is generated per
-    invocation and cleaned up after the subprocess returns.
+    with [allowlist] paths regex entries. It also has no stdout-report mode:
+    ``--report-path -`` is NOT special-cased to stdout — gitleaks does
+    ``os.Create("-")`` and writes the JSON to a literal file named ``-``
+    (verified against v8.21.2 ``cmd/root.go::findingSummaryAndExit`` +
+    ``report/report.go::Write``). The old ``--report-path -`` therefore made
+    the wrapper read empty stdout and silently return 0 findings on every
+    platform (iterate-2026-06-05). So the report is written to a real temp
+    file and read back here. Both temp files are generated per invocation and
+    cleaned up afterward.
     """
     config_path = _write_gitleaks_allowlist(_resolve_excludes("gitleaks"))
+    report_fd, report_path = tempfile.mkstemp(
+        suffix=".json", prefix="shipwright-gitleaks-report-"
+    )
+    os.close(report_fd)  # gitleaks re-creates (truncates) this path itself
     try:
         cmd = [
             "gitleaks", "detect",
             "--report-format", "json",
             "-s", target,
-            "--report-path", "-",
+            "--report-path", report_path,
             "--config", config_path,
         ]
-        raw = _run_tool(cmd, tool_name="gitleaks", expect_nonzero=True)
+        raw = _run_tool(
+            cmd,
+            tool_name="gitleaks",
+            expect_nonzero=True,
+            report_path=report_path,
+        )
     finally:
-        try:
-            os.unlink(config_path)
-        except OSError:
-            pass
+        for tmp in (config_path, report_path):
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
     if raw is None:
         return []
     return normalize_gitleaks(raw)
@@ -319,10 +336,24 @@ def _utf8_subprocess_env() -> dict[str, str]:
     return env
 
 
+def _read_report_file(path: str) -> str:
+    """Read a tool's JSON report file, returning its stripped content.
+
+    Returns an empty string if the file is missing or unreadable — the
+    caller treats that as "no parseable output" and surfaces stderr.
+    """
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
 def _run_tool(
     cmd: list[str],
     tool_name: str,
     expect_nonzero: bool = False,
+    report_path: str | None = None,
 ) -> dict[str, Any] | list[dict[str, Any]] | None:
     """Run a CLI tool and parse its JSON output.
 
@@ -331,6 +362,12 @@ def _run_tool(
         tool_name: Human-readable name for error messages.
         expect_nonzero: If True, a non-zero exit code is acceptable
             (e.g. gitleaks returns 1 when findings exist).
+        report_path: If set, the tool writes its JSON report to this file
+            path and the parsed file content is returned (rather than
+            parsing stdout). Gitleaks requires this: it has no stdout-report
+            mode — ``--report-path -`` writes to a literal file named ``-``,
+            never to stdout (see ``_run_gitleaks``). Semgrep / Trivy leave
+            this None and emit JSON on stdout natively.
 
     Returns:
         Parsed JSON (dict or list), or None on failure.
@@ -352,11 +389,21 @@ def _run_tool(
                 _log(f"{tool_name} stderr: {result.stderr[:500]}")
             return None
 
-        stdout = result.stdout.strip()
-        if not stdout:
+        if report_path is not None:
+            payload = _read_report_file(report_path)
+        else:
+            payload = result.stdout.strip()
+
+        if not payload:
+            # No parseable output. When a non-zero exit is "expected"
+            # (gitleaks exits 1 both on findings AND on fatal errors via
+            # log.Fatal), an empty payload is ambiguous — surface stderr so a
+            # silent tool failure is not mistaken for a clean "0 findings".
+            if result.stderr and result.stderr.strip():
+                _log(f"{tool_name} stderr: {result.stderr[:500]}")
             return None
 
-        return json.loads(stdout)
+        return json.loads(payload)
 
     except subprocess.TimeoutExpired:
         _log(f"{tool_name}: timed out after {_TIMEOUT}s")

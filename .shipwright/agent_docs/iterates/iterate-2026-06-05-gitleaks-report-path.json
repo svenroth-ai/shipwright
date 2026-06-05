@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-06-05-gitleaks-report-path",
+  "date": "2026-06-05T11:12:02.085608Z",
+  "intent": "bug",
+  "type": "bug",
+  "complexity": "small",
+  "branch": "iterate/gitleaks-report-path",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-06-05-gitleaks-report-path.md",
+  "adr": "iterate-2026-06-05-gitleaks-report-path"
+}

@@ -1,11 +1,13 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-05-fr-linkage-lifecycle",
+    "run_id": "iterate-2026-06-05-gitleaks-report-path",
     "date": "2026-06-05",
+    "intent": "bug",
+    "complexity": "small",
     "unit": {
       "status": "passed",
-      "passed": 64,
-      "total": 64
+      "passed": 320,
+      "total": 320
     },
     "integration": {
       "status": "not_run",
@@ -18,7 +20,7 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -28,34 +30,75 @@
       "total": 0
     },
     "smoke": {
-      "status": "not_run"
+      "status": "skipped"
     },
+    "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "runner": "surface_verification.py --surface none",
-      "tests_run": 0,
+      "tests_run": 320,
       "exit_code": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-05-fr-linkage-lifecycle/surface_verification.json",
-      "justification": "Framework-internal Python tooling: the finalize_iterate write-gate (finalize_iterate._record_event) and the Group-D D3 audit semantics (group_d._check_d3). No web/UI/startable surface consumes the change; no API route, store mutation, SSE/WS handler, or message contract is touched (backend-affects-frontend rule N/A). Verification is the unit/regression suites — finalize 20, audit-groups 44, record_event 93, plus full shared (2761), compliance (595), iterate (275) — all green at F0."
+      "justification": "CLI/library change to the gitleaks scanner wrapper (Python backend in shipwright-security); no web/runtime surface and no UI-consumed code. The real-binary E2E is the smoke test test_gitleaks_detect_scans_committed_shipwright_dir, unmockable locally (gitleaks not installed) and executed on Linux by this iterate's own PR CI (now CI-gated via ADR-044, not silently skipped)."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
-        { "behavior": "AC-1: finalize rejects an unclassified iterate work_completed event (no FR, no valid change_type+none_reason) BEFORE write", "disposition": "tested", "evidence": "test_finalize_iterate.py::test_finalize_rejects_feature_event_without_fr_linkage PASSED" },
-        { "behavior": "AC-2: rejection is fail-closed — CLI exits 1, nothing written", "disposition": "tested", "evidence": "test_finalize_iterate.py::test_cli_main_returns_1_on_gate_rejection PASSED" },
-        { "behavior": "AC-2: rejection surfaces an actionable error naming the missing field", "disposition": "tested", "evidence": "test_finalize_iterate.py::test_finalize_rejects_feature_event_without_fr_linkage (asserts affected/change_type in message) PASSED" },
-        { "behavior": "AC-2: a gate rejection aborts run() steps 2-5 (no dashboard/handoff regen for an unclassified iterate)", "disposition": "tested", "evidence": "test_finalize_iterate.py::test_finalize_gate_rejection_aborts_artifact_regen PASSED" },
-        { "behavior": "AC-5: finalize allows an FR-linked event (affected_frs/new_frs)", "disposition": "tested", "evidence": "test_finalize_iterate.py::test_finalize_allows_feature_event_with_affected_frs PASSED" },
-        { "behavior": "AC-5: finalize allows a no-FR event classified via change_type+none_reason", "disposition": "tested", "evidence": "test_finalize_iterate.py::test_finalize_allows_event_with_change_type_pair PASSED" },
-        { "behavior": "AC-1 defense-in-depth: a present-but-malformed change_type (unfilled placeholder) is rejected even alongside FRs", "disposition": "tested", "evidence": "test_finalize_iterate.py::test_finalize_gate_rejects_malformed_change_type PASSED" },
-        { "behavior": "Idempotency early-return runs BEFORE the gate — a re-run with the same run_id and invalid extras is never re-gated", "disposition": "tested", "evidence": "test_finalize_iterate.py::test_finalize_gate_preserves_idempotency_without_regating PASSED" },
-        { "behavior": "AC-3: D3 counts an FR delivered in the same event it was introduced (new_frs+affected_frs together)", "disposition": "tested", "evidence": "test_audit_groups_a_d.py::test_d3_passes_when_fr_delivered_in_same_event PASSED" },
-        { "behavior": "AC-3: D3 still flags an FR promised via new_frs with no covering affected_frs at all", "disposition": "tested", "evidence": "test_audit_groups_a_d.py::test_d3_still_flags_new_fr_with_no_covering_affected PASSED" },
-        { "behavior": "AC-4: the FR-01.33 webui false-positive is cleared by the same-event D3 fix", "disposition": "untestable", "reason_code": "covered-by-existing-test", "reason": "The monorepo D3 unit test mirrors FR-01.33's exact same-event shape; the live shipwright-webui audit green is a post-merge + marketplace-sync verification owned by sub-iterate C4." }
+        {
+          "behavior": "_run_gitleaks returns findings from the report FILE (not stdout)",
+          "disposition": "tested",
+          "evidence": "test_oss_backend.py::TestRunGitleaks::test_reads_findings_from_report_file_not_stdout PASSED (RED on old code)"
+        },
+        {
+          "behavior": "--report-path value is a real temp file, never '-'",
+          "disposition": "tested",
+          "evidence": "test_oss_backend.py::TestRunGitleaks::test_report_path_is_real_file_not_dash PASSED"
+        },
+        {
+          "behavior": "gitleaks config + report temp files are cleaned up",
+          "disposition": "tested",
+          "evidence": "test_gitleaks_cleans_up_temp_config + TestRunGitleaks::test_cleans_up_temp_report_file PASSED"
+        },
+        {
+          "behavior": "_run_tool surfaces stderr when an expect_nonzero tool yields no output",
+          "disposition": "tested",
+          "evidence": "test_oss_backend.py::TestRunGitleaks::test_surfaces_stderr_on_empty_report PASSED"
+        },
+        {
+          "behavior": "malformed/garbage report file degrades to [] without raising",
+          "disposition": "tested",
+          "evidence": "test_oss_backend.py::TestRunGitleaks::test_returns_empty_on_invalid_report_json PASSED"
+        },
+        {
+          "behavior": "full OSSBackend.scan combines gitleaks(report-file)+semgrep+trivy",
+          "disposition": "tested",
+          "evidence": "test_oss_backend.py::TestOSSBackendScan::test_full_scan_combines_all_tools PASSED"
+        },
+        {
+          "behavior": "gitleaks stays in detect (git-history) mode",
+          "disposition": "tested",
+          "evidence": "test_oss_backend.py::test_gitleaks_stays_in_detect_mode PASSED"
+        },
+        {
+          "behavior": "smoke positive-control fails (not skips) in CI on a real gitleaks miss",
+          "disposition": "tested",
+          "evidence": "scan_test_hygiene static probe: no findings (CI-gated pytest.fail accepted) + shared/tests/test_silent_skip_ci_discipline.py 33 passed"
+        },
+        {
+          "behavior": "real gitleaks binary detects the committed key on Linux CI",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "gitleaks not installed locally; the smoke test runs the real binary in this iterate's own PR CI on Linux (the live probe) and is not unit-mockable"
+        }
       ],
-      "counts": { "testable": 10, "tested": 10, "untestable": 1, "untested_testable": 0 },
-      "enumeration_basis": { "acs": 5, "covered_acs": 5 }
-    },
-    "degraded": []
+      "counts": {
+        "testable": 8,
+        "tested": 8,
+        "untestable": 1,
+        "untested_testable": 0
+      },
+      "enumeration_basis": {
+        "acs": 9,
+        "covered_acs": 9
+      }
+    }
   }
 }
