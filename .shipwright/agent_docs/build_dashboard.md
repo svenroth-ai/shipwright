@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-05 12:07 UTC | Session: 4d6fa624-3464-474d-9824-d403297eff6e | Run: iterate-2026-06-05-a5-gate-behavioral-probe
+> Updated: 2026-06-05 12:39 UTC | Session: 474cb900-eabb-46ef-8f55-83f5fd879d5f | Run: iterate-2026-06-05-sbom-cluster-stable-identity
 
-## Recent Changes (107 iterations)
+## Recent Changes (108 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift) | 617/627 |  | compliance | 2026-06-05 |
 | change | B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill. | 44/44 |  | compliance | 2026-06-05 |
 | change | Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab) | 9/9 |  | tooling | 2026-06-05 |
 | bug | gitleaks --report-path - wrote a stray file named - instead of stdout, so the secrets leg silently returned 0 findings everywhere; report now written to a temp file and read back; smoke positive-control converted to ADR-044 CI-gated fail | 320/320 |  | tooling | 2026-06-05 |
@@ -114,7 +115,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-05 | Unit: 612/622 | E2E: 17/17 | Smoke: not_run | (iterate)
+Last run: 2026-06-05 | Unit: 617/627 | Smoke: not_run | (iterate)
 
 ## Pipeline
 
