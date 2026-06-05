@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-06-05 19:45 UTC | Session: 474cb900-eabb-46ef-8f55-83f5fd879d5f | Run: iterate-2026-06-05-triage-track-c1-gitignore
+> Updated: 2026-06-05 18:08 UTC | Session: 474cb900-eabb-46ef-8f55-83f5fd879d5f | Run: iterate-2026-06-05-triage-dismissed-gc
 
-## Recent Changes (108 iterations)
+## Recent Changes (109 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
-| change | git-track triage.jsonl: gitignore negation + scaffolder self-heal (C1) | 19/19 |  | infra | 2026-06-05 |
+| change | SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift) | 617/617 |  | compliance | 2026-06-05 |
+| feature | triage_gc tool: machine-churn-only dismissed-pile compaction | 387/387 |  | tooling | 2026-06-05 |
 | change | B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill. | 44/44 |  | compliance | 2026-06-05 |
 | change | Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab) | 9/9 |  | tooling | 2026-06-05 |
 | bug | gitleaks --report-path - wrote a stray file named - instead of stdout, so the secrets leg silently returned 0 findings everywhere; report now written to a temp file and read back; smoke positive-control converted to ADR-044 CI-gated fail | 320/320 |  | tooling | 2026-06-05 |
@@ -115,7 +116,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-05 | Unit: 19/19 | Smoke: not_run | (iterate)
+Last run: 2026-06-05 | Unit: 387/387 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

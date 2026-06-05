@@ -1,35 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-05-triage-track-c1-gitignore"
+run_id: "iterate-2026-06-05-triage-dismissed-gc"
 phase: "iterate"
-reason: "iterate: triage.jsonl trackable (C1)"
-timestamp: "2026-06-05T19:45:29.065056+00:00"
+reason: "integrate main after A merged (campaign stack)"
+timestamp: "2026-06-05T18:08:24.547455+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-05 19:45:29 UTC
+> Auto-generated 2026-06-05 18:08:24 UTC
 
 ## Session Info
 
 - **Session ID**: 474cb900-eabb-46ef-8f55-83f5fd879d5f
-- **Timestamp**: 2026-06-05 19:45:29 UTC
-- **Reason**: iterate: triage.jsonl trackable (C1)
+- **Timestamp**: 2026-06-05 18:08:24 UTC
+- **Reason**: integrate main after A merged (campaign stack)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-05-a5-gate-behavioral-probe
-- **Date**: 2026-06-05T12:12:18.666645Z
-- **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/a5-gate-behavioral-probe
-- **ADR**: iterate-2026-06-05-a5-gate-behavioral-probe
+- **Run ID**: iterate-2026-06-05-triage-dismissed-gc
+- **Date**: 2026-06-05T18:08:33.330789Z
+- **Type**: feature
+- **Complexity**: small
+- **Branch**: iterate/triage-dismissed-gc
+- **ADR**: iterate-2026-06-05-triage-dismissed-gc
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-05-a5-gate-behavioral-probe.md
+- **Spec**: .shipwright/planning/iterate/campaigns/2026-06-05-track-triage-jsonl/sub-iterates/B-triage-dismissed-gc.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/triage-track-c1
+- **Branch**: iterate/triage-dismissed-gc
 - **External Review Marker**: completed (external_review_state.json @ 2026-06-01T06:00:50)
 
 ### Mandatory replay on Resume
@@ -48,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-track-c1
-- **Last Commit**: 86ea7a68 Merge pull request #152 from svenroth-ai/iterate/a5-gate-behavioral-probe
+- **Branch**: iterate/triage-dismissed-gc
+- **Last Commit**: 5baede61 Merge remote-tracking branch 'origin/main' into iterate/triage-dismissed-gc
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-17f29a61 | work_completed | iterate (git-track triage.jsonl: gitignore negation + scaffolder self-heal (C1)) | 2026-06-05 |
+| evt-7e3e2dc7 | work_completed | iterate (SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift)) | 2026-06-05 |
+| evt-64ee4ee6 | work_completed | iterate (triage_gc tool: machine-churn-only dismissed-pile compaction) | 2026-06-05 |
 | evt-7f17543a | work_completed | iterate (B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill.) | 2026-06-05 |
 | evt-702f8c5b | work_completed | iterate (Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab)) | 2026-06-05 |
 | evt-bebd144d | work_completed | iterate (gitleaks --report-path - wrote a stray file named - instead of stdout, so the secrets leg silently returned 0 findings everywhere; report now written to a temp file and read back; smoke positive-control converted to ADR-044 CI-gated fail) | 2026-06-05 |
-| evt-2c8f0a52 | work_completed | iterate (Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery) | 2026-06-05 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 108
-- **Last iterate**: change — git-track triage.jsonl: gitignore negation + scaffolder self-heal (C1) (2026-06-05)
+- **Total work events**: 109
+- **Last iterate**: change — SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift) (2026-06-05)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
