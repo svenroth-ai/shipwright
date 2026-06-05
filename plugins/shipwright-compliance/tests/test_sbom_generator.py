@@ -627,39 +627,67 @@ class TestEmitUndeclaredTriageClusters:
         assert "clusters" in result
         assert result["clusters"] == 0
 
-    def test_cluster_membership_grows_dismisses_old_emits_new(
+    def test_cluster_membership_grows_keeps_stable_id(
         self, tmp_path: Path, triage_api,
     ):
-        """External review HIGH (OpenAI #2/#3): cluster key MUST encode
-        BOTH signature AND member-list. When membership grows from
-        {A, C} to {A, C, D} (same signature), the old cluster MUST
-        auto-dismiss and a new cluster MUST be appended.
+        """Sub-iterate A (supersedes the membership-encoding of OpenAI
+        #2/#3): id = signature(+manifest_type), not the member list. Grow
+        {a,c}->{a,c,d} (same signature) keeps the SAME item open — no
+        dismiss/append, no churn (AC-4). Body stays at first-emit
+        membership (append-only store; re-render is the deferred
+        follow-up trg-9403a648).
         """
         for sub in ("a", "c"):
             self._seed_npm(tmp_path, sub, {"shared": "1.0.0"})
-        first = emit_undeclared_triage(tmp_path)
-        assert first["clusters"] == 1
-        # Now add a third member to the same signature.
+        assert emit_undeclared_triage(tmp_path)["clusters"] == 1
+        first_key = _read_sbom_items(triage_api, tmp_path)[0]["dedupKey"]
         self._seed_npm(tmp_path, "d", {"shared": "1.0.0"})
         second = emit_undeclared_triage(tmp_path)
-        assert second["clusters"] == 1
-        assert second["dismissed"] == 1, (
-            "Expected old cluster {a,c} to auto-dismiss when membership "
-            f"grew to {{a,c,d}}; got result={second!r}"
-        )
-        assert second["appended"] == 1, (
-            "Expected a fresh cluster {a,c,d} to be appended; "
-            f"got result={second!r}"
-        )
-        # Final state: 2 cluster items, 1 dismissed, 1 open.
-        items = _read_sbom_items(triage_api, tmp_path)
+        assert (second["dismissed"], second["appended"], second["clusters"]) == (0, 0, 0), second
         cluster_items = [
-            i for i in items
+            i for i in _read_sbom_items(triage_api, tmp_path)
             if i["dedupKey"].startswith("sbom:undeclared-cluster:")
         ]
-        assert len(cluster_items) == 2
-        statuses = sorted(i["status"] for i in cluster_items)
-        assert statuses == ["dismissed", "triage"]
+        assert len(cluster_items) == 1
+        assert cluster_items[0]["status"] == "triage"
+        assert cluster_items[0]["dedupKey"] == first_key  # id invariant
+        # Body-fidelity deferral pinned: count stays at first-emit (2), not 3.
+        assert "Workspaces (2)" in cluster_items[0]["detail"]
+
+    def test_cluster_membership_shrinks_within_range_keeps_stable_id(
+        self, tmp_path: Path, triage_api,
+    ):
+        """Sub-iterate A: shrink {a,b,c}->{a,b} (both N>=2) keeps the SAME
+        id — contrast the 2->1 case (…_dismisses_then_reemits_…) that
+        legitimately crosses the cluster->per-workspace boundary.
+        """
+        for sub in ("a", "b", "c"):
+            self._seed_npm(tmp_path, sub, {"react": "^19.0.0"})
+        assert emit_undeclared_triage(tmp_path)["clusters"] == 1
+        first_key = _read_sbom_items(triage_api, tmp_path)[0]["dedupKey"]
+        (tmp_path / "c" / "package-lock.json").write_text(
+            json.dumps({"lockfileVersion": 3, "packages": {
+                "node_modules/react": {"version": "19.0.0", "license": "MIT"}}}),
+            encoding="utf-8",
+        )
+        second = emit_undeclared_triage(tmp_path)
+        assert (second["dismissed"], second["appended"], second["clusters"]) == (0, 0, 0), second
+        cluster_items = [
+            i for i in _read_sbom_items(triage_api, tmp_path)
+            if i["dedupKey"].startswith("sbom:undeclared-cluster:")
+        ]
+        assert len(cluster_items) == 1
+        assert cluster_items[0]["dedupKey"] == first_key
+
+    def test_cluster_dedup_key_independent_of_membership(self):
+        """Sub-iterate A: key = f(signature, manifest_type) only — equal
+        across member sets, distinct across manifest types (AC-8).
+        """
+        from scripts.lib.sbom_generator import _cluster_dedup_key
+        sig = ("react", "shared")
+        assert _cluster_dedup_key(sig, "npm") == _cluster_dedup_key(sig, "npm")
+        assert _cluster_dedup_key(sig, "npm") != _cluster_dedup_key(sig, "python")
+        assert _cluster_dedup_key(sig, "npm").startswith("sbom:undeclared-cluster:")
 
     def test_legacy_per_workspace_item_shielded_when_workspace_joins_cluster(
         self, tmp_path: Path, triage_api,

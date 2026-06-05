@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-06-05T18:08:24.547455+00:00
+Generated: 2026-06-05T12:39:52.235518+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 108 |
-| Total unit tests (latest) | 387/387 |
+| Total unit tests (latest) | 617/617 |
 | New tests from iterations | +102 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | triage_gc tool: machine-churn-only dismissed-pile compaction | iterate | unit | +0 | 387/387 | PASS | 2026-06-05 |
+| 1 | SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift) | iterate | unit | +0 | 617/617 | PASS | 2026-06-05 |
 | 2 | B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill. | iterate | unit | +0 | 44/44 | PASS | 2026-06-05 |
 | 3 | Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab) | iterate | unit | +0 | 9/9 | PASS | 2026-06-05 |
 | 4 | gitleaks --report-path - wrote a stray file named - instead of stdout, so the secrets leg silently returned 0 findings everywhere; report now written to a temp file and read back; smoke positive-control converted to ADR-044 CI-gated fail | iterate | unit | +0 | 320/320 | PASS | 2026-06-05 |
@@ -156,7 +156,7 @@ Generated: 2026-06-05T18:08:24.547455+00:00
 | 27 | iterate | 320/320 | — | — | — | — | 2026-06-05 |
 | 28 | iterate | 9/9 | — | — | — | — | 2026-06-05 |
 | 29 | iterate | 44/44 | — | — | — | — | 2026-06-05 |
-| 30 | iterate | 387/387 | — | — | — | — | 2026-06-05 |
+| 30 | iterate | 617/617 | — | — | — | — | 2026-06-05 |
 
 ## Code Review Evidence
 

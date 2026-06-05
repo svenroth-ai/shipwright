@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-06-05T18:08:24.547455+00:00
+Generated: 2026-06-05T12:39:52.235518+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -10,15 +10,15 @@ Scope: library
 |--------|-------|--------|-----------|
 | Pipeline phases completed | n/a (adopted) | INFO |  |
 | Work events (iterate) | 108 changes | INFO |  |
-| All unit tests passing | 387/387 | PASS |  |
+| All unit tests passing | 617/617 | PASS |  |
 | Architecture decisions | 120 ADRs | INFO |  |
 | Iterate tests passing | 66/108 iterations tested | WARN | 42 iterate(s) without tests — see test-evidence.md |
 | Dependencies | 8 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
 | Triage open | 4 open | WARN | 4 actionable item(s) — see ../agent_docs/triage_inbox.md |
-| Bloat over-limit | 125 | WARN | 125 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
+| Bloat over-limit | 124 | WARN | 124 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
 | Bloat in allowlist | 150 entries | INFO |  |
-| Bloat ratchet delta | -102 lines | PASS |  |
+| Bloat ratchet delta | -105 lines | PASS |  |
 
 ## Project Velocity
 

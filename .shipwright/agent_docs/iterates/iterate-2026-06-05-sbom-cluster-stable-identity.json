@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-05-sbom-cluster-stable-identity",
+  "date": "2026-06-05T12:40:04.902924Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/sbom-cluster-stable-id",
+  "spec": ".shipwright/planning/iterate/campaigns/2026-06-05-track-triage-jsonl/sub-iterates/A-sbom-cluster-stable-identity.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-05-sbom-cluster-stable-identity"
+}

@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-05T18:08:24.547455+00:00
-Total commits: 846
+Generated: 2026-06-05T12:39:52.235518+00:00
+Total commits: 847
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 249
-    "fix" : 230
+    "fix" : 231
     "chore" : 165
     "docs" : 116
     "refactor" : 50
@@ -274,10 +274,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 230 commits
+### Fixes (fix) — 231 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | compliance | SBOM cluster dedup-key = signature + manifest_type only | 53ccf300c5b2 |
 | 2026-06-05 | compliance | B7 excludes non-functional commit types (Rule E) | a611fc8dd9fc |
 | 2026-06-05 | hooks | make the bloat marker + Stop gate worktree-aware (trg-305e2aab) | 9282ef267871 |
 | 2026-06-05 | security | read gitleaks report from a file, not stdout | 4a27c374ed3c |
@@ -915,7 +916,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 846 |
+| Total commits | 847 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 846 |
+| Human-authored commits | 847 |
 
