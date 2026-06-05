@@ -38,12 +38,15 @@ from tools.aggregate_triage import render_markdown  # noqa: E402
 
 _AGENT_DOCS_DIRNAME = ".shipwright/agent_docs"
 TRIAGE_MD_REL = Path(_AGENT_DOCS_DIRNAME) / "triage_inbox.md"
-# Only the lock stays ignored. triage.jsonl itself is the tracked SSoT backlog
-# (campaign 2026-06-05-track-triage-jsonl): the canonical managed block
-# re-includes it via ``!/.shipwright/triage.jsonl``. (The ``/.shipwright/*``
-# wildcard already covers the lock, so this is belt-and-braces for projects
+# Only the lock + the GC backup stay ignored. triage.jsonl itself is the tracked
+# SSoT backlog (campaign 2026-06-05-track-triage-jsonl): the canonical managed
+# block re-includes it via ``!/.shipwright/triage.jsonl``. (The ``/.shipwright/*``
+# wildcard already covers .lock + .bak, so these are belt-and-braces for projects
 # whose .gitignore lacks the canonical block.)
-GITIGNORE_LINES = (".shipwright/triage.jsonl.lock",)
+GITIGNORE_LINES = (
+    ".shipwright/triage.jsonl.lock",
+    ".shipwright/triage.jsonl.bak",
+)
 
 # Stale PLAIN ignores of the now-tracked jsonl, stripped on (re-)scaffold. A
 # bare line appended AFTER the managed block would override the negation by

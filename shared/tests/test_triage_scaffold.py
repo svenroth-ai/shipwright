@@ -126,9 +126,10 @@ def test_skips_already_present_lines(project: Path) -> None:
 # --- tracking flip: triage.jsonl is the tracked SSoT (campaign C1) ------
 
 def test_jsonl_is_no_longer_a_managed_ignore_line(project: Path) -> None:
-    """triage.jsonl is tracked now — only the lock is a scaffolder ignore."""
-    assert GITIGNORE_LINES == (".shipwright/triage.jsonl.lock",)
-    assert ".shipwright/triage.jsonl" not in GITIGNORE_LINES
+    """triage.jsonl is tracked now — only the .lock + GC .bak are scaffolder ignores."""
+    assert ".shipwright/triage.jsonl" not in GITIGNORE_LINES  # the tracked SSoT
+    assert ".shipwright/triage.jsonl.lock" in GITIGNORE_LINES
+    assert ".shipwright/triage.jsonl.bak" in GITIGNORE_LINES
 
 
 def test_self_heals_stale_bare_jsonl_ignore(project: Path) -> None:
