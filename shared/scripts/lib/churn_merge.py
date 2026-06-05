@@ -124,6 +124,7 @@ def validate_triage_text(text: str) -> list[str]:
     errors: list[str] = []
     header_seen = False
     append_ids: set[str] = set()
+    status_ids: list[tuple[int, str]] = []
     for n, line in enumerate(text.splitlines(), start=1):
         if not line.strip():
             continue
@@ -149,8 +150,16 @@ def validate_triage_text(text: str) -> list[str]:
             if iid in append_ids:
                 errors.append(f"line {n}: duplicate append for id {iid!r} — the merge double-counted an item")
             append_ids.add(iid)
-        elif event == "status" and iid not in append_ids:
-            errors.append(f"line {n}: status for id {iid!r} has no preceding append — the merge dropped it")
+        elif event == "status":
+            status_ids.append((n, iid))
+    # Second pass: status ids are checked against the FULL append set, NOT only
+    # appends seen earlier in file order — ``merge=union`` may legitimately
+    # interleave lines so a status precedes its append while both are present
+    # (order-sensitive validation would false-fail `triage_invalid`). Only a
+    # status whose append is absent ANYWHERE is a real merge drop.
+    for n, iid in status_ids:
+        if iid not in append_ids:
+            errors.append(f"line {n}: status for id {iid!r} has no append anywhere — the merge dropped it")
     if not header_seen:
         errors.append("triage log is empty after merge — the header was dropped")
     return errors

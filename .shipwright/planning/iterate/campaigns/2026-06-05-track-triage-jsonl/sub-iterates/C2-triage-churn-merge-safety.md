@@ -40,8 +40,13 @@ keeping both test files < 300 — no bloat-exception needed.
 - [x] **C2-AC2.** `dedup_triage_lines` collapses byte-identical lines only and
       **never** warns on shared append/status ids.
 - [x] **C2-AC3.** `validate_triage_text` flags missing header / non-JSON / empty.
-- [x] **C2-AC4.** Resolver reconciles triage (dedup on no-conflict; `--ours` +
-      reconcile on conflict; `triage_invalid` exit 4 on a dropped header).
+- [x] **C2-AC4.** Resolver reconciles triage (dedup on no-conflict; **unions
+      both sides** on a hard conflict so neither side's items are dropped —
+      Codex BLOCKER; `triage_invalid` exit 4 on validation failure: dropped
+      header, orphan `status` (append absent anywhere), or duplicate `append`).
+      The validator is **order-independent** (two-pass — GPT-5.4 external-review:
+      `merge=union` may interleave a status before its append while both are
+      present, which must NOT false-fail).
 - [x] **C2-AC5.** Leak-guard exempts a tracked main-tree `triage.jsonl` change
       (durable-log append), mirroring the events exemption.
 

@@ -128,11 +128,20 @@ def test_triage_validate_accepts_append_then_status() -> None:
 
 
 def test_triage_validate_flags_orphan_status() -> None:
-    """A status whose append was lost on merge would be silently dropped by the
-    reader — the validator must reject it (Codex HIGH)."""
+    """A status whose append is absent ANYWHERE was dropped by the merge — the
+    reader would silently discard it, so the validator must reject it (Codex HIGH)."""
     errs = validate_triage_text(
         _TRIAGE_HEADER + '\n{"event":"status","id":"trg-x","newStatus":"dismissed"}\n')
-    assert errs and any("no preceding append" in e for e in errs)
+    assert errs and any("no append anywhere" in e for e in errs)
+
+
+def test_triage_validate_accepts_status_before_append_reordered() -> None:
+    """merge=union may interleave so a status precedes its append while BOTH are
+    present — two-pass validation must NOT false-fail (GPT-5.4 external-review)."""
+    reordered = (_TRIAGE_HEADER
+                 + '\n{"event":"status","id":"trg-x","newStatus":"dismissed"}'
+                 + '\n{"event":"append","id":"trg-x"}\n')
+    assert validate_triage_text(reordered) == []
 
 
 def test_triage_validate_flags_duplicate_append() -> None:
