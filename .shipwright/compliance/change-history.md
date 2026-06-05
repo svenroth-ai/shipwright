@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-05T12:01:23.350872+00:00
-Total commits: 842
+Generated: 2026-06-05T12:07:58.769492+00:00
+Total commits: 845
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 248
+    "feat" : 249
     "fix" : 230
-    "chore" : 162
+    "chore" : 164
     "docs" : 116
     "refactor" : 50
     "test" : 21
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 248 commits
+### Features (feat) — 249 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | compliance | A5.8 behaviorally probes the deployed critical-gate | 387e1da8bae3 |
 | 2026-06-03 | iterate | producer-owned campaign lifecycle status (draft->active->complete) | 3afe1fba71b1 |
 | 2026-06-01 | triage | ingest prompt_risks.json as a gh-prompt producer source | fef7f67451ff |
 | 2026-05-31 | iterate | add fail-closed Test Completeness Ledger gate | bde2812d0525 |
@@ -508,10 +509,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 162 commits
+### Chores (chore) — 164 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-05 | iterate | stamp adr ref + spec_impact_justification on A5.8 finalization | f70e2674faf8 |
+| 2026-06-05 | churn | regenerate derived snapshots after main merge | fa051a6abd76 |
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | faa552ad0fef |
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | aab4bd7f64e7 |
 | 2026-06-05 | iterate | correct finalization metadata (adr key + spec_impact_justification) | 3a571d8435d1 |
@@ -911,7 +914,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 842 |
+| Total commits | 845 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 842 |
+| Human-authored commits | 845 |
 

@@ -1,36 +1,39 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-05-b7-exclude-nonfunctional"
+run_id: "iterate-2026-06-05-a5-gate-behavioral-probe"
 phase: "iterate"
-reason: "merge origin/main reconciliation"
-timestamp: "2026-06-05T12:01:23.350872+00:00"
+reason: "integrate origin/main churn (PR #152, A5.8)"
+timestamp: "2026-06-05T12:07:58.769492+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-05 12:01:23 UTC
+> Auto-generated 2026-06-05 12:07:58 UTC
 
 ## Session Info
 
-- **Session ID**: 8c417574-f89c-40fd-a5b3-5d01f6272edb
-- **Timestamp**: 2026-06-05 12:01:23 UTC
-- **Reason**: merge origin/main reconciliation
+- **Session ID**: 4d6fa624-3464-474d-9824-d403297eff6e
+- **Timestamp**: 2026-06-05 12:07:58 UTC
+- **Reason**: integrate origin/main churn (PR #152, A5.8)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-05-b7-exclude-nonfunctional
-- **Date**: 2026-06-05T12:01:23.896278Z
+- **Run ID**: iterate-2026-06-05-a5-gate-behavioral-probe
+- **Date**: 2026-06-05T12:12:18.666645Z
 - **Type**: change
-- **Complexity**: small
-- **Branch**: iterate/b7-exclude-nonfunctional
-- **ADR**: iterate-2026-06-05-b7-exclude-nonfunctional
+- **Complexity**: medium
+- **Branch**: iterate/a5-gate-behavioral-probe
+- **ADR**: iterate-2026-06-05-a5-gate-behavioral-probe
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/adr/097-bloat-b7-rule-e-test-growth.md
+- **Spec**: .shipwright/planning/iterate/2026-06-05-a5-gate-behavioral-probe.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/b7-exclude-nonfunctional
-- **External Review Marker**: completed (external_review_state.json @ 2026-06-01T06:00:50)
+- **Branch**: iterate/a5-gate-behavioral-probe
+- **Run ID**: iterate-2026-06-05-a5-gate-behavioral-probe
+- **Spec**: .shipwright/planning/iterate/2026-06-05-a5-gate-behavioral-probe.md
+- **Complexity**: medium (classifier 0.7, no risk flags)
+- **External Review Marker**: stale (predates spec (2026-06-01T06:00:50))
 
 ### Mandatory replay on Resume
 
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/b7-exclude-nonfunctional
-- **Last Commit**: eeb0f1b4 Merge remote-tracking branch 'origin/main' into iterate/b7-exclude-nonfunctional
+- **Branch**: iterate/a5-gate-behavioral-probe
+- **Last Commit**: 0aed51b7 Merge remote-tracking branch 'origin/main' into iterate/a5-gate-behavioral-probe
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -74,7 +77,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 101
+- **Total work events**: 107
 - **Last iterate**: change — B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill. (2026-06-05)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
