@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-05-b7-exclude-nonfunctional"
+run_id: "iterate-2026-06-05-gitleaks-report-path"
 phase: "iterate"
-reason: "iterate: B7 Rule E (exclude non-functional commit types)"
-timestamp: "2026-06-05T12:01:23.350872+00:00"
+reason: "integrate origin/main: reconcile churn artifacts (compliance MDs, dashboard, handoff, test_results) so PR #149 CI can run"
+timestamp: "2026-06-05T11:26:02.491805+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-05 12:01:23 UTC
+> Auto-generated 2026-06-05 11:26:02 UTC
 
 ## Session Info
 
-- **Session ID**: 8c417574-f89c-40fd-a5b3-5d01f6272edb
-- **Timestamp**: 2026-06-05 12:01:23 UTC
-- **Reason**: iterate: B7 Rule E (exclude non-functional commit types)
+- **Session ID**: 2e937623-d1e9-4832-9565-087ee19c132d
+- **Timestamp**: 2026-06-05 11:26:02 UTC
+- **Reason**: integrate origin/main: reconcile churn artifacts (compliance MDs, dashboard, handoff, test_results) so PR #149 CI can run
 
 ## Last Iterate
 
@@ -28,8 +28,11 @@ timestamp: "2026-06-05T12:01:23.350872+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/b7-exclude-nonfunctional
-- **External Review Marker**: completed (external_review_state.json @ 2026-06-01T06:00:50)
+- **Branch**: iterate/gitleaks-report-path
+- **Run ID**: iterate-2026-06-05-gitleaks-report-path
+- **Spec**: .shipwright/planning/iterate/2026-06-05-gitleaks-report-path.md
+- **Complexity**: small + `touches_io_boundary` (subprocess → report-file → json parse → normalized findings)
+- **External Review Marker**: stale (predates spec (2026-06-01T06:00:50))
 
 ### Mandatory replay on Resume
 
@@ -47,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/b7-exclude-nonfunctional
-- **Last Commit**: 267c8842 Merge pull request #150 from svenroth-ai/iterate/bloat-marker-worktree-aware
+- **Branch**: iterate/gitleaks-report-path
+- **Last Commit**: e031c30a Merge remote-tracking branch 'origin/main' into iterate/gitleaks-report-path
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,8 +67,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-7f17543a | work_completed | iterate (B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill.) | 2026-06-05 |
 | evt-702f8c5b | work_completed | iterate (Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab)) | 2026-06-05 |
+| evt-bebd144d | work_completed | iterate (gitleaks --report-path - wrote a stray file named - instead of stdout, so the secrets leg silently returned 0 findings everywhere; report now written to a temp file and read back; smoke positive-control converted to ADR-044 CI-gated fail) | 2026-06-05 |
 | evt-2c8f0a52 | work_completed | iterate (Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery) | 2026-06-05 |
 | evt-247909be | work_completed | iterate (Set security.yml.template checkout to fetch-depth: 1 (working-tree only) and correct the misleading diff-aware-secret-scans comment; no scanner reads git history.) | 2026-06-05 |
 | evt-4ceefd02 | work_completed | iterate (C1/C2 detective-realign doc + ledger closeout) | 2026-06-05 |
@@ -74,7 +77,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 100
-- **Last iterate**: change — B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill. (2026-06-05)
+- **Last iterate**: change — Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab) (2026-06-05)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
