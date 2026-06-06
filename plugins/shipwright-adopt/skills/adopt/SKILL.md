@@ -212,9 +212,12 @@ uv run "${CLAUDE_PLUGIN_ROOT}/../../shared/scripts/tools/scaffold_triage_inbox.p
   --project-root <project_root> --json
 ```
 
-Idempotent — writes `.shipwright/triage.jsonl` (schema header),
+Idempotent — writes `.shipwright/triage.jsonl` (schema header — now the
+**tracked** SSoT backlog, re-included by the Step E.6 canonical block's
+`!/.shipwright/triage.jsonl` negation, so it ships in the Step H commit),
 `.shipwright/agent_docs/triage_inbox.md` (empty skeleton), and updates
-`.gitignore` to cover both. Result in `results["triage_inbox"]`.
+`.gitignore` for the `.lock` + GC `.bak` only (self-healing a stale bare
+`triage.jsonl` ignore line). Result in `results["triage_inbox"]`.
 
 Full procedure → [references/step-e16-triage-inbox.md](references/step-e16-triage-inbox.md).
 

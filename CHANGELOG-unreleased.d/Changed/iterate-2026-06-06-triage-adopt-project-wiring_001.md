@@ -1,0 +1,1 @@
+adopt skill docs: correct the triage-inbox scaffold description — triage.jsonl is the tracked SSoT backlog committed in the adopt commit (not gitignored); the scaffolder ignores only the .lock + GC .bak and self-heals a stale bare ignore line

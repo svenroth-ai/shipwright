@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-05 20:06 UTC | Session: 474cb900-eabb-46ef-8f55-83f5fd879d5f | Run: iterate-2026-06-05-triage-track-c2-churn
+> Updated: 2026-06-05 22:07 UTC | Session: 474cb900-eabb-46ef-8f55-83f5fd879d5f | Run: iterate-2026-06-06-triage-adopt-project-wiring
 
-## Recent Changes (111 iterations)
+## Recent Changes (112 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | adopt skill docs: triage.jsonl is tracked, not gitignored (D) | 24/24 |  | docs | 2026-06-05 |
 | change | SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift) | 617/617 |  | compliance | 2026-06-05 |
 | feature | triage_gc tool: machine-churn-only dismissed-pile compaction | 387/387 |  | tooling | 2026-06-05 |
 | change | git-track triage.jsonl: gitignore negation + scaffolder self-heal (C1) | 19/19 |  | infra | 2026-06-05 |
@@ -118,7 +119,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-05 | Unit: 53/53 | Smoke: not_run | (iterate)
+Last run: 2026-06-06 | Unit: 24/24 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-05-triage-track-c2-churn",
-    "date": "2026-06-05",
+    "run_id": "iterate-2026-06-06-triage-adopt-project-wiring",
+    "date": "2026-06-06",
     "unit": {
       "status": "passed",
-      "passed": 53,
-      "total": 53
+      "passed": 24,
+      "total": 24
     },
     "integration": {
       "status": "not_run",
@@ -31,89 +31,15 @@
       "status": "not_run"
     },
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --directory shared --extra dev pytest tests/test_churn_merge.py tests/test_resolve_churn_conflicts.py tests/test_worktree_isolation_lib.py tests/test_check_iterate_isolation.py tests/test_churn_merge_doc_sync.py -q",
-      "tests_run": 53,
+      "surface": "none",
+      "tests_run": 0,
       "exit_code": 0,
-      "justification": "Merge-resolver + leak-guard infra (no web/API/UI). Runner exercises triage dedup/validate (unit) + the resolver in real git merge-conflict repos (no-conflict dedup, --ours conflict reconcile, triage_invalid) + the leak-guard exemption + the CHURN_ALLOWLIST<->doc both-directions congruence. Full shared suite: 2781 passed (see degraded)."
+      "justification": "Docs-only change (adopt SKILL.md + step-e16 reference prose). No runtime surface. Verified no regression: test_skill_references_link.py (7) + test_triage_scaffold.py (17) green; the scaffolder code + tests landed in C1, unchanged here."
     },
     "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "TRIAGE_LOG in CHURN_ALLOWLIST",
-          "disposition": "tested",
-          "evidence": "test_triage_in_churn_allowlist PASSED"
-        },
-        {
-          "behavior": "triage dedup exact-line + no shared-id warning",
-          "disposition": "tested",
-          "evidence": "test_triage_dedup_collapses_identical_lines_only + test_triage_dedup_does_NOT_warn_on_shared_append_status_id PASSED"
-        },
-        {
-          "behavior": "validate_triage_text header/non-JSON/empty/valid",
-          "disposition": "tested",
-          "evidence": "test_triage_validate_flags_missing_header/_non_json_line/_empty_log + _accepts_header_plus_json PASSED"
-        },
-        {
-          "behavior": "resolver dedups triage on no-conflict",
-          "disposition": "tested",
-          "evidence": "test_triage_deduped_and_validated_even_without_conflict PASSED"
-        },
-        {
-          "behavior": "resolver routes triage conflict (--ours + reconcile)",
-          "disposition": "tested",
-          "evidence": "test_triage_routed_in_churn_only_merge PASSED"
-        },
-        {
-          "behavior": "triage_invalid status exit 4 on dropped header",
-          "disposition": "tested",
-          "evidence": "test_triage_invalid_when_header_dropped PASSED"
-        },
-        {
-          "behavior": "leak-guard exempts tracked main-tree triage write",
-          "disposition": "tested",
-          "evidence": "test_detect_leak_ignores_tracked_triage_log PASSED"
-        },
-        {
-          "behavior": "CHURN_ALLOWLIST <-> doc table congruent both directions",
-          "disposition": "tested",
-          "evidence": "test_churn_merge_doc_sync PASSED"
-        },
-        {
-          "behavior": ".gitattributes merge=union (dogfood-only optimization)",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "git union is dogfood-only; the resolver (tested) is the authority since union lacks dedup"
-        },
-        {
-          "behavior": "hard triage conflict UNIONS both sides (no --ours data loss) [Codex BLOCKER fix]",
-          "disposition": "tested",
-          "evidence": "test_triage_conflict_unions_both_sides PASSED"
-        },
-        {
-          "behavior": "validator rejects orphan status (lost-append) + duplicate append [Codex HIGH fix]",
-          "disposition": "tested",
-          "evidence": "test_triage_validate_flags_orphan_status + _flags_duplicate_append + _accepts_append_then_status PASSED"
-        }
-      ],
-      "counts": {
-        "testable": 10,
-        "tested": 10,
-        "untestable": 1,
-        "untested_testable": 0
-      },
-      "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
-      }
+      "status": "n/a",
+      "justification": "Docs-only adopt-skill wording correction; no new/changed runtime behavior to test. The scaffolder code and its tests landed in sub-iterate C1 and remain green (17 scaffold + 7 link tests verified)."
     },
-    "degraded": [
-      {
-        "condition": "Full shared suite = 2781 passed / 23 skipped / 1 failed. The 1 failure is the same PRE-EXISTING local-only test_architecture_md_reflects_arch_impact (reads gitignored main-tree decision-drops; CI-green). In this worktree (off origin/main) it lists A/B/C1's drops \u2014 whose architecture.md entries ship in C1's PR #155 \u2014 plus the 4 non-campaign drifts tracked as trg-b61abfab. C2 itself flags NO architecture-impact (the campaign's arch narrative lives in C1's architecture.md block), so it adds nothing to the list.",
-        "impact": "none-on-c2",
-        "tracked": "trg-b61abfab"
-      }
-    ]
+    "degraded": []
   }
 }
