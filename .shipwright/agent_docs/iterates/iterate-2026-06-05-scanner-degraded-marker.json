@@ -1,0 +1,12 @@
+{
+  "run_id": "iterate-2026-06-05-scanner-degraded-marker",
+  "date": "2026-06-05T20:27:13.275170Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/scanner-degraded-marker",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-06-05-scanner-degraded-marker.md",
+  "intent": "change",
+  "spec_impact": "none",
+  "adr": "iterate-2026-06-05-scanner-degraded-marker"
+}

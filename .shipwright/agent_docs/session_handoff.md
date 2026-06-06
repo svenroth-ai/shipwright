@@ -1,8 +1,8 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-06-triage-adopt-project-wiring"
+run_id: "iterate-2026-06-05-scanner-degraded-marker"
 phase: "iterate"
-reason: "iterate: adopt wiring docs (D)"
+reason: "regenerate derived snapshots after main merge for #157"
 timestamp: "2026-06-05T22:07:25.140368+00:00"
 ---
 
@@ -12,25 +12,28 @@ timestamp: "2026-06-05T22:07:25.140368+00:00"
 
 ## Session Info
 
-- **Session ID**: 474cb900-eabb-46ef-8f55-83f5fd879d5f
+- **Session ID**: dd680100-0ee5-44a7-bb41-370a09796aa4
 - **Timestamp**: 2026-06-05 22:07:25 UTC
-- **Reason**: iterate: adopt wiring docs (D)
+- **Reason**: regenerate derived snapshots after main merge for #157
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-05-triage-track-c2-churn
-- **Date**: 2026-06-05T20:06:44.090817Z
+- **Run ID**: iterate-2026-06-06-triage-adopt-project-wiring
+- **Date**: 2026-06-05T22:07:26.407701Z
 - **Type**: change
-- **Complexity**: small
-- **Branch**: iterate/triage-track-c2
-- **ADR**: iterate-2026-06-05-triage-track-c2-churn
+- **Complexity**: trivial
+- **Branch**: iterate/triage-adopt-wiring
+- **ADR**: iterate-2026-06-06-triage-adopt-project-wiring
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/campaigns/2026-06-05-track-triage-jsonl/sub-iterates/C2-triage-churn-merge-safety.md
+- **Spec**: .shipwright/planning/iterate/campaigns/2026-06-05-track-triage-jsonl/sub-iterates/D-adopt-project-wiring.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/triage-adopt-wiring
-- **External Review Marker**: completed (external_review_state.json @ 2026-06-01T06:00:50)
+- **Branch**: iterate/scanner-degraded-marker
+- **Run ID**: iterate-2026-06-05-scanner-degraded-marker
+- **Spec**: .shipwright/planning/iterate/2026-06-05-scanner-degraded-marker.md
+- **Complexity**: medium + `touches_io_boundary` (subprocess stdout/report-file → `json.loads` → findings; `findings.json` config emission read by the ci gate)
+- **External Review Marker**: stale (predates spec (2026-06-01T06:00:50))
 
 ### Mandatory replay on Resume
 
@@ -48,8 +51,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-adopt-wiring
-- **Last Commit**: 359e1edb Merge #156: triage merge-safety + leak-guard exemption (campaign C2)
+- **Branch**: iterate/scanner-degraded-marker
+- **Last Commit**: 5b2797d5 Merge origin/main into iterate/scanner-degraded-marker
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -74,7 +77,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 112
+- **Total work events**: 113
 - **Last iterate**: change — adopt skill docs: triage.jsonl is tracked, not gitignored (D) (2026-06-05)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 

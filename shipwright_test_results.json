@@ -1,16 +1,19 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-06-triage-adopt-project-wiring",
-    "date": "2026-06-06",
+    "run_id": "iterate-2026-06-05-scanner-degraded-marker",
+    "date": "2026-06-05",
+    "intent": "change",
+    "complexity": "medium",
     "unit": {
       "status": "passed",
-      "passed": 24,
-      "total": 24
+      "passed": 348,
+      "total": 351,
+      "note": "3 real-binary smoke skips (binary missing locally)"
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 141,
+      "total": 141
     },
     "pgtap": {
       "status": "not_run",
@@ -18,12 +21,12 @@
       "total": 0
     },
     "e2e": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
@@ -31,14 +34,76 @@
       "status": "not_run"
     },
     "surface_verification": {
-      "surface": "none",
-      "tests_run": 0,
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest plugins/shipwright-security/tests -q  +  uv run pytest integration-tests -q  +  boundary round-trip probe (degraded findings.json -> gate decision)",
+      "tests_run": 348,
       "exit_code": 0,
-      "justification": "Docs-only change (adopt SKILL.md + step-e16 reference prose). No runtime surface. Verified no regression: test_skill_references_link.py (7) + test_triage_scaffold.py (17) green; the scaffolder code + tests landed in C1, unchanged here."
+      "justification": "CLI/CI-only change to the OSS scanner backend + the security CI gate; no web/API/UI surface. The cross-tool contract (oss_backend -> findings.json -> security.yml jq gate) is verified by the executed producer->serialize->gate round-trip probe plus integration-tests/test_ci_self_gating.py."
     },
     "test_completeness": {
-      "status": "n/a",
-      "justification": "Docs-only adopt-skill wording correction; no new/changed runtime behavior to test. The scaffolder code and its tests landed in sub-iterate C1 and remain green (17 scaffold + 7 link tests verified)."
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "_run_tool records a marker on every None-branch (nonzero_exit/empty_output/timeout/invalid_json/missing_binary); findings stays []",
+          "disposition": "tested",
+          "evidence": "test_oss_backend.py::TestRunToolScanErrorReasons::* + test_every_reason_is_in_closed_vocab (8 tests)"
+        },
+        {
+          "behavior": "OSSBackend.scan exposes scan_errors; empty on clean, populated on a degraded leg, reset between calls; other legs' findings survive",
+          "disposition": "tested",
+          "evidence": "test_oss_backend.py::TestOSSBackendScanErrors::* (3 tests)"
+        },
+        {
+          "behavior": "build_config emits degraded(bool)+scan_errors; degraded independent of findings count",
+          "disposition": "tested",
+          "evidence": "test_scan_cli.py::TestBuildConfigDegraded::* (3 tests)"
+        },
+        {
+          "behavior": "scan.py returns exit 2 when degraded (before --fail-on), writes marker; clean still 0; getattr-default for no-attr backends",
+          "disposition": "tested",
+          "evidence": "test_scan_cli.py::TestDegradedScanCLI::* (5 tests)"
+        },
+        {
+          "behavior": "degraded/scan_errors round-trip through --input-from-cache (SARIF re-read keeps failing closed)",
+          "disposition": "tested",
+          "evidence": "test_scan_cli.py::TestDegradedScanCLI::test_cache_roundtrips_degraded"
+        },
+        {
+          "behavior": "run_scan_and_report embeds degraded in latest.{md,json} + exits 1; clean exits 0",
+          "disposition": "tested",
+          "evidence": "test_degraded_scan_surfacing.py::TestRunScanReportDegraded::* (2 tests)"
+        },
+        {
+          "behavior": "generate_security_report renders a degraded banner (standard + pr-mode) + json sidecar degraded; clean has none",
+          "disposition": "tested",
+          "evidence": "test_degraded_scan_surfacing.py::TestGenerateReportDegradedBanner::* (4 tests)"
+        },
+        {
+          "behavior": "security.yml critical-gate reads findings.json .degraded and is coupled to exit 1 (fail closed)",
+          "disposition": "tested",
+          "evidence": "test_degraded_scan_surfacing.py::TestSecurityWorkflowDegradedGuard::* (2 tests)"
+        },
+        {
+          "behavior": "end-to-end producer->findings.json->gate: degraded-0-findings BLOCKS, clean-0-findings PASSES",
+          "disposition": "tested",
+          "evidence": "boundary round-trip probe (build_config->json.dumps->re-read->gate decision), executed in Build"
+        },
+        {
+          "behavior": "real-binary degraded path on Linux CI (gitleaks/semgrep/trivy fatal)",
+          "disposition": "untestable",
+          "evidence": "exercised by this PR's CI security.yml run; not unit-mockable",
+          "reason_code": "requires-external-nondeterministic-service"
+        }
+      ],
+      "counts": {
+        "untested_testable": 0,
+        "tested": 9,
+        "untestable": 1
+      },
+      "enumeration_basis": {
+        "acs": 10,
+        "covered_acs": 10
+      }
     },
     "degraded": []
   }

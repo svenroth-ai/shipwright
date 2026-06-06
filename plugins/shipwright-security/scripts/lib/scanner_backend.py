@@ -91,6 +91,17 @@ class ScannerBackend(ABC):
     capabilities: set[str]      # e.g. {"sast", "sca", "secrets"}
     requires_cloud: bool
 
+    # Optional degraded-scan channel. A backend MAY (re)populate this in
+    # ``scan()`` with one record per degraded leg — a scanner that was invoked
+    # but produced no parseable output (fatal / timeout / truncated report) —
+    # shaped ``{"scanner": str, "reason": str, "detail": str}``. It is the
+    # control-plane counterpart to the data-plane findings list: a degraded
+    # leg must NOT read as a clean "0 findings" scan. Consumers read it via
+    # ``getattr(backend, "scan_errors", [])`` so backends that never set it
+    # (and test mocks) default to "no degradation". Annotation only — no
+    # mutable class default.
+    scan_errors: list[dict[str, Any]]
+
     @abstractmethod
     def is_configured(self) -> bool:
         """Return True if this backend's prerequisites are met."""

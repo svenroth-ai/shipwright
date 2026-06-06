@@ -88,10 +88,16 @@ no-op outside PR events; SARIF still uploads on `workflow_dispatch` and
 > **Critical gate fails closed.** The "Check for critical findings" step
 > aborts the run if `findings.json` is **absent or unparseable** (a
 > scanner crash), instead of reading it as "0 criticals" and passing
-> green. `prompt_risks.json` is a softer signal: its absence warns loudly
-> but does not block. This invariant is enforced going forward by the
-> CI-gate guard (`shared/scripts/tools/check_ci_gate_coverage.py`,
-> check (c)).
+> green. It also aborts on a **degraded scan** — when `findings.json`
+> carries `"degraded": true` because a scanner leg (Gitleaks / Semgrep /
+> Trivy) fataled or produced a truncated report. Such a leg yields `[]`
+> findings, so the critical count would otherwise read 0 and pass green
+> (same failure class as the `--report-path -` secret-scanner regression,
+> iterate-2026-06-05-gitleaks-report-path); the `scan_errors` array names
+> the failed scanner + reason. `prompt_risks.json` is a softer signal: its
+> absence warns loudly but does not block. This invariant is enforced
+> going forward by the CI-gate guard
+> (`shared/scripts/tools/check_ci_gate_coverage.py`, check (c)).
 
 ### Activation — turn on auto-triggers
 
