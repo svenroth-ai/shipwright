@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-05-triage-track-c2-churn",
+  "date": "2026-06-05T20:06:44.090817Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/triage-track-c2",
+  "spec": ".shipwright/planning/iterate/campaigns/2026-06-05-track-triage-jsonl/sub-iterates/C2-triage-churn-merge-safety.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-05-triage-track-c2-churn"
+}

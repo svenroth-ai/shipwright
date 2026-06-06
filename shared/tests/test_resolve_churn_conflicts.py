@@ -1,9 +1,10 @@
-"""AC-3/AC-4/AC-5 — churn-conflict resolver.
+"""AC-3/AC-4/AC-5 — churn-conflict resolver (git integration).
 
-Pure-logic unit tests (allowlist / classify / dedup / validate) plus git
-integration tests in real merge-conflict repos. Regeneration is tested with the
-canonical ``finalize_iterate`` producers monkeypatched (the real regeneration is
-exercised end-to-end by the iterate's own dogfood, AC-10).
+Real merge-conflict repos exercise ``complete_merge`` end-to-end (events +
+triage reconcile, allowlist gate, --ours/--theirs resolution). The pure
+allowlist/classify/dedup/validate unit tests live in ``test_churn_merge.py``.
+Regeneration is tested with the canonical ``finalize_iterate`` producers
+monkeypatched (the real regeneration is dogfooded end-to-end, AC-10).
 """
 
 from __future__ import annotations
@@ -16,71 +17,12 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
-from lib.churn_merge import (  # noqa: E402
-    CHURN_ALLOWLIST,
-    classify,
-    dedup_event_lines,
-    validate_events_text,
-)
+from lib.churn_merge import TRIAGE_LOG  # noqa: E402
 from tools import resolve_churn_conflicts as rcc  # noqa: E402
 
+# Pure allowlist/classify/dedup/validate unit tests live in test_churn_merge.py.
 
-# --------------------------------------------------------------------------- #
-# pure logic                                                                  #
-# --------------------------------------------------------------------------- #
-
-def test_classify_blocks_source_allows_churn() -> None:
-    resolvable, blocking = classify(
-        [
-            ".shipwright/compliance/dashboard.md",
-            "shipwright_events.jsonl",
-            "shipwright_test_results.json",
-            "src/app.py",
-            "shared/scripts/tools/foo.py",
-        ]
-    )
-    assert "src/app.py" in blocking and "shared/scripts/tools/foo.py" in blocking
-    assert ".shipwright/compliance/dashboard.md" in resolvable
-    assert "shipwright_events.jsonl" in resolvable
-
-
-def test_architecture_md_is_NOT_allowlisted_so_it_blocks() -> None:
-    # Curated prose must reach a human (folds external-review G4/O1).
-    assert ".shipwright/agent_docs/architecture.md" not in CHURN_ALLOWLIST
-    resolvable, blocking = classify([".shipwright/agent_docs/architecture.md"])
-    assert blocking == [".shipwright/agent_docs/architecture.md"]
-    assert resolvable == []
-
-
-def test_classify_normalises_backslash_paths() -> None:
-    resolvable, blocking = classify([r".shipwright\compliance\sbom.md"])
-    assert resolvable == [".shipwright/compliance/sbom.md"]
-    assert blocking == []
-
-
-def test_dedup_collapses_byte_identical_lines_only() -> None:
-    out, warn = dedup_event_lines(['{"id":"a"}', '{"id":"a"}', '{"id":"b"}', ""])
-    assert out == ['{"id":"a"}', '{"id":"b"}']
-    assert warn == []
-
-
-def test_dedup_keeps_both_on_id_collision_and_warns() -> None:
-    # Two DISTINCT lines sharing an evt id: never drop, but warn (G2/O6).
-    out, warn = dedup_event_lines(['{"id":"x","ts":1}', '{"id":"x","ts":2}'])
-    assert len(out) == 2
-    assert warn and "x" in warn[0]
-
-
-def test_validate_flags_non_json_line() -> None:
-    errs = validate_events_text('{"ok":1}\nNOT JSON\n')
-    assert any("not valid JSON" in e for e in errs)
-
-
-def test_validate_requires_run_event_when_run_id_given() -> None:
-    present = '{"type":"work_completed","adr_id":"iterate-x","id":"e1"}\n'
-    assert validate_events_text(present, require_run_id="iterate-x") == []
-    absent = '{"type":"phase_completed","id":"e2"}\n'
-    assert validate_events_text(absent, require_run_id="iterate-x")
+_TRIAGE_HEADER = '{"v":1,"schema":"triage","created":"2026-06-05T00:00:00Z"}'
 
 
 # --------------------------------------------------------------------------- #
@@ -195,6 +137,61 @@ def test_events_invalid_when_run_event_missing(tmp_path: Path) -> None:
     assert result.status == "events_invalid"
     assert result.exit_code == 4
     assert any("absent" in e for e in result.errors)
+
+
+def test_triage_deduped_and_validated_even_without_conflict(tmp_path: Path) -> None:
+    _git(tmp_path, "init", "-b", "main")
+    log = tmp_path / ".shipwright" / "triage.jsonl"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    dup = '{"event":"append","id":"trg-a"}'
+    log.write_text(f"{_TRIAGE_HEADER}\n{dup}\n{dup}\n", encoding="utf-8")  # dup twice
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-m", "triage")
+
+    result = rcc.complete_merge(tmp_path, run_id="iterate-x")
+
+    text = log.read_text(encoding="utf-8")
+    assert text.count("trg-a") == 1                 # exact-line dedup ran
+    assert "schema" in text.splitlines()[0]          # header preserved
+    assert result.status in ("resolved", "clean")
+
+
+def test_triage_conflict_unions_both_sides(tmp_path: Path) -> None:
+    """Codex BLOCKER fix: a hard triage.jsonl conflict UNIONS both sides (keeps
+    ours AND theirs items). Target projects lack the merge=union driver, so the
+    old `--ours` path would silently drop the other side's backlog items.
+    """
+    merge = _make_conflict_repo(
+        tmp_path,
+        {".shipwright/triage.jsonl": (
+            f"{_TRIAGE_HEADER}\n",
+            f'{_TRIAGE_HEADER}\n{{"event":"append","id":"trg-ours"}}\n',
+            f'{_TRIAGE_HEADER}\n{{"event":"append","id":"trg-theirs"}}\n',
+        )},
+    )
+    assert merge.returncode != 0
+    result = rcc.complete_merge(tmp_path, run_id=None)
+    assert result.status == "resolved"
+    assert rcc.conflicted_paths(tmp_path) == []
+    assert TRIAGE_LOG in result.resolved
+    text = (tmp_path / ".shipwright" / "triage.jsonl").read_text(encoding="utf-8")
+    assert "trg-ours" in text and "trg-theirs" in text  # NEITHER side dropped
+    assert text.count("schema") == 1                    # header deduped to one
+
+
+def test_triage_invalid_when_header_dropped(tmp_path: Path) -> None:
+    _git(tmp_path, "init", "-b", "main")
+    log = tmp_path / ".shipwright" / "triage.jsonl"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    log.write_text('{"event":"append","id":"trg-1"}\n', encoding="utf-8")  # no header
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-m", "triage")
+
+    result = rcc.complete_merge(tmp_path, run_id=None)
+
+    assert result.status == "triage_invalid"
+    assert result.exit_code == 4
+    assert any("header" in e for e in result.errors)
 
 
 def test_regenerate_invokes_canonical_producers_and_stages(tmp_path: Path, monkeypatch) -> None:

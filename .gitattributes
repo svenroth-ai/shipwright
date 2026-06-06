@@ -11,3 +11,11 @@
 # commit (so .gitattributes is present in its tree) before `union` applies to it.
 # The resolver (resolve_churn_conflicts.py) validates the merged log regardless.
 shipwright_events.jsonl merge=union
+
+# .shipwright/triage.jsonl is the same shape (append-only JSONL backlog, tracked
+# since campaign 2026-06-05-track-triage-jsonl). `union` is DOGFOODING-ONLY: this
+# .gitattributes is never written to target projects, which rely solely on the
+# resolver's _reconcile_triage (exact-line dedup + header/JSON validation). Note
+# `union` is line-union WITHOUT dedup, so the resolver remains the authority even
+# here (it dedups the union'd log post-merge).
+.shipwright/triage.jsonl merge=union

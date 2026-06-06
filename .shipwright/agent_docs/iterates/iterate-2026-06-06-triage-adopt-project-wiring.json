@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-06-triage-adopt-project-wiring",
+  "date": "2026-06-05T22:07:26.407701Z",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/triage-adopt-wiring",
+  "spec": ".shipwright/planning/iterate/campaigns/2026-06-05-track-triage-jsonl/sub-iterates/D-adopt-project-wiring.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-06-triage-adopt-project-wiring"
+}

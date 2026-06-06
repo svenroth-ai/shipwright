@@ -270,9 +270,9 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_sbom_generator.py",
       "limit": 300,
-      "current": 787,
-      "state": "grandfathered",
-      "adr": null
+      "current": 815,
+      "state": "exception",
+      "adr": "ADR-098"
     },
     {
       "path": "plugins/shipwright-compliance/tests/test_test_evidence.py",
@@ -1050,6 +1050,13 @@
       "current": 372,
       "state": "grandfathered",
       "adr": null
+    },
+    {
+      "path": "shared/scripts/tools/resolve_churn_conflicts.py",
+      "limit": 300,
+      "current": 318,
+      "state": "exception",
+      "adr": "ADR-099"
     }
   ]
 }

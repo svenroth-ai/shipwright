@@ -1,0 +1,1 @@
+make .shipwright/triage.jsonl merge-safe + leak-guard-exempt like shipwright_events.jsonl: CHURN_ALLOWLIST + triage-specific dedup (no false id-collision warning) + validator + resolver reconcile + .gitattributes union (dogfood) + the events-style main-tree write exemption

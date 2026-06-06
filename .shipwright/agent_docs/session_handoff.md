@@ -1,39 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-05-scanner-degraded-marker"
+run_id: "iterate-2026-06-06-triage-adopt-project-wiring"
 phase: "iterate"
-reason: "iterate finalization"
-timestamp: "2026-06-05T20:10:57.844941+00:00"
+reason: "iterate: adopt wiring docs (D)"
+timestamp: "2026-06-05T22:07:25.140368+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-05 20:10:57 UTC
+> Auto-generated 2026-06-05 22:07:25 UTC
 
 ## Session Info
 
-- **Session ID**: dd680100-0ee5-44a7-bb41-370a09796aa4
-- **Timestamp**: 2026-06-05 20:10:57 UTC
-- **Reason**: iterate finalization
+- **Session ID**: 474cb900-eabb-46ef-8f55-83f5fd879d5f
+- **Timestamp**: 2026-06-05 22:07:25 UTC
+- **Reason**: iterate: adopt wiring docs (D)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-05-a5-gate-behavioral-probe
-- **Date**: 2026-06-05T12:12:18.666645Z
+- **Run ID**: iterate-2026-06-05-triage-track-c2-churn
+- **Date**: 2026-06-05T20:06:44.090817Z
 - **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/a5-gate-behavioral-probe
-- **ADR**: iterate-2026-06-05-a5-gate-behavioral-probe
+- **Complexity**: small
+- **Branch**: iterate/triage-track-c2
+- **ADR**: iterate-2026-06-05-triage-track-c2-churn
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-05-a5-gate-behavioral-probe.md
+- **Spec**: .shipwright/planning/iterate/campaigns/2026-06-05-track-triage-jsonl/sub-iterates/C2-triage-churn-merge-safety.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/scanner-degraded-marker
-- **Run ID**: iterate-2026-06-05-scanner-degraded-marker
-- **Spec**: .shipwright/planning/iterate/2026-06-05-scanner-degraded-marker.md
-- **Complexity**: medium + `touches_io_boundary` (subprocess stdout/report-file → `json.loads` → findings; `findings.json` config emission read by the ci gate)
-- **External Review Marker**: stale (predates spec (2026-06-01T06:00:50))
+- **Branch**: iterate/triage-adopt-wiring
+- **External Review Marker**: completed (external_review_state.json @ 2026-06-01T06:00:50)
 
 ### Mandatory replay on Resume
 
@@ -51,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/scanner-degraded-marker
-- **Last Commit**: 86ea7a68 Merge pull request #152 from svenroth-ai/iterate/a5-gate-behavioral-probe
+- **Branch**: iterate/triage-adopt-wiring
+- **Last Commit**: 359e1edb Merge #156: triage merge-safety + leak-guard exemption (campaign C2)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-dab53fc5 | work_completed | iterate (Propagate degraded scanner legs (fatal/empty/truncated) via a scan_errors side-channel so the threshold/report/CI-gate layers fail closed instead of treating a dead leg as a clean 0-findings scan.) | 2026-06-05 |
-| evt-7f17543a | work_completed | iterate (B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill.) | 2026-06-05 |
-| evt-702f8c5b | work_completed | iterate (Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab)) | 2026-06-05 |
-| evt-bebd144d | work_completed | iterate (gitleaks --report-path - wrote a stray file named - instead of stdout, so the secrets leg silently returned 0 findings everywhere; report now written to a temp file and read back; smoke positive-control converted to ADR-044 CI-gated fail) | 2026-06-05 |
-| evt-2c8f0a52 | work_completed | iterate (Enforce the FR-gate on the finalize write-path + accept same-event D3 delivery) | 2026-06-05 |
+| evt-731a06cd | work_completed | iterate (adopt skill docs: triage.jsonl is tracked, not gitignored (D)) | 2026-06-05 |
+| evt-7e3e2dc7 | work_completed | iterate (SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift)) | 2026-06-05 |
+| evt-64ee4ee6 | work_completed | iterate (triage_gc tool: machine-churn-only dismissed-pile compaction) | 2026-06-05 |
+| evt-17f29a61 | work_completed | iterate (git-track triage.jsonl: gitignore negation + scaffolder self-heal (C1)) | 2026-06-05 |
+| evt-a27ad620 | work_completed | iterate (triage.jsonl merge-safety + leak-guard exemption (like events) — C2) | 2026-06-05 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 108
-- **Last iterate**: change — Propagate degraded scanner legs (fatal/empty/truncated) via a scan_errors side-channel so the threshold/report/CI-gate layers fail closed instead of treating a dead leg as a clean 0-findings scan. (2026-06-05)
+- **Total work events**: 112
+- **Last iterate**: change — adopt skill docs: triage.jsonl is tracked, not gitignored (D) (2026-06-05)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

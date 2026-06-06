@@ -1,0 +1,1 @@
+git-track .shipwright/triage.jsonl (the triage backlog SSoT): canonical gitignore negation in template + framework, and the triage scaffolder self-heals a stale bare ignore line so already-adopted repos track it on re-scaffold (.lock stays ignored)

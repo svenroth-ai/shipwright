@@ -25,6 +25,9 @@
 !/.shipwright/compliance/
 !/.shipwright/designs/
 !/.shipwright/planning/
+# triage.jsonl is the tracked SSoT backlog (mirrors shipwright_events.jsonl); the
+# .lock + .bak stay ignored by the /.shipwright/* wildcard above (negation is exact).
+!/.shipwright/triage.jsonl
 # Re-exclude transient / internal / generated content inside the doc homes:
 /.shipwright/adopt/backups/
 /.shipwright/adopt/screenshots/

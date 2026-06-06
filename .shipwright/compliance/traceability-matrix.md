@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-05T20:10:57.844941+00:00
+Generated: 2026-06-05T22:07:25.140368+00:00
 
 ## Requirements Coverage
 
@@ -132,7 +132,11 @@ Generated: 2026-06-05T20:10:57.844941+00:00
 | gitleaks --report-path - wrote a stray file named - instead of stdout, so the secrets leg silently returned 0 findings everywhere; report now written to a temp file and read back; smoke positive-control converted to ADR-044 CI-gated fail | iterate | bug |  | 320/320 | — | 2026-06-05 |
 | Make the bloat marker recorder + Stop gate worktree-aware: strip the .worktrees/<slug>/ prefix for the baseline lookup so a worktree iterate growing an already-baselined file (ADR+bump) is not mis-classified crossing and does not false-block Stop (trg-305e2aab) | iterate | change |  | 9/9 | — | 2026-06-05 |
 | B7 Rule E: exclude non-functional Conventional-Commit types (build/chore/ci/docs/style/test) from B7 by default (configurable); functional types still flagged. Supersedes the narrow Rule D + kills the ci/docs/chore backfill treadmill. | iterate | change |  | 44/44 | — | 2026-06-05 |
-| Propagate degraded scanner legs (fatal/empty/truncated) via a scan_errors side-channel so the threshold/report/CI-gate layers fail closed instead of treating a dead leg as a clean 0-findings scan. | iterate | change |  | — | — | 2026-06-05 |
+| triage.jsonl merge-safety + leak-guard exemption (like events) — C2 | iterate | change |  | 49/49 | — | 2026-06-05 |
+| git-track triage.jsonl: gitignore negation + scaffolder self-heal (C1) | iterate | change |  | 19/19 | — | 2026-06-05 |
+| triage_gc tool: machine-churn-only dismissed-pile compaction | iterate | feature |  | 387/387 | — | 2026-06-05 |
+| SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift) | iterate | change |  | 617/617 | — | 2026-06-05 |
+| adopt skill docs: triage.jsonl is tracked, not gitignored (D) | iterate | change |  | 24/24 | — | 2026-06-05 |
 
 ## Coverage Summary
 
@@ -140,7 +144,7 @@ Generated: 2026-06-05T20:10:57.844941+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 108 |
+| Iterate changes | 112 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
