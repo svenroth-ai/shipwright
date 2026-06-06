@@ -1,16 +1,16 @@
 # Commit Change Log
 
 Generated: 2026-06-05T22:07:25.140368+00:00
-Total commits: 862
+Total commits: 865
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 252
-    "fix" : 239
-    "chore" : 168
-    "docs" : 117
+    "fix" : 240
+    "chore" : 169
+    "docs" : 118
     "refactor" : 50
     "test" : 21
     "ci" : 7
@@ -277,7 +277,7 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 239 commits
+### Fixes (fix) — 240 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
@@ -289,6 +289,7 @@ pie title Commit Types
 | 2026-06-05 | triage | scaffolder fallback also ignores triage.jsonl.bak (C1, Codex LOW) | 39ddc7c35410 |
 | 2026-06-05 | triage | address Codex code-review findings on triage_gc (B) | 6334d902012f |
 | 2026-06-05 | triage | address Codex code-review findings on the churn resolver (C2) | b7559a2ec639 |
+| 2026-06-05 | security | fail closed on a degraded scanner leg via scan_errors marker | 4ec64a29fa47 |
 | 2026-06-05 | compliance | SBOM cluster dedup-key = signature + manifest_type only | 53ccf300c5b2 |
 | 2026-06-05 | compliance | B7 excludes non-functional commit types (Rule E) | a611fc8dd9fc |
 | 2026-06-05 | hooks | make the bloat marker + Stop gate worktree-aware (trg-305e2aab) | 9282ef267871 |
@@ -521,13 +522,14 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 168 commits
+### Chores (chore) — 169 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | 55e50da74d8d |
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | 1ad6cd3ae78f |
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | c0b3685ffcfc |
+| 2026-06-05 | iterate | record spec_impact=none + adr ref on finalization | c1376cb0ff6b |
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | 10cc1e661386 |
 | 2026-06-05 | iterate | stamp adr ref + spec_impact_justification on A5.8 finalization | f70e2674faf8 |
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | fa051a6abd76 |
@@ -694,10 +696,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 117 commits
+### Documentation (docs) — 118 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-06 | adopt | triage.jsonl is tracked, not gitignored (campaign D) | 7da2535718ef |
 | 2026-06-05 | triage | reconcile B spec with the 8+8 machine-set (external review) | 3d78dcfbb726 |
 | 2026-06-05 | campaign | normalize C1/C2 status to `complete`; C3 in review (#147) | 3593093e0851 |
 | 2026-06-05 | compliance | document merged C1/C2 detective-audit realign + mark campaign rows done | 5b61555b6c9a |
@@ -931,7 +934,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 862 |
+| Total commits | 865 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 862 |
+| Human-authored commits | 865 |
 
