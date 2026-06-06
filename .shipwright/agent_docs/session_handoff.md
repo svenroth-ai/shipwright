@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-05-scanner-degraded-marker"
+run_id: "iterate-2026-06-06-arch-drift-detector"
 phase: "iterate"
-reason: "regenerate derived snapshots after main merge for #157"
-timestamp: "2026-06-05T22:07:25.140368+00:00"
+reason: "F5 content-oracle + canon F11 architecture-doc gate + back-fill"
+timestamp: "2026-06-06T07:03:38.252014+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-05 22:07:25 UTC
+> Auto-generated 2026-06-06 07:03:38 UTC
 
 ## Session Info
 
-- **Session ID**: dd680100-0ee5-44a7-bb41-370a09796aa4
-- **Timestamp**: 2026-06-05 22:07:25 UTC
-- **Reason**: regenerate derived snapshots after main merge for #157
+- **Session ID**: d7610364-2946-422f-8141-b3f29bcbbf7e
+- **Timestamp**: 2026-06-06 07:03:38 UTC
+- **Reason**: F5 content-oracle + canon F11 architecture-doc gate + back-fill
 
 ## Last Iterate
 
@@ -29,10 +29,9 @@ timestamp: "2026-06-05T22:07:25.140368+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/scanner-degraded-marker
-- **Run ID**: iterate-2026-06-05-scanner-degraded-marker
-- **Spec**: .shipwright/planning/iterate/2026-06-05-scanner-degraded-marker.md
-- **Complexity**: medium + `touches_io_boundary` (subprocess stdout/report-file → `json.loads` → findings; `findings.json` config emission read by the ci gate)
+- **Branch**: iterate/arch-drift-detector
+- **Spec**: .shipwright/planning/iterate/2026-06-06-arch-drift-detector.md
+- **Complexity**: medium (governance-sensitive: compliance gate behavior + a
 - **External Review Marker**: stale (predates spec (2026-06-01T06:00:50))
 
 ### Mandatory replay on Resume
@@ -51,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/scanner-degraded-marker
-- **Last Commit**: 5b2797d5 Merge origin/main into iterate/scanner-degraded-marker
+- **Branch**: iterate/arch-drift-detector
+- **Last Commit**: 9962ffef Merge #157: fail closed on a degraded scanner leg (scan_errors marker)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -68,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-277671b1 | work_completed | iterate (F5 architecture-drift detector switched from a git-history oracle (dead on gitignored drops) to content reconciliation (incl. convention); new canon/blocking F11 gate check_architecture_documented sharing one oracle (shared/scripts/lib/architecture_doc.py); dead check_architecture_reviewed + run_cross_artifact_checks removed; 5 orphan architecture.md entries back-filled.) | 2026-06-06 |
 | evt-731a06cd | work_completed | iterate (adopt skill docs: triage.jsonl is tracked, not gitignored (D)) | 2026-06-05 |
 | evt-7e3e2dc7 | work_completed | iterate (SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift)) | 2026-06-05 |
 | evt-64ee4ee6 | work_completed | iterate (triage_gc tool: machine-churn-only dismissed-pile compaction) | 2026-06-05 |
 | evt-17f29a61 | work_completed | iterate (git-track triage.jsonl: gitignore negation + scaffolder self-heal (C1)) | 2026-06-05 |
-| evt-a27ad620 | work_completed | iterate (triage.jsonl merge-safety + leak-guard exemption (like events) — C2) | 2026-06-05 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 113
-- **Last iterate**: change — adopt skill docs: triage.jsonl is tracked, not gitignored (D) (2026-06-05)
+- **Total work events**: 114
+- **Last iterate**: change — F5 architecture-drift detector switched from a git-history oracle (dead on gitignored drops) to content reconciliation (incl. convention); new canon/blocking F11 gate check_architecture_documented sharing one oracle (shared/scripts/lib/architecture_doc.py); dead check_architecture_reviewed + run_cross_artifact_checks removed; 5 orphan architecture.md entries back-filled. (2026-06-06)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

@@ -29,6 +29,14 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[2]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.architecture_doc import (  # noqa: E402
+    NULL_IMPACTS,
+    REAL_IMPACTS,
+    corrupt_for_run,
+    records_for_run,
+    run_id_documented,
+    scan_drops,
+)
 from lib.events_log import resolve_events_path, resolve_main_repo_root  # noqa: E402
 from lib.iterate_entry import (  # noqa: E402
     MIGRATION_QUARANTINED_COUNT_KEY,
@@ -490,40 +498,6 @@ def _freshness_mtime_reference(project_root: Path, run_id: str) -> float | None:
     if cfg.exists():
         return cfg.stat().st_mtime
     return None
-
-
-def check_architecture_reviewed(
-    project_root: Path,
-    run_id: str,
-) -> CheckResult:
-    """Non-canon warning: architecture.md may need update after structural changes."""
-    name = "architecture.md reviewed"
-    entry = find_entry_by_run_id(project_root, run_id)
-    if not entry:
-        return CheckResult(name, None, "run_id not in history", severity=Severity.SKIPPED.value)
-
-    intent = entry.get("intent", entry.get("type", ""))
-    if intent in ("bug", "fix"):
-        return CheckResult(name, True, f"intent={intent}, architecture update unlikely")
-
-    arch = project_root / ".shipwright" / "agent_docs" / "architecture.md"
-    if not arch.exists():
-        return CheckResult(
-            name, False, "architecture.md missing",
-            severity=Severity.WARNING.value,
-        )
-
-    reference_mtime = _freshness_mtime_reference(project_root, run_id)
-    if reference_mtime is None:
-        return CheckResult(name, None, "no iterate entry file or run_config", severity=Severity.SKIPPED.value)
-    if arch.stat().st_mtime >= reference_mtime:
-        return CheckResult(name, True, "architecture.md is fresh")
-
-    return CheckResult(
-        name, False,
-        f"architecture.md may need update (intent={intent}, arch older than iterate entry)",
-        severity=Severity.WARNING.value,
-    )
 
 
 def check_conventions_reviewed(
@@ -1025,6 +999,78 @@ def check_spec_impact_recorded(
     )
 
 
+def check_architecture_documented(project_root: Path, run_id: str) -> CheckResult:
+    """Canon/blocking F11 gate: an iterate whose decision-drop declares
+    ``architecture_impact ∈ {component, data-flow, convention}`` MUST document
+    its ``run_id`` in ``architecture.md`` (the F2 contract). Replaces the dead,
+    mtime-only ``check_architecture_reviewed`` and shares the reconciliation
+    oracle (``lib.architecture_doc``) with the F5 detective so the two cannot
+    diverge. Worktree-aware: gitignored drops resolved via
+    ``resolve_main_repo_root``, tracked ``architecture.md`` read from
+    ``project_root``. SKIP when no drop yet or impact none; FAIL on a
+    corrupt/unrecognized-impact drop, a missing architecture.md, or a real
+    impact whose run_id is absent. Origin: iterate-2026-06-06-arch-drift-detector.
+    """
+    name = "architecture documented (arch-impact iterate)"
+
+    main_root = resolve_main_repo_root(project_root)
+    base = Path(main_root) if main_root is not None else Path(project_root)
+    drops_dir = base / ".shipwright" / "agent_docs" / "decision-drops"
+
+    records, corrupt = scan_drops(drops_dir)
+    run_corrupt = corrupt_for_run(corrupt, run_id)
+    if run_corrupt:
+        return CheckResult(
+            name, False,
+            f"decision-drop for {run_id} failed to parse ({', '.join(run_corrupt)}) "
+            "— fix the drop JSON before finalize",
+        )
+
+    run_records = records_for_run(records, run_id)
+    if not run_records:
+        return CheckResult(
+            name, True, f"skipped (no decision-drop for {run_id})",
+            severity=Severity.SKIPPED.value,
+        )
+
+    impacts = {r.impact for r in run_records}
+    unknown = sorted(i for i in impacts if i not in REAL_IMPACTS and i not in NULL_IMPACTS)
+    if unknown:
+        return CheckResult(
+            name, False,
+            f"{run_id} decision-drop has an unrecognized architecture_impact "
+            f"{unknown} (expected component|data-flow|convention|none)",
+        )
+    real = sorted(impacts & REAL_IMPACTS)
+    if not real:
+        return CheckResult(
+            name, True, f"skipped (architecture_impact=none for {run_id})",
+            severity=Severity.SKIPPED.value,
+        )
+
+    arch_md = Path(project_root) / ".shipwright" / "agent_docs" / "architecture.md"
+    try:
+        arch_text = arch_md.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return CheckResult(
+            name, False,
+            f"architecture.md missing/unreadable but {run_id} declares "
+            f"architecture_impact={real} — add an entry under "
+            "'## Architecture Updates'",
+        )
+
+    if run_id_documented(arch_text, run_id):
+        return CheckResult(name, True, f"architecture.md documents {run_id} (impact={real})")
+
+    return CheckResult(
+        name, False,
+        f"{run_id} declares architecture_impact={real} but is NOT documented in "
+        "architecture.md — add a bullet under '## Architecture Updates' naming "
+        f"{run_id} and what changed (or set architecture_impact=none if it was "
+        "over-flagged)",
+    )
+
+
 def check_migration_quarantine_empty(project_root: Path) -> CheckResult:
     """Advisory warn — flag if iterate_history migration quarantined any entries.
 
@@ -1077,17 +1123,7 @@ def run_all_checks(
             "spec impact recorded (feature/change)", True,
             "skipped (no --commit supplied)", severity=Severity.SKIPPED.value,
         ),
+        check_architecture_documented(project_root, run_id),
     ]
 
 
-def run_cross_artifact_checks(
-    project_root: Path,
-    run_id: str,
-) -> list[CheckResult]:
-    """Non-canon advisory checks — called by Stop hook for drift detection."""
-    return [
-        check_compliance_reflects_run_id(project_root, run_id),
-        check_architecture_reviewed(project_root, run_id),
-        check_conventions_reviewed(project_root, run_id),
-        check_migration_quarantine_empty(project_root),
-    ]

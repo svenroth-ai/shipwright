@@ -43,6 +43,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from tools.verifiers.common import CheckResult, Severity, format_report  # noqa: E402,F401
 from tools.verifiers.iterate_checks import (  # noqa: E402,F401
     check_adr_in_iterate_history,
+    check_architecture_documented,
     check_changelog_unreleased,
     check_events_has_commit,
     check_iterate_history_has_run_id,

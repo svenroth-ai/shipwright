@@ -48,7 +48,7 @@ from tools.verify_iterate_finalization import (
 )
 from tools.verifiers.iterate_checks import (
     check_build_dashboard_has_run_id,
-    check_architecture_reviewed,
+    check_architecture_documented,
     check_spec_impact_recorded,
     check_surface_verification,
 )
@@ -644,52 +644,105 @@ def test_dashboard_run_id_takes_precedence_over_sha_check(tmp_path):
 
 
 # ──────────────────────────────────────────────────────────────────────
-# Architecture/conventions staleness
+# check_architecture_documented (F11 canon gate — content reconciliation)
+# Replaces the dead/mtime check_architecture_reviewed
+# (iterate-2026-06-06-arch-drift-detector).
 # ──────────────────────────────────────────────────────────────────────
 
-def test_architecture_passes_for_bugfix(tmp_path):
+def _seed_arch_drop_for(proj, run_id, impact):
+    drops = proj / ".shipwright" / "agent_docs" / "decision-drops"
+    drops.mkdir(parents=True, exist_ok=True)
+    (drops / f"{run_id}_001.json").write_text(
+        json.dumps({"run_id": run_id, "architecture_impact": impact})
+    )
+
+
+def _seed_arch_md_for(proj, text):
+    doc = proj / ".shipwright" / "agent_docs"
+    doc.mkdir(parents=True, exist_ok=True)
+    (doc / "architecture.md").write_text(text, encoding="utf-8")
+
+
+def test_architecture_documented_skips_without_drop(tmp_path):
     proj = tmp_path / "webui"
     proj.mkdir()
     (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
-    (proj / "shipwright_run_config.json").write_text(json.dumps({
-        "iterate_history": [{"run_id": "r1", "intent": "bug"}],
-    }))
-    (proj / ".shipwright" / "agent_docs" / "architecture.md").write_text("old")
-    result = check_architecture_reviewed(proj, "r1")
+    result = check_architecture_documented(proj, "iter-r1")
     assert result.ok is True
+    assert result.severity == "skipped"
 
 
-def test_architecture_warns_for_stale_feature(tmp_path):
+def test_architecture_documented_skips_impact_none(tmp_path):
     proj = tmp_path / "webui"
     proj.mkdir()
-    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
-    cfg = proj / "shipwright_run_config.json"
-    cfg.write_text(json.dumps({
-        "iterate_history": [{"run_id": "r1", "intent": "change"}],
-    }))
-    import time
-    arch = proj / ".shipwright" / "agent_docs" / "architecture.md"
-    arch.write_text("old arch")
-    import os
-    os.utime(arch, (time.time() - 3600, time.time() - 3600))
-    result = check_architecture_reviewed(proj, "r1")
+    _seed_arch_drop_for(proj, "iter-r1", "none")
+    result = check_architecture_documented(proj, "iter-r1")
+    assert result.ok is True
+    assert result.severity == "skipped"
+
+
+def test_architecture_documented_fails_when_undocumented(tmp_path):
+    proj = tmp_path / "webui"
+    proj.mkdir()
+    _seed_arch_drop_for(proj, "iter-r1", "component")
+    _seed_arch_md_for(proj, "## Architecture Updates\n")  # no entry for iter-r1
+    result = check_architecture_documented(proj, "iter-r1")
     assert result.ok is False
-    assert result.severity == "warning"
+    assert result.severity == "error"  # canon / blocking
+    assert "iter-r1" in result.detail
 
 
-def test_architecture_passes_when_fresh(tmp_path):
+def test_architecture_documented_passes_when_documented(tmp_path):
     proj = tmp_path / "webui"
     proj.mkdir()
-    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
-    cfg = proj / "shipwright_run_config.json"
-    cfg.write_text(json.dumps({
-        "iterate_history": [{"run_id": "r1", "intent": "feature"}],
-    }))
-    import time, os
-    os.utime(cfg, (time.time() - 3600, time.time() - 3600))
-    (proj / ".shipwright" / "agent_docs" / "architecture.md").write_text("fresh arch")
-    result = check_architecture_reviewed(proj, "r1")
+    _seed_arch_drop_for(proj, "iter-r1", "convention")
+    _seed_arch_md_for(
+        proj, "## Architecture Updates\n- iter-r1 (convention): documented.\n"
+    )
+    result = check_architecture_documented(proj, "iter-r1")
     assert result.ok is True
+
+
+def test_architecture_documented_fails_when_arch_md_missing(tmp_path):
+    proj = tmp_path / "webui"
+    proj.mkdir()
+    _seed_arch_drop_for(proj, "iter-r1", "data-flow")  # no architecture.md
+    result = check_architecture_documented(proj, "iter-r1")
+    assert result.ok is False
+    assert "missing/unreadable" in result.detail
+
+
+def test_architecture_documented_fails_corrupt_drop(tmp_path):
+    proj = tmp_path / "webui"
+    proj.mkdir()
+    drops = proj / ".shipwright" / "agent_docs" / "decision-drops"
+    drops.mkdir(parents=True)
+    (drops / "iter-r1_001.json").write_text("{ not json", encoding="utf-8")
+    result = check_architecture_documented(proj, "iter-r1")
+    assert result.ok is False
+    assert "failed to parse" in result.detail
+
+
+def test_architecture_documented_fails_unknown_impact(tmp_path):
+    proj = tmp_path / "webui"
+    proj.mkdir()
+    _seed_arch_drop_for(proj, "iter-r1", "frobnicate")
+    _seed_arch_md_for(proj, "## Architecture Updates\n")
+    result = check_architecture_documented(proj, "iter-r1")
+    assert result.ok is False
+    assert "unrecognized" in result.detail
+
+
+def test_architecture_documented_prefix_run_id_not_satisfied(tmp_path):
+    # A documented longer run_id must NOT satisfy a shorter prefix run_id.
+    proj = tmp_path / "webui"
+    proj.mkdir()
+    _seed_arch_drop_for(proj, "iter-r1", "component")
+    _seed_arch_md_for(
+        proj, "## Architecture Updates\n- iter-r1-extended (component): x.\n"
+    )
+    result = check_architecture_documented(proj, "iter-r1")
+    assert result.ok is False
 
 
 # ──────────────────────────────────────────────────────────────────────

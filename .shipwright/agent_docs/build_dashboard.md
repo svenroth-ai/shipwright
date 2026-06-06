@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-05 22:07 UTC | Session: dd680100-0ee5-44a7-bb41-370a09796aa4 | Run: iterate-2026-06-05-scanner-degraded-marker
+> Updated: 2026-06-06 07:03 UTC | Session: d7610364-2946-422f-8141-b3f29bcbbf7e | Run: iterate-2026-06-06-arch-drift-detector
 
-## Recent Changes (113 iterations)
+## Recent Changes (114 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | F5 architecture-drift detector switched from a git-history oracle (dead on gitignored drops) to content reconciliation (incl. convention); new canon/blocking F11 gate check_architecture_documented sharing one oracle (shared/scripts/lib/architecture_doc.py); dead check_architecture_reviewed + run_cross_artifact_checks removed; 5 orphan architecture.md entries back-filled. | 0/0 |  | compliance | 2026-06-06 |
 | change | adopt skill docs: triage.jsonl is tracked, not gitignored (D) | 24/24 |  | docs | 2026-06-05 |
 | change | SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift) | 617/617 |  | compliance | 2026-06-05 |
 | feature | triage_gc tool: machine-churn-only dismissed-pile compaction | 387/387 |  | tooling | 2026-06-05 |
@@ -120,7 +121,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-05 | Unit: 348/351 | Integration: 141/141 | Smoke: not_run | (iterate)
+Last run: 2026-06-06 | Unit: 3875/3875 | Integration: 141/141 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

@@ -1435,6 +1435,21 @@ when the commit touched no `.shipwright/planning/**/spec.md` and no
 check **D5** — feature/change events that landed with no FR linkage.
 Origin: iterate-2026-05-16-spec-impact-gate.
 
+**Architecture-documentation gate (iterate, F11 canon).**
+`check_architecture_documented` in `iterate_checks.py` FAILS the F11 verifier
+(ERROR/blocking) when this run's decision-drop declares
+`architecture_impact ∈ {component, data-flow, convention}` but its `run_id`
+is absent from `.shipwright/agent_docs/architecture.md` (the F2 contract). It
+SKIPs when the run has no drop yet or `architecture_impact=none`, and FAILs on
+a corrupt/unrecognized-impact drop or a missing `architecture.md`. It shares
+the reconciliation oracle (`shared/scripts/lib/architecture_doc.py`) with the
+compliance Group F **F5** detective, so the live gate (prevents new drift) and
+the detective (surfaces existing drift) cannot diverge. Decision-drops are
+gitignored staging, so F5 `skip`s in a clean CI checkout — the F11 gate is the
+authoritative prevention layer. Replaced the dead, mtime-only
+`check_architecture_reviewed` + the unreachable `run_cross_artifact_checks`
+wrapper. Origin: iterate-2026-06-06-arch-drift-detector.
+
 **Non-FR change classification (Phase 0a prep, Iterate C.1 enforce).**
 `record_event.py` accepts two additional optional fields on `work_completed`:
 `--change-type {docs|tooling|compliance|infra}` and `--none-reason "..."`.
@@ -1694,8 +1709,12 @@ Compliance **docs** are updated **best-effort** by:
 3. `orchestrator.run_compliance_update()` (between-phase action for `/shipwright-run`)
 
 Non-canon advisory checks (`check_compliance_reflects_run_id`,
-`check_architecture_reviewed`, `check_conventions_reviewed`) detect
-stale cross-artifacts at WARNING level via `iterate_checks.run_cross_artifact_checks()`.
+`check_conventions_reviewed`) detect stale cross-artifacts at WARNING level.
+(The dead `run_cross_artifact_checks` wrapper and the mtime-only
+`check_architecture_reviewed` were removed in
+iterate-2026-06-06-arch-drift-detector; architecture-doc enforcement moved to
+the **canon F11 gate** `check_architecture_documented` + the **F5** content
+detective.)
 The `/shipwright-compliance` SKILL is **active** (v7 content replacement).
 `skills/compliance/SKILL.md` now invokes `scripts/audit/run_audit.py`
 for a detective audit with `--fix` / `--only` / `--format` flags. See
