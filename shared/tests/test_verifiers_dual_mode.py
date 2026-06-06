@@ -28,7 +28,6 @@ from lib.iterate_entry import (
 from tools.generate_session_handoff import generate_handoff
 from tools.verifiers.iterate_checks import (
     check_adr_in_iterate_history,
-    check_architecture_reviewed,
     check_compliance_reflects_run_id,
     check_iterate_history_has_run_id,
     check_migration_quarantine_empty,
@@ -115,16 +114,6 @@ class TestIterateChecksDirOnly:
         result = check_adr_in_iterate_history(tmp_path, entry["run_id"])
         assert result.ok is False
         assert "ADR-999" in result.detail
-
-    def test_architecture_reviewed_for_bugfix_entry_passes_trivially(
-        self, tmp_path
-    ):
-        entry = _canonical_entry(slug="bugfix-a")
-        entry["type"] = "bug"
-        entry["intent"] = "bug"  # legacy field name also present
-        _seed_dir_only_project(tmp_path, [entry])
-        result = check_architecture_reviewed(tmp_path, entry["run_id"])
-        assert result.ok is True
 
     def test_compliance_reflects_entry_count_with_dir_only(self, tmp_path):
         entries = [_canonical_entry(slug=f"c{i}") for i in range(3)]

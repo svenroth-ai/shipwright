@@ -10,11 +10,14 @@ C.2:
 - F4 — ADR bloat. ADRs > 60 lines without a ``spec_ref`` link are
   candidates for refactor into a `.shipwright/planning/adr/<NNN>-…`
   long-form spec file (mirrors the A.3 / B.0+ pattern).
-- F5 — Architecture drift. ``architecture.md`` carries a
-  ``last-sync=<sha>`` marker; if drops with
-  ``architecture_impact ∈ {component, data-flow}`` exist but the
-  marker is missing, the architecture diagram likely needs a re-
-  sync.
+- F5 — Architecture drift (content reconciliation). Every decision-drop
+  declaring ``architecture_impact ∈ {component, data-flow, convention}``
+  must have its ``run_id`` documented in ``architecture.md``; any that
+  don't are flagged. Shares the oracle with the F11
+  ``check_architecture_documented`` finalize gate via
+  ``lib.architecture_doc``. (Replaced the prior ``git log``/marker oracle,
+  which never fired on the gitignored decision-drops —
+  iterate-2026-06-06-arch-drift-detector.)
 - F6 — CLAUDE.md size. CLAUDE.md > 200 lines is a sign that per-
   iterate detail is leaking into the file (webui hit this at 270;
   Phase 0e refactored it down via ADR-spec-folder extraction).
@@ -25,9 +28,7 @@ C.2:
 
 from __future__ import annotations
 
-import json
 import re
-import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +38,7 @@ from scripts.audit.audit_adapters import (
     Finding,
     check_result_to_finding,
     import_iterate12_checks,
+    load_shared_lib,
 )
 
 
@@ -139,17 +141,6 @@ def _check_f4(project_root: Path) -> tuple[str, str, str, list[str]]:
 # ---------------------------------------------------------------------------
 
 
-_ARCH_MARKER_RE = re.compile(
-    r"<!--\s*shipwright:architecture\s+v=\d+\s+last-sync=([0-9a-f]{7,40})\s*-->"
-)
-
-# Standalone SHA validator — reviewer-flagged Gemini-S1: the marker
-# value goes into subprocess.run; even with shell=False + list args
-# git itself can interpret `--option`-shaped strings as flags if we
-# don't pre-validate. Anchored hex-only pattern eliminates that class
-# of risk.
-_SHA_FORMAT_RE = re.compile(r"^[0-9a-f]{7,40}$")
-
 # Recognize the `**Details:** [...](...)` link rendered by
 # aggregate_decisions.py for an ADR's `spec_ref`. The URL part
 # (`(...)`) is what F4 cares about; mere text mention of "Details"
@@ -163,149 +154,106 @@ _DETAILS_LINK_RE = re.compile(
 
 
 def _check_f5(project_root: Path) -> tuple[str, str, str, list[str]]:
-    """Return F5 status — architecture marker vs new arch-impact drops.
+    """Return F5 status — architecture.md *content* vs arch-impact drops.
 
-    Reads the ``last-sync=<sha>`` marker from ``architecture.md`` and
-    scans ``.shipwright/agent_docs/decision-drops/*.json`` for drops
-    with ``architecture_impact ∈ {component, data-flow}``. Drift
-    states:
+    Reconciles every decision-drop declaring ``architecture_impact ∈
+    {component, data-flow, convention}`` against the TEXT of
+    ``architecture.md``: each such drop's ``run_id`` MUST appear there (the
+    contract F2 prescribes). This is the same content oracle the
+    ``test_architecture_md_reflects_arch_impact`` drift test uses, shared via
+    ``lib.architecture_doc`` so the detective and the F11 finalize gate
+    (``check_architecture_documented``) cannot diverge.
 
-    - Marker missing + any arch-impact drops → fail (need first sync).
-    - Marker present + arch-impact drops added AFTER the marker's
-      commit (via ``git log``) → fail (need re-sync).
-    - Marker present + no drift, or drops resolve cleanly → pass.
+    Worktree-aware: decision-drops are gitignored staging that live in the MAIN
+    repo, so the drops dir is resolved via
+    ``events_log.resolve_main_repo_root``; ``architecture.md`` is tracked, so it
+    is read from ``project_root`` (the same file in a worktree and the main
+    tree). In a clean CI checkout the drops dir is absent → ``skip`` — F5 is a
+    local/worktree detective; the authoritative prevention is the F11
+    ``check_architecture_documented`` gate (decision-drops never reach CI).
 
-    Git is invoked best-effort; if not a git repo, the marker-missing
-    path still works.
+    Drift states:
+    - drops dir absent → skip
+    - corrupt drop JSON → fail (a malformed drop must not hide drift)
+    - no arch-impact (and no unknown-impact) drops → pass
+    - architecture.md missing/unreadable while arch-impact drops exist → fail
+    - any arch-impact run_id absent from architecture.md → fail (lists them)
+    - unknown (non-canonical, non-none) impact value → fail (blind-spot guard)
+    - else → pass
+
+    Replaces the prior ``git log <marker>..HEAD`` oracle, which could never fire
+    on the gitignored drops (they are never committed, so the diff was always
+    empty) — iterate-2026-06-06-arch-drift-detector. The adopt-side marker
+    producer is untouched; F5 no longer gates on the marker.
     """
-    arch_md = project_root / ".shipwright" / "agent_docs" / "architecture.md"
-    drops_dir = project_root / ".shipwright" / "agent_docs" / "decision-drops"
+    archdoc = load_shared_lib("architecture_doc")
+    events_log = load_shared_lib("events_log")
 
-    if not drops_dir.exists():
+    main_root = events_log.resolve_main_repo_root(project_root)
+    base = Path(main_root) if main_root is not None else Path(project_root)
+    drops_dir = base / ".shipwright" / "agent_docs" / "decision-drops"
+
+    if not drops_dir.is_dir():
         return "skip", "LOW", "no decision-drops dir", []
 
-    arch_drops: list[tuple[str, str]] = []  # (relpath, architecture_impact)
-    corrupt_drops: list[str] = []
-    for drop_path in sorted(drops_dir.glob("*.json")):
-        try:
-            data = json.loads(drop_path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError) as exc:
-            # Reviewer-flagged code-review-HIGH: a corrupt drop file
-            # could hide an arch-impact drop entirely; surface it as a
-            # fail finding rather than silently swallowing.
-            corrupt_drops.append(f"{drop_path.name}:{type(exc).__name__}")
-            continue
-        impact = data.get("architecture_impact")
-        if impact in ("component", "data-flow"):
-            arch_drops.append((drop_path.name, impact))
-
-    if corrupt_drops:
+    records, corrupt = archdoc.scan_drops(drops_dir)
+    if corrupt:
+        head = ", ".join(corrupt[:3]) + ("…" if len(corrupt) > 3 else "")
         return (
             "fail",
             "MEDIUM",
-            f"{len(corrupt_drops)} decision-drop(s) failed to parse — "
-            f"cannot reliably assess architecture drift. Fix or remove: "
-            f"{', '.join(corrupt_drops[:3])}"
-            f"{'…' if len(corrupt_drops) > 3 else ''}.",
-            corrupt_drops,
+            f"{len(corrupt)} decision-drop(s) failed to parse — cannot reliably "
+            f"assess architecture drift. Fix or remove: {head}.",
+            corrupt,
         )
 
-    if not arch_drops:
+    arch_drops = archdoc.arch_impact_records(records)
+    unknown = archdoc.unknown_impact_records(records)
+    if not arch_drops and not unknown:
         return "pass", "MEDIUM", "no architecture-impact drops to reconcile", []
 
-    marker_sha: str | None = None
-    if arch_md.exists():
-        try:
-            marker_sha_match = _ARCH_MARKER_RE.search(
-                arch_md.read_text(encoding="utf-8")
-            )
-            if marker_sha_match:
-                marker_sha = marker_sha_match.group(1)
-        except OSError:
-            pass
-
-    if marker_sha is None:
-        head = ", ".join(name for name, _ in arch_drops[:3])
-        if len(arch_drops) > 3:
-            head += f", … (+{len(arch_drops) - 3})"
-        return (
-            "fail",
-            "MEDIUM",
-            f"architecture.md has no shipwright:architecture marker, but "
-            f"{len(arch_drops)} arch-impact drop(s) exist — run the first "
-            f"sync to establish a baseline. Drops: {head}.",
-            [f"{name} (impact={impact})" for name, impact in arch_drops],
-        )
-
-    # Reviewer-flagged Gemini-S1: validate the SHA format BEFORE
-    # passing it to subprocess. Anchored hex match defends against
-    # malformed marker content (`-` / `..` / shell-flag shapes) even
-    # though we use `shell=False` + list args.
-    if not _SHA_FORMAT_RE.match(marker_sha):
-        return (
-            "fail",
-            "MEDIUM",
-            f"architecture.md marker last-sync={marker_sha!r} is not a "
-            f"valid hex SHA (7..40 hex chars). Re-run the architecture "
-            f"sync to write a fresh marker.",
-            [f"marker={marker_sha!r}"],
-        )
-
-    # Marker present — check if any drop file was added/modified after
-    # the marker's commit via git.
-    rel_drops = str(drops_dir.relative_to(project_root)).replace("\\", "/")
+    arch_md = project_root / ".shipwright" / "agent_docs" / "architecture.md"
     try:
-        proc = subprocess.run(
-            ["git", "log", "--name-only", "--pretty=format:", f"{marker_sha}..HEAD",
-             "--", rel_drops],
-            cwd=str(project_root),
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        return (
-            "skip",
-            "LOW",
-            f"could not run git log; marker={marker_sha}",
-            [],
-        )
-    if proc.returncode != 0:
-        # Reviewer-flagged Gemini-S2: surface a targeted message when
-        # the marker SHA isn't reachable in this repo's history
-        # (rebase / shallow clone / orphan). Operator-actionable
-        # finding, not a silent skip.
-        stderr_tail = (proc.stderr or "").strip().splitlines()[-1:] or [""]
+        arch_text = arch_md.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        head = ", ".join(r.drop_file for r in arch_drops[:3])
         return (
             "fail",
             "MEDIUM",
-            f"architecture.md marker {marker_sha} isn't reachable in this "
-            f"repo's history — re-sync the diagram and write a fresh marker. "
-            f"git: {stderr_tail[0]}",
-            [f"marker={marker_sha}"],
+            f"architecture.md is missing/unreadable but {len(arch_drops)} "
+            f"arch-impact drop(s) exist — cannot reconcile. Drops: {head}.",
+            [f"{r.drop_file} (impact={r.impact})" for r in arch_drops],
         )
-    changed_drops = {
-        Path(line).name
-        for line in proc.stdout.splitlines()
-        if line and line.endswith(".json")
-    }
-    drift_set = [
-        (name, impact) for name, impact in arch_drops
-        if name in changed_drops
-    ]
-    if not drift_set:
-        return "pass", "MEDIUM", f"no arch-impact drift since marker {marker_sha}", []
 
-    head = ", ".join(name for name, _ in drift_set[:3])
-    if len(drift_set) > 3:
-        head += f", … (+{len(drift_set) - 3})"
+    missing = archdoc.missing_entries(records, arch_text)
+    if missing or unknown:
+        evidence = [
+            f"{r.drop_file} run_id={r.run_id} impact={r.impact}" for r in missing
+        ]
+        evidence += [f"{r.drop_file} unknown-impact={r.impact!r}" for r in unknown]
+        parts: list[str] = []
+        if missing:
+            head = ", ".join(r.run_id for r in missing[:3])
+            if len(missing) > 3:
+                head += f", … (+{len(missing) - 3})"
+            parts.append(
+                f"{len(missing)} arch-impact drop(s) not documented in "
+                f"architecture.md — add a bullet under '## Architecture Updates' "
+                f"naming each run_id + what changed: {head}"
+            )
+        if unknown:
+            uhead = ", ".join(f"{r.run_id}={r.impact!r}" for r in unknown[:3])
+            parts.append(
+                f"{len(unknown)} drop(s) with an unrecognized architecture_impact "
+                f"(expected component|data-flow|convention|none): {uhead}"
+            )
+        return "fail", "MEDIUM", " | ".join(parts), evidence
+
     return (
-        "fail",
+        "pass",
         "MEDIUM",
-        f"{len(drift_set)} arch-impact drop(s) added since "
-        f"architecture.md marker {marker_sha} — re-sync the diagram "
-        f"and bump the marker. Drops: {head}.",
-        [f"{name} (impact={impact})" for name, impact in drift_set],
+        f"all {len(arch_drops)} arch-impact drop(s) documented in architecture.md",
+        [],
     )
 
 

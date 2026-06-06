@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-06-arch-drift-detector",
+  "date": "2026-06-06T07:10:48.287836Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/arch-drift-detector",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-06-06-arch-drift-detector.md",
+  "adr": "iterate-2026-06-06-arch-drift-detector"
+}

@@ -1,0 +1,1 @@
+Compliance Group F architecture-drift check (F5) was structurally blind: it diffed the git history of the gitignored decision-drops, so the diff was always empty and it never flagged an arch-impact iterate missing its architecture.md entry. F5 now reconciles drop content against architecture.md (including convention impacts), via a shared oracle.

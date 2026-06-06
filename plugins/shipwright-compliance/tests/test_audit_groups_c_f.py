@@ -252,34 +252,85 @@ class TestF4AdrBloat:
 
 
 class TestF5ArchDrift:
-    def test_no_drops_passes(self, tmp_path: Path):
-        # Create drops dir but no drops.
+    """Content-oracle F5: each arch-impact drop's run_id must appear in
+    architecture.md (iterate-2026-06-06-arch-drift-detector). Replaces the
+    prior marker/git-log oracle, which never fired on gitignored drops."""
+
+    @staticmethod
+    def _seed_arch_md(root: Path, text: str) -> None:
+        doc = root / ".shipwright" / "agent_docs"
+        doc.mkdir(parents=True, exist_ok=True)
+        (doc / "architecture.md").write_text(text, encoding="utf-8")
+
+    def test_absent_drops_dir_skips(self, tmp_path: Path):
+        # No decision-drops dir at all (clean checkout / CI) → skip, not fail.
+        findings = group_f.run(tmp_path, None, None)
+        f5 = next(f for f in findings if f.check_id == "F5")
+        assert f5.status == "skip"
+
+    def test_empty_drops_dir_passes(self, tmp_path: Path):
         (tmp_path / ".shipwright" / "agent_docs" / "decision-drops").mkdir(parents=True)
         findings = group_f.run(tmp_path, None, None)
         f5 = next(f for f in findings if f.check_id == "F5")
         assert f5.status == "pass"
 
-    def test_missing_marker_with_arch_drops_fails(self, tmp_path: Path):
+    def test_undocumented_component_drop_fails(self, tmp_path: Path):
         _seed_arch_drop(tmp_path, "iter-001_001.json", impact="component")
-        # architecture.md absent → marker missing → drift.
+        self._seed_arch_md(tmp_path, "# Architecture\n\n## Architecture Updates\n")
         findings = group_f.run(tmp_path, None, None)
         f5 = next(f for f in findings if f.check_id == "F5")
         assert f5.status == "fail"
-        assert "no shipwright:architecture marker" in f5.detail
-        assert "iter-001_001.json" in f5.detail
+        assert "not documented" in f5.detail
+        assert "iter-001_001" in str(f5.evidence)
 
-    def test_no_arch_impact_drops_passes(self, tmp_path: Path):
-        _seed_arch_drop(tmp_path, "iter-001_001.json", impact="convention")
-        # Non-architecture impact → ignored by drift detector.
+    def test_documented_component_drop_passes(self, tmp_path: Path):
+        _seed_arch_drop(tmp_path, "iter-001_001.json", impact="component")
+        self._seed_arch_md(
+            tmp_path,
+            "## Architecture Updates\n- iter-001_001 (component): documented.\n",
+        )
         findings = group_f.run(tmp_path, None, None)
         f5 = next(f for f in findings if f.check_id == "F5")
         assert f5.status == "pass"
 
-    def test_data_flow_impact_also_caught(self, tmp_path: Path):
-        _seed_arch_drop(tmp_path, "iter-001_001.json", impact="data-flow")
+    def test_convention_impact_now_counted(self, tmp_path: Path):
+        # Regression: the old F5 ignored `convention`; the new F5 reconciles it.
+        _seed_arch_drop(tmp_path, "iter-conv_001.json", impact="convention")
+        self._seed_arch_md(tmp_path, "## Architecture Updates\n")  # undocumented
         findings = group_f.run(tmp_path, None, None)
         f5 = next(f for f in findings if f.check_id == "F5")
         assert f5.status == "fail"
+        assert "iter-conv_001" in str(f5.evidence)
+
+    def test_data_flow_impact_caught(self, tmp_path: Path):
+        _seed_arch_drop(tmp_path, "iter-df_001.json", impact="data-flow")
+        self._seed_arch_md(tmp_path, "## Architecture Updates\n")
+        findings = group_f.run(tmp_path, None, None)
+        f5 = next(f for f in findings if f.check_id == "F5")
+        assert f5.status == "fail"
+
+    def test_none_impact_ignored(self, tmp_path: Path):
+        _seed_arch_drop(tmp_path, "iter-none_001.json", impact="none")
+        self._seed_arch_md(tmp_path, "## Architecture Updates\n")
+        findings = group_f.run(tmp_path, None, None)
+        f5 = next(f for f in findings if f.check_id == "F5")
+        assert f5.status == "pass"
+
+    def test_arch_md_missing_with_arch_drops_fails(self, tmp_path: Path):
+        # arch-impact drop exists but architecture.md is absent → cannot reconcile.
+        _seed_arch_drop(tmp_path, "iter-001_001.json", impact="component")
+        findings = group_f.run(tmp_path, None, None)
+        f5 = next(f for f in findings if f.check_id == "F5")
+        assert f5.status == "fail"
+        assert "missing/unreadable" in f5.detail
+
+    def test_unknown_impact_surfaced(self, tmp_path: Path):
+        _seed_arch_drop(tmp_path, "iter-weird_001.json", impact="frobnicate")
+        self._seed_arch_md(tmp_path, "## Architecture Updates\n")
+        findings = group_f.run(tmp_path, None, None)
+        f5 = next(f for f in findings if f.check_id == "F5")
+        assert f5.status == "fail"
+        assert "unrecognized" in f5.detail
 
 
 class TestF6F7ClaudeMdHygiene:
@@ -446,70 +497,17 @@ class TestF4SpecRefShapeCheck:
         assert f4.status == "pass"
 
 
-class TestF5InvalidMarker:
-    """Reviewer-flagged Gemini-S1 / S2 + OpenAI-M10 — marker SHA hardening."""
-
-    def test_non_hex_marker_falls_through_to_missing(self, tmp_path: Path):
-        """The marker-extraction regex itself only matches hex 7..40 chars;
-        a non-hex marker value never sets `marker_sha`, so F5 falls
-        through to the "marker missing" branch. This guarantees the
-        defense-in-depth `_SHA_FORMAT_RE` check can't be reached with
-        bad input via the file path.
-        """
-        _seed_arch_drop(tmp_path, "iter-001_001.json", impact="component")
-        doc = tmp_path / ".shipwright" / "agent_docs"
-        doc.mkdir(parents=True, exist_ok=True)
-        # `--injected` is not 7..40 hex — extraction returns no match.
-        (doc / "architecture.md").write_text(
-            "# Architecture\n"
-            "<!-- shipwright:architecture v=2 last-sync=--injected -->\n",
-            encoding="utf-8",
-        )
-        findings = group_f.run(tmp_path, None, None)
-        f5 = next(f for f in findings if f.check_id == "F5")
-        assert f5.status == "fail"
-        assert "no shipwright:architecture marker" in f5.detail
+class TestF5CorruptDrops:
+    """A malformed drop must surface as a fail, never silently hide drift
+    (preserved from the prior F5; the marker-SHA hardening tests are retired
+    with the git-log oracle — iterate-2026-06-06-arch-drift-detector)."""
 
     def test_corrupt_drop_file_surfaces_as_fail(self, tmp_path: Path):
-        """Code-review-HIGH: a malformed drop file must not silently hide drift."""
         drops = tmp_path / ".shipwright" / "agent_docs" / "decision-drops"
         drops.mkdir(parents=True)
         (drops / "broken.json").write_text("{ not valid json", encoding="utf-8")
         findings = group_f.run(tmp_path, None, None)
         f5 = next(f for f in findings if f.check_id == "F5")
         assert f5.status == "fail"
-        assert "decision-drop(s) failed to parse" in f5.detail
+        assert "failed to parse" in f5.detail
         assert "broken.json" in f5.detail
-
-    def test_unreachable_marker_sha_produces_targeted_fail(self, tmp_path: Path):
-        """Marker SHA is well-formed hex but not reachable in repo history
-        (rebase / squash / fresh clone). F5 must produce an actionable
-        message, not a silent skip."""
-        import subprocess as _sp
-        # Make tmp_path a real git repo so `git log` actually runs.
-        _sp.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
-        _sp.run(["git", "config", "user.email", "x@x"], cwd=tmp_path,
-                capture_output=True, check=True)
-        _sp.run(["git", "config", "user.name", "x"], cwd=tmp_path,
-                capture_output=True, check=True)
-        (tmp_path / "README.md").write_text("x", encoding="utf-8")
-        _sp.run(["git", "add", "-A"], cwd=tmp_path, capture_output=True, check=True)
-        _sp.run(["git", "commit", "-m", "initial"], cwd=tmp_path,
-                capture_output=True, check=True)
-
-        _seed_arch_drop(tmp_path, "iter-001_001.json", impact="component")
-        doc = tmp_path / ".shipwright" / "agent_docs"
-        doc.mkdir(parents=True, exist_ok=True)
-        # Marker points at a SHA that doesn't exist in this repo.
-        (doc / "architecture.md").write_text(
-            "# Architecture\n"
-            "<!-- shipwright:architecture v=2 last-sync=deadbeefdeadbeef -->\n",
-            encoding="utf-8",
-        )
-        findings = group_f.run(tmp_path, None, None)
-        f5 = next(f for f in findings if f.check_id == "F5")
-        assert f5.status == "fail"
-        assert (
-            "isn't reachable" in f5.detail
-            or "not a valid hex SHA" in f5.detail
-        )

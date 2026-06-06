@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-05T22:07:25.140368+00:00
+Generated: 2026-06-06T07:03:38.252014+00:00
 
 ## Requirements Coverage
 
@@ -138,6 +138,7 @@ Generated: 2026-06-05T22:07:25.140368+00:00
 | triage_gc tool: machine-churn-only dismissed-pile compaction | iterate | feature |  | 387/387 | — | 2026-06-05 |
 | SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift) | iterate | change |  | 617/617 | — | 2026-06-05 |
 | adopt skill docs: triage.jsonl is tracked, not gitignored (D) | iterate | change |  | 24/24 | — | 2026-06-05 |
+| F5 architecture-drift detector switched from a git-history oracle (dead on gitignored drops) to content reconciliation (incl. convention); new canon/blocking F11 gate check_architecture_documented sharing one oracle (shared/scripts/lib/architecture_doc.py); dead check_architecture_reviewed + run_cross_artifact_checks removed; 5 orphan architecture.md entries back-filled. | iterate | change |  | — | — | 2026-06-06 |
 
 ## Coverage Summary
 
@@ -145,7 +146,7 @@ Generated: 2026-06-05T22:07:25.140368+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 113 |
+| Iterate changes | 114 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

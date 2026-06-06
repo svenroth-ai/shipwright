@@ -1,14 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-05-scanner-degraded-marker",
-    "date": "2026-06-05",
-    "intent": "change",
-    "complexity": "medium",
+    "run_id": "iterate-2026-06-06-arch-drift-detector",
+    "date": "2026-06-06",
     "unit": {
       "status": "passed",
-      "passed": 348,
-      "total": 351,
-      "note": "3 real-binary smoke skips (binary missing locally)"
+      "passed": 3875,
+      "total": 3875
     },
     "integration": {
       "status": "passed",
@@ -21,7 +18,7 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -33,78 +30,72 @@
     "smoke": {
       "status": "not_run"
     },
-    "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --extra dev pytest plugins/shipwright-security/tests -q  +  uv run pytest integration-tests -q  +  boundary round-trip probe (degraded findings.json -> gate decision)",
-      "tests_run": 348,
-      "exit_code": 0,
-      "justification": "CLI/CI-only change to the OSS scanner backend + the security CI gate; no web/API/UI surface. The cross-tool contract (oss_backend -> findings.json -> security.yml jq gate) is verified by the executed producer->serialize->gate round-trip probe plus integration-tests/test_ci_self_gating.py."
-    },
+    "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "_run_tool records a marker on every None-branch (nonzero_exit/empty_output/timeout/invalid_json/missing_binary); findings stays []",
+          "behavior": "AC-1 F5 fails on undocumented arch-impact drop, passes when documented",
           "disposition": "tested",
-          "evidence": "test_oss_backend.py::TestRunToolScanErrorReasons::* + test_every_reason_is_in_closed_vocab (8 tests)"
+          "evidence": "test_audit_groups_c_f.py::TestF5ArchDrift::test_undocumented_component_drop_fails + test_documented_component_drop_passes PASSED"
         },
         {
-          "behavior": "OSSBackend.scan exposes scan_errors; empty on clean, populated on a degraded leg, reset between calls; other legs' findings survive",
+          "behavior": "AC-2 convention impact now counted by F5",
           "disposition": "tested",
-          "evidence": "test_oss_backend.py::TestOSSBackendScanErrors::* (3 tests)"
+          "evidence": "test_audit_groups_c_f.py::TestF5ArchDrift::test_convention_impact_now_counted PASSED"
         },
         {
-          "behavior": "build_config emits degraded(bool)+scan_errors; degraded independent of findings count",
+          "behavior": "AC-3 worktree-resolve + CI-skip on absent dir + corrupt-drop fail",
           "disposition": "tested",
-          "evidence": "test_scan_cli.py::TestBuildConfigDegraded::* (3 tests)"
+          "evidence": "test_audit_groups_c_f.py::test_absent_drops_dir_skips + TestF5CorruptDrops + test_architecture_doc.py::test_scan_drops_* PASSED"
         },
         {
-          "behavior": "scan.py returns exit 2 when degraded (before --fail-on), writes marker; clean still 0; getattr-default for no-attr backends",
+          "behavior": "AC-4 git-log/marker oracle retired (no subprocess in F5)",
           "disposition": "tested",
-          "evidence": "test_scan_cli.py::TestDegradedScanCLI::* (5 tests)"
+          "evidence": "ruff full-repo clean (no unused subprocess import); F5 tests need no git repo PASSED"
         },
         {
-          "behavior": "degraded/scan_errors round-trip through --input-from-cache (SARIF re-read keeps failing closed)",
+          "behavior": "AC-5 canon/blocking F11 gate check_architecture_documented (fail=error, wired into run_all_checks)",
           "disposition": "tested",
-          "evidence": "test_scan_cli.py::TestDegradedScanCLI::test_cache_roundtrips_degraded"
+          "evidence": "test_verify_iterate_finalization.py::test_architecture_documented_* (8 tests incl. severity==error) PASSED"
         },
         {
-          "behavior": "run_scan_and_report embeds degraded in latest.{md,json} + exits 1; clean exits 0",
+          "behavior": "AC-6 dead check_architecture_reviewed + run_cross_artifact_checks removed",
           "disposition": "tested",
-          "evidence": "test_degraded_scan_surfacing.py::TestRunScanReportDegraded::* (2 tests)"
+          "evidence": "full-repo ruff green; test_verifiers_dual_mode.py + test_verify_iterate_finalization.py updated, green PASSED"
         },
         {
-          "behavior": "generate_security_report renders a degraded banner (standard + pr-mode) + json sidecar degraded; clean has none",
+          "behavior": "AC-7 data remediation: 5 orphan architecture.md entries back-filled",
           "disposition": "tested",
-          "evidence": "test_degraded_scan_surfacing.py::TestGenerateReportDegradedBanner::* (4 tests)"
+          "evidence": "test_architecture_md_reflects_arch_impact.py 2 passed; real-repo F5 -> 'all 9 arch-impact drops documented' PASSED"
         },
         {
-          "behavior": "security.yml critical-gate reads findings.json .degraded and is coupled to exit 1 (fail closed)",
-          "disposition": "tested",
-          "evidence": "test_degraded_scan_surfacing.py::TestSecurityWorkflowDegradedGuard::* (2 tests)"
-        },
-        {
-          "behavior": "end-to-end producer->findings.json->gate: degraded-0-findings BLOCKS, clean-0-findings PASSES",
-          "disposition": "tested",
-          "evidence": "boundary round-trip probe (build_config->json.dumps->re-read->gate decision), executed in Build"
-        },
-        {
-          "behavior": "real-binary degraded path on Linux CI (gitleaks/semgrep/trivy fatal)",
+          "behavior": "AC-8 F5 fail flows to compliance:backlog triage item",
           "disposition": "untestable",
-          "evidence": "exercised by this PR's CI security.yml run; not unit-mockable",
-          "reason_code": "requires-external-nondeterministic-service"
+          "reason_code": "covered-by-existing-test",
+          "reason": "triage_bundle mirrors ALL status==fail findings generically (unchanged this iterate; covered by its own tests); F5 producing a fail is tested separately above"
         }
       ],
       "counts": {
-        "untested_testable": 0,
-        "tested": 9,
-        "untestable": 1
+        "testable": 7,
+        "tested": 7,
+        "untestable": 1,
+        "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 10,
-        "covered_acs": 10
+        "acs": 8,
+        "covered_acs": 8
       }
     },
-    "degraded": []
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-06-06T07:00:05.587Z",
+      "attempts": 0,
+      "justification": "Pure-Python compliance detective (Group F/F5) + iterate finalize verifier (F11 check_architecture_documented) + shared lib + docs. No web/cli/api behavior surface a user drives; not consumed by any UI (backend-affects-frontend N/A). Verified by ~3875 unit/integration tests green + ruff; F5 and the F11 gate exercised against the real repo (before/after back-fill)."
+    }
   }
 }
