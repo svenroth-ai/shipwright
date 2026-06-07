@@ -33,10 +33,24 @@ If campaign directory doesn't exist yet:
      --campaign-slug "{slug}" \
      --intent "{user_intent}" \
      --sub-iterates '{json_array}' \
-     --branch-strategy stacked
+     --branch-strategy stacked \
+     --expands-triage "{trg-id}"   # optional — anchor to a triage item
    ```
 4. Review generated
    `.shipwright/planning/iterate/campaigns/{slug}/campaign.md` with user.
+
+> **Promoting a triage item to a campaign.** When the campaign exists to
+> work off a specific triage card, anchor it with `--expands-triage
+> <trg-id>` (validated `trg-<8 hex>`). The id is stamped into BOTH
+> `status.json` and the `campaign.md` frontmatter (`expands_triage:`),
+> which is exactly what the WebUI joins on per-project
+> (`fm.expandsTriage || fm.expands_triage == item.id`) to render the
+> **"Start Campaign"** CTA on that card. The convenience flag
+> `--from-triage <trg-id>` does the same anchor AND seeds `--intent` from
+> the triage item's title/detail when `--intent` is omitted (reads
+> `<project-root>/.shipwright/triage.jsonl`). Anchoring is strictly
+> per-project: the campaign and its triage item must live in the same
+> repo.
 
 ## Autonomous Campaign Loop
 

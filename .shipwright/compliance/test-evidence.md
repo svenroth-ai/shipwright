@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-06-07T16:06:37.048026+00:00
+Generated: 2026-06-07T15:50:24.863108+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 117 |
-| Total unit tests (latest) | 312/312 |
+| Total unit tests (latest) | 0/0 |
 | New tests from iterations | +102 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | adopt scaffolds .gitleaks.toml + hardens security.yml.template | iterate | unit | +0 | 312/312 | PASS | 2026-06-07 |
+| 1 | Add campaign_init --expands-triage / --from-triage so a triage item can be promoted to a campaign anchor; writes expands_triage into both status.json and the campaign.md frontmatter so the Command Center shows 'Start Campaign' on that triage card. | iterate | — | +0 | — | — | 2026-06-07 |
 | 2 | GC machine-churn complianceRefreshed compliance-backlog dismissals (add token to triage_gc.MACHINE_REASONS) | iterate | unit | +0 | 24/24 | PASS | 2026-06-07 |
 | 3 | triage docs + monorepo migration (campaign 2026-06-05-track-triage-jsonl, sub-iterate E) | iterate | unit | +0 | 2839/2839 | PASS | 2026-06-07 |
 | 4 | F5 architecture-drift detector switched from a git-history oracle (dead on gitignored drops) to content reconciliation (incl. convention); new canon/blocking F11 gate check_architecture_documented sharing one oracle (shared/scripts/lib/architecture_doc.py); dead check_architecture_reviewed + run_cross_artifact_checks removed; 5 orphan architecture.md entries back-filled. | iterate | — | +0 | — | — | 2026-06-06 |
@@ -136,36 +136,36 @@ Generated: 2026-06-07T16:06:37.048026+00:00
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 514/514 | — | — | — | — | 2026-05-23 |
-| 2 | iterate | 2678/2678 | — | — | — | — | 2026-05-25 |
-| 3 | iterate | 14/14 | — | — | — | — | 2026-05-25 |
-| 4 | iterate | 131/131 | — | — | — | — | 2026-05-25 |
-| 5 | iterate | 41/41 | — | — | — | — | 2026-05-25 |
-| 6 | iterate | 1104/1104 | — | — | — | — | 2026-05-26 |
-| 7 | iterate | 2449/2449 | — | — | — | — | 2026-05-28 |
-| 8 | iterate | 2449/2450 | — | — | — | — | 2026-05-29 |
-| 9 | iterate | 2545/2545 | — | — | — | — | 2026-05-29 |
-| 10 | iterate | 2549/2550 | — | — | — | — | 2026-05-29 |
-| 11 | iterate | 2558/2558 | — | — | — | — | 2026-05-29 |
-| 12 | iterate | 317/317 | — | — | — | — | 2026-05-29 |
-| 13 | iterate | 2771/2771 | — | — | — | — | 2026-05-31 |
-| 14 | iterate | 2674/2675 | — | — | — | — | 2026-05-31 |
-| 15 | iterate | 48/49 | — | — | — | — | 2026-06-01 |
-| 16 | iterate | 41/41 | — | — | — | — | 2026-06-05 |
-| 17 | iterate | 64/64 | — | — | — | — | 2026-06-05 |
-| 18 | iterate | 41/41 | — | — | — | — | 2026-06-05 |
-| 19 | iterate | 64/64 | — | — | — | — | 2026-06-05 |
-| 20 | iterate | 320/320 | — | — | — | — | 2026-06-05 |
-| 21 | iterate | 9/9 | — | — | — | — | 2026-06-05 |
-| 22 | iterate | 44/44 | — | — | — | — | 2026-06-05 |
-| 23 | iterate | 49/49 | — | — | — | — | 2026-06-05 |
-| 24 | iterate | 19/19 | — | — | — | — | 2026-06-05 |
-| 25 | iterate | 387/387 | — | — | — | — | 2026-06-05 |
-| 26 | iterate | 617/617 | — | — | — | — | 2026-06-05 |
-| 27 | iterate | 24/24 | — | — | — | — | 2026-06-05 |
-| 28 | iterate | 2839/2839 | — | — | — | — | 2026-06-07 |
-| 29 | iterate | 24/24 | — | — | — | — | 2026-06-07 |
-| 30 | iterate | 312/312 | — | — | — | — | 2026-06-07 |
+| 1 | iterate | 497/497 | — | — | — | — | 2026-05-23 |
+| 2 | iterate | 514/514 | — | — | — | — | 2026-05-23 |
+| 3 | iterate | 2678/2678 | — | — | — | — | 2026-05-25 |
+| 4 | iterate | 14/14 | — | — | — | — | 2026-05-25 |
+| 5 | iterate | 131/131 | — | — | — | — | 2026-05-25 |
+| 6 | iterate | 41/41 | — | — | — | — | 2026-05-25 |
+| 7 | iterate | 1104/1104 | — | — | — | — | 2026-05-26 |
+| 8 | iterate | 2449/2449 | — | — | — | — | 2026-05-28 |
+| 9 | iterate | 2449/2450 | — | — | — | — | 2026-05-29 |
+| 10 | iterate | 2545/2545 | — | — | — | — | 2026-05-29 |
+| 11 | iterate | 2549/2550 | — | — | — | — | 2026-05-29 |
+| 12 | iterate | 2558/2558 | — | — | — | — | 2026-05-29 |
+| 13 | iterate | 317/317 | — | — | — | — | 2026-05-29 |
+| 14 | iterate | 2771/2771 | — | — | — | — | 2026-05-31 |
+| 15 | iterate | 2674/2675 | — | — | — | — | 2026-05-31 |
+| 16 | iterate | 48/49 | — | — | — | — | 2026-06-01 |
+| 17 | iterate | 41/41 | — | — | — | — | 2026-06-05 |
+| 18 | iterate | 64/64 | — | — | — | — | 2026-06-05 |
+| 19 | iterate | 41/41 | — | — | — | — | 2026-06-05 |
+| 20 | iterate | 64/64 | — | — | — | — | 2026-06-05 |
+| 21 | iterate | 320/320 | — | — | — | — | 2026-06-05 |
+| 22 | iterate | 9/9 | — | — | — | — | 2026-06-05 |
+| 23 | iterate | 44/44 | — | — | — | — | 2026-06-05 |
+| 24 | iterate | 49/49 | — | — | — | — | 2026-06-05 |
+| 25 | iterate | 19/19 | — | — | — | — | 2026-06-05 |
+| 26 | iterate | 387/387 | — | — | — | — | 2026-06-05 |
+| 27 | iterate | 617/617 | — | — | — | — | 2026-06-05 |
+| 28 | iterate | 24/24 | — | — | — | — | 2026-06-05 |
+| 29 | iterate | 2839/2839 | — | — | — | — | 2026-06-07 |
+| 30 | iterate | 24/24 | — | — | — | — | 2026-06-07 |
 
 ## Code Review Evidence
 
