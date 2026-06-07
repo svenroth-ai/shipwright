@@ -52,6 +52,17 @@ WORKFLOW_PATH = ".github/workflows/security.yml"
 # against the constants in this module.
 TEMPLATE_PATH = "shared/templates/github-actions/security.yml.template"
 
+# Companion gitleaks allowlist. The deployed security.yml runs
+# `gitleaks detect --no-git` with NO `--config`, so gitleaks auto-loads a
+# `.gitleaks.toml` from the repo root when present. Adopt scaffolds this
+# file alongside the workflow so a brownfield repo's first scan does not go
+# red on the universal `cafebabe:deadbeef` sidekiq-secret false positive
+# (proven on leadwright 2026-06-07). GITLEAKS_CONFIG_PATH MUST be the
+# root-level name gitleaks auto-loads; the drift test at
+# shared/tests/test_gitleaks_config_convention.py pins the template's shape.
+GITLEAKS_CONFIG_PATH = ".gitleaks.toml"
+GITLEAKS_CONFIG_TEMPLATE_PATH = "shared/templates/github-actions/gitleaks.toml.template"
+
 # SARIF results land under this category in the GitHub Security tab —
 # separate from CodeQL's own category. Both adopt template and any
 # audit must use this exact value.

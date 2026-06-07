@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-07-triage-gc-compliance-refreshed",
+    "run_id": "iterate-2026-06-07-adopt-gitleaks-allowlist",
     "date": "2026-06-07",
     "unit": {
       "status": "passed",
-      "passed": 24,
-      "total": 24
+      "passed": 312,
+      "total": 312
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 1,
+      "total": 1
     },
     "pgtap": {
       "status": "not_run",
@@ -30,49 +30,90 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [
-      {
-        "condition": "preexisting-unrelated-test-failure",
-        "detail": "Full shared/tests/ run: 2822 passed, 24 skipped, 1 FAILED (test_architecture_md_reflects_arch_impact.py::test_arch_impact_drops_found_at_all). Pre-existing + environmental, NOT introduced by this diff: the main-repo .shipwright/agent_docs/decision-drops/ dir exists but is empty (drops aggregated/cleared at the v0.24.0 release d5764ab7), so that test's 'dir present but no arch-impact drops' sanity guard fires. This diff touches only triage_gc.py + test_triage_gc.py — neither decision-drops nor architecture.md. Robustness gap (test skips when dir absent but not when empty) noted in F3a reflection."
-      }
-    ],
+    "degraded": [],
     "surface_verification": {
       "surface": "none",
       "runner": "surface_verification.py --surface none",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-07-triage-gc-compliance-refreshed/surface_verification.json",
+      "evidence_path": ".shipwright/runs/iterate-2026-06-07-adopt-gitleaks-allowlist/surface_verification.json",
       "timestamp": "2026-06-07T00:00:00Z",
-      "justification": "Pure Python maintenance-tool classifier change (one frozenset token + unit test); no startable user surface, no API/store/UI consumer affected. Backend-affects-Frontend rule N/A — triage_gc is an offline compaction CLI."
+      "justification": "Framework adopt-scaffolder + CI security-template change; no startable web/api/cli USER surface. The only behavior (adopt writing a root .gitleaks.toml) is verified end-to-end by the real generate_adoption_artifacts.py subprocess test. Backend-affects-Frontend rule N/A."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "A complianceBacklog dismissal with reason=complianceRefreshed is classified as machine-churn and dropped by plan_gc",
+          "behavior": "Scaffolds <root>/.gitleaks.toml from the template when absent",
           "disposition": "tested",
-          "evidence": "shared/tests/test_triage_gc.py::test_compliance_refreshed_machine_churn_dropped asserts 'refreshed' in drop_ids; born-red without the fix (refreshed was the 'Extra item' not dropped), PASSED after adding the token"
+          "evidence": "test_gitleaks_config_scaffold.py::test_writes_when_absent PASSED"
         },
         {
-          "behavior": "A complianceBacklog dismissal with reason=complianceResolved is still dropped (no regression from the change)",
+          "behavior": "Copies the template byte-for-byte (drift guarantees carry into adopted repos)",
           "disposition": "tested",
-          "evidence": "same test asserts 'resolved' in drop_ids; PASSED. Existing test_machine_reason coverage in the 14-test GC suite unaffected (14/14 PASSED)"
+          "evidence": "test_gitleaks_config_scaffold.py::test_content_matches_template PASSED"
         },
         {
-          "behavior": "A human dismissal (by=user) that reuses reason=complianceRefreshed is KEPT, because the MACHINE_DISMISSERS gate is unchanged",
+          "behavior": "Written content carries the cafebabe:deadbeef allowlist + useDefault",
           "disposition": "tested",
-          "evidence": "same test asserts the human item id is NOT in drop_ids; PASSED"
+          "evidence": "test_gitleaks_config_scaffold.py::test_written_content_has_cafebabe_allowlist PASSED"
+        },
+        {
+          "behavior": "Never overwrites a pre-existing .gitleaks.toml (byte-preserved)",
+          "disposition": "tested",
+          "evidence": "test_gitleaks_config_scaffold.py::test_idempotent_existing_file_preserved PASSED"
+        },
+        {
+          "behavior": "Idempotent on a repeat call (second call reports already_exists)",
+          "disposition": "tested",
+          "evidence": "test_gitleaks_config_scaffold.py::test_idempotent_when_called_twice PASSED"
+        },
+        {
+          "behavior": "Fails loud (FileNotFoundError, no half-write) when the template path does not resolve",
+          "disposition": "tested",
+          "evidence": "test_gitleaks_config_scaffold.py::test_raises_loudly_when_template_missing PASSED"
+        },
+        {
+          "behavior": "The real adopt pipeline actually wires the scaffold (writes .gitleaks.toml, results.gitleaks_config)",
+          "disposition": "tested",
+          "evidence": "test_adopt_pipeline_subprocess.py::test_full_pipeline_e2e_via_subprocess PASSED (real uv subprocess)"
+        },
+        {
+          "behavior": "GITLEAKS_CONFIG_* SSoT constants resolve to a real template of the required allowlist shape",
+          "disposition": "tested",
+          "evidence": "test_gitleaks_config_convention.py::TestGitleaksConfigTemplate (3 tests) PASSED"
+        },
+        {
+          "behavior": "Deployed config path is the root name gitleaks auto-loads (.gitleaks.toml)",
+          "disposition": "tested",
+          "evidence": "test_gitleaks_config_convention.py::test_gitleaks_config_path_is_root_toml PASSED"
+        },
+        {
+          "behavior": "security.yml.template gitleaks install is SHA256-verified before extract",
+          "disposition": "tested",
+          "evidence": "test_security_workflow_convention.py::TestSupplyChainHardening::test_gitleaks_download_is_sha256_verified PASSED"
+        },
+        {
+          "behavior": "security.yml.template peter-evans action pinned to a commit SHA (no residual @v4)",
+          "disposition": "tested",
+          "evidence": "test_security_workflow_convention.py::TestSupplyChainHardening::test_comment_action_pinned_to_commit_sha PASSED"
+        },
+        {
+          "behavior": "Adopted repo's first live GitHub Actions Security Scan goes green (no cafebabe red)",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "Needs a live GitHub Actions run on a real adopted repo; empirically proven on leadwright 2026-06-07 (run 27086046885 red -> 27086178138 green after the file was added)."
         }
       ],
       "counts": {
-        "testable": 3,
-        "tested": 3,
-        "untestable": 0,
+        "testable": 11,
+        "tested": 11,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 1,
-        "covered_acs": 1
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   }

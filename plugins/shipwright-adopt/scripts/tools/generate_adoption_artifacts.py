@@ -539,6 +539,17 @@ def generate(
     if security_ci_result["wrote"]:
         results["written"].append(security_ci_result["path"])
 
+    # Step E.13b — Gitleaks allowlist scaffold (companion to security.yml,
+    # which runs `gitleaks detect --no-git` with no `--config` → auto-loads a
+    # root `.gitleaks.toml`). Without it the sidekiq-secret rule false-matches
+    # `cafebabe:deadbeef` and reddens every adopted repo's first scan (leadwright
+    # 2026-06-07). Never-overwrite. SSoT: shared/scripts/lib/security_workflow.py.
+    from gitleaks_config_scaffolder import scaffold_gitleaks_config  # type: ignore
+    gitleaks_config_result = scaffold_gitleaks_config(project_root)
+    results["gitleaks_config"] = gitleaks_config_result
+    if gitleaks_config_result["wrote"]:
+        results["written"].append(gitleaks_config_result["path"])
+
     # Step E.14 — CI workflow scaffold (profile-aware). Adopt picks the
     # right CI template per stack profile (vite-hono, supabase-nextjs,
     # python-plugin-monorepo) and lands a cross-platform-matrix template

@@ -140,6 +140,33 @@ Writes — **in order**:
     `{wrote, path, reason}` so the Step H handoff banner can show
     "installed (dormant)" vs "preserved" without re-stat'ing the file.
 
+    **Companion `.gitleaks.toml` scaffold (Step E.13b).** The deployed
+    `security.yml` runs `gitleaks detect --no-git` with **no** `--config`,
+    so gitleaks auto-loads a `.gitleaks.toml` from the repo root when
+    present. Adopt therefore also copies
+    `shared/templates/github-actions/gitleaks.toml.template` to
+    `<root>/.gitleaks.toml` (same never-overwrite contract). Without it,
+    gitleaks' built-in `sidekiq-secret` rule false-matches the magic-hex
+    placeholder `cafebabe:deadbeef` and the hardened critical-gate (which
+    blocks on **any** gitleaks result) turns every freshly-adopted repo's
+    **first** Security Scan red — a misleading "secret leak" that is no
+    leak (empirically proven on leadwright 2026-06-07: run 27086046885 red
+    → 27086178138 green after the file was added). The allowlist extends
+    the full default ruleset (`useDefault = true`) and suppresses only that
+    one self-evident placeholder. The same convention lock declares
+    `GITLEAKS_CONFIG_TEMPLATE_PATH` + `GITLEAKS_CONFIG_PATH`; the drift test
+    at `shared/tests/test_gitleaks_config_convention.py` pins the template's
+    shape. The scaffolder result lands in `results.gitleaks_config` as
+    `{wrote, path, reason}`.
+
+    The template also carries the same supply-chain hardening as the
+    monorepo's own `security.yml`: the gitleaks install is SHA256-verified
+    (download-to-disk + `sha256sum -c` before extract, not an unverified
+    `wget | tar` pipe) and `peter-evans/create-or-update-comment` is pinned
+    to a full commit SHA rather than the mutable `@v4` tag. Both are pinned
+    by `shared/tests/test_security_workflow_convention.py`
+    (`TestSupplyChainHardening`).
+
 14. **CI workflow scaffold (profile-aware).** Adopt picks the CI
     template that matches the stack profile detected earlier in the
     pipeline (`snapshot.profile.matched`) and writes it to

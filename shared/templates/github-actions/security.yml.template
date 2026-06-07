@@ -61,9 +61,19 @@ jobs:
 
       - name: Install Gitleaks
         run: |
+          # Download to disk + verify SHA256 before extracting (supply-chain
+          # integrity): the old `wget | tar` piped an unverified tarball
+          # straight into extraction. The default GitHub-Actions bash shell
+          # runs with `-eo pipefail`, so a checksum mismatch aborts the step.
+          # Mirrors the monorepo's own .github/workflows/security.yml.
           GITLEAKS_VERSION="8.21.2"
-          wget -qO- "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar xz
+          GITLEAKS_SHA256="5bc41815076e6ed6ef8fbecc9d9b75bcae31f39029ceb55da08086315316e3ba"
+          TARBALL="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          wget -qO "$TARBALL" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${TARBALL}"
+          echo "${GITLEAKS_SHA256}  ${TARBALL}" | sha256sum -c -
+          tar xzf "$TARBALL"
           sudo mv gitleaks /usr/local/bin/
+          rm -f "$TARBALL"
           gitleaks version
 
       - name: Prepare SARIF output directory
@@ -136,7 +146,10 @@ jobs:
 
       - name: Post PR comment
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-        uses: peter-evans/create-or-update-comment@v4
+        # Third-party action pinned to a full commit SHA (supply-chain
+        # hardening); trailing comment records the human-readable tag.
+        # Mirrors the monorepo's own .github/workflows/security.yml.
+        uses: peter-evans/create-or-update-comment@71345be0265236311c031f5c7866368bd1eff043  # v4
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body-path: pr-comment.md

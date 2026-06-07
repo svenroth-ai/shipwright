@@ -203,6 +203,36 @@ class TestWorkflowPathConstant:
         )
 
 
+class TestSupplyChainHardening:
+    """The adopt-shipped security.yml.template must carry the same supply-chain
+    hardening the monorepo's own security.yml already has."""
+
+    def test_gitleaks_download_is_sha256_verified(self, template_text):
+        # Download-to-disk + `sha256sum -c` before extract — not an unverified
+        # `wget | tar` pipe. Mirrors .github/workflows/security.yml.
+        assert "GITLEAKS_SHA256" in template_text, (
+            "gitleaks install in the template is not SHA256-pinned — an "
+            "unverified tarball is piped straight into extraction."
+        )
+        assert "sha256sum -c" in template_text, (
+            "gitleaks tarball is downloaded but its checksum is never verified "
+            "before extraction."
+        )
+
+    def test_comment_action_pinned_to_commit_sha(self, template_text):
+        assert (
+            "peter-evans/create-or-update-comment@"
+            "71345be0265236311c031f5c7866368bd1eff043" in template_text
+        ), (
+            "peter-evans/create-or-update-comment must be pinned to its commit "
+            "SHA (supply-chain hardening), not a mutable tag."
+        )
+        assert "peter-evans/create-or-update-comment@v4" not in template_text, (
+            "peter-evans action still references the mutable @v4 tag — a "
+            "compromised tag could inject arbitrary code into the PR-comment step."
+        )
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-07T15:05:01.124652+00:00
-Total commits: 870
+Generated: 2026-06-07T16:06:37.048026+00:00
+Total commits: 871
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 252
-    "fix" : 241
+    "fix" : 242
     "chore" : 172
     "docs" : 119
     "refactor" : 50
@@ -277,10 +277,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 241 commits
+### Fixes (fix) — 242 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-07 | triage-gc | GC machine-churn complianceRefreshed backlog dismissals | 1338052864a7 |
 | 2026-06-06 | compliance | F5 architecture-drift uses content reconciliation + canon F11 gate | c58e7aa02310 |
 | 2026-06-05 | triage | C1 preservation tests assert no-reflow, not byte-level CRLF | c22ac1c3c06f |
 | 2026-06-05 | triage | scaffolder self-heal preserves content + line endings (external review, C1) | 71c5577ff383 |
@@ -939,7 +940,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 870 |
+| Total commits | 871 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 870 |
+| Human-authored commits | 871 |
 

@@ -74,14 +74,14 @@
     {
       "path": "plugins/shipwright-adopt/scripts/tools/generate_adoption_artifacts.py",
       "limit": 300,
-      "current": 683,
+      "current": 694,
       "state": "grandfathered",
       "adr": null
     },
     {
       "path": "plugins/shipwright-adopt/tests/test_adopt_pipeline_subprocess.py",
       "limit": 300,
-      "current": 432,
+      "current": 445,
       "state": "grandfathered",
       "adr": null
     },

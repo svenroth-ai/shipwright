@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-07 15:05 UTC | Session: 21e94cb4-331d-4b2d-8507-c1a5a4202cb3 | Run: iterate-2026-06-07-triage-gc-compliance-refreshed
+> Updated: 2026-06-07 16:06 UTC | Session: 7820c922-2e9f-4892-8ab4-6c0475cbe145 | Run: iterate-2026-06-07-adopt-gitleaks-allowlist
 
-## Recent Changes (116 iterations)
+## Recent Changes (117 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | adopt scaffolds .gitleaks.toml + hardens security.yml.template | 312/312 |  | tooling | 2026-06-07 |
 | change | GC machine-churn complianceRefreshed compliance-backlog dismissals (add token to triage_gc.MACHINE_REASONS) | 24/24 |  | tooling | 2026-06-07 |
 | change | triage docs + monorepo migration (campaign 2026-06-05-track-triage-jsonl, sub-iterate E) | 2839/2839 |  | docs | 2026-06-07 |
 | change | F5 architecture-drift detector switched from a git-history oracle (dead on gitignored drops) to content reconciliation (incl. convention); new canon/blocking F11 gate check_architecture_documented sharing one oracle (shared/scripts/lib/architecture_doc.py); dead check_architecture_reviewed + run_cross_artifact_checks removed; 5 orphan architecture.md entries back-filled. | 0/0 |  | compliance | 2026-06-06 |
@@ -123,7 +124,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-07 | Unit: 24/24 | Smoke: not_run | (iterate)
+Last run: 2026-06-07 | Unit: 312/312 | Integration: 1/1 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

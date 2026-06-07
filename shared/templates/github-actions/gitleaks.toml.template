@@ -1,0 +1,36 @@
+# Gitleaks configuration scaffolded by /shipwright-adopt.
+#
+# The Shipwright security workflow (.github/workflows/security.yml) runs
+# `gitleaks detect --no-git` with NO `--config` flag, so gitleaks auto-loads
+# this `.gitleaks.toml` from the repository root. It extends gitleaks' full
+# built-in ruleset (useDefault = true) and adds a narrowly-scoped allowlist
+# for ONE confirmed, universal false positive.
+#
+# False positive: the built-in `sidekiq-secret` rule matches the shape
+# `[a-f0-9]{8}:[a-f0-9]{8}`. A documentation placeholder using the famous
+# magic-hex constants `cafebabe` / `deadbeef` (i.e. `cafebabe:deadbeef`)
+# matches that shape but is obviously NOT a real credential — it is an
+# example token, never a live secret. It surfaces from a transient GitHub
+# pull-request merge-ref during CI (the string is present in no tracked file
+# on any branch — verified via `git grep` across all refs and a clean
+# `git archive` scan). Without this allowlist EVERY freshly-adopted repo's
+# first Security Scan goes red on this single self-evident placeholder
+# (empirically proven on leadwright 2026-06-07). This config keeps the secret
+# gate meaningful for every real rule while suppressing only that placeholder.
+title = "shipwright gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Placeholder magic-hex (cafebabe:deadbeef) false-matched by the sidekiq-secret rule; not a real secret."
+regexTarget = "match"
+regexes = [
+  '''cafebabe:deadbeef''',
+]
+# Belt-and-suspenders: any finding whose secret contains these famous
+# magic-hex placeholders is treated as a non-secret regardless of rule.
+stopwords = [
+  "cafebabe",
+  "deadbeef",
+]
