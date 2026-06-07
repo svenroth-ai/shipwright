@@ -4,10 +4,10 @@ Produces .shipwright/compliance/sbom.md with all open-source dependencies,
 versions, and licenses.
 
 Iterate B.2 (ADR-056) — also acts as a triage producer: emits one
-``source="sbom"`` action-unit per workspace/manifest with packages whose
-licenses couldn't be resolved (``license == "unknown"``). Auto-resolves
-when the workspace re-runs clean. See
-``.shipwright/planning/adr/056-sbom-undeclared-triage.md``.
+``source="sbom"`` action-unit per workspace/manifest with packages that are
+resolved but declare no license (``license == UNKNOWN_LICENSE``). Packages
+merely ``NOT_INSTALLED`` in the scan env are a scan artifact and are NOT
+flagged (iterate-2026-06-07). Auto-resolves when the workspace re-runs clean.
 
 Iterate 2026-05-24 (cluster-collapse): when N>=2 workspaces share the
 same undeclared-dep set AND same manifest_type, collapse into ONE
@@ -24,6 +24,7 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from scripts.lib.collectors import NOT_INSTALLED, UNKNOWN_LICENSE
 from scripts.lib.mermaid import license_pie
 
 if TYPE_CHECKING:
@@ -38,16 +39,33 @@ _COPYLEFT_LICENSES = {
 }
 
 
+def _license_cell(license_: str) -> str:
+    """Inventory-table cell for a license. ``NOT_INSTALLED`` (a scan artifact,
+    not a repo property) renders as a neutral ``-`` so it never reads as a
+    concern; everything else (real license or genuine ``unknown``) is verbatim.
+    ASCII-only on purpose: the artifact is printed by cp1252-default tooling.
+    """
+    return "-" if license_ == NOT_INSTALLED else license_
+
+
 def generate(data: ComplianceData) -> str:
-    """Generate SBOM as Markdown string."""
+    """Generate SBOM as Markdown — answers "is this repo license-sound?".
+
+    Surfaces genuine concerns (copyleft + resolved-but-no-license); stays silent
+    about ``NOT_INSTALLED`` deps (a scan-environment artifact): they render as
+    ``—`` in the inventory and are excluded from the license count, pie, and the
+    compliance verdict.
+    """
     deps = data.dependencies
 
     runtime = [d for d in deps if d.dep_type == "runtime"]
     dev = [d for d in deps if d.dep_type == "dev"]
     copyleft = [d for d in deps if _is_copyleft(d.license)]
+    no_license = [d for d in deps if d.license == UNKNOWN_LICENSE]  # Fall 2
+    resolved = [d for d in deps if d.license not in (NOT_INSTALLED, UNKNOWN_LICENSE)]
 
-    # Collect unique licenses
-    unique_licenses = sorted(set(d.license for d in deps)) if deps else []
+    # Unique licenses = real, resolved licenses only (no sentinels).
+    unique_licenses = sorted({d.license for d in resolved})
 
     lines = [
         "# Software Bill of Materials (SBOM)",
@@ -70,44 +88,20 @@ def generate(data: ComplianceData) -> str:
         lines.append("_No dependency manifests found (package.json, pyproject.toml)._")
         return "\n".join(lines) + "\n"
 
-    # License distribution
-    lines.extend([
-        "## License Distribution",
-        "",
-        license_pie(deps),
-        "",
-    ])
+    # License distribution — resolved licenses only (sentinels are not licenses).
+    lines.extend(["## License Distribution", "", license_pie(resolved), ""])
 
-    # Runtime dependencies
-    if runtime:
-        lines.extend([
-            "## Runtime Dependencies",
-            "",
-            "| Package | Version | License |",
-            "|---------|---------|---------|",
-        ])
-        for d in sorted(runtime, key=lambda x: x.name):
-            lines.append(f"| {d.name} | {d.version} | {d.license} |")
+    # Dependency inventory (NOT_INSTALLED → `—`).
+    for title, group in (("Runtime Dependencies", runtime), ("Dev Dependencies", dev)):
+        if not group:
+            continue
+        lines.extend([f"## {title}", "", "| Package | Version | License |", "|---------|---------|---------|"])
+        for d in sorted(group, key=lambda x: x.name):
+            lines.append(f"| {d.name} | {d.version} | {_license_cell(d.license)} |")
         lines.append("")
 
-    # Dev dependencies
-    if dev:
-        lines.extend([
-            "## Dev Dependencies",
-            "",
-            "| Package | Version | License |",
-            "|---------|---------|---------|",
-        ])
-        for d in sorted(dev, key=lambda x: x.name):
-            lines.append(f"| {d.name} | {d.version} | {d.license} |")
-        lines.append("")
-
-    # License compliance
-    lines.extend([
-        "## License Compliance",
-        "",
-    ])
-
+    # License compliance — a clear verdict for the reader.
+    lines.extend(["## License Compliance", ""])
     if copyleft:
         lines.extend([
             "**WARNING: Copyleft licenses detected.** These may restrict commercial use.",
@@ -118,23 +112,31 @@ def generate(data: ComplianceData) -> str:
         for d in copyleft:
             lines.append(f"| {d.name} | {d.version} | {d.license} | Review required |")
         lines.append("")
-    else:
-        lines.append("No copyleft licenses detected. All dependencies are permissively licensed or unknown.")
+    if no_license:
+        lines.append(
+            f"**{len(no_license)} dependency(ies) declare no license** - see "
+            "'Dependencies Without a Declared License' below."
+        )
+        lines.append("")
+    if not copyleft and not no_license:
+        lines.append(
+            "No license concerns: all resolved dependencies are permissively licensed."
+            if resolved else "No dependency licenses were resolved in this scan."
+        )
         lines.append("")
 
-    # Unknown licenses
-    unknown = [d for d in deps if d.license == "unknown"]
-    if unknown:
+    # Genuine no-declared-license (Fall 2) — the reader must verify these.
+    if no_license:
         lines.extend([
-            "## Unknown Licenses",
+            "## Dependencies Without a Declared License",
             "",
-            f"**{len(unknown)} packages** have unknown licenses. "
-            "Install dependencies (`npm install` / `uv sync`) and regenerate to detect licenses.",
+            f"**{len(no_license)} package(s)** are installed but ship no license "
+            "metadata. Verify their license terms before distribution.",
             "",
             "| Package | Version | Type |",
             "|---------|---------|------|",
         ])
-        for d in sorted(unknown, key=lambda x: x.name):
+        for d in sorted(no_license, key=lambda x: x.name):
             lines.append(f"| {d.name} | {d.version} | {d.dep_type} |")
         lines.append("")
 

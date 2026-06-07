@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-07T19:06:36.620339+00:00
-Total commits: 877
+Generated: 2026-06-07T18:41:52.920098+00:00
+Total commits: 879
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 254
-    "fix" : 244
-    "chore" : 174
+    "fix" : 245
+    "chore" : 175
     "docs" : 119
     "refactor" : 50
     "test" : 21
@@ -279,10 +279,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 244 commits
+### Fixes (fix) — 245 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-07 | compliance | distinguish SBOM 'not installed' from 'no declared license' | 1e09b96e2917 |
 | 2026-06-07 | iterate | harden finalization/verification tooling (3 fixes from the prior run) (#165) | 4718f6c13921 |
 | 2026-06-07 | adopt | scaffold .gitleaks.toml allowlist + harden security.yml.template | 418a81658f31 |
 | 2026-06-07 | triage-gc | GC machine-churn complianceRefreshed backlog dismissals | 1338052864a7 |
@@ -528,10 +529,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 174 commits
+### Chores (chore) — 175 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-07 | iterate | F11 finalization bookkeeping for SBOM not-installed iterate | 92a497b816c6 |
 | 2026-06-07 | churn | regenerate derived snapshots after main merge | 2f8e0d50a628 |
 | 2026-06-07 | iterate | F11 finalization — ADR linkage + architecture.md bullet | 640e0bd4bcf4 |
 | 2026-06-07 | triage | dismiss trg-9403a648 (by-design) + trg-2fb7d3bc (campaign done) | 7984dee727af |
@@ -946,7 +948,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 877 |
+| Total commits | 879 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 877 |
+| Human-authored commits | 879 |
 

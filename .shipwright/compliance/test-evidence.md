@@ -1,21 +1,21 @@
 # Test Evidence Report
 
-Generated: 2026-06-07T19:06:36.620339+00:00
+Generated: 2026-06-07T18:41:52.920098+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 120 |
-| Total unit tests (latest) | 56/56 |
+| Total unit tests (latest) | 0/0 |
 | New tests from iterations | +102 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | allowlist cafebabe:deadbeef in oss_backend generated gitleaks config (GAP-3) | iterate | unit | +0 | 56/56 | PASS | 2026-06-07 |
-| 2 | Harden iterate finalization tooling: F11 verifier accepts none_reason as a spec_impact=none justification; F0.5 surface_verification rejects compound runners fast with a clear error; arch-drift sanity test no longer false-FAILs on a post-release tree. | iterate | — | +0 | — | — | 2026-06-07 |
+| 1 | Harden iterate finalization tooling: F11 verifier accepts none_reason as a spec_impact=none justification; F0.5 surface_verification rejects compound runners fast with a clear error; arch-drift sanity test no longer false-FAILs on a post-release tree. | iterate | — | +0 | — | — | 2026-06-07 |
+| 2 | SBOM distinguishes not-installed from no-declared-license; not-installed is silent (no triage, dash in sbom.md), only resolved-but-no-license is surfaced. | iterate | — | +0 | — | — | 2026-06-07 |
 | 3 | Add campaign_init --expands-triage / --from-triage so a triage item can be promoted to a campaign anchor; writes expands_triage into both status.json and the campaign.md frontmatter so the Command Center shows 'Start Campaign' on that triage card. | iterate | — | +0 | — | — | 2026-06-07 |
 | 4 | adopt scaffolds .gitleaks.toml + hardens security.yml.template | iterate | unit | +0 | 312/312 | PASS | 2026-06-07 |
 | 5 | GC machine-churn complianceRefreshed compliance-backlog dismissals (add token to triage_gc.MACHINE_REASONS) | iterate | unit | +0 | 24/24 | PASS | 2026-06-07 |
@@ -139,36 +139,36 @@ Generated: 2026-06-07T19:06:36.620339+00:00
 
 | Run | Trigger | Unit | Integration | pgTAP | E2E | Smoke | Date |
 |-----|---------|------|-------------|-------|-----|-------|------|
-| 1 | iterate | 2678/2678 | — | — | — | — | 2026-05-25 |
-| 2 | iterate | 14/14 | — | — | — | — | 2026-05-25 |
-| 3 | iterate | 131/131 | — | — | — | — | 2026-05-25 |
-| 4 | iterate | 41/41 | — | — | — | — | 2026-05-25 |
-| 5 | iterate | 1104/1104 | — | — | — | — | 2026-05-26 |
-| 6 | iterate | 2449/2449 | — | — | — | — | 2026-05-28 |
-| 7 | iterate | 2449/2450 | — | — | — | — | 2026-05-29 |
-| 8 | iterate | 2545/2545 | — | — | — | — | 2026-05-29 |
-| 9 | iterate | 2549/2550 | — | — | — | — | 2026-05-29 |
-| 10 | iterate | 2558/2558 | — | — | — | — | 2026-05-29 |
-| 11 | iterate | 317/317 | — | — | — | — | 2026-05-29 |
-| 12 | iterate | 2771/2771 | — | — | — | — | 2026-05-31 |
-| 13 | iterate | 2674/2675 | — | — | — | — | 2026-05-31 |
-| 14 | iterate | 48/49 | — | — | — | — | 2026-06-01 |
-| 15 | iterate | 41/41 | — | — | — | — | 2026-06-05 |
-| 16 | iterate | 64/64 | — | — | — | — | 2026-06-05 |
-| 17 | iterate | 41/41 | — | — | — | — | 2026-06-05 |
-| 18 | iterate | 64/64 | — | — | — | — | 2026-06-05 |
-| 19 | iterate | 320/320 | — | — | — | — | 2026-06-05 |
-| 20 | iterate | 9/9 | — | — | — | — | 2026-06-05 |
-| 21 | iterate | 44/44 | — | — | — | — | 2026-06-05 |
-| 22 | iterate | 49/49 | — | — | — | — | 2026-06-05 |
-| 23 | iterate | 19/19 | — | — | — | — | 2026-06-05 |
-| 24 | iterate | 387/387 | — | — | — | — | 2026-06-05 |
-| 25 | iterate | 617/617 | — | — | — | — | 2026-06-05 |
-| 26 | iterate | 24/24 | — | — | — | — | 2026-06-05 |
-| 27 | iterate | 2839/2839 | — | — | — | — | 2026-06-07 |
-| 28 | iterate | 24/24 | — | — | — | — | 2026-06-07 |
-| 29 | iterate | 312/312 | — | — | — | — | 2026-06-07 |
-| 30 | iterate | 56/56 | — | — | — | — | 2026-06-07 |
+| 1 | iterate | 514/514 | — | — | — | — | 2026-05-23 |
+| 2 | iterate | 2678/2678 | — | — | — | — | 2026-05-25 |
+| 3 | iterate | 14/14 | — | — | — | — | 2026-05-25 |
+| 4 | iterate | 131/131 | — | — | — | — | 2026-05-25 |
+| 5 | iterate | 41/41 | — | — | — | — | 2026-05-25 |
+| 6 | iterate | 1104/1104 | — | — | — | — | 2026-05-26 |
+| 7 | iterate | 2449/2449 | — | — | — | — | 2026-05-28 |
+| 8 | iterate | 2449/2450 | — | — | — | — | 2026-05-29 |
+| 9 | iterate | 2545/2545 | — | — | — | — | 2026-05-29 |
+| 10 | iterate | 2549/2550 | — | — | — | — | 2026-05-29 |
+| 11 | iterate | 2558/2558 | — | — | — | — | 2026-05-29 |
+| 12 | iterate | 317/317 | — | — | — | — | 2026-05-29 |
+| 13 | iterate | 2771/2771 | — | — | — | — | 2026-05-31 |
+| 14 | iterate | 2674/2675 | — | — | — | — | 2026-05-31 |
+| 15 | iterate | 48/49 | — | — | — | — | 2026-06-01 |
+| 16 | iterate | 41/41 | — | — | — | — | 2026-06-05 |
+| 17 | iterate | 64/64 | — | — | — | — | 2026-06-05 |
+| 18 | iterate | 41/41 | — | — | — | — | 2026-06-05 |
+| 19 | iterate | 64/64 | — | — | — | — | 2026-06-05 |
+| 20 | iterate | 320/320 | — | — | — | — | 2026-06-05 |
+| 21 | iterate | 9/9 | — | — | — | — | 2026-06-05 |
+| 22 | iterate | 44/44 | — | — | — | — | 2026-06-05 |
+| 23 | iterate | 49/49 | — | — | — | — | 2026-06-05 |
+| 24 | iterate | 19/19 | — | — | — | — | 2026-06-05 |
+| 25 | iterate | 387/387 | — | — | — | — | 2026-06-05 |
+| 26 | iterate | 617/617 | — | — | — | — | 2026-06-05 |
+| 27 | iterate | 24/24 | — | — | — | — | 2026-06-05 |
+| 28 | iterate | 2839/2839 | — | — | — | — | 2026-06-07 |
+| 29 | iterate | 24/24 | — | — | — | — | 2026-06-07 |
+| 30 | iterate | 312/312 | — | — | — | — | 2026-06-07 |
 
 ## Code Review Evidence
 

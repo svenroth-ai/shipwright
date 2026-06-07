@@ -21,6 +21,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ._common import CONFIG_FILES, collect_configs
+from ._license_const import NOT_INSTALLED, UNKNOWN_LICENSE
 from ._types import (
     CommitEntry,
     ComplianceData,
@@ -139,6 +140,8 @@ __all__ = [
     # Constants
     "CONFIG_FILES",
     "EVENT_FILE",
+    "NOT_INSTALLED",
+    "UNKNOWN_LICENSE",
     # Top-level entry
     "collect_all",
     # Collectors

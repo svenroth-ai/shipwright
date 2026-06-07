@@ -256,7 +256,7 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_data_collector.py",
       "limit": 300,
-      "current": 1224,
+      "current": 1253,
       "state": "exception",
       "adr": "ADR-092"
     },
@@ -270,7 +270,7 @@
     {
       "path": "plugins/shipwright-compliance/tests/test_sbom_generator.py",
       "limit": 300,
-      "current": 815,
+      "current": 845,
       "state": "exception",
       "adr": "ADR-098"
     },
