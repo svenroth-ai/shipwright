@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-07T18:41:52.920098+00:00
-Total commits: 879
+Generated: 2026-06-07T20:39:47.562496+00:00
+Total commits: 884
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 254
-    "fix" : 245
-    "chore" : 175
+    "fix" : 246
+    "chore" : 179
     "docs" : 119
     "refactor" : 50
     "test" : 21
@@ -279,10 +279,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 245 commits
+### Fixes (fix) — 246 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-07 | security | allowlist cafebabe:deadbeef in generated gitleaks config (GAP-3) | 22f78c572c80 |
 | 2026-06-07 | compliance | distinguish SBOM 'not installed' from 'no declared license' | 1e09b96e2917 |
 | 2026-06-07 | iterate | harden finalization/verification tooling (3 fixes from the prior run) (#165) | 4718f6c13921 |
 | 2026-06-07 | adopt | scaffold .gitleaks.toml allowlist + harden security.yml.template | 418a81658f31 |
@@ -529,10 +530,14 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 175 commits
+### Chores (chore) — 179 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-07 | churn | regenerate derived snapshots after main merge | ab155a10a1c0 |
+| 2026-06-07 | triage | record rolling compliance backlog item (churn) | e07c262977a9 |
+| 2026-06-07 | triage | auto-dismiss trg-e1c91f13 (sbomResolved) post-integrate | f69a71726744 |
+| 2026-06-07 | churn | regenerate derived snapshots after main merge | 66836a989a8f |
 | 2026-06-07 | iterate | F11 finalization bookkeeping for SBOM not-installed iterate | 92a497b816c6 |
 | 2026-06-07 | churn | regenerate derived snapshots after main merge | 2f8e0d50a628 |
 | 2026-06-07 | iterate | F11 finalization — ADR linkage + architecture.md bullet | 640e0bd4bcf4 |
@@ -948,7 +953,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 879 |
+| Total commits | 884 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 879 |
+| Human-authored commits | 884 |
 

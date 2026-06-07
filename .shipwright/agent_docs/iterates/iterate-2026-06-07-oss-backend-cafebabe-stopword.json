@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-06-07-oss-backend-cafebabe-stopword",
+  "date": "2026-06-07T19:06:38.173198Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/oss-backend-cafebabe-stopword",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-07-oss-backend-cafebabe-stopword"
+}

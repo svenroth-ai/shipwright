@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-07-sbom-not-installed-vs-undeclared",
+    "run_id": "iterate-2026-06-07-triage-main-tree-reconcile",
     "date": "2026-06-07",
     "unit": {
       "status": "passed",
-      "passed": 638,
-      "total": 638
+      "passed": 2861,
+      "total": 2861
     },
     "integration": {
       "status": "passed",
@@ -18,83 +18,145 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 23,
+      "total": 23
     },
     "design_fidelity": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "external_concurrent_main_tree_write",
+        "detail": "An unrelated campaign scaffold (.shipwright/planning/iterate/campaigns/2026-06-07-tracked-campaign-status/, trg-fda5f7a3) was created in the MAIN tree by a concurrent process at 20:29Z, after this run's 19:47Z snapshot. Verified NOT produced by this iterate (all changes worktree-isolated). The run snapshot was re-baselined so the F0/F11 leak-guard measures only this run's finalization."
+      },
+      {
+        "condition": "external_review_partial",
+        "detail": "External code review via OpenRouter: OpenAI leg returned actionable findings (all applied: any-staged guard, absolute --git-path, missing-log skip, 2 test-overclaim fixes). Gemini leg returned truncated/garbled output (no actionable signal)."
+      }
+    ],
     "surface_verification": {
-      "surface": "none",
-      "tests_run": 779,
+      "surface": "cli",
+      "runner": "uv run --project C:/01_Development/shipwright pytest C:/01_Development/shipwright/.worktrees/triage-main-tree-reconcile/shared/tests/test_reconcile_triage.py C:/01_Development/shipwright/.worktrees/triage-main-tree-reconcile/shared/tests/test_reconcile_triage_guards.py C:/01_Development/shipwright/.worktrees/triage-main-tree-reconcile/shared/tests/test_reconcile_triage_wiring.py -q",
       "exit_code": 0,
-      "justification": "Backend/CLI producer change in the shipwright-compliance plugin (SBOM license resolver + triage emitter + sbom.md generator). No web surface: the dedup-key contract consumed by the WebUI/audit_detector is unchanged, and sbom.md is a rendered doc. Verified empirically by the full compliance suite (638) + integration suite (141) + a real sbom.md regeneration against the worktree repo (diff confirmed: not-installed deps -> '-', 'Unknown Licenses' section removed, clean verdict)."
+      "tests_run": 23,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\triage-main-tree-reconcile\\.shipwright\\runs\\iterate-2026-06-07-triage-main-tree-reconcile\\surface_verification.log",
+      "timestamp": "2026-06-07T20:29:15.876Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC-1 detect_python_license: NOT_INSTALLED when no dist-info, UNKNOWN_LICENSE when dist-info present w/o license",
+          "behavior": "Detect uncommitted drift / no-drift no-op",
           "disposition": "tested",
-          "evidence": "test_sbom_not_installed.py::TestPythonResolverDistinction (4) PASSED; test_data_collector.py no-venv/no-distinfo flips PASSED"
+          "evidence": "test_commits_drift_as_chore, test_no_drift_is_noop PASSED"
         },
         {
-          "behavior": "AC-2 detect_npm_license: NOT_INSTALLED when absent, UNKNOWN_LICENSE when present-no-license incl blank SPDX object",
+          "behavior": "Validate before commit (fail-closed on invalid)",
           "disposition": "tested",
-          "evidence": "test_sbom_not_installed.py::TestNpmResolverDistinction (5 incl test_lockfile_blank_spdx_object_is_unknown) PASSED"
+          "evidence": "test_invalid_log_is_not_committed PASSED"
         },
         {
-          "behavior": "AC-3 collector: NOT_INSTALLED never becomes a triage group (python+npm)",
+          "behavior": "Dedup exact-duplicate lines",
           "disposition": "tested",
-          "evidence": "test_sbom_not_installed.py::TestCollectorSilence (3) + test_sbom_generator.py::test_python_not_installed_is_silent PASSED"
+          "evidence": "test_dedup_folds_exact_duplicate_lines PASSED"
         },
         {
-          "behavior": "AC-4 genuine Fall-2 still drives per-workspace/cluster triage",
+          "behavior": "Commit chore(triage), B7-exempt, no FR linkage",
           "disposition": "tested",
-          "evidence": "test_sbom_generator.py::TestEmitUndeclaredTriage* re-seeded to Fall 2 (all green) PASSED"
+          "evidence": "test_commit_is_b7_exempt_no_fr_linkage PASSED"
         },
         {
-          "behavior": "AC-5 doc: not-installed rendered '-', excluded from unique licenses/pie/verdict",
+          "behavior": "Idempotent (no empty commit)",
           "disposition": "tested",
-          "evidence": "test_sbom_not_installed.py::test_not_installed_rendered_as_dash_and_excluded + test_sbom_generator.py::test_not_installed_deps_are_silent_in_doc PASSED"
+          "evidence": "test_idempotent_second_run_is_noop PASSED"
         },
         {
-          "behavior": "AC-6 doc: Fall-2 'Dependencies Without a Declared License' section; old 'Unknown Licenses' removed",
+          "behavior": "Non-ASCII + mixed-EOL round-trip",
           "disposition": "tested",
-          "evidence": "test_sbom_not_installed.py::test_genuine_no_license_surfaced_as_section PASSED; sbom.md regen diff confirmed section removed"
+          "evidence": "test_non_ascii_preserved_and_mixed_eol_handled PASSED"
         },
         {
-          "behavior": "AC-7 doc verdict 3 states (clean / nothing-resolved)",
+          "behavior": "Guard: CI without opt-in",
           "disposition": "tested",
-          "evidence": "test_sbom_not_installed.py::test_verdict_clean_when_all_permissive + test_verdict_nothing_resolved_when_all_not_installed PASSED"
+          "evidence": "test_skip_in_ci_without_optin PASSED"
         },
         {
-          "behavior": "AC-8 no scan-coverage / install-nag line; doc ASCII-only",
+          "behavior": "Guard: detached HEAD",
           "disposition": "tested",
-          "evidence": "test_sbom_not_installed.py::test_no_scan_coverage_or_install_nag + test_doc_is_ascii_even_with_fall2_deps PASSED"
+          "evidence": "test_skip_on_detached_head PASSED"
         },
         {
-          "behavior": "AC-9 repo's 4 open SBOM items auto-dismiss on next regen (keys leave current_keys)",
+          "behavior": "Guard: merge in progress (pseudo-ref)",
           "disposition": "tested",
-          "evidence": "mechanism proven: TestCollectorSilence (not-installed -> no group) + existing test_auto_resolve_when_workspace_clean / cluster auto-resolve (key absent -> dismissed sbomResolved)"
+          "evidence": "test_skip_on_merge_in_progress PASSED"
+        },
+        {
+          "behavior": "Guard: rebase in progress (git-dir file)",
+          "disposition": "tested",
+          "evidence": "test_skip_on_rebase_in_progress PASSED"
+        },
+        {
+          "behavior": "Guard: any staged change incl. triage itself",
+          "disposition": "tested",
+          "evidence": "test_skip_on_unrelated_staged_changes, test_skip_when_triage_itself_is_staged PASSED"
+        },
+        {
+          "behavior": "Guard: deleted/missing triage log",
+          "disposition": "tested",
+          "evidence": "test_skip_when_triage_log_deleted PASSED"
+        },
+        {
+          "behavior": "Guard: not a git repo",
+          "disposition": "tested",
+          "evidence": "test_not_a_git_repo_is_skip PASSED"
+        },
+        {
+          "behavior": "Resolve MAIN root from a worktree",
+          "disposition": "tested",
+          "evidence": "test_reconcile_from_worktree_commits_on_main PASSED"
+        },
+        {
+          "behavior": "AC-4 unblocks pull/FF block (real bare origin)",
+          "disposition": "tested",
+          "evidence": "test_ac4_reconcile_unblocks_pull PASSED"
+        },
+        {
+          "behavior": "integrate_main wiring (before merge)",
+          "disposition": "tested",
+          "evidence": "test_integrate_main_reconciles_before_merge, _noop PASSED"
+        },
+        {
+          "behavior": "setup_iterate_worktree wiring (commit drift + clean snapshot)",
+          "disposition": "tested",
+          "evidence": "test_setup_worktree_commits_drift_and_clean_snapshot PASSED"
+        },
+        {
+          "behavior": "CLI status->exit-code mapping + CI opt-in",
+          "disposition": "tested",
+          "evidence": "test_cli_allow_ci_opt_in_flips_skip_to_commit, _invalid_log_exits_three, _no_drift_exits_zero PASSED"
+        },
+        {
+          "behavior": "Producer-lock acquisition around critical section",
+          "disposition": "untestable",
+          "reason_code": "covered-by-existing-test",
+          "reason": "every committed-path test runs through triage._FileLock; a deterministic concurrency-race test would be flaky. Exclusion is guaranteed by reusing the canonical producer lock."
         }
       ],
       "counts": {
-        "testable": 9,
-        "tested": 9,
-        "untestable": 0,
+        "testable": 18,
+        "tested": 18,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 9,
-        "covered_acs": 9
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   }
