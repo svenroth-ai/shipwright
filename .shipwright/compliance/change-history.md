@@ -1,16 +1,16 @@
 # Commit Change Log
 
-Generated: 2026-06-06T07:03:38.252014+00:00
-Total commits: 866
+Generated: 2026-06-07T15:05:01.124652+00:00
+Total commits: 870
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 252
-    "fix" : 240
-    "chore" : 170
-    "docs" : 118
+    "fix" : 241
+    "chore" : 172
+    "docs" : 119
     "refactor" : 50
     "test" : 21
     "ci" : 7
@@ -277,10 +277,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 240 commits
+### Fixes (fix) — 241 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-06 | compliance | F5 architecture-drift uses content reconciliation + canon F11 gate | c58e7aa02310 |
 | 2026-06-05 | triage | C1 preservation tests assert no-reflow, not byte-level CRLF | c22ac1c3c06f |
 | 2026-06-05 | triage | scaffolder self-heal preserves content + line endings (external review, C1) | 71c5577ff383 |
 | 2026-06-05 | evidence | record A's unit suite as 617/617, not 617/627 (external review) | de77c5fc7e44 |
@@ -522,10 +523,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 170 commits
+### Chores (chore) — 172 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-07 | triage | dismiss trg-9403a648 (by-design) + trg-2fb7d3bc (campaign done) | 7984dee727af |
+| 2026-06-07 | release | v0.24.0 | d5764ab72038 |
 | 2026-06-06 | churn | regenerate derived snapshots after main merge | e047b8b54f98 |
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | 55e50da74d8d |
 | 2026-06-05 | churn | regenerate derived snapshots after main merge | 1ad6cd3ae78f |
@@ -697,10 +700,11 @@ pie title Commit Types
 | 2026-03-28 | — | add shipwright-run uv.lock | ef1cc1ad180c |
 | 2026-03-20 | — | initial commit with spec and task list | 07ca9c1de51c |
 
-### Documentation (docs) — 118 commits
+### Documentation (docs) — 119 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-07 | triage | document tracked triage.jsonl SSoT + commit canonical pile (campaign E) | e52985bc611e |
 | 2026-06-06 | adopt | triage.jsonl is tracked, not gitignored (campaign D) | 7da2535718ef |
 | 2026-06-05 | triage | reconcile B spec with the 8+8 machine-set (external review) | 3d78dcfbb726 |
 | 2026-06-05 | campaign | normalize C1/C2 status to `complete`; C3 in review (#147) | 3593093e0851 |
@@ -935,7 +939,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 866 |
+| Total commits | 870 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 866 |
+| Human-authored commits | 870 |
 
