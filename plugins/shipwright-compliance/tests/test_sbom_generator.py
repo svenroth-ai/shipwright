@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -21,6 +22,28 @@ def _make_data(deps: list[DependencyInfo]) -> ComplianceData:
     data.dependencies = deps
     data.timestamp = "2026-03-21T14:00:00Z"
     return data
+
+
+def _seed_npm_lock_unlicensed(manifest_dir: Path, deps: dict) -> None:
+    """Lockfile listing ``deps`` but declaring no license → resolved-no-license
+    (Fall 2 — the genuinely-undeclared case, not the not-installed artifact).
+    Without this, a package with no lockfile/node_modules is NOT_INSTALLED and
+    is (correctly) NOT flagged for triage."""
+    (manifest_dir / "package-lock.json").write_text(
+        json.dumps({"lockfileVersion": 3,
+                    "packages": {f"node_modules/{n}": {"version": "1.0.0"} for n in deps}}),
+        encoding="utf-8",
+    )
+
+
+def _seed_py_distinfo_unlicensed(manifest_dir: Path, names) -> None:
+    """`.venv` dist-info(s) whose METADATA declares no license (Fall 2)."""
+    for raw in names:
+        name = re.split(r"[><=!~ ]", raw, maxsplit=1)[0]
+        di = manifest_dir / ".venv" / "Lib" / "site-packages" / f"{name}-1.0.0.dist-info"
+        di.mkdir(parents=True, exist_ok=True)
+        (di / "METADATA").write_text(
+            f"Metadata-Version: 2.1\nName: {name}\nVersion: 1.0.0\n", encoding="utf-8")
 
 
 class TestGenerate:
@@ -71,14 +94,17 @@ class TestGenerate:
             DependencyInfo("react", "19.0.0", "runtime", "MIT"),
         ]
         result = generate(_make_data(deps))
-        assert "No copyleft licenses detected" in result
+        assert "No license concerns" in result
 
-    def test_unknown_licenses_section(self, project_root: Path):
+    def test_not_installed_deps_are_silent_in_doc(self, project_root: Path):
         data = collect_all(project_root)
         result = generate(data)
-        # All licenses are unknown because no node_modules
-        assert "## Unknown Licenses" in result
-        assert "13 packages" in result
+        # All deps are not-installed (no node_modules / .venv in fixture): a scan
+        # artifact, NOT a concern. No "unknown"/undeclared section; rendered `—`.
+        assert "## Unknown Licenses" not in result
+        assert "## Dependencies Without a Declared License" not in result
+        assert "No dependency licenses were resolved in this scan." in result
+        assert "| - |" in result  # not-installed → neutral ASCII dash
 
     def test_no_deps(self, empty_project_root: Path):
         data = collect_all(empty_project_root)
@@ -119,6 +145,7 @@ class TestEmitUndeclaredTriage:
         (root / sub / "package.json").write_text(
             json.dumps({"dependencies": deps}), encoding="utf-8"
         )
+        _seed_npm_lock_unlicensed(root / sub, deps)
 
     def test_no_undeclared_no_triage(self, tmp_path: Path, triage_api):
         # Resolvable package via lockfile → no undeclared → no item.
@@ -234,6 +261,8 @@ class TestEmitUndeclaredTriage:
             'dependencies = [\n  "definitely-not-a-real-pypi-package-xyz>=1.0.0",\n]\n',
             encoding="utf-8",
         )
+        _seed_py_distinfo_unlicensed(
+            tmp_path / "subpkg", ["definitely-not-a-real-pypi-package-xyz"])
         emit_undeclared_triage(tmp_path)
         item = _read_sbom_items(triage_api, tmp_path)[0]
         assert item["dedupKey"] == "sbom:undeclared:subpkg/pyproject.toml"
@@ -261,6 +290,7 @@ class TestEmitUndeclaredTriage:
         (tmp_path / "my app" / "package.json").write_text(
             json.dumps({"dependencies": {"react": "^19.0.0"}}), encoding="utf-8"
         )
+        _seed_npm_lock_unlicensed(tmp_path / "my app", {"react": "^19.0.0"})
         emit_undeclared_triage(tmp_path)
         item = _read_sbom_items(triage_api, tmp_path)[0]
         payload = item["launchPayload"]
@@ -329,22 +359,19 @@ class TestEmitUndeclaredTriage:
         assert "append:client/package.json" in result["error"]
         assert "RuntimeError" in result["error"]
 
-    def test_python_no_venv_still_emits(self, tmp_path: Path, triage_api):
-        """Reviewer-flagged M11: confirm no-venv → undeclared → triage emitted.
-
-        ``importlib.metadata`` returns 'unknown' for non-installed
-        packages, which is exactly the undeclared-license case the
-        producer handles. A no-venv Python workspace gets the same
-        ``uv sync`` payload as a stale-venv one.
+    def test_python_not_installed_is_silent(self, tmp_path: Path, triage_api):
+        """iterate-2026-06-07: a NOT-installed package (no .venv dist-info) is a
+        scan artifact, NOT a license finding — it must emit NO triage item.
+        Reverses the old ADR-056 "no-venv → undeclared → triage" behavior; the
+        genuine "installed but no declared license" case is covered separately.
         """
         (tmp_path / "pyproject.toml").write_text(
             'dependencies = [\n  "ghost-package-not-installed-xyz>=1.0.0",\n]\n',
             encoding="utf-8",
         )
         result = emit_undeclared_triage(tmp_path)
-        assert result["appended"] == 1
-        item = _read_sbom_items(triage_api, tmp_path)[0]
-        assert "uv sync" in item["launchPayload"]
+        assert result["appended"] == 0
+        assert _read_sbom_items(triage_api, tmp_path) == []
 
 
 class TestEmitUndeclaredTriageClusters:
@@ -362,6 +389,7 @@ class TestEmitUndeclaredTriageClusters:
         (root / sub / "package.json").write_text(
             json.dumps({"dependencies": deps}), encoding="utf-8"
         )
+        _seed_npm_lock_unlicensed(root / sub, deps)
 
     def _seed_python(self, root: Path, sub: str, deps: list[str]) -> None:
         (root / sub).mkdir(parents=True, exist_ok=True)
@@ -369,6 +397,7 @@ class TestEmitUndeclaredTriageClusters:
         (root / sub / "pyproject.toml").write_text(
             f"dependencies = [\n  {dep_lines}\n]\n", encoding="utf-8",
         )
+        _seed_py_distinfo_unlicensed(root / sub, deps)
 
     def test_single_workspace_keeps_per_workspace_shape(
         self, tmp_path: Path, triage_api,
@@ -519,6 +548,7 @@ class TestEmitUndeclaredTriageClusters:
             (tmp_path / sub / "package.json").write_text(
                 json.dumps({"dependencies": {"shared": "1.0.0"}}), encoding="utf-8"
             )
+            _seed_npm_lock_unlicensed(tmp_path / sub, {"shared": "1.0.0"})
         emit_undeclared_triage(tmp_path)
         items = _read_sbom_items(triage_api, tmp_path)
         assert len(items) == 1

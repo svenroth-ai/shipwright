@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-07-adopt-gitleaks-allowlist",
+    "run_id": "iterate-2026-06-07-sbom-not-installed-vs-undeclared",
     "date": "2026-06-07",
     "unit": {
       "status": "passed",
-      "passed": 312,
-      "total": 312
+      "passed": 638,
+      "total": 638
     },
     "integration": {
       "status": "passed",
-      "passed": 1,
-      "total": 1
+      "passed": 141,
+      "total": 141
     },
     "pgtap": {
       "status": "not_run",
@@ -18,7 +18,7 @@
       "total": 0
     },
     "e2e": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
@@ -33,87 +33,68 @@
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "runner": "surface_verification.py --surface none",
+      "tests_run": 779,
       "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-07-adopt-gitleaks-allowlist/surface_verification.json",
-      "timestamp": "2026-06-07T00:00:00Z",
-      "justification": "Framework adopt-scaffolder + CI security-template change; no startable web/api/cli USER surface. The only behavior (adopt writing a root .gitleaks.toml) is verified end-to-end by the real generate_adoption_artifacts.py subprocess test. Backend-affects-Frontend rule N/A."
+      "justification": "Backend/CLI producer change in the shipwright-compliance plugin (SBOM license resolver + triage emitter + sbom.md generator). No web surface: the dedup-key contract consumed by the WebUI/audit_detector is unchanged, and sbom.md is a rendered doc. Verified empirically by the full compliance suite (638) + integration suite (141) + a real sbom.md regeneration against the worktree repo (diff confirmed: not-installed deps -> '-', 'Unknown Licenses' section removed, clean verdict)."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Scaffolds <root>/.gitleaks.toml from the template when absent",
+          "behavior": "AC-1 detect_python_license: NOT_INSTALLED when no dist-info, UNKNOWN_LICENSE when dist-info present w/o license",
           "disposition": "tested",
-          "evidence": "test_gitleaks_config_scaffold.py::test_writes_when_absent PASSED"
+          "evidence": "test_sbom_not_installed.py::TestPythonResolverDistinction (4) PASSED; test_data_collector.py no-venv/no-distinfo flips PASSED"
         },
         {
-          "behavior": "Copies the template byte-for-byte (drift guarantees carry into adopted repos)",
+          "behavior": "AC-2 detect_npm_license: NOT_INSTALLED when absent, UNKNOWN_LICENSE when present-no-license incl blank SPDX object",
           "disposition": "tested",
-          "evidence": "test_gitleaks_config_scaffold.py::test_content_matches_template PASSED"
+          "evidence": "test_sbom_not_installed.py::TestNpmResolverDistinction (5 incl test_lockfile_blank_spdx_object_is_unknown) PASSED"
         },
         {
-          "behavior": "Written content carries the cafebabe:deadbeef allowlist + useDefault",
+          "behavior": "AC-3 collector: NOT_INSTALLED never becomes a triage group (python+npm)",
           "disposition": "tested",
-          "evidence": "test_gitleaks_config_scaffold.py::test_written_content_has_cafebabe_allowlist PASSED"
+          "evidence": "test_sbom_not_installed.py::TestCollectorSilence (3) + test_sbom_generator.py::test_python_not_installed_is_silent PASSED"
         },
         {
-          "behavior": "Never overwrites a pre-existing .gitleaks.toml (byte-preserved)",
+          "behavior": "AC-4 genuine Fall-2 still drives per-workspace/cluster triage",
           "disposition": "tested",
-          "evidence": "test_gitleaks_config_scaffold.py::test_idempotent_existing_file_preserved PASSED"
+          "evidence": "test_sbom_generator.py::TestEmitUndeclaredTriage* re-seeded to Fall 2 (all green) PASSED"
         },
         {
-          "behavior": "Idempotent on a repeat call (second call reports already_exists)",
+          "behavior": "AC-5 doc: not-installed rendered '-', excluded from unique licenses/pie/verdict",
           "disposition": "tested",
-          "evidence": "test_gitleaks_config_scaffold.py::test_idempotent_when_called_twice PASSED"
+          "evidence": "test_sbom_not_installed.py::test_not_installed_rendered_as_dash_and_excluded + test_sbom_generator.py::test_not_installed_deps_are_silent_in_doc PASSED"
         },
         {
-          "behavior": "Fails loud (FileNotFoundError, no half-write) when the template path does not resolve",
+          "behavior": "AC-6 doc: Fall-2 'Dependencies Without a Declared License' section; old 'Unknown Licenses' removed",
           "disposition": "tested",
-          "evidence": "test_gitleaks_config_scaffold.py::test_raises_loudly_when_template_missing PASSED"
+          "evidence": "test_sbom_not_installed.py::test_genuine_no_license_surfaced_as_section PASSED; sbom.md regen diff confirmed section removed"
         },
         {
-          "behavior": "The real adopt pipeline actually wires the scaffold (writes .gitleaks.toml, results.gitleaks_config)",
+          "behavior": "AC-7 doc verdict 3 states (clean / nothing-resolved)",
           "disposition": "tested",
-          "evidence": "test_adopt_pipeline_subprocess.py::test_full_pipeline_e2e_via_subprocess PASSED (real uv subprocess)"
+          "evidence": "test_sbom_not_installed.py::test_verdict_clean_when_all_permissive + test_verdict_nothing_resolved_when_all_not_installed PASSED"
         },
         {
-          "behavior": "GITLEAKS_CONFIG_* SSoT constants resolve to a real template of the required allowlist shape",
+          "behavior": "AC-8 no scan-coverage / install-nag line; doc ASCII-only",
           "disposition": "tested",
-          "evidence": "test_gitleaks_config_convention.py::TestGitleaksConfigTemplate (3 tests) PASSED"
+          "evidence": "test_sbom_not_installed.py::test_no_scan_coverage_or_install_nag + test_doc_is_ascii_even_with_fall2_deps PASSED"
         },
         {
-          "behavior": "Deployed config path is the root name gitleaks auto-loads (.gitleaks.toml)",
+          "behavior": "AC-9 repo's 4 open SBOM items auto-dismiss on next regen (keys leave current_keys)",
           "disposition": "tested",
-          "evidence": "test_gitleaks_config_convention.py::test_gitleaks_config_path_is_root_toml PASSED"
-        },
-        {
-          "behavior": "security.yml.template gitleaks install is SHA256-verified before extract",
-          "disposition": "tested",
-          "evidence": "test_security_workflow_convention.py::TestSupplyChainHardening::test_gitleaks_download_is_sha256_verified PASSED"
-        },
-        {
-          "behavior": "security.yml.template peter-evans action pinned to a commit SHA (no residual @v4)",
-          "disposition": "tested",
-          "evidence": "test_security_workflow_convention.py::TestSupplyChainHardening::test_comment_action_pinned_to_commit_sha PASSED"
-        },
-        {
-          "behavior": "Adopted repo's first live GitHub Actions Security Scan goes green (no cafebabe red)",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "Needs a live GitHub Actions run on a real adopted repo; empirically proven on leadwright 2026-06-07 (run 27086046885 red -> 27086178138 green after the file was added)."
+          "evidence": "mechanism proven: TestCollectorSilence (not-installed -> no group) + existing test_auto_resolve_when_workspace_clean / cluster auto-resolve (key absent -> dismissed sbomResolved)"
         }
       ],
       "counts": {
-        "testable": 11,
-        "tested": 11,
-        "untestable": 1,
+        "testable": 9,
+        "tested": 9,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
+        "acs": 9,
+        "covered_acs": 9
       }
     }
   }

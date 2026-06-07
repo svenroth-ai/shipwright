@@ -17,6 +17,7 @@ import re
 from email.parser import HeaderParser as _HeaderParser
 from pathlib import Path
 
+from ._license_const import NOT_INSTALLED, UNKNOWN_LICENSE
 from ._types import DependencyInfo
 
 
@@ -115,12 +116,14 @@ def _find_distinfo_candidates(
 
 
 def _parse_metadata_license(distinfo: Path) -> str:
-    """Parse a single dist-info METADATA file. Returns license or 'unknown'.
+    """Parse a single dist-info METADATA file. Returns license or
+    ``UNKNOWN_LICENSE``.
 
-    All filesystem / parse errors are swallowed to ``unknown`` —
-    SBOM generation must never crash because one METADATA file is
-    unreadable. Output is always single-line (clamps RFC822 folded /
-    multi-line values uniformly across the three extraction paths).
+    Only reached when the dist-info dir EXISTS (the package is installed), so
+    every non-license outcome here is ``UNKNOWN_LICENSE`` (resolved-but-no-
+    declared-license), never ``NOT_INSTALLED``. All filesystem / parse errors
+    are swallowed to ``UNKNOWN_LICENSE`` — SBOM generation must never crash
+    because one METADATA file is unreadable. Output is always single-line.
     """
     metadata_path = distinfo / "METADATA"
     try:
@@ -128,12 +131,12 @@ def _parse_metadata_license(distinfo: Path) -> str:
         # fall through to the cp1252 default.
         raw = metadata_path.read_text(encoding="utf-8", errors="replace")
     except OSError:
-        return "unknown"
+        return UNKNOWN_LICENSE
 
     try:
         msg = _HeaderParser().parsestr(raw)
     except Exception:  # noqa: BLE001
-        return "unknown"
+        return UNKNOWN_LICENSE
 
     candidate = ""
 
@@ -153,9 +156,9 @@ def _parse_metadata_license(distinfo: Path) -> str:
                     break
 
     if not candidate:
-        return "unknown"
+        return UNKNOWN_LICENSE
     # Single-return one-line clamp (code-review M2: applies to all paths).
-    return candidate.splitlines()[0].strip() or "unknown"
+    return candidate.splitlines()[0].strip() or UNKNOWN_LICENSE
 
 
 def detect_python_license(package_name: str, manifest_dir: Path) -> str:
@@ -165,11 +168,12 @@ def detect_python_license(package_name: str, manifest_dir: Path) -> str:
     directly. See ADR-056 follow-up: deterministic + cross-manifest isolated,
     no ambient sys.path probe.
 
-    Returns ``"unknown"`` when no matching dist-info exists in the
-    manifest's ``.venv`` (no install yet, or stale env without the dep).
-
-    When multiple dist-info dirs match the same canonicalized package
-    name, the highest-versioned directory wins by semver-aware sort.
+    Returns ``NOT_INSTALLED`` when no matching dist-info exists in the
+    manifest's ``.venv`` (no install yet, or stale env without the dep) — a
+    scan artifact, NOT a license finding. Returns ``UNKNOWN_LICENSE`` only when
+    the dist-info IS present but declares no license (a genuine concern). When
+    multiple dist-info dirs match the same canonicalized package name, the
+    highest-versioned directory wins by semver-aware sort.
     """
     canonical = _canonical_pkg_name(package_name)
     for site_packages in _iter_site_packages_dirs(manifest_dir):
@@ -179,7 +183,7 @@ def detect_python_license(package_name: str, manifest_dir: Path) -> str:
         # Highest version last in sorted list → pick it (OpenAI HIGH-2).
         chosen = matches[-1]
         return _parse_metadata_license(chosen)
-    return "unknown"
+    return NOT_INSTALLED
 
 
 def parse_pyproject_deps(pyproject_path: Path) -> list[DependencyInfo]:
