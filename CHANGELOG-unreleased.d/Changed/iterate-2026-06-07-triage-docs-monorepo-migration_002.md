@@ -1,0 +1,1 @@
+Committed the canonical triage backlog: GC-compacted the dismissed pile (179 to 126 items, dropping 53 pure machine-churn auto-resolves while preserving all open, promoted and human-curated dismissals) and committed .shipwright/triage.jsonl plus a regenerated triage_inbox.md so the tracked snapshot finally matches the Command Center WebUI

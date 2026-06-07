@@ -37,18 +37,26 @@ drift (the 161-and-growing dismissed pile), and tracking that as-is bakes the
 churn engine + the dismissed bloat into history forever. A stabilizes the id; B
 compacts the pile **before** it enters tracked history; only then is C safe.
 
-## Sub-iterates (A → E)
+## Sub-Iterates
 
-| ID | Title | Complexity | Status | Branch | Commit |
-|----|-------|-----------|--------|--------|--------|
-| A | B-churn: stabilize SBOM cluster identity (signature-only id) | small | in_review | iterate/sbom-cluster-stable-id | — |
-| B | GC / compaction of the dismissed pile (one-off tool + run) | small | pending | — | — |
-| C | Tracking flip (gitignore negation + scaffolder self-heal + churn allowlist/resolver + F6 add + finalize simplify) | medium | pending | — | — |
-| D | adopt / project wiring | small | pending | — | — |
-| E | docs + glossary + hooks-matrix + monorepo migration | small | pending | — | — |
+> **Slug column = the on-disk spec slug** (`sub-iterates/<id>-<slug>.md`). The
+> WebUI derives the spec path from `<id>-<slug>` and `existsSync`-checks it, so
+> these MUST equal the filenames or the Launch button goes dead. (The `Branch`
+> column is the actual git branch, which intentionally differs.)
 
-> **Dependency order:** A, B → C → D → E. A and B are independent of each other
-> and could bundle, but are kept separate for clean blast-radius isolation.
+| ID | Slug | Title | Complexity | Status | Branch | PR | Commit |
+|----|------|-------|-----------|--------|--------|----|--------|
+| A  | sbom-cluster-stable-identity   | B-churn: stabilize SBOM cluster identity (signature-only id)                         | small  | complete | iterate/sbom-cluster-stable-id        | #153 | de77c5fc |
+| B  | triage-dismissed-gc            | GC / compaction of the dismissed pile (one-off tool + run)                          | small  | complete | iterate/triage-dismissed-gc           | #154 | 3d78dcfb |
+| C1 | triage-gitignore-trackable     | Tracking flip pt.1: gitignore negation + scaffolder self-heal                       | medium | complete | iterate/triage-track-c1               | #155 | c22ac1c3 |
+| C2 | triage-churn-merge-safety      | Tracking flip pt.2: churn allowlist/resolver + leak-guard exempt + F6 `git add`     | medium | complete | iterate/triage-track-c2               | #156 | bad7d909 |
+| D  | adopt-project-wiring           | adopt / project wiring                                                              | small  | complete | iterate/triage-adopt-wiring           | #158 | aed7ad3d |
+| E  | triage-docs-monorepo-migration | docs + glossary + hooks-matrix + stale-docstring fix + DESTRUCTIVE monorepo migration | small  | pending  | iterate/triage-docs-monorepo-migration | —    | —        |
+
+> **Dependency order:** A, B → C1 → C2 → D → E. A and B are independent of each
+> other and could bundle, but are kept separate for clean blast-radius
+> isolation. C was split into C1 (gitignore-trackable) + C2 (churn-merge-safety)
+> at the user's request (high blast radius).
 
 ## Sub-iterate A — scope note (supersedes part of the cluster-collapse iterate)
 
@@ -73,22 +81,23 @@ fully delivered without it.
 
 ## Campaign-level acceptance criteria
 
-- [ ] **AC-1.** `.shipwright/triage.jsonl` is git-tracked in the monorepo and in
+- [x] **AC-1.** `.shipwright/triage.jsonl` is git-tracked in the monorepo and in
       every newly adopted/created project (negation present; scaffolder no longer
-      ignores it; already-adopted repos self-heal on re-run). *(C, D)*
-- [ ] **AC-2.** A fresh iterate worktree inherits the canonical backlog; the
+      ignores it; already-adopted repos self-heal on re-run). *(C1, D — landed)*
+- [x] **AC-2.** A fresh iterate worktree inherits the canonical backlog; the
       committed `triage_inbox.md` matches the WebUI. No more SBOM-only
-      overwrites on merge. *(C)*
-- [ ] **AC-3.** Concurrent appends across worktrees reconcile without manual
+      overwrites on merge. *(C2 — landed; the canonical pile is committed in E)*
+- [x] **AC-3.** Concurrent appends across worktrees reconcile without manual
       conflict resolution; `append`+`status` shared-id semantics produce no
-      false dedup warning/drop. *(C)*
+      false dedup warning/drop. *(C2 — landed)*
 - [x] **AC-4.** SBOM cluster identity is stable across runs under membership
       drift (no fresh id when 8↔9↔10 workspaces); dismissed pile stops growing.
       *(A — landed)*
-- [ ] **AC-5.** `.gitattributes merge=union` for triage in the monorepo; no
-      `.gitattributes` written to target projects. *(C)*
+- [x] **AC-5.** `.gitattributes merge=union` for triage in the monorepo; no
+      `.gitattributes` written to target projects. *(C2 — landed)*
 - [ ] **AC-6.** Docs + glossary + hooks-and-pipeline matrices updated; monorepo
-      snapshot migrated; 161-item dismissed pile compacted. *(B, E)*
+      snapshot migrated; dismissed pile compacted. *(B — landed; docs + migration
+      in E, this iterate)*
 
 ## Notes / progress log
 

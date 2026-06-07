@@ -2,11 +2,15 @@
 """Tests for plugin_sync_reminder_on_stop.py (SP4 Stop reminder hook).
 
 Focus: the durable ``source="plugin-sync"`` triage item is an append-only
-AUDIT trail and must survive ``git worktree remove`` after a /shipwright-iterate
-PR merges. From inside an iterate worktree ``project_root`` is the worktree
-root, whose ``.shipwright/triage.jsonl`` is gitignored + discarded on cleanup —
-so the append is redirected to the MAIN repo via ``resolve_main_repo_root``. The
-reminder banner + once-per-session sentinel still key off the worktree root.
+AUDIT trail that belongs in the **main**-tree, repo-global backlog (curated via
+the WebUI on main) — not a per-worktree pile. From inside an iterate worktree
+``project_root`` is the worktree root, so the append is *intentionally*
+redirected to the MAIN repo via ``resolve_main_repo_root``. Since campaign
+``2026-06-05-track-triage-jsonl`` (C1/C2) ``triage.jsonl`` is git-tracked, not
+gitignored; the mid-iterate main-tree write is leak-guard-exempt
+(``_MAIN_TREE_WRITE_EXEMPT``), so the redirect is a routing choice, not a
+"the worktree copy is discarded" workaround. The reminder banner +
+once-per-session sentinel still key off the worktree root.
 (iterate-2026-05-31-plugin-sync-triage-main-repo)
 """
 from __future__ import annotations
