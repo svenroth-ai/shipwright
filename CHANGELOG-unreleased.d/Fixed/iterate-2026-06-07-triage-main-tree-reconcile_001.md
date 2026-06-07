@@ -1,0 +1,1 @@
+Uncommitted background `.shipwright/triage.jsonl` drift no longer blocks `git pull` / `git merge --ff-only origin/main` in the main tree: the iterate tooling now folds it into a single `chore(triage)` commit before any FF/pull.

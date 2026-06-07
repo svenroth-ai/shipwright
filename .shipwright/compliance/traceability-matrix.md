@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-07T19:06:36.620339+00:00
+Generated: 2026-06-07T20:39:47.562496+00:00
 
 ## Requirements Coverage
 
@@ -146,6 +146,7 @@ Generated: 2026-06-07T19:06:36.620339+00:00
 | SBOM distinguishes not-installed from no-declared-license; not-installed is silent (no triage, dash in sbom.md), only resolved-but-no-license is surfaced. | iterate | change |  | — | — | 2026-06-07 |
 | Harden iterate finalization tooling: F11 verifier accepts none_reason as a spec_impact=none justification; F0.5 surface_verification rejects compound runners fast with a clear error; arch-drift sanity test no longer false-FAILs on a post-release tree. | iterate | change |  | — | — | 2026-06-07 |
 | allowlist cafebabe:deadbeef in oss_backend generated gitleaks config (GAP-3) | iterate | change |  | 56/56 | — | 2026-06-07 |
+| triage main-tree drift reconcile-and-commit at integrate/sync | iterate | change |  | 2861/2861 | — | 2026-06-07 |
 
 ## Coverage Summary
 
@@ -153,7 +154,7 @@ Generated: 2026-06-07T19:06:36.620339+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 121 |
+| Iterate changes | 122 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

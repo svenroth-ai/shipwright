@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-07-oss-backend-cafebabe-stopword",
+    "run_id": "iterate-2026-06-07-triage-main-tree-reconcile",
     "date": "2026-06-07",
     "unit": {
       "status": "passed",
-      "passed": 56,
-      "total": 56
+      "passed": 2861,
+      "total": 2861
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 141,
+      "total": 141
     },
     "pgtap": {
       "status": "not_run",
@@ -18,67 +18,145 @@
       "total": 0
     },
     "e2e": {
+      "status": "passed",
+      "passed": 23,
+      "total": 23
+    },
+    "design_fidelity": {
       "status": "skipped",
       "passed": 0,
       "total": 0
     },
-    "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
-    },
     "smoke": {
-      "status": "skipped"
+      "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "external_concurrent_main_tree_write",
+        "detail": "An unrelated campaign scaffold (.shipwright/planning/iterate/campaigns/2026-06-07-tracked-campaign-status/, trg-fda5f7a3) was created in the MAIN tree by a concurrent process at 20:29Z, after this run's 19:47Z snapshot. Verified NOT produced by this iterate (all changes worktree-isolated). The run snapshot was re-baselined so the F0/F11 leak-guard measures only this run's finalization."
+      },
+      {
+        "condition": "external_review_partial",
+        "detail": "External code review via OpenRouter: OpenAI leg returned actionable findings (all applied: any-staged guard, absolute --git-path, missing-log skip, 2 test-overclaim fixes). Gemini leg returned truncated/garbled output (no actionable signal)."
+      }
+    ],
     "surface_verification": {
-      "surface": "none",
-      "runner": "surface_verification.py --surface none",
+      "surface": "cli",
+      "runner": "uv run --project C:/01_Development/shipwright pytest C:/01_Development/shipwright/.worktrees/triage-main-tree-reconcile/shared/tests/test_reconcile_triage.py C:/01_Development/shipwright/.worktrees/triage-main-tree-reconcile/shared/tests/test_reconcile_triage_guards.py C:/01_Development/shipwright/.worktrees/triage-main-tree-reconcile/shared/tests/test_reconcile_triage_wiring.py -q",
       "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-07-oss-backend-cafebabe-stopword/surface_verification.json",
-      "timestamp": "2026-06-07T00:00:00Z",
-      "justification": "Security-scanner config-generation change (oss_backend._write_gitleaks_allowlist). No startable user surface; behavior verified by the oss_backend gitleaks unit suite + a tomllib validity probe."
+      "tests_run": 23,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\triage-main-tree-reconcile\\.shipwright\\runs\\iterate-2026-06-07-triage-main-tree-reconcile\\surface_verification.log",
+      "timestamp": "2026-06-07T20:29:15.876Z"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Generated gitleaks config allowlists cafebabe:deadbeef (regex, regexTarget=match) + stopwords",
+          "behavior": "Detect uncommitted drift / no-drift no-op",
           "disposition": "tested",
-          "evidence": "test_oss_backend.py::TestRunGitleaks::test_gitleaks_config_allowlists_cafebabe_placeholder PASSED (born-red without the change)"
+          "evidence": "test_commits_drift_as_chore, test_no_drift_is_noop PASSED"
         },
         {
-          "behavior": "useDefault stays true so every built-in secret rule remains live (no over-suppression)",
+          "behavior": "Validate before commit (fail-closed on invalid)",
           "disposition": "tested",
-          "evidence": "same test asserts 'useDefault = true' in the generated config; PASSED"
+          "evidence": "test_invalid_log_is_not_committed PASSED"
         },
         {
-          "behavior": "Generated config is still valid TOML and carries paths + regexes + stopwords together",
+          "behavior": "Dedup exact-duplicate lines",
           "disposition": "tested",
-          "evidence": "tomllib.loads(_write_gitleaks_allowlist(...)) probe: keys=['description','paths','regexTarget','regexes','stopwords'], parses clean"
+          "evidence": "test_dedup_folds_exact_duplicate_lines PASSED"
         },
         {
-          "behavior": "Existing path-exclude allowlist (node_modules/tests/...) is unchanged (no regression)",
+          "behavior": "Commit chore(triage), B7-exempt, no FR linkage",
           "disposition": "tested",
-          "evidence": "test_oss_backend.py::test_gitleaks_cmd_passes_generated_allowlist_config PASSED; full oss_backend suite 56 passed"
+          "evidence": "test_commit_is_b7_exempt_no_fr_linkage PASSED"
         },
         {
-          "behavior": "Monorepo's live GitHub Actions gitleaks scan stays green with the placeholder allowlisted",
+          "behavior": "Idempotent (no empty commit)",
+          "disposition": "tested",
+          "evidence": "test_idempotent_second_run_is_noop PASSED"
+        },
+        {
+          "behavior": "Non-ASCII + mixed-EOL round-trip",
+          "disposition": "tested",
+          "evidence": "test_non_ascii_preserved_and_mixed_eol_handled PASSED"
+        },
+        {
+          "behavior": "Guard: CI without opt-in",
+          "disposition": "tested",
+          "evidence": "test_skip_in_ci_without_optin PASSED"
+        },
+        {
+          "behavior": "Guard: detached HEAD",
+          "disposition": "tested",
+          "evidence": "test_skip_on_detached_head PASSED"
+        },
+        {
+          "behavior": "Guard: merge in progress (pseudo-ref)",
+          "disposition": "tested",
+          "evidence": "test_skip_on_merge_in_progress PASSED"
+        },
+        {
+          "behavior": "Guard: rebase in progress (git-dir file)",
+          "disposition": "tested",
+          "evidence": "test_skip_on_rebase_in_progress PASSED"
+        },
+        {
+          "behavior": "Guard: any staged change incl. triage itself",
+          "disposition": "tested",
+          "evidence": "test_skip_on_unrelated_staged_changes, test_skip_when_triage_itself_is_staged PASSED"
+        },
+        {
+          "behavior": "Guard: deleted/missing triage log",
+          "disposition": "tested",
+          "evidence": "test_skip_when_triage_log_deleted PASSED"
+        },
+        {
+          "behavior": "Guard: not a git repo",
+          "disposition": "tested",
+          "evidence": "test_not_a_git_repo_is_skip PASSED"
+        },
+        {
+          "behavior": "Resolve MAIN root from a worktree",
+          "disposition": "tested",
+          "evidence": "test_reconcile_from_worktree_commits_on_main PASSED"
+        },
+        {
+          "behavior": "AC-4 unblocks pull/FF block (real bare origin)",
+          "disposition": "tested",
+          "evidence": "test_ac4_reconcile_unblocks_pull PASSED"
+        },
+        {
+          "behavior": "integrate_main wiring (before merge)",
+          "disposition": "tested",
+          "evidence": "test_integrate_main_reconciles_before_merge, _noop PASSED"
+        },
+        {
+          "behavior": "setup_iterate_worktree wiring (commit drift + clean snapshot)",
+          "disposition": "tested",
+          "evidence": "test_setup_worktree_commits_drift_and_clean_snapshot PASSED"
+        },
+        {
+          "behavior": "CLI status->exit-code mapping + CI opt-in",
+          "disposition": "tested",
+          "evidence": "test_cli_allow_ci_opt_in_flips_skip_to_commit, _invalid_log_exits_three, _no_drift_exits_zero PASSED"
+        },
+        {
+          "behavior": "Producer-lock acquisition around critical section",
           "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "Needs the real gitleaks binary on a GH Actions runner; the smoke tests skip without it. Covered by the PR's Shipwright Security Scan check."
+          "reason_code": "covered-by-existing-test",
+          "reason": "every committed-path test runs through triage._FileLock; a deterministic concurrency-race test would be flaky. Exclusion is guaranteed by reusing the canonical producer lock."
         }
       ],
       "counts": {
-        "testable": 4,
-        "tested": 4,
+        "testable": 18,
+        "tested": 18,
         "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 1,
-        "covered_acs": 1
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   }
