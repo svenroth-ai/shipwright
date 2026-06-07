@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-07-adopt-gitleaks-allowlist",
+    "run_id": "iterate-2026-06-07-finalization-tooling-hardening",
     "date": "2026-06-07",
     "unit": {
       "status": "passed",
-      "passed": 312,
-      "total": 312
+      "passed": 2837,
+      "total": 2837
     },
     "integration": {
-      "status": "passed",
-      "passed": 1,
-      "total": 1
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -32,88 +32,52 @@
     },
     "degraded": [],
     "surface_verification": {
-      "surface": "none",
-      "runner": "surface_verification.py --surface none",
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest shared/tests/test_surface_verification.py shared/tests/test_verify_iterate_finalization.py shared/tests/test_architecture_md_reflects_arch_impact.py -q",
       "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-07-adopt-gitleaks-allowlist/surface_verification.json",
-      "timestamp": "2026-06-07T00:00:00Z",
-      "justification": "Framework adopt-scaffolder + CI security-template change; no startable web/api/cli USER surface. The only behavior (adopt writing a root .gitleaks.toml) is verified end-to-end by the real generate_adoption_artifacts.py subprocess test. Backend-affects-Frontend rule N/A."
+      "tests_run": 133,
+      "evidence_path": ".shipwright/runs/iterate-2026-06-07-finalization-tooling-hardening/surface_verification.json",
+      "timestamp": "2026-06-07T18:03:23.083Z",
+      "justification": "cli surface: the three affected test suites ARE the scripted verification, and the full shared/tests/ suite (2837 passed, 0 failed) empirically confirms fix #1 removed the previously-recurring failure. No web/UI surface — these are framework finalization-tooling fixes."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Scaffolds <root>/.gitleaks.toml from the template when absent",
+          "behavior": "Fix #2: check_spec_impact_recorded accepts none_reason as a fallback justification for spec_impact=none",
           "disposition": "tested",
-          "evidence": "test_gitleaks_config_scaffold.py::test_writes_when_absent PASSED"
+          "evidence": "test_verify_iterate_finalization.py::test_spec_impact_none_with_none_reason_passes (born-red, now PASSED) + existing ::test_spec_impact_none_with_justification_passes / ::test_spec_impact_none_without_justification_fails still PASS (no weakening)"
         },
         {
-          "behavior": "Copies the template byte-for-byte (drift guarantees carry into adopted repos)",
+          "behavior": "Fix #3: a compound shell runner (operator like && or leading builtin like cd) fails fast (0 attempts) with an actionable 'no shell' message",
           "disposition": "tested",
-          "evidence": "test_gitleaks_config_scaffold.py::test_content_matches_template PASSED"
+          "evidence": "test_surface_verification.py::test_compound_shell_runner_fails_fast_with_hint + ::test_cd_builtin_runner_rejected_with_hint (born-red on attempts==0, now PASSED)"
         },
         {
-          "behavior": "Written content carries the cafebabe:deadbeef allowlist + useDefault",
+          "behavior": "Fix #3 guard: a plain single-executable runner still executes normally (no false-positive rejection)",
           "disposition": "tested",
-          "evidence": "test_gitleaks_config_scaffold.py::test_written_content_has_cafebabe_allowlist PASSED"
+          "evidence": "test_surface_verification.py::test_single_executable_runner_still_runs PASSED; whole 33-test surface suite green"
         },
         {
-          "behavior": "Never overwrites a pre-existing .gitleaks.toml (byte-preserved)",
+          "behavior": "Fix #1: _discovery_sanity classifies dir-absent->skip, present-empty->skip, present-with-nonarch-drop->ok",
           "disposition": "tested",
-          "evidence": "test_gitleaks_config_scaffold.py::test_idempotent_existing_file_preserved PASSED"
+          "evidence": "test_architecture_md_reflects_arch_impact.py::test_discovery_sanity_{skips_when_dir_absent,skips_when_present_but_empty,ok_when_present_with_nonarch_drop} (born-red NameError, now PASSED)"
         },
         {
-          "behavior": "Idempotent on a repeat call (second call reports already_exists)",
+          "behavior": "Fix #1: test_arch_impact_drops_found_at_all no longer false-FAILs on a post-release dev tree (dir present, only non-arch drops)",
           "disposition": "tested",
-          "evidence": "test_gitleaks_config_scaffold.py::test_idempotent_when_called_twice PASSED"
-        },
-        {
-          "behavior": "Fails loud (FileNotFoundError, no half-write) when the template path does not resolve",
-          "disposition": "tested",
-          "evidence": "test_gitleaks_config_scaffold.py::test_raises_loudly_when_template_missing PASSED"
-        },
-        {
-          "behavior": "The real adopt pipeline actually wires the scaffold (writes .gitleaks.toml, results.gitleaks_config)",
-          "disposition": "tested",
-          "evidence": "test_adopt_pipeline_subprocess.py::test_full_pipeline_e2e_via_subprocess PASSED (real uv subprocess)"
-        },
-        {
-          "behavior": "GITLEAKS_CONFIG_* SSoT constants resolve to a real template of the required allowlist shape",
-          "disposition": "tested",
-          "evidence": "test_gitleaks_config_convention.py::TestGitleaksConfigTemplate (3 tests) PASSED"
-        },
-        {
-          "behavior": "Deployed config path is the root name gitleaks auto-loads (.gitleaks.toml)",
-          "disposition": "tested",
-          "evidence": "test_gitleaks_config_convention.py::test_gitleaks_config_path_is_root_toml PASSED"
-        },
-        {
-          "behavior": "security.yml.template gitleaks install is SHA256-verified before extract",
-          "disposition": "tested",
-          "evidence": "test_security_workflow_convention.py::TestSupplyChainHardening::test_gitleaks_download_is_sha256_verified PASSED"
-        },
-        {
-          "behavior": "security.yml.template peter-evans action pinned to a commit SHA (no residual @v4)",
-          "disposition": "tested",
-          "evidence": "test_security_workflow_convention.py::TestSupplyChainHardening::test_comment_action_pinned_to_commit_sha PASSED"
-        },
-        {
-          "behavior": "Adopted repo's first live GitHub Actions Security Scan goes green (no cafebabe red)",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "Needs a live GitHub Actions run on a real adopted repo; empirically proven on leadwright 2026-06-07 (run 27086046885 red -> 27086178138 green after the file was added)."
+          "evidence": "Full shared/tests/ suite now 2837 passed / 0 failed (was 2822 passed / 1 FAILED on this exact check the prior two iterates) — the empirical end-to-end proof"
         }
       ],
       "counts": {
-        "testable": 11,
-        "tested": 11,
-        "untestable": 1,
+        "testable": 5,
+        "tested": 5,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
+        "acs": 3,
+        "covered_acs": 3
       }
     }
   }

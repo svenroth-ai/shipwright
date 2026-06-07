@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-07T16:06:37.048026+00:00
+Generated: 2026-06-07T18:06:49.314647+00:00
 
 ## Requirements Coverage
 
@@ -143,6 +143,7 @@ Generated: 2026-06-07T16:06:37.048026+00:00
 | GC machine-churn complianceRefreshed compliance-backlog dismissals (add token to triage_gc.MACHINE_REASONS) | iterate | change |  | 24/24 | — | 2026-06-07 |
 | adopt scaffolds .gitleaks.toml + hardens security.yml.template | iterate | change |  | 312/312 | — | 2026-06-07 |
 | Add campaign_init --expands-triage / --from-triage so a triage item can be promoted to a campaign anchor; writes expands_triage into both status.json and the campaign.md frontmatter so the Command Center shows 'Start Campaign' on that triage card. | iterate | feature |  | — | — | 2026-06-07 |
+| Harden iterate finalization tooling: F11 verifier accepts none_reason as a spec_impact=none justification; F0.5 surface_verification rejects compound runners fast with a clear error; arch-drift sanity test no longer false-FAILs on a post-release tree. | iterate | change |  | — | — | 2026-06-07 |
 
 ## Coverage Summary
 
@@ -150,7 +151,7 @@ Generated: 2026-06-07T16:06:37.048026+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 118 |
+| Iterate changes | 119 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

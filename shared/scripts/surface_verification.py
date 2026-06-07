@@ -120,6 +120,21 @@ def parse_tests_run(stdout: str, surface: str) -> int:
     return 0
 
 
+# The runner is exec'd with shell=False, so these are never interpreted — a
+# runner that uses them would exec the operator/builtin as a bogus binary and
+# die with a cryptic FileNotFoundError. Detected up front for a clear error.
+_SHELL_OPERATORS = frozenset({"&&", "||", ";", "|", "&", ">", ">>", "<", "<<"})
+_SHELL_BUILTINS = frozenset({"cd", "export", "set", "source", ".", "pushd", "popd"})
+
+_RUNNER_HINT = (
+    "F0.5 runs the runner with NO shell (cwd=project_root), so shell operators "
+    "(&&, ;, |) and builtins (cd, export) are not interpreted. Pass a single "
+    "executable invocation instead — point the tool at the path directly, e.g. "
+    "'uv run --extra dev pytest plugins/<plugin>/tests/<file>.py -q' — or wrap "
+    "the steps in a script and call that."
+)
+
+
 def _tokenize(cmd: list[str] | str) -> list[str]:
     """Convert ``cmd`` to a list usable with ``subprocess.run(..., shell=False)``.
 
@@ -127,10 +142,21 @@ def _tokenize(cmd: list[str] | str) -> list[str]:
     (``C:\\\\Users\\\\...\\\\python.exe``) survive shlex-splitting.
     On POSIX we keep the default mode so single-quoted args and
     embedded shell metacharacters parse the way users expect.
+
+    Raises ``ValueError`` when the runner is a compound shell command (a bare
+    shell operator token, or a leading shell builtin) — these cannot work under
+    shell=False, so we reject them with an actionable message rather than let
+    the exec fail cryptically.
     """
-    if isinstance(cmd, list):
-        return cmd
-    return shlex.split(cmd, posix=(os.name != "nt"))
+    tokens = list(cmd) if isinstance(cmd, list) else shlex.split(cmd, posix=(os.name != "nt"))
+    if not tokens:
+        return tokens
+    bad_op = next((t for t in tokens if t in _SHELL_OPERATORS), None)
+    if bad_op is not None:
+        raise ValueError(f"runner contains the shell operator {bad_op!r}. {_RUNNER_HINT}")
+    if tokens[0] in _SHELL_BUILTINS:
+        raise ValueError(f"runner starts with the shell builtin {tokens[0]!r}. {_RUNNER_HINT}")
+    return tokens
 
 
 def run_with_retries(
@@ -148,7 +174,13 @@ def run_with_retries(
     ``cmd`` is normalised to a list (no shell) — paths with spaces and
     backslashes survive without cmd.exe quote-eating them.
     """
-    cmd_list = _tokenize(cmd)
+    try:
+        cmd_list = _tokenize(cmd)
+    except ValueError as exc:
+        # Malformed runner (compound shell command) — fail fast with an
+        # actionable message and 0 attempts, instead of exec'ing a bogus binary
+        # and burning the whole retry budget on a cryptic FileNotFoundError.
+        return 127, f"[orchestrator] invalid runner: {exc}", 0
     display = " ".join(cmd_list)
     chunks: list[str] = []
     last_exit = 0

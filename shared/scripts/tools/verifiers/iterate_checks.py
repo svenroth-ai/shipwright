@@ -917,7 +917,8 @@ def check_spec_impact_recorded(
     Two sources of truth, checked in order:
 
     1. The F7 ``work_completed`` event's ``spec_impact`` classification.
-       ``none`` + a justification → PASS; ``none`` without one → FAIL.
+       ``none`` + a justification (``spec_impact_justification`` OR the FR-gate's
+       equivalent ``none_reason``) → PASS; ``none`` without one → FAIL.
     2. Otherwise (``add``/``modify``/``remove`` or a legacy event with no
        ``spec_impact``): the commit MUST have touched a
        ``.shipwright/planning/**/spec.md`` file. If it did → PASS, else FAIL.
@@ -957,7 +958,17 @@ def check_spec_impact_recorded(
     spec_impact = str((event or {}).get("spec_impact", "")).lower()
 
     if spec_impact == "none":
-        justification = str((event or {}).get("spec_impact_justification", "")).strip()
+        # `spec_impact_justification` and the FR-gate's `none_reason` are the
+        # same semantic field ("why spec_impact=none"); the FR-gate already
+        # REQUIRES none_reason for a none-impact event, and it is the only field
+        # finalize_iterate's --event-extras-json documents. Accept either so a
+        # caller that recorded only none_reason isn't falsely failed.
+        event_d = event or {}
+        justification = str(
+            event_d.get("spec_impact_justification")
+            or event_d.get("none_reason")
+            or ""
+        ).strip()
         if justification:
             return CheckResult(
                 name, True,
