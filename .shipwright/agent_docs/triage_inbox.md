@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-07T16:06:37.048026Z. Items waiting for triage decision.
+> Auto-generated 2026-06-07T18:06:49.314647Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 131
-- Triage: 13 | Promoted: 1 | Dismissed: 117 | Snoozed: 0
+- Total: 133
+- Triage: 14 | Promoted: 1 | Dismissed: 118 | Snoozed: 0
 
-## Top 13 items (severity-sorted)
+## Top 14 items (severity-sorted)
 
 ### Source: architecture (2 items)
 
@@ -62,7 +62,19 @@
   - Adopt copies security.yml.template (gitleaks runs --no-git with no --config, relying on an auto-loaded .gitleaks.toml a…
   - Promote: `triage_promote.py --id trg-27b6f6ba --task-ref EXT:<ref>`
 
-### Source: sbom (4 items)
+### Source: sbom (5 items)
+
+<a id="trg-e1c91f13"></a>
+- **SBOM: 2 workspaces missing license metadata for 3 shared package(s)** `id=trg-e1c91f13 | severity=low | kind=compliance → P3/engineering`
+  - Common undeclared (3): pytest, pytest-mock, pyyaml Workspaces (2): plugins/shipwright-adopt/pyproject.toml, plugins/shi…
+  - Launch payload (copy into a new Claude session):
+    ```text
+    for d in 'plugins/shipwright-adopt' 'plugins/shipwright-compliance' ; do \
+      ( cd "$d" && uv sync --extra dev ) || exit 1 ;\
+    done \
+      && uv run plugins/shipwright-compliance/scripts/tools/update_compliance.py --project-root . --phase iterate
+    ```
+  - Promote: `triage_promote.py --id trg-e1c91f13 --task-ref EXT:<ref>`
 
 <a id="trg-4eb4c6b3"></a>
 - **SBOM: 3 undeclared license(s) in plugins/shipwright-compliance/pyproject.toml** `id=trg-4eb4c6b3 | severity=low | kind=compliance → P3/engineering`
