@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-07T15:50:24.863108+00:00
-Total commits: 871
+Generated: 2026-06-07T16:06:37.048026+00:00
+Total commits: 874
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 252
-    "fix" : 242
-    "chore" : 172
+    "feat" : 253
+    "fix" : 243
+    "chore" : 173
     "docs" : 119
     "refactor" : 50
     "test" : 21
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 252 commits
+### Features (feat) — 253 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-07 | iterate | campaign_init --expands-triage / --from-triage (promote a triage item to a campaign anchor) (#162) | 0e924eddcc44 |
 | 2026-06-05 | triage | merge-safety + leak-guard exemption for tracked triage.jsonl (C2) | d864828427a6 |
 | 2026-06-05 | triage | git-track .shipwright/triage.jsonl — gitignore negation + scaffolder self-heal (C1) | 17af03c0e70b |
 | 2026-06-05 | triage | machine-churn-only GC tool for the dismissed pile | bad895af4403 |
@@ -277,10 +278,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 242 commits
+### Fixes (fix) — 243 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-07 | adopt | scaffold .gitleaks.toml allowlist + harden security.yml.template | 418a81658f31 |
 | 2026-06-07 | triage-gc | GC machine-churn complianceRefreshed backlog dismissals | 1338052864a7 |
 | 2026-06-06 | compliance | F5 architecture-drift uses content reconciliation + canon F11 gate | c58e7aa02310 |
 | 2026-06-05 | triage | C1 preservation tests assert no-reflow, not byte-level CRLF | c22ac1c3c06f |
@@ -524,10 +526,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 172 commits
+### Chores (chore) — 173 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-07 | iterate | F11 finalization — ADR linkage + architecture.md bullet | 640e0bd4bcf4 |
 | 2026-06-07 | triage | dismiss trg-9403a648 (by-design) + trg-2fb7d3bc (campaign done) | 7984dee727af |
 | 2026-06-07 | release | v0.24.0 | d5764ab72038 |
 | 2026-06-06 | churn | regenerate derived snapshots after main merge | e047b8b54f98 |
@@ -940,7 +943,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 871 |
+| Total commits | 874 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 871 |
+| Human-authored commits | 874 |
 
