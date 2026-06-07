@@ -16,7 +16,9 @@ Sub-checks:
 - A5.5: a step ``uses:`` an action under ``SARIF_UPLOAD_USES_PREFIX``
   AND declares ``category: <SARIF_CATEGORY>``.
 - A5.6: dormant-trigger contract (``workflow_dispatch:`` active;
-  ``pull_request:`` / ``schedule:`` either commented or absent).
+  ``pull_request:`` / ``schedule:`` either commented or absent — unless
+  the project opts in via ``a5_phase_b_activated: true``, which waives
+  the non-dormant sub-case while keeping the structural guards).
 - A5.7: SARIF upload step carries a fork-PR guard
   (``head.repo.full_name == github.repository`` substring).
 
@@ -69,6 +71,9 @@ class _Convention:
     critical_gate_step_id: str
     sarif_category: str
     sarif_upload_uses_prefix: str
+    # Opt-in: deliberate Phase B activation waives A5.6's non-dormant-
+    # trigger sub-case (not its structural guards). See _check_a5_6_triggers.
+    a5_phase_b_activated: bool = False
 
 
 def _load_convention() -> _Convention:
@@ -86,6 +91,12 @@ def _load_convention() -> _Convention:
         critical_gate_step_id=mod.CRITICAL_GATE_STEP_ID,
         sarif_category=mod.SARIF_CATEGORY,
         sarif_upload_uses_prefix=mod.SARIF_UPLOAD_USES_PREFIX,
+        # Behavioral default (not template-pinned): tolerate an older
+        # shared-lib that predates the constant — fall back to the safe
+        # dormant-by-default posture rather than failing A5.0 on skew.
+        a5_phase_b_activated=bool(
+            getattr(mod, "A5_PHASE_B_ACTIVATED_DEFAULT", False)
+        ),
     )
 
 
@@ -100,6 +111,9 @@ def _apply_overrides(c: _Convention, cfg: dict[str, Any]) -> _Convention:
     required = cfg.get("a5_required_permissions")
     gate_id = cfg.get("a5_critical_gate_step_id")
     category = cfg.get("a5_sarif_category")
+    # `isinstance(x, bool)` rejects the int-1 / "true"-string traps —
+    # only a real bool flips the flag; anything else keeps the default.
+    phase_b = cfg.get("a5_phase_b_activated")
     return _Convention(
         workflow_path=(workflow_path
                        if isinstance(workflow_path, str) and workflow_path
@@ -116,6 +130,8 @@ def _apply_overrides(c: _Convention, cfg: dict[str, Any]) -> _Convention:
                         if isinstance(category, str) and category
                         else c.sarif_category),
         sarif_upload_uses_prefix=c.sarif_upload_uses_prefix,
+        a5_phase_b_activated=(phase_b if isinstance(phase_b, bool)
+                              else c.a5_phase_b_activated),
     )
 
 
@@ -326,14 +342,20 @@ def _check_a5_5_sarif_upload(
     return "pass", "SARIF upload step uses canonical action and category", []
 
 
-def _check_a5_6_triggers(parsed: dict) -> tuple[str, str, list[str]]:
+def _check_a5_6_triggers(
+    parsed: dict, conv: _Convention,
+) -> tuple[str, str, list[str]]:
     """Dormant-trigger contract.
 
     The audit only enforces the spec-narrow contract:
     1. ``workflow_dispatch:`` must be present in active triggers (it gives
        the user a manual handle to fire the workflow).
     2. ``pull_request:`` and ``schedule:`` must NOT be active (they are the
-       expensive auto-fire triggers; Phase B activation must be deliberate).
+       expensive auto-fire triggers; Phase B activation must be deliberate)
+       — UNLESS the project has opted in via ``a5_phase_b_activated: true``
+       (``conv.a5_phase_b_activated``), which waives THIS sub-case only.
+       The two structural guards (1 above, and the bare-``on:`` failure)
+       still fire regardless of the opt-in.
 
     Other triggers (``push:``, ``release:``, etc.) are NOT forbidden — a
     legitimate project may want tag-based releases or branch pushes to
@@ -366,18 +388,37 @@ def _check_a5_6_triggers(parsed: dict) -> tuple[str, str, list[str]]:
             sorted(active_triggers),
         )
 
-    # Active dormant-trigger violation: pull_request / schedule appear in
-    # the parsed structure (i.e. NOT commented out).
-    violations: list[str] = []
-    for trigger in ("pull_request", "schedule"):
-        if trigger in active_triggers:
-            violations.append(trigger)
-    if violations:
+    # pull_request / schedule appear in the parsed structure (i.e. NOT
+    # commented out) — these are the "non-dormant" triggers.
+    active_phase_b = [
+        t for t in ("pull_request", "schedule") if t in active_triggers
+    ]
+
+    # Opt-in: deliberate Phase B activation waives the non-dormant sub-case
+    # ONLY. (The structural guards above — workflow_dispatch presence and
+    # the bare-`on:` failure — have already run and are never waived.)
+    if conv.a5_phase_b_activated:
+        if active_phase_b:
+            return (
+                "pass",
+                f"`workflow_dispatch:` active; Phase B deliberately activated "
+                f"(a5_phase_b_activated=true) — {', '.join(active_phase_b)} "
+                f"permitted",
+                [],
+            )
+        return (
+            "pass",
+            "`workflow_dispatch:` active; pull_request/schedule dormant",
+            [],
+        )
+
+    if active_phase_b:
         return (
             "fail",
-            f"non-dormant trigger active: {', '.join(violations)} "
-            "— Phase B activation must be deliberate, not default",
-            violations,
+            f"non-dormant trigger active: {', '.join(active_phase_b)} "
+            "— Phase B activation must be deliberate, not default "
+            "(set a5_phase_b_activated:true in audit_config.json to opt in)",
+            active_phase_b,
         )
     return (
         "pass",
@@ -594,7 +635,7 @@ def run(
     # A5.6 — severity downgrades to LOW for the "active non-dormant
     # trigger" sub-case so reports rank cosmetic-but-deliberate-Phase-B
     # drift below structural breakage.
-    a5_6 = _safe_run("A5.6", lambda: _check_a5_6_triggers(parsed))
+    a5_6 = _safe_run("A5.6", lambda: _check_a5_6_triggers(parsed, conv))
     if a5_6.status == "fail" and "non-dormant trigger active" in a5_6.detail:
         a5_6 = _make_finding(
             "A5.6", "fail", a5_6.detail,

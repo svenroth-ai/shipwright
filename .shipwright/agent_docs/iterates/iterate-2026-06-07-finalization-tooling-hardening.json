@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-06-07-finalization-tooling-hardening",
+  "date": "2026-06-07T18:06:49.820978Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/finalization-tooling-hardening",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-07-finalization-tooling-hardening"
+}

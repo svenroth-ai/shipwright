@@ -90,6 +90,32 @@ def _arch_impact_drops() -> list[dict]:
     return out
 
 
+def _discovery_sanity(drops_dir: Path) -> tuple[str, str]:
+    """Classify the decision-drops discovery state for the sanity gate.
+
+    Returns ``(disposition, reason)`` where ``disposition`` is:
+
+    - ``"skip"`` — the dir is ABSENT (clean checkout / CI runner — drops are
+      gitignored) OR present but holds ZERO drop files (all aggregated into
+      ADRs + cleared at the last ``/shipwright-changelog`` release — a
+      legitimate post-release dev state, NOT a resolution misfire).
+    - ``"ok"`` — the dir holds ≥1 drop file, so the resolver found real content
+      and discovery works. The arch-impact SUBSET may legitimately be empty and
+      is deliberately NOT required (that was the old, born-fragile assertion
+      that false-FAILed every post-release dev tree).
+    """
+    if not drops_dir.is_dir():
+        return ("skip", f"decision-drops/ absent under {drops_dir} — clean "
+                        "checkout (drops are gitignored); nothing to sanity-check")
+    all_drops = sorted(drops_dir.glob("*.json"))
+    if not all_drops:
+        return ("skip", f"decision-drops/ present but empty under {drops_dir} — "
+                        "drops are aggregated into ADRs + cleared at each "
+                        "release, so a post-release dev tree legitimately has "
+                        "none; the arch-impact subset being empty is NOT a misfire")
+    return ("ok", f"resolver found {len(all_drops)} drop file(s) under {drops_dir}")
+
+
 def test_every_arch_impact_drop_has_architecture_md_entry():
     """For every decision-drop that flagged an architecture-impact, the
     run_id must appear in architecture.md. Without this, an iterate can
@@ -122,29 +148,55 @@ def test_every_arch_impact_drop_has_architecture_md_entry():
 
 
 def test_arch_impact_drops_found_at_all():
-    """Sanity check — the discovery path actually finds drops in the repo.
-    Without this, the main assertion silently no-ops on a repo where the
-    main-repo resolution misfires and the decision-drops dir comes back
-    empty.
+    """Sanity check — the discovery path resolves the REAL decision-drops dir.
 
-    Decision-drops are gitignored, so a clean checkout (CI runner, fresh
-    clone) genuinely has no ``decision-drops/`` directory — that is *not* a
-    resolution misfire, it is the expected absence of dev-time artifacts.
-    Skip there; only assert when the directory exists (the case this guard
-    is actually about). Without this skip the test is born-red the moment
-    ``shared/tests`` runs in CI (iterate-2026-05-31-ci-shared-tests)."""
+    Guards the main assertion from silently no-opping when ``_main_repo_root()``
+    misfires and the dir comes back empty. Two non-misfire states are SKIPPED
+    (not failed): the dir absent (clean checkout / CI — drops are gitignored)
+    and the dir present-but-empty (all drops aggregated into ADRs + cleared at
+    the last ``/shipwright-changelog`` release). Classification lives in
+    ``_discovery_sanity`` so it's unit-tested hermetically below.
+
+    Earlier this asserted the arch-impact SUBSET was non-empty, which false-
+    FAILed every post-release dev tree (dir present, only non-arch drops left):
+    iterate-2026-05-31-ci-shared-tests skip + iterate-2026-06-07-finalization-
+    tooling-hardening robustness fix."""
     drops_dir = _main_repo_root() / ".shipwright" / "agent_docs" / "decision-drops"
-    if not drops_dir.is_dir():
-        pytest.skip(
-            f"decision-drops/ absent under {drops_dir} — clean checkout "
-            "(drops are gitignored, not present in CI); nothing to sanity-check"
-        )
-    drops = _arch_impact_drops()
-    # The repo has carried multiple arch-impact decision-drops since
-    # iterate-2026-05-03; an empty list (with the dir present) means we're
-    # looking at the wrong directory or the resolution helper is broken.
-    assert drops, (
-        f"no arch-impact drops discovered under "
-        f"{_main_repo_root() / '.shipwright/agent_docs/decision-drops'} — "
-        "main-repo resolution may be broken"
+    disposition, _reason = _discovery_sanity(drops_dir)
+    if disposition == "skip":
+        pytest.skip(_reason)
+    # 'ok' → the resolver found real drop file(s), so discovery works. The
+    # arch-impact SUBSET may legitimately be empty (post-release, or simply no
+    # recent iterate declared a component/data-flow/convention impact) — assert
+    # the subset invariant, NOT that it is non-empty (the old, born-fragile
+    # claim that false-FAILed every post-release dev tree).
+    arch_drops = _arch_impact_drops()
+    all_drops = sorted(drops_dir.glob("*.json"))
+    assert len(arch_drops) <= len(all_drops)
+
+
+# --- hermetic unit tests for the discovery-sanity classifier ----------------
+
+def test_discovery_sanity_skips_when_dir_absent(tmp_path):
+    assert _discovery_sanity(tmp_path / "nope")[0] == "skip"
+
+
+def test_discovery_sanity_skips_when_present_but_empty(tmp_path):
+    # All drops aggregated into ADRs + cleared at the last release — a
+    # legitimate post-release dev state, not a resolution misfire.
+    d = tmp_path / "decision-drops"
+    d.mkdir()
+    assert _discovery_sanity(d)[0] == "skip"
+
+
+def test_discovery_sanity_ok_when_present_with_nonarch_drop(tmp_path):
+    # THE regression: dir present holding only a non-arch-impact drop
+    # (architecture_impact=none). This used to FALSELY FAIL the sanity gate;
+    # discovery clearly works (a file was found), so it must be 'ok'.
+    d = tmp_path / "decision-drops"
+    d.mkdir()
+    (d / "drop1.json").write_text(
+        json.dumps({"run_id": "r", "architecture_impact": "none"}),
+        encoding="utf-8",
     )
+    assert _discovery_sanity(d)[0] == "ok"

@@ -144,7 +144,7 @@
     {
       "path": "plugins/shipwright-compliance/scripts/audit/group_a5.py",
       "limit": 300,
-      "current": 614,
+      "current": 655,
       "state": "exception",
       "adr": "ADR-095"
     },
@@ -592,7 +592,7 @@
     {
       "path": "shared/scripts/surface_verification.py",
       "limit": 300,
-      "current": 662,
+      "current": 694,
       "state": "grandfathered",
       "adr": null
     },
@@ -718,7 +718,7 @@
     {
       "path": "shared/scripts/tools/verifiers/iterate_checks.py",
       "limit": 300,
-      "current": 1129,
+      "current": 1140,
       "state": "exception",
       "adr": "ADR-093"
     },
