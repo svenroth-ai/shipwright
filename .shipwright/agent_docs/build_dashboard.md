@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-07 20:39 UTC | Session: 2983ece4-27b9-4cab-837d-0069fef3fdc1 | Run: iterate-2026-06-07-track-campaign-status-backfill
+> Updated: 2026-06-07 22:13 UTC | Session: c8e791ac-3a48-4bfe-9704-de015555c881 | Run: iterate-2026-06-07-scaffold-churn-merge-machinery
 
-## Recent Changes (123 iterations)
+## Recent Changes (124 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | scaffold the append-log merge=union .gitattributes driver into managed repos (adopt E.13c + iterate self-heal) | 2884/2884 |  | infra | 2026-06-07 |
 | change | triage main-tree drift reconcile-and-commit at integrate/sync | 2861/2861 |  | tooling | 2026-06-07 |
 | change | Track campaign status.json for compliance-detective-realign + track-triage-jsonl (durable per-sub board on fresh clone / deployed WebUI; stopgap for trg-fda5f7a3). | 0/0 |  | compliance | 2026-06-07 |
 | change | allowlist cafebabe:deadbeef in oss_backend generated gitleaks config (GAP-3) | 56/56 |  | tooling | 2026-06-07 |
@@ -130,7 +131,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-07 | Unit: 2861/2861 | Integration: 141/141 | E2E: 23/23 | Smoke: not_run | (iterate)
+Last run: 2026-06-07 | Unit: 2884/2884 | Integration: 301/301 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

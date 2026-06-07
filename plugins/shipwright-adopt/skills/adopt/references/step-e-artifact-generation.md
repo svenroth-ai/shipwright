@@ -167,6 +167,27 @@ Writes — **in order**:
     by `shared/tests/test_security_workflow_convention.py`
     (`TestSupplyChainHardening`).
 
+    **Append-log union merge driver scaffold (Step E.13c).** Adopt also
+    lands a root `.gitattributes` declaring `merge=union` for the tracked
+    append-log artifacts (`shipwright_events.jsonl`,
+    `.shipwright/triage.jsonl`), sourced from
+    `shared/templates/gitattributes-union.template` (SSoT
+    `shared/scripts/lib/gitattributes_union.py`). `merge=union` is git's
+    built-in line-union driver: when two iterates each append, both sides'
+    lines are kept automatically (no conflict markers, honored by GitHub's
+    server-side PR merge too) — the protection that kept the monorepo
+    merge-theater-free but had never reached managed repos (WebUI #96–#100
+    hand-resolved exactly these files). **Unlike** the `.gitleaks.toml`
+    scaffold this is a **merge, not never-overwrite**: an existing user
+    `.gitattributes` is preserved bit-for-bit and only the missing union
+    lines are appended (idempotent — a second adopt run is a no-op). The
+    same fragment is self-healed into already-adopted repos by the iterate
+    flow (`setup_iterate_worktree` → `self_heal_gitattributes`). The
+    scaffolder result lands in `results.gitattributes_union` as
+    `{wrote, path, reason}` (`scaffolded` / `merged` / `already_present`);
+    the drift test `shared/tests/test_gitattributes_union.py` pins
+    `UNION_PATHS` to the churn resolver's append-log allowlist.
+
 14. **CI workflow scaffold (profile-aware).** Adopt picks the CI
     template that matches the stack profile detected earlier in the
     pipeline (`snapshot.profile.matched`) and writes it to
