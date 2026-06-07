@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-07-triage-gc-compliance-refreshed",
+    "run_id": "iterate-2026-06-07-campaign-expands-triage",
     "date": "2026-06-07",
     "unit": {
       "status": "passed",
-      "passed": 24,
-      "total": 24
+      "passed": 290,
+      "total": 290
     },
     "integration": {
       "status": "not_run",
@@ -33,46 +33,96 @@
     "degraded": [
       {
         "condition": "preexisting-unrelated-test-failure",
-        "detail": "Full shared/tests/ run: 2822 passed, 24 skipped, 1 FAILED (test_architecture_md_reflects_arch_impact.py::test_arch_impact_drops_found_at_all). Pre-existing + environmental, NOT introduced by this diff: the main-repo .shipwright/agent_docs/decision-drops/ dir exists but is empty (drops aggregated/cleared at the v0.24.0 release d5764ab7), so that test's 'dir present but no arch-impact drops' sanity guard fires. This diff touches only triage_gc.py + test_triage_gc.py — neither decision-drops nor architecture.md. Robustness gap (test skips when dir absent but not when empty) noted in F3a reflection."
+        "detail": "Full shared/tests/ run: 2822 passed, 24 skipped, 1 FAILED (test_architecture_md_reflects_arch_impact.py::test_arch_impact_drops_found_at_all). Pre-existing + environmental, NOT introduced by this diff: the main-repo .shipwright/agent_docs/decision-drops/ dir exists with 1 drop, 0 of which carry a real architecture_impact (drops aggregated/cleared at the v0.24.0 release d5764ab7), so that test's 'dir present but no arch-impact drops' sanity guard fires. The same condition was recorded by the prior iterate (triage-gc-compliance-refreshed). This diff touches only campaign_init.py + a new test module + campaign-mode.md — neither decision-drops nor architecture.md, so it is structurally impossible for this change to affect that test. Robustness gap (test skips when dir absent but not when present-but-empty) noted in F3a reflection."
       }
     ],
     "surface_verification": {
-      "surface": "none",
-      "runner": "surface_verification.py --surface none",
+      "surface": "cli",
+      "runner": "uv run --extra dev pytest plugins/shipwright-iterate/tests/test_campaign_expands_triage.py -q",
       "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-07-triage-gc-compliance-refreshed/surface_verification.json",
-      "timestamp": "2026-06-07T00:00:00Z",
-      "justification": "Pure Python maintenance-tool classifier change (one frozenset token + unit test); no startable user surface, no API/store/UI consumer affected. Backend-affects-Frontend rule N/A — triage_gc is an offline compaction CLI."
+      "tests_run": 15,
+      "evidence_path": ".shipwright/runs/iterate-2026-06-07-campaign-expands-triage/surface_verification.json",
+      "timestamp": "2026-06-07T15:46:43.063Z",
+      "justification": "cli surface: the new test module is the scripted CLI verification, driving the real campaign_init.py main() against fixture projects (incl. a real triage.jsonl seeded by the real producer). Plus an out-of-band boundary probe ran the installed CLI end-to-end (seed via triage_add.py -> campaign_init --from-triage -> inspect both artifacts). No web/UI surface in this repo; the WebUI consumer lives in shipwright-webui (out of scope)."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "A complianceBacklog dismissal with reason=complianceRefreshed is classified as machine-churn and dropped by plan_gc",
+          "behavior": "--expands-triage stamps the anchor into status.json",
           "disposition": "tested",
-          "evidence": "shared/tests/test_triage_gc.py::test_compliance_refreshed_machine_churn_dropped asserts 'refreshed' in drop_ids; born-red without the fix (refreshed was the 'Extra item' not dropped), PASSED after adding the token"
+          "evidence": "test_campaign_expands_triage.py::TestExpandsTriageArtifacts::test_status_json_carries_expands_triage + ::TestExpandsTriageCli::test_cli_writes_anchor_to_both PASSED"
         },
         {
-          "behavior": "A complianceBacklog dismissal with reason=complianceResolved is still dropped (no regression from the change)",
+          "behavior": "--expands-triage stamps the snake_case anchor INSIDE the campaign.md YAML frontmatter block (the WebUI join key fm.expands_triage)",
           "disposition": "tested",
-          "evidence": "same test asserts 'resolved' in drop_ids; PASSED. Existing test_machine_reason coverage in the 14-test GC suite unaffected (14/14 PASSED)"
+          "evidence": "::test_frontmatter_carries_snake_case_key asserts 'expands_triage: <trg>' within md.split('---',2)[1]; born-red before impl, PASSED after"
         },
         {
-          "behavior": "A human dismissal (by=user) that reuses reason=complianceRefreshed is KEPT, because the MACHINE_DISMISSERS gate is unchanged",
+          "behavior": "An un-anchored campaign carries NO expands_triage key in either artifact (backward-compat / legacy-shaped)",
           "disposition": "tested",
-          "evidence": "same test asserts the human item id is NOT in drop_ids; PASSED"
+          "evidence": "::test_omitted_when_not_provided PASSED (status.json + campaign.md both free of the key)"
+        },
+        {
+          "behavior": "A malformed trg-id is rejected (ValueError from init_campaign; CLI exit 1)",
+          "disposition": "tested",
+          "evidence": "::test_invalid_trg_id_rejected (pytest.raises ValueError) + ::test_cli_invalid_anchor_returns_1 (ret==1) PASSED; boundary probe step 5 showed exit 1 + clear message"
+        },
+        {
+          "behavior": "Re-init with the same anchor is idempotent — exactly one anchor line, stable value",
+          "disposition": "tested",
+          "evidence": "::test_idempotent_reinit_stable_anchor asserts md.count('expands_triage:')==1 PASSED"
+        },
+        {
+          "behavior": "The anchor survives the status.json load->modify->dump round-trip on the draft->active flip (touches_io_boundary round-trip)",
+          "disposition": "tested",
+          "evidence": "::test_anchor_survives_start_roundtrip runs campaign_progress.cmd_start then asserts status['expands_triage'] persists PASSED"
+        },
+        {
+          "behavior": "--from-triage seeds --intent from the item title/detail (via the real triage SSoT reader) and implies the anchor",
+          "disposition": "tested",
+          "evidence": "::TestFromTriage::test_from_triage_seeds_intent_and_anchor seeds via real triage.append_triage_item, asserts intent text + anchor in both artifacts PASSED"
+        },
+        {
+          "behavior": "Explicit --intent overrides the seeded intent",
+          "disposition": "tested",
+          "evidence": "::test_explicit_intent_overrides_seed PASSED"
+        },
+        {
+          "behavior": "--from-triage with an unknown (valid-shape) id exits 1",
+          "disposition": "tested",
+          "evidence": "::test_from_triage_unknown_id_returns_1 (trg-00000000) ret==1 PASSED"
+        },
+        {
+          "behavior": "--from-triage on a non-open (dismissed) item warns but proceeds (does not block re-promotion)",
+          "disposition": "tested",
+          "evidence": "::test_from_triage_dismissed_item_warns_but_proceeds asserts ret==0, 'WARNING'+'dismissed' on stderr, anchor still written PASSED"
+        },
+        {
+          "behavior": "Conflicting --from-triage and --expands-triage (different ids) is rejected as an ambiguous anchor (exit 1)",
+          "disposition": "tested",
+          "evidence": "::test_from_triage_conflicting_explicit_anchor_returns_1 ret==1 PASSED"
+        },
+        {
+          "behavior": "The CLI requires --intent OR --from-triage (neither -> exit 1)",
+          "disposition": "tested",
+          "evidence": "::test_cli_requires_intent_or_from_triage ret==1 PASSED"
+        },
+        {
+          "behavior": "At runtime the real CLI resolves shared/scripts via the walk-up _find_shared_scripts (not the test's manual sys.path injection) and reads a real triage.jsonl",
+          "disposition": "tested",
+          "evidence": "Out-of-band boundary probe: triage_add.py seeded trg-d3a2976f, then `uv run campaign_init.py --from-triage trg-d3a2976f` (no PYTHONPATH help) exited 0 and wrote expands_triage to both artifacts"
         }
       ],
       "counts": {
-        "testable": 3,
-        "tested": 3,
+        "testable": 13,
+        "tested": 13,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 1,
-        "covered_acs": 1
+        "acs": 3,
+        "covered_acs": 3
       }
     }
   }
