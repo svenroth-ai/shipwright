@@ -1,1 +1,0 @@
-Bloat-recorder PostToolUse hook (check_file_size.py) now only records size-limit crossings for files inside the project root; editing a sibling repo's files no longer leaks into this project's per-session bloat marker and blocks its Stop gate.

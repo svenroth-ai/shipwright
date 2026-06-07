@@ -1674,3 +1674,240 @@ shipwright/
 - **Rationale:** SessionStart injections are byte-identical across plugins, so first-wins dedup is correct without phase-awareness (unlike Stop, where the audited phase differs and a phase-aware dispatcher is required).
 - **Consequences:** Visible SessionStart spam removed. Fail-open: any guard error emits, so a real Tier-1 FAIL is never dropped. Only the Phase-Quality block is deduped; env context + CLAUDE_ENV_FILE write still run per invocation. Interim fix superseded by campaign 2026-06-02-hook-consolidation B2 (full SessionStart dispatcher).
 - **Rejected:** Active-plugin detection at SessionStart (no reliable signal — that is the root cause); session-lifetime dedup without TTL (would suppress legitimate re-injection after resume/compact).
+
+---
+
+### ADR-121: Producer-owned campaign lifecycle status (draft -> active -> complete)
+- **Date:** 2026-06-03
+- **Section:** shipwright-iterate / campaign tooling
+- **Run-ID:** iterate-2026-06-03-campaign-status-field
+- **Context:** A campaign appeared on the WebUI board the instant its directory existed: only per-sub-iterate status existed and done/total is derived, so a freshly-created or hand-authored campaign (all sub-iterates pending) was indistinguishable from one actively running. Needed a producer-owned signal for planned-vs-started.
+- **Decision:** Add a top-level 'status' lifecycle field (draft|active|complete) to status.json AND campaign.md frontmatter. campaign_init writes 'draft'; campaign_progress gains a 'start' subcommand (->active); update-status auto-sets 'complete' once all sub-iterates are complete (halted campaigns stay 'active'); summary prints it. The autonomous campaign loop (campaign-mode.md) calls 'start' right after loop init.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Option B from the 2026-06-03 webui design session: draft hidden (triage-only), active shown, complete hidden. Producer must record intent explicitly because done/total cannot express 'planned-but-not-started'.
+- **Consequences:** WebUI Campaigns lane (shipwright-webui PR #96) shows a campaign iff status=='active'; draft/complete hidden. Backward-compatible: a missing status is 'legacy' and consumers fall back to the prior done<total, so the producer ships independently. Enum SSoT is campaign_progress.LIFECYCLE_STATUSES (== webui VALID_LIFECYCLE). Self-Review: 7-point passed; touches_io_boundary Boundary Probe run end-to-end (real CLI + on-disk files); 20 campaign + 275 plugin tests green.
+- **Rejected:** (1) Derive lifecycle purely from done/total on the consumer - cannot distinguish draft from all-pending-running; the exact bug. (2) A generic 'set-status --status <s>' subcommand - rejected for the tighter 'start' (->active); ->complete is owned by update-status, so a free-form setter only invites bypassing the all-complete guard.
+
+---
+
+### ADR-122: Bloat recorder scopes marker entries to the project root (no cross-repo leak)
+- **Date:** 2026-06-04
+- **Section:** shared/scripts/hooks/check_file_size.py (PostToolUse bloat recorder)
+- **Run-ID:** iterate-2026-06-04-bloat-recorder-cross-repo-scope
+- **Context:** The PostToolUse recorder wrote a marker entry for ANY edited file over the limit, with no project-root check. A session editing a SIBLING repo's files leaked those (by absolute path) into THIS project's per-session marker; the Stop gate then blocked the Stop on files it does not own (~40x this session).
+- **Decision:** Skip recording + nudging when the edited file does not resolve to within cwd (the project root). Advisory hooks never break tool flow, so it is a plain early return; a sibling repo's own bloat baseline governs its files.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A file outside the project is not governed by this project's bloat gate; the Stop gate faithfully reads the marker, so the fix belongs at the producer.
+- **Consequences:** Cross-repo sessions no longer get the Stop gate blocked on sibling-repo files. In-project behavior unchanged (regression-tested). The recorder file was trimmed 309->296 to stay under its own 300 limit.
+- **Rejected:** Filtering in the Stop gate instead (rejected: the gate is correct; the bug is the recorder polluting the marker).
+
+---
+
+### ADR-123: Adopt security-gate: rule-level severity + secret-block + fail-closed
+- **Date:** 2026-06-04
+- **Section:** shared/templates/github-actions/security.yml.template — critical-findings gate
+- **Run-ID:** iterate-2026-06-04-security-gate-template-fix
+- **Context:** The adopt-shipped merge gate read security-severity from SARIF *result* properties, but GitHub puts it on the *rule*. Semgrep/gitleaks emit it nowhere and trivy only on rules, so the gate read 0 for every finding and could never block — a false green inherited by every adopted repo. It also failed open on an empty/invalid sarif/.
+- **Decision:** Resolve each result's severity from its rule (ruleId map + ruleIndex fallback), block at >=9.0; block on ANY gitleaks result (committed secret); fail CLOSED on empty sarif/ or invalid JSON; tolerate non-numeric severity via try/catch. Pin with a regression test that executes the SHIPPED gate shell against fixtures.
+- **Commit:** (assigned post-merge)
+- **Rationale:** security-severity is rule-level per the GitHub SARIF convention; verified empirically against real semgrep/trivy/gitleaks SARIF.
+- **Consequences:** Adopted repos' gate can now block a real critical CVE or leaked secret. A repo with a pre-existing gitleaks finding must triage/allowlist it on adopting the gate. The monorepo's own security.yml (robust findings.json gate) is unchanged.
+- **Rejected:** Vendored python gate script (adopt ships one template file; inline shell + shell-executing test avoids drift). High+ >=7.0 threshold (changes the 'critical' contract, more merge friction).
+
+---
+
+### ADR-124: A5.8 behaviorally probes the deployed critical-gate
+- **Date:** 2026-06-05
+- **Section:** A5.8
+- **Run-ID:** iterate-2026-06-05-a5-gate-behavioral-probe
+- **Context:** Group A5 confirmed the deployed security.yml critical-gate STEP exists (A5.4) but never that it WORKS. The 2026-06-04 false-green was a gate whose step existed yet could never block (read SARIF security-severity at result-level, not rule-level). The template gate is pinned by tests; the deployed file was not.
+- **Decision:** Add A5.8: extract the gate run: body and EXECUTE it against fixture scan output, asserting the ratified policy (critical->block, empty/invalid->fail-closed, clean->pass). Flavor-agnostic: each scenario stages BOTH sarif/*.sarif AND findings.json so it is correct whether the gate reads SARIF (adopted repos) or findings.json (this monorepo).
+- **Commit:** (assigned post-merge)
+- **Rationale:** The deployed gate and the template gate read DIFFERENT artifacts (findings.json vs sarif). A SARIF-only probe would false-fail the monorepo's own gate. The clean-sanity gate downgrades to SKIP when the harness cannot satisfy the gate, avoiding false positives.
+- **Consequences:** Catches a structurally-broken DEPLOYED gate of either flavor. Adds a bash/jq runtime dep to the Stop-hook audit; absent tools, no run-body, unfaithful (${{ }}) body, clean-sanity failure, timeout, or SHIPWRIGHT_A5_GATE_PROBE=0 all yield SKIP (never a phantom FAIL). group_a5.py bloat baseline bumped 608->614 (ADR-095 exception).
+- **Rejected:** SARIF-only fixtures + disabling A5.8 for the monorepo via audit_config (leaves the monorepo's own gate — the file most likely to drift — never behaviorally verified). Executing ${{ }} bodies verbatim as bash (yields a meaningless verdict; SKIP is honest).
+- **Details:** [2026-06-05-a5-gate-behavioral-probe.md](../planning/iterate/2026-06-05-a5-gate-behavioral-probe.md)
+
+---
+
+### ADR-125: B7 excludes non-functional Conventional-Commit types (supersedes narrow Rule D)
+- **Date:** 2026-06-05
+- **Section:** Iterate — change: B7 Rule E (exclude non-functional commit types)
+- **Run-ID:** iterate-2026-06-05-b7-exclude-nonfunctional
+- **Context:** B's narrow Rule D flagged every direct ci/docs/chore commit as B7 drift, forcing a synthetic-event backfill that recurs (2fa1e9ab re-appeared mid-backfill). Non-functional commit types are repo maintenance with no RTM footprint.
+- **Decision:** Added git_log_scan Rule E: exclude commits whose Conventional-Commit type is non-functional (build/chore/ci/docs/style/test) from B7. Functional types (feat/fix/perf/refactor) are NEVER excluded — a feature/fix bypassing the iterate flow stays flagged. Configurable via b7_exclusions.exclude_nonfunctional_types (default true) + nonfunctional_types.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Conventional Commits separates functional (feat/fix/perf/refactor) from non-functional (ci/build/docs/style/test); B7 is an RTM-traceability check, so it should require events only for functional work — not police every maintenance commit.
+- **Consequences:** Direct ci/docs/chore commits no longer re-open B7 (recurrence killed at root); the sub-iterate-A backfill events become redundant-but-harmless. Projects wanting maximal accountability opt out via config. Reverses a tested campaign decision (test updated).
+- **Rejected:** Commit-time event-per-commit mechanism (heavy + pollutes RTM with synthetic events). Keep flagging everything (the treadmill).
+- **Details:** [097-bloat-b7-rule-e-test-growth.md](../planning/adr/097-bloat-b7-rule-e-test-growth.md)
+
+---
+
+### ADR-126: Bloat marker + Stop-gate resolve the worktree path to the baseline key
+- **Date:** 2026-06-05
+- **Section:** Iterate — change: bloat marker worktree-awareness (trg-305e2aab)
+- **Run-ID:** iterate-2026-06-05-bloat-marker-worktree-aware
+- **Context:** A /shipwright-iterate worktree edit records a .worktrees/<slug>/... marker path (relative to the MAIN root); the recorder + Stop gate compared it against repo-relative baseline keys, mis-classifying an already-baselined file as crossing and false-blocking Stop (trg-305e2aab; first hit: C3's ADR-096 baseline bump).
+- **Decision:** Added bloat_baseline.strip_worktree_prefix(); check_file_size and bloat_gate_on_stop strip the .worktrees/<slug>/ prefix for the baseline membership/ceiling lookup. The stored marker path keeps the prefix so the Stop gate can still re-measure the actual worktree file.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Fix the lookup KEY, not the measurement; symmetric on the write-side (delta classification) and read-side (gate).
+- **Consequences:** Worktree iterates that bump a baseline via ADR no longer false-block at Stop; genuine ratchets (over ceiling) and real new crossings still block. Covered by 9 regression tests.
+- **Rejected:** Store the stripped path in the marker — breaks re-measurement (would measure the main-tree file, not the worktree's).
+
+---
+
+### ADR-127: Close C1/C2 doc + ledger via trivial iterate, not direct main commit
+- **Date:** 2026-06-05
+- **Section:** Iterate — change: C1/C2 detective-realign doc + ledger closeout
+- **Run-ID:** iterate-2026-06-05-detective-realign-doc-ledger
+- **Context:** C1/C2 (detective-audit Run-ID provenance + pyyaml invocation resilience) shipped in PR #142, but the docs/hooks-and-pipeline.md update C1/C2's Risk/care required, plus the campaign ledger status, were left stale.
+- **Decision:** Correct hooks-and-pipeline.md (C1 release-snapshot recognition + C2 pyyaml invocation / A5.0-skip) and flip the C1/C2 campaign rows to done, via a trivial iterate flow.
+- **Commit:** (assigned post-merge)
+- **Rationale:** The iterate flow records the work_completed event + Run-ID footer for free; manual provenance catch-up after a bare commit is error-prone.
+- **Consequences:** B7 stays green: the iterate's Run-ID event covers the commit. A direct main commit would have self-inflicted one transient B7 finding because .shipwright/planning/ is not a B7-excluded path (docs/ is).
+- **Rejected:** Direct commit to main (transient B7 finding via campaign.md path); leaving docs stale (violates the C1/C2 Risk-care doc-update rule).
+
+---
+
+### ADR-128: Enforce the FR-gate on the finalize write-path; D3 accepts same-event delivery
+- **Date:** 2026-06-05
+- **Section:** Iterate — change: FR-linkage lifecycle (finalize FR-gate + D3 same-event)
+- **Run-ID:** iterate-2026-06-05-fr-linkage-lifecycle
+- **Context:** Finalize (the worktree F5b write-path) bypassed the ADR-059 FR-gate, so FR-less iterate work_completed events (evt-83b9b73f) reached the log for the D5 detective to catch after the fact. D3 also flagged an FR delivered in the same event it was introduced (FR-01.33) as perpetually pending.
+- **Decision:** finalize_iterate._record_event now calls the SAME record_event._fr_or_change_type_gate_error before append_event (after the idempotency early-return), fail-closed via FinalizeGateError. Group-D D3 counts a same-event new_frs+affected_frs as delivered (ts >= promised_ts, was strictly >).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Parity with the CLI gate via single-source-of-truth reuse (not re-implemented); fail-closed per AC-1/AC-2; '>=' matches the 'same-event or later' delivery semantics.
+- **Consequences:** Unclassified iterate events are rejected at write (CLI exit 1; Stop-hook fallback logs + writes nothing; artifact regen intentionally aborts). Single-iterate FRs no longer stay D3-pending. Four bloat baselines bumped under ADR-096.
+- **Rejected:** Warn-then-enforce ramp (fails AC-1 'rejected before write' / AC-2 fail-closed); re-implementing the gate (drift risk); trimming comments to dodge the bloat bump (theatre, per ADR-095).
+
+---
+
+### ADR-129: Gitleaks report → temp file, not --report-path -
+- **Date:** 2026-06-05
+- **Section:** shipwright-security/_run_gitleaks
+- **Run-ID:** iterate-2026-06-05-gitleaks-report-path
+- **Context:** gitleaks 'detect --report-path -' writes JSON to a literal file named '-' (os.Create, verified v8.21.2 cmd/root.go+report/report.go), never stdout. The wrapper read empty stdout → 0 findings on EVERY platform → the secrets leg was silently dead and the smoke test silently skipped. The illusory win/linux 'divergence' was a measurement artifact; a stray './-' file in-repo held the real gitleaks finding.
+- **Decision:** Write the gitleaks report to a real mkstemp temp file and read it back via a new _run_tool(report_path=...) param; keep detect (git-history) mode; surface stderr when an expect_nonzero tool yields no output; convert the smoke positive-control from allow-silent-skip to an ADR-044 CI-gated fail with a diagnostic.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Root cause proven by reading gitleaks source + the physical stray '-' artifact, not inferred — no Linux repro needed.
+- **Consequences:** The secret scanner now returns findings; no stray '-' file; the smoke test exercises the real binary in CI and can never again silently hide a gitleaks miss. Residual: a gitleaks fatal still degrades to a logged 0-findings — tracked as trg-190ff3b9.
+- **Rejected:** Switching to --no-git/dir mode (loses git-history coverage, not the root cause); flipping skip→fail without fixing detection (would just break CI red with no path to green).
+
+---
+
+### ADR-130: SBOM cluster dedup-key = signature + manifest_type only
+- **Date:** 2026-06-05
+- **Section:** Iterate — change: SBOM cluster stable identity
+- **Run-ID:** iterate-2026-06-05-sbom-cluster-stable-identity
+- **Context:** The cluster dedup-key hashed signature AND member-list (external-review OpenAI #2/#3), so membership drift across worktrees minted a fresh id every run — chore(churn) noise plus a 161-item dismissed pile. Tracking that log (campaign C) would bake the churn into permanent history.
+- **Decision:** Hash the (signature, manifest_type) pair only; the member list moves to the body. Membership drift while >=2 members keep the signature reuses the same id; the bucket dismisses only when its last member resolves.
+- **Commit:** (assigned post-merge)
+- **Rationale:** manifest_type is folded into the hash so npm/python clusters sharing a signature do not collide (AC-8). Faithful body re-render needs a triage-store amend primitive + WebUI consumer — out of A producer-only scope; filed as trg-9403a648.
+- **Consequences:** Cluster identity is stable under membership drift (campaign AC-4); dismissed pile stops growing. One-time migration churn (old membership-keys dismiss, signature-keys emit) on the first post-merge run. Open-item body shows membership-at-first-emit until full resolve (append-only store).
+- **Rejected:** Keep membership in the id (status quo — churns). Add an amend event now (balloons A across the shared triage contract + WebUI).
+
+---
+
+### ADR-131: Degraded scanner legs propagate via a scan_errors side-channel, not synthetic findings
+- **Date:** 2026-06-05
+- **Section:** iterate/scanner-degraded-marker
+- **Run-ID:** iterate-2026-06-05-scanner-degraded-marker
+- **Context:** A fataled/truncated/empty-stdout scanner leg returned [] findings, indistinguishable from a clean scan, so a degraded secrets/SAST/SCA leg passed the CI gate green (same failure class as the gitleaks --report-path regression).
+- **Decision:** OSSBackend records one marker {scanner,reason,detail} per degraded _run_tool None-branch on a control-plane scan_errors channel (closed reason vocab). build_config emits findings.json degraded/scan_errors; scan.py exits 2; run_scan_and_report + generate_security_report render a degraded banner; the monorepo security.yml critical-gate fails closed on .degraded.
+- **Commit:** (assigned post-merge)
+- **Rationale:** A synthetic severity:critical finding would auto-fail every gate but pollutes by_severity counts, the SARIF/code-scanning feed and the SBOM; a degraded-scan signal is a control-plane concern, categorically distinct from a data-plane finding.
+- **Consequences:** A transient scanner crash now blocks merge until resolved/re-run (fail-closed). findings list stays pure (no SARIF/SBOM/remediation pollution). Adopted repos are unaffected (their template runs native binaries, already fails closed on missing SARIF).
+- **Rejected:** Synthetic critical finding injected into .findings[] (rejected: data-plane pollution, code-scanning false alert).
+- **Details:** [2026-06-05-scanner-degraded-marker.md](../planning/iterate/2026-06-05-scanner-degraded-marker.md)
+
+---
+
+### ADR-132: Drop security-template checkout to fetch-depth: 1
+- **Date:** 2026-06-05
+- **Section:** CI / security scan template
+- **Run-ID:** iterate-2026-06-05-security-template-fetch-depth
+- **Context:** shared/templates/github-actions/security.yml.template fetched full git history (fetch-depth: 0) labelled 'full history for diff-aware secret scans', but no scanner in that workflow reads git history: Gitleaks runs --no-git, Semgrep scans '.', Trivy scans 'fs .'. The full fetch was unnecessary and correlated with a stale-merge-ref Gitleaks false positive (cafebabe:deadbeef, shipwright-webui PR #103).
+- **Decision:** Set the template checkout to fetch-depth: 1 with an accurate block comment. Left the monorepo's own .github/workflows/security.yml at fetch-depth: 0 (it legitimately diffs via prompt_injection_scan.py --diff origin/BASE_REF) and bloat-check.yml unchanged.
+- **Commit:** (assigned post-merge)
+- **Rationale:** fetch-depth: 1 supersedes a comment-only fix because it also removes the FP-correlated full-history fetch.
+- **Consequences:** Adopted repos scaffold a working-tree-only secret scan, removing one merge-ref false-positive source and a redundant full-history clone. shipwright-webui's deployed copy still carries fetch-depth: 0 and needs the same change in that repo (separate PR).
+
+---
+
+### ADR-133: Machine-churn-only triage GC tool
+- **Date:** 2026-06-05
+- **Section:** Iterate — feature: triage dismissed-pile GC
+- **Run-ID:** iterate-2026-06-05-triage-dismissed-gc
+- **Context:** Before triage.jsonl becomes git-tracked (sub-iterate C), the dismissed pile (175 items / 53 machine-churn) must be compacted so producer churn does not enter permanent history — but ~half (122) is human-curated audit history that must survive.
+- **Decision:** New shared/scripts/tools/triage_gc.py drops a dismissed item iff statusBy is a background producer AND statusReason is an exact machine auto-resolve token (both required). Dry-run is the default; --apply backs up + rewrites + revalidates.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Both-conditions predicate protects human dismissals that reuse a token and producer dismissals with free-text rationale. Console-encoding-safe report (cp1252 + arrow regression fixed).
+- **Consequences:** 53 droppable / 122 kept on the live pile. The destructive --apply is a gated operational step at the C/E migration (after A key-migration churn settles). Append-only compaction validated for orphan-status + header integrity.
+- **Rejected:** Retention-window GC (drops older human curation). Track the full uncompacted pile (bakes producer churn into permanent history).
+
+---
+
+### ADR-134: git-track triage.jsonl via gitignore negation + scaffolder self-heal
+- **Date:** 2026-06-05
+- **Section:** Iterate — change: triage.jsonl trackable (C1)
+- **Run-ID:** iterate-2026-06-05-triage-track-c1-gitignore
+- **Context:** Campaign C1: make .shipwright/triage.jsonl trackable, mirroring shipwright_events.jsonl. It lives inside the /.shipwright/* whitelist-ignore, and scaffold_triage_inbox appended a bare ignore line AFTER the managed block that would override any negation.
+- **Decision:** Add !/.shipwright/triage.jsonl to the canonical template + monorepo .gitignore (same rule-position, ordered-list congruent). Scaffolder stops managing the bare .jsonl (keeps .lock) and self-heals a stale bare/slash-variant line; the ! negation is never stripped.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Codex review de-scoped the systemic per-tree producer reroute (old C3) as over-engineering: events itself doesn't reroute background writers — the leak-guard EXEMPTS events, so triage mirrors that in C2. C1 is just the gitignore enablement.
+- **Consequences:** triage.jsonl is now tracked; .lock + .bak stay ignored (pinned end-to-end via git check-ignore on the real SSoT). Already-adopted repos self-heal on re-scaffold. C2 adds merge-safety + the events-style leak-guard exemption; E commits the migrated backlog.
+- **Rejected:** Untrack the .md (jsonl is also ignored -> nothing in repo). Systemic per-tree resolver for all ~10 triage producers (over-engineering; events uses an exemption, not a reroute).
+
+---
+
+### ADR-135: triage.jsonl churn-resolver + leak-guard exemption (like events)
+- **Date:** 2026-06-05
+- **Section:** Iterate — change: triage merge-safety + leak-guard exemption (C2)
+- **Run-ID:** iterate-2026-06-05-triage-track-c2-churn
+- **Context:** C1 made triage.jsonl trackable. Concurrent iterate merges + background main-tree triage writes must be safe once tracked, exactly as events.jsonl is handled.
+- **Decision:** Add triage to CHURN_ALLOWLIST with a triage-specific dedup (exact-line, no id-collision warning — append/status share an id) + validate_triage_text; a _reconcile_triage in the resolver (triage_invalid exit 4); .gitattributes merge=union (dogfood-only); and the same leak-guard exemption (_MAIN_TREE_WRITE_EXEMPT) events has.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Codex review: events does not reroute background writers — it EXEMPTS them; triage mirrors that (the de-scoped C3). Test split (test_churn_merge.py) mirrors the source module split, keeping files <300.
+- **Consequences:** Concurrent worktree appends reconcile without manual conflict resolution; background Stop-hook/triage_add main writes no longer trip the F0/F11 leak-guard. The resolver is the authority (union lacks dedup). Documented in the hooks-and-pipeline churn table.
+- **Rejected:** Systemic per-tree producer reroute (over-engineering). merge=union alone without the resolver (union lacks dedup — keeps duplicates).
+
+---
+
+### ADR-136: Architecture-drift detection is content reconciliation, enforced by a canon F11 gate
+- **Date:** 2026-06-06
+- **Section:** iterate/arch-drift-detector
+- **Run-ID:** iterate-2026-06-06-arch-drift-detector
+- **Context:** The compliance Group F F5 detective diffed git history (git log marker..HEAD) of the decision-drops dir, but drops are gitignored (never committed) so the diff was always empty -> F5 permanently passed; it also ignored convention impacts. The only F2 finalize guard (check_architecture_reviewed) was dead code (no caller) and an mtime heuristic. 5 arch-impact drops drifted from architecture.md undetected, no triage item.
+- **Decision:** F5 now reconciles drop CONTENT against architecture.md text (run_id must appear; component|data-flow|convention) via a shared oracle shared/scripts/lib/architecture_doc.py (word-boundary match, main-repo-resolved gitignored drops, case-insensitive). A new canon/blocking F11 gate check_architecture_documented (wired into verify_iterate_finalization) enforces the same contract per-run at finalize. Dead check_architecture_reviewed + run_cross_artifact_checks removed.
+- **Commit:** (assigned post-merge)
+- **Rationale:** Decision-drops are gitignored staging, so any git-history oracle is structurally impossible; content reconciliation needs no git and matches the existing drift test's proven definition. Prose + a dead check already failed 5x, so the constitution 'convert prose to a gate' rule applies.
+- **Consequences:** An arch-impacting iterate can no longer finalize with architecture.md undocumented (F11 blocks). F5 surfaces existing drift as a compliance backlog item. F5 skips in clean CI (drops gitignored) so the F11 gate is the authoritative prevention layer. Detective and finalizer share one oracle and cannot diverge.
+- **Rejected:** Keep the marker and fix the git-log path (rejected: gitignored drops never enter history; would require force-tracking drops, contradicting staging-only design).
+- **Details:** [2026-06-06-arch-drift-detector.md](../planning/iterate/2026-06-06-arch-drift-detector.md)
+
+---
+
+### ADR-137: Adopt docs: triage.jsonl is tracked, not gitignored
+- **Date:** 2026-06-06
+- **Section:** Iterate — change: adopt wiring for tracked triage.jsonl (D)
+- **Run-ID:** iterate-2026-06-06-triage-adopt-project-wiring
+- **Context:** Campaign C1 made triage.jsonl tracked; the adopt skill (SKILL.md E.16 + step-e16 reference) still claimed the scaffolder gitignores it.
+- **Decision:** Update adopt skill docs: scaffolder ignores .lock + GC .bak only + self-heals a stale bare triage.jsonl line; triage.jsonl is the tracked SSoT (canonical negation), committed in Step H. Project unchanged (negation + lazy creation + F6 already cover it).
+- **Commit:** (assigned post-merge)
+- **Rationale:** C1 scaffolder fix + gitignore_canon propagation already make it work; D is doc accuracy.
+- **Consequences:** Adopted repos now correctly track + commit triage.jsonl. No code change (C1 fixed the scaffolder). plugin_sync_reminder docstring cleanup deferred to E.
+- **Rejected:** Add scaffold_triage_inbox to project step-7 (YAGNI — project works via negation + lazy creation + F6).
+
+---
+
+### ADR-138: Commit canonical tracked triage.jsonl; skip SBOM re-emit step
+- **Date:** 2026-06-07
+- **Section:** Iterate — change: triage docs + monorepo migration (campaign E)
+- **Run-ID:** iterate-2026-06-07-triage-docs-monorepo-migration
+- **Context:** Campaign 2026-06-05-track-triage-jsonl C1/C2 made triage.jsonl trackable but the canonical backlog was never committed; the tracked triage_inbox.md diverged from the WebUI. E (final sub-iterate) migrates the canonical pile and fixes stale 'triage is gitignored' docs.
+- **Decision:** GC'd main's live pile (179->126, dropping 53 pure machine-churn dismissals via triage_gc --apply with .bak), copied the canonical jsonl into E's worktree, regenerated triage_inbox.md, and ship both in this PR (option b). Skipped spec Part-2 step 1 (update_compliance SBOM re-emit).
+- **Commit:** (assigned post-merge)
+- **Rationale:** Step 1 was unnecessary: 0 open SBOM items remained (the re-emit/dismiss cycle already ran in background), and running update_compliance would dirty main's clean compliance MDs and trip the F0 leak-guard. GC verified by diff invariants (0 open/promoted lost, validator clean).
+- **Consequences:** Committed triage.jsonl + triage_inbox.md now match the WebUI (11 open items); the original divergence is closed. Future iterates inherit the canonical pile; producers append per-tree, F6 commits, the churn resolver unions concurrent appends.
+- **Rejected:** Direct branch-first commit on main (option a): rejected — option b keeps it in the normal PR/review flow. Untracking the .md (campaign Option A): rejected earlier — leaves nothing about the backlog in the repo.

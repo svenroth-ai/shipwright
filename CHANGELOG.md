@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.24.0] - 2026-06-07
+
+### Added
+
+- Iterate campaigns now carry a producer-owned lifecycle status (`draft` -> `active` -> `complete`): `campaign_init` marks new campaigns `draft`, `campaign_progress start` activates them, and `update-status` auto-completes once every sub-iterate finishes (a halted campaign stays `active`). The Command Center Campaigns lane uses this to show only started campaigns; campaigns without the field stay legacy (done<total fallback).
+- triage_gc maintenance tool to compact the dismissed triage pile by dropping only machine-churn auto-resolves (dry-run default, backup + revalidate on --apply), preserving all human-curated dismissals
+- Blocking finalize gate (check_architecture_documented) that fails an iterate whose decision-drop declares architecture_impact component|data-flow|convention unless its run_id is documented under '## Architecture Updates' in architecture.md, preventing the architecture-doc drift at source.
+
+### Changed
+
+- Compliance B7 now excludes non-functional Conventional-Commit types (build/chore/ci/docs/style/test) by default — repo maintenance needs no work_completed event, so direct ci/docs/chore commits no longer recur as B7 drift. Functional types (feat/fix/perf/refactor) are still flagged; opt out via b7_exclusions.exclude_nonfunctional_types=false.
+- Docs: hooks-and-pipeline.md now documents the merged C1/C2 detective-audit realign — find_snapshot_commit recognizing chore(release) snapshots, and the audit-on-stop hook's uv run --with pyyaml invocation with A5.0 graceful-skip — and the compliance-detective-realign campaign ledger marks C1/C2 done.
+- Iterate finalize now enforces the ADR-059 FR-gate on its write-path: an unclassified iterate work_completed event (no FR and no valid change_type+none_reason) is rejected before write (fail-closed) instead of bypassing the gate, closing the bypass that let FR-less events reach the log for the D5 detective to catch after the fact.
+- git-track .shipwright/triage.jsonl (the triage backlog SSoT): canonical gitignore negation in template + framework, and the triage scaffolder self-heals a stale bare ignore line so already-adopted repos track it on re-scaffold (.lock stays ignored)
+- make .shipwright/triage.jsonl merge-safe + leak-guard-exempt like shipwright_events.jsonl: CHURN_ALLOWLIST + triage-specific dedup (no false id-collision warning) + validator + resolver reconcile + .gitattributes union (dogfood) + the events-style main-tree write exemption
+- adopt skill docs: correct the triage-inbox scaffold description — triage.jsonl is the tracked SSoT backlog committed in the adopt commit (not gitignored); the scaffolder ignores only the .lock + GC .bak and self-heals a stale bare ignore line
+- Documented the git-tracked .shipwright/triage.jsonl SSoT backlog across guide.md, glossary.md, the hooks-and-pipeline artifact-write matrix and architecture.md, and corrected stale "triage is gitignored" references in the plugin-sync reminder Stop hook and its test (campaign 2026-06-05-track-triage-jsonl, sub-iterate E)
+- Committed the canonical triage backlog: GC-compacted the dismissed pile (179 to 126 items, dropping 53 pure machine-churn auto-resolves while preserving all open, promoted and human-curated dismissals) and committed .shipwright/triage.jsonl plus a regenerated triage_inbox.md so the tracked snapshot finally matches the Command Center WebUI
+
+### Fixed
+
+- Bloat-recorder PostToolUse hook (check_file_size.py) now only records size-limit crossings for files inside the project root; editing a sibling repo's files no longer leaks into this project's per-session bloat marker and blocks its Stop gate.
+- Bloat anti-ratchet Stop gate is now worktree-aware: a /shipwright-iterate run that grows an already-baselined file (with an ADR + baseline bump) no longer false-blocks at Stop — the marker's .worktrees/<slug>/ path now resolves to the repo-relative baseline key (recorder classifies anti-ratchet, gate finds the ceiling); genuine ratchets still block.
+- Compliance Group-D D3 no longer flags an FR delivered in the same event it was introduced (new_frs + affected_frs together — the normal single-iterate case) as never-delivered; same-event delivery now counts (was a strictly-later requirement).
+- shipwright-security: the Gitleaks secret scanner now actually returns findings. `_run_gitleaks` wrote its report via `--report-path -`, which Gitleaks turns into a literal file named `-` (never stdout), so the secrets leg silently returned 0 findings on every platform and left a stray `-` file behind. The report is now written to a temp file and read back, and the real-binary smoke positive-control is a CI-gated failure (ADR-044) instead of a silent skip.
+- SBOM undeclared-license cluster triage items now keep a stable id under workspace-membership drift (dedup key = signature + manifest type, not the member list), ending the per-run id churn and the growing dismissed pile
+- Security scan now fails closed on a *degraded* scanner leg: a Gitleaks/Semgrep/Trivy run that fataled or produced an empty/truncated report no longer collapses to a clean 0-findings result. OSSBackend records per-leg markers on a new `scan_errors` channel; `findings.json` gains `degraded`/`scan_errors`; `scan.py` exits 2 and the CI critical-gate blocks merge on `degraded` (same failure class as the gitleaks `--report-path -` regression).
+- Security scan template (`security.yml.template`): checkout now uses `fetch-depth: 1` instead of `0` — no scanner in the workflow reads git history (Gitleaks runs `--no-git`, Semgrep/Trivy scan the working tree), and the full-history fetch had correlated with a stale-merge-ref Gitleaks false positive.
+- Compliance Group F architecture-drift check (F5) was structurally blind: it diffed the git history of the gitignored decision-drops, so the diff was always empty and it never flagged an arch-impact iterate missing its architecture.md entry. F5 now reconciles drop content against architecture.md (including convention impacts), via a shared oracle.
+
+### Security
+
+- shipwright-adopt security workflow: the critical-findings merge gate now resolves SARIF severity at the rule level (it was read from the result, where scanners never put it, so the gate could never block), blocks on any committed secret, and fails closed on an empty/invalid scan — previously a critical finding passed green in every adopted repo.
+- Compliance Group A5 now behaviorally verifies the deployed `.github/workflows/security.yml` critical-merge-gate (new sub-check **A5.8**): it executes the gate's shell against fixture scan output and asserts the ratified policy (critical→block, empty/invalid→fail-closed, clean→pass), so a structurally-broken gate — like the 2026-06-04 false-green whose step existed yet could never block — is caught, not just a present-but-nonfunctional step id. Flavor-agnostic across SARIF (adopted repos) and findings.json (this monorepo) gates; skips safely when bash/jq are absent or via `SHIPWRIGHT_A5_GATE_PROBE=0`.
+
 ## [v0.23.1] - 2026-06-02
 
 ### Fixed

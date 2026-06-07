@@ -1,1 +1,0 @@
-Iterate finalize now enforces the ADR-059 FR-gate on its write-path: an unclassified iterate work_completed event (no FR and no valid change_type+none_reason) is rejected before write (fail-closed) instead of bypassing the gate, closing the bypass that let FR-less events reach the log for the D5 detective to catch after the fact.

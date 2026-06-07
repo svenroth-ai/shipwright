@@ -1,1 +1,0 @@
-shipwright-adopt security workflow: the critical-findings merge gate now resolves SARIF severity at the rule level (it was read from the result, where scanners never put it, so the gate could never block), blocks on any committed secret, and fails closed on an empty/invalid scan — previously a critical finding passed green in every adopted repo.

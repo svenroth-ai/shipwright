@@ -1,1 +1,0 @@
-Blocking finalize gate (check_architecture_documented) that fails an iterate whose decision-drop declares architecture_impact component|data-flow|convention unless its run_id is documented under '## Architecture Updates' in architecture.md, preventing the architecture-doc drift at source.
