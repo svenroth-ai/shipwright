@@ -1,6 +1,6 @@
 # Software Bill of Materials (SBOM)
 
-Generated: 2026-06-07T19:48:37.621625+00:00
+Generated: 2026-06-07T20:39:47.562496+00:00
 
 ## Summary
 
@@ -9,14 +9,15 @@ Generated: 2026-06-07T19:48:37.621625+00:00
 | Runtime dependencies | 6 |
 | Dev dependencies | 2 |
 | Total packages | 8 |
-| Unique licenses | 0 (none) |
+| Unique licenses | 2 (Apache-2.0, MIT) |
 | Copyleft licenses | 0 |
 
 ## License Distribution
 
 ```mermaid
 pie title License Distribution
-    "no packages" : 1
+    "MIT" : 2
+    "Apache-2.0" : 1
 ```
 
 ## Runtime Dependencies
@@ -24,10 +25,10 @@ pie title License Distribution
 | Package | Version | License |
 |---------|---------|---------|
 | google-genai | 1.0.0 | - |
-| jsonschema | 4.18 | - |
-| openai | 2.30.0 | - |
+| jsonschema | 4.18 | MIT |
+| openai | 2.30.0 | Apache-2.0 |
 | openai | 1.0.0 | - |
-| pyyaml | 6.0 | - |
+| pyyaml | 6.0 | MIT |
 | requests | 2.31.0 | - |
 
 ## Dev Dependencies
@@ -39,5 +40,5 @@ pie title License Distribution
 
 ## License Compliance
 
-No dependency licenses were resolved in this scan.
+No license concerns: all resolved dependencies are permissively licensed.
 

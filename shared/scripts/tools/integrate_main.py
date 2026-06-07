@@ -32,6 +32,7 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent.parent  # shared/scripts
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from lib.churn_merge import DERIVED_MDS  # noqa: E402
+from lib.reconcile_triage import reconcile_main_triage  # noqa: E402
 from tools import resolve_churn_conflicts as rcc  # noqa: E402
 
 
@@ -74,6 +75,20 @@ def integrate(
     used by tests to merge a local branch without a remote."""
     project_root = Path(project_root).resolve()
     steps: list[str] = []
+
+    # Fold any uncommitted main-tree triage.jsonl background drift into a single
+    # chore(triage) commit BEFORE we touch origin/main, so the dirty tracked log
+    # can't block the merge (the 2026-06-07 failure). Resolves the MAIN root from
+    # this worktree internally; a structured no-op when there is no drift / a
+    # guard trips (incl. CI without opt-in). See lib/reconcile_triage.
+    recon = reconcile_main_triage(project_root)
+    steps.append(f"reconciled-main-triage:{recon.status}")
+    if recon.status in ("invalid", "error"):
+        # Fail-soft (the merge happens in THIS worktree, unaffected by main-tree
+        # drift) but never silent: a corrupt/un-committable main triage log is
+        # surfaced so the operator can fix it before the next sync.
+        print(f"integrate_main: reconcile-main-triage {recon.status}: "
+              f"{recon.errors or recon.reason}", file=sys.stderr)
 
     if do_fetch and os.environ.get("SHIPWRIGHT_ITERATE_NO_FETCH") != "1":
         fetched = _git(project_root, "fetch", "origin", check=False)
