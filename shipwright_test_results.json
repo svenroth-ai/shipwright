@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-07-finalization-tooling-hardening",
+    "run_id": "iterate-2026-06-07-sbom-not-installed-vs-undeclared",
     "date": "2026-06-07",
     "unit": {
       "status": "passed",
-      "passed": 2837,
-      "total": 2837
+      "passed": 638,
+      "total": 638
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 141,
+      "total": 141
     },
     "pgtap": {
       "status": "not_run",
@@ -18,7 +18,7 @@
       "total": 0
     },
     "e2e": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
@@ -32,52 +32,69 @@
     },
     "degraded": [],
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_surface_verification.py shared/tests/test_verify_iterate_finalization.py shared/tests/test_architecture_md_reflects_arch_impact.py -q",
+      "surface": "none",
+      "tests_run": 779,
       "exit_code": 0,
-      "tests_run": 133,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-07-finalization-tooling-hardening/surface_verification.json",
-      "timestamp": "2026-06-07T18:03:23.083Z",
-      "justification": "cli surface: the three affected test suites ARE the scripted verification, and the full shared/tests/ suite (2837 passed, 0 failed) empirically confirms fix #1 removed the previously-recurring failure. No web/UI surface — these are framework finalization-tooling fixes."
+      "justification": "Backend/CLI producer change in the shipwright-compliance plugin (SBOM license resolver + triage emitter + sbom.md generator). No web surface: the dedup-key contract consumed by the WebUI/audit_detector is unchanged, and sbom.md is a rendered doc. Verified empirically by the full compliance suite (638) + integration suite (141) + a real sbom.md regeneration against the worktree repo (diff confirmed: not-installed deps -> '-', 'Unknown Licenses' section removed, clean verdict)."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Fix #2: check_spec_impact_recorded accepts none_reason as a fallback justification for spec_impact=none",
+          "behavior": "AC-1 detect_python_license: NOT_INSTALLED when no dist-info, UNKNOWN_LICENSE when dist-info present w/o license",
           "disposition": "tested",
-          "evidence": "test_verify_iterate_finalization.py::test_spec_impact_none_with_none_reason_passes (born-red, now PASSED) + existing ::test_spec_impact_none_with_justification_passes / ::test_spec_impact_none_without_justification_fails still PASS (no weakening)"
+          "evidence": "test_sbom_not_installed.py::TestPythonResolverDistinction (4) PASSED; test_data_collector.py no-venv/no-distinfo flips PASSED"
         },
         {
-          "behavior": "Fix #3: a compound shell runner (operator like && or leading builtin like cd) fails fast (0 attempts) with an actionable 'no shell' message",
+          "behavior": "AC-2 detect_npm_license: NOT_INSTALLED when absent, UNKNOWN_LICENSE when present-no-license incl blank SPDX object",
           "disposition": "tested",
-          "evidence": "test_surface_verification.py::test_compound_shell_runner_fails_fast_with_hint + ::test_cd_builtin_runner_rejected_with_hint (born-red on attempts==0, now PASSED)"
+          "evidence": "test_sbom_not_installed.py::TestNpmResolverDistinction (5 incl test_lockfile_blank_spdx_object_is_unknown) PASSED"
         },
         {
-          "behavior": "Fix #3 guard: a plain single-executable runner still executes normally (no false-positive rejection)",
+          "behavior": "AC-3 collector: NOT_INSTALLED never becomes a triage group (python+npm)",
           "disposition": "tested",
-          "evidence": "test_surface_verification.py::test_single_executable_runner_still_runs PASSED; whole 33-test surface suite green"
+          "evidence": "test_sbom_not_installed.py::TestCollectorSilence (3) + test_sbom_generator.py::test_python_not_installed_is_silent PASSED"
         },
         {
-          "behavior": "Fix #1: _discovery_sanity classifies dir-absent->skip, present-empty->skip, present-with-nonarch-drop->ok",
+          "behavior": "AC-4 genuine Fall-2 still drives per-workspace/cluster triage",
           "disposition": "tested",
-          "evidence": "test_architecture_md_reflects_arch_impact.py::test_discovery_sanity_{skips_when_dir_absent,skips_when_present_but_empty,ok_when_present_with_nonarch_drop} (born-red NameError, now PASSED)"
+          "evidence": "test_sbom_generator.py::TestEmitUndeclaredTriage* re-seeded to Fall 2 (all green) PASSED"
         },
         {
-          "behavior": "Fix #1: test_arch_impact_drops_found_at_all no longer false-FAILs on a post-release dev tree (dir present, only non-arch drops)",
+          "behavior": "AC-5 doc: not-installed rendered '-', excluded from unique licenses/pie/verdict",
           "disposition": "tested",
-          "evidence": "Full shared/tests/ suite now 2837 passed / 0 failed (was 2822 passed / 1 FAILED on this exact check the prior two iterates) — the empirical end-to-end proof"
+          "evidence": "test_sbom_not_installed.py::test_not_installed_rendered_as_dash_and_excluded + test_sbom_generator.py::test_not_installed_deps_are_silent_in_doc PASSED"
+        },
+        {
+          "behavior": "AC-6 doc: Fall-2 'Dependencies Without a Declared License' section; old 'Unknown Licenses' removed",
+          "disposition": "tested",
+          "evidence": "test_sbom_not_installed.py::test_genuine_no_license_surfaced_as_section PASSED; sbom.md regen diff confirmed section removed"
+        },
+        {
+          "behavior": "AC-7 doc verdict 3 states (clean / nothing-resolved)",
+          "disposition": "tested",
+          "evidence": "test_sbom_not_installed.py::test_verdict_clean_when_all_permissive + test_verdict_nothing_resolved_when_all_not_installed PASSED"
+        },
+        {
+          "behavior": "AC-8 no scan-coverage / install-nag line; doc ASCII-only",
+          "disposition": "tested",
+          "evidence": "test_sbom_not_installed.py::test_no_scan_coverage_or_install_nag + test_doc_is_ascii_even_with_fall2_deps PASSED"
+        },
+        {
+          "behavior": "AC-9 repo's 4 open SBOM items auto-dismiss on next regen (keys leave current_keys)",
+          "disposition": "tested",
+          "evidence": "mechanism proven: TestCollectorSilence (not-installed -> no group) + existing test_auto_resolve_when_workspace_clean / cluster auto-resolve (key absent -> dismissed sbomResolved)"
         }
       ],
       "counts": {
-        "testable": 5,
-        "tested": 5,
+        "testable": 9,
+        "tested": 9,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
+        "acs": 9,
+        "covered_acs": 9
       }
     }
   }

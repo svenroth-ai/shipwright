@@ -33,6 +33,26 @@ def _git(args: list[str], cwd: Path) -> None:
     )
 
 
+def _npm_lock_unlicensed(manifest_dir: Path, *names: str) -> None:
+    """Seed a package-lock.json that lists ``names`` but declares NO license —
+    i.e. resolved-but-no-license (Fall 2), the genuinely-undeclared case (NOT
+    the not-installed scan artifact)."""
+    (manifest_dir / "package-lock.json").write_text(
+        json.dumps({"lockfileVersion": 3,
+                    "packages": {f"node_modules/{n}": {"version": "1.0.0"} for n in names}}),
+        encoding="utf-8",
+    )
+
+
+def _py_distinfo_unlicensed(manifest_dir: Path, name: str, version: str = "1.0.0") -> None:
+    """Seed a ``.venv`` dist-info whose METADATA declares no license (Fall 2)."""
+    sp = manifest_dir / ".venv" / "Lib" / "site-packages" / f"{name}-{version}.dist-info"
+    sp.mkdir(parents=True, exist_ok=True)
+    (sp / "METADATA").write_text(
+        f"Metadata-Version: 2.1\nName: {name}\nVersion: {version}\n", encoding="utf-8",
+    )
+
+
 class TestCollectConfigs:
     def test_reads_all_configs(self, project_root: Path):
         configs = collect_configs(project_root)
@@ -195,10 +215,11 @@ class TestCollectDependencies:
         deps = collect_dependencies(empty_project_root)
         assert deps == []
 
-    def test_license_unknown_without_node_modules(self, project_root: Path):
+    def test_license_not_installed_without_node_modules(self, project_root: Path):
         deps = collect_dependencies(project_root)
-        # No node_modules + no package-lock.json in fixture → license should be unknown
-        assert all(d.license == "unknown" for d in deps)
+        # No node_modules + no package-lock.json → not resolvable = NOT installed
+        # (a scan artifact), NOT the genuine "unknown" (resolved-no-license) case.
+        assert all(d.license == "not-installed" for d in deps)
 
 
 class TestSbomLockfileAndWorkspace:
@@ -255,10 +276,11 @@ class TestSbomLockfileAndWorkspace:
         )
         assert _detect_npm_license(manifest_dir, "react") == "MIT"
 
-    def test_npm_unknown_when_neither_lockfile_nor_node_modules(self, tmp_path: Path):
+    def test_npm_not_installed_when_neither_lockfile_nor_node_modules(self, tmp_path: Path):
         from scripts.lib.data_collector import _detect_npm_license  # type: ignore
 
-        assert _detect_npm_license(tmp_path, "ghost-pkg") == "unknown"
+        # Neither lockfile nor node_modules → not resolvable = NOT installed.
+        assert _detect_npm_license(tmp_path, "ghost-pkg") == "not-installed"
 
     def test_python_license_resolver_requires_manifest_dir(self):
         """ADR-056 follow-up: the Python license resolver is pinned to a
@@ -374,21 +396,22 @@ class TestPythonLicenseFromVenvMetadata:
         )
         assert _detect_python_license("fake-pkg", tmp_path) == "BSD-3-Clause"
 
-    def test_returns_unknown_when_no_venv(self, tmp_path: Path):
+    def test_returns_not_installed_when_no_venv(self, tmp_path: Path):
         from scripts.lib.data_collector import _detect_python_license  # type: ignore
 
-        # No .venv at all → unknown, deterministically.
-        assert _detect_python_license("anything", tmp_path) == "unknown"
+        # No .venv at all → NOT installed (scan artifact), deterministically.
+        assert _detect_python_license("anything", tmp_path) == "not-installed"
 
-    def test_returns_unknown_when_no_matching_distinfo(self, tmp_path: Path):
+    def test_returns_not_installed_when_no_matching_distinfo(self, tmp_path: Path):
         from scripts.lib.data_collector import _detect_python_license  # type: ignore
 
-        # .venv exists with some other package, but not the one queried.
+        # .venv exists with some other package, but not the one queried → the
+        # queried package was never resolved = NOT installed.
         self._seed_distinfo(
             tmp_path, "other-pkg", "1.0.0",
             "Metadata-Version: 2.1\nName: other-pkg\nVersion: 1.0.0\nLicense: MIT\n",
         )
-        assert _detect_python_license("ghost-pkg", tmp_path) == "unknown"
+        assert _detect_python_license("ghost-pkg", tmp_path) == "not-installed"
 
     def test_returns_unknown_when_metadata_has_no_license(self, tmp_path: Path):
         from scripts.lib.data_collector import _detect_python_license  # type: ignore
@@ -466,10 +489,10 @@ class TestPythonLicenseFromVenvMetadata:
         """
         from scripts.lib.data_collector import _detect_python_license  # type: ignore
 
-        # No dist-info in the manifest .venv → must return 'unknown',
+        # No dist-info in the manifest .venv → must return 'not-installed',
         # regardless of whether the process Python has the package.
         # 'pytest' is in the process .venv (used to run THIS test).
-        assert _detect_python_license("pytest", tmp_path) == "unknown"
+        assert _detect_python_license("pytest", tmp_path) == "not-installed"
 
     def test_cross_manifest_isolation(self, tmp_path: Path):
         """Plugin A and Plugin B may declare the same package with
@@ -549,7 +572,7 @@ class TestPythonLicenseFromVenvMetadata:
 
     def test_launch_payload_outcome_simulation(self, tmp_path: Path):
         """AC-7: Simulate the operator workflow. Before `uv sync` the
-        plugin .venv has no dist-info → license=unknown. After (simulated
+        plugin .venv has no dist-info → license=not-installed. After (simulated
         by seeding the dist-info), license resolves. The launch payload
         prescription is now empirically truthful.
         """
@@ -560,9 +583,9 @@ class TestPythonLicenseFromVenvMetadata:
         (plugin / "pyproject.toml").write_text(
             'dependencies = [\n  "requests>=2.0",\n]\n', encoding="utf-8",
         )
-        # Before `uv sync`: no .venv → unknown.
+        # Before `uv sync`: no .venv → not-installed (scan artifact).
         before = collect_dependencies(tmp_path)
-        assert next(d for d in before if d.name == "requests").license == "unknown"
+        assert next(d for d in before if d.name == "requests").license == "not-installed"
         # After `uv sync` (simulated): dist-info present → resolves.
         self._seed_distinfo(
             plugin, "requests", "2.33.0",
@@ -718,8 +741,8 @@ class TestPythonLicenseFromVenvMetadata:
         monkeypatch.setattr(_metadata, "metadata", _detonate)
         monkeypatch.setattr(_metadata, "distribution", _detonate)
         # If the resolver still calls importlib.metadata, this errors;
-        # otherwise it returns 'unknown' (no .venv seeded).
-        assert _detect_python_license("anything", tmp_path) == "unknown"
+        # otherwise it returns 'not-installed' (no .venv seeded).
+        assert _detect_python_license("anything", tmp_path) == "not-installed"
 
 
 class TestCollectUndeclaredByWorkspace:
@@ -760,6 +783,8 @@ class TestCollectUndeclaredByWorkspace:
             }),
             encoding="utf-8",
         )
+        # Resolved (present in lockfile) but no license declared → Fall 2.
+        _npm_lock_unlicensed(tmp_path / "client", "react", "vitest")
         groups = collect_undeclared_by_workspace(tmp_path)
         assert len(groups) == 1
         group = groups[0]
@@ -775,6 +800,8 @@ class TestCollectUndeclaredByWorkspace:
             'dependencies = [\n  "definitely-not-a-real-pypi-package-xyz>=1.0.0",\n]\n',
             encoding="utf-8",
         )
+        # Installed (dist-info present) but METADATA declares no license → Fall 2.
+        _py_distinfo_unlicensed(tmp_path, "definitely-not-a-real-pypi-package-xyz")
         groups = collect_undeclared_by_workspace(tmp_path)
         assert len(groups) == 1
         group = groups[0]
@@ -791,6 +818,7 @@ class TestCollectUndeclaredByWorkspace:
         (tmp_path / "apps" / "web" / "package.json").write_text(
             json.dumps({"dependencies": {"react": "^19.0.0"}}), encoding="utf-8"
         )
+        _npm_lock_unlicensed(tmp_path / "apps" / "web", "react")
         groups = collect_undeclared_by_workspace(tmp_path)
         assert groups[0]["manifest_rel_path"] == "apps/web/package.json"
         assert "\\" not in groups[0]["manifest_rel_path"]
@@ -824,6 +852,7 @@ class TestCollectUndeclaredByWorkspace:
                         "devDependencies": {"vitest": "^1.0.0"}}),
             encoding="utf-8",
         )
+        _npm_lock_unlicensed(tmp_path / "client", "vitest")
         # Must NOT crash; the bad section is skipped, the good one is scanned.
         groups = collect_undeclared_by_workspace(tmp_path)
         assert len(groups) == 1

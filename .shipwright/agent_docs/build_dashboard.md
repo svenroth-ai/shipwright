@@ -1,11 +1,12 @@
 # Project Activity Dashboard
-> Updated: 2026-06-07 18:06 UTC | Session: 3b85abe0-9a36-4117-87a9-07f79d06f38a | Run: iterate-2026-06-07-finalization-tooling-hardening
+> Updated: 2026-06-07 18:41 UTC | Session: 16dac742-a8b7-4a5d-b12b-7bd1a5e98097 | Run: iterate-2026-06-07-sbom-not-installed-vs-undeclared
 
-## Recent Changes (119 iterations)
+## Recent Changes (120 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
 | change | Harden iterate finalization tooling: F11 verifier accepts none_reason as a spec_impact=none justification; F0.5 surface_verification rejects compound runners fast with a clear error; arch-drift sanity test no longer false-FAILs on a post-release tree. | 0/0 |  | tooling | 2026-06-07 |
+| change | SBOM distinguishes not-installed from no-declared-license; not-installed is silent (no triage, dash in sbom.md), only resolved-but-no-license is surfaced. | 0/0 |  | tooling | 2026-06-07 |
 | feature | Add campaign_init --expands-triage / --from-triage so a triage item can be promoted to a campaign anchor; writes expands_triage into both status.json and the campaign.md frontmatter so the Command Center shows 'Start Campaign' on that triage card. | 0/0 |  | tooling | 2026-06-07 |
 | change | adopt scaffolds .gitleaks.toml + hardens security.yml.template | 312/312 |  | tooling | 2026-06-07 |
 | change | GC machine-churn complianceRefreshed compliance-backlog dismissals (add token to triage_gc.MACHINE_REASONS) | 24/24 |  | tooling | 2026-06-07 |
@@ -126,7 +127,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-07 | Unit: 2837/2837 | Smoke: not_run | (iterate)
+Last run: 2026-06-07 | Unit: 638/638 | Integration: 141/141 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

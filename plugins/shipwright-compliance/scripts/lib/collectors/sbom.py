@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from ._license_const import UNKNOWN_LICENSE
 from ._npm_license import detect_npm_license
 from ._python_license import parse_pyproject_deps
 from ._types import DependencyInfo
@@ -110,7 +111,10 @@ def collect_dependencies(project_root: Path) -> list[DependencyInfo]:
 
 
 def collect_undeclared_by_workspace(project_root: Path) -> list[dict]:
-    """Group packages with ``license == "unknown"`` by their manifest.
+    """Group genuinely-undeclared packages (``license == UNKNOWN_LICENSE``,
+    i.e. resolved but no declared license) by their manifest. ``NOT_INSTALLED``
+    packages are excluded — not installed in the scan env is a scan artifact,
+    not a triage finding.
 
     Iterate B.2 (ADR-054 D1 / ADR-056) — feeds the SBOM triage producer.
     ``collect_dependencies`` collapses cross-workspace duplicates into a
@@ -153,7 +157,9 @@ def collect_undeclared_by_workspace(project_root: Path) -> list[dict]:
             if not isinstance(section_deps, dict):
                 continue
             for name, version in section_deps.items():
-                if detect_npm_license(manifest_dir, name) == "unknown":
+                # Only genuine "resolved but no declared license" (Fall 2) is a
+                # triage finding. NOT_INSTALLED (scan artifact) is excluded.
+                if detect_npm_license(manifest_dir, name) == UNKNOWN_LICENSE:
                     undeclared.append({"name": name, "version": str(version)})
         if undeclared:
             rel = pkg_path.relative_to(project_root).as_posix()
@@ -166,7 +172,8 @@ def collect_undeclared_by_workspace(project_root: Path) -> list[dict]:
     for pyproject_path in manifests["python"]:
         undeclared = []
         for dep in parse_pyproject_deps(pyproject_path):
-            if dep.license == "unknown":
+            # Fall 2 only (see npm branch): NOT_INSTALLED stays silent.
+            if dep.license == UNKNOWN_LICENSE:
                 undeclared.append({"name": dep.name, "version": dep.version})
         if undeclared:
             rel = pyproject_path.relative_to(project_root).as_posix()
