@@ -5,5 +5,6 @@
   "complexity": "medium",
   "branch": "iterate/sbom-not-installed-vs-undeclared",
   "tests_passed": true,
-  "spec": ".shipwright/planning/iterate/2026-06-07-sbom-not-installed-vs-undeclared.md"
+  "spec": ".shipwright/planning/iterate/2026-06-07-sbom-not-installed-vs-undeclared.md",
+  "adr": "iterate-2026-06-07-sbom-not-installed-vs-undeclared"
 }
