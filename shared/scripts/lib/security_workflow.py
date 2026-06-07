@@ -64,3 +64,21 @@ SARIF_CATEGORY = "shipwright-security"
 # coupling to a specific tag. The template uses `@v3` today — bumping the
 # template's version pin must NOT require an audit code change.
 SARIF_UPLOAD_USES_PREFIX = "github/codeql-action/upload-sarif"
+
+# Phase B activation opt-in — convention-lock DEFAULT.
+#
+# A5.6 (group_a5._check_a5_6_triggers) enforces a "dormant-trigger
+# contract": `workflow_dispatch:` must be active, while `pull_request:` /
+# `schedule:` must NOT be — Phase B (auto-scan on every PR + weekly
+# schedule) costs CI minutes and changes fork-PR posture, so activation
+# must be deliberate. This constant is that opt-in's default: dormant-by-
+# default is the safe posture for a freshly /shipwright-adopt-ed repo.
+#
+# A project that has DELIBERATELY activated Phase B records it via
+# `a5_phase_b_activated: true` in its project-local `audit_config.json`;
+# A5 then treats active pull_request/schedule as PASS. The structural
+# guards — workflow_dispatch presence and the bare-`on:`/no-triggers
+# failure — still fire regardless of this flag. This is a behavioral
+# default, not a template-pinned value, so it is read tolerantly
+# (getattr fallback) rather than asserted against the template.
+A5_PHASE_B_ACTIVATED_DEFAULT: bool = False
