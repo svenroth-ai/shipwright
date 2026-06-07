@@ -1,15 +1,15 @@
 # Commit Change Log
 
 Generated: 2026-06-07T20:39:47.562496+00:00
-Total commits: 884
+Total commits: 886
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 254
-    "fix" : 246
-    "chore" : 179
+    "fix" : 247
+    "chore" : 180
     "docs" : 119
     "refactor" : 50
     "test" : 21
@@ -279,10 +279,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 246 commits
+### Fixes (fix) — 247 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-07 | triage | reconcile-and-commit main-tree triage.jsonl drift before FF/pull | 73eed9d41449 |
 | 2026-06-07 | security | allowlist cafebabe:deadbeef in generated gitleaks config (GAP-3) | 22f78c572c80 |
 | 2026-06-07 | compliance | distinguish SBOM 'not installed' from 'no declared license' | 1e09b96e2917 |
 | 2026-06-07 | iterate | harden finalization/verification tooling (3 fixes from the prior run) (#165) | 4718f6c13921 |
@@ -530,10 +531,11 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 179 commits
+### Chores (chore) — 180 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-07 | campaign | track status.json for detective-realign + track-triage-jsonl | 011595113866 |
 | 2026-06-07 | churn | regenerate derived snapshots after main merge | ab155a10a1c0 |
 | 2026-06-07 | triage | record rolling compliance backlog item (churn) | e07c262977a9 |
 | 2026-06-07 | triage | auto-dismiss trg-e1c91f13 (sbomResolved) post-integrate | f69a71726744 |
@@ -953,7 +955,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 884 |
+| Total commits | 886 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 884 |
+| Human-authored commits | 886 |
 
