@@ -155,6 +155,36 @@ directions). Two load-bearing rules:
 must merge that commit (so the attribute is present in its tree) before `union`
 applies to its `events.jsonl`. The resolver validates the merged log regardless.
 
+### Main-tree triage drift reconcile (iterate-2026-06-07-triage-main-tree-reconcile)
+
+The churn resolver above covers **committed-vs-committed** merges. It does NOT
+cover the other failure mode: `.shipwright/triage.jsonl` is tracked *and*
+main-repo-root durable, so per-session **background** producers (plugin-sync
+Stop-hook, compliance audit, `triage_add`) append to the MAIN working tree and
+leave it **uncommitted** — which then blocks `git pull` / `git merge --ff-only
+origin/main` in the main tree (hit 2026-06-07 during the post-merge
+plugin-cache-sync). C2's leak-guard *exemption* (`_MAIN_TREE_WRITE_EXEMPT`)
+silenced the guard but is not a commit path.
+
+`shared/scripts/lib/reconcile_triage.py::reconcile_main_triage(project_root)`
+closes this: it resolves the MAIN repo root, validates + exact-line-dedups the
+drift, and folds it into ONE `chore(triage)` commit (B7-exempt Rule E) BEFORE any
+FF/pull — serialized on the canonical `triage._FileLock` and a **structured
+no-op** under every safety guard (not-a-repo / op-in-progress / detached-HEAD /
+any-staged-index / missing-log / CI-without-`--allow-ci` / no-drift). It is a
+**between-phase action** wired into two call sites:
+
+- `integrate_main.py` — invoked before its `origin/main` merge (every refreshing
+  iterate also folds main-tree drift; step `reconciled-main-triage:<status>`).
+- `setup_iterate_worktree.py` — invoked before the main-tree snapshot, so the
+  background appends are committed (durable, not orphaned by a worktree branching
+  off `origin/<default>`) and the snapshot baseline is clean.
+
+The CLI `shared/scripts/tools/reconcile_main_triage.py` is the manual post-merge
+sync-path entrypoint (run before `git pull`). New write surface: a single
+`chore(triage)` commit on the main tree's default branch (only the
+`.shipwright/triage.jsonl` path). See `shared/tests/test_reconcile_triage*.py`.
+
 ### Pipeline Constants
 
 **File:** `plugins/shipwright-run/scripts/lib/orchestrator_pkg/constants.py`

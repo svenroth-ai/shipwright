@@ -45,6 +45,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.reconcile_triage import reconcile_main_triage  # noqa: E402
 from lib.worktree_isolation import (  # noqa: E402
     GitError,
     WORKTREES_DIRNAME,
@@ -196,7 +197,18 @@ def setup(
             "detail": str(exc),
         }
 
-    # 5. Snapshot the main tree + write the per-session run pointer.
+    # 5. Fold any uncommitted main-tree triage.jsonl background drift into one
+    #    chore(triage) commit BEFORE snapshotting — so the background appends are
+    #    committed (durable, not orphaned by this new worktree branching off
+    #    origin/main) and the snapshot baseline is clean. Structured no-op when
+    #    there is no drift / a guard trips. See lib/reconcile_triage (AC-6).
+    recon = reconcile_main_triage(main_root)
+    if recon.status in ("invalid", "error"):
+        # Fail-soft (the leak-guard exempts triage.jsonl anyway) but not silent.
+        print(f"setup_iterate_worktree: reconcile-main-triage {recon.status}: "
+              f"{recon.errors or recon.reason}", file=sys.stderr)
+
+    # 6. Snapshot the main tree + write the per-session run pointer.
     snap_path = write_snapshot(main_root, run_id)
     pointer_path = write_run_pointer(
         main_root,
