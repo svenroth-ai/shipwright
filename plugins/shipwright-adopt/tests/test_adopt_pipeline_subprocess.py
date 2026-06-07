@@ -205,6 +205,19 @@ def test_full_pipeline_e2e_via_subprocess(tmp_path: Path) -> None:
     assert cr_payload["wrote"] is True
     assert cr_payload["reason"] == "scaffolded"
 
+    # Step E.13b — Gitleaks allowlist scaffold landed (companion to security.yml).
+    # security.yml runs `gitleaks detect --no-git` with no `--config`, so the
+    # root .gitleaks.toml must be present or the adopted repo's FIRST scan goes
+    # red on the cafebabe:deadbeef false positive (leadwright 2026-06-07).
+    gitleaks_cfg = tmp_path / ".gitleaks.toml"
+    assert gitleaks_cfg.exists(), "Step E.13b did not scaffold .gitleaks.toml"
+    gl_payload = payload["gitleaks_config"]
+    assert gl_payload["wrote"] is True
+    assert gl_payload["reason"] == "scaffolded"
+    gl_text = gitleaks_cfg.read_text(encoding="utf-8")
+    assert "useDefault = true" in gl_text
+    assert "cafebabe:deadbeef" in gl_text
+
 
 def test_pipeline_ci_scaffold_supabase_nextjs_profile(tmp_path: Path) -> None:
     """External-review #O7: parametrize subprocess coverage across profiles.

@@ -1,0 +1,1 @@
+shipwright-adopt now scaffolds a `.gitleaks.toml` allowlist alongside `security.yml`, so a freshly-adopted repo's first Security Scan no longer goes red on the universal gitleaks `sidekiq-secret` false positive (`cafebabe:deadbeef`).

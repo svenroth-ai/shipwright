@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-07-campaign-expands-triage",
+    "run_id": "iterate-2026-06-07-adopt-gitleaks-allowlist",
     "date": "2026-06-07",
     "unit": {
       "status": "passed",
-      "passed": 290,
-      "total": 290
+      "passed": 312,
+      "total": 312
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 1,
+      "total": 1
     },
     "pgtap": {
       "status": "not_run",
@@ -30,99 +30,90 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [
-      {
-        "condition": "preexisting-unrelated-test-failure",
-        "detail": "Full shared/tests/ run: 2822 passed, 24 skipped, 1 FAILED (test_architecture_md_reflects_arch_impact.py::test_arch_impact_drops_found_at_all). Pre-existing + environmental, NOT introduced by this diff: the main-repo .shipwright/agent_docs/decision-drops/ dir exists with 1 drop, 0 of which carry a real architecture_impact (drops aggregated/cleared at the v0.24.0 release d5764ab7), so that test's 'dir present but no arch-impact drops' sanity guard fires. The same condition was recorded by the prior iterate (triage-gc-compliance-refreshed). This diff touches only campaign_init.py + a new test module + campaign-mode.md — neither decision-drops nor architecture.md, so it is structurally impossible for this change to affect that test. Robustness gap (test skips when dir absent but not when present-but-empty) noted in F3a reflection."
-      }
-    ],
+    "degraded": [],
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --extra dev pytest plugins/shipwright-iterate/tests/test_campaign_expands_triage.py -q",
+      "surface": "none",
+      "runner": "surface_verification.py --surface none",
       "exit_code": 0,
-      "tests_run": 15,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-07-campaign-expands-triage/surface_verification.json",
-      "timestamp": "2026-06-07T15:46:43.063Z",
-      "justification": "cli surface: the new test module is the scripted CLI verification, driving the real campaign_init.py main() against fixture projects (incl. a real triage.jsonl seeded by the real producer). Plus an out-of-band boundary probe ran the installed CLI end-to-end (seed via triage_add.py -> campaign_init --from-triage -> inspect both artifacts). No web/UI surface in this repo; the WebUI consumer lives in shipwright-webui (out of scope)."
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-06-07-adopt-gitleaks-allowlist/surface_verification.json",
+      "timestamp": "2026-06-07T00:00:00Z",
+      "justification": "Framework adopt-scaffolder + CI security-template change; no startable web/api/cli USER surface. The only behavior (adopt writing a root .gitleaks.toml) is verified end-to-end by the real generate_adoption_artifacts.py subprocess test. Backend-affects-Frontend rule N/A."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "--expands-triage stamps the anchor into status.json",
+          "behavior": "Scaffolds <root>/.gitleaks.toml from the template when absent",
           "disposition": "tested",
-          "evidence": "test_campaign_expands_triage.py::TestExpandsTriageArtifacts::test_status_json_carries_expands_triage + ::TestExpandsTriageCli::test_cli_writes_anchor_to_both PASSED"
+          "evidence": "test_gitleaks_config_scaffold.py::test_writes_when_absent PASSED"
         },
         {
-          "behavior": "--expands-triage stamps the snake_case anchor INSIDE the campaign.md YAML frontmatter block (the WebUI join key fm.expands_triage)",
+          "behavior": "Copies the template byte-for-byte (drift guarantees carry into adopted repos)",
           "disposition": "tested",
-          "evidence": "::test_frontmatter_carries_snake_case_key asserts 'expands_triage: <trg>' within md.split('---',2)[1]; born-red before impl, PASSED after"
+          "evidence": "test_gitleaks_config_scaffold.py::test_content_matches_template PASSED"
         },
         {
-          "behavior": "An un-anchored campaign carries NO expands_triage key in either artifact (backward-compat / legacy-shaped)",
+          "behavior": "Written content carries the cafebabe:deadbeef allowlist + useDefault",
           "disposition": "tested",
-          "evidence": "::test_omitted_when_not_provided PASSED (status.json + campaign.md both free of the key)"
+          "evidence": "test_gitleaks_config_scaffold.py::test_written_content_has_cafebabe_allowlist PASSED"
         },
         {
-          "behavior": "A malformed trg-id is rejected (ValueError from init_campaign; CLI exit 1)",
+          "behavior": "Never overwrites a pre-existing .gitleaks.toml (byte-preserved)",
           "disposition": "tested",
-          "evidence": "::test_invalid_trg_id_rejected (pytest.raises ValueError) + ::test_cli_invalid_anchor_returns_1 (ret==1) PASSED; boundary probe step 5 showed exit 1 + clear message"
+          "evidence": "test_gitleaks_config_scaffold.py::test_idempotent_existing_file_preserved PASSED"
         },
         {
-          "behavior": "Re-init with the same anchor is idempotent — exactly one anchor line, stable value",
+          "behavior": "Idempotent on a repeat call (second call reports already_exists)",
           "disposition": "tested",
-          "evidence": "::test_idempotent_reinit_stable_anchor asserts md.count('expands_triage:')==1 PASSED"
+          "evidence": "test_gitleaks_config_scaffold.py::test_idempotent_when_called_twice PASSED"
         },
         {
-          "behavior": "The anchor survives the status.json load->modify->dump round-trip on the draft->active flip (touches_io_boundary round-trip)",
+          "behavior": "Fails loud (FileNotFoundError, no half-write) when the template path does not resolve",
           "disposition": "tested",
-          "evidence": "::test_anchor_survives_start_roundtrip runs campaign_progress.cmd_start then asserts status['expands_triage'] persists PASSED"
+          "evidence": "test_gitleaks_config_scaffold.py::test_raises_loudly_when_template_missing PASSED"
         },
         {
-          "behavior": "--from-triage seeds --intent from the item title/detail (via the real triage SSoT reader) and implies the anchor",
+          "behavior": "The real adopt pipeline actually wires the scaffold (writes .gitleaks.toml, results.gitleaks_config)",
           "disposition": "tested",
-          "evidence": "::TestFromTriage::test_from_triage_seeds_intent_and_anchor seeds via real triage.append_triage_item, asserts intent text + anchor in both artifacts PASSED"
+          "evidence": "test_adopt_pipeline_subprocess.py::test_full_pipeline_e2e_via_subprocess PASSED (real uv subprocess)"
         },
         {
-          "behavior": "Explicit --intent overrides the seeded intent",
+          "behavior": "GITLEAKS_CONFIG_* SSoT constants resolve to a real template of the required allowlist shape",
           "disposition": "tested",
-          "evidence": "::test_explicit_intent_overrides_seed PASSED"
+          "evidence": "test_gitleaks_config_convention.py::TestGitleaksConfigTemplate (3 tests) PASSED"
         },
         {
-          "behavior": "--from-triage with an unknown (valid-shape) id exits 1",
+          "behavior": "Deployed config path is the root name gitleaks auto-loads (.gitleaks.toml)",
           "disposition": "tested",
-          "evidence": "::test_from_triage_unknown_id_returns_1 (trg-00000000) ret==1 PASSED"
+          "evidence": "test_gitleaks_config_convention.py::test_gitleaks_config_path_is_root_toml PASSED"
         },
         {
-          "behavior": "--from-triage on a non-open (dismissed) item warns but proceeds (does not block re-promotion)",
+          "behavior": "security.yml.template gitleaks install is SHA256-verified before extract",
           "disposition": "tested",
-          "evidence": "::test_from_triage_dismissed_item_warns_but_proceeds asserts ret==0, 'WARNING'+'dismissed' on stderr, anchor still written PASSED"
+          "evidence": "test_security_workflow_convention.py::TestSupplyChainHardening::test_gitleaks_download_is_sha256_verified PASSED"
         },
         {
-          "behavior": "Conflicting --from-triage and --expands-triage (different ids) is rejected as an ambiguous anchor (exit 1)",
+          "behavior": "security.yml.template peter-evans action pinned to a commit SHA (no residual @v4)",
           "disposition": "tested",
-          "evidence": "::test_from_triage_conflicting_explicit_anchor_returns_1 ret==1 PASSED"
+          "evidence": "test_security_workflow_convention.py::TestSupplyChainHardening::test_comment_action_pinned_to_commit_sha PASSED"
         },
         {
-          "behavior": "The CLI requires --intent OR --from-triage (neither -> exit 1)",
-          "disposition": "tested",
-          "evidence": "::test_cli_requires_intent_or_from_triage ret==1 PASSED"
-        },
-        {
-          "behavior": "At runtime the real CLI resolves shared/scripts via the walk-up _find_shared_scripts (not the test's manual sys.path injection) and reads a real triage.jsonl",
-          "disposition": "tested",
-          "evidence": "Out-of-band boundary probe: triage_add.py seeded trg-d3a2976f, then `uv run campaign_init.py --from-triage trg-d3a2976f` (no PYTHONPATH help) exited 0 and wrote expands_triage to both artifacts"
+          "behavior": "Adopted repo's first live GitHub Actions Security Scan goes green (no cafebabe red)",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "Needs a live GitHub Actions run on a real adopted repo; empirically proven on leadwright 2026-06-07 (run 27086046885 red -> 27086178138 green after the file was added)."
         }
       ],
       "counts": {
-        "testable": 13,
-        "tested": 13,
-        "untestable": 0,
+        "testable": 11,
+        "tested": 11,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   }
