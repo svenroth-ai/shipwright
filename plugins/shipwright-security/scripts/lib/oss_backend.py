@@ -358,6 +358,16 @@ def _write_gitleaks_allowlist(excludes: tuple[str, ...]) -> str:
         "[allowlist]\n"
         'description = "shipwright default scanner exclusions"\n'
         f"paths = [{', '.join(patterns)}]\n"
+        # Defense-in-depth: the famous magic-hex placeholder cafebabe:deadbeef
+        # false-matches the built-in sidekiq-secret rule but is never a real
+        # secret. Allowlisting it here keeps the monorepo's own gitleaks scan
+        # from false-redding on it, mirroring the adopt-scaffolded
+        # shared/templates/github-actions/gitleaks.toml.template. useDefault
+        # above keeps every real secret rule live.
+        '# magic-hex placeholder (cafebabe:deadbeef) — false sidekiq-secret match\n'
+        'regexTarget = "match"\n'
+        "regexes = ['''cafebabe:deadbeef''']\n"
+        'stopwords = ["cafebabe", "deadbeef"]\n'
     )
     fd, path = tempfile.mkstemp(suffix=".toml", prefix="shipwright-gitleaks-")
     with os.fdopen(fd, "w", encoding="utf-8") as f:

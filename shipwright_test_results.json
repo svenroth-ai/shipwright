@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-07-finalization-tooling-hardening",
+    "run_id": "iterate-2026-06-07-oss-backend-cafebabe-stopword",
     "date": "2026-06-07",
     "unit": {
       "status": "passed",
-      "passed": 2837,
-      "total": 2837
+      "passed": 56,
+      "total": 56
     },
     "integration": {
       "status": "not_run",
@@ -28,56 +28,57 @@
       "total": 0
     },
     "smoke": {
-      "status": "not_run"
+      "status": "skipped"
     },
     "degraded": [],
     "surface_verification": {
-      "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_surface_verification.py shared/tests/test_verify_iterate_finalization.py shared/tests/test_architecture_md_reflects_arch_impact.py -q",
+      "surface": "none",
+      "runner": "surface_verification.py --surface none",
       "exit_code": 0,
-      "tests_run": 133,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-07-finalization-tooling-hardening/surface_verification.json",
-      "timestamp": "2026-06-07T18:03:23.083Z",
-      "justification": "cli surface: the three affected test suites ARE the scripted verification, and the full shared/tests/ suite (2837 passed, 0 failed) empirically confirms fix #1 removed the previously-recurring failure. No web/UI surface — these are framework finalization-tooling fixes."
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-06-07-oss-backend-cafebabe-stopword/surface_verification.json",
+      "timestamp": "2026-06-07T00:00:00Z",
+      "justification": "Security-scanner config-generation change (oss_backend._write_gitleaks_allowlist). No startable user surface; behavior verified by the oss_backend gitleaks unit suite + a tomllib validity probe."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "Fix #2: check_spec_impact_recorded accepts none_reason as a fallback justification for spec_impact=none",
+          "behavior": "Generated gitleaks config allowlists cafebabe:deadbeef (regex, regexTarget=match) + stopwords",
           "disposition": "tested",
-          "evidence": "test_verify_iterate_finalization.py::test_spec_impact_none_with_none_reason_passes (born-red, now PASSED) + existing ::test_spec_impact_none_with_justification_passes / ::test_spec_impact_none_without_justification_fails still PASS (no weakening)"
+          "evidence": "test_oss_backend.py::TestRunGitleaks::test_gitleaks_config_allowlists_cafebabe_placeholder PASSED (born-red without the change)"
         },
         {
-          "behavior": "Fix #3: a compound shell runner (operator like && or leading builtin like cd) fails fast (0 attempts) with an actionable 'no shell' message",
+          "behavior": "useDefault stays true so every built-in secret rule remains live (no over-suppression)",
           "disposition": "tested",
-          "evidence": "test_surface_verification.py::test_compound_shell_runner_fails_fast_with_hint + ::test_cd_builtin_runner_rejected_with_hint (born-red on attempts==0, now PASSED)"
+          "evidence": "same test asserts 'useDefault = true' in the generated config; PASSED"
         },
         {
-          "behavior": "Fix #3 guard: a plain single-executable runner still executes normally (no false-positive rejection)",
+          "behavior": "Generated config is still valid TOML and carries paths + regexes + stopwords together",
           "disposition": "tested",
-          "evidence": "test_surface_verification.py::test_single_executable_runner_still_runs PASSED; whole 33-test surface suite green"
+          "evidence": "tomllib.loads(_write_gitleaks_allowlist(...)) probe: keys=['description','paths','regexTarget','regexes','stopwords'], parses clean"
         },
         {
-          "behavior": "Fix #1: _discovery_sanity classifies dir-absent->skip, present-empty->skip, present-with-nonarch-drop->ok",
+          "behavior": "Existing path-exclude allowlist (node_modules/tests/...) is unchanged (no regression)",
           "disposition": "tested",
-          "evidence": "test_architecture_md_reflects_arch_impact.py::test_discovery_sanity_{skips_when_dir_absent,skips_when_present_but_empty,ok_when_present_with_nonarch_drop} (born-red NameError, now PASSED)"
+          "evidence": "test_oss_backend.py::test_gitleaks_cmd_passes_generated_allowlist_config PASSED; full oss_backend suite 56 passed"
         },
         {
-          "behavior": "Fix #1: test_arch_impact_drops_found_at_all no longer false-FAILs on a post-release dev tree (dir present, only non-arch drops)",
-          "disposition": "tested",
-          "evidence": "Full shared/tests/ suite now 2837 passed / 0 failed (was 2822 passed / 1 FAILED on this exact check the prior two iterates) — the empirical end-to-end proof"
+          "behavior": "Monorepo's live GitHub Actions gitleaks scan stays green with the placeholder allowlisted",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "Needs the real gitleaks binary on a GH Actions runner; the smoke tests skip without it. Covered by the PR's Shipwright Security Scan check."
         }
       ],
       "counts": {
-        "testable": 5,
-        "tested": 5,
-        "untestable": 0,
+        "testable": 4,
+        "tested": 4,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
+        "acs": 1,
+        "covered_acs": 1
       }
     }
   }

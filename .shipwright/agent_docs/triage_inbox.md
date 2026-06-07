@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-07T18:06:49.314647Z. Items waiting for triage decision.
+> Auto-generated 2026-06-07T19:06:36.620339Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
 - Total: 133
-- Triage: 14 | Promoted: 1 | Dismissed: 118 | Snoozed: 0
+- Triage: 13 | Promoted: 1 | Dismissed: 119 | Snoozed: 0
 
-## Top 14 items (severity-sorted)
+## Top 13 items (severity-sorted)
 
 ### Source: architecture (2 items)
 
@@ -62,7 +62,7 @@
   - Adopt copies security.yml.template (gitleaks runs --no-git with no --config, relying on an auto-loaded .gitleaks.toml a…
   - Promote: `triage_promote.py --id trg-27b6f6ba --task-ref EXT:<ref>`
 
-### Source: sbom (5 items)
+### Source: sbom (4 items)
 
 <a id="trg-e1c91f13"></a>
 - **SBOM: 2 workspaces missing license metadata for 3 shared package(s)** `id=trg-e1c91f13 | severity=low | kind=compliance → P3/engineering`
@@ -99,18 +99,6 @@
       && uv run plugins/shipwright-compliance/scripts/tools/update_compliance.py --project-root . --phase iterate
     ```
   - Promote: `triage_promote.py --id trg-8d263dd0 --task-ref EXT:<ref>`
-
-<a id="trg-01f1300a"></a>
-- **SBOM: 3 undeclared license(s) in plugins/shipwright-security/pyproject.toml** `id=trg-01f1300a | severity=low | kind=compliance → P3/engineering`
-  - 3 package(s) without a resolvable license. Top 3: pytest@8.0.0, pytest-mock@3.12.0, requests@2.31.0
-  - Launch payload (copy into a new Claude session):
-    ```text
-    cd 'plugins/shipwright-security' \
-      && uv sync \
-      && cd - \
-      && uv run plugins/shipwright-compliance/scripts/tools/update_compliance.py --project-root . --phase iterate
-    ```
-  - Promote: `triage_promote.py --id trg-01f1300a --task-ref EXT:<ref>`
 
 <a id="trg-bf655bab"></a>
 - **SBOM: 10 workspaces missing license metadata for 2 shared package(s)** `id=trg-bf655bab | severity=low | kind=compliance → P3/engineering`

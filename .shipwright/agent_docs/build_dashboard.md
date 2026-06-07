@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-07 18:06 UTC | Session: 3b85abe0-9a36-4117-87a9-07f79d06f38a | Run: iterate-2026-06-07-finalization-tooling-hardening
+> Updated: 2026-06-07 19:06 UTC | Session: 7820c922-2e9f-4892-8ab4-6c0475cbe145 | Run: iterate-2026-06-07-oss-backend-cafebabe-stopword
 
-## Recent Changes (119 iterations)
+## Recent Changes (120 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | allowlist cafebabe:deadbeef in oss_backend generated gitleaks config (GAP-3) | 56/56 |  | tooling | 2026-06-07 |
 | change | Harden iterate finalization tooling: F11 verifier accepts none_reason as a spec_impact=none justification; F0.5 surface_verification rejects compound runners fast with a clear error; arch-drift sanity test no longer false-FAILs on a post-release tree. | 0/0 |  | tooling | 2026-06-07 |
 | feature | Add campaign_init --expands-triage / --from-triage so a triage item can be promoted to a campaign anchor; writes expands_triage into both status.json and the campaign.md frontmatter so the Command Center shows 'Start Campaign' on that triage card. | 0/0 |  | tooling | 2026-06-07 |
 | change | adopt scaffolds .gitleaks.toml + hardens security.yml.template | 312/312 |  | tooling | 2026-06-07 |
@@ -126,7 +127,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-07 | Unit: 2837/2837 | Smoke: not_run | (iterate)
+Last run: 2026-06-07 | Unit: 56/56 | Smoke: skipped | (iterate)
 
 ## Pipeline
 
