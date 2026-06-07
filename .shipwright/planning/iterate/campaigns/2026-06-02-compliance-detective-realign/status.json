@@ -1,0 +1,48 @@
+{
+  "campaign": "2026-06-02-compliance-detective-realign",
+  "status": "complete",
+  "branch_strategy": "stacked",
+  "created_at": "2026-06-02T00:00:00+00:00",
+  "sub_iterates": [
+    {
+      "id": "C1",
+      "slug": "audit-run-id-provenance",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-06-02-compliance-detective-realign/sub-iterates/C1-audit-run-id-provenance.md",
+      "status": "complete",
+      "commit": "f688c391",
+      "branch": "iterate/compliance-detective-realign-c1-c2",
+      "tests_passed": null,
+      "tests_total": null
+    },
+    {
+      "id": "C2",
+      "slug": "audit-invocation-resilience",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-06-02-compliance-detective-realign/sub-iterates/C2-audit-invocation-resilience.md",
+      "status": "complete",
+      "commit": "f688c391",
+      "branch": "iterate/compliance-detective-realign-c1-c2",
+      "tests_passed": null,
+      "tests_total": null
+    },
+    {
+      "id": "C3",
+      "slug": "fr-linkage-lifecycle",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-06-02-compliance-detective-realign/sub-iterates/C3-fr-linkage-lifecycle.md",
+      "status": "complete",
+      "commit": "2b0fb66c",
+      "branch": "iterate/compliance-detective-realign-c3",
+      "tests_passed": 64,
+      "tests_total": 64
+    },
+    {
+      "id": "C4",
+      "slug": "webui-data-config",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-06-02-compliance-detective-realign/sub-iterates/C4-webui-data-config.md",
+      "status": "complete",
+      "commit": "f8b63cb",
+      "branch": "iterate/compliance-detective-realign-c4",
+      "tests_passed": null,
+      "tests_total": null
+    }
+  ]
+}

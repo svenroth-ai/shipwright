@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-07 19:06 UTC | Session: 7820c922-2e9f-4892-8ab4-6c0475cbe145 | Run: iterate-2026-06-07-oss-backend-cafebabe-stopword
+> Updated: 2026-06-07 19:48 UTC | Session: 763d29d0-0224-4648-8383-83c105bea9ad | Run: iterate-2026-06-07-track-campaign-status-backfill
 
-## Recent Changes (121 iterations)
+## Recent Changes (122 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Track campaign status.json for compliance-detective-realign + track-triage-jsonl (durable per-sub board on fresh clone / deployed WebUI; stopgap for trg-fda5f7a3). | 0/0 |  | compliance | 2026-06-07 |
 | change | allowlist cafebabe:deadbeef in oss_backend generated gitleaks config (GAP-3) | 56/56 |  | tooling | 2026-06-07 |
 | change | Harden iterate finalization tooling: F11 verifier accepts none_reason as a spec_impact=none justification; F0.5 surface_verification rejects compound runners fast with a clear error; arch-drift sanity test no longer false-FAILs on a post-release tree. | 0/0 |  | tooling | 2026-06-07 |
 | change | SBOM distinguishes not-installed from no-declared-license; not-installed is silent (no triage, dash in sbom.md), only resolved-but-no-license is surfaced. | 0/0 |  | tooling | 2026-06-07 |
