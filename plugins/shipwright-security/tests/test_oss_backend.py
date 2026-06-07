@@ -484,6 +484,36 @@ class TestGitleaksExcludes:
                 f"{name!r}:\n{captured['content']}"
             )
 
+    def test_gitleaks_config_allowlists_cafebabe_placeholder(self, monkeypatch):
+        """Defense-in-depth (GAP-3): the famous magic-hex placeholder
+        cafebabe:deadbeef false-matches the built-in sidekiq-secret rule but is
+        never a real secret. The generated config must allowlist it (regex +
+        stopwords) so the monorepo's own gitleaks scan cannot false-red on it —
+        mirroring shared/templates/github-actions/gitleaks.toml.template. The
+        built-in ruleset stays live via useDefault = true."""
+        monkeypatch.delenv("SHIPWRIGHT_SCAN_EXCLUDES", raising=False)
+        captured = {}
+
+        def capture(cmd, **_kwargs):
+            flag = "--config" if "--config" in cmd else "-c"
+            config_path = cmd[cmd.index(flag) + 1]
+            captured["content"] = Path(config_path).read_text(encoding="utf-8")
+            return MagicMock(returncode=0, stdout="[]", stderr="")
+
+        with patch("subprocess.run", side_effect=capture):
+            _run_gitleaks("/tmp/test")
+
+        content = captured["content"]
+        assert "useDefault = true" in content, (
+            "useDefault dropped — would disable every real secret rule"
+        )
+        assert "cafebabe:deadbeef" in content, (
+            f"cafebabe:deadbeef allowlist regex missing:\n{content}"
+        )
+        assert "cafebabe" in content and "deadbeef" in content, (
+            f"cafebabe/deadbeef stopwords missing:\n{content}"
+        )
+
     def test_gitleaks_cleans_up_temp_config(self):
         """Temp config file must be removed after gitleaks returns."""
         captured_path = {}

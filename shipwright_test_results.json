@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-07-sbom-not-installed-vs-undeclared",
+    "run_id": "iterate-2026-06-07-oss-backend-cafebabe-stopword",
     "date": "2026-06-07",
     "unit": {
       "status": "passed",
-      "passed": 638,
-      "total": 638
+      "passed": 56,
+      "total": 56
     },
     "integration": {
-      "status": "passed",
-      "passed": 141,
-      "total": 141
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -18,7 +18,7 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
@@ -28,73 +28,57 @@
       "total": 0
     },
     "smoke": {
-      "status": "not_run"
+      "status": "skipped"
     },
     "degraded": [],
     "surface_verification": {
       "surface": "none",
-      "tests_run": 779,
+      "runner": "surface_verification.py --surface none",
       "exit_code": 0,
-      "justification": "Backend/CLI producer change in the shipwright-compliance plugin (SBOM license resolver + triage emitter + sbom.md generator). No web surface: the dedup-key contract consumed by the WebUI/audit_detector is unchanged, and sbom.md is a rendered doc. Verified empirically by the full compliance suite (638) + integration suite (141) + a real sbom.md regeneration against the worktree repo (diff confirmed: not-installed deps -> '-', 'Unknown Licenses' section removed, clean verdict)."
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-06-07-oss-backend-cafebabe-stopword/surface_verification.json",
+      "timestamp": "2026-06-07T00:00:00Z",
+      "justification": "Security-scanner config-generation change (oss_backend._write_gitleaks_allowlist). No startable user surface; behavior verified by the oss_backend gitleaks unit suite + a tomllib validity probe."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC-1 detect_python_license: NOT_INSTALLED when no dist-info, UNKNOWN_LICENSE when dist-info present w/o license",
+          "behavior": "Generated gitleaks config allowlists cafebabe:deadbeef (regex, regexTarget=match) + stopwords",
           "disposition": "tested",
-          "evidence": "test_sbom_not_installed.py::TestPythonResolverDistinction (4) PASSED; test_data_collector.py no-venv/no-distinfo flips PASSED"
+          "evidence": "test_oss_backend.py::TestRunGitleaks::test_gitleaks_config_allowlists_cafebabe_placeholder PASSED (born-red without the change)"
         },
         {
-          "behavior": "AC-2 detect_npm_license: NOT_INSTALLED when absent, UNKNOWN_LICENSE when present-no-license incl blank SPDX object",
+          "behavior": "useDefault stays true so every built-in secret rule remains live (no over-suppression)",
           "disposition": "tested",
-          "evidence": "test_sbom_not_installed.py::TestNpmResolverDistinction (5 incl test_lockfile_blank_spdx_object_is_unknown) PASSED"
+          "evidence": "same test asserts 'useDefault = true' in the generated config; PASSED"
         },
         {
-          "behavior": "AC-3 collector: NOT_INSTALLED never becomes a triage group (python+npm)",
+          "behavior": "Generated config is still valid TOML and carries paths + regexes + stopwords together",
           "disposition": "tested",
-          "evidence": "test_sbom_not_installed.py::TestCollectorSilence (3) + test_sbom_generator.py::test_python_not_installed_is_silent PASSED"
+          "evidence": "tomllib.loads(_write_gitleaks_allowlist(...)) probe: keys=['description','paths','regexTarget','regexes','stopwords'], parses clean"
         },
         {
-          "behavior": "AC-4 genuine Fall-2 still drives per-workspace/cluster triage",
+          "behavior": "Existing path-exclude allowlist (node_modules/tests/...) is unchanged (no regression)",
           "disposition": "tested",
-          "evidence": "test_sbom_generator.py::TestEmitUndeclaredTriage* re-seeded to Fall 2 (all green) PASSED"
+          "evidence": "test_oss_backend.py::test_gitleaks_cmd_passes_generated_allowlist_config PASSED; full oss_backend suite 56 passed"
         },
         {
-          "behavior": "AC-5 doc: not-installed rendered '-', excluded from unique licenses/pie/verdict",
-          "disposition": "tested",
-          "evidence": "test_sbom_not_installed.py::test_not_installed_rendered_as_dash_and_excluded + test_sbom_generator.py::test_not_installed_deps_are_silent_in_doc PASSED"
-        },
-        {
-          "behavior": "AC-6 doc: Fall-2 'Dependencies Without a Declared License' section; old 'Unknown Licenses' removed",
-          "disposition": "tested",
-          "evidence": "test_sbom_not_installed.py::test_genuine_no_license_surfaced_as_section PASSED; sbom.md regen diff confirmed section removed"
-        },
-        {
-          "behavior": "AC-7 doc verdict 3 states (clean / nothing-resolved)",
-          "disposition": "tested",
-          "evidence": "test_sbom_not_installed.py::test_verdict_clean_when_all_permissive + test_verdict_nothing_resolved_when_all_not_installed PASSED"
-        },
-        {
-          "behavior": "AC-8 no scan-coverage / install-nag line; doc ASCII-only",
-          "disposition": "tested",
-          "evidence": "test_sbom_not_installed.py::test_no_scan_coverage_or_install_nag + test_doc_is_ascii_even_with_fall2_deps PASSED"
-        },
-        {
-          "behavior": "AC-9 repo's 4 open SBOM items auto-dismiss on next regen (keys leave current_keys)",
-          "disposition": "tested",
-          "evidence": "mechanism proven: TestCollectorSilence (not-installed -> no group) + existing test_auto_resolve_when_workspace_clean / cluster auto-resolve (key absent -> dismissed sbomResolved)"
+          "behavior": "Monorepo's live GitHub Actions gitleaks scan stays green with the placeholder allowlisted",
+          "disposition": "untestable",
+          "reason_code": "requires-external-nondeterministic-service",
+          "reason": "Needs the real gitleaks binary on a GH Actions runner; the smoke tests skip without it. Covered by the PR's Shipwright Security Scan check."
         }
       ],
       "counts": {
-        "testable": 9,
-        "tested": 9,
-        "untestable": 0,
+        "testable": 4,
+        "tested": 4,
+        "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 9,
-        "covered_acs": 9
+        "acs": 1,
+        "covered_acs": 1
       }
     }
   }

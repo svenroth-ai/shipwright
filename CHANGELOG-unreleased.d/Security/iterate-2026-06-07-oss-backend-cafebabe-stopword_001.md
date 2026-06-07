@@ -1,0 +1,1 @@
+shipwright-security's generated gitleaks allowlist now suppresses the magic-hex placeholder `cafebabe:deadbeef` (defense-in-depth, GAP-3) so the monorepo's own secret scan cannot false-red on the built-in `sidekiq-secret` rule; `useDefault = true` keeps every real secret rule live.
