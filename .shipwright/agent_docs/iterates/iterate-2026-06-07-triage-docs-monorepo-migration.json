@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-07-triage-docs-monorepo-migration",
+  "date": "2026-06-07T08:48:45.842235Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/triage-docs-monorepo-migration",
+  "spec": ".shipwright/planning/iterate/campaigns/2026-06-05-track-triage-jsonl/sub-iterates/E-triage-docs-monorepo-migration.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-07-triage-docs-monorepo-migration"
+}

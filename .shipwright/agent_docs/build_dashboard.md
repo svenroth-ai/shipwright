@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-06 07:03 UTC | Session: d7610364-2946-422f-8141-b3f29bcbbf7e | Run: iterate-2026-06-06-arch-drift-detector
+> Updated: 2026-06-07 08:43 UTC | Session: 5278ac7b-42ed-4162-affc-f83cebed66ec | Run: iterate-2026-06-07-triage-docs-monorepo-migration
 
-## Recent Changes (114 iterations)
+## Recent Changes (115 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | triage docs + monorepo migration (campaign 2026-06-05-track-triage-jsonl, sub-iterate E) | 2839/2839 |  | docs | 2026-06-07 |
 | change | F5 architecture-drift detector switched from a git-history oracle (dead on gitignored drops) to content reconciliation (incl. convention); new canon/blocking F11 gate check_architecture_documented sharing one oracle (shared/scripts/lib/architecture_doc.py); dead check_architecture_reviewed + run_cross_artifact_checks removed; 5 orphan architecture.md entries back-filled. | 0/0 |  | compliance | 2026-06-06 |
 | change | adopt skill docs: triage.jsonl is tracked, not gitignored (D) | 24/24 |  | docs | 2026-06-05 |
 | change | SBOM cluster dedup-key = signature + manifest_type only (stable id under membership drift) | 617/617 |  | compliance | 2026-06-05 |
@@ -121,7 +122,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-06 | Unit: 3875/3875 | Integration: 141/141 | Smoke: not_run | (iterate)
+Last run: 2026-06-07 | Unit: 2839/2839 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

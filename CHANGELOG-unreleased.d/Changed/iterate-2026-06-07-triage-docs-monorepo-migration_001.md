@@ -1,0 +1,1 @@
+Documented the git-tracked .shipwright/triage.jsonl SSoT backlog across guide.md, glossary.md, the hooks-and-pipeline artifact-write matrix and architecture.md, and corrected stale "triage is gitignored" references in the plugin-sync reminder Stop hook and its test (campaign 2026-06-05-track-triage-jsonl, sub-iterate E)

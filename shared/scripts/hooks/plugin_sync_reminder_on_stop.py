@@ -101,17 +101,27 @@ def _claim_reminded(project_root: Path, session_id: str) -> bool:
 def _emit_triage(project_root: Path, rel_paths: list[str]) -> None:
     """Append an idempotent plugin-sync triage item (best-effort).
 
-    Triage items are an append-only **audit trail** and MUST live in the
-    durable MAIN-repo log so the follow-up survives ``git worktree remove``
-    after an iterate PR merges. From inside a ``/shipwright-iterate`` worktree
-    ``project_root`` is the worktree root, whose ``.shipwright/triage.jsonl``
-    is gitignored and discarded on cleanup — so the append is redirected to
-    the main repo via ``resolve_main_repo_root`` (mirrors the decision-drop
-    resolver in ``tools/write_decision_drop.py``). The banner + once-per-session
-    sentinel still key off the worktree root (the live SDLC context); only this
-    durable append redirects. ``resolve_main_repo_root`` returns ``None`` for a
-    non-git root, so the ``or project_root`` fallback preserves plain-checkout
-    and non-git behaviour unchanged.
+    The triage backlog is a continuously-curated, repo-global follow-up store
+    curated against the **main** tree (operators dismiss/promote via the WebUI;
+    background producers append on main) — unlike ``events.jsonl``, a per-iterate
+    work record F5b writes once per worktree. So a plugin-sync follow-up belongs
+    in the durable MAIN-repo log: from inside a ``/shipwright-iterate`` worktree
+    ``project_root`` is the worktree root, so the append is redirected to main
+    via ``resolve_main_repo_root`` (mirrors ``tools/write_decision_drop.py``).
+
+    NOTE (campaign ``2026-06-05-track-triage-jsonl``, C1/C2): ``triage.jsonl`` is
+    now **git-tracked**, not gitignored. The redirect is an *intentional* routing
+    choice for a main-tree-curated backlog — **not** a "the worktree copy is
+    gitignored + discarded on cleanup" workaround (that premise is now false).
+    The mid-iterate main-tree write is leak-guard-exempt because C2 added
+    ``triage.jsonl`` (+ ``.lock``) to ``_MAIN_TREE_WRITE_EXEMPT``
+    (``worktree_isolation.py``), mirroring the ``events.jsonl`` exemption, so
+    f0/f11 do not flag it.
+
+    The banner + once-per-session sentinel still key off the worktree root (the
+    live SDLC context); only this durable append redirects.
+    ``resolve_main_repo_root`` returns ``None`` for a non-git root, so the
+    ``or project_root`` fallback preserves plain-checkout / non-git behaviour.
     """
     try:
         scripts_dir = str(Path(__file__).resolve().parent.parent)

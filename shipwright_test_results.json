@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-06-arch-drift-detector",
-    "date": "2026-06-06",
+    "run_id": "iterate-2026-06-07-triage-docs-monorepo-migration",
+    "date": "2026-06-07",
     "unit": {
       "status": "passed",
-      "passed": 3875,
-      "total": 3875
+      "passed": 2839,
+      "total": 2839
     },
     "integration": {
-      "status": "passed",
-      "passed": 141,
-      "total": 141
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -31,71 +31,50 @@
       "status": "not_run"
     },
     "degraded": [],
+    "surface_verification": {
+      "surface": "none",
+      "runner": "surface_verification.py --surface none",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": ".shipwright/runs/iterate-2026-06-07-triage-docs-monorepo-migration/surface_verification.json",
+      "timestamp": "2026-06-07T00:00:00Z",
+      "justification": "Docs + one-time triage.jsonl data migration; no startable user surface."
+    },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC-1 F5 fails on undocumented arch-impact drop, passes when documented",
+          "behavior": "plugin_sync_reminder durable-triage emit (main-redirect) unchanged after the docstring correction",
           "disposition": "tested",
-          "evidence": "test_audit_groups_c_f.py::TestF5ArchDrift::test_undocumented_component_drop_fails + test_documented_component_drop_passes PASSED"
+          "evidence": "shared/tests/test_plugin_sync_reminder_on_stop.py 5/5 PASSED (in full shared suite 2839 passed)"
         },
         {
-          "behavior": "AC-2 convention impact now counted by F5",
+          "behavior": "triage_gc --apply drops only pure machine-churn dismissals and preserves all open/promoted/human-curated items",
           "disposition": "tested",
-          "evidence": "test_audit_groups_c_f.py::TestF5ArchDrift::test_convention_impact_now_counted PASSED"
+          "evidence": "diff vs .bak: removed=53 all dismissed, 0 open/promoted lost, 0 status changes on kept; churn_merge.validate_triage_text=0 errors; shared/tests/test_triage_gc.py PASSED"
         },
         {
-          "behavior": "AC-3 worktree-resolve + CI-skip on absent dir + corrupt-drop fail",
+          "behavior": "triage_inbox.md is a derived view of the canonical jsonl (126 items / 11 open, matches the WebUI)",
           "disposition": "tested",
-          "evidence": "test_audit_groups_c_f.py::test_absent_drops_dir_skips + TestF5CorruptDrops + test_architecture_doc.py::test_scan_drops_* PASSED"
+          "evidence": "aggregate_triage.py regenerated '126 items, 11 triage'; aggregate_triage covered by shared/tests"
         },
         {
-          "behavior": "AC-4 git-log/marker oracle retired (no subprocess in F5)",
-          "disposition": "tested",
-          "evidence": "ruff full-repo clean (no unused subprocess import); F5 tests need no git repo PASSED"
-        },
-        {
-          "behavior": "AC-5 canon/blocking F11 gate check_architecture_documented (fail=error, wired into run_all_checks)",
-          "disposition": "tested",
-          "evidence": "test_verify_iterate_finalization.py::test_architecture_documented_* (8 tests incl. severity==error) PASSED"
-        },
-        {
-          "behavior": "AC-6 dead check_architecture_reviewed + run_cross_artifact_checks removed",
-          "disposition": "tested",
-          "evidence": "full-repo ruff green; test_verifiers_dual_mode.py + test_verify_iterate_finalization.py updated, green PASSED"
-        },
-        {
-          "behavior": "AC-7 data remediation: 5 orphan architecture.md entries back-filled",
-          "disposition": "tested",
-          "evidence": "test_architecture_md_reflects_arch_impact.py 2 passed; real-repo F5 -> 'all 9 arch-impact drops documented' PASSED"
-        },
-        {
-          "behavior": "AC-8 F5 fail flows to compliance:backlog triage item",
+          "behavior": "docs/glossary/hooks-matrix/architecture + hook docstrings accurately state triage.jsonl is git-tracked (no stale 'gitignored')",
           "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "triage_bundle mirrors ALL status==fail findings generically (unchanged this iterate; covered by its own tests); F5 producing a fail is tested separately above"
+          "reason_code": "requires-manual-visual-judgment",
+          "reason": "prose accuracy is an editorial judgment; ruff + full shared suite confirm no drift test broke, but content correctness is not machine-assertable"
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 7,
+        "testable": 3,
+        "tested": 3,
         "untestable": 1,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 8,
-        "covered_acs": 8
+        "acs": 4,
+        "covered_acs": 4
       }
-    },
-    "surface_verification": {
-      "surface": "none",
-      "runner": "",
-      "exit_code": 0,
-      "tests_run": 0,
-      "evidence_path": "",
-      "timestamp": "2026-06-06T07:00:05.587Z",
-      "attempts": 0,
-      "justification": "Pure-Python compliance detective (Group F/F5) + iterate finalize verifier (F11 check_architecture_documented) + shared lib + docs. No web/cli/api behavior surface a user drives; not consumed by any UI (backend-affects-frontend N/A). Verified by ~3875 unit/integration tests green + ruff; F5 and the F11 gate exercised against the real repo (before/after back-fill)."
     }
   }
 }
