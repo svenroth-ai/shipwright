@@ -1,0 +1,9 @@
+{
+  "run_id": "iterate-2026-06-07-track-campaign-status-backfill",
+  "date": "2026-06-07T19:53:31.321023Z",
+  "type": "change",
+  "complexity": "trivial",
+  "branch": "iterate/track-campaign-status-backfill",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-07-track-campaign-status-backfill"
+}

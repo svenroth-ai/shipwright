@@ -1,0 +1,88 @@
+{
+  "campaign": "2026-06-05-track-triage-jsonl",
+  "status": "complete",
+  "branch_strategy": "per-sub-iterate",
+  "created_at": "2026-06-05T00:00:00+00:00",
+  "expands_triage": "trg-2fb7d3bc",
+  "sub_iterates": [
+    {
+      "id": "A",
+      "slug": "sbom-cluster-stable-id",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-06-05-track-triage-jsonl/sub-iterates/A-sbom-cluster-stable-identity.md",
+      "status": "complete",
+      "commit": "de77c5fc",
+      "branch": "iterate/sbom-cluster-stable-id",
+      "pr": 153,
+      "tests_passed": 617,
+      "tests_total": 617,
+      "code_review": "codex-clean",
+      "external_review": "gemini-3.1-pro + gpt-5.4 (findings fixed)",
+      "merged_to_main": true
+    },
+    {
+      "id": "B",
+      "slug": "triage-dismissed-gc",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-06-05-track-triage-jsonl/sub-iterates/B-triage-dismissed-gc.md",
+      "status": "complete",
+      "commit": "3d78dcfb",
+      "branch": "iterate/triage-dismissed-gc",
+      "tests_passed": 387,
+      "tests_total": 387,
+      "pr": 154,
+      "code_review": "codex-passed-after-fixes",
+      "external_review": "gemini-3.1-pro + gpt-5.4 (findings fixed)",
+      "merged_to_main": true
+    },
+    {
+      "id": "C1",
+      "slug": "triage-track-c1",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-06-05-track-triage-jsonl/sub-iterates/C1-triage-gitignore-trackable.md",
+      "status": "complete",
+      "commit": "c22ac1c3",
+      "branch": "iterate/triage-track-c1",
+      "pr": 155,
+      "tests_passed": 19,
+      "tests_total": 19,
+      "code_review": "codex-passed-after-fixes",
+      "external_review": "gemini-3.1-pro + gpt-5.4 (findings fixed)",
+      "merged_to_main": true
+    },
+    {
+      "id": "C2",
+      "slug": "triage-track-c2-churn",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-06-05-track-triage-jsonl/sub-iterates/C2-triage-churn-merge-safety.md",
+      "status": "complete",
+      "commit": "bad7d909",
+      "branch": "iterate/triage-track-c2",
+      "tests_passed": 49,
+      "tests_total": 49,
+      "pr": 156,
+      "code_review": "codex-passed-after-fixes",
+      "external_review": "gemini-3.1-pro + gpt-5.4 (findings fixed)",
+      "merged_to_main": true
+    },
+    {
+      "id": "D",
+      "slug": "triage-adopt-wiring",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-06-05-track-triage-jsonl/sub-iterates/D-adopt-project-wiring.md",
+      "status": "complete",
+      "commit": "aed7ad3d",
+      "branch": "iterate/triage-adopt-wiring",
+      "tests_passed": null,
+      "tests_total": null,
+      "pr": 158,
+      "merged_to_main": true
+    },
+    {
+      "id": "E",
+      "slug": "triage-docs-monorepo-migration",
+      "spec_path": ".shipwright/planning/iterate/campaigns/2026-06-05-track-triage-jsonl/sub-iterates/E-triage-docs-monorepo-migration.md",
+      "status": "complete",
+      "commit": "e52985bc",
+      "branch": "iterate/triage-docs-monorepo-migration",
+      "tests_passed": 2839,
+      "tests_total": 2839,
+      "pr": 160
+    }
+  ]
+}
