@@ -1,11 +1,11 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-07-triage-docs-monorepo-migration",
+    "run_id": "iterate-2026-06-07-triage-gc-compliance-refreshed",
     "date": "2026-06-07",
     "unit": {
       "status": "passed",
-      "passed": 2839,
-      "total": 2839
+      "passed": 24,
+      "total": 24
     },
     "integration": {
       "status": "not_run",
@@ -30,50 +30,49 @@
     "smoke": {
       "status": "not_run"
     },
-    "degraded": [],
+    "degraded": [
+      {
+        "condition": "preexisting-unrelated-test-failure",
+        "detail": "Full shared/tests/ run: 2822 passed, 24 skipped, 1 FAILED (test_architecture_md_reflects_arch_impact.py::test_arch_impact_drops_found_at_all). Pre-existing + environmental, NOT introduced by this diff: the main-repo .shipwright/agent_docs/decision-drops/ dir exists but is empty (drops aggregated/cleared at the v0.24.0 release d5764ab7), so that test's 'dir present but no arch-impact drops' sanity guard fires. This diff touches only triage_gc.py + test_triage_gc.py — neither decision-drops nor architecture.md. Robustness gap (test skips when dir absent but not when empty) noted in F3a reflection."
+      }
+    ],
     "surface_verification": {
       "surface": "none",
       "runner": "surface_verification.py --surface none",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-07-triage-docs-monorepo-migration/surface_verification.json",
+      "evidence_path": ".shipwright/runs/iterate-2026-06-07-triage-gc-compliance-refreshed/surface_verification.json",
       "timestamp": "2026-06-07T00:00:00Z",
-      "justification": "Docs + one-time triage.jsonl data migration; no startable user surface."
+      "justification": "Pure Python maintenance-tool classifier change (one frozenset token + unit test); no startable user surface, no API/store/UI consumer affected. Backend-affects-Frontend rule N/A — triage_gc is an offline compaction CLI."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "plugin_sync_reminder durable-triage emit (main-redirect) unchanged after the docstring correction",
+          "behavior": "A complianceBacklog dismissal with reason=complianceRefreshed is classified as machine-churn and dropped by plan_gc",
           "disposition": "tested",
-          "evidence": "shared/tests/test_plugin_sync_reminder_on_stop.py 5/5 PASSED (in full shared suite 2839 passed)"
+          "evidence": "shared/tests/test_triage_gc.py::test_compliance_refreshed_machine_churn_dropped asserts 'refreshed' in drop_ids; born-red without the fix (refreshed was the 'Extra item' not dropped), PASSED after adding the token"
         },
         {
-          "behavior": "triage_gc --apply drops only pure machine-churn dismissals and preserves all open/promoted/human-curated items",
+          "behavior": "A complianceBacklog dismissal with reason=complianceResolved is still dropped (no regression from the change)",
           "disposition": "tested",
-          "evidence": "diff vs .bak: removed=53 all dismissed, 0 open/promoted lost, 0 status changes on kept; churn_merge.validate_triage_text=0 errors; shared/tests/test_triage_gc.py PASSED"
+          "evidence": "same test asserts 'resolved' in drop_ids; PASSED. Existing test_machine_reason coverage in the 14-test GC suite unaffected (14/14 PASSED)"
         },
         {
-          "behavior": "triage_inbox.md is a derived view of the canonical jsonl (126 items / 11 open, matches the WebUI)",
+          "behavior": "A human dismissal (by=user) that reuses reason=complianceRefreshed is KEPT, because the MACHINE_DISMISSERS gate is unchanged",
           "disposition": "tested",
-          "evidence": "aggregate_triage.py regenerated '126 items, 11 triage'; aggregate_triage covered by shared/tests"
-        },
-        {
-          "behavior": "docs/glossary/hooks-matrix/architecture + hook docstrings accurately state triage.jsonl is git-tracked (no stale 'gitignored')",
-          "disposition": "untestable",
-          "reason_code": "requires-manual-visual-judgment",
-          "reason": "prose accuracy is an editorial judgment; ruff + full shared suite confirm no drift test broke, but content correctness is not machine-assertable"
+          "evidence": "same test asserts the human item id is NOT in drop_ids; PASSED"
         }
       ],
       "counts": {
         "testable": 3,
         "tested": 3,
-        "untestable": 1,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 4,
-        "covered_acs": 4
+        "acs": 1,
+        "covered_acs": 1
       }
     }
   }

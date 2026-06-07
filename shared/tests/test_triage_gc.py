@@ -192,3 +192,19 @@ def test_phasequality_and_testevidence_machine_churn_dropped(tmp_path: Path):
     human = _add(tmp_path, title="h", dedup="kh")
     _dismiss(tmp_path, human, by="user", reason="phaseQualityResolved")  # human → kept
     assert triage_gc.plan_gc(tmp_path)["drop_ids"] == {pq, te}
+
+
+def test_compliance_refreshed_machine_churn_dropped(tmp_path: Path):
+    """``complianceBacklog`` emits BOTH ``complianceResolved`` (all findings
+    cleared) AND ``complianceRefreshed`` (stale-signature rollup superseded by a
+    fresh one — ``triage_bundle.emit_compliance_backlog``). The refresh token is
+    pure machine-churn regenerated every compliance run, so it must be GC-able
+    too (regression: it was missing from MACHINE_REASONS and accumulated as kept
+    noise — found via webui trg-68bc2f62, by=complianceBacklog)."""
+    resolved = _add(tmp_path, title="resolved", dedup="kr")
+    _dismiss(tmp_path, resolved, by="complianceBacklog", reason="complianceResolved")
+    refreshed = _add(tmp_path, title="refreshed", dedup="kf")
+    _dismiss(tmp_path, refreshed, by="complianceBacklog", reason="complianceRefreshed")
+    human = _add(tmp_path, title="h", dedup="khc")
+    _dismiss(tmp_path, human, by="user", reason="complianceRefreshed")  # human → kept
+    assert triage_gc.plan_gc(tmp_path)["drop_ids"] == {resolved, refreshed}

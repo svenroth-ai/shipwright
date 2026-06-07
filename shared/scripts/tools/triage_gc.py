@@ -62,6 +62,7 @@ MACHINE_REASONS = frozenset({
     "f05Resolved",
     "githubResolved",
     "complianceResolved",
+    "complianceRefreshed",  # stale-signature backlog rollup superseded (triage_bundle ~L165)
     "phaseQualityResolved",
     "testEvidenceResolved",
 })
