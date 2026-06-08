@@ -128,6 +128,7 @@ artifact has exactly one documented resolution strategy:
 |---|---|
 | `shipwright_events.jsonl` | **union** (`.gitattributes`, now scaffolded into managed repos) + unconditional validate/dedup |
 | `.shipwright/triage.jsonl` | **union** (`.gitattributes`, now scaffolded into managed repos) + unconditional `_reconcile_triage` (exact-line dedup, NO id-collision warning — append/status share an id by design — + header/JSON validate) |
+| `.shipwright/triage.outbox.jsonl` | **n/a — GITIGNORED**, never merged. Per-tree transient buffer for idle-main background triage producers (campaign 2026-06-08-triage-outbox-delivery / D1): the plugin-sync Stop hook, the compliance audit, and `triage_add` route to the outbox (not the tracked log) when HEAD is on the default branch, so idle main accrues NO tracked-log drift. `triage.read_all_items` returns the tracked ∪ outbox union so consumers see background findings immediately; the D2 sweep folds the outbox into the iterate PR branch + GCs it. `triage_gc` and `_reconcile_triage` operate on the tracked log ONLY. |
 | `.shipwright/compliance/dashboard.md` | **regenerate** (from merged tree) |
 | `.shipwright/compliance/sbom.md` | **regenerate** |
 | `.shipwright/compliance/test-evidence.md` | **regenerate** |

@@ -182,6 +182,37 @@ def test_apply_refuses_on_malformed_line(tmp_path: Path):
     assert m in path.read_text(encoding="utf-8")
 
 
+def test_apply_does_not_fold_outbox_into_tracked(tmp_path: Path):
+    """D1 boundary guard: GC compacts the TRACKED store only — it must NOT
+    fold OUTBOX lines into the tracked log.
+
+    Regression risk: making ``_iter_raw_lines`` union-aware would otherwise
+    make ``apply_gc`` rewrite the tracked log from the union, materializing the
+    gitignored outbox buffer into the tracked log — re-introducing the exact
+    main-tree drift D1 exists to prevent. GC operates on the durable store;
+    the outbox is the D2 sweep's concern.
+    """
+    # One droppable tracked item + one OUTBOX-resident background item.
+    m = _add(tmp_path, title="m", dedup="k1")
+    _dismiss(tmp_path, m, by="sbomGenerator", reason="sbomResolved")
+    keep = _add(tmp_path, title="keep", dedup="k2")  # tracked, open
+    triage.append_triage_item(
+        tmp_path, source="plugin-sync", severity="low", kind="maintenance",
+        title="bg", detail="d", to_outbox=True,
+    )
+    outbox_before = triage._outbox_path(tmp_path).read_bytes()
+
+    triage_gc.apply_gc(tmp_path, triage_gc.plan_gc(tmp_path)["drop_ids"])
+
+    # Tracked log keeps only the open tracked item — the outbox item was NOT
+    # folded in.
+    tracked_text = triage._triage_path(tmp_path).read_text(encoding="utf-8")
+    assert "plugin-sync" not in tracked_text, "outbox folded into tracked log"
+    assert keep in tracked_text
+    # Outbox is byte-unchanged by the tracked-log GC.
+    assert triage._outbox_path(tmp_path).read_bytes() == outbox_before
+
+
 def test_phasequality_and_testevidence_machine_churn_dropped(tmp_path: Path):
     """Codex MEDIUM: phaseQuality + testEvidence producer auto-resolves are
     machine-churn too (were missing from the dismisser/reason sets)."""

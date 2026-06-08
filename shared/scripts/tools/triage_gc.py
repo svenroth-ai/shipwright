@@ -77,13 +77,49 @@ def is_machine_churn(item: dict) -> bool:
     )
 
 
+def _resolve_tracked_only(project_root: Path | str) -> list[dict]:
+    """Resolve items from the TRACKED store only (ignore the outbox).
+
+    D1: GC compacts the durable tracked log; the gitignored outbox is the D2
+    sweep's concern. Mirrors ``triage.read_all_items`` resolution (append +
+    last-status-wins) but over a single file so GC never touches outbox state.
+    """
+    resolved: dict[str, dict] = {}
+    for raw in triage._iter_raw_lines_at(triage._triage_path(project_root)):
+        if not isinstance(raw, dict):
+            continue
+        event = raw.get("event")
+        if event == "append":
+            item_id = raw.get("id")
+            if not isinstance(item_id, str):
+                continue
+            item = {k: v for k, v in raw.items() if k != "event"}
+            item["statusBy"] = None
+            item["statusReason"] = None
+            resolved[item_id] = item
+        elif event == "status":
+            item_id = raw.get("id")
+            if not isinstance(item_id, str) or item_id not in resolved:
+                continue
+            item = resolved[item_id]
+            new_status = raw.get("newStatus")
+            if new_status in triage.STATUSES:
+                item["status"] = new_status
+            item["statusBy"] = raw.get("by")
+            item["statusReason"] = raw.get("reason")
+    return list(resolved.values())
+
+
 def plan_gc(project_root: Path | str) -> dict:
     """Compute the GC plan without writing anything.
+
+    Operates on the TRACKED store only (D1) — the outbox is GC'd by the D2
+    sweep, never by this CLI.
 
     Returns ``{"drop_ids": set, "dropped": [item...], "kept_count": int,
     "total": int}``.
     """
-    items = triage.read_all_items(project_root)
+    items = _resolve_tracked_only(project_root)
     dropped = [i for i in items if is_machine_churn(i)]
     drop_ids = {i["id"] for i in dropped}
     return {
@@ -95,8 +131,15 @@ def plan_gc(project_root: Path | str) -> dict:
 
 
 def _validate_after(project_root: Path | str, drop_ids: set[str]) -> None:
-    """Fail loudly if the rewrite produced an inconsistent log."""
-    raw = triage._iter_raw_lines(project_root)
+    """Fail loudly if the rewrite produced an inconsistent TRACKED log.
+
+    D1: GC compacts the tracked store only, so validation reads the tracked
+    path directly (NOT the union ``read_all_items`` / ``_iter_raw_lines``) —
+    otherwise an OUTBOX-resident status whose append GC just dropped from the
+    tracked log would false-trip the orphan-status check, and an outbox item
+    would count as a survivor.
+    """
+    raw = triage._iter_raw_lines_at(triage._triage_path(project_root))
     if not raw or raw[0].get("schema") != "triage":
         raise RuntimeError("post-GC validation: header missing or malformed")
     append_ids = {r.get("id") for r in raw if r.get("event") == "append"}
@@ -109,7 +152,7 @@ def _validate_after(project_root: Path | str, drop_ids: set[str]) -> None:
             raise RuntimeError(
                 f"post-GC validation: dropped id={r.get('id')} still present"
             )
-    survivors = {i["id"] for i in triage.read_all_items(project_root)}
+    survivors = {i["id"] for i in _resolve_tracked_only(project_root)}
     if survivors & drop_ids:
         raise RuntimeError("post-GC validation: a dropped item resolved as surviving")
 
@@ -135,7 +178,8 @@ def apply_gc(project_root: Path | str, drop_ids: set[str], backup: bool = True) 
                         f"triage_gc: refusing to rewrite — malformed JSON at line "
                         f"{n} ({exc.msg}); fix or remove it first"
                     )
-        raw = triage._iter_raw_lines(project_root)
+        # Tracked store only — never read/rewrite the gitignored outbox (D1).
+        raw = triage._iter_raw_lines_at(triage._triage_path(project_root))
         kept = [
             r for r in raw
             if r.get("event") not in ("append", "status") or r.get("id") not in drop_ids

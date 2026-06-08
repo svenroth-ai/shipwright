@@ -93,6 +93,15 @@ shipwright_events.jsonl.lock
 # legacy path - do not remove. Sub-Iterate F of compliance migration (2026-04-29).
 /compliance/
 
+# Per-tree triage outbox buffer (campaign 2026-06-08-triage-outbox-delivery, D1).
+# .shipwright/triage.outbox.jsonl is a GITIGNORED transient buffer for idle-main
+# background producers; the D2 sweep folds it into the iterate PR branch + GCs it.
+# It is ALREADY ignored by the `/.shipwright/*` wildcard in the managed block
+# below — and is deliberately NOT given a `!` re-include there (only the tracked
+# `triage.jsonl` is). This comment is documentation only (no rule), so it stays
+# OUTSIDE the managed/congruence-checked block. D3 propagates the same intent to
+# adopted repos via the canon template.
+
 # UV
 .uv/
 

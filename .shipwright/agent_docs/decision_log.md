@@ -1911,3 +1911,14 @@ shipwright/
 - **Rationale:** Step 1 was unnecessary: 0 open SBOM items remained (the re-emit/dismiss cycle already ran in background), and running update_compliance would dirty main's clean compliance MDs and trip the F0 leak-guard. GC verified by diff invariants (0 open/promoted lost, validator clean).
 - **Consequences:** Committed triage.jsonl + triage_inbox.md now match the WebUI (11 open items); the original divergence is closed. Future iterates inherit the canonical pile; producers append per-tree, F6 commits, the churn resolver unions concurrent appends.
 - **Rejected:** Direct branch-first commit on main (option a): rejected — option b keeps it in the normal PR/review flow. Untracking the .md (campaign Option A): rejected earlier — leaves nothing about the backlog in the repo.
+
+---
+
+### ADR-139: Gitignored per-tree triage outbox + union reader
+- **Date:** 2026-06-08
+- **Section:** Iterate D1 — triage outbox reroute
+- **Context:** Idle-main background triage producers appended to the git-tracked triage.jsonl, creating uncommitted main-tree drift that blocks git pull/FF and orphans appends.
+- **Decision:** Add a per-tree GITIGNORED .shipwright/triage.outbox.jsonl buffer (shares the canonical lock); route the 3 named background producers there when HEAD==default branch (should_route_to_outbox); make read_all_items return the tracked-union-outbox via a two-pass, ts-primary resolver.
+- **Commit:** pending
+- **Consequences:** Idle main accrues no tracked-log drift; consumers see background findings immediately via the union; GC/reconcile remain tracked-only; D2 sweep folds the outbox into the iterate PR + GCs it.
+- **Rejected:** is_worktree as the discriminator (wrong: the runner is on the main checkout on an iterate branch); a separate outbox lock (would break producer/sweep serialization); pure file-order union resolution (lets an outbox append clobber a tracked status — found by probe).

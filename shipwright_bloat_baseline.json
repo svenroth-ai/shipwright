@@ -746,9 +746,9 @@
     {
       "path": "shared/scripts/triage.py",
       "limit": 300,
-      "current": 592,
-      "state": "grandfathered",
-      "adr": null
+      "current": 719,
+      "state": "exception",
+      "adr": "ADR-100"
     },
     {
       "path": "shared/scripts/validate_env.py",

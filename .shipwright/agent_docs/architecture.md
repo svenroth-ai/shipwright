@@ -191,3 +191,5 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - **ADR-131** (2026-06-05): Degraded scanner legs propagate via a scan_errors side-channel, not synthetic findings
 
 - **ADR-133** (2026-06-05): Machine-churn-only triage GC tool
+
+- **ADR-139** (2026-06-08): Gitignored per-tree triage outbox + union reader
