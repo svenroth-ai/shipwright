@@ -126,8 +126,8 @@ artifact has exactly one documented resolution strategy:
 
 | Churn artifact | Strategy on merge |
 |---|---|
-| `shipwright_events.jsonl` | **union** (`.gitattributes`) + unconditional validate/dedup |
-| `.shipwright/triage.jsonl` | **union** (`.gitattributes`, dogfood-only) + unconditional `_reconcile_triage` (exact-line dedup, NO id-collision warning — append/status share an id by design — + header/JSON validate) |
+| `shipwright_events.jsonl` | **union** (`.gitattributes`, now scaffolded into managed repos) + unconditional validate/dedup |
+| `.shipwright/triage.jsonl` | **union** (`.gitattributes`, now scaffolded into managed repos) + unconditional `_reconcile_triage` (exact-line dedup, NO id-collision warning — append/status share an id by design — + header/JSON validate) |
 | `.shipwright/compliance/dashboard.md` | **regenerate** (from merged tree) |
 | `.shipwright/compliance/sbom.md` | **regenerate** |
 | `.shipwright/compliance/test-evidence.md` | **regenerate** |
@@ -154,6 +154,21 @@ directions). Two load-bearing rules:
 **Rollout note:** a long-lived branch created BEFORE the `.gitattributes` commit
 must merge that commit (so the attribute is present in its tree) before `union`
 applies to its `events.jsonl`. The resolver validates the merged log regardless.
+
+**Target-repo coverage (iterate-2026-06-07-scaffold-churn-merge-machinery).** The
+`merge=union` first-line driver is no longer monorepo-only: the same fragment
+(`shared/templates/gitattributes-union.template`, SSoT
+`shared/scripts/lib/gitattributes_union.py`) is now scaffolded into every managed
+repo — at adopt time (Step E.13c, idempotent **merge** into the target's root
+`.gitattributes`) and self-healed on the next iterate for already-adopted repos
+(`setup_iterate_worktree` → `self_heal_gitattributes`, one guarded `chore` commit
+on the iterate branch). `merge=union` is honored by GitHub's **server-side** PR
+merge too, so a managed repo's concurrent triage/events appends auto-line-union
+even without running `integrate_main.py` locally. The resolver
+(`resolve_churn_conflicts.py`, bundled in the marketplace `shared/` and reachable
+via `{shared_root}`) remains the monorepo-authored **second-line** authority that
+dedups + validates the union'd log; it is incidentally reachable in managed repos
+but the union driver alone is the sufficient first-line defense there.
 
 ### Main-tree triage drift reconcile (iterate-2026-06-07-triage-main-tree-reconcile)
 

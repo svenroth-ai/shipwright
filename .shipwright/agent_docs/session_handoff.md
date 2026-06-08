@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-07-track-campaign-status-backfill"
+run_id: "iterate-2026-06-07-scaffold-churn-merge-machinery"
 phase: "iterate"
-reason: "merge origin/main reconciliation"
-timestamp: "2026-06-07T20:39:47.562496+00:00"
+reason: "iterate: scaffold churn merge machinery"
+timestamp: "2026-06-07T22:13:08.271541+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-07 20:39:47 UTC
+> Auto-generated 2026-06-07 22:13:08 UTC
 
 ## Session Info
 
-- **Session ID**: 2983ece4-27b9-4cab-837d-0069fef3fdc1
-- **Timestamp**: 2026-06-07 20:39:47 UTC
-- **Reason**: merge origin/main reconciliation
+- **Session ID**: c8e791ac-3a48-4bfe-9704-de015555c881
+- **Timestamp**: 2026-06-07 22:13:08 UTC
+- **Reason**: iterate: scaffold churn merge machinery
 
 ## Last Iterate
 
@@ -29,8 +29,10 @@ timestamp: "2026-06-07T20:39:47.562496+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/track-campaign-status-backfill
-- **External Review Marker**: completed (external_review_state.json @ 2026-06-01T06:00:50)
+- **Branch**: iterate/scaffold-churn-merge-machinery
+- **Run ID**: `iterate-2026-06-07-scaffold-churn-merge-machinery`
+- **Spec**: .shipwright/planning/iterate/2026-06-07-scaffold-churn-merge-machinery.md
+- **External Review Marker**: stale (predates spec (2026-06-01T06:00:50))
 
 ### Mandatory replay on Resume
 
@@ -48,8 +50,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/track-campaign-status-backfill
-- **Last Commit**: 81cbb2e8 Merge remote-tracking branch 'origin/main' into iterate/track-campaign-status-backfill
+- **Branch**: iterate/scaffold-churn-merge-machinery
+- **Last Commit**: 5c5030fc Merge pull request #168 from svenroth-ai/iterate/track-campaign-status-backfill
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,17 +67,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-21cd76b0 | work_completed | iterate (scaffold the append-log merge=union .gitattributes driver into managed repos (adopt E.13c + iterate self-heal)) | 2026-06-07 |
 | evt-36fe3a2b | work_completed | iterate (triage main-tree drift reconcile-and-commit at integrate/sync) | 2026-06-07 |
 | evt-c8733ef4 | work_completed | iterate (Track campaign status.json for compliance-detective-realign + track-triage-jsonl (durable per-sub board on fresh clone / deployed WebUI; stopgap for trg-fda5f7a3).) | 2026-06-07 |
 | evt-c5b60683 | work_completed | iterate (allowlist cafebabe:deadbeef in oss_backend generated gitleaks config (GAP-3)) | 2026-06-07 |
 | evt-2b4b0397 | work_completed | iterate (Harden iterate finalization tooling: F11 verifier accepts none_reason as a spec_impact=none justification; F0.5 surface_verification rejects compound runners fast with a clear error; arch-drift sanity test no longer false-FAILs on a post-release tree.) | 2026-06-07 |
-| evt-b6e29275 | work_completed | iterate (SBOM distinguishes not-installed from no-declared-license; not-installed is silent (no triage, dash in sbom.md), only resolved-but-no-license is surfaced.) | 2026-06-07 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 123
-- **Last iterate**: change — triage main-tree drift reconcile-and-commit at integrate/sync (2026-06-07)
+- **Total work events**: 124
+- **Last iterate**: change — scaffold the append-log merge=union .gitattributes driver into managed repos (adopt E.13c + iterate self-heal) (2026-06-07)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
