@@ -166,16 +166,39 @@ def git_repo(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def test_should_route_idle_main_is_true(git_repo: Path) -> None:
-    """On the default branch (idle main), route to the outbox."""
+def test_should_route_idle_main_is_true(git_repo: Path, tmp_path: Path) -> None:
+    """On the default branch (idle main) WITH an origin, route to the outbox.
+
+    FIX 2 (D1 review cascade): routing now ALSO requires a real delivery path —
+    an ``origin`` remote — so the test must add one (a throwaway local URL).
+    """
     # default_branch() falls back to "main"; rename the init branch to match.
     _git(["branch", "-M", "main"], git_repo)
+    origin = tmp_path / "origin-throwaway"
+    _git(["remote", "add", "origin", str(origin)], git_repo)
     assert should_route_to_outbox(git_repo) is True
 
 
-def test_should_route_iterate_branch_is_false(git_repo: Path) -> None:
-    """On an iterate/* branch (worktree or runner), write the tracked log."""
+def test_should_route_no_origin_is_false(git_repo: Path) -> None:
+    """Idle main but NO ``origin`` remote → False (no delivery path; tracked).
+
+    FIX 2: ``default_branch`` falls back to literal ``"main"`` with no
+    ``origin/HEAD``, so without the origin check a fresh/no-origin repo on
+    ``main`` would route a background finding to the gitignored outbox and BURY
+    it. The origin requirement keeps it on the tracked log (safe default).
+    """
     _git(["branch", "-M", "main"], git_repo)
+    assert should_route_to_outbox(git_repo) is False
+
+
+def test_should_route_iterate_branch_is_false(git_repo: Path, tmp_path: Path) -> None:
+    """On an iterate/* branch (worktree or runner), write the tracked log.
+
+    Origin present (so the ONLY reason to route tracked is the branch), proving
+    the branch check still gates even when the delivery path exists.
+    """
+    _git(["branch", "-M", "main"], git_repo)
+    _git(["remote", "add", "origin", str(tmp_path / "origin-throwaway")], git_repo)
     _git(["checkout", "-b", "iterate/some-work"], git_repo)
     assert should_route_to_outbox(git_repo) is False
 
@@ -244,9 +267,11 @@ def test_mark_status_flips_outbox_item(project: Path) -> None:
         project, source="plugin-sync", severity="low", kind="maintenance",
         title="t", detail="d", to_outbox=True,
     )
+    # Residence-derived (FIX 1): the item lives in the outbox, so the dismiss
+    # lands in the outbox WITHOUT any caller flag.
     mark_status(
         project, item_id, new_status="dismissed", by="op",
-        reason="handled", to_outbox=True,
+        reason="handled",
     )
     [resolved] = read_all_items(project)
     assert resolved["id"] == item_id
@@ -263,10 +288,10 @@ def test_mark_status_finds_outbox_id_via_union(project: Path) -> None:
         title="t", detail="d", to_outbox=True,
     )
     # No tracked file exists; the id is only in the outbox. This must NOT
-    # raise FileNotFoundError / KeyError.
+    # raise FileNotFoundError / KeyError, and (FIX 1) residence-derives outbox.
     mark_status(
         project, item_id, new_status="promoted", by="op",
-        promoted_task_id="EXT:1", to_outbox=True,
+        promoted_task_id="EXT:1",
     )
     [resolved] = read_all_items(project)
     assert resolved["status"] == "promoted"
@@ -281,46 +306,67 @@ def test_mark_status_unknown_id_still_raises(project: Path) -> None:
     with pytest.raises(KeyError, match="trg-00000000"):
         mark_status(
             project, "trg-00000000", new_status="dismissed", by="t",
-            to_outbox=True,
         )
 
 
 # --- Cross-file precedence (external-review High; probe-found) ----------
 
+def _append_raw(path: Path, obj: dict) -> None:
+    """Write one raw JSONL line to ``path`` (header-less append)."""
+    import json
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fp:
+        fp.write(json.dumps(obj) + "\n")
+
+
+def _append_raw_line(path: Path, line: str) -> None:
+    """Write a pre-serialized JSONL ``line`` to ``path`` (header-less append)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fp:
+        fp.write(line.rstrip("\n") + "\n")
+
+
 def test_tracked_status_wins_over_outbox_append(project: Path) -> None:
-    """A background item created in the OUTBOX, then dismissed via the TRACKED
-    log, resolves to ``dismissed`` — the outbox append must NOT clobber the
-    tracked status back to ``triage``.
+    """A background item whose ``append`` lives in the OUTBOX, then dismissed
+    by a TRACKED status line, resolves to ``dismissed`` — the outbox append must
+    NOT clobber the tracked status back to ``triage``.
 
     Regression guard for the two-pass union resolver. External plan review
     (OpenAI #5 / Gemini #1, High) flagged this; an empirical probe reproduced
-    it under the naive single-pass tracked-then-outbox resolution.
+    it under the naive single-pass tracked-then-outbox resolution. The status
+    is injected RAW into the tracked file (a genuine cross-file shape, e.g. an
+    out-of-band tracked append) since residence-derived ``mark_status`` would
+    co-locate the dismiss with its outbox append.
     """
     item_id = append_triage_item(
         project, source="plugin-sync", severity="low", kind="maintenance",
         title="bg", detail="d", to_outbox=True,
     )
-    # Operator on a branch dismisses it -> status lands in the TRACKED log.
-    mark_status(
-        project, item_id, new_status="dismissed", by="user",
-        reason="handled", to_outbox=False,
-    )
+    # Cross-file dismiss: status raw in the TRACKED log (append is in outbox).
+    _append_raw(_tracked_path(project), {
+        "event": "status", "id": item_id, "ts": "2026-06-08T00:00:05Z",
+        "newStatus": "dismissed", "by": "user", "reason": "handled",
+        "promotedTaskId": None,
+    })
     [resolved] = read_all_items(project)
     assert resolved["status"] == "dismissed"
     assert resolved["statusReason"] == "handled"
 
 
 def test_outbox_status_wins_over_tracked_append(project: Path) -> None:
-    """Symmetric: a tracked item flipped via an OUTBOX status resolves flipped
-    (tracked append is applied first, outbox status overlays it)."""
+    """Symmetric: a tracked item flipped by an OUTBOX status resolves flipped
+    (tracked append applied first, outbox status overlays it). Status injected
+    RAW into the outbox (cross-file shape; residence-derived mark_status would
+    write tracked for a tracked-resident append)."""
     item_id = append_triage_item(
         project, source="compliance", severity="high", kind="compliance",
         title="c", detail="d",
     )
-    mark_status(
-        project, item_id, new_status="promoted", by="op",
-        promoted_task_id="EXT:9", to_outbox=True,
-    )
+    _append_raw(_outbox_path(project), {
+        "event": "status", "id": item_id, "ts": "2026-06-08T00:00:05Z",
+        "newStatus": "promoted", "by": "op", "reason": None,
+        "promotedTaskId": "EXT:9",
+    })
     [resolved] = read_all_items(project)
     assert resolved["status"] == "promoted"
     assert resolved["promotedTaskId"] == "EXT:9"
@@ -464,3 +510,86 @@ def test_triage_outbox_gitignored() -> None:
         f"outbox not gitignored: stdout={result.stdout!r} "
         f"stderr={result.stderr!r}"
     )
+
+
+# --- FIX 1 (D1 review cascade): residence-derived mark_status -----------
+
+def test_mark_status_residence_outbox_no_tracked_orphan(project: Path) -> None:
+    """Split/resurrection guard: an OUTBOX-resident item dismissed via
+    ``mark_status`` writes the status to the OUTBOX, NOT the tracked log.
+
+    HIGH-1: under the old caller-flag routing a dismiss could land in the
+    tracked log while the append lived only in the gitignored outbox → on a
+    tree without that outbox the status vanished and the item RESURRECTED, AND
+    an orphan status polluted the tracked log on idle main (reconcile rejects
+    it → unhealable pull-block). Residence-derivation keeps status with append.
+    """
+    item_id = append_triage_item(
+        project, source="plugin-sync", severity="low", kind="maintenance",
+        title="bg", detail="d", to_outbox=True,
+    )
+    mark_status(project, item_id, new_status="dismissed", by="op", reason="r")
+
+    # (a) the status event is in the OUTBOX file, not tracked.
+    outbox_raw = _outbox_path(project).read_text(encoding="utf-8")
+    assert '"event":"status"' in outbox_raw
+    assert f'"id":"{item_id}"' in outbox_raw
+    # (b) NO tracked file / NO orphan status line for that id in tracked.
+    if _tracked_path(project).exists():
+        tracked_raw = _tracked_path(project).read_text(encoding="utf-8")
+        assert '"event":"status"' not in tracked_raw, "orphan status in tracked log"
+    else:
+        assert True  # cleaner: tracked log never created at all
+    # (c) the union resolves the item as dismissed.
+    [resolved] = read_all_items(project)
+    assert resolved["id"] == item_id
+    assert resolved["status"] == "dismissed"
+
+
+def test_mark_status_residence_tracked_preferred_on_overlap(project: Path) -> None:
+    """Tracked-preferred: when the same append id exists in BOTH files
+    (post-sweep, pre-GC), ``mark_status`` writes the status to TRACKED so it
+    ships in the PR and the GC can later drop the outbox copy."""
+    item_id = append_triage_item(
+        project, source="plugin-sync", severity="low", kind="maintenance",
+        title="bg", detail="d", to_outbox=True,
+    )
+    # Simulate the sweep having folded the same append into the tracked log.
+    src_line = next(
+        L for L in _outbox_path(project).read_text(encoding="utf-8").splitlines()
+        if f'"id":"{item_id}"' in L and '"event":"append"' in L
+    )
+    _append_raw_line(_tracked_path(project), src_line)
+
+    mark_status(project, item_id, new_status="dismissed", by="op", reason="r")
+
+    tracked_raw = _tracked_path(project).read_text(encoding="utf-8")
+    assert '"event":"status"' in tracked_raw, "status must land in TRACKED on overlap"
+    outbox_raw = _outbox_path(project).read_text(encoding="utf-8")
+    assert '"event":"status"' not in outbox_raw, "status must NOT land in outbox on overlap"
+    [resolved] = read_all_items(project)
+    assert resolved["status"] == "dismissed"
+
+
+def test_mark_status_has_no_to_outbox_param() -> None:
+    """``mark_status`` no longer accepts a ``to_outbox`` kwarg (residence-derived).
+
+    The caller can no longer control the write target (idle-main vs iterate);
+    passing the old kwarg raises TypeError, and the signature omits it.
+    """
+    import inspect
+    params = inspect.signature(mark_status).parameters
+    assert "to_outbox" not in params
+
+    # Need a real item so the call gets past validation before the kwarg error.
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        item_id = append_triage_item(
+            root, source="iterate", severity="low", kind="bug",
+            title="t", detail="d",
+        )
+        with pytest.raises(TypeError):
+            mark_status(  # type: ignore[call-arg]
+                root, item_id, new_status="dismissed", by="t", to_outbox=True,
+            )

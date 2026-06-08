@@ -140,14 +140,15 @@ def _lock_path(project_root: Path | str) -> Path:
 
 
 def should_route_to_outbox(project_root: Path | str) -> bool:
-    """True iff HEAD is the **default branch** (idle main tree) — the signal a
-    background producer should write the outbox, not the tracked log.
+    """True iff a real delivery path exists AND HEAD is the default branch.
 
-    Branch-based, NOT ``is_worktree``: the sub-iterate runner is on the MAIN
-    checkout on an ``iterate/*`` branch (``is_worktree`` False) yet its writes
-    belong in the tracked log (they ship in the PR). So only the idle default
-    branch routes to the outbox; every ``iterate/*`` / non-default branch and
-    ANY git error (non-git, adopt-not-yet, detached HEAD) fail safe to tracked.
+    BOTH required (D1 review cascade, F2): (1) an ``origin`` remote — the outbox
+    is only delivered via the D2 sweep → PR → ``origin`` path, and
+    ``default_branch`` falls back to literal ``"main"`` with no ``origin/HEAD``,
+    so a no-origin repo on ``main`` would route spuriously and BURY the finding;
+    (2) ``current_branch == default_branch`` (idle main, not an ``iterate/*``
+    branch whose writes ship in the PR — branch-based, NOT ``is_worktree``).
+    Every no-origin repo, non-default branch, and git error fail safe to tracked.
     """
     try:
         scripts_dir = str(Path(__file__).resolve().parent)
@@ -156,10 +157,15 @@ def should_route_to_outbox(project_root: Path | str) -> bool:
         from lib.worktree_isolation import (  # noqa: PLC0415
             current_branch,
             default_branch,
+            run_git,
         )
 
         root = Path(project_root)
-        return current_branch(root) == default_branch(root)
+        has_origin = (
+            run_git(["remote", "get-url", "origin"], cwd=root, check=False).returncode
+            == 0
+        )
+        return has_origin and current_branch(root) == default_branch(root)
     except Exception:  # noqa: BLE001
         return False
 
@@ -287,6 +293,14 @@ def _iter_raw_lines_at(path: Path) -> list[dict]:
     return out
 
 
+def _append_ids_at(path: Path) -> set[str]:
+    """Set of `append`-event ids in ONE file (residence probe for mark_status)."""
+    return {
+        ln["id"] for ln in _iter_raw_lines_at(path)
+        if isinstance(ln, dict) and ln.get("event") == "append"
+    }
+
+
 def _iter_raw_lines(project_root: Path | str) -> list[dict]:
     """Tolerant union reader — tracked lines THEN outbox lines, file order.
 
@@ -349,12 +363,10 @@ def append_triage_item(
 ) -> str:
     """Append a new triage item. Returns the new `trg-<8hex>` id.
 
-    `to_outbox` (D1, campaign 2026-06-08-triage-outbox-delivery): when True,
-    write the per-tree GITIGNORED outbox buffer (`.shipwright/triage.outbox.jsonl`)
-    instead of the tracked store — used by idle-main background producers so
-    the tracked log stays clean (no main drift). Default False preserves all
-    existing behavior. The write still serializes on the canonical lock and is
-    visible immediately via the union reader.
+    `to_outbox` (D1): True writes the per-tree GITIGNORED outbox buffer
+    instead of the tracked store (idle-main background producers → no main
+    drift). Default False preserves prior behavior; the write still serializes
+    on the canonical lock and is visible immediately via the union reader.
 
     Auto-creates `.shipwright/triage.jsonl` with the schema header on
     first call (so producers are robust against adopt-not-yet-run repos
@@ -372,23 +384,15 @@ def append_triage_item(
     field is preserved so the aggregator and downstream tooling can
     correlate items across runs.
 
-    `launch_payload` (iterate-2026-05-20-triage-launch-surface) is an
-    optional producer-generated, ready-to-paste block — typically a
-    slash command + context — that the operator copies from the inbox
-    view into a new Claude session to start the matching run. Stored
-    verbatim under the wire key `launchPayload` and ALWAYS persisted
-    (as `null` when omitted) so consumers can read it without a
-    `.get()`-with-default. The producer freezes the payload at first
-    append; subsequent idempotent calls leave the on-disk value
-    unchanged (AC-8). Legacy producers may keep omitting this kwarg —
-    null is the wire default.
+    `launch_payload` (iterate-2026-05-20-triage-launch-surface) is an optional
+    ready-to-paste block (slash command + context) the operator copies into a
+    new session. Stored verbatim under `launchPayload`, ALWAYS persisted (null
+    when omitted), frozen at first append (AC-8).
 
     `fr_id` / `suite_id` / `event_id` (iterate-2026-05-21-triage-producer-contract):
-    optional cross-artifact reference fields that consumers — primarily
-    the compliance RTM generator — use to render `FAIL → [trg-XXX](...)`
-    links from a failing FR row directly to the matching triage card.
-    Persisted under camelCase keys `frId` / `suiteId` / `eventId`. Legacy
-    producers may omit all three — null is the wire default. Schema:
+    optional cross-artifact refs the RTM generator uses to render
+    `FAIL → [trg-XXX](...)` links. Persisted under camelCase `frId` / `suiteId`
+    / `eventId`; null is the wire default. Schema:
     `shared/schemas/triage_item.schema.json`.
     """
     if severity not in SEVERITIES:
@@ -457,11 +461,10 @@ def append_triage_item_idempotent(
 ) -> str | None:
     """Append a triage item only if no matching item is currently open.
 
-    `to_outbox` (D1): write the gitignored outbox buffer instead of the
-    tracked store (idle-main background producers). The dedup scan runs
-    against the UNION (`read_all_items`), so an open match in EITHER file
-    suppresses the append regardless of where the new line would land — a
-    background finding can't be duplicated across the tracked/outbox split.
+    `to_outbox` (D1): write the gitignored outbox buffer instead of the tracked
+    store (idle-main background producers). The dedup scan runs against the
+    UNION (`read_all_items`), so an open match in EITHER file suppresses the
+    append regardless of where the new line lands.
 
     Match = same `source` + `dedup_key` + (optionally) `commit` AND
     status is `triage` (items already promoted / dismissed / snoozed
@@ -580,25 +583,21 @@ def mark_status(
     by: str,
     reason: str | None = None,
     promoted_task_id: str | None = None,
-    to_outbox: bool = False,
 ) -> None:
-    """Append a status event for an existing item.
+    """Append a status event for an existing item (never mutates prior lines).
 
-    Never mutates prior lines. Idempotent on the resolved view (re-marking
-    the same status is allowed and adds to history but doesn't change
-    `read_all_items` output).
-
-    `to_outbox` (D1): write the status event to the gitignored outbox buffer
-    instead of the tracked store — used by idle-main background producers
-    (e.g. the compliance backlog dismiss path) so a status flip on an
-    outbox-resident item lands in the outbox too. The id-existence check is
-    UNION-aware (`_iter_raw_lines` reads tracked ∪ outbox), so an id that
-    lives only in the outbox is found; the new status resolves consistently
-    via the union reader.
+    **Status follows its append (residence-derived, D1 review cascade).** The
+    write target is DERIVED (not a caller flag) from where the item's `append`
+    lives (tracked ∪ outbox, both probed under the lock): outbox-only id →
+    outbox (so a tree without that outbox can't drop the flip / resurrect a
+    dismissed item, and no orphan status lands in the tracked log on idle main
+    where reconcile rejects it); tracked id — incl. the post-sweep/pre-GC
+    overlap in BOTH — → tracked (TRACKED-PREFERRED: ships in the PR, GC drops
+    the outbox copy). Every producer's status writes thus auto-route by residence.
 
     Raises:
         FileNotFoundError: if NEITHER the tracked store NOR the outbox exists.
-        KeyError: if `item_id` is not present in the union.
+        KeyError: if `item_id` is not an `append` id in (tracked ∪ outbox).
         ValueError: if `new_status` is not a known status.
     """
     if new_status not in STATUSES:
@@ -613,15 +612,14 @@ def mark_status(
             f"run /shipwright-adopt or append an item first"
         )
 
-    # Confirm id exists in the UNION (under lock for read-modify-write safety)
+    # Derive residence + write the status to the SAME store, under the lock.
     with _FileLock(_lock_path(project_root)):
-        existing_ids = {
-            line["id"]
-            for line in _iter_raw_lines(project_root)
-            if isinstance(line, dict) and line.get("event") == "append"
-        }
-        if item_id not in existing_ids:
+        tracked_ids = _append_ids_at(_triage_path(project_root))
+        outbox_ids = _append_ids_at(_outbox_path(project_root))
+        if item_id not in tracked_ids and item_id not in outbox_ids:
             raise KeyError(item_id)
+        # TRACKED-PREFERRED: outbox-only → outbox; in tracked (or both) → tracked.
+        to_outbox = item_id in outbox_ids and item_id not in tracked_ids
 
         event = {
             "event": "status",
@@ -686,7 +684,8 @@ def read_all_items(project_root: Path | str) -> list[dict]:
     # file order). This resolves the cross-file status-vs-status ambiguity the
     # external plan review (OpenAI #5 / Gemini #1) flagged without breaking
     # same-ts determinism. ``enumerate`` index is the file-order tiebreaker;
-    # ``str(ts)`` sorts ISO-8601-Z lexicographically == chronologically.
+    # ``_ts_key`` returns the ISO-8601-Z ``ts`` string, which sorts
+    # lexicographically == chronologically (malformed ts → "" → earliest).
     def _ts_key(raw: dict) -> str:
         # Only a real ISO-8601-Z string participates in chronological ordering;
         # a malformed/missing ts (non-str, null, int) coerces to "" so it sorts

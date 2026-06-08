@@ -163,9 +163,14 @@ def emit_compliance_backlog(
 
     def _dismiss(item_id: str, reason: str) -> int:
         try:
+            # mark_status is residence-derived (D1 review cascade): it writes
+            # the dismiss to the SAME store the item's append lives in (outbox
+            # or tracked), so a no-longer-passed ``to_outbox`` flag can't split
+            # the status from its append. The append below still routes by
+            # ``to_outbox`` (idle-main background → outbox).
             mark_status_fn(
                 project_root, item_id, new_status="dismissed",
-                by="complianceBacklog", reason=reason, to_outbox=to_outbox,
+                by="complianceBacklog", reason=reason,
             )
             return 1
         except Exception:  # noqa: BLE001
