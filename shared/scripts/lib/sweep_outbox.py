@@ -16,12 +16,12 @@ Two invariants make this loss-proof:
   GC. A concurrent background producer appending to the outbox serializes
   against the ENTIRE sweep — it is never read-then-lost.
 * **Origin-delivered GC (Codex unlisted failure mode):** an outbox line is
-  dropped ONLY once its normalized form is present in ``origin/<default>``'s
-  tracked log. A just-swept line is on the branch but not yet in origin, so it
-  STAYS in the outbox; if the branch is abandoned/deleted before merge it is
-  re-swept next setup. Re-sweeping is harmless — ``merge=union`` + dedup
-  collapses it to exactly-once. NEVER reset-after-read / NEVER clear the whole
-  outbox.
+  dropped ONLY once it is present in ``origin/<default>``'s tracked log — by
+  semantic ``id`` for append lines (serialization-drift-immune, FIX B) and by
+  normalized text for status lines (see :mod:`lib.sweep_gc`). A just-swept line
+  is on the branch but not yet in origin, so it STAYS in the outbox; an
+  abandoned/deleted branch re-sweeps it next setup. Re-sweeping is harmless —
+  ``merge=union`` + dedup collapses it to exactly-once. NEVER reset-after-read.
 
 The EOL-normalize + ``dedup_triage_lines`` + ``validate_triage_text`` pipeline
 is IDENTICAL to :mod:`lib.reconcile_triage` (Codex Q3) so the materialized
@@ -45,6 +45,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 import triage  # noqa: E402  — canonical lock + outbox path SSoT
 from lib.churn_merge import TRIAGE_LOG, dedup_triage_lines, validate_triage_text  # noqa: E402
+from lib.sweep_gc import is_delivered, parse_delivered  # noqa: E402
 from lib.worktree_isolation import run_git  # noqa: E402
 
 #: Truthy spellings of ``$CI`` that disable the auto-commit unless ``allow_ci``.
@@ -147,18 +148,19 @@ def _atomic_write(path: Path, text: str) -> None:
         raise
 
 
-def _origin_delivered_set(main_root: Path, default_branch: str) -> set[str]:
-    """Normalized line set of ``origin/<default>:<triage>`` (empty if absent).
-
-    The GC anchor: an outbox line is only safe to drop once it is reachable from
-    ``origin`` (i.e. its PR merged and origin advanced). ``check=False`` so a
-    missing ref / file yields the empty set (nothing GC'd — fail-safe)."""
+def _delivered_membership(main_root: Path, default_branch: str) -> tuple[set[str], set[str]]:
+    """Fetch ``origin/<default>:<triage>`` and parse it into ``(append_ids, text)``
+    GC anchors (see :func:`lib.sweep_gc.parse_delivered`). An outbox line is safe
+    to drop only once reachable from ``origin``; membership is by semantic id for
+    ``append`` lines (drift-immune, FIX B) and stripped text for status lines.
+    ``check=False`` so a missing ref / file yields ``(set(), set())`` — nothing
+    GC'd (fail-safe; a non-delivered id always survives)."""
     proc = run_git(
         ["show", f"origin/{default_branch}:{TRIAGE_LOG}"], cwd=main_root, check=False
     )
     if proc.returncode != 0:
-        return set()
-    return _normalized_set(proc.stdout)
+        return set(), set()
+    return parse_delivered(_normalized_set(proc.stdout))
 
 
 def _read_text(path: Path) -> str:
@@ -229,6 +231,9 @@ def sweep_outbox_to_branch(
             return SweepResult(status="invalid", errors=errors)
 
         # Count genuinely-new lines (not already in the worktree tracked log).
+        # JSONL producer lines carry NO surrounding whitespace (``json.dumps(...) +
+        # "\n"``), so the stripped membership set == the exact line set here —
+        # strip is a CRLF/EOL absorber, not a content mutator.
         wt_set = {ln.strip() for ln in worktree_lines_norm if ln.strip()}
         swept = sum(1 for ln in outbox_lines if ln.strip() and ln.strip() not in wt_set)
 
@@ -239,29 +244,42 @@ def sweep_outbox_to_branch(
             add = run_git(["add", "--", TRIAGE_LOG], cwd=worktree_path, check=False)
             if add.returncode != 0:
                 return SweepResult(status="error", reason=f"add_failed: {add.stderr.strip()[:300]}")
-            subject = f"chore(triage): sweep {swept} outbox append(s) into branch"
-            # The commit fires the bloat pre-commit hook, whose cold ``uv run`` on
-            # a brand-new worktree routinely exceeds run_git's 15s default — give
-            # it a generous timeout and map a timeout to a structured error rather
-            # than letting it crash setup (honors "never raises into setup").
-            try:
-                commit = run_git(
-                    ["commit", "-m", subject, "--", TRIAGE_LOG],
-                    cwd=worktree_path, check=False, timeout=120.0,
-                )
-            except subprocess.TimeoutExpired:
-                return SweepResult(status="error", reason="commit_timeout")
-            if commit.returncode != 0:
-                return SweepResult(status="error", reason=f"commit_failed: {commit.stderr.strip()[:300]}")
-            committed_subject = subject
+            # FIX D (D2 review cascade): gate the commit on a REAL staged delta.
+            # ``deduped_text != worktree_raw`` can be EOL-only (materialized LF vs
+            # a CRLF-checked-out log) that git's index — governed by autocrlf —
+            # treats as NO change; committing then fails "nothing to commit" → a
+            # spurious ``error``. No staged delta → git no-op → ``no_change`` (the
+            # GC still runs). ``--quiet`` exits 0 when there is NO staged diff.
+            staged = run_git(
+                ["diff", "--cached", "--quiet", "--", TRIAGE_LOG],
+                cwd=worktree_path, check=False,
+            )
+            if staged.returncode != 0:
+                subject = f"chore(triage): sweep {swept} outbox append(s) into branch"
+                # The commit fires the bloat pre-commit hook, whose cold ``uv run``
+                # on a brand-new worktree routinely exceeds run_git's 15s default —
+                # give it a generous timeout and map a timeout to a structured
+                # error rather than letting it crash setup (never raises into setup).
+                try:
+                    commit = run_git(
+                        ["commit", "-m", subject, "--", TRIAGE_LOG],
+                        cwd=worktree_path, check=False, timeout=120.0,
+                    )
+                except subprocess.TimeoutExpired:
+                    return SweepResult(status="error", reason="commit_timeout")
+                if commit.returncode != 0:
+                    return SweepResult(status="error", reason=f"commit_failed: {commit.stderr.strip()[:300]}")
+                committed_subject = subject
 
         # --- GC (still under the lock): drop ONLY origin-delivered lines ----
-        # Survivors are written back with the OUTBOX's OWN EOL (not the worktree
-        # triage EOL): the outbox is an independent gitignored file, so rewriting
-        # a CRLF-edited outbox to LF would be needless cross-platform churn that
-        # could confuse a later text-membership GC (external code review, OpenAI).
-        delivered = _origin_delivered_set(main_root, default_branch)
-        survivors = [ln for ln in outbox_lines if ln.strip() not in delivered]
+        # Survivors keep the OUTBOX's OWN EOL (gitignored → no cross-platform
+        # rewrite; OpenAI review). FIX B: membership is by semantic ``id`` for
+        # append lines (drift-immune) + stripped text for status/unparseable lines.
+        delivered_ids, delivered_text = _delivered_membership(main_root, default_branch)
+        survivors = [
+            ln for ln in outbox_lines
+            if not is_delivered(ln.strip(), delivered_ids, delivered_text)
+        ]
         gc_dropped = len(outbox_lines) - len(survivors)
         if gc_dropped:
             survivor_text = (outbox_eol.join(survivors) + outbox_eol) if survivors else ""

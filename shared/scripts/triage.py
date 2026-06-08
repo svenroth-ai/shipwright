@@ -333,7 +333,8 @@ def _append_line(project_root: Path | str, line: str, *, to_outbox: bool) -> Non
     else:
         _ensure_header(project_root)
         path = _triage_path(project_root)
-    with open(path, "a", encoding="utf-8") as fp:
+    # FIX A: gitignored outbox → newline="" keeps LF on all platforms (D2 ADR).
+    with open(path, "a", encoding="utf-8", newline="" if to_outbox else None) as fp:
         fp.write(line)
         fp.flush()
         os.fsync(fp.fileno())
