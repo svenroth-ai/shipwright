@@ -1,10 +1,15 @@
 # Project Activity Dashboard
-> Updated: 2026-06-07 22:13 UTC | Session: c8e791ac-3a48-4bfe-9704-de015555c881 | Run: iterate-2026-06-07-scaffold-churn-merge-machinery
+> Updated: 2026-06-08 23:00 UTC | Session: 8707e246-7d90-4cb2-9e68-afab172947de | Run: iterate-2026-06-09-idle-main-artifact-hygiene
 
-## Recent Changes (124 iterations)
+## Recent Changes (129 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Relocate phase-quality skill-compliance roll-ups under the gitignored FINDING_DIR; resolve main_repo_root (not cwd) in the bloat marker writer+reader via a shared fail-soft resolver; defensive nested-locks gitignore canon. | 0/0 |  | infra | 2026-06-08 |
+| change | — | 0/0 | 77cc652 | tooling | 2026-06-08 |
+| D2V empirical verification gate — prove the D2 outbox sweep/GC loses no triage line (HARD insurance before D3) | Real non-mocked empirical harness over the real D2 code + real git: 200 thread + 40 cross-process concurrency trials (multiset zero-loss/zero-dup), abandoned-branch e2e, exactly-once after a real merge, no main pollution; pytest_sessionfinish fails a partial gate. GATE PASS (all 5 methods). | +6 new, 6/6 | 7a31e33 | tooling | 2026-06-08 |
+| Sweep triage outbox into PR branch + abandoned-branch-safe GC; drop integrate_main reconcile | — | +36 new, 2954/2954 | 005f643 | tooling | 2026-06-08 |
+| Gitignored per-tree triage outbox + reroute background producers + union reader | Add .shipwright/triage.outbox.jsonl gitignored buffer; route 3 background producers via should_route_to_outbox; two-pass ts-primary union reader; tracked-only GC. ADR-100 bloat exception. | +22 new, 2913/2913 | 2293a76 | tooling | 2026-06-08 |
 | change | scaffold the append-log merge=union .gitattributes driver into managed repos (adopt E.13c + iterate self-heal) | 2884/2884 |  | infra | 2026-06-07 |
 | change | triage main-tree drift reconcile-and-commit at integrate/sync | 2861/2861 |  | tooling | 2026-06-07 |
 | change | Track campaign status.json for compliance-detective-realign + track-triage-jsonl (durable per-sub board on fresh clone / deployed WebUI; stopgap for trg-fda5f7a3). | 0/0 |  | compliance | 2026-06-07 |
@@ -131,7 +136,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-07 | Unit: 2884/2884 | Integration: 301/301 | Smoke: not_run | (iterate)
+Last run: 2026-06-09 | Unit: 3000/3000 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

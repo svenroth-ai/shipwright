@@ -1,37 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-07-scaffold-churn-merge-machinery"
+run_id: "iterate-2026-06-09-idle-main-artifact-hygiene"
 phase: "iterate"
-reason: "iterate: scaffold churn merge machinery"
-timestamp: "2026-06-07T22:13:08.271541+00:00"
+reason: "idle-main artifact hygiene complete; ADR-089 finished for two producers"
+timestamp: "2026-06-08T23:00:07.796168+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-07 22:13:08 UTC
+> Auto-generated 2026-06-08 23:00:07 UTC
 
 ## Session Info
 
-- **Session ID**: c8e791ac-3a48-4bfe-9704-de015555c881
-- **Timestamp**: 2026-06-07 22:13:08 UTC
-- **Reason**: iterate: scaffold churn merge machinery
+- **Session ID**: 8707e246-7d90-4cb2-9e68-afab172947de
+- **Timestamp**: 2026-06-08 23:00:07 UTC
+- **Reason**: idle-main artifact hygiene complete; ADR-089 finished for two producers
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-07-triage-main-tree-reconcile
-- **Date**: 2026-06-07T20:40:06.137317Z
+- **Run ID**: iterate-2026-06-07-scaffold-churn-merge-machinery
+- **Date**: 2026-06-07T22:13:20.482599Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/triage-main-tree-reconcile
-- **ADR**: iterate-2026-06-07-triage-main-tree-reconcile
+- **Branch**: iterate/scaffold-churn-merge-machinery
+- **ADR**: iterate-2026-06-07-scaffold-churn-merge-machinery
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-07-triage-main-tree-reconcile.md
+- **Spec**: .shipwright/planning/iterate/2026-06-07-scaffold-churn-merge-machinery.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/scaffold-churn-merge-machinery
-- **Run ID**: `iterate-2026-06-07-scaffold-churn-merge-machinery`
-- **Spec**: .shipwright/planning/iterate/2026-06-07-scaffold-churn-merge-machinery.md
+- **Branch**: iterate/idle-main-artifact-hygiene
+- **Spec**: .shipwright/planning/iterate/2026-06-09-idle-main-artifact-hygiene.md
 - **External Review Marker**: stale (predates spec (2026-06-01T06:00:50))
 
 ### Mandatory replay on Resume
@@ -50,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/scaffold-churn-merge-machinery
-- **Last Commit**: 5c5030fc Merge pull request #168 from svenroth-ai/iterate/track-campaign-status-backfill
+- **Branch**: iterate/idle-main-artifact-hygiene
+- **Last Commit**: e530f315 Merge pull request #172 from svenroth-ai/iterate/outbox-delivery-d3-propagation
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,23 +66,23 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-21cd76b0 | work_completed | iterate (scaffold the append-log merge=union .gitattributes driver into managed repos (adopt E.13c + iterate self-heal)) | 2026-06-07 |
-| evt-36fe3a2b | work_completed | iterate (triage main-tree drift reconcile-and-commit at integrate/sync) | 2026-06-07 |
-| evt-c8733ef4 | work_completed | iterate (Track campaign status.json for compliance-detective-realign + track-triage-jsonl (durable per-sub board on fresh clone / deployed WebUI; stopgap for trg-fda5f7a3).) | 2026-06-07 |
-| evt-c5b60683 | work_completed | iterate (allowlist cafebabe:deadbeef in oss_backend generated gitleaks config (GAP-3)) | 2026-06-07 |
-| evt-2b4b0397 | work_completed | iterate (Harden iterate finalization tooling: F11 verifier accepts none_reason as a spec_impact=none justification; F0.5 surface_verification rejects compound runners fast with a clear error; arch-drift sanity test no longer false-FAILs on a post-release tree.) | 2026-06-07 |
+| evt-cefcd03e | work_completed | iterate (Relocate phase-quality skill-compliance roll-ups under the gitignored FINDING_DIR; resolve main_repo_root (not cwd) in the bloat marker writer+reader via a shared fail-soft resolver; defensive nested-locks gitignore canon.) | 2026-06-08 |
+| evt-ec8e9621 | work_completed | iterate (—) | 2026-06-08 |
+| evt-bb598e0d | work_completed | iterate (Real non-mocked empirical harness over the real D2 code + real git: 200 thread + 40 cross-process concurrency trials (multiset zero-loss/zero-dup), abandoned-branch e2e, exactly-once after a real merge, no main pollution; pytest_sessionfinish fails a partial gate. GATE PASS (all 5 methods).) | 2026-06-08 |
+| evt-b9b5ddf2 | work_completed | iterate (—) | 2026-06-08 |
+| evt-418680b6 | work_completed | iterate (Iterate D1 — triage outbox reroute) | 2026-06-08 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 124
-- **Last iterate**: change — scaffold the append-log merge=union .gitattributes driver into managed repos (adopt E.13c + iterate self-heal) (2026-06-07)
+- **Total work events**: 129
+- **Last iterate**: change — Relocate phase-quality skill-compliance roll-ups under the gitignored FINDING_DIR; resolve main_repo_root (not cwd) in the bloat marker writer+reader via a shared fail-soft resolver; defensive nested-locks gitignore canon. (2026-06-08)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions
 
-### ADR-138: Commit canonical tracked triage.jsonl; skip SBOM re-emit step
-- **Date:** 2026-06-07
-- **Section:** Iterate — change: triage docs + monorepo migration (campaign E)
-- **Run-ID:** iterate-2026-06-07-triage-docs-monorepo-migration
-- **Context:** Campaign 2026-06-05-track-triage-jsonl C1/C2 made triage.jsonl trackable but the canonical backlog was never committed; the tracked triage_inbox.md diverged from the WebUI. E (final sub-iterate) migrates the canonical pile and fixes stale 'triage is gi
+### ADR-141: Empirical verification gate for the D2 outbox sweep/GC
+- **Date:** 2026-06-08
+- **Section:** Iterate D2V — outbox-delivery campaign
+- **Context:** D3 stacked on D2 (outbox->sweep->GC); a silent triage-line loss in D2 would propagate to every adopted repo via D3. The campaign needs a HARD, non-mocked empirical gate before D3 proceeds.
+- **Decision:** Built a real empirical harness (shared/tests/test_d2v_empirical_gate*.py) over the REAL D2 code + real git: 200 thread + 40 cross-process trial

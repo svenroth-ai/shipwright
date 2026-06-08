@@ -70,10 +70,10 @@ def _write_run_config(proj: Path, data: dict) -> None:
 
 
 def _write_summary(proj: Path, text: str) -> None:
-    (proj / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
-    (proj / ".shipwright" / "agent_docs" / "skill-compliance-findings.md").write_text(
-        text, encoding="utf-8",
-    )
+    from lib.phase_quality import SUMMARY_PATH  # SSoT (relocated 2026-06-09)
+    p = proj / SUMMARY_PATH
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(text, encoding="utf-8")
 
 
 def _run_capture(payload: str, cwd: Path, **env_overrides) -> subprocess.CompletedProcess:
@@ -393,16 +393,16 @@ def test_critical_gate_constants_frozen():
 
 
 def _write_injection_summary(project_root: Path) -> None:
-    (project_root / ".shipwright" / "agent_docs").mkdir(parents=True, exist_ok=True)
-    (project_root / ".shipwright" / "agent_docs" / "skill-compliance-findings.md").write_text(
+    from lib.phase_quality import SUMMARY_PATH  # SSoT (relocated 2026-06-09)
+    p = project_root / SUMMARY_PATH
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(
         "## build — run-1\n"
         "- audited_at: 2026-04-19\n"
         "- source: orchestrator\n"
         "- totals: 0 PASS · 1 FAIL · 0 WARN · 0 SKIP\n"
         "- open FAILs:\n"
-        "  - **W6** no git tag\n",
-        encoding="utf-8",
-    )
+        "  - **W6** no git tag\n", encoding="utf-8")
 
 
 def test_injection_silent_when_cwd_is_monorepo_root(tmp_path: Path, monkeypatch):

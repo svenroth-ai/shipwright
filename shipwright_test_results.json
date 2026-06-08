@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-07-scaffold-churn-merge-machinery",
-    "date": "2026-06-07",
+    "run_id": "iterate-2026-06-09-idle-main-artifact-hygiene",
+    "date": "2026-06-09",
     "unit": {
       "status": "passed",
-      "passed": 2884,
-      "total": 2884
+      "passed": 3000,
+      "total": 3000
     },
     "integration": {
-      "status": "passed",
-      "passed": 301,
-      "total": 301
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -33,178 +33,81 @@
     "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --extra dev python -m pytest shared/tests/test_gitattributes_union.py shared/tests/test_gitattributes_union_selfheal.py -q -p no:cacheprovider",
+      "runner": "uv run --with pytest --with pytest-mock pytest shared/tests/test_idle_main_artifact_hygiene.py shared/tests/test_check_file_size_cross_repo.py shared/tests/test_bloat_marker_worktree_aware.py -q",
       "exit_code": 0,
-      "tests_run": 25,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\scaffold-churn-merge-machinery\\.shipwright\\runs\\iterate-2026-06-07-scaffold-churn-merge-machinery\\surface_verification.log",
-      "timestamp": "2026-06-07T22:08:59.331Z"
+      "tests_run": 21,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\idle-main-artifact-hygiene\\.shipwright\\runs\\iterate-2026-06-09-idle-main-artifact-hygiene\\surface_verification.log",
+      "timestamp": "2026-06-08T22:57:16.570Z",
+      "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "template SSoT exists + declares every union line",
+          "behavior": "main_repo_root_or resolves MAIN root from a subdir (AC-2)",
           "disposition": "tested",
-          "evidence": "test_template_exists_and_declares_every_union_line PASSED"
+          "evidence": "test_idle_main_artifact_hygiene.py::test_main_repo_root_or_resolves_main_root_from_subdir PASSED"
         },
         {
-          "behavior": "UNION_PATHS == churn allowlist append-logs (drift)",
+          "behavior": "main_repo_root_or fail-soft to fallback on non-git/error (AC-2)",
           "disposition": "tested",
-          "evidence": "test_union_paths_match_churn_allowlist_append_logs PASSED"
+          "evidence": "test_idle_main_artifact_hygiene.py::test_main_repo_root_or_falls_back_on_non_git PASSED"
         },
         {
-          "behavior": "MANAGED_MARKER == template first line",
+          "behavior": "Writer cwd!=root writes marker to ROOT, repo-relative path (AC-2)",
           "disposition": "tested",
-          "evidence": "test_managed_marker_is_the_template_first_line PASSED"
+          "evidence": "test_idle_main_artifact_hygiene.py::test_writer_subdir_cwd_writes_marker_to_repo_root PASSED"
         },
         {
-          "behavior": "merge_into: absent/empty -> full fragment",
+          "behavior": "Reader cwd!=root reads ROOT marker + blocks (AC-2)",
           "disposition": "tested",
-          "evidence": "test_merge_into_none_writes_full_fragment / _whitespace_only PASSED"
+          "evidence": "test_idle_main_artifact_hygiene.py::test_reader_subdir_cwd_reads_root_marker_and_blocks PASSED"
         },
         {
-          "behavior": "merge_into: idempotent (round-trip)",
+          "behavior": "Writer/reader unchanged in cwd=root + non-git tmp (AC-2 regression)",
           "disposition": "tested",
-          "evidence": "test_merge_into_is_idempotent PASSED"
+          "evidence": "test_check_file_size_cross_repo.py + test_bloat_marker_worktree_aware.py + test_bloat_gate_on_stop.py PASSED"
         },
         {
-          "behavior": "merge_into: preserves user entries",
+          "behavior": "Roll-up constants live under FINDING_DIR (AC-1)",
           "disposition": "tested",
-          "evidence": "test_merge_into_preserves_existing_user_entries PASSED"
+          "evidence": "test_idle_main_artifact_hygiene.py::test_rollup_constants_live_under_finding_dir PASSED"
         },
         {
-          "behavior": "merge_into: partial adds only missing, no dup marker",
+          "behavior": "Render writes 3 roll-ups under FINDING_DIR, not legacy paths (AC-1)",
           "disposition": "tested",
-          "evidence": "test_merge_into_partial_adds_only_the_missing_line / _no_duplicate_marker PASSED"
+          "evidence": "test_idle_main_artifact_hygiene.py::test_regenerate_writes_rollups_under_finding_dir PASSED"
         },
         {
-          "behavior": "merge_into: preserves CRLF",
+          "behavior": "Roll-ups gitignored after render - idle-main clean (AC-1)",
           "disposition": "tested",
-          "evidence": "test_merge_into_preserves_crlf_eol PASSED"
+          "evidence": "test_idle_main_artifact_hygiene.py::test_rollups_are_gitignored_after_render PASSED"
         },
         {
-          "behavior": "_declares_union tolerant of extra attributes",
+          "behavior": "SessionStart consumer reads relocated SUMMARY_PATH (AC-1)",
           "disposition": "tested",
-          "evidence": "test_declares_union_tolerates_extra_attributes PASSED"
+          "evidence": "test_capture_session_id.py (phase-quality block) + test_phase_quality_rollout.py injection PASSED"
         },
         {
-          "behavior": "_declares_union ignores #-commented line",
+          "behavior": "DASHBOARD_REL follows relocated constant (AC-1)",
           "disposition": "tested",
-          "evidence": "test_commented_out_union_line_is_not_counted_as_present PASSED"
+          "evidence": "test_phase_quality_triage_emit.py PASSED"
         },
         {
-          "behavior": "AC-4 union merges concurrent appends, no markers, no loss",
+          "behavior": "Defensive **/.shipwright/locks/ in both files + ignores nested (AC-2/AC-3)",
           "disposition": "tested",
-          "evidence": "test_ac4_union_driver_merges_concurrent_appends_without_markers PASSED"
+          "evidence": "test_idle_main_artifact_hygiene.py::{test_nested_locks_rule_in_canon_template,_in_framework_gitignore,test_nested_locks_dir_is_ignored_by_canon_block} PASSED"
         },
         {
-          "behavior": "AC-4 negative control conflicts (proves mechanism)",
+          "behavior": "Canon-path + gitignore-template congruence intact (AC-3 regression)",
           "disposition": "tested",
-          "evidence": "test_ac4_negative_control_without_union_produces_conflict PASSED"
-        },
-        {
-          "behavior": "AC-2 adopt scaffolds when absent",
-          "disposition": "tested",
-          "evidence": "test_scaffolds_when_absent PASSED"
-        },
-        {
-          "behavior": "AC-2 adopt merges, preserves user entries",
-          "disposition": "tested",
-          "evidence": "test_merges_into_existing_preserving_user_entries PASSED"
-        },
-        {
-          "behavior": "AC-2 already-present no-op",
-          "disposition": "tested",
-          "evidence": "test_already_present_is_noop PASSED"
-        },
-        {
-          "behavior": "AC-2 completes a partial union",
-          "disposition": "tested",
-          "evidence": "test_completes_a_partial_existing_union PASSED"
-        },
-        {
-          "behavior": "AC-2 idempotent twice",
-          "disposition": "tested",
-          "evidence": "test_idempotent_when_called_twice PASSED"
-        },
-        {
-          "behavior": "AC-3 self-heal commits when missing",
-          "disposition": "tested",
-          "evidence": "test_self_heal_commits_when_union_missing PASSED"
-        },
-        {
-          "behavior": "AC-3 self-heal idempotent",
-          "disposition": "tested",
-          "evidence": "test_self_heal_is_idempotent PASSED"
-        },
-        {
-          "behavior": "AC-3 preserves existing user .gitattributes",
-          "disposition": "tested",
-          "evidence": "test_self_heal_preserves_existing_user_gitattributes PASSED"
-        },
-        {
-          "behavior": "AC-3 guard: no tracked append-log",
-          "disposition": "tested",
-          "evidence": "test_skip_repo_without_tracked_append_log PASSED"
-        },
-        {
-          "behavior": "AC-3 guard: CI without opt-in",
-          "disposition": "tested",
-          "evidence": "test_skip_in_ci_without_optin PASSED"
-        },
-        {
-          "behavior": "AC-3 guard: detached HEAD",
-          "disposition": "tested",
-          "evidence": "test_skip_on_detached_head PASSED"
-        },
-        {
-          "behavior": "AC-3 guard: op-in-progress (MERGE_HEAD)",
-          "disposition": "tested",
-          "evidence": "test_skip_on_merge_in_progress PASSED"
-        },
-        {
-          "behavior": "AC-3 guard: staged changes",
-          "disposition": "tested",
-          "evidence": "test_skip_on_staged_changes PASSED"
-        },
-        {
-          "behavior": "AC-3 guard: not a git repo",
-          "disposition": "tested",
-          "evidence": "test_skip_when_not_a_git_repo PASSED"
-        },
-        {
-          "behavior": "AC-3 self-heal rolls back on commit rejection",
-          "disposition": "tested",
-          "evidence": "test_rolls_back_on_commit_rejection PASSED"
-        },
-        {
-          "behavior": "Wiring: setup_iterate_worktree self-heals new worktree",
-          "disposition": "tested",
-          "evidence": "test_setup_iterate_worktree_self_heals_new_worktree PASSED"
-        },
-        {
-          "behavior": "AC-3 guard: rebase/bisect git-dir-file probe",
-          "disposition": "untestable",
-          "reason_code": "covered-by-existing-test",
-          "reason": "same --git-path file-probe as reconcile_triage rebase guard; op-in-progress RETURN proven via the MERGE_HEAD test"
-        },
-        {
-          "behavior": "Self-heal commit-timeout -> structured error, not a crash",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "a real >120s hook hang is non-deterministic; the rollback+structured-error path is proven by test_rolls_back_on_commit_rejection (identical _restore_gitattributes cleanup)"
-        },
-        {
-          "behavior": "AC-4 WebUI git check-attr flip",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "separate repo not checked out here; flips via WebUI's own next iterate self-heal (out-of-band)"
+          "evidence": "test_artifact_path_canon.py + test_gitignore_template_congruent.py PASSED"
         }
       ],
       "counts": {
-        "testable": 28,
-        "tested": 28,
-        "untestable": 3,
+        "testable": 12,
+        "tested": 12,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {

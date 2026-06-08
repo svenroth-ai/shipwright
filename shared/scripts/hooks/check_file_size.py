@@ -5,8 +5,8 @@ Per Campaign A.foundation (bloat cleanup): per-filetype limits (300 source/
 tests, 400 runtime-prompt — SKILL.md / CLAUDE.md / agents / prompts via
 ``bloat_baseline.classify_md``; docs skipped). On every crossing / anti-ratchet
 event it writes a per-session marker
-``<cwd>/.shipwright/locks/bloat_pending.<session_id>.json``; the Stop hook
-``bloat_gate_on_stop.py`` reads it (TTL + path-normalise) and blocks on
+``<repo-root>/.shipwright/locks/bloat_pending.<session_id>.json`` (root via
+``main_repo_root_or``, never cwd); ``bloat_gate_on_stop.py`` reads it (TTL) + blocks on
 anti-ratchet entries or new crossings outside the baseline. PostToolUse stays
 advisory (always exits 0); only the Stop-Gate blocks.
 
@@ -30,6 +30,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 from lib import bloat_baseline as _bb  # noqa: E402
+from lib.repo_root import main_repo_root_or  # noqa: E402
 
 DEFAULT_MAX_LINES = _bb.LIMIT_SOURCE  # 300; runtime-prompts override to 400.
 
@@ -262,14 +263,15 @@ def main() -> int:
         return 0
     if _should_skip(file_path):
         return 0
-    cwd = Path.cwd()
-    # Only govern files within THIS project: a sibling repo (its own bloat
-    # baseline) must not leak into this project's marker (advisory -> skip).
+    # Canonical MAIN repo root (fail-soft), never Path.cwd() — see
+    # main_repo_root_or: a sub-package cwd must not leak the marker nested.
+    root = main_repo_root_or(Path.cwd())
+    # Only govern files within THIS project (sibling repo -> skip; advisory).
     try:
-        path.resolve().relative_to(cwd.resolve())
+        path.resolve().relative_to(root.resolve())
     except ValueError:
         return 0
-    limit = _limit_for(file_path, cwd)
+    limit = _limit_for(file_path, root)
     if limit is None:
         return 0
     now = _file_newlines(path)
@@ -278,12 +280,11 @@ def main() -> int:
     before = _before_newlines(
         str(payload.get("tool_name") or ""), tool_input, now, path,
     )
-    # Determine whether this edit "newly" crossed the limit or grew an
-    # already-oversize file. The marker is written either way — the
-    # Stop-Gate decides what to do with it (anti-ratchet always blocks).
+    # "newly" crossed vs grew-an-already-oversize file. Marker written either
+    # way; the Stop-Gate decides (anti-ratchet always blocks).
     is_crossing = before is None or before <= limit
     try:
-        _write_marker_entry(cwd, file_path, now, limit, before, payload)
+        _write_marker_entry(root, file_path, now, limit, before, payload)
     except OSError:
         # Marker write must never break the tool flow.
         pass

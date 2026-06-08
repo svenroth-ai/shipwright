@@ -27,10 +27,12 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 from lib.events_log import resolve_events_path  # noqa: E402
 
 from ._aggregates import load_findings  # noqa: E402
-from ._constants import CATEGORIES, STATUS_FAIL  # noqa: E402
+from ._constants import CATEGORIES, DASHBOARD_PATH, STATUS_FAIL  # noqa: E402
 
 BACKLOG_PREFIX = "phaseQuality:backlog:"
-DASHBOARD_REL = ".shipwright/compliance/skill-compliance-dashboard.md"
+# "Live view:" pointer baked into triage detail/launchPayload. Follow the SSoT
+# constant so it tracks the FINDING_DIR relocation (iterate-2026-06-09).
+DASHBOARD_REL = DASHBOARD_PATH
 
 
 # ---------------------------------------------------------------------------

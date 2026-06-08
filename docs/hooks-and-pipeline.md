@@ -817,13 +817,18 @@ Tier-2 checks (W1, I4, T2, Q1, S3-S5, S7, S9, S10, Cmp1, D2) are
 permanently excluded from enforcement rollout — they land in the
 dashboard as heuristic signal only (plan § 3, § 9.2).
 
-**Artifacts written (deterministically regenerated):**
+**Artifacts written (deterministically regenerated).** All four live UNDER the
+gitignored `FINDING_DIR` (`.shipwright/compliance/skill-compliance/`). The 3 `.md`
+roll-ups are TRANSIENT derived caches of the per-run JSONs — never tracked, not in
+`audit_staleness.DOC_REGISTRY` — so a Stop on idle main leaves `git status` clean
+(iterate-2026-06-09 completes ADR-089's runtime/snapshot split for this producer;
+relocated from the old tracked-eligible `compliance` + `agent_docs` doc homes):
 | File | Purpose | Retention |
 |---|---|---|
-| `.shipwright/compliance/skill-compliance/<phase>-<run_id>-<session_id>.json` | Per-run Finding JSON (atomic write) | GC → `archive/` after 90d |
-| `.shipwright/compliance/skill-compliance-report.md` | Last 10 runs, markdown | cap 10 |
-| `.shipwright/agent_docs/skill-compliance-findings.md` | Last 5 runs, SessionStart-Injection source (PR 4 wires the injection) | cap 5 |
-| `.shipwright/compliance/skill-compliance-dashboard.md` | Phase × category status matrix | overwritten each run |
+| `…/skill-compliance/<phase>-<run_id>-<session_id>.json` | Per-run Finding JSON (atomic write) | GC → `archive/` after 90d |
+| `…/skill-compliance/_report.md` | Last 10 runs, markdown | cap 10 |
+| `…/skill-compliance/_findings.md` | Last 5 runs, SessionStart-Injection source (`capture_session_id`) | cap 5 |
+| `…/skill-compliance/_dashboard.md` | Phase × category status matrix | overwritten each run |
 
 Aggregate rewrites serialise through
 `.shipwright/locks/phase-quality.lock` so concurrent Stop events from
@@ -860,7 +865,8 @@ across PR 1-4.
 **SessionStart-Injection flow (PR 4):**
 
 The canonical SessionStart hook `shared/scripts/hooks/capture_session_id.py`
-reads `.shipwright/agent_docs/skill-compliance-findings.md` at session start and
+reads the transient `…/skill-compliance/_findings.md` digest
+(`phase_quality.SUMMARY_PATH`) at session start and
 injects up to **5 Tier-1 FAILs** as `additionalContext` unless the user
 has opted out via `SHIPWRIGHT_PHASE_QUALITY_MODE=audit_only`. Injection
 is the default since the Phase-Quality epic completed — rollout
@@ -886,7 +892,7 @@ later by campaign `2026-06-02-hook-consolidation` B2.)
 
 ```
 Session ends → Stop hook writes finding JSON + regenerates
-                .shipwright/agent_docs/skill-compliance-findings.md
+                .shipwright/compliance/skill-compliance/_findings.md
                     ↓
 Next session starts → capture_session_id.py reads summary file
                         ↓
@@ -1013,7 +1019,7 @@ phase to load explicitly.
 | PreToolUse | `{"tools": ["Bash"]}` | `validate_command.sh` | Blocks dangerous shell commands (rm -rf, force push, etc.) |
 | PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_destructive_migration.sh` | Warns on DROP/DELETE in .sql files without down.sql |
 | PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_secrets.sh` | Scans written files for API keys, tokens, passwords |
-| PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_file_size.py` | Non-blocking nudge + per-session marker writer. Crossings of the 300/400 line guideline (300 source/test, 400 runtime-prompt SKILL.md/CLAUDE.md/agents) emit a stdout nudge AND write `.shipwright/locks/bloat_pending.<session_id>.json` (atomic tmp+rename). The Stop-Gate (`bloat_gate_on_stop.py`) reads that marker. Registered in every plugin's `hooks.json` since Campaign A.foundation. `<session_id>` comes from the hook **stdin payload** (`session_id`), falling back to the `SHIPWRIGHT_SESSION_ID` env var then `"unknown"` — both writer and gate must agree (fixed `iterate-2026-05-29-bloat-gate-session-id`; env-only keying pooled every session into one `unknown` bucket so one session's oversize file blocked another's Stop). The Stop-Gate clears an **anti-ratchet** entry when the file is trimmed back to `<=` its baseline `current` (the grandfathered ceiling) — it blocks only when the live size grew PAST `current`, matching the canonical anti-ratchet rule in `anti_ratchet.py` (same iterate; previously it compared only against the 300 limit, so a correctly-trimmed grandfathered file kept blocking). |
+| PostToolUse | `{"tools": ["Write", "Edit"]}` | `check_file_size.py` | Non-blocking nudge + per-session marker writer. Crossings of the 300/400 line guideline (300 source/test, 400 runtime-prompt SKILL.md/CLAUDE.md/agents) emit a stdout nudge AND write `<repo-root>/.shipwright/locks/bloat_pending.<session_id>.json` (atomic tmp+rename). The marker/baseline/re-measure root is resolved via `repo_root.main_repo_root_or(Path.cwd())` (fail-soft adapter over `worktree_isolation.main_repo_root`), **never `Path.cwd()`** — a PostToolUse firing with cwd≠repo-root (sub-package test run, monorepo auto-descent) would otherwise leak the marker to a nested `shared/.shipwright/locks/` the root-anchored gitignore misses (fixed `iterate-2026-06-09-idle-main-artifact-hygiene`; a non-anchored `**/.shipwright/locks/` canon ignore is belt-and-suspenders). The Stop-Gate (`bloat_gate_on_stop.py`) resolves the SAME root + reads that marker. Registered in every plugin's `hooks.json` since Campaign A.foundation. `<session_id>` comes from the hook **stdin payload** (`session_id`), falling back to the `SHIPWRIGHT_SESSION_ID` env var then `"unknown"` — both writer and gate must agree (fixed `iterate-2026-05-29-bloat-gate-session-id`; env-only keying pooled every session into one `unknown` bucket so one session's oversize file blocked another's Stop). The Stop-Gate clears an **anti-ratchet** entry when the file is trimmed back to `<=` its baseline `current` (the grandfathered ceiling) — it blocks only when the live size grew PAST `current`, matching the canonical anti-ratchet rule in `anti_ratchet.py` (same iterate; previously it compared only against the 300 limit, so a correctly-trimmed grandfathered file kept blocking). |
 | PostToolUse | — (catch-all) | `track_tool_calls.py` | Increments tool call counter for context pressure detection |
 | Stop | — | `bloat_gate_on_stop.py` | Blocks completion when bloat markers indicate anti-ratchet or a new crossing outside the baseline allowlist (`shipwright_bloat_baseline.json`). Session-scoped (reads only the current session's marker, falls back to `unknown` when `SHIPWRIGHT_SESSION_ID` is unset). Re-measures each entry at decision time so a fixed file isn't punished. Pass-silently when no baseline file exists (fresh / pre-adopt repos). Registered in every plugin's `hooks.json` since Campaign A.foundation. |
 | Stop | — | `audit_phase_quality_on_stop.py` (shared) | Phase-quality audit (canon C1-C5 + W1 TDD-order Tier-2 + I1-I4 infrastructure freshness + Q1/Q2 quality) |
