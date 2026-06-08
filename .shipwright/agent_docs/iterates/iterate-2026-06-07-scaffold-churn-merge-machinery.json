@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-07-scaffold-churn-merge-machinery",
+  "date": "2026-06-07T22:13:20.482599Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/scaffold-churn-merge-machinery",
+  "spec": ".shipwright/planning/iterate/2026-06-07-scaffold-churn-merge-machinery.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-07-scaffold-churn-merge-machinery"
+}

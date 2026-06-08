@@ -45,6 +45,7 @@ _SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
+from lib.gitattributes_union import self_heal_gitattributes  # noqa: E402
 from lib.reconcile_triage import reconcile_main_triage  # noqa: E402
 from lib.worktree_isolation import (  # noqa: E402
     GitError,
@@ -196,6 +197,14 @@ def setup(
             "project_root": str(main_root),
             "detail": str(exc),
         }
+
+    # 4.5. Self-heal the append-log union merge driver into the new worktree's
+    #      .gitattributes (chore commit → ships in PR; guarded fail-soft no-op
+    #      in the monorepo / non-managed repos). See lib/gitattributes_union.
+    heal = self_heal_gitattributes(worktree_path)
+    if heal.status == "error":
+        print(f"setup_iterate_worktree: gitattributes self-heal {heal.reason}",
+              file=sys.stderr)
 
     # 5. Fold any uncommitted main-tree triage.jsonl background drift into one
     #    chore(triage) commit BEFORE snapshotting — so the background appends are

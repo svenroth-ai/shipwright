@@ -527,40 +527,39 @@ def generate(
     else:
         results["e2e_baseline_generated"] = False
 
-    # Step E.13 — Security CI scaffold. Adopt is the entry point for
-    # brownfield repos, so a missing .github/workflows/security.yml is the
-    # default state — the scaffolder writes the dormant template. Existing
-    # files (prior shipwright workflow, hand-rolled CodeQL, anything else)
-    # are preserved bit-for-bit. See docs/security-ci-setup.md for activation
-    # guidance and the convention lock at shared/scripts/lib/security_workflow.py.
+    # Step E.13 — Security CI scaffold: writes the dormant security.yml template;
+    # existing files preserved bit-for-bit. SSoT shared/scripts/lib/security_workflow.py;
+    # activation guidance in docs/security-ci-setup.md.
     from security_workflow_scaffolder import scaffold_security_workflow  # type: ignore
     security_ci_result = scaffold_security_workflow(project_root)
     results["security_ci"] = security_ci_result
     if security_ci_result["wrote"]:
         results["written"].append(security_ci_result["path"])
 
-    # Step E.13b — Gitleaks allowlist scaffold (companion to security.yml,
-    # which runs `gitleaks detect --no-git` with no `--config` → auto-loads a
-    # root `.gitleaks.toml`). Without it the sidekiq-secret rule false-matches
-    # `cafebabe:deadbeef` and reddens every adopted repo's first scan (leadwright
-    # 2026-06-07). Never-overwrite. SSoT: shared/scripts/lib/security_workflow.py.
+    # Step E.13b — Gitleaks allowlist (.gitleaks.toml), companion to security.yml's
+    # `gitleaks detect --no-git` root auto-load (suppresses the cafebabe:deadbeef
+    # sidekiq-secret false-positive); never-overwrite. SSoT: security_workflow.py.
     from gitleaks_config_scaffolder import scaffold_gitleaks_config  # type: ignore
     gitleaks_config_result = scaffold_gitleaks_config(project_root)
     results["gitleaks_config"] = gitleaks_config_result
     if gitleaks_config_result["wrote"]:
         results["written"].append(gitleaks_config_result["path"])
 
-    # Step E.14 — CI workflow scaffold (profile-aware). Adopt picks the
-    # right CI template per stack profile (vite-hono, supabase-nextjs,
-    # python-plugin-monorepo) and lands a cross-platform-matrix template
-    # at .github/workflows/ci.yml. Closes the gap that the shipwright-webui
-    # v0.8.5 regression exposed: hand-written CI without a Windows runner
-    # silently hid path-portability bugs.
-    #
-    # Profile name comes from snapshot.profile.matched (set by adopt's
-    # stack detection earlier in the pipeline). Distinct reason codes
-    # surface profile-detection failures upstream rather than masking
-    # them as "no template available".
+    # Step E.13c — Append-log union merge driver: merges `merge=union` lines for the
+    # append-logs (shipwright_events.jsonl, .shipwright/triage.jsonl) into the repo
+    # root .gitattributes so concurrent iterate appends auto-line-union. MERGE, not
+    # never-overwrite (existing user entries preserved). SSoT gitattributes_union.py.
+    from gitattributes_scaffolder import scaffold_gitattributes  # type: ignore
+    gitattributes_result = scaffold_gitattributes(project_root)
+    results["gitattributes_union"] = gitattributes_result
+    if gitattributes_result["wrote"]:
+        results["written"].append(gitattributes_result["path"])
+
+    # Step E.14 — CI workflow scaffold (profile-aware): lands a cross-platform-matrix
+    # ci.yml per detected stack profile (snapshot.profile.matched: vite-hono /
+    # supabase-nextjs / python-plugin-monorepo). Closes the shipwright-webui v0.8.5
+    # gap (hand-written CI lacking a Windows runner); distinct reason codes surface
+    # profile-detection failures rather than masking them as "no template".
     from ci_workflow_scaffolder import scaffold_ci_workflow  # type: ignore
     profile_name = (snapshot.get("profile") or {}).get("matched")
     ci_result = scaffold_ci_workflow(project_root, profile_name=profile_name)

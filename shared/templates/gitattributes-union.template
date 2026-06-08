@@ -1,0 +1,10 @@
+# Shipwright append-log union merge driver (managed block — do not hand-edit).
+# shipwright_events.jsonl and .shipwright/triage.jsonl are append-only JSONL logs
+# written concurrently by parallel iterates. `merge=union` is git's built-in
+# line-union driver: it keeps BOTH sides' appended lines automatically (no
+# per-clone `git config`; honored by GitHub's server-side PR merge too) instead
+# of emitting conflict markers. The churn resolver (shared/scripts/tools/
+# resolve_churn_conflicts.py) remains the second-line authority that dedups +
+# validates the union'd log. SSoT: shared/scripts/lib/gitattributes_union.py.
+shipwright_events.jsonl merge=union
+.shipwright/triage.jsonl merge=union

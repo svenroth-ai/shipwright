@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-07T20:39:47.562496+00:00
+Generated: 2026-06-07T22:13:08.271541+00:00
 
 ## Requirements Coverage
 
@@ -148,6 +148,7 @@ Generated: 2026-06-07T20:39:47.562496+00:00
 | allowlist cafebabe:deadbeef in oss_backend generated gitleaks config (GAP-3) | iterate | change |  | 56/56 | — | 2026-06-07 |
 | Track campaign status.json for compliance-detective-realign + track-triage-jsonl (durable per-sub board on fresh clone / deployed WebUI; stopgap for trg-fda5f7a3). | iterate | change |  | — | — | 2026-06-07 |
 | triage main-tree drift reconcile-and-commit at integrate/sync | iterate | change |  | 2861/2861 | — | 2026-06-07 |
+| scaffold the append-log merge=union .gitattributes driver into managed repos (adopt E.13c + iterate self-heal) | iterate | change |  | 2884/2884 | — | 2026-06-07 |
 
 ## Coverage Summary
 
@@ -155,7 +156,7 @@ Generated: 2026-06-07T20:39:47.562496+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 123 |
+| Iterate changes | 124 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

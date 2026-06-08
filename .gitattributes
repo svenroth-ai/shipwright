@@ -13,9 +13,12 @@
 shipwright_events.jsonl merge=union
 
 # .shipwright/triage.jsonl is the same shape (append-only JSONL backlog, tracked
-# since campaign 2026-06-05-track-triage-jsonl). `union` is DOGFOODING-ONLY: this
-# .gitattributes is never written to target projects, which rely solely on the
-# resolver's _reconcile_triage (exact-line dedup + header/JSON validation). Note
-# `union` is line-union WITHOUT dedup, so the resolver remains the authority even
-# here (it dedups the union'd log post-merge).
+# since campaign 2026-06-05-track-triage-jsonl). As of
+# iterate-2026-06-07-scaffold-churn-merge-machinery these two union lines are NO
+# LONGER dogfooding-only: the same fragment is now scaffolded into every managed
+# repo (adopt Step E.13c + the iterate self-heal in setup_iterate_worktree),
+# sourced from shared/templates/gitattributes-union.template (SSoT
+# shared/scripts/lib/gitattributes_union.py). `union` is line-union WITHOUT
+# dedup, so the resolver (resolve_churn_conflicts.py) remains the second-line
+# authority that dedups + validates the union'd log post-merge.
 .shipwright/triage.jsonl merge=union
