@@ -141,7 +141,12 @@ def test_rolls_back_on_commit_rejection(git_origin_repo, tmp_path):
     _seed_managed_repo(work)  # no .gitattributes before the call
     hookdir = tmp_path / "failhooks"
     hookdir.mkdir()
-    (hookdir / "pre-commit").write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    hook = hookdir / "pre-commit"
+    hook.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    # Linux git only runs an EXECUTABLE hook (Windows git runs it regardless) —
+    # without the +x bit this test silently passes the commit on CI and the
+    # rollback path is never exercised.
+    os.chmod(hook, 0o755)
     h.git(work, "config", "core.hooksPath", str(hookdir))
 
     res = gu.self_heal_gitattributes(work, allow_ci=True)
