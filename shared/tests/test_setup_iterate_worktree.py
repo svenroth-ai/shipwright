@@ -20,6 +20,18 @@ _SCRIPT = (
     _REPO_ROOT / "shared" / "scripts" / "tools" / "setup_iterate_worktree.py"
 )
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # shared/tests (helpers)
+sys.path.insert(0, str(_REPO_ROOT / "shared" / "scripts"))
+sys.path.insert(0, str(_REPO_ROOT / "shared" / "scripts" / "tools"))
+
+import _sweep_helpers as sh  # noqa: E402  (real-git seed/outbox plumbing)
+import setup_iterate_worktree as siw  # noqa: E402  (the real in-process setup)
+from lib.gitignore_canon import read_canonical_rules  # noqa: E402
+
+_GI_CHORE = (
+    "chore: scaffold canonical .shipwright/ artifact-ignore block into .gitignore"
+)
+
 
 def _run_setup(project_root, slug, run_id, *, extra_env=None):
     env = os.environ.copy()
@@ -176,3 +188,62 @@ def test_writes_snapshot_and_pointer(git_origin_repo):
     assert ptr_data["run_id"] == "iterate-snp"
     assert ptr_data["session_id"] == "sess-xyz"
     assert ptr_data["branch"] == "iterate/snp"
+
+
+# --------------------------------------------------------------------------- #
+# MED-1 (D3 review cascade): the self-heal ↔ sweep STAGED-STATE SEAM.
+# Step 4.6 commits .gitignore; step 5 must then still find a CLEAN index and fold
+# a NON-EMPTY outbox. If the self-heal left .gitignore staged, the sweep would
+# false-skip (staged_changes) and SILENTLY drop delivery. This locks both commits.
+# --------------------------------------------------------------------------- #
+
+
+def _branch_commit_subjects(wt: Path) -> str:
+    return sh.git(wt, "log", "--format=%s").stdout
+
+
+def test_gitignore_selfheal_then_outbox_sweep_both_commit(git_origin_repo):
+    work, _ = git_origin_repo
+    sh.set_identity(work)
+    # 1. Tracked triage.jsonl (schema header) + union .gitattributes on main, pushed
+    #    to origin so the sweep's origin-delivered GC has a base.
+    sh.seed_tracked(work, sh.item("trg-seed"))
+    # 2. .gitignore present but MISSING the canon .shipwright/ managed block, so the
+    #    step-4.6 gitignore self-heal genuinely fires (commits a chore).
+    (work / ".gitignore").write_text("node_modules/\n", encoding="utf-8", newline="\n")
+    sh.git(work, "add", "--", ".gitignore")
+    sh.git(work, "commit", "-m", "user gitignore without canon block")
+    sh.git(work, "push", "origin", "main")
+    assert not any(r in (work / ".gitignore").read_text(encoding="utf-8")
+                   for r in read_canonical_rules()), "canon block must be ABSENT pre-setup"
+    # 3. NON-EMPTY main-tree outbox: one valid append line not yet in tracked log.
+    sh.write_outbox(work, sh.item("trg-outbox-1", title="from-outbox"))
+
+    # 4. Run the REAL in-process setup (no mocks, real git).
+    env_ci = os.environ.get("CI")
+    os.environ["CI"] = ""  # interactive session, not CI
+    try:
+        code, payload = siw.setup(str(work), "seam", "iterate-20260608-seam")
+    finally:
+        if env_ci is None:
+            os.environ.pop("CI", None)
+        else:
+            os.environ["CI"] = env_ci
+    assert code == 0, payload
+    wt = Path(payload["project_root"])
+
+    subjects = _branch_commit_subjects(wt)
+    # (a) BOTH the gitignore self-heal chore AND the outbox sweep chore landed — the
+    #     self-heal did NOT leave .gitignore staged and false-skip the sweep.
+    assert _GI_CHORE in subjects, ("gitignore self-heal commit missing\n" + subjects)
+    assert "chore(triage): sweep 1 outbox append(s) into branch" in subjects, (
+        "outbox sweep commit missing (self-heal may have left .gitignore staged)\n"
+        + subjects
+    )
+    # (b) The worktree is CLEAN afterwards (no staged residue from either step).
+    assert sh.git(wt, "status", "--porcelain").stdout.strip() == "", "worktree not clean"
+    # (c) The swept outbox line is present in the branch's tracked triage.jsonl.
+    branch_lines = sh.branch_triage_lines(wt)
+    assert any('"trg-outbox-1"' in ln for ln in branch_lines), (
+        "swept outbox line not in branch tracked triage.jsonl: " + repr(branch_lines)
+    )

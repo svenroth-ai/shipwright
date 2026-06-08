@@ -164,6 +164,26 @@ def test_skip_when_not_a_git_repo(tmp_path):
     assert (res.status, res.reason) == ("skipped", "not_a_git_repo")
 
 
+def test_non_utf8_gitignore_does_not_raise(git_origin_repo):
+    """LOW-3 (D3 review cascade): a non-UTF-8 ``.gitignore`` must NOT raise a
+    UnicodeDecodeError (a ValueError uncaught by setup.main's (GitError, OSError)
+    handler → would crash setup). ``errors="replace"`` keeps it fail-soft: the read
+    survives, the missing canon rules are still merged, a structured result returns."""
+    work, _ = git_origin_repo
+    # A user .gitignore WITHOUT the canon block + a raw non-UTF-8 byte (0xFF, an
+    # invalid UTF-8 start byte). Write bytes directly so it is genuinely undecodable.
+    (work / ".gitignore").write_bytes(b"node_modules/\n\xff\xfe bad bytes\n")
+    _seed_managed_repo(work)  # commits the .gitignore + the managed marker
+
+    res = gs.self_heal_gitignore(work, allow_ci=True)  # must not raise
+
+    assert res.status == "committed", res
+    assert "/.shipwright/triage.outbox.jsonl" in (
+        work / ".gitignore"
+    ).read_text(encoding="utf-8", errors="replace")
+    assert h.git(work, "status", "--porcelain").stdout.strip() == ""
+
+
 def test_rolls_back_on_commit_rejection(git_origin_repo, tmp_path):
     # A rejecting pre-commit hook must leave git state untouched: no leftover
     # written/staged .gitignore.

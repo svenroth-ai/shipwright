@@ -94,6 +94,9 @@ def _restore(gi_path: Path, original: str | None, reset) -> None:
     """Best-effort rollback after a failed/timed-out commit: unstage then restore
     (or delete) the working-tree file. Never raises — there is already a real
     error to report."""
+    # If the suppressed `reset` itself fails, .gitignore may stay STAGED — but that
+    # is fail-safe: the step-5 outbox sweep's staged_changes guard then SKIPS (now
+    # surfaced, LOW-1) and re-sweeps next setup; no silent data loss.
     with contextlib.suppress(OSError, subprocess.TimeoutExpired):
         reset("reset", "-q", "--", GITIGNORE_PATH)
     with contextlib.suppress(OSError):
@@ -162,7 +165,13 @@ def self_heal_gitignore(
 
     # --- compute the merge (pure; single-sourced in gitignore_canon) -------
     gi_path = repo_root / GITIGNORE_PATH
-    existing = gi_path.read_text(encoding="utf-8") if gi_path.exists() else None
+    # ``errors="replace"`` keeps a non-UTF-8 ``.gitignore`` from raising a
+    # UnicodeDecodeError — a ValueError that setup.main's (GitError, OSError)
+    # handler does NOT catch, which would crash setup and break fail-soft.
+    existing = (
+        gi_path.read_text(encoding="utf-8", errors="replace")
+        if gi_path.exists() else None
+    )
     merged, changed, added = plan_merge(existing or "")
     if not changed:
         return HealResult("no_change")

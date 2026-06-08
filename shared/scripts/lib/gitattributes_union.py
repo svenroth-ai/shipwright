@@ -260,14 +260,14 @@ def self_heal_gitattributes(
 
     # --- compute the merge --------------------------------------------------
     ga_path = repo_root / GITATTRIBUTES_PATH
-    existing = ga_path.read_text(encoding="utf-8") if ga_path.exists() else None
+    # errors="replace": a non-UTF-8 file must not raise UnicodeDecodeError (uncaught by setup.main) — fail-soft, congruent with gitignore_selfheal.
+    existing = ga_path.read_text("utf-8", errors="replace") if ga_path.exists() else None
     merged, changed = merge_into(existing)
     if not changed:
         return HealResult("no_change")
 
     # Skip rather than risk a partial ``git commit -- <path>`` interacting with a
-    # user's staged WIP. The backfill is always an unstaged absence, so a
-    # non-empty index means "not our case" → no-op.
+    # user's staged WIP. The backfill is always an unstaged absence → non-empty index = no-op.
     if _git("diff", "--cached", "--quiet").returncode != 0:
         return HealResult("skipped", "staged_changes")
 

@@ -200,24 +200,30 @@ def setup(
         }
 
     # 4.5/4.6. Self-heal the canon scaffolds into the new worktree as chore commits
-    #      (→ ship in PR; guarded fail-soft no-op in the monorepo): the append-log
-    #      union .gitattributes AND the canonical .shipwright/ .gitignore block
-    #      (D3 — keeps the triage.outbox.jsonl buffer ignored in stale-cache repos).
-    for _label, _heal in (("gitattributes", self_heal_gitattributes(worktree_path)),
-                          ("gitignore", self_heal_gitignore(worktree_path))):
+    #      (→ ship in PR; guarded fail-soft no-op in the monorepo). Explicit + ordered:
+    #      gitattributes (4.5) MUST precede gitignore (4.6 — D3 outbox-ignore block);
+    #      both MUST leave a CLEAN index or the step-5 sweep staged-changes guard
+    #      false-skips. Each non-no_change status → warnings (observability parity).
+    ga = self_heal_gitattributes(worktree_path)
+    gi = self_heal_gitignore(worktree_path)
+    heal_warnings: list[str] = []
+    for _label, _heal in (("gitattributes", ga), ("gitignore", gi)):
         if _heal.status == "error":
             print(f"setup_iterate_worktree: {_label} self-heal {_heal.reason}",
                   file=sys.stderr)
+        if _heal.status != "no_change":
+            heal_warnings.append(f"{_label} self-heal {_heal.status}"
+                                 + (f": {_heal.reason}" if _heal.reason else ""))
 
     # 5. SWEEP the gitignored main-tree triage outbox into THIS worktree's tracked
-    #    triage.jsonl + commit on iterate/<slug> BEFORE snapshotting (campaign
-    #    2026-06-08 / D2): appends ride the PR to origin, not local main. Step-3
-    #    refreshed origin/<default> for the GC. Surface any non-clean sweep so a
-    #    caller never assumes delivery (skip recoverable next setup). lib/sweep_outbox.
+    #    triage.jsonl + commit on iterate/<slug> BEFORE snapshotting (D2): appends ride
+    #    the PR to origin, not local main. Step-3 refreshed origin/<default> for the GC.
+    #    Surface any non-clean sweep so a caller never assumes delivery — incl. `skipped`
+    #    (e.g. staged_changes from a self-heal residue) which else SILENTLY defers it.
     sweep = sweep_outbox_to_branch(main_root, worktree_path, default_branch=db)
     sweep_warning = (f"sweep-outbox {sweep.status}: {sweep.errors or sweep.reason}"
                      if sweep.status in ("invalid", "error", "skipped") else None)
-    if sweep.status in ("invalid", "error"):
+    if sweep.status in ("invalid", "error", "skipped"):
         print(f"setup_iterate_worktree: {sweep_warning}", file=sys.stderr)
 
     # 6. Snapshot the main tree + write the per-session run pointer.
@@ -232,7 +238,7 @@ def setup(
     )
     prune_stale_run_pointers(main_root)
 
-    warnings = [w for w in (fetch_detail, base_warning, sweep_warning) if w]
+    warnings = [w for w in (fetch_detail, base_warning, *heal_warnings, sweep_warning) if w]
     return 0, {
         "action": "created",
         "in_worktree": False,
