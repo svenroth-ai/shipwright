@@ -32,7 +32,6 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent.parent  # shared/scripts
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from lib.churn_merge import DERIVED_MDS  # noqa: E402
-from lib.reconcile_triage import reconcile_main_triage  # noqa: E402
 from tools import resolve_churn_conflicts as rcc  # noqa: E402
 
 
@@ -76,19 +75,14 @@ def integrate(
     project_root = Path(project_root).resolve()
     steps: list[str] = []
 
-    # Fold any uncommitted main-tree triage.jsonl background drift into a single
-    # chore(triage) commit BEFORE we touch origin/main, so the dirty tracked log
-    # can't block the merge (the 2026-06-07 failure). Resolves the MAIN root from
-    # this worktree internally; a structured no-op when there is no drift / a
-    # guard trips (incl. CI without opt-in). See lib/reconcile_triage.
-    recon = reconcile_main_triage(project_root)
-    steps.append(f"reconciled-main-triage:{recon.status}")
-    if recon.status in ("invalid", "error"):
-        # Fail-soft (the merge happens in THIS worktree, unaffected by main-tree
-        # drift) but never silent: a corrupt/un-committable main triage log is
-        # surfaced so the operator can fix it before the next sync.
-        print(f"integrate_main: reconcile-main-triage {recon.status}: "
-              f"{recon.errors or recon.reason}", file=sys.stderr)
+    # NB (campaign 2026-06-08-triage-outbox-delivery / D2, Codex Q1): the merge
+    # below runs in THIS worktree, never against the main tree, and with D1+D2
+    # the main tracked triage.jsonl no longer accrues background drift (idle-main
+    # producers route to the gitignored outbox, swept into the iterate branch at
+    # worktree setup). The old reconcile_main_triage(project_root) call here was
+    # therefore vestigial AND the chief generator of the local-main fold-commit
+    # pile-up — so it is intentionally NOT called. The manual fallback remains at
+    # tools/reconcile_main_triage.py for a hand pull with no imminent iterate.
 
     if do_fetch and os.environ.get("SHIPWRIGHT_ITERATE_NO_FETCH") != "1":
         fetched = _git(project_root, "fetch", "origin", check=False)

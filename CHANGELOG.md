@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Propagate the triage outbox gitignore into adopted repos explicitly: the canonical `.shipwright/` ignore template now carries an explicit `/.shipwright/triage.outbox.jsonl` line (redundant with the `/.shipwright/*` whitelist wildcard but pins intent, guarded against a future `!`-re-include) so the per-tree background-triage buffer can never silently start tracking. Adopt scaffolds it via `gitignore_canon`, and `setup_iterate_worktree` (step 4.6) now self-heals the canon block into already-adopted / stale-cache repos as a guarded chore commit on the iterate branch (sibling of the `.gitattributes` union self-heal; merge logic single-sourced in `gitignore_canon.plan_merge`). Docs: hooks-and-pipeline.md artifact-write matrix gains an outbox row, and the glossary defines the Outbox term.
+
 ## [v0.24.0] - 2026-06-07
 
 ### Added

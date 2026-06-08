@@ -354,31 +354,23 @@ def _emit_drift_to_triage(
     timestamp_drifted: list[str],
     content_findings: list[str],
 ) -> int:
-    """Append drift findings to ``.shipwright/triage.jsonl`` and resolve
-    stale ones.
+    """Append drift findings to the triage store and resolve stale ones.
 
     One triage item per finding. ``source="drift"``, ``severity="medium"``,
-    ``kind="maintenance"``. Dedup key shape: ``f"drift:{file}:{kind}"`` with
+    ``kind="maintenance"``, dedup key ``f"drift:{file}:{kind}"`` with
     ``kind ∈ {"timestamp", "content"}``. ``match_commit=False`` +
-    ``window_seconds=None`` means a given drift finding stays as ONE item
-    indefinitely until it resolves or the operator dismisses it (same
-    cross-session shape as the compliance producer). The ``content`` key's
-    path is canonicalized via :func:`_canonical_anchor` so drive-letter
-    casing can't split one drift across two items (Bug 1 fix).
+    ``window_seconds=None`` → a drift finding stays as ONE item until it
+    resolves / is dismissed. The ``content`` path is canonicalized via
+    :func:`_canonical_anchor` so drive-letter casing can't split one drift
+    (Bug 1).
 
-    **Resolve pass (Bug 2 fix):** after appending, every still-open
-    (``status == "triage"``) ``source="drift"`` item produced by THIS
-    detector whose dedup key is absent from the current finding set flips
-    to ``dismissed`` with ``reason="driftResolved"`` — mirrors
-    ``audit_detector.py``'s ``auditResolved`` pattern. Scope is narrowed
-    to keys ending ``:timestamp`` / ``:content``: ``artifact_sync.py``
-    also emits ``source="drift"`` (with ``:artifact`` keys) and owns its
-    own surface — this detector must never retract another producer's
-    items.
+    **Resolve pass (Bug 2):** after appending, every still-open
+    (``status == "triage"``) ``source="drift"`` item THIS detector owns (key
+    ending ``:timestamp`` / ``:content`` — NOT ``artifact_sync``'s ``:artifact``)
+    whose key is absent from the current set flips to ``dismissed``.
 
-    Best-effort: per-item errors logged to stderr and swallowed. The
-    SessionStart hook MUST always exit 0 (informational), so emission
-    failure can never block. Returns the count of NEW items appended.
+    Best-effort: per-item errors logged + swallowed (the SessionStart hook MUST
+    exit 0). Returns the count of NEW items appended.
     """
     try:
         scripts_dir = os.path.join(
@@ -390,12 +382,18 @@ def _emit_drift_to_triage(
             append_triage_item_idempotent,
             mark_status,
             read_all_items,
+            should_route_to_outbox,
         )
     except Exception as exc:  # noqa: BLE001
         sys.stderr.write(
             f"[drift] triage import failed: {type(exc).__name__}: {exc}\n"
         )
         return 0
+
+    # D1 review cascade: SessionStart is a genuine idle-main background
+    # appender — route its appends to the outbox on idle main WITH origin
+    # (else tracked). The resolve-pass mark_status is residence-derived.
+    to_outbox = should_route_to_outbox(project_root)
 
     # The full set of dedup keys this run produced — drives BOTH the
     # idempotent append and the resolve pass below.
@@ -425,6 +423,7 @@ def _emit_drift_to_triage(
                 dedup_key=f"drift:{fname}:timestamp",
                 match_commit=False,
                 window_seconds=None,
+                to_outbox=to_outbox,
             )
             if new_id is not None:
                 appended += 1
@@ -450,6 +449,7 @@ def _emit_drift_to_triage(
                 dedup_key=f"drift:{_content_anchor(finding)}:content",
                 match_commit=False,
                 window_seconds=None,
+                to_outbox=to_outbox,
             )
             if new_id is not None:
                 appended += 1

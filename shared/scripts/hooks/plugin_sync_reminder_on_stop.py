@@ -113,10 +113,17 @@ def _emit_triage(project_root: Path, rel_paths: list[str]) -> None:
     now **git-tracked**, not gitignored. The redirect is an *intentional* routing
     choice for a main-tree-curated backlog — **not** a "the worktree copy is
     gitignored + discarded on cleanup" workaround (that premise is now false).
-    The mid-iterate main-tree write is leak-guard-exempt because C2 added
-    ``triage.jsonl`` (+ ``.lock``) to ``_MAIN_TREE_WRITE_EXEMPT``
-    (``worktree_isolation.py``), mirroring the ``events.jsonl`` exemption, so
-    f0/f11 do not flag it.
+
+    NOTE (campaign ``2026-06-08-triage-outbox-delivery``, D1): this background
+    Stop-hook producer now appends with ``to_outbox=True`` — the durable write
+    lands in the GITIGNORED per-tree outbox ``.shipwright/triage.outbox.jsonl``,
+    NOT the tracked log. That kills main-tree drift at its source (the tracked
+    log stays clean on idle main); the D2 sweep folds the outbox into the
+    iterate PR branch and GCs it. ``read_all_items`` returns tracked ∪ outbox,
+    so the finding is still visible to Python consumers immediately. The
+    leak-guard ignores the outbox automatically (gitignored → never in
+    ``git status --porcelain``), so no ``_MAIN_TREE_WRITE_EXEMPT`` entry is
+    needed for it.
 
     The banner + once-per-session sentinel still key off the worktree root (the
     live SDLC context); only this durable append redirects.
@@ -147,6 +154,7 @@ def _emit_triage(project_root: Path, rel_paths: list[str]) -> None:
             dedup_key="plugin-sync:cache-drift",
             match_commit=False,
             window_seconds=None,
+            to_outbox=True,
         )
     except Exception as exc:  # noqa: BLE001
         print(f"plugin_sync_reminder: triage emit failed ({exc!r})", file=sys.stderr)

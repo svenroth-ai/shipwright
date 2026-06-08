@@ -220,6 +220,7 @@ def emit_phase_quality_backlog(
             append_triage_item_idempotent,
             mark_status,
             read_all_items,
+            should_route_to_outbox,
         )
     except Exception as exc:  # noqa: BLE001
         sys.stderr.write(
@@ -227,6 +228,12 @@ def emit_phase_quality_backlog(
             f"{type(exc).__name__}: {exc}\n"
         )
         return {"appended": 0, "dismissed": 0, "open_fails": 0}
+
+    # D1 (2026-06-08-triage-outbox-delivery, review cascade): Stop hook is a
+    # genuine idle-main background appender — route its append to the outbox on
+    # idle main WITH origin; iterate/* + no-origin route False → tracked. The
+    # dismiss-pass mark_status is residence-derived (no flag needed).
+    to_outbox = should_route_to_outbox(project_root)
 
     fails = collect_in_scope_fails(project_root)
 
@@ -275,6 +282,7 @@ def emit_phase_quality_backlog(
             match_commit=False,
             window_seconds=None,
             launch_payload=_build_launch_payload(fails),
+            to_outbox=to_outbox,
         )
     except Exception as exc:  # noqa: BLE001
         sys.stderr.write(

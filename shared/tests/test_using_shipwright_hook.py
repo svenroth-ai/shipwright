@@ -180,10 +180,13 @@ def test_reminder_blocks_once_and_emits_triage(tmp_path: Path):
     assert "update-marketplace.sh" in payload["reason"]
     assert "check_plugin_cache_sync.py" in payload["reason"]
 
-    # Triage item appended (durable follow-up). triage.jsonl is compact JSON,
-    # so assert on the value substring rather than a spaced key:value form.
-    triage = (root / ".shipwright" / "triage.jsonl").read_text(encoding="utf-8")
-    assert "plugin-sync" in triage
+    # Triage item appended (durable follow-up). Since campaign
+    # 2026-06-08-triage-outbox-delivery (D1) the background producer routes to
+    # the GITIGNORED outbox buffer (to_outbox=True), not the tracked log — so
+    # the tracked triage.jsonl stays clean (no main drift). Compact JSON, so
+    # assert on the value substring rather than a spaced key:value form.
+    outbox = (root / ".shipwright" / "triage.outbox.jsonl").read_text(encoding="utf-8")
+    assert "plugin-sync" in outbox
 
     # Block-once: a second Stop in the same session is silent (no hard loop).
     assert reminder.run(project_root=root, session_id="sid-Y") == ""

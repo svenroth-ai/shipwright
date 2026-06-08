@@ -30,7 +30,11 @@ _SEVERITY_MAP = {
 
 
 def _triage_api():
-    """(append_idempotent, mark_status, read_all_items) or (None, None, None)."""
+    """(append_idempotent, mark_status, read_all_items, should_route_to_outbox).
+
+    Returns a 4-tuple of (None, None, None, None) when the shared triage module
+    can't be imported (best-effort producer — never blocks the audit).
+    """
     shared_scripts = Path(__file__).resolve().parents[4] / "shared" / "scripts"
     if str(shared_scripts) not in sys.path:
         sys.path.insert(0, str(shared_scripts))
@@ -39,10 +43,16 @@ def _triage_api():
             append_triage_item_idempotent,
             mark_status,
             read_all_items,
+            should_route_to_outbox,
         )
-        return append_triage_item_idempotent, mark_status, read_all_items
+        return (
+            append_triage_item_idempotent,
+            mark_status,
+            read_all_items,
+            should_route_to_outbox,
+        )
     except ImportError:
-        return None, None, None
+        return None, None, None, None
 
 
 def _normalize_fails(report: Any) -> list[dict[str, str]]:
@@ -121,9 +131,17 @@ def emit_compliance_backlog(
 
     Best-effort: returns ``{"appended","dismissed","open_fails"}``.
     """
-    append_idempotent, mark_status_fn, read_all_items = _triage_api()
+    append_idempotent, mark_status_fn, read_all_items, route = _triage_api()
     if append_idempotent is None:
         return {"appended": 0, "dismissed": 0, "open_fails": 0}
+
+    # D1 (campaign 2026-06-08-triage-outbox-delivery): on the idle main tree
+    # the compliance backlog producer fires as background — route its append +
+    # dismiss to the gitignored outbox so the tracked log stays clean (no main
+    # drift). Inside an iterate/* branch (worktree or runner) it writes the
+    # tracked log directly (those ship in the PR). read_all_items is union-aware,
+    # so the rolling item + its dismiss resolve consistently across the split.
+    to_outbox = bool(route(project_root)) if route is not None else False
 
     fails = _normalize_fails(report)
 
@@ -145,6 +163,11 @@ def emit_compliance_backlog(
 
     def _dismiss(item_id: str, reason: str) -> int:
         try:
+            # mark_status is residence-derived (D1 review cascade): it writes
+            # the dismiss to the SAME store the item's append lives in (outbox
+            # or tracked), so a no-longer-passed ``to_outbox`` flag can't split
+            # the status from its append. The append below still routes by
+            # ``to_outbox`` (idle-main background → outbox).
             mark_status_fn(
                 project_root, item_id, new_status="dismissed",
                 by="complianceBacklog", reason=reason,
@@ -181,6 +204,7 @@ def emit_compliance_backlog(
             match_commit=False,
             window_seconds=None,
             launch_payload=_build_launch_payload(fails),
+            to_outbox=to_outbox,
         )
     except Exception as exc:  # noqa: BLE001
         sys.stderr.write(

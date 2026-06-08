@@ -46,7 +46,8 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.gitattributes_union import self_heal_gitattributes  # noqa: E402
-from lib.reconcile_triage import reconcile_main_triage  # noqa: E402
+from lib.gitignore_selfheal import self_heal_gitignore  # noqa: E402
+from lib.sweep_outbox import sweep_outbox_to_branch  # noqa: E402
 from lib.worktree_isolation import (  # noqa: E402
     GitError,
     WORKTREES_DIRNAME,
@@ -198,24 +199,32 @@ def setup(
             "detail": str(exc),
         }
 
-    # 4.5. Self-heal the append-log union merge driver into the new worktree's
-    #      .gitattributes (chore commit → ships in PR; guarded fail-soft no-op
-    #      in the monorepo / non-managed repos). See lib/gitattributes_union.
-    heal = self_heal_gitattributes(worktree_path)
-    if heal.status == "error":
-        print(f"setup_iterate_worktree: gitattributes self-heal {heal.reason}",
-              file=sys.stderr)
+    # 4.5/4.6. Self-heal the canon scaffolds into the new worktree as chore commits
+    #      (→ ship in PR; guarded fail-soft no-op in the monorepo). Explicit + ordered:
+    #      gitattributes (4.5) MUST precede gitignore (4.6 — D3 outbox-ignore block);
+    #      both MUST leave a CLEAN index or the step-5 sweep staged-changes guard
+    #      false-skips. Each non-no_change status → warnings (observability parity).
+    ga = self_heal_gitattributes(worktree_path)
+    gi = self_heal_gitignore(worktree_path)
+    heal_warnings: list[str] = []
+    for _label, _heal in (("gitattributes", ga), ("gitignore", gi)):
+        if _heal.status == "error":
+            print(f"setup_iterate_worktree: {_label} self-heal {_heal.reason}",
+                  file=sys.stderr)
+        if _heal.status != "no_change":
+            heal_warnings.append(f"{_label} self-heal {_heal.status}"
+                                 + (f": {_heal.reason}" if _heal.reason else ""))
 
-    # 5. Fold any uncommitted main-tree triage.jsonl background drift into one
-    #    chore(triage) commit BEFORE snapshotting — so the background appends are
-    #    committed (durable, not orphaned by this new worktree branching off
-    #    origin/main) and the snapshot baseline is clean. Structured no-op when
-    #    there is no drift / a guard trips. See lib/reconcile_triage (AC-6).
-    recon = reconcile_main_triage(main_root)
-    if recon.status in ("invalid", "error"):
-        # Fail-soft (the leak-guard exempts triage.jsonl anyway) but not silent.
-        print(f"setup_iterate_worktree: reconcile-main-triage {recon.status}: "
-              f"{recon.errors or recon.reason}", file=sys.stderr)
+    # 5. SWEEP the gitignored main-tree triage outbox into THIS worktree's tracked
+    #    triage.jsonl + commit on iterate/<slug> BEFORE snapshotting (D2): appends ride
+    #    the PR to origin, not local main. Step-3 refreshed origin/<default> for the GC.
+    #    Surface any non-clean sweep so a caller never assumes delivery — incl. `skipped`
+    #    (e.g. staged_changes from a self-heal residue) which else SILENTLY defers it.
+    sweep = sweep_outbox_to_branch(main_root, worktree_path, default_branch=db)
+    sweep_warning = (f"sweep-outbox {sweep.status}: {sweep.errors or sweep.reason}"
+                     if sweep.status in ("invalid", "error", "skipped") else None)
+    if sweep.status in ("invalid", "error", "skipped"):
+        print(f"setup_iterate_worktree: {sweep_warning}", file=sys.stderr)
 
     # 6. Snapshot the main tree + write the per-session run pointer.
     snap_path = write_snapshot(main_root, run_id)
@@ -229,7 +238,7 @@ def setup(
     )
     prune_stale_run_pointers(main_root)
 
-    warnings = [w for w in (fetch_detail, base_warning) if w]
+    warnings = [w for w in (fetch_detail, base_warning, *heal_warnings, sweep_warning) if w]
     return 0, {
         "action": "created",
         "in_worktree": False,
@@ -251,21 +260,12 @@ def main(argv: list[str] | None = None) -> int:
         description="Unconditional worktree setup for /shipwright-iterate.",
     )
     parser.add_argument("--project-root", default=".")
-    parser.add_argument(
-        "--slug",
-        required=True,
-        help="Iterate slug — branch iterate/<slug>, worktree .worktrees/<slug>",
-    )
-    parser.add_argument(
-        "--run-id",
-        required=True,
-        help="Run id — identifies the main-tree snapshot + run pointer",
-    )
-    parser.add_argument(
-        "--main",
-        default=None,
-        help="Default-branch override (else resolved from origin/HEAD)",
-    )
+    parser.add_argument("--slug", required=True,
+                        help="Iterate slug — branch iterate/<slug>, worktree .worktrees/<slug>")
+    parser.add_argument("--run-id", required=True,
+                        help="Run id — identifies the main-tree snapshot + run pointer")
+    parser.add_argument("--main", default=None,
+                        help="Default-branch override (else resolved from origin/HEAD)")
     parser.add_argument(
         "--session-id",
         default=os.environ.get("SHIPWRIGHT_SESSION_ID"),

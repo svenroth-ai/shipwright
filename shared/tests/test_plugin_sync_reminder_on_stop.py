@@ -86,9 +86,9 @@ def _write_marker(project_root: Path, session_id: str, rel_paths: list[str]) -> 
     )
 
 
-def _read_triage_items(root: Path) -> list[dict]:
-    """Return the ``append`` events from ``root``'s triage store (tolerant)."""
-    path = root / ".shipwright" / "triage.jsonl"
+def _read_triage_items(root: Path, *, filename: str) -> list[dict]:
+    """Return the ``append`` events from ``root``'s ``filename`` log (tolerant)."""
+    path = root / ".shipwright" / filename
     if not path.exists():
         return []
     items: list[dict] = []
@@ -105,9 +105,25 @@ def _read_triage_items(root: Path) -> list[dict]:
     return items
 
 
-def _plugin_sync_items(root: Path) -> list[dict]:
-    """plugin-sync ``append`` items in ``root``'s triage store."""
-    return [r for r in _read_triage_items(root) if r.get("source") == "plugin-sync"]
+def _plugin_sync_outbox_items(root: Path) -> list[dict]:
+    """plugin-sync ``append`` items in ``root``'s GITIGNORED outbox buffer.
+
+    Since campaign 2026-06-08-triage-outbox-delivery (D1) the background
+    Stop-hook producer appends with ``to_outbox=True`` → the durable write
+    lands in ``triage.outbox.jsonl``, NOT the tracked ``triage.jsonl``.
+    """
+    return [
+        r for r in _read_triage_items(root, filename="triage.outbox.jsonl")
+        if r.get("source") == "plugin-sync"
+    ]
+
+
+def _plugin_sync_tracked_items(root: Path) -> list[dict]:
+    """plugin-sync ``append`` items in ``root``'s TRACKED ``triage.jsonl``."""
+    return [
+        r for r in _read_triage_items(root, filename="triage.jsonl")
+        if r.get("source") == "plugin-sync"
+    ]
 
 
 # ----------------------------------------------------------------------
@@ -137,16 +153,21 @@ def test_run_noops_without_pending_edits(tmp_path):
 
 def test_triage_item_emitted_non_git_fallback(tmp_path):
     """Non-git monorepo root: resolve_main_repo_root is None → fallback writes
-    the triage item next to ``project_root`` (plain-checkout/legacy behaviour)."""
+    the triage item next to ``project_root`` (plain-checkout/legacy behaviour).
+
+    D1: the background producer hardcodes ``to_outbox=True``, so the durable
+    write lands in the GITIGNORED outbox buffer, never the tracked log."""
     _make_monorepo(tmp_path)
     _write_marker(tmp_path, "sid", ["plugins/x/skills/x/SKILL.md"])
 
     out = psr.run(project_root=tmp_path, session_id="sid")
 
     assert "PLUGIN-CACHE REMINDER" in out
-    items = _plugin_sync_items(tmp_path)
+    items = _plugin_sync_outbox_items(tmp_path)
     assert len(items) == 1
     assert items[0]["dedupKey"] == "plugin-sync:cache-drift"
+    # Tracked log stays clean — no main drift (AC1).
+    assert _plugin_sync_tracked_items(tmp_path) == []
 
 
 # ----------------------------------------------------------------------
@@ -155,13 +176,19 @@ def test_triage_item_emitted_non_git_fallback(tmp_path):
 
 
 def test_triage_item_written_to_main_repo_from_worktree(tmp_path):
-    """From inside an iterate worktree, the triage item lands in the MAIN log.
+    """From inside an iterate worktree, the triage item lands in the MAIN
+    repo's OUTBOX.
 
     Regression guard: ``_emit_triage`` previously appended to
     ``project_root/.shipwright/triage.jsonl`` where ``project_root`` is the
     worktree root — a gitignored, throwaway log discarded by
     ``git worktree remove``. The durable audit item must instead be written to
     the main repo via ``resolve_main_repo_root``.
+
+    D1: the producer now routes ``to_outbox=True``, so the main-repo write
+    lands in the GITIGNORED ``triage.outbox.jsonl`` buffer (visible via the
+    union reader; folded into a PR + GC'd by the D2 sweep) — NOT the tracked
+    ``triage.jsonl`` (which therefore accrues no main-tree drift).
     """
     main_root = tmp_path / "main"
     _init_monorepo_git(main_root)
@@ -189,12 +216,15 @@ def test_triage_item_written_to_main_repo_from_worktree(tmp_path):
             / "plugin_sync_reminded.wt-sid"
         ).exists()
 
-        # Durable audit item lives in the MAIN repo log...
-        main_items = _plugin_sync_items(main_root)
+        # Durable audit item lives in the MAIN repo's OUTBOX buffer...
+        main_items = _plugin_sync_outbox_items(main_root)
         assert len(main_items) == 1
         assert main_items[0]["dedupKey"] == "plugin-sync:cache-drift"
-        # ...and NOT in the throwaway worktree log.
-        assert _plugin_sync_items(worktree_root) == []
+        # ...NOT the tracked MAIN log (no main drift, AC1)...
+        assert _plugin_sync_tracked_items(main_root) == []
+        # ...and NOT in the throwaway worktree log (tracked or outbox).
+        assert _plugin_sync_outbox_items(worktree_root) == []
+        assert _plugin_sync_tracked_items(worktree_root) == []
     finally:
         try:
             _git(["worktree", "remove", "--force", str(worktree_root)], main_root)

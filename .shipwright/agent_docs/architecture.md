@@ -191,3 +191,9 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - **ADR-131** (2026-06-05): Degraded scanner legs propagate via a scan_errors side-channel, not synthetic findings
 
 - **ADR-133** (2026-06-05): Machine-churn-only triage GC tool
+
+- **ADR-139** (2026-06-08): Gitignored per-tree triage outbox + union reader
+
+- **ADR-140** (2026-06-08): Sweep triage outbox into PR branch; GC only origin-delivered lines
+
+- **iterate-2026-06-08-outbox-delivery-d3** (2026-06-08): Convention — the canonical `.shipwright/` artifact-ignore block (incl. an explicit `/.shipwright/triage.outbox.jsonl` line, redundant with the `/.shipwright/*` wildcard, that pins intent) is now self-healed into every adopted / stale-cache repo on its next iterate: new `lib/gitignore_selfheal.self_heal_gitignore` (sibling of `self_heal_gitattributes`, merge single-sourced in `gitignore_canon.plan_merge`) wired into `setup_iterate_worktree` step 4.6 as a guarded `chore` commit that ships in the PR — `shared/` change != deployed for adopted repos (Codex Q6). A no-negation guard test + template↔framework congruence test make the coverage machine-checkable. (campaign 2026-06-08-triage-outbox-delivery / D3)

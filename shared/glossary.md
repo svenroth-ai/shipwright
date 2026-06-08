@@ -64,6 +64,28 @@
   Source of Action-Units. Producers: phase-quality + compliance
   Stop-hooks, the drift / security / performance / F0.5 emitters, and the
   GitHub-findings importer.
+- **Outbox** — The per-tree, **gitignored** background-triage buffer
+  `.shipwright/triage.outbox.jsonl` (campaign
+  `2026-06-08-triage-outbox-delivery`). When a background Producer would
+  append to the tracked `.shipwright/triage.jsonl` but HEAD is on the
+  default branch with an `origin` remote (idle main), it appends HERE
+  instead — so idle main never accrues uncommitted tracked-log drift that
+  would block a fast-forward pull. Kept ignored by the canon
+  `/.shipwright/*` whitelist wildcard (pinned by an explicit
+  `/.shipwright/triage.outbox.jsonl` line — never a `!`-re-include). The
+  guarantee is scoped to the managed BEGIN/END block: a user `!`-rule placed
+  AFTER the block (git honours the last matching pattern) can still override it,
+  which is out of contract. The
+  Outbox is **swept** into the iterate PR branch by
+  `setup_iterate_worktree` (`lib.sweep_outbox`, under the canonical triage
+  lock), then **GC'd** once the line is origin-delivered (by semantic `id`
+  for appends, normalized text for status flips). `triage.read_all_items`
+  **union-reads** tracked ∪ Outbox so Consumers see background findings
+  immediately, before the sweep. The canon ignore block is self-healed
+  into stale-cache managed repos by `lib.gitignore_selfheal` at the next
+  iterate setup. Related: Producer, Consumer, Worktree-Isolation,
+  Anti-Ratchet (the Outbox is NOT a ratchet of the tracked log — it is a
+  staging buffer, drained exactly-once via `merge=union` + dedup).
 - **Iterate** — A change to a completed project (`shipwright_run_config`
   status `complete`). Skills: `/shipwright-iterate`, with Path A
   (feature), Path B (change), Path C (bug). The medium+ flow lives

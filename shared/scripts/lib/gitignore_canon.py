@@ -161,6 +161,23 @@ def merge_canonical_block(
     }
 
 
+def plan_merge(text: str, *, template_path: Path | None = None) -> tuple[str, bool, list[str]]:
+    """Pure planner: return ``(merged_text, changed, added)`` for *text*.
+
+    Side-effect-free twin of :func:`merge_canonical_block` (which writes the
+    file). Reuses the SAME merge primitives (``read_canonical_rules`` +
+    ``_insert_missing``) so the self-heal commit-path (``lib.gitignore_selfheal``)
+    never reinvents the merge. ``added`` is the ordered subset of canonical rules
+    missing from *text*.
+    """
+    canonical = read_canonical_rules(template_path)
+    present = {line.strip() for line in text.splitlines()}
+    missing = [rule for rule in canonical if rule not in present]
+    if not missing:
+        return text, False, []
+    return _insert_missing(text, missing), True, missing
+
+
 def main(argv: list[str] | None = None) -> int:
     """CLI: merge the canonical block into a project's .gitignore.
 

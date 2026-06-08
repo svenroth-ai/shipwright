@@ -93,6 +93,15 @@ shipwright_events.jsonl.lock
 # legacy path - do not remove. Sub-Iterate F of compliance migration (2026-04-29).
 /compliance/
 
+# Per-tree triage outbox buffer (campaign 2026-06-08-triage-outbox-delivery, D1).
+# .shipwright/triage.outbox.jsonl is a GITIGNORED transient buffer for idle-main
+# background producers; the D2 sweep folds it into the iterate PR branch + GCs it.
+# It is ALREADY ignored by the `/.shipwright/*` wildcard in the managed block
+# below — and is deliberately NOT given a `!` re-include there (only the tracked
+# `triage.jsonl` is). This comment is documentation only (no rule), so it stays
+# OUTSIDE the managed/congruence-checked block. D3 propagates the same intent to
+# adopted repos via the canon template.
+
 # UV
 .uv/
 
@@ -132,6 +141,13 @@ Spec/
 # triage.jsonl is the tracked SSoT backlog (mirrors shipwright_events.jsonl); the
 # .lock + .bak stay ignored by the /.shipwright/* wildcard above (negation is exact).
 !/.shipwright/triage.jsonl
+# triage.outbox.jsonl is the per-tree, GITIGNORED background-triage buffer
+# (campaign 2026-06-08-triage-outbox-delivery): idle-main producers append HERE
+# (never the tracked triage.jsonl), and setup_iterate_worktree sweeps it into the
+# iterate PR branch. It MUST stay ignored — the explicit line below is redundant
+# with the /.shipwright/* wildcard but pins the intent so a future `!`-negation
+# can never silently start tracking the buffer. DO NOT add a `!`-re-include for it.
+/.shipwright/triage.outbox.jsonl
 # Re-exclude transient / internal / generated content inside the doc homes:
 /.shipwright/adopt/backups/
 /.shipwright/adopt/screenshots/

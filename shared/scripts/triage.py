@@ -41,6 +41,13 @@ from uuid import uuid4
 
 SCHEMA_VERSION = 1
 TRIAGE_FILE = "triage.jsonl"
+# Per-tree, GITIGNORED transient buffer for background main-tree producers
+# (campaign 2026-06-08-triage-outbox-delivery / D1). Idle-main producers route
+# here instead of the tracked TRIAGE_FILE so the tracked log stays clean (no
+# main drift); the sweep (D2) folds it into the PR branch and GCs it. The
+# outbox carries NO schema header — it is a buffer, not a store — and shares
+# the canonical TRIAGE_FILE lock so producer-append and sweep serialize.
+OUTBOX_FILE = "triage.outbox.jsonl"
 _SHIPWRIGHT_DIR = ".shipwright"
 
 STATUSES = ("triage", "promoted", "dismissed", "snoozed")
@@ -121,8 +128,46 @@ def _triage_path(project_root: Path | str) -> Path:
     return Path(project_root) / _SHIPWRIGHT_DIR / TRIAGE_FILE
 
 
+def _outbox_path(project_root: Path | str) -> Path:
+    return Path(project_root) / _SHIPWRIGHT_DIR / OUTBOX_FILE
+
+
 def _lock_path(project_root: Path | str) -> Path:
+    # The outbox shares this ONE canonical lock so producer-append and the D2
+    # sweep (which holds it across read->commit) serialize — do NOT add a
+    # separate outbox lock (Codex Q4 data-loss invariant).
     return Path(project_root) / _SHIPWRIGHT_DIR / (TRIAGE_FILE + ".lock")
+
+
+def should_route_to_outbox(project_root: Path | str) -> bool:
+    """True iff a real delivery path exists AND HEAD is the default branch.
+
+    BOTH required (D1 review cascade, F2): (1) an ``origin`` remote — the outbox
+    is only delivered via the D2 sweep → PR → ``origin`` path, and
+    ``default_branch`` falls back to literal ``"main"`` with no ``origin/HEAD``,
+    so a no-origin repo on ``main`` would route spuriously and BURY the finding;
+    (2) ``current_branch == default_branch`` (idle main, not an ``iterate/*``
+    branch whose writes ship in the PR — branch-based, NOT ``is_worktree``).
+    Every no-origin repo, non-default branch, and git error fail safe to tracked.
+    """
+    try:
+        scripts_dir = str(Path(__file__).resolve().parent)
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        from lib.worktree_isolation import (  # noqa: PLC0415
+            current_branch,
+            default_branch,
+            run_git,
+        )
+
+        root = Path(project_root)
+        has_origin = (
+            run_git(["remote", "get-url", "origin"], cwd=root, check=False).returncode
+            == 0
+        )
+        return has_origin and current_branch(root) == default_branch(root)
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def _now_z() -> str:
@@ -225,9 +270,12 @@ def _ensure_header(project_root: Path | str) -> None:
 # Low-level read
 # ---------------------------------------------------------------------------
 
-def _iter_raw_lines(project_root: Path | str) -> list[dict]:
-    """Tolerant reader — skip JSONDecodeError lines, keep file order."""
-    path = _triage_path(project_root)
+def _iter_raw_lines_at(path: Path) -> list[dict]:
+    """Tolerant reader for ONE file — skip JSONDecodeError lines, keep order.
+
+    ``line.strip()`` already absorbs a trailing ``\\r`` (CRLF probe), so a
+    Windows-written or human-edited outbox line round-trips unchanged.
+    """
     if not path.exists():
         return []
     out: list[dict] = []
@@ -243,6 +291,53 @@ def _iter_raw_lines(project_root: Path | str) -> list[dict]:
                 stacklevel=2,
             )
     return out
+
+
+def _append_ids_at(path: Path) -> set[str]:
+    """Set of `append`-event ids in ONE file (residence probe for mark_status)."""
+    return {
+        ln["id"] for ln in _iter_raw_lines_at(path)
+        if isinstance(ln, dict) and ln.get("event") == "append"
+    }
+
+
+def _iter_raw_lines(project_root: Path | str) -> list[dict]:
+    """Tolerant union reader — tracked lines THEN outbox lines, file order.
+
+    The union (campaign 2026-06-08-triage-outbox-delivery / D1) makes
+    background producer appends + status-flips that land in the outbox visible
+    to every Python consumer immediately, without a sweep. Resolution is by id
+    in :func:`read_all_items`, so a line present in both (post-sweep, pre-GC)
+    collapses to one item.
+    """
+    out: list[dict] = []
+    for path in (_triage_path(project_root), _outbox_path(project_root)):
+        out.extend(_iter_raw_lines_at(path))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Low-level write (caller holds the lock)
+# ---------------------------------------------------------------------------
+
+def _append_line(project_root: Path | str, line: str, *, to_outbox: bool) -> None:
+    """Append one JSONL line under the held lock.
+
+    Tracked target → ensure the schema header first. Outbox target → no
+    header (it is a transient buffer; :func:`read_all_items` ignores
+    non-append/status events anyway), just ensure the directory exists.
+    """
+    if to_outbox:
+        path = _outbox_path(project_root)
+        path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        _ensure_header(project_root)
+        path = _triage_path(project_root)
+    # FIX A: gitignored outbox → newline="" keeps LF on all platforms (D2 ADR).
+    with open(path, "a", encoding="utf-8", newline="" if to_outbox else None) as fp:
+        fp.write(line)
+        fp.flush()
+        os.fsync(fp.fileno())
 
 
 # ---------------------------------------------------------------------------
@@ -265,8 +360,14 @@ def append_triage_item(
     fr_id: str | None = None,
     suite_id: str | None = None,
     event_id: str | None = None,
+    to_outbox: bool = False,
 ) -> str:
     """Append a new triage item. Returns the new `trg-<8hex>` id.
+
+    `to_outbox` (D1): True writes the per-tree GITIGNORED outbox buffer
+    instead of the tracked store (idle-main background producers → no main
+    drift). Default False preserves prior behavior; the write still serializes
+    on the canonical lock and is visible immediately via the union reader.
 
     Auto-creates `.shipwright/triage.jsonl` with the schema header on
     first call (so producers are robust against adopt-not-yet-run repos
@@ -284,23 +385,15 @@ def append_triage_item(
     field is preserved so the aggregator and downstream tooling can
     correlate items across runs.
 
-    `launch_payload` (iterate-2026-05-20-triage-launch-surface) is an
-    optional producer-generated, ready-to-paste block — typically a
-    slash command + context — that the operator copies from the inbox
-    view into a new Claude session to start the matching run. Stored
-    verbatim under the wire key `launchPayload` and ALWAYS persisted
-    (as `null` when omitted) so consumers can read it without a
-    `.get()`-with-default. The producer freezes the payload at first
-    append; subsequent idempotent calls leave the on-disk value
-    unchanged (AC-8). Legacy producers may keep omitting this kwarg —
-    null is the wire default.
+    `launch_payload` (iterate-2026-05-20-triage-launch-surface) is an optional
+    ready-to-paste block (slash command + context) the operator copies into a
+    new session. Stored verbatim under `launchPayload`, ALWAYS persisted (null
+    when omitted), frozen at first append (AC-8).
 
     `fr_id` / `suite_id` / `event_id` (iterate-2026-05-21-triage-producer-contract):
-    optional cross-artifact reference fields that consumers — primarily
-    the compliance RTM generator — use to render `FAIL → [trg-XXX](...)`
-    links from a failing FR row directly to the matching triage card.
-    Persisted under camelCase keys `frId` / `suiteId` / `eventId`. Legacy
-    producers may omit all three — null is the wire default. Schema:
+    optional cross-artifact refs the RTM generator uses to render
+    `FAIL → [trg-XXX](...)` links. Persisted under camelCase `frId` / `suiteId`
+    / `eventId`; null is the wire default. Schema:
     `shared/schemas/triage_item.schema.json`.
     """
     if severity not in SEVERITIES:
@@ -342,12 +435,7 @@ def append_triage_item(
     line = json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
 
     with _FileLock(_lock_path(project_root)):
-        _ensure_header(project_root)
-        path = _triage_path(project_root)
-        with open(path, "a", encoding="utf-8") as fp:
-            fp.write(line)
-            fp.flush()
-            os.fsync(fp.fileno())
+        _append_line(project_root, line, to_outbox=to_outbox)
 
     return item_id
 
@@ -370,8 +458,14 @@ def append_triage_item_idempotent(
     fr_id: str | None = None,
     suite_id: str | None = None,
     event_id: str | None = None,
+    to_outbox: bool = False,
 ) -> str | None:
     """Append a triage item only if no matching item is currently open.
+
+    `to_outbox` (D1): write the gitignored outbox buffer instead of the tracked
+    store (idle-main background producers). The dedup scan runs against the
+    UNION (`read_all_items`), so an open match in EITHER file suppresses the
+    append regardless of where the new line lands.
 
     Match = same `source` + `dedup_key` + (optionally) `commit` AND
     status is `triage` (items already promoted / dismissed / snoozed
@@ -448,8 +542,7 @@ def append_triage_item_idempotent(
     new_line = json.dumps(new_event, ensure_ascii=False, separators=(",", ":")) + "\n"
 
     with _FileLock(_lock_path(project_root)):
-        _ensure_header(project_root)
-        # Dedup-scan under the same lock — readers see the merged view.
+        # Dedup-scan under the same lock — readers see the merged (union) view.
         for existing in read_all_items(project_root):
             if existing.get("status") != "triage":
                 continue
@@ -474,11 +567,7 @@ def append_triage_item_idempotent(
                 return None
 
         # No duplicate — append.
-        path = _triage_path(project_root)
-        with open(path, "a", encoding="utf-8") as fp:
-            fp.write(new_line)
-            fp.flush()
-            os.fsync(fp.fileno())
+        _append_line(project_root, new_line, to_outbox=to_outbox)
 
     return new_id
 
@@ -496,15 +585,20 @@ def mark_status(
     reason: str | None = None,
     promoted_task_id: str | None = None,
 ) -> None:
-    """Append a status event for an existing item.
+    """Append a status event for an existing item (never mutates prior lines).
 
-    Never mutates prior lines. Idempotent on the resolved view (re-marking
-    the same status is allowed and adds to history but doesn't change
-    `read_all_items` output).
+    **Status follows its append (residence-derived, D1 review cascade).** The
+    write target is DERIVED (not a caller flag) from where the item's `append`
+    lives (tracked ∪ outbox, both probed under the lock): outbox-only id →
+    outbox (so a tree without that outbox can't drop the flip / resurrect a
+    dismissed item, and no orphan status lands in the tracked log on idle main
+    where reconcile rejects it); tracked id — incl. the post-sweep/pre-GC
+    overlap in BOTH — → tracked (TRACKED-PREFERRED: ships in the PR, GC drops
+    the outbox copy). Every producer's status writes thus auto-route by residence.
 
     Raises:
-        FileNotFoundError: if `.shipwright/triage.jsonl` doesn't exist.
-        KeyError: if `item_id` is not present in the file.
+        FileNotFoundError: if NEITHER the tracked store NOR the outbox exists.
+        KeyError: if `item_id` is not an `append` id in (tracked ∪ outbox).
         ValueError: if `new_status` is not a known status.
     """
     if new_status not in STATUSES:
@@ -512,22 +606,21 @@ def mark_status(
             f"unknown status {new_status!r}; expected one of {STATUSES}"
         )
 
-    path = _triage_path(project_root)
-    if not path.exists():
+    if not _triage_path(project_root).exists() and not _outbox_path(project_root).exists():
         raise FileNotFoundError(
-            f"triage store not initialized at {path}; "
+            f"triage store not initialized at {_triage_path(project_root)} "
+            f"(nor outbox at {_outbox_path(project_root)}); "
             f"run /shipwright-adopt or append an item first"
         )
 
-    # Confirm id exists (under lock for read-modify-write safety)
+    # Derive residence + write the status to the SAME store, under the lock.
     with _FileLock(_lock_path(project_root)):
-        existing_ids = {
-            line["id"]
-            for line in _iter_raw_lines(project_root)
-            if isinstance(line, dict) and line.get("event") == "append"
-        }
-        if item_id not in existing_ids:
+        tracked_ids = _append_ids_at(_triage_path(project_root))
+        outbox_ids = _append_ids_at(_outbox_path(project_root))
+        if item_id not in tracked_ids and item_id not in outbox_ids:
             raise KeyError(item_id)
+        # TRACKED-PREFERRED: outbox-only → outbox; in tracked (or both) → tracked.
+        to_outbox = item_id in outbox_ids and item_id not in tracked_ids
 
         event = {
             "event": "status",
@@ -539,10 +632,7 @@ def mark_status(
             "promotedTaskId": promoted_task_id,
         }
         line = json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
-        with open(path, "a", encoding="utf-8") as fp:
-            fp.write(line)
-            fp.flush()
-            os.fsync(fp.fileno())
+        _append_line(project_root, line, to_outbox=to_outbox)
 
 
 # ---------------------------------------------------------------------------
@@ -557,36 +647,73 @@ def read_all_items(project_root: Path | str) -> list[dict]:
 
     Returns `[]` when the file is missing or contains only the header
     (so consumers don't need a separate existence check).
+
+    **Two-pass union resolution (D1):** sources tracked ∪ outbox lines. Pass 1
+    applies ALL `append` events (base records); Pass 2 applies ALL `status`
+    events ordered by ``(ts, file-order)``. Load-bearing across the split: (1)
+    the append-first split stops an OUTBOX `append` (status:triage) from
+    clobbering a TRACKED `status` flip back to `triage`; (2) ``ts``-primary
+    ordering makes the chronologically-later flip win regardless of source file
+    (file order is only a STABLE tiebreaker for equal ts), preserving the
+    single-file "later valid line wins by file order" contract. Both bugs were
+    flagged by external review (OpenAI #5 / Gemini #1) and reproduced by probes.
     """
+    raw_lines = [r for r in _iter_raw_lines(project_root) if isinstance(r, dict)]
+
+    # Pass 1 — every append establishes a base record (union of both files).
     resolved: dict[str, dict] = {}
-    for raw in _iter_raw_lines(project_root):
-        if not isinstance(raw, dict):
+    for raw in raw_lines:
+        if raw.get("event") != "append":
             continue
-        event = raw.get("event")
-        if event == "append":
-            item_id = raw.get("id")
-            if not isinstance(item_id, str):
-                continue
-            # Initial record — strip "event" key (internal)
-            item = {k: v for k, v in raw.items() if k != "event"}
-            item["statusBy"] = None
-            item["statusReason"] = None
-            item["promotedTaskId"] = None
-            resolved[item_id] = item
-        elif event == "status":
-            item_id = raw.get("id")
-            if not isinstance(item_id, str) or item_id not in resolved:
-                # status for unknown id (corrupt or out-of-order) — skip
-                continue
-            item = resolved[item_id]
-            new_status = raw.get("newStatus")
-            if new_status in STATUSES:
-                item["status"] = new_status
-            item["ts"] = raw.get("ts", item.get("ts"))
-            item["statusBy"] = raw.get("by")
-            item["statusReason"] = raw.get("reason")
-            if raw.get("promotedTaskId") is not None:
-                item["promotedTaskId"] = raw["promotedTaskId"]
-        # header / unknown events ignored
+        item_id = raw.get("id")
+        if not isinstance(item_id, str):
+            continue
+        # Initial record — strip "event" key (internal). A duplicate append for
+        # the same id (post-sweep, pre-GC window) collapses to one record; the
+        # later line's fields win, which is harmless (identical content).
+        item = {k: v for k, v in raw.items() if k != "event"}
+        item["statusBy"] = None
+        item["statusReason"] = None
+        item["promotedTaskId"] = None
+        resolved[item_id] = item
+
+    # Pass 2 — overlay status flips. Order by (ts, file-order): timestamp is
+    # primary so a chronologically-later status in EITHER file wins; file order
+    # is a STABLE tiebreaker for equal ts (clock-resolution collisions) so the
+    # single-file contract "later valid line wins by file order" is preserved
+    # exactly (within one file, appends are written in ascending ts; ties keep
+    # file order). This resolves the cross-file status-vs-status ambiguity the
+    # external plan review (OpenAI #5 / Gemini #1) flagged without breaking
+    # same-ts determinism. ``enumerate`` index is the file-order tiebreaker;
+    # ``_ts_key`` returns the ISO-8601-Z ``ts`` string, which sorts
+    # lexicographically == chronologically (malformed ts → "" → earliest).
+    def _ts_key(raw: dict) -> str:
+        # Only a real ISO-8601-Z string participates in chronological ordering;
+        # a malformed/missing ts (non-str, null, int) coerces to "" so it sorts
+        # EARLIEST — i.e. is treated as "oldest / unknown time" and can never
+        # outrank a later valid status (external code review, OpenAI High). The
+        # file-order index then keeps malformed events stable among themselves.
+        ts = raw.get("ts")
+        return ts if isinstance(ts, str) else ""
+
+    status_events = [
+        (idx, raw) for idx, raw in enumerate(raw_lines)
+        if raw.get("event") == "status"
+    ]
+    status_events.sort(key=lambda t: (_ts_key(t[1]), t[0]))
+    for _idx, raw in status_events:
+        item_id = raw.get("id")
+        if not isinstance(item_id, str) or item_id not in resolved:
+            # status for unknown id (corrupt or out-of-order) — skip
+            continue
+        item = resolved[item_id]
+        new_status = raw.get("newStatus")
+        if new_status in STATUSES:
+            item["status"] = new_status
+        item["ts"] = raw.get("ts", item.get("ts"))
+        item["statusBy"] = raw.get("by")
+        item["statusReason"] = raw.get("reason")
+        if raw.get("promotedTaskId") is not None:
+            item["promotedTaskId"] = raw["promotedTaskId"]
 
     return list(resolved.values())

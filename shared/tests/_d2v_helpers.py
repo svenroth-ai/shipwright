@@ -1,0 +1,270 @@
+"""D2V empirical-gate plumbing: evidence recorder + real-git flow helpers.
+
+Not a test file (leading underscore → pytest does not collect it). Campaign
+2026-06-08-triage-outbox-delivery / D2V — the HARD verification gate stacked
+under D3. Everything here drives the REAL D2 code paths (the canonical
+``triage._FileLock`` / ``append_triage_item(..., to_outbox=True)``,
+``lib.sweep_outbox.sweep_outbox_to_branch``, ``tools.setup_iterate_worktree.setup``,
+``tools.integrate_main.integrate``) over REAL git — nothing is mocked.
+
+The :class:`Evidence` collector accumulates per-method PASS/FAIL + sample
+before/after line-sets + git refs as the gate runs, and serializes a
+human-auditable markdown artifact once. A module-scoped singleton is shared
+across the gate's test functions (each method appends its result) so the heavy
+200-trial run and the three e2e proofs land in ONE artifact.
+"""
+
+from __future__ import annotations
+
+import json
+import platform
+import subprocess
+import sys
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+
+_SHARED_SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
+if str(_SHARED_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SHARED_SCRIPTS))
+
+# Reuse the D2 helper plumbing (TRIAGE/OUTBOX/HEADER constants, git(), item(),
+# seed_tracked, etc.) — do NOT duplicate it (DRY; the constants are the SSoT).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _sweep_helpers as h  # noqa: E402
+
+TRIAGE = h.TRIAGE
+OUTBOX = h.OUTBOX
+
+#: Where the human-auditable proof is written (referenced by the iterate ADR).
+_CAMPAIGN_DIR = (
+    Path(__file__).resolve().parents[2]
+    / ".shipwright" / "planning" / "iterate" / "campaigns"
+    / "2026-06-08-triage-outbox-delivery"
+)
+EVIDENCE_PATH = _CAMPAIGN_DIR / "D2V-empirical-results.md"
+
+#: The mandatory methods (by the leading "METHOD N" tag of their MethodResult
+#: name) that MUST all be recorded-and-passed for a PASS verdict. A partial slow
+#: selection that records only a subset must report INCOMPLETE, never PASS
+#: (external-review openai code-finding: partial run must not over-report success).
+#: METHOD 1 (>=200 thread) + 1b (cross-process) + 2 + 3 + 4 — the full gate.
+REQUIRED_METHOD_TAGS = frozenset({"METHOD 1", "METHOD 1b", "METHOD 2", "METHOD 3", "METHOD 4"})
+
+
+def _method_tag(name: str) -> str:
+    """Leading "METHOD N[ b]" tag of a MethodResult name (for completeness check)."""
+    head = name.split("—", 1)[0].strip()
+    return head
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+@dataclass
+class MethodResult:
+    """One mandatory method's empirical outcome."""
+
+    name: str
+    passed: bool
+    iterations: int = 0
+    detail: str = ""
+    git_refs: dict[str, str] = field(default_factory=dict)
+    sample_before: list[str] = field(default_factory=list)
+    sample_after: list[str] = field(default_factory=list)
+
+
+@dataclass
+class Evidence:
+    """Accumulates the gate's empirical results into ONE auditable artifact.
+
+    Module-scoped (one instance per gate run). Each method calls :meth:`record`;
+    :meth:`flush` writes the markdown once all methods have reported.
+    """
+
+    methods: list[MethodResult] = field(default_factory=list)
+
+    def record(self, result: MethodResult) -> None:
+        # Replace a same-named prior record (re-run safety) rather than append.
+        self.methods = [m for m in self.methods if m.name != result.name]
+        self.methods.append(result)
+
+    def recorded_tags(self) -> set[str]:
+        return {_method_tag(m.name) for m in self.methods}
+
+    def missing_required(self) -> set[str]:
+        """Mandatory method tags that were NOT recorded this run."""
+        return set(REQUIRED_METHOD_TAGS) - self.recorded_tags()
+
+    def all_passed(self) -> bool:
+        """PASS iff EVERY mandatory method was recorded AND every recorded method
+        passed. A partial run (some mandatory method never recorded) is NOT a
+        PASS — it is INCOMPLETE (the gate did not establish all proofs)."""
+        if self.missing_required():
+            return False
+        return bool(self.methods) and all(m.passed for m in self.methods)
+
+    def verdict(self) -> str:
+        if self.missing_required():
+            return "INCOMPLETE"
+        return "PASS" if self.all_passed() else "FAIL"
+
+    def flush(self, *, node_ids: list[str]) -> Path:
+        EVIDENCE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        lines: list[str] = []
+        lines.append("# D2V — Empirical Verification Gate · Results Artifact")
+        lines.append("")
+        lines.append(
+            "Campaign `2026-06-08-triage-outbox-delivery` / sub-iterate **D2V**. "
+            "HARD safety gate stacked under D3 — every proof below was produced by "
+            "the REAL D2 code over REAL git (no mocks). Regenerated by running "
+            "`pytest shared/tests/test_d2v_empirical_gate.py -m slow` (or the gate "
+            "marker)."
+        )
+        lines.append("")
+        lines.append(f"- Generated: `{_now()}`")
+        lines.append(f"- Platform: `{platform.platform()}` · Python `{platform.python_version()}`")
+        lines.append(f"- git: `{_git_version()}`")
+        lines.append(f"- Overall verdict: **{self.verdict()}**")
+        missing = self.missing_required()
+        if missing:
+            lines.append(
+                f"- INCOMPLETE — mandatory methods NOT recorded this run: "
+                f"`{', '.join(sorted(missing))}`. A PASS requires ALL of "
+                f"`{', '.join(sorted(REQUIRED_METHOD_TAGS))}`."
+            )
+        lines.append("")
+        lines.append("## Per-method PASS/FAIL")
+        lines.append("")
+        lines.append("| Method | Verdict | Iterations | Detail |")
+        lines.append("|---|---|---|---|")
+        for m in self.methods:
+            verdict = "PASS" if m.passed else "**FAIL**"
+            detail = m.detail.replace("|", "\\|").replace("\n", " ")
+            lines.append(f"| {m.name} | {verdict} | {m.iterations or '—'} | {detail} |")
+        lines.append("")
+        for m in self.methods:
+            lines.append(f"### {m.name}")
+            lines.append("")
+            lines.append(f"- Verdict: **{'PASS' if m.passed else 'FAIL'}**")
+            if m.iterations:
+                lines.append(f"- Iterations actually run: **{m.iterations}**")
+            if m.detail:
+                lines.append(f"- Detail: {m.detail}")
+            if m.git_refs:
+                lines.append("- Git refs / SHAs exercised:")
+                for k, v in m.git_refs.items():
+                    lines.append(f"  - `{k}` = `{v}`")
+            if m.sample_before:
+                lines.append("- Sample BEFORE line-set:")
+                lines.append("")
+                lines.append("```")
+                lines.extend(m.sample_before)
+                lines.append("```")
+            if m.sample_after:
+                lines.append("- Sample AFTER line-set (union of branch-committed ∪ surviving outbox):")
+                lines.append("")
+                lines.append("```")
+                lines.extend(m.sample_after)
+                lines.append("```")
+            lines.append("")
+        lines.append("## Pytest node ids (exact)")
+        lines.append("")
+        for nid in node_ids:
+            lines.append(f"- `{nid}`")
+        lines.append("")
+        EVIDENCE_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+        return EVIDENCE_PATH
+
+
+def _git_version() -> str:
+    try:
+        return subprocess.run(
+            ["git", "--version"], capture_output=True, text=True, check=True
+        ).stdout.strip()
+    except Exception:  # noqa: BLE001
+        return "unknown"
+
+
+def union_appends_present(work: Path, wt: Path) -> tuple[set[str], set[str]]:
+    """Return ``(branch_lines, outbox_lines)`` stripped sets for the worktree.
+
+    The post-sweep union of these two is the line-set every expected append must
+    appear in (origin un-advanced → nothing GC'd, so a line lives on the branch
+    OR still in the outbox — never neither)."""
+    return h.branch_triage_lines(wt), h.outbox_lines(work)
+
+
+def branch_raw_lines(wt: Path) -> list[str]:
+    """Committed triage lines on the worktree branch HEAD as a LIST (NOT a set —
+    so an in-file PHYSICAL duplicate is visible). Stripped, non-blank."""
+    proc = h.git(wt, "show", f"HEAD:{TRIAGE}", check=False)
+    if proc.returncode != 0:
+        return []
+    return [ln.strip() for ln in proc.stdout.split("\n") if ln.strip()]
+
+
+def outbox_raw_lines(work: Path) -> list[str]:
+    """Outbox lines as a LIST (NOT a set), stripped, non-blank."""
+    p = work / OUTBOX
+    if not p.exists():
+        return []
+    return [ln.strip() for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()]
+
+
+def assert_no_physical_dup(raw_lines: list[str], label: str) -> None:
+    """Assert no append ``title`` repeats across the RAW (un-deduped) lines of ONE
+    file. Catches an in-file physical duplicate that a stripped-line SET would
+    silently collapse (external-review: set-union masks cross/in-file dup)."""
+    counts = count_titles_list(raw_lines)
+    dups = {t: c for t, c in counts.items() if c > 1}
+    assert not dups, f"{label}: in-file duplicate append title(s): {dups}"
+
+
+def count_titles_list(raw_lines: list[str]) -> dict[str, int]:
+    """Count append ``title`` occurrences across a LIST of raw lines (physical
+    duplicates therefore counted, unlike :func:`count_titles` over a set)."""
+    counts: dict[str, int] = {}
+    for ln in raw_lines:
+        try:
+            obj = json.loads(ln)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict) and obj.get("event") == "append":
+            title = obj.get("title")
+            if isinstance(title, str):
+                counts[title] = counts.get(title, 0) + 1
+    return counts
+
+
+def title_present(union: set[str], iid: str) -> bool:
+    """True iff some line in ``union`` is the append for ``iid`` (title-keyed —
+    the producer writes ``"title":"<iid>"``)."""
+    needle = f'"title":"{iid}"'
+    return any(needle in ln for ln in union)
+
+
+def count_titles(lines: set[str]) -> dict[str, int]:
+    """Count append ``title`` occurrences across ``lines`` (a set of PHYSICALLY
+    distinct lines — physically-identical lines already collapsed by the caller's
+    set union). Two DIFFERENT physical lines sharing one title (a re-serialized
+    duplicate of the same logical item) therefore count as 2 → the MULTISET dup
+    proof (external-review openai-H1).
+
+    Keyed on ``title`` (NOT the JSON ``id``): the stress producer tags each item's
+    ``title`` with the synthetic expected tag (e.g. ``trg-cnc00100``) while the
+    real ``id`` is an unrelated generated ``trg-<uuid8>`` — the whole harness
+    identifies items by that synthetic title tag, so the multiplicity key must
+    match. Returns ``{title: occurrences}`` over append lines only."""
+    counts: dict[str, int] = {}
+    for ln in lines:
+        try:
+            obj = json.loads(ln)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict) and obj.get("event") == "append":
+            title = obj.get("title")
+            if isinstance(title, str):
+                counts[title] = counts.get(title, 0) + 1
+    return counts

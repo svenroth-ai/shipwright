@@ -44,7 +44,7 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent.parent  # shared/scripts
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from triage import append_triage_item  # noqa: E402
+from triage import append_triage_item, should_route_to_outbox  # noqa: E402
 
 # Canonical FR-ID shape — matches what `shipwright-project` emits and
 # what the RTM generator reads back from triage.jsonl's `frId` field.
@@ -125,6 +125,12 @@ def main(argv: list[str] | None = None) -> int:
     # 2) Delegate the rest of validation (title/severity/kind/source) to
     #    triage.append_triage_item — single source of truth (OpenAI #5).
     project_root = Path(args.project_root).resolve()
+    # D1 (campaign 2026-06-08-triage-outbox-delivery): when invoked against the
+    # idle main tree this CLI fires as a background producer — route to the
+    # gitignored outbox (no main drift). Invoked inside an iterate/* branch
+    # (worktree or PR branch) it writes the tracked log directly (AC4) since
+    # that write ships in the PR.
+    to_outbox = should_route_to_outbox(project_root)
     try:
         item_id = append_triage_item(
             project_root,
@@ -137,6 +143,7 @@ def main(argv: list[str] | None = None) -> int:
             run_id=args.run_id,
             commit=args.commit,
             fr_id=fr_id,
+            to_outbox=to_outbox,
         )
     except ValueError as exc:
         # Severity / kind / title validation, or non-str optional fields.

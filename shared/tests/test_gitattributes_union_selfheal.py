@@ -134,6 +134,23 @@ def test_skip_when_not_a_git_repo(tmp_path):
     assert (res.status, res.reason) == ("skipped", "not_a_git_repo")
 
 
+def test_non_utf8_gitattributes_does_not_raise(git_origin_repo):
+    """LOW-3 (D3 review cascade): a non-UTF-8 ``.gitattributes`` must NOT raise a
+    UnicodeDecodeError (uncaught by setup.main → would crash setup). ``errors="replace"``
+    keeps the self-heal fail-soft, congruent with ``gitignore_selfheal``."""
+    work, _ = git_origin_repo
+    (work / ".gitattributes").write_bytes(b"*.png binary\n\xff\xfe bad\n")
+    _seed_managed_repo(work)  # commits the .gitattributes + the managed marker
+
+    res = gu.self_heal_gitattributes(work, allow_ci=True)  # must not raise
+
+    assert res.status == "committed", res
+    assert gu.missing_union_paths(
+        (work / ".gitattributes").read_text(encoding="utf-8", errors="replace")
+    ) == []
+    assert h.git(work, "status", "--porcelain").stdout.strip() == ""
+
+
 def test_rolls_back_on_commit_rejection(git_origin_repo, tmp_path):
     # A rejecting pre-commit hook (the bloat-gate failure mode) must leave git
     # state untouched: no leftover written/staged .gitattributes.
@@ -180,6 +197,16 @@ def test_setup_iterate_worktree_self_heals_new_worktree(git_origin_repo):
     assert proc.returncode == 0, proc.stderr
     wt = Path(json.loads(proc.stdout)["project_root"])
 
-    # The iterate branch carries the chore commit + the union lines.
-    assert h.git(wt, "log", "-1", "--format=%s").stdout.strip() == _CHORE_SUBJECT
+    # The iterate branch carries the gitattributes chore commit + the union
+    # lines. The gitignore self-heal (setup step 4.6, campaign 2026-06-08) lands
+    # a SECOND chore on top in the SAME setup, so the documented order is:
+    #   HEAD     = gitignore self-heal (step 4.6)
+    #   HEAD~1   = gitattributes self-heal (step 4.5)
+    # Assert the gitattributes chore is the SECOND-newest commit (recency-precise,
+    # not merely "somewhere in history" — a regression that skips step 4.5 fails).
+    _GI_SUBJECT = (
+        "chore: scaffold canonical .shipwright/ artifact-ignore block into .gitignore"
+    )
+    assert h.git(wt, "log", "-1", "--format=%s").stdout.strip() == _GI_SUBJECT
+    assert h.git(wt, "log", "-1", "--skip=1", "--format=%s").stdout.strip() == _CHORE_SUBJECT
     assert gu.missing_union_paths((wt / ".gitattributes").read_text(encoding="utf-8")) == []

@@ -291,6 +291,18 @@ CLI rather than inside `generate_adoption_artifacts.py` to keep that
 already-grandfathered file under its bloat baseline —
 iterate-2026-05-30-gitignore-canon-propagation.)
 
+The canon block also scaffolds the ignore for the per-tree background-triage
+**outbox** `.shipwright/triage.outbox.jsonl` (campaign
+`2026-06-08-triage-outbox-delivery`): the `/.shipwright/*` whitelist wildcard
+ignores it, and an explicit `/.shipwright/triage.outbox.jsonl` line pins the
+intent (no `!`-re-include) so a future template edit can't silently start
+tracking the buffer. Idle-main background producers append there (never the
+tracked `triage.jsonl`); `setup_iterate_worktree` sweeps it into the iterate
+PR branch. An already-adopted repo whose plugin cache predates this campaign
+gets the block back-filled automatically on its next iterate by
+`shared/scripts/lib/gitignore_selfheal.self_heal_gitignore`
+(`setup_iterate_worktree` step 4.6 — sibling of the `.gitattributes` self-heal).
+
 **Gitignore awareness (4.1)**. Inside `generate_adoption_artifacts.py`,
 after all artifact writes, the tool runs `git check-ignore` against every
 output path. The result lands in `results.gitignore_report` as

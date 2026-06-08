@@ -71,6 +71,16 @@ def _isolate_scanner_environment(monkeypatch):
     monkeypatch.setattr(shutil, "which", _which_no_oss)
 
 
+@pytest.fixture(autouse=True)
+def _sweep_tests_unset_ci(request, monkeypatch):
+    # Sweep/D2V suites run the REAL outbox sweep, which no-ops under `$CI`
+    # (`ci_without_optin` safety); they assert it COMMITS, so must run as a local
+    # iterate ($CI unset). `$CI=true` on GitHub Actions → 44 false skips (PR #172).
+    # A guard test re-sets CI in its own body (its setenv runs after this fixture).
+    if request.path.name.startswith(("test_sweep_outbox", "test_d2v_empirical_gate")):
+        monkeypatch.delenv("CI", raising=False)
+
+
 @pytest.fixture
 def tmp_project(tmp_path):
     """Create a temporary project directory with .shipwright/agent_docs/."""
@@ -202,3 +212,84 @@ def remove_worktree():
         )
 
     return _remove
+
+
+# --------------------------------------------------------------------------- #
+# D2V empirical-gate evidence collector (campaign 2026-06-08-triage-outbox-delivery)
+# --------------------------------------------------------------------------- #
+
+
+@pytest.fixture(scope="session")
+def _d2v_evidence():
+    """Session-scoped :class:`_d2v_helpers.Evidence` shared across the D2V gate
+    modules so the concurrency-stress result AND the three e2e proofs land in ONE
+    human-auditable artifact, flushed at session teardown with the exact node ids
+    of the tests that ran.
+
+    The artifact is written ONLY when at least one D2V method recorded a result
+    (i.e. the gate actually ran) — a session that didn't touch the gate leaves
+    the prior artifact untouched. Underscore-prefixed so it is unmistakably the
+    gate's internal collector, not a general fixture.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import _d2v_helpers as ev  # noqa: PLC0415
+
+    evidence = ev.Evidence()
+    node_ids: list[str] = []
+    _D2V_LIVE_EVIDENCE.clear()
+    _D2V_LIVE_EVIDENCE.append(evidence)  # expose to pytest_sessionfinish
+    yield _D2VEvidenceProxy(evidence, node_ids)
+    if evidence.methods:
+        evidence.flush(node_ids=sorted(set(node_ids)))
+
+
+class _D2VEvidenceProxy:
+    """Thin wrapper handed to each gate test: ``record(...)`` a MethodResult and
+    register the calling test's node id (captured via the ``request`` fixture)."""
+
+    def __init__(self, evidence, node_ids: list[str]):
+        self._evidence = evidence
+        self._node_ids = node_ids
+
+    def record(self, result) -> None:
+        self._evidence.record(result)
+
+    def add_node_id(self, nid: str) -> None:
+        self._node_ids.append(nid)
+
+
+@pytest.fixture
+def _evidence(_d2v_evidence, request):
+    """Per-test handle: registers this test's node id with the session collector,
+    then exposes ``record(MethodResult)``."""
+    _d2v_evidence.add_node_id(request.node.nodeid)
+    return _d2v_evidence
+
+
+# Session-level handle the sessionfinish hook reads to enforce gate completeness.
+_D2V_LIVE_EVIDENCE: list = []
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Gate-completeness enforcement (external-review): a PARTIAL D2V gate run must
+    not silently pass. The gate is anchored on METHOD 1 (the >=200-trial slow
+    proof): if METHOD 1 recorded, this IS a gate run and EVERY mandatory method
+    must also have recorded — otherwise fail the session (a partial slow selection
+    cannot masquerade as a complete gate). If METHOD 1 did NOT record, this is the
+    default fast suite (smoke + e2e only), not the gate → no interference."""
+    if not _D2V_LIVE_EVIDENCE:
+        return
+    evidence = _D2V_LIVE_EVIDENCE[0]
+    recorded = evidence.recorded_tags()
+    if "METHOD 1" not in recorded:
+        return  # not a gate run (the >=200 anchor wasn't selected)
+    missing = evidence.missing_required()
+    if missing:
+        session.exitstatus = 1
+        rep = session.config.pluginmanager.get_plugin("terminalreporter")
+        if rep is not None:
+            rep.write_line(
+                f"D2V GATE INCOMPLETE — METHOD 1 ran but mandatory {sorted(missing)} "
+                f"missing; a partial gate run is NOT a pass.",
+                red=True,
+            )
