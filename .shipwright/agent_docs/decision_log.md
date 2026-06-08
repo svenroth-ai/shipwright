@@ -1933,3 +1933,15 @@ shipwright/
 - **Commit:** c0867ef9a22a06ac41637f6a58f6e40c407f1c93
 - **Consequences:** Background triage appends ride the PR to origin; local main never accrues a fold commit. Re-sweeping is exactly-once via merge=union + dedup. New lib/sweep_outbox.py reuses reconcile's identical dedup/validate/EOL pipeline.
 - **Rejected:** reset-after-read GC (would strand an abandoned-branch line); clearing the whole outbox; a separate outbox lock (would break read-then-lost serialization).
+
+---
+
+### ADR-141: Empirical verification gate for the D2 outbox sweep/GC
+- **Date:** 2026-06-08
+- **Section:** Iterate D2V — outbox-delivery campaign
+- **Context:** D3 stacked on D2 (outbox->sweep->GC); a silent triage-line loss in D2 would propagate to every adopted repo via D3. The campaign needs a HARD, non-mocked empirical gate before D3 proceeds.
+- **Decision:** Built a real empirical harness (shared/tests/test_d2v_empirical_gate*.py) over the REAL D2 code + real git: 200 thread + 40 cross-process trials (guaranteed overlap, multiset zero-loss/zero-dup), abandoned-branch e2e, exactly-once after a real merge, no main pollution; pytest_sessionfinish fails a partial gate. Evidence -> D2V-empirical-results.md.
+- **Commit:** fb3bb55b
+- **Consequences:** Gate PASSES (all 5 methods, exit 0) -> D3 may proceed. Heavy runs slow-marked.
+- **Rejected:** count-only assertions; mocking the lock/git; a new pytest marker.
+- **Details:** [D2V-iterate-adr.md](../planning/iterate/campaigns/2026-06-08-triage-outbox-delivery/sub-iterates/D2V-iterate-adr.md)
