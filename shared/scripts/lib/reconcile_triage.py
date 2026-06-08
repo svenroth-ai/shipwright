@@ -143,6 +143,13 @@ def reconcile_main_triage(
     commit, then return. Resolves the MAIN repo root from ``project_root`` (so it
     is correct when called from inside a worktree). Never raises for an expected
     condition — returns a structured :class:`ReconcileResult` instead.
+
+    **Manual fallback only (campaign 2026-06-08-triage-outbox-delivery / D2).**
+    The per-iterate default is now the branch SWEEP (:mod:`lib.sweep_outbox`,
+    wired into ``setup_iterate_worktree``); idle-main background producers route
+    to the gitignored outbox, never the tracked log, so neither ``setup`` nor
+    ``integrate_main`` calls this anymore. It survives ONLY as the operator
+    ``reconcile_main_triage.py`` CLI — "unblock a hand pull, no imminent iterate".
     """
     root = Path(project_root)
 

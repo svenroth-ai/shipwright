@@ -46,7 +46,7 @@ if str(_SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_ROOT))
 
 from lib.gitattributes_union import self_heal_gitattributes  # noqa: E402
-from lib.reconcile_triage import reconcile_main_triage  # noqa: E402
+from lib.sweep_outbox import sweep_outbox_to_branch  # noqa: E402
 from lib.worktree_isolation import (  # noqa: E402
     GitError,
     WORKTREES_DIRNAME,
@@ -206,16 +206,16 @@ def setup(
         print(f"setup_iterate_worktree: gitattributes self-heal {heal.reason}",
               file=sys.stderr)
 
-    # 5. Fold any uncommitted main-tree triage.jsonl background drift into one
-    #    chore(triage) commit BEFORE snapshotting — so the background appends are
-    #    committed (durable, not orphaned by this new worktree branching off
-    #    origin/main) and the snapshot baseline is clean. Structured no-op when
-    #    there is no drift / a guard trips. See lib/reconcile_triage (AC-6).
-    recon = reconcile_main_triage(main_root)
-    if recon.status in ("invalid", "error"):
-        # Fail-soft (the leak-guard exempts triage.jsonl anyway) but not silent.
-        print(f"setup_iterate_worktree: reconcile-main-triage {recon.status}: "
-              f"{recon.errors or recon.reason}", file=sys.stderr)
+    # 5. SWEEP the gitignored main-tree triage outbox into THIS worktree's tracked
+    #    triage.jsonl + commit on iterate/<slug> BEFORE snapshotting (campaign
+    #    2026-06-08 / D2): appends ride the PR to origin, not local main. Step-3
+    #    refreshed origin/<default> for the GC. Surface any non-clean sweep so a
+    #    caller never assumes delivery (skip recoverable next setup). lib/sweep_outbox.
+    sweep = sweep_outbox_to_branch(main_root, worktree_path, default_branch=db)
+    sweep_warning = (f"sweep-outbox {sweep.status}: {sweep.errors or sweep.reason}"
+                     if sweep.status in ("invalid", "error", "skipped") else None)
+    if sweep.status in ("invalid", "error"):
+        print(f"setup_iterate_worktree: {sweep_warning}", file=sys.stderr)
 
     # 6. Snapshot the main tree + write the per-session run pointer.
     snap_path = write_snapshot(main_root, run_id)
@@ -229,7 +229,7 @@ def setup(
     )
     prune_stale_run_pointers(main_root)
 
-    warnings = [w for w in (fetch_detail, base_warning) if w]
+    warnings = [w for w in (fetch_detail, base_warning, sweep_warning) if w]
     return 0, {
         "action": "created",
         "in_worktree": False,

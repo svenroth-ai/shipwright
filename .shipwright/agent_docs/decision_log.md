@@ -1922,3 +1922,14 @@ shipwright/
 - **Commit:** pending
 - **Consequences:** Idle main accrues no tracked-log drift; consumers see background findings immediately via the union; GC/reconcile remain tracked-only; D2 sweep folds the outbox into the iterate PR + GCs it.
 - **Rejected:** is_worktree as the discriminator (wrong: the runner is on the main checkout on an iterate branch); a separate outbox lock (would break producer/sweep serialization); pure file-order union resolution (lets an outbox append clobber a tracked status — found by probe).
+
+---
+
+### ADR-140: Sweep triage outbox into PR branch; GC only origin-delivered lines
+- **Date:** 2026-06-08
+- **Section:** Iterate -> D2 outbox sweep + GC
+- **Context:** D1 routes idle-main background triage producers to a gitignored outbox to avoid main drift. The prior delivery path (reconcile_main_triage folding drift into a chore commit on LOCAL main) orphaned and piled up (Codex Q1).
+- **Decision:** setup_iterate_worktree sweeps the outbox into the iterate branch's tracked triage.jsonl under the canonical triage lock held across read->commit->GC (Codex Q4); the GC drops a line only once it is in origin/<default> so an abandoned branch re-sweeps it (Codex unlisted failure mode). integrate_main no longer reconciles main; reconcile_main_triage becomes a manual-CLI fallback.
+- **Commit:** c0867ef9a22a06ac41637f6a58f6e40c407f1c93
+- **Consequences:** Background triage appends ride the PR to origin; local main never accrues a fold commit. Re-sweeping is exactly-once via merge=union + dedup. New lib/sweep_outbox.py reuses reconcile's identical dedup/validate/EOL pipeline.
+- **Rejected:** reset-after-read GC (would strand an abandoned-branch line); clearing the whole outbox; a separate outbox lock (would break read-then-lost serialization).

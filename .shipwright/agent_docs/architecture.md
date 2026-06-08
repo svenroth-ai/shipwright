@@ -193,3 +193,5 @@ _Existing user-facing documentation discovered by /shipwright-adopt._
 - **ADR-133** (2026-06-05): Machine-churn-only triage GC tool
 
 - **ADR-139** (2026-06-08): Gitignored per-tree triage outbox + union reader
+
+- **ADR-140** (2026-06-08): Sweep triage outbox into PR branch; GC only origin-delivered lines
