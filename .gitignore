@@ -141,6 +141,13 @@ Spec/
 # triage.jsonl is the tracked SSoT backlog (mirrors shipwright_events.jsonl); the
 # .lock + .bak stay ignored by the /.shipwright/* wildcard above (negation is exact).
 !/.shipwright/triage.jsonl
+# triage.outbox.jsonl is the per-tree, GITIGNORED background-triage buffer
+# (campaign 2026-06-08-triage-outbox-delivery): idle-main producers append HERE
+# (never the tracked triage.jsonl), and setup_iterate_worktree sweeps it into the
+# iterate PR branch. It MUST stay ignored — the explicit line below is redundant
+# with the /.shipwright/* wildcard but pins the intent so a future `!`-negation
+# can never silently start tracking the buffer. DO NOT add a `!`-re-include for it.
+/.shipwright/triage.outbox.jsonl
 # Re-exclude transient / internal / generated content inside the doc homes:
 /.shipwright/adopt/backups/
 /.shipwright/adopt/screenshots/

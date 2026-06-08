@@ -180,6 +180,16 @@ def test_setup_iterate_worktree_self_heals_new_worktree(git_origin_repo):
     assert proc.returncode == 0, proc.stderr
     wt = Path(json.loads(proc.stdout)["project_root"])
 
-    # The iterate branch carries the chore commit + the union lines.
-    assert h.git(wt, "log", "-1", "--format=%s").stdout.strip() == _CHORE_SUBJECT
+    # The iterate branch carries the gitattributes chore commit + the union
+    # lines. The gitignore self-heal (setup step 4.6, campaign 2026-06-08) lands
+    # a SECOND chore on top in the SAME setup, so the documented order is:
+    #   HEAD     = gitignore self-heal (step 4.6)
+    #   HEAD~1   = gitattributes self-heal (step 4.5)
+    # Assert the gitattributes chore is the SECOND-newest commit (recency-precise,
+    # not merely "somewhere in history" — a regression that skips step 4.5 fails).
+    _GI_SUBJECT = (
+        "chore: scaffold canonical .shipwright/ artifact-ignore block into .gitignore"
+    )
+    assert h.git(wt, "log", "-1", "--format=%s").stdout.strip() == _GI_SUBJECT
+    assert h.git(wt, "log", "-1", "--skip=1", "--format=%s").stdout.strip() == _CHORE_SUBJECT
     assert gu.missing_union_paths((wt / ".gitattributes").read_text(encoding="utf-8")) == []
