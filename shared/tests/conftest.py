@@ -71,6 +71,16 @@ def _isolate_scanner_environment(monkeypatch):
     monkeypatch.setattr(shutil, "which", _which_no_oss)
 
 
+@pytest.fixture(autouse=True)
+def _sweep_tests_unset_ci(request, monkeypatch):
+    # Sweep/D2V suites run the REAL outbox sweep, which no-ops under `$CI`
+    # (`ci_without_optin` safety); they assert it COMMITS, so must run as a local
+    # iterate ($CI unset). `$CI=true` on GitHub Actions → 44 false skips (PR #172).
+    # A guard test re-sets CI in its own body (its setenv runs after this fixture).
+    if request.path.name.startswith(("test_sweep_outbox", "test_d2v_empirical_gate")):
+        monkeypatch.delenv("CI", raising=False)
+
+
 @pytest.fixture
 def tmp_project(tmp_path):
     """Create a temporary project directory with .shipwright/agent_docs/."""
