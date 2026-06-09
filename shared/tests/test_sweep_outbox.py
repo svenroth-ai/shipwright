@@ -277,3 +277,22 @@ def test_double_sweep_idempotent(repo) -> None:
     assert h.git(wt, "rev-parse", "HEAD").stdout.strip() == head_after_first
     branch_appends = [ln for ln in h.branch_triage_lines(wt) if '"event":"append"' in ln]
     assert branch_appends.count(h.item("trg-bbbb")) == 1
+
+
+def test_sweep_collapses_producer_double_append_keep_last(repo) -> None:
+    """Regression (trg-60ef91fb): a producer re-appending an UPDATED, non-byte-
+    identical version of a finding must NOT return ``invalid`` and wedge the whole
+    outbox — the sweep folds the LAST append onto the branch (reader parity)."""
+    work, _ = repo
+    h.seed_tracked(work)  # header only
+    a1 = '{"event":"append","id":"trg-x","ts":"2026-06-09T06:17:00Z","title":"draft","status":"triage"}'
+    a2 = '{"event": "append", "id": "trg-x", "ts": "2026-06-09T06:29:00Z", "title": "resolved", "status": "triage"}'
+    h.write_outbox(work, a1, a2)
+    wt = h.make_worktree(work, "dbl-append")
+
+    res = sweep_outbox_to_branch(work, wt, default_branch="main")
+
+    assert res.status == "committed", res.to_dict()
+    branch = h.branch_triage_lines(wt)
+    assert [ln for ln in branch if '"append"' in ln and "trg-x" in ln] == [a2]
+    assert a1 not in branch

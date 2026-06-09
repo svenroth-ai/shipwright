@@ -90,22 +90,60 @@ def dedup_event_lines(lines: list[str]) -> tuple[list[str], list[str]]:
 
 
 def dedup_triage_lines(lines: list[str]) -> tuple[list[str], list[str]]:
-    """Exact-line dedup for the triage log, preserving first-seen order.
+    """Dedup for the triage log, preserving order. Two collapses, in order:
+
+    1. **Byte-identical** lines (the same event recorded on both merge sides)
+       are dropped, first-seen order preserved.
+    2. **Same-id ``append`` events** are collapsed to keep the LAST one. A
+       producer that re-appends an UPDATED version of an existing finding writes
+       a second, NON-byte-identical ``append`` for that id; the append-log reader
+       (``triage.read_all_items`` pass 1) keeps the LAST append's content, so
+       collapsing to keep-last mirrors that reduction. Without it the
+       one-append-per-id invariant ``validate_triage_text`` enforces false-trips
+       on a legitimate update and wedges the WHOLE outbox sweep (the
+       trg-60ef91fb double-append that blocked the 2026-06-08 delivery).
+       ``status`` events — which INTENTIONALLY share an id with their ``append``
+       — and any non-append / unparseable lines (and appends with a non-str id)
+       pass through untouched. The reader overlays status in a SEPARATE pass 2
+       (ts-sorted), so dropping an earlier append never un-flips a status,
+       regardless of where the kept append lands relative to a status line.
 
     Returns ``(deduped, warnings)`` for interface parity with
-    :func:`dedup_event_lines`, but ``warnings`` is **always empty**: triage
-    ``append`` and ``status`` events INTENTIONALLY share an item ``id`` (the
-    status event flips the status of an existing item), so the event-log
-    "distinct lines share an id → warn" heuristic would false-fire on every
-    item that was ever promoted / dismissed. Only byte-identical duplicate
-    lines (the same event recorded on both merge sides) are dropped.
+    :func:`dedup_event_lines`, but ``warnings`` is **always empty**: a triage id
+    is shared by design (append + status; updated re-appends), so the event-log
+    "distinct lines share an id → warn" heuristic would false-fire.
     """
+    # (1) byte-identical dedup, first-seen order.
     seen: set[str] = set()
-    out: list[str] = []
+    interim: list[str] = []
     for line in lines:
         if not line.strip() or line in seen:
             continue
         seen.add(line)
+        interim.append(line)
+
+    # (2) collapse same-id `append` events → keep LAST (reader parity).
+    def _append_id(line: str) -> str | None:
+        try:
+            obj = json.loads(line)
+        except (json.JSONDecodeError, ValueError):
+            return None
+        if isinstance(obj, dict) and obj.get("event") == "append":
+            iid = obj.get("id")
+            return iid if isinstance(iid, str) else None
+        return None
+
+    last_idx: dict[str, int] = {}
+    for i, line in enumerate(interim):
+        iid = _append_id(line)
+        if iid is not None:
+            last_idx[iid] = i
+
+    out: list[str] = []
+    for i, line in enumerate(interim):
+        iid = _append_id(line)
+        if iid is not None and last_idx[iid] != i:
+            continue  # earlier same-id append — superseded by a later one
         out.append(line)
     return out, []
 

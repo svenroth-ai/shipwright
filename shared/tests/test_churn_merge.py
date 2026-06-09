@@ -148,3 +148,70 @@ def test_triage_validate_flags_duplicate_append() -> None:
     errs = validate_triage_text(
         _TRIAGE_HEADER + '\n{"event":"append","id":"trg-x"}\n{"event":"append","id":"trg-x"}\n')
     assert errs and any("duplicate append" in e for e in errs)
+
+
+# --- triage dedup: keep-last collapse of same-id APPEND events ----------------
+# (iterate-2026-06-10-triage-dedup-keep-last-append) A producer that re-appends an
+# UPDATED version of an existing finding writes a second, NON-byte-identical
+# ``append`` for the same id. The append-log reader (``triage.read_all_items``
+# pass 1) keeps the LAST append's content; the sweep/reconcile validator
+# (``validate_triage_text``) enforces exactly one append per id. So
+# ``dedup_triage_lines`` MUST collapse same-id appends to keep-LAST — otherwise a
+# legitimate update trips the validator and blocks the whole outbox sweep
+# (the trg-60ef91fb double-append that wedged the 2026-06-08 outbox delivery).
+
+# Two NON-byte-identical appends for the SAME id (compact vs spaced serialization).
+_A1 = '{"event":"append","id":"trg-x","ts":"2026-06-09T06:17:00Z","title":"draft"}'
+_A2 = '{"event": "append", "id": "trg-x", "ts": "2026-06-09T06:29:00Z", "title": "resolved"}'
+
+
+def test_triage_dedup_collapses_same_id_appends_keep_last() -> None:
+    out, warn = dedup_triage_lines([_TRIAGE_HEADER, _A1, _A2])
+    assert out == [_TRIAGE_HEADER, _A2]   # earlier append dropped, LAST kept (reader parity)
+    assert warn == []
+    assert validate_triage_text("\n".join(out) + "\n") == []
+
+
+def test_triage_dedup_same_id_appends_unblocks_validator() -> None:
+    # The RAW (un-deduped) two-append text is exactly what tripped the sweep...
+    raw = _TRIAGE_HEADER + "\n" + _A1 + "\n" + _A2 + "\n"
+    assert any("duplicate append" in e for e in validate_triage_text(raw))
+    # ...and routing it through dedup_triage_lines first makes it valid (the fix).
+    deduped, _ = dedup_triage_lines([_TRIAGE_HEADER, _A1, _A2])
+    assert validate_triage_text("\n".join(deduped) + "\n") == []
+
+
+def test_triage_dedup_keep_last_preserves_status_and_order() -> None:
+    """append(v1) -> status -> append(v2): keep append(v2) + status, drop v1.
+
+    The reader resolves appends (pass 1, last-wins) and statuses (pass 2, ts-
+    sorted) in SEPARATE passes, so a kept append after a status never un-flips
+    the status — dropping the earlier append is safe and order is preserved.
+    """
+    status = '{"event":"status","id":"trg-x","newStatus":"dismissed"}'
+    out, warn = dedup_triage_lines([_TRIAGE_HEADER, _A1, status, _A2])
+    assert out == [_TRIAGE_HEADER, status, _A2]
+    assert warn == []
+    assert validate_triage_text("\n".join(out) + "\n") == []
+
+
+def test_triage_dedup_different_id_appends_untouched() -> None:
+    a = '{"event":"append","id":"trg-a","ts":"1"}'
+    b = '{"event":"append","id":"trg-b","ts":"2"}'
+    out, _ = dedup_triage_lines([_TRIAGE_HEADER, a, b])
+    assert out == [_TRIAGE_HEADER, a, b]
+
+
+def test_triage_dedup_keep_last_passes_through_unparseable() -> None:
+    # A corrupt (non-JSON) line must NOT be swallowed by the append collapse — it
+    # passes through so the validator still flags it.
+    out, _ = dedup_triage_lines([_TRIAGE_HEADER, _A1, "NOT JSON", _A2])
+    assert out == [_TRIAGE_HEADER, "NOT JSON", _A2]
+
+
+def test_triage_dedup_byte_identical_appends_still_single() -> None:
+    # Regression: byte-identical same-id appends collapse to one (the pre-existing
+    # contract) — keep-last must not double-keep when the lines are identical.
+    out, warn = dedup_triage_lines([_TRIAGE_HEADER, _A1, _A1])
+    assert out == [_TRIAGE_HEADER, _A1]
+    assert warn == []

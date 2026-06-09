@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-09-external-review-marker-gitignore",
-    "date": "2026-06-09",
+    "run_id": "iterate-2026-06-10-triage-dedup-keep-last-append",
+    "date": "2026-06-10",
     "unit": {
       "status": "passed",
-      "passed": 21,
-      "total": 21
+      "passed": 3029,
+      "total": 3029
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 1,
+      "total": 1
     },
     "pgtap": {
       "status": "not_run",
@@ -31,56 +31,56 @@
     "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/test_artifact_path_canon.py shared/tests/test_gitignore_canon_merge.py shared/tests/test_gitignore_template_congruent.py -q  +  git check-ignore round-trip",
+      "runner": "uv run --extra dev pytest shared/tests/ -m 'not cross_plugin'  +  D2V empirical gate (-o addopts='')  +  real-sweep integration regression",
       "exit_code": 0,
-      "tests_run": 21,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\2026-06-09-external-review-marker-gitignore\\.shipwright\\runs\\iterate-2026-06-09-external-review-marker-gitignore\\surface_verification.log",
-      "timestamp": "2026-06-09T21:08:11.000Z",
+      "tests_run": 3029,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\2026-06-10-triage-dedup-keep-last-append\\.shipwright\\runs\\iterate-2026-06-10-triage-dedup-keep-last-append\\surface_verification.log",
+      "timestamp": "2026-06-09T22:26:18.000Z",
       "attempts": 1,
-      "note": "No web/UI surface (gitignore-canon hygiene). Verified via CLI: real git check-ignore round-trip + pytest. Full shared/tests ran 3021 passed; the sole failure was this iterate's own new docstring tripping the artifact-path-canon lint (bare planning/), fixed and re-verified green."
+      "note": "No web/UI surface (shared churn-merge lib). Verified via CLI: unit + real-git integration + D2V empirical gate (6 methods). Full shared/tests 3029 passed."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "canon ignores top-level planning/iterate/external_review_state.json",
+          "behavior": "same-id non-byte-identical appends collapse to keep-LAST",
           "disposition": "tested",
-          "evidence": "test_gitignore_canon_merge.py::test_empirical_iterate_markers_ignored_plan_split_tracked PASSED + real git check-ignore exit 0"
+          "evidence": "test_churn_merge.py::test_triage_dedup_collapses_same_id_appends_keep_last PASSED"
         },
         {
-          "behavior": "canon ignores top-level planning/iterate/external_code_review_state.json",
+          "behavior": "collapsed result satisfies validate_triage_text (one-append-per-id)",
           "disposition": "tested",
-          "evidence": "test_empirical_iterate_markers_ignored_plan_split_tracked PASSED + real git check-ignore exit 0"
+          "evidence": "test_triage_dedup_same_id_appends_unblocks_validator PASSED"
         },
         {
-          "behavior": "canon ignores deep campaign/sub-iterate copies via **/",
+          "behavior": "append+status same id: status preserved, order preserved, append v1 dropped",
           "disposition": "tested",
-          "evidence": "test_empirical_iterate_markers_ignored_plan_split_tracked (deep_rel asserts) PASSED + real git check-ignore exit 0"
+          "evidence": "test_triage_dedup_keep_last_preserves_status_and_order PASSED"
         },
         {
-          "behavior": "durable plan-split planning/<split>/ markers stay TRACKED (RTM evidence preserved)",
+          "behavior": "different-id appends untouched",
           "disposition": "tested",
-          "evidence": "test_empirical_iterate_markers_ignored_plan_split_tracked (not _check_ignored 01-auth) PASSED + real git check-ignore exit 1"
+          "evidence": "test_triage_dedup_different_id_appends_untouched PASSED"
         },
         {
-          "behavior": "re-excludes do NOT over-match a non-iterate plan .md",
+          "behavior": "non-append / unparseable lines pass through (not swallowed)",
           "disposition": "tested",
-          "evidence": "test_empirical_iterate_markers_ignored_plan_split_tracked (.md assert) + pre-existing test_empirical_round_trip_fresh_repo PASSED"
+          "evidence": "test_triage_dedup_keep_last_passes_through_unparseable PASSED"
         },
         {
-          "behavior": "both rules present in canonical SSoT, ordered after planning re-include",
+          "behavior": "byte-identical same-id appends still collapse to one (regression)",
           "disposition": "tested",
-          "evidence": "test_read_canonical_rules_includes_iterate_external_marker_reexcludes PASSED"
+          "evidence": "test_triage_dedup_byte_identical_appends_still_single PASSED"
         },
         {
-          "behavior": "template <-> framework .gitignore congruent with the 2 new re-excludes",
+          "behavior": "REAL sweep returns committed (not invalid) for double-append, folds LAST",
           "disposition": "tested",
-          "evidence": "test_gitignore_template_congruent.py::test_template_and_framework_block_are_congruent PASSED"
+          "evidence": "test_sweep_outbox.py::test_sweep_collapses_producer_double_append_keep_last PASSED (real git+worktree)"
         },
         {
-          "behavior": "6 accidentally-tracked copies untracked (git rm --cached)",
+          "behavior": "concurrency / exactly-once-after-merge / abandoned-branch unaffected",
           "disposition": "tested",
-          "evidence": "git rm --cached output + git status D x6 + git check-ignore !! (on-disk survival) \u2014 deterministic git op"
+          "evidence": "test_d2v_empirical_gate.py 6 methods PASSED over real git"
         }
       ],
       "counts": {
