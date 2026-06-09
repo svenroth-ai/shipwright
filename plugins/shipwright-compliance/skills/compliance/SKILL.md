@@ -46,9 +46,9 @@ Groups:
   F — ADR structural integrity (preventive re-run)
   G — Agent-docs freshness vs. git activity (G2 conventional-commit scope, G3 ADR-ID body refs)
 
-Reports written:
-  - .shipwright/compliance/audit-report.md  ← human-readable summary
-  - shipwright_audit_report.json            ← structured payload
+Reports written (both gitignored — transient):
+  - .shipwright/compliance/audit-report.md    ← human-readable summary
+  - .shipwright/compliance/audit-report.json  ← structured payload (also on stdout)
 ================================================================================
 ```
 
@@ -111,7 +111,7 @@ Fixes applied:
 
 Report:
   .shipwright/compliance/audit-report.md
-  shipwright_audit_report.json
+  .shipwright/compliance/audit-report.json
 ================================================================================
 ```
 

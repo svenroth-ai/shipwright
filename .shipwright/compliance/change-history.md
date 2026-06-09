@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-08T23:00:07.796168+00:00
-Total commits: 901
+Generated: 2026-06-09T05:40:11.370772+00:00
+Total commits: 906
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 258
-    "fix" : 252
-    "chore" : 185
+    "fix" : 253
+    "chore" : 189
     "docs" : 119
     "refactor" : 50
     "test" : 22
@@ -283,10 +283,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 252 commits
+### Fixes (fix) — 253 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-09 | infra | idle-main artifact hygiene — complete ADR-089 for two stragglers | 1f7f0ceff292 |
 | 2026-06-08 | test | unset $CI for sweep/D2V suites so the real sweep runs in CI | 40cdf6f0e828 |
 | 2026-06-08 | triage | D3 review cascade — seam test, fail-soft decode, sweep-skip observability | 45ce44900ed9 |
 | 2026-06-08 | triage | harden D2 sweep/GC (LF outbox, GC-by-id, exactly-once proof, staged-diff gate) | b8fcf8ae0342 |
@@ -540,10 +541,14 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 185 commits
+### Chores (chore) — 189 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-09 | triage | sweep 2 outbox append(s) into branch | 0a1b4c334d29 |
+| 2026-06-09 | planning | idle-main housekeeping — gitignore audit report, commit campaign docs, drop consumed scratch | ca0df889a915 |
+| 2026-06-09 | triage | fold 3 main-tree background append(s) | 1e900f5a41c7 |
+| 2026-06-09 | iterate | F11 bookkeeping — adr ref + architecture.md note | 67a8daa667c5 |
 | 2026-06-08 | triage | fold 3 main-tree background append(s) | 7df9da1e8b62 |
 | 2026-06-08 | triage | fold 3 main-tree background append(s) | 91a516977159 |
 | 2026-06-07 | triage | fold 1 main-tree background append(s) | b8f6ce407935 |
@@ -970,7 +975,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 901 |
+| Total commits | 906 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 901 |
+| Human-authored commits | 906 |
 

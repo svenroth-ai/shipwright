@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
+_REPO_ROOT = PLUGIN_ROOT.parents[1]
 sys.path.insert(0, str(PLUGIN_ROOT))
 
 from scripts.audit.audit_adapters import (  # noqa: E402
@@ -106,7 +110,11 @@ def test_write_creates_both_artifacts(tmp_path):
     paths = write(report, tmp_path)
     assert set(paths) == {"md", "json"}
     assert paths["md"] == tmp_path / ".shipwright" / "compliance" / "audit-report.md"
-    assert paths["json"] == tmp_path / "shipwright_audit_report.json"
+    # JSON relocated from repo-ROOT under .shipwright/compliance/ (idle-main
+    # hygiene, iterate-2026-06-09) so the .shipwright/-scoped gitignore canon can
+    # re-exclude it; the ROOT file must no longer be produced.
+    assert paths["json"] == tmp_path / ".shipwright" / "compliance" / "audit-report.json"
+    assert not (tmp_path / "shipwright_audit_report.json").exists()
     assert paths["md"].exists()
     assert paths["json"].exists()
     # JSON is valid + preserves source field
@@ -119,6 +127,29 @@ def test_write_respects_format_flags(tmp_path):
     paths = write(report, tmp_path, markdown=False, json_out=True)
     assert set(paths) == {"json"}
     assert not (tmp_path / ".shipwright" / "compliance" / "audit-report.md").exists()
+
+
+def test_audit_artifacts_gitignored_under_canon(tmp_path):
+    """Empirical (touches_io_boundary): after a real write() in a git repo with
+    the canon .gitignore installed, NEITHER audit artifact shows in `git status`
+    — the canon re-excludes propagate the ignore to every adopted repo. Would
+    FAIL pre-relocation (root json escapes the .shipwright/-scoped canon)."""
+    if subprocess.run(["git", "--version"], capture_output=True).returncode != 0:
+        if os.environ.get("CI", "").lower() in ("true", "1"):
+            pytest.fail("git required for audit-report hygiene probe; install git")
+        pytest.skip("git not available")
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", "-b", "main"], cwd=str(repo), check=True)
+    template = _REPO_ROOT / "shared" / "templates" / "shipwright-gitignore.template"
+    (repo / ".gitignore").write_text(template.read_text(encoding="utf-8"), encoding="utf-8")
+    write(AuditReport(findings=[_finding(status="fail")]), repo)
+    out = subprocess.run(
+        ["git", "-C", str(repo), "status", "--porcelain", "-uall"],
+        capture_output=True, text=True, encoding="utf-8",
+    ).stdout
+    assert "audit-report" not in out, f"audit artifacts leaked into git status:\n{out}"
+    assert "shipwright_audit_report.json" not in out, f"root json leaked:\n{out}"
 
 
 # ---------------------------------------------------------------------------

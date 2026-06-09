@@ -1,0 +1,11 @@
+{
+  "run_id": "iterate-2026-06-09-audit-report-hygiene",
+  "date": "2026-06-09T05:40:11.806641Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/audit-report-hygiene",
+  "tests_passed": true,
+  "spec": ".shipwright/planning/iterate/2026-06-09-audit-report-hygiene.md",
+  "change_type": "infra",
+  "adr": "iterate-2026-06-09-audit-report-hygiene"
+}

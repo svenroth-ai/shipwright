@@ -63,9 +63,9 @@ def main(argv: list[str] | None = None) -> int:
         return 3
 
     # Step 9 rendering. ``--format both`` writes .shipwright/compliance/audit-report.md
-    # AND shipwright_audit_report.json; ``--format md|json`` writes only
-    # the named one. stdout always carries the JSON payload so automated
-    # callers have a stable contract.
+    # AND .shipwright/compliance/audit-report.json (both gitignored); ``--format
+    # md|json`` writes only the named one. stdout always carries the JSON payload
+    # so automated callers have a stable contract.
     want_md = args.format in ("md", "both")
     want_json = args.format in ("json", "both")
     written = write_report(report, project_root,
