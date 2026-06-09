@@ -1,9 +1,0 @@
-{
-  "status": "completed",
-  "timestamp": "2026-06-08T11:18:22.975653+00:00",
-  "provider": "openrouter",
-  "findings_count": 6,
-  "self_review_fallback_ran": false,
-  "reason": null,
-  "review_mode": "code"
-}

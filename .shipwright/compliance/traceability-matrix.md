@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-09T05:40:11.370772+00:00
+Generated: 2026-06-09T21:09:05.322255+00:00
 
 ## Requirements Coverage
 
@@ -155,6 +155,7 @@ Generated: 2026-06-09T05:40:11.370772+00:00
 | evt-ec8e9621 | iterate | change |  | — | 77cc652 | 2026-06-08 |
 | Relocate phase-quality skill-compliance roll-ups under the gitignored FINDING_DIR; resolve main_repo_root (not cwd) in the bloat marker writer+reader via a shared fail-soft resolver; defensive nested-locks gitignore canon. | iterate | change |  | — | — | 2026-06-08 |
 | Relocate detective-audit JSON from repo root to .shipwright/compliance/audit-report.json; canon re-excludes audit-report.{md,json} (propagates to adopted repos); drop obsolete framework root ignore. | iterate | change |  | — | — | 2026-06-09 |
+| Iterate-scoped external-review markers gitignored (not blanket); 6 tracked copies untracked. | iterate | change |  | — | — | 2026-06-09 |
 
 ## Coverage Summary
 
@@ -162,7 +163,7 @@ Generated: 2026-06-09T05:40:11.370772+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 130 |
+| Iterate changes | 131 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

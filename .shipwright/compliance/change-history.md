@@ -1,14 +1,14 @@
 # Commit Change Log
 
-Generated: 2026-06-09T05:40:11.370772+00:00
-Total commits: 906
+Generated: 2026-06-09T21:09:05.322255+00:00
+Total commits: 907
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
     "feat" : 258
-    "fix" : 253
+    "fix" : 254
     "chore" : 189
     "docs" : 119
     "refactor" : 50
@@ -283,10 +283,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 253 commits
+### Fixes (fix) — 254 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-09 | compliance | relocate detective-audit JSON under .shipwright/compliance/ so the gitignore canon covers it | 79fcde8c865f |
 | 2026-06-09 | infra | idle-main artifact hygiene — complete ADR-089 for two stragglers | 1f7f0ceff292 |
 | 2026-06-08 | test | unset $CI for sweep/D2V suites so the real sweep runs in CI | 40cdf6f0e828 |
 | 2026-06-08 | triage | D3 review cascade — seam test, fail-soft decode, sweep-skip observability | 45ce44900ed9 |
@@ -975,7 +976,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 906 |
+| Total commits | 907 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 906 |
+| Human-authored commits | 907 |
 
