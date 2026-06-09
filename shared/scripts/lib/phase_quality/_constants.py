@@ -62,10 +62,17 @@ GC_AGE_DAYS = 90
 COMPLIANCE_DIR = ".shipwright/compliance"
 LEGACY_COMPLIANCE_DIRNAME = "compliance"
 
+# Per-finding JSON dir — ALREADY gitignored (canon block re-excludes it).
 FINDING_DIR = f"{COMPLIANCE_DIR}/skill-compliance"
-REPORT_PATH = f"{COMPLIANCE_DIR}/skill-compliance-report.md"
-SUMMARY_PATH = ".shipwright/agent_docs/skill-compliance-findings.md"
-DASHBOARD_PATH = f"{COMPLIANCE_DIR}/skill-compliance-dashboard.md"
+# The 3 aggregate roll-ups are TRANSIENT derived caches of the FINDING_DIR
+# JSONs (regenerated every Stop; never tracked; not in audit_staleness.
+# DOC_REGISTRY). They live UNDER FINDING_DIR so they inherit the existing
+# gitignore rule and never show up as `??` on idle main — completing ADR-089's
+# runtime/snapshot split for this producer (iterate-2026-06-09; trg-7640bd14).
+# load_findings/gc only glob `*.json`, so the `.md` roll-ups never collide.
+REPORT_PATH = f"{FINDING_DIR}/_report.md"
+SUMMARY_PATH = f"{FINDING_DIR}/_findings.md"
+DASHBOARD_PATH = f"{FINDING_DIR}/_dashboard.md"
 LOCK_PATH = ".shipwright/locks/phase-quality.lock"
 
 # Finding status constants.

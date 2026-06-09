@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-07T22:13:08.271541+00:00
+Generated: 2026-06-08T23:00:07.796168+00:00
 
 ## Requirements Coverage
 
@@ -149,6 +149,11 @@ Generated: 2026-06-07T22:13:08.271541+00:00
 | Track campaign status.json for compliance-detective-realign + track-triage-jsonl (durable per-sub board on fresh clone / deployed WebUI; stopgap for trg-fda5f7a3). | iterate | change |  | — | — | 2026-06-07 |
 | triage main-tree drift reconcile-and-commit at integrate/sync | iterate | change |  | 2861/2861 | — | 2026-06-07 |
 | scaffold the append-log merge=union .gitattributes driver into managed repos (adopt E.13c + iterate self-heal) | iterate | change |  | 2884/2884 | — | 2026-06-07 |
+| Add .shipwright/triage.outbox.jsonl gitignored buffer; route 3 background producers via should_route_to_outbox; two-pass ts-primary union reader; tracked-only GC. ADR-100 bloat exception. | iterate | Gitignored per-tree triage outbox + reroute background producers + union reader |  | 2913/2913 | 2293a76 | 2026-06-08 |
+| evt-b9b5ddf2 | iterate | Sweep triage outbox into PR branch + abandoned-branch-safe GC; drop integrate_main reconcile |  | 2954/2954 | 005f643 | 2026-06-08 |
+| Real non-mocked empirical harness over the real D2 code + real git: 200 thread + 40 cross-process concurrency trials (multiset zero-loss/zero-dup), abandoned-branch e2e, exactly-once after a real merge, no main pollution; pytest_sessionfinish fails a partial gate. GATE PASS (all 5 methods). | iterate | D2V empirical verification gate — prove the D2 outbox sweep/GC loses no triage line (HARD insurance before D3) |  | 6/6 | 7a31e33 | 2026-06-08 |
+| evt-ec8e9621 | iterate | change |  | — | 77cc652 | 2026-06-08 |
+| Relocate phase-quality skill-compliance roll-ups under the gitignored FINDING_DIR; resolve main_repo_root (not cwd) in the bloat marker writer+reader via a shared fail-soft resolver; defensive nested-locks gitignore canon. | iterate | change |  | — | — | 2026-06-08 |
 
 ## Coverage Summary
 
@@ -156,12 +161,12 @@ Generated: 2026-06-07T22:13:08.271541+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 124 |
+| Iterate changes | 129 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |
-| Total review findings | 12 |
-| Unresolved findings | 0 |
+| Total review findings | 66 |
+| Unresolved findings | 24 |
 
 ### FRs with stale verification (> 14 days)
 

@@ -26,6 +26,7 @@ if str(_SHARED_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SHARED_SCRIPTS))
 
 from lib import bloat_baseline as _bb  # noqa: E402
+from lib.repo_root import main_repo_root_or  # noqa: E402
 
 
 def _session_id(payload: object = None) -> str:
@@ -213,14 +214,17 @@ def _emit_pass() -> None:
 
 
 def main() -> int:
-    cwd = Path.cwd()
+    # Canonical MAIN repo root (fail-soft), never Path.cwd() — must match the
+    # writer (check_file_size) so marker/baseline/re-measure key off ONE root.
+    # A Stop firing with cwd != repo-root otherwise reads the wrong location.
+    root = main_repo_root_or(Path.cwd())
     sid = _session_id(_read_payload())
-    entries = _load_marker(_marker_path(cwd, sid))
+    entries = _load_marker(_marker_path(root, sid))
     if not entries:
         _emit_pass()
         return 0
     now = datetime.datetime.now(datetime.timezone.utc)
-    baseline = _baseline_map(cwd)
+    baseline = _baseline_map(root)
     if baseline is None:
         # AC-7: no/malformed baseline → pass silently (fresh / pre-adopt / corrupted).
         _emit_pass()
@@ -231,7 +235,7 @@ def main() -> int:
             continue
         if not _within_ttl(entry, now):
             continue
-        current = _re_measure_oversize(cwd, entry)
+        current = _re_measure_oversize(root, entry)
         if current is None:
             continue
         path = _bb.normalize_path(str(entry.get("path", "")))

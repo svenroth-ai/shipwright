@@ -1,16 +1,16 @@
 """Aggregate Markdown renderers — skill-compliance dashboards + report.
 
-Three artifacts:
+Three artifacts — all TRANSIENT derived caches written UNDER the gitignored
+``FINDING_DIR`` (``.shipwright/compliance/skill-compliance/``) so idle main
+stays clean (iterate-2026-06-09; ADR-089 split for this producer):
 
-* :func:`rewrite_aggregated_report` — full
-  ``.shipwright/compliance/skill-compliance-report.md`` (last
-  ``MAX_REPORT_RUNS`` runs, per-category detail).
+* :func:`rewrite_aggregated_report` — full ``{FINDING_DIR}/_report.md``
+  (last ``MAX_REPORT_RUNS`` runs, per-category detail).
 * :func:`rewrite_session_findings_summary` — short-form
-  ``.shipwright/agent_docs/skill-compliance-findings.md`` digest
-  consumed by the SessionStart-Injection hook.
+  ``{FINDING_DIR}/_findings.md`` digest consumed by the
+  SessionStart-Injection hook (``capture_session_id``).
 * :func:`write_quality_dashboard_file` — per-phase matrix
-  ``.shipwright/compliance/skill-compliance-dashboard.md`` (newest
-  finding per phase).
+  ``{FINDING_DIR}/_dashboard.md`` (newest finding per phase).
 
 The project-wide Compliance Dashboard's bloat-findings column lives
 in :mod:`._bloat_findings` (so this module stays focused on Markdown
@@ -47,7 +47,7 @@ from ._findings import now_iso
 
 
 def rewrite_aggregated_report(project_root: Path) -> Path | None:
-    """Regenerate ``.shipwright/compliance/skill-compliance-report.md``."""
+    """Regenerate the transient ``{FINDING_DIR}/_report.md`` roll-up."""
     findings = load_findings(project_root)[:MAX_REPORT_RUNS]
     path = project_root / REPORT_PATH
     if not findings:
@@ -105,7 +105,7 @@ def _render_run_detail(f: LoadedFinding) -> list[str]:
 
 
 def rewrite_session_findings_summary(project_root: Path) -> Path | None:
-    """Regenerate ``.shipwright/agent_docs/skill-compliance-findings.md``."""
+    """Regenerate the transient ``{FINDING_DIR}/_findings.md`` digest."""
     findings = load_findings(project_root)[:MAX_SESSION_SUMMARY_RUNS]
     path = project_root / SUMMARY_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -149,7 +149,7 @@ def rewrite_session_findings_summary(project_root: Path) -> Path | None:
 
 
 def write_quality_dashboard_file(project_root: Path) -> Path | None:
-    """Regenerate ``.shipwright/compliance/skill-compliance-dashboard.md``.
+    """Regenerate the transient ``{FINDING_DIR}/_dashboard.md`` roll-up.
 
     Table: one row per phase, one column per category. Newest finding per
     phase wins. Heuristic (Tier-2) checks are reported as a separate

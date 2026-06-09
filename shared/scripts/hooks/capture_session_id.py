@@ -14,9 +14,10 @@ bash subprocesses inherit it — additionalContext alone does not reach
 child processes spawned by Claude's Bash tool.
 
 **Phase-Quality injection (PR 4, Szenario C):** at SessionStart this
-hook reads ``.shipwright/agent_docs/skill-compliance-findings.md`` and appends up
-to 5 Tier-1 FAILs as ``additionalContext``. Only Tier-1 FAILs are
-injected; Tier-2 (heuristic) is silent (plan § 4.3).
+hook reads the transient findings summary (``phase_quality.SUMMARY_PATH``,
+under the gitignored ``skill-compliance`` dir since iterate-2026-06-09) and
+appends up to 5 Tier-1 FAILs as ``additionalContext``.
+Only Tier-1 FAILs are injected; Tier-2 (heuristic) is silent (plan § 4.3).
 
 **Default is ON** (``audit_inject``) since the Phase-Quality epic
 completed — rollout calculus shifted from "wait 6 weeks, opt in" to
@@ -94,7 +95,7 @@ def _phase_quality_inject_enabled() -> bool:
 
 
 def _collect_tier1_fails(summary_text: str) -> list[dict[str, str]]:
-    """Parse skill-compliance-findings.md and return up to N Tier-1 FAILs.
+    """Parse the findings digest (``_findings.md``) and return up to N Tier-1 FAILs.
 
     The summary file groups runs under ``## {phase} — {run_id}`` headers
     and lists open FAILs as bulleted lines under ``- open FAILs:``.
@@ -182,7 +183,15 @@ def _build_phase_quality_injection(project_root: str) -> str:
         if cwd_is_strict_ancestor_of(cwd, pr) \
                 and not project_root_was_explicitly_selected(pr):
             return ""
-    summary_path = pr / ".shipwright" / "agent_docs" / "skill-compliance-findings.md"
+    # The findings summary is a transient derived cache under the gitignored
+    # skill-compliance dir (relocated in iterate-2026-06-09 so idle main stays
+    # clean). Follow the SSoT constant; if phase_quality can't be imported in
+    # this minimal hook context there is nothing meaningful to inject.
+    try:
+        from lib.phase_quality import SUMMARY_PATH as _PQ_SUMMARY_REL
+    except ImportError:
+        return ""
+    summary_path = pr / _PQ_SUMMARY_REL
     try:
         text = summary_path.read_text(encoding="utf-8")
     except (FileNotFoundError, OSError):
