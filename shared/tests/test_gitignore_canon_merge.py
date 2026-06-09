@@ -219,3 +219,71 @@ def test_empirical_webui_regression_runtime_becomes_ignored(tmp_path: Path) -> N
     merge_canonical_block(repo, template_path=TEMPLATE)
     # Post-merge: runtime file IS ignored (the fix).
     assert _check_ignored(repo, probe)
+
+
+# --------------------------------------------------------------------------
+# Iterate-scoped external-review markers — transient, must NOT be tracked,
+# while the durable plan-split markers (RTM evidence) MUST stay tracked.
+# (iterate-2026-06-09-external-review-marker-gitignore.) The danger is a
+# blanket ``**/external_*review_state.json`` near-miss that would also erase
+# the plan-split RTM evidence; these probes pin both directions.
+# --------------------------------------------------------------------------
+
+_ITERATE_MARKER_REEXCLUDES = (
+    "/.shipwright/planning/iterate/**/external_review_state.json",
+    "/.shipwright/planning/iterate/**/external_code_review_state.json",
+)
+
+
+def test_read_canonical_rules_includes_iterate_external_marker_reexcludes() -> None:
+    rules = read_canonical_rules(TEMPLATE)
+    for rule in _ITERATE_MARKER_REEXCLUDES:
+        assert rule in rules, f"canon missing iterate-marker re-exclude: {rule!r}"
+    # The re-excludes must come AFTER the planning re-include, else the
+    # whitelist semantics can't re-exclude inside the re-included dir.
+    planning_idx = rules.index("!/.shipwright/planning/")
+    for rule in _ITERATE_MARKER_REEXCLUDES:
+        assert rules.index(rule) > planning_idx
+
+
+def test_empirical_iterate_markers_ignored_plan_split_tracked(tmp_path: Path) -> None:
+    """The near-miss guard, proven with real ``git check-ignore``.
+
+    Iterate-scoped external-review markers (top-level AND deep campaign /
+    sub-iterate copies) are run-scoped transient state and MUST be ignored.
+    The plan-split markers under ``.shipwright/planning/<split>/`` are durable
+    RTM evidence (``rtm.collect_external_review_states`` reads them; it skips
+    ``.shipwright/planning/iterate/``) and MUST stay tracked. A non-iterate ``.md``
+    must also stay tracked — the re-excludes target only the two state files.
+    """
+    repo = _init_repo(tmp_path)
+    merge_canonical_block(repo, template_path=TEMPLATE)
+
+    iterate = repo / ".shipwright" / "planning" / "iterate"
+    deep = iterate / "campaigns" / "2026-05-25-demo" / "sub-iterates"
+    split = repo / ".shipwright" / "planning" / "01-auth"
+    deep.mkdir(parents=True)
+    split.mkdir(parents=True)
+    for d in (iterate, deep, split):
+        (d / "external_review_state.json").write_text("{}")
+        (d / "external_code_review_state.json").write_text("{}")
+    (iterate / "2026-06-09-demo.md").write_text("# spec")
+
+    # Transient iterate markers — top-level copies are ignored.
+    assert _check_ignored(repo, ".shipwright/planning/iterate/external_review_state.json")
+    assert _check_ignored(
+        repo, ".shipwright/planning/iterate/external_code_review_state.json"
+    )
+    # ...and the deep campaign / sub-iterate copies are ignored too (`**/`).
+    deep_rel = ".shipwright/planning/iterate/campaigns/2026-05-25-demo/sub-iterates"
+    assert _check_ignored(repo, f"{deep_rel}/external_review_state.json")
+    assert _check_ignored(repo, f"{deep_rel}/external_code_review_state.json")
+    # Durable plan-split RTM evidence stays TRACKED (not ignored).
+    assert not _check_ignored(
+        repo, ".shipwright/planning/01-auth/external_review_state.json"
+    )
+    assert not _check_ignored(
+        repo, ".shipwright/planning/01-auth/external_code_review_state.json"
+    )
+    # The re-excludes must not over-match: an iterate plan .md stays tracked.
+    assert not _check_ignored(repo, ".shipwright/planning/iterate/2026-06-09-demo.md")

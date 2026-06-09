@@ -1,9 +1,0 @@
-{
-  "status": "completed",
-  "timestamp": "2026-06-01T06:00:50.376446+00:00",
-  "provider": "internal-code-reviewer",
-  "findings_count": 4,
-  "self_review_fallback_ran": false,
-  "reason": "code-reviewer subagent: 1 MEDIUM (D5 parity gap \u2014 now requires none_reason, true gate parity) + 3 LOW (casing comment, pass-preservation guard, disable scope note) all addressed; +self-caught canon-lint regression fixed",
-  "review_mode": "iterate"
-}

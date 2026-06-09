@@ -1,37 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-09-audit-report-hygiene"
+run_id: "iterate-2026-06-09-external-review-marker-gitignore"
 phase: "iterate"
-reason: "audit-report json relocated under .shipwright/compliance + canon re-excludes; ADR-089 leak class continued"
-timestamp: "2026-06-09T05:40:11.370772+00:00"
+reason: "gitignore-canon hygiene: iterate-scoped external-review markers re-excluded + 6 tracked copies untracked"
+timestamp: "2026-06-09T21:09:05.322255+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-09 05:40:11 UTC
+> Auto-generated 2026-06-09 21:09:05 UTC
 
 ## Session Info
 
-- **Session ID**: 8707e246-7d90-4cb2-9e68-afab172947de
-- **Timestamp**: 2026-06-09 05:40:11 UTC
-- **Reason**: audit-report json relocated under .shipwright/compliance + canon re-excludes; ADR-089 leak class continued
+- **Session ID**: d23ad659-b692-4618-ab0b-2021e37ec619
+- **Timestamp**: 2026-06-09 21:09:05 UTC
+- **Reason**: gitignore-canon hygiene: iterate-scoped external-review markers re-excluded + 6 tracked copies untracked
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-09-idle-main-artifact-hygiene
-- **Date**: 2026-06-08T23:00:38.392991Z
+- **Run ID**: iterate-2026-06-09-audit-report-hygiene
+- **Date**: 2026-06-09T05:40:11.806641Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/idle-main-artifact-hygiene
-- **ADR**: iterate-2026-06-09-idle-main-artifact-hygiene
+- **Branch**: iterate/audit-report-hygiene
+- **ADR**: iterate-2026-06-09-audit-report-hygiene
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-09-idle-main-artifact-hygiene.md
+- **Spec**: .shipwright/planning/iterate/2026-06-09-audit-report-hygiene.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/audit-report-hygiene
-- **Spec**: .shipwright/planning/iterate/2026-06-09-audit-report-hygiene.md
-- **External Review Marker**: stale (predates spec (2026-06-01T06:00:50))
+- **Branch**: iterate/2026-06-09-external-review-marker-gitignore
+- **External Review Marker**: completed (external_review_state.json @ 2026-06-01T06:00:50)
 
 ### Mandatory replay on Resume
 
@@ -49,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/audit-report-hygiene
-- **Last Commit**: 0a1b4c33 chore(triage): sweep 2 outbox append(s) into branch
+- **Branch**: iterate/2026-06-09-external-review-marker-gitignore
+- **Last Commit**: 9e91a939 Merge pull request #174 from svenroth-ai/iterate/audit-report-hygiene
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-3beaef96 | work_completed | iterate (Iterate-scoped external-review markers gitignored (not blanket); 6 tracked copies untracked.) | 2026-06-09 |
 | evt-1326569b | work_completed | iterate (Relocate detective-audit JSON from repo root to .shipwright/compliance/audit-report.json; canon re-excludes audit-report.{md,json} (propagates to adopted repos); drop obsolete framework root ignore.) | 2026-06-09 |
 | evt-cefcd03e | work_completed | iterate (Relocate phase-quality skill-compliance roll-ups under the gitignored FINDING_DIR; resolve main_repo_root (not cwd) in the bloat marker writer+reader via a shared fail-soft resolver; defensive nested-locks gitignore canon.) | 2026-06-08 |
 | evt-ec8e9621 | work_completed | iterate (—) | 2026-06-08 |
 | evt-bb598e0d | work_completed | iterate (Real non-mocked empirical harness over the real D2 code + real git: 200 thread + 40 cross-process concurrency trials (multiset zero-loss/zero-dup), abandoned-branch e2e, exactly-once after a real merge, no main pollution; pytest_sessionfinish fails a partial gate. GATE PASS (all 5 methods).) | 2026-06-08 |
-| evt-b9b5ddf2 | work_completed | iterate (—) | 2026-06-08 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 130
-- **Last iterate**: change — Relocate detective-audit JSON from repo root to .shipwright/compliance/audit-report.json; canon re-excludes audit-report.{md,json} (propagates to adopted repos); drop obsolete framework root ignore. (2026-06-09)
+- **Total work events**: 131
+- **Last iterate**: change — Iterate-scoped external-review markers gitignored (not blanket); 6 tracked copies untracked. (2026-06-09)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

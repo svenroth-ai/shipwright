@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-09-audit-report-hygiene",
+    "run_id": "iterate-2026-06-09-external-review-marker-gitignore",
     "date": "2026-06-09",
     "unit": {
       "status": "passed",
-      "passed": 654,
-      "total": 654
+      "passed": 21,
+      "total": 21
     },
     "integration": {
-      "status": "passed",
-      "passed": 141,
-      "total": 141
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -23,9 +23,7 @@
       "total": 0
     },
     "design_fidelity": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "not_run"
     },
     "smoke": {
       "status": "not_run"
@@ -33,56 +31,67 @@
     "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest --with pytest-mock pytest plugins/shipwright-compliance/tests/test_audit_report.py -q",
+      "runner": "uv run --extra dev pytest shared/tests/test_artifact_path_canon.py shared/tests/test_gitignore_canon_merge.py shared/tests/test_gitignore_template_congruent.py -q  +  git check-ignore round-trip",
       "exit_code": 0,
-      "tests_run": 12,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\audit-report-hygiene\\.shipwright\\runs\\iterate-2026-06-09-audit-report-hygiene\\surface_verification.log",
-      "timestamp": "2026-06-09T05:38:27.354Z",
-      "attempts": 1
+      "tests_run": 21,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\2026-06-09-external-review-marker-gitignore\\.shipwright\\runs\\iterate-2026-06-09-external-review-marker-gitignore\\surface_verification.log",
+      "timestamp": "2026-06-09T21:08:11.000Z",
+      "attempts": 1,
+      "note": "No web/UI surface (gitignore-canon hygiene). Verified via CLI: real git check-ignore round-trip + pytest. Full shared/tests ran 3021 passed; the sole failure was this iterate's own new docstring tripping the artifact-path-canon lint (bare planning/), fixed and re-verified green."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "json written to .shipwright/compliance/audit-report.json (AC-1)",
+          "behavior": "canon ignores top-level planning/iterate/external_review_state.json",
           "disposition": "tested",
-          "evidence": "test_audit_report.py::test_write_creates_both_artifacts PASSED"
+          "evidence": "test_gitignore_canon_merge.py::test_empirical_iterate_markers_ignored_plan_split_tracked PASSED + real git check-ignore exit 0"
         },
         {
-          "behavior": "root shipwright_audit_report.json no longer produced (AC-1)",
+          "behavior": "canon ignores top-level planning/iterate/external_code_review_state.json",
           "disposition": "tested",
-          "evidence": "test_audit_report.py::test_write_creates_both_artifacts (assert-not-exists) PASSED"
+          "evidence": "test_empirical_iterate_markers_ignored_plan_split_tracked PASSED + real git check-ignore exit 0"
         },
         {
-          "behavior": "--format flags still respected (regression)",
+          "behavior": "canon ignores deep campaign/sub-iterate copies via **/",
           "disposition": "tested",
-          "evidence": "test_audit_report.py::test_write_respects_format_flags PASSED"
+          "evidence": "test_empirical_iterate_markers_ignored_plan_split_tracked (deep_rel asserts) PASSED + real git check-ignore exit 0"
         },
         {
-          "behavior": "both artifacts gitignored under canon - git-status-clean + propagates (AC-2/AC-4)",
+          "behavior": "durable plan-split planning/<split>/ markers stay TRACKED (RTM evidence preserved)",
           "disposition": "tested",
-          "evidence": "test_audit_report.py::test_audit_artifacts_gitignored_under_canon (real git -uall) PASSED"
+          "evidence": "test_empirical_iterate_markers_ignored_plan_split_tracked (not _check_ignored 01-auth) PASSED + real git check-ignore exit 1"
         },
         {
-          "behavior": "template<->framework congruent with 2 re-excludes (AC-2/AC-3)",
+          "behavior": "re-excludes do NOT over-match a non-iterate plan .md",
           "disposition": "tested",
-          "evidence": "test_gitignore_template_congruent.py PASSED"
+          "evidence": "test_empirical_iterate_markers_ignored_plan_split_tracked (.md assert) + pre-existing test_empirical_round_trip_fresh_repo PASSED"
         },
         {
-          "behavior": "stdout JSON payload unchanged (AC-1 contract)",
+          "behavior": "both rules present in canonical SSoT, ordered after planning re-include",
           "disposition": "tested",
-          "evidence": "run_audit e2e CLI tests (covered-by-existing-test; stdout path untouched) PASSED"
+          "evidence": "test_read_canonical_rules_includes_iterate_external_marker_reexcludes PASSED"
+        },
+        {
+          "behavior": "template <-> framework .gitignore congruent with the 2 new re-excludes",
+          "disposition": "tested",
+          "evidence": "test_gitignore_template_congruent.py::test_template_and_framework_block_are_congruent PASSED"
+        },
+        {
+          "behavior": "6 accidentally-tracked copies untracked (git rm --cached)",
+          "disposition": "tested",
+          "evidence": "git rm --cached output + git status D x6 + git check-ignore !! (on-disk survival) \u2014 deterministic git op"
         }
       ],
       "counts": {
-        "testable": 6,
-        "tested": 6,
+        "testable": 8,
+        "tested": 8,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 5,
-        "covered_acs": 5
+        "acs": 8,
+        "covered_acs": 8
       }
     }
   }

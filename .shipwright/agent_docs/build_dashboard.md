@@ -1,10 +1,11 @@
 # Project Activity Dashboard
-> Updated: 2026-06-09 05:40 UTC | Session: 8707e246-7d90-4cb2-9e68-afab172947de | Run: iterate-2026-06-09-audit-report-hygiene
+> Updated: 2026-06-09 21:09 UTC | Session: d23ad659-b692-4618-ab0b-2021e37ec619 | Run: iterate-2026-06-09-external-review-marker-gitignore
 
-## Recent Changes (130 iterations)
+## Recent Changes (131 iterations)
 
 | Type | Description | Tests | Commit | FRs | Date |
 |------|-------------|-------|--------|-----|------|
+| change | Iterate-scoped external-review markers gitignored (not blanket); 6 tracked copies untracked. | 0/0 |  | infra | 2026-06-09 |
 | change | Relocate detective-audit JSON from repo root to .shipwright/compliance/audit-report.json; canon re-excludes audit-report.{md,json} (propagates to adopted repos); drop obsolete framework root ignore. | 0/0 |  | infra | 2026-06-09 |
 | change | Relocate phase-quality skill-compliance roll-ups under the gitignored FINDING_DIR; resolve main_repo_root (not cwd) in the bloat marker writer+reader via a shared fail-soft resolver; defensive nested-locks gitignore canon. | 0/0 |  | infra | 2026-06-08 |
 | change | — | 0/0 | 77cc652 | tooling | 2026-06-08 |
@@ -137,7 +138,7 @@
 | change | post-adoption framework cleanup (Sub-1A through 1D) | 225/225 | 3db485b | FR-01.01, FR-01.02, FR-01.03 | 2026-05-02 |
 
 ## Test Status
-Last run: 2026-06-09 | Unit: 654/654 | Integration: 141/141 | Smoke: not_run | (iterate)
+Last run: 2026-06-09 | Unit: 21/21 | Smoke: not_run | (iterate)
 
 ## Pipeline
 

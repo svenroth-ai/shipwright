@@ -166,6 +166,16 @@ Spec/
 # leaked in every adopted repo).
 /.shipwright/compliance/audit-report.md
 /.shipwright/compliance/audit-report.json
+# External-review gate markers under planning/iterate/ are TRANSIENT run-scoped
+# state (mark-review-state.py Branch A/B/C), not durable audit evidence: the RTM
+# (rtm.collect_external_review_states) explicitly SKIPS planning/iterate/ and only
+# treats planning/<plan-split>/external_*review_state.json as evidence. The `**/`
+# matches BOTH the direct top-level copy AND the deeper campaign/sub-iterate
+# copies; it deliberately does NOT touch planning/<split>/ (a blanket
+# **/external_*review_state.json would be a near-miss that erases the plan-split
+# RTM evidence on fresh clones). iterate-2026-06-09-external-review-marker-gitignore.
+/.shipwright/planning/iterate/**/external_review_state.json
+/.shipwright/planning/iterate/**/external_code_review_state.json
 # Defensive (non-anchored): a stray nested `.shipwright/locks/` (e.g. a bloat
 # marker written by a hook whose cwd != repo-root) must never leak. The
 # root-anchored `/.shipwright/*` above misses nested copies. The real fix is the
