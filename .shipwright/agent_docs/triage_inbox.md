@@ -1,21 +1,16 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-08T23:00:07.796168Z. Items waiting for triage decision.
+> Auto-generated 2026-06-09T05:40:11.370772Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 142
-- Triage: 9 | Promoted: 1 | Dismissed: 132 | Snoozed: 0
+- Total: 144
+- Triage: 8 | Promoted: 1 | Dismissed: 135 | Snoozed: 0
 
-## Top 9 items (severity-sorted)
+## Top 8 items (severity-sorted)
 
-### Source: architecture (3 items)
-
-<a id="trg-94f70926"></a>
-- **triage.jsonl background appends never reach origin (orphan reconcile-to-main)** `id=trg-94f70926 | severity=high | kind=improvement → P1/engineering`
-  - reconcile_main_triage() folds main-tree background drift into chore(triage) commits on LOCAL main; PR-protected repo ne…
-  - Promote: `triage_promote.py --id trg-94f70926 --task-ref EXT:<ref>`
+### Source: architecture (2 items)
 
 <a id="trg-721b1765"></a>
 - **Hook fan-out across plugins — collapse to phase-aware dispatchers (Start+Stop+Prompt+PostTool; PreToolUse separate) [ca…** `id=trg-721b1765 | severity=medium | kind=improvement → P2/engineering`

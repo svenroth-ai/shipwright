@@ -1106,9 +1106,11 @@ Two surfaces (plan v7 Option Z, 2026-04-19):
 2. **On-demand detective audit** (new in v7): `/shipwright-compliance`
    invokes `scripts/audit/run_audit.py`. Reads specs, plan.md,
    configs, shipwright_events.jsonl, ADRs, and the compliance docs.
-   Writes `.shipwright/compliance/audit-report.md` + `shipwright_audit_report.json`.
-   Does not modify anything unless `--fix` is passed (Group E per-doc
-   regen only).
+   Writes `.shipwright/compliance/audit-report.md` + `.shipwright/compliance/audit-report.json`
+   (both transient/gitignored — the `.json` relocated from the repo root in
+   iterate-2026-06-09 so the gitignore canon covers it; stdout stays the stable
+   JSON contract). Does not modify anything unless `--fix` is passed (Group E
+   per-doc regen only).
    **Applicability (iterate-2026-05-31 `compliance-check-context-gate`):** a
    repo-root `audit_config.json` may set `disabled_checks: ["B7","D1",…]` —
    detective checks that are structurally not-applicable to the project type.

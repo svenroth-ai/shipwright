@@ -6,8 +6,10 @@ Takes an :class:`AuditReport` and produces:
    top-level sections:
    - **Preventive re-checks** (source=preventive-rerun): Groups C/F/B3/B6
    - **Detective-only checks** (source=detective-only): everything else
-2. A JSON payload (``shipwright_audit_report.json``) with each finding's
-   ``source`` field preserved.
+2. A JSON payload (``.shipwright/compliance/audit-report.json``) with each
+   finding's ``source`` field preserved. (Relocated from the repo root in
+   iterate-2026-06-09 so the gitignore canon covers it; stdout stays the
+   stable contract for automated callers.)
 
 Rendering is pure / side-effect-free except for the ``write`` helper,
 which commits both artifacts to disk.
@@ -170,7 +172,15 @@ def write(
                            encoding="utf-8")
         paths["md"] = md_path
     if json_out:
-        json_path = project_root / "shipwright_audit_report.json"
+        # Under .shipwright/compliance/ (NOT repo root) since iterate-2026-06-09:
+        # a transient detective artifact (regenerated each run, not in
+        # audit_staleness.DOC_REGISTRY) belongs on a gitignored path so it never
+        # leaks as `??`. Living under .shipwright/ lets the .shipwright/-scoped
+        # gitignore canon re-exclude it, propagating the ignore to adopted repos.
+        # The stdout JSON payload remains the stable contract for automated callers.
+        json_dir = project_root / ".shipwright" / "compliance"
+        json_dir.mkdir(parents=True, exist_ok=True)
+        json_path = json_dir / "audit-report.json"
         json_path.write_text(render_json(report), encoding="utf-8")
         paths["json"] = json_path
     return paths

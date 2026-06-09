@@ -68,11 +68,6 @@ shipwright_events.jsonl
 shipwright_events.jsonl.lock
 # Exception: root-level event log from the framework's own self-adoption.
 !/shipwright_events.jsonl
-# Generated detective-audit output (run_audit.py / /shipwright-compliance) —
-# transient, regenerated each run, never tracked (not in audit_staleness
-# DOC_REGISTRY). Framework-local; adopted-repo propagation + the `.md` variant
-# are tracked as a follow-up (same producer-leak class as ADR-089).
-shipwright_audit_report.json
 # Canonical agent_docs home is .shipwright/agent_docs/.
 # Anchored to root since 2026-05-02 self-adoption to allow .shipwright/agent_docs/.
 # See docs/migrations/.shipwright-agent_docs-relocation.md.
@@ -164,6 +159,13 @@ Spec/
 # See iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox.
 /.shipwright/agent_docs/runtime/
 /.shipwright/compliance/skill-compliance/
+# Detective-audit report (run_audit.py / /shipwright-compliance) — transient,
+# regenerated each run, not in audit_staleness.DOC_REGISTRY. The .json was
+# relocated from the repo root under here in iterate-2026-06-09 so this canon
+# block can ignore it (the root path escaped the .shipwright/-scoped canon and
+# leaked in every adopted repo).
+/.shipwright/compliance/audit-report.md
+/.shipwright/compliance/audit-report.json
 # Defensive (non-anchored): a stray nested `.shipwright/locks/` (e.g. a bloat
 # marker written by a hook whose cwd != repo-root) must never leak. The
 # root-anchored `/.shipwright/*` above misses nested copies. The real fix is the

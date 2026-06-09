@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-09-idle-main-artifact-hygiene",
+    "run_id": "iterate-2026-06-09-audit-report-hygiene",
     "date": "2026-06-09",
     "unit": {
       "status": "passed",
-      "passed": 3000,
-      "total": 3000
+      "passed": 654,
+      "total": 654
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 141,
+      "total": 141
     },
     "pgtap": {
       "status": "not_run",
@@ -33,80 +33,50 @@
     "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --with pytest --with pytest-mock pytest shared/tests/test_idle_main_artifact_hygiene.py shared/tests/test_check_file_size_cross_repo.py shared/tests/test_bloat_marker_worktree_aware.py -q",
+      "runner": "uv run --with pytest --with pytest-mock pytest plugins/shipwright-compliance/tests/test_audit_report.py -q",
       "exit_code": 0,
-      "tests_run": 21,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\idle-main-artifact-hygiene\\.shipwright\\runs\\iterate-2026-06-09-idle-main-artifact-hygiene\\surface_verification.log",
-      "timestamp": "2026-06-08T22:57:16.570Z",
+      "tests_run": 12,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\audit-report-hygiene\\.shipwright\\runs\\iterate-2026-06-09-audit-report-hygiene\\surface_verification.log",
+      "timestamp": "2026-06-09T05:38:27.354Z",
       "attempts": 1
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "main_repo_root_or resolves MAIN root from a subdir (AC-2)",
+          "behavior": "json written to .shipwright/compliance/audit-report.json (AC-1)",
           "disposition": "tested",
-          "evidence": "test_idle_main_artifact_hygiene.py::test_main_repo_root_or_resolves_main_root_from_subdir PASSED"
+          "evidence": "test_audit_report.py::test_write_creates_both_artifacts PASSED"
         },
         {
-          "behavior": "main_repo_root_or fail-soft to fallback on non-git/error (AC-2)",
+          "behavior": "root shipwright_audit_report.json no longer produced (AC-1)",
           "disposition": "tested",
-          "evidence": "test_idle_main_artifact_hygiene.py::test_main_repo_root_or_falls_back_on_non_git PASSED"
+          "evidence": "test_audit_report.py::test_write_creates_both_artifacts (assert-not-exists) PASSED"
         },
         {
-          "behavior": "Writer cwd!=root writes marker to ROOT, repo-relative path (AC-2)",
+          "behavior": "--format flags still respected (regression)",
           "disposition": "tested",
-          "evidence": "test_idle_main_artifact_hygiene.py::test_writer_subdir_cwd_writes_marker_to_repo_root PASSED"
+          "evidence": "test_audit_report.py::test_write_respects_format_flags PASSED"
         },
         {
-          "behavior": "Reader cwd!=root reads ROOT marker + blocks (AC-2)",
+          "behavior": "both artifacts gitignored under canon - git-status-clean + propagates (AC-2/AC-4)",
           "disposition": "tested",
-          "evidence": "test_idle_main_artifact_hygiene.py::test_reader_subdir_cwd_reads_root_marker_and_blocks PASSED"
+          "evidence": "test_audit_report.py::test_audit_artifacts_gitignored_under_canon (real git -uall) PASSED"
         },
         {
-          "behavior": "Writer/reader unchanged in cwd=root + non-git tmp (AC-2 regression)",
+          "behavior": "template<->framework congruent with 2 re-excludes (AC-2/AC-3)",
           "disposition": "tested",
-          "evidence": "test_check_file_size_cross_repo.py + test_bloat_marker_worktree_aware.py + test_bloat_gate_on_stop.py PASSED"
+          "evidence": "test_gitignore_template_congruent.py PASSED"
         },
         {
-          "behavior": "Roll-up constants live under FINDING_DIR (AC-1)",
+          "behavior": "stdout JSON payload unchanged (AC-1 contract)",
           "disposition": "tested",
-          "evidence": "test_idle_main_artifact_hygiene.py::test_rollup_constants_live_under_finding_dir PASSED"
-        },
-        {
-          "behavior": "Render writes 3 roll-ups under FINDING_DIR, not legacy paths (AC-1)",
-          "disposition": "tested",
-          "evidence": "test_idle_main_artifact_hygiene.py::test_regenerate_writes_rollups_under_finding_dir PASSED"
-        },
-        {
-          "behavior": "Roll-ups gitignored after render - idle-main clean (AC-1)",
-          "disposition": "tested",
-          "evidence": "test_idle_main_artifact_hygiene.py::test_rollups_are_gitignored_after_render PASSED"
-        },
-        {
-          "behavior": "SessionStart consumer reads relocated SUMMARY_PATH (AC-1)",
-          "disposition": "tested",
-          "evidence": "test_capture_session_id.py (phase-quality block) + test_phase_quality_rollout.py injection PASSED"
-        },
-        {
-          "behavior": "DASHBOARD_REL follows relocated constant (AC-1)",
-          "disposition": "tested",
-          "evidence": "test_phase_quality_triage_emit.py PASSED"
-        },
-        {
-          "behavior": "Defensive **/.shipwright/locks/ in both files + ignores nested (AC-2/AC-3)",
-          "disposition": "tested",
-          "evidence": "test_idle_main_artifact_hygiene.py::{test_nested_locks_rule_in_canon_template,_in_framework_gitignore,test_nested_locks_dir_is_ignored_by_canon_block} PASSED"
-        },
-        {
-          "behavior": "Canon-path + gitignore-template congruence intact (AC-3 regression)",
-          "disposition": "tested",
-          "evidence": "test_artifact_path_canon.py + test_gitignore_template_congruent.py PASSED"
+          "evidence": "run_audit e2e CLI tests (covered-by-existing-test; stdout path untouched) PASSED"
         }
       ],
       "counts": {
-        "testable": 12,
-        "tested": 12,
+        "testable": 6,
+        "tested": 6,
         "untestable": 0,
         "untested_testable": 0
       },

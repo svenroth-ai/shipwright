@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-08T23:00:07.796168+00:00
+Generated: 2026-06-09T05:40:11.370772+00:00
 
 ## Requirements Coverage
 
@@ -154,6 +154,7 @@ Generated: 2026-06-08T23:00:07.796168+00:00
 | Real non-mocked empirical harness over the real D2 code + real git: 200 thread + 40 cross-process concurrency trials (multiset zero-loss/zero-dup), abandoned-branch e2e, exactly-once after a real merge, no main pollution; pytest_sessionfinish fails a partial gate. GATE PASS (all 5 methods). | iterate | D2V empirical verification gate — prove the D2 outbox sweep/GC loses no triage line (HARD insurance before D3) |  | 6/6 | 7a31e33 | 2026-06-08 |
 | evt-ec8e9621 | iterate | change |  | — | 77cc652 | 2026-06-08 |
 | Relocate phase-quality skill-compliance roll-ups under the gitignored FINDING_DIR; resolve main_repo_root (not cwd) in the bloat marker writer+reader via a shared fail-soft resolver; defensive nested-locks gitignore canon. | iterate | change |  | — | — | 2026-06-08 |
+| Relocate detective-audit JSON from repo root to .shipwright/compliance/audit-report.json; canon re-excludes audit-report.{md,json} (propagates to adopted repos); drop obsolete framework root ignore. | iterate | change |  | — | — | 2026-06-09 |
 
 ## Coverage Summary
 
@@ -161,7 +162,7 @@ Generated: 2026-06-08T23:00:07.796168+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 129 |
+| Iterate changes | 130 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

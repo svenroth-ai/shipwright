@@ -1,36 +1,36 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-09-idle-main-artifact-hygiene"
+run_id: "iterate-2026-06-09-audit-report-hygiene"
 phase: "iterate"
-reason: "idle-main artifact hygiene complete; ADR-089 finished for two producers"
-timestamp: "2026-06-08T23:00:07.796168+00:00"
+reason: "audit-report json relocated under .shipwright/compliance + canon re-excludes; ADR-089 leak class continued"
+timestamp: "2026-06-09T05:40:11.370772+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-08 23:00:07 UTC
+> Auto-generated 2026-06-09 05:40:11 UTC
 
 ## Session Info
 
 - **Session ID**: 8707e246-7d90-4cb2-9e68-afab172947de
-- **Timestamp**: 2026-06-08 23:00:07 UTC
-- **Reason**: idle-main artifact hygiene complete; ADR-089 finished for two producers
+- **Timestamp**: 2026-06-09 05:40:11 UTC
+- **Reason**: audit-report json relocated under .shipwright/compliance + canon re-excludes; ADR-089 leak class continued
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-07-scaffold-churn-merge-machinery
-- **Date**: 2026-06-07T22:13:20.482599Z
+- **Run ID**: iterate-2026-06-09-idle-main-artifact-hygiene
+- **Date**: 2026-06-08T23:00:38.392991Z
 - **Type**: change
 - **Complexity**: medium
-- **Branch**: iterate/scaffold-churn-merge-machinery
-- **ADR**: iterate-2026-06-07-scaffold-churn-merge-machinery
+- **Branch**: iterate/idle-main-artifact-hygiene
+- **ADR**: iterate-2026-06-09-idle-main-artifact-hygiene
 - **Tests passed**: True
-- **Spec**: .shipwright/planning/iterate/2026-06-07-scaffold-churn-merge-machinery.md
+- **Spec**: .shipwright/planning/iterate/2026-06-09-idle-main-artifact-hygiene.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/idle-main-artifact-hygiene
-- **Spec**: .shipwright/planning/iterate/2026-06-09-idle-main-artifact-hygiene.md
+- **Branch**: iterate/audit-report-hygiene
+- **Spec**: .shipwright/planning/iterate/2026-06-09-audit-report-hygiene.md
 - **External Review Marker**: stale (predates spec (2026-06-01T06:00:50))
 
 ### Mandatory replay on Resume
@@ -49,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/idle-main-artifact-hygiene
-- **Last Commit**: e530f315 Merge pull request #172 from svenroth-ai/iterate/outbox-delivery-d3-propagation
+- **Branch**: iterate/audit-report-hygiene
+- **Last Commit**: 0a1b4c33 chore(triage): sweep 2 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -66,17 +66,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-1326569b | work_completed | iterate (Relocate detective-audit JSON from repo root to .shipwright/compliance/audit-report.json; canon re-excludes audit-report.{md,json} (propagates to adopted repos); drop obsolete framework root ignore.) | 2026-06-09 |
 | evt-cefcd03e | work_completed | iterate (Relocate phase-quality skill-compliance roll-ups under the gitignored FINDING_DIR; resolve main_repo_root (not cwd) in the bloat marker writer+reader via a shared fail-soft resolver; defensive nested-locks gitignore canon.) | 2026-06-08 |
 | evt-ec8e9621 | work_completed | iterate (—) | 2026-06-08 |
 | evt-bb598e0d | work_completed | iterate (Real non-mocked empirical harness over the real D2 code + real git: 200 thread + 40 cross-process concurrency trials (multiset zero-loss/zero-dup), abandoned-branch e2e, exactly-once after a real merge, no main pollution; pytest_sessionfinish fails a partial gate. GATE PASS (all 5 methods).) | 2026-06-08 |
 | evt-b9b5ddf2 | work_completed | iterate (—) | 2026-06-08 |
-| evt-418680b6 | work_completed | iterate (Iterate D1 — triage outbox reroute) | 2026-06-08 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 129
-- **Last iterate**: change — Relocate phase-quality skill-compliance roll-ups under the gitignored FINDING_DIR; resolve main_repo_root (not cwd) in the bloat marker writer+reader via a shared fail-soft resolver; defensive nested-locks gitignore canon. (2026-06-08)
+- **Total work events**: 130
+- **Last iterate**: change — Relocate detective-audit JSON from repo root to .shipwright/compliance/audit-report.json; canon re-excludes audit-report.{md,json} (propagates to adopted repos); drop obsolete framework root ignore. (2026-06-09)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

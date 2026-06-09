@@ -45,6 +45,13 @@
 # iterate-finalize as the single producer (ADR-089, 2026-05-27).
 /.shipwright/agent_docs/runtime/
 /.shipwright/compliance/skill-compliance/
+# Detective-audit report (run_audit.py / /shipwright-compliance) — transient,
+# regenerated each run, not in audit_staleness.DOC_REGISTRY. The .json was
+# relocated from the repo root under here in iterate-2026-06-09 so this canon
+# block can ignore it (the root path escaped the .shipwright/-scoped canon and
+# leaked in every adopted repo).
+/.shipwright/compliance/audit-report.md
+/.shipwright/compliance/audit-report.json
 # Defensive (non-anchored): a stray nested `.shipwright/locks/` (e.g. a bloat
 # marker written by a hook whose cwd != repo-root) must never leak. The
 # root-anchored `/.shipwright/*` above misses nested copies. The real fix is the
