@@ -6,25 +6,16 @@
 ## Status summary
 
 - Total: 146
-- Triage: 9 | Promoted: 1 | Dismissed: 136 | Snoozed: 0
+- Triage: 8 | Promoted: 1 | Dismissed: 137 | Snoozed: 0
 
-## Top 9 items (severity-sorted)
+## Top 8 items (severity-sorted)
 
-### Source: architecture (3 items)
+### Source: architecture (2 items)
 
 <a id="trg-721b1765"></a>
 - **Hook fan-out across plugins — collapse to phase-aware dispatchers (Start+Stop+Prompt+PostTool; PreToolUse separate) [ca…** `id=trg-721b1765 | severity=medium | kind=improvement → P2/engineering`
   - [SCOPE EXPANDED 2026-06-02 -> campaign .shipwright/planning/iterate/campaigns/2026-06-02-hook-consolidation/; this item…
   - Promote: `triage_promote.py --id trg-721b1765 --task-ref EXT:<ref>`
-
-<a id="trg-60ef91fb"></a>
-- **external-review-state hygiene: transient review-gate state inconsistently tracked (ADR-089 leak class)** `id=trg-60ef91fb | severity=low | kind=improvement → P3/engineering`
-  - The external-review gate (mark-review-state.py) writes external_review_state.json + external_code_review_state.json (Br…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-iterate --type change external-review-state hygiene (trg-60ef91fb): gitignore the TRANSIENT iterate-scoped review markers + untrack the 6 committed copies; KEEP plan-split markers tracked (RTM evidence). Add to canon (template + framework, congruent): /.shipwright/planning/iterate/**/external_review_state.json + /.shipwright/planning/iterate/**/external_code_review_state.json ; git rm --cached the 6 tracked copies under planning/iterate/. DO NOT use a blanket **/ pattern (would erase durable plan-split RTM evidence per rtm.py:234 skip). Tests: gitignore congruence + probe (iterate marker ignored, plan-split marker NOT ignored). expands_triage trg-60ef91fb; dismiss after.
-    ```
-  - Promote: `triage_promote.py --id trg-60ef91fb --task-ref EXT:<ref>`
 
 <a id="trg-fda5f7a3"></a>
 - **Durable producer-maintained campaign status (tracked SSoT)** `id=trg-fda5f7a3 | severity=low | kind=improvement → P3/engineering`
