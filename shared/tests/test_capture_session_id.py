@@ -172,10 +172,15 @@ _PQ_MARKER = "[Shipwright Phase-Quality]"
 
 
 def _write_findings(project_root: Path) -> None:
-    """Minimal skill-compliance-findings.md with one Tier-1 FAIL (C1)."""
-    d = project_root / ".shipwright" / "agent_docs"
-    d.mkdir(parents=True, exist_ok=True)
-    (d / "skill-compliance-findings.md").write_text(
+    """Minimal findings digest (one Tier-1 FAIL, C1) at the SSoT path.
+
+    Follows ``phase_quality.SUMMARY_PATH`` — relocated under the gitignored
+    FINDING_DIR in iterate-2026-06-09 — so it stays in sync with the consumer.
+    """
+    from lib.phase_quality import SUMMARY_PATH
+    path = project_root / SUMMARY_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
         "## iterate — run-123\n- open FAILs:\n  - **C1** no phase_completed for x\n",
         encoding="utf-8",
     )

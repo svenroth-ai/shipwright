@@ -11,8 +11,15 @@ anti-ratchet was satisfied. An entire session's Stop was blocked ~40 times on
 sibling-repo test files it did not own.
 
 The recorder must skip (no marker entry, no nudge) any edited file that does
-not resolve to within ``cwd`` (the project root). Advisory hooks never break
-the tool flow, so the skip is a plain early return.
+not resolve to within the project root. Advisory hooks never break the tool
+flow, so the skip is a plain early return.
+
+NB (iterate-2026-06-09): the membership guard is now repo-root-relative
+(``main_repo_root_or(Path.cwd())``), not cwd-relative. These tests run the hook
+in a NON-git ``tmp_path`` so the resolver fails soft to cwd — behavior is
+identical to the old cwd guard. The sibling-repo rejection holds for independent
+git roots; a sibling that shares an ENCLOSING repo would now be governed (the
+intended "whole main repo" semantic).
 """
 
 from __future__ import annotations

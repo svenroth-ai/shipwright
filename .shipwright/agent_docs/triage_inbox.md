@@ -1,16 +1,21 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-07T22:13:08.271541Z. Items waiting for triage decision.
+> Auto-generated 2026-06-08T23:00:07.796168Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 134
-- Triage: 10 | Promoted: 1 | Dismissed: 123 | Snoozed: 0
+- Total: 142
+- Triage: 9 | Promoted: 1 | Dismissed: 132 | Snoozed: 0
 
-## Top 10 items (severity-sorted)
+## Top 9 items (severity-sorted)
 
-### Source: architecture (2 items)
+### Source: architecture (3 items)
+
+<a id="trg-94f70926"></a>
+- **triage.jsonl background appends never reach origin (orphan reconcile-to-main)** `id=trg-94f70926 | severity=high | kind=improvement → P1/engineering`
+  - reconcile_main_triage() folds main-tree background drift into chore(triage) commits on LOCAL main; PR-protected repo ne…
+  - Promote: `triage_promote.py --id trg-94f70926 --task-ref EXT:<ref>`
 
 <a id="trg-721b1765"></a>
 - **Hook fan-out across plugins — collapse to phase-aware dispatchers (Start+Stop+Prompt+PostTool; PreToolUse separate) [ca…** `id=trg-721b1765 | severity=medium | kind=improvement → P2/engineering`
@@ -22,21 +27,6 @@
   - WebUI reads per-sub campaign status from status.json, which is authoritative per the campaign-store.ts contract + PR #1…
   - Evidence: `.shipwright/planning/iterate/proposed-tracked-campaign-status.md`
   - Promote: `triage_promote.py --id trg-fda5f7a3 --task-ref EXT:<ref>`
-
-### Source: compliance (1 item)
-
-<a id="trg-a544d2ce"></a>
-- **Compliance: 1 open finding(s)** `id=trg-a544d2ce | severity=medium | kind=compliance → P2/compliance`
-  - 1 open compliance finding(s): F/F5  - F/F5: Architecture marker vs arch-impact drops — 1 arch-impact drop(s) not docume…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-compliance
-    
-    Context: 1 open compliance finding(s): F/F5.
-    Dashboard: .shipwright/compliance/dashboard.md
-    Each finding + hint is listed in this item's detail.
-    ```
-  - Promote: `triage_promote.py --id trg-a544d2ce --task-ref EXT:<ref>`
 
 ### Source: external-frameworks (6 items)
 
@@ -69,11 +59,4 @@
 - **[P8.1] Architecture Research Sprint: internal-packages + daemon + skills-lock** `id=trg-aecf9cde | severity=low | kind=maintenance → P3/engineering`
   - \## Intent  Bundle P8.1 from Spec/external-frameworks-integration.md (MU5 + MU7 + MU-PL1). Single research iterate prod…
   - Promote: `triage_promote.py --id trg-aecf9cde --task-ref EXT:<ref>`
-
-### Source: manual (1 item)
-
-<a id="trg-27b6f6ba"></a>
-- **shipwright-adopt: scaffold .gitleaks.toml allowlist + harden security.yml.template** `id=trg-27b6f6ba | severity=medium | kind=improvement → P2/engineering`
-  - Adopt copies security.yml.template (gitleaks runs --no-git with no --config, relying on an auto-loaded .gitleaks.toml a…
-  - Promote: `triage_promote.py --id trg-27b6f6ba --task-ref EXT:<ref>`
 

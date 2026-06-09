@@ -1933,11 +1933,13 @@ The audit covers six categories (plan § 2, plan § 3):
 
 **Tier classification (plan § 3):** Of the 36 checks, 20 are Tier-1 (candidate for enforcement after burn-in) and 16 are Tier-2 (heuristic, never enforcement). Tier-2 ids are `W1`, `I4`, `T2`, `Q1`, `S3`, `S4`, `S5`, `S7`, `S9`, `S10`, `Cmp1`, `D2` — they always land as WARN/SKIP and carry `"tier": 2` so the dashboard can group them as low-signal.
 
-**Artifacts** (deterministically regenerated, hard-capped):
+**Artifacts** (deterministically regenerated, hard-capped). All four live under
+the gitignored `skill-compliance` dir; the 3 `.md` roll-ups are transient derived
+caches (never tracked → idle `main` stays clean — iterate-2026-06-09, ADR-089):
 - `.shipwright/compliance/skill-compliance/<phase>-<run_id>-<session>.json` — per-run finding (atomic, GC after 90 days)
-- `.shipwright/compliance/skill-compliance-report.md` — last 10 runs, markdown table
-- `.shipwright/agent_docs/skill-compliance-findings.md` — last 5 runs, source for SessionStart-Injection
-- `.shipwright/compliance/skill-compliance-dashboard.md` — phase × category matrix
+- `.shipwright/compliance/skill-compliance/_report.md` — last 10 runs, markdown table
+- `.shipwright/compliance/skill-compliance/_findings.md` — last 5 runs, source for SessionStart-Injection
+- `.shipwright/compliance/skill-compliance/_dashboard.md` — phase × category matrix
 
 **Enforcement rollout (staggered, default OFF in code):**
 

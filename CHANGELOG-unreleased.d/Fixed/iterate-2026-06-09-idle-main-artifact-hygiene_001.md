@@ -1,0 +1,1 @@
+Idle-`main` artifact hygiene (completes ADR-089): the phase-quality skill-compliance roll-ups now live under the already-gitignored `skill-compliance/` dir, and the bloat marker writer/reader resolve the canonical main repo root (never `cwd`) so a hook firing from a sub-package no longer leaks `.shipwright/locks/` — keeping `git status` clean on idle main and in adopted repos.

@@ -159,4 +159,10 @@ Spec/
 # See iterate-2026-05-27-tracked-artifacts-single-producer-and-finalize-sandbox.
 /.shipwright/agent_docs/runtime/
 /.shipwright/compliance/skill-compliance/
+# Defensive (non-anchored): a stray nested `.shipwright/locks/` (e.g. a bloat
+# marker written by a hook whose cwd != repo-root) must never leak. The
+# root-anchored `/.shipwright/*` above misses nested copies. The real fix is the
+# main_repo_root resolver in check_file_size + bloat_gate_on_stop
+# (iterate-2026-06-09); this is belt-and-suspenders.
+**/.shipwright/locks/
 # === END Shipwright canonical .shipwright artifact-ignore (managed) ===
