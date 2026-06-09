@@ -68,6 +68,11 @@ shipwright_events.jsonl
 shipwright_events.jsonl.lock
 # Exception: root-level event log from the framework's own self-adoption.
 !/shipwright_events.jsonl
+# Generated detective-audit output (run_audit.py / /shipwright-compliance) —
+# transient, regenerated each run, never tracked (not in audit_staleness
+# DOC_REGISTRY). Framework-local; adopted-repo propagation + the `.md` variant
+# are tracked as a follow-up (same producer-leak class as ADR-089).
+shipwright_audit_report.json
 # Canonical agent_docs home is .shipwright/agent_docs/.
 # Anchored to root since 2026-05-02 self-adoption to allow .shipwright/agent_docs/.
 # See docs/migrations/.shipwright-agent_docs-relocation.md.

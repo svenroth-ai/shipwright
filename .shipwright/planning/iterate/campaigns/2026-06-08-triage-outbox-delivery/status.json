@@ -1,0 +1,49 @@
+{
+  "campaign": "2026-06-08-triage-outbox-delivery",
+  "status": "complete",
+  "branch_strategy": "stacked",
+  "created_at": "2026-06-08T08:22:25.870120+00:00",
+  "expands_triage": "trg-94f70926",
+  "sub_iterates": [
+    {
+      "id": "D1",
+      "slug": "outbox-reroute",
+      "spec_path": "C:\\01_Development\\shipwright\\.shipwright\\planning\\iterate\\campaigns\\2026-06-08-triage-outbox-delivery\\sub-iterates\\D1-outbox-reroute.md",
+      "status": "complete",
+      "commit": "8b36e7dc",
+      "branch": "iterate/outbox-delivery-d1-reroute",
+      "tests_passed": null,
+      "tests_total": null
+    },
+    {
+      "id": "D2",
+      "slug": "sweep-and-gc",
+      "spec_path": "C:\\01_Development\\shipwright\\.shipwright\\planning\\iterate\\campaigns\\2026-06-08-triage-outbox-delivery\\sub-iterates\\D2-sweep-and-gc.md",
+      "status": "complete",
+      "commit": "b8fcf8ae",
+      "branch": "iterate/outbox-delivery-d2-sweep-gc",
+      "tests_passed": null,
+      "tests_total": null
+    },
+    {
+      "id": "D2V",
+      "slug": "empirical-verification-gate",
+      "spec_path": "C:\\01_Development\\shipwright\\.shipwright\\planning\\iterate\\campaigns\\2026-06-08-triage-outbox-delivery\\sub-iterates\\D2V-empirical-verification-gate.md",
+      "status": "complete",
+      "commit": "41127433",
+      "branch": "iterate/outbox-delivery-d2v-verification",
+      "tests_passed": null,
+      "tests_total": null
+    },
+    {
+      "id": "D3",
+      "slug": "scaffold-propagation",
+      "spec_path": "C:\\01_Development\\shipwright\\.shipwright\\planning\\iterate\\campaigns\\2026-06-08-triage-outbox-delivery\\sub-iterates\\D3-scaffold-propagation.md",
+      "status": "complete",
+      "commit": "45ce4490",
+      "branch": "iterate/outbox-delivery-d3-propagation",
+      "tests_passed": null,
+      "tests_total": null
+    }
+  ]
+}
