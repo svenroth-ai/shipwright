@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-10-complexity-classifier-prior",
+    "run_id": "iterate-2026-06-10-canon-exempt-agent-doc-caches",
     "date": "2026-06-10",
     "unit": {
       "status": "passed",
-      "passed": 3370,
-      "total": 3370
+      "passed": 3027,
+      "total": 3028
     },
     "integration": {
-      "status": "passed",
-      "passed": 141,
-      "total": 141
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -18,103 +18,67 @@
       "total": 0
     },
     "e2e": {
-      "status": "passed",
-      "passed": 28,
-      "total": 28
-    },
-    "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
-    "smoke": {
-      "status": "skipped"
+    "design_fidelity": {
+      "status": "not_run"
     },
-    "degraded": [],
+    "smoke": {
+      "status": "not_run"
+    },
+    "degraded": [
+      "test_architecture_md_reflects_arch_impact fails LOCALLY ONLY due to a concurrent iterate (iterate-2026-06-10-event-self-id) decision-drop in the shared gitignored main-root decision-drops dir; passes on a fresh CI checkout (drops gitignored/absent). Not caused by this change."
+    ],
     "surface_verification": {
       "surface": "cli",
-      "tests_run": 28,
+      "runner": "uv run --extra dev pytest shared/tests/ -m 'not slow and not cross_plugin'  +  canon-exempt drift test",
       "exit_code": 0,
-      "evidence": ".shipwright/runs/iterate-2026-06-10-complexity-classifier-prior/surface_verification.json"
+      "tests_run": 3028,
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\2026-06-10-canon-exempt-agent-doc-caches\\.shipwright\\runs\\iterate-2026-06-10-canon-exempt-agent-doc-caches\\surface_verification.log",
+      "timestamp": "2026-06-10T07:53:28.000Z",
+      "attempts": 1,
+      "note": "Allowlist-data + drift-test change. The 1 local failure is an unrelated concurrent iterate's gitignored decision-drop (passes on CI)."
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "history prior: median odd/even-lower-middle, window=20, clamp<=medium, min-entries=3",
+          "behavior": "session_handoff.md exempt from artifact-path-canon in all 4 migrations",
           "disposition": "tested",
-          "evidence": "test_complexity_history.py::TestLoadHistoryPrior (9 tests) PASSED"
+          "evidence": "test_generated_cache_canon_exempt.py::test_generated_agent_doc_caches_exempt_in_every_migration PASSED"
         },
         {
-          "behavior": "invalid-entry skips: bad complexity/JSON/non-dict, missing/non-string/unparseable date, oversized, _quarantine, valid-first-then-window",
+          "behavior": "build_dashboard.md exempt from artifact-path-canon in all 4 migrations",
           "disposition": "tested",
-          "evidence": "TestLoadHistoryPrior skip tests incl. test_non_string_date_is_skipped_not_crash PASSED"
+          "evidence": "same test PASSED"
         },
         {
-          "behavior": "sort determinism: (date, run_id) tiebreak at window cutoff, glob-order independence",
+          "behavior": "triage_inbox.md exemption preserved (regression from #178)",
           "disposition": "tested",
-          "evidence": "test_complexity_history.py::test_run_id_tiebreak_decides_window_cutoff PASSED"
+          "evidence": "same test + test_artifact_path_canon.py 4 PASSED"
         },
         {
-          "behavior": "classify precedence keyword > history > default + signals shape (prior_source/history_prior/history_n)",
+          "behavior": "artifact-path-canon lint still green on the final tree",
           "disposition": "tested",
-          "evidence": "TestClassifyPrecedence (6 tests) PASSED"
+          "evidence": "test_artifact_path_canon.py 4 passed"
         },
         {
-          "behavior": "risk-floor interplay: floor lifts trivial prior, floor does not cap medium prior",
+          "behavior": "trg-6ed063ae dismissed (status event in tracked triage.jsonl)",
           "disposition": "tested",
-          "evidence": "test_risk_floor_does_not_cap_history_prior + test_history_prior_lifts_to_risk_floor_at_least PASSED"
-        },
-        {
-          "behavior": "backward compat: no project_root -> old estimate + legacy signal keys",
-          "disposition": "tested",
-          "evidence": "test_no_project_root_preserves_old_behaviour + TestCli::test_without_flag_old_behaviour PASSED"
-        },
-        {
-          "behavior": "CLI --project-root end-to-end via subprocess",
-          "disposition": "tested",
-          "evidence": "test_complexity_history_roundtrip.py::TestCli (2 tests) PASSED"
-        },
-        {
-          "behavior": "writer->reader contract via real shared append_iterate_entry + real field entry shape",
-          "disposition": "tested",
-          "evidence": "TestRoundTripWithRealWriter (2 tests) PASSED"
-        },
-        {
-          "behavior": "sibling-module deployment + standalone spec_from_file_location self-bootstrap",
-          "disposition": "tested",
-          "evidence": "TestStandaloneLoading (2 tests) PASSED"
-        },
-        {
-          "behavior": "matcher: alnum boundaries (underscore=separator), plural s/es, no arbitrary inflection, phrase anchoring",
-          "disposition": "tested",
-          "evidence": "TestFalsePositiveGuards (8 tests) + test_es_plural_suffix_fires PASSED"
-        },
-        {
-          "behavior": "vocabulary golden on 29 real prompts + under-classification metric ceilings (18->11 under, 1->0 over)",
-          "disposition": "tested",
-          "evidence": "TestVocabularyGolden + TestUnderClassificationMetric + TestFixtureSchema PASSED"
-        },
-        {
-          "behavior": "new/changed keyword intents incl. new module large->medium",
-          "disposition": "tested",
-          "evidence": "TestIntendedNewKeywords (9 tests) PASSED"
-        },
-        {
-          "behavior": "SKILL.md / sub-iterate-runner / guide prose edits",
-          "disposition": "tested",
-          "evidence": "covered-by-existing-test: skill drift suite green (completeness/phase-matrix/risk-taxonomy/references-link) in 341-test plugin run"
+          "evidence": "triage_cli dismiss -> grep trg-6ed063ae = 2 (append+status)"
         }
       ],
       "counts": {
-        "testable": 13,
-        "tested": 13,
+        "testable": 5,
+        "tested": 5,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
+        "acs": 5,
+        "covered_acs": 5
       }
     }
   }
