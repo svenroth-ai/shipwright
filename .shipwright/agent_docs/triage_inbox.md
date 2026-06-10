@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-10T06:09:07.980286Z. Items waiting for triage decision.
+> Auto-generated 2026-06-10T06:36:37.802318Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 149
-- Triage: 10 | Promoted: 1 | Dismissed: 138 | Snoozed: 0
+- Total: 151
+- Triage: 11 | Promoted: 1 | Dismissed: 139 | Snoozed: 0
 
-## Top 10 items (severity-sorted)
+## Top 11 items (severity-sorted)
 
 ### Source: architecture (2 items)
 
@@ -54,6 +54,14 @@
 - **[P8.1] Architecture Research Sprint: internal-packages + daemon + skills-lock** `id=trg-aecf9cde | severity=low | kind=maintenance → P3/engineering`
   - \## Intent  Bundle P8.1 from Spec/external-frameworks-integration.md (MU5 + MU7 + MU-PL1). Single research iterate prod…
   - Promote: `triage_promote.py --id trg-aecf9cde --task-ref EXT:<ref>`
+
+### Source: iterate-analysis (1 item)
+
+<a id="trg-35e6701e"></a>
+- **classify_complexity Stage-1 systematically under-classifies: app-domain keywords + hard-coded trivial fall-through** `id=trg-35e6701e | severity=medium | kind=improvement → P2/engineering`
+  - Empirical (45 Stage-1 outputs from sessions 2026-05-10..2026-06-10 vs 50 finalized runs in agent_docs/iterates): Stage…
+  - Evidence: `plugins/shipwright-iterate/scripts/lib/classify_complexity.py`
+  - Promote: `triage_promote.py --id trg-35e6701e --task-ref EXT:<ref>`
 
 ### Source: manual (2 items)
 

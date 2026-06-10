@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-10T06:09:07.980286+00:00
+Generated: 2026-06-10T06:36:37.802318+00:00
 
 ## Requirements Coverage
 
@@ -158,6 +158,7 @@ Generated: 2026-06-10T06:09:07.980286+00:00
 | Iterate-scoped external-review markers gitignored (not blanket); 6 tracked copies untracked. | iterate | change |  | — | — | 2026-06-09 |
 | Triage dedup collapses same-id appends keep-last (reader parity); unblocks outbox sweep on producer update re-append. | iterate | change |  | — | — | 2026-06-09 |
 | Add triage_cli.py list --json (unioned open items + pendingDelivery) as a WebUI contract. | iterate | feature |  | — | — | 2026-06-10 |
+| Gate D2V evidence markdown write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE; default runs assert without writing the tracked artifact. | iterate | change |  | — | — | 2026-06-10 |
 
 ## Coverage Summary
 
@@ -165,7 +166,7 @@ Generated: 2026-06-10T06:09:07.980286+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 133 |
+| Iterate changes | 134 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-10-d2v-evidence-write-optin",
+  "date": "2026-06-10T06:36:38.315232Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/2026-06-10-d2v-evidence-write-optin",
+  "tests_passed": true,
+  "change_type": "infra",
+  "adr": "iterate-2026-06-10-d2v-evidence-write-optin"
+}
