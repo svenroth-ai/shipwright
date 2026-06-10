@@ -1,0 +1,1 @@
+triage_cli.py list (incl. --json) no longer crashes with UnicodeEncodeError on Windows consoles when an item title/detail contains non-cp1252 characters (emoji/CJK/umlauts): stdout is pinned to UTF-8, making the WebUI live-view JSON contract platform-independent.

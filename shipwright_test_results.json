@@ -1,16 +1,19 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-10-complexity-classifier-prior",
+    "run_id": "iterate-2026-06-10-triage-cli-json-utf8",
     "date": "2026-06-10",
+    "intent": "bug",
+    "complexity": "small",
     "unit": {
       "status": "passed",
-      "passed": 3370,
-      "total": 3370
+      "passed": 3030,
+      "total": 3031,
+      "note": "shared/tests full suite: 3030 passed, 23 skipped (pre-existing skip set), 1 PRE-EXISTING env-local failure (test_architecture_md_reflects_arch_impact — flags gitignored main-tree decision-drops of two OTHER in-flight iterates, event-self-id + canon-exempt-agent-doc-caches; reproduced identically on the clean main tree, absent in CI checkouts). Touched-scope tests 22/22 green; ruff (pinned 0.15.15) clean."
     },
     "integration": {
-      "status": "passed",
-      "passed": 141,
-      "total": 141
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -19,103 +22,58 @@
     },
     "e2e": {
       "status": "passed",
-      "passed": 28,
-      "total": 28
+      "passed": 8,
+      "total": 8,
+      "note": "Real-subprocess CLI tests (test_triage_cli_json.py) incl. the two new legacy-console-encoding regressions (PYTHONIOENCODING=cp1252 forces the crash deterministically on every platform)."
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "smoke": {
-      "status": "skipped"
+      "status": "not_run"
     },
-    "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "tests_run": 28,
       "exit_code": 0,
-      "evidence": ".shipwright/runs/iterate-2026-06-10-complexity-classifier-prior/surface_verification.json"
+      "tests_run": 8,
+      "runner": "uv run --extra dev pytest shared/tests/test_triage_cli_json.py -q",
+      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\triage-cli-json-utf8\\.shipwright\\runs\\iterate-2026-06-10-triage-cli-json-utf8\\surface_verification.log",
+      "timestamp": "2026-06-10T07:58:33.865Z"
     },
     "test_completeness": {
-      "status": "complete",
-      "behaviors": [
-        {
-          "behavior": "history prior: median odd/even-lower-middle, window=20, clamp<=medium, min-entries=3",
-          "disposition": "tested",
-          "evidence": "test_complexity_history.py::TestLoadHistoryPrior (9 tests) PASSED"
-        },
-        {
-          "behavior": "invalid-entry skips: bad complexity/JSON/non-dict, missing/non-string/unparseable date, oversized, _quarantine, valid-first-then-window",
-          "disposition": "tested",
-          "evidence": "TestLoadHistoryPrior skip tests incl. test_non_string_date_is_skipped_not_crash PASSED"
-        },
-        {
-          "behavior": "sort determinism: (date, run_id) tiebreak at window cutoff, glob-order independence",
-          "disposition": "tested",
-          "evidence": "test_complexity_history.py::test_run_id_tiebreak_decides_window_cutoff PASSED"
-        },
-        {
-          "behavior": "classify precedence keyword > history > default + signals shape (prior_source/history_prior/history_n)",
-          "disposition": "tested",
-          "evidence": "TestClassifyPrecedence (6 tests) PASSED"
-        },
-        {
-          "behavior": "risk-floor interplay: floor lifts trivial prior, floor does not cap medium prior",
-          "disposition": "tested",
-          "evidence": "test_risk_floor_does_not_cap_history_prior + test_history_prior_lifts_to_risk_floor_at_least PASSED"
-        },
-        {
-          "behavior": "backward compat: no project_root -> old estimate + legacy signal keys",
-          "disposition": "tested",
-          "evidence": "test_no_project_root_preserves_old_behaviour + TestCli::test_without_flag_old_behaviour PASSED"
-        },
-        {
-          "behavior": "CLI --project-root end-to-end via subprocess",
-          "disposition": "tested",
-          "evidence": "test_complexity_history_roundtrip.py::TestCli (2 tests) PASSED"
-        },
-        {
-          "behavior": "writer->reader contract via real shared append_iterate_entry + real field entry shape",
-          "disposition": "tested",
-          "evidence": "TestRoundTripWithRealWriter (2 tests) PASSED"
-        },
-        {
-          "behavior": "sibling-module deployment + standalone spec_from_file_location self-bootstrap",
-          "disposition": "tested",
-          "evidence": "TestStandaloneLoading (2 tests) PASSED"
-        },
-        {
-          "behavior": "matcher: alnum boundaries (underscore=separator), plural s/es, no arbitrary inflection, phrase anchoring",
-          "disposition": "tested",
-          "evidence": "TestFalsePositiveGuards (8 tests) + test_es_plural_suffix_fires PASSED"
-        },
-        {
-          "behavior": "vocabulary golden on 29 real prompts + under-classification metric ceilings (18->11 under, 1->0 over)",
-          "disposition": "tested",
-          "evidence": "TestVocabularyGolden + TestUnderClassificationMetric + TestFixtureSchema PASSED"
-        },
-        {
-          "behavior": "new/changed keyword intents incl. new module large->medium",
-          "disposition": "tested",
-          "evidence": "TestIntendedNewKeywords (9 tests) PASSED"
-        },
-        {
-          "behavior": "SKILL.md / sub-iterate-runner / guide prose edits",
-          "disposition": "tested",
-          "evidence": "covered-by-existing-test: skill drift suite green (completeness/phase-matrix/risk-taxonomy/references-link) in 341-test plugin run"
-        }
-      ],
       "counts": {
-        "testable": 13,
-        "tested": 13,
+        "total_behaviors": 4,
+        "tested": 4,
         "untestable": 0,
         "untested_testable": 0
       },
-      "enumeration_basis": {
-        "acs": 7,
-        "covered_acs": 7
-      }
+      "enumeration_basis": "Behaviors changed by _ensure_utf8_stdout in triage_cli.py (root-cause fix for the cp1252 UnicodeEncodeError found by the webui pending-delivery-badge boundary probe).",
+      "status": "complete",
+      "behaviors": [
+        {
+          "behavior": "list --json emits UTF-8 bytes under a legacy console codepage (machine contract)",
+          "disposition": "tested",
+          "evidence": "test_list_json_is_utf8_under_legacy_console_encoding (RED pre-fix: UnicodeEncodeError ✨)"
+        },
+        {
+          "behavior": "human list renders non-ASCII titles instead of crashing",
+          "disposition": "tested",
+          "evidence": "test_list_human_output_survives_legacy_console_encoding"
+        },
+        {
+          "behavior": "streams without reconfigure() are tolerated (guarded getattr)",
+          "disposition": "tested",
+          "evidence": "in-process invocations in test_triage_cli.py (14/14, pytest-captured stdout) stay green"
+        },
+        {
+          "behavior": "pre-existing list/--json semantics unchanged (union, pendingDelivery, open-filter)",
+          "disposition": "tested",
+          "evidence": "test_triage_cli_json.py 6 prior tests + test_triage_cli.py 14 green"
+        }
+      ]
     }
-  }
+  },
+  "last_updated": "2026-06-10T08:45:00Z"
 }
