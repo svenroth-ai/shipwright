@@ -1,34 +1,34 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-10-canon-exempt-agent-doc-caches"
+run_id: "iterate-2026-06-10-triage-cli-json-utf8"
 phase: "iterate"
-reason: "exempt full generated agent-doc trio from canon lint; finalize trg-6ed063ae"
-timestamp: "2026-06-10T07:53:28.614369+00:00"
+reason: "merge origin/main reconciliation"
+timestamp: "2026-06-10T08:00:55.145129+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-10 07:53:28 UTC
+> Auto-generated 2026-06-10 08:00:55 UTC
 
 ## Session Info
 
-- **Session ID**: d23ad659-b692-4618-ab0b-2021e37ec619
-- **Timestamp**: 2026-06-10 07:53:28 UTC
-- **Reason**: exempt full generated agent-doc trio from canon lint; finalize trg-6ed063ae
+- **Session ID**: 55205f02-66aa-43eb-93b1-2cf9cb776ce8
+- **Timestamp**: 2026-06-10 08:00:55 UTC
+- **Reason**: merge origin/main reconciliation
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-10-complexity-classifier-prior
-- **Date**: 2026-06-10T07:22:28.352640Z
-- **Type**: change
-- **Complexity**: medium
-- **Branch**: iterate/complexity-classifier-prior
-- **ADR**: iterate-2026-06-10-complexity-classifier-prior
+- **Run ID**: iterate-2026-06-10-triage-cli-json-utf8
+- **Date**: 2026-06-10T08:00:55.618054Z
+- **Type**: bug
+- **Complexity**: small
+- **Branch**: iterate/triage-cli-json-utf8
+- **ADR**: iterate-2026-06-10-triage-cli-json-utf8
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/2026-06-10-canon-exempt-agent-doc-caches
+- **Branch**: iterate/triage-cli-json-utf8
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/2026-06-10-canon-exempt-agent-doc-caches
-- **Last Commit**: efdb0cfc chore(triage): sweep 2 outbox append(s) into branch
+- **Branch**: iterate/triage-cli-json-utf8
+- **Last Commit**: 9d89609e Merge remote-tracking branch 'origin/main' into iterate/triage-cli-json-utf8
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -65,15 +65,15 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 | Event | Type | Source | Date |
 |-------|------|--------|------|
 | evt-374ac212 | work_completed | iterate (Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae.) | 2026-06-10 |
+| evt-a858c858 | work_completed | iterate (triage_cli list pins stdout to UTF-8: fixes UnicodeEncodeError on Windows consoles for non-cp1252 item titles (found by the webui pending-delivery-badge boundary probe).) | 2026-06-10 |
 | evt-b2f6aa17 | work_completed | iterate (History-calibrated complexity prior + cross-domain scope vocabulary for the iterate Stage-1 classifier) | 2026-06-10 |
 | evt-7359794f | work_completed | iterate (Gate D2V evidence markdown write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE; default runs assert without writing the tracked artifact.) | 2026-06-10 |
 | evt-e54d689f | work_completed | iterate (Add triage_cli.py list --json (unioned open items + pendingDelivery) as a WebUI contract.) | 2026-06-10 |
-| evt-b83d455a | work_completed | iterate (Triage dedup collapses same-id appends keep-last (reader parity); unblocks outbox sweep on producer update re-append.) | 2026-06-09 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 136
+- **Total work events**: 137
 - **Last iterate**: change — Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae. (2026-06-10)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
