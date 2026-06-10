@@ -1,20 +1,20 @@
 # Test Evidence Report
 
-Generated: 2026-06-10T23:05:41.755327+00:00
+Generated: 2026-06-10T22:55:27.413208+00:00
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
 | Total test checkpoints | 136 |
-| Total unit tests (latest) | 3088/3088 |
+| Total unit tests (latest) | 3451/3471 |
 | New tests from iterations | +166 |
 
 ## Test Progression
 
 | # | Event | Source | Layer | New Tests | Suite Total | Result | Date |
 |---|-------|--------|-------|-----------|-------------|--------|------|
-| 1 | Bloat Stop-gate resolves a file's ceiling from the worktree baseline it measures, not main (trg-28e83840) | iterate | unit | +0 | 3088/3088 | PASS | 2026-06-10 |
+| 1 | Campaign status backfill + docs (S4): parse_campaign_skeleton strips markdown emphasis from id/slug cells so a legacy campaign.md (bold **C1**) matches the plain committed status.json ids (else re-projection drops completed subs); a read-only drift-guard test verifies every tracked campaign regenerates without downgrade; docs landed (hooks-and-pipeline glob-churn note, glossary Campaign-Status + token-vocab SSoT, ADR). Closes campaign 2026-06-07-tracked-campaign-status. | iterate | unit | +0 | 3451/3471 | FAIL | 2026-06-10 |
 | 2 | Per-tree campaign status.json: F5b finalize wiring + scoped churn resolver (campaign S3) | iterate | unit | +0 | 3442/3462 | FAIL | 2026-06-10 |
 | 3 | Campaign status projection: pure regenerate_campaign_status producer + campaign_progress regenerate CLI project per-sub-iterate status.json from the campaign.md skeleton and self-identifying work_completed events, with a never-downgrade guard (campaign 2026-06-07-tracked-campaign-status S2). | iterate | unit | +0 | 3426/3445 | FAIL | 2026-06-10 |
 | 4 | Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae. | iterate | — | +0 | — | — | 2026-06-10 |
@@ -184,7 +184,7 @@ Generated: 2026-06-10T23:05:41.755327+00:00
 | 27 | iterate | 3457/3458 | — | — | — | — | 2026-06-10 |
 | 28 | iterate | 3426/3445 | — | — | — | — | 2026-06-10 |
 | 29 | iterate | 3442/3462 | — | — | — | — | 2026-06-10 |
-| 30 | iterate | 3088/3088 | — | — | — | — | 2026-06-10 |
+| 30 | iterate | 3451/3471 | — | — | — | — | 2026-06-10 |
 
 ## Code Review Evidence
 

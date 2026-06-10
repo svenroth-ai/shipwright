@@ -53,6 +53,27 @@
   the campaign is a discrete `/shipwright-iterate` invocation. Track
   A (Prevention) is the first campaign that bundles three iterates
   (foundation / review / defense).
+- **Campaign-Status** — A campaign's per-sub-iterate board: the tracked,
+  per-tree `…/campaigns/<slug>/status.json` (producer-owned, authoritative for
+  the Command Center Campaigns lane). **Projected from the event log** by
+  `campaign_status.project_campaign_status` (campaign
+  `2026-06-07-tracked-campaign-status`): the `campaign.md` `## Sub-Iterates`
+  table is the **skeleton** (id/slug/order, markdown-emphasis stripped so a
+  legacy `**C1**` matches the plain committed `C1`); each top-level-stamped
+  `work_completed` event (`event["campaign"]`/`["sub_iterate_id"]`, S1) marks its
+  sub `complete`; a **never-downgrade** guard merges over the committed file
+  (`commit=""`/null-test no-clobber; non-skeleton subs dropped). Written at F5b
+  Step 6 (`campaign_status_io.finalize_campaign_status`), reconciled by glob
+  (`churn_merge.is_campaign_status`, regenerate **scoped to conflicted
+  campaigns**). **Token-vocabulary SSoT (cross-repo, Producer ↔ Consumer must
+  agree):** the **lifecycle** `draft|active|complete` is declared once in
+  `campaign_progress.LIFECYCLE_STATUSES` (↔ WebUI `VALID_LIFECYCLE`); the
+  **sub-status** `pending < in_progress < complete` ladder plus the explicit
+  terminals `failed`/`escalated` live in `campaign_status.STATUS_LADDER` +
+  `TERMINAL_STATUSES` (↔ WebUI `VALID_STATUSES`). Producers:
+  `campaign_progress.py` (`start`/`update-status`/`regenerate`),
+  `campaign_status_io`. Consumers: the WebUI Campaigns lane
+  (`campaign-status-json.ts`). Related: Producer, Consumer, Churn-Artifact.
 - **Triage-Inbox** — The cross-cutting pre-backlog intake. Its SSoT is
   the **git-tracked** append-only event log `.shipwright/triage.jsonl`
   (committed per-tree like `shipwright_events.jsonl` since campaign

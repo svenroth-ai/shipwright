@@ -1,0 +1,10 @@
+{
+  "run_id": "iterate-2026-06-11-backfill-docs",
+  "date": "2026-06-10T22:55:43.648028Z",
+  "type": "change",
+  "complexity": "small",
+  "branch": "iterate/2026-06-11-backfill-docs",
+  "spec": ".shipwright/planning/iterate/campaigns/2026-06-07-tracked-campaign-status/sub-iterates/S4-backfill-docs.md",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-11-backfill-docs"
+}
