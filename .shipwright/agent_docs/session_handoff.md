@@ -1,34 +1,35 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-10-d2v-evidence-write-optin"
+run_id: "iterate-2026-06-10-complexity-classifier-prior"
 phase: "iterate"
-reason: "gate D2V evidence write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE opt-in (test-isolation leak fix)"
-timestamp: "2026-06-10T06:36:37.802318+00:00"
+reason: "iterate complete"
+timestamp: "2026-06-10T07:21:44.385582+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-10 06:36:37 UTC
+> Auto-generated 2026-06-10 07:21:44 UTC
 
 ## Session Info
 
-- **Session ID**: d23ad659-b692-4618-ab0b-2021e37ec619
-- **Timestamp**: 2026-06-10 06:36:37 UTC
-- **Reason**: gate D2V evidence write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE opt-in (test-isolation leak fix)
+- **Session ID**: 2e830dd7-d5db-466a-b904-03a7e7baa98f
+- **Timestamp**: 2026-06-10 07:21:44 UTC
+- **Reason**: iterate complete
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-10-triage-list-json
-- **Date**: 2026-06-10T06:09:09.543912Z
-- **Type**: feature
+- **Run ID**: iterate-2026-06-10-d2v-evidence-write-optin
+- **Date**: 2026-06-10T06:36:38.315232Z
+- **Type**: change
 - **Complexity**: small
-- **Branch**: iterate/2026-06-10-triage-list-json
-- **ADR**: iterate-2026-06-10-triage-list-json
+- **Branch**: iterate/2026-06-10-d2v-evidence-write-optin
+- **ADR**: iterate-2026-06-10-d2v-evidence-write-optin
 - **Tests passed**: True
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/2026-06-10-d2v-evidence-write-optin
+- **Branch**: iterate/complexity-classifier-prior
+- **Spec**: .shipwright/planning/iterate/2026-06-10-complexity-classifier-prior.md
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +48,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/2026-06-10-d2v-evidence-write-optin
-- **Last Commit**: 5898f86c chore(triage): sweep 3 outbox append(s) into branch
+- **Branch**: iterate/complexity-classifier-prior
+- **Last Commit**: e45c9741 Merge pull request #178 from svenroth-ai/iterate/2026-06-10-d2v-evidence-write-optin
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-b2f6aa17 | work_completed | iterate (History-calibrated complexity prior + cross-domain scope vocabulary for the iterate Stage-1 classifier) | 2026-06-10 |
 | evt-7359794f | work_completed | iterate (Gate D2V evidence markdown write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE; default runs assert without writing the tracked artifact.) | 2026-06-10 |
 | evt-e54d689f | work_completed | iterate (Add triage_cli.py list --json (unioned open items + pendingDelivery) as a WebUI contract.) | 2026-06-10 |
 | evt-b83d455a | work_completed | iterate (Triage dedup collapses same-id appends keep-last (reader parity); unblocks outbox sweep on producer update re-append.) | 2026-06-09 |
 | evt-3beaef96 | work_completed | iterate (Iterate-scoped external-review markers gitignored (not blanket); 6 tracked copies untracked.) | 2026-06-09 |
-| evt-1326569b | work_completed | iterate (Relocate detective-audit JSON from repo root to .shipwright/compliance/audit-report.json; canon re-excludes audit-report.{md,json} (propagates to adopted repos); drop obsolete framework root ignore.) | 2026-06-09 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 134
-- **Last iterate**: change — Gate D2V evidence markdown write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE; default runs assert without writing the tracked artifact. (2026-06-10)
+- **Total work events**: 135
+- **Last iterate**: change — History-calibrated complexity prior + cross-domain scope vocabulary for the iterate Stage-1 classifier (2026-06-10)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

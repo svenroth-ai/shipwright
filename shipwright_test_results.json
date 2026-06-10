@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-10-d2v-evidence-write-optin",
+    "run_id": "iterate-2026-06-10-complexity-classifier-prior",
     "date": "2026-06-10",
     "unit": {
       "status": "passed",
-      "passed": 3047,
-      "total": 3047
+      "passed": 3370,
+      "total": 3370
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 141,
+      "total": 141
     },
     "pgtap": {
       "status": "not_run",
@@ -18,70 +18,103 @@
       "total": 0
     },
     "e2e": {
-      "status": "not_run",
+      "status": "passed",
+      "passed": 28,
+      "total": 28
+    },
+    "design_fidelity": {
+      "status": "skipped",
       "passed": 0,
       "total": 0
     },
-    "design_fidelity": {
-      "status": "not_run"
-    },
     "smoke": {
-      "status": "not_run"
+      "status": "skipped"
     },
     "degraded": [],
     "surface_verification": {
       "surface": "cli",
-      "runner": "uv run --extra dev pytest shared/tests/ -m 'not cross_plugin'  +  full D2V gate sans opt-in tree-cleanliness probe",
+      "tests_run": 28,
       "exit_code": 0,
-      "tests_run": 3047,
-      "evidence_path": "C:\\01_Development\\shipwright\\.worktrees\\2026-06-10-d2v-evidence-write-optin\\.shipwright\\runs\\iterate-2026-06-10-d2v-evidence-write-optin\\surface_verification.log",
-      "timestamp": "2026-06-10T06:36:22.000Z",
-      "attempts": 1,
-      "note": "Test-infra change (no product surface). Verified the full gate runs + asserts without writing the tracked artifact; full suite leaves the tree clean."
+      "evidence": ".shipwright/runs/iterate-2026-06-10-complexity-classifier-prior/surface_verification.json"
     },
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "evidence_write_enabled() parses truthy/falsy env values",
+          "behavior": "history prior: median odd/even-lower-middle, window=20, clamp<=medium, min-entries=3",
           "disposition": "tested",
-          "evidence": "test_evidence_write_enabled_parses_env (9 params) PASSED"
+          "evidence": "test_complexity_history.py::TestLoadHistoryPrior (9 tests) PASSED"
         },
         {
-          "behavior": "evidence_write_enabled() False when env unset",
+          "behavior": "invalid-entry skips: bad complexity/JSON/non-dict, missing/non-string/unparseable date, oversized, _quarantine, valid-first-then-window",
           "disposition": "tested",
-          "evidence": "test_evidence_write_enabled_false_when_unset PASSED"
+          "evidence": "TestLoadHistoryPrior skip tests incl. test_non_string_date_is_skipped_not_crash PASSED"
         },
         {
-          "behavior": "flush() skips the write without opt-in (the leak fix)",
+          "behavior": "sort determinism: (date, run_id) tiebreak at window cutoff, glob-order independence",
           "disposition": "tested",
-          "evidence": "test_flush_skips_write_without_optin PASSED + behavioral: full gate sans opt-in leaves artifact untouched"
+          "evidence": "test_complexity_history.py::test_run_id_tiebreak_decides_window_cutoff PASSED"
         },
         {
-          "behavior": "flush() writes the artifact with opt-in (regen still works)",
+          "behavior": "classify precedence keyword > history > default + signals shape (prior_source/history_prior/history_n)",
           "disposition": "tested",
-          "evidence": "test_flush_writes_with_optin PASSED"
+          "evidence": "TestClassifyPrecedence (6 tests) PASSED"
         },
         {
-          "behavior": "gate assertions still run/pass without opt-in (CI coverage preserved)",
+          "behavior": "risk-floor interplay: floor lifts trivial prior, floor does not cap medium prior",
           "disposition": "tested",
-          "evidence": "full D2V gate sans opt-in -> 6 methods passed"
+          "evidence": "test_risk_floor_does_not_cap_history_prior + test_history_prior_lifts_to_risk_floor_at_least PASSED"
         },
         {
-          "behavior": "full default shared/tests suite no longer dirties the tracked D2V artifact",
+          "behavior": "backward compat: no project_root -> old estimate + legacy signal keys",
           "disposition": "tested",
-          "evidence": "F0: 3047 passed, git status clean of D2V-empirical-results.md"
+          "evidence": "test_no_project_root_preserves_old_behaviour + TestCli::test_without_flag_old_behaviour PASSED"
+        },
+        {
+          "behavior": "CLI --project-root end-to-end via subprocess",
+          "disposition": "tested",
+          "evidence": "test_complexity_history_roundtrip.py::TestCli (2 tests) PASSED"
+        },
+        {
+          "behavior": "writer->reader contract via real shared append_iterate_entry + real field entry shape",
+          "disposition": "tested",
+          "evidence": "TestRoundTripWithRealWriter (2 tests) PASSED"
+        },
+        {
+          "behavior": "sibling-module deployment + standalone spec_from_file_location self-bootstrap",
+          "disposition": "tested",
+          "evidence": "TestStandaloneLoading (2 tests) PASSED"
+        },
+        {
+          "behavior": "matcher: alnum boundaries (underscore=separator), plural s/es, no arbitrary inflection, phrase anchoring",
+          "disposition": "tested",
+          "evidence": "TestFalsePositiveGuards (8 tests) + test_es_plural_suffix_fires PASSED"
+        },
+        {
+          "behavior": "vocabulary golden on 29 real prompts + under-classification metric ceilings (18->11 under, 1->0 over)",
+          "disposition": "tested",
+          "evidence": "TestVocabularyGolden + TestUnderClassificationMetric + TestFixtureSchema PASSED"
+        },
+        {
+          "behavior": "new/changed keyword intents incl. new module large->medium",
+          "disposition": "tested",
+          "evidence": "TestIntendedNewKeywords (9 tests) PASSED"
+        },
+        {
+          "behavior": "SKILL.md / sub-iterate-runner / guide prose edits",
+          "disposition": "tested",
+          "evidence": "covered-by-existing-test: skill drift suite green (completeness/phase-matrix/risk-taxonomy/references-link) in 341-test plugin run"
         }
       ],
       "counts": {
-        "testable": 6,
-        "tested": 6,
+        "testable": 13,
+        "tested": 13,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 7,
+        "covered_acs": 7
       }
     }
   }

@@ -1517,7 +1517,7 @@ After the initial pipeline completes, ongoing changes use `/shipwright-iterate` 
 
 Unlike v0.2's fixed process, `/shipwright-iterate` v0.3 assesses each change's complexity and runs only the phases that change needs. This happens in two stages:
 
-1. **Quick Estimate** -- A classifier script analyzes your prompt for scope keywords and risk signals, producing an initial estimate with confidence score.
+1. **Quick Estimate** -- A classifier script analyzes your prompt for scope keywords and risk signals, producing an initial estimate with confidence score. When no scope keyword matches, the default is history-calibrated: the median final complexity of your last finalized iterates (capped at medium) instead of a blanket "trivial", so the estimate adapts to each project's reality (`signals.prior_source` reports `keyword`, `history`, or `default`).
 2. **Repo Scout** -- The agent scans the repository (affected files, FRs, split boundaries) to confirm or upgrade the estimate. After this, complexity is locked.
 
 The result is one of four levels:
