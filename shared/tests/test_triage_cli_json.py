@@ -9,6 +9,7 @@ status==triage items the human `list` shows, as a JSON array, plus a
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -105,3 +106,53 @@ def test_list_default_output_is_not_json(tmp_path: Path, tracked_item: str) -> N
     assert tracked_item in res.stdout
     with pytest.raises(json.JSONDecodeError):
         json.loads(res.stdout)
+
+
+# ---------------------------------------------------------------------------
+# UTF-8 output contract under a legacy console encoding
+# (iterate-2026-06-10-triage-cli-json-utf8)
+#
+# On Windows, sys.stdout defaults to the console codepage (cp1252) — writing
+# `ensure_ascii=False` JSON for any non-cp1252 item title/detail (emoji, CJK)
+# crashed the CLI with UnicodeEncodeError, breaking the WebUI live-view
+# contract for exactly the real-world findings most likely to carry such
+# characters. Found by the webui pending-delivery-badge boundary probe.
+# PYTHONIOENCODING pins the child's stdout codec so the regression reproduces
+# deterministically on every platform, not just a Windows console.
+# ---------------------------------------------------------------------------
+
+NON_ASCII_TITLE = "Outbox-önly finding ✨ 中文"
+
+
+def _run_legacy_console(args: list[str]) -> subprocess.CompletedProcess[bytes]:
+    env = {**os.environ, "PYTHONIOENCODING": "cp1252"}
+    return subprocess.run(
+        [sys.executable, str(TRIAGE_CLI), *args],
+        capture_output=True, check=False, env=env,
+    )
+
+
+def test_list_json_is_utf8_under_legacy_console_encoding(tmp_path: Path) -> None:
+    """`list --json` is a machine contract: UTF-8 bytes regardless of the
+    console codepage. Pre-fix this exited non-zero with UnicodeEncodeError."""
+    append_triage_item(
+        tmp_path, source="manual", severity="low", kind="improvement",
+        title=NON_ASCII_TITLE, detail="ümläut ✓ detail", dedup_key="utf8:probe",
+    )
+    res = _run_legacy_console(["--project-root", str(tmp_path), "list", "--json"])
+    assert res.returncode == 0, res.stderr.decode("utf-8", "replace")
+    data = json.loads(res.stdout.decode("utf-8"))
+    assert data[0]["title"] == NON_ASCII_TITLE
+    assert data[0]["pendingDelivery"] is False
+
+
+def test_list_human_output_survives_legacy_console_encoding(tmp_path: Path) -> None:
+    """The human `list` shares the stdout path: a non-ASCII title must render
+    (UTF-8), not crash the CLI with a traceback."""
+    append_triage_item(
+        tmp_path, source="manual", severity="low", kind="improvement",
+        title=NON_ASCII_TITLE, detail="d", dedup_key="utf8:probe2",
+    )
+    res = _run_legacy_console(["--project-root", str(tmp_path), "list"])
+    assert res.returncode == 0, res.stderr.decode("utf-8", "replace")
+    assert NON_ASCII_TITLE in res.stdout.decode("utf-8")

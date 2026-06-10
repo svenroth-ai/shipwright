@@ -1,15 +1,15 @@
 # Commit Change Log
 
-Generated: 2026-06-10T07:53:28.614369+00:00
-Total commits: 924
+Generated: 2026-06-10T08:00:55.145129+00:00
+Total commits: 920
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 261
-    "fix" : 258
-    "chore" : 199
+    "feat" : 260
+    "fix" : 259
+    "chore" : 195
     "docs" : 119
     "refactor" : 50
     "test" : 22
@@ -20,11 +20,10 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 261 commits
+### Features (feat) — 260 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-10 | iterate | campaign sub-iterates self-identify via event extras stamp | efa1dcfc3a5e |
 | 2026-06-10 | iterate | history-calibrated complexity prior + cross-domain scope vocabulary | 9309f0b03c98 |
 | 2026-06-10 | triage | add `triage_cli.py list --json` contract for the WebUI live-view | 2198a496c4f4 |
 | 2026-06-08 | triage | propagate outbox gitignore to adopted repos (adopt + iterate self-heal) + docs | 8a0df7927e6d |
@@ -286,10 +285,11 @@ pie title Commit Types
 | 2026-03-20 | — | Task 02 — project templates (CLAUDE.md, agent_docs, CI) | c3a6d2f53bd3 |
 | 2026-03-20 | — | Task 01 — monorepo scaffolding + supabase-nextjs stack profile | 990a138a4690 |
 
-### Fixes (fix) — 258 commits
+### Fixes (fix) — 259 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-10 | triage | pin triage_cli list stdout to UTF-8 — cp1252 console crash on non-ASCII items | 2d53d3960957 |
 | 2026-06-10 | tests | exempt full generated agent-doc cache trio from canon lint | 3544da31e17d |
 | 2026-06-10 | tests | gate D2V evidence write behind an opt-in env var | ef70f5cce30c |
 | 2026-06-10 | triage | dedup_triage_lines collapses same-id appends keep-last | 6f8d0fc70482 |
@@ -549,18 +549,14 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 199 commits
+### Chores (chore) — 195 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
-| 2026-06-10 | triage | commit session producer append(s) | 5a07044a23cf |
-| 2026-06-10 | triage | commit session producer append(s) | c03412ea9016 |
+| 2026-06-10 | triage | sweep 3 outbox append(s) into branch | 41826b299ccd |
 | 2026-06-10 | triage | sweep 2 outbox append(s) into branch | efdb0cfc1555 |
-| 2026-06-10 | campaign | tracked-campaign-status active, S1 complete (efa1dcfc) | 3821e293be5f |
-| 2026-06-10 | docs | backfill architecture bullets for merged PRs #177/#178 | de8de4b5e611 |
 | 2026-06-10 | triage | sweep 3 outbox append(s) into branch | 5898f86ce135 |
 | 2026-06-10 | triage | sweep 5 outbox append(s) into branch | 09994d984fb8 |
-| 2026-06-10 | triage | sweep 5 outbox append(s) into branch | 865d37577cf7 |
 | 2026-06-10 | triage | dismiss trg-60ef91fb (resolved by #175) | 7c9a08828bed |
 | 2026-06-10 | triage | sweep 3 outbox append(s) into branch | b142fe6c7184 |
 | 2026-06-09 | triage | sweep 2 outbox append(s) into branch | 0a1b4c334d29 |
@@ -993,7 +989,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 924 |
+| Total commits | 920 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 924 |
+| Human-authored commits | 920 |
 

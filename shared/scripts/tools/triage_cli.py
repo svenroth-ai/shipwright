@@ -102,7 +102,28 @@ def _format_item(item: dict) -> str:
     return "\n".join(lines)
 
 
+def _ensure_utf8_stdout() -> None:
+    """Pin stdout to UTF-8 regardless of the console codepage.
+
+    On Windows ``sys.stdout`` defaults to the legacy codepage (cp1252), so
+    writing ``ensure_ascii=False`` JSON — or a stripped-but-non-ASCII human
+    line (`_strip_control_chars` deliberately keeps >= 0x80) — crashed with
+    ``UnicodeEncodeError`` for any item title/detail carrying emoji/CJK/umlauts
+    (iterate-2026-06-10-triage-cli-json-utf8; found by the webui
+    pending-delivery-badge boundary probe). ``list --json`` is a machine
+    contract consumed by the WebUI live-view: its bytes MUST be UTF-8.
+    UTF-8 encodes all of Unicode, so the strict error handler can't raise.
+    """
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if callable(reconfigure):
+        try:
+            reconfigure(encoding="utf-8")
+        except (ValueError, OSError):
+            pass  # detached/closed stream — let the write surface the error
+
+
 def _cmd_list(args: argparse.Namespace) -> int:
+    _ensure_utf8_stdout()
     project_root = Path(args.project_root)
     items = [it for it in read_all_items(project_root) if it.get("status") == "triage"]
     if getattr(args, "json", False):
