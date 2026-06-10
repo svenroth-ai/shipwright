@@ -18,13 +18,14 @@ timestamp: "2026-06-10T07:31:00.326550+00:00"
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-10-triage-dedup-keep-last-append
-- **Date**: 2026-06-09T22:26:37.674867Z
-- **Type**: change
+- **Run ID**: iterate-2026-06-10-event-self-id
+- **Date**: 2026-06-10T07:31:29.098672Z
+- **Type**: feature
 - **Complexity**: small
-- **Branch**: iterate/2026-06-10-triage-dedup-keep-last-append
-- **ADR**: iterate-2026-06-10-triage-dedup-keep-last-append
+- **Branch**: iterate/2026-06-10-event-self-id
+- **ADR**: iterate-2026-06-10-event-self-id
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/campaigns/2026-06-07-tracked-campaign-status/sub-iterates/S1-event-self-id.md
 
 ## Current Iterate Progress
 
@@ -48,7 +49,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 ## Git State
 
 - **Branch**: iterate/2026-06-10-event-self-id
-- **Last Commit**: de8de4b5 chore(docs): backfill architecture bullets for merged PRs #177/#178
+- **Last Commit**: c03412ea chore(triage): commit session producer append(s)
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,17 +65,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-b2f6aa17 | work_completed | iterate (History-calibrated complexity prior + cross-domain scope vocabulary for the iterate Stage-1 classifier) | 2026-06-10 |
+| evt-7359794f | work_completed | iterate (Gate D2V evidence markdown write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE; default runs assert without writing the tracked artifact.) | 2026-06-10 |
+| evt-e54d689f | work_completed | iterate (Add triage_cli.py list --json (unioned open items + pendingDelivery) as a WebUI contract.) | 2026-06-10 |
 | evt-c064117a | work_completed | iterate (Campaign sub-iterates self-identify: runner Step 4 + manual --campaign/--sub-iterate-id stamp campaign/sub_iterate_id into the work_completed event via F5b --event-extras-json) | 2026-06-10 |
 | evt-b83d455a | work_completed | iterate (Triage dedup collapses same-id appends keep-last (reader parity); unblocks outbox sweep on producer update re-append.) | 2026-06-09 |
-| evt-3beaef96 | work_completed | iterate (Iterate-scoped external-review markers gitignored (not blanket); 6 tracked copies untracked.) | 2026-06-09 |
-| evt-1326569b | work_completed | iterate (Relocate detective-audit JSON from repo root to .shipwright/compliance/audit-report.json; canon re-excludes audit-report.{md,json} (propagates to adopted repos); drop obsolete framework root ignore.) | 2026-06-09 |
-| evt-cefcd03e | work_completed | iterate (Relocate phase-quality skill-compliance roll-ups under the gitignored FINDING_DIR; resolve main_repo_root (not cwd) in the bloat marker writer+reader via a shared fail-soft resolver; defensive nested-locks gitignore canon.) | 2026-06-08 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 133
-- **Last iterate**: feature — Campaign sub-iterates self-identify: runner Step 4 + manual --campaign/--sub-iterate-id stamp campaign/sub_iterate_id into the work_completed event via F5b --event-extras-json (2026-06-10)
+- **Total work events**: 131
+- **Last iterate**: change — History-calibrated complexity prior + cross-domain scope vocabulary for the iterate Stage-1 classifier (2026-06-10)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

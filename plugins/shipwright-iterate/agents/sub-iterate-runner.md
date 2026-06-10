@@ -37,7 +37,7 @@ You receive these parameters in the prompt:
 
 ```bash
 uv run "{plugin_root}/scripts/lib/classify_complexity.py" \
-  --project-root "{project_root}" --description "$(cat {sub_iterate_spec})"
+  --project-root "{project_root}" --message "$(cat {sub_iterate_spec})"
 ```
 
 **If complexity == "large":** STOP immediately. Return the escalation

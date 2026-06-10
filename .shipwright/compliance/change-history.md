@@ -1,15 +1,15 @@
 # Commit Change Log
 
 Generated: 2026-06-10T07:31:00.326550+00:00
-Total commits: 913
+Total commits: 916
 
 ## Commit Distribution
 
 ```mermaid
 pie title Commit Types
-    "feat" : 258
+    "feat" : 259
     "fix" : 256
-    "chore" : 193
+    "chore" : 195
     "docs" : 119
     "refactor" : 50
     "test" : 22
@@ -20,10 +20,11 @@ pie title Commit Types
 
 ## Changes by Type
 
-### Features (feat) — 258 commits
+### Features (feat) — 259 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-10 | iterate | campaign sub-iterates self-identify via event extras stamp | efa1dcfc3a5e |
 | 2026-06-08 | triage | propagate outbox gitignore to adopted repos (adopt + iterate self-heal) + docs | 8a0df7927e6d |
 | 2026-06-08 | triage | sweep outbox into PR branch + abandoned-branch-safe GC; drop integrate_main reconcile | a728156f713c |
 | 2026-06-08 | triage | gitignored per-tree outbox + reroute background producers + union reader | a7a0209395b6 |
@@ -544,10 +545,12 @@ pie title Commit Types
 | 2026-03-21 | — | rename skill folders for clean slash commands | 5a8d77658fab |
 | 2026-03-20 | — | update README attribution to svenroth.ai | dd5de7f7d6ab |
 
-### Chores (chore) — 193 commits
+### Chores (chore) — 195 commits
 
 | Date | Scope | Description | Commit |
 |------|-------|-------------|--------|
+| 2026-06-10 | triage | commit session producer append(s) | c03412ea9016 |
+| 2026-06-10 | campaign | tracked-campaign-status active, S1 complete (efa1dcfc) | 3821e293be5f |
 | 2026-06-10 | docs | backfill architecture bullets for merged PRs #177/#178 | de8de4b5e611 |
 | 2026-06-10 | triage | sweep 5 outbox append(s) into branch | 865d37577cf7 |
 | 2026-06-10 | triage | dismiss trg-60ef91fb (resolved by #175) | 7c9a08828bed |
@@ -982,7 +985,7 @@ pie title Commit Types
 
 | Metric | Value |
 |--------|-------|
-| Total commits | 913 |
+| Total commits | 916 |
 | AI-assisted commits | 0 |
-| Human-authored commits | 913 |
+| Human-authored commits | 916 |
 

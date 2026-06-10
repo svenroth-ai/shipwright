@@ -1,0 +1,1 @@
+D2V empirical-gate tests no longer regenerate the tracked D2V-empirical-results.md on every run: the markdown write is gated behind the opt-in SHIPWRIGHT_D2V_WRITE_EVIDENCE env var (the gate's assertions still run, preserving CI coverage; only the artifact side-effect is opt-in), ending the test-isolation leak that dirtied the working tree.

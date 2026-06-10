@@ -9,7 +9,20 @@ Output: JSON with estimate, confidence, risk_flags, and signals.
 
 import json
 import re
+import sys
 from pathlib import Path
+
+# Self-bootstrap: sibling modules must resolve even under
+# importlib.spec_from_file_location (contracts/iterate.py, test harnesses).
+_LIB_DIR = str(Path(__file__).resolve().parent)
+if _LIB_DIR not in sys.path:
+    sys.path.insert(0, _LIB_DIR)
+
+from complexity_history import load_history_prior  # noqa: E402
+from complexity_vocabulary import (  # noqa: E402, F401 — re-exported surface
+    COMPLEXITY_ORDER, SCOPE_LARGE_KEYWORDS, SCOPE_MEDIUM_KEYWORDS,
+    SCOPE_SMALL_KEYWORDS, estimate_scope, match_scope_keyword,
+)
 
 # --- Canonical Risk Taxonomy ---
 # One authoritative list. Referenced by SKILL.md, references, and tests.
@@ -203,25 +216,6 @@ def is_io_boundary_change(changed_files: list[str] | None) -> bool:
     return False
 
 
-COMPLEXITY_ORDER = ["trivial", "small", "medium", "large"]
-
-# --- Heuristic keywords for file/FR count estimation ---
-
-SCOPE_LARGE_KEYWORDS = {
-    "multi-language", "i18n", "internationalization", "rewrite",
-    "rebuild", "overhaul", "migration", "redesign the entire",
-    "replace all", "new module", "new split",
-}
-SCOPE_MEDIUM_KEYWORDS = {
-    "search", "filter", "dashboard", "wizard", "workflow",
-    "new page", "new screen", "new route", "integration",
-}
-SCOPE_SMALL_KEYWORDS = {
-    "spinner", "loading", "tooltip", "icon", "badge",
-    "toast", "notification", "rename", "reorder",
-}
-
-
 def _complexity_index(level: str) -> int:
     """Return numeric index for complexity comparison."""
     return COMPLEXITY_ORDER.index(level)
@@ -281,29 +275,16 @@ def detect_cross_split(
     return None
 
 
-def estimate_scope(message: str) -> str:
-    """Heuristic scope estimate from keywords."""
-    msg_lower = message.lower()
-    for kw in SCOPE_LARGE_KEYWORDS:
-        if kw in msg_lower:
-            return "large"
-    for kw in SCOPE_MEDIUM_KEYWORDS:
-        if kw in msg_lower:
-            return "medium"
-    for kw in SCOPE_SMALL_KEYWORDS:
-        if kw in msg_lower:
-            return "small"
-    return "trivial"
-
-
 def classify(
     message: str,
     sync_config_path: str | None = None,
+    project_root=None,
 ) -> dict:
     """Stage 1: Quick complexity estimate from prompt + risk flags.
 
-    Returns dict with: estimate, confidence, risk_flags, signals.
-    Stage 2 (AI agent repo scout) may upgrade the estimate.
+    Canonical, history-aware path (estimate_scope = legacy vocabulary-only).
+    Scope precedence: keyword match > history prior > trivial default;
+    risk floors apply on top either way. Stage 2 (repo scout) may upgrade.
     """
     # Detect risk flags
     risk_flags = detect_risk_flags(message)
@@ -313,8 +294,17 @@ def classify(
     if cross_split:
         risk_flags.append(cross_split)
 
-    # Heuristic scope estimate
-    scope_estimate = estimate_scope(message)
+    # Scope estimate: keyword > history prior > default.
+    keyword_level = match_scope_keyword(message)
+    history = None
+    if keyword_level is not None:
+        scope_estimate, prior_source = keyword_level, "keyword"
+    else:
+        history = load_history_prior(project_root)
+        if history is not None:
+            scope_estimate, prior_source = history["prior"], "history"
+        else:
+            scope_estimate, prior_source = "trivial", "default"
 
     # Apply risk flag minimums
     effective_min = "trivial"
@@ -351,7 +341,10 @@ def classify(
         "risk_flags": flag_names,
         "enforcements": sorted(enforcements),
         "signals": {
-            "scope_keyword_estimate": scope_estimate,
+            "scope_keyword_estimate": keyword_level or "trivial",
+            "prior_source": prior_source,
+            "history_prior": history["prior"] if history else None,
+            "history_n": history["n"] if history else 0,
             "risk_floor": effective_min,
             "cross_split": cross_split is not None,
             "has_sync_config": (
@@ -371,9 +364,13 @@ def main():
     )
     parser.add_argument("--message", required=True, help="User message")
     parser.add_argument("--sync-config", help="Path to shipwright_sync_config.json")
+    parser.add_argument(
+        "--project-root",
+        help="Enables the history prior from .shipwright/agent_docs/iterates/",
+    )
     args = parser.parse_args()
 
-    result = classify(args.message, args.sync_config)
+    result = classify(args.message, args.sync_config, args.project_root)
     print(json.dumps(result, indent=2))
 
 
