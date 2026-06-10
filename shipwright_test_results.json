@@ -1,99 +1,150 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-10-event-self-id",
+    "run_id": "iterate-2026-06-10-status-projection",
     "date": "2026-06-10",
     "unit": {
       "status": "passed",
-      "passed": 3457,
-      "total": 3458
+      "passed": 3426,
+      "total": 3445
     },
     "integration": {
-      "status": "passed",
-      "passed": 141,
-      "total": 141
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "e2e": {
-      "status": "passed",
-      "passed": 4,
-      "total": 4
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "design_fidelity": {
-      "status": "skipped",
+      "status": "not_run",
       "passed": 0,
       "total": 0
     },
     "smoke": {
-      "status": "skipped"
+      "status": "not_run"
     },
-    "degraded": [
-      "shared/tests/test_architecture_md_reflects_arch_impact.py: 1 failure is a cross-session race artifact — a concurrently-running iterate (iterate-2026-06-10-complexity-classifier-prior) dropped an arch-impact decision-drop into the shared main-tree drops dir; its architecture.md bullet ships in ITS PR (backfilling here would double-add). CI unaffected (drops absent on clean checkout -> test skips)."
-    ],
+    "surface_verification": {
+      "surface": "none",
+      "runner": "",
+      "exit_code": 0,
+      "tests_run": 0,
+      "evidence_path": "",
+      "timestamp": "2026-06-10T20:16:51.441Z",
+      "attempts": 0,
+      "justification": "S2 ships a pure projection library plus a manual regenerate CLI only; it is NOT wired into finalize or runtime (that is S3) and changes no status.json schema or WebUI contract, so no status.json is produced in any runtime/UI flow and there is no startable web/api/cli-app surface to drive. Empirical verification: Boundary Probe round-trip over the real merged S1 event (commit empty no-clobber, exact projection) plus regenerate-CLI smoke, both in the unit suite (shared 3070, iterate 356 green)."
+    },
+    "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC-1: work_completed event carries top-level campaign + sub_iterate_id from --event-extras-json",
+          "behavior": "AC1 exact projection over a stamped divergent campaign",
           "disposition": "tested",
-          "evidence": "shared/tests/test_finalize_event_self_id.py::test_event_carries_campaign_and_sub_iterate_id PASSED"
+          "evidence": "test_campaign_status_project::test_exact_when_all_stamped PASSED"
         },
         {
-          "behavior": "AC-2: finalize re-run with same run_id returns same event id, exactly one stamped work_completed line",
+          "behavior": "AC2 never-downgrade preserves unstamped complete sub",
           "disposition": "tested",
-          "evidence": "shared/tests/test_finalize_event_self_id.py::test_stamp_is_idempotent_per_run_id PASSED"
+          "evidence": "test_campaign_status_project::test_never_downgrade_unstamped_complete PASSED"
         },
         {
-          "behavior": "AC-3: manual --campaign/--sub-iterate-id path (finalize CLI --event-extras-json) stamps the event, rc=0",
+          "behavior": "AC3 missing campaign.md raises -> CLI exit 1",
           "disposition": "tested",
-          "evidence": "shared/tests/test_finalize_event_self_id.py::test_cli_manual_flag_path_stamps_event PASSED + 2 real-subprocess round-trip probes (PowerShell quoting boundary)"
+          "evidence": "test_campaign_status::test_missing_campaign_md_raises + test_campaign_status_projection::test_missing_md_returns_1 PASSED"
         },
         {
-          "behavior": "Stamp keys are additive metadata: unclassified event still rejected by FR-gate",
+          "behavior": "AC4 matches TOP-LEVEL event keys, not extras",
           "disposition": "tested",
-          "evidence": "shared/tests/test_finalize_event_self_id.py::test_stamp_does_not_bypass_fr_gate PASSED"
+          "evidence": "test_campaign_status_project::test_reads_top_level_keys_not_extras PASSED"
         },
         {
-          "behavior": "Runner contract Step 4 pins: finalize_iterate.py + --event-extras-json + campaign/sub_iterate_id keys + legacy F7 bullet removed",
+          "behavior": "AC4 commit='' no-clobber (synthetic + real S1 shape)",
           "disposition": "tested",
-          "evidence": "plugins/shipwright-iterate/tests/test_event_self_id_contract.py 5 Step-4-scoped drift tests PASSED"
+          "evidence": "test_campaign_status_project::test_commit_empty_no_clobber + test_campaign_status_projection::test_boundary_probe_real_s1_shape_no_clobber PASSED"
         },
         {
-          "behavior": "SKILL.md documents manual --campaign / --sub-iterate-id flags routed to F5b extras",
+          "behavior": "AC5 lifecycle: all-complete overrides prior failed; partial preserves",
           "disposition": "tested",
-          "evidence": "test_event_self_id_contract.py::test_skill_documents_manual_campaign_flag / _sub_iterate_id_flag / _route_to_f5b_extras PASSED"
+          "evidence": "test_campaign_status_project::test_lifecycle_all_complete_overrides_prior_failed + test_lifecycle_partial_preserves_prior PASSED"
         },
         {
-          "behavior": "F5b.md + campaign-mode.md document the stamp at producer + orchestrator briefing",
+          "behavior": "AC5 _all_subs_complete is the shared canonical (SSoT alias identity)",
           "disposition": "tested",
-          "evidence": "test_event_self_id_contract.py::test_f5b_reference_documents_stamp_keys + test_campaign_mode_briefing_mentions_stamp PASSED"
+          "evidence": "test_campaign_status_projection::TestAllSubsCompleteAlias PASSED"
         },
         {
-          "behavior": "A live runner/agent actually emits the stamp at runtime (LLM-interpreted prompt contract)",
-          "disposition": "untestable",
-          "reason_code": "requires-external-nondeterministic-service",
-          "reason": "Runner execution is LLM-agent behavior; mechanically pinned via contract drift tests + the real-producer CLI path, and verified live by this run's own F5b dogfood stamp."
+          "behavior": "AC6 regenerate CLI writes status.json + fixed summary",
+          "disposition": "tested",
+          "evidence": "test_campaign_status_projection::test_writes_status_and_prints_summary PASSED"
+        },
+        {
+          "behavior": "skeleton drives ordering",
+          "disposition": "tested",
+          "evidence": "test_campaign_status_project::test_skeleton_drives_order PASSED"
+        },
+        {
+          "behavior": "never-downgrade ladder incl. failed/escalated + in_progress->complete, no KeyError",
+          "disposition": "tested",
+          "evidence": "test_campaign_status::TestMergeStatus (7 cases) PASSED"
+        },
+        {
+          "behavior": "field-level no-clobber (tests_passed/total null)",
+          "disposition": "tested",
+          "evidence": "test_campaign_status_project::test_tests_null_no_clobber PASSED"
+        },
+        {
+          "behavior": "latest-ts + missing-ts file-order fallback",
+          "disposition": "tested",
+          "evidence": "test_campaign_status_project::test_latest_ts_wins + test_missing_ts_file_order_fallback PASSED"
+        },
+        {
+          "behavior": "drop non-skeleton committed subs + report",
+          "disposition": "tested",
+          "evidence": "test_campaign_status_project::test_drops_non_skeleton_committed_subs PASSED"
+        },
+        {
+          "behavior": "corrupt/blank/non-dict event line skipped + warning",
+          "disposition": "tested",
+          "evidence": "test_campaign_status_project::test_corrupt_line_skipped_with_warning + test_valid_json_non_object_line_counted_corrupt PASSED"
+        },
+        {
+          "behavior": "strict skeleton validation (missing table/dup/empty id)",
+          "disposition": "tested",
+          "evidence": "test_campaign_status::TestParseSkeleton (5 cases) PASSED"
+        },
+        {
+          "behavior": "producer<->parser contract (real campaign_init output)",
+          "disposition": "tested",
+          "evidence": "test_campaign_status_projection::test_real_campaign_md_parses PASSED"
+        },
+        {
+          "behavior": "corrupt committed status.json rebuilds-no-baseline",
+          "disposition": "tested",
+          "evidence": "test_campaign_status::test_corrupt_committed_status_rebuilds_with_warning PASSED"
+        },
+        {
+          "behavior": "idempotent regeneration (serialized)",
+          "disposition": "tested",
+          "evidence": "test_campaign_status::test_idempotent_serialized PASSED"
         }
       ],
       "counts": {
-        "testable": 7,
-        "tested": 7,
-        "untestable": 1,
+        "testable": 18,
+        "tested": 18,
+        "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 3,
-        "covered_acs": 3
+        "acs": 6,
+        "covered_acs": 6
       }
-    },
-    "surface_verification": {
-      "surface": "cli",
-      "tests_run": 4,
-      "exit_code": 0,
-      "evidence": ".shipwright/runs/iterate-2026-06-10-event-self-id/surface_verification.json"
     }
   }
 }

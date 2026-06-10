@@ -1,6 +1,6 @@
 # Requirements Traceability Matrix
 
-Generated: 2026-06-10T08:00:55.145129+00:00
+Generated: 2026-06-10T20:21:00.450352+00:00
 
 ## Requirements Coverage
 
@@ -158,6 +158,7 @@ Generated: 2026-06-10T08:00:55.145129+00:00
 | History-calibrated complexity prior + cross-domain scope vocabulary for the iterate Stage-1 classifier | iterate | change |  | — | — | 2026-06-10 |
 | triage_cli list pins stdout to UTF-8: fixes UnicodeEncodeError on Windows consoles for non-cp1252 item titles (found by the webui pending-delivery-badge boundary probe). | iterate | bug |  | — | — | 2026-06-10 |
 | Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae. | iterate | change |  | — | — | 2026-06-10 |
+| Campaign status projection: pure regenerate_campaign_status producer + campaign_progress regenerate CLI project per-sub-iterate status.json from the campaign.md skeleton and self-identifying work_completed events, with a never-downgrade guard (campaign 2026-06-07-tracked-campaign-status S2). | iterate | feature |  | 3426/3445 | — | 2026-06-10 |
 
 ## Coverage Summary
 
@@ -165,7 +166,7 @@ Generated: 2026-06-10T08:00:55.145129+00:00
 |--------|-------|
 | Total splits built | 0 |
 | Build sections | 0 |
-| Iterate changes | 133 |
+| Iterate changes | 134 |
 | Requirements total | 14 |
 | Requirements verified | 14/14 |
 | Must-have verified | 11/11 |

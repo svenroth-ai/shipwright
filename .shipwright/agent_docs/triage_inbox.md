@@ -1,14 +1,14 @@
 # Triage Inbox
 
-> Auto-generated 2026-06-10T07:53:28.614369Z. Items waiting for triage decision.
+> Auto-generated 2026-06-10T08:00:55.145129Z. Items waiting for triage decision.
 > Promote via WebUI Triage tab (when v1b lands) or `shared/scripts/tools/triage_promote.py --id <id> --task-ref EXT:<ref>`.
 
 ## Status summary
 
-- Total: 154
-- Triage: 10 | Promoted: 1 | Dismissed: 143 | Snoozed: 0
+- Total: 159
+- Triage: 12 | Promoted: 1 | Dismissed: 146 | Snoozed: 0
 
-## Top 10 items (severity-sorted)
+## Top 12 items (severity-sorted)
 
 ### Source: architecture (2 items)
 
@@ -23,20 +23,25 @@
   - Evidence: `.shipwright/planning/iterate/proposed-tracked-campaign-status.md`
   - Promote: `triage_promote.py --id trg-fda5f7a3 --task-ref EXT:<ref>`
 
-### Source: compliance (1 item)
+### Source: deep-audit (3 items)
 
-<a id="trg-1fa1265a"></a>
-- **Compliance: 8 open finding(s)** `id=trg-1fa1265a | severity=medium | kind=compliance → P2/compliance`
-  - 8 open compliance finding(s): E/E1, E/E2, E/E3, E/E5, E/E?, E/E?, E/E?, F/F5  - E/E1: RTM stale (regen vs snapshot) — f…
-  - Launch payload (copy into a new Claude session):
-    ```text
-    /shipwright-compliance
-    
-    Context: 8 open compliance finding(s): E/E1, E/E2, E/E3, E/E5, E/E?, E/E?, E/E?, F/F5.
-    Dashboard: .shipwright/compliance/dashboard.md
-    Each finding + hint is listed in this item's detail.
-    ```
-  - Promote: `triage_promote.py --id trg-1fa1265a --task-ref EXT:<ref>`
+<a id="trg-d689be5b"></a>
+- **Audit 2 - Manual: deep-audit pipeline / concurrency / hook-contract fixes - 3 sub-iterates (run one-by-one with review)** `id=trg-d689be5b | severity=high | kind=bug → P1/engineering`
+  - Campaign 2026-06-10-audit-2-manual: WP1 phase-hook-lifecycle (the v2 multi-session pipeline is silently dead), WP2 runc…
+  - Evidence: `Spec/audits/2026-06-10-deep-audit.md`
+  - Promote: `triage_promote.py --id trg-d689be5b --task-ref EXT:<ref>`
+
+<a id="trg-346793e1"></a>
+- **Audit 1 - Auto: deep-audit mechanical fixes (utf8, compliance gates, triage tooling, installer) - 7 sub-iterates** `id=trg-346793e1 | severity=high | kind=bug → P1/engineering`
+  - Autonomous campaign 2026-06-10-audit-1-auto (independent branches): WP3 compliance-gates, WP5 hook-resolvers, WP6/7/8 u…
+  - Evidence: `Spec/audits/2026-06-10-deep-audit.md`
+  - Promote: `triage_promote.py --id trg-346793e1 --task-ref EXT:<ref>`
+
+<a id="trg-1f94f285"></a>
+- **Audit 3 - Final: deep-audit docs/SSoT reconcile + low-risk hardening - 2 sub-iterates (run last)** `id=trg-1f94f285 | severity=medium | kind=improvement → P2/engineering`
+  - Campaign 2026-06-10-audit-3-final: WP11a docs/SSoT (the hooks.json Format doc section is inverted), WP11b low-risk hard…
+  - Evidence: `Spec/audits/2026-06-10-deep-audit.md`
+  - Promote: `triage_promote.py --id trg-1f94f285 --task-ref EXT:<ref>`
 
 ### Source: external-frameworks (6 items)
 

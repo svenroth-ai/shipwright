@@ -27,6 +27,28 @@ import sys
 from pathlib import Path
 
 
+def _find_shared_scripts() -> Path:
+    """Locate shared/scripts/ by walking up — robust to plugin-layout depth
+    (dev monorepo root vs installed plugin-cache ``shipwright/`` root). Mirrors
+    ``campaign_init._find_shared_scripts``."""
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        candidate = parent / "shared" / "scripts"
+        if candidate.is_dir():
+            return candidate
+    return here.parents[4] / "shared" / "scripts"  # historical fallback
+
+
+_SHARED_SCRIPTS = str(_find_shared_scripts())
+if _SHARED_SCRIPTS not in sys.path:
+    sys.path.insert(0, _SHARED_SCRIPTS)
+
+from lib.campaign_status import (  # noqa: E402
+    all_subs_complete,
+    regenerate_campaign_status,
+)
+
+
 def _load_status(campaign_dir: Path) -> dict:
     status_path = campaign_dir / "status.json"
     if not status_path.exists():
@@ -51,10 +73,12 @@ def _save_status(campaign_dir: Path, status: dict) -> None:
 LIFECYCLE_STATUSES = ("draft", "active", "complete")
 
 
-def _all_subs_complete(status: dict) -> bool:
-    """True iff the campaign has sub-iterates and every one is complete."""
-    subs = status.get("sub_iterates", [])
-    return bool(subs) and all(s.get("status") == "complete" for s in subs)
+# Lifecycle ``-> complete`` rule lives in the shared SSoT
+# (``lib.campaign_status.all_subs_complete``), so the producer CLI and S2/S3's
+# pure projection share ONE definition. The alias preserves the historical name
+# and the ``cmd_update_status`` call site (zero behaviour change — same object,
+# asserted by ``test_campaign_status_projection.TestAllSubsCompleteAlias``).
+_all_subs_complete = all_subs_complete
 
 
 def cmd_start(args: argparse.Namespace) -> int:
@@ -147,6 +171,31 @@ def cmd_summary(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_regenerate(args: argparse.Namespace) -> int:
+    """Project the campaign's status.json from the event log and write it.
+
+    Thin wrapper over the pure ``lib.campaign_status.regenerate_campaign_status``
+    (campaign S2): reads the campaign.md skeleton + committed status.json +
+    events log, never-downgrades, and persists the result. Prints a fixed-shape
+    JSON summary. S3 wires the same pure core into worktree finalize.
+    """
+    campaign_dir = Path(args.campaign_dir)
+    try:
+        status, summary = regenerate_campaign_status(campaign_dir, args.events_log)
+    except (FileNotFoundError, ValueError) as e:
+        # FileNotFoundError: campaign.md absent. ValueError: malformed skeleton
+        # (no table / duplicate / empty id). Both are clean operator errors —
+        # exit 1 with a message, never a traceback. (A corrupt committed
+        # status.json no longer raises — the wrapper rebuilds with no baseline.)
+        print(f"ERROR: {e}", file=sys.stderr)
+        return 1
+    _save_status(campaign_dir, status)
+    summary["output_path"] = str(campaign_dir / "status.json")
+    summary["campaign_status"] = status.get("status")
+    print(json.dumps(summary, indent=2, ensure_ascii=False))
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Campaign progress tracker")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -170,12 +219,21 @@ def main() -> int:
     p_summary = sub.add_parser("summary", help="Print campaign summary")
     p_summary.add_argument("--campaign-dir", required=True)
 
+    p_regen = sub.add_parser(
+        "regenerate",
+        help="Project status.json from the event log (never-downgrade) and write it",
+    )
+    p_regen.add_argument("--campaign-dir", required=True)
+    p_regen.add_argument("--events-log", required=True,
+                         help="Path to shipwright_events.jsonl to project from")
+
     args = parser.parse_args()
     cmd_map = {
         "list-units": cmd_list_units,
         "start": cmd_start,
         "update-status": cmd_update_status,
         "summary": cmd_summary,
+        "regenerate": cmd_regenerate,
     }
     return cmd_map[args.command](args)
 
