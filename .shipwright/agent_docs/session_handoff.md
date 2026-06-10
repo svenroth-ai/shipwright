@@ -1,38 +1,37 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-10-status-projection"
+run_id: "iterate-2026-06-10-finalize-resolver"
 phase: "iterate"
-reason: "iterate: campaign status projection (S2)"
-timestamp: "2026-06-10T20:21:00.450352+00:00"
+reason: "iterate: per-tree campaign status.json finalize wiring + scoped churn resolver (S3)"
+timestamp: "2026-06-10T22:01:50.975662+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-10 20:21:00 UTC
+> Auto-generated 2026-06-10 22:01:50 UTC
 
 ## Session Info
 
-- **Session ID**: 88b11785-06c5-4d46-b7a2-7fd1b6b60402
-- **Timestamp**: 2026-06-10 20:21:00 UTC
-- **Reason**: iterate: campaign status projection (S2)
+- **Session ID**: 01b76389-5200-4e4e-96b6-e7983947e53b
+- **Timestamp**: 2026-06-10 22:01:50 UTC
+- **Reason**: iterate: per-tree campaign status.json finalize wiring + scoped churn resolver (S3)
 
 ## Last Iterate
 
-- **Run ID**: iterate-2026-06-10-triage-cli-json-utf8
-- **Date**: 2026-06-10T08:00:55.618054Z
-- **Type**: bug
-- **Complexity**: small
-- **Branch**: iterate/triage-cli-json-utf8
-- **ADR**: iterate-2026-06-10-triage-cli-json-utf8
+- **Run ID**: iterate-2026-06-10-status-projection
+- **Date**: 2026-06-10T20:21:11.764533Z
+- **Type**: feature
+- **Complexity**: medium
+- **Branch**: iterate/2026-06-10-status-projection
+- **ADR**: iterate-2026-06-10-status-projection
 - **Tests passed**: True
+- **Spec**: .shipwright/planning/iterate/2026-06-10-status-projection.md
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/2026-06-10-status-projection
-- **Run ID**: iterate-2026-06-10-status-projection
-- **Spec**: .shipwright/planning/iterate/2026-06-10-status-projection.md
-- **Complexity**: medium (escalated from small; self-declared `touches_io_boundary`)
-- **External Review Marker**: stale (predates spec (2026-06-10T19:38:50))
+- **Branch**: iterate/2026-06-10-finalize-resolver
+- **Spec**: .shipwright/planning/iterate/2026-06-10-finalize-resolver.md
+- **External Review Marker**: missing
 
 ### Mandatory replay on Resume
 
@@ -50,8 +49,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/2026-06-10-status-projection
-- **Last Commit**: 9adeaf8e chore(triage): sweep 5 outbox append(s) into branch
+- **Branch**: iterate/2026-06-10-finalize-resolver
+- **Last Commit**: 4da151cd chore(triage): sweep 2 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -67,17 +66,17 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
+| evt-dee0c8a6 | work_completed | iterate (Per-tree campaign status.json: F5b finalize wiring + scoped churn resolver (campaign S3)) | 2026-06-10 |
 | evt-e6943f4c | work_completed | iterate (Campaign status projection: pure regenerate_campaign_status producer + campaign_progress regenerate CLI project per-sub-iterate status.json from the campaign.md skeleton and self-identifying work_completed events, with a never-downgrade guard (campaign 2026-06-07-tracked-campaign-status S2).) | 2026-06-10 |
 | evt-374ac212 | work_completed | iterate (Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae.) | 2026-06-10 |
 | evt-a858c858 | work_completed | iterate (triage_cli list pins stdout to UTF-8: fixes UnicodeEncodeError on Windows consoles for non-cp1252 item titles (found by the webui pending-delivery-badge boundary probe).) | 2026-06-10 |
 | evt-b2f6aa17 | work_completed | iterate (History-calibrated complexity prior + cross-domain scope vocabulary for the iterate Stage-1 classifier) | 2026-06-10 |
-| evt-7359794f | work_completed | iterate (Gate D2V evidence markdown write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE; default runs assert without writing the tracked artifact.) | 2026-06-10 |
 
 ## Recovery
 
 - **Pipeline**: 1 phases completed
-- **Total work events**: 134
-- **Last iterate**: feature — Campaign status projection: pure regenerate_campaign_status producer + campaign_progress regenerate CLI project per-sub-iterate status.json from the campaign.md skeleton and self-identifying work_completed events, with a never-downgrade guard (campaign 2026-06-07-tracked-campaign-status S2). (2026-06-10)
+- **Total work events**: 135
+- **Last iterate**: change — Per-tree campaign status.json: F5b finalize wiring + scoped churn resolver (campaign S3) (2026-06-10)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

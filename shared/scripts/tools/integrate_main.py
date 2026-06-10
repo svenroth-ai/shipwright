@@ -31,7 +31,7 @@ from pathlib import Path
 _SCRIPTS_DIR = Path(__file__).resolve().parent.parent  # shared/scripts
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from lib.churn_merge import DERIVED_MDS  # noqa: E402
+from lib.churn_merge import DERIVED_MDS, is_campaign_status  # noqa: E402
 from tools import resolve_churn_conflicts as rcc  # noqa: E402
 
 
@@ -128,14 +128,23 @@ def integrate(
     steps.append("merge-committed")
 
     if regenerate:
+        # Scope campaign-status regen (S3) to the campaign(s) this merge actually
+        # CONFLICTED on — re-deriving an untouched campaign would be destructive.
+        camp_rels = [r for r in result.resolved if is_campaign_status(r)]
         outcomes = rcc.regenerate_tracked_snapshots(
-            project_root, run_id, session_id=session_id, reason=reason
+            project_root, run_id, session_id=session_id, reason=reason,
+            campaign_status_rels=camp_rels,
         )
         failed = [k for k, v in outcomes.items() if v == "error"]
         if failed:
-            # Transactional rollback: restore every derived MD to the just-made merge
-            # commit so a partial regeneration never leaves a dirty tree.
+            # Transactional rollback: restore every derived MD AND any campaign
+            # status.json touched this pass (campaign S3) to the just-made merge
+            # commit, so a partial regeneration never leaves a dirty tree.
             restorable = [p for p in sorted(DERIVED_MDS) if (project_root / p).exists()]
+            restorable += [
+                k for k in sorted(outcomes)
+                if is_campaign_status(k) and (project_root / k).exists()
+            ]
             if restorable:
                 _git(project_root, "checkout", "HEAD", "--", *restorable, check=False)
             return {"status": "regenerate_failed", "failed": failed, "steps": steps}

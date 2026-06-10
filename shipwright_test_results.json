@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-10-status-projection",
+    "run_id": "iterate-2026-06-10-finalize-resolver",
     "date": "2026-06-10",
     "unit": {
       "status": "passed",
-      "passed": 3426,
-      "total": 3445
+      "passed": 3442,
+      "total": 3462
     },
     "integration": {
-      "status": "not_run",
-      "passed": 0,
-      "total": 0
+      "status": "passed",
+      "passed": 141,
+      "total": 141
     },
     "pgtap": {
       "status": "not_run",
@@ -35,115 +35,90 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": "",
-      "timestamp": "2026-06-10T20:16:51.441Z",
+      "evidence_path": ".shipwright/runs/iterate-2026-06-10-finalize-resolver/surface_verification.json",
+      "timestamp": "2026-06-10T21:54:05.867Z",
       "attempts": 0,
-      "justification": "S2 ships a pure projection library plus a manual regenerate CLI only; it is NOT wired into finalize or runtime (that is S3) and changes no status.json schema or WebUI contract, so no status.json is produced in any runtime/UI flow and there is no startable web/api/cli-app surface to drive. Empirical verification: Boundary Probe round-trip over the real merged S1 event (commit empty no-clobber, exact projection) plus regenerate-CLI smoke, both in the unit suite (shared 3070, iterate 356 green)."
+      "justification": "Framework-internal merge-resolver + F5b finalize tooling (churn_merge / resolve_churn_conflicts / integrate_main / campaign_status_io); no startable app stack in this monorepo. The WebUI-consumed campaigns status.json SCHEMA is unchanged (same fields) — byte-parity to the existing campaign_progress producer — so no frontend contract is touched. Empirical verification: 41 campaign-status unit/integration tests (producer->consumer byte-parity, concurrent-sibling merge, scoped regen, rollback) + a real-campaign Boundary Probe projecting 2026-06-07-tracked-campaign-status (S1/S2 complete self-healed, idempotent, never-downgrade)."
     },
     "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC1 exact projection over a stamped divergent campaign",
+          "behavior": "AC2 is_campaign_status single-segment glob (normalise; reject nested/md/outside/empty-slug)",
           "disposition": "tested",
-          "evidence": "test_campaign_status_project::test_exact_when_all_stamped PASSED"
+          "evidence": "test_churn_merge::test_is_campaign_status_truth_table + test_glob_constant_is_single_segment_wildcard PASSED"
         },
         {
-          "behavior": "AC2 never-downgrade preserves unstamped complete sub",
+          "behavior": "AC2 classify admits campaign status via glob; still blocks campaign.md + source",
           "disposition": "tested",
-          "evidence": "test_campaign_status_project::test_never_downgrade_unstamped_complete PASSED"
+          "evidence": "test_churn_merge::test_classify_admits_campaign_status_via_glob + test_classify_still_blocks_campaign_md_curated_prose PASSED"
         },
         {
-          "behavior": "AC3 missing campaign.md raises -> CLI exit 1",
+          "behavior": "AC3 resolver placeholder-resolves a status.json conflict (--theirs); md conflict blocks",
           "disposition": "tested",
-          "evidence": "test_campaign_status::test_missing_campaign_md_raises + test_campaign_status_projection::test_missing_md_returns_1 PASSED"
+          "evidence": "test_resolve_churn_campaign_status::test_resolves_campaign_status_conflict_to_placeholder + test_campaign_status_md_conflict_blocks_touching_nothing PASSED"
         },
         {
-          "behavior": "AC4 matches TOP-LEVEL event keys, not extras",
+          "behavior": "AC1/AC3 scoped regen re-projects ONLY named campaigns from events + stages (byte-parity)",
           "disposition": "tested",
-          "evidence": "test_campaign_status_project::test_reads_top_level_keys_not_extras PASSED"
+          "evidence": "test_resolve_churn_campaign_status::test_regenerate_reprojects_scoped_campaign_from_events PASSED"
         },
         {
-          "behavior": "AC4 commit='' no-clobber (synthetic + real S1 shape)",
+          "behavior": "B1 untouched campaign left byte-identical (scoped, not glob-all)",
           "disposition": "tested",
-          "evidence": "test_campaign_status_project::test_commit_empty_no_clobber + test_campaign_status_projection::test_boundary_probe_real_s1_shape_no_clobber PASSED"
+          "evidence": "test_resolve_churn_campaign_status::test_regenerate_leaves_untouched_campaigns_alone PASSED"
         },
         {
-          "behavior": "AC5 lifecycle: all-complete overrides prior failed; partial preserves",
+          "behavior": "campaign regen is opt-in via campaign_status_rels (absent rels -> no regen)",
           "disposition": "tested",
-          "evidence": "test_campaign_status_project::test_lifecycle_all_complete_overrides_prior_failed + test_lifecycle_partial_preserves_prior PASSED"
+          "evidence": "test_resolve_churn_campaign_status::test_regenerate_skips_campaign_status_without_rels PASSED"
         },
         {
-          "behavior": "AC5 _all_subs_complete is the shared canonical (SSoT alias identity)",
+          "behavior": "AC1 finalize Step 6 writes per-tree board (byte-parity to pure producer)",
           "disposition": "tested",
-          "evidence": "test_campaign_status_projection::TestAllSubsCompleteAlias PASSED"
+          "evidence": "test_finalize_campaign_status::test_run_regenerates_campaign_status_with_byte_parity PASSED"
         },
         {
-          "behavior": "AC6 regenerate CLI writes status.json + fixed summary",
+          "behavior": "finalize skips: non-campaign / absent dir / invalid-slug / symlink target",
           "disposition": "tested",
-          "evidence": "test_campaign_status_projection::test_writes_status_and_prints_summary PASSED"
+          "evidence": "test_finalize_campaign_status::test_run_skips_campaign_status_for_non_campaign_iterate + test_run_skips_when_campaign_dir_absent + test_run_skips_symlinked_status_target (runs on CI/POSIX; platform-skips where symlink unprivileged) PASSED"
         },
         {
-          "behavior": "skeleton drives ordering",
+          "behavior": "AC3 integrate concurrent-sibling regenerate (single-line conflict -> union projection)",
           "disposition": "tested",
-          "evidence": "test_campaign_status_project::test_skeleton_drives_order PASSED"
+          "evidence": "test_integrate_campaign_status::test_integrate_concurrent_sibling_status_regenerate PASSED"
         },
         {
-          "behavior": "never-downgrade ladder incl. failed/escalated + in_progress->complete, no KeyError",
+          "behavior": "M2 production multi-line non-overlapping subs auto-merge correct (no conflict, no corruption)",
           "disposition": "tested",
-          "evidence": "test_campaign_status::TestMergeStatus (7 cases) PASSED"
+          "evidence": "test_integrate_campaign_status::test_integrate_multiline_nonoverlapping_subs_merge_clean PASSED"
         },
         {
-          "behavior": "field-level no-clobber (tests_passed/total null)",
+          "behavior": "AC3 events_invalid aborts BEFORE any campaign regen",
           "disposition": "tested",
-          "evidence": "test_campaign_status_project::test_tests_null_no_clobber PASSED"
+          "evidence": "test_integrate_campaign_status::test_integrate_status_regen_skipped_when_events_invalid PASSED"
         },
         {
-          "behavior": "latest-ts + missing-ts file-order fallback",
+          "behavior": "integrate rollback restores campaign status.json on regenerate failure",
           "disposition": "tested",
-          "evidence": "test_campaign_status_project::test_latest_ts_wins + test_missing_ts_file_order_fallback PASSED"
+          "evidence": "test_integrate_campaign_status::test_integrate_rolls_back_campaign_status_on_regenerate_failure PASSED"
         },
         {
-          "behavior": "drop non-skeleton committed subs + report",
+          "behavior": "events-log path SSoT: campaign_status_io resolves via resolve_events_path (worktree-reachable)",
           "disposition": "tested",
-          "evidence": "test_campaign_status_project::test_drops_non_skeleton_committed_subs PASSED"
-        },
-        {
-          "behavior": "corrupt/blank/non-dict event line skipped + warning",
-          "disposition": "tested",
-          "evidence": "test_campaign_status_project::test_corrupt_line_skipped_with_warning + test_valid_json_non_object_line_counted_corrupt PASSED"
-        },
-        {
-          "behavior": "strict skeleton validation (missing table/dup/empty id)",
-          "disposition": "tested",
-          "evidence": "test_campaign_status::TestParseSkeleton (5 cases) PASSED"
-        },
-        {
-          "behavior": "producer<->parser contract (real campaign_init output)",
-          "disposition": "tested",
-          "evidence": "test_campaign_status_projection::test_real_campaign_md_parses PASSED"
-        },
-        {
-          "behavior": "corrupt committed status.json rebuilds-no-baseline",
-          "disposition": "tested",
-          "evidence": "test_campaign_status::test_corrupt_committed_status_rebuilds_with_warning PASSED"
-        },
-        {
-          "behavior": "idempotent regeneration (serialized)",
-          "disposition": "tested",
-          "evidence": "test_campaign_status::test_idempotent_serialized PASSED"
+          "evidence": "test_events_log_ssot::test_no_unaccounted_raw_event_log_joins + test_worktree_reachable_files_use_the_resolver PASSED"
         }
       ],
       "counts": {
-        "testable": 18,
-        "tested": 18,
+        "testable": 13,
+        "tested": 13,
         "untestable": 0,
         "untested_testable": 0
       },
       "enumeration_basis": {
-        "acs": 6,
-        "covered_acs": 6
+        "acs": 3,
+        "covered_acs": 3
       }
     }
   }

@@ -32,6 +32,7 @@ from lib.artifact_paths import (  # noqa: E402
     runtime_path,
     tracked_path,
 )
+from lib.campaign_status_io import finalize_campaign_status  # noqa: E402
 
 
 class FinalizeGateError(RuntimeError):
@@ -452,6 +453,9 @@ def run(
         "outcome": _snapshot_triage_runtime(project_root),
     }
     result["steps"]["runtime_cleanup"] = _unlink_runtime_artifacts(project_root)
+
+    # Step 6 (campaign S3): a campaign sub-iterate writes its per-tree status.json (F6 stages it).
+    result["steps"]["campaign_status"] = finalize_campaign_status(project_root, event_extras)
 
     return result
 

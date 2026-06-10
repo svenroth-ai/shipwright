@@ -110,7 +110,13 @@ If campaign directory doesn't exist yet:
    3f. uv run ... record --state .shipwright/loop_state.json --unit {id} --result '{json}'
        → exit 3 = failure/escalation → go to step 4 (strict-stop)
 
-   3g. Update campaign status.json:
+   3g. Update the MAIN-tree campaign status.json (LOCAL-BOARD CONVENIENCE only,
+       campaign S3): keeps the orchestrator's own board current BETWEEN
+       sub-iterates. It is NO LONGER the durable source — each sub-iterate's F5b
+       Step 6 already re-projected + committed a per-tree `status.json` that
+       ships in its PR (tracked, churn-reconciled), so the deployed/cloned board
+       is correct from the merged artifacts. This main-tree write is untracked
+       and never reaches a PR; skipping it only affects the live orchestrator view.
        uv run "{plugin_root}/scripts/tools/campaign_progress.py" update-status \
          --campaign-dir ".shipwright/planning/iterate/campaigns/{slug}" \
          --sub-iterate-id {id} --status complete --commit {commit} --branch {branch}
@@ -123,12 +129,15 @@ If campaign directory doesn't exist yet:
    uv run ... finalize --state .shipwright/loop_state.json
    ```
    The campaign's top-level lifecycle status reaches `complete`
-   **automatically** — the `update-status` call in 3g flips it to
-   `complete` once every sub-iterate is `complete`, which hides the
-   campaign from the board. If the loop strict-stopped on a failure /
-   escalation (3f), some sub-iterates are not `complete`, so the status
-   stays `active` and the campaign remains visible (matching step 5's
-   "campaign incomplete" branch). No explicit set-complete call is needed.
+   **automatically** once every sub-iterate is `complete` — the
+   never-downgrade projection (`campaign_status.all_subs_complete`) sets it in
+   the per-tree `status.json` the LAST sub-iterate's F5b commits (the durable
+   path, S3), and the local 3g `update-status` mirrors it for the live
+   orchestrator view. A `complete` campaign is hidden from the board. If the loop
+   strict-stopped on a failure / escalation (3f), some sub-iterates are not
+   `complete`, so the status stays `active` and the campaign remains visible
+   (matching step 5's "campaign incomplete" branch). No explicit set-complete
+   call is needed.
 
 5. **Release prompt (F12, once):** Only if ALL sub-iterates are
    `complete` AND worktree is clean: count unreleased entries in

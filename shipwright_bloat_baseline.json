@@ -655,7 +655,7 @@
     {
       "path": "shared/scripts/tools/finalize_iterate.py",
       "limit": 300,
-      "current": 532,
+      "current": 536,
       "state": "exception",
       "adr": "ADR-096"
     },
@@ -1054,7 +1054,7 @@
     {
       "path": "shared/scripts/tools/resolve_churn_conflicts.py",
       "limit": 300,
-      "current": 318,
+      "current": 326,
       "state": "exception",
       "adr": "ADR-099"
     }
