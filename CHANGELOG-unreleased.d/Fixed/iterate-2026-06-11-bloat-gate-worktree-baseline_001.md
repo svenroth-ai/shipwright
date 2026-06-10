@@ -1,0 +1,1 @@
+The bloat Stop-gate no longer false-blocks a `/shipwright-iterate` worktree that bumps a file's size baseline via an ADR exception: it now resolves the ceiling from the worktree's own `shipwright_bloat_baseline.json` (the tree it measures the file in), matching the CI + pre-commit anti-ratchet gates, instead of the stale main baseline.

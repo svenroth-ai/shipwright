@@ -1,16 +1,16 @@
 {
   "iterate_latest": {
-    "run_id": "iterate-2026-06-10-finalize-resolver",
-    "date": "2026-06-10",
+    "run_id": "iterate-2026-06-11-bloat-gate-worktree-baseline",
+    "date": "2026-06-11",
     "unit": {
       "status": "passed",
-      "passed": 3442,
-      "total": 3462
+      "passed": 3088,
+      "total": 3088
     },
     "integration": {
-      "status": "passed",
-      "passed": 141,
-      "total": 141
+      "status": "not_run",
+      "passed": 0,
+      "total": 0
     },
     "pgtap": {
       "status": "not_run",
@@ -35,84 +35,44 @@
       "runner": "",
       "exit_code": 0,
       "tests_run": 0,
-      "evidence_path": ".shipwright/runs/iterate-2026-06-10-finalize-resolver/surface_verification.json",
-      "timestamp": "2026-06-10T21:54:05.867Z",
+      "evidence_path": ".shipwright/runs/iterate-2026-06-11-bloat-gate-worktree-baseline/surface_verification.json",
+      "timestamp": "2026-06-11T00:00:00.000Z",
       "attempts": 0,
-      "justification": "Framework-internal merge-resolver + F5b finalize tooling (churn_merge / resolve_churn_conflicts / integrate_main / campaign_status_io); no startable app stack in this monorepo. The WebUI-consumed campaigns status.json SCHEMA is unchanged (same fields) — byte-parity to the existing campaign_progress producer — so no frontend contract is touched. Empirical verification: 41 campaign-status unit/integration tests (producer->consumer byte-parity, concurrent-sibling merge, scoped regen, rollback) + a real-campaign Boundary Probe projecting 2026-06-07-tracked-campaign-status (S1/S2 complete self-healed, idempotent, never-downgrade)."
+      "justification": "Pure-Python Stop-hook decision logic (bloat_gate_on_stop baseline-source resolution); no startable app/UI/CLI surface. Empirical verification = the regression suite reproducing the production false-block (Red before fix, Green after) + the safety counter-case (over-ceiling still blocks) + the #150 fallback-to-main case; 28 bloat tests + adversarial review. (A transient F0 arch-impact false-positive from a parallel S4 decision-drop was resolved by integrating origin/main, which carries S4's architecture.md entry.)"
     },
     "degraded": [],
     "test_completeness": {
       "status": "complete",
       "behaviors": [
         {
-          "behavior": "AC2 is_campaign_status single-segment glob (normalise; reject nested/md/outside/empty-slug)",
+          "behavior": "worktree iterate that bumped a baseline (file == worktree ceiling) does NOT false-block at Stop",
           "disposition": "tested",
-          "evidence": "test_churn_merge::test_is_campaign_status_truth_table + test_glob_constant_is_single_segment_wildcard PASSED"
+          "evidence": "test_bloat_gate_worktree_baseline::test_worktree_baseline_bump_not_false_blocked (Red pre-fix, Green post-fix) PASSED"
         },
         {
-          "behavior": "AC2 classify admits campaign status via glob; still blocks campaign.md + source",
+          "behavior": "real ratchet still blocks: file over even the WORKTREE's bumped ceiling blocks",
           "disposition": "tested",
-          "evidence": "test_churn_merge::test_classify_admits_campaign_status_via_glob + test_classify_still_blocks_campaign_md_curated_prose PASSED"
+          "evidence": "test_bloat_gate_worktree_baseline::test_worktree_file_over_worktree_ceiling_still_blocks PASSED"
         },
         {
-          "behavior": "AC3 resolver placeholder-resolves a status.json conflict (--theirs); md conflict blocks",
+          "behavior": "file baselined ONLY in the worktree (absent from main) not treated as a new crossing",
           "disposition": "tested",
-          "evidence": "test_resolve_churn_campaign_status::test_resolves_campaign_status_conflict_to_placeholder + test_campaign_status_md_conflict_blocks_touching_nothing PASSED"
+          "evidence": "test_bloat_gate_worktree_baseline::test_worktree_newly_baselined_file_not_treated_as_crossing PASSED"
         },
         {
-          "behavior": "AC1/AC3 scoped regen re-projects ONLY named campaigns from events + stages (byte-parity)",
+          "behavior": "fallback to MAIN baseline when the worktree has none (#150 scenario preserved)",
           "disposition": "tested",
-          "evidence": "test_resolve_churn_campaign_status::test_regenerate_reprojects_scoped_campaign_from_events PASSED"
+          "evidence": "test_bloat_marker_worktree_aware::test_worktree_prefixed_{baselined_crossing,anti_ratchet_within_ceiling}_does_not_block PASSED"
         },
         {
-          "behavior": "B1 untouched campaign left byte-identical (scoped, not glob-all)",
+          "behavior": "main-tree-path entries unchanged (_worktree_root None -> main baseline)",
           "disposition": "tested",
-          "evidence": "test_resolve_churn_campaign_status::test_regenerate_leaves_untouched_campaigns_alone PASSED"
-        },
-        {
-          "behavior": "campaign regen is opt-in via campaign_status_rels (absent rels -> no regen)",
-          "disposition": "tested",
-          "evidence": "test_resolve_churn_campaign_status::test_regenerate_skips_campaign_status_without_rels PASSED"
-        },
-        {
-          "behavior": "AC1 finalize Step 6 writes per-tree board (byte-parity to pure producer)",
-          "disposition": "tested",
-          "evidence": "test_finalize_campaign_status::test_run_regenerates_campaign_status_with_byte_parity PASSED"
-        },
-        {
-          "behavior": "finalize skips: non-campaign / absent dir / invalid-slug / symlink target",
-          "disposition": "tested",
-          "evidence": "test_finalize_campaign_status::test_run_skips_campaign_status_for_non_campaign_iterate + test_run_skips_when_campaign_dir_absent + test_run_skips_symlinked_status_target (runs on CI/POSIX; platform-skips where symlink unprivileged) PASSED"
-        },
-        {
-          "behavior": "AC3 integrate concurrent-sibling regenerate (single-line conflict -> union projection)",
-          "disposition": "tested",
-          "evidence": "test_integrate_campaign_status::test_integrate_concurrent_sibling_status_regenerate PASSED"
-        },
-        {
-          "behavior": "M2 production multi-line non-overlapping subs auto-merge correct (no conflict, no corruption)",
-          "disposition": "tested",
-          "evidence": "test_integrate_campaign_status::test_integrate_multiline_nonoverlapping_subs_merge_clean PASSED"
-        },
-        {
-          "behavior": "AC3 events_invalid aborts BEFORE any campaign regen",
-          "disposition": "tested",
-          "evidence": "test_integrate_campaign_status::test_integrate_status_regen_skipped_when_events_invalid PASSED"
-        },
-        {
-          "behavior": "integrate rollback restores campaign status.json on regenerate failure",
-          "disposition": "tested",
-          "evidence": "test_integrate_campaign_status::test_integrate_rolls_back_campaign_status_on_regenerate_failure PASSED"
-        },
-        {
-          "behavior": "events-log path SSoT: campaign_status_io resolves via resolve_events_path (worktree-reachable)",
-          "disposition": "tested",
-          "evidence": "test_events_log_ssot::test_no_unaccounted_raw_event_log_joins + test_worktree_reachable_files_use_the_resolver PASSED"
+          "evidence": "test_bloat_gate_on_stop (16 existing invariants: anti-ratchet/new-crossing block, session-scope, TTL, fail-open) PASSED"
         }
       ],
       "counts": {
-        "testable": 13,
-        "tested": 13,
+        "testable": 5,
+        "tested": 5,
         "untestable": 0,
         "untested_testable": 0
       },
