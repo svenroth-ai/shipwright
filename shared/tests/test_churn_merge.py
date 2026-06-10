@@ -12,11 +12,13 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "shared" / "scripts"))
 
 from lib.churn_merge import (  # noqa: E402
+    CAMPAIGN_STATUS_GLOB,
     CHURN_ALLOWLIST,
     TRIAGE_LOG,
     classify,
     dedup_event_lines,
     dedup_triage_lines,
+    is_campaign_status,
     validate_events_text,
     validate_triage_text,
 )
@@ -53,6 +55,59 @@ def test_classify_normalises_backslash_paths() -> None:
     resolvable, blocking = classify([r".shipwright\compliance\sbom.md"])
     assert resolvable == [".shipwright/compliance/sbom.md"]
     assert blocking == []
+
+
+# --- campaign status.json glob predicate (campaign S3) ----------------------
+# status.json lives at a WILDCARD path (one per campaign), so it cannot be a
+# fixed CHURN_ALLOWLIST entry — admitted by the is_campaign_status glob predicate
+# instead. It is a per-tree tracked churn artifact resolved like a DERIVED_MD
+# (placeholder side then regenerate-from-events), NOT added to CHURN_ALLOWLIST
+# (which would break the exact-path doc-sync registry test).
+
+_STATUS = ".shipwright/planning/iterate/campaigns/2026-06-07-demo/status.json"
+
+
+def test_is_campaign_status_truth_table() -> None:
+    assert is_campaign_status(_STATUS)
+    # backslash form normalises (robust standalone, not only via classify's norm)
+    assert is_campaign_status(_STATUS.replace("/", "\\"))
+    # exactly ONE slug segment — a nested extra dir must NOT match (the single
+    # `*` in the glob spans one path segment, never `a/b`).
+    assert not is_campaign_status(
+        ".shipwright/planning/iterate/campaigns/demo/nested/status.json"
+    )
+    # missing slug segment does not match
+    assert not is_campaign_status(".shipwright/planning/iterate/campaigns/status.json")
+    # a DIFFERENT json / the curated campaign.md in the campaign dir does not match
+    assert not is_campaign_status(".shipwright/planning/iterate/campaigns/demo/campaign.md")
+    assert not is_campaign_status(
+        ".shipwright/planning/iterate/campaigns/demo/sub-iterates/S1-x.md"
+    )
+    # a same-named file outside the campaigns tree does not match
+    assert not is_campaign_status("status.json")
+    assert not is_campaign_status(".shipwright/other/status.json")
+
+
+def test_glob_constant_is_single_segment_wildcard() -> None:
+    # the predicate's glob is the documented SSoT shape (one `*` slug segment).
+    assert CAMPAIGN_STATUS_GLOB == ".shipwright/planning/iterate/campaigns/*/status.json"
+    assert CAMPAIGN_STATUS_GLOB not in CHURN_ALLOWLIST  # separate predicate, not a fixed entry
+
+
+def test_classify_admits_campaign_status_via_glob() -> None:
+    a = ".shipwright/planning/iterate/campaigns/c-one/status.json"
+    b = ".shipwright/planning/iterate/campaigns/c-two/status.json"
+    resolvable, blocking = classify([a, b, "src/app.py"])
+    assert a in resolvable and b in resolvable
+    assert blocking == ["src/app.py"]
+
+
+def test_classify_still_blocks_campaign_md_curated_prose() -> None:
+    # campaign.md is curated prose — must reach a human (never auto-resolved).
+    md = ".shipwright/planning/iterate/campaigns/demo/campaign.md"
+    resolvable, blocking = classify([md])
+    assert blocking == [md]
+    assert resolvable == []
 
 
 # --- events dedup / validate ------------------------------------------------

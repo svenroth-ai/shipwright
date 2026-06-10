@@ -61,6 +61,17 @@ FR-gate classification above. The stamp makes `shipwright_events.jsonl`
 self-sufficient for per-sub-iterate status projection — no slug-join
 heuristics against branch names.
 
+> **Step 6 — per-tree campaign board (campaign 2026-06-07, S3).** When the
+> `campaign` stamp is present, `finalize_iterate` re-projects
+> `.shipwright/planning/iterate/campaigns/<slug>/status.json` from this
+> worktree's event log (the canonical `campaign_status` producer — byte-identical
+> to the `campaign_progress regenerate` CLI) and writes it into the worktree, so
+> **F6 stages it** and the producer-owned board ships in the PR. This replaces
+> the old write-once main-tree file; the autonomous-loop 3g main-tree
+> `campaign_progress update-status` is demoted to a local-board convenience.
+> Best-effort + no-op for a non-campaign iterate. Reads back at
+> `result["steps"]["campaign_status"]`.
+
 Reads back: `result["steps"]["event"]["id"]` — capture it so F6 can confirm
 the event is present before staging `shipwright_events.jsonl` (and for the
 legacy F6.5 SHA patch, used only by non-worktree callers).

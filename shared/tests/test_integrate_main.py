@@ -182,3 +182,6 @@ def test_integrate_aborts_and_restores_on_source_conflict(git_origin_repo, make_
     # merge --abort restored a clean tree (no unmerged paths, nothing staged).
     assert _git(wt, "diff", "--name-only", "--diff-filter=U").stdout.strip() == ""
     assert _git(wt, "diff", "--cached", "--name-only").stdout.strip() == ""
+
+# Campaign status.json concurrent-sibling regenerate (S3) lives in
+# test_integrate_campaign_status.py (reuses _set_repo_identity / _write / _git here).

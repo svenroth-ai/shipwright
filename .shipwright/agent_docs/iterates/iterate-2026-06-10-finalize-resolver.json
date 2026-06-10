@@ -1,0 +1,13 @@
+{
+  "run_id": "iterate-2026-06-10-finalize-resolver",
+  "date": "2026-06-10T22:05:28.401156Z",
+  "type": "change",
+  "complexity": "medium",
+  "branch": "iterate/2026-06-10-finalize-resolver",
+  "tests_passed": true,
+  "adr": "iterate-2026-06-10-finalize-resolver",
+  "campaign": "2026-06-07-tracked-campaign-status",
+  "sub_iterate_id": "S3",
+  "spec": ".shipwright/planning/iterate/2026-06-10-finalize-resolver.md",
+  "summary": "Per-tree campaign status.json: F5b finalize wiring + scoped churn resolver (campaign S3)"
+}

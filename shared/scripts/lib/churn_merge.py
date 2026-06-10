@@ -8,6 +8,7 @@ stays under the 300-LOC source guideline. See
 
 from __future__ import annotations
 
+import fnmatch
 import json
 
 # --- the churn allowlist (POSIX relpaths) -----------------------------------
@@ -35,18 +36,48 @@ TRIAGE_LOG = ".shipwright/triage.jsonl"
 #: (curated prose — must reach a human; folds external-review G4/O1).
 CHURN_ALLOWLIST: frozenset[str] = DERIVED_MDS | {EVENTS_LOG, TEST_RESULTS, TRIAGE_LOG}
 
+#: Per-campaign status boards (campaign 2026-06-07-tracked-campaign-status, S3)
+#: are tracked per-tree churn artifacts but live at a WILDCARD path — one
+#: ``status.json`` per campaign slug — so they cannot be fixed
+#: :data:`CHURN_ALLOWLIST` entries. They are admitted by the
+#: :func:`is_campaign_status` glob predicate instead and resolved like a
+#: DERIVED_MD (placeholder side at conflict, then regenerate-from-events in the
+#: follow-up). Kept OUT of ``CHURN_ALLOWLIST`` so the exact-path doc-sync
+#: registry test (``test_churn_merge_doc_sync``) stays a 1:1 mapping.
+CAMPAIGN_STATUS_GLOB = ".shipwright/planning/iterate/campaigns/*/status.json"
+
 
 def norm(rel: str) -> str:
     """Normalise a git path to forward-slash POSIX form."""
     return rel.strip().replace("\\", "/")
 
 
+def is_campaign_status(rel: str) -> bool:
+    """True iff ``rel`` is a campaign ``status.json`` (glob-matched, one slug).
+
+    Matches :data:`CAMPAIGN_STATUS_GLOB`. ``fnmatch``'s ``*`` would span ``/``,
+    so a path-segment count guard pins the single ``*`` to exactly one segment
+    (the campaign slug): ``campaigns/a/b/status.json`` does NOT match. Normalises
+    backslashes so the predicate is robust when called standalone (``classify``
+    already feeds it normalised paths).
+    """
+    rel = norm(rel)
+    # fnmatchcase (NOT fnmatch): git paths are case-sensitive POSIX, but fnmatch
+    # applies os.path.normcase → case-INSENSITIVE on Windows, a platform-divergent
+    # gate. The segment-count guard pins the single ``*`` to one slug segment.
+    return (
+        fnmatch.fnmatchcase(rel, CAMPAIGN_STATUS_GLOB)
+        and rel.count("/") == CAMPAIGN_STATUS_GLOB.count("/")
+    )
+
+
 def classify(conflicted: object) -> tuple[list[str], list[str]]:
     """Split conflicted paths into ``(resolvable, blocking)``.
 
-    ``resolvable`` ⊆ :data:`CHURN_ALLOWLIST`; ``blocking`` is everything else
-    (real source). Both lists are normalised + de-duplicated + sorted. The
-    pre-flight gate aborts whenever ``blocking`` is non-empty (AC-3).
+    ``resolvable`` = :data:`CHURN_ALLOWLIST` members ∪ campaign ``status.json``
+    files (:func:`is_campaign_status`); ``blocking`` is everything else (real
+    source / curated prose). Both lists are normalised + de-duplicated + sorted.
+    The pre-flight gate aborts whenever ``blocking`` is non-empty (AC-3).
     """
     resolvable: list[str] = []
     blocking: list[str] = []
@@ -54,7 +85,8 @@ def classify(conflicted: object) -> tuple[list[str], list[str]]:
         rel = norm(str(raw))
         if not rel:
             continue
-        (resolvable if rel in CHURN_ALLOWLIST else blocking).append(rel)
+        ok = rel in CHURN_ALLOWLIST or is_campaign_status(rel)
+        (resolvable if ok else blocking).append(rel)
     return sorted(set(resolvable)), sorted(set(blocking))
 
 
