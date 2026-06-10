@@ -1,20 +1,20 @@
 ---
 canon_generated: true
-run_id: "iterate-2026-06-10-triage-cli-json-utf8"
+run_id: "iterate-2026-06-10-canon-exempt-agent-doc-caches"
 phase: "iterate"
-reason: "iterate finalization"
-timestamp: "2026-06-10T08:00:55.145129+00:00"
+reason: "exempt full generated agent-doc trio from canon lint; finalize trg-6ed063ae"
+timestamp: "2026-06-10T07:53:28.614369+00:00"
 ---
 
 # Session Handoff
 
-> Auto-generated 2026-06-10 08:00:55 UTC
+> Auto-generated 2026-06-10 07:53:28 UTC
 
 ## Session Info
 
-- **Session ID**: 55205f02-66aa-43eb-93b1-2cf9cb776ce8
-- **Timestamp**: 2026-06-10 08:00:55 UTC
-- **Reason**: iterate finalization
+- **Session ID**: d23ad659-b692-4618-ab0b-2021e37ec619
+- **Timestamp**: 2026-06-10 07:53:28 UTC
+- **Reason**: exempt full generated agent-doc trio from canon lint; finalize trg-6ed063ae
 
 ## Last Iterate
 
@@ -28,7 +28,7 @@ timestamp: "2026-06-10T08:00:55.145129+00:00"
 
 ## Current Iterate Progress
 
-- **Branch**: iterate/triage-cli-json-utf8
+- **Branch**: iterate/2026-06-10-canon-exempt-agent-doc-caches
 - **External Review Marker**: missing
 
 ### Mandatory replay on Resume
@@ -47,8 +47,8 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 ## Git State
 
-- **Branch**: iterate/triage-cli-json-utf8
-- **Last Commit**: 41826b29 chore(triage): sweep 3 outbox append(s) into branch
+- **Branch**: iterate/2026-06-10-canon-exempt-agent-doc-caches
+- **Last Commit**: efdb0cfc chore(triage): sweep 2 outbox append(s) into branch
 - **Uncommitted Changes**: Yes
 
 ## Config Files to Read
@@ -64,7 +64,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 | Event | Type | Source | Date |
 |-------|------|--------|------|
-| evt-a858c858 | work_completed | iterate (triage_cli list pins stdout to UTF-8: fixes UnicodeEncodeError on Windows consoles for non-cp1252 item titles (found by the webui pending-delivery-badge boundary probe).) | 2026-06-10 |
+| evt-374ac212 | work_completed | iterate (Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae.) | 2026-06-10 |
 | evt-b2f6aa17 | work_completed | iterate (History-calibrated complexity prior + cross-domain scope vocabulary for the iterate Stage-1 classifier) | 2026-06-10 |
 | evt-7359794f | work_completed | iterate (Gate D2V evidence markdown write behind SHIPWRIGHT_D2V_WRITE_EVIDENCE; default runs assert without writing the tracked artifact.) | 2026-06-10 |
 | evt-e54d689f | work_completed | iterate (Add triage_cli.py list --json (unioned open items + pendingDelivery) as a WebUI contract.) | 2026-06-10 |
@@ -74,7 +74,7 @@ Before dispatching to the handoff's Remaining phase, run these if missing:
 
 - **Pipeline**: 1 phases completed
 - **Total work events**: 136
-- **Last iterate**: bug — triage_cli list pins stdout to UTF-8: fixes UnicodeEncodeError on Windows consoles for non-cp1252 item titles (found by the webui pending-delivery-badge boundary probe). (2026-06-10)
+- **Last iterate**: change — Exempt session_handoff.md + build_dashboard.md (with triage_inbox.md) from artifact-path-canon in all migrations; drift test; dismiss trg-6ed063ae. (2026-06-10)
 - **Resume**: `/shipwright-iterate` for next change, or `/shipwright-run` for new pipeline
 
 ## Recent Decisions

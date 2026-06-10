@@ -1,6 +1,6 @@
 # Compliance Dashboard
 
-Generated: 2026-06-10T08:00:55.145129+00:00
+Generated: 2026-06-10T07:53:28.614369+00:00
 Profile: python-plugin-monorepo
 Scope: library
 
@@ -15,7 +15,7 @@ Scope: library
 | Iterate tests passing | 79/136 iterations tested | WARN | 57 iterate(s) without tests — see test-evidence.md |
 | Dependencies | 8 packages | INFO |  |
 | Copyleft risk | 0 | PASS |  |
-| Triage open | 11 open | WARN | 11 actionable item(s) — see ../agent_docs/triage_inbox.md |
+| Triage open | 9 open | WARN | 9 actionable item(s) — see ../agent_docs/triage_inbox.md |
 | Bloat over-limit | 123 | WARN | 123 file(s) past limit AND not ADR-justified — see shipwright_bloat_baseline.json |
 | Bloat in allowlist | 151 entries | INFO |  |
 | Bloat ratchet delta | -161 lines | PASS |  |
